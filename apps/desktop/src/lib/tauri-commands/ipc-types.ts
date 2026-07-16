@@ -90,6 +90,8 @@ export interface SearchQuery {
 export interface SearchResult {
   entries: SearchResultEntry[]
   totalCount: number
+  /** Scope paths that couldn't be searched because their volume has no index (an unindexed NAS share, an ejected drive). Empty on a fully-covered search. */
+  uncoveredScopes?: string[]
 }
 
 export interface SearchResultEntry {

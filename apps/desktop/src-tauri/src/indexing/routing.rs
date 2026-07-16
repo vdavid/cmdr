@@ -44,7 +44,7 @@ use super::store::{self, IndexStoreError};
 ///   [`external_mount_volume_id_for_path`].
 /// - **Everything else** (the boot disk, and cloud-drive folders in the home dir
 ///   that `root`'s index owns) → `root`.
-pub(super) fn volume_id_for_local_path(path: &str) -> VolumeId {
+pub(crate) fn volume_id_for_local_path(path: &str) -> VolumeId {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     if let Some(smb_id) = super::smb_index::smb_volume_id_for_path(path) {
         return smb_id;

@@ -1,83 +1,10 @@
 //! Search tool handlers (search, ai_search).
 
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-
 use serde_json::{Value, json};
 
 use super::{ToolError, ToolResult};
 use crate::search::PatternType;
-use crate::search::{
-    self, DIALOG_OPEN, SEARCH_INDEX, SearchIndexState, SearchQuery, SearchResult, fill_directory_sizes, format_size,
-    format_timestamp, summarize_query,
-};
-
-/// Ensure the search index is loaded. Returns the index or an error.
-async fn ensure_search_index() -> Result<Arc<search::SearchIndex>, ToolError> {
-    // Check if already loaded
-    {
-        let guard = SEARCH_INDEX.lock().map_err(|e| ToolError::internal(format!("{e}")))?;
-        if let Some(ref state) = *guard {
-            if state.index.entries.is_empty() && state.index.generation == 0 {
-                // Loading sentinel: wait briefly then check again
-                log::warn!("MCP ai_search: search index is in loading sentinel state (empty, gen=0), will reload");
-            } else {
-                log::debug!(
-                    "MCP ai_search: search index already loaded, {} entries, gen={}",
-                    state.index.entries.len(),
-                    state.index.generation
-                );
-                return Ok(state.index.clone());
-            }
-        } else {
-            log::debug!("MCP ai_search: search index not loaded, will load now");
-        }
-    }
-
-    // Not loaded: load synchronously via spawn_blocking
-    let pool = crate::indexing::get_read_pool().ok_or_else(|| {
-        crate::log_error!("MCP ai_search: drive index not available (no read pool)");
-        ToolError::internal(
-            "Drive index not available. Make sure indexing is enabled and the initial scan has completed.",
-        )
-    })?;
-
-    DIALOG_OPEN.store(false, Ordering::Relaxed);
-
-    let cancel = Arc::new(AtomicBool::new(false));
-    let cancel_clone = cancel.clone();
-
-    log::debug!("MCP ai_search: loading search index from DB...");
-    let index = tokio::task::spawn_blocking(move || search::load_search_index(&pool, &cancel_clone))
-        .await
-        .map_err(|e| {
-            crate::log_error!("MCP ai_search: search index load spawn_blocking failed: {e}");
-            ToolError::internal(format!("Search index load failed: {e}"))
-        })?
-        .map_err(|e| {
-            crate::log_error!("MCP ai_search: search index load failed: {e}");
-            ToolError::internal(format!("Search index load failed: {e}"))
-        })?;
-
-    log::debug!(
-        "MCP ai_search: search index loaded from DB, {} entries",
-        index.entries.len()
-    );
-    let index = Arc::new(index);
-
-    // Store it for reuse (no timers for MCP; one-shot)
-    {
-        let mut guard = SEARCH_INDEX.lock().map_err(|e| ToolError::internal(format!("{e}")))?;
-        *guard = Some(SearchIndexState {
-            index: index.clone(),
-            idle_timer: None,
-            backstop_timer: None,
-            load_cancel: Some(cancel),
-        });
-    }
-
-    Ok(index)
-}
+use crate::search::{self, SearchQuery, SearchResult, format_size, format_timestamp, summarize_query};
 
 /// Parse a human-readable size string into bytes.
 /// Supports B, KB, MB, GB, TB (case-insensitive, with or without space).
@@ -183,52 +110,27 @@ pub fn format_search_results(result: &SearchResult, limit: u32) -> String {
     lines.join("\n")
 }
 
-/// Run search and post-process (fill dir sizes, post-filter, truncate).
-fn run_search_and_postprocess(index: &search::SearchIndex, query: &SearchQuery) -> Result<SearchResult, ToolError> {
-    // Blend the live importance weights into ranking, same as the dialog's
-    // `search_files` (one integration point for both). Empty when unavailable ⇒
-    // match-quality + recency ranking.
-    let weights = search::importance_weights_snapshot();
-    let mut result = search::search(index, query, &weights).map_err(ToolError::internal)?;
-
-    // Fill directory sizes from the DB
-    if result.entries.iter().any(|e| e.is_directory)
-        && let Some(pool) = crate::indexing::get_read_pool()
-    {
-        fill_directory_sizes(&mut result, &pool);
+/// An honest one-line note naming any scopes the search couldn't cover (a scope
+/// pointing at a volume with no search index), or `None` when coverage is complete.
+/// Rendered so an agent learns its NAS/ejected-drive scope was skipped rather than
+/// reading an empty result as "no matches".
+fn coverage_note(result: &SearchResult) -> Option<String> {
+    if result.uncovered_scopes.is_empty() {
+        return None;
     }
+    Some(format!(
+        "Note: Cmdr hasn't indexed {} yet, so it isn't searchable. Skipped it.",
+        result.uncovered_scopes.join(", ")
+    ))
+}
 
-    // Post-filter: remove directories that don't match size criteria
-    let has_size_filter = query.min_size.is_some() || query.max_size.is_some();
-    if has_size_filter {
-        result.entries.retain(|e| {
-            if !e.is_directory {
-                return true;
-            }
-            if let Some(min) = query.min_size {
-                match e.size {
-                    Some(s) if s >= min => {}
-                    _ => return false,
-                }
-            }
-            if let Some(max) = query.max_size {
-                match e.size {
-                    Some(s) if s <= max => {}
-                    _ => return false,
-                }
-            }
-            true
-        });
-        result.total_count = result.entries.len() as u32;
-    }
-
-    // Truncate to limit
-    let limit = query.limit.min(1000) as usize;
-    if result.entries.len() > limit {
-        result.entries.truncate(limit);
-    }
-
-    Ok(result)
+/// Run a routed multi-volume search on a blocking thread (route → load → scan →
+/// merge). Shared by both `search` and `ai_search`.
+async fn run_search(query: SearchQuery) -> Result<SearchResult, ToolError> {
+    tokio::task::spawn_blocking(move || search::run_blocking(query))
+        .await
+        .map_err(|e| ToolError::internal(format!("Search failed: {e}")))?
+        .map_err(ToolError::internal)
 }
 
 /// Execute the `search` tool.
@@ -267,9 +169,7 @@ pub async fn execute_search(params: &Value) -> ToolResult {
     };
     let limit = params.get("limit").and_then(|v| v.as_u64()).unwrap_or(30) as u32;
 
-    let index = ensure_search_index().await?;
-
-    // Parse scope if provided
+    // Parse scope if provided (routing to the owning volume(s) happens in the runner).
     let scope_str = params.get("scope").and_then(|v| v.as_str());
     let (include_paths, exclude_dir_names) = if let Some(scope) = scope_str {
         let parsed = search::parse_scope(scope);
@@ -291,7 +191,7 @@ pub async fn execute_search(params: &Value) -> ToolResult {
     let case_sensitive = params.get("caseSensitive").and_then(|v| v.as_bool());
     let exclude_system_dirs = params.get("excludeSystemDirs").and_then(|v| v.as_bool());
 
-    let mut query = SearchQuery {
+    let query = SearchQuery {
         name_pattern: pattern,
         pattern_type,
         min_size,
@@ -307,20 +207,14 @@ pub async fn execute_search(params: &Value) -> ToolResult {
         exclude_system_dirs,
     };
 
-    // Resolve include paths to entry IDs via SQLite
-    if query.include_paths.as_ref().is_some_and(|p| !p.is_empty())
-        && let Some(pool) = crate::indexing::get_read_pool()
-    {
-        search::resolve_include_paths(&mut query, &pool);
-    }
+    let result = run_search(query).await?;
 
-    let query_clone = query.clone();
-    let index_clone = index.clone();
-    let result = tokio::task::spawn_blocking(move || run_search_and_postprocess(&index_clone, &query_clone))
-        .await
-        .map_err(|e| ToolError::internal(format!("Search failed: {e}")))??;
-
-    Ok(json!(format_search_results(&result, limit)))
+    let table = format_search_results(&result, limit);
+    let output = match coverage_note(&result) {
+        Some(note) => format!("{note}\n\n{table}"),
+        None => table,
+    };
+    Ok(json!(output))
 }
 
 /// Build a `SearchQuery` from a `TranslateResult`, merging in caller-provided scope
@@ -381,18 +275,6 @@ pub async fn execute_ai_search(params: &Value) -> ToolResult {
     let total_t = std::time::Instant::now();
     log::info!("MCP ai_search: handler entered, query={natural_query:?}, limit={limit}, scope={scope_str:?}");
 
-    log::debug!("MCP ai_search: loading search index...");
-    let index = match ensure_search_index().await {
-        Ok(idx) => {
-            log::debug!("MCP ai_search: search index loaded, {} entries", idx.entries.len());
-            idx
-        }
-        Err(e) => {
-            crate::log_error!("MCP ai_search: search index load failed: {}", e.message);
-            return Err(e);
-        }
-    };
-
     // ── Translate query ──────────────────────────────────────────────
     log::debug!("MCP ai_search: calling translate_search_query for query={natural_query:?}");
     let t = std::time::Instant::now();
@@ -425,41 +307,21 @@ pub async fn execute_ai_search(params: &Value) -> ToolResult {
         }
     };
 
-    let mut query = build_search_query_from_translate(&translate_result, scope_str, limit);
-
-    // Resolve include paths to entry IDs via SQLite
-    if query.include_paths.as_ref().is_some_and(|p| !p.is_empty())
-        && let Some(pool) = crate::indexing::get_read_pool()
-    {
-        search::resolve_include_paths(&mut query, &pool);
-    }
+    let query = build_search_query_from_translate(&translate_result, scope_str, limit);
 
     log::debug!("MCP ai_search: running search...");
     let t = std::time::Instant::now();
-    let query_clone = query.clone();
-    let index_clone = index.clone();
-    let result = match tokio::task::spawn_blocking(move || run_search_and_postprocess(&index_clone, &query_clone)).await
-    {
-        Ok(Ok(result)) => {
-            log::info!(
-                "MCP ai_search: search completed in {:.1}s, {} results (total_count={})",
-                t.elapsed().as_secs_f64(),
-                result.entries.len(),
-                result.total_count
-            );
-            result
-        }
-        Ok(Err(e)) => {
-            crate::log_error!("MCP ai_search: search failed (postprocess): {}", e.message);
-            return Err(e);
-        }
-        Err(e) => {
-            crate::log_error!("MCP ai_search: spawn_blocking failed (task join): {e}");
-            return Err(ToolError::internal(format!("Search failed: {e}")));
-        }
-    };
+    let result = run_search(query.clone()).await.inspect_err(|e| {
+        crate::log_error!("MCP ai_search: search failed: {}", e.message);
+    })?;
+    log::info!(
+        "MCP ai_search: search completed in {:.1}s, {} results (total_count={})",
+        t.elapsed().as_secs_f64(),
+        result.entries.len(),
+        result.total_count
+    );
 
-    // ── Fallback: if 0 results and LLM suggested searchPaths, retry without them ──
+    // ── Fallback: if 0 results and the LLM suggested searchPaths, retry without them ──
     let (result, query) = if result.total_count == 0
         && translate_result
             .query
@@ -474,28 +336,16 @@ pub async fn execute_ai_search(params: &Value) -> ToolResult {
         let mut fallback_query = query;
         fallback_query.include_paths = None;
         fallback_query.include_path_ids = None;
-        let fallback_query_clone = fallback_query.clone();
-        let index_clone = index.clone();
         let t = std::time::Instant::now();
-        match tokio::task::spawn_blocking(move || run_search_and_postprocess(&index_clone, &fallback_query_clone)).await
-        {
-            Ok(Ok(result)) => {
-                log::info!(
-                    "MCP ai_search: fallback full-drive search completed in {:.1}s, {} results",
-                    t.elapsed().as_secs_f64(),
-                    result.total_count
-                );
-                (result, fallback_query)
-            }
-            Ok(Err(e)) => {
-                crate::log_error!("MCP ai_search: fallback search failed: {}", e.message);
-                return Err(e);
-            }
-            Err(e) => {
-                crate::log_error!("MCP ai_search: fallback spawn_blocking failed: {e}");
-                return Err(ToolError::internal(format!("Search failed: {e}")));
-            }
-        }
+        let result = run_search(fallback_query.clone()).await.inspect_err(|e| {
+            crate::log_error!("MCP ai_search: fallback search failed: {}", e.message);
+        })?;
+        log::info!(
+            "MCP ai_search: fallback full-drive search completed in {:.1}s, {} results",
+            t.elapsed().as_secs_f64(),
+            result.total_count
+        );
+        (result, fallback_query)
     } else {
         (result, query)
     };
@@ -507,8 +357,9 @@ pub async fn execute_ai_search(params: &Value) -> ToolResult {
         .as_deref()
         .map(|c| format!("Note: {c}\n"))
         .unwrap_or_default();
+    let coverage_line = coverage_note(&result).map(|n| format!("{n}\n")).unwrap_or_default();
     let output = format!(
-        "{} hits\n\nInterpreted query: {interpreted}\n{caveat_line}\n{formatted}",
+        "{} hits\n\nInterpreted query: {interpreted}\n{caveat_line}{coverage_line}\n{formatted}",
         result.total_count
     );
     log::info!(

@@ -52,6 +52,15 @@ pub enum PatternType {
 pub struct SearchResult {
     pub entries: Vec<SearchResultEntry>,
     pub total_count: u32,
+    /// Scope paths the search couldn't cover because they resolve to a volume with
+    /// no search index on disk (an unindexed NAS share, an ejected drive). A TYPED
+    /// honesty signal (not a message the caller string-matches): when it's non-empty
+    /// AND `entries` is empty, the query returned nothing because the target isn't
+    /// searchable — distinct from a genuine "no matches" — so the UI and MCP render
+    /// "not indexed yet" rather than "no files found". Empty on a fully-covered
+    /// search. Absent from a request body; populated server-side.
+    #[serde(default)]
+    pub uncovered_scopes: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -127,6 +136,7 @@ mod tests {
                 entry_id: 42,
             }],
             total_count: 1,
+            uncovered_scopes: Vec::new(),
         };
         let json = serde_json::to_string(&result).unwrap();
         assert!(json.contains("totalCount"));

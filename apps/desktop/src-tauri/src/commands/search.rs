@@ -2,22 +2,15 @@
 //!
 //! Thin wrappers around `search` module functions, exposed to the frontend via Tauri commands.
 
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::Ordering;
 
 use serde::Serialize;
 
 use genai::chat::ChatOptions;
 
 use crate::ai::AiTranslateError;
-use crate::indexing::get_read_pool;
-use crate::search::{
-    self, DIALOG_OPEN, ParsedScope, SEARCH_INDEX, SearchIndexState, SearchQuery, SearchResult, drop_search_index,
-    fill_directory_sizes, start_backstop_timer, start_idle_timer, touch_activity,
-};
+use crate::search::{self, ParsedScope, SearchQuery, SearchResult, VolumeLoad};
 
-use crate::indexing::writer::WRITER_GENERATION;
-use crate::pluralize::pluralize_with;
 use crate::search::ai::{self, query_builder as ai_query_builder};
 use crate::search::history::{self, HistoryEntry};
 
@@ -37,103 +30,42 @@ pub struct SearchIndexReadyEvent {
     pub entry_count: u64,
 }
 
-/// Called when the search dialog opens. Starts loading the index in the background.
-/// Returns immediately with `{ ready, entryCount }`.
+/// Called when the search dialog opens. Pre-loads the ROOT index in the background
+/// (the common case; scoped volumes load lazily on their first query). Returns
+/// immediately with `{ ready, entryCount }`; the dialog flips to ready on the
+/// emitted `search-index-ready` event.
 #[tauri::command]
 #[specta::specta]
 pub async fn prepare_search_index(app: tauri::AppHandle) -> Result<PrepareResult, String> {
-    touch_activity();
-    DIALOG_OPEN.store(true, Ordering::Relaxed);
+    use crate::indexing::ROOT_VOLUME_ID;
 
-    // Check if already loaded and fresh
-    {
-        let mut guard = SEARCH_INDEX.lock().map_err(|e| format!("{e}"))?;
-        if let Some(ref mut state) = *guard {
-            let current_gen = WRITER_GENERATION.load(Ordering::Relaxed);
-            if state.index.generation == current_gen {
-                // Cancel any pending idle timer
-                if let Some(ref h) = state.idle_timer {
-                    h.abort();
-                }
-                state.idle_timer = None;
-                // Reset backstop timer; the previous session's timer may still
-                // be ticking and could fire while the dialog is open.
-                if let Some(ref h) = state.backstop_timer {
-                    h.abort();
-                }
-                state.backstop_timer = Some(start_backstop_timer());
-                return Ok(PrepareResult {
-                    ready: true,
-                    entry_count: state.index.entries.len() as u64,
-                });
-            }
-            // Stale: drop and reload below
-        }
-    }
+    search::touch_activity();
+    search::DIALOG_OPEN.store(true, Ordering::Relaxed);
+    search::cancel_idle_timer();
 
-    // Drop stale index if any
-    drop_search_index();
-
-    let pool = get_read_pool().ok_or_else(|| "Index not available".to_string())?;
-    let cancel = Arc::new(AtomicBool::new(false));
-    let cancel_clone = cancel.clone();
-
-    // Store a "loading" sentinel with the cancel flag BEFORE spawning the task.
-    // This closes the race window where release_search_index can't cancel the
-    // load between checking the lock and the background task starting.
-    {
-        let mut guard = SEARCH_INDEX.lock().map_err(|e| format!("{e}"))?;
-        if guard.is_some() {
-            return Ok(PrepareResult {
-                ready: false,
-                entry_count: 0,
-            });
-        }
-        *guard = Some(SearchIndexState {
-            index: Arc::new(search::SearchIndex::empty()),
-            idle_timer: None,
-            backstop_timer: None,
-            load_cancel: Some(cancel.clone()),
+    // Fast path: root already warm and fresh.
+    if let Some(v) = search::get_loaded(ROOT_VOLUME_ID) {
+        // A prior session's backstop timer may still be ticking; reset it so it
+        // can't fire while the dialog is open.
+        search::reset_backstop_timer();
+        return Ok(PrepareResult {
+            ready: true,
+            entry_count: v.index.entries.len() as u64,
         });
     }
 
-    // Spawn the load in a background task
+    // Load root in the background so the dialog doesn't block on a multi-second scan.
     let app_clone = app.clone();
     tauri::async_runtime::spawn(async move {
-        let result = tokio::task::spawn_blocking(move || search::load_search_index(&pool, &cancel_clone)).await;
-
-        match result {
-            Ok(Ok(index)) => {
-                let entry_count = index.entries.len() as u64;
-                let backstop = start_backstop_timer();
-                let mut guard = match SEARCH_INDEX.lock() {
-                    Ok(g) => g,
-                    Err(e) => e.into_inner(),
-                };
-                *guard = Some(SearchIndexState {
-                    index: Arc::new(index),
-                    idle_timer: None,
-                    backstop_timer: Some(backstop),
-                    load_cancel: Some(cancel),
-                });
-                log::debug!(
-                    "Search index ready: {}",
-                    pluralize_with(entry_count, "entry", "entries")
-                );
-                // Emit event to frontend
+        match tokio::task::spawn_blocking(|| search::ensure_volume(ROOT_VOLUME_ID)).await {
+            Ok(VolumeLoad::Loaded(v)) => {
+                let entry_count = v.index.entries.len() as u64;
                 use tauri_specta::Event;
                 let _ = SearchIndexReadyEvent { entry_count }.emit(&app_clone);
             }
-            Ok(Err(e)) => {
-                if e.contains("cancelled") {
-                    log::debug!("Search index load cancelled");
-                } else {
-                    log::warn!("Search index load failed: {e}");
-                }
-            }
-            Err(e) => {
-                log::warn!("Search index load task panicked: {e}");
-            }
+            Ok(VolumeLoad::NotIndexed) => log::debug!("prepare_search_index: root index not available yet"),
+            Ok(VolumeLoad::Failed(e)) => log::warn!("prepare_search_index: root load failed: {e}"),
+            Err(e) => log::warn!("prepare_search_index: load task panicked: {e}"),
         }
     });
 
@@ -143,106 +75,28 @@ pub async fn prepare_search_index(app: tauri::AppHandle) -> Result<PrepareResult
     })
 }
 
-/// Search the in-memory index. Returns empty if not loaded yet.
+/// Search across the scoped volume(s), or every indexed volume when unscoped.
+/// Returns empty (no coverage gaps) when nothing is indexed yet.
 #[tauri::command]
 #[specta::specta]
-pub async fn search_files(mut query: SearchQuery) -> Result<SearchResult, String> {
-    touch_activity();
+pub async fn search_files(query: SearchQuery) -> Result<SearchResult, String> {
+    search::touch_activity();
+    search::cancel_idle_timer();
 
-    let index = {
-        let guard = SEARCH_INDEX.lock().map_err(|e| format!("{e}"))?;
-        match guard.as_ref() {
-            Some(state) => {
-                // Cancel any idle timer since we're actively searching
-                if let Some(ref h) = state.idle_timer {
-                    h.abort();
-                }
-                state.index.clone()
-            }
-            None => {
-                return Ok(SearchResult {
-                    entries: Vec::new(),
-                    total_count: 0,
-                });
-            }
-        }
-    };
-
-    // Resolve include paths to entry IDs via SQLite (microseconds, not 20s)
-    if query.include_paths.as_ref().is_some_and(|p| !p.is_empty())
-        && let Some(pool) = get_read_pool()
-    {
-        search::resolve_include_paths(&mut query, &pool);
-    }
-
-    // Load the per-volume importance weight map (empty when unavailable, which
-    // degrades ranking to match-quality + recency — today's behavior).
-    let weights = search::importance_weights_snapshot();
-
-    // Run search on a blocking thread (rayon parallel scan)
-    let query_clone = query.clone();
-    let index_clone = index.clone();
-    let mut result = tokio::task::spawn_blocking(move || search::search(&index_clone, &query_clone, &weights))
+    // Route + load + scan + merge on a blocking thread (opens DBs, rayon scan).
+    tokio::task::spawn_blocking(move || search::run_blocking(query))
         .await
-        .map_err(|e| format!("Search task failed: {e}"))??;
-
-    // Fill directory sizes from the DB
-    if result.entries.iter().any(|e| e.is_directory)
-        && let Some(pool) = get_read_pool()
-    {
-        fill_directory_sizes(&mut result, &pool);
-    }
-
-    // Post-filter directories by size (their sizes come from dir_stats, filled
-    // above, so engine::search couldn't apply the size filter to them).
-    search::filter_directories_by_size(&mut result, &query);
-
-    // Truncate to the originally requested limit
-    let limit = query.limit.min(1000) as usize;
-    if result.entries.len() > limit {
-        result.entries.truncate(limit);
-    }
-
-    // Check generation staleness; trigger background reload if needed
-    let current_gen = WRITER_GENERATION.load(Ordering::Relaxed);
-    if index.generation != current_gen {
-        log::debug!(
-            "Search index stale (gen {} vs {}), will reload on next prepare",
-            index.generation,
-            current_gen
-        );
-    }
-
-    Ok(result)
+        .map_err(|e| format!("Search task failed: {e}"))?
 }
 
-/// Called when the search dialog closes. Starts the idle timer and
-/// cancels any in-progress load.
+/// Called when the search dialog closes. Starts the idle timer and cancels any
+/// in-progress index load.
 #[tauri::command]
 #[specta::specta]
 pub async fn release_search_index() -> Result<(), String> {
-    DIALOG_OPEN.store(false, Ordering::Relaxed);
-    let mut guard = SEARCH_INDEX.lock().map_err(|e| format!("{e}"))?;
-
-    // Set cancellation flag on any in-progress load
-    if let Some(ref state) = *guard
-        && let Some(ref cancel) = state.load_cancel
-    {
-        cancel.store(true, Ordering::Relaxed);
-    }
-
-    // Start idle timer
-    if guard.is_some() {
-        let idle_handle = start_idle_timer();
-        if let Some(ref mut state) = *guard {
-            // Cancel previous idle timer if any
-            if let Some(ref h) = state.idle_timer {
-                h.abort();
-            }
-            state.idle_timer = Some(idle_handle);
-        }
-    }
-
+    search::DIALOG_OPEN.store(false, Ordering::Relaxed);
+    search::cancel_active_loads();
+    search::start_idle_timer();
     Ok(())
 }
 

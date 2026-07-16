@@ -12,7 +12,7 @@ use crate::indexing::store::{self, ROOT_ID};
 use super::index::SearchIndex;
 use super::query::{SYSTEM_DIR_EXCLUDES, glob_to_regex, summarize_query};
 use super::ranking::{self, ImportanceWeights};
-use super::types::{PatternType, SearchQuery, SearchResult, SearchResultEntry};
+use super::types::{PatternType, SearchQuery, SearchResultEntry};
 
 // ── Scope filter (pre-resolved for the hot loop) ─────────────────────
 
@@ -194,15 +194,50 @@ fn prepare_scope_filter(query: &SearchQuery) -> ScopeFilter {
 
 // ── Search execution ─────────────────────────────────────────────────
 
-/// Execute a search query against the in-memory index. Pure function.
+/// One ranked result: its cross-volume-comparable [`RankKey`] plus the built
+/// result entry. Single-volume callers drop the key immediately; the multi-volume
+/// orchestrator keeps it to k-way-merge each volume's slice into one global order.
+pub(crate) struct RankedEntry {
+    pub(crate) key: ranking::RankKey,
+    pub(crate) entry: SearchResultEntry,
+}
+
+/// Execute a search query against ONE in-memory index, returning a `SearchResult`.
 ///
-/// `weights` supplies per-volume folder importance for ranking; an empty map ranks
-/// on match quality + recency alone (the degradation contract). See `ranking.rs`.
+/// A thin wrapper over [`search_ranked`] (no path prefix, keys dropped, no coverage
+/// gaps) that the pure-engine tests assert against. Production runs
+/// [`search_ranked`] directly so it can k-way-merge across volumes and prefix mount
+/// paths; this wrapper isn't on any production path, hence `#[cfg(test)]`.
+#[cfg(test)]
 pub(crate) fn search(
     index: &SearchIndex,
     query: &SearchQuery,
     weights: &ImportanceWeights,
-) -> Result<SearchResult, String> {
+) -> Result<super::types::SearchResult, String> {
+    let (ranked, total_count) = search_ranked(index, query, weights, "")?;
+    Ok(super::types::SearchResult {
+        entries: ranked.into_iter().map(|r| r.entry).collect(),
+        total_count,
+        uncovered_scopes: Vec::new(),
+    })
+}
+
+/// Execute a search against ONE volume's index and return the ranked, path-built
+/// results (best-first) with their sort keys, plus the total match count.
+///
+/// `path_prefix` is prepended to every reconstructed path: empty for the `root`
+/// volume (its index is `/`-rooted, paths are already absolute), the mount root
+/// (`/Volumes/naspi`) for a mount-rooted volume whose index stores mount-relative
+/// paths — so a NAS result reports `/Volumes/naspi/sub/file`, not the bare `/sub/file`
+/// its index holds, and opens in a pane. The returned entries are already truncated
+/// to the query's effective limit, so path reconstruction stays bounded even on a
+/// multi-million-entry index.
+pub(crate) fn search_ranked(
+    index: &SearchIndex,
+    query: &SearchQuery,
+    weights: &ImportanceWeights,
+    path_prefix: &str,
+) -> Result<(Vec<RankedEntry>, u32), String> {
     let t = std::time::Instant::now();
 
     // Case-folding rule (shared by pattern matching and ranking): platform default
@@ -334,10 +369,10 @@ pub(crate) fn search(
     let total_count = matching_indices.len() as u32;
 
     // Rank by match-quality band first, then importance-boosted recency within a
-    // band (empty weights ⇒ pure recency, today's order). See `ranking.rs`.
+    // band (empty weights ⇒ pure recency, today's order). See `ranking.rs`. Keep the
+    // keys: the multi-volume merge k-way-merges each volume's slice on them.
     let stem = ranking::stem_for(query);
-    let mut sorted = matching_indices;
-    ranking::rank(index, &mut sorted, &stem, case_insensitive, weights);
+    let mut ranked = ranking::rank_decorated(index, &matching_indices, &stem, case_insensitive, weights);
 
     // Take first `limit` entries. When size filters are active and directories
     // are included, collect extra candidates because some directories may be
@@ -351,20 +386,22 @@ pub(crate) fn search(
     } else {
         base_limit
     };
-    sorted.truncate(limit);
+    ranked.truncate(limit);
 
-    // Reconstruct paths and build result entries
+    // Reconstruct paths and build result entries (prefixed into the volume's mount
+    // space, so a non-root volume's mount-relative index paths become absolute).
     let home_dir = dirs::home_dir().map(|p| p.to_string_lossy().to_string());
-    let entries: Vec<SearchResultEntry> = sorted
+    let entries: Vec<RankedEntry> = ranked
         .iter()
-        .map(|&idx| {
+        .map(|&(key, idx)| {
             let entry = &index.entries[idx];
-            let path = reconstruct_path_from_index(index, entry.id);
+            let path = apply_path_prefix(path_prefix, &reconstruct_path_from_index(index, entry.id));
             let parent_path = match path.rfind('/') {
                 Some(0) => "/".to_string(),
                 Some(pos) => {
                     let parent = &path[..pos];
-                    // Replace home dir prefix with ~
+                    // Replace home dir prefix with ~ (a no-op for a prefixed non-root
+                    // path, whose mount root is never the home dir).
                     if let Some(ref home) = home_dir {
                         if let Some(rest) = parent.strip_prefix(home.as_str()) {
                             format!("~{rest}")
@@ -379,15 +416,18 @@ pub(crate) fn search(
             };
             let entry_name = index.name(entry);
             let icon_id = derive_icon_id(entry_name, entry.is_directory);
-            SearchResultEntry {
-                name: entry_name.to_string(),
-                path,
-                parent_path,
-                is_directory: entry.is_directory,
-                size: entry.size,
-                modified_at: entry.modified_at,
-                icon_id,
-                entry_id: entry.id,
+            RankedEntry {
+                key,
+                entry: SearchResultEntry {
+                    name: entry_name.to_string(),
+                    path,
+                    parent_path,
+                    is_directory: entry.is_directory,
+                    size: entry.size,
+                    modified_at: entry.modified_at,
+                    icon_id,
+                    entry_id: entry.id,
+                },
             }
         })
         .collect();
@@ -399,7 +439,22 @@ pub(crate) fn search(
         entries.len(),
         t.elapsed()
     );
-    Ok(SearchResult { entries, total_count })
+    Ok((entries, total_count))
+}
+
+/// Prepend a volume's mount-root prefix to an index-reconstructed path.
+///
+/// Empty prefix (the `root` volume): return the path unchanged. Otherwise the index
+/// is mount-rooted and `path` is mount-relative (`/sub/file`, or `/` for the mount
+/// root itself), so join them into the mount-absolute path (`/Volumes/naspi/sub/file`).
+fn apply_path_prefix(prefix: &str, path: &str) -> String {
+    if prefix.is_empty() {
+        path.to_string()
+    } else if path == "/" {
+        prefix.to_string()
+    } else {
+        format!("{prefix}{path}")
+    }
 }
 
 // ── Path reconstruction ──────────────────────────────────────────────

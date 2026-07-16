@@ -240,6 +240,7 @@ fn test_format_search_results_empty() {
     let result = SearchResult {
         entries: Vec::new(),
         total_count: 0,
+        uncovered_scopes: Vec::new(),
     };
     assert_eq!(format_search_results(&result, 30), "No files found matching the query.");
 }
@@ -259,6 +260,7 @@ fn test_format_search_results_with_entries() {
             entry_id: 1,
         }],
         total_count: 1,
+        uncovered_scopes: Vec::new(),
     };
     let formatted = format_search_results(&result, 30);
     assert!(formatted.contains("1 of 1 results:"));
@@ -281,6 +283,7 @@ fn test_format_search_results_directory_trailing_slash() {
             entry_id: 2,
         }],
         total_count: 1,
+        uncovered_scopes: Vec::new(),
     };
     let formatted = format_search_results(&result, 30);
     assert!(formatted.contains("Projects/"));

@@ -71,9 +71,10 @@ impl ReadPool {
     }
 }
 
-/// The root volume's read pool. The fast handle for local-disk enrichment,
-/// search (D7 keeps search local-only), and IPC dir-stats. The root
-/// `IndexInstance` shares this same `Arc`, so registry and read path can't drift.
+/// The root volume's read pool. The fast handle for local-disk enrichment, root
+/// filename search, and IPC dir-stats. The root `IndexInstance` shares this same
+/// `Arc`, so registry and read path can't drift. (Non-root filename search opens
+/// its own read-only pool from the volume's `index-{id}.db`; see `search/volumes.rs`.)
 ///
 /// Root is special-cased to this global (rather than read from the registry)
 /// for two reasons: search reads it on the hot path, and the indexing tests

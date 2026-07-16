@@ -19,8 +19,8 @@ impl IndexStore {
         Ok(())
     }
 
-    /// Get a single meta value by key.
-    #[cfg(test)]
+    /// Get a single meta value by key. Read by the search loader to recover a
+    /// volume's `volume_path` (mount root) from its persisted index DB.
     pub fn get_meta(conn: &Connection, key: &str) -> Result<Option<String>, IndexStoreError> {
         Self::read_meta_value(conn, key)
     }

@@ -1,15 +1,20 @@
 # Search module
 
-In-memory search index and AI query translation for whole-drive file search. Flat API:
-`use crate::search::{SearchQuery, search, ...}`.
+Multi-volume in-memory filename search + AI query translation. A scope routes to its owning volume(s); an unscoped
+query fans out across every volume with a persisted `index-{volumeId}.db` and merges. Flat API:
+`use crate::search::{SearchQuery, SearchResult, ...}`.
 
 ## Module map
 
 - **`mod.rs`**: re-exports from submodules.
-- **`index.rs`**: `SearchIndex` (arena-allocated filename storage), `SearchEntry`, global `SEARCH_INDEX` with idle/
-  backstop timers and load cancellation.
-- **`engine.rs`**: `search()` pure function (no I/O): compiles glob/regex, parallel-filters with rayon, sorts by
-  recency. Scope filtering via `include_path_ids` and `exclude_dir_names`.
+- **`index.rs`**: `SearchIndex` (arena-allocated filename storage), `SearchEntry`, and `load_search_index` (the arena
+  loader). No lifecycle state — that's `volumes.rs`.
+- **`volumes.rs`**: per-volume registry + dialog/idle/backstop timers (drop ALL arenas at once). `ensure_volume(id)`
+  lazily loads + caches a volume's arena, mount root (DB `volume_path` meta), and weights; a non-root volume opens
+  read-only from `index-{id}.db` on disk, NOT via `INDEX_REGISTRY`. `VolumeLoad::{Loaded,NotIndexed,Failed}`.
+- **`execute.rs`**: `run_blocking(query)`, the multi-volume orchestrator (route → load → per-volume engine → merge).
+- **`engine.rs`**: `search_ranked()` pure (no I/O): compiles glob/regex, rayon-filters, ranks, reconstructs paths
+  (mount-root-prefixed). Scope via `include_path_ids` / `exclude_dir_names`. `search()` is a `#[cfg(test)]` wrapper.
 - **`history.rs`**: persistent recent-searches store. Atomic JSON, canonical dedupe key, cap eviction, schema-version
   quarantine. See must-knows below.
 - **`types.rs`**: pure data (`SearchQuery`, `SearchResult`, `SearchResultEntry`, `ParsedScope`, `PatternType`,
@@ -18,8 +23,8 @@ In-memory search index and AI query translation for whole-drive file search. Fla
   `fill_directory_sizes()` (DB post-query), formatters, `summarize_query()`, `SYSTEM_DIR_EXCLUDES`.
 - **`ai/`**: NL → `SearchQuery` translation. See [`ai/CLAUDE.md`](ai/CLAUDE.md).
 
-Flow: `types.rs` defines → `query.rs` prepares (`resolve_include_paths`) → `engine.rs` scans (pure) → `query.rs`
-enriches (`fill_directory_sizes`).
+Flow: `execute.rs` routes a query to its volume(s) → per volume: `query.rs` resolves scope IDs → `engine.rs` scans
+(pure, ranked) → `execute.rs` fills dir sizes + merges.
 
 ## Must-knows
 
@@ -28,9 +33,14 @@ enriches (`fill_directory_sizes`).
 - **`types.rs` stays free of logic.** It's imported by everything (`engine.rs`, `query.rs`, `ai/`); adding logic risks
   circular dependencies.
 - **`search/` is a read-only, one-way consumer of `indexing/`** (`search → indexing`, never reverse). It imports
-  `ReadPool` (`indexing::enrichment`), `WRITER_GENERATION` (`indexing::writer`), and `ROOT_ID` /
-  `normalize_for_comparison` / `resolve_path` / `IndexStore` (`indexing::store`). Search reads the index but doesn't
-  participate in indexing.
+  `ReadPool` (`indexing::enrichment`), `WRITER_GENERATION` (`indexing::writer`), `ROOT_ID` /
+  `normalize_for_comparison` / `resolve_path` / `IndexStore` (`indexing::store`), and `volume_id_for_local_path`
+  (`indexing::routing`, for scope→volume routing). Search reads the index but doesn't participate in indexing.
+
+- **Multi-volume: `execute.rs` routes + merges, the engine stays per-index/pure.** Non-root indices are mount-relative,
+  so PREFIX the mount root onto read paths and STRIP it from scope include paths. A scope on an unindexed volume →
+  `SearchResult::uncovered_scopes` (typed; branch on emptiness, never string-match), not empty success. Only the root
+  writer bumps `WRITER_GENERATION`. Full model + gotchas: [DETAILS.md](DETAILS.md) § Multi-volume search.
 - **`name_folded` is NOT stored in the index**: the pattern is NFD-normalized at query time on macOS (APFS filenames are
   already NFD). Avoids doubling the name arena's memory.
 - **Filenames are arena-allocated**: each `SearchEntry` holds `name_offset: u32` + `name_len: u16`, not an owned
@@ -43,17 +53,11 @@ enriches (`fill_directory_sizes`).
 
 ## History store (`history.rs`)
 
-- **Persistence path**: `{app_data_dir}/search-history.json`, schema-versioned via `_schemaVersion` (currently 1). On
-  parse failure or version mismatch, rename to `.broken` and start fresh (corrupt file kept one rotation for debugging).
-- **Concurrency**: in-memory `Mutex<HistoryStore>` cache plus a separate `OnceLock<Mutex<()>>` (`DISK_LOCK`) serializing
-  the read-modify-write cycle. Always drop the cache guard before any `fs` call; no `.await` while holding a guard.
-- **Canonical dedupe key** (compare-time only, never persisted): `mode | normalized_query | filters | scope |
-  case_sensitive | exclude_system_dirs`. Same key = same search; the most recent copy wins (move-to-top).
-- **Add only on "Open in pane"**, never on Enter / auto-apply. This is David's explicit design call (a signal-rich
-  1000-entry budget). The Rust side doesn't enforce it; the frontend's only `addRecentSearch` call site is the
-  Open-in-pane handler. Don't add a "convenience" add-on-search call site.
-- **Cap**: `search.recentSearches.maxCount` (default 1000). `apply_max_count` trims in-memory on live-apply; `0` clears
-  and short-circuits future adds.
+- **Concurrency**: `Mutex<HistoryStore>` cache + a separate `DISK_LOCK` serializing the read-modify-write. Drop the
+  cache guard before any `fs` call; no `.await` while holding a guard.
+- **Add only on "Open in pane"**, never on Enter / auto-apply (David's call; a signal-rich 1000-entry budget). Not
+  Rust-enforced — the FE's ONLY `addRecentSearch` call site is the Open-in-pane handler. Don't add a "convenience" one.
+- Persistence + dedupe-key + cap details: [DETAILS.md](DETAILS.md) § History store.
 
 ## Sharing with `selection/`
 

@@ -1992,15 +1992,20 @@ export const commands = {
    */
   mediaIndexDownloadClipModel: () => typedError<null, string>(__TAURI_INVOKE('media_index_download_clip_model')),
   /**
-   *  Called when the search dialog opens. Starts loading the index in the background.
-   *  Returns immediately with `{ ready, entryCount }`.
+   *  Called when the search dialog opens. Pre-loads the ROOT index in the background
+   *  (the common case; scoped volumes load lazily on their first query). Returns
+   *  immediately with `{ ready, entryCount }`; the dialog flips to ready on the
+   *  emitted `search-index-ready` event.
    */
   prepareSearchIndex: () => typedError<PrepareResult, string>(__TAURI_INVOKE('prepare_search_index')),
-  // Search the in-memory index. Returns empty if not loaded yet.
+  /**
+   *  Search across the scoped volume(s), or every indexed volume when unscoped.
+   *  Returns empty (no coverage gaps) when nothing is indexed yet.
+   */
   searchFiles: (query: SearchQuery) => typedError<SearchResult, string>(__TAURI_INVOKE('search_files', { query })),
   /**
-   *  Called when the search dialog closes. Starts the idle timer and
-   *  cancels any in-progress load.
+   *  Called when the search dialog closes. Starts the idle timer and cancels any
+   *  in-progress index load.
    */
   releaseSearchIndex: () => typedError<null, string>(__TAURI_INVOKE('release_search_index')),
   /**
@@ -6496,6 +6501,16 @@ export type SearchQuery = {
 export type SearchResult = {
   entries: SearchResultEntry[]
   totalCount: number
+  /**
+   *  Scope paths the search couldn't cover because they resolve to a volume with
+   *  no search index on disk (an unindexed NAS share, an ejected drive). A TYPED
+   *  honesty signal (not a message the caller string-matches): when it's non-empty
+   *  AND `entries` is empty, the query returned nothing because the target isn't
+   *  searchable — distinct from a genuine "no matches" — so the UI and MCP render
+   *  "not indexed yet" rather than "no files found". Empty on a fully-covered
+   *  search. Absent from a request body; populated server-side.
+   */
+  uncoveredScopes?: string[]
 }
 
 export type SearchResultEntry = {

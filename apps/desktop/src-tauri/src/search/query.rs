@@ -2,9 +2,9 @@
 //! directory size enrichment, and system directory exclusions.
 
 use crate::indexing::ReadPool;
-use crate::indexing::store::{self, IndexStore};
+use crate::indexing::store;
 
-use super::types::{PatternType, SearchQuery, SearchResult};
+use super::types::{PatternType, SearchQuery};
 
 // ── System directory exclusions ──────────────────────────────────────
 
@@ -284,113 +284,57 @@ fn canonicalize_scope_path(path: &str) -> String {
     }
 }
 
-/// Resolve `include_paths` to entry IDs via SQLite and set `include_path_ids`
-/// on the query. Call this before `search()` when the query has `include_paths`.
-pub(crate) fn resolve_include_paths(query: &mut SearchQuery, pool: &ReadPool) {
-    let paths = match query.include_paths.as_ref() {
-        Some(p) if !p.is_empty() => p.clone(),
-        _ => return,
+/// Map an absolute scope path into a volume's index path space (mount-relative),
+/// so `store::resolve_path` — which walks component-by-component from the index
+/// `ROOT_ID` — hits. `root` (mount_root `None`) is already index-rooted, so the
+/// path passes through. A mount-rooted volume's index `ROOT_ID` is its mount root,
+/// so the mount prefix is stripped: `/Volumes/naspi/sub` → `/sub`, the mount root
+/// itself → `/`. A path outside the mount root yields `None` (don't mis-root it).
+fn to_index_relative(path: &str, mount_root: Option<&str>) -> Option<String> {
+    let Some(root) = mount_root else {
+        return Some(path.to_string());
     };
+    if path == root {
+        return Some("/".to_string());
+    }
+    let rest = path.strip_prefix(root)?;
+    rest.starts_with('/').then(|| rest.to_string())
+}
+
+/// Resolve a volume's scope include paths to entry IDs against that volume's index,
+/// for the engine's ancestor-walk scope filter. Canonicalizes each path (symlink
+/// resolution, off the hot loop), maps it into the volume's index path space
+/// (mount-relative for a NAS/MTP volume), and looks it up via the volume's pool.
+///
+/// Returns the resolved IDs, or `[i64::MIN]` (an impossible id) when NONE resolve,
+/// so the engine's include filter rejects every entry — a scope that matched
+/// nothing in this volume yields no results rather than silently ignoring the
+/// scope. Callers set the result on a per-volume `SearchQuery::include_path_ids`.
+pub(crate) fn resolve_include_path_ids(paths: &[String], pool: &ReadPool, mount_root: Option<&str>) -> Vec<i64> {
     // Canonicalize each include path ONCE (resolve symlinks like /tmp → /private/tmp)
     // so the prefix walk matches the index's stored real paths. Off the hot scan loop.
-    let paths: Vec<String> = paths.iter().map(|p| canonicalize_scope_path(p)).collect();
-    let ids = pool
-        .with_conn(|conn| {
-            let mut resolved = Vec::with_capacity(paths.len());
-            for path in &paths {
-                match store::resolve_path(conn, path) {
-                    Ok(Some(id)) => resolved.push(id),
-                    Ok(None) => log::debug!("search: include path not found in index: {path}"),
-                    Err(e) => log::warn!("search: failed to resolve include path {path}: {e}"),
-                }
-            }
-            if resolved.is_empty() {
-                // No valid include paths resolved: use impossible ID to force all entries to fail
-                resolved.push(i64::MIN);
-            }
-            resolved
-        })
-        .unwrap_or_else(|e| {
-            log::warn!("search: ReadPool error resolving include paths: {e}");
-            vec![i64::MIN]
-        });
-    query.include_path_ids = Some(ids);
-}
-
-// ── Directory size enrichment ────────────────────────────────────────
-
-/// Fetch directory sizes for directory entries in the search results.
-/// Mutates the result entries in place, setting `size` for directories.
-/// Uses batch lookup via entry IDs stored in `SearchResultEntry`.
-pub(crate) fn fill_directory_sizes(result: &mut SearchResult, pool: &ReadPool) {
-    let dir_indices: Vec<usize> = result
-        .entries
+    let index_paths: Vec<String> = paths
         .iter()
-        .enumerate()
-        .filter(|(_, e)| e.is_directory)
-        .map(|(i, _)| i)
+        .filter_map(|p| to_index_relative(&canonicalize_scope_path(p), mount_root))
         .collect();
-
-    if dir_indices.is_empty() {
-        return;
-    }
-
-    let t = std::time::Instant::now();
-    let entry_ids: Vec<i64> = dir_indices.iter().map(|&idx| result.entries[idx].entry_id).collect();
-
-    let _ = pool.with_conn(|conn| {
-        if let Ok(stats_batch) = IndexStore::get_dir_stats_batch_by_ids(conn, &entry_ids) {
-            for (i, &idx) in dir_indices.iter().enumerate() {
-                if let Some(Some(stats)) = stats_batch.get(i) {
-                    result.entries[idx].size = Some(stats.recursive_logical_size);
-                }
+    pool.with_conn(|conn| {
+        let mut resolved = Vec::with_capacity(index_paths.len());
+        for path in &index_paths {
+            match store::resolve_path(conn, path) {
+                Ok(Some(id)) => resolved.push(id),
+                Ok(None) => log::debug!("search: include path not found in index: {path}"),
+                Err(e) => log::warn!("search: failed to resolve include path {path}: {e}"),
             }
         }
-    });
-    log::debug!(
-        "Filled directory sizes for {} dirs, took {:?}",
-        dir_indices.len(),
-        t.elapsed()
-    );
-}
-
-/// Trims directories whose size (from `dir_stats`, filled by
-/// [`fill_directory_sizes`]) falls outside the query's size filter, then resets
-/// `total_count` to the trimmed length.
-///
-/// Files are already size-filtered in `engine::search`; only directories reach
-/// here unfiltered, because their sizes live in `dir_stats` rather than the
-/// entries table. `engine::search` over-fetches directory candidates to absorb
-/// this trim (see its `has_size_filter` limit bump). No-op when the query has no
-/// size filter.
-///
-/// `total_count` is approximate after trimming: the exact count would need
-/// `dir_stats` for ALL matching directories, which is too expensive, so the
-/// displayed count may slightly overestimate.
-pub(crate) fn filter_directories_by_size(result: &mut SearchResult, query: &SearchQuery) {
-    if query.min_size.is_none() && query.max_size.is_none() {
-        return;
-    }
-
-    result.entries.retain(|e| {
-        if !e.is_directory {
-            return true; // files already filtered in engine::search
+        if resolved.is_empty() {
+            resolved.push(i64::MIN);
         }
-        if let Some(min) = query.min_size {
-            match e.size {
-                Some(s) if s >= min => {}
-                _ => return false,
-            }
-        }
-        if let Some(max) = query.max_size {
-            match e.size {
-                Some(s) if s <= max => {}
-                _ => return false,
-            }
-        }
-        true
-    });
-    result.total_count = result.entries.len() as u32;
+        resolved
+    })
+    .unwrap_or_else(|e| {
+        log::warn!("search: ReadPool error resolving include paths: {e}");
+        vec![i64::MIN]
+    })
 }
 
 #[cfg(test)]
@@ -786,75 +730,6 @@ mod tests {
     // The scope parser has nested escape/quote rules. Property tests probe
     // the round-trip and count invariants that don't require asserting a
     // specific canonical form.
-
-    // ── filter_directories_by_size ───────────────────────────────────
-
-    fn dir_entry(name: &str, size: Option<u64>) -> crate::search::SearchResultEntry {
-        crate::search::SearchResultEntry {
-            name: name.to_string(),
-            path: format!("/{name}"),
-            parent_path: "/".to_string(),
-            is_directory: true,
-            size,
-            modified_at: None,
-            icon_id: String::new(),
-            entry_id: 0,
-        }
-    }
-
-    fn file_entry(name: &str, size: Option<u64>) -> crate::search::SearchResultEntry {
-        crate::search::SearchResultEntry {
-            is_directory: false,
-            ..dir_entry(name, size)
-        }
-    }
-
-    /// A size-filtered query, reusing `make_query` and setting only the size bounds.
-    fn size_query(min_size: Option<u64>, max_size: Option<u64>) -> SearchQuery {
-        make_query(None, PatternType::Glob, min_size, max_size, None, None, None)
-    }
-
-    #[test]
-    fn filter_directories_by_size_no_filter_is_noop() {
-        let mut result = SearchResult {
-            entries: vec![dir_entry("a", None), dir_entry("b", Some(10))],
-            total_count: 2,
-        };
-        filter_directories_by_size(&mut result, &size_query(None, None));
-        assert_eq!(result.entries.len(), 2);
-        assert_eq!(result.total_count, 2);
-    }
-
-    #[test]
-    fn filter_directories_by_size_trims_dirs_and_keeps_files() {
-        let mut result = SearchResult {
-            entries: vec![
-                dir_entry("small-dir", Some(100)),
-                dir_entry("big-dir", Some(10_000)),
-                dir_entry("sizeless-dir", None),
-                file_entry("some-file", None), // files pass through unconditionally
-            ],
-            total_count: 4,
-        };
-        filter_directories_by_size(&mut result, &size_query(Some(1_000), None));
-        let names: Vec<&str> = result.entries.iter().map(|e| e.name.as_str()).collect();
-        // `big-dir` clears the floor; `small-dir` and the sizeless dir are dropped;
-        // the file passes through (already filtered in engine::search).
-        assert_eq!(names, vec!["big-dir", "some-file"]);
-        assert_eq!(result.total_count, 2);
-    }
-
-    #[test]
-    fn filter_directories_by_size_honors_max_size() {
-        let mut result = SearchResult {
-            entries: vec![dir_entry("small-dir", Some(100)), dir_entry("big-dir", Some(10_000))],
-            total_count: 2,
-        };
-        filter_directories_by_size(&mut result, &size_query(None, Some(1_000)));
-        let names: Vec<&str> = result.entries.iter().map(|e| e.name.as_str()).collect();
-        assert_eq!(names, vec!["small-dir"]);
-        assert_eq!(result.total_count, 1);
-    }
 
     mod scope_proptests {
         use super::*;

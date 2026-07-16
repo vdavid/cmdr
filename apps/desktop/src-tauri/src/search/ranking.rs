@@ -161,6 +161,34 @@ impl ImportanceWeights {
     }
 }
 
+/// A matched entry's full sort key: its match-quality band, its importance-boosted
+/// recency, and its entry id (the final deterministic tiebreak).
+///
+/// Carried out of ranking so a multi-volume search can merge each volume's ranked
+/// slice into one global order with the SAME comparator the single-volume sort uses
+/// (`cmp_best_first`) — the key is computed per volume against that volume's own
+/// index and weights, but it compares across volumes because band and
+/// boosted-recency are volume-independent scalars.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct RankKey {
+    band: MatchQuality,
+    boosted_recency: f64,
+    id: i64,
+}
+
+impl RankKey {
+    /// Order two keys best-first: higher band, then higher boosted recency, then
+    /// lower id (stable, deterministic). The exact ordering the single-volume sort
+    /// applies, reused for the cross-volume merge.
+    pub(crate) fn cmp_best_first(&self, other: &Self) -> std::cmp::Ordering {
+        other
+            .band
+            .cmp(&self.band)
+            .then_with(|| other.boosted_recency.total_cmp(&self.boosted_recency))
+            .then_with(|| self.id.cmp(&other.id))
+    }
+}
+
 /// The recency-and-importance sort key for one matched entry, WITHIN its band.
 ///
 /// `recency` is the entry's `modified_at` (0 when unknown, as today). The returned
@@ -180,8 +208,10 @@ pub(crate) fn boosted_recency_key(recency: u64, weight: f64) -> f64 {
 /// importance. The sort is deterministic (a stable final tiebreak on entry id) so
 /// equal keys don't reorder run to run.
 ///
-/// Pure: no I/O. The engine calls this after its parallel filter, before
-/// truncating to the limit.
+/// Pure: no I/O. Production ranks via [`rank_decorated`] (it keeps the keys for the
+/// cross-volume merge); this index-rewriting form is what the ranking tests assert
+/// against, hence `#[cfg(test)]`.
+#[cfg(test)]
 pub(crate) fn rank(
     index: &SearchIndex,
     matching: &mut [usize],
@@ -189,23 +219,41 @@ pub(crate) fn rank(
     case_insensitive: bool,
     weights: &ImportanceWeights,
 ) {
-    // Decorate-sort-undecorate: compute each entry's sort key EXACTLY ONCE, then
-    // sort the decorated pairs. A naive `sort_by` recomputes the key for both
-    // operands on every comparison — O(n log n) key computations, and each key with
-    // weights does an O(depth) parent-path reconstruction. A result set can be tens
-    // of thousands of candidates, so computing keys once (O(n)) instead is the
-    // difference that keeps ranking off the hot path.
-    //
-    // The empty-map fast path skips the per-entry path reconstruction entirely,
-    // preserving today's pure-recency order (the degradation contract).
+    let decorated = rank_decorated(index, matching, stem, case_insensitive, weights);
+    for (slot, (_, idx)) in matching.iter_mut().zip(decorated.iter()) {
+        *slot = *idx;
+    }
+}
+
+/// Rank matched entry indices and return each with its [`RankKey`], best-first.
+///
+/// The same policy as [`rank`], but it hands back the sort keys so a multi-volume
+/// search can k-way-merge each volume's ranked slice into one global order
+/// (`RankKey::cmp_best_first`) without recomputing bands or reconstructing paths.
+/// Single-volume callers use [`rank`]; the engine calls this and drops the keys
+/// after truncating, except on the multi-volume path where the keys travel with the
+/// results up to the merge.
+///
+/// Pure: no I/O. Decorate-sort-undecorate computes each entry's key EXACTLY ONCE
+/// (a naive `sort_by` recomputes it per comparison, and each key with weights does
+/// an O(depth) parent-path reconstruction). The empty-map fast path skips the
+/// per-entry path reconstruction entirely, preserving today's pure-recency order
+/// (the degradation contract).
+pub(crate) fn rank_decorated(
+    index: &SearchIndex,
+    matching: &[usize],
+    stem: &str,
+    case_insensitive: bool,
+    weights: &ImportanceWeights,
+) -> Vec<(RankKey, usize)> {
     let no_weights = weights.is_empty();
-    let mut decorated: Vec<(MatchQuality, f64, i64, usize)> = matching
+    let mut decorated: Vec<(RankKey, usize)> = matching
         .iter()
         .map(|&idx| {
             let entry = &index.entries[idx];
             let band = classify_match(index.name(entry), stem, case_insensitive);
             let recency = entry.modified_at.unwrap_or(0);
-            let key = if no_weights {
+            let boosted_recency = if no_weights {
                 recency as f64
             } else {
                 // A file takes its parent folder's weight; a folder takes its own.
@@ -213,21 +261,19 @@ pub(crate) fn rank(
                 let folder_path = super::engine::reconstruct_path_from_index(index, folder_id);
                 boosted_recency_key(recency, weights.weight_for(&folder_path))
             };
-            (band, key, entry.id, idx)
+            (
+                RankKey {
+                    band,
+                    boosted_recency,
+                    id: entry.id,
+                },
+                idx,
+            )
         })
         .collect();
 
-    // Band descending, then boosted recency descending, then id ascending (a stable,
-    // deterministic final tiebreak so equal keys don't reorder run to run).
-    decorated.sort_by(|a, b| {
-        b.0.cmp(&a.0)
-            .then_with(|| b.1.total_cmp(&a.1))
-            .then_with(|| a.2.cmp(&b.2))
-    });
-
-    for (slot, dec) in matching.iter_mut().zip(decorated.iter()) {
-        *slot = dec.3;
-    }
+    decorated.sort_by(|a, b| a.0.cmp_best_first(&b.0));
+    decorated
 }
 
 #[cfg(test)]
