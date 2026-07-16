@@ -455,12 +455,12 @@ proven pattern rather than inventing a new one.
 ### Follow-up parked mid-effort: image indexing for external local drives (`LocalExternal`)
 
 Main gained `IndexVolumeKind::LocalExternal` (USB sticks / SD cards: mount-rooted, local scanner, MOUNT-RELATIVE index
-paths) partway through this effort. Media enrichment currently SKIPS these volumes explicitly — treating them as
-`Local` would hand mount-relative index paths to the backend as OS paths (the phantom-path bug class). Proper support
-is real work, not a match arm: the pass needs the mount-root join (the network pass's `os_join` shape, with plain
-local reads and none of the SMB conservatism), reclaim/coverage need the same mapping, and eject-during-pass needs the
-pause semantics. SD cards full of photos are a prime image-search use case, so this is worth doing soon — as its own
-effort, after this plan ships.
+paths) partway through this effort. Media enrichment currently SKIPS these volumes explicitly — treating them as `Local`
+would hand mount-relative index paths to the backend as OS paths (the phantom-path bug class). Proper support is real
+work, not a match arm: the pass needs the mount-root join (the network pass's `os_join` shape, with plain local reads
+and none of the SMB conservatism), reclaim/coverage need the same mapping, and eject-during-pass needs the pause
+semantics. SD cards full of photos are a prime image-search use case, so this is worth doing soon — as its own effort,
+after this plan ships.
 
 ## Execution notes
 
