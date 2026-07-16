@@ -282,9 +282,9 @@
   "@askCmdr.consent.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "askCmdr.consent.noContents": "Cmdr sendet nie die Inhalte deiner Dateien. Das kann es auch gar nicht: In dieser Version gibt es kein Werkzeug, das sie liest. Ask Cmdr schaut nur und antwortet; es verändert nie etwas.",
+  "askCmdr.consent.noContents": "Cmdr sendet die Dateien selbst nie: keine Dateiinhalte, keine Fotos, keine Miniaturen. Die Fotosuche ist das Einzige, was in deine Bilder hineinschaut, und nur, wenn du sie damit durchsuchst: Der Text, den Cmdr in den passenden Fotos erkannt hat, und deren Tags gehen an deinen Anbieter, damit er sie finden kann. Ask Cmdr schaut nur und antwortet; es verändert nie etwas.",
   "@askCmdr.consent.noContents": {
-    "sourceHash": "0908765"
+    "sourceHash": "764a421"
   },
   "askCmdr.consent.local": "Deine Chats bleiben auf deinem Mac, in einer lokalen Datenbank, die du öffnen und lesen kannst. Du wählst Anbieter und Modell und siehst, was jeder Chat kostet.",
   "@askCmdr.consent.local": {

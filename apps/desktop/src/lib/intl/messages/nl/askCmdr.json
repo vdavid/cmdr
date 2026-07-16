@@ -283,9 +283,9 @@
   "@askCmdr.consent.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "askCmdr.consent.noContents": "Cmdr verstuurt nooit de inhoud van je bestanden. Dat kan ook niet: in deze versie is er geen hulpmiddel dat ze leest. Ask Cmdr kijkt en praat alleen; het verandert nooit iets.",
+  "askCmdr.consent.noContents": "Cmdr verstuurt nooit de bestanden zelf: geen bestandsinhoud, geen foto''s, geen miniaturen. De fotozoekfunctie is het enige dat in je afbeeldingen kijkt, en alleen wanneer je ermee zoekt: de tekst die Cmdr in de gevonden foto''s heeft herkend en hun tags gaan naar je aanbieder zodat die ze kan vinden. Ask Cmdr kijkt en praat alleen; het verandert nooit iets.",
   "@askCmdr.consent.noContents": {
-    "sourceHash": "0908765"
+    "sourceHash": "764a421"
   },
   "askCmdr.consent.local": "Je chats blijven op je Mac, in een lokale database die je kunt openen en lezen. Je kiest de aanbieder en het model, en je kunt zien wat elke chat kost.",
   "@askCmdr.consent.local": {

@@ -280,9 +280,9 @@
   "@askCmdr.consent.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "askCmdr.consent.noContents": "A Cmdr soha nem küldi el a fájljaid tartalmát. Nem is teheti: ebben a verzióban nincs olyan eszköz, ami beolvasná őket. Az Ask Cmdr csak néz és beszél; soha semmit nem változtat.",
+  "askCmdr.consent.noContents": "A Cmdr soha nem küldi el magukat a fájlokat: sem a fájlok tartalmát, sem fotókat, sem bélyegképeket. A fotókeresés az egyetlen funkció, amely belenéz a képeidbe, és csak akkor, amikor keresel bennük: a Cmdr által a találati fotókban felismert szöveg és azok címkéi a szolgáltatódhoz kerülnek, hogy meg tudja találni őket. Az Ask Cmdr csak néz és beszél; soha semmit nem változtat.",
   "@askCmdr.consent.noContents": {
-    "sourceHash": "0908765"
+    "sourceHash": "764a421"
   },
   "askCmdr.consent.local": "A csevegéseid a Mac-eden maradnak, egy helyi adatbázisban, amit megnyithatsz és elolvashatsz. Te választod ki a szolgáltatót és a modellt, és láthatod, mennyibe kerül az egyes beszélgetések.",
   "@askCmdr.consent.local": {

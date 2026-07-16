@@ -280,9 +280,9 @@
   "@askCmdr.consent.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "askCmdr.consent.noContents": "Cmdr không bao giờ gửi nội dung tệp của bạn. Cmdr không thể: trong phiên bản này không có công cụ nào đọc chúng. Ask Cmdr chỉ xem và nói; không bao giờ thay đổi bất cứ điều gì.",
+  "askCmdr.consent.noContents": "Cmdr không bao giờ gửi chính các tệp: không gửi nội dung tệp, không gửi ảnh, không gửi ảnh thu nhỏ. Tìm kiếm ảnh là thứ duy nhất nhìn vào bên trong hình ảnh của bạn, và chỉ khi bạn dùng nó để tìm: văn bản mà Cmdr nhận dạng được bên trong các ảnh khớp cùng thẻ của chúng sẽ được gửi đến nhà cung cấp của bạn để có thể tìm thấy chúng. Ask Cmdr chỉ xem và nói; không bao giờ thay đổi bất cứ điều gì.",
   "@askCmdr.consent.noContents": {
-    "sourceHash": "0908765"
+    "sourceHash": "764a421"
   },
   "askCmdr.consent.local": "Các cuộc trò chuyện của bạn ở lại trên Mac, trong một cơ sở dữ liệu cục bộ mà bạn có thể mở và đọc. Bạn chọn nhà cung cấp và mô hình, và bạn có thể xem chi phí của mỗi cuộc trò chuyện.",
   "@askCmdr.consent.local": {

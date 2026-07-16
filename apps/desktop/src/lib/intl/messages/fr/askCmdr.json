@@ -280,9 +280,9 @@
   "@askCmdr.consent.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "askCmdr.consent.noContents": "Cmdr n''envoie jamais le contenu de vos fichiers. C''est impossible : dans cette version, aucun outil ne les lit. Ask Cmdr ne fait que regarder et parler ; il ne change jamais rien.",
+  "askCmdr.consent.noContents": "Cmdr n''envoie jamais les fichiers eux-mêmes : ni le contenu des fichiers, ni les photos, ni les miniatures. La recherche de photos est la seule chose qui regarde à l''intérieur de vos images, et uniquement quand vous l''utilisez pour les rechercher : le texte que Cmdr a reconnu dans les photos correspondantes et leurs tags sont envoyés à votre fournisseur pour qu''il puisse les trouver. Ask Cmdr ne fait que regarder et parler ; il ne change jamais rien.",
   "@askCmdr.consent.noContents": {
-    "sourceHash": "0908765"
+    "sourceHash": "764a421"
   },
   "askCmdr.consent.local": "Vos conversations restent sur votre Mac, dans une base de données locale que vous pouvez ouvrir et consulter. Vous choisissez le fournisseur et le modèle, et vous pouvez voir ce que coûte chaque conversation.",
   "@askCmdr.consent.local": {

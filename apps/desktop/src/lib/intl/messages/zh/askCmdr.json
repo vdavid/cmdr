@@ -280,9 +280,9 @@
   "@askCmdr.consent.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "askCmdr.consent.noContents": "Cmdr 从不发送你文件的内容。它做不到：这个版本里没有能读取内容的工具。Ask Cmdr 只负责查看和交流，从不修改任何内容。",
+  "askCmdr.consent.noContents": "Cmdr 从不发送文件本身：不发送文件内容，不发送照片，也不发送缩略图。照片搜索是唯一会深入你图像内部的功能，而且仅在你用它搜索照片时：Cmdr 在匹配照片中识别出的文字及其标签会发送给你的提供方，以便它找到这些照片。Ask Cmdr 只负责查看和交流，从不修改任何内容。",
   "@askCmdr.consent.noContents": {
-    "sourceHash": "0908765"
+    "sourceHash": "764a421"
   },
   "askCmdr.consent.local": "你的聊天记录留在你的 Mac 上，保存在一个你可以打开查看的本地数据库里。提供方和模型由你选择，你也能看到每次聊天的花费。",
   "@askCmdr.consent.local": {
