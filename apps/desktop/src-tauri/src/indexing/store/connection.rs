@@ -174,6 +174,19 @@ impl IndexStore {
         Ok(())
     }
 
+    /// Persist the volume's mount root (`volume_path` meta) on its index DB.
+    ///
+    /// The search loader reads this to strip the mount root off scope paths (a
+    /// non-root index is mount-relative). Older SMB indexes never wrote it (only the
+    /// local scan-completion path did), so `start_indexing_for_smb` heals an existing
+    /// DB with this on the next registration — no rescan. Same short-lived-write
+    /// safety as [`set_user_disabled`]: call it only when no writer thread is live.
+    pub fn set_volume_path(db_path: &Path, volume_path: &str) -> Result<(), IndexStoreError> {
+        let conn = Self::open_write_connection(db_path)?;
+        Self::update_meta(&conn, "volume_path", volume_path)?;
+        Ok(())
+    }
+
     /// Read all meta keys and return the index status.
     pub fn get_index_status(&self) -> Result<IndexStatus, IndexStoreError> {
         Ok(IndexStatus {

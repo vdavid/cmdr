@@ -219,6 +219,7 @@ pub(crate) fn search(
         entries: ranked.into_iter().map(|r| r.entry).collect(),
         total_count,
         uncovered_scopes: Vec::new(),
+        unresolved_scopes: Vec::new(),
     })
 }
 

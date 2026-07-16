@@ -6517,6 +6517,15 @@ export type SearchResult = {
    *  search. Absent from a request body; populated server-side.
    */
   uncoveredScopes?: string[]
+  /**
+   *  Scope paths that routed to an INDEXED volume but weren't found in its index (a
+   *  typo, a since-deleted folder, or a path outside a volume's mount root). The
+   *  sibling of `uncovered_scopes`: there the whole volume is unindexed, here the
+   *  volume is searchable but the specific path isn't in it. Also typed (branch on
+   *  emptiness), so the UI/MCP say "couldn't find that path" rather than a silent
+   *  "no files found". Empty when every scope path resolved.
+   */
+  unresolvedScopes?: string[]
 }
 
 export type SearchResultEntry = {

@@ -194,6 +194,52 @@ fn recompute_notification_lets_the_next_reload_see_new_weights() {
     );
 }
 
+// ── Mount-root fallback to the live volume registry ──────────────────
+
+/// Write an index DB with entries but WITHOUT the `volume_path` meta — the shape a
+/// real SMB index has (older DBs never wrote it). Mount root must then come from the
+/// live volume registry.
+fn make_index_db_without_volume_path(data_dir: &Path, volume_id: &str) {
+    let db_path = data_dir.join(format!("index-{volume_id}.db"));
+    let _store = IndexStore::open(&db_path).expect("open store");
+    let conn = IndexStore::open_write_connection(&db_path).expect("write conn");
+    IndexStore::insert_entry_v2(&conn, ROOT_ID, "sub", true, false, None, None, None, None).unwrap();
+}
+
+/// A non-root index whose DB has no `volume_path` meta still recovers its mount root
+/// from the live `VolumeManager` while the volume is mounted (the live-QA bug: real
+/// SMB DBs have no `volume_path`, so the loader returned `None` and scope stripping
+/// failed → 0 results). Regression: mount root resolves via the registry fallback.
+#[test]
+fn mount_root_falls_back_to_the_volume_registry() {
+    use crate::file_system::get_volume_manager;
+    use crate::file_system::volume::LocalPosixVolume;
+    use std::sync::Arc;
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let vid = "smb-fallback-test";
+    let root = "/Volumes/cmdr-fallback-nas";
+    make_index_db_without_volume_path(dir.path(), vid);
+
+    let manager = get_volume_manager();
+    manager.register(vid, Arc::new(LocalPosixVolume::new("Fallback", root)));
+
+    let cancel = AtomicBool::new(false);
+    let loaded = match load_volume_blocking(vid, dir.path(), &cancel) {
+        VolumeLoad::Loaded(v) => v,
+        other => {
+            manager.unregister(vid);
+            panic!("expected Loaded, got {}", describe(&other));
+        }
+    };
+    assert_eq!(
+        loaded.mount_root.as_deref(),
+        Some(root),
+        "mount root recovered from the live volume registry when the meta is absent"
+    );
+    manager.unregister(vid);
+}
+
 fn describe(load: &VolumeLoad) -> String {
     match load {
         VolumeLoad::Loaded(_) => "Loaded".to_string(),

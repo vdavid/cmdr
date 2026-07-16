@@ -78,6 +78,7 @@ pub(crate) fn run_blocking(query: SearchQuery) -> Result<SearchResult, String> {
     let mut merged: Vec<RankedEntry> = Vec::new();
     let mut total: u64 = 0;
     let mut uncovered_scopes: Vec<String> = Vec::new();
+    let mut unresolved_scopes: Vec<String> = Vec::new();
 
     for target in targets {
         let loaded = match volumes::ensure_volume(&target.volume_id) {
@@ -100,11 +101,23 @@ pub(crate) fn run_blocking(query: SearchQuery) -> Result<SearchResult, String> {
         };
 
         let mut vq = query.clone();
-        vq.include_paths = (!target.include_paths.is_empty()).then(|| target.include_paths.clone());
-        vq.include_path_ids = vq
-            .include_paths
-            .as_ref()
-            .map(|paths| query::resolve_include_path_ids(paths, &loaded.pool, loaded.mount_root.as_deref()));
+        if target.include_paths.is_empty() {
+            vq.include_paths = None;
+            vq.include_path_ids = None;
+        } else {
+            let resolution =
+                query::resolve_include_scope(&target.include_paths, &loaded.pool, loaded.mount_root.as_deref());
+            unresolved_scopes.extend(resolution.unresolved);
+            // Empty ids ⇒ a mount-root ("whole volume") scope: drop the restriction
+            // entirely (routing already scoped to this volume). Otherwise apply it.
+            if resolution.include_ids.is_empty() {
+                vq.include_paths = None;
+                vq.include_path_ids = None;
+            } else {
+                vq.include_paths = Some(target.include_paths.clone());
+                vq.include_path_ids = Some(resolution.include_ids);
+            }
+        }
 
         let weights = volumes::weights_for(&target.volume_id);
         let prefix = loaded.mount_root.as_deref().unwrap_or("");
@@ -143,6 +156,7 @@ pub(crate) fn run_blocking(query: SearchQuery) -> Result<SearchResult, String> {
         entries: merged.into_iter().map(|r| r.entry).collect(),
         total_count: total.min(u32::MAX as u64) as u32,
         uncovered_scopes,
+        unresolved_scopes,
     })
 }
 

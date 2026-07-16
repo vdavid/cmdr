@@ -217,14 +217,31 @@ pub(crate) fn get_loaded(volume_id: &str) -> Option<Arc<LoadedVolume>> {
     Some(v)
 }
 
-/// Read a volume's mount root from its index DB's `volume_path` meta. `None` for
-/// `root` (stored as `/`) or when unset — the caller then treats paths as absolute.
-fn read_mount_root(pool: &ReadPool) -> Option<String> {
-    let stored = pool
+/// A non-root volume's mount root, needed to prefix its mount-relative index paths.
+///
+/// Prefers the persisted `volume_path` meta; falls back to the LIVE volume registry
+/// when that meta is absent. The fallback matters because SMB index DBs written
+/// before this meta existed never wrote it (only the local scan-completion path
+/// did), so a real NAS index has no `volume_path` — without the fallback its mount
+/// root reads as `None`, scope paths never get stripped, and every scoped search
+/// returns nothing. While the volume is mounted (the only time a `/Volumes/…` scope
+/// even routes to it) the registry knows its root; the DB is also healed on the next
+/// SMB registration so offline reads recover too. `None` only when neither source
+/// has it (an offline volume whose DB predates the meta) — the caller then treats
+/// the scope as unresolved rather than mis-rooting it.
+fn read_mount_root(pool: &ReadPool, volume_id: &str) -> Option<String> {
+    let usable = |s: String| (s != "/" && !s.is_empty()).then_some(s);
+    let from_meta = pool
         .with_conn(|conn| IndexStore::get_meta(conn, "volume_path").ok().flatten())
         .ok()
-        .flatten()?;
-    (stored != "/" && !stored.is_empty()).then_some(stored)
+        .flatten()
+        .and_then(usable);
+    from_meta.or_else(|| {
+        crate::file_system::get_volume_manager()
+            .get(volume_id)
+            .map(|v| v.root().to_string_lossy().into_owned())
+            .and_then(usable)
+    })
 }
 
 /// Load one volume's index synchronously (call inside `spawn_blocking`). Opens the
@@ -248,7 +265,7 @@ fn load_volume_blocking(volume_id: &str, data_dir: &Path, cancel: &AtomicBool) -
             Ok(pool) => Arc::new(pool),
             Err(e) => return VolumeLoad::Failed(format!("open index for '{volume_id}': {e}")),
         };
-        let mount_root = read_mount_root(&pool);
+        let mount_root = read_mount_root(&pool, volume_id);
         (pool, mount_root, 0)
     };
 

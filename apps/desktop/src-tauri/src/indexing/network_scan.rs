@@ -287,6 +287,10 @@ impl IndexManager {
         // never re-locking the registry.
         let freshness = Arc::clone(&self.freshness);
         let root = self.volume_root.clone();
+        // Kept alongside `root` (which the scan consumes): the completion handler
+        // persists it as `volume_path` so search can strip the mount root off scope
+        // paths (symmetry with the local scan-completion path).
+        let volume_root_str = self.volume_root.to_string_lossy().into_owned();
         let kind = self.kind;
         tauri::async_runtime::spawn(async move {
             let result = if reconcile {
@@ -333,6 +337,10 @@ impl IndexManager {
                     let _ = writer.send(WriteMessage::UpdateMeta {
                         key: "total_physical_bytes".to_string(),
                         value: summary.total_physical_bytes.to_string(),
+                    });
+                    let _ = writer.send(WriteMessage::UpdateMeta {
+                        key: "volume_path".to_string(),
+                        value: volume_root_str.clone(),
                     });
                     let _ = writer.flush().await;
 

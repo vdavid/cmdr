@@ -485,6 +485,28 @@ fn meta_roundtrip() {
     assert_eq!(status.scan_duration_ms.as_deref(), Some("1234"));
 }
 
+/// `set_volume_path` heals an index DB that has no `volume_path` meta (the shape a
+/// real SMB index has — only the local scan-completion path ever wrote it), so
+/// search can strip the mount root off scope paths without a rescan.
+#[test]
+fn set_volume_path_heals_a_db_missing_it() {
+    let (store, _dir) = open_temp_store();
+    let db_path = store.db_path().to_path_buf();
+
+    // A fresh DB has no volume_path meta.
+    let conn = IndexStore::open_write_connection(&db_path).unwrap();
+    assert_eq!(IndexStore::get_meta(&conn, "volume_path").unwrap(), None);
+    drop(conn);
+
+    IndexStore::set_volume_path(&db_path, "/Volumes/naspi").unwrap();
+
+    let conn = IndexStore::open_write_connection(&db_path).unwrap();
+    assert_eq!(
+        IndexStore::get_meta(&conn, "volume_path").unwrap().as_deref(),
+        Some("/Volumes/naspi")
+    );
+}
+
 #[test]
 fn read_scan_calibration_reads_seeded_keys() {
     let (store, _dir) = open_temp_store();

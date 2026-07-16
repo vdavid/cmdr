@@ -66,6 +66,14 @@ pub struct SearchResult {
     /// search. Absent from a request body; populated server-side.
     #[serde(default)]
     pub uncovered_scopes: Vec<String>,
+    /// Scope paths that routed to an INDEXED volume but weren't found in its index (a
+    /// typo, a since-deleted folder, or a path outside a volume's mount root). The
+    /// sibling of `uncovered_scopes`: there the whole volume is unindexed, here the
+    /// volume is searchable but the specific path isn't in it. Also typed (branch on
+    /// emptiness), so the UI/MCP say "couldn't find that path" rather than a silent
+    /// "no files found". Empty when every scope path resolved.
+    #[serde(default)]
+    pub unresolved_scopes: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -143,6 +151,7 @@ mod tests {
             }],
             total_count: 1,
             uncovered_scopes: Vec::new(),
+            unresolved_scopes: Vec::new(),
         };
         let json = serde_json::to_string(&result).unwrap();
         assert!(json.contains("totalCount"));

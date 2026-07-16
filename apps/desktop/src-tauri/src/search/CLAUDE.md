@@ -19,8 +19,8 @@ query fans out across every volume with a persisted `index-{volumeId}.db` and me
   quarantine. See must-knows below.
 - **`types.rs`**: pure data (`SearchQuery`, `SearchResult`, `SearchResultEntry`, `ParsedScope`, `PatternType`,
   `default_limit`). No logic.
-- **`query.rs`**: operations on the types: `parse_scope()`, `resolve_include_paths()` (DB pre-query),
-  `fill_directory_sizes()` (DB post-query), formatters, `summarize_query()`, `SYSTEM_DIR_EXCLUDES`.
+- **`query.rs`**: operations on the types: `parse_scope()`, `resolve_include_scope()` (per-volume scope→IDs),
+  formatters, `summarize_query()`, `SYSTEM_DIR_EXCLUDES`.
 - **`ai/`**: NL → `SearchQuery` translation. See [`ai/CLAUDE.md`](ai/CLAUDE.md).
 
 Flow: `execute.rs` routes a query to its volume(s) → per volume: `query.rs` resolves scope IDs → `engine.rs` scans
@@ -40,10 +40,12 @@ Flow: `execute.rs` routes a query to its volume(s) → per volume: `query.rs` re
   `normalize_for_comparison` / `resolve_path` / `IndexStore` (`indexing::store`), and `volume_id_for_local_path`
   (`indexing::routing`, for scope→volume routing). Search reads the index but doesn't participate in indexing.
 
-- **Multi-volume: `execute.rs` routes + merges, the engine stays per-index/pure.** Non-root indices are mount-relative,
-  so PREFIX the mount root onto read paths and STRIP it from scope include paths. A scope on an unindexed volume →
-  `SearchResult::uncovered_scopes` (typed; branch on emptiness, never string-match), not empty success. Only the root
-  writer bumps `WRITER_GENERATION`. Full model + gotchas: [DETAILS.md](DETAILS.md) § Multi-volume search.
+- **Multi-volume: `execute.rs` routes + merges, the engine stays per-index/pure.** Non-root indices are mount-relative:
+  PREFIX the mount root onto read paths, STRIP it from scope paths (a mount-root scope = the WHOLE volume, no restriction).
+  Mount root = the `volume_path` meta OR the live volume registry — SMB DBs historically lacked the meta, so don't assume
+  it's set. Two typed honesty fields (branch on emptiness, never string-match): `uncovered_scopes` (volume unindexed) and
+  `unresolved_scopes` (path not found in an indexed volume). Only the root writer bumps `WRITER_GENERATION`. Full model +
+  gotchas: [DETAILS.md](DETAILS.md) § Multi-volume search.
 - **`name_folded` is NOT stored in the index**: the pattern is NFD-normalized at query time on macOS (APFS filenames are
   already NFD). Avoids doubling the name arena's memory.
 - **Filenames are arena-allocated**: each `SearchEntry` holds `name_offset: u32` + `name_len: u16`, not an owned

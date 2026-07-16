@@ -301,40 +301,84 @@ fn to_index_relative(path: &str, mount_root: Option<&str>) -> Option<String> {
     rest.starts_with('/').then(|| rest.to_string())
 }
 
-/// Resolve a volume's scope include paths to entry IDs against that volume's index,
-/// for the engine's ancestor-walk scope filter. Canonicalizes each path (symlink
-/// resolution, off the hot loop), maps it into the volume's index path space
-/// (mount-relative for a NAS/MTP volume), and looks it up via the volume's pool.
+/// The outcome of resolving a volume's scope include paths against its index.
+pub(crate) struct ScopeResolution {
+    /// Entry IDs for the engine's ancestor-walk include filter. EMPTY means "no
+    /// restriction — search the whole volume" (the caller sets `include_path_ids` to
+    /// `None`); `[i64::MIN]` (an impossible id) means "restrict to nothing" so a
+    /// scope that resolved to zero real folders returns no results rather than
+    /// silently searching everything.
+    pub include_ids: Vec<i64>,
+    /// Original scope paths that routed to this volume but weren't found in its index
+    /// (a typo, a since-deleted folder, or a path outside the mount root). Surfaced
+    /// to the caller as an honest signal instead of a silent empty result.
+    pub unresolved: Vec<String>,
+}
+
+/// Resolve a volume's scope include paths to entry IDs against that volume's index.
 ///
-/// Returns the resolved IDs, or `[i64::MIN]` (an impossible id) when NONE resolve,
-/// so the engine's include filter rejects every entry — a scope that matched
-/// nothing in this volume yields no results rather than silently ignoring the
-/// scope. Callers set the result on a per-volume `SearchQuery::include_path_ids`.
-pub(crate) fn resolve_include_path_ids(paths: &[String], pool: &ReadPool, mount_root: Option<&str>) -> Vec<i64> {
-    // Canonicalize each include path ONCE (resolve symlinks like /tmp → /private/tmp)
-    // so the prefix walk matches the index's stored real paths. Off the hot scan loop.
-    let index_paths: Vec<String> = paths
-        .iter()
-        .filter_map(|p| to_index_relative(&canonicalize_scope_path(p), mount_root))
-        .collect();
-    pool.with_conn(|conn| {
-        let mut resolved = Vec::with_capacity(index_paths.len());
-        for path in &index_paths {
-            match store::resolve_path(conn, path) {
-                Ok(Some(id)) => resolved.push(id),
-                Ok(None) => log::debug!("search: include path not found in index: {path}"),
-                Err(e) => log::warn!("search: failed to resolve include path {path}: {e}"),
+/// Canonicalizes each path (symlink resolution, off the hot loop), maps it into the
+/// volume's index path space (mount-relative for a NAS/MTP volume via
+/// [`to_index_relative`]), and looks it up via the volume's pool. Three outcomes per
+/// path, and the whole result collapses accordingly:
+///
+/// - **The mount root itself** (`/Volumes/naspi`, stripped to `/`) means the WHOLE
+///   VOLUME — routing already scoped to this volume, so there's no sub-restriction.
+///   Any such path makes `include_ids` empty (no filter), regardless of the others.
+/// - **A resolvable subpath** contributes its entry id.
+/// - **An unresolvable path** (outside the mount root, or a folder not in the index)
+///   goes to `unresolved` for honest reporting. If NONE of the non-whole-volume
+///   paths resolve, `include_ids` is `[i64::MIN]` so the engine matches nothing.
+pub(crate) fn resolve_include_scope(paths: &[String], pool: &ReadPool, mount_root: Option<&str>) -> ScopeResolution {
+    let mut whole_volume = false;
+    let mut unresolved: Vec<String> = Vec::new();
+    // (original path, index-relative path) for the subpaths that need a DB lookup.
+    let mut to_resolve: Vec<(String, String)> = Vec::new();
+
+    for original in paths {
+        // Canonicalize ONCE (resolve symlinks like /tmp -> /private/tmp) so the prefix
+        // walk matches the index's stored real paths. Off the hot scan loop.
+        match to_index_relative(&canonicalize_scope_path(original), mount_root) {
+            Some(index_path) if index_path == "/" => whole_volume = true,
+            Some(index_path) => to_resolve.push((original.clone(), index_path)),
+            None => unresolved.push(original.clone()), // outside this volume's mount root
+        }
+    }
+
+    if whole_volume {
+        // The whole volume is in scope, so every subpath is already covered - no
+        // include restriction and nothing to report as unresolved.
+        return ScopeResolution {
+            include_ids: Vec::new(),
+            unresolved: Vec::new(),
+        };
+    }
+
+    let mut include_ids: Vec<i64> = Vec::new();
+    let _ = pool.with_conn(|conn| {
+        for (original, index_path) in &to_resolve {
+            match store::resolve_path(conn, index_path) {
+                Ok(Some(id)) => include_ids.push(id),
+                Ok(None) => {
+                    log::debug!("search: include path not found in index: {index_path}");
+                    unresolved.push(original.clone());
+                }
+                Err(e) => {
+                    log::warn!("search: failed to resolve include path {index_path}: {e}");
+                    unresolved.push(original.clone());
+                }
             }
         }
-        if resolved.is_empty() {
-            resolved.push(i64::MIN);
-        }
-        resolved
-    })
-    .unwrap_or_else(|e| {
-        log::warn!("search: ReadPool error resolving include paths: {e}");
-        vec![i64::MIN]
-    })
+    });
+
+    if include_ids.is_empty() {
+        // Nothing resolved (all typos / not in this index): match nothing.
+        include_ids.push(i64::MIN);
+    }
+    ScopeResolution {
+        include_ids,
+        unresolved,
+    }
 }
 
 #[cfg(test)]
@@ -731,6 +775,73 @@ mod tests {
     // The scope parser has nested escape/quote rules. Property tests probe
     // the round-trip and count invariants that don't require asserting a
     // specific canonical form.
+
+    // ── resolve_include_scope (mount-relative scope resolution) ──────
+    //
+    // Regression tests for the two live-QA failures: a volume-root scope
+    // (`/Volumes/naspi`) must search the WHOLE volume, and a path that isn't in the
+    // index must be reported as unresolved rather than silently returning nothing.
+
+    use crate::indexing::ReadPool;
+    use crate::indexing::store::{IndexStore, ROOT_ID};
+
+    /// A mount-rooted index (SMB shape: `ROOT_ID` is the mount root) with a single
+    /// `/photos` folder, returned as a `ReadPool`. Mount root is a path that can't
+    /// exist, so `canonicalize_scope_path` keeps the literal deterministically.
+    fn mount_rooted_pool() -> (tempfile::TempDir, ReadPool) {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("index-smb-test.db");
+        let _store = IndexStore::open(&db_path).expect("open store");
+        let conn = IndexStore::open_write_connection(&db_path).expect("write conn");
+        IndexStore::insert_entry_v2(&conn, ROOT_ID, "photos", true, false, None, None, None, None).unwrap();
+        let pool = ReadPool::new(db_path).expect("read pool");
+        (dir, pool)
+    }
+
+    const TEST_MOUNT: &str = "/Volumes/cmdr-test-nas";
+
+    #[test]
+    fn scope_at_volume_root_searches_whole_volume() {
+        let (_dir, pool) = mount_rooted_pool();
+        // The mount root itself strips to "/" ⇒ whole volume ⇒ NO include restriction
+        // (empty ids), not `[i64::MIN]` (which would match nothing — the live bug).
+        let r = resolve_include_scope(&[TEST_MOUNT.to_string()], &pool, Some(TEST_MOUNT));
+        assert!(
+            r.include_ids.is_empty(),
+            "volume-root scope ⇒ no restriction (whole volume)"
+        );
+        assert!(r.unresolved.is_empty());
+    }
+
+    #[test]
+    fn scope_subpath_resolves_to_its_index_id() {
+        let (_dir, pool) = mount_rooted_pool();
+        let scope = format!("{TEST_MOUNT}/photos");
+        let r = resolve_include_scope(&[scope], &pool, Some(TEST_MOUNT));
+        // `/Volumes/cmdr-test-nas/photos` → strip mount → `/photos` → resolves.
+        assert_eq!(r.include_ids.len(), 1);
+        assert_ne!(r.include_ids[0], i64::MIN);
+        assert!(r.unresolved.is_empty());
+    }
+
+    #[test]
+    fn scope_path_not_in_index_is_reported_unresolved() {
+        let (_dir, pool) = mount_rooted_pool();
+        let scope = format!("{TEST_MOUNT}/does-not-exist");
+        let r = resolve_include_scope(std::slice::from_ref(&scope), &pool, Some(TEST_MOUNT));
+        // Nothing resolved ⇒ match nothing AND surface the path honestly.
+        assert_eq!(r.include_ids, vec![i64::MIN]);
+        assert_eq!(r.unresolved, vec![scope]);
+    }
+
+    #[test]
+    fn scope_outside_mount_root_is_unresolved() {
+        let (_dir, pool) = mount_rooted_pool();
+        // A path not under the volume's mount root can't map into its index.
+        let r = resolve_include_scope(&["/Volumes/other/x".to_string()], &pool, Some(TEST_MOUNT));
+        assert_eq!(r.include_ids, vec![i64::MIN]);
+        assert_eq!(r.unresolved, vec!["/Volumes/other/x".to_string()]);
+    }
 
     mod scope_proptests {
         use super::*;

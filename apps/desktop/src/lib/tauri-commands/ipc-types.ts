@@ -92,6 +92,8 @@ export interface SearchResult {
   totalCount: number
   /** Scope paths that couldn't be searched because their volume has no index (an unindexed NAS share, an ejected drive). Empty on a fully-covered search. */
   uncoveredScopes?: string[]
+  /** Scope paths that routed to an indexed volume but weren't found in its index (a typo, a since-deleted folder). Empty when every scope path resolved. */
+  unresolvedScopes?: string[]
 }
 
 export interface SearchResultEntry {

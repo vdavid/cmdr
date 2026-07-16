@@ -115,13 +115,20 @@ pub fn format_search_results(result: &SearchResult, limit: u32) -> String {
 /// Rendered so an agent learns its NAS/ejected-drive scope was skipped rather than
 /// reading an empty result as "no matches".
 fn coverage_note(result: &SearchResult) -> Option<String> {
-    if result.uncovered_scopes.is_empty() {
-        return None;
+    let mut notes = Vec::new();
+    if !result.uncovered_scopes.is_empty() {
+        notes.push(format!(
+            "Note: Cmdr hasn't indexed {} yet, so it isn't searchable. Skipped it.",
+            result.uncovered_scopes.join(", ")
+        ));
     }
-    Some(format!(
-        "Note: Cmdr hasn't indexed {} yet, so it isn't searchable. Skipped it.",
-        result.uncovered_scopes.join(", ")
-    ))
+    if !result.unresolved_scopes.is_empty() {
+        notes.push(format!(
+            "Note: couldn't find {} in the index (a typo, or not indexed yet).",
+            result.unresolved_scopes.join(", ")
+        ));
+    }
+    (!notes.is_empty()).then(|| notes.join("\n"))
 }
 
 /// Run a routed multi-volume search on a blocking thread (route → load → scan →

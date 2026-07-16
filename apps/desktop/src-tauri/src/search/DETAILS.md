@@ -68,7 +68,11 @@ orchestration; `engine.rs` stays per-index and pure.
 `ensure_volume(id)` is cache-aware. Root's pool is the live `get_read_pool()`; a NON-root volume opens a read-only
 `ReadPool` straight from `index-{id}.db` on disk — deliberately NOT via `INDEX_REGISTRY`, because the DB file is the
 source of truth and an ejected/unmounted drive's index is still searchable. The mount root comes from the DB's
-`volume_path` meta (so it's known offline). Lifecycle is dialog-scoped, not per-volume: opening the dialog pre-loads
+`volume_path` meta, falling back to the LIVE volume registry when that meta is absent — historically SMB index DBs never
+wrote `volume_path` (only the local scan-completion path did), so a real NAS index has none; the fallback recovers the
+mount root while the volume is mounted (the only time a `/Volumes/…` scope even routes to it), and both the SMB
+scan-completion path and `start_indexing_for_smb` now persist it (the latter heals an existing DB on the next
+registration — no rescan). Lifecycle is dialog-scoped, not per-volume: opening the dialog pre-loads
 root and arms the timers; a search lazily loads its scope's volumes; idle/backstop drops ALL arenas at once (RAM
 reclaim). A long root pre-load is cancelable (`cancel_active_loads` on dialog close).
 
@@ -83,10 +87,16 @@ A non-root volume's index `ROOT_ID` is its MOUNT ROOT, so it stores mount-relati
 
 - **Read side** — `engine::search_ranked` takes a `path_prefix` (the mount root, empty for root) and PREPENDS it to
   every reconstructed path, so a NAS result reports `/Volumes/naspi/sub/file` and opens in a pane.
-- **Scope side** — `query::resolve_include_path_ids` STRIPS the mount root from each include path before
-  `store::resolve_path` (which walks from `ROOT_ID`). A path outside the mount root resolves to nothing.
+- **Scope side** — `query::resolve_include_scope` STRIPS the mount root from each include path before
+  `store::resolve_path` (which walks from `ROOT_ID`), with two special cases:
+  - **The mount root itself** (`/Volumes/naspi` → stripped to `/`) means the WHOLE VOLUME — routing already scoped to
+    this volume, so there's no sub-restriction. `run_blocking` then leaves `include_path_ids` `None` (search everything
+    in that volume). Without this, the empty strip resolved to nothing and every volume-root scope returned 0.
+  - **A path not found in the volume's index** (a typo, a since-deleted folder, or one outside the mount root) is
+    collected into `unresolved` and surfaces as `SearchResult::unresolved_scopes` (see Honesty below), instead of the
+    engine silently matching nothing.
 
-Without either, an indexed NAS folder would show bare paths that don't open, or a scope would match zero entries.
+Without the strip, an indexed NAS folder would show bare paths that don't open, or a scope would match zero entries.
 
 ### Merge
 
@@ -97,13 +107,17 @@ merge because each slice is already its volume's top-k. `total_count` sums the p
 are filled per volume (each from its own pool) BEFORE the merge, so the size post-filter runs against the right
 `dir_stats`.
 
-### Honesty: `uncovered_scopes`
+### Honesty: `uncovered_scopes` and `unresolved_scopes`
 
-A `from_scope` target whose volume has no persisted index (`VolumeLoad::NotIndexed`) is NOT silently empty — its scope
-paths ride back in `SearchResult::uncovered_scopes`, a TYPED field callers branch on by emptiness (never string-match).
-The dialog and MCP render "Cmdr hasn't indexed X yet" instead of "no files found", so an unindexed NAS scope reads
-honestly. Partial coverage works too: covered volumes still return results alongside the note. An unscoped unindexed
-volume is skipped silently (no user intent to honor).
+Two TYPED sibling fields on `SearchResult` (callers branch on emptiness, never string-match), for the two ways a scoped
+search returns nothing for a STRUCTURAL reason rather than a genuine "no matches":
+
+- **`uncovered_scopes`** — a `from_scope` target whose volume has no persisted index (`VolumeLoad::NotIndexed`). The
+  dialog and MCP render "Cmdr hasn't indexed X yet". An unscoped unindexed volume is skipped silently (no user intent).
+- **`unresolved_scopes`** — the volume IS indexed but the specific path isn't in it (a typo, a deleted folder, or a
+  path outside the mount root). Rendered as "couldn't find that path". Distinct copy, distinct field.
+
+Partial coverage works: covered volumes still return results alongside the note(s).
 
 ## History store (`history.rs`)
 

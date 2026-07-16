@@ -188,9 +188,16 @@ pub async fn start_indexing_for_smb(app: AppHandle, volume_id: String) -> Result
     // already absent (the resume gate required it), so this is a no-op there.
     if let Ok(db_path) = super::state::resolved_index_db_path(&app, &volume_id)
         && db_path.exists()
-        && let Err(e) = super::store::IndexStore::set_user_disabled(&db_path, false)
     {
-        log::warn!(target: "indexing::smb_index", "start_indexing_for_smb: clearing user_disabled for '{volume_id}' failed: {e}");
+        if let Err(e) = super::store::IndexStore::set_user_disabled(&db_path, false) {
+            log::warn!(target: "indexing::smb_index", "start_indexing_for_smb: clearing user_disabled for '{volume_id}' failed: {e}");
+        }
+        // Heal `volume_path` for an SMB index written before that meta existed (only
+        // the local scan-completion path wrote it), so search can strip the mount
+        // root off scope paths without the volume being mounted. No rescan needed.
+        if let Err(e) = super::store::IndexStore::set_volume_path(&db_path, &mount_root.to_string_lossy()) {
+            log::warn!(target: "indexing::smb_index", "start_indexing_for_smb: healing volume_path for '{volume_id}' failed: {e}");
+        }
     }
 
     // The direct gate passed: start the per-volume index over the Volume trait.
