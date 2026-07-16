@@ -214,8 +214,12 @@ pub enum WriteMessage {
         /// byte-for-byte; `Sql` is the unified path.
         source: PartialAggSource,
     },
-    /// Subtree scan complete: trigger aggregation for a subtree only.
-    ComputeSubtreeAggregates { root: String },
+    /// Subtree scan complete: trigger aggregation for a subtree only, keyed by
+    /// the subtree root's entry id. The id (not a path) is carried so a rename or
+    /// delete landing between send and process can't make the aggregate — and the
+    /// ancestor repair that follows it — silently no-op after the destructive
+    /// `DeleteDescendantsById` already ran.
+    ComputeSubtreeAggregates { root_id: i64 },
     /// Store the last processed FSEvents event ID.
     UpdateLastEventId(u64),
     /// Update a meta key.
@@ -1032,8 +1036,8 @@ fn process_message(
         WriteMessage::ComputePartialAggregates { hot_paths, source } => {
             handle_compute_partial_aggregates(conn, accumulator, app_handle, hot_paths, source);
         }
-        WriteMessage::ComputeSubtreeAggregates { root } => {
-            handle_compute_subtree_aggregates(conn, &root);
+        WriteMessage::ComputeSubtreeAggregates { root_id } => {
+            handle_compute_subtree_aggregates(conn, root_id);
         }
         WriteMessage::UpdateLastEventId(id) => {
             if let Err(e) = IndexStore::update_meta(conn, "last_event_id", &id.to_string()) {

@@ -50,7 +50,6 @@
     "apps/desktop/src-tauri/src/indexing/verifier.rs": 873,
     "apps/desktop/src-tauri/src/indexing/volume_scanner.rs": 867,
     "apps/desktop/src-tauri/src/indexing/volume_scanner/tests.rs": 1239,
-    "apps/desktop/src-tauri/src/indexing/writer/aggregation.rs": 909,
     "apps/desktop/src-tauri/src/indexing/writer/entries/tests.rs": 2138,
     "apps/desktop/src-tauri/src/indexing/writer/mod.rs": 1059,
     "apps/desktop/src-tauri/src/ipc.rs": 801,

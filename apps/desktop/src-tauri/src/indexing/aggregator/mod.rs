@@ -505,17 +505,15 @@ fn compute_subtree_map(conn: &Connection, root_id: i64) -> Result<HashMap<i64, D
     ))
 }
 
-/// Compute `dir_stats` for directories under `root` only (bottom-up).
+/// Compute `dir_stats` for directories under the subtree rooted at `root_id`
+/// only (bottom-up).
 ///
-/// Called after a subtree scan completes. Resolves the root path to an entry ID,
-/// computes stats bottom-up over the scoped subtree, then writes EVERY computed
-/// row. Returns the number of directories processed.
-pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, IndexStoreError> {
-    let root_id = match resolve_path(conn, root)? {
-        Some(id) => id,
-        None => return Ok(0),
-    };
-
+/// Called after a subtree scan completes. Keyed by entry id (not path) so a
+/// rename between the scan and this recompute can't miss the subtree. Computes
+/// stats bottom-up over the scoped subtree, then writes EVERY computed row
+/// (including the subtree root's own fresh totals). Returns the number of
+/// directories processed (`0` if the id no longer resolves to a directory).
+pub fn compute_subtree_aggregates(conn: &Connection, root_id: i64) -> Result<u64, IndexStoreError> {
     let start = std::time::Instant::now();
     let computed = compute_subtree_map(conn, root_id)?;
     if computed.is_empty() {
@@ -524,7 +522,7 @@ pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, 
 
     let all_stats: Vec<DirStatsById> = computed.into_values().collect();
     let count = all_stats.len() as u64;
-    log::debug!("Subtree aggregation: writing {} dir_stats rows under {root}...", count);
+    log::debug!("Subtree aggregation: writing {count} dir_stats rows under id={root_id}...");
 
     for chunk in all_stats.chunks(1000) {
         IndexStore::upsert_dir_stats_by_id(conn, chunk)?;

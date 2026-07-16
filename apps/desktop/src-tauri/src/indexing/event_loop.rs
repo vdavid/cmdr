@@ -1161,62 +1161,12 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
             reconciler::emit_dir_updated(&app, visible_new_dirs);
         }
 
-        // For new directories, propagate their subtree totals up the ancestor chain.
-        // scan_subtree computes aggregates within the subtree but doesn't propagate
-        // upward. Resolve each new dir path to its entry ID, read the computed
-        // dir_stats, and send PropagateDeltaById to the parent.
-        if !verify_result.new_dir_paths.is_empty() {
-            // Resolve paths → IDs and batch-read dir_stats via ReadPool.
-            // Note: although `run_background_verification` is async, `pool.with_conn()`
-            // is safe here because the closure contains no `.await` points; the task
-            // cannot migrate threads mid-closure, so thread-local storage is reliable.
-            let dir_deltas: Vec<(i64, store::DirStatsById)> = get_read_pool()
-                .and_then(|pool| {
-                    pool.with_conn(|conn| {
-                        let mut deltas = Vec::new();
-                        for dir_path in &verify_result.new_dir_paths {
-                            let entry_id = match store::resolve_path(conn, dir_path) {
-                                Ok(Some(id)) => id,
-                                _ => continue,
-                            };
-                            let parent_id = match IndexStore::get_parent_id(conn, entry_id) {
-                                Ok(Some(pid)) => pid,
-                                _ => continue,
-                            };
-                            let stats = IndexStore::get_dir_stats_by_id(conn, entry_id)
-                                .ok()
-                                .flatten()
-                                .unwrap_or(store::DirStatsById {
-                                    entry_id,
-                                    recursive_logical_size: 0,
-                                    recursive_physical_size: 0,
-                                    recursive_file_count: 0,
-                                    recursive_dir_count: 0,
-                                    recursive_has_symlinks: false,
-                                    min_subtree_epoch: 0,
-                                });
-                            deltas.push((parent_id, stats));
-                        }
-                        deltas
-                    })
-                    .ok()
-                })
-                .unwrap_or_default();
-
-            for (parent_id, stats) in &dir_deltas {
-                let _ = writer.send(WriteMessage::PropagateDeltaById {
-                    entry_id: *parent_id,
-                    logical_size_delta: stats.recursive_logical_size as i64,
-                    physical_size_delta: stats.recursive_physical_size as i64,
-                    file_count_delta: stats.recursive_file_count as i32,
-                    dir_count_delta: stats.recursive_dir_count as i32,
-                });
-            }
-
-            if let Err(e) = writer.flush().await {
-                log::warn!("Background verification propagation flush failed: {e}");
-            }
-        }
+        // No off-writer ancestor compensation for the new dirs: each `scan_subtree`
+        // above sent `ComputeSubtreeAggregates`, whose handler repairs the ancestor
+        // chain (sizes, counts, symlinks, AND coverage — which this path never
+        // corrected before) on the writer thread, race-free and without the 2×
+        // credit a read-then-`PropagateDeltaById` here caused (Leak A). The
+        // repairs already committed under the `has_changes` flush above.
 
         // Final emit for the replay-affected paths whose stats were corrected
         // (stale-row deletions and new-file additions in the affected_paths set).

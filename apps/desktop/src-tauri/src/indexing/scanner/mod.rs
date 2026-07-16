@@ -269,7 +269,7 @@ pub fn scan_volume(
             // that dir at epoch 0 and roll the whole tree to incomplete). The
             // single in-order writer enforces it. The WAL checkpoint trims the
             // GB-scale post-scan spike now instead of waiting for the ticker.
-            if let Ok((summary, listed_ids, epoch)) = &result
+            if let Ok((summary, listed_ids, epoch, _root_id)) = &result
                 && !summary.was_cancelled
             {
                 send_marks(listed_ids, *epoch, &writer);
@@ -280,7 +280,7 @@ pub fn scan_volume(
                 }
             }
 
-            result.map(|(summary, _, _)| summary)
+            result.map(|(summary, _, _, _)| summary)
         })
         .map_err(ScanError::Io)?;
 
@@ -294,7 +294,7 @@ pub fn scan_volume(
 pub fn scan_subtree(root: &Path, writer: &IndexWriter, cancelled: &AtomicBool) -> Result<ScanSummary, ScanError> {
     let progress = Arc::new(ScanProgress::new());
     let reader: ReadDirFn = default_reader();
-    let (summary, listed_ids, epoch) = run_scan(
+    let (summary, listed_ids, epoch, root_id) = run_scan(
         root,
         cancelled,
         &progress,
@@ -312,13 +312,15 @@ pub fn scan_subtree(root: &Path, writer: &IndexWriter, cancelled: &AtomicBool) -
         LOCAL_LIST_TIMEOUT,
     )?;
 
-    if !summary.was_cancelled {
-        // Stamp the listed dirs before the subtree aggregate (ordering invariant).
-        send_marks(&listed_ids, epoch, writer);
-        let root_str = root.to_string_lossy().to_string();
-        if let Err(e) = writer.send(WriteMessage::ComputeSubtreeAggregates { root: root_str }) {
-            log::warn!("Scanner: failed to send ComputeSubtreeAggregates: {e}");
-        }
+    // Stamp the listed dirs before the subtree aggregate (the ordering invariant).
+    // A cancelled scan has no listed ids (honest partial coverage), so this
+    // no-ops, but the aggregate below still runs: `run_scan` already sent the
+    // destructive `DeleteDescendantsById(root_id)`, so skipping the aggregate on
+    // cancel would strand a half-rebuilt subtree with stale ancestors. The
+    // aggregate recomputes whatever entries landed and repairs the ancestor chain.
+    send_marks(&listed_ids, epoch, writer);
+    if let Err(e) = writer.send(WriteMessage::ComputeSubtreeAggregates { root_id }) {
+        log::warn!("Scanner: failed to send ComputeSubtreeAggregates: {e}");
     }
 
     Ok(summary)
@@ -350,7 +352,7 @@ fn run_scan(
     inodes_trustworthy: bool,
     reader: ReadDirFn,
     read_timeout: Duration,
-) -> Result<(ScanSummary, Vec<i64>, u64), ScanError> {
+) -> Result<(ScanSummary, Vec<i64>, u64, i64), ScanError> {
     let start = Instant::now();
 
     // Resolve the scan root id and read the epoch every listed dir is stamped with
@@ -487,6 +489,7 @@ fn run_scan(
         },
         listed_ids,
         epoch,
+        root_id,
     ))
 }
 

@@ -263,8 +263,8 @@ fn subtree_aggregation() {
         ],
     );
 
-    // Only aggregate /b subtree
-    let count = compute_subtree_aggregates(&conn, "/b").unwrap();
+    // Only aggregate /b subtree (id 4)
+    let count = compute_subtree_aggregates(&conn, 4).unwrap();
     assert_eq!(count, 2); // /b and /b/sub
 
     // /b/sub should have stats
@@ -301,7 +301,7 @@ fn subtree_aggregation_sets_min_subtree_epoch() {
     );
     IndexStore::mark_dirs_listed(&conn, &[2, 3], 4).unwrap();
 
-    let count = compute_subtree_aggregates(&conn, "/b").unwrap();
+    let count = compute_subtree_aggregates(&conn, 2).unwrap();
     assert_eq!(count, 3); // /b, /b/listed, /b/unlisted
 
     assert_eq!(
@@ -324,7 +324,8 @@ fn subtree_aggregation_sets_min_subtree_epoch() {
 #[test]
 fn subtree_aggregation_nonexistent_root() {
     let (conn, _dir) = open_temp_conn();
-    let count = compute_subtree_aggregates(&conn, "/nonexistent").unwrap();
+    // An id with no directory subtree (never inserted) yields zero rows.
+    let count = compute_subtree_aggregates(&conn, 999).unwrap();
     assert_eq!(count, 0);
 }
 

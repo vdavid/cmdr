@@ -395,60 +395,11 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                 }
             }
         }
-
-        // Flush after scans, then propagate subtree deltas up the ancestor chain
-        if let Err(e) = writer.flush().await {
-            log::warn!("Verifier: post-scan flush failed: {e}");
-        }
-
-        let dir_deltas: Vec<(i64, store::DirStatsById)> = get_read_pool()
-            .and_then(|pool| {
-                pool.with_conn(|conn| {
-                    let mut deltas = Vec::new();
-                    for new_dir in &new_dir_paths {
-                        let entry_id = match store::resolve_path(conn, new_dir) {
-                            Ok(Some(id)) => id,
-                            _ => continue,
-                        };
-                        let p_id = match IndexStore::get_parent_id(conn, entry_id) {
-                            Ok(Some(pid)) => pid,
-                            _ => continue,
-                        };
-                        let stats = IndexStore::get_dir_stats_by_id(conn, entry_id)
-                            .ok()
-                            .flatten()
-                            .unwrap_or(store::DirStatsById {
-                                entry_id,
-                                recursive_logical_size: 0,
-                                recursive_physical_size: 0,
-                                recursive_file_count: 0,
-                                recursive_dir_count: 0,
-                                recursive_has_symlinks: false,
-                                min_subtree_epoch: 0,
-                            });
-                        deltas.push((p_id, stats));
-                    }
-                    deltas
-                })
-                .ok()
-            })
-            .unwrap_or_default();
-
-        for (p_id, stats) in &dir_deltas {
-            let _ = writer.send(WriteMessage::PropagateDeltaById {
-                entry_id: *p_id,
-                logical_size_delta: stats.recursive_logical_size as i64,
-                physical_size_delta: stats.recursive_physical_size as i64,
-                file_count_delta: stats.recursive_file_count as i32,
-                dir_count_delta: stats.recursive_dir_count as i32,
-            });
-            // `scan_subtree` stamped the new dir's `listed_epoch` and its
-            // `ComputeSubtreeAggregates` set its `min_subtree_epoch`, but the
-            // `UpsertEntryV2` that created it earlier dropped every ancestor's
-            // coverage to 0. Recompute up from the parent so a now-fully-listed
-            // subtree lifts ancestor coverage back to exact.
-            let _ = writer.send(WriteMessage::PropagateMinSubtreeEpoch(*p_id));
-        }
+        // No off-writer ancestor compensation: each `scan_subtree` sends
+        // `ComputeSubtreeAggregates`, whose handler repairs the ancestor chain
+        // (sizes, counts, symlinks, AND coverage) on the writer thread. Doing it
+        // there is race-free and can't double-count; a read-then-`PropagateDeltaById`
+        // here would credit the same bytes twice (Leak A).
     }
 
     // Flush all corrections
@@ -468,6 +419,7 @@ mod tests {
     use super::*;
     use crate::indexing::enrichment::{READ_POOL, READ_POOL_TEST_MUTEX, ReadPool};
     use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
+    use crate::indexing::stress_test_helpers::check_db_consistency;
     use crate::indexing::writer::IndexWriter;
     use std::fs;
     use std::sync::Arc;
@@ -699,6 +651,55 @@ mod tests {
 
         assert!(!paths.is_empty());
         assert!(children_after.iter().any(|e| e.name == "new_dir" && e.is_directory));
+
+        remove_read_pool();
+        writer.shutdown();
+    }
+
+    /// Leak A, end to end: a new directory appearing on disk must credit the
+    /// ancestor chain for its bytes EXACTLY once. `scan_subtree` →
+    /// `ComputeSubtreeAggregates` now repairs ancestors on the writer; with the
+    /// old off-writer `PropagateDeltaById` compensation still in place the new
+    /// dir's bytes would land twice (2× credit). The recompute-from-`entries`
+    /// oracle catches a double-count anywhere in the chain.
+    #[test]
+    fn verify_new_dir_credits_ancestors_exactly_once() {
+        let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
+        let fs_root = test_tempdir();
+        fs::write(fs_root.path().join("file1.txt"), "hello").unwrap(); // 5 bytes
+
+        let (writer, db_path, _db_dir) = setup_writer();
+        let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
+        insert_children_from_disk(&writer, parent_id, fs_root.path());
+        // Exact baseline for the whole ancestor chain.
+        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer.flush_blocking().unwrap();
+        install_read_pool(&db_path);
+
+        // A new dir with two known-size files appears on disk after indexing.
+        let new_dir = fs_root.path().join("new_dir");
+        fs::create_dir(&new_dir).unwrap();
+        fs::write(new_dir.join("a.txt"), "AAAA").unwrap(); // 4 bytes
+        fs::write(new_dir.join("b.txt"), "BB").unwrap(); // 2 bytes
+
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let _paths = rt.block_on(verify_and_correct(&fs_root.path().to_string_lossy(), &writer));
+        writer.flush_blocking().unwrap();
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let parent = IndexStore::get_dir_stats_by_id(&conn, parent_id).unwrap().unwrap();
+        assert_eq!(
+            (
+                parent.recursive_logical_size,
+                parent.recursive_file_count,
+                parent.recursive_dir_count
+            ),
+            // file1(5) + a(4) + b(2) = 11 bytes; 3 files; 1 new dir.
+            (11, 3, 1),
+            "the verified dir must be credited for new_dir's bytes exactly once, not doubled"
+        );
+        // The whole tree agrees with an independent recompute from `entries`.
+        check_db_consistency(&conn);
 
         remove_read_pool();
         writer.shutdown();

@@ -840,7 +840,7 @@ fn timed_out_dir_is_not_marked_listed() {
     let cancelled = AtomicBool::new(false);
 
     let start = Instant::now();
-    let (summary, listed_ids, epoch) = run_scan(
+    let (summary, listed_ids, epoch, _root_id) = run_scan(
         &root,
         &cancelled,
         &progress,
