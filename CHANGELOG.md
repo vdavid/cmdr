@@ -23,18 +23,18 @@ progress.**
   Indexing starts the moment you turn it on and resumes after every restart, shows live progress with an ETA in the
   top-right indicator, and re-indexes a changed photo within seconds. Choose how much to index with a fast, honest depth
   preview; exclude any folder to keep its photos out of search, which erases the ones already indexed; and reclaim the
-  disk space left behind when you narrow the depth ([f42a34ed](https://github.com/vdavid/cmdr/commit/f42a34ed),
-  [a1f50b88](https://github.com/vdavid/cmdr/commit/a1f50b88),
-  [bc76af69](https://github.com/vdavid/cmdr/commit/bc76af69),
-  [ad859ae6](https://github.com/vdavid/cmdr/commit/ad859ae6),
-  [7a238144](https://github.com/vdavid/cmdr/commit/7a238144),
-  [d9738d57](https://github.com/vdavid/cmdr/commit/d9738d57))
+  disk space left behind when you narrow the depth ([6b56d195](https://github.com/vdavid/cmdr/commit/6b56d195),
+  [ed1c660f](https://github.com/vdavid/cmdr/commit/ed1c660f),
+  [5bb09aab](https://github.com/vdavid/cmdr/commit/5bb09aab),
+  [bf2ffe5d](https://github.com/vdavid/cmdr/commit/bf2ffe5d),
+  [c8da01f0](https://github.com/vdavid/cmdr/commit/c8da01f0),
+  [cb91d647](https://github.com/vdavid/cmdr/commit/cb91d647))
 
 ### Fixed
 
 - Image search reliably starts after you enable it, even right after an app update that rebuilt Cmdr's folder ranking.
   Before, it could get stuck deciding what to cover (showing "working out how much this covers…") and never index a
-  thing ([f42a34ed](https://github.com/vdavid/cmdr/commit/f42a34ed)).
+  thing ([6b56d195](https://github.com/vdavid/cmdr/commit/6b56d195)).
 
 ## [0.33.0] - 2026-07-09
 
