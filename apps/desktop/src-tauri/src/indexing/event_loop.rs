@@ -983,7 +983,7 @@ pub(super) async fn run_replay_event_loop(
     scanning.store(false, Ordering::Relaxed);
 
     log::info!("Replay: switching to live mode");
-    let mut reconciler = EventReconciler::new();
+    let mut reconciler = EventReconciler::new_for(volume_id.clone(), space.clone());
     reconciler.switch_to_live();
 
     // Spawn background verification: runs concurrently with live events.

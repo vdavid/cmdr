@@ -129,7 +129,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
 
             // Step 4: Reconcile buffered watcher events, in this volume's path space
             // (a mount-rooted drive strips its mount root before `resolve_path`).
-            let mut reconciler = EventReconciler::new_for(space.clone());
+            let mut reconciler = EventReconciler::new_for(volume_id.clone(), space.clone());
 
             // Drain all buffered events from the channel into the reconciler
             let mut event_rx = event_rx;

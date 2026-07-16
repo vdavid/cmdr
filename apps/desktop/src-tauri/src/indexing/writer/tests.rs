@@ -302,6 +302,40 @@ fn clears_pending_sizes_when_queue_drains() {
     writer.shutdown();
 }
 
+/// A NON-root writer draining its queue must route its clear to its OWN tracker,
+/// never the root one. Pre-fix the drain called the root-only `get_pending_sizes`
+/// from every volume's writer, so a non-root drain wiped root's hourglass early
+/// (and non-root trackers never cleared). Here the non-root writer has no
+/// registered instance, so its clear resolves to `None` and root's marks + holds
+/// survive its drain.
+#[test]
+fn non_root_writer_drain_does_not_clear_root_tracker() {
+    use crate::indexing::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes, get_pending_sizes};
+    let _guard = PENDING_SIZES_TEST_MUTEX.lock().unwrap();
+
+    let (db_path, _dir) = setup_db();
+    // A non-root writer (feeds_search=false, a non-root volume id with no registered
+    // `IndexInstance`, so `get_pending_sizes_for` resolves to `None`).
+    let writer = IndexWriter::spawn_for(&db_path, None, false, "smb://test-nonroot".to_string()).unwrap();
+
+    // Install and populate the ROOT tracker.
+    *PENDING_SIZES.lock().unwrap() = Some(Arc::new(PendingSizes::new()));
+    let root_tracker = get_pending_sizes().expect("root tracker installed");
+    root_tracker.mark("/aaa/bbb/ccc");
+    root_tracker.hold("/aaa/rescan");
+
+    // Drain the non-root writer. Give the end-of-iteration clear hook time to run.
+    writer.flush_blocking().unwrap();
+    thread::sleep(Duration::from_millis(50));
+
+    // Root's transient mark AND held root are untouched by the non-root drain.
+    assert!(root_tracker.is_pending("/aaa/bbb/ccc"), "root's transient mark survives");
+    assert!(root_tracker.is_pending("/aaa/rescan"), "root's held rescan survives");
+
+    *PENDING_SIZES.lock().unwrap() = None;
+    writer.shutdown();
+}
+
 #[test]
 fn get_entry_count_via_writer() {
     let (db_path, _dir) = setup_db();

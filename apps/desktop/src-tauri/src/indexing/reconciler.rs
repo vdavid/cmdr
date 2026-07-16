@@ -33,6 +33,10 @@ use crate::indexing::store::{self, IndexStore, IndexStoreError};
 use crate::indexing::watcher::FsChangeEvent;
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 use crate::indexing::{DEBUG_STATS, IndexPathSpace};
+// Only the test-only `new()` / `new_with_throttle_window` and the rescan tests
+// name the root volume id; production sites thread the real id through `new_for`.
+#[cfg(test)]
+use crate::indexing::ROOT_VOLUME_ID;
 use crate::pluralize::pluralize;
 
 mod escalation;
@@ -199,22 +203,31 @@ pub struct EventReconciler {
     /// for a mount-rooted external drive. Threaded to `process_fs_event` and the
     /// `MustScanSubDirs` `reconcile_subtree` so both speak the right space.
     space: IndexPathSpace,
+    /// The volume this reconciler serves. Routes the rescan hourglass hold/release
+    /// (and the completion emit) to THIS volume's `PendingSizes` tracker via
+    /// `get_pending_sizes_for` — defaulting to the root-only handle would recreate
+    /// the cross-volume bug the held tier fixes for clears.
+    volume_id: String,
 }
 
 impl EventReconciler {
-    /// Create a new reconciler in buffering mode for the boot disk (`root` space).
+    /// Create a new reconciler in buffering mode for the boot disk (`root` space,
+    /// `root` volume id). Test-only convenience; production sites carry the real
+    /// volume id + space through [`new_for`](Self::new_for).
+    #[cfg(test)]
     pub fn new() -> Self {
-        Self::new_for(IndexPathSpace::root())
+        Self::new_for(ROOT_VOLUME_ID.to_string(), IndexPathSpace::root())
     }
 
-    /// Create a reconciler bound to a volume's path space. A mount-rooted external
-    /// drive passes its space so live/replay resolution strips the mount root.
-    pub(super) fn new_for(space: IndexPathSpace) -> Self {
-        Self::with_space_and_throttle(space, Throttle::new(resolve_downloads_prefix()))
+    /// Create a reconciler bound to a volume's id + path space. A mount-rooted
+    /// external drive passes its space so live/replay resolution strips the mount
+    /// root, and its id so the rescan hourglass routes to its own tracker.
+    pub(super) fn new_for(volume_id: String, space: IndexPathSpace) -> Self {
+        Self::with_space_and_throttle(volume_id, space, Throttle::new(resolve_downloads_prefix()))
     }
 
-    /// Construct with a caller-supplied space + throttle (tests inject a short window).
-    fn with_space_and_throttle(space: IndexPathSpace, throttle: LiveThrottle) -> Self {
+    /// Construct with a caller-supplied id + space + throttle (tests inject a short window).
+    fn with_space_and_throttle(volume_id: String, space: IndexPathSpace, throttle: LiveThrottle) -> Self {
         Self {
             buffer: Vec::new(),
             buffering: true,
@@ -224,6 +237,7 @@ impl EventReconciler {
             active_rescan_path: Arc::new(Mutex::new(None)),
             throttle,
             space,
+            volume_id,
         }
     }
 
@@ -231,7 +245,11 @@ impl EventReconciler {
     /// exercised without sleeping a real [`THROTTLE_WINDOW`].
     #[cfg(test)]
     pub(super) fn new_with_throttle_window(window: std::time::Duration) -> Self {
-        Self::with_space_and_throttle(IndexPathSpace::root(), Throttle::with_window(window, None))
+        Self::with_space_and_throttle(
+            ROOT_VOLUME_ID.to_string(),
+            IndexPathSpace::root(),
+            Throttle::with_window(window, None),
+        )
     }
 
     /// Buffer an event during scan. If the buffer cap is reached, stops

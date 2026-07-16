@@ -16,6 +16,8 @@ use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tokio::sync::oneshot;
 
+#[cfg(test)]
+use crate::ignore_poison::IgnorePoison;
 use crate::indexing::aggregator::AggregationPhase;
 use crate::indexing::state::ROOT_VOLUME_ID;
 use crate::indexing::store::{EntryRow, IndexStore, IndexStoreError};
@@ -106,6 +108,14 @@ pub(super) struct MutationTracker {
     /// Per-writer count of `DeleteSubtreeById` messages processed (see
     /// [`delete_entry_count`](Self::delete_entry_count)).
     delete_subtree_count: AtomicU64,
+    /// Test-only capture of every `EmitDirUpdated` message's paths, in send
+    /// order. Lets the M4b completion-emit test assert the rescan-completion
+    /// refresh rides the writer AFTER the reconcile's writes, carrying the root
+    /// plus its ancestor chain — without a real `AppHandle` (the production emit
+    /// is `AppHandle`-gated, a no-op in tests). Gated off entirely in release
+    /// builds so the emit path stays allocation-free there.
+    #[cfg(test)]
+    emitted_paths: std::sync::Mutex<Vec<Vec<String>>>,
 }
 
 impl MutationTracker {
@@ -115,6 +125,8 @@ impl MutationTracker {
             feeds_search,
             delete_entry_count: AtomicU64::new(0),
             delete_subtree_count: AtomicU64::new(0),
+            #[cfg(test)]
+            emitted_paths: std::sync::Mutex::new(Vec::new()),
         }
     }
 
@@ -138,6 +150,18 @@ impl MutationTracker {
     #[inline]
     pub(super) fn record_delete_subtree(&self) {
         self.delete_subtree_count.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Record an `EmitDirUpdated` message's paths (test observability).
+    #[cfg(test)]
+    pub(super) fn record_emit(&self, paths: &[String]) {
+        self.emitted_paths.lock_ignore_poison().push(paths.to_vec());
+    }
+
+    /// Every `EmitDirUpdated` message's paths, in send order (test-only).
+    #[cfg(test)]
+    pub(super) fn emitted_paths(&self) -> Vec<Vec<String>> {
+        self.emitted_paths.lock_ignore_poison().clone()
     }
 
     /// The per-writer mutation count (test-only observable).
@@ -520,6 +544,14 @@ impl IndexWriter {
     #[cfg(test)]
     pub(crate) fn delete_counts(&self) -> (u64, u64) {
         self.mutation_tracker.delete_counts()
+    }
+
+    /// Every `EmitDirUpdated` message's paths, in send order. The M4b
+    /// completion-emit test asserts the rescan-completion refresh rides the
+    /// writer after the reconcile's writes with the root + its ancestor chain.
+    #[cfg(test)]
+    pub(crate) fn emitted_paths(&self) -> Vec<Vec<String>> {
+        self.mutation_tracker.emitted_paths()
     }
 
     /// Send a message to the writer thread. Blocks if the channel is full
@@ -932,13 +964,16 @@ fn writer_loop(
 
         // Pending-size hourglass: once the writer has fully caught up (no more
         // queued work), every directory's `dir_stats` reflects all known
-        // changes, so the "size updating" flags are correct to clear wholesale.
+        // changes, so the transient "size updating" marks are correct to clear
+        // wholesale (held rescan roots survive — see `pending_sizes::clear`).
         // Done here (end of iteration, after the message's DB effect is applied)
         // rather than at recv time — at recv the depth hits 0 *before* the
         // delete/propagate runs, which would briefly show a settled flag against
-        // a not-yet-updated size. See `indexing/pending_sizes.rs`.
+        // a not-yet-updated size. Route to THIS volume's tracker: a root-only
+        // `get_pending_sizes()` from a non-root writer would wipe root's hourglass
+        // and never clear its own. See `indexing/pending_sizes.rs`.
         if queue_depth.load(Ordering::Relaxed) == 0
-            && let Some(tracker) = crate::indexing::pending_sizes::get_pending_sizes()
+            && let Some(tracker) = crate::indexing::pending_sizes::get_pending_sizes_for(&volume_id)
         {
             tracker.clear();
         }
@@ -1189,6 +1224,8 @@ fn process_message(
             handle_wal_checkpoint(conn);
         }
         WriteMessage::EmitDirUpdated(paths) => {
+            #[cfg(test)]
+            mutation_tracker.record_emit(&paths);
             if let Some(app) = app_handle {
                 crate::indexing::reconciler::emit_dir_updated(app, paths);
             }
