@@ -1,5 +1,18 @@
 # Image ML index: searchable photos by text, tags, faces, and OCR
 
+## Status (2026-07-16)
+
+- **Shipped:** M1 (plumbing + OCR search), M1.5 (SMB opt-in enrichment), M2 (tags + image-similarity) all landed in the
+  initial effort (~2026-07-14); M3 (natural-language CLIP semantic search) and M6 (photo search as an Ask Cmdr + MCP
+  tool) landed on this branch (2026-07-16). A separate polish effort
+  ([media-index-polish-plan.md](media-index-polish-plan.md)) then hardened everything shipped (dead-start fixes,
+  never-scored detection, progress-indicator integration, privacy retro-delete, settings moved to AI › Image search).
+- **Parked (deliberate):** M4a + M4b (faces: detect/embed/cluster, then naming + durable identity + People UI) and M5
+  (LLM captions). David wants to be closer in the loop for faces before building them; captions are genuinely optional.
+- **M3 deviation:** the CLIP path is complete but **gated off until David uploads the model artifacts** — that upload is
+  the one remaining David-only handoff. The feature stays dark until the `.mlpackage` is hosted.
+- **M6 deviation:** photo search shipped as an **agent/MCP tool, not a `cmdr://` resource** (see the M6 note below).
+
 ## Why this exists
 
 We want the user's images (across local disk, and opt-in on SMB/MTP) to be **searchable by their content**: type "beach
@@ -388,7 +401,7 @@ storage, clustering, GC, and search logic are all testable without GPU/ANE.
 
 Each milestone is independently shippable and leaves the tree green. Sequential is the default.
 
-### M1 — Plumbing + OCR search (zero model download, proves the whole pipeline)
+### M1 — Plumbing + OCR search (zero model download, proves the whole pipeline) — ✅ SHIPPED (~2026-07-14)
 
 The thinnest end-to-end slice: decode + Vision FFI + path-keyed per-volume `media.db` + a search surface, with **no
 model download and no vector math**. Its original "prove the risky plumbing" premise is now much weaker: the lifecycle
@@ -476,7 +489,7 @@ SHIPPED sibling in `importance/` to COPY (verified 2026-07-13). So M1 splits cle
   `claude-md-details-sibling`, `docs-reachable`, file-length). Smoke-test the scheduler on 1–2 images first
   (`test-infra-smoke-first`).
 
-### M1.5 — Network-volume enrichment (SMB opt-in), validated on the NAS
+### M1.5 — Network-volume enrichment (SMB opt-in), validated on the NAS — ✅ SHIPPED (~2026-07-14)
 
 Network enrichment is the **headline use case**, not an afterthought: the user's photo library lives on a NAS
 (`/Volumes/naspi`, over SMB), and "search my NAS photos" is the whole point. So it earns a scheduled milestone, right
@@ -534,7 +547,7 @@ Vision OCR and adds no new models, so it proves the transport without model-down
   - _E2E:_ the per-volume SMB opt-in persists.
 - **Checks:** full `pnpm check` + `--include-slow` before wrapping (the network + resumability paths).
 
-### M2 — Tags + image-similarity (Vision-only, zero download)
+### M2 — Tags + image-similarity (Vision-only, zero download) — ✅ SHIPPED (~2026-07-14)
 
 - Vision `VNClassifyImageRequest` → `media_tags` (label + score), folded into the FTS index so tags are keyword-
   searchable. Vision `VNGenerateImageFeaturePrintRequest` → `media_embedding` (image↔image only). **Stamp `media_tags`
@@ -581,7 +594,7 @@ Vision OCR and adds no new models, so it proves the transport without model-down
 - **Checks:** as M1 + `--include-slow` before wrapping (vector paths); a11y on the slider (AA+ contrast, screen reader,
   keyboard-operable).
 
-### M3 — Natural-language semantic search (first model: a commercially-licensed CLIP via Core ML)
+### M3 — Natural-language semantic search (first model: a commercially-licensed CLIP via Core ML) — ✅ SHIPPED (2026-07-16, this branch; gated off until David uploads the model artifacts)
 
 - **Gate RESOLVED (spike, 2026-06-30):** the Core ML text encoder + `objc2-core-ml` round-trip work (bit-identical to
   the `coremltools` reference), so the native path stands. **Use a commercially-licensed CLIP — NOT Apple's MobileCLIP**
@@ -610,7 +623,7 @@ Vision OCR and adds no new models, so it proves the transport without model-down
 M4 is split because "detect + embed + cluster + hardened durable store + re-attach + People UI + a11y" is two
 milestones; M4a de-risks the faces FFI/pipeline before the curation/durable-store/UI surface.
 
-### M4a — Faces pipeline: detect, embed, cluster (no naming yet)
+### M4a — Faces pipeline: detect, embed, cluster (no naming yet) — ⏸ PARKED (not started; David wants to be closer in the loop for faces)
 
 - Vision detect (`VNDetectFaceRectanglesRequest` + `VNDetectFaceCaptureQualityRequest` best crop). Download an
   **ArcFace/AuraFace Core ML** model (verify license — AuraFace commercial-friendly) via the M3 model-install path →
@@ -632,7 +645,7 @@ milestones; M4a de-risks the faces FFI/pipeline before the curation/durable-stor
   detect+embed on a fixture with known faces. _E2E:_ faces detected, cluster-id search returns the right photos.
 - **Checks:** full incl. `--include-slow`.
 
-### M4b — Naming + durable identity store + conservative re-attach + People UI (the data-safety core)
+### M4b — Naming + durable identity store + conservative re-attach + People UI (the data-safety core) — ⏸ PARKED (not started; follows M4a)
 
 - **Durable identity store (Decision 4), hardened:** names + corrections (incl. **negative/cannot-link**, each carrying
   a **space-independent anchor** `(path, IoU-tolerant face-locator)`) + **provenance-stamped centroids**
@@ -660,7 +673,7 @@ milestones; M4a de-risks the faces FFI/pipeline before the curation/durable-stor
     relabeling.
 - **Checks:** full incl. `--include-slow`; a11y on the People UI (AA+ contrast, screen reader).
 
-### M5 — LLM captions (premium, opt-in; on-device default, cloud optional) — clearly later, genuinely optional
+### M5 — LLM captions (premium, opt-in; on-device default, cloud optional) — clearly later, genuinely optional — ⏸ PARKED (not started; genuinely optional)
 
 - On-device captions via **Foundation Models** (verify multimodal per Decision 1b). **Swift bridge = a Swift-toolchain
   build subproject** (Foundation Models is Swift-only; no Rust bindings) — a linked Swift static lib/framework or a
@@ -677,7 +690,7 @@ milestones; M4a de-risks the faces FFI/pipeline before the curation/durable-stor
   Swift-bridge smoke (gated). _E2E:_ enable captions, search a described scene.
 - **Checks:** full suite.
 
-### M6 (follow-on, low-scope) — photo search as an Ask Cmdr agent tool and an MCP tool
+### M6 (follow-on, low-scope) — photo search as an Ask Cmdr agent tool and an MCP tool — ✅ SHIPPED (2026-07-16, this branch; shipped as a tool, not a `cmdr://` resource)
 
 Once `media_index` lands and surfaces through the search read API, photo search becomes a natural read-only tool for the
 in-app agent and the MCP server — "find my passport scan", "photos of Dóri at the beach", answered in chat. Forward-

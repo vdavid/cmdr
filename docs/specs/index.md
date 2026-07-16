@@ -19,13 +19,6 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
       integration test (real-FAT mount-relative scan → dir_stats + null inodes) plus a live MCP validation on a
       synthetic FAT32 image — NO CI Playwright E2E by decision (the panic-class `hdiutil`/FSKit op is deliberately kept
       out of CI; see the plan's M9).
-- [ ] 2026-07-15 [media-index-polish-plan.md](media-index-polish-plan.md) - Finish + polish image search: fix the
-      dead-start bugs (toggle/startup/threshold now kick passes; defer-until-scored replaces the enrich-all race), the
-      importance "never scored" detection (recreate-bound full-recompute trigger + weights-probe fallback), preview
-      re-polling, the excluded-folder privacy retro-delete (live veto + double-tap delete), reclaim-space UX
-      (single-sourced arithmetic + VACUUM), image indexing joins the top-right progress indicator (throttled events,
-      honest per-volume ETA, terminal events on every exit), and settings move to AI > Image search. Plan reviewed in
-      five rounds.
 - [ ] 2026-07-14 [idle-cpu-throttle-plan.md](idle-cpu-throttle-plan.md) - Cut idle CPU + disk-write thrash from live
       indexing (#37). L1 (importance folded-key subtree clear) and M1 (per-file live-upsert throttle: 60 s leading +
       trailing, 2%/512 KiB bypass, Downloads-exempt, self-write loop subsumed) shipped; M2 (search-index prealloc
@@ -36,7 +29,10 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
       vectors in SQLite not Postgres, on-device by default with faces/cloud as separate opt-ins. Plan reviewed + the
       Core ML/Rust path spike-verified (`docs/notes/clip-coreml-rust-spike.md`), then re-grounded on the shipped
       `importance/`, lifecycle-bus, and `agent/` subsystems (copy the plumbing, not build it); importance-prioritized
-      enrichment + a settings threshold slider added. Execution pending.
+      enrichment + a settings threshold slider added. **Partially shipped** (see the plan's `## Status (2026-07-16)`
+      section): M1/M1.5/M2 landed ~2026-07-14, M3 (natural-language CLIP semantic search) and M6 (photo-search agent/MCP
+      tool) landed 2026-07-16; M3's CLIP path is gated off until David uploads the model artifacts. Faces (M4a/M4b) and
+      LLM captions (M5) are deliberately PARKED (David wants to be closer in the loop for faces; captions optional).
 - [ ] 2026-07-12 [ask-cmdr-plan.md](ask-cmdr-plan.md) - Implementation plan for the "Ask Cmdr" chat slice: 9 milestones
       (`AgentLlm` trait + fake → `main.db` store → registry read/write gating + split → in-process tool layer →
       runtime + context assembly → rail UI + streaming → sessions/search/attachments → consent/settings/i18n/E2E → LLM
@@ -86,6 +82,14 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 Done and merged; each entry stays until its durable intent is confirmed captured in the colocated C+D.md, then gets
 wiped.
 
+- [x] 2026-07-15 [media-index-polish-plan.md](media-index-polish-plan.md) - Finish + polish image search: fix the
+      dead-start bugs (toggle/startup/threshold now kick passes; defer-until-scored replaces the enrich-all race), the
+      importance "never scored" detection (recreate-bound full-recompute trigger + weights-probe fallback), preview
+      re-polling, the excluded-folder privacy retro-delete (live veto + double-tap delete), reclaim-space UX
+      (single-sourced arithmetic + VACUUM), image indexing joins the top-right progress indicator (throttled events,
+      honest per-volume ETA, terminal events on every exit), and settings move to AI > Image search. Plan reviewed in
+      five rounds. SHIPPED in full 2026-07-16; hardens everything the `media-ml-index-plan` shipped. Wipe once the
+      durable intent is confirmed captured in the `media_index/` C+D.md.
 - [x] 2026-07-09 [mcp-agent-surface-plan.md](mcp-agent-surface-plan.md) - Catch the MCP server up with ~2 months of
       features and ready it as the future in-app agent's substrate: per-volume `cmdr://indexing` + `indexing` tool, the
       `cmdr://importance` resource (offline-capable), operation-queue visibility (`operations:`) + `queue` tool +
