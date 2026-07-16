@@ -737,9 +737,10 @@ space, so a typed query is encoded to a vector and cosine-matched against stored
   deviation that drops the CVPixelBuffer/MLImageConstraint FFI surface. So the image tower takes a float `[1,3,224,224]`
   CHW `[0,1]` tensor; the Rust side resizes + center-crops the decoded CGImage to 224 and divides by 255
   (`clip_pixels_from_cgimage` in `backend/vision`), and the model bakes the normalization.
-- **Upload is David-only** (agents never upload): the pinned `url` (`https://models.getcmdr.com/<artifact>`) must serve
-  the exact pinned bytes. Until then the checksum-verified download fails and the feature stays honestly gated off. A
-  public HuggingFace repo under David's account is the zero-setup alternative host.
+- **Models are hosted on the public Hugging Face repo `veszelovszki/cmdr-clip-vit-b32-coreml`** (uploads only with
+  David's explicit approval; `hf` CLI + `secret HF_TOKEN`): the pinned `url` in `install.rs` must serve the exact pinned
+  bytes, else the checksum-verified download fails and the feature stays honestly gated off. The `resolve` URLs redirect
+  to a CDN (reqwest follows) and support Range resume (verified 2026-07-16).
 
 ### Two vector spaces, two-part staleness
 

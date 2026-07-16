@@ -49,13 +49,15 @@ The app ships the `.mlpackage` and compiles it to `.mlmodelc` on-device at first
 - `reference-tokenization.json` — token-id reference (checked in; backs the Rust tests).
 - `reference-vectors.json` — fidelity cosines + reference output vectors (checked in).
 
-## Upload (DAVID ONLY)
+## Upload (with David's explicit approval)
 
-Agents never upload. `convert.py` prints an upload-handoff line per artifact:
+The shipped artifacts live in the public Hugging Face repo `veszelovszki/cmdr-clip-vit-b32-coreml` (uploaded with the
+`hf` CLI; token via `secret HF_TOKEN`). `convert.py` prints an upload-handoff line per artifact:
 
-> David: upload `<artifact>` (sha256 `<hash>`, `<size>` bytes) to `https://models.getcmdr.com/<artifact>`; confirm the
-> URL returns those exact bytes.
+> David: upload `<artifact>` (sha256 `<hash>`, `<size>` bytes) to the model host; confirm the pinned URL in
+> `media_index/clip/install.rs` returns those exact bytes.
 
-The app pins that URL + SHA-256 in `media_index/clip/` (`ClipModelSpec`). The download is checksum-verified before
-install, so the bytes at the URL must match the printed hash exactly. A public HuggingFace repo under David's account is
-the zero-setup alternative host; whatever the host, the URL must return the exact bytes the checked-in SHA-256 pins.
+The app pins the URL + SHA-256 in `media_index/clip/install.rs` (`ClipTowerSpec`). The download is checksum-verified
+before install, so the bytes at the URL must match the printed hash exactly. Whatever the host, the URL must return the
+exact bytes the checked-in SHA-256 pins — after re-converting, update both the hashes and (if the host changes) the URLs
+there.

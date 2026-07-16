@@ -211,7 +211,7 @@ def main():
         print(f"fidelity: min_cosine={min(cosines):.4f} mean_cosine={sum(cosines)/len(cosines):.4f}")
     print("\n=== DAVID UPLOAD HANDOFF ===")
     for name, _pkg, zip_bytes, sha in results:
-        print(f"David: upload {name} (sha256 {sha}, {zip_bytes} bytes) to https://models.getcmdr.com/{name}; confirm the URL returns those exact bytes.")
+        print(f"David: upload {name} (sha256 {sha}, {zip_bytes} bytes) to the model host; confirm the pinned URL in media_index/clip/install.rs returns those exact bytes.")
 
 
 if __name__ == "__main__":

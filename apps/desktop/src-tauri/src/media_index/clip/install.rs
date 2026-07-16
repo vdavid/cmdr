@@ -57,20 +57,22 @@ pub const PLACEHOLDER_SHA: &str = "000000000000000000000000000000000000000000000
 /// tower — see the conversion script), so it's the honest correct-but-larger download;
 /// shrinking it via a per-layer palettization exclusion is a future optimization.
 ///
-/// **David must upload these bytes** to the URLs below (agents never upload); until the URL
-/// serves the exact pinned bytes, the checksum-verified download fails and the feature stays
-/// gated off. The hash guarantees whatever downloads is exactly the converted, verified model.
+/// Hosted on Hugging Face (`veszelovszki/cmdr-clip-vit-b32-coreml`, public); `resolve` URLs
+/// 302-redirect to the CDN (reqwest follows) and honor Range requests (the resumable
+/// download's 206 resume — both verified 2026-07-16, byte-exact against the pinned hashes,
+/// unauthenticated). The hash guarantees whatever downloads is exactly the converted,
+/// verified model.
 pub const CLIP_TOWERS: &[ClipTowerSpec] = &[
     ClipTowerSpec {
         artifact: "clip-image.mlpackage.zip",
-        url: "https://models.getcmdr.com/clip-image.mlpackage.zip",
+        url: "https://huggingface.co/veszelovszki/cmdr-clip-vit-b32-coreml/resolve/main/clip-image.mlpackage.zip",
         sha256: "b3e3a3fe9a2268a05ea0d9e97f60e3a905d07f83a51678a467b03a629f77b237",
         size_bytes: 207_920_562,
         package_dir: "clip-image.mlpackage",
     },
     ClipTowerSpec {
         artifact: "clip-text.mlpackage.zip",
-        url: "https://models.getcmdr.com/clip-text.mlpackage.zip",
+        url: "https://huggingface.co/veszelovszki/cmdr-clip-vit-b32-coreml/resolve/main/clip-text.mlpackage.zip",
         sha256: "d48091c587b32033920870dfb9db3d30866162e46f3e69d07e79df1a99e5d7d3",
         size_bytes: 183_694_108,
         package_dir: "clip-text.mlpackage",
