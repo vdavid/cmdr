@@ -74,6 +74,42 @@ describe('focus watchdog', () => {
     expect(warnSpy).not.toHaveBeenCalled()
   })
 
+  it('does not warn when focus is inside the Ask Cmdr rail', () => {
+    // The rail is a keyboard home alongside the panes, so focus in its
+    // composer (or any other rail chrome) is a valid resting place.
+    const rail = document.createElement('aside')
+    rail.className = 'ask-cmdr-rail'
+    const composer = document.createElement('textarea')
+    composer.className = 'composer-input'
+    rail.appendChild(composer)
+    document.body.appendChild(rail)
+    composer.focus()
+
+    initFocusWatchdog()
+    vi.advanceTimersByTime(2000)
+
+    expect(warnSpy).not.toHaveBeenCalled()
+  })
+
+  it('warns when the rail is open but focus falls to body (the bug it must still catch)', () => {
+    // Rail being open is NOT a suppressor: if focus lands on <body> while the
+    // rail is open, that is still the restore-focus bug the watchdog exists to
+    // catch. Only focus actually INSIDE the rail counts as a home.
+    const rail = document.createElement('aside')
+    rail.className = 'ask-cmdr-rail'
+    const composer = document.createElement('textarea')
+    composer.className = 'composer-input'
+    rail.appendChild(composer)
+    document.body.appendChild(rail)
+
+    document.body.focus()
+
+    initFocusWatchdog()
+    vi.advanceTimersByTime(2000)
+
+    expect(warnSpy).toHaveBeenCalledTimes(1)
+  })
+
   it('does not warn when a dialog is open even if focus is loose', () => {
     const dialog = document.createElement('div')
     dialog.setAttribute('role', 'dialog')

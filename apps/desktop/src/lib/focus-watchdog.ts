@@ -1,6 +1,7 @@
 /**
- * Focus watchdog: logs a WARN when the main window has OS focus but neither
- * file pane is keyboard-focused for {@link WAIT_MS}+ ms, with no dialog open.
+ * Focus watchdog: logs a WARN when the main window has OS focus but focus sits
+ * in no keyboard home (neither file pane nor the Ask Cmdr rail) for
+ * {@link WAIT_MS}+ ms, with no dialog open.
  *
  * Catches a class of bug where a modal or palette closes without restoring
  * focus to the previously focused pane. Arrow keys then silently no-op
@@ -26,13 +27,23 @@ let warned = false
 let installed = false
 
 /**
- * Returns true when `document.activeElement` lives inside the dual-pane
- * explorer (the keyboard event sink for both file panes).
+ * Selectors for every region that is a legitimate keyboard home: the dual-pane
+ * explorer (the keyboard event sink for both file panes) and the Ask Cmdr rail
+ * (composer, sessions list, and its other focusable chrome). The rail only
+ * mounts while open (`{#if askCmdrState.open}`), so a closed rail matches
+ * nothing here without any extra guard.
  */
-function focusInsideExplorer(): boolean {
+const KEYBOARD_HOME_SELECTOR = '.dual-pane-explorer, .ask-cmdr-rail'
+
+/**
+ * Returns true when `document.activeElement` lives inside a keyboard home. This
+ * is the "focus is where it belongs" test: the whole watchdog fires only when
+ * focus is in NONE of these homes (and no suppressor is active).
+ */
+function focusInsideKeyboardHome(): boolean {
   const ae = document.activeElement
   if (!ae || ae === document.body) return false
-  return ae.closest('.dual-pane-explorer') !== null
+  return ae.closest(KEYBOARD_HOME_SELECTOR) !== null
 }
 
 /**
@@ -50,7 +61,7 @@ function shouldSuppress(): boolean {
   // misplaced focus. AppKit will restore focus to the main window when the
   // panel closes, and the user is in control of when that happens (Shift+
   // Space, Esc, ✕). Treat the panel as the "dialog" for watchdog purposes.
-  return !document.hasFocus() || focusInsideExplorer() || anyDialogOpen() || quickLookState.isOpen
+  return !document.hasFocus() || focusInsideKeyboardHome() || anyDialogOpen() || quickLookState.isOpen
 }
 
 function check(): void {
