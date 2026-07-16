@@ -4,8 +4,16 @@
 //! mutation: `propagate_delta_by_id` walks size/count deltas upward, and
 //! `propagate_recursive_has_symlinks` recomputes the OR-aggregated symlink flag.
 //! All run on the writer thread, inside whatever transaction the caller holds.
+//!
+//! When an exact delta can't be trusted — a subtraction that would drive a field
+//! below zero (arithmetic proof the stored balance drifted), or a debit against
+//! a missing row — the walk escalates to [`super::repair::repair_dir_stats_upward`]
+//! rather than clamping the lie into place. See the ledger design in
+//! `indexing/DETAILS.md` § "The dir_stats ledger".
 
 use crate::indexing::store::IndexStore;
+
+use super::repair::{recompute_recursive_has_symlinks, repair_dir_stats_upward};
 
 pub(super) fn propagate_delta_by_id(
     conn: &rusqlite::Connection,
@@ -27,25 +35,60 @@ pub(super) fn propagate_delta_by_id(
         // row. Resetting `min_subtree_epoch` here would flip an exact dir to "≥"
         // on every live file write — the lie this milestone prevents.
         let (new_logical, new_physical, new_files, new_dirs, has_symlinks, min_subtree_epoch) = match existing {
-            Some(s) => (
-                (s.recursive_logical_size as i64 + logical_size_delta).max(0) as u64,
-                (s.recursive_physical_size as i64 + physical_size_delta).max(0) as u64,
-                (s.recursive_file_count as i64 + i64::from(file_delta)).max(0) as u64,
-                (s.recursive_dir_count as i64 + i64::from(dir_delta)).max(0) as u64,
-                s.recursive_has_symlinks,
-                s.min_subtree_epoch,
-            ),
-            None => (
-                logical_size_delta.max(0) as u64,
-                physical_size_delta.max(0) as u64,
-                i64::from(file_delta).max(0) as u64,
-                i64::from(dir_delta).max(0) as u64,
-                false,
-                // No prior row ⇒ coverage unknown (0). A `MarkDirsListed` +
-                // `propagate_min_subtree_epoch` from the shape-change handler
-                // sets the real value; this default never claims coverage.
-                0,
-            ),
+            Some(s) => {
+                let new_logical = s.recursive_logical_size as i64 + logical_size_delta;
+                let new_physical = s.recursive_physical_size as i64 + physical_size_delta;
+                let new_files = s.recursive_file_count as i64 + i64::from(file_delta);
+                let new_dirs = s.recursive_dir_count as i64 + i64::from(dir_delta);
+                // A field going negative is arithmetic PROOF this ancestor's stored
+                // balance drifted low (an exact debit exceeded it). Don't clamp the
+                // lie into place — escalate: recompute this dir and the rest of the
+                // chain from committed children, and log it once as drift telemetry.
+                // It should stay silent; a steadily-firing warn means a new leak.
+                if new_logical < 0 || new_physical < 0 || new_files < 0 || new_dirs < 0 {
+                    log::warn!(
+                        target: "indexing::writer",
+                        "dir_stats drift at id={current_id} in {db}: stored ({}, {}, {}, {}) + delta (logical={logical_size_delta}, physical={physical_size_delta}, files={file_delta}, dirs={dir_delta}) would go negative; repairing from children",
+                        s.recursive_logical_size,
+                        s.recursive_physical_size,
+                        s.recursive_file_count,
+                        s.recursive_dir_count,
+                        db = conn.path().unwrap_or("<unknown db>"),
+                    );
+                    repair_dir_stats_upward(conn, current_id);
+                    return;
+                }
+                (
+                    new_logical as u64,
+                    new_physical as u64,
+                    new_files as u64,
+                    new_dirs as u64,
+                    s.recursive_has_symlinks,
+                    s.min_subtree_epoch,
+                )
+            }
+            None => {
+                // No row here. A NEGATIVE component means we're debiting a dir whose
+                // aggregate row is missing (Leak C by construction) — materializing a
+                // zeroed row would bake in a lie. Repair this dir from its committed
+                // children and let the recompute walk up instead.
+                if logical_size_delta < 0 || physical_size_delta < 0 || file_delta < 0 || dir_delta < 0 {
+                    repair_dir_stats_upward(conn, current_id);
+                    return;
+                }
+                // Pure-positive delta to a missing row: create it (load-bearing for
+                // live-created dirs; coverage unknown ⇒ epoch 0). A `MarkDirsListed`
+                // + `propagate_min_subtree_epoch` from the shape-change handler sets
+                // the real epoch; this default never claims coverage.
+                (
+                    logical_size_delta as u64,
+                    physical_size_delta as u64,
+                    i64::from(file_delta) as u64,
+                    i64::from(dir_delta) as u64,
+                    false,
+                    0,
+                )
+            }
         };
 
         if let Err(e) = conn.execute(
@@ -67,38 +110,6 @@ pub(super) fn propagate_delta_by_id(
             _ => break,
         }
     }
-}
-
-/// Recompute `recursive_has_symlinks` for a directory from its direct children
-/// (`is_symlink`) plus its subdirectories' stored `recursive_has_symlinks`.
-///
-/// Returns the recomputed value, without writing it. Returns `false` if the
-/// directory has no children or the queries fail.
-fn recompute_recursive_has_symlinks(conn: &rusqlite::Connection, dir_id: i64) -> bool {
-    // Direct symlink child?
-    let direct: bool = conn
-        .query_row(
-            "SELECT EXISTS(SELECT 1 FROM entries WHERE parent_id = ?1 AND is_symlink = 1)",
-            rusqlite::params![dir_id],
-            |row| row.get::<_, i32>(0).map(|n| n != 0),
-        )
-        .unwrap_or(false);
-    if direct {
-        return true;
-    }
-    // Any sub-directory with the flag set?
-    let from_subdirs: bool = conn
-        .query_row(
-            "SELECT EXISTS(
-                SELECT 1 FROM entries e
-                JOIN dir_stats ds ON ds.entry_id = e.id
-                WHERE e.parent_id = ?1 AND e.is_directory = 1 AND ds.recursive_has_symlinks = 1
-            )",
-            rusqlite::params![dir_id],
-            |row| row.get::<_, i32>(0).map(|n| n != 0),
-        )
-        .unwrap_or(false);
-    from_subdirs
 }
 
 /// Walk the parent chain, recomputing `recursive_has_symlinks` for each ancestor

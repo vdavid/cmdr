@@ -25,6 +25,7 @@ mod aggregation;
 mod delta;
 mod entries;
 mod maintenance;
+mod repair;
 
 use aggregation::{
     handle_backfill_missing_dir_stats, handle_compute_all_aggregates, handle_compute_partial_aggregates,

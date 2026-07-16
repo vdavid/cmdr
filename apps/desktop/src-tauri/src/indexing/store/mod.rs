@@ -73,7 +73,7 @@ pub struct DirStats {
 }
 
 /// Dir stats keyed by entry ID. Used internally by the integer-keyed store.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DirStatsById {
     pub entry_id: i64,
     pub recursive_logical_size: u64,
