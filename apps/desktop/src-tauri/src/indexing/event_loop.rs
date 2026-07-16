@@ -15,12 +15,15 @@ use super::events::{
     IndexReplayCompleteEvent, IndexReplayProgressEvent, RescanReason, emit_rescan_notification, set_phase_for,
 };
 use super::firmlinks;
+use super::path_prefix;
 use super::reconciler::{self, EventReconciler};
 use super::scanner;
 use super::store::{self, IndexStore};
 use super::watcher;
 use super::writer::{IndexWriter, WriteMessage};
 use crate::pluralize::pluralize;
+
+mod storm;
 
 // ── Live event loop ──────────────────────────────────────────────────
 
@@ -211,6 +214,11 @@ pub(super) async fn run_live_event_loop(
             return;
         }
     };
+
+    // Drain any rescans deferred during buffered replay (missing-parent
+    // escalations defer into `pending_rescans` without live-queueing during
+    // replay; `EventReconciler::replay` populates them, this starts them).
+    reconciler.kick_pending_rescans(&writer);
 
     let mut event_count = 0u64;
     let mut pending_paths = HashSet::<String>::new();
@@ -428,10 +436,83 @@ pub(super) fn process_live_batch(
         });
     }
 
-    // Pass 2: process everything else
-    for (_path, event) in &other_events {
+    // Pass 2: removals (with removal-storm coalescing) and everything else.
+    //
+    // Removals get storm coalescing (root cause 7): a per-batch burst under one
+    // prefix escalates to a single subtree rescan, and the storm's
+    // strict-descendant per-file removals are dropped (the rescan re-lists the
+    // survivors). Non-removals (files, modifications) keep flowing per-event —
+    // the drop rule keys strictly on `item_removed`, so a mixed create+delete
+    // storm still converges (the reconcile sees final disk state).
+    let (removals, non_removals): (Vec<_>, Vec<_>) = other_events.into_iter().partition(|(_p, e)| e.flags.item_removed);
+
+    for (_path, event) in &non_removals {
         max_event_id = max_event_id.max(event.event_id);
         reconciler.process_live_event(event, conn, writer, pending_paths);
+    }
+
+    if !removals.is_empty() {
+        // Escalate over-threshold removal groups to subtree rescans FIRST, so the
+        // freshly-queued anchors are visible in `rescan_scopes()` for the drop
+        // filter below.
+        let removal_paths: Vec<&str> = removals.iter().map(|(p, _)| p.as_str()).collect();
+        for anchor in storm::detect_storm_anchors(&removal_paths) {
+            log::info!(
+                "Removal storm: coalescing {} removals into a subtree rescan of {}",
+                removals.len(),
+                anchor.display(),
+            );
+            reconciler.queue_must_scan_sub_dirs(anchor, writer);
+        }
+
+        // Snapshot the queued-or-active rescan scopes once (owned paths, so the
+        // per-event `requeue_rescan` below doesn't conflict with the borrow).
+        let scopes = reconciler.rescan_scopes();
+        let mut kept: Vec<(String, watcher::FsChangeEvent)> = Vec::with_capacity(removals.len());
+        for (path, event) in removals {
+            // Every removal advances the journal position — a dropped one WAS
+            // handled (by the coalescing rescan), just not per-file.
+            max_event_id = max_event_id.max(event.event_id);
+            // Drop STRICT descendants of a rescan scope and re-queue that scope
+            // (set-dedup makes it idempotent; also recovers a sub-threshold tail
+            // batch that lands after the walk already listed those dirs). Never
+            // the scope's own removal event — it must take the cheap
+            // `DeleteSubtreeById` path (`reconcile_subtree` on a vanished root
+            // deletes nothing and would strand the subtree).
+            if let Some(scope) = storm::scope_to_requeue(&path, &scopes) {
+                let scope = scope.clone();
+                reconciler.requeue_rescan(scope, writer);
+                continue;
+            }
+            kept.push((path, event));
+        }
+
+        // Parent-first ordering (dirs before files, shallow-first): `rm -rf`
+        // emits a dir's rmdir AFTER its children's unlinks but usually in the
+        // SAME batch. `item_is_dir` rides FSEvents flags (macOS-solid; a harmless
+        // no-op on Linux, where removals default it false).
+        kept.sort_by_key(|(path, event)| (!event.flags.item_is_dir, path_prefix::depth(path)));
+
+        // Process dir removals first, then FLUSH before the file removals so each
+        // dir's `DeleteSubtreeById` is visible to the read connection — its
+        // file-siblings then resolve to nothing and become cheap unknown-path
+        // skips (one subtree delete instead of N per-file deletes, the ~3-5x
+        // saver the incident log shows working across batches, engaged early).
+        let mut processed_any_dir = false;
+        let mut flushed_dirs = false;
+        for (_path, event) in &kept {
+            if event.flags.item_is_dir {
+                processed_any_dir = true;
+            } else if processed_any_dir && !flushed_dirs {
+                // Reached the first file after ≥1 dir removal: commit the dir
+                // removals so the file-siblings resolve to nothing and skip.
+                tokio::task::block_in_place(|| {
+                    let _ = writer.flush_blocking();
+                });
+                flushed_dirs = true;
+            }
+            reconciler.process_live_event(event, conn, writer, pending_paths);
+        }
     }
 
     if max_event_id > 0 {
@@ -703,13 +784,25 @@ pub(super) async fn run_replay_event_loop(
                 &writer,
                 &mut affected_paths,
                 &mut affected_paths_overflow,
+                &mut pending_rescans,
+                &mut pending_rescans_overflow,
             ) as u64;
 
-            // Process the HistoryDone event itself (it may carry other flags)
-            if let Some(paths) = reconciler::process_fs_event(&event, &space, &conn, &writer, None)
+            // Process the HistoryDone event itself (it may carry other flags).
+            // A missing-parent escalation here DEFERS into the pending list (no
+            // live queueing during replay), same as a must_scan_sub_dirs event.
+            let mut escalation: Option<std::path::PathBuf> = None;
+            if let Some(paths) = reconciler::process_fs_event(&event, &space, &conn, &writer, None, &mut escalation)
                 && !affected_paths_overflow
             {
                 affected_paths.extend(paths);
+            }
+            if let Some(anchor) = escalation {
+                defer_replay_rescan(
+                    &mut pending_rescans,
+                    &mut pending_rescans_overflow,
+                    anchor.to_string_lossy().to_string(),
+                );
             }
             last_event_id = event.event_id;
             event_count += 1;
@@ -719,19 +812,12 @@ pub(super) async fn run_replay_event_loop(
 
         // Handle MustScanSubDirs: queue for after replay (don't start during replay)
         if event.flags.must_scan_sub_dirs {
-            if !pending_rescans_overflow {
-                if pending_rescans.len() >= MAX_PENDING_RESCANS {
-                    log::warn!(
-                        "Replay: pending rescans cap reached ({MAX_PENDING_RESCANS}). \
-                         Will trigger a full rescan instead of individual subtree rescans."
-                    );
-                    pending_rescans_overflow = true;
-                    pending_rescans.clear();
-                } else {
-                    // Keep absolute; the reconcile strips at its resolve.
-                    pending_rescans.push(space.absolute(&event.path));
-                }
-            }
+            // Keep absolute; the reconcile strips at its resolve.
+            defer_replay_rescan(
+                &mut pending_rescans,
+                &mut pending_rescans_overflow,
+                space.absolute(&event.path),
+            );
             last_event_id = event.event_id;
             event_count += 1;
             continue;
@@ -785,6 +871,8 @@ pub(super) async fn run_replay_event_loop(
                 &writer,
                 &mut affected_paths,
                 &mut affected_paths_overflow,
+                &mut pending_rescans,
+                &mut pending_rescans_overflow,
             ) as u64;
             if last_event_id > since_event_id
                 && let Err(e) = writer.send(WriteMessage::UpdateLastEventId(last_event_id))
@@ -1188,9 +1276,36 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
+/// Defer a rescan anchor into the replay-phase pending list, honoring the
+/// `MAX_PENDING_RESCANS` cap (overflow escalates to a full rescan after replay).
+/// Shared by must_scan_sub_dirs events and missing-parent escalations — both are
+/// the same "go look here" signal, deferred identically during replay (no live
+/// queueing then; the post-replay live loop queues them via
+/// `queue_must_scan_sub_dirs`).
+fn defer_replay_rescan(pending_rescans: &mut Vec<String>, pending_rescans_overflow: &mut bool, path: String) {
+    if *pending_rescans_overflow {
+        return;
+    }
+    if pending_rescans.len() >= MAX_PENDING_RESCANS {
+        log::warn!(
+            "Replay: pending rescans cap reached ({MAX_PENDING_RESCANS}). \
+             Will trigger a full rescan instead of individual subtree rescans."
+        );
+        *pending_rescans_overflow = true;
+        pending_rescans.clear();
+    } else {
+        pending_rescans.push(path);
+    }
+}
+
 /// Drain the replay dedup buffer, process each event through the
 /// reconciler, and collect affected paths. Returns the number of
-/// deduplicated events processed.
+/// deduplicated events processed. Missing-parent escalations DEFER into the
+/// pending-rescan list (no live queueing during replay).
+#[allow(
+    clippy::too_many_arguments,
+    reason = "replay accumulators (affected paths + pending rescans, each with its overflow flag) travel together"
+)]
 fn flush_replay_batch(
     pending: &mut HashMap<String, watcher::FsChangeEvent>,
     space: &IndexPathSpace,
@@ -1198,10 +1313,13 @@ fn flush_replay_batch(
     writer: &IndexWriter,
     affected_paths: &mut HashSet<String>,
     affected_paths_overflow: &mut bool,
+    pending_rescans: &mut Vec<String>,
+    pending_rescans_overflow: &mut bool,
 ) -> usize {
     let count = pending.len();
     for (_path, event) in pending.drain() {
-        if let Some(paths) = reconciler::process_fs_event(&event, space, conn, writer, None)
+        let mut escalation: Option<std::path::PathBuf> = None;
+        if let Some(paths) = reconciler::process_fs_event(&event, space, conn, writer, None, &mut escalation)
             && !*affected_paths_overflow
         {
             affected_paths.extend(paths);
@@ -1213,6 +1331,13 @@ fn flush_replay_batch(
                 *affected_paths_overflow = true;
                 affected_paths.clear();
             }
+        }
+        if let Some(anchor) = escalation {
+            defer_replay_rescan(
+                pending_rescans,
+                pending_rescans_overflow,
+                anchor.to_string_lossy().to_string(),
+            );
         }
     }
     count

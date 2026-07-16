@@ -37,6 +37,7 @@ mod metadata;
 mod mtp_index;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod mtp_watch;
+mod path_prefix;
 mod pending_sizes;
 mod reconciler;
 mod retention;

@@ -115,7 +115,7 @@ fn excluded_paths_are_skipped() {
 
     let event = make_event(excluded_path, 1, created_file_flags());
     let (writer, _dir, conn) = setup_test_writer();
-    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
+    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None, &mut None);
     assert!(result.is_none());
     writer.shutdown();
 }
@@ -126,7 +126,7 @@ fn system_paths_without_firmlink_are_skipped() {
     // /System/foo paths that aren't firmlinked should be excluded
     let event = make_event("/System/Library/Frameworks/foo", 1, created_file_flags());
     let (writer, _dir, conn) = setup_test_writer();
-    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
+    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None, &mut None);
     assert!(result.is_none());
     writer.shutdown();
 }
@@ -135,7 +135,7 @@ fn system_paths_without_firmlink_are_skipped() {
 fn history_done_events_are_skipped() {
     let event = make_event("/test/file.txt", 1, history_done_flags());
     let (writer, _dir, conn) = setup_test_writer();
-    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
+    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None, &mut None);
     assert!(result.is_none());
     writer.shutdown();
 }
@@ -182,6 +182,106 @@ async fn must_scan_sub_dirs_deduplication() {
     writer.shutdown();
 }
 
+// ── Missing-parent escalation (Leak B) ──────────────────────────
+
+/// A live creation whose parent chain is absent must NOT be dropped: it escalates
+/// to a rescan of the HIGHEST missing dir (the child of the deepest existing
+/// dir), so `reconcile_subtree` anchors at an existing parent and discovers the
+/// whole missing chain. Pre-fix this silently dropped the credit.
+#[tokio::test(flavor = "multi_thread")]
+async fn missing_parent_creation_escalates_to_highest_missing_dir() {
+    let (writer, _dir, conn) = setup_test_writer();
+    let db_path = writer.db_path();
+    let space = IndexPathSpace::root();
+
+    // On disk: <base>/mid/leaf/file.txt exists; only <base> and up is indexed.
+    let base = non_excluded_tempdir();
+    let deep = base.path().join("mid").join("leaf");
+    std::fs::create_dir_all(&deep).expect("create deep dirs");
+    let file = deep.join("file.txt");
+    std::fs::write(&file, b"hi").expect("write file");
+
+    let base_abs = space.absolute(&base.path().to_string_lossy());
+    ensure_path_in_db(&db_path, &base_abs, &writer);
+
+    let mut reconciler = EventReconciler::new();
+    reconciler.switch_to_live();
+    // Keep the queued anchor visible in the set (don't spawn a rescan).
+    reconciler.rescan_active.store(true, Ordering::Relaxed);
+
+    let file_abs = space.absolute(&file.to_string_lossy());
+    let event = make_event(&file_abs, 1, created_file_flags());
+    let mut pending = HashSet::new();
+    reconciler.process_live_event(&event, &conn, &writer, &mut pending);
+
+    let queued: Vec<PathBuf> = reconciler.pending_rescans.lock().unwrap().iter().cloned().collect();
+    let expected = PathBuf::from(format!("{base_abs}/mid"));
+    assert_eq!(
+        queued,
+        vec![expected],
+        "escalates to the highest missing dir (child of the deepest existing dir)"
+    );
+
+    writer.shutdown();
+}
+
+/// `reconcile_subtree` on a root whose parent chain is missing escalates via its
+/// `ReconcileSummary.escalation` (the caller re-queues an anchor closer to the
+/// volume root), instead of dropping the whole subtree's credit.
+#[test]
+fn reconcile_subtree_missing_chain_escalates() {
+    let (writer, _dir, conn) = setup_test_writer();
+    let db_path = writer.db_path();
+    let space = IndexPathSpace::root();
+
+    let base = non_excluded_tempdir();
+    let deep = base.path().join("mid").join("leaf");
+    std::fs::create_dir_all(&deep).expect("create deep dirs");
+    let base_abs = space.absolute(&base.path().to_string_lossy());
+    ensure_path_in_db(&db_path, &base_abs, &writer);
+
+    let cancelled = AtomicBool::new(false);
+    let leaf_abs = space.absolute(&deep.to_string_lossy());
+    let summary = reconcile_subtree(Path::new(&leaf_abs), &space, &conn, &writer, &cancelled).expect("reconcile ok");
+    assert_eq!(
+        summary.escalation,
+        Some(PathBuf::from(format!("{base_abs}/mid"))),
+        "escalates to the highest missing dir"
+    );
+
+    writer.shutdown();
+}
+
+/// A parent component that resolves to a FILE row (a stale file→dir type change)
+/// counts as MISSING: the anchor re-lists the deepest existing DIR so the diff
+/// deletes the stale file row and inserts the dir — never parenting under a file.
+#[test]
+fn escalation_anchor_stops_at_a_file_parent() {
+    let (writer, _dir, conn) = setup_test_writer();
+    let db_path = writer.db_path();
+    let space = IndexPathSpace::root();
+
+    let base = non_excluded_tempdir();
+    let base_abs = space.absolute(&base.path().to_string_lossy());
+    ensure_path_in_db(&db_path, &base_abs, &writer);
+    // Insert "mid" as a FILE under base.
+    {
+        let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+        let base_id = store::resolve_path(&wconn, &base_abs).unwrap().unwrap();
+        IndexStore::insert_entry_v2(&wconn, base_id, "mid", false, false, Some(1), Some(1), None, None).unwrap();
+    }
+
+    let target = format!("{base_abs}/mid/leaf/x.txt");
+    let anchor = resolve_escalation_anchor(&space, &conn, &target);
+    assert_eq!(
+        anchor,
+        Some(PathBuf::from(&base_abs)),
+        "a file parent forces re-listing the deepest existing dir"
+    );
+
+    writer.shutdown();
+}
+
 // ── Event processing with real files ────────────────────────────
 
 #[test]
@@ -200,7 +300,7 @@ fn process_file_creation_writes_entry() {
 
     let event = make_event(&file_path.to_string_lossy(), 50, created_file_flags());
 
-    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
+    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None, &mut None);
     assert!(result.is_some());
 
     writer.flush_blocking().unwrap();
@@ -241,7 +341,7 @@ fn process_file_removal_deletes_entry() {
     }
 
     let event = make_event("/gone/deleted.txt", 60, removed_file_flags());
-    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
+    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None, &mut None);
     assert!(result.is_some());
 
     writer.flush_blocking().unwrap();
@@ -268,7 +368,7 @@ fn process_dir_creation_writes_entry_and_propagates() {
 
     let event = make_event(&new_dir.to_string_lossy(), 70, created_dir_flags());
 
-    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
+    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None, &mut None);
     assert!(result.is_some());
 
     // The affected paths should include both the parent and the new dir itself
@@ -314,7 +414,7 @@ fn process_dir_removal_deletes_subtree() {
     }
 
     let event = make_event("/parent/removed_dir", 80, removed_dir_flags());
-    process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
+    process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None, &mut None);
 
     writer.flush_blocking().unwrap();
     writer.shutdown();
@@ -332,7 +432,7 @@ fn process_nonexistent_file_treated_as_removal() {
     // Event for a file that was created and immediately deleted
     // Use a path not under any excluded prefix (for example, /tmp/ is excluded on Linux)
     let event = make_event("/nonexistent_cmdr_test_dir/ghost_file.txt", 90, created_file_flags());
-    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
+    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None, &mut None);
     // Should still return Some (stat fails, treated as removal)
     assert!(result.is_some());
 
@@ -375,7 +475,7 @@ fn removal_event_for_existing_path_upserts_instead_of_deleting() {
 
     // Send a removal event even though the file exists on disk
     let event = make_event(&real_file.to_string_lossy(), 99, removed_file_flags());
-    process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
+    process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None, &mut None);
 
     writer.flush_blocking().unwrap();
     writer.shutdown();
@@ -437,7 +537,7 @@ fn atomic_swap_event_upserts_existing_file() {
         ..Default::default()
     };
     let event = make_event(&file_path.to_string_lossy(), 120, flags);
-    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
+    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None, &mut None);
     assert!(result.is_some());
 
     writer.flush_blocking().unwrap();
@@ -577,7 +677,7 @@ fn removal_event_for_existing_directory_upserts_not_deletes() {
         ..Default::default()
     };
     let event = make_event(&target_dir.to_string_lossy(), 150, flags);
-    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
+    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None, &mut None);
     assert!(result.is_some());
 
     writer.flush_blocking().unwrap();
@@ -1338,7 +1438,7 @@ fn live_create_under_mount_rooted_index_resolves_via_strip() {
 
     // `root` space (pre-strip): the absolute parent `<mount>/sub` is walked from
     // `ROOT_ID` (which holds only "sub") and misses, so the create is dropped.
-    process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
+    process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None, &mut None);
     writer.flush_blocking().unwrap();
     assert_eq!(
         IndexStore::list_children_on(sub_id, &conn).unwrap().len(),
@@ -1348,7 +1448,7 @@ fn live_create_under_mount_rooted_index_resolves_via_strip() {
 
     // `mount_rooted` space: `<mount>/sub` strips to `/sub`, resolves to `sub_id`, upserts.
     let space = IndexPathSpace::mount_rooted(mount_root);
-    process_fs_event(&event, &space, &conn, &writer, None);
+    process_fs_event(&event, &space, &conn, &writer, None, &mut None);
     writer.flush_blocking().unwrap();
     writer.shutdown();
 
@@ -1389,7 +1489,7 @@ fn live_delete_under_mount_rooted_index_resolves_via_strip() {
     let event = make_event(&gone_abs.to_string_lossy(), 60, removed_file_flags());
 
     // `root` space misses the mount-absolute path, so the stale row survives.
-    process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
+    process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None, &mut None);
     writer.flush_blocking().unwrap();
     assert_eq!(
         IndexStore::list_children_on(sub_id, &conn).unwrap().len(),
@@ -1399,7 +1499,7 @@ fn live_delete_under_mount_rooted_index_resolves_via_strip() {
 
     // `mount_rooted` space strips and resolves, so the delete lands.
     let space = IndexPathSpace::mount_rooted(mount_root);
-    process_fs_event(&event, &space, &conn, &writer, None);
+    process_fs_event(&event, &space, &conn, &writer, None, &mut None);
     writer.flush_blocking().unwrap();
     writer.shutdown();
 

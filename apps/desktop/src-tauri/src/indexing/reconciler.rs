@@ -35,7 +35,10 @@ use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 use crate::indexing::{DEBUG_STATS, IndexPathSpace};
 use crate::pluralize::pluralize;
 
+mod escalation;
+mod rescan;
 mod throttle;
+use escalation::resolve_escalation_anchor;
 use throttle::{Throttle, ThrottleOutcome};
 
 /// The live-path throttle, carrying the exact upsert to replay on the trailing
@@ -67,16 +70,17 @@ pub(super) struct PendingUpsert {
 /// events is always safe.
 const MAX_BUFFER_CAPACITY: usize = 500_000;
 
-/// Aggregator for high-volume reconciler skip events. Each per-event line is at TRACE
-/// (off by default; file chain captures Debug+ only); this aggregator emits a single
-/// DEBUG summary every ~5 s, so error report bundles still carry the existence-of-drift
-/// signal without the per-event noise. Two instances cover the two skip classes that
-/// dominate normal log volume: [`UNKNOWN_PATH_SKIPS`] (removal for a path not in the DB)
-/// and [`STALE_PARENT_SKIPS`] (create/modify whose parent dir isn't in the DB).
+/// Aggregator for high-volume reconciler skip/escalation events. Each per-event line
+/// is at TRACE (off by default; file chain captures Debug+ only); this aggregator emits
+/// a single DEBUG summary every ~5 s, so error report bundles still carry the
+/// existence-of-drift signal without the per-event noise. Two instances cover the two
+/// classes that dominate normal log volume: [`UNKNOWN_PATH_SKIPS`] (removal for a path
+/// not in the DB) and [`ESCALATED_MISSING_PARENTS`] (create/modify whose parent dir
+/// isn't in the DB — now escalated to a subtree rescan rather than dropped).
 ///
-/// Most skips are harmless build-output churn, but a sustained rate (or a sample path
-/// in an unexpected tree) can flag real reconciler/index drift. Triagers: if you need
-/// the per-event detail, run with `RUST_LOG=cmdr_lib::indexing::reconciler=trace,debug`.
+/// Most are harmless build-output churn, but a sustained rate (or a sample path in an
+/// unexpected tree) can flag real reconciler/index drift. Triagers: if you need the
+/// per-event detail, run with `RUST_LOG=cmdr_lib::indexing::reconciler=trace,debug`.
 mod skip_aggregator {
     use std::sync::Mutex;
     use std::time::Instant;
@@ -161,8 +165,10 @@ mod skip_aggregator {
 
     /// Removals for a path that isn't in the DB (mostly harmless build-output churn).
     pub(super) static UNKNOWN_PATH_SKIPS: SkipAggregator = SkipAggregator::new("removal", "for unknown paths");
-    /// Create/modify events whose parent dir isn't in the DB (stale intermediate dir).
-    pub(super) static STALE_PARENT_SKIPS: SkipAggregator = SkipAggregator::new("event", "for missing parents");
+    /// Create/modify events whose parent dir isn't in the DB: escalated to a subtree
+    /// rescan of the highest missing dir (Leak B) rather than dropped.
+    pub(super) static ESCALATED_MISSING_PARENTS: SkipAggregator =
+        SkipAggregator::new("event", "escalated for missing parents");
 }
 
 /// Buffers FSEvents during the initial scan and replays them after the scan completes.
@@ -179,6 +185,12 @@ pub struct EventReconciler {
     pending_rescans: Arc<Mutex<HashSet<PathBuf>>>,
     /// Whether a MustScanSubDirs rescan is currently running.
     rescan_active: Arc<AtomicBool>,
+    /// The path of the CURRENTLY-running rescan (set at spawn, cleared on
+    /// completion). `start_next_rescan` pops the path out of `pending_rescans`
+    /// before spawning, so without this slot the removal-storm drop rule would see
+    /// an empty set and drop nothing while a rescan is in flight. Also the seam
+    /// M4b's held-hourglass tier reads. `None` when no rescan runs.
+    active_rescan_path: Arc<Mutex<Option<PathBuf>>>,
     /// Per-file throttle for live upserts (leading + trailing, 60 s window). Only
     /// consulted on the live path; the trailing flush runs off the event loop's
     /// sweep tick via [`EventReconciler::sweep_throttle`].
@@ -209,6 +221,7 @@ impl EventReconciler {
             buffer_overflow: false,
             pending_rescans: Arc::new(Mutex::new(HashSet::new())),
             rescan_active: Arc::new(AtomicBool::new(false)),
+            active_rescan_path: Arc::new(Mutex::new(None)),
             throttle,
             space,
         }
@@ -275,8 +288,15 @@ impl EventReconciler {
 
             // Replay stays unthrottled (None): journal catch-up must converge
             // fully and fast; throttling is a live-steady-state concern.
-            if let Some(paths) = process_fs_event(event, &self.space, conn, writer, None) {
+            // Missing-parent escalations DEFER into the pending set without starting
+            // a rescan (no live queueing during replay); the live loop that follows
+            // drains them via `kick_pending_rescans`.
+            let mut escalation: Option<PathBuf> = None;
+            if let Some(paths) = process_fs_event(event, &self.space, conn, writer, None, &mut escalation) {
                 affected_paths.extend(paths);
+            }
+            if let Some(anchor) = escalation {
+                self.pending_rescans.lock_ignore_poison().insert(anchor);
             }
 
             last_event_id = event.event_id;
@@ -335,8 +355,22 @@ impl EventReconciler {
             return Some(event.event_id);
         }
 
-        if let Some(affected_paths) = process_fs_event(event, &self.space, conn, writer, Some(&mut self.throttle)) {
+        // Missing-parent escalation (Leak B): if the event's parent chain isn't in
+        // the index, `process_fs_event` sets `escalation` to the rescan anchor
+        // instead of dropping the credit. Live mode queues it right away.
+        let mut escalation: Option<PathBuf> = None;
+        if let Some(affected_paths) = process_fs_event(
+            event,
+            &self.space,
+            conn,
+            writer,
+            Some(&mut self.throttle),
+            &mut escalation,
+        ) {
             pending_paths.extend(affected_paths);
+        }
+        if let Some(anchor) = escalation {
+            self.queue_must_scan_sub_dirs(anchor, writer);
         }
 
         // UpdateLastEventId is sent once per batch by the caller (process_live_batch)
@@ -369,27 +403,6 @@ impl EventReconciler {
         affected
     }
 
-    /// Queue a MustScanSubDirs rescan, throttled to max 1 concurrent.
-    pub(super) fn queue_must_scan_sub_dirs(&mut self, path: PathBuf, writer: &IndexWriter) {
-        DEBUG_STATS.record_must_scan(&path.to_string_lossy());
-        self.pending_rescans.lock_ignore_poison().insert(path.clone());
-
-        if self.rescan_active.load(Ordering::Relaxed) {
-            log::debug!(
-                "Reconciler: MustScanSubDirs for {} queued (rescan already active)",
-                path.display()
-            );
-            return;
-        }
-
-        start_next_rescan(
-            Arc::clone(&self.pending_rescans),
-            Arc::clone(&self.rescan_active),
-            self.space.clone(),
-            writer,
-        );
-    }
-
     /// Whether the reconciler's event buffer overflowed during the scan.
     pub(super) fn did_buffer_overflow(&self) -> bool {
         self.buffer_overflow
@@ -408,86 +421,6 @@ impl EventReconciler {
     }
 }
 
-/// Start the next pending MustScanSubDirs rescan, if any.
-///
-/// Standalone function (not a method) so the spawned task can call it
-/// after completion to drain the pending queue automatically.
-fn start_next_rescan(
-    pending_rescans: Arc<Mutex<HashSet<PathBuf>>>,
-    rescan_active: Arc<AtomicBool>,
-    space: IndexPathSpace,
-    writer: &IndexWriter,
-) {
-    let path = {
-        let mut pending = pending_rescans.lock_ignore_poison();
-        match pending.iter().next().cloned() {
-            Some(p) => {
-                pending.remove(&p);
-                p
-            }
-            None => return,
-        }
-    };
-    rescan_active.store(true, Ordering::Relaxed);
-
-    let writer = writer.clone();
-    let pending_for_task = Arc::clone(&pending_rescans);
-    let active_for_task = Arc::clone(&rescan_active);
-    let space_for_task = space.clone();
-
-    log::info!("MustScanSubDirs: reconcile starting for {}", path.display());
-
-    tokio::task::spawn_blocking(move || {
-        let cancelled = AtomicBool::new(false);
-        let conn = match IndexStore::open_write_connection(&writer.db_path()) {
-            Ok(c) => c,
-            Err(e) => {
-                log::warn!(
-                    "MustScanSubDirs: couldn't open read connection for {}: {e}",
-                    path.display()
-                );
-                active_for_task.store(false, Ordering::Relaxed);
-                // Try the next pending rescan even if this one failed
-                start_next_rescan(pending_for_task, active_for_task, space_for_task, &writer);
-                return;
-            }
-        };
-
-        match reconcile_subtree(&path, &space_for_task, &conn, &writer, &cancelled) {
-            Ok(summary) => {
-                if summary.duration.as_secs() > 10 {
-                    log::warn!(
-                        "MustScanSubDirs: reconcile slow for {} (+{} -{} ~{}, {}s)",
-                        path.display(),
-                        summary.added,
-                        summary.removed,
-                        summary.updated,
-                        summary.duration.as_secs(),
-                    );
-                } else {
-                    log::info!(
-                        "MustScanSubDirs: reconcile complete for {} (+{} -{} ~{}, {}ms)",
-                        path.display(),
-                        summary.added,
-                        summary.removed,
-                        summary.updated,
-                        summary.duration.as_millis(),
-                    );
-                }
-            }
-            Err(e) => {
-                log::warn!("MustScanSubDirs: reconcile failed for {}: {e}", path.display());
-            }
-        }
-
-        DEBUG_STATS.record_rescan_completed();
-        active_for_task.store(false, Ordering::Relaxed);
-
-        // Automatically start the next queued rescan
-        start_next_rescan(pending_for_task, active_for_task, space_for_task, &writer);
-    });
-}
-
 // ── Subtree reconciliation ───────────────────────────────────────────
 
 /// Summary of a subtree reconciliation.
@@ -496,6 +429,11 @@ pub(super) struct ReconcileSummary {
     pub removed: u64,
     pub updated: u64,
     pub duration: std::time::Duration,
+    /// Set when the reconcile couldn't anchor because the subtree root's chain is
+    /// still (partly) missing from the index (the skip branch, or a parent that
+    /// resolves to a file). Carries the escalation anchor — a rescan root strictly
+    /// closer to the volume root — for the caller to re-queue. `None` on success.
+    pub escalation: Option<PathBuf>,
 }
 
 /// A live directory child, normalized to the fields the per-dir diff needs.
@@ -794,14 +732,42 @@ pub(super) fn reconcile_subtree(
             // stat the root, and upsert it via the writer.
             let parent_path = compute_parent_path(&root_str);
             let parent_id = match space.resolve_abs(conn, &parent_path) {
-                Ok(Some(id)) => id,
+                Ok(Some(id)) => {
+                    // Harden against the type-change orphan class: the parent must be
+                    // a DIRECTORY row before we parent new entries under it. A parent
+                    // that resolves to a FILE (a stale file→dir type change) means the
+                    // chain is broken; escalate to a rescan that re-lists the deepest
+                    // existing dir, healing it — never upsert under a file id.
+                    let parent_is_dir = matches!(
+                        IndexStore::get_entry_by_id(conn, id),
+                        Ok(Some(e)) if e.is_directory
+                    );
+                    if parent_is_dir {
+                        id
+                    } else {
+                        log::debug!("reconcile_subtree: parent of {root_str} is not a directory row, escalating");
+                        return Ok(ReconcileSummary {
+                            added: 0,
+                            removed: 0,
+                            updated: 0,
+                            duration: start.elapsed(),
+                            escalation: resolve_escalation_anchor(space, conn, &root_str),
+                        });
+                    }
+                }
                 Ok(None) => {
-                    log::debug!("reconcile_subtree: neither root nor parent in DB, skipping: {root_str}");
+                    // Neither root nor parent in DB: the chain above is (partly)
+                    // missing (Leak B, subtree-scan variant). Escalate to a rescan
+                    // anchored at the highest missing dir (strictly closer to the
+                    // volume root, so the caller's re-queue converges by depth)
+                    // rather than dropping the whole subtree's credit.
+                    log::debug!("reconcile_subtree: neither root nor parent in DB, escalating: {root_str}");
                     return Ok(ReconcileSummary {
                         added: 0,
                         removed: 0,
                         updated: 0,
                         duration: start.elapsed(),
+                        escalation: resolve_escalation_anchor(space, conn, &root_str),
                     });
                 }
                 Err(e) => return Err(format!("resolve_path for parent: {e}")),
@@ -811,12 +777,16 @@ pub(super) fn reconcile_subtree(
             let metadata = match std::fs::symlink_metadata(root) {
                 Ok(m) => m,
                 Err(e) => {
+                    // The root vanished between the event and now: nothing to index
+                    // and no chain to heal (a real delete will arrive as its own
+                    // event), so no escalation.
                     log::debug!("reconcile_subtree: can't stat root {root_str}: {e}");
                     return Ok(ReconcileSummary {
                         added: 0,
                         removed: 0,
                         updated: 0,
                         duration: start.elapsed(),
+                        escalation: None,
                     });
                 }
             };
@@ -848,12 +818,16 @@ pub(super) fn reconcile_subtree(
             match space.resolve_abs(conn, &root_str) {
                 Ok(Some(id)) => id,
                 Ok(None) => {
+                    // We just upserted and flushed, yet the row is absent: a write
+                    // race or a concurrent delete. Re-queuing the same root would
+                    // spin, so don't escalate; the next real event heals it.
                     log::warn!("reconcile_subtree: root still not in DB after upsert, skipping: {root_str}");
                     return Ok(ReconcileSummary {
                         added,
                         removed: 0,
                         updated: 0,
                         duration: start.elapsed(),
+                        escalation: None,
                     });
                 }
                 Err(e) => return Err(format!("resolve_path for root after upsert: {e}")),
@@ -958,6 +932,7 @@ pub(super) fn reconcile_subtree(
         removed,
         updated,
         duration: start.elapsed(),
+        escalation: None,
     })
 }
 
@@ -1032,12 +1007,20 @@ pub(super) fn read_fs_children(
 /// cold-start pass `None` so journal catch-up applies every event immediately.
 /// When present, a regular file's in-place rewrite may be suppressed here (its
 /// last-seen size flushed later by [`EventReconciler::sweep_throttle`]).
+///
+/// `escalation` is an out-param for Leak B: when a create/modify event's parent
+/// chain is (partly) missing from the index, this sets it to the rescan anchor
+/// (the highest missing dir) instead of dropping the credit. The caller
+/// (`process_live_event` live, buffered replay) owns the reconciler state and
+/// queues or defers it. `None` means nothing to escalate. A typed `PathBuf`
+/// out-param, never a string signal — no string-matching classification.
 pub(super) fn process_fs_event(
     event: &FsChangeEvent,
     space: &IndexPathSpace,
     conn: &Connection,
     writer: &IndexWriter,
     throttle: Option<&mut LiveThrottle>,
+    escalation: &mut Option<PathBuf>,
 ) -> Option<Vec<String>> {
     // The canonical ABSOLUTE path in this volume's world. It stays absolute through
     // the whole function (FS stat, exclusion, ancestor/affected paths, the FE emit);
@@ -1062,7 +1045,7 @@ pub(super) fn process_fs_event(
     let mut affected = collect_ancestor_paths(&normalized);
 
     if event.flags.item_removed {
-        return handle_removal(&normalized, space, conn, event, writer, affected, throttle);
+        return handle_removal(&normalized, space, conn, event, writer, affected, throttle, escalation);
     }
 
     if event.flags.item_created || event.flags.item_modified || event.flags.item_renamed {
@@ -1075,6 +1058,7 @@ pub(super) fn process_fs_event(
             writer,
             &mut affected,
             throttle,
+            escalation,
         );
     }
 
@@ -1089,6 +1073,7 @@ pub(super) fn process_fs_event(
             writer,
             &mut affected,
             throttle,
+            escalation,
         );
     }
 
@@ -1102,6 +1087,10 @@ pub(super) fn process_fs_event(
 /// deleting live entries, we stat the path first: if it exists, delegate to
 /// `handle_creation_or_modification` (which upserts). Only delete from the DB
 /// when the path is truly gone from the filesystem.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "shares the event-processing param set; a struct would add indirection without clarity"
+)]
 fn handle_removal(
     normalized: &str,
     space: &IndexPathSpace,
@@ -1110,6 +1099,7 @@ fn handle_removal(
     writer: &IndexWriter,
     mut affected: Vec<String>,
     throttle: Option<&mut LiveThrottle>,
+    escalation: &mut Option<PathBuf>,
 ) -> Option<Vec<String>> {
     // Check if the path actually exists on disk before deleting from the DB.
     // `normalized` is the absolute FS path, so this stat is correct on any volume.
@@ -1126,6 +1116,7 @@ fn handle_removal(
             writer,
             &mut affected,
             throttle,
+            escalation,
         );
     }
 
@@ -1163,7 +1154,7 @@ fn handle_removal(
 /// from the parent so dir_stats are updated along the ancestor chain.
 #[allow(
     clippy::too_many_arguments,
-    reason = "shares the event-processing param set (path/parent/space/conn/event/writer/affected/throttle); a struct would add indirection without clarity, matching run_scan"
+    reason = "shares the event-processing param set (path/parent/space/conn/event/writer/affected/throttle/escalation); a struct would add indirection without clarity, matching run_scan"
 )]
 fn handle_creation_or_modification(
     normalized: &str,
@@ -1174,6 +1165,7 @@ fn handle_creation_or_modification(
     writer: &IndexWriter,
     affected: &mut Vec<String>,
     throttle: Option<&mut LiveThrottle>,
+    escalation: &mut Option<PathBuf>,
 ) -> Option<Vec<String>> {
     // Stat the file to get current metadata. `normalized` is the absolute FS path.
     let path = Path::new(normalized);
@@ -1208,12 +1200,17 @@ fn handle_creation_or_modification(
     let parent_id = match space.resolve_abs(conn, parent_path) {
         Ok(Some(id)) => id,
         Ok(None) => {
-            // Parent not in DB -- stale event (intermediate directory missing), skip.
-            // Per-event at TRACE; a DEBUG aggregate every ~5 s keeps the drift signal in
-            // error reports without the per-event flood (this was ~13% of normal log
-            // volume, almost all harmless build-output churn).
-            log::trace!("Reconciler: parent path not in DB, skipping event for {normalized} (parent: {parent_path})");
-            skip_aggregator::STALE_PARENT_SKIPS.record(normalized);
+            // Parent not in DB (Leak B): the intermediate dir chain is missing.
+            // Instead of dropping the credit, escalate to a subtree rescan anchored
+            // at the highest missing dir, so `reconcile_subtree` discovers and
+            // credits the whole chain. The caller queues (live) or defers (replay).
+            // Per-event at TRACE; a DEBUG aggregate every ~5 s keeps the drift
+            // signal in error reports without the per-event flood.
+            if let Some(anchor) = resolve_escalation_anchor(space, conn, normalized) {
+                *escalation = Some(anchor);
+            }
+            log::trace!("Reconciler: parent path not in DB, escalating event for {normalized} (parent: {parent_path})");
+            skip_aggregator::ESCALATED_MISSING_PARENTS.record(normalized);
             return Some(affected.clone());
         }
         Err(e) => {

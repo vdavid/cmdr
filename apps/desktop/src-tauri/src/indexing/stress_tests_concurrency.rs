@@ -573,7 +573,8 @@ fn live_event_storm_with_concurrent_reads() {
     let event_thread = std::thread::spawn(move || {
         let conn = IndexStore::open_read_connection(&db_path_a).expect("open event conn");
         for event in &events_clone {
-            let _affected = reconciler::process_fs_event(event, &IndexPathSpace::root(), &conn, &writer_a, None);
+            let _affected =
+                reconciler::process_fs_event(event, &IndexPathSpace::root(), &conn, &writer_a, None, &mut None);
         }
     });
 
@@ -652,6 +653,264 @@ fn live_event_storm_with_concurrent_reads() {
     assert!(
         root_stats.recursive_dir_count > 0,
         "root should still have subdirectories after event storm"
+    );
+
+    writer.send(WriteMessage::Shutdown).unwrap();
+}
+
+// ── Mixed removal-storm + concurrent rescan → ledger fixed point ───────
+
+/// A minimal 1-byte file `EntryRow` for seeding a synthetic tree.
+fn make_file_entry_row(id: i64, parent_id: i64, name: &str) -> EntryRow {
+    EntryRow {
+        id,
+        parent_id,
+        name: name.to_string(),
+        is_directory: false,
+        is_symlink: false,
+        logical_size: Some(1),
+        physical_size: Some(1),
+        modified_at: Some(1_700_000_000),
+        inode: Some(id as u64),
+    }
+}
+
+/// The whole-effort invariant (index-ledger plan, M4a item 3): after a bulk
+/// delete processed as a removal storm, a concurrent subtree rescan, and mixed
+/// live events, once the writer drains AND rescans quiesce, `dir_stats` ≡
+/// recompute-from-`entries` (the `check_db_consistency` oracle). Exercises the
+/// storm coalescing (drop + re-queue), the scope-root `DeleteSubtreeById`, an
+/// escalation-free rescan, and the fixed-point quiescence loop the plan spells
+/// out — not a single await (a rescan finishing after a drain enqueues more).
+#[test]
+fn mixed_storm_reaches_consistent_fixed_point() {
+    use crate::indexing::event_loop::process_live_batch;
+    use std::collections::{HashMap, HashSet};
+    use std::time::{Duration, Instant};
+
+    // > REMOVAL_STORM_THRESHOLD (200), kept local: `event_loop::storm` isn't
+    // nameable from here, and the exact value only needs to trip the detector.
+    const BULK_FILES: usize = 260;
+    const KEEP_FILES: usize = 6;
+
+    let (writer, _read_conn, _db_dir) = setup_writer();
+    let db_path = writer.db_path();
+    writer.send(WriteMessage::TruncateData).unwrap();
+    writer.flush_blocking().unwrap();
+
+    // Real on-disk tree under CWD (avoids /tmp exclusion + macOS /tmp symlink).
+    let cwd = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+    let disk = tempfile::Builder::new()
+        .prefix("cmdr-test-mixed-storm-")
+        .tempdir_in(&cwd)
+        .expect("create temp dir in cwd");
+    let root = disk.path().to_path_buf();
+    let bulk = root.join("bulk");
+    let keep = root.join("keep");
+    std::fs::create_dir(&bulk).unwrap();
+    std::fs::create_dir(&keep).unwrap();
+    for i in 0..BULK_FILES {
+        std::fs::write(bulk.join(format!("f{i}.dat")), b"x").unwrap();
+    }
+    for i in 0..KEEP_FILES {
+        std::fs::write(keep.join(format!("k{i}.dat")), b"y").unwrap();
+    }
+
+    // Mirror the tree into the DB: the `/`-down chain, then bulk + keep + files.
+    let canonical_root = std::fs::canonicalize(&root).unwrap_or_else(|_| root.clone());
+    let mut next_id: i64 = 2;
+    let mut entries: Vec<EntryRow> = Vec::new();
+    let mut parent_id = ROOT_ID;
+    for c in canonical_root.components().skip(1) {
+        let id = next_id;
+        next_id += 1;
+        entries.push(EntryRow {
+            id,
+            parent_id,
+            name: c.as_os_str().to_string_lossy().to_string(),
+            is_directory: true,
+            is_symlink: false,
+            logical_size: None,
+            physical_size: None,
+            modified_at: None,
+            inode: None,
+        });
+        parent_id = id;
+    }
+    let root_id = parent_id;
+    let push_dir = |entries: &mut Vec<EntryRow>, next_id: &mut i64, parent: i64, name: &str| -> i64 {
+        let id = *next_id;
+        *next_id += 1;
+        entries.push(EntryRow {
+            id,
+            parent_id: parent,
+            name: name.to_string(),
+            is_directory: true,
+            is_symlink: false,
+            logical_size: None,
+            physical_size: None,
+            modified_at: None,
+            inode: None,
+        });
+        id
+    };
+    let bulk_id = push_dir(&mut entries, &mut next_id, root_id, "bulk");
+    let keep_id = push_dir(&mut entries, &mut next_id, root_id, "keep");
+    for i in 0..BULK_FILES {
+        let id = next_id;
+        next_id += 1;
+        entries.push(make_file_entry_row(id, bulk_id, &format!("f{i}.dat")));
+    }
+    for i in 0..KEEP_FILES {
+        let id = next_id;
+        next_id += 1;
+        entries.push(make_file_entry_row(id, keep_id, &format!("k{i}.dat")));
+    }
+    for chunk in entries.chunks(50) {
+        writer.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
+    }
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
+    writer.flush_blocking().unwrap();
+
+    // Baseline: the freshly-built tree is internally consistent.
+    {
+        let conn = IndexStore::open_read_connection(&db_path).expect("baseline conn");
+        check_db_consistency(&conn);
+    }
+
+    // `rm -rf bulk` on disk, and add a NEW file to keep (a live create the
+    // concurrent rescan of `keep` must discover and credit).
+    std::fs::remove_dir_all(&bulk).unwrap();
+    let new_keep_file = keep.join("k_new.dat");
+    std::fs::write(&new_keep_file, b"zz").unwrap();
+
+    let root_str = canonical_root.to_string_lossy().to_string();
+
+    // Build ONE batch mixing: the bulk removal storm (all files + the bulk rmdir),
+    // a modify + create under keep, and a must_scan_sub_dirs on keep (the
+    // concurrent rescan). Keyed by path like the live loop.
+    let mut batch: HashMap<String, FsChangeEvent> = HashMap::new();
+    let mut ev = 10_000u64;
+    for i in 0..BULK_FILES {
+        let p = format!("{root_str}/bulk/f{i}.dat");
+        batch.insert(
+            p.clone(),
+            FsChangeEvent {
+                path: p,
+                event_id: ev,
+                flags: FsEventFlags {
+                    item_removed: true,
+                    item_is_file: true,
+                    ..Default::default()
+                },
+            },
+        );
+        ev += 1;
+    }
+    let bulk_path = format!("{root_str}/bulk");
+    batch.insert(
+        bulk_path.clone(),
+        FsChangeEvent {
+            path: bulk_path,
+            event_id: ev,
+            flags: FsEventFlags {
+                item_removed: true,
+                item_is_dir: true,
+                ..Default::default()
+            },
+        },
+    );
+    ev += 1;
+    let new_keep_path = new_keep_file.to_string_lossy().to_string();
+    batch.insert(
+        new_keep_path.clone(),
+        FsChangeEvent {
+            path: new_keep_path,
+            event_id: ev,
+            flags: FsEventFlags {
+                item_created: true,
+                item_is_file: true,
+                ..Default::default()
+            },
+        },
+    );
+    ev += 1;
+    let keep_path = format!("{root_str}/keep");
+    batch.insert(
+        keep_path.clone(),
+        FsChangeEvent {
+            path: keep_path,
+            event_id: ev,
+            flags: FsEventFlags {
+                must_scan_sub_dirs: true,
+                item_is_dir: true,
+                ..Default::default()
+            },
+        },
+    );
+
+    let mut reconciler = EventReconciler::new();
+    reconciler.switch_to_live();
+
+    // process_live_batch + the spawned rescans use tokio (`block_in_place`,
+    // `spawn_blocking`), so run everything inside a multi-thread runtime.
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    rt.block_on(async {
+        let conn = IndexStore::open_read_connection(&db_path).expect("batch conn");
+        let mut pending_paths = HashSet::new();
+        process_live_batch(
+            &mut batch,
+            &mut reconciler,
+            &IndexPathSpace::root(),
+            &conn,
+            &writer,
+            &mut pending_paths,
+        );
+
+        // Fixed-point quiescence loop: drain the writer, then require BOTH no
+        // active rescan AND an empty pending set, confirmed stable across a final
+        // drain (a rescan finishing after a drain can enqueue more messages, and
+        // start_next_rescan chains). Bounded so a regression fails instead of
+        // hanging. Termination: with no new events, escalations re-fire only from
+        // reconcile_subtree's skip branch, each anchoring strictly closer to the
+        // volume root; successful rescans strictly shrink the missing set.
+        let start = Instant::now();
+        loop {
+            tokio::task::block_in_place(|| writer.flush_blocking().unwrap());
+            let quiesced = !reconciler.is_rescan_active_for_test() && reconciler.pending_rescans_snapshot().is_empty();
+            if quiesced {
+                tokio::task::block_in_place(|| writer.flush_blocking().unwrap());
+                if !reconciler.is_rescan_active_for_test() && reconciler.pending_rescans_snapshot().is_empty() {
+                    break;
+                }
+            }
+            assert!(
+                start.elapsed() < Duration::from_secs(30),
+                "rescans did not quiesce within 30s"
+            );
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    });
+
+    // The oracle: after quiescence, dir_stats ≡ recompute-from-entries.
+    let fresh_conn = IndexStore::open_read_connection(&db_path).expect("fresh conn");
+    check_db_consistency(&fresh_conn);
+
+    // The bulk subtree is gone; keep (plus its new file) survives.
+    assert!(
+        IndexStore::get_entry_by_id(&fresh_conn, bulk_id).unwrap().is_none(),
+        "the bulk subtree was deleted via the coalesced storm"
+    );
+    assert!(
+        IndexStore::get_entry_by_id(&fresh_conn, keep_id).unwrap().is_some(),
+        "the untouched keep subtree survives"
     );
 
     writer.send(WriteMessage::Shutdown).unwrap();
@@ -877,7 +1136,8 @@ fn test_listings_complete_under_reconciler_load_and_rapid_navigation() {
                     };
                     let event = FsChangeEvent { path, event_id, flags };
                     event_id += 1;
-                    let _ = reconciler::process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
+                    let _ =
+                        reconciler::process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None, &mut None);
                     events_fired.fetch_add(1, Ordering::Relaxed);
                     counter += 1;
                     // No sleep; apply full pressure. The 20K-bounded writer channel

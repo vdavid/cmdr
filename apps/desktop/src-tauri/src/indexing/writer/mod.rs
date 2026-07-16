@@ -95,6 +95,17 @@ pub(crate) static WRITER_GENERATION: AtomicU64 = AtomicU64::new(1);
 pub(super) struct MutationTracker {
     counter: AtomicU64,
     feeds_search: bool,
+    /// Per-writer count of `DeleteEntryById` messages processed. Test-only probe
+    /// for the removal-storm coalescing tests, whose pre- and post-fix DB END
+    /// states are identical (rows end up gone either way) — the behavior only
+    /// shows at the MESSAGE level (per-file deletes vs one coalesced rescan). A
+    /// per-writer counter (like [`counter`](Self::counter)) is immune to other
+    /// concurrent writers in the same test binary; a global `DEBUG_STATS` counter
+    /// would be racy under `cargo test`'s threaded execution.
+    delete_entry_count: AtomicU64,
+    /// Per-writer count of `DeleteSubtreeById` messages processed (see
+    /// [`delete_entry_count`](Self::delete_entry_count)).
+    delete_subtree_count: AtomicU64,
 }
 
 impl MutationTracker {
@@ -102,6 +113,8 @@ impl MutationTracker {
         Self {
             counter: AtomicU64::new(0),
             feeds_search,
+            delete_entry_count: AtomicU64::new(0),
+            delete_subtree_count: AtomicU64::new(0),
         }
     }
 
@@ -115,10 +128,31 @@ impl MutationTracker {
         }
     }
 
+    /// Tick the per-writer `DeleteEntryById` probe (test observability).
+    #[inline]
+    pub(super) fn record_delete_entry(&self) {
+        self.delete_entry_count.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Tick the per-writer `DeleteSubtreeById` probe (test observability).
+    #[inline]
+    pub(super) fn record_delete_subtree(&self) {
+        self.delete_subtree_count.fetch_add(1, Ordering::Relaxed);
+    }
+
     /// The per-writer mutation count (test-only observable).
     #[cfg(test)]
     pub(super) fn count(&self) -> u64 {
         self.counter.load(Ordering::Relaxed)
+    }
+
+    /// The per-writer `DeleteEntryById` / `DeleteSubtreeById` counts (test-only).
+    #[cfg(test)]
+    pub(super) fn delete_counts(&self) -> (u64, u64) {
+        (
+            self.delete_entry_count.load(Ordering::Relaxed),
+            self.delete_subtree_count.load(Ordering::Relaxed),
+        )
     }
 }
 
@@ -477,6 +511,15 @@ impl IndexWriter {
     #[cfg(test)]
     pub(crate) fn mutation_count(&self) -> u64 {
         self.mutation_tracker.count()
+    }
+
+    /// Per-writer `(DeleteEntryById, DeleteSubtreeById)` message counts. The
+    /// removal-storm coalescing tests assert the MESSAGE shape (one coalesced
+    /// rescan vs N per-file deletes) because the DB END state is identical either
+    /// way. Per-writer, so it's immune to concurrent writers in the same binary.
+    #[cfg(test)]
+    pub(crate) fn delete_counts(&self) -> (u64, u64) {
+        self.mutation_tracker.delete_counts()
     }
 
     /// Send a message to the writer thread. Blocks if the channel is full
@@ -1015,9 +1058,11 @@ fn process_message(
             handle_move_entry_v2(conn, entry_id, new_parent_id, new_name, mutation_tracker);
         }
         WriteMessage::DeleteEntryById(entry_id) => {
+            mutation_tracker.record_delete_entry();
             handle_delete_entry_by_id(conn, entry_id, *propagate_deltas, mutation_tracker);
         }
         WriteMessage::DeleteSubtreeById(root_id) => {
+            mutation_tracker.record_delete_subtree();
             handle_delete_subtree_by_id(conn, root_id, *propagate_deltas, mutation_tracker);
         }
         WriteMessage::DeleteDescendantsById(root_id) => {

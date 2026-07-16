@@ -1,4 +1,5 @@
 use super::*;
+use std::path::PathBuf;
 
 fn make_event(path: &str, event_id: u64, flags: watcher::FsEventFlags) -> watcher::FsChangeEvent {
     watcher::FsChangeEvent {
@@ -650,7 +651,7 @@ use crate::indexing::store::{DirStatsById, ROOT_ID};
 /// blocks `/tmp/`, but we don't actually scan here (the path just has
 /// to exist on disk so `stat` succeeds and gives us a real inode).
 fn rename_test_tempdir() -> tempfile::TempDir {
-    let base = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let base = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     tempfile::Builder::new()
         .prefix("cmdr-rename-test-")
         .tempdir_in(base)
@@ -658,7 +659,7 @@ fn rename_test_tempdir() -> tempfile::TempDir {
 }
 
 /// Spawn a writer + DB and return everything callers need.
-fn rename_test_setup() -> (IndexWriter, std::path::PathBuf, tempfile::TempDir) {
+fn rename_test_setup() -> (IndexWriter, PathBuf, tempfile::TempDir) {
     let dir = tempfile::tempdir().expect("create db temp dir");
     let db_path = dir.path().join("rename-test.db");
     let _store = IndexStore::open(&db_path).expect("open store");
@@ -682,6 +683,214 @@ fn insert_path_chain(db_path: &Path, path: &Path, writer: &IndexWriter) -> i64 {
     let db_next_id = IndexStore::get_next_id(&conn).unwrap();
     writer.next_id().fetch_max(db_next_id, Ordering::Relaxed);
     parent_id
+}
+
+/// Flags for a removed FILE (gone from disk → the reconciler would delete it).
+fn removed_file() -> watcher::FsEventFlags {
+    watcher::FsEventFlags {
+        item_removed: true,
+        item_is_file: true,
+        ..Default::default()
+    }
+}
+
+/// Flags for a removed DIRECTORY.
+fn removed_dir() -> watcher::FsEventFlags {
+    watcher::FsEventFlags {
+        item_removed: true,
+        item_is_dir: true,
+        ..Default::default()
+    }
+}
+
+/// Seed a directory chain plus `n` file rows under its deepest dir; returns the
+/// deepest dir's entry id. The synthetic paths don't exist on disk, so a removal
+/// event for one stats-fails and takes the delete path (what the storm coalesces).
+fn seed_files_under(db_path: &Path, base: &str, n: usize, writer: &IndexWriter) -> i64 {
+    let dir_id = insert_path_chain(db_path, Path::new(base), writer);
+    let conn = IndexStore::open_write_connection(db_path).unwrap();
+    for i in 0..n {
+        IndexStore::insert_entry_v2(
+            &conn,
+            dir_id,
+            &format!("item{i}.dat"),
+            false,
+            false,
+            Some(1),
+            Some(1),
+            None,
+            None,
+        )
+        .unwrap();
+    }
+    let db_next_id = IndexStore::get_next_id(&conn).unwrap();
+    writer.next_id().fetch_max(db_next_id, Ordering::Relaxed);
+    dir_id
+}
+
+/// Run `process_live_batch` inside a multi-thread runtime (its flushes use
+/// `block_in_place`), returning the writer's `(DeleteEntryById, DeleteSubtreeById)`
+/// counts after a final flush.
+fn run_live_batch(
+    pending_events: &mut HashMap<String, watcher::FsChangeEvent>,
+    reconciler: &mut EventReconciler,
+    writer: &IndexWriter,
+    db_path: &Path,
+) -> (u64, u64) {
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    rt.block_on(async {
+        let conn = IndexStore::open_write_connection(db_path).unwrap();
+        let mut pending_paths = HashSet::new();
+        process_live_batch(
+            pending_events,
+            reconciler,
+            &IndexPathSpace::root(),
+            &conn,
+            writer,
+            &mut pending_paths,
+        );
+    });
+    writer.flush_blocking().unwrap();
+    writer.delete_counts()
+}
+
+// ── Removal-storm coalescing (root cause 7) ──────────────────────
+
+/// A removal burst over one prefix coalesces into ONE subtree rescan at the
+/// group's deepest common ancestor, and every per-file removal is DROPPED (zero
+/// `DeleteEntryById`). Pre-fix, the seeded rows fired N per-file deletes.
+#[test]
+fn removal_storm_coalesces_into_one_rescan_and_drops_per_file_deletes() {
+    let (writer, db_path, _db_dir) = rename_test_setup();
+    // Base at depth 8 so files (depth 9) share one depth-8 grouping prefix.
+    let base = "/Users/cmdrstorm/ws/p1/p2/p3/deep/bulk";
+    let n = storm::REMOVAL_STORM_THRESHOLD + 1;
+    seed_files_under(&db_path, base, n, &writer);
+
+    let mut pending_events: HashMap<String, watcher::FsChangeEvent> = HashMap::new();
+    for i in 0..n {
+        let p = format!("{base}/item{i}.dat");
+        pending_events.insert(p.clone(), make_event(&p, 100 + i as u64, removed_file()));
+    }
+
+    let mut reconciler = EventReconciler::new();
+    reconciler.switch_to_live();
+    // Pre-set rescan_active so the queued anchor STAYS in the set (deterministic
+    // RED trick: no rescan spawns, so the pending-set assertion is stable).
+    reconciler.set_rescan_active_for_test(true);
+
+    let (del_entry, del_subtree) = run_live_batch(&mut pending_events, &mut reconciler, &writer, &db_path);
+
+    let queued = reconciler.pending_rescans_snapshot();
+    assert_eq!(
+        queued,
+        vec![PathBuf::from(base)],
+        "one rescan at the group's deepest common ancestor"
+    );
+    assert_eq!(del_entry, 0, "every storm removal is dropped, not deleted per-file");
+    assert_eq!(del_subtree, 0);
+
+    writer.shutdown();
+}
+
+/// Below the threshold, removals process per-file (no coalescing, no rescan).
+#[test]
+fn below_threshold_removals_process_per_file() {
+    let (writer, db_path, _db_dir) = rename_test_setup();
+    let base = "/Users/cmdrstorm/ws2/p1/p2/p3/deep/bulk";
+    let n = 5usize;
+    seed_files_under(&db_path, base, n, &writer);
+
+    let mut pending_events: HashMap<String, watcher::FsChangeEvent> = HashMap::new();
+    for i in 0..n {
+        let p = format!("{base}/item{i}.dat");
+        pending_events.insert(p.clone(), make_event(&p, 200 + i as u64, removed_file()));
+    }
+
+    let mut reconciler = EventReconciler::new();
+    reconciler.switch_to_live();
+
+    let (del_entry, _del_subtree) = run_live_batch(&mut pending_events, &mut reconciler, &writer, &db_path);
+
+    assert!(
+        reconciler.pending_rescans_snapshot().is_empty(),
+        "no rescan below the threshold"
+    );
+    assert_eq!(del_entry, n as u64, "each below-threshold removal deletes per-file");
+
+    writer.shutdown();
+}
+
+/// Parent-first ordering: a dir removal and its file children in ONE batch become
+/// a single `DeleteSubtreeById` (the dir sorts first, its subtree delete lands,
+/// then the children resolve to nothing and skip) — not N `DeleteEntryById`.
+#[test]
+fn parent_first_sort_collapses_children_into_one_subtree_delete() {
+    let (writer, db_path, _db_dir) = rename_test_setup();
+    let base = "/Users/cmdrstorm/ws3/p1/p2/sub";
+    let n = 5usize;
+    seed_files_under(&db_path, base, n, &writer);
+
+    let mut pending_events: HashMap<String, watcher::FsChangeEvent> = HashMap::new();
+    // Children (files) first in the map; the sort must reorder the dir ahead.
+    for i in 0..n {
+        let p = format!("{base}/item{i}.dat");
+        pending_events.insert(p.clone(), make_event(&p, 300 + i as u64, removed_file()));
+    }
+    pending_events.insert(base.to_string(), make_event(base, 400, removed_dir()));
+
+    let mut reconciler = EventReconciler::new();
+    reconciler.switch_to_live();
+
+    let (del_entry, del_subtree) = run_live_batch(&mut pending_events, &mut reconciler, &writer, &db_path);
+
+    assert_eq!(del_subtree, 1, "the dir sorts first → one subtree delete");
+    assert_eq!(
+        del_entry, 0,
+        "children resolve to nothing after the subtree delete and skip"
+    );
+
+    writer.shutdown();
+}
+
+/// The scope's OWN removal event is never dropped (it must take the cheap
+/// `DeleteSubtreeById` path), and a dropped strict-descendant re-queues the
+/// anchor into `pending_rescans` so a tail batch can't strand stale rows.
+#[test]
+fn scope_root_removal_survives_and_descendant_requeues_the_anchor() {
+    let (writer, db_path, _db_dir) = rename_test_setup();
+    let scope = "/Users/cmdrstorm/ws4/p1/p2/scope";
+    seed_files_under(&db_path, scope, 1, &writer);
+
+    let mut reconciler = EventReconciler::new();
+    reconciler.switch_to_live();
+    // An active rescan already covers `scope`: seed the set + mark active so the
+    // drop rule sees the scope, and no new rescan spawns.
+    reconciler.set_rescan_active_for_test(true);
+    reconciler.insert_pending_rescan_for_test(PathBuf::from(scope));
+
+    let mut pending_events: HashMap<String, watcher::FsChangeEvent> = HashMap::new();
+    // The scope's own rmdir (kept) plus a strict-descendant unlink (dropped).
+    pending_events.insert(scope.to_string(), make_event(scope, 500, removed_dir()));
+    let child = format!("{scope}/item0.dat");
+    pending_events.insert(child.clone(), make_event(&child, 501, removed_file()));
+
+    let (del_entry, del_subtree) = run_live_batch(&mut pending_events, &mut reconciler, &writer, &db_path);
+
+    assert_eq!(
+        del_subtree, 1,
+        "the scope's own removal takes the cheap subtree-delete path"
+    );
+    assert_eq!(del_entry, 0, "the strict descendant is dropped, not deleted per-file");
+    assert!(
+        reconciler.pending_rescans_snapshot().contains(&PathBuf::from(scope)),
+        "a dropped descendant re-queues the anchor"
+    );
+
+    writer.shutdown();
 }
 
 fn renamed_event(path: &str, event_id: u64) -> watcher::FsChangeEvent {
