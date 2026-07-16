@@ -363,12 +363,13 @@ pub async fn media_index_covered_count(
 
         for vid in &volume_ids {
             // Enabled = master on (checked above) AND the scheduler would enrich this
-            // volume: a local volume always, an SMB volume only when opted in, MTP
-            // never (it's on-demand, not previewed).
+            // volume: a local volume always, an SMB volume only when opted in, MTP and
+            // LocalExternal never (MTP is on-demand; a LocalExternal drive's index paths
+            // are mount-relative, so it's skipped until mapped — see `wire_volume`).
             let enabled = match kinds.get(vid) {
-                Some(IndexVolumeKind::Local | IndexVolumeKind::LocalExternal) => true,
+                Some(IndexVolumeKind::Local) => true,
                 Some(IndexVolumeKind::Smb) => network_config::is_opted_in(vid),
-                Some(IndexVolumeKind::Mtp) | None => false,
+                Some(IndexVolumeKind::Mtp | IndexVolumeKind::LocalExternal) | None => false,
             };
             if !enabled {
                 // An offline / not-ready requested volume that the user expects to
@@ -465,8 +466,10 @@ fn resolve_reclaim_volumes(volume_ids: &[String]) -> (Vec<(String, String)>, boo
                 Some(mount) => enabled.push((vid.clone(), mount.clone())),
                 None => pending = true,
             },
-            // Not opted-in SMB / MTP: never reclaimed here (nothing enriched).
-            Some(IndexVolumeKind::Smb) | Some(IndexVolumeKind::Mtp) => {}
+            // Not opted-in SMB / MTP / LocalExternal: never reclaimed here (nothing was
+            // enriched — LocalExternal is skipped by the passes since its index paths are
+            // mount-relative, so it has no stored rows to reclaim).
+            Some(IndexVolumeKind::Smb) | Some(IndexVolumeKind::Mtp) | Some(IndexVolumeKind::LocalExternal) => {}
             // Requested but offline / not scanned: the user expects it, so it's pending.
             None => pending = true,
         }

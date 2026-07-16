@@ -621,6 +621,11 @@ pub fn kick_all_ready_passes_with(scheduler: &Arc<MediaScheduler>) {
             IndexVolumeKind::Smb => PassKind::Network,
             // MTP is never background-swept (on-demand only); nothing to kick.
             IndexVolumeKind::Mtp => continue,
+            // A LocalExternal (USB/SD) drive's index paths are MOUNT-RELATIVE, so the
+            // local pass (which treats stored paths as OS paths) would hand Vision
+            // relative paths — the phantom-path bug class. Skip it until mount-root
+            // mapping lands (parked follow-up; see the plan's parked-follow-up note).
+            IndexVolumeKind::LocalExternal => continue,
         };
         spawn_pass(Arc::clone(scheduler), volume_id, pass_kind);
     }
@@ -730,12 +735,23 @@ enum PassKind {
 ///   on-demand trigger is a later slice; this gate is real now.
 fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kind: IndexVolumeKind) {
     let pass_kind = match kind {
-        IndexVolumeKind::Local | IndexVolumeKind::LocalExternal => PassKind::Local,
+        IndexVolumeKind::Local => PassKind::Local,
         IndexVolumeKind::Smb => PassKind::Network,
         IndexVolumeKind::Mtp => {
             log::debug!(
                 target: "media_index",
                 "media enrichment skips MTP '{volume_id}': never background-swept (on-demand-per-visit only)"
+            );
+            return;
+        }
+        // A LocalExternal (USB/SD) drive's index paths are MOUNT-RELATIVE, not OS paths,
+        // so running the local pass (which reads stored paths as OS paths) would feed
+        // Vision relative paths — the phantom-path bug class. NOT `PassKind::Local`. Skip
+        // it until mount-root mapping lands (parked follow-up; see the plan's note).
+        IndexVolumeKind::LocalExternal => {
+            log::debug!(
+                target: "media_index",
+                "media enrichment skips LocalExternal '{volume_id}': mount-relative index paths not yet mapped"
             );
             return;
         }

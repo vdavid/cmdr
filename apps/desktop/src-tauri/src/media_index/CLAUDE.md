@@ -1,8 +1,9 @@
 # Media index subsystem
 
 Image-ML enrichment: images searchable by content. A read-consumer of `indexing/`. Off by default. On-device OCR +
-Vision tags + similarity embeddings; local enriches by default, opt-in SMB conservative, MTP never. Real macOS Vision, a
-fake for tests.
+Vision tags + similarity embeddings; local enriches by default, opt-in SMB conservative, MTP never, LocalExternal
+(USB/SD) parked (mount-relative index paths not yet mapped — skip, never treat as Local). Real macOS Vision, a fake for
+tests.
 
 ## Module map
 
