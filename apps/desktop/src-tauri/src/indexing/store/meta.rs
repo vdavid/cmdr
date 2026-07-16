@@ -25,6 +25,22 @@ impl IndexStore {
         Self::read_meta_value(conn, key)
     }
 
+    /// Whether the one-shot `dir_stats` ledger heal has already rebuilt this DB's
+    /// aggregates (the `LEDGER_HEAL_KEY` meta key is present). The launch heal
+    /// decision reads this to decide whether to arm the writer latch. Only
+    /// presence matters; the stored value is a marker.
+    pub fn ledger_heal_done(conn: &Connection) -> Result<bool, IndexStoreError> {
+        Ok(Self::read_meta_value(conn, LEDGER_HEAL_KEY)?.is_some())
+    }
+
+    /// Mark the one-shot ledger heal complete: write the `LEDGER_HEAL_KEY` marker
+    /// so a later launch skips the heal. Called from the writer's
+    /// `ComputeAllAggregates` handler on success only (`set_heal_key_on_success`),
+    /// so a failed rebuild leaves the key unset and re-heals next launch.
+    pub fn mark_ledger_heal_done(conn: &Connection) -> Result<(), IndexStoreError> {
+        Self::update_meta(conn, LEDGER_HEAL_KEY, "1")
+    }
+
     /// Read the volume's `current_epoch` from `meta`.
     ///
     /// Absent (older / first-run DB) or unparseable ⇒ `1`: a volume with no

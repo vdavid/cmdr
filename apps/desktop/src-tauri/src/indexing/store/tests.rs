@@ -119,6 +119,22 @@ fn current_epoch_helpers() {
     assert_eq!(IndexStore::read_current_epoch(&conn).unwrap(), 2);
 }
 
+/// The ledger-heal marker: absent on a fresh DB, present after `mark`.
+#[test]
+fn ledger_heal_marker_round_trip() {
+    let (store, _dir) = open_temp_store();
+    let conn = IndexStore::open_write_connection(store.db_path()).unwrap();
+
+    // A fresh DB has never healed.
+    assert!(!IndexStore::ledger_heal_done(&conn).unwrap());
+
+    // Marking it done makes the check report present, and it's idempotent.
+    IndexStore::mark_ledger_heal_done(&conn).unwrap();
+    assert!(IndexStore::ledger_heal_done(&conn).unwrap());
+    IndexStore::mark_ledger_heal_done(&conn).unwrap();
+    assert!(IndexStore::ledger_heal_done(&conn).unwrap());
+}
+
 /// `recompute_min_subtree_epoch`: the 0-absorbing min over the dir's own
 /// `listed_epoch` and every child dir's stored `min_subtree_epoch`.
 #[test]

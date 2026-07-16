@@ -274,6 +274,17 @@ impl IndexManager {
             .map_err(|e| format!("Failed to get index status: {e}"))?;
         let stored_event_id = status.last_event_id.as_deref().and_then(|s| s.parse::<u64>().ok());
 
+        // One-shot ledger heal (see `indexing/DETAILS.md` § "The dir_stats ledger").
+        // A DB that has never healed still carries pre-ledger drift; arm the
+        // writer latch so the next full aggregate rebuilds and marks it. EVERY
+        // branch below arms (any flow's own aggregate then consumes it); the
+        // replay branch, which runs no full aggregate of its own, ALSO enqueues
+        // the heal's own `Sql` aggregate (below, `heal_pending` into `start_replay`).
+        let heal_pending = IndexStore::ledger_heal_done(self.store.read_conn()).is_ok_and(|done| !done);
+        if heal_pending {
+            let _ = self.writer.send(WriteMessage::ArmLedgerHealLatch);
+        }
+
         // Replay the FSEvents journal ONLY for a volume that actually has one —
         // gated on the kind, never on a stored event id (see
         // `should_replay_journal` for the load-bearing why).
@@ -308,7 +319,7 @@ impl IndexManager {
 
             let gap = current_id.saturating_sub(last_event_id);
             log::info!("Startup: cold-start replay (last_event_id={last_event_id}, current={current_id}, gap={gap})",);
-            return self.start_replay(last_event_id);
+            return self.start_replay(last_event_id, heal_pending);
         }
 
         // No journal replay: a (re)scan brings the index current. A populated DB
@@ -366,7 +377,7 @@ impl IndexManager {
     /// Starts the watcher with `sinceWhen = since_event_id`. The watcher replays
     /// journal events which are processed as live events. If the journal is
     /// unavailable (gap detected), falls back to a full scan.
-    fn start_replay(&mut self, since_event_id: u64) -> Result<(), String> {
+    fn start_replay(&mut self, since_event_id: u64, heal_after_replay: bool) -> Result<(), String> {
         let (event_tx, event_rx) = tokio::sync::mpsc::channel(WATCHER_CHANNEL_CAPACITY);
         let current_id = watcher::current_event_id();
 
@@ -443,6 +454,7 @@ impl IndexManager {
                     space: super::IndexPathSpace::for_volume(kind, &volume_root, inodes_trustworthy),
                     since_event_id,
                     estimated_total,
+                    heal_after_replay,
                 },
                 fallback_tx,
                 watcher_overflow,

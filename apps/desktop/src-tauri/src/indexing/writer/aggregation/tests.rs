@@ -1,10 +1,18 @@
 //! Tests for the aggregation handlers ([`super`]).
 
 use super::*;
-use crate::indexing::store::{DirStatsById, EntryRow, IndexStore, ROOT_ID};
+use crate::indexing::store::{DirStatsById, EntryRow, IndexStore, LEDGER_HEAL_KEY, ROOT_ID};
 use crate::indexing::stress_test_helpers::check_db_consistency;
 use crate::indexing::writer::tests::setup_db;
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
+
+/// Read the ledger-heal marker directly off a fresh connection.
+fn heal_key_present(db_path: &std::path::Path) -> bool {
+    let conn = IndexStore::open_read_connection(db_path).expect("open read conn");
+    IndexStore::get_meta(&conn, LEDGER_HEAL_KEY)
+        .expect("read heal key")
+        .is_some()
+}
 
 // ── Subtree-aggregate ancestor repair (Leak A) ───────────────────
 //
@@ -12,8 +20,9 @@ use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 // (`DeleteDescendantsById` → `InsertEntriesV2` → `MarkDirsListed` →
 // `ComputeSubtreeAggregates`) and assert the handler leaves the ancestor
 // chain EXACT — sizes, counts, AND coverage — with no off-writer
-// compensation. Pre-M2 the messages alone left ancestors stale (the
-// subtree aggregate only rewrote rows INSIDE the subtree).
+// compensation. Before the writer-side ancestor repair, the messages alone
+// left ancestors stale (the subtree aggregate only rewrote rows INSIDE the
+// subtree).
 
 fn dir_row(id: i64, parent_id: i64, name: &str) -> EntryRow {
     EntryRow {
@@ -242,6 +251,186 @@ fn subtree_aggregate_from_parentless_root_is_noop() {
         (100, 1, 1),
     );
     check_db_consistency(&conn);
+
+    writer.shutdown();
+}
+
+// ── One-shot ledger heal (the writer-side latch) ─────────────────
+//
+// `set_heal_key_on_success` is the whole latch policy: write the
+// `LEDGER_HEAL_KEY` marker (and disarm) ONLY when the latch is armed AND the
+// aggregate succeeded. The message-level tests then prove the latch rides
+// whichever aggregate flow runs, on a real drifted DB.
+
+#[test]
+fn heal_latch_writes_key_and_disarms_on_successful_aggregate() {
+    let (db_path, _dir) = setup_db();
+    let conn = IndexStore::open_write_connection(&db_path).unwrap();
+    let mut latch = true;
+    set_heal_key_on_success(&conn, &mut latch, true);
+    assert!(!latch, "a successful aggregate consumes (disarms) the latch");
+    assert!(
+        IndexStore::get_meta(&conn, LEDGER_HEAL_KEY).unwrap().is_some(),
+        "the healed marker is persisted so a later launch skips the heal",
+    );
+}
+
+#[test]
+fn heal_latch_stays_armed_and_unset_on_failed_aggregate() {
+    // A FAILED full aggregate must leave the key unset (re-heals next launch)
+    // AND keep the latch armed so a later aggregate this session can still heal.
+    let (db_path, _dir) = setup_db();
+    let conn = IndexStore::open_write_connection(&db_path).unwrap();
+    let mut latch = true;
+    set_heal_key_on_success(&conn, &mut latch, false);
+    assert!(latch, "a failed aggregate must NOT consume the latch");
+    assert!(
+        IndexStore::get_meta(&conn, LEDGER_HEAL_KEY).unwrap().is_none(),
+        "a failed rebuild leaves the marker unset, so the heal retries",
+    );
+}
+
+#[test]
+fn heal_key_not_written_when_latch_disarmed() {
+    // An already-healed DB's routine aggregate (latch never armed) must not
+    // rewrite the key — this is why a second clean startup does nothing.
+    let (db_path, _dir) = setup_db();
+    let conn = IndexStore::open_write_connection(&db_path).unwrap();
+    let mut latch = false;
+    set_heal_key_on_success(&conn, &mut latch, true);
+    assert!(
+        IndexStore::get_meta(&conn, LEDGER_HEAL_KEY).unwrap().is_none(),
+        "a disarmed latch writes nothing even on a successful aggregate",
+    );
+}
+
+/// The end-to-end heal: an existing install carries drifted ancestor stats and
+/// no heal key. Arming the latch, then any full aggregate, must both HEAL the
+/// drift (recompute-from-`entries` oracle) and set the key so it never re-runs.
+#[test]
+fn armed_sql_aggregate_heals_drift_and_sets_key() {
+    let (db_path, _dir) = setup_db();
+    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+    // ROOT(1) → A(10) → f(11, 900). Correct baseline first.
+    writer
+        .send(WriteMessage::InsertEntriesV2(vec![
+            dir_row(10, ROOT_ID, "A"),
+            file_row(11, 10, "f", 900),
+        ]))
+        .unwrap();
+    writer
+        .send(WriteMessage::MarkDirsListed {
+            ids: vec![ROOT_ID, 10],
+            epoch: 1,
+        })
+        .unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
+    writer.flush_blocking().unwrap();
+    // The baseline aggregate ran with NO latch armed, so it left the key unset.
+    assert!(!heal_key_present(&db_path), "no heal key before the heal is armed");
+
+    // Simulate accumulated pre-ledger drift: force A's stored row low (the kind
+    // of leaked-credit under-count the ledger fixes going forward but can't
+    // retro-correct without a heal).
+    {
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        IndexStore::upsert_dir_stats_by_id(
+            &conn,
+            &[DirStatsById {
+                entry_id: 10,
+                recursive_logical_size: 0,
+                recursive_physical_size: 0,
+                recursive_file_count: 0,
+                recursive_dir_count: 0,
+                recursive_has_symlinks: false,
+                min_subtree_epoch: 1,
+            }],
+        )
+        .unwrap();
+    }
+
+    // The launch heal: arm the latch, then the heal's own Sql aggregate.
+    writer.send(WriteMessage::ArmLedgerHealLatch).unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates { source: AggSource::Sql })
+        .unwrap();
+    writer.flush_blocking().unwrap();
+
+    let conn = IndexStore::open_read_connection(&db_path).unwrap();
+    let a = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
+    assert_eq!(
+        (a.recursive_logical_size, a.recursive_file_count),
+        (900, 1),
+        "the heal must recompute A from entries, not leave it drifted at 0",
+    );
+    check_db_consistency(&conn);
+    assert!(heal_key_present(&db_path), "the heal sets the key so it never re-runs");
+
+    writer.shutdown();
+}
+
+/// The rescan-funnel case: a launch that runs its OWN full scan arms the latch
+/// only, and that flow's `Maps` aggregate consumes it — no second aggregate
+/// needed. Proves the latch rides whichever aggregate runs, Maps or Sql.
+#[test]
+fn armed_maps_aggregate_from_scan_flow_sets_key() {
+    let (db_path, _dir) = setup_db();
+    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+    // Arm at launch, THEN the scan's own final Maps aggregate.
+    writer.send(WriteMessage::ArmLedgerHealLatch).unwrap();
+    writer
+        .send(WriteMessage::InsertEntriesV2(vec![
+            dir_row(10, ROOT_ID, "A"),
+            file_row(11, 10, "f", 400),
+        ]))
+        .unwrap();
+    writer
+        .send(WriteMessage::MarkDirsListed {
+            ids: vec![ROOT_ID, 10],
+            epoch: 1,
+        })
+        .unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
+    writer.flush_blocking().unwrap();
+
+    assert!(
+        heal_key_present(&db_path),
+        "the scan flow's own Maps aggregate consumes the latch and sets the key",
+    );
+
+    writer.shutdown();
+}
+
+/// A full aggregate on a never-armed writer (an already-healed DB) must not
+/// write the key — the writer-level guarantee behind "second clean startup does
+/// nothing".
+#[test]
+fn unarmed_aggregate_leaves_key_unset() {
+    let (db_path, _dir) = setup_db();
+    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+    writer
+        .send(WriteMessage::InsertEntriesV2(vec![file_row(11, ROOT_ID, "f", 100)]))
+        .unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates { source: AggSource::Sql })
+        .unwrap();
+    writer.flush_blocking().unwrap();
+
+    assert!(
+        !heal_key_present(&db_path),
+        "no arm ⇒ no key, even though a full aggregate ran",
+    );
 
     writer.shutdown();
 }

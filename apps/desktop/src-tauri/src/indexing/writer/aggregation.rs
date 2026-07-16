@@ -162,6 +162,27 @@ pub(super) fn handle_compute_partial_aggregates(
     // existence, so a partial pass isn't a "mutation" for that purpose.
 }
 
+/// Persist the ledger-heal marker after a SUCCESSFUL full aggregate, and disarm
+/// the latch — but only when the latch is armed AND the aggregate succeeded.
+///
+/// This is the whole heal-latch policy in one place: a failed aggregate
+/// (`aggregate_ok == false`) leaves the key unset so the heal re-arms next
+/// launch; a disarmed latch (an already-healed DB's routine aggregate) writes
+/// nothing. A meta-write failure leaves the latch armed to retry.
+fn set_heal_key_on_success(conn: &rusqlite::Connection, heal_latch: &mut bool, aggregate_ok: bool) {
+    if !*heal_latch || !aggregate_ok {
+        return;
+    }
+    match IndexStore::mark_ledger_heal_done(conn) {
+        Ok(()) => {
+            *heal_latch = false;
+            log::info!("Ledger heal: rebuilt dir_stats aggregates and marked this index healed");
+        }
+        // Leave the latch armed so a later aggregate (or the next launch) retries.
+        Err(e) => log::warn!("Ledger heal: failed to persist the healed marker (will retry): {e}"),
+    }
+}
+
 pub(super) fn handle_compute_all_aggregates(
     conn: &rusqlite::Connection,
     accumulator: &mut AccumulatorMaps,
@@ -169,6 +190,7 @@ pub(super) fn handle_compute_all_aggregates(
     volume_id: &str,
     expected_total_entries: &AtomicU64,
     source: AggSource,
+    heal_latch: &mut bool,
 ) {
     let t = Instant::now();
     // Only a `Maps` sender may read the accumulator, and only when it's non-empty
@@ -220,16 +242,21 @@ pub(super) fn handle_compute_all_aggregates(
     // don't emit spurious saving_entries progress events after the full scan.
     accumulator.clear();
     expected_total_entries.store(0, Ordering::Relaxed);
-    match result {
+    match &result {
         Ok(count) => {
             log::info!(
                 "ComputeAllAggregates: done, {} in {:.1}s",
-                pluralize_with(count, "directory", "directories"),
+                pluralize_with(*count, "directory", "directories"),
                 t.elapsed().as_secs_f64(),
             );
         }
         Err(e) => log::warn!("Index writer: compute_all_aggregates failed: {e}"),
     }
+    // Consume the one-shot ledger-heal latch, but ONLY on success: a full
+    // aggregate recomputes every `dir_stats` row from the committed `entries`, so
+    // an `Ok` here means this DB's drift is now healed. A failed rebuild leaves
+    // the latch armed and the key unset, so the heal re-runs next launch.
+    set_heal_key_on_success(conn, heal_latch, result.is_ok());
 }
 
 pub(super) fn handle_compute_subtree_aggregates(conn: &rusqlite::Connection, root_id: i64) {

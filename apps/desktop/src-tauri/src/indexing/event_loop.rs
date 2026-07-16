@@ -80,6 +80,12 @@ pub(super) struct ReplayConfig {
     pub(super) space: IndexPathSpace,
     pub(super) since_event_id: u64,
     pub(super) estimated_total: Option<u64>,
+    /// Whether to run the one-shot ledger heal after replay's initial phase.
+    /// Set by `resume_or_scan` when this DB has never healed. Replay itself runs
+    /// no full aggregate (only backfill), so it enqueues the heal's own
+    /// `ComputeAllAggregates { source: Sql }` after the entries table is fully
+    /// replayed. See `indexing/DETAILS.md` § "The dir_stats ledger".
+    pub(super) heal_after_replay: bool,
 }
 
 /// Merge two `FsChangeEvent`s for the same normalized path, keeping the
@@ -695,6 +701,7 @@ pub(super) async fn run_replay_event_loop(
         space,
         since_event_id,
         estimated_total,
+        heal_after_replay,
     } = config;
 
     log::info!("Replay: started (since_event_id={since_event_id}, estimated_total={estimated_total:?})");
@@ -962,6 +969,18 @@ pub(super) async fn run_replay_event_loop(
     // Backfill dir_stats for any directories created by the replay
     // that didn't go through a full aggregation pass.
     let _ = writer.send(WriteMessage::BackfillMissingDirStats);
+
+    // One-shot ledger heal: replay runs no full aggregate of its own, so on a
+    // never-healed DB it enqueues one here — AFTER the entries table is fully
+    // replayed (past `CommitTransaction` + backfill above), so the `Sql`
+    // recompute sees final state. The writer's armed latch (set at launch)
+    // consumes it and persists the healed marker. See `indexing/DETAILS.md`
+    // § "The dir_stats ledger".
+    if heal_after_replay {
+        let _ = writer.send(WriteMessage::ComputeAllAggregates {
+            source: crate::indexing::writer::AggSource::Sql,
+        });
+    }
 
     // ── Switch to live mode immediately (before verification) ────────
 

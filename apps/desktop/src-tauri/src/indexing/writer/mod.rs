@@ -109,7 +109,7 @@ pub(super) struct MutationTracker {
     /// [`delete_entry_count`](Self::delete_entry_count)).
     delete_subtree_count: AtomicU64,
     /// Test-only capture of every `EmitDirUpdated` message's paths, in send
-    /// order. Lets the M4b completion-emit test assert the rescan-completion
+    /// order. Lets the rescan completion-emit test assert the rescan-completion
     /// refresh rides the writer AFTER the reconcile's writes, carrying the root
     /// plus its ancestor chain — without a real `AppHandle` (the production emit
     /// is `AppHandle`-gated, a no-op in tests). Gated off entirely in release
@@ -368,6 +368,14 @@ pub enum WriteMessage {
     /// Happens after reconciler replay or cold-start replay to catch dirs
     /// created by events that ran after the last full aggregation.
     BackfillMissingDirStats,
+    /// Arm the one-shot `dir_stats` ledger-heal latch. Sent once at launch (from
+    /// the `resume_or_scan` heal decision) for a DB whose `LEDGER_HEAL_KEY` is
+    /// absent. The NEXT successful `ComputeAllAggregates` on this writer — from
+    /// whichever flow runs it — then persists the key and disarms the latch, so
+    /// every existing install self-heals its drifted aggregates exactly once. A
+    /// failed aggregate leaves the latch armed (re-heals next launch). Like
+    /// `SetDeltaPropagation`, a control message: no `MutationTracker::bump()`.
+    ArmLedgerHealLatch,
     /// Periodic housekeeping: reclaim free pages from deletes/rescans.
     /// Sent by a background timer, not counted in WriterStats.
     IncrementalVacuum,
@@ -546,7 +554,7 @@ impl IndexWriter {
         self.mutation_tracker.delete_counts()
     }
 
-    /// Every `EmitDirUpdated` message's paths, in send order. The M4b
+    /// Every `EmitDirUpdated` message's paths, in send order. The rescan
     /// completion-emit test asserts the rescan-completion refresh rides the
     /// writer after the reconcile's writes with the root + its ancestor chain.
     #[cfg(test)]
@@ -887,6 +895,12 @@ fn writer_loop(
     // ancestor `dir_stats` chain. Default `true` (the live path needs it); the
     // FULL reconcile flips it off around its bulk walk via `SetDeltaPropagation`.
     let mut propagate_deltas = true;
+    // One-shot ledger-heal latch. Armed by `ArmLedgerHealLatch` (once at launch
+    // when this DB has never healed), consumed by the first SUCCESSFUL
+    // `ComputeAllAggregates` — which then persists `LEDGER_HEAL_KEY`. Default
+    // `false`: a DB that already healed never re-arms, so routine aggregates
+    // don't rewrite the key.
+    let mut heal_latch = false;
 
     // Phase 1 instrumentation: time split between recv() (idle waiting),
     // processing (handlers), and commit (txn commits, tracked via wrapper).
@@ -936,6 +950,7 @@ fn writer_loop(
                 &mutation_tracker,
                 &mut probe,
                 &mut propagate_deltas,
+                &mut heal_latch,
             )
         });
         #[cfg(not(target_os = "macos"))]
@@ -951,6 +966,7 @@ fn writer_loop(
             &mutation_tracker,
             &mut probe,
             &mut propagate_deltas,
+            &mut heal_latch,
         );
         probe.time_in_processing += proc_start.elapsed();
         probe.messages_processed += 1;
@@ -1044,6 +1060,7 @@ fn process_message(
     mutation_tracker: &MutationTracker,
     probe: &mut ProbeStats,
     propagate_deltas: &mut bool,
+    heal_latch: &mut bool,
 ) -> bool {
     match msg {
         // ── Integer-keyed variants ───────────────────────────────────
@@ -1130,7 +1147,15 @@ fn process_message(
             handle_truncate_data(conn, accumulator, expected_total_entries, next_id, mutation_tracker);
         }
         WriteMessage::ComputeAllAggregates { source } => {
-            handle_compute_all_aggregates(conn, accumulator, app_handle, volume_id, expected_total_entries, source);
+            handle_compute_all_aggregates(
+                conn,
+                accumulator,
+                app_handle,
+                volume_id,
+                expected_total_entries,
+                source,
+                heal_latch,
+            );
         }
         WriteMessage::ComputePartialAggregates { hot_paths, source } => {
             handle_compute_partial_aggregates(conn, accumulator, app_handle, hot_paths, source);
@@ -1216,6 +1241,14 @@ fn process_message(
         }
         WriteMessage::BackfillMissingDirStats => {
             handle_backfill_missing_dir_stats(conn);
+        }
+        WriteMessage::ArmLedgerHealLatch => {
+            // A control message, not a mutation (no `MutationTracker::bump()`):
+            // it only arms ambient writer state. The next successful full
+            // aggregate consumes it. Idempotent — re-arming an already-armed
+            // latch is a no-op.
+            log::debug!("Writer: ArmLedgerHealLatch");
+            *heal_latch = true;
         }
         WriteMessage::IncrementalVacuum => {
             handle_incremental_vacuum(conn);

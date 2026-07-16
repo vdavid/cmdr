@@ -33,6 +33,13 @@ const SCHEMA_VERSION: &str = "14";
 /// "Honest sizes" model in `indexing/DETAILS.md`.
 pub const CURRENT_EPOCH_KEY: &str = "current_epoch";
 
+/// Meta key marking that the one-shot `dir_stats` ledger heal has already rebuilt
+/// this DB's aggregates. Present ⇒ the heal ran successfully once, so a later
+/// launch skips it; absent ⇒ this DB still carries pre-ledger drift and heals on
+/// the next full aggregate (the writer-side latch). Only presence matters (the
+/// value is a marker). See `indexing/DETAILS.md` § "The dir_stats ledger".
+pub const LEDGER_HEAL_KEY: &str = "aggregates_rebuilt_for_ledger";
+
 /// Root entry sentinel ID. All top-level entries have `parent_id = ROOT_ID`.
 pub const ROOT_ID: i64 = 1;
 

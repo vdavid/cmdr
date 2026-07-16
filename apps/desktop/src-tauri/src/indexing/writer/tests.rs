@@ -329,7 +329,10 @@ fn non_root_writer_drain_does_not_clear_root_tracker() {
     thread::sleep(Duration::from_millis(50));
 
     // Root's transient mark AND held root are untouched by the non-root drain.
-    assert!(root_tracker.is_pending("/aaa/bbb/ccc"), "root's transient mark survives");
+    assert!(
+        root_tracker.is_pending("/aaa/bbb/ccc"),
+        "root's transient mark survives"
+    );
     assert!(root_tracker.is_pending("/aaa/rescan"), "root's held rescan survives");
 
     *PENDING_SIZES.lock().unwrap() = None;

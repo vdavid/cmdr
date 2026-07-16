@@ -77,6 +77,16 @@ impl IndexManager {
             .get_index_status()
             .map_err(|e| format!("Failed to get index status: {e}"))?;
 
+        // One-shot ledger heal (see `indexing/DETAILS.md` § "The dir_stats
+        // ledger"). Arm the writer latch on a never-healed DB so the next full
+        // aggregate rebuilds and marks it. The scan branch below lets its own
+        // aggregate consume the latch; the completed-index branch runs no scan,
+        // so it ALSO enqueues the heal's own `Sql` aggregate.
+        let heal_pending = IndexStore::ledger_heal_done(self.store.read_conn()).is_ok_and(|done| !done);
+        if heal_pending {
+            let _ = self.writer.send(WriteMessage::ArmLedgerHealLatch);
+        }
+
         if status.scan_completed_at.is_some() {
             log::info!(
                 "Startup: {kind} volume '{}' has a completed index, loading as Stale (no journal to replay)",
@@ -86,6 +96,16 @@ impl IndexManager {
             // the persisted index until the user rescans. The live watcher (SMB
             // CHANGE_NOTIFY / MTP PTP event loop) runs connection-scoped and is
             // what keeps a re-enabled/re-scanned index Fresh.
+            //
+            // This branch does NOT rescan on connect, so nothing would consume the
+            // armed heal latch — enqueue the heal's own aggregate directly. It
+            // recomputes `dir_stats` from the committed `entries` (Sql), so the
+            // stale-but-browsable index gets its drifted sizes healed in place.
+            if heal_pending {
+                let _ = self
+                    .writer
+                    .send(WriteMessage::ComputeAllAggregates { source: AggSource::Sql });
+            }
             return Ok(());
         }
 
