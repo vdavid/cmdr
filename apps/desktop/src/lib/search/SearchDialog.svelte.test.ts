@@ -46,33 +46,33 @@ const {
   mediaSearchSemanticMock,
   mediaVolumeStateMock,
 } = vi.hoisted(() => ({
-    translateSearchQueryMock: vi.fn(() => Promise.resolve({ display: {}, query: {} } as TranslateResult)),
-    searchFilesMock: vi.fn(
-      (): Promise<{ entries: SearchResultEntry[]; totalCount: number }> =>
-        Promise.resolve({ entries: [], totalCount: 0 }),
-    ),
-    addRecentSearchMock: vi.fn(() => Promise.resolve()),
-    // The image-OCR grid's IPC. Defaults: enrichment on, one hit, so the grid actually
-    // queries the passed volume (its state gates all work). Path is index-relative.
-    mediaSearchOcrMock: vi.fn((_v: string, _q: string, _l: number | null) =>
-      Promise.resolve([{ path: '/DCIM/photo.png', snippet: 'an [invoice] scan' }]),
-    ),
-    // No CLIP model in these tests: semantic search returns nothing, so the grid runs
-    // OCR-only (the degraded path).
-    mediaSearchSemanticMock: vi.fn((_v: string, _q: string, _l: number | null) =>
-      Promise.resolve([] as { path: string; score: number }[]),
-    ),
-    mediaVolumeStateMock: vi.fn((_v: string) =>
-      Promise.resolve({
-        enabled: true,
-        indexing: false,
-        enrichedCount: 3,
-        networkOptIn: true,
-        alwaysIndexed: false,
-        paused: false,
-      }),
-    ),
-  }))
+  translateSearchQueryMock: vi.fn(() => Promise.resolve({ display: {}, query: {} } as TranslateResult)),
+  searchFilesMock: vi.fn(
+    (): Promise<{ entries: SearchResultEntry[]; totalCount: number }> =>
+      Promise.resolve({ entries: [], totalCount: 0 }),
+  ),
+  addRecentSearchMock: vi.fn(() => Promise.resolve()),
+  // The image-OCR grid's IPC. Defaults: enrichment on, one hit, so the grid actually
+  // queries the passed volume (its state gates all work). Path is index-relative.
+  mediaSearchOcrMock: vi.fn((_v: string, _q: string, _l: number | null) =>
+    Promise.resolve([{ path: '/DCIM/photo.png', snippet: 'an [invoice] scan' }]),
+  ),
+  // No CLIP model in these tests: semantic search returns nothing, so the grid runs
+  // OCR-only (the degraded path).
+  mediaSearchSemanticMock: vi.fn((_v: string, _q: string, _l: number | null) =>
+    Promise.resolve([] as { path: string; score: number }[]),
+  ),
+  mediaVolumeStateMock: vi.fn((_v: string) =>
+    Promise.resolve({
+      enabled: true,
+      indexing: false,
+      enrichedCount: 3,
+      networkOptIn: true,
+      alwaysIndexed: false,
+      paused: false,
+    }),
+  ),
+}))
 
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),

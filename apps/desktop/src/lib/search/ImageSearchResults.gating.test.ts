@@ -17,7 +17,8 @@ import ImageSearchResults from './ImageSearchResults.svelte'
 // component module — and thus the mocked deps — evaluate.
 const h = vi.hoisted(() => ({
   searchOcr: vi.fn<(volumeId: string, query: string, limit: number | null) => Promise<OcrHit[]>>(),
-  searchSemantic: vi.fn<(volumeId: string, query: string, limit: number | null) => Promise<{ path: string; score: number }[]>>(),
+  searchSemantic:
+    vi.fn<(volumeId: string, query: string, limit: number | null) => Promise<{ path: string; score: number }[]>>(),
   volumeState: vi.fn<(volumeId: string) => Promise<MediaIndexVolumeState>>(),
   thumbnailToken: vi.fn<(path: string) => Promise<string | null>>(),
   dropTokens: vi.fn<(tokens: string[]) => Promise<void>>(),

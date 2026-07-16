@@ -1,20 +1,19 @@
 # CLIP → Core ML conversion (dev-only, out-of-tree)
 
-Produces the two Core ML towers Cmdr's semantic image search (media_index M3) downloads on
-demand: an **image tower** (enrichment embeds every photo) and a **text tower** (a search
-query is encoded and cosine-matched against the stored image embeddings).
+Produces the two Core ML towers Cmdr's semantic image search (media_index M3) downloads on demand: an **image tower**
+(enrichment embeds every photo) and a **text tower** (a search query is encoded and cosine-matched against the stored
+image embeddings).
 
-This is a **one-off developer tool**. It is NEVER invoked by CI or `pnpm` — it runs by hand
-in a throwaway virtualenv to regenerate the shippable artifacts when the model or its
-preprocessing changes.
+This is a **one-off developer tool**. It is NEVER invoked by CI or `pnpm` — it runs by hand in a throwaway virtualenv to
+regenerate the shippable artifacts when the model or its preprocessing changes.
 
 ## Model + license
 
-- `openai/clip-vit-base-patch32` — OpenAI CLIP ViT-B/32, **MIT-licensed** weights (a
-  commercial product can ship them; Apple's MobileCLIP is research-only and can't — see
-  `docs/notes/clip-coreml-rust-spike.md`). Embedding dim 512, image 224×224, text context 77.
-- Verify the license from the model card before regenerating: it must stay MIT (or another
-  commercial-OK license). Record what you found in the commit.
+- `openai/clip-vit-base-patch32` — OpenAI CLIP ViT-B/32, **MIT-licensed** weights (a commercial product can ship them;
+  Apple's MobileCLIP is research-only and can't — see `docs/notes/clip-coreml-rust-spike.md`). Embedding dim 512, image
+  224×224, text context 77.
+- Verify the license from the model card before regenerating: it must stay MIT (or another commercial-OK license).
+  Record what you found in the commit.
 
 ## Run
 
@@ -33,21 +32,20 @@ uv pip install --python .venv -r requirements.txt
 .venv/bin/python convert.py             # writes dist/*.mlpackage(.zip) + reference-vectors.json
 ```
 
-`convert.py` bakes CLIP's per-channel `(x-mean)/std` normalization INTO the image model, so
-the Rust side only resizes + center-crops to 224×224, divides RGB by 255, and packs a CHW
-float `[1,3,224,224]` tensor. Both towers take an `MLMultiArray` (the path the Rust spike
-proved), avoiding the Core ML `ImageType` / CVPixelBuffer FFI surface. Weights are fp16 then 8-bit palettized
-(`PALETTIZE_NBITS`; drop to 4 to shrink further, at some quality cost — measure the fidelity
-cosine). Embeddings are the **raw** projected 512-d features; the Rust cosine normalizes.
+`convert.py` bakes CLIP's per-channel `(x-mean)/std` normalization INTO the image model, so the Rust side only resizes +
+center-crops to 224×224, divides RGB by 255, and packs a CHW float `[1,3,224,224]` tensor. Both towers take an
+`MLMultiArray` (the path the Rust spike proved), avoiding the Core ML `ImageType` / CVPixelBuffer FFI surface. Weights
+are fp16 then 8-bit palettized (`PALETTIZE_NBITS`; drop to 4 to shrink further, at some quality cost — measure the
+fidelity cosine). Embeddings are the **raw** projected 512-d features; the Rust cosine normalizes.
 
-The app ships the `.mlpackage` and compiles it to `.mlmodelc` on-device at first run
-(`.mlmodelc` is OS-version-specific — never bundle a prebuilt one).
+The app ships the `.mlpackage` and compiles it to `.mlmodelc` on-device at first run (`.mlmodelc` is OS-version-specific
+— never bundle a prebuilt one).
 
 ## Outputs
 
 - `dist/clip-image.mlpackage`, `dist/clip-text.mlpackage` — the towers (gitignored).
-- `dist/clip-image.mlpackage.zip`, `dist/clip-text.mlpackage.zip` — the distributables, with
-  their SHA-256 and byte sizes printed at the end.
+- `dist/clip-image.mlpackage.zip`, `dist/clip-text.mlpackage.zip` — the distributables, with their SHA-256 and byte
+  sizes printed at the end.
 - `reference-tokenization.json` — token-id reference (checked in; backs the Rust tests).
 - `reference-vectors.json` — fidelity cosines + reference output vectors (checked in).
 
@@ -55,10 +53,9 @@ The app ships the `.mlpackage` and compiles it to `.mlmodelc` on-device at first
 
 Agents never upload. `convert.py` prints an upload-handoff line per artifact:
 
-> David: upload `<artifact>` (sha256 `<hash>`, `<size>` bytes) to
-> `https://models.getcmdr.com/<artifact>`; confirm the URL returns those exact bytes.
+> David: upload `<artifact>` (sha256 `<hash>`, `<size>` bytes) to `https://models.getcmdr.com/<artifact>`; confirm the
+> URL returns those exact bytes.
 
-The app pins that URL + SHA-256 in `media_index/clip/` (`ClipModelSpec`). The download is
-checksum-verified before install, so the bytes at the URL must match the printed hash exactly.
-A public HuggingFace repo under David's account is the zero-setup alternative host; whatever
-the host, the URL must return the exact bytes the checked-in SHA-256 pins.
+The app pins that URL + SHA-256 in `media_index/clip/` (`ClipModelSpec`). The download is checksum-verified before
+install, so the bytes at the URL must match the printed hash exactly. A public HuggingFace repo under David's account is
+the zero-setup alternative host; whatever the host, the URL must return the exact bytes the checked-in SHA-256 pins.

@@ -148,16 +148,15 @@ All under `apps/desktop/src-tauri/src/`.
 - `media_index/`: Image-ML enrichment — makes a volume's images searchable by their content (OCR text, Vision scene/
   object tags, image-similarity "find similar" via feature-print embeddings, and natural-language semantic search via an
   on-demand on-device CLIP model — `clip/`, macOS Core ML, a SEPARATE vector space with independent two-part staleness).
-  A read-consumer of `indexing/`, ported
-  from `importance/`, with its own per-volume disposable `media.db` (path-keyed, FTS5 OCR + tags, structured tags, and a
-  brute-force cosine vector store over feature-print embeddings), a scheduler that enriches on the lifecycle-bus
-  scan-completion edge, importance-prioritized (high-importance folders first, below the settings slider threshold
-  deferred, with "always index" overrides + a per-folder privacy exclude), inference behind a `VisionBackend` seam (real
-  objc2-vision OCR + classify + feature print, a fake for tests), deletion-driven GC gated on a completed scan, and the
-  consumable `MediaIndex` read API (OCR/tag search + find-similar, offline after unmount). Enriches local volumes plus
-  opt-in network (SMB) volumes conservatively (idle-gated, bandwidth-bounded byte-fetch off the OS mount; disconnect
-  pauses without losing coverage; MTP never background-sweeps). Off by default. See its
-  [`CLAUDE.md`](../apps/desktop/src-tauri/src/media_index/CLAUDE.md) and
+  A read-consumer of `indexing/`, ported from `importance/`, with its own per-volume disposable `media.db` (path-keyed,
+  FTS5 OCR + tags, structured tags, and a brute-force cosine vector store over feature-print embeddings), a scheduler
+  that enriches on the lifecycle-bus scan-completion edge, importance-prioritized (high-importance folders first, below
+  the settings slider threshold deferred, with "always index" overrides + a per-folder privacy exclude), inference
+  behind a `VisionBackend` seam (real objc2-vision OCR + classify + feature print, a fake for tests), deletion-driven GC
+  gated on a completed scan, and the consumable `MediaIndex` read API (OCR/tag search + find-similar, offline after
+  unmount). Enriches local volumes plus opt-in network (SMB) volumes conservatively (idle-gated, bandwidth-bounded
+  byte-fetch off the OS mount; disconnect pauses without losing coverage; MTP never background-sweeps). Off by default.
+  See its [`CLAUDE.md`](../apps/desktop/src-tauri/src/media_index/CLAUDE.md) and
   [`docs/specs/media-ml-index-plan.md`](specs/media-ml-index-plan.md)
 - `operation_log/`: The durable, cross-volume journal of file mutations — the app's first durable DB
   (`operation-log.db`), the foundation for rollback, indexed name search, and a future undo. Single writer thread, a
