@@ -179,6 +179,20 @@ pub async fn start_indexing_for_smb(app: AppHandle, volume_id: String) -> Result
 
     let mount_root = ensure_direct_smb(&volume_id).await?;
 
+    // (Re-)enabling clears any sticky `user_disabled` marker, so this reflects the
+    // user's current intent and future reconnects auto-resume again. Safe here: the
+    // early `is_active` return means no writer thread is running for this volume yet,
+    // so the brief write connection can't contend (`SQLITE_BUSY`). Only touch an
+    // existing DB — a first-ever enable has no marker to clear. Reached by both the
+    // manual enable command and the auto-resume hook; on the latter the marker is
+    // already absent (the resume gate required it), so this is a no-op there.
+    if let Ok(db_path) = super::state::resolved_index_db_path(&app, &volume_id)
+        && db_path.exists()
+        && let Err(e) = super::store::IndexStore::set_user_disabled(&db_path, false)
+    {
+        log::warn!(target: "indexing::smb_index", "start_indexing_for_smb: clearing user_disabled for '{volume_id}' failed: {e}");
+    }
+
     // The direct gate passed: start the per-volume index over the Volume trait.
     // `start_indexing_for` handles the lock-first reservation, load-as-Stale
     // freshness seeding, and SMB scan-path selection.
@@ -195,6 +209,71 @@ pub async fn start_indexing_for_smb(app: AppHandle, volume_id: String) -> Result
     // a registered/live volume, and this one is now registered. See `retention`.
     super::retention::enforce_external_index_cap(&app);
     Ok(())
+}
+
+/// Whether a reconnect should auto-resume indexing for this SMB volume. Both must
+/// hold on the PERSISTED per-volume state:
+/// - a completed scan is recorded (`persisted_scan_completed`) — the "the user
+///   enabled indexing here and it finished at least once" signal; a never-enabled
+///   share has no such DB, so it's never indexed uninvited, AND
+/// - the user hasn't turned indexing OFF (`user_disabled` marker absent).
+///
+/// The two facts are separate on purpose: `disable_drive_index` KEEPS the DB (with
+/// its completed-scan marker) on disk so a re-enable resumes fast rather than
+/// rescanning, but writes the sticky `user_disabled` marker to record intent — so a
+/// reconnect never turns back on what the user turned off. Enabling
+/// (`start_indexing_for_smb`) clears the marker; `forget_drive_index` deletes the
+/// whole DB.
+pub(crate) fn smb_index_was_enabled(app: &AppHandle, volume_id: &str) -> bool {
+    match super::state::resolved_index_db_path(app, volume_id) {
+        Ok(db_path) => {
+            super::store::IndexStore::persisted_scan_completed(&db_path)
+                && !super::store::IndexStore::user_disabled(&db_path)
+        }
+        Err(e) => {
+            log::debug!(target: "indexing::smb_index", "resume gate: can't resolve db path for '{volume_id}': {e}");
+            false
+        }
+    }
+}
+
+/// Resume drive indexing for an SMB volume that just came online — after a
+/// launch/upgrade session install (`register_smb_volume`) or an in-place
+/// reconnect (`do_attempt_reconnect`) — IF the user had it enabled. This is the
+/// backend-autonomous half of index recovery: without it, an enabled NAS index
+/// silently stays dark after any disconnect or restart until the user re-enables
+/// by hand.
+///
+/// Fire-and-forget and idempotent:
+/// - No-op unless a persisted index DB with a completed scan exists
+///   (`smb_index_was_enabled`) — never indexes a never-enabled share.
+/// - No-op if the index is already active.
+/// - Spawns off-thread, so a caller fires it AFTER the session install completes
+///   and OUTSIDE any lock (per `indexing/CLAUDE.md`): `start_indexing_for_smb` is
+///   async and reserves the registry slot itself. Registering flows through the
+///   lifecycle registration bus, so the media scheduler resumes enrichment with
+///   no scheduler changes. The resumed index loads Stale (we weren't watching
+///   while disconnected); a rescan is what restores Fresh (the honest-sizes model).
+///
+/// Handle-free: pulls the app handle stashed in `indexing::init` (a no-op before
+/// setup or in unit tests). Keyed on the canonical volume id both install paths
+/// agree on.
+pub(crate) fn resume_smb_index_if_enabled(volume_id: String) {
+    let Some(app) = super::state::app_handle() else {
+        return;
+    };
+    if super::state::is_active(&volume_id) {
+        return;
+    }
+    if !smb_index_was_enabled(&app, &volume_id) {
+        return;
+    }
+    tauri::async_runtime::spawn(async move {
+        log::info!(target: "indexing::smb_index", "SMB '{volume_id}' online with a persisted index; resuming indexing");
+        if let Err(reason) = start_indexing_for_smb(app, volume_id.clone()).await {
+            log::warn!(target: "indexing::smb_index", "auto-resume indexing for '{volume_id}' refused: {reason}");
+        }
+    });
 }
 
 /// Record that an SMB volume's live watcher died (session drop, disconnect, or

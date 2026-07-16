@@ -33,6 +33,9 @@ Auth-flow background: `docs/notes/smb-auth-flow-redesign.md`.
   new one and emitting `volumes-changed`. A bare overwrite leaves the old watcher's lifetime non-deterministic and lets
   an in-flight reconnect install a session into an evicted volume. It wraps `on_unmount` in `spawn_blocking` (the
   `blocking_*` locks panic a direct call with "cannot block_on within a runtime"); don't revert to a direct call.
+- **A direct-session install auto-resumes the drive index.** `register_smb_volume` / `try_smb_upgrade` call
+  `crate::indexing::resume_smb_index_if_enabled(volume_id)` after registering (no-op unless enabled); don't drop it.
+  Detail: `backends/DETAILS.md` § "Backend-autonomous reconnect and index resume".
 - **Strip `.local` from the addr for smb2** (`build_addr`): some servers reject `foo.local` in the UNC path smb2 builds
   from `server_name`. Pass the resolved mDNS IP when available.
 - **All three SMB-upgrade paths share resolution.** The two auto paths (startup `upgrade_existing_smb_mounts`, mount-time

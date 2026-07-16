@@ -1770,7 +1770,10 @@ export const commands = {
    *
    *  Stops the scan and watcher and removes the volume's registry instance (so its
    *  badge goes gray / not-indexed), but PRESERVES the DB on disk, so re-enabling
-   *  can resume rather than rescan from scratch. Local `root` disable/enable still
+   *  can resume rather than rescan from scratch. Also persists a sticky
+   *  `user_disabled` marker so a later SMB reconnect doesn't auto-resume what the
+   *  user turned off (`disable_drive_index_persist_intent`); re-enabling clears it,
+   *  "Forget this drive" deletes the whole DB. Local `root` disable/enable still
    *  works (don't break it). A no-op if the drive isn't indexed.
    */
   disableDriveIndex: (volumeId: string) =>

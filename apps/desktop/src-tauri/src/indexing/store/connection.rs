@@ -114,6 +114,66 @@ impl IndexStore {
         Ok(conn)
     }
 
+    /// Whether the persisted index DB at `db_path` records a completed scan.
+    ///
+    /// The on-connect auto-resume gate: a `scan_completed_at` marker means the
+    /// user previously enabled indexing for this volume AND a scan finished, so
+    /// a reconnect should resume it. Deliberately a READ-ONLY probe — never the
+    /// delete-and-recreate `open` path — so merely checking a schema-mismatched
+    /// or locked DB never mutates it. A missing file, an unreadable/locked DB, or
+    /// an absent marker all read `false` (a never-enabled share is never
+    /// auto-indexed on connect).
+    pub fn persisted_scan_completed(db_path: &Path) -> bool {
+        if !db_path.exists() {
+            return false;
+        }
+        match Self::open_read_connection(db_path) {
+            Ok(conn) => Self::read_meta_value(&conn, "scan_completed_at")
+                .ok()
+                .flatten()
+                .is_some(),
+            Err(e) => {
+                log::debug!("persisted_scan_completed({}): read open failed: {e}", db_path.display());
+                false
+            }
+        }
+    }
+
+    /// Whether the user explicitly turned indexing OFF for this volume (the sticky
+    /// `user_disabled` meta marker). Persisted intent that survives a reconnect: the
+    /// DB stays on disk for a fast re-enable, but this flag stops the SMB auto-resume
+    /// gate from turning back on something the user turned off. A missing file /
+    /// unreadable DB / absent marker all read `false`. READ-ONLY probe.
+    pub fn user_disabled(db_path: &Path) -> bool {
+        if !db_path.exists() {
+            return false;
+        }
+        match Self::open_read_connection(db_path) {
+            Ok(conn) => Self::read_meta_value(&conn, "user_disabled").ok().flatten().as_deref() == Some("1"),
+            Err(e) => {
+                log::debug!("user_disabled({}): read open failed: {e}", db_path.display());
+                false
+            }
+        }
+    }
+
+    /// Set or clear the sticky `user_disabled` marker on the volume's index DB.
+    ///
+    /// Opens a short-lived write connection, so it's safe ONLY when no writer thread
+    /// is live for this volume — call it after `stop_indexing` (disable) or before a
+    /// start (re-enable), never mid-scan (a second writer risks `SQLITE_BUSY`).
+    /// Clearing DELETEs the key (absent = not disabled). The caller guards on the DB
+    /// existing; a volume with no persisted index has nothing to resume anyway.
+    pub fn set_user_disabled(db_path: &Path, disabled: bool) -> Result<(), IndexStoreError> {
+        let conn = Self::open_write_connection(db_path)?;
+        if disabled {
+            Self::update_meta(&conn, "user_disabled", "1")?;
+        } else {
+            conn.execute("DELETE FROM meta WHERE key = ?1", params!["user_disabled"])?;
+        }
+        Ok(())
+    }
+
     /// Read all meta keys and return the index status.
     pub fn get_index_status(&self) -> Result<IndexStatus, IndexStoreError> {
         Ok(IndexStatus {

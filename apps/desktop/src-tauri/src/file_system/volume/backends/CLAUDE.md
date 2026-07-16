@@ -22,9 +22,11 @@ The trait shape, capability matrix, streaming patterns, and "Building a new volu
 - **`SmbVolume`'s background watcher runs on a dedicated smb2 session, NOT a clone of the main connection.** Stacking
   CHANGE_NOTIFY long-polls on the same TCP session as heavy writes wedges Samba (pinned by
   `smb_integration_concurrent_streaming_writes_no_deadlock`). See [DETAILS.md](DETAILS.md) § "Per-backend decisions".
-- **The SMB watcher doesn't reconnect itself; it bails on connection errors.** Don't give it its own reconnect-with-
-  backoff loop: two state machines tracking "is the session alive" diverge and swallow real disconnects.
-  `do_attempt_reconnect` (driven by the FE backoff) is the single source of truth and respawns the watcher.
+- **The SMB watcher doesn't reconnect itself; on death it kicks the one reconnect path.** It bails, then
+  `spawn_watcher_death_reconnect` → `do_attempt_reconnect` (single source of truth) on a bounded backoff, so a background
+  disconnect recovers with no pane open. Don't give the watcher its OWN reconnect loop (a second state machine swallows
+  real disconnects). Reconnect respawns the watcher AND resumes the index (`resume_smb_index_if_enabled`).
+  [DETAILS.md](DETAILS.md) § "Backend-autonomous reconnect and index resume".
 - **`SmbVolume::write_from_stream` uses a cloned `Connection` + owned `FileWriter`; never a borrowed `FileWriter<'a>`
   that holds the client mutex across the upload.** That brief-clone-then-long-hold shape is the QNAP deadlock
   reproducer. The client mutex is held only for `clone_session()`, never across I/O.

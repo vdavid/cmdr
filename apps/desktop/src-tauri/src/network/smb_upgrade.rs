@@ -140,6 +140,12 @@ pub(crate) async fn register_smb_volume(
             // torn down before we replace it.
             register_replacing_predecessor(&volume_id, Arc::new(volume)).await;
             log::info!("Registered SmbVolume for {} (id={})", mount_path, volume_id);
+            // The session is installed and Direct. If the user had indexing
+            // enabled for this volume (a persisted index DB with a completed
+            // scan), resume it — the backend-autonomous recovery that keeps a NAS
+            // index from silently going dark after a disconnect/restart. No-op for
+            // a never-enabled share.
+            crate::indexing::resume_smb_index_if_enabled(volume_id.clone());
         }
         Err(e) => {
             log::warn!(
@@ -204,6 +210,10 @@ pub(crate) async fn try_smb_upgrade(
         Ok(volume) => {
             register_replacing_predecessor(volume_id, Arc::new(volume)).await;
             log::info!("Registered SmbVolume for {} (id={})", mount_path, volume_id);
+            // Manual "Connect directly" also installs a Direct session; resume the
+            // drive index the same way the auto-upgrade path does (no-op unless the
+            // user had it enabled), so the two install paths stay consistent.
+            crate::indexing::resume_smb_index_if_enabled(volume_id.to_string());
             Ok(())
         }
         Err(e) => {

@@ -128,6 +128,21 @@ pub fn init(app: &AppHandle) {
     log::debug!("Indexing registry initialized");
 }
 
+/// The app handle stashed in `init`, for handle-free callers that need to reach
+/// the indexer from a context without one (the SMB on-connect auto-resume hook,
+/// fired from the volume backend / upgrade paths). `None` before setup or in unit
+/// tests, where the caller no-ops.
+pub(crate) fn app_handle() -> Option<AppHandle> {
+    APP_HANDLE.get().cloned()
+}
+
+/// The on-disk path of a volume's index DB (`index-<volume_id>.db` under the
+/// resolved app data dir). Single-sources the filename format shared by the
+/// indexer's open path and the on-connect resume probe.
+pub(crate) fn resolved_index_db_path(app: &AppHandle, volume_id: &str) -> Result<PathBuf, String> {
+    Ok(crate::config::resolved_app_data_dir(app)?.join(format!("index-{volume_id}.db")))
+}
+
 /// Whether indexing should auto-start on launch.
 ///
 /// - If settings say disabled (`indexing_enabled == Some(false)`): never auto-start.
@@ -601,8 +616,7 @@ fn start_indexing_for(
     // per-volume guard, two writers race on the same DB (each owns its own
     // `Arc<AtomicI64>` ID counter and `AccumulatorMaps`), producing PK
     // collisions and inflated `dir_stats`.
-    let data_dir = crate::config::resolved_app_data_dir(app)?;
-    let db_path = data_dir.join(format!("index-{volume_id}.db"));
+    let db_path = resolved_index_db_path(app, volume_id)?;
     let init_store = IndexStore::open(&db_path).map_err(|e| format!("Failed to open init store: {e}"))?;
     let pool = Arc::new(ReadPool::new(db_path.clone()).map_err(|e| format!("Failed to create read pool: {e}"))?);
     let pending = Arc::new(PendingSizes::new());
@@ -836,6 +850,30 @@ pub(crate) fn reset_to_not_indexed(volume_id: &str) {
     if let Err(e) = stop_indexing(volume_id) {
         log::warn!("reset_to_not_indexed('{volume_id}') failed: {e}");
     }
+}
+
+/// Turn indexing OFF for a drive at the user's explicit request: stop it (DB kept
+/// on disk for a fast re-enable), then persist the sticky `user_disabled` marker so
+/// a later reconnect doesn't auto-resume what the user turned off.
+///
+/// This is the ONLY caller that writes the marker — deliberately NOT `stop_indexing`
+/// itself, which also runs on eject, unmount, an interrupted network scan
+/// (`reset_to_not_indexed`), and the memory watchdog; marking there would suppress
+/// auto-resume after a transient teardown, not a real user disable. The marker is
+/// consumed only by the SMB auto-resume gate (`smb_index::smb_index_was_enabled`);
+/// root/MTP/local-external have no auto-resume path that reads it. The write runs
+/// AFTER the drain, so no writer thread contends. Writing the marker is best-effort
+/// (a failure only means a future reconnect might re-resume; logged).
+pub fn disable_drive_index_persist_intent(volume_id: &str) -> Result<(), String> {
+    stop_indexing(volume_id)?;
+    if let Some(app) = app_handle()
+        && let Ok(db_path) = resolved_index_db_path(&app, volume_id)
+        && db_path.exists()
+        && let Err(e) = IndexStore::set_user_disabled(&db_path, true)
+    {
+        log::warn!("disable_drive_index_persist_intent('{volume_id}'): marking user_disabled failed: {e}");
+    }
+    Ok(())
 }
 
 /// Remove a volume's instance from the registry and uninstall its read-path

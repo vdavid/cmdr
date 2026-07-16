@@ -43,6 +43,10 @@ SMB/MTP indexing:
 
 - **Gated on a `direct` (smb2) connection; an `os_mount` upgrades first** (`start_indexing_for_smb` refuses with a TYPED
   `SmbIndexGateReason`).
+- **Reconnect/upgrade AUTO-RESUMES the index, gated on PERSISTED state** (`smb_index_was_enabled`): resume ONLY when a
+  scan completed (`persisted_scan_completed`) AND the user hasn't turned it off (sticky `user_disabled` marker; the
+  disable command writes it, NOT `stop_indexing`) — NEVER unconditionally. Fire-and-forget; no-op if active. DETAILS §
+  "SMB indexing and the freshness model".
 - **Manual rescan routes by TYPED kind** (`force_scan`): SMB/MTP → `start_volume_scan`, local → `start_scan`; never
   `start_scan` a trait-scanned volume (walks nothing, false-completes).
 - **Never write `scan_completed_at` for an empty root** (typed `EmptyRoot`); a yanked drive's unlistable root → typed

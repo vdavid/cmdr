@@ -6,9 +6,13 @@
 //! volume's primary client), so the watcher's long-polls don't multiplex with
 //! heavy concurrent writes on the main connection.
 //!
-//! No internal reconnect: on `next_events` errors, the task returns and
-//! `SmbVolume::attempt_reconnect` is the single source of truth for
-//! re-establishing the session — it respawns the watcher when it succeeds.
+//! No internal reconnect loop: on `next_events` errors the task returns. It does
+//! NOT retry the session itself; instead it kicks `spawn_watcher_death_reconnect`,
+//! which drives `SmbVolume::do_attempt_reconnect` (the single source of truth) on
+//! a bounded backoff. That one path re-establishes the session, respawns the
+//! watcher, and resumes the drive index — so there's still exactly one reconnect
+//! state machine, just now backend-triggered on watcher death (not only on the
+//! next FE backoff tick / hot-path op).
 
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed, refresh_archive_listings};
@@ -380,6 +384,13 @@ pub(super) async fn run_smb_watcher(
                 #[cfg(any(target_os = "macos", target_os = "linux"))]
                 crate::indexing::on_smb_watcher_died(&volume_id);
                 let _ = watcher.close().await;
+                // Backend-autonomous recovery: the watcher's dedicated session
+                // dying proves the server connection broke. Drive a bounded-backoff
+                // reconnect (single source of truth: `SmbVolume::do_attempt_reconnect`),
+                // which rebuilds the session, respawns this watcher, and resumes the
+                // drive index — so an enabled NAS index doesn't go dark until the
+                // user intervenes. Coalesces with any FE-driven reconnect.
+                super::smb::spawn_watcher_death_reconnect(volume_id.clone());
                 return;
             }
         }

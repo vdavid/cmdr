@@ -293,6 +293,76 @@ fn open_read_connection_succeeds_under_write_lock() {
     writer.execute_batch("ROLLBACK").unwrap();
 }
 
+/// `persisted_scan_completed` is the on-connect auto-resume gate: it reports
+/// `true` ONLY for a DB that recorded a completed scan (the "the user enabled
+/// indexing for this volume and it finished at least once" signal). A missing
+/// file, a fresh DB with no completed scan, and an unreadable path all read
+/// `false`, so a never-enabled SMB share is never auto-indexed on connect.
+#[test]
+fn persisted_scan_completed_reflects_the_marker() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let db_path = dir.path().join("index-smb-test.db");
+
+    // No file yet ⇒ never enabled.
+    assert!(
+        !IndexStore::persisted_scan_completed(&db_path),
+        "a missing DB must read as not-yet-enabled"
+    );
+
+    // A fresh DB with no completed scan ⇒ still not the resume signal (the user
+    // may have started an enable that never finished; don't auto-resume it).
+    let store = IndexStore::open(&db_path).expect("open store");
+    drop(store);
+    assert!(
+        !IndexStore::persisted_scan_completed(&db_path),
+        "a DB with no scan_completed_at must read as not-enabled"
+    );
+
+    // Stamp a completed scan ⇒ the resume signal.
+    let conn = IndexStore::open_write_connection(&db_path).expect("write conn");
+    IndexStore::update_meta(&conn, "scan_completed_at", "1700000000").expect("stamp scan_completed_at");
+    drop(conn);
+    assert!(
+        IndexStore::persisted_scan_completed(&db_path),
+        "a completed scan must read as enabled (auto-resume on connect)"
+    );
+}
+
+/// The sticky `user_disabled` marker round-trips and, combined with a completed
+/// scan, gates auto-resume: set ⇒ suppress resume even with a completed scan;
+/// cleared ⇒ resume again. This is what makes "turn off indexing for this drive"
+/// survive a reconnect (the DB stays on disk for a fast re-enable, but the marker
+/// records intent).
+#[test]
+fn user_disabled_marker_gates_auto_resume() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let db_path = dir.path().join("index-smb-test.db");
+
+    // Absent DB / marker ⇒ not disabled.
+    assert!(!IndexStore::user_disabled(&db_path), "no DB ⇒ not disabled");
+
+    // A completed scan with no marker is eligible to auto-resume.
+    let store = IndexStore::open(&db_path).expect("open store");
+    drop(store);
+    let conn = IndexStore::open_write_connection(&db_path).expect("write conn");
+    IndexStore::update_meta(&conn, "scan_completed_at", "1700000000").expect("stamp scan");
+    drop(conn);
+    assert!(IndexStore::persisted_scan_completed(&db_path));
+    assert!(!IndexStore::user_disabled(&db_path), "fresh index isn't user-disabled");
+
+    // Turn indexing off ⇒ marker set ⇒ no auto-resume (even though a scan completed).
+    IndexStore::set_user_disabled(&db_path, true).expect("set marker");
+    assert!(IndexStore::user_disabled(&db_path), "marker must persist");
+    assert!(
+        IndexStore::persisted_scan_completed(&db_path),
+        "the completed-scan fact is untouched by the disable marker (DB preserved for fast resume)"
+    );
+
+    // Re-enable ⇒ marker cleared ⇒ eligible again.
+    IndexStore::set_user_disabled(&db_path, false).expect("clear marker");
+    assert!(!IndexStore::user_disabled(&db_path), "re-enable clears the marker");
+}
+
 #[test]
 fn root_sentinel_exists() {
     let (store, _dir) = open_temp_store();

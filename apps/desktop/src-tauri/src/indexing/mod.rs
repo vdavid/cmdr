@@ -92,15 +92,15 @@ pub(crate) use state::get_freshness;
 pub(crate) use state::reserve_initializing_index_for_test;
 pub(crate) use state::{IndexVolumeKind, all_registered_volume_ids, ready_volumes_with_kind, volume_kind};
 pub use state::{
-    clear_index, force_scan, init, is_active, should_auto_start, should_auto_start_indexing, start_indexing,
-    stop_indexing, stop_scan, trigger_verification,
+    clear_index, disable_drive_index_persist_intent, force_scan, init, is_active, should_auto_start,
+    should_auto_start_indexing, start_indexing, stop_indexing, stop_scan, trigger_verification,
 };
 pub use subsystem_stop::register_subsystem_stop_hook;
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use smb_index::SmbIndexGateReason;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use smb_index::{on_smb_overflow, on_smb_watcher_died, start_indexing_for_smb};
+pub(crate) use smb_index::{on_smb_overflow, on_smb_watcher_died, resume_smb_index_if_enabled, start_indexing_for_smb};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use smb_watch::{apply_smb_change, discard_buffered_changes, replay_buffered_changes};
 

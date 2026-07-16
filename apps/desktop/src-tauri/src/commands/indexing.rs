@@ -243,12 +243,15 @@ pub async fn enable_drive_index(app: AppHandle, volume_id: String) -> Result<Ena
 ///
 /// Stops the scan and watcher and removes the volume's registry instance (so its
 /// badge goes gray / not-indexed), but PRESERVES the DB on disk, so re-enabling
-/// can resume rather than rescan from scratch. Local `root` disable/enable still
+/// can resume rather than rescan from scratch. Also persists a sticky
+/// `user_disabled` marker so a later SMB reconnect doesn't auto-resume what the
+/// user turned off (`disable_drive_index_persist_intent`); re-enabling clears it,
+/// "Forget this drive" deletes the whole DB. Local `root` disable/enable still
 /// works (don't break it). A no-op if the drive isn't indexed.
 #[tauri::command]
 #[specta::specta]
 pub async fn disable_drive_index(volume_id: String) -> Result<(), String> {
-    indexing::stop_indexing(&volume_id)
+    indexing::disable_drive_index_persist_intent(&volume_id)
 }
 
 /// Forget a drive's index entirely: stop it, DELETE its index DB (plus WAL/SHM

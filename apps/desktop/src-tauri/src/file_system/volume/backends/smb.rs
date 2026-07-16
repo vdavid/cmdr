@@ -923,6 +923,15 @@ impl SmbVolume {
         // up on the event will see a fully-installed session.
         self.transition_to_direct();
 
+        // The session is back. Resume the drive index if the user had it enabled
+        // (a persisted index DB with a completed scan). Fire-and-forget: the hook
+        // spawns, so we never start the async indexer while holding `reconnect_lock`
+        // (still held here). No-op for a never-enabled share or an already-active
+        // index. This is the in-place-reconnect half of index recovery; the
+        // launch/upgrade half lives in `smb_upgrade::register_smb_volume`.
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        crate::indexing::resume_smb_index_if_enabled(self.volume_id.clone());
+
         info!("SmbVolume::attempt_reconnect(share={}): success", self.share_name);
         Ok(())
     }
@@ -950,6 +959,121 @@ impl SmbVolume {
         }
         self.do_attempt_reconnect().await
     }
+}
+
+// ── Backend-autonomous reconnect (watcher-death recovery) ─────────────
+
+/// The bounded, growing backoff between backend reconnect attempts after the live
+/// watcher's session died. A handful of tries over a few minutes, then we give up
+/// quietly — never hammering a truly-down server. The frontend reconnect manager
+/// runs its OWN cadence while a pane is open; this is the no-pane / background /
+/// restart safety net, coalesced with the FE through `do_attempt_reconnect`'s
+/// single-flight.
+const WATCHER_DEATH_RECONNECT_BACKOFF: [Duration; 6] = [
+    Duration::from_secs(2),
+    Duration::from_secs(5),
+    Duration::from_secs(15),
+    Duration::from_secs(30),
+    Duration::from_secs(60),
+    Duration::from_secs(120),
+];
+
+/// Whether a failed reconnect attempt is terminal for the backoff loop (stop) vs.
+/// transient (keep backing off). An auth failure (`PermissionDenied`) is terminal:
+/// `do_attempt_reconnect` already re-pulled credentials and emitted `needs_auth`,
+/// so only the user's "Sign in" (the FE flow) can fix it, and retrying risks
+/// locking the account. Everything else (network down, timeout, server rebooting)
+/// is transient.
+fn reconnect_backoff_should_give_up(err: &VolumeError) -> bool {
+    matches!(err, VolumeError::PermissionDenied(_))
+}
+
+/// Drive backend-autonomous reconnection after the live SMB watcher's session
+/// died. The single caller is the watcher's fatal-error exit
+/// (`smb_watcher::run_smb_watcher`), which has already flipped the index Stale.
+///
+/// The watcher runs on its own dedicated smb2 session; that session erroring
+/// proves the connection to the server broke, so we mark the volume Disconnected
+/// (a background disconnect may not have touched the main session yet, leaving it
+/// falsely Direct) and drive `do_attempt_reconnect` on a bounded, growing backoff.
+/// Reusing `do_attempt_reconnect` (not a second reconnect path) means:
+/// - it coalesces with any FE-initiated reconnect (single-flight `reconnect_lock`),
+/// - success rebuilds the session, RESPAWNS the watcher, and resumes the drive
+///   index (the on-connect hook) — all in one place, no second state machine.
+///
+/// Stops early when the volume is unmounted, removed/replaced in the manager, back
+/// to Direct (an FE reconnect won the race), or an auth failure surfaced (the FE
+/// "Sign in" flow owns that). Gives up quietly once the backoff is exhausted.
+pub(crate) fn spawn_watcher_death_reconnect(volume_id: String) {
+    tokio::spawn(async move {
+        // The watcher's session died ⇒ the server connection is gone. Mark the
+        // volume Disconnected so `do_attempt_reconnect` actually rebuilds (it
+        // no-ops while Direct) and respawns the watcher.
+        {
+            let Some(volume) = crate::file_system::get_volume_manager().get(&volume_id) else {
+                return; // already gone from the manager
+            };
+            let Some(smb) = volume.as_any().downcast_ref::<SmbVolume>() else {
+                return; // replaced by a non-SMB volume
+            };
+            if smb.unmounted.load(Ordering::Relaxed) {
+                return;
+            }
+            smb.transition_to_disconnected();
+        }
+
+        for (i, delay) in WATCHER_DEATH_RECONNECT_BACKOFF.iter().enumerate() {
+            tokio::time::sleep(*delay).await;
+
+            // Re-resolve each iteration: an unmount/replace swaps the instance.
+            let Some(volume) = crate::file_system::get_volume_manager().get(&volume_id) else {
+                return;
+            };
+            let Some(smb) = volume.as_any().downcast_ref::<SmbVolume>() else {
+                return;
+            };
+            if smb.unmounted.load(Ordering::Relaxed) {
+                return;
+            }
+            if smb.connection_state() == ConnectionState::Direct {
+                debug!("smb backend reconnect: '{}' already Direct; done", volume_id);
+                return; // an FE reconnect (or a prior attempt) won the race
+            }
+
+            match smb.do_attempt_reconnect().await {
+                Ok(()) => {
+                    info!(
+                        "smb backend reconnect: '{}' back online after watcher death (attempt {}/{})",
+                        volume_id,
+                        i + 1,
+                        WATCHER_DEATH_RECONNECT_BACKOFF.len()
+                    );
+                    return;
+                }
+                Err(e) if reconnect_backoff_should_give_up(&e) => {
+                    info!(
+                        "smb backend reconnect: '{}' needs credentials ({}); stopping — the Sign-in flow owns recovery",
+                        volume_id, e
+                    );
+                    return;
+                }
+                Err(e) => {
+                    debug!(
+                        "smb backend reconnect: '{}' attempt {}/{} failed: {}",
+                        volume_id,
+                        i + 1,
+                        WATCHER_DEATH_RECONNECT_BACKOFF.len(),
+                        e
+                    );
+                }
+            }
+        }
+        info!(
+            "smb backend reconnect: '{}' still down after {} attempts; giving up (retries on next access or the next watcher death)",
+            volume_id,
+            WATCHER_DEATH_RECONNECT_BACKOFF.len()
+        );
+    });
 }
 
 // ── Reconnect helpers (free functions to keep `attempt_reconnect` readable) ──
@@ -2315,6 +2439,54 @@ impl SmbConnectionParams {
 // the `smb` module so `super::*` reaches the backend's private items. Because
 // `smb.rs` is a file module (not a `mod.rs` directory), the sibling paths are
 // spelled explicitly with `#[path]`.
+#[cfg(test)]
+mod reconnect_backoff_tests {
+    use super::*;
+
+    /// The watcher-death backoff must be bounded (a handful of attempts) and
+    /// monotonically growing (never hammer a truly-down server), and finite so the
+    /// loop always gives up. Guards against an accidental unbounded or shrinking
+    /// schedule during edits.
+    #[test]
+    fn backoff_is_bounded_and_monotonic() {
+        let schedule = WATCHER_DEATH_RECONNECT_BACKOFF;
+        assert!(
+            (3..=8).contains(&schedule.len()),
+            "a handful of attempts, not an endless loop: got {}",
+            schedule.len()
+        );
+        for pair in schedule.windows(2) {
+            assert!(pair[1] >= pair[0], "backoff must never shrink: {:?}", schedule);
+        }
+        let total: Duration = schedule.iter().sum();
+        assert!(
+            total <= Duration::from_secs(600),
+            "the loop must give up within a few minutes: total {:?}",
+            total
+        );
+    }
+
+    /// An auth failure is terminal for the backoff loop (the FE Sign-in flow owns
+    /// recovery; retrying risks locking the account); every other failure is
+    /// transient and keeps the loop backing off.
+    #[test]
+    fn only_auth_failure_stops_the_backoff() {
+        assert!(reconnect_backoff_should_give_up(&VolumeError::PermissionDenied(
+            "bad creds".into()
+        )));
+        assert!(!reconnect_backoff_should_give_up(&VolumeError::DeviceDisconnected(
+            "server down".into()
+        )));
+        assert!(!reconnect_backoff_should_give_up(&VolumeError::ConnectionTimeout(
+            "slow".into()
+        )));
+        assert!(!reconnect_backoff_should_give_up(&VolumeError::IoError {
+            message: "blip".into(),
+            raw_os_error: None,
+        }));
+    }
+}
+
 #[cfg(test)]
 #[path = "smb_archive_integration_test.rs"]
 mod smb_archive_integration_test;

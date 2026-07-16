@@ -10,7 +10,7 @@ modifying `SmbVolume`, `MtpVolume`, `LocalPosixVolume`, the SMB watcher, or `InM
 - **`local_posix.rs`**: `LocalPosixVolume`: real filesystem; delegates listing to `file_system::listing`, indexing to `indexing::scanner`, watching to `indexing::watcher` (FSEvents), copy scanning via `walkdir`. Uses `libc::statvfs` FFI for space info.
 - **`mtp.rs`**: `MtpVolume`: MTP device storage; async `Volume` trait with direct async MTP calls. Uses `MtpReadStream`, which reads in bounded `GetPartialObject64` windows over a cached `MtpReadSession` (mtp-rs `WindowedDownload`; the window/offset bookkeeping lives in mtp-rs, the per-window device lock in `mtp/connection`). Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`.
 - **`smb.rs`**: `SmbVolume`: SMB share storage; async `Volume` trait with direct async smb2 calls. Splits session storage into `Arc<Mutex<Option<SmbClient>>>` + `Arc<RwLock<Option<Arc<Tree>>>>` so the hot read/write paths can clone `Connection` under a brief lock and drive compound / download ops without serializing on the client mutex. `AtomicU8` connection state. Caches `SmbConnectionParams` (host, share, port, credentials) so `attempt_reconnect` can rebuild the session in place after a transient disconnect, single-flighted via `reconnect_lock`. Holds a global `AppHandle` (`set_app_handle` in `lib.rs::setup`) for emitting `smb-connection-changed` events (the typed `tauri_specta::Event` struct `SmbConnectionChanged` lives in the always-compiled `network/mod.rs`, not here, so `collect_events!` in `ipc.rs` can reference it on every platform; `emit_state_change` just builds and `.emit()`s it). Also contains `connect_smb_volume()`. Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`.
-- **`smb_watcher.rs`**: Background SMB change watcher (`run_smb_watcher`). Owns a dedicated smb2 session (separate TCP connection from the volume's primary client) and uses smb2 0.10's `'static` `Watcher` with pipelined CHANGE_NOTIFY (one request kept pre-issued on the wire so events arriving during consumer processing don't fall in a re-arm gap). Debounces events, feeds `notify_directory_changed`. Spawned by `connect_smb_volume()` and respawned by `attempt_reconnect`. No internal reconnect — bails on `next_events` errors and lets `attempt_reconnect` handle session recovery.
+- **`smb_watcher.rs`**: Background SMB change watcher (`run_smb_watcher`). Owns a dedicated smb2 session (separate TCP connection from the volume's primary client) and uses smb2 0.10's `'static` `Watcher` with pipelined CHANGE_NOTIFY (one request kept pre-issued on the wire so events arriving during consumer processing don't fall in a re-arm gap). Debounces events, feeds `notify_directory_changed`. Spawned by `connect_smb_volume()` and respawned by `attempt_reconnect`. No internal reconnect loop — bails on `next_events` errors, then kicks `spawn_watcher_death_reconnect` (which drives `do_attempt_reconnect`, the single source of truth) so recovery happens even with no pane open. See § "Backend-autonomous reconnect and index resume".
 - **`in_memory.rs`**: `InMemoryVolume`: `RwLock<HashMap>` store for tests; also used for stress tests (`with_file_count`)
 
 ## SMB auto-upgrade lifecycle
@@ -53,6 +53,31 @@ Credentials are kept in memory for the lifetime of the `SmbVolume` (no security 
 process's address space for every smb2 call). Only re-pulled from the secret store on auth failure, in case the user
 updated them.
 
+### Backend-autonomous reconnect and index resume
+
+The FE reconnect manager only runs its backoff while a `FilePane` subscribes to the volume, so before this a background
+disconnect (no pane open, or a restart) left an enabled NAS index dark until the user manually re-enabled. Two backend
+hooks close that, both funneling through the ONE reconnect path (`do_attempt_reconnect`):
+
+- **`spawn_watcher_death_reconnect(volume_id)`** (in `smb.rs`, kicked from the watcher's fatal-error exit). The watcher
+  runs on its own dedicated smb2 session; that session erroring proves the server connection broke. A background
+  disconnect may not have touched the MAIN session yet, so it can still read `Direct` — meaning `do_attempt_reconnect`
+  would no-op. So the kick FIRST marks the volume `Disconnected`, then drives `do_attempt_reconnect` on a bounded, growing
+  backoff (`WATCHER_DEATH_RECONNECT_BACKOFF`: ~6 tries over ~4 min, then gives up quietly — never hammering a truly-down
+  server). It re-resolves the volume from the manager each iteration (an unmount/replace swaps the instance) and stops
+  early on unmount, on a race back to `Direct` (an FE reconnect won), or on an auth failure (`PermissionDenied` — the FE
+  "Sign in" flow owns that; retrying risks locking the account). Single-flight `reconnect_lock` coalesces it with any
+  concurrent FE reconnect.
+- **`indexing::resume_smb_index_if_enabled(volume_id)`** fires at every session-install success — `do_attempt_reconnect`
+  (in-place reconnect), `register_smb_volume` (launch/auto-upgrade), and `try_smb_upgrade` (manual "Connect directly").
+  It's fire-and-forget (spawns, so it never starts the async indexer under `reconnect_lock` / a registry lock), a no-op
+  if the index is already active, and gated on the PERSISTED per-volume state — resume ONLY when a completed scan is
+  recorded AND the user hasn't turned indexing off (the sticky `user_disabled` marker; `disable_drive_index` keeps the DB
+  for fast re-enable but records intent). Registering flows through the indexing lifecycle registration bus, so the media
+  scheduler resumes enrichment with no scheduler changes. The resumed index loads Stale (we weren't watching while
+  disconnected); a rescan restores Fresh. Canonical detail lives in `indexing/DETAILS.md` § "SMB indexing and the
+  freshness model"; this bullet is the volume-side trigger map.
+
 ## Per-backend decisions
 
 **Decision**: `SmbVolume` and `MtpVolume` store `volume_id: String` for listing cache lookups
@@ -73,8 +98,8 @@ updated them.
 **Decision**: Watcher task is not stored on `SmbVolume`, only the cancel sender is
 **Why**: The spawned task owns its own `Watcher` and `SmbClient`. Storing them on the struct alongside the cancel sender would just duplicate ownership without buying anything — `watcher.next_events()` is `&mut self`, so the task is the only thing that can drive it anyway. The `watcher_cancel: Mutex<Option<oneshot::Sender<()>>>` on the struct provides clean shutdown.
 
-**Decision**: Watcher doesn't reconnect itself; it bails on connection errors
-**Why**: When `next_events` errors with anything but `NOTIFY_ENUM_DIR`, the watcher's task returns. The next hot-path op on the volume hits the dead main session, `handle_smb_result` flips to `Disconnected`, the FE backoff cycle calls `attempt_reconnect`, which respawns the watcher (with a fresh dedicated session). Don't give the watcher its own reconnect-with-backoff loop: two state machines tracking the same "is the session alive" question is a recipe for divergence — the watcher's internal retries swallow real disconnections the FE reconnect manager would have surfaced. One reconnect path, one source of truth. The watcher's session being separate from the main session means a watcher-only failure (e.g., a TCP hiccup on the watcher's connection) doesn't surface as a volume disconnect until the next mutation; that's the trade-off for keeping the connections independent.
+**Decision**: Watcher doesn't reconnect itself; on death it KICKS the one reconnect path
+**Why**: When `next_events` errors with anything but `NOTIFY_ENUM_DIR`, the watcher's task returns. It must NOT run its own reconnect-with-backoff loop: two state machines tracking the same "is the session alive" question diverge — the watcher's internal retries would swallow real disconnections the FE reconnect manager surfaces. So the watcher still owns no reconnect logic; it just calls `spawn_watcher_death_reconnect(volume_id)`, which drives `do_attempt_reconnect` (the single source of truth) on a bounded backoff. One reconnect path, one source of truth — now triggered on watcher death too, not only by the next hot-path op / FE backoff tick. See § "Backend-autonomous reconnect and index resume" for why the kick marks the volume `Disconnected` first.
 
 **Decision**: Watcher debounces 200ms per batch, `FullRefresh` above 50 events per directory
 **Why**: Prevents 1000 individual stat calls when 1000 files are copied. The 200ms window collects events that arrive in rapid succession. The 50-event threshold for `FullRefresh` avoids O(n) stat calls for bulk operations.
