@@ -125,9 +125,9 @@ worktree under `.claude/worktrees/<slug>`:
     `pnpm check` (cache-aware, builds correctly). Don't trust a bare-cargo green right after edits. (Also:
     `pnpm check rust` does NOT run docs-group checks like `pluralize-noun` — run full `pnpm check` before claiming
     green.)
-- CodeGraph (from `~/.claude/docs/codegraph-worktree.md`): `mkdir -p <worktree>/.codegraph`,
-  `cp -c .codegraph/codegraph.db` and `cp .codegraph/config.json` into it, then `(cd <worktree> && codegraph sync)`.
-  Without its own populated `.codegraph`, the worktree session deadlocks against the main repo's DB.
+- CodeGraph: `mkdir -p <worktree>/.codegraph`, `cp -c .codegraph/codegraph.db` and `cp .codegraph/config.json` into it,
+  then `(cd <worktree> && codegraph sync)`. Without its own populated `.codegraph`, the worktree session deadlocks
+  against the main repo's DB.
 - llama-server binaries (gitignored, `src-tauri/resources/ai/`): nothing to do. `src-tauri/build.rs` runs
   `scripts/download-llama-server.go` on demand, which clones from the main clone when `.version` matches (APFS clonefile
   — a self-contained copy, so the worktree also works bind-mounted into the Linux-E2E Docker container), else downloads.

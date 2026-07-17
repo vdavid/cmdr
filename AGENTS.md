@@ -70,7 +70,7 @@ Two colocated tiers per code area, enforced by checks:
 - **Every area `C.md` has a sibling `D.md` and links it** (enforced by `claude-md-details-sibling`). Default new content
   to `D.md`; promote to `C.md` only if it clears the must-know bar. Never `@`-import `D.md` from a `C.md`.
 - If you need to cut `C.md`, do it radically: make its parts sound like tweets, and move stuff to `D.md` as-needed. Aim
-  for 3–400 words.
+  for 3–400 words. OR consider splitting the dir if it's genuinely too complex to describe in 600 words!
 - The doc graph is enforced: `docs-reachable` (every doc reachable from this file by link-walking), `docs-dead-links`
   (no broken links), and `resident-doc-budget` (the always-resident bundle, this file plus its `@`-imports plus
   `.claude/rules/`, can't silently regrow). Keep this section crisp: it's the contract every agent replicates.
@@ -95,25 +95,19 @@ conversational and actionable and never use the words "error" or "failed". The w
   `security.md`, `maintenance.md`.
 - `scripts/check/`: the Go check runner. `.github/workflows/`: CI.
 
-## Checking
+## Checker script
 
 Always use **`pnpm check`** at the repo root (never raw `cargo` / `vitest` / etc.); it's cache-aware. Cadence: `--fast`
 while iterating, plain `pnpm check` per milestone, `--include-slow` before wrapping; prefer **`-q`** (`--quiet`), it
 collapses passes to one line. You can also scope by name (`pnpm check clippy`), tech (`rust` / `svelte` / `go`), or app
 (`desktop` / `website` / ...). [Full docs](scripts/check/CLAUDE.md). **Finish every unit of work by running the right
-checks.**
+checks.** Don't even try to tail the checker script.
 
 ## Testing
 
 Before adding or changing tests, read [`docs/testing.md`](docs/testing.md) (the playbook) and
 [`docs/tooling/testing.md`](docs/tooling/testing.md) (the tools inventory). Desktop-specific test, MCP, and E2E
 mechanics live in [`apps/desktop/CLAUDE.md`](apps/desktop/CLAUDE.md).
-
-## Where to put instructions
-
-Split by kind and level: imperatives ("always / never X") go in `rules/` (`~/.claude/rules/` cross-project,
-[`.claude/rules/`](.claude/rules) project), kept concise; knowledge (how the code works, gotchas, how-tos) in this file
-and colocated `DETAILS.md`. Don't restate user-level rules here, nor use `memory/MEMORY.md` for either.
 
 ## Hard rules
 
@@ -124,17 +118,11 @@ agents should read them manually). Two facts worth stating directly: tool versio
 
 ## Workflow
 
-- **Worktrees by default; don't work on `main`.** Branch off LOCAL `main`, create under `.claude/worktrees/`, rebase and
-  fast-forward local `main`. Started on `main` by mistake? Move to a worktree
-  (`~/.claude/docs/worktree-move-changes.md`) rather than continuing. Desktop worktree setup (target clone, CodeGraph,
-  data-dir cleanup) is in [`apps/desktop/CLAUDE.md`](apps/desktop/CLAUDE.md). For parallel-subagent efforts, see
+- Desktop worktree setup (target clone, CodeGraph, data-dir cleanup) is in
+  [`apps/desktop/CLAUDE.md`](apps/desktop/CLAUDE.md). For parallel-subagent efforts, see
   [`docs/guides/multi-agent-refactors.md`](docs/guides/multi-agent-refactors.md).
 - Before doing **legwork**, read the [guide](docs/guides/agent-legwork-guide.md).
 - **TDD where reasonable** (red → green); cover code with tests until confident, not beyond.
-- **No PRs.** Changes land on `main` via fast-forward merge from a worktree branch (`gh pr create` only if David
-  explicitly asks; see [`.claude/rules/git-conventions.md`](.claude/rules/git-conventions.md)).
-- **Don't `git push` without explicit approval** (solo work, limited CI; see the `push-cadence` and
-  `no-external-actions` user rules).
 - Step back per milestone: is it solid AND elegant?
 - **The delivery pipeline is fully wired; don't re-audit it.** Releases are agent-automated end to end (tag → CI
   build/sign/notarize → publish `latest.json` → website deploy → FDA-preserving silent update), and feedback loops are

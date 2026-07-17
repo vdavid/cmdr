@@ -1,6 +1,6 @@
 # Teach CodeGraph to trace Cmdr's Tauri IPC
 
-Status: not started. Priority: low / opportunistic (spare-capacity work). Owner: unassigned.
+Status: PR exists. Priority: low / opportunistic (spare-capacity work). Owner: unassigned.
 
 ## Overview (the impact)
 
@@ -47,7 +47,7 @@ pleasant, well-scoped, opportunistic contribution, not because it's urgent. Be c
 **What CodeGraph is:** a local code-knowledge-graph indexer + MCP server (`@colbymchenry/codegraph`, MIT). It parses
 each language with tree-sitter into nodes (functions, structs, components, etc.) and edges (calls, imports, references),
 stored in SQLite, queried via MCP tools (`codegraph_search`, `codegraph_callers`, `codegraph_impact`, etc.). Cmdr uses
-it (see `.codegraph/` at repo root and David's setup notes in `~/.claude/CLAUDE.md`).
+it (see `.codegraph` at repo root and David's setup notes in `~/.claude/CLAUDE.md`).
 
 **Why it can't see IPC:** the link between a TS `commands.getMcpPort()` call and the Rust `get_mcp_port` fn is a runtime
 IPC hop, not an AST edge, and the two sides are different languages with different names (`getMcpPort` ↔
@@ -200,7 +200,5 @@ no runtime, no app launch, the inverse of the typed-events migration's E2E-only 
   [languages reference](https://colbymchenry.github.io/codegraph/reference/languages/). Key files:
   `src/resolution/types.ts` (interface), `src/resolution/frameworks/{react-native,fabric,swift-objc,rust,index}.ts`,
   `__tests__/frameworks-integration.test.ts`.
-- David's CodeGraph setup notes (native `better-sqlite3` build, node-22 pin, version cooldown): `~/.claude/CLAUDE.md` §
-  CodeGraph. Relevant when updating the local install to a release that includes this resolver.
 - Prior art that is NOT this (typed-IPC generators, not analyzers): [TauRPC](https://github.com/MatsDK/TauRPC),
   `tauri-specta` (which Cmdr already uses).

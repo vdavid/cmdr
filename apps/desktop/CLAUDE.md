@@ -3,9 +3,8 @@
 The Cmdr desktop app: Rust + Tauri 2 backend (`src-tauri/`), Svelte 5 + TypeScript frontend (`src/`), custom CSS with
 design tokens.
 
-Repo-wide rules: [`/AGENTS.md`](../../AGENTS.md). Subsystem map: [`/docs/architecture.md`](../../docs/architecture.md).
-Running, debugging, MCP control, testing, and worktree setup: [DETAILS.md](DETAILS.md). Feature must-knows live in each
-directory's colocated `CLAUDE.md`.
+[Subsystem map](../../docs/architecture.md). Running, dev watchers, debugging, MCP control, testing, and worktree setup
+in [DETAILS.md](DETAILS.md). Feature must-knows in the colocated `CLAUDE.md`s.
 
 ## Must-knows
 
@@ -37,6 +36,3 @@ directory's colocated `CLAUDE.md`.
 - `src-tauri/`: Rust backend (Tauri 2, serde, notify, tokio).
 - `scripts/`: dev/build scripts, mainly `tauri-wrapper.js`; see its [CLAUDE.md](scripts/CLAUDE.md).
 - `test/`: Vitest unit tests, plus `test/e2e-playwright/`, `test/e2e-linux/`, and `test/smb-servers/` fixtures.
-
-Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.

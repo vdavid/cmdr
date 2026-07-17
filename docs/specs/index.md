@@ -153,6 +153,7 @@ wiped.
       (clone+tail-rewrite design spike-validated 2026-07-09, see `notes/m-append-spike.md`; SMB path needs an smb2
       copychunk client API), open-with-external for inner files (design spiked), and MTP in-place editing (stretch).
       Wipe the shipped sections once the C+D.md capture is confirmed; the deferred items then move back under `later/`.
+- [x] 2026-06-10 codegraph-tauri-resolver.md - Teach CodeGraph to trace Cmdr's Tauri IPC boundary
 
 ## Later
 
@@ -167,7 +168,6 @@ Deferred future work. Unchecked by default; the folder name is the status.
       feature
 - [ ] 2026-06-04 later/agent-spec.md - Persistent in-app agent proposing file operations
 - [ ] 2026-06-04 later/data-dir-rename-spec-draft.md - Rename data directories from bundle-id to plain names
-- [ ] 2026-06-10 later/codegraph-tauri-resolver.md - Teach CodeGraph to trace Cmdr's Tauri IPC boundary
 - [ ] 2026-06-28 later/index-vacuum-reader-pinning.md - Reclaim residual index-DB freelist that long-lived root readers
       stop the incremental vacuum from returning to the OS (deferred: the big freelist sources are now fixed)
 - [ ] 2026-06-21 later/transfer-queue-v2-plan.md - Transfer queue/pause v2: per-lane budgets (FTP conns), mid-large-file
