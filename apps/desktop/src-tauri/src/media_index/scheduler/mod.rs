@@ -62,7 +62,7 @@ mod coordinator;
 use coordinator::{BeginOutcome, FinishOutcome, PassCoordinator};
 
 mod lifecycle;
-use lifecycle::local_should_enrich;
+use lifecycle::{PassOutcome, local_should_enrich, should_retry_when_idle};
 pub use lifecycle::{kick_all_ready_passes, kick_all_ready_passes_with, kick_network_pass, start};
 // Re-exported into the scheduler namespace so the sibling `kick_tests` module reaches
 // them through its `use super::*` (they're otherwise only called within `lifecycle`).
@@ -381,19 +381,21 @@ impl MediaScheduler {
     /// a hung mount), OCR them, and GC vanished rows — idle-gated, bandwidth-bounded,
     /// resumable, and disconnect-paused.
     ///
-    /// No-ops (returns `Ok`) when the master toggle is off, the volume isn't opted in,
-    /// the volume isn't registered (no mount root / no index) — the same skip-on-absence
-    /// discipline as the local pass. A disconnect mid-pass PAUSES the volume (keeps
-    /// completed rows, no `Failed`, no GC); it resumes on reconnect via the bus.
-    pub fn run_network_pass_blocking(&self, volume_id: &str) -> Result<(), String> {
+    /// No-ops (returns `Done(0)`) when the master toggle is off, the volume isn't opted
+    /// in, the volume isn't registered (no mount root / no index) — the same
+    /// skip-on-absence discipline as the local pass. A disconnect mid-pass PAUSES the
+    /// volume (keeps completed rows, no `Failed`, no GC); it resumes on reconnect via the
+    /// bus. A `NotIdle` yield returns [`PassOutcome::RetryWhenIdle`] so the caller resumes
+    /// the pass once the app is idle again (it would otherwise stall permanently).
+    pub(crate) fn run_network_pass_blocking(&self, volume_id: &str) -> Result<PassOutcome, String> {
         if !gate::is_enabled() {
-            return Ok(());
+            return Ok(PassOutcome::Done(0));
         }
         // The per-volume SMB opt-in: turning on the master toggle does NOT auto-enrich
         // network volumes (plan Decision 6).
         if !network::config::is_opted_in(volume_id) {
             log::debug!(target: "media_index", "network enrichment skips '{volume_id}': not opted in");
-            return Ok(());
+            return Ok(PassOutcome::Done(0));
         }
         // The OS mount root we read image bytes from (`/Volumes/<share>`), via the
         // VolumeManager — the same source `indexing::routing` uses for the read-side
@@ -403,10 +405,10 @@ impl MediaScheduler {
             .map(|v| v.root().to_string_lossy().into_owned())
         else {
             log::debug!(target: "media_index", "network enrichment skips '{volume_id}': volume not registered");
-            return Ok(());
+            return Ok(PassOutcome::Done(0));
         };
         let Some(pool) = crate::indexing::get_read_pool_for(volume_id) else {
-            return Ok(());
+            return Ok(PassOutcome::Done(0));
         };
         let images = pool
             .with_conn(walk_image_entries)
@@ -474,7 +476,7 @@ impl MediaScheduler {
             progress: progress.as_ref(),
             clip_stamp: clip_stamp.as_deref(),
         };
-        match enrich_network_and_gc(&ctx)? {
+        let outcome = match enrich_network_and_gc(&ctx)? {
             NetworkPassOutcome::Completed(summary) => {
                 network::config::clear_paused(volume_id);
                 if summary.enriched > 0 || summary.gc_count > 0 {
@@ -495,6 +497,7 @@ impl MediaScheduler {
                     images.len(),
                     summary.gc_count,
                 );
+                PassOutcome::Done(summary.enriched)
             }
             NetworkPassOutcome::Paused { summary, reason } => {
                 if reason == PauseReason::Disconnected {
@@ -514,8 +517,16 @@ impl MediaScheduler {
                     "network enrichment of '{volume_id}' paused ({reason:?}) after {} enriched",
                     summary.enriched,
                 );
+                // A NotIdle yield is transient: ask the caller to resume once the app is
+                // idle again. A disconnect/cancel is terminal for this pass (it resumes via
+                // the registration bus or the next scan/kick).
+                if should_retry_when_idle(reason) {
+                    PassOutcome::RetryWhenIdle
+                } else {
+                    PassOutcome::Done(summary.enriched)
+                }
             }
-        }
-        Ok(())
+        };
+        Ok(outcome)
     }
 }

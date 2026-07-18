@@ -7,6 +7,8 @@
 //!
 //! [the `mod.rs` core]: super::MediaScheduler
 
+use std::time::Duration;
+
 use tauri::Manager;
 
 use crate::indexing::IndexVolumeKind;
@@ -323,6 +325,56 @@ pub fn kick_network_pass(scheduler: Arc<MediaScheduler>, volume_id: String) {
     spawn_pass(scheduler, volume_id, PassKind::Network);
 }
 
+/// The outcome of one enrichment pass, as [`spawn_pass`]'s loop needs to see it. Local
+/// passes only ever finish; a network pass can additionally yield to foreground activity
+/// and ask to resume once the app is idle.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum PassOutcome {
+    /// The pass finished (completed, disconnected, cancelled, skipped, or handled an
+    /// error). The count is the images enriched, for the debug log.
+    Done(usize),
+    /// A network pass paused because the app is in use. The pass persisted every
+    /// completed row; resume it (from the store, skipping done rows) once the app is
+    /// idle again. Without this the pass would stall permanently after a single pause.
+    RetryWhenIdle,
+}
+
+/// Whether a paused network pass should resume once the app is idle. ONLY a `NotIdle`
+/// yield resumes here: a `Disconnected` pause resumes via the registration bus on
+/// remount, and a `Cancelled` one (memory watchdog or toggle-off) via the next scan or
+/// user kick, so looping on either would spin the idle-wait against a condition this
+/// loop can't clear.
+pub(super) fn should_retry_when_idle(reason: PauseReason) -> bool {
+    matches!(reason, PauseReason::NotIdle)
+}
+
+/// Whether the idle-wait before a `NotIdle` resume should end: the app went idle (resume
+/// now), or enrichment was stopped (disabled / cancelled — end the wait so the re-run
+/// can no-op out instead of parking a task forever on a never-idle app). Pure, so the
+/// exit condition is unit-testable without a clock or the global signal.
+fn idle_wait_should_end(is_idle: bool, should_stop: bool) -> bool {
+    is_idle || should_stop
+}
+
+/// How often the idle-wait re-checks the foreground signal. Small enough to resume
+/// promptly after the user stops browsing, large enough to cost nothing while waiting.
+const RESUME_POLL_INTERVAL: Duration = Duration::from_secs(2);
+
+/// Park until the app is idle enough to resume a network pass (or until enrichment is
+/// stopped), polling the foreground-activity signal every [`RESUME_POLL_INTERVAL`]. The
+/// idle threshold matches the pass's own gate ([`ConservativeFetchPolicy::idle_threshold`]),
+/// so "idle enough to resume" is exactly "idle enough to have kept going".
+async fn wait_until_idle_to_resume() {
+    let idle_threshold = ConservativeFetchPolicy::default().idle_threshold;
+    loop {
+        let is_idle = crate::media_index::foreground::global().idle_for(idle_threshold);
+        if idle_wait_should_end(is_idle, gate::should_stop()) {
+            return;
+        }
+        tokio::time::sleep(RESUME_POLL_INTERVAL).await;
+    }
+}
+
 /// Request a coalesced enrichment pass and, if this request starts it, drive it
 /// (plus any coalesced re-run) on a blocking background task — never on the IPC
 /// thread, and on a dedicated worker (SQLite + backend), not rayon.
@@ -335,13 +387,24 @@ fn spawn_pass(scheduler: Arc<MediaScheduler>, volume_id: String, kind: PassKind)
             let sched = Arc::clone(&scheduler);
             let vid = volume_id.clone();
             let result = tauri::async_runtime::spawn_blocking(move || match kind {
-                PassKind::Local => sched.run_pass_blocking(&vid),
-                // Unify the return shape (the network pass reports via its own logs).
-                PassKind::Network => sched.run_network_pass_blocking(&vid).map(|()| 0usize),
+                PassKind::Local => sched.run_pass_blocking(&vid).map(PassOutcome::Done),
+                PassKind::Network => sched.run_network_pass_blocking(&vid),
             })
             .await;
             match result {
-                Ok(Ok(count)) => log::debug!(
+                // A network pass yielded to foreground activity. Keep the coordinator slot
+                // (don't `finish`) and re-run once the app is idle again, so enrichment
+                // resumes instead of stalling forever after one pause. A concurrent kick
+                // that arrived meanwhile coalesced into this held slot and re-runs anyway.
+                Ok(Ok(PassOutcome::RetryWhenIdle)) => {
+                    log::debug!(
+                        target: "media_index",
+                        "enrichment of '{volume_id}' paused for foreground activity; waiting for idle to resume"
+                    );
+                    wait_until_idle_to_resume().await;
+                    continue;
+                }
+                Ok(Ok(PassOutcome::Done(count))) => log::debug!(
                     target: "media_index",
                     "enrichment of '{volume_id}' ({kind:?}) enriched {}",
                     crate::pluralize::pluralize(count as u64, "image")
@@ -354,4 +417,35 @@ fn spawn_pass(scheduler: Arc<MediaScheduler>, volume_id: String, kind: PassKind)
             }
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::media_index::network::enrich::PauseReason;
+
+    #[test]
+    fn only_a_not_idle_pause_retries_when_idle() {
+        // NotIdle is a transient yield to foreground activity: the pass must resume once
+        // the app is idle again, or a NAS stalls forever after one pause (the
+        // stuck-paused bug).
+        assert!(should_retry_when_idle(PauseReason::NotIdle));
+        // A disconnect resumes via the registration bus on remount, and a watchdog/
+        // toggle-off cancel resumes via the next scan or user kick — neither loops here,
+        // or a dead mount would spin the idle-wait forever.
+        assert!(!should_retry_when_idle(PauseReason::Disconnected));
+        assert!(!should_retry_when_idle(PauseReason::Cancelled));
+    }
+
+    #[test]
+    fn the_idle_wait_ends_on_idle_or_a_stop() {
+        // Resume the moment the app goes idle.
+        assert!(idle_wait_should_end(true, false), "idle ⇒ resume now");
+        // A disable/cancel ends the wait too, so a disabled feature never leaves a task
+        // parked forever on a never-idle app; the re-run then no-ops out.
+        assert!(idle_wait_should_end(false, true), "stopped ⇒ stop waiting");
+        assert!(idle_wait_should_end(true, true));
+        // Still busy and still enabled: keep waiting.
+        assert!(!idle_wait_should_end(false, false), "busy and enabled ⇒ keep waiting");
+    }
 }

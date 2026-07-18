@@ -122,7 +122,13 @@ Typed knobs (`ConservativeFetchPolicy`), each a real gate, not a comment:
   is a single process-global "last foreground activity" timestamp; the hot foreground filesystem IPC (directory listing =
   every navigation) calls `note_foreground_activity`, and the pure `is_idle(now, last, threshold)` is unit-tested over a
   fake clock. A non-idle app pauses the pass (`PauseReason::NotIdle`) so a NAS is never dragged over the wire while the
-  user browses.
+  user browses. A `NotIdle` pause is TRANSIENT, not terminal: `run_network_pass_blocking` returns
+  `PassOutcome::RetryWhenIdle`, and `spawn_pass` keeps the volume's coordinator slot and re-runs the pass (from the
+  store, skipping done rows) once the app is idle again (`wait_until_idle_to_resume`, polling every 2 s, ending on idle
+  OR `gate::should_stop`). Without this resume the enrichment would stall permanently after the first pause — a NAS that
+  the user keeps browsing near would freeze mid-sweep and never finish. The `should_retry_when_idle` gate is `NotIdle`
+  ONLY: `Disconnected` resumes via the registration bus on remount, `Cancelled` via the next scan or user kick, so
+  looping on either would spin the idle-wait against a condition this loop can't clear.
 - **Bandwidth-bounded.** After each image, `throttle_delay(bytes, max_bytes_per_sec)` sleeps so the sustained fetch rate
   stays under the cap (default 8 MB/s). Pure and tested; it deliberately over-throttles slightly (ignores OCR time) — the
   conservative direction.
