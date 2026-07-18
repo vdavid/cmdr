@@ -166,6 +166,11 @@ Deferred future work. Unchecked by default; the folder name is the status.
       future archive/plugin work
 - [ ] 2026-05-29 later/disk-cleanup-advice-process.md - Not a spec, but reference notes for a future disk-cleanup advice
       feature
+- [ ] 2026-07-18 [later/out-of-process-indexing.md](later/out-of-process-indexing.md) - Deferred escalation: move drive
+      and media indexing into a separate OS process for a hard "can't starve the UI" guarantee. Not needed now (thread
+      QoS + bounded logging closed the levers; the resilience fix stopped the source); captures the `INDEX_REGISTRY` /
+      `AppHandle`-emit / status-RPC / shared-`Arc` seams, the clean per-volume-WAL data-safety split, the
+      `ai/process.rs` sidecar prior art, and the effort/tradeoffs, with revisit triggers
 - [ ] 2026-06-04 later/agent-spec.md - Persistent in-app agent proposing file operations
 - [ ] 2026-06-04 later/data-dir-rename-spec-draft.md - Rename data directories from bundle-id to plain names
 - [ ] 2026-06-28 later/index-vacuum-reader-pinning.md - Reclaim residual index-DB freelist that long-lived root readers
