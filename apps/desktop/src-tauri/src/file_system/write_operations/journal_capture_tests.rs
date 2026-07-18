@@ -415,7 +415,14 @@ fn time_delete(op_id: &str, paths: &[std::path::PathBuf]) -> Duration {
 /// the vacuum runs in bounded slices between batches, so even the loaded writer
 /// can't stall the op. A capture that went synchronous on the op thread would blow
 /// the budget in (b)/(c).
+///
+/// `#[ignore]`d: this is a wall-clock latency assertion (three real 1,500-file
+/// create+delete passes plus a core-hogging vacuum spinner), which is meaningless
+/// under `cargo nextest`'s process-per-test parallelism — a descheduled run blows
+/// the 8 s cap even though the internal `base*6 + 3s` budget is contention-robust.
+/// Run it explicitly to check the "capture stays off the hot path" property.
 #[test]
+#[ignore = "wall-clock latency assertion; meaningless under nextest parallelism — run explicitly"]
 fn capture_stays_off_the_hot_path_under_writer_load() {
     const N: usize = 1_500;
 

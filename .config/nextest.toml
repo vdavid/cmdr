@@ -47,6 +47,10 @@ real-notify = { max-threads = 1 }
 # about, and multiplying live watches starves delivery. See the override below
 # for the timeout headroom.
 disk-image = { max-threads = 1 }
+# SMB streaming STRESS tests hammer the SHARED Docker Samba stack with heavy
+# concurrent I/O (hundreds of MB). Running them at once — or alongside each other
+# — self-contends on the one server. Serialize them.
+smb-stress = { max-threads = 1 }
 
 [[profile.default.overrides]]
 filter = 'test(mtp_scan) + test(listing_is_watched_flips_with_connection)'
@@ -61,6 +65,27 @@ test-group = 'virtual-mtp'
 filter = 'test(indexing::external_drive_fixture::)'
 test-group = 'disk-image'
 slow-timeout = { period = "30s", terminate-after = 1 }
+
+# SMB stress tests serialize on the shared server (see `smb-stress` group above).
+# The concurrent-streaming one additionally wraps its copy in a 120 s internal
+# `tokio::time::timeout` whose expiry dumps the last 30 `client-mutex:`/`recv:`
+# lines — its deadlock diagnostic. The general 30 s `smb_integration_` cap below
+# would SIGKILL the process before that fires, AND under heavy host/container
+# contention (parallel integration runs sharing the one Docker Samba stack) a
+# HEALTHY run can legitimately exceed 30 s. Give it 130 s so its own 120 s
+# deadline stays authoritative (the diagnostic fires, nextest stays a backstop).
+# This override precedes the general one so it wins slow-timeout for this test
+# (nextest: the first matching override per setting wins).
+[[profile.default.overrides]]
+filter = 'test(smb_integration_concurrent_streaming_writes_no_deadlock)'
+test-group = 'smb-stress'
+slow-timeout = { period = "130s", terminate-after = 1 }
+
+[[profile.default.overrides]]
+# Serialize the other heavy SMB stress test against the concurrent-streaming one
+# (shared server); its own runtime fits the general 30 s cap, so no override there.
+filter = 'test(smb_integration_copy_100_unique_files_no_cross_contamination)'
+test-group = 'smb-stress'
 
 [[profile.default.overrides]]
 # SMB integration tests (`#[ignore]`-gated, only run by the
