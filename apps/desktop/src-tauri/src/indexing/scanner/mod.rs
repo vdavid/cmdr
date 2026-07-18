@@ -26,7 +26,8 @@ pub(in crate::indexing) use exclusions::*;
 
 mod walker;
 use walker::{
-    DirTask, DirVisitor, RawDirEntry, RawFileType, ReadDirFn, WalkConfig, WalkReadError, default_reader, walk,
+    DEFAULT_GIVE_UP_AFTER, DirTask, DirVisitor, RawDirEntry, RawFileType, ReadDirFn, WalkConfig, WalkReadError,
+    default_reader, walk,
 };
 
 /// Per-directory read timeout for the LOCAL walk. Sits above any legitimate
@@ -406,6 +407,7 @@ fn run_scan(
         num_threads,
         read_timeout,
         watchdog_interval,
+        give_up_after: DEFAULT_GIVE_UP_AFTER,
     };
     let root_task = DirTask {
         path: root.to_path_buf(),
@@ -448,6 +450,13 @@ fn run_scan(
             "Scanner: {} skipped after {}s each (hung / disconnected dirs)",
             pluralize(walk_stats.timed_out, "dir"),
             read_timeout.as_secs(),
+        );
+    }
+    if walk_stats.subtrees_abandoned > 0 {
+        log::warn!(
+            "Scanner: gave up on {} after {DEFAULT_GIVE_UP_AFTER} consecutive failed reads each \
+             (dead mounts / providers); their subtrees are left honestly unindexed",
+            pluralize(walk_stats.subtrees_abandoned, "subtree"),
         );
     }
 

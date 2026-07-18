@@ -151,6 +151,13 @@ pub trait DirVisitor: Send + Sync {
     fn visit_read_error(&self, dir: &DirTask, err: &WalkReadError);
 }
 
+/// Default per-subtree consecutive-read-failure budget. Mirrors the network
+/// scanner's `CONSECUTIVE_FAILURE_ABORT` (`volume_scanner.rs`) so the two give-up
+/// thresholds stay consistent; the count is stronger evidence here (every failure
+/// is under ONE parent, and any successful sibling resets it), so reusing the
+/// value is if anything conservative.
+pub const DEFAULT_GIVE_UP_AFTER: usize = 32;
+
 /// Walk tuning.
 #[derive(Debug, Clone)]
 pub struct WalkConfig {
@@ -161,6 +168,11 @@ pub struct WalkConfig {
     /// How often the watchdog checks for over-timeout reads. Smaller = tighter
     /// abandon latency and cancellation latency, at a little more wakeup cost.
     pub watchdog_interval: Duration,
+    /// Per-subtree consecutive-read-failure budget (see [`SubtreeBudget`]). Once
+    /// the children of one successfully-listed directory rack up this many failed
+    /// reads (timeouts + IO errors) with no successful read in between, the whole
+    /// remaining subtree is pruned unread. `0` disables the budget.
+    pub give_up_after: usize,
 }
 
 impl Default for WalkConfig {
@@ -169,6 +181,7 @@ impl Default for WalkConfig {
             num_threads: 0,
             read_timeout: Duration::from_secs(15),
             watchdog_interval: Duration::from_secs(1),
+            give_up_after: DEFAULT_GIVE_UP_AFTER,
         }
     }
 }
@@ -179,6 +192,9 @@ pub struct WalkStats {
     pub dirs_read: u64,
     pub timed_out: u64,
     pub io_errors: u64,
+    /// Subtrees abandoned by the give-up budget (one per trip, not per pruned
+    /// descendant). Each corresponds to a single give-up log line.
+    pub subtrees_abandoned: u64,
 }
 
 /// Non-macOS reader: `std::fs::read_dir`, classifying each child without
@@ -257,13 +273,21 @@ pub fn walk<V: DirVisitor + 'static>(
         reader,
         visitor,
         timeout: cfg.read_timeout,
+        give_up_after: cfg.give_up_after,
         slots: Mutex::new(Vec::with_capacity(num_threads)),
         dirs_read: AtomicU64::new(0),
         timed_out: AtomicU64::new(0),
         io_errors: AtomicU64::new(0),
+        subtrees_abandoned: AtomicU64::new(0),
     });
 
-    engine.enqueue(root);
+    // The scan root and its direct children share a budget rooted at the root path;
+    // each successfully-listed dir mints a fresh budget for its own children.
+    let root_budget = SubtreeBudget::new(root.path.clone(), cfg.give_up_after);
+    engine.enqueue(ScheduledTask {
+        task: root,
+        budget: root_budget,
+    });
 
     // Give each initial worker its own slot up front so the watchdog can see it.
     let initial_slots: Vec<Slot> = {
@@ -301,16 +325,84 @@ pub fn walk<V: DirVisitor + 'static>(
         dirs_read: engine.dirs_read.load(Ordering::Relaxed),
         timed_out: engine.timed_out.load(Ordering::Relaxed),
         io_errors: engine.io_errors.load(Ordering::Relaxed),
+        subtrees_abandoned: engine.subtrees_abandoned.load(Ordering::Relaxed),
     }
 }
 
 // ── Internals ────────────────────────────────────────────────────────
 
+/// Per-subtree give-up budget: the consecutive failed-read count among the
+/// children of ONE successfully-listed directory. Any successful sibling read
+/// resets it; once it reaches `limit` the budget is *given up* — sticky — and
+/// every still-queued sibling sharing it is pruned unread. This bounds a dead
+/// mount to ~`limit` probes per level instead of one abandon per descendant,
+/// and it falls naturally on a dead `Library/CloudStorage/<provider>-*` root
+/// (reads fail, nothing resets). A healthy provider is untouched: its reads
+/// succeed, so the counter never climbs. Shared (`Arc`) by all children of the
+/// directory that minted it. Pruned dirs are never marked listed, so they stay
+/// honest-stale (unknown size), never false-complete.
+struct SubtreeBudget {
+    /// Consecutive failed reads with no success in between (reset by any success).
+    consecutive_failures: AtomicUsize,
+    /// Sticky once the budget trips; makes the give-up idempotent and prunes the
+    /// remaining siblings.
+    given_up: AtomicBool,
+    /// The directory whose children this budget covers — the subject of the single
+    /// give-up log line.
+    root: PathBuf,
+    /// Trip threshold, copied from [`WalkConfig::give_up_after`]. `0` disables it.
+    limit: usize,
+}
+
+impl SubtreeBudget {
+    fn new(root: PathBuf, limit: usize) -> Arc<Self> {
+        Arc::new(Self {
+            consecutive_failures: AtomicUsize::new(0),
+            given_up: AtomicBool::new(false),
+            root,
+            limit,
+        })
+    }
+
+    /// Record a failed read under this subtree. Returns `true` exactly once — on
+    /// the read that trips the budget — so the caller logs the give-up a single
+    /// time. Under concurrency "consecutive" is loose (up to `num_threads` reads
+    /// can be in flight against one budget), the same caveat the network scanner
+    /// notes: a genuinely dead subtree piles failures with no success to reset it,
+    /// so it still trips; a lone bad dir is reset by its many healthy peers.
+    fn record_failure(&self) -> bool {
+        if self.limit == 0 {
+            return false;
+        }
+        let n = self.consecutive_failures.fetch_add(1, Ordering::SeqCst) + 1;
+        n >= self.limit && !self.given_up.swap(true, Ordering::SeqCst)
+    }
+
+    /// A successful read broke the streak — reset the counter. Leaves an
+    /// already-tripped budget given up (its siblings are already being pruned).
+    fn reset(&self) {
+        self.consecutive_failures.store(0, Ordering::SeqCst);
+    }
+
+    fn is_given_up(&self) -> bool {
+        self.given_up.load(Ordering::SeqCst)
+    }
+}
+
+/// A directory scheduled for reading: the visitor-facing [`DirTask`] plus the
+/// give-up budget it shares with its siblings. Internal to the engine — the
+/// public visitor API still sees a bare `DirTask`.
+#[derive(Clone)]
+struct ScheduledTask {
+    task: DirTask,
+    budget: Arc<SubtreeBudget>,
+}
+
 /// An in-flight directory read, registered in a worker's slot so the watchdog
 /// can time it out.
 struct InFlight {
     state: Arc<AtomicU8>,
-    task: DirTask,
+    task: ScheduledTask,
     started: Instant,
 }
 
@@ -320,7 +412,7 @@ type Slot = Arc<Mutex<Option<InFlight>>>;
 
 struct Engine<V: DirVisitor> {
     /// Directories still to read. Drained by workers, grown as dirs are discovered.
-    queue: Mutex<VecDeque<DirTask>>,
+    queue: Mutex<VecDeque<ScheduledTask>>,
     /// Signals queue-non-empty and walk-done. Paired with `queue`'s mutex.
     cv: Condvar,
     /// Tasks enqueued but not yet accounted done. Walk completes when this hits 0.
@@ -331,20 +423,41 @@ struct Engine<V: DirVisitor> {
     reader: ReadDirFn,
     visitor: Arc<V>,
     timeout: Duration,
+    /// Per-subtree give-up budget threshold (see [`SubtreeBudget`]). Copied onto
+    /// every budget the engine mints.
+    give_up_after: usize,
     /// One slot per live worker (initial + replacements). Grows on abandonment.
     slots: Mutex<Vec<Slot>>,
     dirs_read: AtomicU64,
     timed_out: AtomicU64,
     io_errors: AtomicU64,
+    subtrees_abandoned: AtomicU64,
 }
 
 impl<V: DirVisitor + 'static> Engine<V> {
     /// Push a directory to read. Bumps the outstanding count first so completion
     /// can't race to zero before the child is queued.
-    fn enqueue(&self, task: DirTask) {
+    fn enqueue(&self, task: ScheduledTask) {
         self.outstanding.fetch_add(1, Ordering::SeqCst);
         self.queue.lock_ignore_poison().push_back(task);
         self.cv.notify_one();
+    }
+
+    /// Record a failed read against its subtree budget. On the read that trips the
+    /// budget (returns `true` exactly once), log the give-up a single time and
+    /// count it; the remaining still-queued siblings are pruned unread by the
+    /// pre-read check in [`Self::run_worker`].
+    fn record_subtree_failure(&self, scheduled: &ScheduledTask) {
+        if scheduled.budget.record_failure() {
+            self.subtrees_abandoned.fetch_add(1, Ordering::Relaxed);
+            log::warn!(
+                target: LOG_TARGET,
+                "giving up on subtree {} after {} consecutive failed reads (timeouts / IO errors); \
+                 pruning its remaining unread directories (left honest-stale, not indexed)",
+                scheduled.budget.root.display(),
+                scheduled.budget.limit,
+            );
+        }
     }
 
     /// Account one task done. When the last one completes, mark the walk done
@@ -381,7 +494,7 @@ impl<V: DirVisitor + 'static> Engine<V> {
     fn run_worker(self: Arc<Self>, slot: Slot) {
         loop {
             // Pop the next task, or exit when the walk is done/cancelled.
-            let task = {
+            let scheduled = {
                 let mut q = self.queue.lock_ignore_poison();
                 loop {
                     if self.done.load(Ordering::SeqCst) || self.cancelled.load(Ordering::SeqCst) {
@@ -394,15 +507,24 @@ impl<V: DirVisitor + 'static> Engine<V> {
                 }
             };
 
+            // Prune: this task's subtree was given up (its siblings racked up the
+            // failure budget). Skip the read entirely — no probe, no per-dir log,
+            // the dir left unlisted (honest-stale). This is what replaces the
+            // per-descendant abandon flood with one give-up line.
+            if scheduled.budget.is_given_up() {
+                self.complete_one();
+                continue;
+            }
+
             // Register the read so the watchdog can time it out, then do the
             // (potentially blocking) read.
             let state = Arc::new(AtomicU8::new(READING));
             *slot.lock_ignore_poison() = Some(InFlight {
                 state: Arc::clone(&state),
-                task: task.clone(),
+                task: scheduled.clone(),
                 started: Instant::now(),
             });
-            let result = (self.reader)(&task.path);
+            let result = (self.reader)(&scheduled.task.path);
 
             // Resolve the race with the watchdog. If it already abandoned this
             // read, drop the result and exit — a replacement worker took over.
@@ -422,13 +544,21 @@ impl<V: DirVisitor + 'static> Engine<V> {
             match result {
                 Ok(children) => {
                     self.dirs_read.fetch_add(1, Ordering::Relaxed);
-                    for sub in self.visitor.visit_dir(&task, children) {
-                        self.enqueue(sub);
+                    // A successful read breaks the failure streak among this dir's
+                    // siblings, and its own children start a fresh budget rooted here.
+                    scheduled.budget.reset();
+                    let child_budget = SubtreeBudget::new(scheduled.task.path.clone(), self.give_up_after);
+                    for sub in self.visitor.visit_dir(&scheduled.task, children) {
+                        self.enqueue(ScheduledTask {
+                            task: sub,
+                            budget: Arc::clone(&child_budget),
+                        });
                     }
                 }
                 Err(e) => {
                     self.io_errors.fetch_add(1, Ordering::Relaxed);
-                    self.visitor.visit_read_error(&task, &WalkReadError::Io(e));
+                    self.record_subtree_failure(&scheduled);
+                    self.visitor.visit_read_error(&scheduled.task, &WalkReadError::Io(e));
                 }
             }
             self.complete_one();
@@ -475,9 +605,10 @@ impl<V: DirVisitor + 'static> Engine<V> {
                     target: LOG_TARGET,
                     "read timed out after {:?}, abandoning {} (subtree skipped this scan)",
                     self.timeout,
-                    task.path.display(),
+                    task.task.path.display(),
                 );
-                self.visitor.visit_read_error(&task, &WalkReadError::TimedOut);
+                self.record_subtree_failure(&task);
+                self.visitor.visit_read_error(&task.task, &WalkReadError::TimedOut);
 
                 // Restore capacity: the parked worker is gone, so add a fresh slot
                 // and a replacement worker.

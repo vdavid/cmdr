@@ -147,6 +147,10 @@ fn fast_cfg(num_threads: usize) -> WalkConfig {
         num_threads,
         read_timeout: Duration::from_millis(50),
         watchdog_interval: Duration::from_millis(5),
+        // The default budget (32) is far above any existing test's failure count,
+        // so the give-up path stays out of the way here; its own test sets a small
+        // budget deliberately.
+        give_up_after: DEFAULT_GIVE_UP_AFTER,
     }
 }
 
@@ -408,6 +412,7 @@ fn cancellation_returns_promptly() {
             num_threads: 2,
             read_timeout: Duration::from_secs(10), // long, so only cancel can end it
             watchdog_interval: Duration::from_millis(5),
+            give_up_after: DEFAULT_GIVE_UP_AFTER,
         },
         fs.clone().reader(),
         visitor,
@@ -418,4 +423,93 @@ fn cancellation_returns_promptly() {
         "cancel must end the walk promptly, not wait out the hang (elapsed {:?})",
         start.elapsed(),
     );
+}
+
+#[test]
+fn gives_up_on_a_dead_subtree_and_keeps_walking_a_healthy_sibling() {
+    // A dead mount: `/r/dead` lists OK but EVERY one of its many children fails to
+    // read (like a disconnected File Provider returning ETIMEDOUT per descendant).
+    // Without the give-up budget the walker probes all of them (the log-flood /
+    // wasted-time bug); with it, the subtree is abandoned after ~N consecutive
+    // failures and the rest are pruned unread. The healthy sibling `/r/healthy`
+    // must still be walked in full, and the pruned dead dirs must be left
+    // honest-stale — never marked read (so never false-completed or zeroed).
+    const DEAD_CHILDREN: usize = 200;
+    const HEALTHY_CHILDREN: usize = 20;
+    const GIVE_UP_AFTER: usize = 4;
+    const NUM_THREADS: usize = 2;
+
+    let dead_names: Vec<String> = (0..DEAD_CHILDREN).map(|i| format!("d{i}")).collect();
+    let healthy_names: Vec<String> = (0..HEALTHY_CHILDREN).map(|i| format!("h{i}")).collect();
+
+    let mut b = TreeBuilder::default();
+    b.dir("/r", &[("dead", RawFileType::Dir), ("healthy", RawFileType::Dir)]);
+    // `/r/dead` lists OK, yielding many child dirs that are ABSENT from the map, so
+    // each of their reads errors immediately (an IO-error dead subtree).
+    let dead_children: Vec<(&str, RawFileType)> = dead_names.iter().map(|n| (n.as_str(), RawFileType::Dir)).collect();
+    b.dir("/r/dead", &dead_children);
+    // `/r/healthy` is fully present: it and all its children read OK.
+    let healthy_children: Vec<(&str, RawFileType)> =
+        healthy_names.iter().map(|n| (n.as_str(), RawFileType::Dir)).collect();
+    b.dir("/r/healthy", &healthy_children);
+    for n in &healthy_names {
+        b.dir(&format!("/r/healthy/{n}"), &[("leaf.txt", RawFileType::File)]);
+    }
+    let fs = b.build(HashSet::new(), Duration::ZERO);
+
+    let visitor = Arc::new(RecordingVisitor::new());
+    let cfg = WalkConfig {
+        num_threads: NUM_THREADS,
+        read_timeout: Duration::from_millis(50),
+        watchdog_interval: Duration::from_millis(5),
+        give_up_after: GIVE_UP_AFTER,
+    };
+    let stats = walk(
+        root_task("/r"),
+        cfg,
+        fs.clone().reader(),
+        visitor.clone(),
+        Arc::new(AtomicBool::new(false)),
+    );
+
+    let rec = visitor.rec.lock().unwrap_or_else(|e| e.into_inner());
+
+    // The dead subtree was given up at least once (bounded work, one log line).
+    assert!(
+        stats.subtrees_abandoned >= 1,
+        "the dead subtree must trip the give-up budget"
+    );
+
+    // Whole-subtree abandonment: only ~N dead children were ever probed; the vast
+    // majority were pruned unread. "Consecutive" is loose under concurrency, so
+    // allow a small per-thread slack, but it must be nowhere near DEAD_CHILDREN.
+    let dead_probed = rec
+        .errors
+        .iter()
+        .filter(|(p, _)| p.parent() == Some(Path::new("/r/dead")))
+        .count();
+    assert!(
+        dead_probed <= GIVE_UP_AFTER + NUM_THREADS * 2,
+        "dead children probed ({dead_probed}) must be bounded near the budget ({GIVE_UP_AFTER}), \
+         not the whole {DEAD_CHILDREN}",
+    );
+
+    // Honest-stale: no dead child is marked read (they either erred or were pruned;
+    // none is completed/known). The pruned majority are neither read nor even
+    // error-reported — left silently unknown, exactly as a dir the scan never reached.
+    assert!(
+        !rec.read_ok.iter().any(|p| p.parent() == Some(Path::new("/r/dead"))),
+        "no dead child may be marked read (honest-stale, never false-complete)",
+    );
+
+    // The healthy sibling is fully walked despite the dead subtree flooding the queue.
+    assert!(rec.read_ok.contains(Path::new("/r/healthy")), "healthy root read");
+    for n in &healthy_names {
+        let p = PathBuf::from(format!("/r/healthy/{n}"));
+        assert!(
+            rec.read_ok.contains(&p),
+            "healthy subtree must be fully indexed: {} missing",
+            p.display(),
+        );
+    }
 }

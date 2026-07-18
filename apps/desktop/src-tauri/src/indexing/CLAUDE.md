@@ -57,6 +57,9 @@ SMB/MTP indexing:
   `start_scan` a trait-scanned volume (walks nothing, false-completes).
 - **Never write `scan_completed_at` for an empty root** (typed `EmptyRoot`); a yanked drive's unlistable root → typed
   `RootUnlistable`: abort, no completion. DETAILS § "No completion marker on an empty root".
+- **The local walker gives up on a subtree after `give_up_after` (32) consecutive failed reads** (dead mount): remaining
+  descendants are pruned unread and left honest-stale (`listed_epoch=0`, unknown), NEVER marked complete or zeroed.
+  DETAILS § "The guarded local walker".
 - **`should_exclude(path, ExclusionScope)` derives scope from the volume kind, NEVER `is_volume_root`** (else
   `MountRooted` false-completes).
 - **The LOCAL scan/reconcile/live pipeline is mount-relative via `IndexPathSpace`.** Strip the mount root ONLY at the
