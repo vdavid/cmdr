@@ -283,15 +283,19 @@ impl ReleaseBuilder {
     }
 }
 
-/// Joins the lead lines into paragraphs, preserving both blank-line paragraph breaks
-/// and the newlines *within* a paragraph. Returns `None` when there's no prose.
+/// Joins the lead lines into paragraphs. Blank lines separate paragraphs; within a
+/// paragraph, a line that starts a new Markdown list item begins a fresh line and every
+/// other line is soft-wrap continuation joined onto the previous line with a space.
+/// Returns `None` when there's no prose.
 ///
-/// Within a paragraph the source lines are joined with `\n`, not a space, so the
-/// author's line structure survives to the Markdown renderer. That's what lets a lead
-/// carry a real numbered list (`1.` / `2.` / `3.`, each on its own line): both snarkdown
-/// (app popup) and marked (website) only recognize a list marker at the start of a line.
-/// Soft-wrapped prose is unaffected: a single `\n` inside a paragraph collapses to a
-/// space when either renderer emits HTML, so wrapped sentences still read as one line.
+/// Keeping each list marker at the start of its own line is what lets a lead carry a real
+/// numbered list (`1.` / `2.` / `3.`): both snarkdown (app popup) and marked (website)
+/// only recognize a marker at line-start. Reflowing continuation lines onto that same line
+/// matters for snarkdown, whose list parser has no lazy-continuation: a bare wrapped line
+/// (say a highlight the changelog formatter wrapped at ~100 chars) would otherwise close
+/// the `<ol>` and make the next `N.` open a fresh list that restarts at 1. Prose is
+/// unaffected: a soft `\n` and a space both collapse to a space when either renderer emits
+/// HTML, so the reflow reads identically.
 fn build_lead(lines: &[String]) -> Option<String> {
     let mut paragraphs: Vec<String> = Vec::new();
     let mut current: Vec<&str> = Vec::new();
@@ -299,7 +303,7 @@ fn build_lead(lines: &[String]) -> Option<String> {
     for line in lines {
         if line.trim().is_empty() {
             if !current.is_empty() {
-                paragraphs.push(current.join("\n"));
+                paragraphs.push(join_paragraph(&current));
                 current.clear();
             }
         } else {
@@ -307,11 +311,43 @@ fn build_lead(lines: &[String]) -> Option<String> {
         }
     }
     if !current.is_empty() {
-        paragraphs.push(current.join("\n"));
+        paragraphs.push(join_paragraph(&current));
     }
 
     let joined = paragraphs.join("\n\n");
     if joined.trim().is_empty() { None } else { Some(joined) }
+}
+
+/// Assembles one paragraph's trimmed lines: a line that starts a list item begins a fresh
+/// line (`\n`), any other line is soft-wrap continuation joined with a space. See `build_lead`.
+fn join_paragraph(lines: &[&str]) -> String {
+    let mut out = String::new();
+    for (index, line) in lines.iter().enumerate() {
+        if index == 0 {
+            out.push_str(line);
+        } else if starts_list_item(line) {
+            out.push('\n');
+            out.push_str(line);
+        } else {
+            out.push(' ');
+            out.push_str(line);
+        }
+    }
+    out
+}
+
+/// True when a trimmed line begins a Markdown list item: an unordered marker
+/// (`- ` / `* ` / `+ `) or an ordered one (one or more digits then `.` or `)` then a space).
+fn starts_list_item(line: &str) -> bool {
+    if ["- ", "* ", "+ "].iter().any(|marker| line.starts_with(marker)) {
+        return true;
+    }
+    let digits = line.chars().take_while(char::is_ascii_digit).count();
+    if digits == 0 {
+        return false;
+    }
+    let rest = &line[digits..];
+    rest.starts_with(". ") || rest.starts_with(") ")
 }
 
 /// Turns a section's raw source lines into entries: groups each bullet with its

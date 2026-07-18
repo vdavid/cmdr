@@ -10,16 +10,27 @@ Depth and rationale. `CLAUDE.md` holds the must-knows; this is the exact parse c
   sections, in changelog order. Drops `Non-app` and any unknown section name.
 - Omits a release that has no lead AND no displayable section.
 
-### Lead newlines are preserved (so a lead can carry a numbered list)
+### Lead line-joining (so a lead can carry a wrapped numbered list)
 
-`build_lead` joins the lines *within* a paragraph with `\n`, not a space, and separates blank-line-delimited paragraphs
-with `\n\n`. Preserving the in-paragraph newlines is load-bearing: it lets a lead be a bold headline followed by a real
-Markdown numbered list (`1.` / `2.` / `3.`, each on its own line). Both renderers (snarkdown in the app popup, marked on
-the website) only recognize a list marker at the **start of a line**, so a space-join would flatten `1. … 2. … 3. …`
-into literal inline text instead of an `<ol>`. Soft-wrapped prose is unaffected: a single in-paragraph `\n` collapses to
-a space when either renderer emits HTML, so wrapped sentences still read as one line. This is faithful rendering, not
-fix-up logic (the changelog stays the single source of truth); the standard lead shape is a `**bold headline**`,
-optionally followed by a blank line and a short numbered list of highlights.
+`build_lead` separates blank-line-delimited paragraphs with `\n\n`. *Within* a paragraph it joins each line that starts
+a Markdown list item (`- ` / `* ` / `+ ` or `N.` / `N)`) onto a fresh line, and every other line onto the previous one
+with a space (soft-wrap continuation). This is load-bearing for a lead shaped as a bold headline plus a real Markdown
+numbered list (`1.` / `2.` / `3.`):
+
+- **Markers must stay at line-start.** Both renderers (snarkdown in the app popup, marked on the website) only recognize
+  a list marker at the **start of a line**, so a blanket space-join would flatten `1. … 2. … 3. …` into literal inline
+  text instead of an `<ol>`.
+- **Continuation lines must reflow onto their item.** snarkdown's list parser has no lazy-continuation: a highlight that
+  the changelog formatter wraps at ~100 chars leaves a bare, un-indented continuation line, and snarkdown treats that
+  line as **closing** the `<ol>`, printing it as loose text and making the next `N.` open a fresh list that restarts at
+  1. Joining the continuation onto the item's line with a space keeps each item a single line, which both renderers
+  render as one clean `<ol>`. (marked survives the un-reflowed form via lazy-continuation; snarkdown does not, hence the
+  reflow.)
+
+Prose is unaffected: a soft in-paragraph `\n` and a space both collapse to a space when either renderer emits HTML, so
+reflowing wrapped prose to spaces reads identically. This is faithful rendering, not fix-up logic (the changelog stays
+the single source of truth); the standard lead shape is a `**bold headline**`, optionally followed by a blank line and a
+short numbered list of highlights.
 
 ## Per-entry post-processing
 

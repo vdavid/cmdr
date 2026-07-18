@@ -119,11 +119,11 @@ fn extracts_wrapped_prose_lead() {
     let r = releases.iter().find(|r| r.version == "0.10.0").unwrap();
     let lead = r.lead.as_ref().unwrap();
     assert!(lead.starts_with("Double-digit minor lead."));
-    // Wrapped lead lines keep their source newline (the renderer collapses a single
-    // in-paragraph `\n` to a space, so the sentence still reads as one line on screen).
+    // Wrapped prose lines reflow onto one line with a space (a soft source `\n` and a
+    // space render identically, so the sentence reads as one line either way).
     assert_eq!(
         lead,
-        "Double-digit minor lead. This release sorts after 0.9.0 by semver, not by string\norder."
+        "Double-digit minor lead. This release sorts after 0.9.0 by semver, not by string order."
     );
 }
 
@@ -151,6 +151,36 @@ fn preserves_numbered_list_lead() {
     assert_eq!(
         releases[0].lead.as_deref(),
         Some("**Big release.**\n\n1. First highlight.\n2. Second highlight.\n3. Third highlight.")
+    );
+}
+
+#[test]
+fn reflows_wrapped_numbered_list_item() {
+    // A numbered highlight that soft-wraps across two source lines (the changelog
+    // formatter caps line length) must reach the renderer as ONE line per item.
+    // Otherwise the bare continuation line closes snarkdown's <ol> and the next `N.`
+    // opens a fresh list that restarts at "1." (marked survives it via lazy
+    // continuation, snarkdown does not).
+    let md = "\
+# Changelog
+
+## [1.0.0] - 2026-07-14
+
+1. First highlight.
+2. Second highlight that runs long enough that the formatter wraps it onto the next
+   line right here.
+3. Third highlight.
+
+### Added
+
+- Something ([abc123](https://github.com/vdavid/cmdr/commit/abc123))
+";
+    let releases = parse(md);
+    assert_eq!(
+        releases[0].lead.as_deref(),
+        Some(
+            "1. First highlight.\n2. Second highlight that runs long enough that the formatter wraps it onto the next line right here.\n3. Third highlight."
+        )
     );
 }
 
