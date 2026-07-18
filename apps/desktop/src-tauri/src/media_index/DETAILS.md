@@ -29,6 +29,15 @@ sweep → wire ordering, edge-triggered bus consumption).
 - **A real GC instead of wholesale table replacement.** Media enrichment is expensive and incremental, so a pass enriches
   only stale images and GCs vanished rows, rather than clearing + rewriting the whole table.
 
+## Scheduler file layout
+
+`scheduler/` splits the coalesced-pass machinery by responsibility: `mod.rs` holds the `MediaScheduler` struct + its
+pass bodies (`run_pass_blocking`, `run_network_pass_blocking`, `folder_scores`, `retro_delete_excluded_folder`);
+`coordinator.rs` holds the pure, testable `PassCoordinator` (one pass per volume, coalesced re-run — covered by
+`coalescing_tests`); `lifecycle.rs` holds the free-function scheduling/wiring layer (`start`, `kick_all_ready_passes`,
+`kick_network_pass`, `wire_volume`, `spawn_pass`, `local_should_enrich`, `PassKind`); `live.rs` holds the live-follow
+tick. The `kick_*`/`start` entry points re-export through `mod.rs` so their public paths stay `scheduler::start` etc.
+
 ## The lifecycle bus
 
 `media_index`'s scheduler subscribes to `indexing/lifecycle_bus.rs` exactly as `importance`'s does — its OWN `start()`

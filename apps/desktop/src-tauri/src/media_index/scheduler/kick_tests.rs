@@ -16,6 +16,7 @@ use std::collections::{HashMap, HashSet};
 use super::*;
 use crate::importance::store::{ImportanceStore, importance_db_path};
 use crate::importance::writer::{ImportanceWriter, WeightRow};
+use crate::indexing::IndexVolumeKind;
 use crate::indexing::store::{IndexStore, ROOT_ID};
 use crate::media_index::backend::fake::FakeVisionBackend;
 use crate::media_index::network::config::NetworkEnrichConfig;

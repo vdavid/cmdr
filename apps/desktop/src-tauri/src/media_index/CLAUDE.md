@@ -2,13 +2,15 @@
 
 Image-ML enrichment: images searchable by content. A read-consumer of `indexing/`, off by default. On-device OCR +
 Vision tags + similarity embeddings. Local enriches by default; SMB opt-in conservative; MTP never; LocalExternal
-(USB/SD) parked (skip, never treat as Local). Real macOS Vision, a fake for tests.
+(USB/SD) parked (skip, never treat as Local).
 
 ## Module map
 
 - `predicate.rs` PURE `qualify_dir`. `store/` per-volume `media.db` + ONE writer thread (`writer_registry`). `backend/`
   the `VisionBackend` seam (`FakeVisionBackend`, macOS `vision/`).
-- `scheduler/` bus-driven coalesced pass + `enrich.rs` + `reclaim.rs` (coverage split + prune). `network/` SMB
+- `scheduler/` bus-driven coalesced pass: `mod.rs` (`MediaScheduler` + pass bodies), `coordinator.rs`
+  (`PassCoordinator`), `lifecycle.rs` (`start`/kick/wire/spawn), `live.rs`, `enrich.rs`, `reclaim.rs` (coverage
+  + prune). `network/` SMB
   byte-fetch + `config` (opt-in/override/exclude/paused). `vector/` `VectorStore` + resident `cache`; `coverage.rs`
   covered-count.
 - `read/` `MediaIndex` (the ONLY consumer entry). `commands.rs` IPC; `gate.rs` toggle + threshold atomics.
