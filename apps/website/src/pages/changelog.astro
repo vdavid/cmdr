@@ -9,8 +9,13 @@ import { marked } from 'marked'
 // bundling; `?raw` is the supported way to ship a file's contents into the bundle.
 import changelogContent from '../../../../CHANGELOG.md?raw'
 
+// Drop the `# Changelog` title and the intro paragraphs: the page renders its own
+// header above, so we only want the release entries (from the first `## ` heading on).
+const firstReleaseIndex = changelogContent.search(/^## /m)
+const releasesOnly = firstReleaseIndex >= 0 ? changelogContent.slice(firstReleaseIndex) : changelogContent
+
 // Parse markdown to HTML
-const htmlContent = await marked.parse(changelogContent)
+const htmlContent = await marked.parse(releasesOnly)
 ---
 
 <Layout title="Changelog - Cmdr" description="All notable changes to Cmdr, version by version.">
@@ -44,12 +49,6 @@ const htmlContent = await marked.parse(changelogContent)
         font-family: var(--font-mono) monospace;
         font-size: 0.875rem;
         line-height: 1.75;
-    }
-
-    /* Hide the title and intro from the markdown since we render them manually */
-    .changelog-content :global(h1:first-child),
-    .changelog-content :global(h1:first-child + p) {
-        display: none;
     }
 
     .changelog-content :global(h2) {
@@ -91,6 +90,15 @@ const htmlContent = await marked.parse(changelogContent)
         margin-bottom: 1rem;
         padding-left: 1.5rem;
         list-style-type: disc;
+    }
+
+    /* Ordered lists (the per-release highlight list in each lead). Tailwind's Preflight
+       resets list markers, and the `ul` rule above only restores them for bullet lists,
+       so an `ol` needs its own rule or its numbers vanish. */
+    .changelog-content :global(ol) {
+        margin-bottom: 1rem;
+        padding-left: 1.5rem;
+        list-style-type: decimal;
     }
 
     .changelog-content :global(li) {
