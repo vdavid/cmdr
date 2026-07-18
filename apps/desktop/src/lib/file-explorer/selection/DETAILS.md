@@ -100,6 +100,22 @@ Props: `file: FileEntry`, `syncIcon?: string` (URL for sync overlay badge).
 - Sync badge: 10×10px `<img>` at bottom-right.
 - Reactivity: subscribes to `$iconCacheVersion`, re-renders when the cache is populated.
 
+### Cmdr-gold folder recolor scope
+
+When the app color is "Cmdr gold" (`getIsCmdrGold()`), folder icons get the `.gold-folder` CSS filter
+(`grayscale(1) sepia(1) hue-rotate(3deg) saturate(2.5) brightness(0.95)`). Because it starts with `grayscale(1)`, the
+folder's baked-in tint is discarded first, so a folder macOS rendered in any system accent re-tints to the same gold.
+
+`isFolderIcon` gates which ids get it, and the scope is a deliberate contract (pinned by `FileIcon.gold-recolor.test.ts`):
+
+- **Included**: `dir` / `symlink-dir` (the generic folder) and `special:*` (the standard folders macOS badges with a
+  white glyph: Downloads, Desktop, Documents, Movies, Music, Pictures, Public, Trash, home). Without `special:*`, those
+  keep the raw OS bitmap, whose folder tint is the macOS *system* accent, so they'd leak through non-gold while every
+  generic folder is gold. (The glyph goes gold-on-gold rather than white-on-color; accepted as consistent-over-crisp.)
+- **Excluded, on purpose**: `pkg:*` (full-color `.app`/bundle icons the grayscale+sepia filter would flatten into a gold
+  blob) and `path:*` (folders with a user-assigned Finder custom icon we must not override). ❌ Don't widen the gate to
+  either; a "make all folders gold" refactor is exactly the regression the test guards.
+
 ## `SortableHeader.svelte`
 
 Props: `column`, `label`, `currentSortColumn`, `currentSortOrder`, `onClick`, `align?` (`'left'` default, `'right'` for

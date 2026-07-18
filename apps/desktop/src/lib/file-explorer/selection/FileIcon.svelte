@@ -20,7 +20,20 @@
         return getCachedIcon(f.iconId)
     }
 
-    const isFolderIcon = $derived(file.iconId === 'dir' || file.iconId === 'symlink-dir')
+    // Which icon ids get the Cmdr-gold recolor filter. All are folders macOS
+    // renders as a plain (accent-tinted) folder shape, so the grayscale-first
+    // filter re-tints them to gold cleanly regardless of the system accent:
+    //   - `dir` / `symlink-dir`: the generic folder (~99% of rows).
+    //   - `special:*`: the standard folders macOS badges with a white glyph
+    //     (Downloads, Desktop, Documents, Movies, Music, Pictures, Public,
+    //     Trash, home). Without this they keep the raw OS bitmap, whose folder
+    //     tint is the system accent, so they'd leak through non-gold.
+    // Deliberately EXCLUDED: `pkg:*` (full-color `.app`/bundle icons the filter
+    // would destroy) and `path:*` (folders with a user-assigned custom icon we
+    // must not override).
+    const isFolderIcon = $derived(
+        file.iconId === 'dir' || file.iconId === 'symlink-dir' || file.iconId.startsWith('special:'),
+    )
     const recolorToGold = $derived(isFolderIcon && getIsCmdrGold())
 
     // Git portal icons resolve in the frontend via Lucide instead of going
