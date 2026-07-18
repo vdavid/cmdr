@@ -17,7 +17,6 @@
     "apps/desktop/src-tauri/src/file_system/volume/backends/in_memory_test.rs": 914,
     "apps/desktop/src-tauri/src/file_system/volume/backends/local_posix.rs": 850,
     "apps/desktop/src-tauri/src/file_system/volume/backends/mtp.rs": 1095,
-    "apps/desktop/src-tauri/src/file_system/volume/backends/smb.rs": 2236,
     "apps/desktop/src-tauri/src/file_system/volume/mod.rs": 1008,
     "apps/desktop/src-tauri/src/file_system/write_operations/conflict.rs": 1391,
     "apps/desktop/src-tauri/src/file_system/write_operations/delete/walker.rs": 942,

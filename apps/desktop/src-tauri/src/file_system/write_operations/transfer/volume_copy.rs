@@ -508,7 +508,7 @@ fn account_skipped_file(
 ///
 /// Exposed as `pub(crate)` under `cfg(test)` so integration tests in sibling
 /// modules (for example the SMB concurrent-copy cross-contamination test in
-/// `volume/smb.rs`) can drive the real copy pipeline with a
+/// `volume/backends/smb/`) can drive the real copy pipeline with a
 /// `CollectorEventSink` instead of spinning up a full Tauri app. In
 /// production, the only caller is `copy_between_volumes` in this file.
 ///

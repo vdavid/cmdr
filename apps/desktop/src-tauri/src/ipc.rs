@@ -774,7 +774,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             MtpPermissionError,
             MtpPtpcameradSuppressed,
             MtpPtpcameradRestored,
-            // Network + git (network/, file_system/git/, file_system/volume/backends/smb.rs,
+            // Network + git (network/, file_system/git/, file_system/volume/backends/smb/,
             // menu/menu_handlers.rs). Host-found / host-resolved flatten the bare
             // `NetworkHost`; `git-state-changed` pins its wire name via `event_name`
             // (the `…Payload` suffix wouldn't kebab-case to it); `network-host-context-action`

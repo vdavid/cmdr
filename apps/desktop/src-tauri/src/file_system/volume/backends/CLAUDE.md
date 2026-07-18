@@ -9,8 +9,10 @@ checklist live in the parent [`volume/CLAUDE.md`](../CLAUDE.md) + [`volume/DETAI
   + `indexing`, copy scan via `walkdir`, space via `libc::statvfs` FFI.
 - `mtp.rs`: `MtpVolume`, MTP device storage; direct async MTP calls, `MtpReadStream` (bounded-window reads).
   macOS/Linux only.
-- `smb.rs`: `SmbVolume`, direct async smb2. Split session storage, `AtomicU8` connection state, cached
-  `SmbConnectionParams` for reconnect, global `AppHandle` for `smb-connection-changed` events.
+- `smb/`: `SmbVolume`, direct async smb2, as a directory module. `mod.rs` owns the struct + `connect_smb_volume`;
+  concerns split into `events`, `state`, `mapping`, `session`, `reconnect`, `streams`, `scan`, and `volume_impl` (the
+  whole `impl Volume`, since a trait impl can't be split across files). Split session storage, `AtomicU8` connection
+  state, cached `SmbConnectionParams` for reconnect, global `AppHandle` for `smb-connection-changed` events.
 - `smb_watcher.rs`: background SMB change watcher on a dedicated smb2 session (separate TCP connection).
 - `in_memory.rs`: `InMemoryVolume`, `RwLock<HashMap>` for tests + stress tests.
 - `archive/`: `ArchiveVolume` (zip/tar/7z) + reading core, zip write side, live watch. See
