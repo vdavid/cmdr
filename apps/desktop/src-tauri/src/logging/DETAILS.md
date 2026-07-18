@@ -34,6 +34,39 @@ error reports). Two independent chains avoid the tradeoff.
 - **`cleanup_legacy_log_files(dir)`**: one-shot startup sweep removing `Cmdr_<timestamp>.log` files left from the
   earlier `tauri-plugin-log` setup.
 
+## Duplicate coalescing (file chain)
+
+The file chain's terminal writer is `coalesce::CoalescingWriter`, wrapping `FileRotate`. It exists so a runaway loop
+logging the same line thousands of times a second can't peg a core through `write` syscalls or stall other threads on
+the log mutex (an incident once logged 12,700 near-identical warnings; a thread sample caught ~900 samples inside
+`write`). The loop's source is fixed elsewhere (fatal storage errors stop instead of retrying); this is the general
+safety net.
+
+How it works:
+
+- fern hands a chain-target writer one record as a run of `write` calls followed by exactly one `flush`, all under
+  fern's own `Mutex<Box<dyn Write + Send>>`. So the writer buffers bytes in `pending`, and `flush` sees exactly one
+  complete record with no interior locking and no cross-record interleaving. (This also means the old `MutexWriter`
+  wrapper was redundant and is gone.)
+- The dedup key is the record's `LEVEL target  message` bytes. Within a 1 s window, the first `BURST_THRESHOLD` (3)
+  identical lines pass verbatim; further identical lines are dropped and counted. At the next window the line reappears
+  tagged `[+N identical suppressed]`, so triage sees the repetition rate. Distinct lines never coalesce, so normal
+  traffic loses nothing; only a genuine flood is trimmed.
+- The key set is bounded (`MAX_KEYS`, 4096): on the insert path, if full, idle keys (window elapsed) are dropped, then
+  cleared if still full. At worst this re-emits a line that would have been coalesced.
+
+Why this design and not an async drain thread: synchronous, unbuffered per-record writes (fern flushes after each one;
+`file-rotate` writes straight to an unbuffered `File`) are exactly what makes the crash tail complete: every line a
+crashing run logged is already on disk when the next launch bundles it. A bounded async channel would leave the most
+recent lines in-process at crash time, and a flood-then-crash (the worst case for triage) would lose precisely the
+lines that matter. Coalescing keeps the synchronous path and only removes redundant duplicate writes, so the crash tail
+and error-report completeness are preserved while the CPU-burn lever is closed.
+
+**Timestamp placement gotcha**: the ISO-8601 stamp is prepended by the writer at emit time, NOT in the fern `.format()`
+closure. The dedup key must be timestamp-free, or two identical messages a millisecond apart would hash differently and
+never coalesce. Don't move `file_timestamp()` back into the file-chain format. The on-disk line shape is unchanged
+(`<iso-ts> LEVEL target  message`), so the error reporter's timestamp parsing is unaffected.
+
 ## Why fern + file-rotate
 
 `tauri-plugin-log` is one-shot, owns the global `log` facade, and routes everything through a single shared level.

@@ -19,6 +19,7 @@
 //! - **One-shot pruner** ([`eager_prune`]): for the user-lowered-the-cap case.
 //! - **Listing helper** ([`list_recent_log_files`]): for bundle building and diagnostics.
 
+mod coalesce;
 pub mod dispatch;
 
 use std::path::{Path, PathBuf};

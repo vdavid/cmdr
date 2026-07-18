@@ -33,6 +33,7 @@
 
 use std::io::Write;
 use std::path::PathBuf;
+#[cfg(test)]
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicU8, Ordering};
 
@@ -188,16 +189,19 @@ pub fn init(opts: InitOptions) -> Result<(), fern::InitError> {
             Compression::None,
             None,
         );
-        let writer: Box<dyn Write + Send + 'static> = Box::new(MutexWriter(Mutex::new(rotator)));
+        // The coalescing writer prepends the ISO timestamp itself (so the dedup key stays
+        // timestamp-free) and collapses identical-line floods so a runaway loop can't peg a
+        // core through the log file. It needs no interior mutex: fern serializes every
+        // record through its own writer mutex. See `coalesce.rs`.
+        let writer: Box<dyn Write + Send + 'static> = Box::new(super::coalesce::CoalescingWriter::new(rotator));
 
         let file_chain = fern::Dispatch::new()
             .format(|out, message, record| {
+                // No timestamp here: the coalescing writer adds it at emit time, keeping the
+                // dedup key (`LEVEL target  message`) free of the ever-changing stamp.
                 let target = record.target().strip_prefix("cmdr_lib::").unwrap_or(record.target());
                 let level = record.level();
-                out.finish(format_args!(
-                    "{ts} {level:<5} {target}  {message}",
-                    ts = file_timestamp(),
-                ));
+                out.finish(format_args!("{level:<5} {target}  {message}"));
             })
             .level(log::LevelFilter::Debug)
             .chain(writer);
@@ -280,24 +284,6 @@ impl<W: Write> Write for BrokenPipeTolerantWriter<W> {
             Err(e) if e.kind() == std::io::ErrorKind::BrokenPipe => Ok(()),
             Err(e) => Err(e),
         }
-    }
-}
-
-/// Adapts `FileRotate` (which is `Write` but not `Sync`) into a `Send + Sync` writer fern
-/// can swallow. fern accepts `Box<dyn Write + Send>` for chain targets; the lock here
-/// guards `FileRotate`'s internal cursor across the (rare) concurrent `log!` calls from
-/// multiple threads.
-struct MutexWriter<W: Write + Send>(Mutex<W>);
-
-impl<W: Write + Send> Write for MutexWriter<W> {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        let mut guard = self.0.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
-        guard.write(buf)
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        let mut guard = self.0.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
-        guard.flush()
     }
 }
 

@@ -9,6 +9,8 @@ level filtering**: the file target is locked at Debug, the terminal defaults to 
   `set_keep_count` / `keep_count`, `list_recent_log_files`, `eager_prune`, `cleanup_legacy_log_files`
 - **`dispatch.rs`**: `init` (builds + installs the fern tree), `set_stdout_threshold` / `stdout_threshold` (the verbose
   toggle knob, a single AtomicU8)
+- **`coalesce.rs`**: `CoalescingWriter`, the file chain's terminal writer; collapses identical-line floods so a runaway
+  loop can't peg a core through the log file (DETAILS § "Duplicate coalescing")
 - **`tests.rs`**: pruner / listing helper unit tests
 
 Dispatch-tree shape, why fern + file-rotate, timestamp formats, and decisions: [DETAILS.md](DETAILS.md).
@@ -31,6 +33,9 @@ Dispatch-tree shape, why fern + file-rotate, timestamp formats, and decisions: [
   the swap. `commands/logging.rs::set_log_level` calls `dispatch::set_stdout_threshold(Debug | Info)`; the file chain
   ignores the knob. `RUST_LOG` sets the startup stdout threshold and always wins at startup; the toggle takes over at
   runtime if the user flips it (it overwrites the AtomicU8 directly).
+- **The file chain's ISO timestamp is prepended by `CoalescingWriter`, NOT the fern `.format()` closure.** The dedup key
+  must stay timestamp-free or identical lines a millisecond apart never coalesce. Don't move `file_timestamp()` back into
+  the file-chain format. DETAILS § "Duplicate coalescing".
 - **Cap = 0 disables the file chain entirely** (`init` skips it). stdout and the verbose toggle still work; the error
   reporter then produces a bundle with empty `logs/` (upload still goes through). The settings UI documents this.
 - **`file-rotate` is configured once at startup; the keep-N value can't be reconfigured live.** `set_keep_count(n)`
