@@ -243,6 +243,12 @@ pub(super) async fn run_live_event_loop(
     let mut events_since_heartbeat: u64 = 0;
     let mut last_batch_duration_ms: u128 = 0;
 
+    // Tripped by the writer on a fatal storage error. Polled each flush tick below
+    // so a dead index stops this loop promptly, bounding the reconciler's
+    // failing-resolve churn to one batch after the trip (the supervisor also tears
+    // the watcher down, but this doesn't wait for that).
+    let failure_signal = writer.failure_signal();
+
     loop {
         tokio::select! {
             event = event_rx.recv() => {
@@ -290,6 +296,16 @@ pub(super) async fn run_live_event_loop(
                 }
             }
             _ = flush_interval.tick() => {
+                // Stop promptly if the index DB died with a fatal storage error: the
+                // writer detected it and tripped the signal, so there is nothing to
+                // process against a dead DB (the reconciler's resolves would just fail).
+                // The supervisor also tears the watcher down; polling here bounds the
+                // failing-resolve churn to at most one batch after the trip.
+                if failure_signal.is_tripped() {
+                    log::info!("Live event processing: stopping, the index storage failed");
+                    break;
+                }
+
                 // Check if the FSEvents channel overflowed. Events were dropped
                 // between FSEvents and our forward task. The only safe recovery is
                 // a full rescan.
