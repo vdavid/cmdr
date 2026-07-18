@@ -240,3 +240,30 @@ site WITH the `PUBLIC_*` analytics env into a separate `dist-analytics/` dir, th
 `createElement('script')` Umami injector with `data-website-id`, a `/scripts/posthog-init.js` PostHog injector,
 `__cmdrRReady` gating, and no inert-wrapper signature. Still worth a real-browser check for behavior the built HTML
 can't show.
+
+## Visual baselines
+
+`e2e/visual.spec.ts` screenshots every main page in light and dark and diffs against committed PNGs
+(`maxDiffPixelRatio: 0.01`). Baselines are per-OS: Playwright suffixes each snapshot with the platform it ran on, so
+`features-light-chromium-darwin.png` (local macOS) and `features-light-chromium-linux.png` (CI's ubuntu-latest) are
+distinct files. CI only checks the `-linux` set; the `-darwin` set is for local `pnpm --filter @cmdr/website test:e2e`
+runs on a Mac.
+
+**Why this bites at release time.** The website E2E job is path-gated (`apps/website/**`), so baseline drift stays
+latent until a website-touching push runs it. Release prep edits `feature-status.json` (renders `/features`) and
+`roadmap.astro`, which grow those pages; if the `-linux` baseline isn't refreshed, CI goes red right after the release
+tags. macOS can't produce the `-linux` PNGs (font antialiasing differs from Linux), so they must be rendered on Linux.
+
+**`scripts/update-visual-baselines.sh`** refreshes both platforms:
+
+- `-darwin` natively; `-linux` in `mcr.microsoft.com/playwright:v<version>-noble`, pinned (derived, not hardcoded) to
+  the installed `@playwright/test` version so the bundled chromium and Noble fonts track CI's ubuntu-latest. The
+  ultimate check that the container matches the runner is CI itself passing against the committed `-linux` baselines.
+- Compare-then-`--last-failed`: it runs a normal comparison and only re-shoots baselines that actually fail the
+  threshold, so passing (sub-threshold-noisy) pages aren't churned. Idempotent (a no-op when everything already passes).
+- The container installs and builds into anonymous volumes and chowns the written PNGs back, so it never overwrites the
+  caller's macOS `node_modules`/`dist`. Requires Docker; a stopped Docker aborts before any change.
+
+`scripts/release.sh` calls it after the release copy is finalized and before the release commit, so `git add -u` folds
+any refreshed baselines into the `chore(release)` commit and a release never ships a stale baseline. First wired in for
+the v0.34.0 follow-up (2026-07-19).

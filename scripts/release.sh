@@ -75,6 +75,14 @@ sed -i '' "s/^version = \".*\"/version = \"$VERSION\"/" apps/desktop/src-tauri/C
 TODAY=$(date +%Y-%m-%d)
 sed -i '' "s/## \[Unreleased\]/## [$VERSION] - $TODAY/" CHANGELOG.md
 
+# Refresh the website's visual baselines against the finalized release copy. Roadmap and
+# feature-status edits grow pages that have snapshots (most often /features), so a release
+# would otherwise ship a stale Linux baseline and turn CI red right after tagging. This
+# regenerates both platforms and the `git add -u` below stages whatever actually moved.
+# Requires Docker (the Linux baselines can't be rendered on macOS); a missing/stopped Docker
+# aborts here, before tagging.
+apps/website/scripts/update-visual-baselines.sh
+
 # Run oxfmt across the repo so CHANGELOG / package.json / tauri.conf.json drift from
 # manual edits + the sed/`npm pkg set` mutations above doesn't fail CI on the release commit.
 # This also reformats any unrelated files that drifted (for example, a `.claude/commands/*.md`
@@ -92,11 +100,12 @@ git add \
   apps/desktop/src-tauri/Cargo.toml \
   Cargo.lock
 
-# Pick up anything oxfmt reformatted on top of those. `git add -u` only touches tracked
-# files that are already modified, and the pre-flight at the top of this script guaranteed
-# the working tree was clean before we started, so the only modifications that exist now
-# are the version bumps above plus oxfmt's auto-fixes. This keeps the release commit in
-# sync with what oxfmt --ci will see in CI on the freshly-pushed tag.
+# Pick up anything the steps above modified on top of those. `git add -u` only touches
+# tracked files that are already modified, and the pre-flight at the top of this script
+# guaranteed the working tree was clean before we started, so the only modifications that
+# exist now are the version bumps above, the refreshed visual baselines, plus oxfmt's
+# auto-fixes. This keeps the release commit in sync with what oxfmt --ci will see in CI on
+# the freshly-pushed tag.
 git add -u
 
 # Belt-and-braces: confirm the staged tree passes oxfmt in CI mode (no auto-fix). If this

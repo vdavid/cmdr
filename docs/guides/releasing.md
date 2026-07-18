@@ -27,8 +27,14 @@ sequentially on one runner; never let them run concurrently against this shared 
 ## Release gates that abort before tagging
 
 `scripts/release.sh` runs a few hard gates locally before it commits and tags, so a release that can't ship is never
-tagged. Beyond the version/CHANGELOG checks and `oxfmt --ci`, one is worth knowing:
+tagged. Beyond the version/CHANGELOG checks and `oxfmt --ci`, two are worth knowing:
 
+- **Visual baselines are auto-refreshed (Docker required).** After the CHANGELOG/roadmap/version are finalized, the
+  script runs `apps/website/scripts/update-visual-baselines.sh`, which re-shoots any website visual baseline that
+  release-prep copy (mainly `feature-status.json` → `/features`) made stale, on both macOS and (in a pinned Playwright
+  container) Linux, and folds them into the release commit. Docker must be running; a stopped Docker aborts the release
+  before tagging. Without this, the stale `-linux` baseline turns CI red right after the tag. Mechanism:
+  [`apps/website/DETAILS.md`](../../apps/website/DETAILS.md) § Visual baselines.
 - **No stale translations may ship.** A non-`en` translation whose stored `@key.sourceHash` no longer matches the
   current English value is STALE (it renders text translated from a sentence that no longer exists). The
   `desktop-i18n-stale` check is warn-only in normal `pnpm check` (a maintenance signal, not a daily-dev build breaker),
