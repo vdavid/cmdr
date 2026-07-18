@@ -1257,6 +1257,10 @@
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
     "sourceHash": "0d85b0b"
   },
+  "fileExplorer.navigation.driveIndex.tooltipFailed": "Az indexelés leállt, mert nem sikerült elmenteni a meghajtó indexét. Indíts újbóli átvizsgálást az újraépítéshez.",
+  "@fileExplorer.navigation.driveIndex.tooltipFailed": {
+    "sourceHash": "7386b54"
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "Indexelés bekapcsolása ehhez a meghajtóhoz",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"

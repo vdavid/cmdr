@@ -1263,6 +1263,10 @@
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
     "sourceHash": "0d85b0b"
   },
+  "fileExplorer.navigation.driveIndex.tooltipFailed": "Lindexation sest arrêtée à cause dun problème denregistrement de lindex de ce disque. Relancez lanalyse pour le reconstruire.",
+  "@fileExplorer.navigation.driveIndex.tooltipFailed": {
+    "sourceHash": "7386b54"
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "Activer l''indexation pour ce disque",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"

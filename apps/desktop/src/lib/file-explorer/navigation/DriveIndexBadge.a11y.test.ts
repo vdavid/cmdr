@@ -39,6 +39,7 @@ function makeStatus(freshness: Freshness | null, enabled = freshness != null): V
     volumeId: 'smb-test',
     enabled,
     freshness,
+    failure: null,
     scanCompletedAt: freshness === 'fresh' ? 1_750_000_000 : null,
     scanDurationMs: freshness === 'fresh' ? 134_000 : null,
   }

@@ -1259,6 +1259,10 @@
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
     "sourceHash": "0d85b0b"
   },
+  "fileExplorer.navigation.driveIndex.tooltipFailed": "Indexeringen stoppades på grund av ett problem med att spara den här enhetens index. Sök igenom på nytt för att bygga om det.",
+  "@fileExplorer.navigation.driveIndex.tooltipFailed": {
+    "sourceHash": "7386b54"
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "Slå på indexering för den här enheten",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"

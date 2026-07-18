@@ -1259,6 +1259,10 @@
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
     "sourceHash": "0d85b0b"
   },
+  "fileExplorer.navigation.driveIndex.tooltipFailed": "Se detuvo la indexación por un problema al guardar el índice de esta unidad. Vuelve a analizar para reconstruirlo.",
+  "@fileExplorer.navigation.driveIndex.tooltipFailed": {
+    "sourceHash": "7386b54"
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "Activar la indexación de esta unidad",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"

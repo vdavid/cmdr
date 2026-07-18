@@ -1257,6 +1257,10 @@
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
     "sourceHash": "0d85b0b"
   },
+  "fileExplorer.navigation.driveIndex.tooltipFailed": "Đã dừng lập chỉ mục do gặp sự cố khi lưu chỉ mục của ổ đĩa này. Quét lại để tạo lại chỉ mục.",
+  "@fileExplorer.navigation.driveIndex.tooltipFailed": {
+    "sourceHash": "7386b54"
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "Bật lập chỉ mục cho ổ đĩa này",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"

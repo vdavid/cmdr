@@ -64,6 +64,7 @@ var allowedUnusedClasses = map[string]bool{
 	"drive-index-badge-scanning": true,
 	"drive-index-badge-fresh":    true,
 	"drive-index-badge-stale":    true,
+	"drive-index-badge-failed":   true,
 }
 
 // allowedUnusedVariables lists CSS custom properties that are defined but used dynamically,

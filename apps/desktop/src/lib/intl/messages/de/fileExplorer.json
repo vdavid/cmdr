@@ -1265,6 +1265,10 @@
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
     "sourceHash": "0d85b0b"
   },
+  "fileExplorer.navigation.driveIndex.tooltipFailed": "Die Indizierung wurde gestoppt, weil der Index dieses Laufwerks nicht gespeichert werden konnte. Scanne erneut, um ihn neu aufzubauen.",
+  "@fileExplorer.navigation.driveIndex.tooltipFailed": {
+    "sourceHash": "7386b54"
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "Indizierung für dieses Laufwerk einschalten",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"

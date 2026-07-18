@@ -56,7 +56,7 @@ import { createDriveIndexManager, isDriveRow } from './drive-index-manager.svelt
 import type { VolumeInfo } from '../types'
 
 function status(volumeId: string, freshness: VolumeIndexStatus['freshness']): VolumeIndexStatus {
-  return { volumeId, enabled: true, freshness, scanCompletedAt: null, scanDurationMs: null }
+  return { volumeId, enabled: true, freshness, failure: null, scanCompletedAt: null, scanDurationMs: null }
 }
 
 /** Minimal `VolumeInfo` for `isDriveRow`, which reads only `category`, `id`, and `isDiskImage`. */

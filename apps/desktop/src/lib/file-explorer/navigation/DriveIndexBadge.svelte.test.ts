@@ -67,6 +67,7 @@ function makeStatus(overrides: Partial<VolumeIndexStatus> = {}): VolumeIndexStat
     volumeId: 'smb-test',
     enabled: true,
     freshness: 'fresh',
+    failure: null,
     scanCompletedAt: 1_750_000_000,
     scanDurationMs: 134_000,
     ...overrides,

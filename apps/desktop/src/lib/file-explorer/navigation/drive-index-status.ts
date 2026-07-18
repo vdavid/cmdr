@@ -1,6 +1,6 @@
 // Pure mapping helpers for the per-drive index freshness badge + its menu.
 //
-// The badge surfaces four visible states (gray/blue/green/yellow); the backend
+// The badge surfaces five visible states (gray/blue/green/yellow/red); the backend
 // `VolumeIndexStatus` carries `enabled` + a nullable `freshness`. This module is
 // the single source of truth for that mapping and for the badge's tooltip, menu
 // items, and footer copy — kept pure (no Svelte, no DOM) so the state→color and
@@ -9,17 +9,24 @@
 import type { MessageKey } from '$lib/intl/keys.gen'
 import type { Freshness, SmbIndexGateReason, VolumeIndexStatus } from '$lib/ipc/bindings'
 
-/** The four visible badge states. `disabled` is gray (no live index). */
-export type DriveIndexState = 'disabled' | 'scanning' | 'fresh' | 'stale'
+/**
+ * The five visible badge states. `disabled` is gray (no live index); `failed` is
+ * red (the index DB died with a storage error and indexing stopped).
+ */
+export type DriveIndexState = 'disabled' | 'scanning' | 'fresh' | 'stale' | 'failed'
 
 /**
  * Map a backend status to its visible badge state.
  *
- * Gray (`disabled`) is the ABSENCE of a live index: either `enabled: false` or a
- * registered index that somehow carries no `freshness` yet. Otherwise the
- * `freshness` value maps 1:1 (`scanning`→blue, `fresh`→green, `stale`→yellow).
+ * `failed` (red) comes FIRST: a failed index is registered but reports
+ * `enabled: false` (its writer is torn down), so it must render its own distinct
+ * state, not fall through to gray. Gray (`disabled`) is the ABSENCE of a live
+ * index: either `enabled: false` or a registered index with no `freshness` yet.
+ * Otherwise the `freshness` value maps 1:1 (`scanning`→blue, `fresh`→green,
+ * `stale`→yellow).
  */
 export function driveIndexState(status: VolumeIndexStatus): DriveIndexState {
+  if (status.freshness === 'failed') return 'failed'
   if (!status.enabled || status.freshness == null) return 'disabled'
   return freshnessToState(status.freshness)
 }
@@ -32,6 +39,8 @@ function freshnessToState(freshness: Freshness): DriveIndexState {
       return 'fresh'
     case 'stale':
       return 'stale'
+    case 'failed':
+      return 'failed'
   }
 }
 
@@ -59,6 +68,10 @@ export function driveIndexMenuActions(state: DriveIndexState): DriveIndexMenuAct
     case 'fresh':
     case 'stale':
       return ['rescan', 'disable', 'forget']
+    // A failed index can't resume in place; `rescan` rebuilds it from scratch (the
+    // retry), `forget` deletes its dead DB. No `disable` — there's nothing running.
+    case 'failed':
+      return ['rescan', 'forget']
   }
 }
 

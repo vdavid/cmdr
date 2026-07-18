@@ -101,6 +101,8 @@
                           duration: durationText,
                       })
                     : tString('fileExplorer.navigation.driveIndex.tooltipFreshNoScan')
+            case 'failed':
+                return tString('fileExplorer.navigation.driveIndex.tooltipFailed')
         }
     })
 
@@ -240,6 +242,13 @@
     /*noinspection CssUnusedSymbol*/
     .drive-index-badge-stale {
         background-color: var(--color-warning);
+    }
+
+    /* Red: the index DB died with a storage problem and indexing stopped. Distinct
+       from gray (deliberately off) and yellow (stale but browsable). */
+    /*noinspection CssUnusedSymbol*/
+    .drive-index-badge-failed {
+        background-color: var(--color-error);
     }
 
     /* The scanning dot pulses to signal live work, like the corner hourglass.

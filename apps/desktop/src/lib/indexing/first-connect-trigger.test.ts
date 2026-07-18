@@ -33,6 +33,7 @@ vi.mock('$lib/ipc/bindings', () => ({
           volumeId,
           enabled: false,
           freshness: null,
+          failure: null,
           scanCompletedAt: null,
           scanDurationMs: null,
         },
@@ -86,6 +87,7 @@ describe('maybePromptFirstConnect gating', () => {
       volumeId: 'smb-e',
       enabled: true,
       freshness: 'fresh',
+      failure: null,
       scanCompletedAt: null,
       scanDurationMs: null,
     }

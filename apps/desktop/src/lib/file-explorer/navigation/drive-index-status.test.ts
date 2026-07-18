@@ -15,6 +15,7 @@ function makeStatus(overrides: Partial<VolumeIndexStatus> = {}): VolumeIndexStat
     volumeId: 'root',
     enabled: true,
     freshness: 'fresh',
+    failure: null,
     scanCompletedAt: 1_750_000_000,
     scanDurationMs: 134_000,
     ...overrides,
@@ -36,6 +37,15 @@ describe('driveIndexState', () => {
     expect(driveIndexState(makeStatus({ freshness: 'scanning' }))).toBe('scanning')
     expect(driveIndexState(makeStatus({ freshness: 'fresh' }))).toBe('fresh')
     expect(driveIndexState(makeStatus({ freshness: 'stale' }))).toBe('stale')
+    expect(driveIndexState(makeStatus({ freshness: 'failed' }))).toBe('failed')
+  })
+
+  it('maps a failed index to red even though it reports not-enabled', () => {
+    // A failed index is registered (so the badge is honest) but `enabled: false`
+    // (its writer is torn down). It must render red, NOT fall through to gray.
+    expect(
+      driveIndexState(makeStatus({ enabled: false, freshness: 'failed', failure: { code: 10, extendedCode: 266 } })),
+    ).toBe('failed')
   })
 })
 
@@ -45,6 +55,7 @@ describe('driveIndexColorClass', () => {
     expect(driveIndexColorClass('scanning')).toBe('scanning')
     expect(driveIndexColorClass('fresh')).toBe('fresh')
     expect(driveIndexColorClass('stale')).toBe('stale')
+    expect(driveIndexColorClass('failed')).toBe('failed')
   })
 })
 
@@ -60,6 +71,13 @@ describe('driveIndexMenuActions', () => {
   it('offers rescan + disable + forget when fresh or stale', () => {
     expect(driveIndexMenuActions('fresh')).toEqual(['rescan', 'disable', 'forget'])
     expect(driveIndexMenuActions('stale')).toEqual(['rescan', 'disable', 'forget'])
+  })
+
+  it('offers rescan (rebuild) + forget when failed, but no disable', () => {
+    // A failed index can only be rebuilt (rescan) or deleted (forget); there is
+    // nothing running to disable.
+    expect(driveIndexMenuActions('failed')).toEqual(['rescan', 'forget'])
+    expect(driveIndexMenuActions('failed')).not.toContain('disable')
   })
 
   it('does not offer forget when disabled (no index to delete)', () => {
