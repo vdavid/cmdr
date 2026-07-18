@@ -132,7 +132,10 @@ pub(super) fn optional_pane_param(params: &Value) -> Result<Option<&str>, ToolEr
 // under `#![deny(unused)]`; the helper itself is platform-neutral.
 #[cfg_attr(
     not(target_os = "macos"),
-    allow(dead_code, reason = "only caller `tag` is macOS-gated; the helper itself is platform-neutral")
+    allow(
+        dead_code,
+        reason = "only caller `tag` is macOS-gated; the helper itself is platform-neutral"
+    )
 )]
 pub(super) async fn flush_pane_state<R: Runtime>(app: &AppHandle<R>, pane: &str) -> Result<(), ToolError> {
     mcp_round_trip(app, "mcp-sync-state", json!({ "pane": pane }), "ok".to_string())
@@ -150,7 +153,10 @@ pub(super) async fn flush_pane_state<R: Runtime>(app: &AppHandle<R>, pane: &str)
 // under `#![deny(unused)]`; the helper itself is platform-neutral.
 #[cfg_attr(
     not(target_os = "macos"),
-    allow(dead_code, reason = "only caller `tag` is macOS-gated; the helper itself is platform-neutral")
+    allow(
+        dead_code,
+        reason = "only caller `tag` is macOS-gated; the helper itself is platform-neutral"
+    )
 )]
 pub(super) fn resolve_pane_target_paths(state: &PaneState, names: Option<&[String]>) -> Result<Vec<String>, ToolError> {
     if let Some(names) = names {

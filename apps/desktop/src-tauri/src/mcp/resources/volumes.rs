@@ -25,7 +25,10 @@ pub(crate) enum VolumeKind {
     /// off macOS it's genuinely unconstructed — the `token` match still needs it.
     #[cfg_attr(
         not(target_os = "macos"),
-        allow(dead_code, reason = "constructed only in the macOS snapshot_volumes path; the token match still needs the variant off macOS")
+        allow(
+            dead_code,
+            reason = "constructed only in the macOS snapshot_volumes path; the token match still needs the variant off macOS"
+        )
     )]
     Smb,
     /// An MTP device storage (Android / camera over USB).
