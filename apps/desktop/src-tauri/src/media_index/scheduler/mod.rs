@@ -306,7 +306,9 @@ impl MediaScheduler {
         // `enrich_and_gc`), so EVERY exit path reports a terminal.
         let (progress, mut terminal) = self.pass_emitters(volume_id);
         let hooks = PassHooks {
-            cancel: &gate::is_cancelled,
+            // Stop between images on the memory-watchdog emergency stop OR a master-toggle
+            // OFF, so disabling image indexing halts an in-flight pass promptly (§ gate).
+            cancel: &gate::should_stop,
             progress: progress.as_ref(),
         };
         // A full pass walks the whole index, so a stored row absent from the walk genuinely
@@ -521,7 +523,9 @@ impl MediaScheduler {
             network::policy::should_enrich_image(covered, importance, threshold as f32)
         };
         let is_excluded = |os_path: &str| -> bool { network::config::is_excluded(os_path) };
-        let cancel = || gate::is_cancelled();
+        // Stop on the watchdog emergency stop OR a master-toggle OFF (§ gate), so
+        // disabling image indexing halts a running NAS pass promptly.
+        let cancel = || gate::should_stop();
         let sleep = |d: Duration| std::thread::sleep(d);
 
         // Progress + terminal emitters; the guard's default `Failed` covers an

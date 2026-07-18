@@ -39,7 +39,9 @@ tests.
 - **`FakeVisionBackend` via `MediaScheduler::new`, never `start`.** Real backend: ALL Vision/ImageIO on ONE 8 MB-stack
   thread (never rayon); a hostile image gives a typed `VisionError`, never a panic.
 - **Off by default + ONE shared memory ceiling.** Scheduler no-ops until on; cancellation hooks the EXISTING indexing
-  watchdog, so don't add a second.
+  watchdog, so don't add a second. Every pass's between-images cancel hook is `gate::should_stop` (watchdog `is_cancelled`
+  OR toggle OFF), so disabling stops the RUNNING pass (rows kept, GC skipped) — don't narrow it back to `is_cancelled`.
+  D.md § Disabling stops the running pass.
 - **A disconnect is NOT a bad file.** A mid-pass SMB unmount PAUSES (keeps rows, no GC, no `Failed`).
 - **`search/` reaches `media.db` ONLY through `MediaIndex`.** Commands register in BOTH `ipc.rs` + `ipc_collectors.rs`
   (`pnpm bindings:regen`); events (`events.rs`) register in `ipc.rs`'s `collect_events!` only.

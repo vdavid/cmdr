@@ -325,6 +325,27 @@ through `indexing::register_subsystem_stop_hook` (a new tiny hook registry `stop
 yields to the SAME 16 GB resident-memory ceiling rather than a second independent one that would let two ceilings sum to
 ~2× over one pool. The gate's emergency-stop atomic is checked between images; enabling the feature clears it.
 
+### Disabling stops the running pass (not just future ones)
+
+Every pass's between-images cancel hook is `gate::should_stop`, the ONE predicate all three pass types check (the local
+full pass at `run_pass_blocking`, the SMB network pass at `run_network_pass_blocking`, and the live tick at
+`run_live_tick_blocking`). It's true on EITHER of two independent reasons: the watchdog's `is_cancelled` emergency stop,
+OR the master toggle being OFF (`!is_enabled()`). So turning "Index image contents" off halts an in-flight pass (e.g. a
+NAS pass at image 74 of 31,890) within a few images, reusing the SAME safe cancel exit the watchdog uses — the loop
+breaks with `cancelled: true`, which SKIPS GC and keeps every already-enriched row. Disabling is "stop processing",
+never "erase": no GC, no prune (the privacy retro-delete is the separate, explicit erase path).
+
+**Decision: fold the disable into the cancel predicate, don't overload `CANCELLED`.** The two stop reasons stay SEPARATE
+at the atomic level — disabling sets no flag, it's observed live off `is_enabled()`, so `is_cancelled` / `request_cancel`
+keep their exact watchdog-only meaning. This also means re-enable can never leave a stuck flag: `set_enabled(true)`
+clears `CANCELLED` and makes `is_enabled()` true, so `should_stop()` is false again, and `kick_all_ready_passes` starts
+fresh passes (`a_pass_no_ops_while_disabled_and_enriches_once_enabled` pins the disable → no-op → re-enable → enrich
+cycle). A distinct third atomic for disable would add state to reset for no gain. The between-images granularity is right
+for a NON-destructive stop: unlike the exclusion veto (privacy, which re-checks before each upsert to close the
+in-flight-analyze TOCTOU), one more image finishing after a disable just writes one more KEPT row, so the per-image loop
+check is enough. `disabling_the_master_toggle_stops_a_running_pass_and_keeps_rows` (real red→green) pins the running pass
+stopping early with rows preserved.
+
 ## Standing cost
 
 `media_index` adds a THIRD long-lived writer thread per volume (index + importance + media) plus a per-volume `watch`

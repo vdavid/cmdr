@@ -169,7 +169,9 @@ impl MediaScheduler {
         };
 
         let hooks = PassHooks {
-            cancel: &gate::is_cancelled,
+            // Stop on the watchdog emergency stop OR a master-toggle OFF (§ gate), so a
+            // disable halts even a live tick promptly.
+            cancel: &gate::should_stop,
             progress: progress.as_ref(),
         };
         // A live tick CLIP-embeds a new/changed image too (two-part staleness), so the

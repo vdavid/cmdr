@@ -542,6 +542,113 @@ fn a_cancelled_pass_enriches_nothing_and_skips_gc() {
     writer.shutdown();
 }
 
+#[test]
+fn disabling_the_master_toggle_stops_a_running_pass_and_keeps_rows() {
+    use crate::media_index::gate;
+
+    // Turning "Index image contents" OFF must stop an IN-FLIGHT pass promptly, not only
+    // prevent future passes. Every pass's cancel hook is `gate::should_stop`, which yields
+    // when the master toggle flips off (as well as on the watchdog's emergency stop). A
+    // stopped pass keeps every already-enriched row — disabling is "stop processing", not
+    // "erase": no GC, no prune.
+    //
+    // The gate is process-global, so serialize with the other gate-touching tests via the
+    // shared read-pool lock (the guard `kick_tests` / `reclaim_tests` also hold).
+    let _guard = crate::indexing::test_read_pool_lock();
+    gate::set_enabled(true); // is_enabled = true, and clears any prior emergency-stop
+
+    let dir = tempfile::tempdir().expect("temp");
+    let writer = media_writer(dir.path(), "root");
+    // A pre-existing enriched row ABSENT from this pass's walk: a full-pass GC would
+    // delete it. A stopped pass must keep it (GC skipped), proving disable never deletes.
+    writer
+        .upsert(
+            MediaStatusRow {
+                path: "/survivor.jpg".to_string(),
+                mtime: Some(1),
+                size: Some(2),
+                media_kind: MediaKind::Image,
+                state: EnrichmentState::Done,
+                engine_version: "fake-vision-1".to_string(),
+                clip_stamp: String::new(),
+            },
+            Some(crate::media_index::writer::UpsertAnalysis::ocr_only("keep me")),
+        )
+        .expect("seed survivor");
+    writer.flush_blocking().expect("flush");
+
+    // Two stale images: with the toggle ON both would enrich. The user flips it OFF right
+    // before the second, so only the first is processed.
+    let images = vec![
+        ImageEntry {
+            path: "/photos/a.jpg".to_string(),
+            mtime: Some(5),
+            size: Some(6),
+            kind: MediaKind::Image,
+        },
+        ImageEntry {
+            path: "/photos/b.jpg".to_string(),
+            mtime: Some(7),
+            size: Some(8),
+            kind: MediaKind::Image,
+        },
+    ];
+    let statuses = load_statuses(dir.path(), "root");
+    let backend = FakeVisionBackend::new();
+
+    // The cancel hook is wired to the production predicate `gate::should_stop`. Between the
+    // first and second image, simulate the user turning "Index image contents" OFF.
+    let calls = std::cell::Cell::new(0u32);
+    let cancel = || {
+        if calls.get() == 1 {
+            gate::set_enabled(false);
+        }
+        calls.set(calls.get() + 1);
+        gate::should_stop()
+    };
+    let summary = enrich_and_gc(
+        &images,
+        &statuses,
+        &backend,
+        &writer,
+        &|_| true,
+        &|_| false,
+        &PassHooks {
+            cancel: &cancel,
+            progress: &NoopProgressSink,
+        },
+    )
+    .expect("pass");
+
+    assert_eq!(
+        summary.enriched, 1,
+        "only the first image enriched before the toggle flipped off"
+    );
+    assert!(summary.cancelled, "flipping the master toggle off stops the pass");
+    assert_eq!(
+        summary.gc_count, 0,
+        "a stopped pass skips GC — disabling is not a deletion"
+    );
+
+    let store = MediaStore::open(&media_db_path(dir.path(), "root")).expect("reopen");
+    assert!(
+        store.status_for("/photos/a.jpg").expect("read").is_some(),
+        "the first image was enriched and kept"
+    );
+    assert!(
+        store.status_for("/photos/b.jpg").expect("read").is_none(),
+        "the pass stopped before reaching the second image"
+    );
+    assert!(
+        store.status_for("/survivor.jpg").expect("read").is_some(),
+        "already-enriched rows are kept — disabling triggers no GC"
+    );
+
+    writer.shutdown();
+    // Leave the gate disabled (the default) so other tests start clean.
+    gate::set_enabled(false);
+}
+
 // ── Progress denominator + vanished-file handling ─────────────────
 
 /// A progress sink that records the last reported snapshot, so a test can assert the

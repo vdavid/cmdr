@@ -56,6 +56,26 @@ pub fn is_cancelled() -> bool {
     CANCELLED.load(Ordering::SeqCst)
 }
 
+/// Whether an in-flight enrichment pass should STOP promptly. It's the ONE predicate
+/// every pass's between-images cancel hook checks (the local full pass, the SMB network
+/// pass, and the live tick), true on EITHER of two independent reasons:
+///
+/// - the memory watchdog fired an emergency stop ([`is_cancelled`]), OR
+/// - the user turned the master "Index image contents" toggle OFF ([`is_enabled`] is
+///   false), so a pass already running (e.g. a NAS pass at image 74 of 31,890) yields
+///   within a few images instead of grinding to completion after the user said stop.
+///
+/// The two reasons stay SEPARATE at the atomic level: disabling touches no atomic here,
+/// it's observed live off [`is_enabled`], so [`is_cancelled`] / [`request_cancel`] keep
+/// their exact watchdog meaning and re-enabling can never leave a stuck flag —
+/// [`set_enabled(true)`](set_enabled) clears the emergency stop and the scheduler kicks
+/// fresh passes, and the disable input is simply `is_enabled() == true` again. Stopping
+/// reuses the existing cancel exit (rows kept, GC skipped): disabling is "stop
+/// processing", never "erase".
+pub fn should_stop() -> bool {
+    is_cancelled() || !is_enabled()
+}
+
 /// Set the importance threshold (clamped to `0.0..=1.0`). Seeded from settings at
 /// startup and live-applied by the slider's settings command.
 pub fn set_importance_threshold(threshold: f64) {
