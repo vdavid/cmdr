@@ -5,7 +5,7 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.34.0] - 2026-07-18
 
 1. Ask Cmdr: a built-in AI assistant that has access to your files to answer questions (alpha, read-only).
 2. Image index: Find your photos via natural language, by describing the stuff / text (OCR) inside them, fully
