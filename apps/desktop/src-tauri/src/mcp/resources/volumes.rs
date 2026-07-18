@@ -23,13 +23,19 @@ pub(crate) enum VolumeKind {
     /// An SMB share (direct smb2 or an OS mount). Constructed only in the macOS
     /// `snapshot_volumes` path (the Linux snapshot surfaces only root + MTP), so
     /// off macOS it's genuinely unconstructed — the `token` match still needs it.
-    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+    #[cfg_attr(
+        not(target_os = "macos"),
+        allow(dead_code, reason = "constructed only in the macOS snapshot_volumes path; the token match still needs the variant off macOS")
+    )]
     Smb,
     /// An MTP device storage (Android / camera over USB).
     Mtp,
     /// A synthetic entry with no backing device (the `Network` browser root). Also
     /// macOS-path-only today, so off macOS it's unconstructed — see `Smb`.
-    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+    #[cfg_attr(
+        not(target_os = "macos"),
+        allow(dead_code, reason = "macOS-path-only today; unconstructed off macOS, see `Smb`")
+    )]
     Virtual,
 }
 
