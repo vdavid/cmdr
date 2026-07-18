@@ -6,8 +6,8 @@ actual levers, so this stays on the shelf as a documented fallback, not planned 
 
 ## The problem it would solve
 
-Indexing runs in the app process today. A pathological background loop (a dead index DB spinning a failing-retry loop,
-a runaway scan) can contend with the thread that services the UI and IPC, and with a shared resource like the log file.
+Indexing runs in the app process today. A pathological background loop (a dead index DB spinning a failing-retry loop, a
+runaway scan) can contend with the thread that services the UI and IPC, and with a shared resource like the log file.
 One real incident pegged ~190% CPU and froze the webview (a separate process) through CPU plus synchronous log-write
 contention.
 
@@ -22,9 +22,9 @@ Two in-process levers were closing the actual gap, and both are cheaper and lowe
 1. **Thread QoS.** The heavy indexing threads (writer, scanner, walker workers plus watchdog, local reconcile) now set
    `QOS_CLASS_UTILITY` at thread start (`src-tauri/src/thread_qos.rs`). Under contention macOS lets the UI's
    user-interactive threads preempt them, so indexing yields the core without a process boundary.
-2. **Bounded logging.** The file-log writer now coalesces identical-line floods
-   (`src-tauri/src/logging/coalesce.rs`), so a runaway loop can't peg a core through `write` syscalls or stall other
-   threads on the log mutex. The synchronous write path is preserved, so the crash tail stays complete.
+2. **Bounded logging.** The file-log writer now coalesces identical-line floods (`src-tauri/src/logging/coalesce.rs`),
+   so a runaway loop can't peg a core through `write` syscalls or stall other threads on the log mutex. The synchronous
+   write path is preserved, so the crash tail stays complete.
 
 Plus the source of the original incident is fixed independently: fatal storage errors now stop and fail the index
 instead of retrying forever (`indexing/CLAUDE.md` § "A fatal storage error STOPS"). With the source stopped and both
@@ -44,8 +44,8 @@ seams:
 - **`AppHandle`-bound event emits.** The indexer emits progress, phase, and completion events to the frontend via
   Tauri's `Event::emit` (about 25 emit sites in `indexing/`), and `IndexManager` itself carries an `AppHandle`
   (`manager.rs`, `pub(super) app: AppHandle`). Tauri events only exist in the app process. Across a boundary the indexer
-  would emit onto an IPC channel (a pipe or local socket) that the app process forwards to the webview. The
-  `APP_HANDLE` `OnceLock` in `commands/indexing.rs` and the manager's `app` field both need replacing with that channel.
+  would emit onto an IPC channel (a pipe or local socket) that the app process forwards to the webview. The `APP_HANDLE`
+  `OnceLock` in `commands/indexing.rs` and the manager's `app` field both need replacing with that channel.
 - **Status reads become RPC.** The MCP `cmdr://state` resource and the IPC index-status commands read registry and
   per-volume state synchronously today. They'd become request/response calls to the indexer, with the app-side timeout
   discipline (`blocking_with_timeout`) extended to cover a possibly-busy or crashed indexer process.
@@ -61,12 +61,12 @@ seams:
 The storage model splits cleanly along the process boundary:
 
 - **One WAL DB per volume, single-writer discipline.** Each volume has its own SQLite file in WAL mode
-  (`indexing/store/mod.rs`), with exactly one writer thread and a separate write connection
-  (`store/connection.rs`). WAL is designed for exactly this: one writing process, many reading processes/connections.
-  Moving the single writer into the indexer process changes nothing about the invariant; it just relocates the writer.
-- **Search already reads cross-boundary-safe.** Readers open the index read-only (`store/connection.rs`, the
-  "global read-only store"), and WAL lets a reader in one process see a writer in another. So search could stay in the
-  app process, reading the same DB files the indexer writes, with no new coordination beyond what WAL already provides.
+  (`indexing/store/mod.rs`), with exactly one writer thread and a separate write connection (`store/connection.rs`). WAL
+  is designed for exactly this: one writing process, many reading processes/connections. Moving the single writer into
+  the indexer process changes nothing about the invariant; it just relocates the writer.
+- **Search already reads cross-boundary-safe.** Readers open the index read-only (`store/connection.rs`, the "global
+  read-only store"), and WAL lets a reader in one process see a writer in another. So search could stay in the app
+  process, reading the same DB files the indexer writes, with no new coordination beyond what WAL already provides.
 - **No shared mutable file state to referee.** Because it's one-writer-per-file with read-only readers, there's no
   multi-writer contention to design around. This is what makes the split tractable at all: the hard part is the control
   plane (registry, events, status), not the data plane.
@@ -83,17 +83,17 @@ stateless request/response), but the process-management scaffolding exists and i
 
 - **Magnitude: large.** The data plane is easy (WAL already supports it); the control plane is the cost. Reworking
   around three dozen `INDEX_REGISTRY` touch points, ~25 event emits, and the status reads into an RPC surface, plus a
-  supervised sidecar with its own crash/restart handling, is a multi-week effort with real regression surface across
-  the whole indexing lifecycle.
+  supervised sidecar with its own crash/restart handling, is a multi-week effort with real regression surface across the
+  whole indexing lifecycle.
 - **New failure modes.** A sidecar can crash, hang, or be killed by the OS independently of the app. The app then needs
   supervision (detect death, restart, back off), and the UI needs an honest "indexer unavailable" state distinct from
   "indexing disabled." This is more moving parts than the current in-process model, which fails as one unit.
-- **IPC overhead.** Every status read and event emit crosses a process boundary (serialization plus a socket/pipe
-  hop). Negligible for progress events, but the synchronous status reads on hot paths (volume switching, `cmdr://state`)
-  would need caching to stay sub-millisecond.
-- **What it buys.** A structural guarantee that indexing can't starve the UI, and independent resource accounting
-  (the OS shows the indexer's CPU and memory separately, which also helps triage). Worth it only if the in-process
-  levers stop being enough.
+- **IPC overhead.** Every status read and event emit crosses a process boundary (serialization plus a socket/pipe hop).
+  Negligible for progress events, but the synchronous status reads on hot paths (volume switching, `cmdr://state`) would
+  need caching to stay sub-millisecond.
+- **What it buys.** A structural guarantee that indexing can't starve the UI, and independent resource accounting (the
+  OS shows the indexer's CPU and memory separately, which also helps triage). Worth it only if the in-process levers
+  stop being enough.
 
 ## When to revisit
 
