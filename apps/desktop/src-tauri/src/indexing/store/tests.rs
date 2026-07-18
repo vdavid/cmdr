@@ -1769,3 +1769,32 @@ fn non_sqlite_errors_have_no_code_and_are_not_fatal() {
     assert!(!io.is_fatal_storage_error());
     assert!(io.as_index_failure().is_none());
 }
+
+/// The WAL/checkpoint cadence pragmas must actually be in effect on a fresh write
+/// connection. These tame the fsync/checkpoint storm during the big aggregate
+/// finalize (the most likely trigger of the mid-scan `SQLITE_IOERR`): a bounded
+/// `wal_autocheckpoint` cuts implicit-checkpoint frequency ~4x vs the 1 000-page
+/// default, and `journal_size_limit` caps the resting `-wal` file. Read-only
+/// connections never commit or checkpoint, so the pragmas are gated to writers;
+/// this asserts the writer path applies both.
+#[test]
+fn write_connection_applies_wal_cadence_pragmas() {
+    let (store, _dir) = open_temp_store();
+    let conn = IndexStore::open_write_connection(store.db_path()).unwrap();
+
+    let autocheckpoint: i64 = conn
+        .pragma_query_value(None, "wal_autocheckpoint", |row| row.get(0))
+        .unwrap();
+    assert_eq!(
+        autocheckpoint, 4000,
+        "wal_autocheckpoint must be the bounded 4 000-page threshold, not SQLite's 1 000-page default"
+    );
+
+    let journal_size_limit: i64 = conn
+        .pragma_query_value(None, "journal_size_limit", |row| row.get(0))
+        .unwrap();
+    assert_eq!(
+        journal_size_limit, 67_108_864,
+        "journal_size_limit must cap the -wal file at 64 MiB, not the -1 (unlimited) default"
+    );
+}

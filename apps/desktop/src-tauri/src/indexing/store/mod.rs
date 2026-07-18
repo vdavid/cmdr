@@ -448,6 +448,35 @@ fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), IndexStoreErro
             "PRAGMA auto_vacuum = INCREMENTAL;
              PRAGMA journal_mode = WAL;",
         )?;
+        // WAL/checkpoint cadence hardening (write connection only; read-only
+        // connections never commit or checkpoint, so these would be no-ops there).
+        //
+        // With `synchronous = NORMAL` + WAL, ordinary commits don't fsync — the
+        // fsync barriers happen at CHECKPOINT time (fsync the WAL, copy pages into
+        // the main DB, fsync the main DB; an F_FULLFSYNC each on APFS). SQLite's
+        // default `wal_autocheckpoint` of 1 000 pages (~4 MiB) fires a PASSIVE
+        // checkpoint inline on the committing connection every ~4 MiB of WAL, so a
+        // big finalize (the `ComputeAllAggregates` write loop commits ~464 chunked
+        // autocommit transactions) crosses that boundary many times and turns
+        // finalize into an fsync storm. That is the most likely trigger of the
+        // `SQLITE_IOERR` the root index hit mid-scan and never recovered from; the
+        // confirm path is the primary+extended SQLite code now logged when a fatal
+        // storage error trips `IndexPhase::Failed`. Raise the threshold to 4 000
+        // pages (~16 MiB, matching the `-16384` page cache) so implicit checkpoints
+        // fire ~4x less often (fewer fsync barriers) while the WAL between them
+        // stays small enough to keep reads fast.
+        //
+        // `journal_size_limit` caps the on-disk `-wal` file after a checkpoint
+        // resets it: a backstop for the window between the 30 s
+        // `wal_checkpoint(TRUNCATE)` maintenance ticks (`writer/maintenance.rs`)
+        // and the explicit post-scan checkpoint. 64 MiB gives 4x headroom over the
+        // autocheckpoint size so the file is reused in place in steady state (no
+        // trim/regrow churn), yet a pathological burst — or a long-lived reader
+        // blocking checkpoints — can't strand a multi-hundred-MiB `-wal`.
+        conn.execute_batch(
+            "PRAGMA wal_autocheckpoint = 4000;
+             PRAGMA journal_size_limit = 67108864;",
+        )?;
     }
     // busy_timeout: when another connection holds the write lock, retry for up
     // to 5s instead of returning SQLITE_BUSY immediately. Applies to every open
