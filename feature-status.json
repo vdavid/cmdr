@@ -23,13 +23,13 @@
       "id": "image-search",
       "name": "Image search",
       "status": "alpha",
-      "note": "Search the words inside your photos and screenshots. Runs on your Mac and covers local drives for now."
+      "note": "Search the things (dogs, sunset, document, etc., and also text via OCR) inside your photos and screenshots. Runs on your Mac, fully local."
     },
     {
       "id": "archives",
       "name": "Archives",
       "status": "alpha",
-      "note": "Browse, edit, extract zip, tar, and 7z archives like folders."
+      "note": "Browse, create, edit, and extract zip, tar, and 7z archives like folders, including password-protected ones."
     },
     {
       "id": "operation-log",
@@ -41,7 +41,7 @@
       "id": "ask-cmdr",
       "name": "Ask Cmdr",
       "status": "alpha",
-      "note": "Chat with a bring-your-own-key AI about your files. It reads names, paths, sizes, and history to answer, never file contents. Early: the model picker and cost view are still coming."
+      "note": "Chat with an AI agent about your files. It reads names, paths, sizes, and history, plus any files you attach, and shows what each reply costs. Early, with rough edges. Read-only for now. On-device or Cloud via API key, your choice."
     },
     {
       "id": "network-drives",

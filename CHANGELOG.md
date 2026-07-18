@@ -7,48 +7,91 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-**Search the text inside your images, with on-device indexing that starts when you enable it and shows honest
-progress.**
+1. Ask Cmdr: a built-in AI assistant that has access to your files to answer questions (alpha, read-only).
+2. Image index: Find your photos via natural language, by describing the stuff / text (OCR) inside them, fully
+   on-device.
+3. Operation log: Review and roll back (undo) any non-destructive file change.
 
-1. Turn on image search under AI › Image search and Cmdr starts indexing your photos right away, again after every
-   restart.
-2. Follow live progress with an ETA in the top-right indicator, and choose how much to index with a fast, honest depth
-   preview.
-3. Exclude folders to keep photos out of search (already-indexed ones are erased too), and reclaim the disk space when
-   you narrow what you index.
+Plus MCP improvements and tons of bug fixes incl. CPU use improvements.
 
 ### Added
 
-- Search the text inside your images, powered by on-device indexing you control (AI › Image search, off by default).
-  Indexing starts the moment you turn it on and resumes after every restart, shows live progress with an ETA in the
-  top-right indicator, and re-indexes a changed photo within seconds. Choose how much to index with a fast, honest depth
-  preview; exclude any folder to keep its photos out of search, which erases the ones already indexed; and reclaim the
-  disk space left behind when you narrow the depth ([6b56d195](https://github.com/vdavid/cmdr/commit/6b56d195),
-  [ed1c660f](https://github.com/vdavid/cmdr/commit/ed1c660f),
-  [5bb09aab](https://github.com/vdavid/cmdr/commit/5bb09aab),
+- Add Ask Cmdr, a built-in AI assistant that answers questions about your files (alpha): saved sessions, cross-thread
+  search, file attachments, and visible cost ([46f5719e](https://github.com/vdavid/cmdr/commit/46f5719e),
+  [19618827](https://github.com/vdavid/cmdr/commit/19618827),
+  [c067693b](https://github.com/vdavid/cmdr/commit/c067693b),
+  [6a2ec7b9](https://github.com/vdavid/cmdr/commit/6a2ec7b9))
+- Find your photos by description, by the text inside them, or by tag, and find visually similar images, all on-device
+  ([0b6e164b](https://github.com/vdavid/cmdr/commit/0b6e164b),
+  [8efd2bf2](https://github.com/vdavid/cmdr/commit/8efd2bf2),
+  [3a43ff32](https://github.com/vdavid/cmdr/commit/3a43ff32))
+- Control image indexing under AI › Image search: a depth slider, live progress and ETA, opt-in for other drives, and
+  reclaimed disk space when you narrow it ([6b56d195](https://github.com/vdavid/cmdr/commit/6b56d195),
   [bf2ffe5d](https://github.com/vdavid/cmdr/commit/bf2ffe5d),
-  [c8da01f0](https://github.com/vdavid/cmdr/commit/c8da01f0),
-  [cb91d647](https://github.com/vdavid/cmdr/commit/cb91d647))
-- Ask a photo question in Ask Cmdr, or from any connected AI agent: a new `search_photos` tool finds your images by
-  description, by the text inside them, or by tag, and answers with the matching file paths. It reads the on-device
-  image index only, never uploads your photos, and says so honestly when image indexing is off or still building. Text
-  found inside your images and their tags are sent to your AI provider when you use it, so the Ask Cmdr consent screen
-  now spells that out.
+  [e293d63f](https://github.com/vdavid/cmdr/commit/e293d63f),
+  [47113476](https://github.com/vdavid/cmdr/commit/47113476),
+  [5bb09aab](https://github.com/vdavid/cmdr/commit/5bb09aab),
+  [ed1c660f](https://github.com/vdavid/cmdr/commit/ed1c660f))
+- Review and roll back any file change from the new Operation log (View menu, ⌘⌥L); alpha
+  ([39282ade](https://github.com/vdavid/cmdr/commit/39282ade),
+  [4cfde6e5](https://github.com/vdavid/cmdr/commit/4cfde6e5))
+- Compress files into a new zip from the Transfer dialog, with a compression-level slider, a live size estimate, and
+  SMB/MTP destinations ([cea1631b](https://github.com/vdavid/cmdr/commit/cea1631b),
+  [0dddc0e8](https://github.com/vdavid/cmdr/commit/0dddc0e8),
+  [50aeda6c](https://github.com/vdavid/cmdr/commit/50aeda6c))
+- Open password-protected 7z and WinZip-AES encrypted zips ([506d07f3](https://github.com/vdavid/cmdr/commit/506d07f3))
+- Index local external drives (USB sticks, SD cards, extra disks) so search covers them too
+  ([53e52e8b](https://github.com/vdavid/cmdr/commit/53e52e8b),
+  [03497f8c](https://github.com/vdavid/cmdr/commit/03497f8c))
+- Search every indexed volume at once, not just the current drive, and answer "how many" with a count instead of a full
+  list ([a141cc24](https://github.com/vdavid/cmdr/commit/a141cc24),
+  [4426bffc](https://github.com/vdavid/cmdr/commit/4426bffc))
+- Let external AI agents rename, create, tag, favorite, eject, pick trash-vs-delete, drive the operation queue, and read
+  indexing status and folder importance over MCP ([e59f95af](https://github.com/vdavid/cmdr/commit/e59f95af),
+  [a723a623](https://github.com/vdavid/cmdr/commit/a723a623),
+  [d8c6dc3c](https://github.com/vdavid/cmdr/commit/d8c6dc3c))
+- See what's new after an update in a redesigned popup, and open the full changelog from Cmdr › Changelog…
+  ([bacc1d9e](https://github.com/vdavid/cmdr/commit/bacc1d9e))
+
+### Changed
+
+- Scan local drives up to 2.8x faster with a bulk-stat walker
+  ([b2b30ac4](https://github.com/vdavid/cmdr/commit/b2b30ac4),
+  [d6185b65](https://github.com/vdavid/cmdr/commit/d6185b65))
+- Use less CPU and memory while indexing: lower-priority background threads, throttled live writes, and a lighter file
+  list ([2671c00d](https://github.com/vdavid/cmdr/commit/2671c00d),
+  [846cf21a](https://github.com/vdavid/cmdr/commit/846cf21a),
+  [6032386d](https://github.com/vdavid/cmdr/commit/6032386d))
+- Auto-reconnect an SMB share and resume its index after a disconnect or restart
+  ([499027b5](https://github.com/vdavid/cmdr/commit/499027b5))
 
 ### Fixed
 
-- Folder sizes stay accurate after large deletes. Deleting a big folder used to leave its parents showing a stale size,
-  then sometimes settle on a confident but wrong "0 bytes" for a folder that still held gigabytes. The numbers also took
-  minutes of background work to catch up. Now a big delete shows the "size updating" hourglass within a couple of
-  seconds and the sizes settle within seconds, not minutes. Existing drives repair their stored sizes automatically on
-  the next launch, with no rescan ([3d13ab7d](https://github.com/vdavid/cmdr/commit/3d13ab7d),
-  [c2ebf500](https://github.com/vdavid/cmdr/commit/c2ebf500),
-  [e410951c](https://github.com/vdavid/cmdr/commit/e410951c),
-  [7e64e716](https://github.com/vdavid/cmdr/commit/7e64e716),
-  [ac24bca7](https://github.com/vdavid/cmdr/commit/ac24bca7)).
-- Image search reliably starts after you enable it, even right after an app update that rebuilt Cmdr's folder ranking.
-  Before, it could get stuck deciding what to cover (showing "working out how much this covers…") and never index a
-  thing ([6b56d195](https://github.com/vdavid/cmdr/commit/6b56d195)).
+- Keep folder sizes accurate after big deletes and creates; existing drives repair drifted sizes automatically on the
+  next launch ([3d13ab7d](https://github.com/vdavid/cmdr/commit/3d13ab7d),
+  [acefb9a6](https://github.com/vdavid/cmdr/commit/acefb9a6))
+- Show an honest "indexing stopped" badge when a drive's index fails, instead of spinning silently
+  ([1cc60856](https://github.com/vdavid/cmdr/commit/1cc60856))
+- Refresh Google Drive panes live after rename, create, and delete
+  ([b0ccff5e](https://github.com/vdavid/cmdr/commit/b0ccff5e))
+- Never freeze at launch or stall state reads on a hung network mount
+  ([cb669ab2](https://github.com/vdavid/cmdr/commit/cb669ab2))
+- Fix scoped search silently returning nothing for `/tmp` and `/var` paths
+  ([1a448f17](https://github.com/vdavid/cmdr/commit/1a448f17))
+- Fix scoped filename search returning no results on a NAS ([bdcdb7ab](https://github.com/vdavid/cmdr/commit/bdcdb7ab))
+- Match image tag search regardless of case ([092696aa](https://github.com/vdavid/cmdr/commit/092696aa))
+- Stop MCP-created or moved files landing in the wrong pane ([2125b522](https://github.com/vdavid/cmdr/commit/2125b522))
+- Prompt for SMB credentials instead of falling back to the CLI when a share rejects guest access
+  ([9cbd0277](https://github.com/vdavid/cmdr/commit/9cbd0277))
+
+### Non-app
+
+- Split the largest source files into cohesive modules for maintainability
+  ([0cf01dc0](https://github.com/vdavid/cmdr/commit/0cf01dc0))
+- Add Ask Cmdr and the Operation log to the website features page
+  ([14c3d230](https://github.com/vdavid/cmdr/commit/14c3d230),
+  [6735cc6d](https://github.com/vdavid/cmdr/commit/6735cc6d))
+- Bump `spin` off the yanked 0.9.8 ([5eb645bf](https://github.com/vdavid/cmdr/commit/5eb645bf))
 
 ## [0.33.0] - 2026-07-09
 
