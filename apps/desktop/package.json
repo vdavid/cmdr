@@ -47,7 +47,7 @@
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "@ark-ui/svelte": "^5.21.2",
-    "@chenglou/pretext": "^0.0.6",
+    "@chenglou/pretext": "^0.0.8",
     "@leeoniya/ufuzzy": "^1.0.19",
     "@logtape/logtape": "^2.0.5",
     "@tauri-apps/api": "^2.10.1",
@@ -64,7 +64,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@iconify-json/lucide": "1.2.103",
+    "@iconify-json/lucide": "1.2.117",
     "@playwright/test": "^1.59.1",
     "@srsholmes/tauri-playwright": "^0.4.0",
     "@sveltejs/adapter-static": "^3.0.10",
