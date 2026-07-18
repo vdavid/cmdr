@@ -23,8 +23,9 @@ Shared tooling: the Go check runner ([`scripts/check/CLAUDE.md`](scripts/check/C
 ## Where to look (router)
 
 - **Editing code**: the colocated `CLAUDE.md` autoloads when you touch a directory. For "where does symbol X live", use
-  CodeGraph (`codegraph_search`), not a doc. Autoload is touch-based, so read a subsystem's `CLAUDE.md` before running
-  its tooling/tests (e.g. `test/e2e-playwright/CLAUDE.md` before the E2E suite).
+  CodeGraph (`codegraph_search`), not a doc. CodeGraph is enabled for the project and is up to date! Autoload is
+  touch-based, so read a subsystem's `CLAUDE.md` before running its tooling/tests (e.g. `test/e2e-playwright/CLAUDE.md`
+  before the E2E suite).
 - **Planning in an unfamiliar area**: [`docs/architecture.md`](docs/architecture.md), the subsystem map (what + where +
   a pointer to each area's docs).
 - **A procedure** (release, screenshots, deps, adding a window or icon): [`docs/guides/`](docs/guides) and the skills.
