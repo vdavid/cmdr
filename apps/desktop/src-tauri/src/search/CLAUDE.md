@@ -1,82 +1,59 @@
 # Search module
 
-Multi-volume in-memory filename search + AI query translation. A scope routes to its owning volume(s); an unscoped
-query fans out across every volume with a persisted `index-{volumeId}.db` and merges. Flat API:
+Multi-volume in-memory filename search + AI query translation. A scope routes to its owning volume(s); an unscoped query
+fans out across every volume with a persisted `index-{volumeId}.db` and merges. Flat API:
 `use crate::search::{SearchQuery, SearchResult, ...}`.
 
 ## Module map
 
-- **`mod.rs`**: re-exports from submodules.
-- **`index.rs`**: `SearchIndex` (arena-allocated filename storage), `SearchEntry`, and `load_search_index` (the arena
-  loader). No lifecycle state — that's `volumes.rs`.
-- **`volumes.rs`**: per-volume registry + dialog/idle/backstop timers (drop ALL arenas at once). `ensure_volume(id)`
-  lazily loads + caches a volume's arena, mount root (DB `volume_path` meta), and weights; a non-root volume opens
-  read-only from `index-{id}.db` on disk, NOT via `INDEX_REGISTRY`. `VolumeLoad::{Loaded,NotIndexed,Failed}`.
-- **`execute.rs`**: `run_blocking(query)`, the multi-volume orchestrator (route → load → per-volume engine → merge).
-- **`engine.rs`**: `search_ranked()` pure (no I/O): compiles glob/regex, rayon-filters, ranks, reconstructs paths
-  (mount-root-prefixed). Scope via `include_path_ids` / `exclude_dir_names`. `search()` is a `#[cfg(test)]` wrapper.
-- **`history.rs`**: persistent recent-searches store. Atomic JSON, canonical dedupe key, cap eviction, schema-version
-  quarantine. See must-knows below.
-- **`types.rs`**: pure data (`SearchQuery`, `SearchResult`, `SearchResultEntry`, `ParsedScope`, `PatternType`,
-  `default_limit`). No logic.
-- **`query.rs`**: operations on the types: `parse_scope()`, `resolve_include_scope()` (per-volume scope→IDs),
-  formatters, `summarize_query()`, `SYSTEM_DIR_EXCLUDES`.
-- **`ai/`**: NL → `SearchQuery` translation. See [`ai/CLAUDE.md`](ai/CLAUDE.md).
-
-Flow: `execute.rs` routes a query to its volume(s) → per volume: `query.rs` resolves scope IDs → `engine.rs` scans
-(pure, ranked) → `execute.rs` fills dir sizes + merges.
+- `index.rs`: `SearchIndex` (arena-allocated filename storage), `SearchEntry`, `load_search_index` (the arena loader).
+- `volumes.rs`: per-volume registry + dialog/idle/backstop timers (drop ALL arenas at once). `ensure_volume(id)` lazily
+  loads a volume's arena, mount root (`volume_path` meta), and weights; a non-root volume opens read-only from
+  `index-{id}.db` on disk, NOT via `INDEX_REGISTRY`.
+- `execute.rs`: `run_blocking(query)`, the multi-volume orchestrator (route → load → per-volume engine → merge).
+- `engine.rs`: `search_ranked()` PURE (no I/O): compiles glob/regex, rayon-filters, ranks, reconstructs
+  mount-root-prefixed paths. Scope via `include_path_ids` / `exclude_dir_names`.
+- `types.rs`: pure data, no logic. `query.rs`: operations on the types (`parse_scope`, `resolve_include_scope`,
+  formatters, `SYSTEM_DIR_EXCLUDES`).
+- `history.rs`: persistent recent-searches store (see below). `ai/`: NL → `SearchQuery` translation
+  ([`ai/CLAUDE.md`](ai/CLAUDE.md)).
 
 ## Must-knows
 
-- **`engine.rs` is pure: no I/O, no DB access.** Keep it that way; it's the hot path isolated from side effects and
-  trivially testable with synthetic data.
-- **Count-only (`count_only`): `search_ranked` returns exact per-volume totals with no rows; `execute.rs` sums them,
-  no merge.** With a dir size filter, `search_ranked` returns that volume's matching dirs so `run_blocking` MUST
-  `fill_ranked_dir_sizes` then `count_only_volume_total` (else over-count). DETAILS.md § Decisions.
-- **`types.rs` stays free of logic.** It's imported by everything (`engine.rs`, `query.rs`, `ai/`); adding logic risks
-  circular dependencies.
-- **`search/` is a read-only, one-way consumer of `indexing/`** (`search → indexing`, never reverse). It imports
-  `ReadPool` (`indexing::enrichment`), `WRITER_GENERATION` (`indexing::writer`), `ROOT_ID` /
-  `normalize_for_comparison` / `resolve_path` / `IndexStore` (`indexing::store`), and `volume_id_for_local_path`
-  (`indexing::routing`, for scope→volume routing). Search reads the index but doesn't participate in indexing.
-
-- **Multi-volume: `execute.rs` routes + merges, the engine stays per-index/pure.** Non-root indices are mount-relative:
-  PREFIX the mount root onto read paths, STRIP it from scope paths (a mount-root scope = the WHOLE volume, no restriction).
-  Mount root = the `volume_path` meta OR the live volume registry — SMB DBs historically lacked the meta, so don't assume
-  it's set. Two typed honesty fields (branch on emptiness, never string-match): `uncovered_scopes` (volume unindexed) and
-  `unresolved_scopes` (path not found in an indexed volume). Only the root writer bumps `WRITER_GENERATION`. Full model +
-  gotchas: [DETAILS.md](DETAILS.md) § Multi-volume search.
-- **`name_folded` is NOT stored in the index**: the pattern is NFD-normalized at query time on macOS (APFS filenames are
-  already NFD). Avoids doubling the name arena's memory.
-- **Filenames are arena-allocated**: each `SearchEntry` holds `name_offset: u32` + `name_len: u16`, not an owned
-  `String`. During load, `row.get_ref(col).as_str()` borrows from SQLite's buffer (zero per-row heap alloc).
-  `SearchIndex::name(&self, entry)` returns a `&str` slice. Don't switch to owned `String`s; it roughly doubles
-  resident memory.
+- **`engine.rs` is pure: no I/O, no DB.** The hot path, isolated from side effects and trivially testable. Keep it so.
+- **`types.rs` stays free of logic** (imported by everything; logic risks circular deps).
+- **`search/` is a read-only, one-way consumer of `indexing/`** (`search → indexing`, never reverse): imports
+  `ReadPool`, `WRITER_GENERATION`, store helpers, `volume_id_for_local_path`. It reads the index, doesn't participate in
+  indexing.
+- **Multi-volume: `execute.rs` routes + merges; the engine stays per-index/pure** (DETAILS § Multi-volume search).
+  Non-root indices are mount-relative: PREFIX the mount root onto read paths, STRIP it from scope paths (a mount-root
+  scope = the WHOLE volume). Mount root = the `volume_path` meta OR the live registry (SMB DBs historically lacked the
+  meta; don't assume it's set). Two typed honesty fields (branch on emptiness, never string-match): `uncovered_scopes`
+  (volume unindexed), `unresolved_scopes` (path not found). Only the root writer bumps `WRITER_GENERATION`.
+- **Count-only (`count_only`)**: `search_ranked` returns exact per-volume totals with no rows; with a dir-size filter it
+  returns that volume's matching dirs, so `run_blocking` MUST `fill_ranked_dir_sizes` then `count_only_volume_total`
+  (else over-count).
+- **Filenames are arena-allocated**: `SearchEntry` holds `name_offset: u32` + `name_len: u16`, borrowing from SQLite's
+  buffer during load (zero per-row heap alloc). Don't switch to owned `String`s (roughly doubles resident memory).
+  `name_folded` is NOT stored: the pattern is NFD-normalized at query time (APFS filenames are already NFD).
 - **`expand_tilde` is imported from `crate::commands::file_system` in `ai/query_builder.rs`**: business logic reaching
-  into the IPC layer, kept because moving it touches 20+ call sites across four files. Architecturally backwards but
-  intentional; worth a separate cleanup, not a silent "fix" here.
+  into the IPC layer, kept because moving it touches 20+ call sites. Backwards but intentional; a separate cleanup, not
+  a silent "fix" here.
 
 ## History store (`history.rs`)
 
-- **Concurrency**: `Mutex<HistoryStore>` cache + a separate `DISK_LOCK` serializing the read-modify-write. Drop the
-  cache guard before any `fs` call; no `.await` while holding a guard.
-- **Add only on "Open in pane"**, never on Enter / auto-apply (David's call; a signal-rich 1000-entry budget). Not
-  Rust-enforced — the FE's ONLY `addRecentSearch` call site is the Open-in-pane handler. Don't add a "convenience" one.
-- Persistence + dedupe-key + cap details: [DETAILS.md](DETAILS.md) § History store.
+- **Concurrency**: `Mutex<HistoryStore>` cache + a separate `DISK_LOCK` serializing the read-modify-write. Drop the cache
+  guard before any `fs` call; no `.await` while holding a guard.
+- **Add only on "Open in pane"**, never on Enter / auto-apply (David's call). Not Rust-enforced; the FE's ONLY
+  `addRecentSearch` call site is the Open-in-pane handler. Don't add a "convenience" one.
+- Persistence, dedupe-key, and cap: [DETAILS.md](DETAILS.md) § History store.
 
-## Sharing with `selection/`
+## Sharing + IPC
 
-`crate::selection::history` re-exports `HistoryMode` and `HistoryFilters` from this module's `history.rs` (one-way; the
-wire shape stays in sync). The entry structs stay separate (`HistoryEntry` vs `SelectionHistoryEntry`) because the
-canonical keys differ (Selection has no scope or exclude-system-dirs). The `search/ai/parser.rs` helpers are NOT shared
-with Selection (different fields). If the mode set forks, drop the re-export and copy the types.
+- **`selection/` re-exports `HistoryMode` / `HistoryFilters` from `history.rs`** (one-way; the entry structs stay
+  separate, canonical keys differ). If the mode set forks, drop the re-export and copy the types.
+- **`commands/search.rs`** holds thin wrappers; `translate_search_query` orchestrates the AI pipeline; `resolve_ai_backend`
+  stays there (touches `crate::ai` + `crate::settings`). The MCP `ai_search` executor calls it with `current_type = None`.
 
-## IPC
-
-`commands/search.rs` holds thin wrappers. `translate_search_query(natural_query, current_type)` orchestrates the AI
-pipeline (classification prompt with the `Both | Files | Folders` toggle as `current_type`, `ai::parse_llm_response`,
-`ai::query_builder`). `resolve_ai_backend` stays in `commands/search.rs` (touches `crate::ai` + `crate::settings`). The
-MCP `ai_search` executor calls it with `current_type = None`.
-
-Full details (the in-memory-Vec vs SQLite, structured-query, and path-reconstruction rationale; schema-migration
-policy): [DETAILS.md](DETAILS.md).
+Full rationale (in-memory-Vec vs SQLite, path reconstruction, schema-migration policy): [DETAILS.md](DETAILS.md). Read it
+before any non-trivial work here: editing, planning, reorganizing, or advising.

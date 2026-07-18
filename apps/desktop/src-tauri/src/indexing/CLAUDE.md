@@ -7,72 +7,62 @@ Background-indexes each volume (local, SMB, MTP) into its own SQLite DB with rec
 Full per-file grouping: DETAILS § "Module structure". Subdirs: `scanner/`, `writer/`, `aggregator/`,
 [`store/`](store/CLAUDE.md). Key top-level: `state.rs` + `manager.rs` (lifecycle), `local_reconcile.rs` /
 `volume_scanner.rs` (LOCAL / SMB-MTP scan), `reconciler.rs` + `event_loop.rs` (live), `enrichment.rs`, `freshness.rs`.
-IPC `commands/indexing.rs`; frontend `src/lib/indexing/`; search `src/search/`.
+IPC `commands/indexing.rs`, frontend `src/lib/indexing/`, search `src/search/`.
 
 ## Must-knows
 
-All invariants hold PER volume id (DETAILS).
+All invariants hold PER volume id; full depth in [DETAILS.md](DETAILS.md).
 
-- **`INDEX_REGISTRY` (`Mutex<HashMap<VolumeId, IndexInstance>>`) is the authority**: absent key = disabled (no
-  `Disabled` phase). Guards lifecycle ONLY; reads route through the per-volume `ReadPool`, never under it.
+- **`INDEX_REGISTRY` (`Mutex<HashMap<VolumeId, IndexInstance>>`) is the authority**: absent key = disabled. Guards
+  lifecycle ONLY; reads route through the per-volume `ReadPool`, never under it.
 - **Phase transitions go through `events::set_phase_for(...)`**, never raw `DEBUG_STATS.set_phase`.
 
 Writer discipline (one writer thread per DB):
 
 - **`start_indexing` is lock-first**: reserve the registry slot before building `IndexManager` (else two starts race).
-  **Never hold `INDEX_REGISTRY` across a blocking/re-entrant manager call** (froze the UI once): drop the guard before
-  `shutdown()` / `start_scan`.
-- **Reconciler/event loops hold a READ connection, never a write one** (`SQLITE_BUSY` silently kills live indexing).
-  **`IndexWriter` owns the shared `Arc<AtomicI64>` ID counter**; never allocate from `MAX(id)` (uncommitted inserts →
-  double-assign).
-- **Live file upserts are throttled 60 s** (`reconciler/throttle.rs`): ≤1 write/window; a `pending` key is NEVER
-  evictable.
+  **Never hold `INDEX_REGISTRY` across a blocking/re-entrant manager call** (froze the UI once).
+- **Reconciler/event loops hold a READ connection, never a write one** (`SQLITE_BUSY` kills live indexing). **`IndexWriter`
+  owns the shared `Arc<AtomicI64>` ID counter**; never allocate from `MAX(id)` (uncommitted inserts → double-assign).
+  Live file upserts throttle 60 s (`reconciler/throttle.rs`): ≤1 write/window, `pending` never evictable.
 - **The index is a disposable cache**: a schema mismatch or corruption deletes and rebuilds the DB (no migrations). Gate
   only `scan_completed_at`.
-- **A fatal storage error STOPS + FAILS the index, never retries** (an incident logged 12,700 warnings in 8 min). The
-  writer trips a per-volume `IndexFailureSignal` on the first fatal SQLite error (`store::is_fatal_storage_error`); a
-  supervisor moves the volume to `IndexPhase::Failed` + terminal `Freshness::Failed` (red badge, distinct from gray;
-  reads skip, instance stays). Recovery is rebuild (`enable`/`rescan` clear + restart); BUSY/LOCKED stay retried.
-  DETAILS § "The Failed state".
+- **A fatal storage error STOPS + FAILS the index, never retries** (an incident logged 12,700 warnings in 8 min): the
+  writer trips `IndexFailureSignal` on the first fatal SQLite error → `Failed` + `Freshness::Failed`. Recovery is rebuild;
+  BUSY/LOCKED stay retried.
 - **Defer `root` auto-start** (`should_auto_start_indexing`): scanning `/` stacks TCC popups; FDA gates ONLY `root`.
 
-`dir_stats` is a delta-adjusted ledger (DETAILS § "The dir_stats ledger"):
+**The `dir_stats` delta-adjusted ledger, three hard rules** (DETAILS § "The dir_stats ledger"):
 
-- **Never clamp `dir_stats` arithmetic**: a negative delta is drift evidence; escalate to `repair_dir_stats_upward`,
-  never `.max(0)` (which floored a real 1.21 GB to "0 bytes").
-- **Structural rewrites repair ancestors ON THE WRITER** (subtree scan, backfill); never off-writer read-then-credit.
-- **Full-aggregate senders declare `source: Maps|Sql`** (`Maps` only for a fresh scan; reconcile/heal `Sql`); never
-  clear the accumulator in the subtree handler.
+- **Never clamp the arithmetic**: a negative delta is drift; escalate to `repair_dir_stats_upward`, never `.max(0)`
+  (floored a real 1.21 GB to "0 bytes").
+- **Structural rewrites repair ancestors ON THE WRITER** (subtree scan, backfill), never off-writer read-then-credit.
+- **Full-aggregate senders declare `source: Maps|Sql`** (`Maps` only for a fresh scan); never clear the accumulator in
+  the subtree handler.
 
-SMB/MTP indexing:
+SMB/MTP + external-drive indexing:
 
-- **Gated on a `direct` (smb2) connection; an `os_mount` upgrades first** (`start_indexing_for_smb` refuses with a TYPED
-  `SmbIndexGateReason`).
-- **Reconnect/upgrade AUTO-RESUMES, gated on PERSISTED state** (`smb_index_was_enabled`): resume ONLY when a scan
-  completed (`persisted_scan_completed`) AND the user hasn't turned it off (sticky `user_disabled`; the disable command
-  writes it, NOT `stop_indexing`), NEVER unconditionally. Fire-and-forget; no-op if active.
+- **Gated on a `direct` (smb2) connection; an `os_mount` upgrades first** (typed `SmbIndexGateReason`).
+- **Reconnect/upgrade AUTO-RESUMES, gated on PERSISTED state**: resume ONLY when a scan completed AND `user_disabled`
+  isn't set (the disable command writes it, NOT `stop_indexing`).
 - **Manual rescan routes by TYPED kind** (`force_scan`): SMB/MTP → `start_volume_scan`, local → `start_scan`; never
-  `start_scan` a trait-scanned volume (walks nothing, false-completes).
-- **Never write `scan_completed_at` for an empty root** (typed `EmptyRoot`); a yanked drive's unlistable root → typed
-  `RootUnlistable`: abort, no completion.
-- **The local walker gives up on a subtree after 32 consecutive failed reads** (dead mount): remaining descendants are
-  pruned unread, left honest-stale (`listed_epoch=0`), NEVER completed or zeroed. DETAILS § "The guarded local walker".
-- **`should_exclude(path, ExclusionScope)` derives scope from the volume kind, NEVER `is_volume_root`** (else
+  `start_scan` a trait-scanned volume (false-completes).
+- **Never write `scan_completed_at` for an empty root** (typed `EmptyRoot`) or an unlistable one (`RootUnlistable`):
+  abort, no completion.
+- **The local walker gives up on a subtree after 32 consecutive failed reads** (dead mount): descendants left
+  honest-stale (`listed_epoch=0`), never completed or zeroed.
+- **`should_exclude(path, ExclusionScope)` derives scope from the volume KIND, never `is_volume_root`** (else
   `MountRooted` false-completes).
-- **The LOCAL scan/reconcile/live pipeline is mount-relative via `IndexPathSpace`**: strip the mount root ONLY at the
-  `resolve_abs` argument; keep path sets + the FE emit ABSOLUTE.
+- **The LOCAL scan/reconcile/live pipeline is mount-relative via `IndexPathSpace`**: strip the mount root ONLY at
+  `resolve_abs`; path sets + FE emit stay ABSOLUTE.
 - **Live watch runs with NO pane open** (`apply_smb_change` hooks before the pane early-return; don't remove).
 - **Freshness has ONE transition table (`freshness.rs`); don't branch elsewhere.** No journal ⇒ loads **Stale**.
-- **`resume_or_scan` gates journal replay on `has_event_journal()`, NOT `last_event_id.is_some()`** (a `LocalExternal`
-  index persists an event id but has no journal).
-- **Deletes resolve against the INDEX** (unknown = no-op); local `item_removed` stat-verifies.
-- **FAT/exFAT (`LocalExternal`) store `inode: None`** (`IndexPathSpace::trust_inode`): a reused derived inode
-  false-matches the rename pre-pass, corrupting `dir_stats`; don't restore it.
-- **Threads + resources.** Wrap ObjC/Cocoa threads in `objc2::rc::autoreleasepool`; use `tauri::async_runtime::spawn`
-  (`tokio::spawn` panics in `setup()`). GLOBAL 16 GB memory watchdog stops indexing (`stop_all_indexing`).
-- **The 2026-07-15 FSKit panic governs external drives.** Stop a `LocalExternal` index BEFORE its volume unmounts: an
-  open FSEvents watcher at unmount can wedge FSKit and kernel-panic (eject stops it before `diskutil`). Tests: synthetic
-  images ONLY. DETAILS §§ "Unmount/eject lifecycle", "Testing external drives".
+- **Deletes resolve against the INDEX** (unknown = no-op); local `item_removed` stat-verifies. **FAT/exFAT
+  (`LocalExternal`) store `inode: None`** (`trust_inode`): a reused derived inode false-matches the rename pre-pass and
+  corrupts `dir_stats`; don't restore it.
+- **FSKit panic (2026-07-15): stop a `LocalExternal` index BEFORE its volume unmounts.** An open FSEvents watcher at
+  unmount can wedge FSKit → kernel panic (eject stops it first). Test with synthetic disk images ONLY.
+- **A GLOBAL 16 GB memory watchdog stops ALL indexing.** Scans spawn via `tauri::async_runtime::spawn` (`tokio::spawn`
+  panics in `setup()`).
 
 Flows, decisions, and gotchas: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.
