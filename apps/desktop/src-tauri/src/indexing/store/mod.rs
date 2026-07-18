@@ -290,6 +290,72 @@ impl std::fmt::Display for IndexStoreError {
 
 impl std::error::Error for IndexStoreError {}
 
+/// A fatal storage failure that stopped a volume's index: the SQLite result codes
+/// that classified the DB as unusable (a dead disk, a corrupt file, a full or
+/// read-only volume). Carried on the `IndexPhase::Failed` phase (see `state.rs`)
+/// and surfaced to the UI and logs so the failure is specific.
+///
+/// `code` is the primary SQLite result code (for example `SQLITE_IOERR` = 10);
+/// `extended_code` is the extended code (for example `SQLITE_IOERR_WRITE`),
+/// preserved because [`IndexStoreError`]'s `Display` flattens it away.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct IndexFailure {
+    pub code: i32,
+    pub extended_code: i32,
+}
+
+impl IndexStoreError {
+    /// The SQLite `(primary ErrorCode, extended result code)` when this wraps a
+    /// `SqliteFailure`. `None` for non-SQLite errors and for `rusqlite` errors that
+    /// carry no ffi code (for example `QueryReturnedNoRows`).
+    ///
+    /// Classify on THIS, never on the `Display` string (`no-string-matching`):
+    /// `Display` writes only `SQLite error: {e}` and drops the numeric extended
+    /// code that distinguishes a transient lock from a dead disk.
+    pub fn sqlite_code(&self) -> Option<(rusqlite::ErrorCode, i32)> {
+        match self {
+            IndexStoreError::Sqlite(rusqlite::Error::SqliteFailure(e, _)) => Some((e.code, e.extended_code)),
+            _ => None,
+        }
+    }
+
+    /// Whether this is a FATAL storage-class error: the DB is unusable and every
+    /// subsequent read and write will fail the same way, so the index must stop and
+    /// fail rather than retry forever (the 12,700-warning livelock this guards
+    /// against). Transient contention (`SQLITE_BUSY` / `SQLITE_LOCKED`) is
+    /// deliberately NOT fatal: the busy handler already backs those off. Classified
+    /// on the typed primary `ErrorCode`.
+    pub fn is_fatal_storage_error(&self) -> bool {
+        use rusqlite::ErrorCode::{CannotOpen, DatabaseCorrupt, DiskFull, NotADatabase, ReadOnly, SystemIoFailure};
+        matches!(
+            self.sqlite_code(),
+            Some((
+                SystemIoFailure     // SQLITE_IOERR*
+                    | DatabaseCorrupt   // SQLITE_CORRUPT
+                    | CannotOpen        // SQLITE_CANTOPEN
+                    | DiskFull          // SQLITE_FULL
+                    | ReadOnly          // SQLITE_READONLY
+                    | NotADatabase, // SQLITE_NOTADB
+                _
+            ))
+        )
+    }
+
+    /// The typed [`IndexFailure`] for the `Failed` phase, if this is a fatal
+    /// storage error (else `None`). The primary code is the low byte of the
+    /// extended code, matching SQLite's `SQLITE_IOERR == extended & 0xFF`.
+    pub fn as_index_failure(&self) -> Option<IndexFailure> {
+        if !self.is_fatal_storage_error() {
+            return None;
+        }
+        self.sqlite_code().map(|(_, extended_code)| IndexFailure {
+            code: extended_code & 0xFF,
+            extended_code,
+        })
+    }
+}
+
 // ── Platform-case collation ──────────────────────────────────────────
 
 /// Register the `platform_case` collation on a connection.

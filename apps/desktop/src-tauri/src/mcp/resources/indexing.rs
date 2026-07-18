@@ -87,18 +87,22 @@ fn phase_step_index(phase: &ActivityPhase) -> usize {
         ActivityPhase::Aggregating => 1,
         ActivityPhase::Reconciling => 2,
         ActivityPhase::Live => 3,
-        ActivityPhase::Idle => PIPELINE_STEPS.len(),
+        // Idle and Failed are both "nothing in flight" for the checklist; Failed
+        // means the pipeline stopped on a storage error (surfaced via freshness).
+        ActivityPhase::Idle | ActivityPhase::Failed => PIPELINE_STEPS.len(),
     }
 }
 
-/// The freshness token an agent matches on: `fresh` / `scanning` / `stale`, or
-/// `off` when no index is registered. This is the single mapping the resource
-/// and the `await index_status` condition share.
+/// The freshness token an agent matches on: `fresh` / `scanning` / `stale` /
+/// `failed`, or `off` when no index is registered. This is the single mapping the
+/// resource and the `await index_status` condition share.
 pub(crate) fn freshness_token(freshness: Option<Freshness>) -> &'static str {
     match freshness {
         Some(Freshness::Fresh) => "fresh",
         Some(Freshness::Scanning) => "scanning",
         Some(Freshness::Stale) => "stale",
+        // The DB died with a fatal storage error; indexing stopped until rebuilt.
+        Some(Freshness::Failed) => "failed",
         None => "off",
     }
 }

@@ -13,6 +13,7 @@ mod enrichment;
 mod event_loop;
 mod events;
 pub mod expected_totals;
+mod failure;
 pub mod firmlinks;
 pub mod freshness;
 pub(crate) mod lifecycle_bus;
@@ -81,6 +82,7 @@ pub(crate) use enrichment::{test_install_root_read_pool, test_read_pool_lock, te
 pub(crate) use events::DEBUG_STATS;
 pub use events::*;
 
+pub(crate) use failure::IndexFailureSignal;
 pub use queries::{
     get_debug_status, get_dir_stats, get_dir_stats_batch, get_status, get_volume_index_status,
     get_volume_index_status_for_path, list_dir_children,
@@ -92,9 +94,10 @@ pub(crate) use state::get_freshness;
 pub(crate) use state::reserve_initializing_index_for_test;
 pub(crate) use state::{IndexVolumeKind, all_registered_volume_ids, ready_volumes_with_kind, volume_kind};
 pub use state::{
-    clear_index, disable_drive_index_persist_intent, force_scan, init, is_active, should_auto_start,
+    clear_index, disable_drive_index_persist_intent, force_scan, init, is_active, is_failed, should_auto_start,
     should_auto_start_indexing, start_indexing, stop_indexing, stop_scan, trigger_verification,
 };
+pub use store::IndexFailure;
 pub use subsystem_stop::register_subsystem_stop_hook;
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]

@@ -8,11 +8,11 @@
 //! freshness is binary: continuously watched since the last scan ⇒ we know
 //! what's where (Fresh); any break ⇒ we can't know what drifted (Stale).
 //!
-//! ## The four UI states and where they live
+//! ## The UI states and where they live
 //!
-//! The UX surfaces four colors, but only three are `Freshness` variants —
-//! gray is the *absence* of a running index, mirroring the registry's
-//! "disabled = no key" model (see `state.rs`):
+//! The UX surfaces five colors; four are `Freshness` variants — gray is the
+//! *absence* of a running index, mirroring the registry's "disabled = no key"
+//! model (see `state.rs`):
 //!
 //! - **Gray (disabled / not-indexed)**: no `IndexInstance` for the volume, OR a
 //!   scan was interrupted and its partial discarded (D-interrupted). Not a
@@ -21,6 +21,11 @@
 //! - **Blue (scanning)** → [`Freshness::Scanning`].
 //! - **Green (fresh)** → [`Freshness::Fresh`].
 //! - **Yellow (stale)** → [`Freshness::Stale`].
+//! - **Red (indexing stopped)** → [`Freshness::Failed`]: the DB died with a fatal
+//!   storage error. Unlike Stale it is NOT browsable and does NOT self-heal on a
+//!   watcher event; the index is torn down and the only way out is a
+//!   rebuild-from-scratch rescan. See `state.rs`'s `IndexPhase::Failed` and
+//!   `failure.rs`.
 //!
 //! ## The transition table (this module is the single source of truth)
 //!
@@ -56,6 +61,16 @@ pub enum Freshness {
     /// dead watcher, notify overflow). Browsable, clearly marked, one-click
     /// rescan. Yellow.
     Stale,
+    /// The index DB died with a fatal storage error (`SQLITE_IOERR`, corruption, a
+    /// full or read-only disk, …). Indexing STOPPED for this volume — its writer
+    /// thread and watcher are torn down, so there are no sizes and no live updates
+    /// until the user retries (a rebuild-from-scratch). Distinct from Stale (which
+    /// is still browsable and self-heals on rescan) and from gray/disabled (a
+    /// deliberate off state). Red. Terminal in this table: only an explicit rescan
+    /// (`ScanStarted`) leaves it, so a concurrent scan-completion handler can't
+    /// downgrade a dead index back to Stale/Fresh. See [`IndexFailure`](super::store::IndexFailure)
+    /// for the typed reason carried alongside on the `Failed` phase.
+    Failed,
 }
 
 /// Inputs that drive a volume's freshness transitions.
@@ -96,6 +111,13 @@ pub enum FreshnessEvent {
     /// arms. Without it, `ScanStarted` having already moved the badge to
     /// `Scanning` would strand it on a perpetual spinner until relaunch.
     ScanFailed,
+    /// The index DB died with a FATAL storage error and indexing has stopped for
+    /// this volume. ⇒ `Failed` (terminal). Fired ONCE by the failure supervisor
+    /// (`state::spawn_failure_supervisor`) when the writer trips its
+    /// [`IndexFailureSignal`](super::failure::IndexFailureSignal), NOT from the scan
+    /// path. Distinct from `ScanFailed` (a scan/reconcile that failed but left a
+    /// browsable, self-healing Stale index): here the storage itself is unusable.
+    StorageFailed,
 }
 
 impl Freshness {
@@ -109,9 +131,18 @@ impl Freshness {
     /// every state keeps the function total and the seam trivial.
     #[must_use]
     pub fn on(self, event: FreshnessEvent) -> Self {
+        // `Failed` is TERMINAL: a dead-storage index only leaves it by an explicit
+        // rescan (the rebuild-from-scratch recovery). Guarding here first keeps a
+        // concurrent scan-completion handler (which may still fire `ScanFailed` or
+        // even `ScanCompleted` as the torn-down scan unwinds) from downgrading a
+        // dead index back to Stale/Fresh.
+        if self == Freshness::Failed && event != FreshnessEvent::ScanStarted {
+            return Freshness::Failed;
+        }
         match event {
-            // A scan (re)starts from anywhere: Fresh/Stale rescan, or a fresh
-            // initial scan. While scanning we are neither Fresh nor Stale.
+            // A scan (re)starts from anywhere: Fresh/Stale rescan, a fresh initial
+            // scan, or the recovery rescan of a Failed volume. While scanning we are
+            // neither Fresh nor Stale.
             FreshnessEvent::ScanStarted => Freshness::Scanning,
             // A clean scan completion is the only path to Fresh.
             FreshnessEvent::ScanCompleted => Freshness::Fresh,
@@ -123,6 +154,9 @@ impl Freshness {
             FreshnessEvent::WatcherDied | FreshnessEvent::OverflowUnrecoverable | FreshnessEvent::ScanFailed => {
                 Freshness::Stale
             }
+            // The storage itself died: stop and fail, distinct from a browsable
+            // Stale. Terminal (see the guard above).
+            FreshnessEvent::StorageFailed => Freshness::Failed,
         }
     }
 
@@ -229,6 +263,46 @@ mod tests {
         assert!(Freshness::Fresh.is_authoritative());
         assert!(!Freshness::Stale.is_authoritative());
         assert!(!Freshness::Scanning.is_authoritative());
+        assert!(!Freshness::Failed.is_authoritative());
+    }
+
+    #[test]
+    fn storage_failure_goes_to_failed_from_any_state() {
+        // A fatal storage death stops indexing from wherever the volume was.
+        for from in [Freshness::Scanning, Freshness::Fresh, Freshness::Stale] {
+            assert_eq!(
+                from.on(FreshnessEvent::StorageFailed),
+                Freshness::Failed,
+                "a storage failure from {from:?} must land Failed"
+            );
+        }
+    }
+
+    #[test]
+    fn failed_is_terminal_except_an_explicit_rescan() {
+        // The core stickiness guarantee: once the storage is dead, a concurrent
+        // scan-completion handler firing ScanFailed/ScanCompleted (or another
+        // watcher-death) must NOT downgrade the badge off Failed — only the user's
+        // explicit rebuild (ScanStarted) leaves it.
+        for event in [
+            FreshnessEvent::ScanCompleted,
+            FreshnessEvent::WatcherDied,
+            FreshnessEvent::OverflowUnrecoverable,
+            FreshnessEvent::ScanFailed,
+            FreshnessEvent::StorageFailed,
+        ] {
+            assert_eq!(
+                Freshness::Failed.on(event),
+                Freshness::Failed,
+                "Failed must stay Failed under {event:?}"
+            );
+        }
+        // The one escape hatch: a rebuild-from-scratch rescan.
+        assert_eq!(
+            Freshness::Failed.on(FreshnessEvent::ScanStarted),
+            Freshness::Scanning,
+            "an explicit rescan recovers a Failed volume"
+        );
     }
 
     // ── initial_freshness_on_launch(): the load rule ─────────────────────

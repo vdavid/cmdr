@@ -94,6 +94,7 @@ fn handle_insert_entries_v2_only_accumulates_rows_that_landed() {
     let expected = AtomicU64::new(0);
     let mutation_tracker = MutationTracker::new(true);
 
+    let signal = IndexFailureSignal::new();
     handle_insert_entries_v2(
         &conn,
         entries_dup,
@@ -102,6 +103,7 @@ fn handle_insert_entries_v2_only_accumulates_rows_that_landed() {
         "root",
         &expected,
         &mutation_tracker,
+        &signal,
     );
 
     // DB has the original first.txt (id=100) and the new second.txt (id=101).

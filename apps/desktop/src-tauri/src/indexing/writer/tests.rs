@@ -634,3 +634,94 @@ fn busy_handler_escalates_only_for_unexpected_sustained_contention() {
     assert!(!busy_handler_escalates(20, true));
     assert!(!busy_handler_escalates(51, true));
 }
+
+// ── Fatal-storage failure stops the writer (resilience) ──────────────
+
+/// A fatal storage error (here `SQLITE_READONLY`, a deterministic stand-in for the
+/// dead-disk `SQLITE_IOERR` from the real incident) must STOP the writer thread and
+/// trip its failure signal, instead of logging-and-retrying forever (the
+/// 12,700-warning livelock). Drives `writer_loop` directly with a `query_only`
+/// connection: reads succeed, every write fails `READONLY`.
+#[test]
+fn a_fatal_storage_error_stops_the_writer_and_trips_the_signal() {
+    use std::sync::atomic::AtomicUsize;
+
+    let (db_path, _dir) = setup_db();
+
+    // A writable connection put into query_only mode: reads work, writes fail with
+    // SQLITE_READONLY — no real dead disk needed.
+    let conn = IndexStore::open_write_connection(&db_path).expect("open write conn");
+    conn.execute_batch("PRAGMA query_only = ON").expect("enable query_only");
+
+    let (sender, receiver) = mpsc::sync_channel::<WriteMessage>(WRITER_CHANNEL_CAPACITY);
+    let signal = Arc::new(IndexFailureSignal::new());
+    let queue_depth = Arc::new(AtomicUsize::new(0));
+
+    let signal_for_loop = Arc::clone(&signal);
+    let queue_depth_for_loop = Arc::clone(&queue_depth);
+    let handle = thread::spawn(move || {
+        writer_loop(
+            conn,
+            receiver,
+            None,
+            "root".to_string(),
+            Arc::new(AtomicU64::new(0)),
+            Arc::new(AtomicI64::new(2)),
+            Arc::new(MutationTracker::new(true)),
+            queue_depth_for_loop,
+            signal_for_loop,
+        );
+    });
+
+    // A write that fails READONLY, then MANY more. If the writer kept
+    // logging-and-retrying it would drain all 1,000; instead it must stop right
+    // after the first fatal error. Mirror `IndexWriter::send`'s depth accounting.
+    let send = |msg| {
+        queue_depth.fetch_add(1, Ordering::Relaxed);
+        sender.send(msg).expect("writer receiver alive");
+    };
+    for i in 0..1000 {
+        send(WriteMessage::UpsertEntryV2 {
+            parent_id: ROOT_ID,
+            name: format!("f{i}.txt"),
+            is_directory: false,
+            is_symlink: false,
+            logical_size: Some(1),
+            physical_size: Some(1),
+            modified_at: None,
+            inode: None,
+            nlink: None,
+        });
+    }
+
+    // The loop must terminate ON ITS OWN — we keep the sender alive, so a
+    // still-running loop would block on recv, not exit. Join with a timeout.
+    let start = Instant::now();
+    while !handle.is_finished() && start.elapsed() < Duration::from_secs(5) {
+        thread::sleep(Duration::from_millis(10));
+    }
+    assert!(
+        handle.is_finished(),
+        "the writer loop must stop after a fatal storage error, not retry forever"
+    );
+    handle.join().expect("writer thread join");
+
+    assert!(
+        signal.is_tripped(),
+        "the fatal write error must trip the failure signal"
+    );
+    let reason = signal.reason().expect("a reason is recorded");
+    assert_eq!(
+        reason.code,
+        rusqlite::ffi::SQLITE_READONLY,
+        "the recorded reason is the READONLY write failure"
+    );
+
+    // Bounded work: the loop stopped near the first message, not after draining all
+    // 1,000 — most stay unprocessed in the channel.
+    assert!(
+        queue_depth.load(Ordering::Relaxed) > 900,
+        "the writer stopped early, leaving most messages unprocessed (was {})",
+        queue_depth.load(Ordering::Relaxed),
+    );
+}

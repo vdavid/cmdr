@@ -1701,3 +1701,71 @@ fn has_sized_entry_for_inode_multiple_entries_one_has_sizes() {
     // From primary's perspective (exclude self): secondary has no sizes
     assert!(!IndexStore::has_sized_entry_for_inode(&conn, 100, Some(primary_id)).unwrap());
 }
+
+// ── Fatal storage-error classification ───────────────────────────────
+
+/// Build an `IndexStoreError` wrapping a SQLite failure with the given (extended)
+/// result code, so the classifier can be exercised without a real dead disk.
+fn sqlite_err(result_code: std::os::raw::c_int) -> IndexStoreError {
+    IndexStoreError::Sqlite(rusqlite::Error::SqliteFailure(
+        rusqlite::ffi::Error::new(result_code),
+        None,
+    ))
+}
+
+#[test]
+fn fatal_storage_errors_are_classified_as_fatal() {
+    // The storage-death classes: a dead disk, a corrupt file, an unopenable or
+    // full or read-only volume, and non-DB bytes. Each means every later
+    // read/write fails the same way, so the index must stop, not retry forever.
+    for code in [
+        rusqlite::ffi::SQLITE_IOERR,
+        rusqlite::ffi::SQLITE_CORRUPT,
+        rusqlite::ffi::SQLITE_CANTOPEN,
+        rusqlite::ffi::SQLITE_FULL,
+        rusqlite::ffi::SQLITE_READONLY,
+        rusqlite::ffi::SQLITE_NOTADB,
+    ] {
+        assert!(
+            sqlite_err(code).is_fatal_storage_error(),
+            "result code {code} must be fatal"
+        );
+    }
+}
+
+#[test]
+fn extended_ioerr_codes_are_still_fatal_and_preserved() {
+    // The incident's error was an EXTENDED `SQLITE_IOERR_*` code. It must classify
+    // fatal on its primary `SQLITE_IOERR` low byte, and `as_index_failure` must
+    // preserve the full extended code (which `Display` would have dropped).
+    let err = sqlite_err(rusqlite::ffi::SQLITE_IOERR_WRITE);
+    assert!(err.is_fatal_storage_error());
+    let failure = err.as_index_failure().expect("a fatal error yields a typed failure");
+    assert_eq!(
+        failure.code,
+        rusqlite::ffi::SQLITE_IOERR,
+        "primary code is the low byte"
+    );
+    assert_eq!(
+        failure.extended_code,
+        rusqlite::ffi::SQLITE_IOERR_WRITE,
+        "the extended code is preserved, not flattened"
+    );
+}
+
+#[test]
+fn transient_contention_is_not_fatal() {
+    // BUSY/LOCKED are routine contention the busy handler already retries; failing
+    // the whole index on them would be a regression, so they must NOT be fatal.
+    assert!(!sqlite_err(rusqlite::ffi::SQLITE_BUSY).is_fatal_storage_error());
+    assert!(!sqlite_err(rusqlite::ffi::SQLITE_LOCKED).is_fatal_storage_error());
+    assert!(sqlite_err(rusqlite::ffi::SQLITE_BUSY).as_index_failure().is_none());
+}
+
+#[test]
+fn non_sqlite_errors_have_no_code_and_are_not_fatal() {
+    let io = IndexStoreError::Io(std::io::Error::other("broken pipe"));
+    assert!(io.sqlite_code().is_none());
+    assert!(!io.is_fatal_storage_error());
+    assert!(io.as_index_failure().is_none());
+}

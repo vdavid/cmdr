@@ -11,6 +11,7 @@ use std::time::Instant;
 use tauri::AppHandle;
 use tauri_specta::Event;
 
+use crate::indexing::IndexFailureSignal;
 use crate::indexing::aggregator::{self, AggregationProgress};
 use crate::indexing::store::IndexStore;
 use crate::pluralize::{pluralize, pluralize_with};
@@ -115,6 +116,7 @@ pub(super) fn handle_compute_partial_aggregates(
     app_handle: &Option<AppHandle>,
     hot_paths: Vec<String>,
     source: AggSource,
+    signal: &IndexFailureSignal,
 ) {
     let t = Instant::now();
     let hot_paths_count = hot_paths.len();
@@ -155,7 +157,9 @@ pub(super) fn handle_compute_partial_aggregates(
                 crate::indexing::reconciler::emit_dir_updated(app, vec!["/".to_string()]);
             }
         }
-        Err(e) => log::warn!("Index writer: compute_partial_aggregates({source:?}) failed: {e}"),
+        Err(e) => {
+            signal.note(&e, &format!("compute_partial_aggregates({source:?})"));
+        }
     }
     // No `bump_generation`: partial passes change no `entries` rows, only
     // transient `dir_stats`. Search-staleness detection cares about entry
@@ -183,6 +187,10 @@ fn set_heal_key_on_success(conn: &rusqlite::Connection, heal_latch: &mut bool, a
     }
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "writer handler: ambient state + the failure signal"
+)]
 pub(super) fn handle_compute_all_aggregates(
     conn: &rusqlite::Connection,
     accumulator: &mut AccumulatorMaps,
@@ -191,6 +199,7 @@ pub(super) fn handle_compute_all_aggregates(
     expected_total_entries: &AtomicU64,
     source: AggSource,
     heal_latch: &mut bool,
+    signal: &IndexFailureSignal,
 ) {
     let t = Instant::now();
     // Only a `Maps` sender may read the accumulator, and only when it's non-empty
@@ -250,7 +259,9 @@ pub(super) fn handle_compute_all_aggregates(
                 t.elapsed().as_secs_f64(),
             );
         }
-        Err(e) => log::warn!("Index writer: compute_all_aggregates failed: {e}"),
+        Err(e) => {
+            signal.note(e, "compute_all_aggregates");
+        }
     }
     // Consume the one-shot ledger-heal latch, but ONLY on success: a full
     // aggregate recomputes every `dir_stats` row from the committed `entries`, so
@@ -259,7 +270,11 @@ pub(super) fn handle_compute_all_aggregates(
     set_heal_key_on_success(conn, heal_latch, result.is_ok());
 }
 
-pub(super) fn handle_compute_subtree_aggregates(conn: &rusqlite::Connection, root_id: i64) {
+pub(super) fn handle_compute_subtree_aggregates(
+    conn: &rusqlite::Connection,
+    root_id: i64,
+    signal: &IndexFailureSignal,
+) {
     let t = Instant::now();
     match aggregator::compute_subtree_aggregates(conn, root_id) {
         Ok(count) => {
@@ -283,11 +298,13 @@ pub(super) fn handle_compute_subtree_aggregates(conn: &rusqlite::Connection, roo
                 repair_dir_stats_upward(conn, parent_id);
             }
         }
-        Err(e) => log::warn!("Index writer: compute_subtree_aggregates(id={root_id}) failed: {e}"),
+        Err(e) => {
+            signal.note(&e, &format!("compute_subtree_aggregates(id={root_id})"));
+        }
     }
 }
 
-pub(super) fn handle_backfill_missing_dir_stats(conn: &rusqlite::Connection) {
+pub(super) fn handle_backfill_missing_dir_stats(conn: &rusqlite::Connection, signal: &IndexFailureSignal) {
     let t = Instant::now();
     match aggregator::backfill_missing_dir_stats(conn) {
         Ok(outcome) if outcome.backfilled == 0 => {
@@ -309,7 +326,9 @@ pub(super) fn handle_backfill_missing_dir_stats(conn: &rusqlite::Connection) {
                 t.elapsed().as_secs_f64(),
             );
         }
-        Err(e) => log::warn!("BackfillMissingDirStats failed: {e}"),
+        Err(e) => {
+            signal.note(&e, "backfill_missing_dir_stats");
+        }
     }
 }
 

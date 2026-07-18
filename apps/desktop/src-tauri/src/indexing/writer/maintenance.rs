@@ -7,6 +7,8 @@
 
 use std::cell::Cell;
 
+use crate::indexing::IndexFailureSignal;
+use crate::indexing::store::IndexStoreError;
 use crate::pluralize::pluralize;
 
 // ── Busy-handler checkpoint suppression ──────────────────────────────
@@ -81,11 +83,11 @@ fn pick_vacuum_cap(freelist: i64) -> Option<i64> {
     }
 }
 
-pub(super) fn handle_incremental_vacuum(conn: &rusqlite::Connection) {
+pub(super) fn handle_incremental_vacuum(conn: &rusqlite::Connection, signal: &IndexFailureSignal) {
     let free = match conn.pragma_query_value(None, "freelist_count", |row| row.get::<_, i64>(0)) {
         Ok(n) => n,
         Err(e) => {
-            log::warn!("Writer: freelist_count query failed: {e}");
+            signal.note(&IndexStoreError::from(e), "freelist_count query");
             return;
         }
     };
@@ -95,7 +97,7 @@ pub(super) fn handle_incremental_vacuum(conn: &rusqlite::Connection) {
     };
 
     if let Err(e) = crate::sqlite_util::run_incremental_vacuum(conn, Some(cap)) {
-        log::warn!("Writer: incremental_vacuum failed: {e}");
+        signal.note(&IndexStoreError::from(e), "incremental_vacuum");
     } else {
         log::debug!(
             "Writer: incremental_vacuum reclaimed up to {cap} of {}",
@@ -124,7 +126,7 @@ pub(super) fn handle_incremental_vacuum(conn: &rusqlite::Connection) {
 /// debug for the whole reader wait rather than escalating to warn past attempt 20
 /// — a persistent reader here is working-as-designed, not a stall. Every OTHER
 /// writer contention still warns past attempt 20.
-pub(super) fn handle_wal_checkpoint(conn: &rusqlite::Connection) {
+pub(super) fn handle_wal_checkpoint(conn: &rusqlite::Connection, signal: &IndexFailureSignal) {
     let _guard = WalCheckpointGuard::enter();
     // `PRAGMA wal_checkpoint(TRUNCATE)` returns a single row with three
     // columns: (busy, log_size, checkpointed). `busy = 0` means everything
@@ -150,7 +152,9 @@ pub(super) fn handle_wal_checkpoint(conn: &rusqlite::Connection) {
                 pluralize(log_size as u64, "page")
             );
         }
-        Err(e) => log::warn!("Writer: wal_checkpoint failed: {e}"),
+        Err(e) => {
+            signal.note(&IndexStoreError::from(e), "wal_checkpoint");
+        }
     }
 }
 

@@ -15,7 +15,7 @@ use super::firmlinks;
 use super::manager::IndexManager;
 use super::pending_sizes::get_pending_sizes_for;
 use super::routing::{index_read_path, volume_id_for_local_path};
-use super::state::{INDEX_REGISTRY, IndexPhase, ROOT_VOLUME_ID, get_freshness, is_active};
+use super::state::{INDEX_REGISTRY, IndexPhase, ROOT_VOLUME_ID, get_freshness, index_failure, is_active};
 use super::store::{self, DirStats, IndexStore};
 
 /// Per-volume index status for the per-drive freshness badge.
@@ -50,6 +50,7 @@ pub fn get_volume_index_status(volume_id: &str) -> VolumeIndexStatus {
         volume_id: volume_id.to_string(),
         enabled,
         freshness,
+        failure: index_failure(volume_id),
         scan_completed_at,
         scan_duration_ms,
     }
@@ -82,7 +83,10 @@ fn disabled_status_response() -> IndexStatusResponse {
 pub fn get_status(volume_id: &str) -> Result<IndexStatusResponse, String> {
     let reg = INDEX_REGISTRY.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
     match reg.get(volume_id).map(|i| &i.phase) {
-        None | Some(IndexPhase::ShuttingDown) => Ok(disabled_status_response()),
+        // A `Failed` volume reports the same not-scanning shape as disabled — its
+        // distinct state rides `freshness: Failed` + `failure` on
+        // `VolumeIndexStatus`, not this scan-progress response.
+        None | Some(IndexPhase::ShuttingDown | IndexPhase::Failed { .. }) => Ok(disabled_status_response()),
         Some(IndexPhase::Initializing { store, .. }) => {
             let db_file_size = store.db_file_size().ok();
             let index_status = store.get_index_status().ok();
@@ -105,7 +109,7 @@ pub fn get_status(volume_id: &str) -> Result<IndexStatusResponse, String> {
 pub fn get_debug_status(volume_id: &str) -> Result<IndexDebugStatusResponse, String> {
     let reg = INDEX_REGISTRY.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
     match reg.get(volume_id).map(|i| &i.phase) {
-        None | Some(IndexPhase::ShuttingDown) => {
+        None | Some(IndexPhase::ShuttingDown | IndexPhase::Failed { .. }) => {
             let base = disabled_status_response();
             let (activity_phase, phase_started_at, phase_duration_ms, phase_history) =
                 IndexManager::read_phase_timeline();

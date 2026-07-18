@@ -194,6 +194,15 @@ pub async fn enable_drive_index(app: AppHandle, volume_id: String) -> Result<Ena
         return Ok(EnableIndexingOutcome::Started);
     }
 
+    // A failed index (its DB died) can't resume in place: the writer/manager are
+    // torn down and the instance is still registered, so a plain `start_indexing`
+    // would no-op on the existing key. The index is a disposable cache, so the
+    // recovery is a rebuild-from-scratch: clear the dead instance + DB, then fall
+    // through to a fresh start below. This is the retry the Failed badge offers.
+    if indexing::is_failed(&volume_id) {
+        indexing::clear_index(&volume_id)?;
+    }
+
     if volume_id == ROOT_VOLUME_ID {
         indexing::start_indexing(&app)?;
         return Ok(EnableIndexingOutcome::Started);

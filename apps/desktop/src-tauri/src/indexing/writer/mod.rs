@@ -18,6 +18,7 @@ use tokio::sync::oneshot;
 
 #[cfg(test)]
 use crate::ignore_poison::IgnorePoison;
+use crate::indexing::IndexFailureSignal;
 use crate::indexing::aggregator::AggregationPhase;
 use crate::indexing::state::ROOT_VOLUME_ID;
 use crate::indexing::store::{EntryRow, IndexStore, IndexStoreError};
@@ -427,6 +428,12 @@ pub struct IndexWriter {
     /// Incremented on each `send()`; the writer thread decrements it after each `recv()`.
     /// Used by the heartbeat (writer thread) to log queue pressure.
     queue_depth: Arc<AtomicUsize>,
+    /// The per-volume fatal-storage-failure signal. The writer thread trips this on
+    /// the first fatal DB error (`SQLITE_IOERR` / corruption / full / read-only) and
+    /// then exits, rather than logging and retrying forever. Shared with the live
+    /// event loop (which polls it to stop) and the supervisor (which awaits it to
+    /// fail the volume). See `indexing::failure`.
+    failure_signal: Arc<IndexFailureSignal>,
 }
 
 impl IndexWriter {
@@ -490,6 +497,8 @@ impl IndexWriter {
         let mutation_tracker_clone = Arc::clone(&mutation_tracker);
         let queue_depth = Arc::new(AtomicUsize::new(0));
         let queue_depth_clone = Arc::clone(&queue_depth);
+        let failure_signal = Arc::new(IndexFailureSignal::new());
+        let failure_signal_clone = Arc::clone(&failure_signal);
 
         let handle = thread::Builder::new()
             .name("index-writer".into())
@@ -503,6 +512,7 @@ impl IndexWriter {
                     next_id_clone,
                     mutation_tracker_clone,
                     queue_depth_clone,
+                    failure_signal_clone,
                 )
             })
             .map_err(IndexStoreError::Io)?;
@@ -515,7 +525,16 @@ impl IndexWriter {
             next_id,
             mutation_tracker,
             queue_depth,
+            failure_signal,
         })
+    }
+
+    /// The per-volume fatal-storage-failure signal. The manager clones this to hand
+    /// to the live event loop (which polls it to stop) and to the supervisor task
+    /// (which awaits it to fail the volume). Trips exactly once on the first fatal
+    /// DB error; see `indexing::failure`.
+    pub(crate) fn failure_signal(&self) -> Arc<IndexFailureSignal> {
+        Arc::clone(&self.failure_signal)
     }
 
     /// Return the path to the DB file. Used by the scanner to open a
@@ -887,6 +906,7 @@ fn writer_loop(
     next_id: Arc<AtomicI64>,
     mutation_tracker: Arc<MutationTracker>,
     queue_depth: Arc<AtomicUsize>,
+    failure_signal: Arc<IndexFailureSignal>,
 ) {
     log::debug!("Writer: thread started");
     let mut stats = WriterStats::new();
@@ -951,6 +971,7 @@ fn writer_loop(
                 &mut probe,
                 &mut propagate_deltas,
                 &mut heal_latch,
+                &failure_signal,
             )
         });
         #[cfg(not(target_os = "macos"))]
@@ -967,12 +988,26 @@ fn writer_loop(
             &mut probe,
             &mut propagate_deltas,
             &mut heal_latch,
+            &failure_signal,
         );
         probe.time_in_processing += proc_start.elapsed();
         probe.messages_processed += 1;
 
         if should_exit {
             log::debug!("Writer: shutdown after processing {} messages", stats.current.total);
+            return;
+        }
+
+        // A fatal storage error (dead disk, corruption, full/read-only volume) means
+        // the DB is unusable and every later write fails identically. Stop the writer
+        // thread instead of logging-and-retrying forever (the 12,700-warning
+        // livelock). The supervisor, woken by the same signal, transitions the volume
+        // to the `Failed` phase and tears the rest down. See `indexing::failure`.
+        if failure_signal.is_tripped() {
+            log::warn!(
+                "Writer: stopping for '{volume_id}' after a fatal storage error ({} messages processed)",
+                stats.current.total,
+            );
             return;
         }
         stats.maybe_log_summary();
@@ -1061,6 +1096,7 @@ fn process_message(
     probe: &mut ProbeStats,
     propagate_deltas: &mut bool,
     heal_latch: &mut bool,
+    signal: &IndexFailureSignal,
 ) -> bool {
     match msg {
         // ── Integer-keyed variants ───────────────────────────────────
@@ -1073,6 +1109,7 @@ fn process_message(
                 volume_id,
                 expected_total_entries,
                 mutation_tracker,
+                signal,
             );
         }
         WriteMessage::UpsertEntryV2 {
@@ -1100,6 +1137,7 @@ fn process_message(
                 next_id,
                 mutation_tracker,
                 *propagate_deltas,
+                signal,
             );
         }
         WriteMessage::MoveEntryV2 {
@@ -1107,21 +1145,21 @@ fn process_message(
             new_parent_id,
             new_name,
         } => {
-            handle_move_entry_v2(conn, entry_id, new_parent_id, new_name, mutation_tracker);
+            handle_move_entry_v2(conn, entry_id, new_parent_id, new_name, mutation_tracker, signal);
         }
         WriteMessage::DeleteEntryById(entry_id) => {
             mutation_tracker.record_delete_entry();
-            handle_delete_entry_by_id(conn, entry_id, *propagate_deltas, mutation_tracker);
+            handle_delete_entry_by_id(conn, entry_id, *propagate_deltas, mutation_tracker, signal);
         }
         WriteMessage::DeleteSubtreeById(root_id) => {
             mutation_tracker.record_delete_subtree();
-            handle_delete_subtree_by_id(conn, root_id, *propagate_deltas, mutation_tracker);
+            handle_delete_subtree_by_id(conn, root_id, *propagate_deltas, mutation_tracker, signal);
         }
         WriteMessage::DeleteDescendantsById(root_id) => {
             // No delta propagation: the subtree will be immediately re-scanned and
             // ComputeSubtreeAggregates will recompute stats for the subtree root.
             if let Err(e) = IndexStore::delete_descendants_by_id(conn, root_id) {
-                log::warn!("Index writer: delete_descendants_by_id failed for id={root_id}: {e}");
+                signal.note(&e, &format!("delete_descendants_by_id id={root_id}"));
             }
         }
         WriteMessage::PropagateDeltaById {
@@ -1144,7 +1182,14 @@ fn process_message(
             propagate_min_subtree_epoch(conn, start_id);
         }
         WriteMessage::TruncateData => {
-            handle_truncate_data(conn, accumulator, expected_total_entries, next_id, mutation_tracker);
+            handle_truncate_data(
+                conn,
+                accumulator,
+                expected_total_entries,
+                next_id,
+                mutation_tracker,
+                signal,
+            );
         }
         WriteMessage::ComputeAllAggregates { source } => {
             handle_compute_all_aggregates(
@@ -1155,37 +1200,35 @@ fn process_message(
                 expected_total_entries,
                 source,
                 heal_latch,
+                signal,
             );
         }
         WriteMessage::ComputePartialAggregates { hot_paths, source } => {
-            handle_compute_partial_aggregates(conn, accumulator, app_handle, hot_paths, source);
+            handle_compute_partial_aggregates(conn, accumulator, app_handle, hot_paths, source, signal);
         }
         WriteMessage::ComputeSubtreeAggregates { root_id } => {
-            handle_compute_subtree_aggregates(conn, root_id);
+            handle_compute_subtree_aggregates(conn, root_id, signal);
         }
         WriteMessage::UpdateLastEventId(id) => {
             if let Err(e) = IndexStore::update_meta(conn, "last_event_id", &id.to_string()) {
-                log::warn!("Index writer: update last_event_id failed: {e}");
+                signal.note(&e, "update last_event_id");
             }
         }
         WriteMessage::UpdateMeta { key, value } => {
             if let Err(e) = IndexStore::update_meta(conn, &key, &value) {
-                log::warn!("Index writer: update_meta({key}) failed: {e}");
+                signal.note(&e, &format!("update_meta({key})"));
             }
         }
         WriteMessage::DeleteMeta(key) => {
             if let Err(e) = IndexStore::delete_meta(conn, &key) {
-                log::warn!("Index writer: delete_meta({key}) failed: {e}");
+                signal.note(&e, &format!("delete_meta({key})"));
             }
         }
         WriteMessage::MarkDirsListed { ids, epoch } => {
             // No MutationTracker::bump(): stamping coverage changes nothing
             // search indexes, so it must not trigger a root-search reload.
             if let Err(e) = IndexStore::mark_dirs_listed(conn, &ids, epoch) {
-                log::warn!(
-                    "Index writer: mark_dirs_listed (count={}, epoch={epoch}) failed: {e}",
-                    ids.len()
-                );
+                signal.note(&e, &format!("mark_dirs_listed (count={}, epoch={epoch})", ids.len()));
             }
         }
         WriteMessage::BumpCurrentEpoch => {
@@ -1193,7 +1236,9 @@ fn process_message(
             // about (same policy as MarkDirsListed/UpdateMeta).
             match IndexStore::bump_current_epoch(conn) {
                 Ok(epoch) => log::debug!("Index writer: bumped current_epoch to {epoch}"),
-                Err(e) => log::warn!("Index writer: bump_current_epoch failed: {e}"),
+                Err(e) => {
+                    signal.note(&e, "bump_current_epoch");
+                }
             }
         }
         #[cfg(test)]
@@ -1240,7 +1285,7 @@ fn process_message(
             }
         }
         WriteMessage::BackfillMissingDirStats => {
-            handle_backfill_missing_dir_stats(conn);
+            handle_backfill_missing_dir_stats(conn, signal);
         }
         WriteMessage::ArmLedgerHealLatch => {
             // A control message, not a mutation (no `MutationTracker::bump()`):
@@ -1251,10 +1296,10 @@ fn process_message(
             *heal_latch = true;
         }
         WriteMessage::IncrementalVacuum => {
-            handle_incremental_vacuum(conn);
+            handle_incremental_vacuum(conn, signal);
         }
         WriteMessage::WalCheckpoint => {
-            handle_wal_checkpoint(conn);
+            handle_wal_checkpoint(conn, signal);
         }
         WriteMessage::EmitDirUpdated(paths) => {
             #[cfg(test)]

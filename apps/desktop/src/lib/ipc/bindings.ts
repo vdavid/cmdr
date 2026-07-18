@@ -3195,6 +3195,12 @@ export type ActivityPhase =
   | 'live'
   // Idle: indexing initialized but no active work.
   | 'idle'
+  /**
+   *  Stopped after a fatal storage error: the DB is unusable, so the writer,
+   *  watcher, and event loop are torn down and the volume sits in the `Failed`
+   *  phase until the user rebuilds it. The terminal, unhappy sibling of `Idle`.
+   */
+  | 'failed'
 
 // Tauri event payload for aggregation progress updates.
 export type AggregationProgressEvent = {
@@ -4276,6 +4282,18 @@ export type Freshness =
    *  rescan. Yellow.
    */
   | 'stale'
+  /**
+   *  The index DB died with a fatal storage error (`SQLITE_IOERR`, corruption, a
+   *  full or read-only disk, …). Indexing STOPPED for this volume — its writer
+   *  thread and watcher are torn down, so there are no sizes and no live updates
+   *  until the user retries (a rebuild-from-scratch). Distinct from Stale (which
+   *  is still browsable and self-heals on rescan) and from gray/disabled (a
+   *  deliberate off state). Red. Terminal in this table: only an explicit rescan
+   *  (`ScanStarted`) leaves it, so a concurrent scan-completion handler can't
+   *  downgrade a dead index back to Stale/Fresh. See [`IndexFailure`](super::store::IndexFailure)
+   *  for the typed reason carried alongside on the `Failed` phase.
+   */
+  | 'failed'
 
 export type FriendlyGitErrorKind =
   /**
@@ -4482,6 +4500,21 @@ export type IndexDebugStatusResponse = {
 
 export type IndexDirUpdatedEvent = {
   paths: string[]
+}
+
+/**
+ *  A fatal storage failure that stopped a volume's index: the SQLite result codes
+ *  that classified the DB as unusable (a dead disk, a corrupt file, a full or
+ *  read-only volume). Carried on the `IndexPhase::Failed` phase (see `state.rs`)
+ *  and surfaced to the UI and logs so the failure is specific.
+ *
+ *  `code` is the primary SQLite result code (for example `SQLITE_IOERR` = 10);
+ *  `extended_code` is the extended code (for example `SQLITE_IOERR_WRITE`),
+ *  preserved because [`IndexStoreError`]'s `Display` flattens it away.
+ */
+export type IndexFailure = {
+  code: number
+  extendedCode: number
 }
 
 /**
@@ -7326,9 +7359,17 @@ export type VolumeIndexStatus = {
   enabled: boolean
   /**
    *  The volume's freshness (gray = `None`/disabled; blue = `scanning`; green
-   *  = `fresh`; yellow = `stale`). Always `Some` when `enabled`.
+   *  = `fresh`; yellow = `stale`; red = `failed`). Always `Some` when `enabled`,
+   *  and `Some(Failed)` for a dead index even though `enabled` is `false` (the
+   *  instance stays registered in the `Failed` phase so the badge is honest).
    */
   freshness: Freshness | null
+  /**
+   *  The typed fatal-storage reason, present ONLY when `freshness == Failed`.
+   *  Carries the SQLite result codes so logs and any future detailed tooltip can
+   *  be specific; the badge itself branches on `freshness`, not this.
+   */
+  failure: IndexFailure | null
   /**
    *  Unix seconds of the last completed scan, for the "Last indexed: …"
    *  tooltip/footer. From `meta.scan_completed_at`; `None` if none completed.

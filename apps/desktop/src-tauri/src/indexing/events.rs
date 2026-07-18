@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tauri_specta::Event;
 
-use super::store::IndexStatus;
+use super::store::{IndexFailure, IndexStatus};
 
 // ── Event payloads (Rust -> Frontend) ────────────────────────────────
 
@@ -196,6 +196,10 @@ pub enum ActivityPhase {
     Live,
     /// Idle: indexing initialized but no active work.
     Idle,
+    /// Stopped after a fatal storage error: the DB is unusable, so the writer,
+    /// watcher, and event loop are torn down and the volume sits in the `Failed`
+    /// phase until the user rebuilds it. The terminal, unhappy sibling of `Idle`.
+    Failed,
 }
 
 impl std::fmt::Display for ActivityPhase {
@@ -207,6 +211,7 @@ impl std::fmt::Display for ActivityPhase {
             Self::Reconciling => write!(f, "Reconciling"),
             Self::Live => write!(f, "Live"),
             Self::Idle => write!(f, "Idle"),
+            Self::Failed => write!(f, "Failed"),
         }
     }
 }
@@ -293,8 +298,14 @@ pub struct VolumeIndexStatus {
     /// volume. `false` ⇒ gray / not-indexed.
     pub enabled: bool,
     /// The volume's freshness (gray = `None`/disabled; blue = `scanning`; green
-    /// = `fresh`; yellow = `stale`). Always `Some` when `enabled`.
+    /// = `fresh`; yellow = `stale`; red = `failed`). Always `Some` when `enabled`,
+    /// and `Some(Failed)` for a dead index even though `enabled` is `false` (the
+    /// instance stays registered in the `Failed` phase so the badge is honest).
     pub freshness: Option<super::freshness::Freshness>,
+    /// The typed fatal-storage reason, present ONLY when `freshness == Failed`.
+    /// Carries the SQLite result codes so logs and any future detailed tooltip can
+    /// be specific; the badge itself branches on `freshness`, not this.
+    pub failure: Option<IndexFailure>,
     /// Unix seconds of the last completed scan, for the "Last indexed: …"
     /// tooltip/footer. From `meta.scan_completed_at`; `None` if none completed.
     pub scan_completed_at: Option<u64>,

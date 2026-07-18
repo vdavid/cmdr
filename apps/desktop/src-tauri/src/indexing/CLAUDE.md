@@ -29,6 +29,12 @@ Writer discipline (one writer thread per DB):
   evictable. DETAILS § "Live per-file write throttle".
 - **The index is a disposable cache**: a schema mismatch or corruption deletes and rebuilds the DB (no migrations). Gate
   only `scan_completed_at`.
+- **A fatal storage error STOPS and FAILS the index, never retries forever** (an incident logged 12,700 warnings in 8
+  min). The writer classifies each SQLite error (`store::is_fatal_storage_error`: `IOERR`/`CORRUPT`/`FULL`/`READONLY`/
+  `NOTADB`/`CANTOPEN`); the first trips the per-volume `IndexFailureSignal` and a supervisor moves the volume to the new
+  `IndexPhase::Failed` + terminal `Freshness::Failed` (red badge, DISTINCT from gray; reads skip, instance stays).
+  Recovery is rebuild-from-scratch (`enable`/`rescan` clear + restart); `BUSY`/`LOCKED` stay retried. DETAILS § "The
+  Failed state".
 - **Defer `root` auto-start** (`should_auto_start_indexing`): scanning `/` stacks TCC popups; FDA gates ONLY `root`.
 
 `dir_stats` is a delta-adjusted ledger (DETAILS § "The dir_stats ledger"):

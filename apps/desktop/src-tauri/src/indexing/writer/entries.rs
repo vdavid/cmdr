@@ -11,13 +11,18 @@ use std::time::Instant;
 use tauri::AppHandle;
 use tauri_specta::Event;
 
+use crate::indexing::IndexFailureSignal;
 use crate::indexing::aggregator::AggregationPhase;
-use crate::indexing::store::{DirStatsById, EntryRow, IndexStore};
+use crate::indexing::store::{DirStatsById, EntryRow, IndexStore, IndexStoreError};
 use crate::pluralize::pluralize_with;
 
 use super::delta::{propagate_delta_by_id, propagate_min_subtree_epoch, propagate_recursive_has_symlinks};
 use super::{AccumulatorMaps, AggregationProgressEvent, MutationTracker, phase_to_str};
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "writer handler: ambient state + the failure signal"
+)]
 pub(super) fn handle_insert_entries_v2(
     conn: &rusqlite::Connection,
     entries: Vec<EntryRow>,
@@ -26,6 +31,7 @@ pub(super) fn handle_insert_entries_v2(
     volume_id: &str,
     expected_total_entries: &AtomicU64,
     mutation_tracker: &MutationTracker,
+    signal: &IndexFailureSignal,
 ) {
     let count = entries.len();
     let t = Instant::now();
@@ -75,7 +81,9 @@ pub(super) fn handle_insert_entries_v2(
                 );
             }
         }
-        Err(e) => crate::log_error!("Index writer: insert_entries_v2_batch failed: {e}"),
+        Err(e) => {
+            signal.note(&e, "insert_entries_v2_batch");
+        }
     }
     let elapsed = t.elapsed().as_millis();
     if elapsed > 100 {
@@ -118,6 +126,7 @@ pub(super) fn handle_upsert_entry_v2(
     next_id: &AtomicI64,
     mutation_tracker: &MutationTracker,
     propagate_deltas: bool,
+    signal: &IndexFailureSignal,
 ) {
     // Hardlink dedup: if this file has nlink > 1, check whether another entry
     // for the same inode already has non-NULL sizes. If so, override sizes to
@@ -145,9 +154,9 @@ pub(super) fn handle_upsert_entry_v2(
                     old.is_directory
                 );
                 if old.is_directory {
-                    handle_delete_subtree_by_id(conn, existing_id, propagate_deltas, mutation_tracker);
+                    handle_delete_subtree_by_id(conn, existing_id, propagate_deltas, mutation_tracker, signal);
                 } else {
-                    handle_delete_entry_by_id(conn, existing_id, propagate_deltas, mutation_tracker);
+                    handle_delete_entry_by_id(conn, existing_id, propagate_deltas, mutation_tracker, signal);
                 }
                 upsert_insert_new(
                     conn,
@@ -162,6 +171,7 @@ pub(super) fn handle_upsert_entry_v2(
                     should_dedup,
                     next_id,
                     propagate_deltas,
+                    signal,
                 );
                 return;
             }
@@ -179,6 +189,7 @@ pub(super) fn handle_upsert_entry_v2(
                 should_dedup,
                 old_entry,
                 propagate_deltas,
+                signal,
             );
         }
         Ok(None) => {
@@ -195,10 +206,11 @@ pub(super) fn handle_upsert_entry_v2(
                 should_dedup,
                 next_id,
                 propagate_deltas,
+                signal,
             );
         }
         Err(e) => {
-            log::warn!("Index writer: resolve_component failed for {name}: {e}");
+            signal.note(&e, &format!("resolve_component for {name}"));
         }
     }
     mutation_tracker.bump();
@@ -222,6 +234,7 @@ fn upsert_update_existing(
     should_dedup: bool,
     old_entry: Option<EntryRow>,
     propagate_deltas: bool,
+    signal: &IndexFailureSignal,
 ) {
     // Dedup: override sizes if another entry already has sizes for this inode
     let (logical_size, physical_size) = if should_dedup
@@ -246,7 +259,7 @@ fn upsert_update_existing(
         modified_at,
         inode,
     ) {
-        log::warn!("Index writer: update_entry failed for id={existing_id}: {e}");
+        signal.note(&e, &format!("update_entry id={existing_id}"));
     } else if let Some(old) = old_entry
         && propagate_deltas
     {
@@ -284,6 +297,7 @@ fn upsert_insert_new(
     should_dedup: bool,
     next_id: &AtomicI64,
     propagate_deltas: bool,
+    signal: &IndexFailureSignal,
 ) {
     // Dedup: override sizes if another entry already has sizes for this inode
     let (logical_size, physical_size) = if should_dedup
@@ -332,7 +346,7 @@ fn upsert_insert_new(
                         min_subtree_epoch: 0,
                     }],
                 ) {
-                    log::warn!("Writer: init dir_stats for new dir id={new_id} failed: {e}");
+                    signal.note(&e, &format!("init dir_stats for new dir id={new_id}"));
                 }
             }
             // Ancestor propagation. Skipped under a bulk reconcile
@@ -363,7 +377,7 @@ fn upsert_insert_new(
             }
         }
         Err(e) => {
-            log::warn!("Index writer: insert_entry_v2 failed for {name}: {e}");
+            signal.note(&e, &format!("insert_entry_v2 for {name}"));
         }
     }
 }
@@ -388,6 +402,7 @@ pub(super) fn handle_move_entry_v2(
     new_parent_id: i64,
     new_name: String,
     mutation_tracker: &MutationTracker,
+    signal: &IndexFailureSignal,
 ) {
     use crate::indexing::store::normalize_for_comparison;
 
@@ -398,7 +413,7 @@ pub(super) fn handle_move_entry_v2(
             return;
         }
         Err(e) => {
-            log::warn!("Index writer: MoveEntryV2 get_entry_by_id({entry_id}) failed: {e}");
+            signal.note(&e, &format!("MoveEntryV2 get_entry_by_id({entry_id})"));
             return;
         }
     };
@@ -436,14 +451,14 @@ pub(super) fn handle_move_entry_v2(
             // Move is a live-only message (never part of a bulk reconcile, which
             // emits only Upsert/Delete), so its internal deletes always propagate.
             if conflicting_is_dir {
-                handle_delete_subtree_by_id(conn, conflicting_id, true, mutation_tracker);
+                handle_delete_subtree_by_id(conn, conflicting_id, true, mutation_tracker, signal);
             } else {
-                handle_delete_entry_by_id(conn, conflicting_id, true, mutation_tracker);
+                handle_delete_entry_by_id(conn, conflicting_id, true, mutation_tracker, signal);
             }
         }
         Ok(_) => {}
         Err(e) => {
-            log::warn!("Index writer: MoveEntryV2 destination lookup failed for id={entry_id}: {e}");
+            signal.note(&e, &format!("MoveEntryV2 destination lookup for id={entry_id}"));
             return;
         }
     }
@@ -451,7 +466,10 @@ pub(super) fn handle_move_entry_v2(
         "UPDATE entries SET parent_id = ?1, name = ?2, name_folded = ?3 WHERE id = ?4",
         rusqlite::params![new_parent_id, new_name, new_name_folded, entry_id],
     ) {
-        log::warn!("Index writer: MoveEntryV2 update failed for id={entry_id}: {e}");
+        signal.note(
+            &IndexStoreError::from(e),
+            &format!("MoveEntryV2 update for id={entry_id}"),
+        );
         return;
     }
 
@@ -548,11 +566,12 @@ pub(super) fn handle_delete_entry_by_id(
     entry_id: i64,
     propagate_deltas: bool,
     mutation_tracker: &MutationTracker,
+    signal: &IndexFailureSignal,
 ) {
     // Read old entry before deleting to get accurate delta
     let old_entry = IndexStore::get_entry_by_id(conn, entry_id).ok().flatten();
     if let Err(e) = IndexStore::delete_entry_by_id(conn, entry_id) {
-        log::warn!("Index writer: delete_entry_by_id failed for id={entry_id}: {e}");
+        signal.note(&e, &format!("delete_entry_by_id id={entry_id}"));
     }
     // Auto-propagate accurate negative delta via parent_id chain. Skipped under a
     // bulk reconcile (`propagate_deltas == false`): the final ComputeAllAggregates
@@ -598,6 +617,7 @@ pub(super) fn handle_delete_subtree_by_id(
     root_id: i64,
     propagate_deltas: bool,
     mutation_tracker: &MutationTracker,
+    signal: &IndexFailureSignal,
 ) {
     // Read subtree totals before deleting to get accurate delta
     let totals = IndexStore::get_subtree_totals_by_id(conn, root_id).ok();
@@ -624,7 +644,7 @@ pub(super) fn handle_delete_subtree_by_id(
         }
     };
     if let Err(e) = IndexStore::delete_subtree_by_id(conn, root_id) {
-        log::warn!("Index writer: delete_subtree_by_id failed for id={root_id}: {e}");
+        signal.note(&e, &format!("delete_subtree_by_id id={root_id}"));
     }
     // Auto-propagate accurate negative delta via parent_id chain. Skipped under a
     // bulk reconcile (`propagate_deltas == false`): the final ComputeAllAggregates
@@ -658,6 +678,7 @@ pub(super) fn handle_truncate_data(
     expected_total_entries: &AtomicU64,
     next_id: &AtomicI64,
     mutation_tracker: &MutationTracker,
+    signal: &IndexFailureSignal,
 ) {
     accumulator.clear();
     expected_total_entries.store(0, Ordering::Relaxed);
@@ -677,7 +698,9 @@ pub(super) fn handle_truncate_data(
                 log::warn!("Writer: incremental_vacuum after truncate failed: {e}");
             }
         }
-        Err(e) => log::warn!("Writer: truncate failed: {e}"),
+        Err(e) => {
+            signal.note(&IndexStoreError::from(e), "truncate");
+        }
     }
     mutation_tracker.bump();
 }
