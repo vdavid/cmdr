@@ -36,8 +36,6 @@
     "apps/desktop/src-tauri/src/file_viewer/session.rs": 1459,
     "apps/desktop/src-tauri/src/file_viewer/session_test.rs": 1777,
     "apps/desktop/src-tauri/src/indexing/aggregator/mod.rs": 810,
-    "apps/desktop/src-tauri/src/indexing/event_loop.rs": 1377,
-    "apps/desktop/src-tauri/src/indexing/event_loop/tests.rs": 1184,
     "apps/desktop/src-tauri/src/indexing/integration_tests.rs": 1111,
     "apps/desktop/src-tauri/src/indexing/manager.rs": 1147,
     "apps/desktop/src-tauri/src/indexing/reconciler.rs": 1337,
