@@ -23,8 +23,8 @@ Wrapper architecture, decisions, and the full instance-isolation reference: [DET
 
 ## Must-knows
 
-- **Scripts are TypeScript run directly by Node** (`node scripts/foo.ts`); Node 25's native type stripping handles
-  them, no build step. Two rules this imposes: relative sibling imports MUST carry the real `.ts` extension
+- **Scripts are TypeScript run directly by Node** (`node scripts/foo.ts`); Node 25's native type stripping handles them,
+  no build step. Two rules this imposes: relative sibling imports MUST carry the real `.ts` extension
   (`from './instance-id.ts'`, not `.js` — bare Node won't resolve a `.js` specifier to a `.ts` file), enabled by
   `allowImportingTsExtensions` in `tsconfig.json`; and stripping can't emit, so no `enum`/`namespace`/parameter
   properties/decorators (plain types only). `console` is allowed here (CLI tools) via an `eslint.config.js` override.

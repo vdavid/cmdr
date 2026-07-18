@@ -322,9 +322,13 @@ describe('buildPseudoFile: deliberately-verbatim values carry a justification', 
     // Kept verbatim by construction → justified, so the coverage check's
     // identical-to-English signal doesn't flag the generated locale.
     expect(out['fixture.heading']).toBe('{name}')
-    expect(out['@fixture.heading']).toMatchObject({ sameAsSourceJustification: expect.stringContaining('verbatim') })
+    expect((out['@fixture.heading'] as { sameAsSourceJustification?: string }).sameAsSourceJustification).toContain(
+      'verbatim',
+    )
     expect(out['fixture.appName']).toBe('Cmdr')
-    expect(out['@fixture.appName']).toMatchObject({ sameAsSourceJustification: expect.stringContaining('verbatim') })
+    expect((out['@fixture.appName'] as { sameAsSourceJustification?: string }).sameAsSourceJustification).toContain(
+      'verbatim',
+    )
     // A normal string is accented/expanded and carries NO justification.
     expect(out['fixture.plain']).not.toBe('Cancel')
     expect(out['@fixture.plain']).not.toHaveProperty('sameAsSourceJustification')

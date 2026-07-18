@@ -84,14 +84,21 @@ export function resolveInstanceId({
  * Returns null when there's nothing meaningful to show (prod, or no info available), so the
  * caller leaves `CMDR_WORKTREE_LABEL` unset.
  *
- * @param {object} opts
- * @param {boolean} opts.isDev
- * @param {string|null|undefined} opts.worktreeSlug  raw --worktree argument (pre-sanitization)
- * @param {boolean} opts.isMainWorkingTree  cwd is the repo's main clone, not a linked worktree
- * @param {string|null|undefined} opts.worktreeDirName  basename of the worktree toplevel (linked worktrees)
- * @returns {string|null}
+ * - `worktreeSlug`: raw --worktree argument (pre-sanitization).
+ * - `isMainWorkingTree`: cwd is the repo's main clone, not a linked worktree.
+ * - `worktreeDirName`: basename of the worktree toplevel (linked worktrees).
  */
-export function resolveWorktreeLabel({ isDev, worktreeSlug, isMainWorkingTree, worktreeDirName }) {
+export function resolveWorktreeLabel({
+  isDev,
+  worktreeSlug,
+  isMainWorkingTree,
+  worktreeDirName,
+}: {
+  isDev: boolean
+  worktreeSlug: string | null | undefined
+  isMainWorkingTree: boolean
+  worktreeDirName: string | null | undefined
+}): string | null {
   if (!isDev) return null
   if (worktreeSlug != null) {
     // Show the sanitized slug so the label matches the actual instance identity (data dir,
