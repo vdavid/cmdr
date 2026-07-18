@@ -433,8 +433,12 @@ export function pseudoValue(key, value) {
  * Builds the pseudolocale content for ONE area file: every English message → its
  * pseudo value, each paired with an `@key.sourceHash` of the English value, so a
  * locale's catalog file is interleaved `key` / `@key` exactly like `en` but with
- * only the maintenance metadata the stale check needs. Deterministic and
- * order-stable (keys in source order).
+ * only the maintenance metadata the stale check needs. A value the generator
+ * deliberately keeps verbatim (placeholder-only, or pure brand/system tokens)
+ * also gets a `sameAsSourceJustification`, so the coverage check's
+ * identical-to-English signal stays honest instead of flagging by-construction
+ * matches as "possibly untranslated". Deterministic and order-stable (keys in
+ * source order).
  * @param {Record<string, unknown>} rawEnFile a parsed `en/<area>.json`
  * @returns {Record<string, unknown>}
  */
@@ -443,8 +447,16 @@ export function buildPseudoFile(rawEnFile) {
   const out = {}
   for (const [key, value] of Object.entries(rawEnFile)) {
     if (isMetadataKey(key) || typeof value !== 'string') continue
-    out[key] = pseudoValue(key, value)
-    out[`@${key}`] = { sourceHash: sourceHash(value) }
+    const pseudo = pseudoValue(key, value)
+    out[key] = pseudo
+    out[`@${key}`] =
+      pseudo === value
+        ? {
+            sourceHash: sourceHash(value),
+            sameAsSourceJustification:
+              'Generator keeps this value verbatim (placeholder-only, or pure brand/system tokens).',
+          }
+        : { sourceHash: sourceHash(value) }
   }
   return out
 }

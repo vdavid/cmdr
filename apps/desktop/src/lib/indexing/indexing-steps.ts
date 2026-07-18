@@ -43,6 +43,35 @@ export type AggregationSubPhase = 'saving_entries' | 'loading' | 'sorting' | 'co
 /** Which family of steps a volume's pipeline produces. */
 export type IndexRunKind = 'local' | 'network' | 'replay'
 
+/** Whether a scan is the volume's very first index build or a full re-walk of an
+ *  already-indexed drive. Derived from the scan-started event's calibration (a
+ *  prior scan's totals exist ⇒ rescan) and stashed per volume in `index-state`
+ *  so the header stays truthful through the aggregation and reconcile steps,
+ *  when the live scan entry is already gone. */
+export type ScanKind = 'first' | 'rescan'
+
+/** The run-kind header above the checklist: what KIND of run this is, answering
+ *  "is this a full scan or a quick roll-on?" at a glance. */
+export type IndexRunLabel = 'firstScan' | 'rescan' | 'update'
+
+/**
+ * Derive the run-kind header for one volume's checklist, or `null` when the scan
+ * kind is unknown (a mid-scan reload dropped the scan-started event) — no header
+ * beats a guessed one.
+ */
+export function deriveRunLabel(runKind: IndexRunKind, scanKind: ScanKind | undefined): IndexRunLabel | null {
+  if (runKind === 'replay') return 'update'
+  if (scanKind == null) return null
+  return scanKind === 'first' ? 'firstScan' : 'rescan'
+}
+
+/** The user-facing label key for each run-kind header (resolved via `tString` at render). */
+export const runLabelToLabelKey: Record<IndexRunLabel, MessageKey> = {
+  firstScan: 'indexing.run.firstScan',
+  rescan: 'indexing.run.rescan',
+  update: 'indexing.run.update',
+}
+
 export interface StepDerivationInput {
   runKind: IndexRunKind
   /** The volume's current top-level pipeline phase, or `undefined` when unknown

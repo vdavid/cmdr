@@ -12,7 +12,7 @@
  * before the implementation existed.
  */
 import { describe, it, expect } from 'vitest'
-import { deriveSteps, activeStep, type IndexStep, type IndexStepKind } from './indexing-steps'
+import { deriveSteps, activeStep, deriveRunLabel, type IndexStep, type IndexStepKind } from './indexing-steps'
 
 /** The ordered step kinds, for readable assertions. */
 function kinds(steps: IndexStep[]): IndexStepKind[] {
@@ -138,6 +138,25 @@ describe('deriveSteps — event-log roll-on (replay)', () => {
   it('the single step is done once the volume goes live', () => {
     const steps = deriveSteps({ runKind: 'replay', phase: 'live', aggregationSubPhase: undefined })
     expect(statusOf(steps, 'updateIndex')).toBe('done')
+  })
+})
+
+describe('deriveRunLabel — the run-kind header above the checklist', () => {
+  it('labels a replay run an update, regardless of scan kind', () => {
+    expect(deriveRunLabel('replay', undefined)).toBe('update')
+    expect(deriveRunLabel('replay', 'rescan')).toBe('update')
+  })
+
+  it('labels a scan by its first-vs-rescan kind', () => {
+    expect(deriveRunLabel('local', 'first')).toBe('firstScan')
+    expect(deriveRunLabel('local', 'rescan')).toBe('rescan')
+    expect(deriveRunLabel('network', 'first')).toBe('firstScan')
+    expect(deriveRunLabel('network', 'rescan')).toBe('rescan')
+  })
+
+  it('returns null when the scan kind is unknown (mid-scan reload), so no header lies', () => {
+    expect(deriveRunLabel('local', undefined)).toBeNull()
+    expect(deriveRunLabel('network', undefined)).toBeNull()
   })
 })
 

@@ -14,7 +14,9 @@ boundary: [`../CLAUDE.md`](../CLAUDE.md).
   with `pnpm i18n:shots`. See [DETAILS.md](DETAILS.md) § Screenshots.
 - `en-XA/`: the generated **pseudolocale** (accented, expanded, structure-preserving), the overflow-testing locale + the
   i18n-check fixture. **Gitignored + fully regenerable** from `en/` with `pnpm i18n:pseudo`; never hand-edit it (your
-  edit is overwritten). The committed check fixture is `test/fixtures/i18n-pseudolocale/`, not here. See
+  edit is overwritten). Values the generator keeps verbatim (placeholder-only, pure brand tokens) get an auto-emitted
+  `sameAsSourceJustification`, so a regenerated `en-XA` passes `i18n-coverage` — don't hand-justify them. The committed
+  check fixture is `test/fixtures/i18n-pseudolocale/`, not here. See
   [`/docs/guides/i18n.md`](../../../../../../docs/guides/i18n.md) § Pseudolocale.
 
 ## Must-knows

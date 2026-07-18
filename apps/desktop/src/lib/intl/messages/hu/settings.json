@@ -454,6 +454,9 @@
     "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Ez teljes egészében a Macen fut az Apple beépített Vision keretrendszerével. A képeid soha nem hagyják el a számítógépedet, és nincs benne AI-szolgáltató vagy API-kulcs.",
+  "@settings.mediaIndex.privacyNote": {
+    "sourceHash": "817fc60"
+  },
   "settings.mediaIndex.clip.title": "Szemantikus keresés",
   "@settings.mediaIndex.clip.title": {
     "sourceHash": "e1a8427"
@@ -481,9 +484,6 @@
   "settings.mediaIndex.clip.failed": "A letöltés nem fejeződött be. Ellenőrizd a kapcsolatot, és próbáld újra.",
   "@settings.mediaIndex.clip.failed": {
     "sourceHash": "5feb349"
-  },
-  "@settings.mediaIndex.privacyNote": {
-    "sourceHash": "817fc60"
   },
   "settings.mediaIndex.enabled.label": "Képek tartalmának indexelése",
   "@settings.mediaIndex.enabled.label": {
@@ -608,6 +608,10 @@
   "settings.mediaIndex.importanceThreshold.waitingForImportance": "Kiszámítjuk, mely mappák a fontosak. A képek indexelése rögtön ezután indul.",
   "@settings.mediaIndex.importanceThreshold.waitingForImportance": {
     "sourceHash": "2116b55"
+  },
+  "settings.mediaIndex.importanceThreshold.waitingForDriveIndex": "A meghajtó átvizsgálása még folyamatban van. A képek indexelése azonnal elindul, amint befejeződik.",
+  "@settings.mediaIndex.importanceThreshold.waitingForDriveIndex": {
+    "sourceHash": "1d50f92"
   },
   "settings.mediaIndex.importanceThreshold.pending": "Néhány meghajtó átvizsgálása még folyamatban van, ezért ezek a számok tovább nőnek majd.",
   "@settings.mediaIndex.importanceThreshold.pending": {

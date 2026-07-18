@@ -450,3 +450,15 @@ Settled while translating the Compress feature:
 - This Mac (local-disk label in the per-drive indexing progress list) · **Este Mac** · matches Apple Finder sidebar
   convention · high. `progress.local`.
 - No `sameAsSourceJustification` needed: all 22 values differ from English.
+
+### Drive-scan run-kind headers and drive-scan noun (`indexing.run.*` + `indexing.enrich.queued` + `settings.mediaIndex.importanceThreshold.waitingForDriveIndex`, 2026-07-18)
+
+- drive scan (the noun, a full walk of the drive) · **varredura (do disco)** · aligns with the shipped
+  `indexing.step.findFilesFirstScan` "Primeira varredura"; **varredura** is the drive-indexing scan noun (distinct from
+  the file-operation "Analisar/Análise" sense in the glossary Terms, which is transfer/delete pre-counting) · high.
+- First full scan · **Primeira varredura completa** · run-kind header; extends the "Primeira varredura" precedent with
+  **completa** for "full" · high. `indexing.run.firstScan`.
+- Full rescan · **Nova varredura completa** · a fresh full re-walk; "nova ... completa" reads better than a literal
+  "re-" prefix · high. `indexing.run.rescan`.
+- Quick update (replay recorded changes, the light path) · **Atualização rápida** · noun form of the glossary Refresh →
+  **Atualizar** row; matches `indexing.step.updateIndex` "Atualizar o índice" · high. `indexing.run.update`.

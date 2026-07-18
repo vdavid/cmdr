@@ -457,6 +457,9 @@
     "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Isto roda inteiramente no seu Mac usando o framework Vision integrado da Apple. Suas imagens nunca saem do seu computador e nenhum provedor de IA ou chave de API está envolvido.",
+  "@settings.mediaIndex.privacyNote": {
+    "sourceHash": "817fc60"
+  },
   "settings.mediaIndex.clip.title": "Busca semântica",
   "@settings.mediaIndex.clip.title": {
     "sourceHash": "e1a8427"
@@ -484,9 +487,6 @@
   "settings.mediaIndex.clip.failed": "O download não foi concluído. Verifique sua conexão e tente novamente.",
   "@settings.mediaIndex.clip.failed": {
     "sourceHash": "5feb349"
-  },
-  "@settings.mediaIndex.privacyNote": {
-    "sourceHash": "817fc60"
   },
   "settings.mediaIndex.enabled.label": "Indexar o conteúdo das imagens",
   "@settings.mediaIndex.enabled.label": {
@@ -611,6 +611,10 @@
   "settings.mediaIndex.importanceThreshold.waitingForImportance": "Calculando quais pastas são importantes. A indexação de imagens começa logo depois.",
   "@settings.mediaIndex.importanceThreshold.waitingForImportance": {
     "sourceHash": "2116b55"
+  },
+  "settings.mediaIndex.importanceThreshold.waitingForDriveIndex": "A varredura do disco ainda está em andamento. A indexação de imagens começa assim que ela terminar.",
+  "@settings.mediaIndex.importanceThreshold.waitingForDriveIndex": {
+    "sourceHash": "1d50f92"
   },
   "settings.mediaIndex.importanceThreshold.pending": "Alguns discos ainda estão sendo analisados, então esses números vão crescer.",
   "@settings.mediaIndex.importanceThreshold.pending": {

@@ -14,13 +14,17 @@
         type VolumeIndexActivity,
         type AggregationActivity,
     } from './index-state.svelte'
+    import { onMount } from 'svelte'
     import { getEnrichingVolumes, isAnyVolumeEnriching, type VolumeEnrichActivity } from './media-enrich-state.svelte'
+    import { isEnrichQueued } from './media-enrich-queued'
     import IndexingDriveRow from './IndexingDriveRow.svelte'
     import IndexingDriveSummary from './IndexingDriveSummary.svelte'
     import IndexingEnrichRow from './IndexingEnrichRow.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { tString } from '$lib/intl/messages.svelte'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
+    import { getSetting, onSpecificSettingChange } from '$lib/settings'
+    import { getEnabledMediaIndexVolumeIds } from '$lib/media-index/enabled-volumes'
 
     // The hourglass shows whenever a drive is indexing OR any volume is actively
     // enriching images (the second publisher ORs into the gate). A paused-only
@@ -73,6 +77,25 @@
         return result
     })
 
+    // Live master-toggle state for the queued-enrichment line (the setting can
+    // flip in the settings window while this tooltip is up).
+    let imageIndexEnabled = $state(getSetting('mediaIndex.enabled'))
+    onMount(() => onSpecificSettingChange('mediaIndex.enabled', (_id, value) => (imageIndexEnabled = value)))
+
+    // "Image indexing starts after the drive scan": image indexing is on, but its
+    // pass is waiting for an eligible volume's drive index (the scan-completion
+    // edge kicks it automatically). Without this line, flipping the toggle
+    // mid-scan looks like it did nothing. Replay (roll-on) rows don't count: a
+    // quick update isn't the completion edge the promise is about.
+    const enrichQueued = $derived(
+        isEnrichQueued(
+            imageIndexEnabled,
+            getEnabledMediaIndexVolumeIds(),
+            rows.filter((r) => r.activity.phase !== 'replaying').map((r) => r.activity.volumeId),
+            enrichVolumes.map((v) => v.volumeId),
+        ),
+    )
+
     // The tooltip action adopts `tooltipContent` (not the hidden wrapper) so it
     // renders visibly inside the tooltip: an adopted element keeps its own
     // `hidden` attribute, so a hidden host passed as `contentEl` would render
@@ -117,6 +140,9 @@
             {#each enrichVolumes as enrich (enrich.volumeId)}
                 <IndexingEnrichRow activity={enrich} driveName={driveName(enrich.volumeId)} showHeading={true} />
             {/each}
+            {#if enrichQueued}
+                <span class="enrich-queued">{tString('indexing.enrich.queued')}</span>
+            {/if}
         </div>
     </div>
 {/if}
@@ -154,6 +180,12 @@
         50% {
             opacity: 1;
         }
+    }
+
+    /* The queued-enrichment one-liner: an aside under the live rows, quietest
+       text tier (it promises future work, it isn't live progress). */
+    .enrich-queued {
+        color: var(--color-text-tertiary);
     }
 
     .tooltip-content {

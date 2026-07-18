@@ -25,6 +25,18 @@
   "@indexing.scan.etaRough": {
     "sourceHash": "6f92820"
   },
+  "indexing.run.firstScan": "首次完整扫描",
+  "@indexing.run.firstScan": {
+    "sourceHash": "bb804db"
+  },
+  "indexing.run.rescan": "完整重新扫描",
+  "@indexing.run.rescan": {
+    "sourceHash": "f8cd103"
+  },
+  "indexing.run.update": "快速更新",
+  "@indexing.run.update": {
+    "sourceHash": "97ac3e3"
+  },
   "indexing.step.findFiles": "查找文件",
   "@indexing.step.findFiles": {
     "sourceHash": "15d12bc"
@@ -100,6 +112,14 @@
   "indexing.eta.minutesLeft": "剩余 {minutesText} 分钟",
   "@indexing.eta.minutesLeft": {
     "sourceHash": "bcb3615"
+  },
+  "indexing.eta.hoursMinutesLeft": "剩余 {hours, plural, other {{hoursText} 小时}} {minutes, plural, other {{minutesText} 分钟}}",
+  "@indexing.eta.hoursMinutesLeft": {
+    "sourceHash": "8b2b4c0"
+  },
+  "indexing.eta.hoursLeft": "剩余 {hours, plural, other {{hoursText} 小时}}",
+  "@indexing.eta.hoursLeft": {
+    "sourceHash": "1d50900"
   },
   "indexing.rescan.staleIndex": "你的驱动器索引已过期。看起来应用有一阵子没运行了。正在重新扫描以跟上变化。",
   "@indexing.rescan.staleIndex": {
@@ -197,6 +217,10 @@
   "indexing.enrich.pausedDisconnected": "已暂停，重新连接后继续",
   "@indexing.enrich.pausedDisconnected": {
     "sourceHash": "1483989"
+  },
+  "indexing.enrich.queued": "图像索引将在驱动器扫描完成后开始",
+  "@indexing.enrich.queued": {
+    "sourceHash": "09e94f5"
   },
   "indexing.enrich.imagesBarLabel": "已索引的图像",
   "@indexing.enrich.imagesBarLabel": {

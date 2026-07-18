@@ -49,6 +49,7 @@ vi.mock('./index-state.svelte', () => ({
   getAggregatingVolumeIds: () => Object.keys(aggregationByVolume),
   getActivePhaseVolumeIds: () => Object.keys(phaseByVolume),
   getVolumePhase: (volumeId: string) => phaseByVolume[volumeId],
+  getVolumeScanKind: () => undefined,
   placeholderActivity: (volumeId: string): VolumeIndexActivity => ({
     volumeId,
     phase: 'scanning',
@@ -70,6 +71,17 @@ vi.mock('$lib/stores/volume-store.svelte', () => ({
     { id: 'root', name: 'Macintosh HD' },
     { id: 'smb-nas', name: 'Backups' },
   ],
+}))
+
+// The queued-enrichment line's inputs: master toggle off and no eligible volumes,
+// so the line stays out of these scenarios (it has its own pure-predicate tests).
+vi.mock('$lib/settings', () => ({
+  getSetting: () => false,
+  onSpecificSettingChange: () => () => {},
+}))
+
+vi.mock('$lib/media-index/enabled-volumes', () => ({
+  getEnabledMediaIndexVolumeIds: () => [],
 }))
 
 describe('IndexingStatusIndicator a11y', () => {

@@ -456,6 +456,9 @@
     "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Das läuft vollständig auf deinem Mac über Apples integriertes Vision-Framework. Deine Bilder verlassen deinen Computer nie, und es sind kein KI-Anbieter und kein API-Schlüssel beteiligt.",
+  "@settings.mediaIndex.privacyNote": {
+    "sourceHash": "817fc60"
+  },
   "settings.mediaIndex.clip.title": "Semantische Suche",
   "@settings.mediaIndex.clip.title": {
     "sourceHash": "e1a8427"
@@ -483,9 +486,6 @@
   "settings.mediaIndex.clip.failed": "Der Download wurde nicht abgeschlossen. Prüfe deine Verbindung und versuche es erneut.",
   "@settings.mediaIndex.clip.failed": {
     "sourceHash": "5feb349"
-  },
-  "@settings.mediaIndex.privacyNote": {
-    "sourceHash": "817fc60"
   },
   "settings.mediaIndex.enabled.label": "Bildinhalte indizieren",
   "@settings.mediaIndex.enabled.label": {
@@ -610,6 +610,10 @@
   "settings.mediaIndex.importanceThreshold.waitingForImportance": "Cmdr ermittelt, welche Ordner wichtig sind. Die Bildindizierung startet gleich danach.",
   "@settings.mediaIndex.importanceThreshold.waitingForImportance": {
     "sourceHash": "2116b55"
+  },
+  "settings.mediaIndex.importanceThreshold.waitingForDriveIndex": "Das Laufwerk wird noch durchsucht. Die Bildindizierung startet, sobald das abgeschlossen ist.",
+  "@settings.mediaIndex.importanceThreshold.waitingForDriveIndex": {
+    "sourceHash": "1d50f92"
   },
   "settings.mediaIndex.importanceThreshold.pending": "Manche Laufwerke werden noch durchsucht, daher werden diese Zahlen noch steigen.",
   "@settings.mediaIndex.importanceThreshold.pending": {

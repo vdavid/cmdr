@@ -24,10 +24,27 @@ describe('formatEta', () => {
     expect(formatEta(59)).toBe('59s left')
   })
 
-  it('rounds to whole minutes at a minute and above', () => {
+  it('rounds to whole minutes between a minute and an hour', () => {
     expect(formatEta(60)).toBe('1m left')
     expect(formatEta(125)).toBe('2m left')
     expect(formatEta(600)).toBe('10m left')
+  })
+
+  it('spells out hours and minutes from an hour up', () => {
+    expect(formatEta(3600)).toBe('1 hour left')
+    expect(formatEta(3660)).toBe('1 hour 1 minute left')
+    // The reported NAS case: "84m left" is hard to read as an hour-scale wait.
+    expect(formatEta(84 * 60)).toBe('1 hour 24 minutes left')
+    expect(formatEta(2 * 3600)).toBe('2 hours left')
+    expect(formatEta(9 * 3600 + 59 * 60)).toBe('9 hours 59 minutes left')
+  })
+
+  it('drops the minutes from ten hours up', () => {
+    expect(formatEta(10 * 3600)).toBe('10 hours left')
+    // The reported NAS case: "1200m left" forced the reader to do the division.
+    expect(formatEta(1200 * 60)).toBe('20 hours left')
+    expect(formatEta(10 * 3600 + 29 * 60)).toBe('10 hours left')
+    expect(formatEta(10 * 3600 + 31 * 60)).toBe('11 hours left')
   })
 
   it('reads "Almost done" for non-finite input', () => {

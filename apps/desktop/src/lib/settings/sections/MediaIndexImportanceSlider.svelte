@@ -180,6 +180,15 @@
     // spinner so the panel never shows two spinners for one wait.
     const waitingForImportance = $derived(localState?.waitingForImportance ?? false)
 
+    // The drive index isn't ready yet (for the local root: the full drive scan is
+    // still running), so no image can be indexed yet — the pass starts by itself on
+    // the scan's completion. Voiced explicitly, or flipping the master toggle
+    // mid-scan looks like the switch did nothing. `qualifyingCount === null` is the
+    // typed "index not registered" signal from `media_index_volume_state`.
+    const waitingForDriveIndex = $derived(
+        localState != null && localState.enabled && localState.qualifyingCount === null,
+    )
+
     // The incremental hint: the signed image delta vs the last settled bucket. Shown only while
     // the live bucket differs from the settled baseline (i.e. mid-adjustment).
     const delta = $derived.by(() => {
@@ -212,9 +221,11 @@
                 totalText: formatInteger(covered),
             })
         }
-        // Not scored yet: the whole-drive count (or "counting" before the index is ready).
+        // Not scored yet: the whole-drive count. Before the drive index is ready
+        // there's no line at all — the preview's waiting-for-drive-scan message
+        // above owns that state (one honest line, not a duplicate "Counting…").
         if (s.qualifyingCount === null) {
-            return s.enrichedCount > 0 ? null : tString('settings.mediaIndex.progress.counting')
+            return null
         }
         if (s.qualifyingCount === 0) return null
         if (s.enrichedCount >= s.qualifyingCount) {
@@ -289,7 +300,12 @@
     </Slider.Root>
 
     <p class="mi-preview" aria-live="polite">
-        {#if waitingForImportance}
+        {#if waitingForDriveIndex}
+            <!-- The drive scan hasn't finished: one honest line about the wait,
+                 replacing the generic counting spinner (same single-line rule as
+                 the importance wait below). -->
+            {tString('settings.mediaIndex.importanceThreshold.waitingForDriveIndex')}
+        {:else if waitingForImportance}
             <!-- Deferred on importance: one honest line, replacing the generic
                  "Working out how much this covers…" spinner (same underlying wait). -->
             {tString('settings.mediaIndex.importanceThreshold.waitingForImportance')}

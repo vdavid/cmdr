@@ -25,6 +25,18 @@
   "@indexing.scan.etaRough": {
     "sourceHash": "6f92820"
   },
+  "indexing.run.firstScan": "Primeira varredura completa",
+  "@indexing.run.firstScan": {
+    "sourceHash": "bb804db"
+  },
+  "indexing.run.rescan": "Nova varredura completa",
+  "@indexing.run.rescan": {
+    "sourceHash": "f8cd103"
+  },
+  "indexing.run.update": "Atualização rápida",
+  "@indexing.run.update": {
+    "sourceHash": "97ac3e3"
+  },
   "indexing.step.findFiles": "Encontrar arquivos",
   "@indexing.step.findFiles": {
     "sourceHash": "15d12bc"
@@ -101,6 +113,14 @@
   "indexing.eta.minutesLeft": "{minutesText}min restantes",
   "@indexing.eta.minutesLeft": {
     "sourceHash": "bcb3615"
+  },
+  "indexing.eta.hoursMinutesLeft": "{hours, plural, one {{hoursText} hora} many {{hoursText} horas} other {{hoursText} horas}} {minutes, plural, one {{minutesText} minuto restante} many {{minutesText} minutos restantes} other {{minutesText} minutos restantes}}",
+  "@indexing.eta.hoursMinutesLeft": {
+    "sourceHash": "8b2b4c0"
+  },
+  "indexing.eta.hoursLeft": "{hours, plural, one {{hoursText} hora restante} many {{hoursText} horas restantes} other {{hoursText} horas restantes}}",
+  "@indexing.eta.hoursLeft": {
+    "sourceHash": "1d50900"
   },
   "indexing.rescan.staleIndex": "O índice do seu disco está desatualizado. Parece que o app não foi aberto há um tempo. Examinando o disco de novo para colocar tudo em dia.",
   "@indexing.rescan.staleIndex": {
@@ -199,6 +219,10 @@
   "indexing.enrich.pausedDisconnected": "Pausado, retoma ao reconectar",
   "@indexing.enrich.pausedDisconnected": {
     "sourceHash": "1483989"
+  },
+  "indexing.enrich.queued": "A indexação de imagens começa após a varredura do disco",
+  "@indexing.enrich.queued": {
+    "sourceHash": "09e94f5"
   },
   "indexing.enrich.imagesBarLabel": "Imagens indexadas",
   "@indexing.enrich.imagesBarLabel": {

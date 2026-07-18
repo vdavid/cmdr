@@ -5,20 +5,19 @@ indicator. Rust counterpart: `apps/desktop/src-tauri/src/indexing/`.
 
 ## Module map
 
-`index-state.svelte.ts` is the reactive core — per-volume `SvelteMap`s (activity, aggregation, and the pipeline `phase`
-via `getVolumePhase`) fed by the Tauri index events; `index-events.ts` bridges `index-dir-updated`. Pure helpers:
-`eta.ts` (+ `computeScanProgress`), `indexing-steps.ts` (`deriveSteps`), `elapsed.ts`. The status surface
-(`IndexingStatusIndicator` → the `IndexingDriveRow` wrapper → the presentational `IndexingStatusBody` +
-`IndexingDriveSummary`) is the top-right hourglass rendering the per-drive step checklist; the breadcrumb badge reuses
-`IndexingDriveRow`. `media-enrich-state.svelte.ts` + `IndexingEnrichRow.svelte`: image indexing (2nd publisher, below).
-Prompts (FE-owned): `first-connect-trigger.ts` + `FirstConnectIndexToastContent`, `StaleDriveDialog.svelte`,
-`drive-index-prefs.ts`. Public API barrel: `index.ts`. Per-file detail + the event tables: DETAILS.md or
-`codegraph_search`.
+`index-state.svelte.ts` is the reactive core — per-volume `SvelteMap`s (activity, aggregation, the pipeline `phase` via
+`getVolumePhase`, and the run-kind `scanKind` via `getVolumeScanKind`) fed by the Tauri index events; `index-events.ts`
+bridges `index-dir-updated`. Pure helpers: `eta.ts` (+ `computeScanProgress`), `indexing-steps.ts` (`deriveSteps`,
+`deriveRunLabel`), `elapsed.ts`, `media-enrich-queued.ts`. The status surface (`IndexingStatusIndicator` → the
+`IndexingDriveRow` wrapper → the presentational `IndexingStatusBody` + `IndexingDriveSummary`) is the top-right
+hourglass rendering the per-drive step checklist; the breadcrumb badge reuses `IndexingDriveRow`.
+`media-enrich-state.svelte.ts` + `IndexingEnrichRow.svelte`: image indexing (2nd publisher, below). Prompts (FE-owned):
+`first-connect-trigger.ts` + `FirstConnectIndexToastContent`, `StaleDriveDialog.svelte`, `drive-index-prefs.ts`. Public
+API barrel: `index.ts`. Per-file detail + the event tables: DETAILS.md or `codegraph_search`.
 
 ## Must-knows
 
-- **`$state` must live in `.svelte.ts`**, not plain `.ts` (Svelte runes). `index-state.svelte.ts` is allowlisted in
-  `coverage-allowlist.json` (event-driven module `$state`).
+- **`$state` must live in `.svelte.ts`**, not plain `.ts` (Svelte runes).
 - **`initIndexState` uses "listen first, then query"**: register event listeners, THEN call `get_index_status`. The Rust
   indexer starts in `setup()` before the frontend mounts, so querying first races `index-scan-started` and the UI sticks
   on "not scanning". Don't reorder.

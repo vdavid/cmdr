@@ -25,6 +25,18 @@
   "@indexing.scan.etaRough": {
     "sourceHash": "6f92820"
   },
+  "indexing.run.firstScan": "Eerste volledige scan",
+  "@indexing.run.firstScan": {
+    "sourceHash": "bb804db"
+  },
+  "indexing.run.rescan": "Volledige herscan",
+  "@indexing.run.rescan": {
+    "sourceHash": "f8cd103"
+  },
+  "indexing.run.update": "Snelle update",
+  "@indexing.run.update": {
+    "sourceHash": "97ac3e3"
+  },
   "indexing.step.findFiles": "Bestanden zoeken",
   "@indexing.step.findFiles": {
     "sourceHash": "15d12bc"
@@ -101,6 +113,14 @@
   "indexing.eta.minutesLeft": "nog {minutesText}m",
   "@indexing.eta.minutesLeft": {
     "sourceHash": "bcb3615"
+  },
+  "indexing.eta.hoursMinutesLeft": "nog {hours, plural, one {{hoursText} uur} other {{hoursText} uur}} {minutes, plural, one {{minutesText} minuut} other {{minutesText} minuten}}",
+  "@indexing.eta.hoursMinutesLeft": {
+    "sourceHash": "8b2b4c0"
+  },
+  "indexing.eta.hoursLeft": "nog {hours, plural, one {{hoursText} uur} other {{hoursText} uur}}",
+  "@indexing.eta.hoursLeft": {
+    "sourceHash": "1d50900"
   },
   "indexing.rescan.staleIndex": "De index van je schijf is verouderd. De app lijkt een tijd niet te zijn gebruikt. Cmdr doorzoekt de schijf opnieuw om bij te werken.",
   "@indexing.rescan.staleIndex": {
@@ -199,6 +219,10 @@
   "indexing.enrich.pausedDisconnected": "Gepauzeerd, gaat verder bij opnieuw verbinden",
   "@indexing.enrich.pausedDisconnected": {
     "sourceHash": "1483989"
+  },
+  "indexing.enrich.queued": "Het indexeren van afbeeldingen begint na het doorzoeken van de schijf",
+  "@indexing.enrich.queued": {
+    "sourceHash": "09e94f5"
   },
   "indexing.enrich.imagesBarLabel": "Geïndexeerde afbeeldingen",
   "@indexing.enrich.imagesBarLabel": {

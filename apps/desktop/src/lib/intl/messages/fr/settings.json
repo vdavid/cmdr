@@ -456,6 +456,9 @@
     "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Tout cela fonctionne entièrement sur votre Mac grâce au framework Vision intégré d''Apple. Vos images ne quittent jamais votre ordinateur, et aucun fournisseur d''IA ni clé d''API n''est impliqué.",
+  "@settings.mediaIndex.privacyNote": {
+    "sourceHash": "817fc60"
+  },
   "settings.mediaIndex.clip.title": "Recherche sémantique",
   "@settings.mediaIndex.clip.title": {
     "sourceHash": "e1a8427"
@@ -483,9 +486,6 @@
   "settings.mediaIndex.clip.failed": "Le téléchargement ne s''est pas terminé. Vérifiez votre connexion et réessayez.",
   "@settings.mediaIndex.clip.failed": {
     "sourceHash": "5feb349"
-  },
-  "@settings.mediaIndex.privacyNote": {
-    "sourceHash": "817fc60"
   },
   "settings.mediaIndex.enabled.label": "Indexer le contenu des images",
   "@settings.mediaIndex.enabled.label": {
@@ -610,6 +610,10 @@
   "settings.mediaIndex.importanceThreshold.waitingForImportance": "Détermination des dossiers qui comptent. L''indexation des images démarre juste après.",
   "@settings.mediaIndex.importanceThreshold.waitingForImportance": {
     "sourceHash": "2116b55"
+  },
+  "settings.mediaIndex.importanceThreshold.waitingForDriveIndex": "L''analyse du disque est encore en cours. L''indexation des images démarre dès qu''elle se termine.",
+  "@settings.mediaIndex.importanceThreshold.waitingForDriveIndex": {
+    "sourceHash": "1d50f92"
   },
   "settings.mediaIndex.importanceThreshold.pending": "Certains disques sont encore en cours d''analyse, ces chiffres vont donc augmenter.",
   "@settings.mediaIndex.importanceThreshold.pending": {

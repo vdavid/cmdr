@@ -25,6 +25,18 @@
   "@indexing.scan.etaRough": {
     "sourceHash": "6f92820"
   },
+  "indexing.run.firstScan": "Quét toàn bộ lần đầu",
+  "@indexing.run.firstScan": {
+    "sourceHash": "bb804db"
+  },
+  "indexing.run.rescan": "Quét lại toàn bộ",
+  "@indexing.run.rescan": {
+    "sourceHash": "f8cd103"
+  },
+  "indexing.run.update": "Cập nhật nhanh",
+  "@indexing.run.update": {
+    "sourceHash": "97ac3e3"
+  },
   "indexing.step.findFiles": "Tìm tệp",
   "@indexing.step.findFiles": {
     "sourceHash": "15d12bc"
@@ -101,6 +113,14 @@
   "indexing.eta.minutesLeft": "còn {minutesText}m",
   "@indexing.eta.minutesLeft": {
     "sourceHash": "bcb3615"
+  },
+  "indexing.eta.hoursMinutesLeft": "còn {hours, plural, other {{hoursText} giờ}} {minutes, plural, other {{minutesText} phút}}",
+  "@indexing.eta.hoursMinutesLeft": {
+    "sourceHash": "8b2b4c0"
+  },
+  "indexing.eta.hoursLeft": "còn {hours, plural, other {{hoursText} giờ}}",
+  "@indexing.eta.hoursLeft": {
+    "sourceHash": "1d50900"
   },
   "indexing.rescan.staleIndex": "Chỉ mục ổ đĩa của bạn đã lỗi thời. Có vẻ như ứng dụng chưa chạy một thời gian. Đang chạy một lần quét mới để bắt kịp.",
   "@indexing.rescan.staleIndex": {
@@ -198,6 +218,10 @@
   "indexing.enrich.pausedDisconnected": "Đã tạm dừng, sẽ tiếp tục khi kết nối lại",
   "@indexing.enrich.pausedDisconnected": {
     "sourceHash": "1483989"
+  },
+  "indexing.enrich.queued": "Lập chỉ mục hình ảnh bắt đầu sau khi quét xong ổ đĩa",
+  "@indexing.enrich.queued": {
+    "sourceHash": "09e94f5"
   },
   "indexing.enrich.imagesBarLabel": "Ảnh đã lập chỉ mục",
   "@indexing.enrich.imagesBarLabel": {

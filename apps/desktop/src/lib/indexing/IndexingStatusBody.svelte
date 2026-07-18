@@ -23,11 +23,14 @@
     import {
         deriveSteps,
         activeStep,
+        deriveRunLabel,
         stepKindToLabelKey,
         computeSubPhaseToLabelKey,
+        runLabelToLabelKey,
         type IndexRunKind,
         type AggregationSubPhase,
         type IndexStepStatus,
+        type ScanKind,
     } from './indexing-steps'
     import type { VolumeIndexActivity, AggregationActivity } from './index-state.svelte'
     import type { ActivityPhase } from '$lib/ipc/bindings'
@@ -57,9 +60,13 @@
         /** A network (SMB/MTP) volume: its checklist omits the Save-the-file-list
          *  and Catch-up steps (they don't run for an inline network scan). */
         isNetwork: boolean
+        /** First index build vs full rescan (from `getVolumeScanKind`), for the
+         *  run-kind header. `undefined` when unknown (a mid-scan reload): the
+         *  header is omitted rather than guessed. */
+        scanKind?: ScanKind
     }
 
-    const { activity, aggregation, now, windowedEta, phase, isNetwork }: Props = $props()
+    const { activity, aggregation, now, windowedEta, phase, isNetwork, scanKind }: Props = $props()
 
     // ── Steps ─────────────────────────────────────────────────────────
     const runKind = $derived<IndexRunKind>(
@@ -67,6 +74,9 @@
     )
     const aggSubPhase = $derived(aggregation?.phase as AggregationSubPhase | undefined)
     const steps = $derived(deriveSteps({ runKind, phase, aggregationSubPhase: aggSubPhase }))
+    // The run-kind header ("First full scan" / "Full rescan" / "Quick update"),
+    // so the user can tell a full walk from a quick roll-on at a glance.
+    const runLabel = $derived(deriveRunLabel(runKind, scanKind))
     const active = $derived(activeStep(steps))
     const activeLabel = $derived(active ? tString(stepKindToLabelKey[active.kind]) : '')
 
@@ -192,6 +202,9 @@
     )
 </script>
 
+{#if runLabel}
+    <span class="run-kind">{tString(runLabelToLabelKey[runLabel])}</span>
+{/if}
 <ul class="step-list">
     {#each steps as step (step.kind)}
         <li
@@ -234,6 +247,12 @@
 </ul>
 
 <style>
+    /* The run-kind header: what kind of run this checklist is. Quieter than the
+       drive-name heading above it, louder than the step detail below. */
+    .run-kind {
+        color: var(--color-text-secondary);
+    }
+
     .step-list {
         list-style: none;
         margin: 0;

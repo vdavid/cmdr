@@ -25,6 +25,18 @@
   "@indexing.scan.etaRough": {
     "sourceHash": "6f92820"
   },
+  "indexing.run.firstScan": "Első teljes átvizsgálás",
+  "@indexing.run.firstScan": {
+    "sourceHash": "bb804db"
+  },
+  "indexing.run.rescan": "Teljes újbóli átvizsgálás",
+  "@indexing.run.rescan": {
+    "sourceHash": "f8cd103"
+  },
+  "indexing.run.update": "Gyors frissítés",
+  "@indexing.run.update": {
+    "sourceHash": "97ac3e3"
+  },
   "indexing.step.findFiles": "Fájlok keresése",
   "@indexing.step.findFiles": {
     "sourceHash": "15d12bc"
@@ -101,6 +113,14 @@
   "indexing.eta.minutesLeft": "{minutesText} p",
   "@indexing.eta.minutesLeft": {
     "sourceHash": "bcb3615"
+  },
+  "indexing.eta.hoursMinutesLeft": "{hours, plural, one {{hoursText} óra} other {{hoursText} óra}} {minutes, plural, one {{minutesText} perc} other {{minutesText} perc}}",
+  "@indexing.eta.hoursMinutesLeft": {
+    "sourceHash": "8b2b4c0"
+  },
+  "indexing.eta.hoursLeft": "{hours, plural, one {{hoursText} óra} other {{hoursText} óra}}",
+  "@indexing.eta.hoursLeft": {
+    "sourceHash": "1d50900"
   },
   "indexing.rescan.staleIndex": "A meghajtó indexe elavult. Úgy tűnik, az app egy ideje nem futott. Friss átvizsgálás indul, hogy behozza a lemaradást.",
   "@indexing.rescan.staleIndex": {
@@ -198,6 +218,10 @@
   "indexing.enrich.pausedDisconnected": "Szüneteltetve, újracsatlakozáskor folytatódik",
   "@indexing.enrich.pausedDisconnected": {
     "sourceHash": "1483989"
+  },
+  "indexing.enrich.queued": "A képek indexelése a meghajtó átvizsgálása után indul",
+  "@indexing.enrich.queued": {
+    "sourceHash": "09e94f5"
   },
   "indexing.enrich.imagesBarLabel": "Indexelt képek",
   "@indexing.enrich.imagesBarLabel": {

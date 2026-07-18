@@ -454,6 +454,9 @@
     "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "这一切完全在你的 Mac 上通过 Apple 内置的 Vision 框架运行。你的图像绝不离开你的电脑，也不涉及任何 AI 提供商或 API 密钥。",
+  "@settings.mediaIndex.privacyNote": {
+    "sourceHash": "817fc60"
+  },
   "settings.mediaIndex.clip.title": "语义搜索",
   "@settings.mediaIndex.clip.title": {
     "sourceHash": "e1a8427"
@@ -481,9 +484,6 @@
   "settings.mediaIndex.clip.failed": "下载未完成。请检查网络连接后重试。",
   "@settings.mediaIndex.clip.failed": {
     "sourceHash": "5feb349"
-  },
-  "@settings.mediaIndex.privacyNote": {
-    "sourceHash": "817fc60"
   },
   "settings.mediaIndex.enabled.label": "索引图像内容",
   "@settings.mediaIndex.enabled.label": {
@@ -605,9 +605,13 @@
   "@settings.mediaIndex.importanceThreshold.previewCounting": {
     "sourceHash": "659de34"
   },
-  "settings.mediaIndex.importanceThreshold.waitingForImportance": "正在确定哪些文件夹更重要。图片索引会紧接着开始。",
+  "settings.mediaIndex.importanceThreshold.waitingForImportance": "正在确定哪些文件夹更重要。图像索引会紧接着开始。",
   "@settings.mediaIndex.importanceThreshold.waitingForImportance": {
     "sourceHash": "2116b55"
+  },
+  "settings.mediaIndex.importanceThreshold.waitingForDriveIndex": "驱动器扫描仍在进行中。图像索引会在扫描完成后立即开始。",
+  "@settings.mediaIndex.importanceThreshold.waitingForDriveIndex": {
+    "sourceHash": "1d50f92"
   },
   "settings.mediaIndex.importanceThreshold.pending": "部分驱动器仍在扫描中，因此这些数字还会继续增加。",
   "@settings.mediaIndex.importanceThreshold.pending": {

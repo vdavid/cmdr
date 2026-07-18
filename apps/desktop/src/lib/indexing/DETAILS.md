@@ -15,6 +15,13 @@ directly — that's what makes the indicator track local + SMB + MTP, not just r
 Aggregation carries its own `volumeId` too (see below), so it lives in a second per-volume map keyed by `volumeId`, each
 entry an `AggregationActivity` (`phase`, `current`, `total`, `startedAt`).
 
+A fourth map, `scanKind` (`volumeId → 'first' | 'rescan'`), stashes the first-build-vs-full-rescan fact from
+`index-scan-started` (prior scan totals present ⇒ rescan) so the checklist's run-kind header stays truthful through
+aggregation and reconcile, after the live scan entry (and its `priorTotalEntries`) is gone. It's cleared on the terminal
+`live`/`idle` phase transitions and on `index-scan-aborted`, mirroring the `phase` map. A volume seeded by a progress
+tick alone (mid-scan reload) gets NO entry — the header is omitted rather than guessed — and root recovers via the
+`get_index_status` backfill's prior-totals meta. Read via `getVolumeScanKind`.
+
 **Gotcha — store a FRESH object on every progress tick, never mutate-in-place + re-set.** `SvelteMap.set` bumps its
 per-key reactive source only when the stored value REFERENCE changes; re-setting the same (just-mutated) object is a
 no-op to its reactivity. So the scan-progress and replay-progress handlers build a new object literal each tick
@@ -39,6 +46,7 @@ getVolumeActivity(volumeId): VolumeIndexActivity | undefined  // ONE volume's sc
 isAnyVolumeIndexing(): boolean                    // scan/replay map non-empty OR any volume aggregating (visibility gate)
 getVolumeAggregation(volumeId): AggregationActivity | undefined  // that volume's live aggregation, or undefined
 getVolumePhase(volumeId): ActivityPhase | undefined  // that volume's current mid-pipeline phase, or undefined (step checklist)
+getVolumeScanKind(volumeId): ScanKind | undefined  // 'first' | 'rescan', or undefined when unknown (the run-kind header)
 getAggregatingVolumeIds(): string[]               // every volume currently aggregating
 getActivePhaseVolumeIds(): string[]               // every volume with a live phase (incl. reconcile, no scan/agg entry)
 placeholderActivity(volumeId): VolumeIndexActivity  // a zero-valued activity for an aggregation-/reconcile-only row
@@ -63,7 +71,8 @@ Ten Tauri events drive the state. All of them carry a `volumeId`: scan and repla
 aggregation keys its own `aggregation` map, and the phase event keys its own `phase` map.
 
 - **`index-scan-started`** (`{ volumeId, priorTotalEntries, priorScanDurationMs, volumeUsedBytes }`): create/replace the
-  volume's `activity` entry (`phase: 'scanning'`, `scanStartedAt = Date.now()`, stash the calibration).
+  volume's `activity` entry (`phase: 'scanning'`, `scanStartedAt = Date.now()`, stash the calibration), and stamp the
+  volume's `scanKind` (prior totals ⇒ `rescan`, none ⇒ `first`).
 - **`index-scan-progress`** (`{ volumeId, entriesScanned, dirsFound, bytesScanned }`): update that volume's counters
   (seeds a scanning entry if the started event was missed, e.g. mid-scan reload).
 - **`index-scan-complete`** (`{ volumeId, totalEntries, totalDirs, durationMs }`): remove the volume's `activity` entry.
@@ -82,13 +91,13 @@ aggregation keys its own `aggregation` map, and the phase event keys its own `ph
 - **`index-aggregation-complete`** (`{ volumeId }`): remove that volume's `aggregation` entry.
 - **`index-phase-changed`** (`{ volumeId, phase: ActivityPhase }`): the volume's top-level pipeline phase changed. Set
   the `phase` map entry for the active steps (`scanning` / `aggregating` / `reconciling` / `replaying`); DELETE it on
-  the terminal `live` / `idle` transitions (the pipeline ended) and on `index-scan-aborted` (the cancel/fail abort arm
-  fires no phase event). So a present `phase` entry always means "this volume is at this step right now" — the spine of
-  the step checklist, and the only signal for the reconcile step. Per-volume, unlike the global debug-window phase
-  timeline. Fires only on transitions, so after a mid-scan reload the current phase is unknown until the next
-  transition; the reconcile step is briefly unobservable then (accepted — `index-phase-changed` is transition-only and
-  `VolumeIndexStatus` carries no phase by design; see the backend `indexing/DETAILS.md`). Branch on the typed
-  `ActivityPhase` variant, never the wording.
+  the terminal `live` / `idle` transitions (the pipeline ended, which also drops the volume's `scanKind`) and on
+  `index-scan-aborted` (the cancel/fail abort arm fires no phase event). So a present `phase` entry always means "this
+  volume is at this step right now" — the spine of the step checklist, and the only signal for the reconcile step.
+  Per-volume, unlike the global debug-window phase timeline. Fires only on transitions, so after a mid-scan reload the
+  current phase is unknown until the next transition; the reconcile step is briefly unobservable then (accepted —
+  `index-phase-changed` is transition-only and `VolumeIndexStatus` carries no phase by design; see the backend
+  `indexing/DETAILS.md`). Branch on the typed `ActivityPhase` variant, never the wording.
 
 ### Aggregation is per-volume
 
@@ -145,6 +154,13 @@ and survive a mid-scan reload: when the transition-only phase event is gone, the
 far we are. The accepted gap: after a reload landing mid-RECONCILE (no scan, no aggregation, no phase), the catch-up
 step shows not-yet-active — but in that window the surface isn't rendered at all (no live entry), so it falls back to
 the badge's static "Scanning your drive…" text.
+
+**Run-kind header.** Above the step list the body renders what KIND of run this checklist is — "First full scan" / "Full
+rescan" / "Quick update" (`indexing.run.*`) — via the pure `deriveRunLabel(runKind, scanKind)` (`indexing-steps.ts`):
+replay ⇒ update, otherwise the per-volume `scanKind` decides, and an unknown kind (mid-scan reload) renders NO header
+rather than a guessed one. The wrapper reads `getVolumeScanKind` and passes it down (the body stays presentational). On
+the badge surface (drive heading off) this line doubles as the block's header, answering "is this a full reindex or a
+roll-on?" right in the tooltip.
 
 **Two label maps, separate on purpose**: `indexing-steps.ts`'s `stepKindToLabelKey` keys the step labels off the typed
 `IndexStepKind`; its `computeSubPhaseToLabelKey` (imported by `IndexingStatusBody`) keys the compute step's
@@ -221,6 +237,16 @@ another reason (the settings panel also voices `paused` via `media_index_volume_
 reconciliation of "terminal events clear the row" with "paused states voiced": a pause re-labels rather than clears, and
 the gate keeps it from lighting the corner on its own.
 
+**Queued feedback.** Flipping "Index image contents" on mid-drive-scan is a designed backend no-op (a pass only starts
+on a ready index; the scan's completion edge kicks it automatically), which used to look like the toggle did nothing. So
+when image indexing is ON and an enrichment-eligible volume (per `getEnabledMediaIndexVolumeIds`: local root + opted-in
+SMB — a USB stick never qualifies) is mid-drive-index with no enrich row of its own, the indicator appends one quiet
+`indexing.enrich.queued` line under the rows. The decision is the pure `isEnrichQueued` (`media-enrich-queued.ts`);
+replay (roll-on) rows are excluded (a quick update isn't the completion edge the promise is about). The line renders
+only under drive rows already pinning the hourglass, so it never lights the gate itself. The settings slider voices the
+same wait in words (`settings.mediaIndex.importanceThreshold.waitingForDriveIndex`, keyed off the typed
+`qualifyingCount === null` "index not registered" signal).
+
 **Listen-first-then-query at init** (`initMediaEnrichState`): because enrichment can start at backend setup BEFORE the
 frontend mounts, so the pass-start event is lost. After registering the listeners, seed the ROOT volume from
 `media_index_volume_state` if it's enriching (`done = enrichedCount − keptCount` capped,
@@ -255,21 +281,26 @@ sliding window fills again (accepted). Tier 1 reads the prior scan's totals from
 
 ## ETA mechanics (`eta.ts`)
 
-Pure helpers. Aggregation uses a single elapsed extrapolation. Scan and replay blend that 50-50 with a sliding-window
-rate over the last ~5 seconds (early extrapolation alone is wildly wrong). The window-snapshot collection is the only
-stateful glue and stays in each `IndexingDriveRow` (so per-drive rates don't collide); it feeds the pure
-`pruneSnapshots` / `computeWindowEta` / `blendEtas` / `formatEta`. Tier 1's prior-duration seed
-(`priorScanDurationMs − elapsed`, ms→seconds) covers the gap before the window has samples. Tier 2's ETA is prefixed
-"roughly".
+Pure helpers. `formatEta` tiers: under two seconds "Almost done", under a minute whole seconds, under an hour whole
+minutes ("12m left"), one-to-ten hours spelled out ("1 hour 24 minutes left" — a bare "84m left" makes the reader do the
+division), and from ten hours up whole hours only, rounded ("20 hours left" — minute precision is noise at that scale).
+Aggregation uses a single elapsed extrapolation. Scan and replay blend that 50-50 with a sliding-window rate over the
+last ~5 seconds (early extrapolation alone is wildly wrong). The window-snapshot collection is the only stateful glue
+and stays in each `IndexingDriveRow` (so per-drive rates don't collide); it feeds the pure `pruneSnapshots` /
+`computeWindowEta` / `blendEtas` / `formatEta`. Tier 1's prior-duration seed (`priorScanDurationMs − elapsed`,
+ms→seconds) covers the gap before the window has samples. Tier 2's ETA is prefixed "roughly".
 
 ## Tests
 
-- **`eta.test.ts`**: the pure ETA helpers (thresholds, elapsed + window estimation, blending, snapshot pruning), plus
-  `computeScanProgress` (tier selection, both clamps, null/zero-denominator fallbacks) and the `formatEta` non-finite
-  pin.
+- **`eta.test.ts`**: the pure ETA helpers (thresholds incl. the hour-scale word formats, elapsed + window estimation,
+  blending, snapshot pruning), plus `computeScanProgress` (tier selection, both clamps, null/zero-denominator fallbacks)
+  and the `formatEta` non-finite pin.
 - **`indexing-steps.test.ts`**: the pure `deriveSteps` (TDD'd red→green) — local full scan through all four steps,
   network (no Save/Catch-up), replay (one step), the aggregation-sub-phase-alone derivation after a reload, and the
-  accepted reconcile-after-reload gap (catch-up stays pending).
+  accepted reconcile-after-reload gap (catch-up stays pending) — plus `deriveRunLabel` (update / first / rescan / the
+  unknown-kind null).
+- **`media-enrich-queued.test.ts`**: the pure `isEnrichQueued` predicate (toggle off, ineligible volume, already
+  enriching, no drive rows, opted-in SMB).
 - **`IndexingStatusIndicator.a11y.test.ts`**: tier-3 axe checks for idle (renders nothing), single-drive scanning
   (counter-only, first-scan tier-2, calibrated-with-bar — each asserting the always-on drive heading), aggregating, the
   primary-expands-secondary-collapses multi-drive case, and a phase-only mid-reconcile volume (visible, catch-up
@@ -284,11 +315,12 @@ stateful glue and stays in each `IndexingDriveRow` (so per-drive rates don't col
   the visually-hidden status words.
 - **`index-state.svelte.test.ts`**: per-volume aggregation attribution, plus `index-scan-aborted` clearing a volume's
   activity + aggregation (the network-abort stuck-row regression), plus the per-volume `phase` map
-  (`index-phase-changed` sets the active phase, `live` / `idle` and an abort clear it, volumes stay independent).
+  (`index-phase-changed` sets the active phase, `live` / `idle` and an abort clear it, volumes stay independent), plus
+  the per-volume `scanKind` map (stamped at scan-started, survives into aggregation, expires on terminal/abort, stays
+  unknown on a progress-only seed).
 - **`elapsed.test.ts`**: `formatElapsedClock` (sub-second → `null`, `m:ss` formatting, zero-padding, flooring).
 
-The reactive event-driven glue in `index-state.svelte.ts` is allowlisted in `coverage-allowlist.json`. Manual end-to-end
-testing runs the Rust indexer via `pnpm dev`.
+Manual end-to-end testing runs the Rust indexer via `pnpm dev`.
 
 ## Dependencies
 

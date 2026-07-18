@@ -267,13 +267,22 @@ describe('ACCEPTANCE BAR: whole real en catalog round-trips with no structural l
     expect(failures).toEqual([])
   })
 
-  it('every key: @key.sourceHash equals sourceHash(en value)', () => {
+  it('every key: @key.sourceHash equals sourceHash(en value); a justification appears iff verbatim', () => {
     const enFiles = readLocaleFiles('en')
     for (const rawFile of Object.values(enFiles)) {
       const built = buildPseudoFile(rawFile)
       for (const [key, value] of Object.entries(rawFile)) {
         if (isMetadataKey(key) || typeof value !== 'string') continue
-        expect(built[`@${key}`]).toEqual({ sourceHash: sourceHash(value) })
+        const meta = built[`@${key}`]
+        expect(meta).toMatchObject({ sourceHash: sourceHash(value) })
+        // A verbatim (unchanged) value must carry the deliberate-identical
+        // justification so the coverage check doesn't flag it; a changed value
+        // must NOT carry one.
+        if (built[key] === value) {
+          expect(meta).toHaveProperty('sameAsSourceJustification')
+        } else {
+          expect(meta).not.toHaveProperty('sameAsSourceJustification')
+        }
       }
     }
   })
@@ -318,5 +327,24 @@ describe('committed fixture matches the generator', () => {
 
   it('PSEUDO_LOCALE is the en-XA tag the fixture dir uses', () => {
     expect(PSEUDO_LOCALE).toBe('en-XA')
+  })
+})
+
+describe('buildPseudoFile: deliberately-verbatim values carry a justification', () => {
+  it('justifies placeholder-only and pure-brand values, but never a normal string', () => {
+    const out = buildPseudoFile({
+      'fixture.heading': '{name}',
+      'fixture.appName': 'Cmdr',
+      'fixture.plain': 'Cancel',
+    })
+    // Kept verbatim by construction → justified, so the coverage check's
+    // identical-to-English signal doesn't flag the generated locale.
+    expect(out['fixture.heading']).toBe('{name}')
+    expect(out['@fixture.heading']).toMatchObject({ sameAsSourceJustification: expect.stringContaining('verbatim') })
+    expect(out['fixture.appName']).toBe('Cmdr')
+    expect(out['@fixture.appName']).toMatchObject({ sameAsSourceJustification: expect.stringContaining('verbatim') })
+    // A normal string is accented/expanded and carries NO justification.
+    expect(out['fixture.plain']).not.toBe('Cancel')
+    expect(out['@fixture.plain']).not.toHaveProperty('sameAsSourceJustification')
   })
 })

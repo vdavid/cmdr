@@ -732,6 +732,10 @@
   "@settings.mediaIndex.importanceThreshold.waitingForImportance": {
     "description": "Shown under the slider when image indexing is enabled and the drive is scanned, but Cmdr hasn''t yet worked out which folders the user relies on most (the ranking that decides indexing order). It replaces the generic covered-count placeholder so there''s one honest line, not two spinners. Indexing starts as soon as that ranking finishes."
   },
+  "settings.mediaIndex.importanceThreshold.waitingForDriveIndex": "The drive scan is still running. Image indexing starts as soon as it finishes.",
+  "@settings.mediaIndex.importanceThreshold.waitingForDriveIndex": {
+    "description": "Shown under the slider when image indexing was just turned on but the drive index isn''t ready yet (the full drive scan is still running), so no images can be indexed yet. Answers the ''I flipped the switch and nothing happened'' moment honestly: the pass starts by itself right after the scan. Replaces the generic covered-count placeholder so there''s one honest line, not two spinners."
+  },
   "settings.mediaIndex.importanceThreshold.pending": "Some drives are still scanning, so these numbers will grow.",
   "@settings.mediaIndex.importanceThreshold.pending": {
     "description": "Caveat appended under the covered-count preview when at least one drive being indexed hasn''t finished scanning, so the shown totals are a lower bound."

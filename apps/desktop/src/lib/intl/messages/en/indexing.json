@@ -48,6 +48,22 @@
     }
   },
 
+  "indexing.run.firstScan": "First full scan",
+  "@indexing.run.firstScan": {
+    "description": "Run-kind header at the top of the drive-indexing checklist when Cmdr scans this drive for the very first time (no earlier index exists). Tells the user this is the big one-time pass, not a routine update. Short noun phrase, sentence case, no trailing period.",
+    "screenshot": "indexing-checklist.png"
+  },
+  "indexing.run.rescan": "Full rescan",
+  "@indexing.run.rescan": {
+    "description": "Run-kind header at the top of the drive-indexing checklist when Cmdr re-walks the whole drive even though an index already exists (a stale index, a change-log gap, and similar). Distinguishes this full pass from the quick update. Short noun phrase, sentence case, no trailing period.",
+    "screenshot": "indexing-checklist.png"
+  },
+  "indexing.run.update": "Quick update",
+  "@indexing.run.update": {
+    "description": "Run-kind header at the top of the drive-indexing checklist when Cmdr only replays recorded file changes instead of re-walking the drive (the light alternative to a full scan). Reassures the user this is the fast path. Short noun phrase, sentence case, no trailing period.",
+    "screenshot": "indexing-checklist.png"
+  },
+
   "indexing.step.findFiles": "Find files",
   "@indexing.step.findFiles": {
     "description": "Checklist step label in the drive-indexing tooltip for the scan that walks the drive and finds every file and folder. The user sees it tick from waiting, to in progress (a spinner, with a live count under it), to done (a check). Short imperative label; sentence case; no trailing period or ellipsis (the spinner signals ongoing work, not the text).",
@@ -165,9 +181,31 @@
 
   "indexing.eta.minutesLeft": "{minutesText}m left",
   "@indexing.eta.minutesLeft": {
-    "description": "Estimated time remaining of a minute or more, e.g. '3m left'. The 'm' is the abbreviation for minutes; keep this very short (it sits in a compact tooltip).",
+    "description": "Estimated time remaining between a minute and an hour, e.g. '3m left'. The 'm' is the abbreviation for minutes; keep this very short (it sits in a compact tooltip).",
     "placeholders": {
       "minutesText": "whole minutes remaining, already formatted (e.g. 3)"
+    },
+    "screenshot": "indexing-checklist.png"
+  },
+
+  "indexing.eta.hoursMinutesLeft": "{hours, plural, one {{hoursText} hour} other {{hoursText} hours}} {minutes, plural, one {{minutesText} minute} other {{minutesText} minutes}} left",
+  "@indexing.eta.hoursMinutesLeft": {
+    "description": "Estimated time remaining between one and ten hours, spelled out so an hour-scale wait is readable at a glance, e.g. '1 hour 24 minutes left' (never '84m left'). Shown only when the minutes part is non-zero; otherwise the hours-only message is used.",
+    "placeholders": {
+      "hours": "raw whole hours remaining, drives the hour plural",
+      "hoursText": "whole hours remaining, already formatted (e.g. 1)",
+      "minutes": "raw whole minutes past the hour, drives the minute plural",
+      "minutesText": "whole minutes past the hour, already formatted (e.g. 24)"
+    },
+    "screenshot": "indexing-checklist.png"
+  },
+
+  "indexing.eta.hoursLeft": "{hours, plural, one {{hoursText} hour} other {{hoursText} hours}} left",
+  "@indexing.eta.hoursLeft": {
+    "description": "Estimated time remaining in whole hours: an exact hour count under ten hours ('2 hours left'), or any wait of ten hours and up rounded to the nearest hour ('20 hours left') because minute precision is noise at that scale.",
+    "placeholders": {
+      "hours": "raw whole hours remaining, drives the plural",
+      "hoursText": "whole hours remaining, already formatted (e.g. 20)"
     },
     "screenshot": "indexing-checklist.png"
   },
@@ -304,6 +342,12 @@
     "description": "Status shown for a network drive whose image indexing paused because the drive disconnected; it resumes automatically when the drive reconnects. Reassuring, not an error. No em-dash.",
     "screenshot": "indexing-checklist.png"
   },
+  "indexing.enrich.queued": "Image indexing starts after the drive scan",
+  "@indexing.enrich.queued": {
+    "description": "Quiet one-liner at the bottom of the drive-indexing tooltip when image indexing is turned on but its pass is waiting for the drive scan above it to finish (it starts automatically right after). Gives the ''Index image contents'' toggle immediate visible feedback. Calm, sentence case, no trailing period.",
+    "screenshot": "indexing-checklist.png"
+  },
+
   "indexing.enrich.imagesBarLabel": "Images indexed",
   "@indexing.enrich.imagesBarLabel": {
     "description": "Accessible label (screen-reader only) for the images progress bar in the Image-indexing row. Not shown visually.",

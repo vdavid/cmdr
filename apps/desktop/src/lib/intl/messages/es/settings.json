@@ -457,6 +457,9 @@
     "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Esto se ejecuta por completo en tu Mac usando el framework Vision integrado de Apple. Tus imágenes nunca salen de tu ordenador y no interviene ningún proveedor de IA ni clave de API.",
+  "@settings.mediaIndex.privacyNote": {
+    "sourceHash": "817fc60"
+  },
   "settings.mediaIndex.clip.title": "Búsqueda semántica",
   "@settings.mediaIndex.clip.title": {
     "sourceHash": "e1a8427"
@@ -484,9 +487,6 @@
   "settings.mediaIndex.clip.failed": "La descarga no se completó. Comprueba tu conexión e inténtalo de nuevo.",
   "@settings.mediaIndex.clip.failed": {
     "sourceHash": "5feb349"
-  },
-  "@settings.mediaIndex.privacyNote": {
-    "sourceHash": "817fc60"
   },
   "settings.mediaIndex.enabled.label": "Indexar el contenido de las imágenes",
   "@settings.mediaIndex.enabled.label": {
@@ -611,6 +611,10 @@
   "settings.mediaIndex.importanceThreshold.waitingForImportance": "Calculando qué carpetas son importantes. La indexación de imágenes empieza justo después.",
   "@settings.mediaIndex.importanceThreshold.waitingForImportance": {
     "sourceHash": "2116b55"
+  },
+  "settings.mediaIndex.importanceThreshold.waitingForDriveIndex": "El análisis de la unidad todavía está en curso. La indexación de imágenes empieza en cuanto termine.",
+  "@settings.mediaIndex.importanceThreshold.waitingForDriveIndex": {
+    "sourceHash": "1d50f92"
   },
   "settings.mediaIndex.importanceThreshold.pending": "Algunas unidades todavía se están analizando, así que estos números aumentarán.",
   "@settings.mediaIndex.importanceThreshold.pending": {

@@ -452,6 +452,9 @@
     "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Việc này chạy hoàn toàn trên máy Mac của bạn bằng Vision framework tích hợp của Apple. Hình ảnh của bạn không bao giờ rời khỏi máy tính, và không có nhà cung cấp AI hay khóa API nào tham gia.",
+  "@settings.mediaIndex.privacyNote": {
+    "sourceHash": "817fc60"
+  },
   "settings.mediaIndex.clip.title": "Tìm kiếm ngữ nghĩa",
   "@settings.mediaIndex.clip.title": {
     "sourceHash": "e1a8427"
@@ -479,9 +482,6 @@
   "settings.mediaIndex.clip.failed": "Quá trình tải chưa hoàn tất. Hãy kiểm tra kết nối và thử lại.",
   "@settings.mediaIndex.clip.failed": {
     "sourceHash": "5feb349"
-  },
-  "@settings.mediaIndex.privacyNote": {
-    "sourceHash": "817fc60"
   },
   "settings.mediaIndex.enabled.label": "Lập chỉ mục nội dung hình ảnh",
   "@settings.mediaIndex.enabled.label": {
@@ -606,6 +606,10 @@
   "settings.mediaIndex.importanceThreshold.waitingForImportance": "Đang xác định những thư mục nào quan trọng. Việc lập chỉ mục ảnh sẽ bắt đầu ngay sau đó.",
   "@settings.mediaIndex.importanceThreshold.waitingForImportance": {
     "sourceHash": "2116b55"
+  },
+  "settings.mediaIndex.importanceThreshold.waitingForDriveIndex": "Quá trình quét ổ đĩa vẫn đang chạy. Lập chỉ mục hình ảnh sẽ bắt đầu ngay khi quét xong.",
+  "@settings.mediaIndex.importanceThreshold.waitingForDriveIndex": {
+    "sourceHash": "1d50f92"
   },
   "settings.mediaIndex.importanceThreshold.pending": "Một số ổ đĩa vẫn đang quét, nên các con số này sẽ còn tăng.",
   "@settings.mediaIndex.importanceThreshold.pending": {

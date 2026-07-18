@@ -560,3 +560,23 @@ Terms settled while translating the network-drive image-indexing opt-in (`settin
   /`Angehalten` · high. resume → `fortsetzen` ("wird fortgesetzt"), reconnect → "wieder verbunden" (derived from the
   settled connect/disconnect terms). ❌ Don't introduce the loanword "pausiert" — macOS uses `anhalten`/`angehalten`
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+## Indexing run-kind headers + hour-scale ETA (2026-07-18)
+
+Terms settled while filling the drive-indexing checklist headers (`indexing.run.*`), the spelled-out hour ETAs
+(`indexing.eta.hours*Left`), and the "image indexing is queued behind the drive scan" feedback lines
+(`indexing.enrich.queued`, `settings.mediaIndex.importanceThreshold.waitingForDriveIndex`).
+
+- run-kind headers → `Erster vollständiger Durchlauf` (first full scan) / `Erneuter vollständiger Durchlauf` (full
+  rescan) / `Schnelle Aktualisierung` (quick update) · builds on the settled `scan → durchsuchen`/`Durchlauf` and
+  `rescan → erneuter Durchlauf`; `full → vollständig` (glossary full-disk-access → "vollständiger Festplattenzugriff");
+  `update → Aktualisierung` (glossary update → aktualisieren) · high. First/rescan share `vollständiger Durchlauf` and
+  differ only in `Erster`/`Erneuter`, a clean parallel; the quick path is the light `Aktualisierung`, not a `Durchlauf`.
+- spelled-out hour ETA → `noch {n} Stunde(n)` / `noch {n} Stunde(n) {m} Minute(n)` · extends the settled ETA pattern
+  (`"{n}m left" → "noch {n} Min."`, DE puts "noch" first) to the full-word hour scale; `hour → Stunde/Stunden`,
+  `minute → Minute/Minuten` (CLDR one/other) · high. The compact `s`/`Min.` abbreviations stay on the sub-hour keys;
+  only the hour scale spells the unit out, matching the EN source.
+- `Laufwerksdurchlauf` (drive scan, as a noun/event: "after the drive scan") · already in the de catalog
+  (`indexing.rescan.fallback`: "Ein neuer Laufwerksdurchlauf …") · high. The running-subject phrasing ("The drive scan
+  is still running") uses the verb form `Das Laufwerk wird noch durchsucht` instead, matching `indexing.scan.label`.
+- No `sameAsSourceJustification` needed: every value differs from English.

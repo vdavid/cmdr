@@ -18,14 +18,32 @@ export interface EtaSnapshot {
  * Format an ETA in seconds to a short human-readable string.
  *
  * Thresholds: under two seconds reads "Almost done" (a precise countdown there is noise),
- * under a minute counts down in seconds, otherwise rounds to whole minutes.
+ * under a minute counts down in seconds, under an hour rounds to whole minutes. From an
+ * hour up the wait is spelled out in words ("1 hour 24 minutes left") — a bare "84m left"
+ * makes the reader do the division — and from ten hours up the minutes are dropped
+ * entirely ("20 hours left"), because minute precision is noise at that scale.
  */
 export function formatEta(seconds: number): string {
   // Non-finite guard: every planned caller null-gates before reaching here, but the scan
   // branch is a new caller and a future edit dropping that gate would surface "Infinitym left".
   if (!Number.isFinite(seconds) || seconds < 2) return tString('indexing.eta.almostDone')
   if (seconds < 60) return tString('indexing.eta.secondsLeft', { secondsText: String(Math.round(seconds)) })
-  return tString('indexing.eta.minutesLeft', { minutesText: String(Math.round(seconds / 60)) })
+  const totalMinutes = Math.round(seconds / 60)
+  if (totalMinutes < 60) return tString('indexing.eta.minutesLeft', { minutesText: String(totalMinutes) })
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (hours >= 10) {
+    // Rounded to the nearest hour (not floored), so 10h31m honestly reads "11 hours".
+    const roundedHours = Math.round(seconds / 3600)
+    return tString('indexing.eta.hoursLeft', { hours: roundedHours, hoursText: String(roundedHours) })
+  }
+  if (minutes === 0) return tString('indexing.eta.hoursLeft', { hours, hoursText: String(hours) })
+  return tString('indexing.eta.hoursMinutesLeft', {
+    hours,
+    hoursText: String(hours),
+    minutes,
+    minutesText: String(minutes),
+  })
 }
 
 /**

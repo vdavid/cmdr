@@ -25,6 +25,18 @@
   "@indexing.scan.etaRough": {
     "sourceHash": "6f92820"
   },
+  "indexing.run.firstScan": "Första fullständiga genomsökningen",
+  "@indexing.run.firstScan": {
+    "sourceHash": "bb804db"
+  },
+  "indexing.run.rescan": "Fullständig ny genomsökning",
+  "@indexing.run.rescan": {
+    "sourceHash": "f8cd103"
+  },
+  "indexing.run.update": "Snabb uppdatering",
+  "@indexing.run.update": {
+    "sourceHash": "97ac3e3"
+  },
   "indexing.step.findFiles": "Hitta filer",
   "@indexing.step.findFiles": {
     "sourceHash": "15d12bc"
@@ -101,6 +113,14 @@
   "indexing.eta.minutesLeft": "{minutesText} min kvar",
   "@indexing.eta.minutesLeft": {
     "sourceHash": "bcb3615"
+  },
+  "indexing.eta.hoursMinutesLeft": "{hours, plural, one {{hoursText} timme} other {{hoursText} timmar}} {minutes, plural, one {{minutesText} minut} other {{minutesText} minuter}} kvar",
+  "@indexing.eta.hoursMinutesLeft": {
+    "sourceHash": "8b2b4c0"
+  },
+  "indexing.eta.hoursLeft": "{hours, plural, one {{hoursText} timme} other {{hoursText} timmar}} kvar",
+  "@indexing.eta.hoursLeft": {
+    "sourceHash": "1d50900"
   },
   "indexing.rescan.staleIndex": "Indexet för din enhet är inaktuellt. Det verkar som att appen inte har körts på ett tag. Gör en ny genomsökning för att komma ikapp.",
   "@indexing.rescan.staleIndex": {
@@ -199,6 +219,10 @@
   "indexing.enrich.pausedDisconnected": "Pausad, återupptas vid återanslutning",
   "@indexing.enrich.pausedDisconnected": {
     "sourceHash": "1483989"
+  },
+  "indexing.enrich.queued": "Bildindexeringen börjar efter enhetens genomsökning",
+  "@indexing.enrich.queued": {
+    "sourceHash": "09e94f5"
   },
   "indexing.enrich.imagesBarLabel": "Indexerade bilder",
   "@indexing.enrich.imagesBarLabel": {

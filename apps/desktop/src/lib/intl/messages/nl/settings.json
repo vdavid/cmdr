@@ -459,6 +459,9 @@
     "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Dit draait volledig op je Mac met Apples ingebouwde Vision-framework. Je afbeeldingen verlaten je computer nooit, en er komt geen AI-aanbieder of API-sleutel aan te pas.",
+  "@settings.mediaIndex.privacyNote": {
+    "sourceHash": "817fc60"
+  },
   "settings.mediaIndex.clip.title": "Semantisch zoeken",
   "@settings.mediaIndex.clip.title": {
     "sourceHash": "e1a8427"
@@ -486,9 +489,6 @@
   "settings.mediaIndex.clip.failed": "De download is niet voltooid. Controleer je verbinding en probeer het opnieuw.",
   "@settings.mediaIndex.clip.failed": {
     "sourceHash": "5feb349"
-  },
-  "@settings.mediaIndex.privacyNote": {
-    "sourceHash": "817fc60"
   },
   "settings.mediaIndex.enabled.label": "Inhoud van afbeeldingen indexeren",
   "@settings.mediaIndex.enabled.label": {
@@ -613,6 +613,10 @@
   "settings.mediaIndex.importanceThreshold.waitingForImportance": "Bezig met bepalen welke mappen ertoe doen. Het indexeren van afbeeldingen begint direct daarna.",
   "@settings.mediaIndex.importanceThreshold.waitingForImportance": {
     "sourceHash": "2116b55"
+  },
+  "settings.mediaIndex.importanceThreshold.waitingForDriveIndex": "De schijf wordt nog doorzocht. Het indexeren van afbeeldingen begint zodra dat klaar is.",
+  "@settings.mediaIndex.importanceThreshold.waitingForDriveIndex": {
+    "sourceHash": "1d50f92"
   },
   "settings.mediaIndex.importanceThreshold.pending": "Sommige schijven worden nog doorzocht, dus deze aantallen lopen nog op.",
   "@settings.mediaIndex.importanceThreshold.pending": {

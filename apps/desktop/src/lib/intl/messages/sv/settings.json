@@ -456,6 +456,9 @@
     "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Det här körs helt på din Mac med Apples inbyggda Vision-ramverk. Dina bilder lämnar aldrig din dator, och ingen AI-leverantör eller API-nyckel är inblandad.",
+  "@settings.mediaIndex.privacyNote": {
+    "sourceHash": "817fc60"
+  },
   "settings.mediaIndex.clip.title": "Semantisk sökning",
   "@settings.mediaIndex.clip.title": {
     "sourceHash": "e1a8427"
@@ -483,9 +486,6 @@
   "settings.mediaIndex.clip.failed": "Nedladdningen slutfördes inte. Kontrollera din anslutning och försök igen.",
   "@settings.mediaIndex.clip.failed": {
     "sourceHash": "5feb349"
-  },
-  "@settings.mediaIndex.privacyNote": {
-    "sourceHash": "817fc60"
   },
   "settings.mediaIndex.enabled.label": "Indexera bildinnehåll",
   "@settings.mediaIndex.enabled.label": {
@@ -610,6 +610,10 @@
   "settings.mediaIndex.importanceThreshold.waitingForImportance": "Räknar ut vilka mappar som betyder mest. Bildindexeringen börjar direkt efter.",
   "@settings.mediaIndex.importanceThreshold.waitingForImportance": {
     "sourceHash": "2116b55"
+  },
+  "settings.mediaIndex.importanceThreshold.waitingForDriveIndex": "Enhetens genomsökning pågår fortfarande. Bildindexeringen börjar så snart den är klar.",
+  "@settings.mediaIndex.importanceThreshold.waitingForDriveIndex": {
+    "sourceHash": "1d50f92"
   },
   "settings.mediaIndex.importanceThreshold.pending": "Vissa enheter genomsöks fortfarande, så de här siffrorna kommer att öka.",
   "@settings.mediaIndex.importanceThreshold.pending": {

@@ -786,3 +786,23 @@ From the network image-indexing pass (`settings.mediaIndex.networkVolumes.*` + `
 - resume (auto, of a paused pass) → `gaat verder` · plainer than glossary button `Hervat` for a passive status line
   ("gaat verder zodra …") · high
 - No `sameAsSourceJustification` needed: all 19 values differ from English.
+
+From the indexing run-kind + hour-scale-ETA pass (`indexing.run.*`, `indexing.eta.hours*`, `indexing.enrich.queued`,
+`settings.mediaIndex.importanceThreshold.waitingForDriveIndex`; 2026-07-18):
+
+- run-kind headers (checklist top): First full scan → `Eerste volledige scan`; Full rescan → `Volledige herscan`; Quick
+  update → `Snelle update` · reuses in-catalog "scan" as a noun (`indexing.step.findFilesFirstScan` "Eerste scan, dit
+  kan even duren"), "volledig" (glossary "volledige schijftoegang"/"Volledige weergave"), and update→`update` (glossary
+  "update/bijwerken"). "herscan" is a compact coinage parallel to "scan"; the rescan toasts spell the verb form as "de
+  schijf opnieuw doorzoeken" · high (headers) / tentative (`herscan` noun)
+- hour(s) (time-remaining, spelled out) → `uur` in BOTH plural branches · Dutch keeps `uur` invariant after a cardinal
+  for durations ("2 uur", "20 uur", not "uren"); macOS shows "uur" for remaining time · high
+- minute(s) (time-remaining, spelled out) → `minuut` (one) / `minuten` (other) · standard NL · high
+- "… left" (hour-scale ETA) → leads with `nog …` · matches the sibling `indexing.eta.minutesLeft`/`.secondsLeft` ("nog
+  {n}m"/"nog {n}s") and the glossary "left (time remaining) → nog …"; renders "nog 1 uur 24 minuten" / "nog 20 uur" ·
+  high
+- "the drive scan" (as a noun phrase in prose) → `het doorzoeken van de schijf` / `de schijf wordt nog doorzocht` ·
+  glossary scan→doorzoeken; `indexing.enrich.queued` = "Het indexeren van afbeeldingen begint na het doorzoeken van de
+  schijf", `waitingForDriveIndex` = "De schijf wordt nog doorzocht. …" (parallels the sibling `waitingForImportance`
+  "Het indexeren van afbeeldingen begint direct daarna.") · high
+- No `sameAsSourceJustification` needed: all 7 values differ from English.

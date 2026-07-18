@@ -25,6 +25,18 @@
   "@indexing.scan.etaRough": {
     "sourceHash": "6f92820"
   },
+  "indexing.run.firstScan": "Erster vollständiger Durchlauf",
+  "@indexing.run.firstScan": {
+    "sourceHash": "bb804db"
+  },
+  "indexing.run.rescan": "Erneuter vollständiger Durchlauf",
+  "@indexing.run.rescan": {
+    "sourceHash": "f8cd103"
+  },
+  "indexing.run.update": "Schnelle Aktualisierung",
+  "@indexing.run.update": {
+    "sourceHash": "97ac3e3"
+  },
   "indexing.step.findFiles": "Dateien finden",
   "@indexing.step.findFiles": {
     "sourceHash": "15d12bc"
@@ -100,6 +112,14 @@
   "indexing.eta.minutesLeft": "noch {minutesText} Min.",
   "@indexing.eta.minutesLeft": {
     "sourceHash": "bcb3615"
+  },
+  "indexing.eta.hoursMinutesLeft": "noch {hours, plural, one {{hoursText} Stunde} other {{hoursText} Stunden}} {minutes, plural, one {{minutesText} Minute} other {{minutesText} Minuten}}",
+  "@indexing.eta.hoursMinutesLeft": {
+    "sourceHash": "8b2b4c0"
+  },
+  "indexing.eta.hoursLeft": "noch {hours, plural, one {{hoursText} Stunde} other {{hoursText} Stunden}}",
+  "@indexing.eta.hoursLeft": {
+    "sourceHash": "1d50900"
   },
   "indexing.rescan.staleIndex": "Dein Laufwerksindex ist veraltet. Die App war anscheinend eine Weile nicht geöffnet. Ein neuer Durchlauf bringt ihn auf den aktuellen Stand.",
   "@indexing.rescan.staleIndex": {
@@ -198,6 +218,10 @@
   "indexing.enrich.pausedDisconnected": "Angehalten, wird bei erneuter Verbindung fortgesetzt",
   "@indexing.enrich.pausedDisconnected": {
     "sourceHash": "1483989"
+  },
+  "indexing.enrich.queued": "Die Bildindizierung startet nach dem Laufwerksdurchlauf",
+  "@indexing.enrich.queued": {
+    "sourceHash": "09e94f5"
   },
   "indexing.enrich.imagesBarLabel": "Indizierte Bilder",
   "@indexing.enrich.imagesBarLabel": {

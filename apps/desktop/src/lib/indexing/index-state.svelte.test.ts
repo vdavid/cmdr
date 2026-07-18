@@ -18,11 +18,13 @@ import type {
   IndexReplayProgressEvent,
   IndexScanAbortedEvent,
   IndexScanProgressEvent,
+  IndexScanStartedEvent,
 } from '$lib/ipc/bindings'
 
 // Captured callbacks the module registers via the wrappers below.
 let aggProgressCb: ((p: AggregationProgressEvent) => void) | undefined
 let aggCompleteCb: ((p: IndexAggregationCompleteEvent) => void) | undefined
+let scanStartedCb: ((p: IndexScanStartedEvent) => void) | undefined
 let scanProgressCb: ((p: IndexScanProgressEvent) => void) | undefined
 let scanAbortedCb: ((p: IndexScanAbortedEvent) => void) | undefined
 let phaseCb: ((p: IndexPhaseChangedEvent) => void) | undefined
@@ -32,7 +34,10 @@ const noopUnlisten = () => {}
 
 // Mock the typed event wrappers: capture the ones the tests drive, no-op the rest.
 vi.mock('$lib/tauri-commands', () => ({
-  onIndexScanStarted: () => Promise.resolve(noopUnlisten),
+  onIndexScanStarted: (cb: (p: IndexScanStartedEvent) => void) => {
+    scanStartedCb = cb
+    return Promise.resolve(noopUnlisten)
+  },
   onIndexScanProgress: (cb: (p: IndexScanProgressEvent) => void) => {
     scanProgressCb = cb
     return Promise.resolve(noopUnlisten)
@@ -77,6 +82,7 @@ import {
   getVolumeActivity,
   getEntriesScanned,
   getVolumePhase,
+  getVolumeScanKind,
   getActivePhaseVolumeIds,
   getAggregatingVolumeIds,
   isVolumeScanning,
@@ -298,6 +304,57 @@ describe('index-state per-volume pipeline phase', () => {
     emitPhase('root', 'live')
     expect(isAnyVolumeIndexing()).toBe(false)
     expect(getActivePhaseVolumeIds()).toEqual([])
+  })
+})
+
+describe('index-state per-volume scan kind (the run-kind header fact)', () => {
+  beforeEach(async () => {
+    destroyIndexState()
+    scanStartedCb = undefined
+    scanProgressCb = undefined
+    scanAbortedCb = undefined
+    phaseCb = undefined
+    await initIndexState()
+  })
+
+  function emitStarted(volumeId: string, priorTotalEntries: number | null): void {
+    if (!scanStartedCb) throw new Error('scan-started callback not registered')
+    scanStartedCb({ volumeId, priorTotalEntries, priorScanDurationMs: null, volumeUsedBytes: null })
+  }
+
+  it('classifies a scan with prior totals as a rescan, without as a first build', () => {
+    emitStarted('root', 405356)
+    expect(getVolumeScanKind('root')).toBe('rescan')
+
+    emitStarted('smb-nas', null)
+    expect(getVolumeScanKind('smb-nas')).toBe('first')
+  })
+
+  it('survives past the live scan entry, so the header holds through aggregation', () => {
+    if (!phaseCb) throw new Error('phase-changed callback not registered')
+    emitStarted('root', 1000)
+    // The scan finished (activity entry gone), aggregation is running: the
+    // pipeline isn't terminal, so the kind must still be known.
+    phaseCb({ volumeId: 'root', phase: 'aggregating' })
+    expect(getVolumeScanKind('root')).toBe('rescan')
+  })
+
+  it('expires on the terminal live transition and on an abort', () => {
+    if (!phaseCb || !scanAbortedCb) throw new Error('callbacks not registered')
+    emitStarted('root', 1000)
+    phaseCb({ volumeId: 'root', phase: 'live' })
+    expect(getVolumeScanKind('root')).toBeUndefined()
+
+    emitStarted('smb-nas', null)
+    scanAbortedCb({ volumeId: 'smb-nas' })
+    expect(getVolumeScanKind('smb-nas')).toBeUndefined()
+  })
+
+  it('stays unknown for a volume seeded by a progress tick alone (mid-scan reload)', () => {
+    if (!scanProgressCb) throw new Error('scan-progress callback not registered')
+    scanProgressCb({ volumeId: 'smb-nas', entriesScanned: 10, dirsFound: 2, bytesScanned: 100 })
+    // No started event ⇒ no first-vs-rescan fact ⇒ the header is omitted, not guessed.
+    expect(getVolumeScanKind('smb-nas')).toBeUndefined()
   })
 })
 

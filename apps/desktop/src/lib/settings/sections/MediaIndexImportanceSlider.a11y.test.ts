@@ -114,11 +114,15 @@ describe('MediaIndexImportanceSlider', () => {
     expect(line).toContain('500')
   })
 
-  it('voices "still counting" when the qualifying total is unknown', async () => {
+  it('voices the drive-scan wait when the qualifying total is unknown', async () => {
     volumeState.mockResolvedValue(vstate({ enrichedCount: 0, qualifyingCount: null }))
     const target = await mountAndSettle()
-    // Counting (qualifyingCount null + nothing enriched) shows a line rather than a fabricated total.
-    expect(target.querySelector('.mi-progress-line')?.textContent ?? '').not.toBe('')
+    // `qualifyingCount: null` means the drive index isn't ready (the scan is still
+    // running), so the preview says exactly that — the "I flipped the switch and
+    // nothing happened" answer — instead of a generic counting line.
+    expect(target.querySelector('.mi-preview')?.textContent ?? '').toContain('drive scan is still running')
+    // One honest line, not two: the per-volume progress line stays out.
+    expect(target.querySelector('.mi-progress-line')).toBeNull()
   })
 
   it('caveats the preview when an enabled volume is still scanning', async () => {
