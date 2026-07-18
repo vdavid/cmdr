@@ -18,7 +18,8 @@
 
 use super::super::super::state::{OperationIntent, WRITE_OPERATION_STATE, cancel_write_operation, load_intent};
 use super::test_support::{
-    REL_TOTAL, RelLog, ReleasingSource, SLOW_CHUNK_COUNT, SLOW_CHUNK_SIZE, SlowSource, make_state, rel_expected_bytes,
+    REL_CHUNK, REL_TOTAL, RelLog, ReleasingSource, SLOW_CHUNK_COUNT, SLOW_CHUNK_SIZE, SlowSource, make_state,
+    rel_expected_bytes,
 };
 use super::*;
 use std::path::Path;
@@ -192,12 +193,34 @@ async fn streaming_copy_cancel_while_paused_mid_file_unblocks() {
     let _ = fs::remove_dir_all(&dst_dir);
 }
 
+/// Poll `seen` until it reaches at least `target` bytes, then return; panic after a
+/// generous budget. Lets the pause test wait on real copy progress instead of a
+/// fixed sleep, so a descheduled runtime can't race the assertion.
+async fn wait_for_bytes(seen: &AtomicU64, target: u64) {
+    for _ in 0..3_000 {
+        if seen.load(Ordering::SeqCst) >= target {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(1)).await;
+    }
+    panic!(
+        "bytes_seen never reached {target}; last = {}",
+        seen.load(Ordering::SeqCst)
+    );
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn paused_mtp_copy_parks_in_place_then_resumes_byte_exact() {
     use std::fs;
 
     let log = Arc::new(StdMutex::new(RelLog::default()));
-    let source: Arc<dyn Volume> = Arc::new(ReleasingSource { log: Arc::clone(&log) });
+    // A chunk-budget gate lets us hold the source at an exact byte offset, so the
+    // pause lands deterministically mid-file instead of racing a wall-clock timer.
+    let gate = Arc::new(tokio::sync::Semaphore::new(0));
+    let source: Arc<dyn Volume> = Arc::new(ReleasingSource {
+        log: Arc::clone(&log),
+        gate: Some(Arc::clone(&gate)),
+    });
 
     let dst_dir = std::env::temp_dir().join(format!("cmdr_relpause_dst_{:?}", std::thread::current().id()));
     let _ = fs::remove_dir_all(&dst_dir);
@@ -232,21 +255,22 @@ async fn paused_mtp_copy_parks_in_place_then_resumes_byte_exact() {
         .await
     });
 
-    // Let a few windows stream, then pause MID-FILE.
-    tokio::time::sleep(Duration::from_millis(30)).await;
-    state.pause_gate.pause();
+    // Release exactly one window, then wait until it lands. The source now blocks
+    // on the next permit, so the copy is provably mid-stream (one window written).
+    gate.add_permits(1);
+    wait_for_bytes(&bytes_seen, REL_CHUNK as u64).await;
 
-    // The byte count must freeze: the wrapper parks before starting the next
-    // window. NOTHING is released — the bounded-window read holds no session
+    // Pause MID-FILE, then lift the budget entirely. The source can now serve every
+    // remaining window, so if the copy still stops it's because the PAUSE parked it,
+    // not because it ran out of chunks. The window already past its checkpoint
+    // completes, then the copy parks at the next one: it settles at exactly two
+    // windows. NOTHING is released — the bounded-window read holds no session
     // between windows, so there's nothing to free.
-    tokio::time::sleep(Duration::from_millis(60)).await;
+    state.pause_gate.pause();
+    gate.add_permits(REL_TOTAL / REL_CHUNK + 4);
+    wait_for_bytes(&bytes_seen, 2 * REL_CHUNK as u64).await;
     let frozen = bytes_seen.load(Ordering::SeqCst);
-    tokio::time::sleep(Duration::from_millis(60)).await;
-    assert_eq!(
-        bytes_seen.load(Ordering::SeqCst),
-        frozen,
-        "a paused copy must stop starting the next window mid-file"
-    );
+
     assert!(
         frozen > 0 && (frozen as usize) < REL_TOTAL,
         "must be parked short of completion"
@@ -257,6 +281,17 @@ async fn paused_mtp_copy_parks_in_place_then_resumes_byte_exact() {
         0,
         "pause must NOT release the source stream — bounded windows hold nothing to free (park-in-place)"
     );
+
+    // The park must HOLD: with the budget wide open, an UNpaused copy would race to
+    // completion, so a stable offset across this grace window proves the pause (not
+    // a starved source) is what's holding it.
+    tokio::time::sleep(Duration::from_millis(50)).await;
+    assert_eq!(
+        bytes_seen.load(Ordering::SeqCst),
+        frozen,
+        "a paused copy must stop starting the next window mid-file"
+    );
+    assert!(!op.is_finished(), "the copy task must still be parked while paused");
 
     // Resume → keeps reading from the current offset and completes.
     state.pause_gate.resume();
@@ -291,7 +326,10 @@ async fn paused_mtp_copy_cancel_while_paused_keeps_no_partial() {
     use std::fs;
 
     let log = Arc::new(StdMutex::new(RelLog::default()));
-    let source: Arc<dyn Volume> = Arc::new(ReleasingSource { log: Arc::clone(&log) });
+    let source: Arc<dyn Volume> = Arc::new(ReleasingSource {
+        log: Arc::clone(&log),
+        gate: None,
+    });
 
     let dst_dir = std::env::temp_dir().join(format!("cmdr_relpause_cancel_dst_{:?}", std::thread::current().id()));
     let _ = fs::remove_dir_all(&dst_dir);
@@ -373,7 +411,10 @@ async fn unpaused_mtp_copy_streams_straight_through() {
     // Sanity: with no pause, an MTP-shaped source streams straight through with a
     // single open and no release — the pause/yield machinery stays dormant.
     let log = Arc::new(StdMutex::new(RelLog::default()));
-    let source: Arc<dyn Volume> = Arc::new(ReleasingSource { log: Arc::clone(&log) });
+    let source: Arc<dyn Volume> = Arc::new(ReleasingSource {
+        log: Arc::clone(&log),
+        gate: None,
+    });
 
     let dst_dir = std::env::temp_dir().join(format!("cmdr_relpause_nopause_dst_{:?}", std::thread::current().id()));
     let _ = fs::remove_dir_all(&dst_dir);

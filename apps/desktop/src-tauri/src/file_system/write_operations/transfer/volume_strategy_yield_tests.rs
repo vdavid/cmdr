@@ -433,7 +433,10 @@ async fn non_mtp_source_never_auto_yields_for_foreground() {
     let _tuning = AutoYieldTuningGuard::new(Duration::from_millis(0), REL_CHUNK as u64);
 
     let log = Arc::new(StdMutex::new(RelLog::default()));
-    let source: Arc<dyn Volume> = Arc::new(ReleasingSource { log: Arc::clone(&log) });
+    let source: Arc<dyn Volume> = Arc::new(ReleasingSource {
+        log: Arc::clone(&log),
+        gate: None,
+    });
     assert!(
         !source.supports_foreground_yield(),
         "the double must NOT support foreground yield"

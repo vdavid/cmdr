@@ -223,6 +223,11 @@ pub(super) struct ReleasingStream {
     pub(super) emitted_here: u64,
     #[allow(dead_code, reason = "read in cancel_and_release; nightly cargo-udeps false positive")]
     pub(super) released: bool,
+    /// Optional test-controlled chunk budget. When `Some`, `next_chunk` consumes
+    /// one permit before emitting each chunk, so a test can hold the stream at an
+    /// exact byte offset (deterministic pause-point control) instead of racing a
+    /// wall-clock timer against the stream. `None` = ungated (the default).
+    pub(super) gate: Option<Arc<tokio::sync::Semaphore>>,
 }
 
 impl VolumeReadStream for ReleasingStream {
@@ -230,6 +235,13 @@ impl VolumeReadStream for ReleasingStream {
         Box::pin(async move {
             if self.pos >= REL_TOTAL as u64 {
                 return None;
+            }
+            if let Some(gate) = &self.gate {
+                // Wait for the test to release this window; a closed semaphore ends the stream.
+                match gate.acquire().await {
+                    Ok(permit) => permit.forget(),
+                    Err(_) => return None,
+                }
             }
             tokio::time::sleep(REL_CHUNK_DELAY).await;
             let start = self.pos;
@@ -265,6 +277,9 @@ impl VolumeReadStream for ReleasingStream {
 /// "non-yield-capable source" in `non_mtp_source_never_auto_yields_for_foreground`.
 pub(super) struct ReleasingSource {
     pub(super) log: Arc<StdMutex<RelLog>>,
+    /// Optional chunk-budget gate handed to every stream this source opens; see
+    /// [`ReleasingStream::gate`]. `None` = ungated (the default for most tests).
+    pub(super) gate: Option<Arc<tokio::sync::Semaphore>>,
 }
 
 impl Volume for ReleasingSource {
@@ -314,6 +329,7 @@ impl Volume for ReleasingSource {
         offset: u64,
     ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
         let log = Arc::clone(&self.log);
+        let gate = self.gate.clone();
         Box::pin(async move {
             log.lock_ignore_poison().opens.push(offset);
             Ok(Box::new(ReleasingStream {
@@ -321,6 +337,7 @@ impl Volume for ReleasingSource {
                 pos: offset,
                 emitted_here: 0,
                 released: false,
+                gate,
             }) as Box<dyn VolumeReadStream>)
         })
     }
@@ -449,6 +466,7 @@ impl Volume for YieldingSource {
                 pos: offset,
                 emitted_here: 0,
                 released: false,
+                gate: None,
             }) as Box<dyn VolumeReadStream>)
         })
     }
@@ -521,6 +539,7 @@ impl Volume for NeverPendingYieldSource {
                 pos: 0,
                 emitted_here: 0,
                 released: false,
+                gate: None,
             }) as Box<dyn VolumeReadStream>)
         })
     }
