@@ -153,6 +153,7 @@ mod system_strings;
 pub mod test_mode;
 #[cfg(target_os = "macos")]
 mod text_size;
+mod thread_qos;
 #[cfg(target_os = "macos")]
 mod updater;
 mod usb_speed;

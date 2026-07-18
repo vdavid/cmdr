@@ -306,7 +306,11 @@ pub fn walk<V: DirVisitor + 'static>(
         let interval = cfg.watchdog_interval;
         std::thread::Builder::new()
             .name("index-walk-watchdog".into())
-            .spawn(move || engine.run_watchdog(interval))
+            .spawn(move || {
+                // Utility tier: the whole walk (workers + this watchdog) yields CPU to the UI.
+                crate::thread_qos::set_current_thread_qos(crate::thread_qos::QosClass::Utility);
+                engine.run_watchdog(interval)
+            })
             .expect("failed to spawn walker watchdog thread")
     };
 
@@ -492,6 +496,9 @@ impl<V: DirVisitor + 'static> Engine<V> {
     }
 
     fn run_worker(self: Arc<Self>, slot: Slot) {
+        // Yield CPU to the UI: directory-walking is heavy background work. Set once per
+        // worker thread (covers both initial and replacement workers).
+        crate::thread_qos::set_current_thread_qos(crate::thread_qos::QosClass::Utility);
         loop {
             // Pop the next task, or exit when the walk is done/cancelled.
             let scheduled = {

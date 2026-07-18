@@ -104,6 +104,8 @@ impl GuardedReader {
             .name("reconcile-read".into())
             .stack_size(READER_STACK_SIZE)
             .spawn(move || {
+                // Yield CPU to the UI: this thread reads directories in the background.
+                crate::thread_qos::set_current_thread_qos(crate::thread_qos::QosClass::Utility);
                 while let Ok(path) = req_rx.recv() {
                     let result = read_fn(&path);
                     // If the caller abandoned us (timed out and dropped the receiver),
@@ -173,6 +175,8 @@ pub(super) fn start_local_reconcile(
     let thread_handle = std::thread::Builder::new()
         .name("index-local-reconcile".into())
         .spawn(move || {
+            // Yield CPU to the UI: reconcile walks the tree in the background.
+            crate::thread_qos::set_current_thread_qos(crate::thread_qos::QosClass::Utility);
             // Catch a panic INSIDE the walk and convert it to a typed
             // `ScanError::Panicked` so the `JoinHandle` resolves to
             // `Ok(Err(_))` (clean logged message + `ScanFailed` ⇒ Stale) rather

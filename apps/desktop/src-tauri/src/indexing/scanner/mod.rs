@@ -249,6 +249,8 @@ pub fn scan_volume(
     let thread_handle = std::thread::Builder::new()
         .name("index-scanner".into())
         .spawn(move || {
+            // Yield CPU to the UI: the whole scan runs on this thread and its walker pool.
+            crate::thread_qos::set_current_thread_qos(crate::thread_qos::QosClass::Utility);
             let reader: ReadDirFn = default_reader();
             let result = run_scan(
                 &config.root,

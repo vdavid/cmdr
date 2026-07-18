@@ -503,6 +503,8 @@ impl IndexWriter {
         let handle = thread::Builder::new()
             .name("index-writer".into())
             .spawn(move || {
+                // Yield CPU to the UI: this thread writes the index DB in the background.
+                crate::thread_qos::set_current_thread_qos(crate::thread_qos::QosClass::Utility);
                 writer_loop(
                     conn,
                     receiver,
