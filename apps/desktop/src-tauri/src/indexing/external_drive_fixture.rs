@@ -506,7 +506,7 @@ mod tests {
         let fixture = DiskImageFixture::attach(fs, volume_name).expect("attach image");
         let mount = fixture.mount_point().to_path_buf();
 
-        let (tx, mut rx) = mpsc::channel::<FsChangeEvent>(256);
+        let (tx, mut rx) = mpsc::unbounded_channel::<FsChangeEvent>();
         // since_when = 0 -> "since now": live delivery only, no replay (FAT/exFAT
         // have no journal to replay from anyway).
         let mut watcher = DriveWatcher::start(&mount, 0, tx).expect("start watcher");

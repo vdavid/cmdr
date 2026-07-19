@@ -16,6 +16,7 @@
 
 use super::*;
 
+mod ingestion;
 mod merge;
 mod rename;
 mod split_parent;

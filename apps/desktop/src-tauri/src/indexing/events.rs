@@ -107,6 +107,10 @@ pub enum RescanReason {
     IncompletePreviousScan,
     /// FSEvents channel overflowed: events were dropped.
     WatcherChannelOverflow,
+    /// The unbounded ingestion queue grew past the RAM-guard hard cap: the event
+    /// loop is hopelessly behind, so we deliberately fall back to a full scan (our
+    /// decision, not a dropped-events overflow). See `event_loop::INGESTION_HARD_CAP`.
+    IngestionBacklog,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]

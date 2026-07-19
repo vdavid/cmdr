@@ -28,8 +28,8 @@ use super::super::writer::{IndexWriter, WriteMessage};
 use super::live::{mark_pending_and_drain, process_live_batch};
 use super::verification::run_background_verification;
 use super::{
-    JOURNAL_GAP_THRESHOLD, LIVE_FLUSH_INTERVAL_MS, ReplayConfig, THROTTLE_SWEEP_INTERVAL_MS, merge_fs_events,
-    open_read_conn_with_retry,
+    INGESTION_WARN_INTERVAL, IngestionPressure, JOURNAL_GAP_THRESHOLD, LIVE_FLUSH_INTERVAL_MS, ReplayConfig,
+    THROTTLE_SWEEP_INTERVAL_MS, classify_ingestion_pressure, merge_fs_events, open_read_conn_with_retry,
 };
 use crate::pluralize::pluralize;
 
@@ -70,7 +70,7 @@ const REPLAY_DEDUP_BATCH_SIZE: u64 = 1_000;
 /// If a journal gap is detected (first event ID >> stored last_event_id),
 /// sends a signal via `fallback_tx` to trigger a full scan.
 pub(in crate::indexing) async fn run_replay_event_loop(
-    mut event_rx: tokio::sync::mpsc::Receiver<watcher::FsChangeEvent>,
+    mut event_rx: tokio::sync::mpsc::UnboundedReceiver<watcher::FsChangeEvent>,
     writer: IndexWriter,
     app: AppHandle,
     config: ReplayConfig,
@@ -103,6 +103,9 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     let mut first_event_checked = false;
     let mut fallback_tx = Some(fallback_tx);
     let mut last_event_id = since_event_id;
+    // Rate-limiter for the "ingestion falling behind" warning (Fix 2), shared
+    // across both replay phases.
+    let mut last_ingestion_warn: Option<Instant> = None;
 
     // Collect all affected parent paths during replay (deduplicated).
     // Capped at MAX_AFFECTED_PATHS; beyond that we emit a full refresh.
@@ -258,6 +261,40 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                 && let Err(e) = writer.send(WriteMessage::UpdateLastEventId(last_event_id))
             {
                 log::warn!("Replay: UpdateLastEventId send failed: {e}");
+            }
+
+            // Ingestion-pressure guard (Fix 2). The channel is unbounded, so a slow
+            // replay drain grows the queue instead of backpressuring FSEvents into
+            // dropping events (which used to force a full scan). Past the RAM-guard
+            // hard cap we DELIBERATELY fall back; a merely-high watermark just logs.
+            match classify_ingestion_pressure(event_rx.len()) {
+                IngestionPressure::Overflowing => {
+                    let queued = event_rx.len();
+                    log::warn!("Replay: ingestion queue at {queued} (hard cap); falling back to a full scan");
+                    emit_rescan_notification(
+                        &app,
+                        &volume_id,
+                        RescanReason::IngestionBacklog,
+                        format!(
+                            "The replay event queue reached {queued} pending events, past the ingestion hard cap. \
+                             Running a fresh scan to catch up."
+                        ),
+                    );
+                    if let Some(tx) = fallback_tx.take() {
+                        let _ = tx.send(RescanReason::IngestionBacklog);
+                    }
+                    return Ok(());
+                }
+                IngestionPressure::FallingBehind => {
+                    if last_ingestion_warn.is_none_or(|t| t.elapsed() >= INGESTION_WARN_INTERVAL) {
+                        log::warn!(
+                            "Replay: falling behind, {} events queued (draining, not dropping)",
+                            event_rx.len()
+                        );
+                        last_ingestion_warn = Some(Instant::now());
+                    }
+                }
+                IngestionPressure::Healthy => {}
             }
         }
 
@@ -474,6 +511,39 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                         while event_rx.recv().await.is_some() {}
                         return Ok(());
                     }
+
+                // Ingestion-pressure guard (Fix 2), same as Phase 1 and the live loop.
+                match classify_ingestion_pressure(event_rx.len()) {
+                    IngestionPressure::Overflowing => {
+                        let queued = event_rx.len();
+                        log::warn!("Replay (live): ingestion queue at {queued} (hard cap); falling back to a full scan");
+                        emit_rescan_notification(
+                            &app,
+                            &volume_id,
+                            RescanReason::IngestionBacklog,
+                            format!(
+                                "The live event queue reached {queued} pending events, past the ingestion hard cap. \
+                                 Running a fresh scan to catch up."
+                            ),
+                        );
+                        if let Some(tx) = fallback_tx.take() {
+                            let _ = tx.send(RescanReason::IngestionBacklog);
+                        }
+                        event_rx.close();
+                        while event_rx.recv().await.is_some() {}
+                        return Ok(());
+                    }
+                    IngestionPressure::FallingBehind => {
+                        if last_ingestion_warn.is_none_or(|t| t.elapsed() >= INGESTION_WARN_INTERVAL) {
+                            log::warn!(
+                                "Replay (live): falling behind, {} events queued (draining, not dropping)",
+                                event_rx.len()
+                            );
+                            last_ingestion_warn = Some(Instant::now());
+                        }
+                    }
+                    IngestionPressure::Healthy => {}
+                }
 
                 process_live_batch(
                     &mut live_pending_events, &mut reconciler, &space, &conn,

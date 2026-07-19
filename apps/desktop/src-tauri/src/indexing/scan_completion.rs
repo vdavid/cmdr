@@ -42,8 +42,8 @@ pub(super) struct ScanCompletion {
     /// The manager's "a scan is running" flag; reset to false on completion.
     pub scanning: Arc<AtomicBool>,
     /// Buffered watcher events; drained into the reconciler, then handed to the
-    /// live event loop.
-    pub event_rx: tokio::sync::mpsc::Receiver<FsChangeEvent>,
+    /// live event loop. Unbounded (Fix 2): the forward task never backpressures.
+    pub event_rx: tokio::sync::mpsc::UnboundedReceiver<FsChangeEvent>,
     /// `None` if the watcher failed to start; otherwise the FSEvents overflow
     /// flag, checked here and passed to the live loop.
     pub watcher_overflow_flag: Option<Arc<AtomicBool>>,

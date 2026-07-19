@@ -8,7 +8,7 @@ use std::time::Duration;
 use tauri::AppHandle;
 use tauri_specta::Event;
 
-use super::event_loop::{JOURNAL_GAP_THRESHOLD, ReplayConfig, WATCHER_CHANNEL_CAPACITY, run_replay_event_loop};
+use super::event_loop::{JOURNAL_GAP_THRESHOLD, ReplayConfig, run_replay_event_loop};
 use super::events::{
     ActivityPhase, DEBUG_STATS, IndexDebugStatusResponse, IndexScanStartedEvent, IndexStatusResponse, PhaseRecord,
     RescanReason, emit_rescan_notification, set_phase_for,
@@ -458,7 +458,10 @@ impl IndexManager {
     /// journal events which are processed as live events. If the journal is
     /// unavailable (gap detected), falls back to a full scan.
     fn start_replay(&mut self, since_event_id: u64, heal_after_replay: bool) -> Result<(), String> {
-        let (event_tx, event_rx) = tokio::sync::mpsc::channel(WATCHER_CHANNEL_CAPACITY);
+        // Unbounded: a slow replay drain must never backpressure the FSEvents
+        // forward task into dropping events (Fix 2). Memory is bounded by the
+        // ingestion hard cap in `run_replay_event_loop`, not by the channel.
+        let (event_tx, event_rx) = tokio::sync::mpsc::unbounded_channel();
         let current_id = watcher::current_event_id();
 
         let watcher_overflow: Option<Arc<AtomicBool>>;
@@ -683,8 +686,11 @@ impl IndexManager {
         // scope), the reconcile walk, and the completion handler's replay + live loop.
         let space = super::IndexPathSpace::for_volume(self.kind, &self.volume_root, self.inodes_trustworthy);
 
-        // Step 1: Start the FSEvents watcher BEFORE the scan so we don't miss events
-        let (event_tx, event_rx) = tokio::sync::mpsc::channel(WATCHER_CHANNEL_CAPACITY);
+        // Step 1: Start the FSEvents watcher BEFORE the scan so we don't miss events.
+        // Unbounded so a slow buffered-event drain never backpressures the forward
+        // task into dropping events (Fix 2); memory is capped by the ingestion hard
+        // cap in the live loop, not the channel.
+        let (event_tx, event_rx) = tokio::sync::mpsc::unbounded_channel();
         let scan_start_event_id = watcher::current_event_id();
 
         // In E2E mode, scope the watcher to the fixture directory instead of `/`.

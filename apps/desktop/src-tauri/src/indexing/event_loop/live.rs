@@ -24,7 +24,10 @@ use super::super::reconciler::EventReconciler;
 use super::super::store::{self, IndexStore};
 use super::super::watcher;
 use super::super::writer::{IndexWriter, WriteMessage};
-use super::{LIVE_FLUSH_INTERVAL_MS, THROTTLE_SWEEP_INTERVAL_MS, merge_fs_events, open_read_conn_with_retry, storm};
+use super::{
+    INGESTION_WARN_INTERVAL, IngestionPressure, LIVE_FLUSH_INTERVAL_MS, THROTTLE_SWEEP_INTERVAL_MS,
+    classify_ingestion_pressure, merge_fs_events, open_read_conn_with_retry, storm,
+};
 use crate::pluralize::pluralize;
 
 /// Mark every affected directory (and its ancestors) as having a recursive-size
@@ -57,7 +60,7 @@ pub(super) fn mark_pending_and_drain(volume_id: &str, pending_paths: &mut HashSe
 /// `index-dir-updated` notifications with a 1s flush interval.
 /// Exits when the channel closes (watcher stopped).
 pub(in crate::indexing) async fn run_live_event_loop(
-    mut event_rx: tokio::sync::mpsc::Receiver<watcher::FsChangeEvent>,
+    mut event_rx: tokio::sync::mpsc::UnboundedReceiver<watcher::FsChangeEvent>,
     mut reconciler: EventReconciler,
     writer: IndexWriter,
     app: AppHandle,
@@ -116,6 +119,9 @@ pub(in crate::indexing) async fn run_live_event_loop(
     // the watcher down, but this doesn't wait for that).
     let failure_signal = writer.failure_signal();
 
+    // Rate-limiter for the "ingestion falling behind" warning (Fix 2).
+    let mut last_ingestion_warn: Option<Instant> = None;
+
     loop {
         tokio::select! {
             event = event_rx.recv() => {
@@ -171,6 +177,46 @@ pub(in crate::indexing) async fn run_live_event_loop(
                 if failure_signal.is_tripped() {
                     log::info!("Live event processing: stopping, the index storage failed");
                     break;
+                }
+
+                // Ingestion-pressure guard (Fix 2). The watcher→loop channel is
+                // unbounded, so a slow drain grows the queue instead of dropping
+                // events. Past the RAM-guard hard cap we DELIBERATELY fall back to a
+                // full scan; a merely-high watermark just logs (rate-limited).
+                match classify_ingestion_pressure(event_rx.len()) {
+                    IngestionPressure::Overflowing => {
+                        let queued = event_rx.len();
+                        log::warn!(
+                            "Live event processing: ingestion queue at {queued} (hard cap); falling back to a full scan"
+                        );
+                        emit_rescan_notification(
+                            &app,
+                            &volume_id,
+                            RescanReason::IngestionBacklog,
+                            format!(
+                                "The live event queue reached {queued} pending events, past the ingestion hard cap. \
+                                 Running a fresh scan to catch up."
+                            ),
+                        );
+                        let vid = volume_id.clone();
+                        tauri::async_runtime::spawn(async move {
+                            crate::indexing::manager::perform_registry_rescan(&vid, "ingestion backlog").await;
+                        });
+                        // Drain and discard the backlog; the fresh scan supersedes it.
+                        event_rx.close();
+                        while event_rx.recv().await.is_some() {}
+                        break;
+                    }
+                    IngestionPressure::FallingBehind => {
+                        if last_ingestion_warn.is_none_or(|t| t.elapsed() >= INGESTION_WARN_INTERVAL) {
+                            log::warn!(
+                                "Live event processing: falling behind, {} events queued (draining, not dropping)",
+                                event_rx.len()
+                            );
+                            last_ingestion_warn = Some(Instant::now());
+                        }
+                    }
+                    IngestionPressure::Healthy => {}
                 }
 
                 // Check if the FSEvents channel overflowed. Events were dropped

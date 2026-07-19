@@ -6226,6 +6226,12 @@ export type RescanReason =
   | 'incomplete_previous_scan'
   // FSEvents channel overflowed: events were dropped.
   | 'watcher_channel_overflow'
+  /**
+   *  The unbounded ingestion queue grew past the RAM-guard hard cap: the event
+   *  loop is hopelessly behind, so we deliberately fall back to a full scan (our
+   *  decision, not a dropped-events overflow). See `event_loop::INGESTION_HARD_CAP`.
+   */
+  | 'ingestion_backlog'
 
 /**
  *  Result of resolving a bare path into a `Location` via `resolve_location`.

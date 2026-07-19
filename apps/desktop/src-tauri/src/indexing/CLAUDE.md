@@ -24,10 +24,14 @@ Writer discipline (one writer thread per DB):
 - **Reconciler/event loops hold a READ connection, never a write one** (`SQLITE_BUSY` kills live indexing). **`IndexWriter`
   owns the shared `Arc<AtomicI64>` ID counter**; never allocate from `MAX(id)` (uncommitted inserts → double-assign).
   Live file upserts throttle 60 s (`reconciler/throttle.rs`): ≤1 write/window, `pending` never evictable.
-- **`MustScanSubDirs` is depth-split** (`reconciler/rescan_route.rs`): a SHALLOW/root-scale anchor (`depth ≤ 2`) routes
-  to the VISIBLE scanner (`route_must_scan_sub_dirs` → `start_scan`, cooldown 45 s), taking NO hourglass hold — holding
-  it for a ~20-min reconcile-of-`/` is the stuck-hourglass bug. A DEEP anchor keeps the per-subtree-throttled reconcile
-  drain (`rescan_throttle.rs`, 60 s, ≤1 re-walk/window). Depth: DETAILS § "Depth-split MustScanSubDirs routing".
+- **`MustScanSubDirs` is depth-split** (`reconciler/rescan_route.rs`): a SHALLOW anchor (`depth ≤ 2`, root-scale) routes
+  via `route_must_scan_sub_dirs` to the VISIBLE scanner (`start_scan`, 45 s cooldown) with NO hourglass hold — holding it
+  for a ~20-min reconcile-of-`/` is the stuck-hourglass bug. A DEEP anchor keeps the per-subtree-throttled reconcile
+  drain (`rescan_throttle.rs`, 60 s). Depth: DETAILS § "Depth-split MustScanSubDirs routing".
+- **The watcher→loop channel is UNBOUNDED** (`mpsc::unbounded_channel`): a slow drain must never backpressure FSEvents
+  into dropping events (that used to force a full scan). Don't re-bound it. Memory is capped by
+  `classify_ingestion_pressure` instead: warn at 20K, deliberate full scan past `INGESTION_HARD_CAP` (5M). DETAILS §
+  "Unbounded ingestion buffer".
 - **The index is a disposable cache**: a schema mismatch or corruption deletes and rebuilds the DB (no migrations). Gate
   only `scan_completed_at`.
 - **A fatal storage error STOPS + FAILS the index, never retries** (an incident logged 12,700 warnings in 8 min): the

@@ -58,10 +58,48 @@ pub(super) const THROTTLE_SWEEP_INTERVAL_MS: u64 = 1000;
 /// the journal unavailable and fall back to a full scan.
 pub(super) const JOURNAL_GAP_THRESHOLD: u64 = 10_000_000;
 
-/// Capacity of the watcher→event loop channel. Provides backpressure to
-/// FSEvents/inotify when the event loop can't keep up, preventing unbounded
-/// memory growth. Each event is ~300 bytes, so 20K ≈ 6 MB worst case.
-pub(super) const WATCHER_CHANNEL_CAPACITY: usize = 20_000;
+/// Healthy watcher→loop queue depth. The channel is UNBOUNDED (Fix 2: a slow
+/// drain must never backpressure FSEvents/inotify into dropping events, which used
+/// to cascade into a forced full scan), so this is NOT a capacity — it's the
+/// "we're falling behind" watermark. Above it the loop LOGS (rate-limited); it
+/// never drops. Steady state sits well under it (each event is ~300 B).
+pub(super) const INGESTION_BACKLOG_WARN: usize = 20_000;
+
+/// RAM-guard hard cap on the unbounded watcher→loop queue. Past it the loop is
+/// hopelessly behind, so we DELIBERATELY fall back to a full scan — our decision,
+/// at a far higher threshold than the old bounded-channel overflow, replacing "OS
+/// dropped events → forced scan" with "we're behind → chosen scan". At ~300 B/event
+/// this is ~1.5 GB: far above the healthy <20K, comfortably below the global 16 GB
+/// memory watchdog (`memory_watchdog.rs`) that stops all indexing.
+pub(super) const INGESTION_HARD_CAP: usize = 5_000_000;
+
+/// Minimum gap between "ingestion falling behind" warnings, so a sustained backlog
+/// logs at a steady cadence rather than every flush tick. Shared by both loops.
+pub(super) const INGESTION_WARN_INTERVAL: Duration = Duration::from_secs(5);
+
+/// How much pressure the unbounded ingestion queue is under, derived from its
+/// depth. Pure so the thresholds — and the contract that the OLD 20K overflow no
+/// longer forces a scan — are unit-tested.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum IngestionPressure {
+    /// Draining fine; do nothing.
+    Healthy,
+    /// Above the healthy watermark: log "falling behind" (rate-limited), never drop.
+    FallingBehind,
+    /// Past the RAM-guard hard cap: deliberately fall back to a full scan.
+    Overflowing,
+}
+
+/// Classify the unbounded ingestion queue's depth into an [`IngestionPressure`].
+pub(super) fn classify_ingestion_pressure(queue_len: usize) -> IngestionPressure {
+    if queue_len > INGESTION_HARD_CAP {
+        IngestionPressure::Overflowing
+    } else if queue_len > INGESTION_BACKLOG_WARN {
+        IngestionPressure::FallingBehind
+    } else {
+        IngestionPressure::Healthy
+    }
+}
 
 /// Configuration for a replay event loop.
 pub(super) struct ReplayConfig {
