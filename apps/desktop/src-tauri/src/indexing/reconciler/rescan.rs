@@ -10,12 +10,70 @@
 //! a churning anchor to ≤1 walk per window by picking only ELIGIBLE anchors and
 //! leaving throttled ones queued for the sweep tick's re-kick.
 
+use super::rescan_route::{self, RescanRoute};
 use super::rescan_throttle::RescanThrottle;
 use super::*;
 use crate::indexing::path_prefix;
 
 impl EventReconciler {
-    /// Queue a MustScanSubDirs rescan, throttled to max 1 concurrent.
+    /// Route a `MustScanSubDirs` anchor by depth (see [`rescan_route`]). The single
+    /// entry point for the two feeders the churn-resilience fix targets — the live
+    /// path (`process_live_event`) and the post-replay handoff (`event_loop::replay`):
+    ///
+    /// - **Shallow/root-scale** anchor: take the VISIBLE scanner path
+    ///   ([`route_shallow_to_scanner`](Self::route_shallow_to_scanner)) — single-
+    ///   flight, updates freshness, and (critically) NO per-dir hourglass hold, so a
+    ///   continuously re-churning `/` can't leave the hold stuck for a ~20-min walk.
+    /// - **Deep/narrow** anchor: keep the throttled `reconcile_subtree` drain, which
+    ///   is exactly what it's good at.
+    pub(in crate::indexing) fn route_must_scan_sub_dirs(&mut self, path: PathBuf, writer: &IndexWriter) {
+        match rescan_route::classify(path_prefix::depth(&path.to_string_lossy())) {
+            RescanRoute::Scanner => self.route_shallow_to_scanner(path),
+            RescanRoute::Reconcile => self.queue_must_scan_sub_dirs(path, writer),
+        }
+    }
+
+    /// Request a VISIBLE full (re)scan for a shallow/root-scale anchor, gated by the
+    /// per-volume root-rescan cooldown. Deliberately takes NO hourglass hold and
+    /// never enters `pending_rescans`: the scanner path is visible and single-flight,
+    /// and holding the per-dir hourglass for a root-scale reconcile is the stuck-
+    /// hourglass bug this replaces. Within the cooldown the redundant demand is
+    /// coalesced (dropped): safe, because `start_scan` is single-flight and FSEvents
+    /// replays from the last event id, so the next scan catches interim changes.
+    fn route_shallow_to_scanner(&mut self, anchor: PathBuf) {
+        DEBUG_STATS.record_must_scan(&anchor.to_string_lossy());
+        if !rescan_route::allow_scanner_rescan(&self.volume_id, Instant::now()) {
+            log::debug!(
+                "MustScanSubDirs: coalescing shallow anchor {} (root-rescan cooldown)",
+                anchor.display()
+            );
+            return;
+        }
+        let label = format!("shallow MustScanSubDirs ({})", anchor.display());
+        log::info!(
+            "MustScanSubDirs: routing shallow anchor {} to the visible scanner",
+            anchor.display()
+        );
+        match &self.scan_trigger {
+            ScanTrigger::Registry => {
+                let volume_id = self.volume_id.clone();
+                // Fire-and-forget: `perform_registry_rescan` re-resolves the manager
+                // in the registry and runs a fresh single-flight `start_scan`. Spawn
+                // (not inline) because we hold a read `Connection` on the live loop.
+                tauri::async_runtime::spawn(async move {
+                    crate::indexing::manager::perform_registry_rescan(&volume_id, &label).await;
+                });
+            }
+            #[cfg(test)]
+            ScanTrigger::Disabled => {}
+            #[cfg(test)]
+            ScanTrigger::Recording(sink) => sink.lock_ignore_poison().push(label),
+        }
+    }
+
+    /// Queue a MustScanSubDirs rescan on the throttled reconcile drain, capped to
+    /// max 1 concurrent. This is the DEEP-anchor path; shallow anchors route to the
+    /// scanner via [`route_must_scan_sub_dirs`](Self::route_must_scan_sub_dirs).
     pub(in crate::indexing) fn queue_must_scan_sub_dirs(&mut self, path: PathBuf, writer: &IndexWriter) {
         DEBUG_STATS.record_must_scan(&path.to_string_lossy());
         self.enqueue_rescan(path, writer);

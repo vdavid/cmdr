@@ -389,15 +389,16 @@ pub(in crate::indexing) async fn run_replay_event_loop(
         });
     }
 
-    // Queue any MustScanSubDirs rescans that were deferred during replay.
-    // If pending_rescans overflowed, trigger a full rescan via fallback.
-    // Hand every deferred anchor to the live drain. However many the gap produced,
-    // the drain dedups, ancestor-collapses, and per-subtree-throttles them and
-    // works through them at background QoS, so a churn-heavy gap catches up subtree
-    // by subtree instead of escalating to a full-volume walk. The genuine
-    // full-scan fallbacks (journal purge, >10M events, watcher overflow) remain.
+    // Queue any MustScanSubDirs rescans that were deferred during replay. Route
+    // each by depth (see `reconciler/rescan_route.rs`): a shallow/root-scale anchor
+    // — the case our replay-unification can collapse to one invisible reconcile-of-`/`
+    // with a stuck hourglass — takes the VISIBLE scanner path instead; a deep/narrow
+    // anchor stays on the live drain, which dedups, ancestor-collapses, and
+    // per-subtree-throttles them at background QoS, so a churn-heavy gap catches up
+    // subtree by subtree. The genuine full-scan fallbacks (journal purge, >10M
+    // events, watcher overflow) remain.
     for path in pending_rescans {
-        reconciler.queue_must_scan_sub_dirs(std::path::PathBuf::from(path), &writer);
+        reconciler.route_must_scan_sub_dirs(std::path::PathBuf::from(path), &writer);
     }
 
     let mut live_count = 0u64;

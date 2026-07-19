@@ -41,11 +41,30 @@ use crate::pluralize::pluralize;
 
 mod escalation;
 mod rescan;
+mod rescan_route;
 mod rescan_throttle;
 mod throttle;
 use escalation::resolve_escalation_anchor;
 use rescan_throttle::RescanThrottle;
 use throttle::{Throttle, ThrottleOutcome};
+
+/// How the reconciler asks for a VISIBLE scanner rescan when a shallow/root-scale
+/// `MustScanSubDirs` anchor should take the `start_scan` path instead of the
+/// invisible reconcile hold (see [`rescan_route`]). Defaults to [`Self::Registry`]
+/// on every production reconciler, so the two live-loop construction sites
+/// (`scan_completion`, `event_loop::replay`) need no extra wiring.
+pub(in crate::indexing) enum ScanTrigger {
+    /// Production: spawn [`crate::indexing::manager::perform_registry_rescan`],
+    /// which re-resolves this volume's manager in the registry and runs a fresh
+    /// single-flight `start_scan`.
+    Registry,
+    /// Test: don't touch the registry (no Tauri runtime under a unit test).
+    #[cfg(test)]
+    Disabled,
+    /// Test: record the trigger labels so a test can assert routing happened.
+    #[cfg(test)]
+    Recording(Arc<Mutex<Vec<String>>>),
+}
 
 /// The live-path throttle, carrying the exact upsert to replay on the trailing
 /// flush (see [`PendingUpsert`]). Only the live reconciler holds one; the replay
@@ -217,15 +236,24 @@ pub struct EventReconciler {
     /// `get_pending_sizes_for` — defaulting to the root-only handle would recreate
     /// the cross-volume bug the held tier fixes for clears.
     volume_id: String,
+    /// How a shallow/root-scale `MustScanSubDirs` anchor requests the visible
+    /// scanner path. `Registry` in production (spawns `perform_registry_rescan`);
+    /// tests inject `Disabled`/`Recording`. See [`ScanTrigger`] and [`rescan_route`].
+    scan_trigger: ScanTrigger,
 }
 
 impl EventReconciler {
     /// Create a new reconciler in buffering mode for the boot disk (`root` space,
     /// `root` volume id). Test-only convenience; production sites carry the real
-    /// volume id + space through [`new_for`](Self::new_for).
+    /// volume id + space through [`new_for`](Self::new_for). The scan trigger is
+    /// `Disabled` so a shallow-anchor route doesn't touch the registry under a
+    /// unit test; a test that wants to observe routing calls
+    /// [`set_recording_scan_trigger`](Self::set_recording_scan_trigger).
     #[cfg(test)]
     pub fn new() -> Self {
-        Self::new_for(ROOT_VOLUME_ID.to_string(), IndexPathSpace::root())
+        let mut reconciler = Self::new_for(ROOT_VOLUME_ID.to_string(), IndexPathSpace::root());
+        reconciler.scan_trigger = ScanTrigger::Disabled;
+        reconciler
     }
 
     /// Create a reconciler bound to a volume's id + path space. A mount-rooted
@@ -248,6 +276,7 @@ impl EventReconciler {
             throttle,
             space,
             volume_id,
+            scan_trigger: ScanTrigger::Registry,
         }
     }
 
@@ -255,11 +284,20 @@ impl EventReconciler {
     /// exercised without sleeping a real [`THROTTLE_WINDOW`].
     #[cfg(test)]
     pub(super) fn new_with_throttle_window(window: std::time::Duration) -> Self {
-        Self::with_space_and_throttle(
+        let mut reconciler = Self::with_space_and_throttle(
             ROOT_VOLUME_ID.to_string(),
             IndexPathSpace::root(),
             Throttle::with_window(window, None),
-        )
+        );
+        reconciler.scan_trigger = ScanTrigger::Disabled;
+        reconciler
+    }
+
+    /// Test-only: route shallow `MustScanSubDirs` anchors to a recording trigger so
+    /// a test can assert the scanner path was taken (instead of the reconcile hold).
+    #[cfg(test)]
+    pub(in crate::indexing) fn set_recording_scan_trigger(&mut self, sink: Arc<Mutex<Vec<String>>>) {
+        self.scan_trigger = ScanTrigger::Recording(sink);
     }
 
     /// Buffer an event during scan. If the buffer cap is reached, stops
@@ -379,7 +417,9 @@ impl EventReconciler {
             // Keep the path absolute (the reconcile walks the FS from it); the
             // mount-relative strip happens inside `reconcile_subtree`'s resolve.
             let absolute = self.space.absolute(&event.path);
-            self.queue_must_scan_sub_dirs(PathBuf::from(&absolute), writer);
+            // Depth-split routing: a shallow/root-scale anchor takes the visible
+            // scanner path; a deep/narrow one keeps the throttled reconcile drain.
+            self.route_must_scan_sub_dirs(PathBuf::from(&absolute), writer);
             return Some(event.event_id);
         }
 

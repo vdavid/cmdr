@@ -182,6 +182,108 @@ async fn must_scan_sub_dirs_deduplication() {
     writer.shutdown();
 }
 
+// ── Depth-split MustScanSubDirs routing (churn resilience, Fix 1) ─
+
+fn must_scan_dir_flags() -> FsEventFlags {
+    FsEventFlags {
+        must_scan_sub_dirs: true,
+        item_is_dir: true,
+        ..Default::default()
+    }
+}
+
+/// A root-scale `MustScanSubDirs` must take the VISIBLE scanner path, not the
+/// invisible reconcile hold. Pre-fix, `process_live_event` queued `/` onto the
+/// reconcile drain, which holds the per-dir hourglass for the whole ~20-min walk
+/// (`reconciler/rescan.rs`) and — under continuous root churn — never releases it
+/// (the stuck-hourglass bug). Post-fix, a shallow anchor routes to the scanner: no
+/// hold, nothing queued on the drain.
+#[tokio::test]
+async fn root_scale_must_scan_routes_to_scanner_without_a_stuck_hold() {
+    use crate::indexing::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes};
+    let _guard = PENDING_SIZES_TEST_MUTEX.lock().expect("test mutex");
+    *PENDING_SIZES.lock().expect("install tracker") = Some(Arc::new(PendingSizes::new()));
+    rescan_route::reset_cooldown_for_test();
+
+    let (writer, _dir, conn) = setup_test_writer();
+    let mut reconciler = EventReconciler::new();
+    reconciler.switch_to_live();
+    let sink = Arc::new(Mutex::new(Vec::<String>::new()));
+    reconciler.set_recording_scan_trigger(Arc::clone(&sink));
+
+    // Drive a real root-scale MustScanSubDirs event through the live path.
+    let mut pending = HashSet::new();
+    reconciler.process_live_event(&make_event("/", 1, must_scan_dir_flags()), &conn, &writer, &mut pending);
+
+    // Routed to the visible scanner...
+    assert_eq!(
+        sink.lock().unwrap().len(),
+        1,
+        "a shallow (root-scale) anchor routes to the scanner"
+    );
+    // ...and took NO reconcile hourglass hold, and queued nothing on the drain.
+    let tracker = crate::indexing::pending_sizes::get_pending_sizes_for(ROOT_VOLUME_ID).expect("tracker");
+    assert!(
+        !tracker.is_pending("/"),
+        "the scanner path must NOT hold the per-dir hourglass (the stuck-hold bug)"
+    );
+    assert!(
+        reconciler.pending_rescans_snapshot().is_empty(),
+        "nothing is queued on the reconcile drain"
+    );
+    assert!(!reconciler.is_rescan_active_for_test(), "no reconcile was spawned");
+
+    *PENDING_SIZES.lock().expect("uninstall") = None;
+    writer.shutdown();
+}
+
+/// The counterpart: a deep/narrow `MustScanSubDirs` anchor keeps the throttled
+/// reconcile drain (holds the hourglass, queues the anchor). Routing splits by
+/// depth, so the deep path must NOT reach the scanner.
+#[tokio::test]
+async fn deep_must_scan_keeps_the_reconcile_drain() {
+    use crate::indexing::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes};
+    let _guard = PENDING_SIZES_TEST_MUTEX.lock().expect("test mutex");
+    *PENDING_SIZES.lock().expect("install tracker") = Some(Arc::new(PendingSizes::new()));
+    rescan_route::reset_cooldown_for_test();
+
+    let (writer, _dir, conn) = setup_test_writer();
+    let mut reconciler = EventReconciler::new();
+    reconciler.switch_to_live();
+    // Keep the queued anchor visible (no spawn), so we assert on the queue directly.
+    reconciler.rescan_active.store(true, Ordering::Relaxed);
+    let sink = Arc::new(Mutex::new(Vec::<String>::new()));
+    reconciler.set_recording_scan_trigger(Arc::clone(&sink));
+
+    // Depth 5: well past the shallow threshold, so it reconciles in place.
+    let deep = "/aaa/bbb/ccc/ddd/target";
+    let mut pending = HashSet::new();
+    reconciler.process_live_event(
+        &make_event(deep, 1, must_scan_dir_flags()),
+        &conn,
+        &writer,
+        &mut pending,
+    );
+
+    assert!(
+        sink.lock().unwrap().is_empty(),
+        "a deep anchor must NOT route to the scanner"
+    );
+    assert_eq!(
+        reconciler.pending_rescans_snapshot(),
+        vec![PathBuf::from(deep)],
+        "the deep anchor is queued on the reconcile drain"
+    );
+    let tracker = crate::indexing::pending_sizes::get_pending_sizes_for(ROOT_VOLUME_ID).expect("tracker");
+    assert!(
+        tracker.is_pending(deep),
+        "the reconcile drain holds the per-dir hourglass for a deep anchor"
+    );
+
+    *PENDING_SIZES.lock().expect("uninstall") = None;
+    writer.shutdown();
+}
+
 // ── Missing-parent escalation (Leak B) ──────────────────────────
 
 /// A live creation whose parent chain is absent must NOT be dropped: it escalates

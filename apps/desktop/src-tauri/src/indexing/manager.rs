@@ -195,6 +195,86 @@ fn should_replay_journal(
     kind.has_event_journal() && supports_event_replay && scan_completed && stored_event_id.is_some_and(|id| id > 0)
 }
 
+/// Take a volume's manager OUT of the registry (transient `ShuttingDown`), stop
+/// its current watcher + live loop, run a fresh `start_scan` OFF the registry
+/// lock, then reinsert it as `Running`. Re-resolves the manager by volume id, so
+/// it can be spawned fire-and-forget with no captured manager.
+///
+/// Shared by two triggers that both mean "roll forward from the visible scanner,
+/// not the invisible reconcile": the cold-start replay full-scan fallback
+/// (`start_replay`) and the shallow-`MustScanSubDirs` scanner routing
+/// (`reconciler/rescan.rs`). Single-flight: `start_scan` no-ops if a scan is
+/// already running, so overlapping triggers coalesce.
+///
+/// Runs the blocking `start_scan` prelude off the lock (holding it across
+/// `flush_blocking` + the space-info query would freeze every concurrent registry
+/// user; the freshness firing inside `start_scan` would also re-lock the registry,
+/// now fired through the manager's own `Arc`). Mirrors `state::force_scan`'s
+/// extract-drop-run-reinsert flow.
+pub(in crate::indexing) async fn perform_registry_rescan(volume_id: &str, trigger: &str) {
+    let mut mgr = {
+        let mut reg = match INDEX_REGISTRY.lock() {
+            Ok(g) => g,
+            Err(e) => {
+                log::warn!("Failed to lock registry for a scanner rescan: {e}");
+                return;
+            }
+        };
+        let Some(instance) = reg.get_mut(volume_id) else {
+            return;
+        };
+        // `mgr` is the `IndexManager` taken out of `Running`.
+        match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
+            IndexPhase::Running(mut mgr) => {
+                // Stop the current watcher + live loop (the fresh scan starts its
+                // own) while still under the lock — these are non-blocking.
+                if let Some(ref mut watcher) = mgr.drive_watcher {
+                    watcher.stop();
+                }
+                mgr.drive_watcher = None;
+                {
+                    let mut task_guard = mgr.live_event_task.lock_ignore_poison();
+                    if let Some(task) = task_guard.take() {
+                        task.abort();
+                    }
+                }
+                mgr
+            }
+            other => {
+                instance.phase = other;
+                return;
+            }
+        }
+    };
+
+    // Guard released: run the blocking-prelude scan start off the lock.
+    if let Err(ref e) = mgr.start_scan(trigger) {
+        log::warn!("Scanner rescan for '{volume_id}' failed to start: {e}");
+    }
+
+    // Re-lock to restore the manager as `Running`. If the volume was torn down
+    // while we were detached, shut the orphaned manager down instead of
+    // resurrecting a removed volume.
+    let mut reg = match INDEX_REGISTRY.lock() {
+        Ok(g) => g,
+        Err(e) => {
+            log::warn!("Failed to re-lock registry after a scanner rescan: {e}");
+            mgr.shutdown();
+            return;
+        }
+    };
+    match reg.get_mut(volume_id) {
+        Some(instance) if matches!(instance.phase, IndexPhase::ShuttingDown) => {
+            instance.phase = IndexPhase::Running(mgr);
+        }
+        _ => {
+            drop(reg);
+            log::info!("scanner rescan: '{volume_id}' was torn down during scan start; shutting down the manager");
+            mgr.shutdown();
+        }
+    }
+}
+
 impl IndexManager {
     /// Create a new IndexManager for a volume of the given kind.
     ///
@@ -481,78 +561,7 @@ impl IndexManager {
         tauri::async_runtime::spawn(async move {
             if let Ok(reason) = fallback_rx.await {
                 log::warn!("Replay signaled a full-scan fallback ({reason:?}); rescanning the volume");
-
-                // Take the manager OUT of the registry (transient `ShuttingDown`)
-                // so the blocking `start_scan` prelude runs OFF the registry lock.
-                // Holding the lock across `start_scan`'s `flush_blocking` +
-                // space-info query would freeze every concurrent registry user;
-                // the freshness firing inside `start_scan` would also re-lock the
-                // registry (now fired through the manager's own freshness `Arc`).
-                // Mirrors `state::force_scan`'s extract-drop-run-reinsert flow.
-                let mut mgr = {
-                    let mut reg = match INDEX_REGISTRY.lock() {
-                        Ok(g) => g,
-                        Err(e) => {
-                            log::warn!("Failed to lock registry for fallback scan: {e}");
-                            return;
-                        }
-                    };
-                    let Some(instance) = reg.get_mut(&fallback_volume_id) else {
-                        return;
-                    };
-                    // `mgr` is the `Box<IndexManager>` taken out of `Running`.
-                    match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
-                        IndexPhase::Running(mut mgr) => {
-                            // Stop the current watcher (replay detected it's useless)
-                            // while still under the lock — these are non-blocking.
-                            if let Some(ref mut watcher) = mgr.drive_watcher {
-                                watcher.stop();
-                            }
-                            mgr.drive_watcher = None;
-                            {
-                                let mut task_guard = mgr.live_event_task.lock_ignore_poison();
-                                if let Some(task) = task_guard.take() {
-                                    task.abort();
-                                }
-                            }
-                            mgr
-                        }
-                        other => {
-                            instance.phase = other;
-                            return;
-                        }
-                    }
-                };
-
-                // Guard released: run the blocking-prelude scan start off the lock.
-                let result = mgr.start_scan(&format!("replay fallback ({reason:?})"));
-                if let Err(ref e) = result {
-                    log::warn!("Fallback full scan failed: {e}");
-                }
-
-                // Re-lock to restore the manager as `Running`. If the volume was
-                // torn down while we were detached, shut the orphaned manager down
-                // instead of resurrecting a removed volume.
-                let mut reg = match INDEX_REGISTRY.lock() {
-                    Ok(g) => g,
-                    Err(e) => {
-                        log::warn!("Failed to re-lock registry after fallback scan: {e}");
-                        mgr.shutdown();
-                        return;
-                    }
-                };
-                match reg.get_mut(&fallback_volume_id) {
-                    Some(instance) if matches!(instance.phase, IndexPhase::ShuttingDown) => {
-                        instance.phase = IndexPhase::Running(mgr);
-                    }
-                    _ => {
-                        drop(reg);
-                        log::info!(
-                            "fallback scan: '{fallback_volume_id}' was torn down during scan start; shutting down the manager"
-                        );
-                        mgr.shutdown();
-                    }
-                }
+                perform_registry_rescan(&fallback_volume_id, &format!("replay fallback ({reason:?})")).await;
             }
         });
 
