@@ -98,6 +98,10 @@ pub struct InitOptions {
 /// already taken over the `log` facade. In tests this is fine; they don't need the real
 /// logger.
 pub fn init(opts: InitOptions) -> Result<(), fern::InitError> {
+    // Start the optional per-line RAM gauge (no-op unless `CMDR_LOG_RAM_USE` is set)
+    // before any format closure can run.
+    super::ram_gauge::init();
+
     // Apply RUST_LOG up front so `set_stdout_threshold` is the only post-init knob.
     // Defaults: stdout Info (noise-free), file Debug (catches error-report context).
     let mut stdout_default = log::LevelFilter::Info;
@@ -147,7 +151,8 @@ pub fn init(opts: InitOptions) -> Result<(), fern::InitError> {
                 log::Level::Debug => "\x1b[36m", // cyan
                 log::Level::Trace => "\x1b[35m", // magenta
             };
-            out.finish(format_args!("{ts} {color}{level:<5}\x1b[0m {target}  {message}"));
+            let ram = super::ram_gauge::tag();
+            out.finish(format_args!("{ts} {color}{level:<5}\x1b[0m {ram}{target}  {message}"));
         })
         // Ceiling: the live AtomicU8 filter below does the real gating.
         .level(log::LevelFilter::Trace)
@@ -201,7 +206,11 @@ pub fn init(opts: InitOptions) -> Result<(), fern::InitError> {
                 // dedup key (`LEVEL target  message`) free of the ever-changing stamp.
                 let target = record.target().strip_prefix("cmdr_lib::").unwrap_or(record.target());
                 let level = record.level();
-                out.finish(format_args!("{level:<5} {target}  {message}"));
+                // `ram` is empty unless `CMDR_LOG_RAM_USE` is set. When on, its value varies
+                // per line and so becomes part of the dedup key; that's an accepted debug-mode
+                // tradeoff (see `ram_gauge` § "Interaction with file-log dedup").
+                let ram = super::ram_gauge::tag();
+                out.finish(format_args!("{level:<5} {ram}{target}  {message}"));
             })
             .level(log::LevelFilter::Debug)
             .chain(writer);

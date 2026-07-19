@@ -11,6 +11,8 @@ level filtering**: the file target is locked at Debug, the terminal defaults to 
   toggle knob, a single AtomicU8)
 - **`coalesce.rs`**: `CoalescingWriter`, the file chain's terminal writer; collapses identical-line floods so a runaway
   loop can't peg a core through the log file (DETAILS § "Duplicate coalescing")
+- **`ram_gauge.rs`**: optional per-line RAM prefix (`CMDR_LOG_RAM_USE=1` → `… DEBUG (374 MB) target …`); a 100 ms
+  background sampler of `phys_footprint` into a lock-free atomic the format closures read (DETAILS § "RAM gauge")
 - **`tests.rs`**: pruner / listing helper unit tests
 
 Dispatch-tree shape, why fern + file-rotate, timestamp formats, and decisions: [DETAILS.md](DETAILS.md).
@@ -36,6 +38,10 @@ Dispatch-tree shape, why fern + file-rotate, timestamp formats, and decisions: [
 - **The file chain's ISO timestamp is prepended by `CoalescingWriter`, NOT the fern `.format()` closure.** The dedup key
   must stay timestamp-free or identical lines a millisecond apart never coalesce. Don't move `file_timestamp()` back into
   the file-chain format. DETAILS § "Duplicate coalescing".
+- **The RAM gauge is off unless `CMDR_LOG_RAM_USE` is truthy** (`ram_gauge::tag()` returns `""`, no alloc). When on, the
+  ever-changing number lands in the file dedup key, so floods coalesce less; accepted debug-mode tradeoff, and 100 ms
+  sampling still caps it (DETAILS § "RAM gauge"). The metric is the Rust process's `phys_footprint` via
+  `crate::process_memory` (the shared reader, not RSS, WebView processes not included).
 - **Cap = 0 disables the file chain entirely** (`init` skips it). stdout and the verbose toggle still work; the error
   reporter then produces a bundle with empty `logs/` (upload still goes through). The settings UI documents this.
 - **`file-rotate` is configured once at startup; the keep-N value can't be reconfigured live.** `set_keep_count(n)`

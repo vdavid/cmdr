@@ -135,6 +135,7 @@ mod permissions;
 mod permissions_linux;
 mod platform;
 mod pluralize;
+mod process_memory;
 mod quick_look;
 mod redact;
 #[cfg(target_os = "macos")]

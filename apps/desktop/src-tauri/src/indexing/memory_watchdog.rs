@@ -85,7 +85,7 @@ async fn run_watchdog(app: tauri::AppHandle) {
 
         // Per-tick check is cheap: one `task_info` call for `phys_footprint`.
         // The full breakdown is gathered only when a threshold actually trips.
-        let phys_footprint = match get_phys_footprint() {
+        let phys_footprint = match crate::process_memory::current_phys_footprint() {
             Some(b) => b,
             None => continue,
         };
@@ -205,7 +205,7 @@ impl MemorySnapshot {
     /// Gather the full breakdown. Returns `None` only if the load-bearing
     /// `phys_footprint` query fails; the heap and peak degrade gracefully.
     fn capture() -> Option<MemorySnapshot> {
-        let vm = query_task_vm_info()?;
+        let vm = crate::process_memory::query_task_vm_info()?;
         let basic = query_basic_info().unwrap_or(BasicInfo {
             resident_size: vm.resident_size,
             resident_size_max: 0,
@@ -337,117 +337,9 @@ fn query_basic_info() -> Option<BasicInfo> {
     }
 }
 
-/// The prefix of `task_vm_info` we read: everything up to and including
-/// `ledger_phys_footprint_peak`.
-///
-/// `task_vm_info`'s layout differs from `mach_task_basic_info`, and its `count`
-/// is measured in `natural_t` (u32) words. We request only this prefix's worth
-/// of words; the kernel writes `min(requested, supported)` and reports the
-/// actual back, so we gate each field on the returned count covering its byte
-/// range (a very old kernel might predate the rev that added `phys_footprint` /
-/// the ledger peak).
-#[cfg(target_os = "macos")]
-#[repr(C)]
-struct TaskVmInfo {
-    virtual_size: u64,
-    region_count: i32,
-    page_size: i32,
-    resident_size: u64,
-    resident_size_peak: u64,
-    device: u64,
-    device_peak: u64,
-    internal: u64,
-    internal_peak: u64,
-    external: u64,
-    external_peak: u64,
-    reusable: u64,
-    reusable_peak: u64,
-    purgeable_volatile_pmap: u64,
-    purgeable_volatile_resident: u64,
-    purgeable_volatile_virtual: u64,
-    compressed: u64,
-    compressed_peak: u64,
-    compressed_lifetime: u64,
-    phys_footprint: u64,
-    min_address: u64,
-    max_address: u64,
-    ledger_phys_footprint_peak: i64,
-}
-
-/// What we extract from a `task_vm_info` query.
-#[cfg(target_os = "macos")]
-struct TaskVmInfoResult {
-    phys_footprint: u64,
-    phys_footprint_peak: Option<u64>,
-    resident_size: u64,
-}
-
-/// Query `task_vm_info` (`TASK_VM_INFO`, flavor 22) for `phys_footprint`.
-///
-/// Uses raw FFI because the `libc` crate doesn't expose `TASK_VM_INFO`.
-#[cfg(target_os = "macos")]
-fn query_task_vm_info() -> Option<TaskVmInfoResult> {
-    // Mach task info flavor (from <mach/task_info.h>).
-    const TASK_VM_INFO: u32 = 22;
-
-    // `count` is in `natural_t` (u32) words, per the `task_info` ABI.
-    let requested_count = (size_of::<TaskVmInfo>() / size_of::<u32>()) as u32;
-
-    #[allow(deprecated, reason = "mach_task_self is deprecated in libc but works fine")]
-    // SAFETY: `info` is zeroed before use; `count` is the prefix's size in `natural_t` (u32) words,
-    // which is how `task_info` with `TASK_VM_INFO` reports its length. `TaskVmInfo` is `#[repr(C)]`
-    // and matches the leading fields of `task_vm_info`, so the kernel writes only within `info`
-    // (it writes `min(requested, supported)` words). We read fields only after `result == 0` AND
-    // the returned `count` covers each field's byte range.
-    let (info, returned_count, result) = unsafe {
-        let mut info: TaskVmInfo = std::mem::zeroed();
-        let mut count = requested_count;
-        let result = libc::task_info(
-            libc::mach_task_self(),
-            TASK_VM_INFO,
-            &mut info as *mut TaskVmInfo as *mut i32,
-            &mut count,
-        );
-        (info, count, result)
-    };
-
-    if result != 0 {
-        log::debug!("Memory watchdog: task_info(VM_INFO) failed with code {result}");
-        return None;
-    }
-
-    // Only trust a field if the kernel actually wrote through its byte range.
-    let covered = |byte_offset: usize, field_size: usize| -> bool {
-        (returned_count as usize) * size_of::<u32>() >= byte_offset + field_size
-    };
-
-    if !covered(std::mem::offset_of!(TaskVmInfo, phys_footprint), size_of::<u64>()) {
-        log::debug!("Memory watchdog: task_info(VM_INFO) returned too few words for phys_footprint");
-        return None;
-    }
-
-    let phys_footprint_peak = if covered(
-        std::mem::offset_of!(TaskVmInfo, ledger_phys_footprint_peak),
-        size_of::<i64>(),
-    ) && info.ledger_phys_footprint_peak > 0
-    {
-        Some(info.ledger_phys_footprint_peak as u64)
-    } else {
-        None
-    };
-
-    Some(TaskVmInfoResult {
-        phys_footprint: info.phys_footprint,
-        phys_footprint_peak,
-        resident_size: info.resident_size,
-    })
-}
-
-/// The cheap per-tick query: just `phys_footprint`.
-#[cfg(target_os = "macos")]
-fn get_phys_footprint() -> Option<u64> {
-    query_task_vm_info().map(|vm| vm.phys_footprint)
-}
+// The `task_vm_info` FFI (`phys_footprint`, resident size, ledger peak) lives in
+// `crate::process_memory`, the shared reader used by both this watchdog and the
+// log RAM gauge. `MemorySnapshot::capture` calls it directly.
 
 // ── malloc-heap query ────────────────────────────────────────────────
 
@@ -581,14 +473,6 @@ mod tests {
         let basic = query_basic_info();
         assert!(basic.is_some(), "should be able to query resident memory");
         assert!(basic.unwrap().resident_size > 0, "resident memory should be positive");
-    }
-
-    #[cfg(target_os = "macos")]
-    #[test]
-    fn get_phys_footprint_returns_positive_value() {
-        let phys = get_phys_footprint();
-        assert!(phys.is_some(), "should be able to query phys_footprint");
-        assert!(phys.unwrap() > 0, "phys_footprint should be positive");
     }
 
     #[cfg(target_os = "macos")]

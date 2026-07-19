@@ -109,6 +109,33 @@ above the baked-in value.
   ships to triage, where bare `HH:MM:SS.mmm` is impossible to correlate; the error reporter's Flow B bundle parses this
   stamp to line-trim by timestamp.
 
+## RAM gauge (`CMDR_LOG_RAM_USE`)
+
+Opt-in debug aid in `ram_gauge.rs`: with `CMDR_LOG_RAM_USE` set to a truthy value (`1`/`true`/`yes`/`on`), every log
+line carries the process's current memory use right after the level, on both chains:
+
+```
+2026-07-16T22:56:21.829+02:00 DEBUG (374 MB) smb2::client::tree  tree: fs_info done, total=...
+```
+
+The point is a memory timeline: the inline number tells you which operation coincided with a jump. It answers *when and
+near what*, not *what allocated* (for that, Instruments or a heap profiler). It rides the logger, so it works in dev,
+E2E, and prod builds identically.
+
+- **Metric**: `phys_footprint` of the Rust process via `crate::process_memory` (the shared Mach-`task_info` reader the
+  indexing watchdog also uses; see that module for why `phys_footprint`, not RSS). Cmdr is multi-process (Tauri), so
+  this is the backend only, not the WebView helper processes: "backend RAM," not "total Cmdr RAM."
+- **Cost**: a background OS thread (named `ram-gauge`, plain `std::thread` so it runs before the async runtime exists)
+  samples every 100 ms into an `AtomicU64`. The format closures do one Relaxed load per line, no syscall on the log
+  path. `init()` (called from `dispatch::init`) reads the env flag once and spawns the sampler only when enabled and
+  only once (a `STARTED` swap-guard). When the flag is unset, `tag()` returns an empty `String` (no allocation).
+- **Format**: `MB` below 1 GiB, else `GB` with two decimals (binary units, matching the watchdog's `gb()`/`mb()`).
+  `?? MB` before the first sample lands (primed synchronously in `init`, so only a theoretical window).
+- **Dedup interaction**: the file chain keys its flood-coalescing on the line text (`coalesce.rs`). With the gauge ON,
+  the per-line RAM number varies, so identical messages no longer collapse to one key. Accepted because (a) the flag is
+  an explicit debug opt-in, off in normal runs where dedup is fully intact, and (b) 100 ms sampling caps distinct values
+  to ~10 per one-second window, so a tight loop still collapses from thousands of writes to a few dozen, not thousands.
+
 ## Decisions
 
 - **fern over a custom logger**: a from-scratch `log::Log` impl is ~150 LOC plus ~100 of tests; fern gives battle-tested

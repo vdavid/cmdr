@@ -150,6 +150,28 @@ Copy-paste commands for common debugging scenarios. All include `info` as the ba
 
 Frontend log targets use `FE:{category}` where category matches the `getAppLogger('category')` name.
 
+## RAM gauge (`CMDR_LOG_RAM_USE`)
+
+Set `CMDR_LOG_RAM_USE=1` to prefix every log line with the backend's current memory use, right after the level:
+
+```
+2026-07-16T22:56:21.829+02:00 DEBUG (374 MB) smb2::client::tree  tree: fs_info done, total=...
+```
+
+```bash
+CMDR_LOG_RAM_USE=1 pnpm dev
+# combine with RUST_LOG to zoom in on a suspect subsystem:
+CMDR_LOG_RAM_USE=1 RUST_LOG=cmdr_lib::indexing=debug,info pnpm dev
+```
+
+Use it to keep RAM at bay: the inline number turns the log into a memory timeline, so you can see which operation
+coincided with a jump. It answers *when and near what*, not *what allocated* (reach for Instruments or a heap profiler
+for that). Works in dev, E2E, and prod builds. Accepts `1`/`true`/`yes`/`on`.
+
+The number is `phys_footprint` (Activity Monitor's "Memory" metric, not RSS) of the Rust backend process only, sampled
+every 100 ms. Cmdr's WebView runs in separate processes, so it's not included. Mechanism and the file-dedup caveat:
+`apps/desktop/src-tauri/src/logging/DETAILS.md` § "RAM gauge".
+
 ## Verbose logging
 
 Toggle in **Settings > Developer > Logging > "Verbose console output (developer)"**:
