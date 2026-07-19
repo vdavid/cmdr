@@ -12,6 +12,12 @@ const FETCH_BATCH = 500
 // WebKit caps element height at ~2^25 px (33.5M). Stay well below to avoid scroll cutoff.
 const MAX_SCROLL_HEIGHT = 30_000_000
 const FETCH_DEBOUNCE_MS = 100
+// A full DOM re-measure of every line (on a width change) is ~70 ms, so it can't
+// run on every ResizeObserver frame during a live window drag. Debounce to the
+// resize-settle, the same way the text-size slider path debounces (see
+// `onDebouncedScaleChange`). Between drag and settle the CSS re-wraps live; only
+// the scroll geometry lags a beat, then snaps into place.
+const REFLOW_DEBOUNCE_MS = 150
 
 interface ScrollDeps {
   getSessionId: () => string
@@ -369,10 +375,29 @@ export function createViewerScroll(deps: ScrollDeps) {
   }
 
   /**
-   * Watches textWidth and calls heightMap.reflow() when it changes.
-   * Compensates scroll position synchronously to prevent feedback loops.
+   * Re-measures all line heights at the new width and preserves the scroll
+   * fraction across the change. Uses the container's real `scrollHeight` (the
+   * rendered spacer) for the fraction rather than a derived value, and applies
+   * the new position after the spacer DOM has settled.
+   */
+  function doReflow(newWidth: number) {
+    if (!heightMap.ready || !contentRef) return
+    const oldScrollHeight = contentRef.scrollHeight
+    const fraction = oldScrollHeight > 0 ? contentRef.scrollTop / oldScrollHeight : 0
+    heightMap.reflow(newWidth)
+    const ref = contentRef
+    requestAnimationFrame(() => {
+      ref.scrollTop = fraction * ref.scrollHeight
+    })
+  }
+
+  /**
+   * Watches textWidth and re-measures the height map when it changes. Debounced
+   * to the resize-settle: a full DOM re-measure is ~70 ms, too slow to run on
+   * every ResizeObserver frame during a live window drag.
    */
   let prevTextWidth = 0
+  let reflowDebounceTimer: ReturnType<typeof setTimeout> | undefined
   function runHeightMapReflowEffect() {
     const textWidth = deps.getTextWidth()
 
@@ -385,16 +410,10 @@ export function createViewerScroll(deps: ScrollDeps) {
     }
     prevTextWidth = textWidth
 
-    // Reflow is a no-op if width hasn't changed (heightMap also guards internally).
-    heightMap.reflow(textWidth)
-
-    // Scroll compensation after reflow: preserve the scroll fraction.
-    if (contentRef) {
-      const totalHeight = heightMap.getTotalHeight() * scrollScale
-      if (totalHeight > 0 && spacerHeight > 0) {
-        contentRef.scrollTop = (contentRef.scrollTop / spacerHeight) * totalHeight
-      }
-    }
+    if (reflowDebounceTimer) clearTimeout(reflowDebounceTimer)
+    reflowDebounceTimer = setTimeout(() => {
+      doReflow(textWidth)
+    }, REFLOW_DEBOUNCE_MS)
   }
 
   // After the user settles on a new text scale, the line height the height
@@ -407,6 +426,7 @@ export function createViewerScroll(deps: ScrollDeps) {
 
   function destroy() {
     if (fetchDebounceTimer) clearTimeout(fetchDebounceTimer)
+    if (reflowDebounceTimer) clearTimeout(reflowDebounceTimer)
     heightMap.cancel()
     unsubscribeScaleChange()
   }

@@ -38,6 +38,58 @@ const fileContent = `# T\n\n${`${longLine}\n`.repeat(120)}`
 // (the file ends with a newline).
 const lastLineSelector = `.line[data-line="${String(fileContent.split('\n').length - 1)}"]`
 
+// Binary fixture with highly variable wrapped line heights, the shape the height
+// map must get right or the virtual scroll drifts (blank gaps, last line
+// unreachable). Three line kinds cycle:
+//  - long lines of space-separated tokens carrying control bytes (0x01-0x06):
+//    wrap to several rows, AND a canvas `measureText` predictor mis-measures the
+//    control-byte advances, so a predictor drifts where DOM measurement holds;
+//  - an unbreakable no-space run ('W'*200): the real flex `.line-text` renders
+//    it on ONE overflowing row, so the measurer must NOT wrap it (guards the
+//    flex-layout replication in `measureLineHeightsViaDom`);
+//  - a short line: one row.
+const binaryFilePath = path.join(fixtureRoot, 'left', 'binary-drift.bin')
+const binaryContent: Buffer = (() => {
+  const rows: Buffer[] = []
+  for (let i = 0; i < 300; i++) {
+    if (i % 3 === 0) {
+      const tokens: string[] = []
+      for (let w = 0; w < 40; w++) tokens.push('abc' + String.fromCharCode(1 + (w % 6)) + 'xy')
+      rows.push(Buffer.from(tokens.join(' '), 'latin1')) // long, wraps to several rows
+    } else if (i % 3 === 1) {
+      rows.push(Buffer.from('W'.repeat(200), 'latin1')) // no-space run: one overflowing row
+    } else {
+      rows.push(Buffer.from('short', 'latin1')) // one row
+    }
+  }
+  return Buffer.concat(rows.flatMap((r) => [r, Buffer.from([0x0a])]))
+})()
+// 300 newlines => content lines 0..299 plus a trailing empty line 300.
+const binaryLastLineSelector = `.line[data-line="300"]`
+
+/** Scrolls to a fraction of the file and reports whether rendered content fills
+ *  down to the viewport bottom. With a drifting height map, mid-file scrolling
+ *  leaves a blank band below the last placed line. Scroll + check in one
+ *  evaluate so each poll iteration re-scrolls and lets the virtualizer settle. */
+function scrollToFractionAndCheckFilled(viewer: TauriPage, fraction: number): Promise<string> {
+  return viewer.evaluate<string>(`
+    (function () {
+      const content = document.querySelector('.file-content')
+      if (!content) return 'no-content'
+      content.scrollTop = Math.round((content.scrollHeight - content.clientHeight) * ${String(fraction)})
+      const c = content.getBoundingClientRect()
+      const lines = document.querySelectorAll('.line')
+      if (lines.length === 0) return 'no-lines'
+      let maxBottom = -Infinity
+      for (const l of lines) {
+        const b = l.getBoundingClientRect().bottom; if (b > maxBottom) maxBottom = b
+      }
+      // Content must reach within ~2 rows of the viewport bottom (no blank band).
+      return maxBottom >= c.bottom - 40 ? 'filled' : ('gap:' + String(Math.round(c.bottom - maxBottom)))
+    })()
+  `)
+}
+
 /** Dispatches an unmodified `w` keydown on the viewer window (the production
  *  word-wrap toggle binding, handled by the `<svelte:window>` listener). */
 async function pressWrapToggle(viewer: TauriPage): Promise<void> {
@@ -69,13 +121,16 @@ async function setWordWrap(viewer: TauriPage, on: boolean): Promise<void> {
  *  the file is rendered inside the viewport. Scroll + check in one evaluate so
  *  every poll iteration re-scrolls (the spacer height can change while the
  *  height map prepares). */
-function scrollToBottomAndCheckLastLineVisible(viewer: TauriPage): Promise<string> {
+function scrollToBottomAndCheckLastLineVisible(
+  viewer: TauriPage,
+  selector: string = lastLineSelector,
+): Promise<string> {
   return viewer.evaluate<string>(`
     (function () {
       const content = document.querySelector('.file-content')
       if (!content) return 'no-content'
       content.scrollTop = content.scrollHeight
-      const target = document.querySelector('${lastLineSelector}')
+      const target = document.querySelector('${selector}')
       if (!target) return 'last-line-not-rendered'
       const c = content.getBoundingClientRect()
       const r = target.getBoundingClientRect()
@@ -119,6 +174,43 @@ test.describe('Viewer word-wrap scrolling', () => {
     } finally {
       await closeScopedWindow(mainPage, viewer, label)
       fs.rmSync(testFilePath, { force: true })
+    }
+  })
+
+  test('with wrap on, a control-byte binary file scrolls without drift (DOM-measured heights)', async ({
+    tauriPage,
+  }) => {
+    const mainPage = tauriPage as TauriPage
+    fs.writeFileSync(binaryFilePath, binaryContent)
+
+    const viewer = await openViewerWindow(mainPage, binaryFilePath)
+    const label = viewer.targetWindow
+    if (!label) throw new Error('Scoped viewer page has no targetWindow label')
+
+    try {
+      await viewer.waitForSelector('.viewer-container[data-window-ready="loaded"]', 10000)
+      await setWordWrap(viewer, true)
+
+      // Mid-file, content must fill the viewport (a drifting height map leaves a
+      // blank band below the last placed line). Poll so the height map's async
+      // measure pass has flipped ready and the virtualizer has settled.
+      await expect.poll(() => scrollToFractionAndCheckFilled(viewer, 0.5), { timeout: 10000 }).toBe('filled')
+
+      // And the end of the file stays reachable (a wrong total height puts the
+      // last line off-screen). Sample across the ready flip.
+      await expect
+        .poll(() => scrollToBottomAndCheckLastLineVisible(viewer, binaryLastLineSelector), { timeout: 10000 })
+        .toBe('visible')
+      for (let i = 0; i < 5; i++) {
+        // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- sampling interval of a stability assertion, not a readiness wait
+        await sleep(100)
+        expect(await scrollToBottomAndCheckLastLineVisible(viewer, binaryLastLineSelector)).toBe('visible')
+      }
+
+      await setWordWrap(viewer, false)
+    } finally {
+      await closeScopedWindow(mainPage, viewer, label)
+      fs.rmSync(binaryFilePath, { force: true })
     }
   })
 })

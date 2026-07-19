@@ -176,10 +176,11 @@ details.
   Exercises the restricted-window settings path (typed commands + main-window bridge) under the real capability ACL,
   which vitest can't reproduce. Polls the instance's `settings.json` (requires `CMDR_DATA_DIR`) so the reopen never
   races the 500 ms save debounce.
-- **`viewer-wordwrap-scroll.spec.ts`**: 1 test: with word wrap on, scrolling to the bottom of a short-first-line file
-  shows the last line. Regression pin for the height-map wrap width: measuring the first `.line-text` span
-  (shrink-wrapped, ~44px for "# Cmdr") once inflated the scroll height ~7x and made the end of the file unreachable
-  blank space.
+- **`viewer-wordwrap-scroll.spec.ts`**: 2 tests. (1) With word wrap on, scrolling to the bottom of a short-first-line
+  file shows the last line: regression pin for the height-map wrap width (measuring the first `.line-text` span,
+  shrink-wrapped to ~44px for "# Cmdr", once inflated the scroll height ~7x and made the end of the file unreachable
+  blank space). (2) A control-byte binary file with variable wrapped heights scrolls without drift (mid-file content
+  fills the viewport, last line reachable): guards the DOM-measured height map and its flex-row probe replication.
 - **`mtp.spec.ts`**: MTP E2E tests: volume selection, navigation, file ops, large file transfer via virtual device. Uses
   `e2e-shared/mcp-client.ts` (MCP client helper) and `e2e-shared/mtp-fixtures.ts` (MTP fixtures). Requires `virtual-mtp`
   feature.

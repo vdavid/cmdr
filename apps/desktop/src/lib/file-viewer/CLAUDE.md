@@ -34,8 +34,8 @@ also silences the unrendered ones, which then show raw bytes with no nudge.
 
 ## Architecture (summary)
 
-- **Virtual scrolling**: only visible lines rendered. Fixed 18px line height; per-line pretext heights when wrap is on
-  (FullLoad), averaged heights otherwise.
+- **Virtual scrolling**: only visible lines rendered. Fixed 18px line height; per-line DOM-measured heights when wrap is
+  on (FullLoad), averaged heights otherwise.
 - **Session-based**: `viewer_open` returns a session ID passed to all operations; `viewer_close` frees resources.
 - **Three backends, chosen by Rust on file size**: FullLoad (<1MB, in RAM), ByteSeek (instant, no pre-scan, byte-offset
   seeks, approximate line numbers), LineIndex (after a background scan, exact line seeks). ByteSeek scrolls by byte

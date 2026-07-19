@@ -5,8 +5,8 @@ invariants and gotchas live in [CLAUDE.md](CLAUDE.md).
 
 The file viewer opens files in a separate Tauri window with virtual scrolling and text search. Backend counterpart:
 [`apps/desktop/src-tauri/src/file_viewer/CLAUDE.md`](../../../src-tauri/src/file_viewer/CLAUDE.md) for the three backend
-strategies (chunked, full-load, pretext), session orchestration, and background search. Reusable FE primitives live at
-[`src/lib/file-viewer/CLAUDE.md`](../../lib/file-viewer/CLAUDE.md).
+strategies (`FullLoad`, `ByteSeek`, `LineIndex`), session orchestration, and background search. Reusable FE primitives
+live at [`src/lib/file-viewer/CLAUDE.md`](../../lib/file-viewer/CLAUDE.md).
 
 ## Module map
 
@@ -14,8 +14,8 @@ Per-file inventory for the route. Locate symbols via `codegraph_search`; this is
 
 - **`+page.svelte`**: top-level component (lifecycle, window management, UI).
 - Composables: **`viewer-scroll`** (virtual scroll), **`viewer-search`** (start/poll/cancel/navigate, regex projection),
-  **`viewer-line-heights`** (word-wrap height map via pretext, FullLoad only), **`viewer-text-width`** (`ResizeObserver`
-  width tracker), **`viewer-tail`** (`viewer:file-changed:<sid>` → reload toasts).
+  **`viewer-line-heights`** (word-wrap height map via DOM measurement, FullLoad only), **`viewer-text-width`**
+  (`ResizeObserver` width tracker), **`viewer-tail`** (`viewer:file-changed:<sid>` → reload toasts).
 - **`viewer-indexing-poll.ts`**: `viewer_get_status` poll during line-index build.
 - **`viewer-keyboard.ts`**: pure key helpers + `createViewerKeyboard`, the keydown router (modifiers, Escape ladder, ⌘A,
   bare-key dispatch).
@@ -71,24 +71,36 @@ source for the origin form). `openViewerSession` hands the result to `media.setF
 
 ### Variable-height word wrap (progressive enhancement)
 
-`viewer-line-heights.svelte.ts` uses `@chenglou/pretext` to compute per-line wrapped heights for FullLoad files (<1MB).
-It runs `prepare()` asynchronously via `requestIdleCallback` after first render, then builds a prefix-sum array for O(1)
-`getLineTop(n)` and O(log n) `getLineAtPosition(y)`. While preparation runs (or for ByteSeek/LineIndex files), the
-viewer falls back to the existing averaged-height approach with zero regression.
+`viewer-line-heights.svelte.ts` measures per-line wrapped heights for FullLoad files (<1MB) by laying every line out in
+a hidden offscreen probe styled exactly like `.word-wrap .line-text` (`measureLineHeightsViaDom`) and reading each
+`getBoundingClientRect().height`. It runs once, deferred via `requestIdleCallback` after first render, then builds a
+prefix-sum array for O(1) `getLineTop(n)` and O(log n) `getLineAtPosition(y)`. While the measure pass runs (or for
+ByteSeek/LineIndex files), the viewer falls back to the averaged-height approach with zero regression.
 
-**Extending exact wrap to ByteSeek/LineIndex (multi-MB) is unsolved, and the obvious fix is a trap.** Counting chars per
-line in Rust and dividing by column width (`ceil(chars * charWidth / availWidth)`) does NOT give the wrapped row count:
-the viewer wraps at word boundaries (`overflow-wrap: break-word` on `.line-text`), so the ragged right edge pushes
-content into rows the division never predicts — shipping it would regress the FullLoad path pretext gets right. It's a
-pick-two-of-three (exact word wrap / a compact per-line scalar / instant local resize reflow); word-boundary wrapping
-can't be reconstructed from a per-line count, so you can't have all three. Computing the wrap in Rust (exact + compact,
-reflow needs an IPC recompute) is the most promising path. This breadcrumb replaces a deleted speculative plan.
+**Why DOM measurement, not a canvas predictor.** WebKit's own layout is the source of truth for what the viewer renders.
+A `measureText`/canvas predictor (this used `@chenglou/pretext`) can't match it for arbitrary bytes: control,
+zero-width, combining, and undefined-glyph characters get advances from the font metrics that diverge from what WebKit
+paints, so predicted wrap row counts drift. Measured on a 400 KB binary file, pretext over-counted by ~10 px/line (~18%,
+verified 2026-07-19 by reading the live height map vs real `.line` rects across lines 0–338), accumulating to ~16,000 px
+(~26 screens) of drift by line ~1,600: the classic "lines vanish and drift as you scroll" bug. Measuring observes the
+wrap instead of predicting it, so it's correct for binary, emoji, CJK, RTL, and ligatures alike. Cost is a one-time
+offscreen layout+read: ~70 ms for ~2.3k lines (measured 2026-07-19), off the critical path in an idle callback. The
+`measure` and `schedule` functions are injectable so `viewer-line-heights.svelte.test.ts` unit-tests the prefix-sum and
+positioning math without a real layout engine; the DOM measurer itself is covered by `viewer-wordwrap-scroll.spec.ts`.
 
-**Integration flow:** The scroll composable creates the height map and exposes `runHeightMapInitEffect` (triggers
-preparation when word wrap + lines + textWidth are available) and `runHeightMapReflowEffect` (re-layouts on width change
-with synchronous scroll compensation). The page component wires these as `$effect`s and tracks `textWidth` via a
-`ResizeObserver` on `.file-content`. The search composable uses `getLineTop(n)` instead of `n * scrollLineHeight` for
-scroll-to-match positioning.
+**Extending exact wrap to ByteSeek/LineIndex (multi-MB) is unsolved.** We can't measure every line for a file we never
+fully load into the DOM, and computing wrap in Rust from a per-line char count is a trap: `overflow-wrap: break-word`
+wrapping can't be reconstructed from a scalar (the ragged right edge pushes content into rows a `ceil(chars/width)`
+division never predicts). The forward path is measure-on-render (estimate unseen lines, patch the prefix-sum and
+compensate `scrollTop` as each line renders), which also generalizes the averaged fallback. Not built yet: those paths
+keep the averaged-height approximation.
+
+**Integration flow:** The scroll composable creates the height map and exposes `runHeightMapInitEffect` (triggers the
+measure pass when word wrap + lines + textWidth are available) and `runHeightMapReflowEffect` (re-measures on width
+change, debounced to the resize-settle by `REFLOW_DEBOUNCE_MS` since a full re-measure is ~70 ms, then preserves the
+scroll fraction against the container's real `scrollHeight`). The page component wires these as `$effect`s and tracks
+`textWidth` via a `ResizeObserver` on `.file-content`. The search composable uses `getLineTop(n)` instead of
+`n * scrollLineHeight` for scroll-to-match positioning.
 
 **Key invariant:** `heightMap.ready` gates all height-map paths. When false, every calculation falls through to the
 existing uniform-height code. The `scrollScale` (for MAX_SCROLL_HEIGHT compression) multiplies height map values at the
@@ -243,19 +255,26 @@ glyphs (the a11y labels and tooltips carry the real copy). The runtime works in 
 - `getLineHeight()` (returns `18px × effective scale`) and the CSS rule
   `.line { height: calc(18px * var(--font-scale)) }` in `+page.svelte` must stay paired. Both read the same scale: the
   JS function for virtualization math, the CSS rule for layout. If you change the 18 base, change both.
-- `runHeightMapInitEffect` guards with `if (heightMap.ready) return` to avoid re-preparing when only `textWidth`
-  changes. Width-only changes are handled by `runHeightMapReflowEffect` via `reflow()` (instant) instead of re-running
-  the async `prepareLines` pipeline. Without this guard, both effects would race on width changes.
+- `runHeightMapInitEffect` guards with `if (heightMap.ready) return` to avoid re-measuring when only `textWidth`
+  changes. Width-only changes are handled by `runHeightMapReflowEffect` via `reflow()` instead of re-running the
+  `prepareLines` pipeline. Without this guard, both effects would race on width changes.
 - **The height map's wrap width comes from the row geometry, never from a `.line-text` span.**
   `viewer-text-width.svelte.ts` computes it as the scroll container's `clientWidth` minus the `.line` padding and the
-  gutter (`.line-number` width + margin). `.line-text` is a flex item with no `flex-grow`, so it shrink-wraps to its own
-  content: measuring it on a file whose first line is short ("# Cmdr", ~44px) once fed a 44px wrap width to pretext,
-  inflating the height map ~7x (blank space below ~line 60, end of the file unreachable). The `.line` row is no better:
-  in no-wrap mode the `.lines-container` is `max-content`, so the row is as wide as the widest line. Pinned by
-  `viewer-text-width.svelte.test.ts` and `viewer-wordwrap-scroll.spec.ts` (E2E).
-- **Pretext reports height 0 for empty lines; `buildPrefixSum` clamps each line to `getLineHeight()`.** The DOM renders
-  every `.line` row at least one line tall (the gutter number keeps the row open), so without the clamp the height map
-  under-counts by one row per empty line and the scroll mapping drifts on files with many blank lines.
+  gutter (`.line-number` width + margin), and the offscreen measurer wraps at exactly that width. `.line-text` is a flex
+  item with no `flex-grow`, so it shrink-wraps to its own content: measuring it on a file whose first line is short ("#
+  Cmdr", ~44px) once fed a 44px wrap width to the height map, inflating it ~7x (blank space below ~line 60, end of the
+  file unreachable). The `.line` row is no better: in no-wrap mode the `.lines-container` is `max-content`, so the row
+  is as wide as the widest line. Pinned by `viewer-text-width.svelte.test.ts` and `viewer-wordwrap-scroll.spec.ts`
+  (E2E).
+- **An empty line measures 0 px; `buildPrefixSum` clamps each line to `getLineHeight()`.** The DOM renders every `.line`
+  row at least one line tall (the gutter number keeps the row open), so without the clamp the height map under-counts by
+  one row per empty line and the scroll mapping drifts on files with many blank lines.
+- **The offscreen measurer wraps each line inside a `display:flex` row, mirroring `.line`, NOT a plain block.** A flex
+  item's `min-width:auto` makes `overflow-wrap:break-word` ineffective on an unbreakable run (no break opportunities,
+  e.g. `WWWW…`): the real viewer renders such a run on one overflowing row, so its height is one line. A plain-block
+  probe breaks that run to fit and over-counts the height, drifting the scroll exactly like the predictor bug this
+  replaced. Don't "simplify" the probe to a bare `<div>`. Pinned by the no-space-run line in
+  `viewer-wordwrap-scroll.spec.ts` (E2E).
 - `closeWindow()`'s `setTimeout(() => …, 0)` before `currentWindow.close()` is load-bearing — not decoration. Calling
   `close()` synchronously from inside a webview event handler runs webkit2gtk's destruction on the same GTK main-loop
   tick, stalling other webviews' IPC for an undefined duration. The settings page (`routes/settings/+page.svelte`'s

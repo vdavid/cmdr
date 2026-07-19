@@ -1,27 +1,12 @@
-import type { PreparedText } from '@chenglou/pretext'
 import { getAppLogger } from '$lib/logging/logger'
 import { getEffectiveScale } from '$lib/text-size.svelte'
 import { pluralize } from '$lib/utils/pluralize'
 
 const log = getAppLogger('viewer')
 
-// Dynamic import so a missing/broken dependency doesn't crash the entire viewer module.
-// The viewer works fine without pretext (falls back to averaged heights).
-let pretextModule: typeof import('@chenglou/pretext') | null = null
-const pretextReady = import('@chenglou/pretext')
-  .then((m) => {
-    pretextModule = m
-    log.info('pretext library loaded')
-  })
-  .catch((e: unknown) => {
-    log.error('Failed to load pretext library, falling back to averaged heights: {error}', {
-      error: String(e),
-    })
-  })
-
 /**
  * Base viewer line height at scale 1, in CSS pixels. The CSS rule
- * `.line { height: calc(18px * var(--text-scale, 1)) }` and `getLineHeight()`
+ * `.line { height: calc(18px * var(--font-scale)) }` and `getLineHeight()`
  * (below) are paired. Keep them in sync if you change the base.
  */
 const LINE_HEIGHT_BASE = 18
@@ -38,124 +23,133 @@ export function getLineHeight(): number {
 }
 
 const MAX_LINES = 50_000
-const PREPARE_TIMEOUT_MS = 2_000
 
 // WebKit in Tauri doesn't have requestIdleCallback. Fall back to setTimeout.
-const scheduleIdle: (cb: IdleRequestCallback) => number =
+const scheduleIdle: (cb: () => void) => void =
   typeof requestIdleCallback === 'function'
-    ? requestIdleCallback
-    : (cb) =>
-        setTimeout(() => {
-          cb({ didTimeout: false, timeRemaining: () => 10 })
-        }, 1) as unknown as number
-const FONT_VALIDATION_TEST_STRING = 'ABCDabcd1234!@#$%^&*()_+-=[]{}|;:,./<>?'
-const FONT_VALIDATION_TOLERANCE_PX = 1
+    ? (cb) => {
+        requestIdleCallback(() => {
+          cb()
+        })
+      }
+    : (cb) => {
+        setTimeout(cb, 1)
+      }
 
 /**
- * Resolves the actual font string from the viewer's CSS custom properties.
- * Creates a hidden probe element styled like viewer lines, reads getComputedStyle().font,
- * then validates that canvas measureText agrees with DOM measurement.
- * Returns the font string on success, or null if validation fails.
+ * Measures the rendered pixel height of each line when wrapped at `maxWidth`.
+ * Returns one raw height per line (0 for an empty line is fine; the map clamps
+ * to the minimum row height). `maxWidth` is the text column width: the scroll
+ * container minus the gutter and row padding (see `viewer-text-width.svelte.ts`).
  */
-function resolveAndValidateFont(): string | null {
-  const probe = document.createElement('span')
-  probe.style.fontFamily = 'var(--font-mono)'
-  probe.style.fontSize = 'var(--font-size-sm)'
-  probe.style.lineHeight = '1.5'
-  probe.style.position = 'absolute'
-  probe.style.visibility = 'hidden'
-  probe.style.whiteSpace = 'pre'
-  document.body.appendChild(probe)
+export type LineHeightMeasurer = (lines: string[], maxWidth: number) => Float64Array
 
-  const computedFont = getComputedStyle(probe).font
+/**
+ * DOM-truth measurer: lays every line out in a hidden probe that mirrors the
+ * real `.line` (a `display:flex` row with a `.line-text` flex item) and reads
+ * the wrapped height. This is the source of truth because WebKit's own layout is
+ * what the viewer renders (see the flex note on the row loop). A canvas /
+ * `measureText` predictor (e.g. pretext) can't match it for arbitrary bytes:
+ * control, zero-width, combining, and undefined-glyph characters get advances
+ * from the font metrics that diverge from what WebKit paints, so predicted wrap
+ * row counts drift and the virtual-scroll positions rot (blank gaps, vanishing
+ * lines). Measuring observes the wrap instead of predicting it, so it's correct
+ * for binary, emoji, CJK, RTL, and ligatures alike.
+ *
+ * One offscreen layout + read for the whole file (~70 ms for ~2.3k lines);
+ * deferred to an idle callback so it never blocks first paint.
+ */
+function measureLineHeightsViaDom(lines: string[], maxWidth: number): Float64Array {
+  const n = lines.length
+  const heights = new Float64Array(n)
+  if (typeof document === 'undefined' || n === 0) return heights
 
-  // Validate: canvas measureText vs DOM width for a test string
-  probe.textContent = FONT_VALIDATION_TEST_STRING
-  const domWidth = probe.getBoundingClientRect().width
+  const host = document.createElement('div')
+  host.setAttribute('aria-hidden', 'true')
+  host.style.cssText = `position:absolute;left:-99999px;top:0;visibility:hidden;contain:layout style;width:${String(maxWidth)}px;`
 
-  document.body.removeChild(probe)
+  // Each row mirrors the real `.line` EXACTLY: a `display:flex` row (the text
+  // column width) with the `.line-text` as a flex item. This matters because a
+  // flex item's `min-width:auto` makes `overflow-wrap:break-word` ineffective on
+  // an unbreakable run (no spaces): the real viewer renders such a run on one
+  // row, overflowing, NOT wrapped. A plain-block probe would wrap it and
+  // over-count the height, drifting the scroll. Replicating the flex context
+  // makes the probe wrap identically to what's on screen.
+  const rows: HTMLDivElement[] = new Array<HTMLDivElement>(n)
+  const frag = document.createDocumentFragment()
+  for (let i = 0; i < n; i++) {
+    const row = document.createElement('div')
+    row.style.cssText = 'display:flex'
+    const text = document.createElement('div')
+    text.style.cssText =
+      'font-family:var(--font-mono);font-size:var(--font-size-sm);line-height:1.5;white-space:pre-wrap;overflow-wrap:break-word;'
+    text.textContent = lines[i]
+    row.appendChild(text)
+    rows[i] = row
+    frag.appendChild(row)
+  }
+  host.appendChild(frag)
+  document.body.appendChild(host)
 
-  if (!computedFont) {
-    log.warn('Font resolution failed: getComputedStyle().font returned empty')
-    return null
+  // First read forces one layout pass; the rest are cheap reads off it.
+  for (let i = 0; i < n; i++) {
+    heights[i] = rows[i].getBoundingClientRect().height
   }
 
-  const canvas = document.createElement('canvas')
-  const ctx = canvas.getContext('2d')
-  if (!ctx) {
-    log.warn('Font validation failed: could not create canvas 2d context')
-    return null
-  }
-  ctx.font = computedFont
-  const canvasWidth = ctx.measureText(FONT_VALIDATION_TEST_STRING).width
-
-  const drift = Math.abs(canvasWidth - domWidth)
-  if (drift > FONT_VALIDATION_TOLERANCE_PX) {
-    log.warn(
-      'Font validation failed: canvas width ({canvasWidth}) differs from DOM width ({domWidth}) by {drift}px for font "{font}"',
-      {
-        canvasWidth: canvasWidth.toFixed(2),
-        domWidth: domWidth.toFixed(2),
-        drift: drift.toFixed(2),
-        font: computedFont,
-      },
-    )
-    return null
-  }
-
-  log.debug('Font resolved and validated: "{font}" (drift {drift}px)', {
-    font: computedFont,
-    drift: drift.toFixed(3),
-  })
-
-  return computedFont
+  document.body.removeChild(host)
+  return heights
 }
 
-export function createLineHeightMap() {
+interface LineHeightMapOptions {
+  /** Height source. Defaults to the DOM measurer; tests inject a deterministic one. */
+  measure?: LineHeightMeasurer
+  /** Defers the (blocking) measure pass. Defaults to an idle callback; tests run it now. */
+  schedule?: (cb: () => void) => void
+}
+
+export function createLineHeightMap(options: LineHeightMapOptions = {}) {
+  const measure = options.measure ?? measureLineHeightsViaDom
+  const schedule = options.schedule ?? scheduleIdle
+
   let ready = $state(false)
   // Bumped every time the prefix-sum is rebuilt (by buildPrefixSum or reset).
   // Read by getters so Svelte's $derived expressions track changes to the underlying data.
-
   let version = $state(0)
   let generation = 0
-  let preparedTexts: PreparedText[] = []
+  let currentLines: string[] = []
   let cumHeight: Float64Array = new Float64Array(0)
-  let currentFont: string | null = null
   let currentMaxWidth = 0
-  let currentLayoutFn: typeof import('@chenglou/pretext').layout | null = null
 
   function reset() {
     ready = false
     // No version++ here: when ready is false, getters return 0 regardless.
     // Bumping version from inside cancel() (called by effects) would create
-    // an infinite reactive loop: effect → cancel → version++ → $derived dirty → effect.
-    preparedTexts = []
+    // an infinite reactive loop: effect -> cancel -> version++ -> $derived dirty -> effect.
+    currentLines = []
     cumHeight = new Float64Array(0)
-    currentFont = null
     currentMaxWidth = 0
-    currentLayoutFn = null
   }
 
   /**
-   * Builds the prefix-sum array from prepared texts at the given width.
+   * Measures every line at `maxWidth` and builds the prefix-sum array, where
    * cumHeight[i] = sum of heights for lines 0..i-1, so:
    * - cumHeight[0] = 0
    * - cumHeight[n] = total height through line n-1
    * - cumHeight[lines.length] = total height
+   *
+   * Each line is clamped to at least one row: the DOM renders every `.line` at
+   * least one line tall (the gutter number keeps the row open) even when the
+   * text is empty, so the prefix sum must match what's on screen.
    */
   function buildPrefixSum(maxWidth: number) {
-    if (!currentLayoutFn) return
-    const n = preparedTexts.length
+    const heights = measure(currentLines, maxWidth)
+    const n = currentLines.length
     const sums = new Float64Array(n + 1)
     const minHeight = getLineHeight()
     let acc = 0
     for (let i = 0; i < n; i++) {
       sums[i] = acc
-      const result = currentLayoutFn(preparedTexts[i], maxWidth, minHeight)
-      // Pretext reports height 0 for empty lines, but the DOM renders every
-      // `.line` row at least one line tall (the gutter number keeps the row
-      // open). Clamp so the prefix sum matches what's actually on screen.
-      acc += Math.max(result.height, minHeight)
+      acc += Math.max(heights[i], minHeight)
     }
     sums[n] = acc
     cumHeight = sums
@@ -201,30 +195,29 @@ export function createLineHeightMap() {
   }
 
   /**
-   * Re-runs layout() on all prepared texts with a new width and rebuilds the
-   * prefix-sum. This is fast (~0.0002ms per line) because prepare() data is cached.
+   * Re-measures all lines at a new width and rebuilds the prefix-sum. The caller
+   * debounces this to the resize-settle: a full DOM re-measure is ~70 ms, too
+   * slow to run on every ResizeObserver frame during a live drag.
    */
   function reflow(newWidth: number) {
-    if (!ready || preparedTexts.length === 0) return
+    if (!ready || currentLines.length === 0) return
     if (newWidth === currentMaxWidth) return
     buildPrefixSum(newWidth)
   }
 
   /**
-   * Force a re-layout at the current width, used when the line height itself
+   * Force a re-measure at the current width, used when the line height itself
    * changed (e.g. text-size slider settled) but the container width hasn't.
-   * Pretext layout returns line heights, which scale with `getLineHeight()`,
-   * so the prefix sum needs rebuilding.
+   * Row heights scale with the font, so the prefix sum needs rebuilding.
    */
   function recomputeForLineHeightChange() {
-    if (!ready || preparedTexts.length === 0) return
+    if (!ready || currentLines.length === 0) return
     buildPrefixSum(currentMaxWidth)
   }
 
   /**
-   * Asynchronously prepares all lines via requestIdleCallback.
-   * Uses a generation counter to discard stale preparations.
-   * Waits for the pretext dynamic import before starting work.
+   * Schedules an idle measure pass for all lines and flips `ready` when done.
+   * A generation counter discards a preparation that a newer one superseded.
    */
   function prepareLines(lines: string[], maxWidth: number) {
     generation++
@@ -241,63 +234,18 @@ export function createLineHeightMap() {
       return
     }
 
-    // Wait for pretext to load, then start preparation
-    void pretextReady.then(() => {
-      if (thisGeneration !== generation) return // stale
-      if (!pretextModule) return // pretext failed to load
-
-      const { prepare, layout: layoutFn } = pretextModule
-
-      const resolvedFont = resolveAndValidateFont()
-      if (!resolvedFont) return
-
-      const font: string = resolvedFont
-      currentFont = font
-      // Stash layoutFn for reflow
-      currentLayoutFn = layoutFn
-      const prepared: PreparedText[] = new Array<PreparedText>(lines.length)
-      let index = 0
+    schedule(() => {
+      if (thisGeneration !== generation) return // superseded
       const startTime = performance.now()
-
-      function processBatch(deadline: IdleDeadline) {
-        if (thisGeneration !== generation) return // stale
-
-        while (index < lines.length) {
-          if (performance.now() - startTime > PREPARE_TIMEOUT_MS) {
-            log.warn('Line height preparation timed out after {ms}ms at line {index}/{total}', {
-              ms: PREPARE_TIMEOUT_MS,
-              index,
-              total: lines.length,
-            })
-            return // abandon: ready stays false
-          }
-
-          prepared[index] = prepare(lines[index], font, { whiteSpace: 'pre-wrap' })
-          index++
-
-          // Yield back to the browser if we've used up the idle time
-          if (deadline.timeRemaining() < 1) {
-            scheduleIdle(processBatch)
-            return
-          }
-        }
-
-        // All lines prepared: check generation is still current
-        if (thisGeneration !== generation) return
-
-        preparedTexts = prepared
-        buildPrefixSum(maxWidth)
-        ready = true
-
-        log.info('Line height map ready: {count} {linesNoun}, total height {height}px, prepared in {ms}ms', {
-          count: lines.length,
-          linesNoun: pluralize(lines.length, 'line'),
-          height: getTotalHeight().toFixed(0),
-          ms: (performance.now() - startTime).toFixed(1),
-        })
-      }
-
-      scheduleIdle(processBatch)
+      currentLines = lines
+      buildPrefixSum(maxWidth)
+      ready = true
+      log.info('Line height map ready: {count} {linesNoun}, total height {height}px, measured in {ms}ms', {
+        count: lines.length,
+        linesNoun: pluralize(lines.length, 'line'),
+        height: getTotalHeight().toFixed(0),
+        ms: (performance.now() - startTime).toFixed(1),
+      })
     })
   }
 
@@ -310,9 +258,6 @@ export function createLineHeightMap() {
   return {
     get ready() {
       return ready
-    },
-    get font() {
-      return currentFont
     },
     getLineTop,
     getLineAtPosition,

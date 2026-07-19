@@ -21,15 +21,17 @@ Depth and rationale for the frontend file viewer. `CLAUDE.md` holds the must-kno
   while it's recalculating content insets. A single `requestAnimationFrame` isn't enough: the current frame must
   complete AND the next start. This also means you must NOT call `setFocus()` on another window before closing, as that
   can trigger the dying window to recalculate.
-- **FullLoad files use `@chenglou/pretext` for per-line height calculation when word wrap is on.** Pretext runs
-  `prepare()` on each line's text using canvas font metrics, then `layout()` computes wrapped height without rendering
-  to the DOM. A prefix-sum array (`Float64Array`) gives O(1) `getLineTop(n)` and O(log n) `getLineAtPosition(y)`.
-  Preparation runs async via `requestIdleCallback` (with a 2s timeout and 50k line cap). While it runs, the viewer falls
-  back to averaged heights, so there's zero regression. Width changes call `reflow()` (re-runs `layout()` only,
-  ~0.0002ms/line) instead of re-preparing. A generation counter discards stale preparations.
-- **Word wrap uses averaged line height as fallback for ByteSeek/LineIndex files and while pretext prepares.** Measuring
-  every wrapped line would require rendering the whole file. Instead, the viewer measures the average height of
-  currently-visible lines and uses that for the scroll spacer. This is slightly inaccurate (scroll thumb drifts) but
+- **FullLoad files measure per-line wrapped heights from the real DOM when word wrap is on** (not a canvas predictor).
+  `measureLineHeightsViaDom` lays every line out in a hidden probe styled like `.word-wrap .line-text` and reads each
+  `getBoundingClientRect().height`; a prefix-sum array (`Float64Array`) gives O(1) `getLineTop(n)` and O(log n)
+  `getLineAtPosition(y)`. The measure pass runs once, deferred via `requestIdleCallback` (50k line cap), ~70 ms for
+  ~2.3k lines. While it runs, the viewer falls back to averaged heights, so there's zero regression. A width change
+  re-measures via `reflow()`, debounced to the resize-settle. A generation counter discards superseded passes. Canvas
+  `measureText` (`@chenglou/pretext`) was tried and drifts badly on binary/control-char content because its advances
+  diverge from WebKit's layout; see the viewer route `DETAILS.md` § "Variable-height word wrap".
+- **Word wrap uses averaged line height as fallback for ByteSeek/LineIndex files and while the measure pass runs.**
+  Measuring every wrapped line would require rendering the whole file. Instead, the viewer measures the average height
+  of currently-visible lines and uses that for the scroll spacer. This is slightly inaccurate (scroll thumb drifts) but
   keeps the O(1) virtual-scroll contract. The measurement effect depends on `scrollTop` rather than `visibleLines` to
   avoid a feedback loop: `visibleLines -> measure -> avgHeight -> effectiveLineHeight -> visibleLines`.
 - **Proportional scroll compensation when `effectiveLineHeight` changes.** Toggling word wrap or updating the averaged
