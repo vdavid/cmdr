@@ -3,26 +3,70 @@
 
 use super::*;
 
+/// Backoff between `IndexStore::open` retries after transient lock contention, in
+/// milliseconds; its length is the retry budget (so three attempts in total).
+///
+/// Deliberately short: `busy_timeout` (5 s, `apply_pragmas`) already absorbs
+/// ordinary contention inside SQLite, so reaching this array means a writer held
+/// the lock through a whole busy-handler window (a long checkpoint, another
+/// process). These retries are the second line of defense before we hand the
+/// caller an error, and they cap the added launch latency at 400 ms.
+const OPEN_RETRY_BACKOFF_MS: [u64; 2] = [100, 300];
+
 impl IndexStore {
     /// Open (or create) the index database at `db_path`.
     ///
     /// Registers the `platform_case` collation, runs WAL pragmas, creates tables
-    /// if missing, and checks the schema version. On a schema-version mismatch
-    /// (a clean upgrade) or corruption (an unexpected failure) the DB file is
-    /// deleted and recreated fresh, reclaiming disk with zero freelist.
+    /// if missing, and checks the schema version.
+    ///
+    /// Failures are classified by typed SQLite code, because deleting is the
+    /// destructive branch and needs proof:
+    /// - A schema-version mismatch (a clean upgrade) or proven corruption deletes
+    ///   the file and recreates it fresh, reclaiming disk with zero freelist.
+    /// - Transient lock contention retries with a short backoff, then gives up and
+    ///   returns the error. A busy DB is a healthy DB.
+    /// - Anything else (a full or read-only volume, a momentary I/O error, an
+    ///   unrecognized code) returns the error with the file untouched. A real index
+    ///   holds millions of entries and costs tens of minutes to rebuild, so the
+    ///   caller reporting a failure always beats silently discarding a good index.
     pub fn open(db_path: &Path) -> Result<Self, IndexStoreError> {
-        match Self::try_open(db_path) {
-            Ok(store) => Ok(store),
-            // A schema bump is an expected, clean upgrade, not a failure. Recreate
-            // the file fresh (the disposable cache has no migrations) and log it as
-            // an upgrade so it reads distinctly from the corruption path below.
-            Err(IndexStoreError::SchemaMismatch { found, expected }) => {
-                log::info!("Index DB schema version changed (found {found}, expected {expected}), recreating index DB");
-                Self::delete_and_recreate(db_path)
-            }
-            Err(e) => {
-                log::warn!("Index DB open failed ({e}), deleting and recreating");
-                Self::delete_and_recreate(db_path)
+        let mut attempt = 0usize;
+        loop {
+            match Self::try_open(db_path) {
+                Ok(store) => return Ok(store),
+                // A schema bump is an expected, clean upgrade, not a failure. Recreate
+                // the file fresh (the disposable cache has no migrations) and log it as
+                // an upgrade so it reads distinctly from the corruption path below.
+                Err(IndexStoreError::SchemaMismatch { found, expected }) => {
+                    log::info!(
+                        "Index DB schema version changed (found {found}, expected {expected}), recreating index DB"
+                    );
+                    return Self::delete_and_recreate(db_path);
+                }
+                Err(e) if e.indicates_corruption() => {
+                    log::warn!(
+                        "Index DB at {} is corrupt ({e}), deleting and recreating",
+                        db_path.display()
+                    );
+                    return Self::delete_and_recreate(db_path);
+                }
+                Err(e) if e.is_transient_lock_error() && attempt < OPEN_RETRY_BACKOFF_MS.len() => {
+                    let backoff = OPEN_RETRY_BACKOFF_MS[attempt];
+                    attempt += 1;
+                    log::warn!(
+                        "Index DB at {} is locked ({e}), retrying in {backoff} ms (attempt {attempt} of {})",
+                        db_path.display(),
+                        OPEN_RETRY_BACKOFF_MS.len()
+                    );
+                    std::thread::sleep(std::time::Duration::from_millis(backoff));
+                }
+                Err(e) => {
+                    log::warn!(
+                        "Index DB at {} failed to open ({e}); keeping the file (only corruption is thrown away)",
+                        db_path.display()
+                    );
+                    return Err(e);
+                }
             }
         }
     }

@@ -15,9 +15,12 @@ factories), `entries.rs` (entry-tree CRUD), `dir_stats.rs`, `meta.rs`; tests in 
   insert with `INSERT OR IGNORE`, never `INSERT OR REPLACE`.** The UNIQUE constraint is the safety net against two
   writers double-inserting a row (observed once as a 1.83 TB ghost size); `OR REPLACE` would reassign integer IDs and
   orphan children; `name_folded` is the pre-folded key that keeps the composite index binary-collated and fast.
-- **The index is a disposable cache**: a schema-version mismatch or corruption deletes the DB file and recreates it fresh
-  (`delete_and_recreate`) — reclaims disk with no freelist, no online migrations. Bump `SCHEMA_VERSION` (in `mod.rs`) for
-  any schema change; there's no migration path by design.
+- **The index is a disposable cache, but only PROVEN garbage is thrown away.** A schema-version mismatch or corruption
+  (`indicates_corruption()`: `SQLITE_CORRUPT*` / `SQLITE_NOTADB`) deletes the DB file and recreates it fresh
+  (`delete_and_recreate`), reclaiming disk with no freelist; no online migrations. Every OTHER `open` failure keeps the
+  file: `SQLITE_BUSY` / `LOCKED` retry with backoff, and anything else (full disk, read-only volume, `IOERR`, unknown
+  code) returns an error. Never widen `indicates_corruption()`; rebuilding a real index costs tens of minutes. Bump
+  `SCHEMA_VERSION` (in `mod.rs`) for any schema change; there's no migration path by design.
 
 The schema columns and the honest-sizes epoch model that shares them (`listed_epoch`, `min_subtree_epoch`,
 `current_epoch`), plus the module structure: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here:

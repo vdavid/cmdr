@@ -680,6 +680,90 @@ fn corruption_recovery_deletes_and_recreates() {
     assert_eq!(status.schema_version.as_deref(), Some(SCHEMA_VERSION));
 }
 
+/// A DB that's momentarily locked by another connection must NEVER be deleted:
+/// `open` retries and recovers the existing index. A real 6.9M-entry index costs
+/// tens of minutes to rebuild, so losing one to a checkpoint-length write lock is
+/// the failure mode this guards.
+///
+/// The induction is honest: a second connection holds `BEGIN EXCLUSIVE` for longer
+/// than the 5 s `busy_timeout`, so the first `try_open` really does come back
+/// `SQLITE_BUSY`. That's why this test takes ~6 s.
+#[test]
+fn busy_db_is_retried_not_deleted() {
+    let dir = tempfile::tempdir().unwrap();
+    let db_path = dir.path().join("busy.db");
+
+    // Build an index worth keeping, and checkpoint it into the main DB file.
+    {
+        let store = IndexStore::open(&db_path).unwrap();
+        let conn = IndexStore::open_write_connection(store.db_path()).unwrap();
+        insert_entry(&conn, ROOT_ID, "precious.txt", false, Some(42));
+        conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE)").unwrap();
+    }
+
+    // Hold the write lock past `busy_timeout`, then release it.
+    let holder_path = db_path.clone();
+    let holder = std::thread::spawn(move || {
+        let conn = IndexStore::open_write_connection(&holder_path).expect("holder connection");
+        conn.execute_batch("BEGIN EXCLUSIVE").expect("hold the write lock");
+        std::thread::sleep(std::time::Duration::from_millis(5_500));
+        conn.execute_batch("COMMIT").expect("release the write lock");
+    });
+
+    let store = IndexStore::open(&db_path).expect("a contended open must recover, not fail");
+    let children = store.list_children(ROOT_ID).unwrap();
+    assert_eq!(
+        children.len(),
+        1,
+        "the existing index must survive transient contention, got {children:?}"
+    );
+
+    holder.join().expect("holder thread");
+}
+
+/// An index DB we can't write to (a read-only volume, a permissions mishap) must
+/// be left alone. Only corruption justifies throwing an index away; everything
+/// else fails loudly so the caller can report it and the data stays recoverable.
+#[cfg(unix)]
+#[test]
+fn unwritable_db_is_not_deleted_on_open_failure() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let dir = tempfile::tempdir().unwrap();
+    let db_path = dir.path().join("readonly.db");
+
+    {
+        let store = IndexStore::open(&db_path).unwrap();
+        let conn = IndexStore::open_write_connection(store.db_path()).unwrap();
+        insert_entry(&conn, ROOT_ID, "precious.txt", false, Some(42));
+        conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE)").unwrap();
+    }
+
+    std::fs::set_permissions(&db_path, std::fs::Permissions::from_mode(0o444)).unwrap();
+    // The open may still succeed when the test runs as root (mode bits don't
+    // apply); either way the entries must be there afterwards.
+    let _ = IndexStore::open(&db_path);
+
+    // SQLite mirrors the main file's mode onto any `-wal` / `-shm` it recreates,
+    // so restore all three before reopening.
+    for path in [
+        db_path.clone(),
+        db_path.with_extension("db-wal"),
+        db_path.with_extension("db-shm"),
+    ] {
+        if path.exists() {
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644)).unwrap();
+        }
+    }
+
+    let store = IndexStore::open(&db_path).expect("reopen after restoring permissions");
+    assert_eq!(
+        store.list_children(ROOT_ID).unwrap().len(),
+        1,
+        "a non-corruption open failure must not delete the index"
+    );
+}
+
 #[test]
 fn db_file_size_returns_nonzero() {
     let (store, _dir) = open_temp_store();
@@ -1777,11 +1861,53 @@ fn primary_key_conflicts_are_told_apart_from_name_conflicts() {
 }
 
 #[test]
+fn transient_lock_errors_are_retryable_and_never_delete() {
+    // The contention family: another connection (or process) holds the lock, or
+    // the WAL locking protocol needs another go. Retrying fixes all three, and
+    // deleting a good index over one is the data loss we refuse.
+    for code in [
+        rusqlite::ffi::SQLITE_BUSY,
+        rusqlite::ffi::SQLITE_LOCKED,
+        rusqlite::ffi::SQLITE_PROTOCOL,
+        rusqlite::ffi::SQLITE_BUSY_SNAPSHOT,
+    ] {
+        let err = sqlite_err(code);
+        assert!(err.is_transient_lock_error(), "result code {code} must be transient");
+        assert!(!err.indicates_corruption(), "result code {code} must not delete the DB");
+    }
+}
+
+#[test]
+fn only_corruption_codes_justify_deleting_the_index() {
+    // Deleting is the destructive branch, so it needs positive proof the file is
+    // unusable: the bytes aren't a DB, or the B-tree is broken.
+    assert!(sqlite_err(rusqlite::ffi::SQLITE_CORRUPT).indicates_corruption());
+    assert!(sqlite_err(rusqlite::ffi::SQLITE_NOTADB).indicates_corruption());
+    assert!(sqlite_err(rusqlite::ffi::SQLITE_CORRUPT_VTAB).indicates_corruption());
+
+    // The storage-death classes stop the index (`is_fatal_storage_error`) but are
+    // NOT proof of corruption: a full disk, a read-only volume, a dead mount, or a
+    // momentary I/O error all leave a perfectly good index on disk.
+    for code in [
+        rusqlite::ffi::SQLITE_IOERR,
+        rusqlite::ffi::SQLITE_FULL,
+        rusqlite::ffi::SQLITE_READONLY,
+        rusqlite::ffi::SQLITE_CANTOPEN,
+    ] {
+        let err = sqlite_err(code);
+        assert!(!err.indicates_corruption(), "result code {code} must not delete the DB");
+        assert!(!err.is_transient_lock_error(), "result code {code} isn't contention");
+    }
+}
+
+#[test]
 fn non_sqlite_errors_have_no_code_and_are_not_fatal() {
     let io = IndexStoreError::Io(std::io::Error::other("broken pipe"));
     assert!(io.sqlite_code().is_none());
     assert!(!io.is_fatal_storage_error());
     assert!(!io.is_primary_key_conflict());
+    assert!(!io.is_transient_lock_error());
+    assert!(!io.indicates_corruption());
     assert!(io.as_index_failure().is_none());
 }
 
@@ -1811,5 +1937,38 @@ fn write_connection_applies_wal_cadence_pragmas() {
     assert_eq!(
         journal_size_limit, 67_108_864,
         "journal_size_limit must cap the -wal file at 64 MiB, not the -1 (unlimited) default"
+    );
+}
+
+/// A savepoint-wrapped store call that FAILS must leave the connection in
+/// autocommit. `ROLLBACK TO <name>` undoes the work but leaves the savepoint —
+/// and the implicit transaction it opened — in place, so without a matching
+/// `RELEASE` one failed write parks the writer's connection in an open
+/// transaction holding the write lock: every other connection then sees
+/// `database is locked` forever, and the writer's own later writes never commit.
+#[test]
+fn a_failed_savepoint_call_leaves_the_connection_in_autocommit() {
+    let (store, _dir) = open_temp_store();
+    let conn = IndexStore::open_write_connection(store.db_path()).unwrap();
+    // Reject one specific `dir_stats` write with a real SQLite failure.
+    conn.execute_batch(
+        "CREATE TRIGGER reject_ds BEFORE INSERT ON dir_stats WHEN NEW.entry_id = 42
+         BEGIN SELECT RAISE(ABORT, 'nope'); END;",
+    )
+    .unwrap();
+
+    let stats = [DirStatsById {
+        entry_id: 42,
+        recursive_logical_size: 1,
+        recursive_physical_size: 1,
+        recursive_file_count: 1,
+        recursive_dir_count: 0,
+        recursive_has_symlinks: false,
+        min_subtree_epoch: 0,
+    }];
+    assert!(IndexStore::upsert_dir_stats_by_id(&conn, &stats).is_err());
+    assert!(
+        conn.is_autocommit(),
+        "a failed savepoint must not park the connection in an open transaction"
     );
 }

@@ -342,6 +342,40 @@ impl IndexStoreError {
         )
     }
 
+    /// Whether this is TRANSIENT lock contention: another connection (or another
+    /// process) held the lock, or the WAL locking protocol needs another attempt.
+    /// The DB itself is fine, so the only correct response is to back off and try
+    /// again, never to throw the index away. `IndexStore::open` retries on this.
+    pub fn is_transient_lock_error(&self) -> bool {
+        use rusqlite::ErrorCode::{DatabaseBusy, DatabaseLocked, FileLockingProtocolFailed};
+        matches!(
+            self.sqlite_code(),
+            Some((
+                DatabaseBusy        // SQLITE_BUSY
+                    | DatabaseLocked    // SQLITE_LOCKED
+                    | FileLockingProtocolFailed, // SQLITE_PROTOCOL
+                _
+            ))
+        )
+    }
+
+    /// Whether the file is positively PROVEN unusable: the bytes aren't a SQLite
+    /// database (`SQLITE_NOTADB`) or its B-tree is broken (`SQLITE_CORRUPT*`).
+    ///
+    /// This is the ONLY class that justifies `IndexStore::open` deleting the DB.
+    /// It's deliberately narrower than [`is_fatal_storage_error`]: a full disk, a
+    /// read-only volume, or a momentary `SQLITE_IOERR` also stop the index, but
+    /// they leave a perfectly good index on disk that a later launch can reuse, so
+    /// deleting on those would destroy a 6.9M-entry index (tens of minutes to
+    /// rebuild) over an environment problem. Anything unrecognized fails loudly
+    /// rather than deleting.
+    ///
+    /// [`is_fatal_storage_error`]: Self::is_fatal_storage_error
+    pub fn indicates_corruption(&self) -> bool {
+        use rusqlite::ErrorCode::{DatabaseCorrupt, NotADatabase};
+        matches!(self.sqlite_code(), Some((DatabaseCorrupt | NotADatabase, _)))
+    }
+
     /// Whether this is a PRIMARY KEY conflict on `entries.id`
     /// (`SQLITE_CONSTRAINT_PRIMARYKEY`, extended code 1555): the writer's shared
     /// ID counter fell behind the table's real `MAX(id)`, so the id it handed out
@@ -462,6 +496,22 @@ fn ensure_root_sentinel(conn: &Connection) -> Result<(), IndexStoreError> {
 
 /// Apply WAL-mode pragmas for performance.
 fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), IndexStoreError> {
+    // busy_timeout: when another connection holds the write lock, retry for up
+    // to 5s instead of returning SQLITE_BUSY immediately. Applies to every open
+    // (read and write) because even read-only connections in WAL mode touch the
+    // -shm file at startup and can briefly race a writer. Without this, the
+    // live event loop was dying on its initial open under transient contention,
+    // dropping the FSEvents receiver and silently stopping live index updates
+    // for the rest of the session.
+    //
+    // FIRST, before anything that takes a lock: `journal_mode = WAL` and the root
+    // sentinel insert both need one, and a busy handler that isn't installed yet
+    // can't back them off.
+    conn.execute_batch(
+        "PRAGMA busy_timeout = 5000;
+         PRAGMA synchronous = NORMAL;
+         PRAGMA cache_size = -16384;",
+    )?;
     if !readonly {
         conn.execute_batch(
             "PRAGMA auto_vacuum = INCREMENTAL;
@@ -497,18 +547,6 @@ fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), IndexStoreErro
              PRAGMA journal_size_limit = 67108864;",
         )?;
     }
-    // busy_timeout: when another connection holds the write lock, retry for up
-    // to 5s instead of returning SQLITE_BUSY immediately. Applies to every open
-    // (read and write) because even read-only connections in WAL mode touch the
-    // -shm file at startup and can briefly race a writer. Without this, the
-    // live event loop was dying on its initial open under transient contention,
-    // dropping the FSEvents receiver and silently stopping live index updates
-    // for the rest of the session.
-    conn.execute_batch(
-        "PRAGMA busy_timeout = 5000;
-         PRAGMA synchronous = NORMAL;
-         PRAGMA cache_size = -16384;",
-    )?;
     Ok(())
 }
 
@@ -637,9 +675,14 @@ where
             Ok(val)
         }
         Err(e) => {
-            // Rollback failure is intentionally silenced; the savepoint may already
-            // be released or the connection may be in an error state.
-            let _ = conn.execute_batch(&format!("ROLLBACK TO {name}"));
+            // `ROLLBACK TO` undoes the work but LEAVES the savepoint open, and with
+            // it the implicit transaction it started — so the `RELEASE` is
+            // load-bearing, not tidiness: without it one failed write parks this
+            // connection in an open transaction holding the write lock, and every
+            // other connection sees `database is locked` from then on.
+            // Both are silenced: the savepoint may already be gone, or the
+            // connection may be in an error state.
+            let _ = conn.execute_batch(&format!("ROLLBACK TO {name}; RELEASE {name}"));
             Err(e)
         }
     }
