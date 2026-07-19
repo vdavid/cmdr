@@ -5,18 +5,18 @@ Status: spec for implementation. Owner: David (via Claude). Follows the per-subt
 
 ## Problem
 
-On a high-churn boot disk (dev machine: `~/Library/Caches`, `node_modules`, cargo `target/`, DriveFS
-`content_cache`, all indexed), macOS FSEvents drops fine-grained events and sets `MustScanSubDirs` on high paths, up
-to `/`. Three coupled defects surface (all verified in code):
+On a high-churn boot disk (dev machine: `~/Library/Caches`, `node_modules`, cargo `target/`, DriveFS `content_cache`,
+all indexed), macOS FSEvents drops fine-grained events and sets `MustScanSubDirs` on high paths, up to `/`. Three
+coupled defects surface (all verified in code):
 
-1. **Root-scale `MustScanSubDirs` takes the wrong path.** A shallow/`/` anchor goes through the *reconcile* drain
+1. **Root-scale `MustScanSubDirs` takes the wrong path.** A shallow/`/` anchor goes through the _reconcile_ drain
    (`reconciler.rs:378` → `reconcile_subtree`), which is **invisible** (no `Scanning` phase, no freshness update) and
    **holds the per-dir hourglass on the anchor for the whole ~20-min walk** (`rescan.rs:41`, released only at
    completion). Under continuous root churn the anchor stays in `pending_rescans`, so `release_rescan_hold` keeps
    skipping (`rescan.rs:196`) and the local-folder hourglasses never clear. The per-subtree throttle does NOT help here:
-   a 60-s cap after a 20-min walk is noise. Meanwhile a *channel* overflow (same "we lost events" meaning) correctly
-   routes to the **scanner** (`live.rs:179`, `manager.rs:570`): visible, updates freshness, single-flight, self-clearing.
-   The two equivalent signals take divergent paths; that inconsistency is the bug.
+   a 60-s cap after a 20-min walk is noise. Meanwhile a _channel_ overflow (same "we lost events" meaning) correctly
+   routes to the **scanner** (`live.rs:179`, `manager.rs:570`): visible, updates freshness, single-flight,
+   self-clearing. The two equivalent signals take divergent paths; that inconsistency is the bug.
 
 2. **Ingestion backpressure cascades into a forced full scan.** The watcher→loop channel is a bounded tokio mpsc of
    `WATCHER_CHANNEL_CAPACITY = 20_000` (`event_loop.rs:64`, `manager.rs:381`). During a long replay the loop drains
@@ -40,8 +40,8 @@ Route `MustScanSubDirs` by anchor depth, in BOTH the live path (`process_live_ev
   last event id catches interim changes. Do NOT take the per-dir reconcile hourglass hold for these.
 - **Deep/narrow anchor** (a single `target/`): keep the current throttled `reconcile_subtree` path — that's what it's
   good at.
-- **Root-rescan cooldown**: a min-interval between scanner rescans triggered this way (a named const, e.g. 30–60 s),
-  so a machine that overflows `/` every few minutes doesn't scanner-rescan continuously. Within the cooldown, coalesce
+- **Root-rescan cooldown**: a min-interval between scanner rescans triggered this way (a named const, e.g. 30–60 s), so
+  a machine that overflows `/` every few minutes doesn't scanner-rescan continuously. Within the cooldown, coalesce
   (drop) the redundant shallow demand; the single-flight guard + last-event-id replay make dropping safe. This is the
   one genuine staleness knob — bound it, document it.
 

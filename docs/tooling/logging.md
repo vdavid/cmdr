@@ -165,7 +165,7 @@ CMDR_LOG_RAM_USE=1 RUST_LOG=cmdr_lib::indexing=debug,info pnpm dev
 ```
 
 Use it to keep RAM at bay: the inline number turns the log into a memory timeline, so you can see which operation
-coincided with a jump. It answers *when and near what*, not *what allocated* (reach for Instruments or a heap profiler
+coincided with a jump. It answers _when and near what_, not _what allocated_ (reach for Instruments or a heap profiler
 for that). Works in dev, E2E, and prod builds. Accepts `1`/`true`/`yes`/`on`.
 
 The number is `phys_footprint` (Activity Monitor's "Memory" metric, not RSS) of the Rust backend process only, sampled
