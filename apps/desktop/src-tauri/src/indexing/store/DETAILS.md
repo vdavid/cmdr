@@ -29,6 +29,13 @@ pulling shared items via `use super::*`):
 `resolve_component` always queries by `(parent_id, name_folded)` using the `idx_parent_name_folded` composite **UNIQUE**
 index. On Linux/Windows `normalize_for_comparison()` is the identity function, so `name_folded = name` and the index
 behaves identically to a `(parent_id, name)` index. A schema-version mismatch triggers drop+rebuild.
+`IndexStoreError` carries the typed SQLite classifiers callers branch on (never the message string): `sqlite_code()`,
+`is_fatal_storage_error()`, `as_index_failure()`, and `is_primary_key_conflict()` — the last one separates an
+`entries.id` collision (extended 1555, the writer heals it by resyncing its counter) from a `(parent_id, name_folded)`
+conflict (2067, which must never be retried under a fresh id). Rationale and the writer side: parent
+[`DETAILS.md`](../DETAILS.md) § "Decision: a PRIMARY KEY conflict on an upsert insert resyncs the counter and retries
+once".
+
 `has_sized_entry_for_inode()` checks whether another entry with the same inode already has non-NULL sizes;
 `find_entry_by_inode()` returns the first row with a given inode (the live event loop's rename pre-pass). Both path-keyed
 (backward compat) and integer-keyed APIs exist.

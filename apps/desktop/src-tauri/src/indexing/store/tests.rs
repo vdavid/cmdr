@@ -1763,10 +1763,25 @@ fn transient_contention_is_not_fatal() {
 }
 
 #[test]
+fn primary_key_conflicts_are_told_apart_from_name_conflicts() {
+    // 1555 is the writer's ID counter drifting behind `MAX(id)`: heal it by
+    // resyncing and retrying under a fresh id. 2067 is a `(parent_id,
+    // name_folded)` conflict: the name is already there, so a retry under a
+    // fresh id would insert a duplicate row. Only the extended code separates
+    // them; the primary code is `ConstraintViolation` for both.
+    assert!(sqlite_err(rusqlite::ffi::SQLITE_CONSTRAINT_PRIMARYKEY).is_primary_key_conflict());
+    assert!(!sqlite_err(rusqlite::ffi::SQLITE_CONSTRAINT_UNIQUE).is_primary_key_conflict());
+    assert!(!sqlite_err(rusqlite::ffi::SQLITE_BUSY).is_primary_key_conflict());
+    // A constraint conflict is never a storage-death class either.
+    assert!(!sqlite_err(rusqlite::ffi::SQLITE_CONSTRAINT_PRIMARYKEY).is_fatal_storage_error());
+}
+
+#[test]
 fn non_sqlite_errors_have_no_code_and_are_not_fatal() {
     let io = IndexStoreError::Io(std::io::Error::other("broken pipe"));
     assert!(io.sqlite_code().is_none());
     assert!(!io.is_fatal_storage_error());
+    assert!(!io.is_primary_key_conflict());
     assert!(io.as_index_failure().is_none());
 }
 

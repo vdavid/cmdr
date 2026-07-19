@@ -22,7 +22,9 @@ Writer discipline (one writer thread per DB):
 - **`start_indexing` is lock-first**: reserve the registry slot before building `IndexManager` (else two starts race).
   **Never hold `INDEX_REGISTRY` across a blocking/re-entrant manager call** (froze the UI once).
 - **Reconciler/event loops hold a READ connection, never a write one** (`SQLITE_BUSY` kills live indexing). **`IndexWriter`
-  owns the shared `Arc<AtomicI64>` ID counter**; never allocate from `MAX(id)` (uncommitted inserts → double-assign).
+  owns the shared `Arc<AtomicI64>` ID counter**; never allocate from `MAX(id)` (uncommitted inserts → double-assign). A
+  drifted counter self-heals: an upsert insert hitting PK 1555 resyncs from the DB and retries once (else the entry is
+  dropped forever). Never extend that to UNIQUE 2067 — a name conflict retried under a new id IS the duplicate row.
   Live file upserts throttle 60 s (`reconciler/throttle.rs`): ≤1 write/window, `pending` never evictable.
 - **`MustScanSubDirs` is depth-split** (`reconciler/rescan_route.rs`): a SHALLOW anchor (`depth ≤ 2`, root-scale) routes
   via `route_must_scan_sub_dirs` to the VISIBLE scanner (`start_scan`, 45 s cooldown) with NO hourglass hold — holding it

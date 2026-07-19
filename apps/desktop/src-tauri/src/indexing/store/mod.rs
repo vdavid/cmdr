@@ -342,6 +342,25 @@ impl IndexStoreError {
         )
     }
 
+    /// Whether this is a PRIMARY KEY conflict on `entries.id`
+    /// (`SQLITE_CONSTRAINT_PRIMARYKEY`, extended code 1555): the writer's shared
+    /// ID counter fell behind the table's real `MAX(id)`, so the id it handed out
+    /// is already taken. That's self-healing (resync the counter from the DB and
+    /// retry with a fresh id), which is exactly why it's classified apart from
+    /// `SQLITE_CONSTRAINT_UNIQUE` (2067), the `(parent_id, name_folded)` conflict.
+    /// A UNIQUE conflict means the NAME is already in the table (a real duplicate,
+    /// a case-folding collision, a racing writer); retrying that one under a fresh
+    /// id would insert a duplicate row, so it must never heal. Both share the
+    /// primary `ErrorCode::ConstraintViolation`, so only the extended code tells
+    /// them apart.
+    pub fn is_primary_key_conflict(&self) -> bool {
+        matches!(
+            self.sqlite_code(),
+            Some((rusqlite::ErrorCode::ConstraintViolation, extended))
+                if extended == rusqlite::ffi::SQLITE_CONSTRAINT_PRIMARYKEY
+        )
+    }
+
     /// The typed [`IndexFailure`] for the `Failed` phase, if this is a fatal
     /// storage error (else `None`). The primary code is the low byte of the
     /// extended code, matching SQLite's `SQLITE_IOERR == extended & 0xFF`.

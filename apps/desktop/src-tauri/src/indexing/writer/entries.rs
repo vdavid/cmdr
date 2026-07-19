@@ -313,10 +313,8 @@ fn upsert_insert_new(
         (logical_size, physical_size)
     };
 
-    let new_entry_id = next_id.fetch_add(1, Ordering::Relaxed);
-    match IndexStore::insert_entry_v2_with_id(
+    match insert_with_allocated_id(
         conn,
-        new_entry_id,
         parent_id,
         name,
         is_directory,
@@ -325,6 +323,7 @@ fn upsert_insert_new(
         physical_size,
         modified_at,
         inode,
+        next_id,
     ) {
         Ok(new_id) => {
             log::trace!("Writer: UpsertEntryV2 inserted \"{name}\" (parent_id={parent_id}) → id={new_id}");
@@ -379,6 +378,68 @@ fn upsert_insert_new(
         Err(e) => {
             signal.note(&e, &format!("insert_entry_v2 for {name}"));
         }
+    }
+}
+
+/// Insert one entry under an id taken from the shared counter, healing a counter
+/// that drifted behind the table.
+///
+/// The counter is the single allocator for `entries.id` (never `MAX(id)`, which
+/// double-assigns across uncommitted inserts), but it can still fall behind the
+/// table's real `MAX(id)`. The insert then hits
+/// `SQLITE_CONSTRAINT_PRIMARYKEY` and, left alone, the entry is dropped from the
+/// index forever AND every following insert collides the same way (one incident
+/// logged ~9,600 warnings in seconds). So on that specific code we resync the
+/// counter from the DB and retry once with a fresh id.
+///
+/// Only a PRIMARY KEY conflict heals. A `(parent_id, name_folded)` UNIQUE
+/// conflict means the name is already in the table, so a retry under a fresh id
+/// would insert a duplicate row; it falls through to the caller's error handling
+/// (see `IndexStoreError::is_primary_key_conflict`).
+#[allow(clippy::too_many_arguments, reason = "mirrors the DB columns for a new-entry insert")]
+fn insert_with_allocated_id(
+    conn: &rusqlite::Connection,
+    parent_id: i64,
+    name: &str,
+    is_directory: bool,
+    is_symlink: bool,
+    logical_size: Option<u64>,
+    physical_size: Option<u64>,
+    modified_at: Option<u64>,
+    inode: Option<u64>,
+    next_id: &AtomicI64,
+) -> Result<i64, IndexStoreError> {
+    let insert = |id: i64| {
+        IndexStore::insert_entry_v2_with_id(
+            conn,
+            id,
+            parent_id,
+            name,
+            is_directory,
+            is_symlink,
+            logical_size,
+            physical_size,
+            modified_at,
+            inode,
+        )
+    };
+
+    let taken_id = next_id.fetch_add(1, Ordering::Relaxed);
+    match insert(taken_id) {
+        Err(e) if e.is_primary_key_conflict() => {
+            // One line per resync, not per row: the resync puts the counter past
+            // the table's MAX, so the retried insert and every later one stop
+            // colliding.
+            let db_next_id = IndexStore::get_next_id(conn)?;
+            let counter_before = next_id.fetch_max(db_next_id, Ordering::Relaxed);
+            log::warn!(
+                "Index writer: entry-ID counter drifted behind the table (id {taken_id} was already taken); \
+                 resyncing {counter_before} → {} and retrying, else this entry would be dropped from the index",
+                counter_before.max(db_next_id)
+            );
+            insert(next_id.fetch_add(1, Ordering::Relaxed))
+        }
+        other => other,
     }
 }
 
