@@ -434,9 +434,11 @@ impl IndexManager {
         // replay loop task.
         let fallback_volume_id = self.volume_id.clone();
 
-        // We need a way for the replay loop to signal "journal unavailable, need full scan".
-        // Use a oneshot channel: if the replay detects a gap, it sends a signal.
-        let (fallback_tx, fallback_rx) = tokio::sync::oneshot::channel::<()>();
+        // A way for the replay loop to signal "can't roll forward from the journal,
+        // need a full scan", carrying WHY. Several distinct causes trip this (journal
+        // purged, >10M events, watcher channel overflowed); the reason rides the
+        // channel so the fallback logs the real cause instead of guessing "gap".
+        let (fallback_tx, fallback_rx) = tokio::sync::oneshot::channel::<RescanReason>();
 
         // Use tauri::async_runtime::spawn because indexing can start from the
         // synchronous Tauri setup() hook where no Tokio runtime context exists.
@@ -477,8 +479,8 @@ impl IndexManager {
 
         // Spawn a task that watches for the fallback signal and triggers a full scan if needed.
         tauri::async_runtime::spawn(async move {
-            if fallback_rx.await.is_ok() {
-                log::warn!("Journal replay detected gap, initiating full scan fallback");
+            if let Ok(reason) = fallback_rx.await {
+                log::warn!("Replay signaled a full-scan fallback ({reason:?}); rescanning the volume");
 
                 // Take the manager OUT of the registry (transient `ShuttingDown`)
                 // so the blocking `start_scan` prelude runs OFF the registry lock.
@@ -523,7 +525,7 @@ impl IndexManager {
                 };
 
                 // Guard released: run the blocking-prelude scan start off the lock.
-                let result = mgr.start_scan("journal replay detected gap");
+                let result = mgr.start_scan(&format!("replay fallback ({reason:?})"));
                 if let Err(ref e) = result {
                     log::warn!("Fallback full scan failed: {e}");
                 }

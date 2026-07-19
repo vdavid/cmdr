@@ -41,8 +41,10 @@ use crate::pluralize::pluralize;
 
 mod escalation;
 mod rescan;
+mod rescan_throttle;
 mod throttle;
 use escalation::resolve_escalation_anchor;
+use rescan_throttle::RescanThrottle;
 use throttle::{Throttle, ThrottleOutcome};
 
 /// The live-path throttle, carrying the exact upsert to replay on the trailing
@@ -195,6 +197,13 @@ pub struct EventReconciler {
     /// an empty set and drop nothing while a rescan is in flight. Also the seam
     /// the held-hourglass tier reads. `None` when no rescan runs.
     active_rescan_path: Arc<Mutex<Option<PathBuf>>>,
+    /// Per-subtree rescan throttle (leading + trailing, 60 s window). Caps a
+    /// hard-churning subtree to at most one reconcile per window, so a folder's
+    /// size stays bounded-fresh without re-walking its subtree continuously.
+    /// Shared with spawned rescan tasks (which record each completion) and
+    /// consulted at pick time; its trailing re-kick rides the same sweep tick as
+    /// `throttle`, via [`EventReconciler::sweep_rescan_throttle`].
+    rescan_throttle: Arc<Mutex<RescanThrottle>>,
     /// Per-file throttle for live upserts (leading + trailing, 60 s window). Only
     /// consulted on the live path; the trailing flush runs off the event loop's
     /// sweep tick via [`EventReconciler::sweep_throttle`].
@@ -235,6 +244,7 @@ impl EventReconciler {
             pending_rescans: Arc::new(Mutex::new(HashSet::new())),
             rescan_active: Arc::new(AtomicBool::new(false)),
             active_rescan_path: Arc::new(Mutex::new(None)),
+            rescan_throttle: Arc::new(Mutex::new(RescanThrottle::new())),
             throttle,
             space,
             volume_id,

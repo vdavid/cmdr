@@ -24,6 +24,9 @@ Writer discipline (one writer thread per DB):
 - **Reconciler/event loops hold a READ connection, never a write one** (`SQLITE_BUSY` kills live indexing). **`IndexWriter`
   owns the shared `Arc<AtomicI64>` ID counter**; never allocate from `MAX(id)` (uncommitted inserts → double-assign).
   Live file upserts throttle 60 s (`reconciler/throttle.rs`): ≤1 write/window, `pending` never evictable.
+- **`MustScanSubDirs` rescans are per-subtree throttled** (`reconciler/rescan_throttle.rs`, 60 s): a churning anchor
+  re-walks ≤1/window, and replay hands anchors to this drain rather than full-scanning on subtree count. Depth: DETAILS
+  § "Per-subtree rescan throttle".
 - **The index is a disposable cache**: a schema mismatch or corruption deletes and rebuilds the DB (no migrations). Gate
   only `scan_completed_at`.
 - **A fatal storage error STOPS + FAILS the index, never retries** (an incident logged 12,700 warnings in 8 min): the

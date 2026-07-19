@@ -226,6 +226,9 @@ pub(in crate::indexing) async fn run_live_event_loop(
                 // resulting ancestor paths ride the next flush tick's emit.
                 let affected = reconciler.sweep_throttle(&writer, Instant::now());
                 pending_paths.extend(affected);
+                // Trailing edge of the per-subtree rescan throttle: re-kick the
+                // drain so a churny subtree whose window has now elapsed re-walks.
+                reconciler.sweep_rescan_throttle(&writer);
             }
             _ = heartbeat_interval.tick() => {
                 log::info!(

@@ -1,12 +1,16 @@
 //! MustScanSubDirs rescan orchestration for the reconciler.
 //!
-//! One rescan runs at a time (`rescan_active`); anchors queue in `pending_rescans`
-//! and drain automatically on completion. Two behaviors this milestone leans on:
-//! ancestor-collapse at pick time (a queued descendant is redundant once its
-//! ancestor's reconcile re-lists the whole subtree) and the shared
-//! `active_rescan_path` slot the removal-storm drop rule reads to see the
-//! in-flight rescan (the path is popped out of `pending_rescans` at spawn).
+//! One rescan runs at a time (`rescan_active`), on a dedicated `Utility`-QoS
+//! thread; anchors queue in `pending_rescans` and drain automatically on
+//! completion. Three behaviors the drain leans on: ancestor-collapse at pick time
+//! (a queued descendant is redundant once its ancestor's reconcile re-lists the
+//! whole subtree); the shared `active_rescan_path` slot the removal-storm drop
+//! rule reads to see the in-flight rescan (the path is popped out of
+//! `pending_rescans` at spawn); and the per-subtree [`RescanThrottle`], which caps
+//! a churning anchor to ≤1 walk per window by picking only ELIGIBLE anchors and
+//! leaving throttled ones queued for the sweep tick's re-kick.
 
+use super::rescan_throttle::RescanThrottle;
 use super::*;
 use crate::indexing::path_prefix;
 
@@ -48,6 +52,7 @@ impl EventReconciler {
             Arc::clone(&self.pending_rescans),
             Arc::clone(&self.rescan_active),
             Arc::clone(&self.active_rescan_path),
+            Arc::clone(&self.rescan_throttle),
             self.space.clone(),
             self.volume_id.clone(),
             writer,
@@ -68,10 +73,26 @@ impl EventReconciler {
             Arc::clone(&self.pending_rescans),
             Arc::clone(&self.rescan_active),
             Arc::clone(&self.active_rescan_path),
+            Arc::clone(&self.rescan_throttle),
             self.space.clone(),
             self.volume_id.clone(),
             writer,
         );
+    }
+
+    /// Trailing edge of the per-subtree throttle, driven by the event loop's
+    /// ~1 s sweep tick (the same tick as [`Self::sweep_throttle`]). Re-kicks the
+    /// drain so an anchor that was held back because its window hadn't elapsed
+    /// reconciles once it has: this is what guarantees a hard-churning subtree
+    /// re-walks every window and never starves. Also garbage-collects throttle
+    /// records for anchors no longer pending, so the map stays bounded by the
+    /// count of actively-churning subtrees.
+    pub(in crate::indexing) fn sweep_rescan_throttle(&mut self, writer: &IndexWriter) {
+        {
+            let pending = self.pending_rescans.lock_ignore_poison();
+            self.rescan_throttle.lock_ignore_poison().gc(&pending, Instant::now());
+        }
+        self.kick_pending_rescans(writer);
     }
 
     /// Snapshot the set of queued-or-active rescan scopes: every path in
@@ -111,18 +132,42 @@ impl EventReconciler {
     pub(in crate::indexing) fn insert_pending_rescan_for_test(&self, path: PathBuf) {
         self.pending_rescans.lock_ignore_poison().insert(path);
     }
+
+    /// Test-only: replace the per-subtree rescan throttle with one using `window`.
+    /// A zero window disables throttling (every anchor is always eligible), which
+    /// the storm/stress fixed-point tests use so a re-queued anchor drains
+    /// immediately instead of lingering in `pending_rescans` for the production
+    /// 60 s window. Cadence itself is covered by `rescan_throttle`'s unit tests.
+    #[cfg(test)]
+    pub(in crate::indexing) fn set_rescan_throttle_window_for_test(&self, window: std::time::Duration) {
+        *self.rescan_throttle.lock_ignore_poison() = RescanThrottle::with_window(window);
+    }
 }
 
-/// Pick the next rescan anchor from the pending set: the SHALLOWEST queued path
-/// (fewest components), then drop it AND every queued STRICT descendant of it.
-/// An ancestor's reconcile re-lists the whole subtree, so a queued descendant is
-/// redundant — collapsing bounds an escalation or removal storm to ONE subtree
-/// walk instead of one per level. Returns the picked anchor plus the dropped
-/// descendants (so the caller can release their held-hourglass roots — the
-/// picked ancestor's hold now covers them), or `None` when the set is empty.
-pub(super) fn pick_and_collapse_rescan(pending: &mut HashSet<PathBuf>) -> Option<(PathBuf, Vec<PathBuf>)> {
+/// Pick the next rescan anchor from the pending set: the SHALLOWEST ELIGIBLE
+/// queued path (fewest components), then drop it AND every queued STRICT
+/// descendant of it. An ancestor's reconcile re-lists the whole subtree, so a
+/// queued descendant is redundant — collapsing bounds an escalation or removal
+/// storm to ONE subtree walk instead of one per level. Returns the picked anchor
+/// plus the dropped descendants (so the caller can release their held-hourglass
+/// roots — the picked ancestor's hold now covers them), or `None` when nothing is
+/// eligible (empty set, or every queued anchor is still inside its throttle
+/// window — the sweep tick retries once a window elapses).
+///
+/// Eligibility is the per-subtree throttle: an anchor reconciled less than the
+/// window ago is skipped (left pending), so a hard-churning subtree re-walks at
+/// most once per window. A never-walked anchor is always eligible (the leading
+/// edge), so a freshly-dirty subtree still reconciles promptly. Strict
+/// descendants are dropped whether or not THEY are eligible: the picked ancestor's
+/// walk re-lists them regardless.
+pub(super) fn pick_and_collapse_rescan(
+    pending: &mut HashSet<PathBuf>,
+    throttle: &RescanThrottle,
+    now: Instant,
+) -> Option<(PathBuf, Vec<PathBuf>)> {
     let picked = pending
         .iter()
+        .filter(|p| throttle.is_eligible(p, now))
         .min_by_key(|p| path_prefix::depth(&p.to_string_lossy()))
         .cloned()?;
     let picked_str = picked.to_string_lossy().to_string();
@@ -195,13 +240,17 @@ pub(super) fn start_next_rescan(
     pending_rescans: Arc<Mutex<HashSet<PathBuf>>>,
     rescan_active: Arc<AtomicBool>,
     active_rescan_path: Arc<Mutex<Option<PathBuf>>>,
+    rescan_throttle: Arc<Mutex<RescanThrottle>>,
     space: IndexPathSpace,
     volume_id: String,
     writer: &IndexWriter,
 ) {
     let path = {
         let mut pending = pending_rescans.lock_ignore_poison();
-        match pick_and_collapse_rescan(&mut pending) {
+        let throttle = rescan_throttle.lock_ignore_poison();
+        // Lock order is always pending → throttle where both are held; the task
+        // records completions under the throttle lock alone, so there's no inverse.
+        match pick_and_collapse_rescan(&mut pending, &throttle, Instant::now()) {
             Some((picked, dropped)) => {
                 // The collapsed descendants are now covered by `picked`'s hold;
                 // release their own so the held set doesn't leak them forever.
@@ -220,102 +269,139 @@ pub(super) fn start_next_rescan(
     let pending_for_task = Arc::clone(&pending_rescans);
     let active_for_task = Arc::clone(&rescan_active);
     let active_path_for_task = Arc::clone(&active_rescan_path);
+    let throttle_for_task = Arc::clone(&rescan_throttle);
     let space_for_task = space.clone();
     let volume_id_for_task = volume_id.clone();
 
     log::info!("MustScanSubDirs: reconcile starting for {}", path.display());
 
-    tokio::task::spawn_blocking(move || {
-        let cancelled = AtomicBool::new(false);
-        // The reconciler holds a READ connection (invariant: reconciler/event
-        // loops never open a write connection — a write conn contends with the
-        // writer thread and `SQLITE_BUSY` silently kills live indexing). Every
-        // reconcile_subtree DB access is a read; writes ride the writer channel.
-        let conn = match IndexStore::open_read_connection(&writer.db_path()) {
-            Ok(c) => c,
-            Err(e) => {
-                log::warn!(
-                    "MustScanSubDirs: couldn't open read connection for {}: {e}",
-                    path.display()
-                );
-                // Release this root's hourglass before recursing to the next
-                // rescan (skip if it's been re-queued meanwhile).
-                release_rescan_hold(&volume_id_for_task, &path, &pending_for_task);
-                active_for_task.store(false, Ordering::Relaxed);
-                *active_path_for_task.lock_ignore_poison() = None;
-                // Try the next pending rescan even if this one failed
-                start_next_rescan(
-                    pending_for_task,
-                    active_for_task,
-                    active_path_for_task,
-                    space_for_task,
-                    volume_id_for_task,
-                    &writer,
-                );
-                return;
-            }
-        };
+    // Kept for the rare spawn-failure handler below (the closure moves `path`).
+    let path_for_spawn_failure = path.clone();
 
-        let escalation = match reconcile_subtree(&path, &space_for_task, &conn, &writer, &cancelled) {
-            Ok(summary) => {
-                if summary.duration.as_secs() > 10 {
+    // A DEDICATED thread (not the tokio blocking pool) so we can lower it to
+    // `Utility` QoS: this background subtree walk must never outrank the webview
+    // for CPU, matching the scanner and local-reconcile threads. QoS on a pooled
+    // thread would leak onto later unrelated tasks, so `thread_qos` forbids it.
+    // One thread per rescan is fine: the drain is single-flight and per-subtree
+    // throttled, so spawns are infrequent. Panics unwind this thread only
+    // (`panic=unwind`), same as the pool task it replaces.
+    let spawn_result = std::thread::Builder::new()
+        .name("rescan-subtree".into())
+        .spawn(move || {
+            crate::thread_qos::set_current_thread_qos(crate::thread_qos::QosClass::Utility);
+            let cancelled = AtomicBool::new(false);
+            // The reconciler holds a READ connection (invariant: reconciler/event
+            // loops never open a write connection — a write conn contends with the
+            // writer thread and `SQLITE_BUSY` silently kills live indexing). Every
+            // reconcile_subtree DB access is a read; writes ride the writer channel.
+            let conn = match IndexStore::open_read_connection(&writer.db_path()) {
+                Ok(c) => c,
+                Err(e) => {
                     log::warn!(
-                        "MustScanSubDirs: reconcile slow for {} (+{} -{} ~{}, {}s)",
-                        path.display(),
-                        summary.added,
-                        summary.removed,
-                        summary.updated,
-                        summary.duration.as_secs(),
+                        "MustScanSubDirs: couldn't open read connection for {}: {e}",
+                        path.display()
                     );
-                } else {
-                    log::info!(
-                        "MustScanSubDirs: reconcile complete for {} (+{} -{} ~{}, {}ms)",
-                        path.display(),
-                        summary.added,
-                        summary.removed,
-                        summary.updated,
-                        summary.duration.as_millis(),
+                    // Release this root's hourglass before recursing to the next
+                    // rescan (skip if it's been re-queued meanwhile).
+                    release_rescan_hold(&volume_id_for_task, &path, &pending_for_task);
+                    active_for_task.store(false, Ordering::Relaxed);
+                    *active_path_for_task.lock_ignore_poison() = None;
+                    // Try the next pending rescan even if this one failed
+                    start_next_rescan(
+                        pending_for_task,
+                        active_for_task,
+                        active_path_for_task,
+                        throttle_for_task,
+                        space_for_task,
+                        volume_id_for_task,
+                        &writer,
                     );
+                    return;
                 }
-                summary.escalation
+            };
+
+            let escalation = match reconcile_subtree(&path, &space_for_task, &conn, &writer, &cancelled) {
+                Ok(summary) => {
+                    if summary.duration.as_secs() > 10 {
+                        log::warn!(
+                            "MustScanSubDirs: reconcile slow for {} (+{} -{} ~{}, {}s)",
+                            path.display(),
+                            summary.added,
+                            summary.removed,
+                            summary.updated,
+                            summary.duration.as_secs(),
+                        );
+                    } else {
+                        log::info!(
+                            "MustScanSubDirs: reconcile complete for {} (+{} -{} ~{}, {}ms)",
+                            path.display(),
+                            summary.added,
+                            summary.removed,
+                            summary.updated,
+                            summary.duration.as_millis(),
+                        );
+                    }
+                    summary.escalation
+                }
+                Err(e) => {
+                    log::warn!("MustScanSubDirs: reconcile failed for {}: {e}", path.display());
+                    None
+                }
+            };
+
+            // The subtree's chain was still (partly) missing: re-queue the anchor the
+            // skip branch resolved (strictly closer to the volume root, so this
+            // converges by depth). Hold its hourglass before inserting so the follow-up
+            // rescan is covered, and so the completion release below can't strand it.
+            // The anchor is a proper ancestor of `path` (never equal), so it doesn't
+            // affect `path`'s own release decision. The drain below picks it up.
+            if let Some(anchor) = escalation {
+                hold_rescan(&volume_id_for_task, &anchor);
+                pending_for_task.lock_ignore_poison().insert(anchor);
             }
-            Err(e) => {
-                log::warn!("MustScanSubDirs: reconcile failed for {}: {e}", path.display());
-                None
-            }
-        };
 
-        // The subtree's chain was still (partly) missing: re-queue the anchor the
-        // skip branch resolved (strictly closer to the volume root, so this
-        // converges by depth). Hold its hourglass before inserting so the follow-up
-        // rescan is covered, and so the completion release below can't strand it.
-        // The anchor is a proper ancestor of `path` (never equal), so it doesn't
-        // affect `path`'s own release decision. The drain below picks it up.
-        if let Some(anchor) = escalation {
-            hold_rescan(&volume_id_for_task, &anchor);
-            pending_for_task.lock_ignore_poison().insert(anchor);
-        }
+            // Record this subtree's reconcile so the per-subtree throttle holds the
+            // anchor back until the window elapses. A hard-churning subtree that
+            // re-queues immediately stays pending but won't re-walk until then; the
+            // sweep tick's re-kick fires it at the window boundary (the trailing edge).
+            throttle_for_task
+                .lock_ignore_poison()
+                .record_completion(&path, Instant::now());
 
-        // Release this root's hourglass (unless a storm re-queued it) and emit the
-        // in-place refresh for the root + its ancestor chain. Release precedes the
-        // emit so the triggered refetch reads `pending == false`; the emit rides
-        // the writer so it lands after the reconcile's writes.
-        release_and_emit_completion(&volume_id_for_task, &path, &pending_for_task, &writer);
+            // Release this root's hourglass (unless a storm re-queued it) and emit the
+            // in-place refresh for the root + its ancestor chain. Release precedes the
+            // emit so the triggered refetch reads `pending == false`; the emit rides
+            // the writer so it lands after the reconcile's writes.
+            release_and_emit_completion(&volume_id_for_task, &path, &pending_for_task, &writer);
 
-        DEBUG_STATS.record_rescan_completed();
-        active_for_task.store(false, Ordering::Relaxed);
-        *active_path_for_task.lock_ignore_poison() = None;
+            DEBUG_STATS.record_rescan_completed();
+            active_for_task.store(false, Ordering::Relaxed);
+            *active_path_for_task.lock_ignore_poison() = None;
 
-        // Automatically start the next queued rescan
-        start_next_rescan(
-            pending_for_task,
-            active_for_task,
-            active_path_for_task,
-            space_for_task,
-            volume_id_for_task,
-            &writer,
+            // Automatically start the next queued rescan
+            start_next_rescan(
+                pending_for_task,
+                active_for_task,
+                active_path_for_task,
+                throttle_for_task,
+                space_for_task,
+                volume_id_for_task,
+                &writer,
+            );
+        });
+
+    if let Err(e) = spawn_result {
+        // Spawning the rescan thread failed (a rare resource limit). Undo the
+        // in-flight flags set just above so the single-flight drain isn't wedged,
+        // and drop this anchor's hourglass; the next enqueue or sweep re-kicks.
+        log::warn!(
+            "MustScanSubDirs: couldn't spawn rescan thread for {}: {e}",
+            path_for_spawn_failure.display()
         );
-    });
+        rescan_active.store(false, Ordering::Relaxed);
+        *active_rescan_path.lock_ignore_poison() = None;
+        release_rescan_hold(&volume_id, &path_for_spawn_failure, &pending_rescans);
+    }
 }
 
 #[cfg(test)]
@@ -334,7 +420,8 @@ mod tests {
         ]
         .into_iter()
         .collect();
-        let (picked, dropped) = pick_and_collapse_rescan(&mut pending).expect("a path is picked");
+        let (picked, dropped) =
+            pick_and_collapse_rescan(&mut pending, &RescanThrottle::new(), Instant::now()).expect("a path is picked");
         assert_eq!(picked, PathBuf::from("/a/b"));
         assert!(
             pending.is_empty(),
@@ -350,7 +437,8 @@ mod tests {
     #[test]
     fn pick_and_collapse_keeps_unrelated_siblings() {
         let mut pending: HashSet<PathBuf> = [PathBuf::from("/a/b/c"), PathBuf::from("/x/y")].into_iter().collect();
-        let (picked, dropped) = pick_and_collapse_rescan(&mut pending).expect("a path is picked");
+        let (picked, dropped) =
+            pick_and_collapse_rescan(&mut pending, &RescanThrottle::new(), Instant::now()).expect("a path is picked");
         assert_eq!(picked, PathBuf::from("/x/y"), "shallowest picked first");
         assert!(dropped.is_empty(), "an unrelated sibling is not a collapsed descendant");
         assert_eq!(
@@ -358,6 +446,51 @@ mod tests {
             vec![PathBuf::from("/a/b/c")],
             "the unrelated deeper subtree stays queued"
         );
+    }
+
+    /// A throttled anchor (reconciled within the window) is skipped at pick time,
+    /// so a still-eligible sibling is chosen even though the throttled one is
+    /// shallower. This is the per-subtree throttle gating the drain: a hard-churning
+    /// subtree can't monopolize the single-flight drain by re-queueing.
+    #[test]
+    fn pick_skips_throttled_anchor_for_eligible_sibling() {
+        let window = std::time::Duration::from_millis(100);
+        let mut throttle = RescanThrottle::with_window(window);
+        let t0 = Instant::now();
+        throttle.record_completion(&PathBuf::from("/a"), t0); // /a just walked -> throttled
+        let mut pending: HashSet<PathBuf> = [PathBuf::from("/a"), PathBuf::from("/x/y")].into_iter().collect();
+        let (picked, _dropped) =
+            pick_and_collapse_rescan(&mut pending, &throttle, t0).expect("an eligible anchor is picked");
+        assert_eq!(
+            picked,
+            PathBuf::from("/x/y"),
+            "shallower /a is throttled, so eligible /x/y wins"
+        );
+        assert_eq!(
+            pending.iter().cloned().collect::<Vec<_>>(),
+            vec![PathBuf::from("/a")],
+            "the throttled anchor stays queued for a later sweep, not dropped"
+        );
+    }
+
+    /// When every queued anchor is inside its throttle window nothing is picked (the
+    /// drain goes idle; the sweep tick retries). Once the window elapses the anchor
+    /// is eligible again: the trailing edge that stops a busy subtree from starving.
+    #[test]
+    fn pick_none_when_all_throttled_then_eligible_after_window() {
+        let window = std::time::Duration::from_millis(100);
+        let mut throttle = RescanThrottle::with_window(window);
+        let t0 = Instant::now();
+        throttle.record_completion(&PathBuf::from("/a"), t0);
+        let mut pending: HashSet<PathBuf> = [PathBuf::from("/a")].into_iter().collect();
+        assert!(
+            pick_and_collapse_rescan(&mut pending, &throttle, t0).is_none(),
+            "the only anchor is throttled, so nothing is picked"
+        );
+        assert_eq!(pending.len(), 1, "the throttled anchor is left queued, not dropped");
+        let (picked, _dropped) =
+            pick_and_collapse_rescan(&mut pending, &throttle, t0 + window).expect("eligible once the window elapses");
+        assert_eq!(picked, PathBuf::from("/a"));
     }
 
     use crate::indexing::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes};

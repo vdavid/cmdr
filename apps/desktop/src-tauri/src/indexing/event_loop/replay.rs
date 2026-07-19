@@ -37,10 +37,6 @@ use crate::pluralize::pluralize;
 /// tracking stops and a single "full refresh" is emitted instead.
 const MAX_AFFECTED_PATHS: usize = 50_000;
 
-/// Cap on `pending_rescans` during replay. When exceeded, a full rescan
-/// is triggered instead of queuing individual subtree rescans.
-const MAX_PENDING_RESCANS: usize = 1_000;
-
 /// If the number of events processed during replay exceeds this threshold,
 /// abort replay and fall back to a full scan. Safety net for scenarios where
 /// FDA was toggled and the app suddenly sees millions of previously hidden paths.
@@ -78,7 +74,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     writer: IndexWriter,
     app: AppHandle,
     config: ReplayConfig,
-    fallback_tx: tokio::sync::oneshot::Sender<()>,
+    fallback_tx: tokio::sync::oneshot::Sender<RescanReason>,
     watcher_overflow: Option<Arc<AtomicBool>>,
     scanning: Arc<AtomicBool>,
 ) -> Result<(), String> {
@@ -113,10 +109,11 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     let mut affected_paths = HashSet::<String>::new();
     let mut affected_paths_overflow = false;
 
-    // MustScanSubDirs paths to queue after replay.
-    // Capped at MAX_PENDING_RESCANS; beyond that a full rescan is triggered.
-    let mut pending_rescans = Vec::<String>::new();
-    let mut pending_rescans_overflow = false;
+    // MustScanSubDirs paths to queue after replay. A `HashSet` dedups the anchor
+    // churn a long gap produces (the same dir re-flagged thousands of times); the
+    // live drain they hand off to ancestor-collapses and per-subtree-throttles
+    // them, so there's no cap here and no full-rescan escalation on volume.
+    let mut pending_rescans = HashSet::<String>::new();
 
     // Progress reporting interval
     let mut last_progress = Instant::now();
@@ -154,7 +151,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                     ),
                 );
                 if let Some(tx) = fallback_tx.take() {
-                    let _ = tx.send(());
+                    let _ = tx.send(RescanReason::JournalGap);
                 }
                 return Ok(());
             }
@@ -178,7 +175,6 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                 &mut affected_paths,
                 &mut affected_paths_overflow,
                 &mut pending_rescans,
-                &mut pending_rescans_overflow,
             ) as u64;
 
             // Process the HistoryDone event itself (it may carry other flags).
@@ -191,11 +187,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                 affected_paths.extend(paths);
             }
             if let Some(anchor) = escalation {
-                defer_replay_rescan(
-                    &mut pending_rescans,
-                    &mut pending_rescans_overflow,
-                    anchor.to_string_lossy().to_string(),
-                );
+                defer_replay_rescan(&mut pending_rescans, anchor.to_string_lossy().to_string());
             }
             last_event_id = event.event_id;
             event_count += 1;
@@ -206,11 +198,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
         // Handle MustScanSubDirs: queue for after replay (don't start during replay)
         if event.flags.must_scan_sub_dirs {
             // Keep absolute; the reconcile strips at its resolve.
-            defer_replay_rescan(
-                &mut pending_rescans,
-                &mut pending_rescans_overflow,
-                space.absolute(&event.path),
-            );
+            defer_replay_rescan(&mut pending_rescans, space.absolute(&event.path));
             last_event_id = event.event_id;
             event_count += 1;
             continue;
@@ -250,7 +238,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                 ),
             );
             if let Some(tx) = fallback_tx.take() {
-                let _ = tx.send(());
+                let _ = tx.send(RescanReason::ReplayOverflow);
             }
             return Ok(());
         }
@@ -265,7 +253,6 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                 &mut affected_paths,
                 &mut affected_paths_overflow,
                 &mut pending_rescans,
-                &mut pending_rescans_overflow,
             ) as u64;
             if last_event_id > since_event_id
                 && let Err(e) = writer.send(WriteMessage::UpdateLastEventId(last_event_id))
@@ -404,22 +391,11 @@ pub(in crate::indexing) async fn run_replay_event_loop(
 
     // Queue any MustScanSubDirs rescans that were deferred during replay.
     // If pending_rescans overflowed, trigger a full rescan via fallback.
-    if pending_rescans_overflow {
-        emit_rescan_notification(
-            &app,
-            &volume_id,
-            RescanReason::TooManySubdirRescans,
-            format!(
-                // allowed-pluralize-noun: MAX_PENDING_RESCANS is the const 1_000.
-                "Replay accumulated more than {MAX_PENDING_RESCANS} directories needing full \
-                 rescans. This typically means a major filesystem reorganization happened."
-            ),
-        );
-        if let Some(tx) = fallback_tx.take() {
-            let _ = tx.send(());
-        }
-        return Ok(());
-    }
+    // Hand every deferred anchor to the live drain. However many the gap produced,
+    // the drain dedups, ancestor-collapses, and per-subtree-throttles them and
+    // works through them at background QoS, so a churn-heavy gap catches up subtree
+    // by subtree instead of escalating to a full-volume walk. The genuine
+    // full-scan fallbacks (journal purge, >10M events, watcher overflow) remain.
     for path in pending_rescans {
         reconciler.queue_must_scan_sub_dirs(std::path::PathBuf::from(path), &writer);
     }
@@ -491,7 +467,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                             ),
                         );
                         if let Some(tx) = fallback_tx.take() {
-                            let _ = tx.send(());
+                            let _ = tx.send(RescanReason::WatcherChannelOverflow);
                         }
                         event_rx.close();
                         while event_rx.recv().await.is_some() {}
@@ -513,6 +489,9 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                 // resulting ancestor paths ride the next flush tick's emit.
                 let affected = reconciler.sweep_throttle(&writer, Instant::now());
                 live_pending_paths.extend(affected);
+                // Trailing edge of the per-subtree rescan throttle: re-kick the
+                // drain so a churny subtree whose window has now elapsed re-walks.
+                reconciler.sweep_rescan_throttle(&writer);
             }
         }
     }
@@ -527,36 +506,21 @@ pub(in crate::indexing) async fn run_replay_event_loop(
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
-/// Defer a rescan anchor into the replay-phase pending list, honoring the
-/// `MAX_PENDING_RESCANS` cap (overflow escalates to a full rescan after replay).
-/// Shared by must_scan_sub_dirs events and missing-parent escalations — both are
-/// the same "go look here" signal, deferred identically during replay (no live
-/// queueing then; the post-replay live loop queues them via
-/// `queue_must_scan_sub_dirs`).
-fn defer_replay_rescan(pending_rescans: &mut Vec<String>, pending_rescans_overflow: &mut bool, path: String) {
-    if *pending_rescans_overflow {
-        return;
-    }
-    if pending_rescans.len() >= MAX_PENDING_RESCANS {
-        log::warn!(
-            "Replay: pending rescans cap reached ({MAX_PENDING_RESCANS}). \
-             Will trigger a full rescan instead of individual subtree rescans."
-        );
-        *pending_rescans_overflow = true;
-        pending_rescans.clear();
-    } else {
-        pending_rescans.push(path);
-    }
+/// Defer a rescan anchor into the replay-phase pending set. Shared by
+/// must_scan_sub_dirs events and missing-parent escalations: both are the same
+/// "go look here" signal, deferred identically during replay (no live queueing
+/// then; the post-replay live loop hands them to `queue_must_scan_sub_dirs`,
+/// which dedups, ancestor-collapses, and per-subtree-throttles them). The
+/// `HashSet` dedups a churny dir re-flagged many times across the gap so it
+/// consumes one entry, not thousands.
+fn defer_replay_rescan(pending_rescans: &mut HashSet<String>, path: String) {
+    pending_rescans.insert(path);
 }
 
 /// Drain the replay dedup buffer, process each event through the
 /// reconciler, and collect affected paths. Returns the number of
 /// deduplicated events processed. Missing-parent escalations DEFER into the
 /// pending-rescan list (no live queueing during replay).
-#[allow(
-    clippy::too_many_arguments,
-    reason = "replay accumulators (affected paths + pending rescans, each with its overflow flag) travel together"
-)]
 fn flush_replay_batch(
     pending: &mut HashMap<String, watcher::FsChangeEvent>,
     space: &IndexPathSpace,
@@ -564,8 +528,7 @@ fn flush_replay_batch(
     writer: &IndexWriter,
     affected_paths: &mut HashSet<String>,
     affected_paths_overflow: &mut bool,
-    pending_rescans: &mut Vec<String>,
-    pending_rescans_overflow: &mut bool,
+    pending_rescans: &mut HashSet<String>,
 ) -> usize {
     let count = pending.len();
     for (_path, event) in pending.drain() {
@@ -584,11 +547,7 @@ fn flush_replay_batch(
             }
         }
         if let Some(anchor) = escalation {
-            defer_replay_rescan(
-                pending_rescans,
-                pending_rescans_overflow,
-                anchor.to_string_lossy().to_string(),
-            );
+            defer_replay_rescan(pending_rescans, anchor.to_string_lossy().to_string());
         }
     }
     count
