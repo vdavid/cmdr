@@ -6,6 +6,16 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 
 ## In progress
 
+- [ ] 2026-07-19 [indexing-churn-resilience.md](indexing-churn-resilience.md) - Routing + ingestion fixes for a
+      high-churn boot disk, following the per-subtree rescan throttle. Fix 1: depth-split `MustScanSubDirs` routing
+      (shallow/root-scale → the visible scanner path, deep/narrow → the throttled reconcile) + a root-rescan cooldown,
+      curing the stuck local-folder hourglass, the invisible ~20-min root reconcile, and the replay-routes-to-invisible
+      nuance our unification introduced. Fix 2: replace the bounded 20K watcher channel (whose backpressure cascades an
+      upstream FSEvents drop → forced full scan) with an unbounded, fast-drained buffer kept small by reading fast, with
+      our own high-watermark full-scan decision instead of the OS's. Non-goal: multi-core replay (single-writer
+      invariant + reconcile ordering). Includes a release-build gap-replay measurement to set the adaptive-replay
+      ceiling on data.
+
 - [ ] 2026-07-16 [resource-use-plan.md](resource-use-plan.md) - Make media indexing fast, small, and honest at NAS
       scale: 10 items in impact order (fix the network-pass read path + error classification, parallel enrichment
       workers + a Settings slider, f16 embeddings, integer-id media-DB keying, CLIP model palettization, ANN vector
