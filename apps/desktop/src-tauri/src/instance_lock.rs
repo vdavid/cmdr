@@ -51,6 +51,16 @@ const ALERT_TITLE: &str = "Cmdr is already running";
 const ALERT_BODY: &str =
     "Another copy of Cmdr is using this data folder. Switch to the running app, or quit it and try again.";
 
+/// How long the refusal alert waits for a click before giving up and letting the process exit.
+///
+/// Long enough that someone who launched Cmdr and glanced away still gets to read it; short enough
+/// that a dialog nobody comes back to doesn't sit on screen (with a refused process behind it) for
+/// the rest of the session. There's no decision to make in it, only an "OK" to acknowledge.
+const ALERT_TIMEOUT: Duration = Duration::from_secs(60);
+
+/// Extra slack the watchdog gives the alert to return on its own before ending the process anyway.
+const ALERT_WATCHDOG_GRACE: Duration = Duration::from_secs(10);
+
 /// Path of the lock file for a given data dir.
 pub fn lock_path(data_dir: &Path) -> PathBuf {
     data_dir.join(LOCK_FILE_NAME)
@@ -149,8 +159,12 @@ pub fn acquire(data_dir: &Path) -> Result<File, AcquireError> {
 
 /// Claims the data dir for this process, or tells the user and exits.
 ///
-/// Call this once at startup, right after the logger is up and before anything opens a database or
-/// shows a window. On refusal the process is gone before it can touch a single index file.
+/// Call this once at startup, right after the logger is up and before anything opens a database. On
+/// refusal the process is gone before it can touch a single index file.
+///
+/// Tauri has already created the config-declared main window by the time `setup` runs, so this is
+/// not "before a window exists". It is before one is ever shown: that window is `"visible": false`
+/// and only gets shown later in startup, which the refusal path never reaches.
 ///
 /// An I/O problem (unwritable data dir, exotic filesystem with no `flock`) is NOT treated as
 /// refusal: that would turn an unrelated filesystem fault into "Cmdr won't start". We log it loudly
@@ -183,28 +197,65 @@ pub fn claim_data_dir_or_exit(data_dir: &Path) {
     }
 }
 
-/// Native "already running" alert.
+/// Native "already running" alert, shown without ever pumping our own run loop.
 ///
 /// A signed `.app` has no visible stderr, so the dialog is the only thing the user actually sees.
-/// We run `NSAlert` synchronously here rather than going through `tauri-plugin-dialog`: its
-/// `blocking_show` explicitly must not run on the main thread (it hands the dialog to
-/// `run_on_main_thread` and waits), and Tauri's `setup` hook IS the main thread with the event loop
-/// not yet running, so it would deadlock. `NSAlert::runModal` spins its own modal loop and needs
-/// nothing but an initialized `NSApplication`, which Tauri has already created by `setup` time.
+///
+/// `CFUserNotificationDisplayAlert` is the API that fits: the dialog is drawn by the system's
+/// `UserNotificationCenter` agent, so our call is a plain blocking wait on this thread, and it
+/// carries its own timeout.
+///
+/// ❌ Don't swap in `NSAlert::runModal` or `tauri-plugin-dialog` here. `runModal` pumps OUR main run
+/// loop, so a refused process kept booting behind the unanswered alert: webview and frontend up,
+/// updater check fired, files written into the data dir the other instance owns, then an abort when
+/// the frontend called a menu command while `setup` was still parked in the modal. And
+/// `tauri-plugin-dialog`'s `blocking_show` must not run on the main thread (it hands the dialog to
+/// `run_on_main_thread` and waits), which is exactly where `setup` lives, so it would deadlock.
 #[cfg(target_os = "macos")]
 fn show_already_running_alert() {
-    use objc2::MainThreadMarker;
-    use objc2_app_kit::NSAlert;
-    use objc2_foundation::NSString;
+    use objc2_core_foundation::{CFOptionFlags, CFString, CFUserNotification, kCFUserNotificationCautionAlertLevel};
 
-    let Some(mtm) = MainThreadMarker::new() else {
-        log::warn!(target: "instance_lock", "Not on the main thread; skipping the already-running alert.");
-        return;
+    spawn_exit_watchdog(ALERT_TIMEOUT + ALERT_WATCHDOG_GRACE);
+
+    let header = CFString::from_str(ALERT_TITLE);
+    let message = CFString::from_str(ALERT_BODY);
+    let mut response: CFOptionFlags = 0;
+    // SAFETY: every pointer argument is either `None` (the icon, sound, localization, and button
+    // titles are documented as nullable, meaning "system defaults", which is the single "OK" button
+    // we want) or a live `CFString` we own for the whole call, and `response_flags` points at a
+    // stack local that outlives the call. The call blocks this thread, so both borrows stay valid.
+    let err = unsafe {
+        CFUserNotification::display_alert(
+            ALERT_TIMEOUT.as_secs_f64(),
+            kCFUserNotificationCautionAlertLevel,
+            None,
+            None,
+            None,
+            Some(&header),
+            Some(&message),
+            None,
+            None,
+            None,
+            &mut response,
+        )
     };
-    let alert = NSAlert::new(mtm);
-    alert.setMessageText(&NSString::from_str(ALERT_TITLE));
-    alert.setInformativeText(&NSString::from_str(ALERT_BODY));
-    alert.runModal();
+    if err != 0 {
+        log::warn!(target: "instance_lock", "Couldn't show the already-running alert (CFUserNotification error {err}).");
+    }
+}
+
+/// Ends the process after `after`, whatever the alert is doing.
+///
+/// `CFUserNotificationDisplayAlert` honors its own timeout, but it depends on a separate system
+/// agent; if that agent wedges, the call could outlive it. A process that has been refused the data
+/// dir must never be able to linger, so this thread ends it unconditionally.
+#[cfg(target_os = "macos")]
+fn spawn_exit_watchdog(after: Duration) {
+    std::thread::spawn(move || {
+        std::thread::sleep(after);
+        log::warn!(target: "instance_lock", "The already-running alert never returned; exiting anyway.");
+        std::process::exit(1);
+    });
 }
 
 /// Non-macOS: no native alert surface we can rely on at this point in startup, so the log line and

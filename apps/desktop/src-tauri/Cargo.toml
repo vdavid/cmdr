@@ -305,7 +305,9 @@ objc2-core-graphics = { version = "0.3.2", features = [
     # (resize + center-crop) to feed the image tower (media_index/backend/vision).
     "CGColorSpace", "CGContext", "CGBitmapContext",
 ] }
-objc2-core-foundation = { version = "0.3.2", features = ["CFData", "CFDictionary", "CFString", "CFNumber", "CFBase", "CFCGTypes"] }
+# `CFUserNotification` (+ its `CFDate` / `CFURL` prerequisites) powers the instance-lock refusal
+# alert: it's the one alert API that doesn't pump our run loop (see `instance_lock.rs`).
+objc2-core-foundation = { version = "0.3.2", features = ["CFData", "CFDictionary", "CFString", "CFNumber", "CFBase", "CFCGTypes", "CFUserNotification", "CFDate", "CFURL"] }
 # Media-index CLIP semantic search: on-device Core ML inference for the text + image towers
 # (media_index/clip/). 0.3.2, published 2025-10-04, same objc2 0.6 / 0.3.2 family as the
 # Vision bindings above; the CLIP spike proved this exact version round-trips bit-identically

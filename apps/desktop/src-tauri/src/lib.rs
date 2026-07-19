@@ -425,11 +425,12 @@ pub fn run() {
                 ),
             }
 
-            // Claim the data dir before anything opens a database or shows a window. Two processes
-            // on one data dir means two index writers handing out the same entry IDs, which
-            // corrupts the index silently. This is the earliest point that has both a logger (so
-            // the refusal is recorded) and a resolved data dir. On refusal the process exits here
-            // and never touches an index file. See `instance_lock.rs`.
+            // Claim the data dir before anything opens a database. Two processes on one data dir
+            // means two index writers handing out the same entry IDs, which corrupts the index
+            // silently. This is the earliest point that has both a logger (so the refusal is
+            // recorded) and a resolved data dir. Tauri already created the config-declared main
+            // window before `setup`, but it's `"visible": false`, and a refused process exits here
+            // without ever showing it or touching an index file. See `instance_lock.rs`.
             match config::resolved_app_data_dir(app.handle()) {
                 Ok(dir) => instance_lock::claim_data_dir_or_exit(&dir),
                 Err(e) => log::warn!(
