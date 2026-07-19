@@ -16,6 +16,7 @@ use crate::indexing::aggregator::AggregationPhase;
 use crate::indexing::store::{DirStatsById, EntryRow, IndexStore, IndexStoreError};
 use crate::pluralize::pluralize_with;
 
+use super::deferred_repair::DeferredRepairs;
 use super::delta::{propagate_delta_by_id, propagate_min_subtree_epoch, propagate_recursive_has_symlinks};
 use super::{AccumulatorMaps, AggregationProgressEvent, MutationTracker, phase_to_str};
 
@@ -126,6 +127,7 @@ pub(super) fn handle_upsert_entry_v2(
     next_id: &AtomicI64,
     mutation_tracker: &MutationTracker,
     propagate_deltas: bool,
+    repairs: &DeferredRepairs,
     signal: &IndexFailureSignal,
 ) {
     // Hardlink dedup: if this file has nlink > 1, check whether another entry
@@ -154,9 +156,9 @@ pub(super) fn handle_upsert_entry_v2(
                     old.is_directory
                 );
                 if old.is_directory {
-                    handle_delete_subtree_by_id(conn, existing_id, propagate_deltas, mutation_tracker, signal);
+                    handle_delete_subtree_by_id(conn, existing_id, propagate_deltas, mutation_tracker, repairs, signal);
                 } else {
-                    handle_delete_entry_by_id(conn, existing_id, propagate_deltas, mutation_tracker, signal);
+                    handle_delete_entry_by_id(conn, existing_id, propagate_deltas, mutation_tracker, repairs, signal);
                 }
                 upsert_insert_new(
                     conn,
@@ -171,6 +173,7 @@ pub(super) fn handle_upsert_entry_v2(
                     should_dedup,
                     next_id,
                     propagate_deltas,
+                    repairs,
                     signal,
                 );
                 return;
@@ -189,6 +192,7 @@ pub(super) fn handle_upsert_entry_v2(
                 should_dedup,
                 old_entry,
                 propagate_deltas,
+                repairs,
                 signal,
             );
         }
@@ -206,6 +210,7 @@ pub(super) fn handle_upsert_entry_v2(
                 should_dedup,
                 next_id,
                 propagate_deltas,
+                repairs,
                 signal,
             );
         }
@@ -234,6 +239,7 @@ fn upsert_update_existing(
     should_dedup: bool,
     old_entry: Option<EntryRow>,
     propagate_deltas: bool,
+    repairs: &DeferredRepairs,
     signal: &IndexFailureSignal,
 ) {
     // Dedup: override sizes if another entry already has sizes for this inode
@@ -273,11 +279,11 @@ fn upsert_update_existing(
         let logical_delta = new_logical - old_logical;
         let physical_delta = new_physical - old_physical;
         if logical_delta != 0 || physical_delta != 0 {
-            propagate_delta_by_id(conn, parent_id, logical_delta, physical_delta, 0, 0);
+            propagate_delta_by_id(conn, parent_id, logical_delta, physical_delta, 0, 0, repairs);
         }
         // Symlink state change can flip the parent's `recursive_has_symlinks`.
         if old.is_symlink != is_symlink {
-            propagate_recursive_has_symlinks(conn, parent_id);
+            propagate_recursive_has_symlinks(conn, parent_id, repairs);
         }
     }
 }
@@ -297,6 +303,7 @@ fn upsert_insert_new(
     should_dedup: bool,
     next_id: &AtomicI64,
     propagate_deltas: bool,
+    repairs: &DeferredRepairs,
     signal: &IndexFailureSignal,
 ) {
     // Dedup: override sizes if another entry already has sizes for this inode
@@ -356,22 +363,22 @@ fn upsert_insert_new(
             // enrichment always has a row to read during the walk.
             if propagate_deltas {
                 if is_directory {
-                    propagate_delta_by_id(conn, parent_id, 0, 0, 0, 1);
+                    propagate_delta_by_id(conn, parent_id, 0, 0, 0, 1, repairs);
                     // The new dir is unlisted (`min_subtree_epoch = 0`), so a new
                     // incomplete subtree now exists: drop every ancestor's coverage
                     // to 0. A later verifier/reconcile scan stamps it and lifts
                     // coverage back. Fire from the parent so the dir's own (correct)
                     // 0 propagates up the chain.
-                    propagate_min_subtree_epoch(conn, parent_id);
+                    propagate_min_subtree_epoch(conn, parent_id, repairs);
                 } else {
                     let logical = logical_size.unwrap_or(0) as i64;
                     let physical = physical_size.unwrap_or(0) as i64;
-                    propagate_delta_by_id(conn, parent_id, logical, physical, 1, 0);
+                    propagate_delta_by_id(conn, parent_id, logical, physical, 1, 0, repairs);
                 }
                 // New symlink: walk the parent chain and OR in the flag.
                 // We start at parent_id so the parent's stats include this symlink.
                 if is_symlink {
-                    propagate_recursive_has_symlinks(conn, parent_id);
+                    propagate_recursive_has_symlinks(conn, parent_id, repairs);
                 }
             }
         }
@@ -463,6 +470,7 @@ pub(super) fn handle_move_entry_v2(
     new_parent_id: i64,
     new_name: String,
     mutation_tracker: &MutationTracker,
+    repairs: &DeferredRepairs,
     signal: &IndexFailureSignal,
 ) {
     use crate::indexing::store::normalize_for_comparison;
@@ -512,9 +520,9 @@ pub(super) fn handle_move_entry_v2(
             // Move is a live-only message (never part of a bulk reconcile, which
             // emits only Upsert/Delete), so its internal deletes always propagate.
             if conflicting_is_dir {
-                handle_delete_subtree_by_id(conn, conflicting_id, true, mutation_tracker, signal);
+                handle_delete_subtree_by_id(conn, conflicting_id, true, mutation_tracker, repairs, signal);
             } else {
-                handle_delete_entry_by_id(conn, conflicting_id, true, mutation_tracker, signal);
+                handle_delete_entry_by_id(conn, conflicting_id, true, mutation_tracker, repairs, signal);
             }
         }
         Ok(_) => {}
@@ -579,6 +587,7 @@ pub(super) fn handle_move_entry_v2(
         -physical_delta,
         -file_delta,
         -dir_delta,
+        repairs,
     );
     propagate_delta_by_id(
         conn,
@@ -587,6 +596,7 @@ pub(super) fn handle_move_entry_v2(
         physical_delta,
         file_delta,
         dir_delta,
+        repairs,
     );
 
     // The `recursive_has_symlinks` flag may flip on either chain. The old
@@ -595,8 +605,8 @@ pub(super) fn handle_move_entry_v2(
     // additions and recomputes correctly on removals, so calling it on both
     // is safe and stops walking as soon as a value stabilizes.
     if old_entry.is_symlink {
-        propagate_recursive_has_symlinks(conn, old_entry.parent_id);
-        propagate_recursive_has_symlinks(conn, new_parent_id);
+        propagate_recursive_has_symlinks(conn, old_entry.parent_id, repairs);
+        propagate_recursive_has_symlinks(conn, new_parent_id, repairs);
     } else if old_entry.is_directory {
         let had_symlinks = IndexStore::get_dir_stats_by_id(conn, entry_id)
             .ok()
@@ -604,8 +614,8 @@ pub(super) fn handle_move_entry_v2(
             .map(|s| s.recursive_has_symlinks)
             .unwrap_or(false);
         if had_symlinks {
-            propagate_recursive_has_symlinks(conn, old_entry.parent_id);
-            propagate_recursive_has_symlinks(conn, new_parent_id);
+            propagate_recursive_has_symlinks(conn, old_entry.parent_id, repairs);
+            propagate_recursive_has_symlinks(conn, new_parent_id, repairs);
         }
     }
 
@@ -615,8 +625,8 @@ pub(super) fn handle_move_entry_v2(
     // unchanged (it moved intact), so recompute only the two ancestor chains —
     // mirroring the dual-chain `recursive_has_symlinks` recompute above.
     if old_entry.is_directory {
-        propagate_min_subtree_epoch(conn, old_entry.parent_id);
-        propagate_min_subtree_epoch(conn, new_parent_id);
+        propagate_min_subtree_epoch(conn, old_entry.parent_id, repairs);
+        propagate_min_subtree_epoch(conn, new_parent_id, repairs);
     }
 
     mutation_tracker.bump();
@@ -627,6 +637,7 @@ pub(super) fn handle_delete_entry_by_id(
     entry_id: i64,
     propagate_deltas: bool,
     mutation_tracker: &MutationTracker,
+    repairs: &DeferredRepairs,
     signal: &IndexFailureSignal,
 ) {
     // Read old entry before deleting to get accurate delta
@@ -657,17 +668,18 @@ pub(super) fn handle_delete_entry_by_id(
             physical_delta,
             file_delta,
             dir_delta,
+            repairs,
         );
         // If we just deleted a symlink, the parent's `recursive_has_symlinks`
         // may flip back to false (and propagate further up).
         if entry.is_symlink {
-            propagate_recursive_has_symlinks(conn, entry.parent_id);
+            propagate_recursive_has_symlinks(conn, entry.parent_id, repairs);
         }
         // Removing a directory can RAISE the parent's coverage (its incomplete
         // child is gone). Deleting a file never changes coverage. Fire only for
         // a directory removal.
         if entry.is_directory {
-            propagate_min_subtree_epoch(conn, entry.parent_id);
+            propagate_min_subtree_epoch(conn, entry.parent_id, repairs);
         }
     }
     mutation_tracker.bump();
@@ -678,6 +690,7 @@ pub(super) fn handle_delete_subtree_by_id(
     root_id: i64,
     propagate_deltas: bool,
     mutation_tracker: &MutationTracker,
+    repairs: &DeferredRepairs,
     signal: &IndexFailureSignal,
 ) {
     // Read subtree totals before deleting to get accurate delta
@@ -720,15 +733,16 @@ pub(super) fn handle_delete_subtree_by_id(
             -(physical_size as i64),
             -(file_count as i32),
             -(dir_count as i32),
+            repairs,
         );
         // If the deleted subtree contained any symlinks, the parent's
         // `recursive_has_symlinks` may flip, so recompute up the chain.
         if subtree_had_symlinks {
-            propagate_recursive_has_symlinks(conn, pid);
+            propagate_recursive_has_symlinks(conn, pid, repairs);
         }
         // The removed subtree may have been incomplete (`min_subtree_epoch = 0`);
         // its removal can RAISE the parent's coverage, so recompute up the chain.
-        propagate_min_subtree_epoch(conn, pid);
+        propagate_min_subtree_epoch(conn, pid, repairs);
     }
     mutation_tracker.bump();
 }

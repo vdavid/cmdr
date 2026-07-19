@@ -25,6 +25,7 @@ use crate::indexing::store::{EntryRow, IndexStore, IndexStoreError};
 use crate::pluralize::{pluralize, pluralize_with};
 
 mod aggregation;
+mod deferred_repair;
 mod delta;
 mod entries;
 mod maintenance;
@@ -34,6 +35,7 @@ use aggregation::{
     handle_backfill_missing_dir_stats, handle_compute_all_aggregates, handle_compute_partial_aggregates,
     handle_compute_subtree_aggregates,
 };
+use deferred_repair::DeferredRepairs;
 use delta::{propagate_delta_by_id, propagate_min_subtree_epoch};
 use entries::{
     handle_delete_entry_by_id, handle_delete_subtree_by_id, handle_insert_entries_v2, handle_move_entry_v2,
@@ -923,6 +925,9 @@ fn writer_loop(
     // `false`: a DB that already healed never re-arms, so routine aggregates
     // don't rewrite the key.
     let mut heal_latch = false;
+    // Chains a failed `dir_stats` read/write left drifted, drained below once the
+    // writer is idle again. See `deferred_repair.rs`.
+    let repairs = DeferredRepairs::new();
 
     // Phase 1 instrumentation: time split between recv() (idle waiting),
     // processing (handlers), and commit (txn commits, tracked via wrapper).
@@ -973,6 +978,7 @@ fn writer_loop(
                 &mut probe,
                 &mut propagate_deltas,
                 &mut heal_latch,
+                &repairs,
                 &failure_signal,
             )
         });
@@ -990,6 +996,7 @@ fn writer_loop(
             &mut probe,
             &mut propagate_deltas,
             &mut heal_latch,
+            &repairs,
             &failure_signal,
         );
         probe.time_in_processing += proc_start.elapsed();
@@ -1029,6 +1036,18 @@ fn writer_loop(
             && let Some(tracker) = crate::indexing::pending_sizes::get_pending_sizes_for(&volume_id)
         {
             tracker.clear();
+        }
+
+        // Drain deferred `dir_stats` repairs at the same caught-up point, and for
+        // the same reason: with nothing queued behind us every committed row is
+        // final, so a recompute-from-children sees the whole truth, and whatever
+        // contention failed the original write (a checkpoint, a long reader) has
+        // had its chance to clear. `is_autocommit()` keeps the drain out of an
+        // open `BeginTransaction` batch, where the tree is only half written: a
+        // repair there would roll ancestors up from a partial state and then
+        // dequeue the id, baking that half-state in.
+        if queue_depth.load(Ordering::Relaxed) == 0 && conn.is_autocommit() && !repairs.is_empty() {
+            repairs.drain(&conn);
         }
     }
 
@@ -1098,6 +1117,7 @@ fn process_message(
     probe: &mut ProbeStats,
     propagate_deltas: &mut bool,
     heal_latch: &mut bool,
+    repairs: &DeferredRepairs,
     signal: &IndexFailureSignal,
 ) -> bool {
     match msg {
@@ -1139,6 +1159,7 @@ fn process_message(
                 next_id,
                 mutation_tracker,
                 *propagate_deltas,
+                repairs,
                 signal,
             );
         }
@@ -1147,15 +1168,23 @@ fn process_message(
             new_parent_id,
             new_name,
         } => {
-            handle_move_entry_v2(conn, entry_id, new_parent_id, new_name, mutation_tracker, signal);
+            handle_move_entry_v2(
+                conn,
+                entry_id,
+                new_parent_id,
+                new_name,
+                mutation_tracker,
+                repairs,
+                signal,
+            );
         }
         WriteMessage::DeleteEntryById(entry_id) => {
             mutation_tracker.record_delete_entry();
-            handle_delete_entry_by_id(conn, entry_id, *propagate_deltas, mutation_tracker, signal);
+            handle_delete_entry_by_id(conn, entry_id, *propagate_deltas, mutation_tracker, repairs, signal);
         }
         WriteMessage::DeleteSubtreeById(root_id) => {
             mutation_tracker.record_delete_subtree();
-            handle_delete_subtree_by_id(conn, root_id, *propagate_deltas, mutation_tracker, signal);
+            handle_delete_subtree_by_id(conn, root_id, *propagate_deltas, mutation_tracker, repairs, signal);
         }
         WriteMessage::DeleteDescendantsById(root_id) => {
             // No delta propagation: the subtree will be immediately re-scanned and
@@ -1178,10 +1207,11 @@ fn process_message(
                 physical_size_delta,
                 file_count_delta,
                 dir_count_delta,
+                repairs,
             );
         }
         WriteMessage::PropagateMinSubtreeEpoch(start_id) => {
-            propagate_min_subtree_epoch(conn, start_id);
+            propagate_min_subtree_epoch(conn, start_id, repairs);
         }
         WriteMessage::TruncateData => {
             handle_truncate_data(
@@ -1192,6 +1222,8 @@ fn process_message(
                 mutation_tracker,
                 signal,
             );
+            // The tables are gone; queued ids name rows that no longer exist.
+            repairs.clear();
         }
         WriteMessage::ComputeAllAggregates { source } => {
             handle_compute_all_aggregates(
@@ -1209,7 +1241,7 @@ fn process_message(
             handle_compute_partial_aggregates(conn, accumulator, app_handle, hot_paths, source, signal);
         }
         WriteMessage::ComputeSubtreeAggregates { root_id } => {
-            handle_compute_subtree_aggregates(conn, root_id, signal);
+            handle_compute_subtree_aggregates(conn, root_id, repairs, signal);
         }
         WriteMessage::UpdateLastEventId(id) => {
             if let Err(e) = IndexStore::update_meta(conn, "last_event_id", &id.to_string()) {
@@ -1287,7 +1319,7 @@ fn process_message(
             }
         }
         WriteMessage::BackfillMissingDirStats => {
-            handle_backfill_missing_dir_stats(conn, signal);
+            handle_backfill_missing_dir_stats(conn, repairs, signal);
         }
         WriteMessage::ArmLedgerHealLatch => {
             // A control message, not a mutation (no `MutationTracker::bump()`):

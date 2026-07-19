@@ -45,6 +45,9 @@ Writer discipline (one writer thread per DB):
 
 - **Never clamp the arithmetic**: a negative delta is drift; escalate to `repair_dir_stats_upward`, never `.max(0)`
   (floored a real 1.21 GB to "0 bytes").
+- **A failed `dir_stats` read or write is drift, not a no-op**: never warn-and-continue, and never treat a read `Err`
+  as "no row" (that overwrites a real aggregate with the delta). Queue the id (`writer/deferred_repair.rs`); the writer
+  drains it when caught up.
 - **Structural rewrites repair ancestors ON THE WRITER** (subtree scan, backfill), never off-writer read-then-credit.
 - **Full-aggregate senders declare `source: Maps|Sql`** (`Maps` only for a fresh scan); never clear the accumulator in
   the subtree handler.

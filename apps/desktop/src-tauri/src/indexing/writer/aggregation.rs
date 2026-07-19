@@ -16,6 +16,7 @@ use crate::indexing::aggregator::{self, AggregationProgress};
 use crate::indexing::store::IndexStore;
 use crate::pluralize::{pluralize, pluralize_with};
 
+use super::deferred_repair::DeferredRepairs;
 use super::repair::repair_dir_stats_upward;
 use super::{AccumulatorMaps, AggSource, AggregationProgressEvent, phase_to_str};
 
@@ -273,6 +274,7 @@ pub(super) fn handle_compute_all_aggregates(
 pub(super) fn handle_compute_subtree_aggregates(
     conn: &rusqlite::Connection,
     root_id: i64,
+    repairs: &DeferredRepairs,
     signal: &IndexFailureSignal,
 ) {
     let t = Instant::now();
@@ -295,7 +297,7 @@ pub(super) fn handle_compute_subtree_aggregates(
             if let Ok(Some(parent_id)) = IndexStore::get_parent_id(conn, root_id)
                 && parent_id != 0
             {
-                repair_dir_stats_upward(conn, parent_id);
+                repair_dir_stats_upward(conn, parent_id, repairs);
             }
         }
         Err(e) => {
@@ -304,7 +306,11 @@ pub(super) fn handle_compute_subtree_aggregates(
     }
 }
 
-pub(super) fn handle_backfill_missing_dir_stats(conn: &rusqlite::Connection, signal: &IndexFailureSignal) {
+pub(super) fn handle_backfill_missing_dir_stats(
+    conn: &rusqlite::Connection,
+    repairs: &DeferredRepairs,
+    signal: &IndexFailureSignal,
+) {
     let t = Instant::now();
     match aggregator::backfill_missing_dir_stats(conn) {
         Ok(outcome) if outcome.backfilled == 0 => {
@@ -318,7 +324,7 @@ pub(super) fn handle_backfill_missing_dir_stats(conn: &rusqlite::Connection, sig
             // writer thread — idempotent, so the deduped chains just short-circuit
             // where they already agree.
             for parent_id in outcome.parents_to_repair {
-                repair_dir_stats_upward(conn, parent_id);
+                repair_dir_stats_upward(conn, parent_id, repairs);
             }
             log::info!(
                 "BackfillMissingDirStats: computed stats for {} in {:.1}s",

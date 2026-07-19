@@ -2203,6 +2203,7 @@ fn upsert_heals_an_id_counter_that_drifted_behind_the_table() {
         &next_id,
         &mutation_tracker,
         true,
+        &DeferredRepairs::new(),
         &signal,
     );
 
@@ -2250,6 +2251,7 @@ fn upsert_does_not_reassign_an_id_on_a_name_conflict() {
         false,
         &next_id,
         true,
+        &DeferredRepairs::new(),
         &signal,
     );
 

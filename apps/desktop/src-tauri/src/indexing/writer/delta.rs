@@ -8,13 +8,17 @@
 //! When an exact delta can't be trusted — a subtraction that would drive a field
 //! below zero (arithmetic proof the stored balance drifted), or a debit against
 //! a missing row — the walk escalates to [`super::repair::repair_dir_stats_upward`]
-//! rather than clamping the lie into place. See the ledger design in
-//! `indexing/DETAILS.md` § "The dir_stats ledger".
+//! rather than clamping the lie into place. When the DB itself refuses — a read
+//! or write that fails mid-chain — the walk writes nothing and hands the id to
+//! [`super::deferred_repair`], which repairs it on a later writer tick. See the
+//! ledger design in `indexing/DETAILS.md` § "The dir_stats ledger".
 
 use crate::indexing::store::IndexStore;
 
+use super::deferred_repair::DeferredRepairs;
 use super::repair::{recompute_recursive_has_symlinks, repair_dir_stats_upward};
 
+#[allow(clippy::too_many_arguments, reason = "one signed delta per aggregate field")]
 pub(super) fn propagate_delta_by_id(
     conn: &rusqlite::Connection,
     start_id: i64,
@@ -22,13 +26,23 @@ pub(super) fn propagate_delta_by_id(
     physical_size_delta: i64,
     file_delta: i32,
     dir_delta: i32,
+    repairs: &DeferredRepairs,
 ) {
     use crate::indexing::store::ROOT_ID;
 
     let mut current_id = start_id;
     while current_id != 0 {
-        // Read existing stats
-        let existing = IndexStore::get_dir_stats_by_id(conn, current_id).ok().flatten();
+        // A read ERROR is not "no row": the `None` branch below would, for a
+        // positive delta, INSERT OR REPLACE a row holding only the delta — a
+        // transient failure baked into the ledger as a permanently wrong size.
+        let existing = match IndexStore::get_dir_stats_by_id(conn, current_id) {
+            Ok(row) => row,
+            Err(e) => {
+                log::debug!(target: "indexing::writer", "propagate_delta_by_id: read failed for id={current_id}: {e}");
+                repairs.queue(current_id, "propagate_delta_by_id read");
+                return;
+            }
+        };
 
         // A size/count delta never changes coverage, so `recursive_has_symlinks`
         // and `min_subtree_epoch` are carried through unchanged from the existing
@@ -55,7 +69,7 @@ pub(super) fn propagate_delta_by_id(
                         s.recursive_dir_count,
                         db = conn.path().unwrap_or("<unknown db>"),
                     );
-                    repair_dir_stats_upward(conn, current_id);
+                    repair_dir_stats_upward(conn, current_id, repairs);
                     return;
                 }
                 (
@@ -73,7 +87,7 @@ pub(super) fn propagate_delta_by_id(
                 // zeroed row would bake in a lie. Repair this dir from its committed
                 // children and let the recompute walk up instead.
                 if logical_size_delta < 0 || physical_size_delta < 0 || file_delta < 0 || dir_delta < 0 {
-                    repair_dir_stats_upward(conn, current_id);
+                    repair_dir_stats_upward(conn, current_id, repairs);
                     return;
                 }
                 // Pure-positive delta to a missing row: create it (load-bearing for
@@ -97,8 +111,12 @@ pub(super) fn propagate_delta_by_id(
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             rusqlite::params![current_id, new_logical, new_physical, new_files, new_dirs, has_symlinks as i32, min_subtree_epoch],
         ) {
-            log::warn!("propagate_delta_by_id: upsert failed for id={current_id}: {e}");
-            break;
+            // The delta never landed, so this ancestor and everything above it
+            // are short by it. Retrying inline is pointless (the DB is locked
+            // right now); defer the repair.
+            log::debug!(target: "indexing::writer", "propagate_delta_by_id: upsert failed for id={current_id}: {e}");
+            repairs.queue(current_id, "propagate_delta_by_id upsert");
+            return;
         }
 
         // Walk up to parent
@@ -107,7 +125,14 @@ pub(super) fn propagate_delta_by_id(
         }
         match IndexStore::get_parent_id(conn, current_id) {
             Ok(Some(pid)) if pid != 0 => current_id = pid,
-            _ => break,
+            // No parent (or a `0` sentinel): this is the top of the chain.
+            Ok(_) => break,
+            // Nowhere to go next, so the ancestors above still owe this delta.
+            Err(e) => {
+                log::debug!(target: "indexing::writer", "propagate_delta_by_id: parent lookup failed for id={current_id}: {e}");
+                repairs.queue(current_id, "propagate_delta_by_id parent lookup");
+                return;
+            }
         }
     }
 }
@@ -122,16 +147,25 @@ pub(super) fn propagate_delta_by_id(
 /// Used after symlink additions/removals (and subtree deletes that may have
 /// removed all symlinks in a branch). For pure size/count deltas this is a no-op
 /// and `propagate_delta_by_id` is enough.
-pub(super) fn propagate_recursive_has_symlinks(conn: &rusqlite::Connection, start_id: i64) {
+pub(super) fn propagate_recursive_has_symlinks(conn: &rusqlite::Connection, start_id: i64, repairs: &DeferredRepairs) {
     use crate::indexing::store::ROOT_ID;
 
     let mut current_id = start_id;
     while current_id != 0 {
-        let new_value = recompute_recursive_has_symlinks(conn, current_id);
-        let old_value = IndexStore::get_dir_stats_by_id(conn, current_id)
-            .ok()
-            .flatten()
-            .map(|s| s.recursive_has_symlinks);
+        // Same rule as the size walk: a failed READ must not decide the value.
+        // A `false` from a failed recompute would clear a true flag, and a failed
+        // stored-row read would misfire the short-circuit. Queue and stop.
+        let (new_value, old_value) = match (
+            recompute_recursive_has_symlinks(conn, current_id),
+            IndexStore::get_dir_stats_by_id(conn, current_id),
+        ) {
+            (Ok(new_value), Ok(stored)) => (new_value, stored.map(|s| s.recursive_has_symlinks)),
+            (Err(e), _) | (_, Err(e)) => {
+                log::debug!(target: "indexing::writer", "propagate_recursive_has_symlinks: read failed for id={current_id}: {e}");
+                repairs.queue(current_id, "propagate_recursive_has_symlinks read");
+                return;
+            }
+        };
 
         if old_value == Some(new_value) {
             // No change: the rest of the chain can't change either.
@@ -143,8 +177,9 @@ pub(super) fn propagate_recursive_has_symlinks(conn: &rusqlite::Connection, star
             "UPDATE dir_stats SET recursive_has_symlinks = ?1 WHERE entry_id = ?2",
             rusqlite::params![new_value as i32, current_id],
         ) {
-            log::warn!("propagate_recursive_has_symlinks: update failed for id={current_id}: {e}");
-            break;
+            log::debug!(target: "indexing::writer", "propagate_recursive_has_symlinks: update failed for id={current_id}: {e}");
+            repairs.queue(current_id, "propagate_recursive_has_symlinks update");
+            return;
         }
 
         if current_id == ROOT_ID {
@@ -152,7 +187,12 @@ pub(super) fn propagate_recursive_has_symlinks(conn: &rusqlite::Connection, star
         }
         match IndexStore::get_parent_id(conn, current_id) {
             Ok(Some(pid)) if pid != 0 => current_id = pid,
-            _ => break,
+            Ok(_) => break,
+            Err(e) => {
+                log::debug!(target: "indexing::writer", "propagate_recursive_has_symlinks: parent lookup failed for id={current_id}: {e}");
+                repairs.queue(current_id, "propagate_recursive_has_symlinks parent lookup");
+                return;
+            }
         }
     }
 }
@@ -172,22 +212,23 @@ pub(super) fn propagate_recursive_has_symlinks(conn: &rusqlite::Connection, star
 /// Fire it from the handlers where TREE SHAPE changes (new dir created, delete,
 /// subtree delete, move) — never on a pure size/count delta, where coverage is
 /// unchanged and `propagate_delta_by_id` carries `min_subtree_epoch` through.
-pub(super) fn propagate_min_subtree_epoch(conn: &rusqlite::Connection, start_id: i64) {
+pub(super) fn propagate_min_subtree_epoch(conn: &rusqlite::Connection, start_id: i64, repairs: &DeferredRepairs) {
     use crate::indexing::store::ROOT_ID;
 
     let mut current_id = start_id;
     while current_id != 0 {
-        let new_value = match IndexStore::recompute_min_subtree_epoch(conn, current_id) {
-            Ok(v) => v,
-            Err(e) => {
-                log::warn!("propagate_min_subtree_epoch: recompute failed for id={current_id}: {e}");
-                break;
+        // A failed read is not knowledge (see `propagate_recursive_has_symlinks`).
+        let (new_value, old_value) = match (
+            IndexStore::recompute_min_subtree_epoch(conn, current_id),
+            IndexStore::get_dir_stats_by_id(conn, current_id),
+        ) {
+            (Ok(new_value), Ok(stored)) => (new_value, stored.map(|s| s.min_subtree_epoch)),
+            (Err(e), _) | (_, Err(e)) => {
+                log::debug!(target: "indexing::writer", "propagate_min_subtree_epoch: read failed for id={current_id}: {e}");
+                repairs.queue(current_id, "propagate_min_subtree_epoch read");
+                return;
             }
         };
-        let old_value = IndexStore::get_dir_stats_by_id(conn, current_id)
-            .ok()
-            .flatten()
-            .map(|s| s.min_subtree_epoch);
 
         if old_value == Some(new_value) {
             // No change at this ancestor: the rest of the chain can't change either.
@@ -199,8 +240,9 @@ pub(super) fn propagate_min_subtree_epoch(conn: &rusqlite::Connection, start_id:
             "UPDATE dir_stats SET min_subtree_epoch = ?1 WHERE entry_id = ?2",
             rusqlite::params![new_value, current_id],
         ) {
-            log::warn!("propagate_min_subtree_epoch: update failed for id={current_id}: {e}");
-            break;
+            log::debug!(target: "indexing::writer", "propagate_min_subtree_epoch: update failed for id={current_id}: {e}");
+            repairs.queue(current_id, "propagate_min_subtree_epoch update");
+            return;
         }
 
         if current_id == ROOT_ID {
@@ -208,7 +250,12 @@ pub(super) fn propagate_min_subtree_epoch(conn: &rusqlite::Connection, start_id:
         }
         match IndexStore::get_parent_id(conn, current_id) {
             Ok(Some(pid)) if pid != 0 => current_id = pid,
-            _ => break,
+            Ok(_) => break,
+            Err(e) => {
+                log::debug!(target: "indexing::writer", "propagate_min_subtree_epoch: parent lookup failed for id={current_id}: {e}");
+                repairs.queue(current_id, "propagate_min_subtree_epoch parent lookup");
+                return;
+            }
         }
     }
 }

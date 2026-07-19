@@ -13,6 +13,8 @@
 
 use crate::indexing::store::{DirStatsById, IndexStore, IndexStoreError};
 
+use super::deferred_repair::DeferredRepairs;
+
 /// Recompute a directory's aggregate from its committed children and walk that
 /// recompute up the `parent_id` chain, rewriting each level, until a level's
 /// recompute already equals its stored row.
@@ -42,20 +44,26 @@ use crate::indexing::store::{DirStatsById, IndexStore, IndexStoreError};
 /// duplicate call is a cheap no-op after the short-circuit, so it's safe to fire
 /// from every escalation site without coordination. Writer-thread only; don't
 /// add a `WriteMessage::RepairDirStats` until a real off-thread caller exists.
-pub(super) fn repair_dir_stats_upward(conn: &rusqlite::Connection, start_id: i64) {
+pub(super) fn repair_dir_stats_upward(conn: &rusqlite::Connection, start_id: i64, repairs: &DeferredRepairs) {
     use crate::indexing::store::ROOT_ID;
 
     let mut current_id = start_id;
     while current_id != 0 {
-        let fresh = match recompute_dir_stats_from_children(conn, current_id) {
-            Ok(f) => f,
-            Err(e) => {
-                log::warn!("repair_dir_stats_upward: recompute failed for id={current_id}: {e}");
-                break;
+        // A read that fails tells us nothing, and this walk is the last line of
+        // defense against drift: stop and hand the id back to the deferred queue
+        // so a later tick tries again, rather than acting on a guess.
+        let (fresh, stored) = match (
+            recompute_dir_stats_from_children(conn, current_id),
+            IndexStore::get_dir_stats_by_id(conn, current_id),
+        ) {
+            (Ok(fresh), Ok(stored)) => (fresh, stored),
+            (Err(e), _) | (_, Err(e)) => {
+                log::debug!(target: "indexing::writer", "repair_dir_stats_upward: read failed for id={current_id}: {e}");
+                repairs.queue(current_id, "repair_dir_stats_upward read");
+                return;
             }
         };
 
-        let stored = IndexStore::get_dir_stats_by_id(conn, current_id).ok().flatten();
         if stored.as_ref() == Some(&fresh) {
             // This ancestor already agrees with its children, so the change below
             // it never reached here and nothing above can change either.
@@ -63,8 +71,9 @@ pub(super) fn repair_dir_stats_upward(conn: &rusqlite::Connection, start_id: i64
         }
 
         if let Err(e) = IndexStore::upsert_dir_stats_by_id(conn, std::slice::from_ref(&fresh)) {
-            log::warn!("repair_dir_stats_upward: upsert failed for id={current_id}: {e}");
-            break;
+            log::debug!(target: "indexing::writer", "repair_dir_stats_upward: upsert failed for id={current_id}: {e}");
+            repairs.queue(current_id, "repair_dir_stats_upward upsert");
+            return;
         }
 
         if current_id == ROOT_ID {
@@ -72,7 +81,12 @@ pub(super) fn repair_dir_stats_upward(conn: &rusqlite::Connection, start_id: i64
         }
         match IndexStore::get_parent_id(conn, current_id) {
             Ok(Some(pid)) if pid != 0 => current_id = pid,
-            _ => break,
+            Ok(_) => break,
+            Err(e) => {
+                log::debug!(target: "indexing::writer", "repair_dir_stats_upward: parent lookup failed for id={current_id}: {e}");
+                repairs.queue(current_id, "repair_dir_stats_upward parent lookup");
+                return;
+            }
         }
     }
 }
@@ -115,7 +129,7 @@ fn recompute_dir_stats_from_children(
         recursive_physical_size: physical,
         recursive_file_count: files,
         recursive_dir_count: dirs,
-        recursive_has_symlinks: recompute_recursive_has_symlinks(conn, dir_id),
+        recursive_has_symlinks: recompute_recursive_has_symlinks(conn, dir_id)?,
         min_subtree_epoch: IndexStore::recompute_min_subtree_epoch(conn, dir_id)?,
     })
 }
@@ -123,34 +137,36 @@ fn recompute_dir_stats_from_children(
 /// Recompute `recursive_has_symlinks` for a directory from its direct children
 /// (`is_symlink`) plus its subdirectories' stored `recursive_has_symlinks`.
 ///
-/// Returns the recomputed value, without writing it. Returns `false` if the
-/// directory has no children or the queries fail. Consumed by both the repair
-/// recompute above and [`super::delta::propagate_recursive_has_symlinks`].
-pub(super) fn recompute_recursive_has_symlinks(conn: &rusqlite::Connection, dir_id: i64) -> bool {
+/// Returns the recomputed value, without writing it: `false` for a directory
+/// with no children, an `Err` when a query fails. A failed query is deliberately
+/// NOT flattened to `false` — that would clear a true flag on a transient read
+/// error, the same "write a lie you didn't verify" class the ledger's negative-
+/// delta rule forbids. Consumed by both the repair recompute above and
+/// [`super::delta::propagate_recursive_has_symlinks`].
+pub(super) fn recompute_recursive_has_symlinks(
+    conn: &rusqlite::Connection,
+    dir_id: i64,
+) -> Result<bool, IndexStoreError> {
     // Direct symlink child?
-    let direct: bool = conn
-        .query_row(
-            "SELECT EXISTS(SELECT 1 FROM entries WHERE parent_id = ?1 AND is_symlink = 1)",
-            rusqlite::params![dir_id],
-            |row| row.get::<_, i32>(0).map(|n| n != 0),
-        )
-        .unwrap_or(false);
+    let direct: bool = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM entries WHERE parent_id = ?1 AND is_symlink = 1)",
+        rusqlite::params![dir_id],
+        |row| row.get::<_, i32>(0).map(|n| n != 0),
+    )?;
     if direct {
-        return true;
+        return Ok(true);
     }
     // Any sub-directory with the flag set?
-    let from_subdirs: bool = conn
-        .query_row(
-            "SELECT EXISTS(
+    let from_subdirs: bool = conn.query_row(
+        "SELECT EXISTS(
                 SELECT 1 FROM entries e
                 JOIN dir_stats ds ON ds.entry_id = e.id
                 WHERE e.parent_id = ?1 AND e.is_directory = 1 AND ds.recursive_has_symlinks = 1
             )",
-            rusqlite::params![dir_id],
-            |row| row.get::<_, i32>(0).map(|n| n != 0),
-        )
-        .unwrap_or(false);
-    from_subdirs
+        rusqlite::params![dir_id],
+        |row| row.get::<_, i32>(0).map(|n| n != 0),
+    )?;
+    Ok(from_subdirs)
 }
 
 // ── Tests ────────────────────────────────────────────────────────────
@@ -341,7 +357,7 @@ mod tests {
 
         {
             let conn = IndexStore::open_write_connection(&db_path).unwrap();
-            repair_dir_stats_upward(&conn, 20);
+            repair_dir_stats_upward(&conn, 20, &DeferredRepairs::new());
             check_db_consistency(&conn);
         }
 
@@ -386,7 +402,7 @@ mod tests {
             let conn = IndexStore::open_write_connection(&db_path).unwrap();
             IndexStore::upsert_dir_stats_by_id(&conn, std::slice::from_ref(&poison)).unwrap();
 
-            repair_dir_stats_upward(&conn, 20);
+            repair_dir_stats_upward(&conn, 20, &DeferredRepairs::new());
 
             let a = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
             assert_eq!(
@@ -447,7 +463,7 @@ mod tests {
             )
             .unwrap();
 
-            repair_dir_stats_upward(&conn, 10);
+            repair_dir_stats_upward(&conn, 10, &DeferredRepairs::new());
 
             let a = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
             assert_eq!(
@@ -495,7 +511,7 @@ mod tests {
             )
             .unwrap();
 
-            repair_dir_stats_upward(&conn, 10);
+            repair_dir_stats_upward(&conn, 10, &DeferredRepairs::new());
 
             // A rolls up B (400/1) + counts B and C as dirs (2). C contributes 0 to
             // sizes/counts (missing row) and absorbs A's epoch to 0.
@@ -563,7 +579,7 @@ mod tests {
             )
             .unwrap();
 
-            repair_dir_stats_upward(&conn, 10);
+            repair_dir_stats_upward(&conn, 10, &DeferredRepairs::new());
 
             let a = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
             assert!(a.recursive_has_symlinks, "A must inherit the symlink from B's subtree");
@@ -599,7 +615,7 @@ mod tests {
 
         {
             let conn = IndexStore::open_write_connection(&db_path).unwrap();
-            repair_dir_stats_upward(&conn, 10);
+            repair_dir_stats_upward(&conn, 10, &DeferredRepairs::new());
             check_db_consistency(&conn);
         }
 
