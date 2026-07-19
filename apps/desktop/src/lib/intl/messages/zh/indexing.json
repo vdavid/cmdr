@@ -133,10 +133,6 @@
   "@indexing.rescan.replayOverflow": {
     "sourceHash": "70c7481"
   },
-  "indexing.rescan.tooManySubdirRescans": "自上次运行以来许多目录有了较大变化。正在重新扫描，让一切保持最新。",
-  "@indexing.rescan.tooManySubdirRescans": {
-    "sourceHash": "06d04a0"
-  },
   "indexing.rescan.watcherStartFailed": "无法启动文件更改监视器。正在重新扫描，让索引保持最新。",
   "@indexing.rescan.watcherStartFailed": {
     "sourceHash": "831e44d"

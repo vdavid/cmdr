@@ -225,11 +225,6 @@
     "description": "Info toast explaining why Cmdr is doing a full rescan rather than replaying changes: too many changes accumulated since last run. Calm and explanatory."
   },
 
-  "indexing.rescan.tooManySubdirRescans": "Many directories changed significantly since last run. Running a fresh scan to get everything up to date.",
-  "@indexing.rescan.tooManySubdirRescans": {
-    "description": "Info toast explaining why Cmdr is rescanning: too many folders changed a lot since last run. Calm and explanatory."
-  },
-
   "indexing.rescan.watcherStartFailed": "Couldn''t start the file change watcher. Running a fresh scan to get the index up to date.",
   "@indexing.rescan.watcherStartFailed": {
     "description": "Info toast explaining why Cmdr is rescanning: the live file-change watcher couldn't start, so it falls back to a full scan. Calm and explanatory; avoid the words 'error' and 'failed'."

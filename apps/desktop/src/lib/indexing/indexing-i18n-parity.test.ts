@@ -72,9 +72,6 @@ describe('indexing catalog parity (en)', () => {
     expect(tString('indexing.rescan.replayOverflow')).toBe(
       'A lot of file changes happened since last run. Running a fresh scan instead of replaying them one by one.',
     )
-    expect(tString('indexing.rescan.tooManySubdirRescans')).toBe(
-      'Many directories changed significantly since last run. Running a fresh scan to get everything up to date.',
-    )
     expect(tString('indexing.rescan.watcherStartFailed')).toBe(
       "Couldn't start the file change watcher. Running a fresh scan to get the index up to date.",
     )

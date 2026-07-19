@@ -134,10 +134,6 @@
   "@indexing.rescan.replayOverflow": {
     "sourceHash": "70c7481"
   },
-  "indexing.rescan.tooManySubdirRescans": "Veel mappen zijn sterk veranderd sinds de vorige keer. Cmdr doorzoekt de schijf opnieuw om alles bij te werken.",
-  "@indexing.rescan.tooManySubdirRescans": {
-    "sourceHash": "06d04a0"
-  },
   "indexing.rescan.watcherStartFailed": "De bewaker voor bestandswijzigingen kon niet starten. Cmdr doorzoekt de schijf opnieuw om de index bij te werken.",
   "@indexing.rescan.watcherStartFailed": {
     "sourceHash": "831e44d"

@@ -133,10 +133,6 @@
   "@indexing.rescan.replayOverflow": {
     "sourceHash": "70c7481"
   },
-  "indexing.rescan.tooManySubdirRescans": "De nombreux répertoires ont beaucoup changé depuis la dernière exécution. Une nouvelle analyse est en cours pour tout remettre à jour.",
-  "@indexing.rescan.tooManySubdirRescans": {
-    "sourceHash": "06d04a0"
-  },
   "indexing.rescan.watcherStartFailed": "Le surveillant des modifications de fichiers n''a pas pu démarrer. Une nouvelle analyse est en cours pour remettre l''index à jour.",
   "@indexing.rescan.watcherStartFailed": {
     "sourceHash": "831e44d"

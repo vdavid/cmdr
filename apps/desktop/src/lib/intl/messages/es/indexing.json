@@ -134,10 +134,6 @@
   "@indexing.rescan.replayOverflow": {
     "sourceHash": "70c7481"
   },
-  "indexing.rescan.tooManySubdirRescans": "Muchas carpetas cambiaron de forma notable desde la última ejecución. Estamos haciendo un análisis nuevo para tenerlo todo al día.",
-  "@indexing.rescan.tooManySubdirRescans": {
-    "sourceHash": "06d04a0"
-  },
   "indexing.rescan.watcherStartFailed": "No se pudo iniciar el monitor de cambios de archivos. Estamos haciendo un análisis nuevo para poner el índice al día.",
   "@indexing.rescan.watcherStartFailed": {
     "sourceHash": "831e44d"

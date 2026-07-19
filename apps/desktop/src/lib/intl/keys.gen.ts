@@ -1344,7 +1344,6 @@ export type MessageKey =
   | 'indexing.rescan.reconcilerBufferOverflow'
   | 'indexing.rescan.replayOverflow'
   | 'indexing.rescan.staleIndex'
-  | 'indexing.rescan.tooManySubdirRescans'
   | 'indexing.rescan.watcherChannelOverflow'
   | 'indexing.rescan.watcherStartFailed'
   | 'indexing.run.firstScan'

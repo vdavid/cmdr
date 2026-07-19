@@ -134,10 +134,6 @@
   "@indexing.rescan.replayOverflow": {
     "sourceHash": "70c7481"
   },
-  "indexing.rescan.tooManySubdirRescans": "Muitas pastas mudaram bastante desde a última vez. Examinando o disco de novo para deixar tudo em dia.",
-  "@indexing.rescan.tooManySubdirRescans": {
-    "sourceHash": "06d04a0"
-  },
   "indexing.rescan.watcherStartFailed": "Não foi possível iniciar o monitor de alterações de arquivos. Examinando o disco de novo para colocar o índice em dia.",
   "@indexing.rescan.watcherStartFailed": {
     "sourceHash": "831e44d"

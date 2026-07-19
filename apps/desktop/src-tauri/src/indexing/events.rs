@@ -99,8 +99,6 @@ pub enum RescanReason {
     JournalGap,
     /// Replay processed too many events (safety limit exceeded).
     ReplayOverflow,
-    /// Too many MustScanSubDirs events during replay.
-    TooManySubdirRescans,
     /// DriveWatcher failed to start for replay.
     WatcherStartFailed,
     /// Reconciler event buffer overflowed during scan.

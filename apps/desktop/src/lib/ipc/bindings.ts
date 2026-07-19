@@ -6218,8 +6218,6 @@ export type RescanReason =
   | 'journal_gap'
   // Replay processed too many events (safety limit exceeded).
   | 'replay_overflow'
-  // Too many MustScanSubDirs events during replay.
-  | 'too_many_subdir_rescans'
   // DriveWatcher failed to start for replay.
   | 'watcher_start_failed'
   // Reconciler event buffer overflowed during scan.

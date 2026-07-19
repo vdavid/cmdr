@@ -270,7 +270,6 @@ const rescanReasonToMessageKey: Record<string, MessageKey> = {
   stale_index: 'indexing.rescan.staleIndex',
   journal_gap: 'indexing.rescan.journalGap',
   replay_overflow: 'indexing.rescan.replayOverflow',
-  too_many_subdir_rescans: 'indexing.rescan.tooManySubdirRescans',
   watcher_start_failed: 'indexing.rescan.watcherStartFailed',
   reconciler_buffer_overflow: 'indexing.rescan.reconcilerBufferOverflow',
   incomplete_previous_scan: 'indexing.rescan.incompletePreviousScan',
