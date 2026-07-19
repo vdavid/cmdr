@@ -188,6 +188,8 @@ All under `apps/desktop/src-tauri/src/`.
 - `space_poller.rs`: Live disk-space polling (per-volume-type intervals) plus the low-disk-space hysteresis warning
 - `fda_gate.rs`: Full Disk Access startup gate: blocks TCC reads + `NSWorkspace` icon calls until FDA is decided. See
   the `tauri-apis` rule in `.claude/rules/`
+- `instance_lock.rs`: Single-instance guard: one process per data dir, claimed at startup. See
+  [`docs/tooling/instance-isolation.md`](tooling/instance-isolation.md) § Instance lock
 - `stubs/`: Linux compilation stubs for macOS-only modules (Docker E2E pipeline)
 - `menu/`: Native menu bar: construction, dispatch mapping, accelerator sync, context-aware enable/disable. The Help
   menu carries the "What's new" item (above "Send feedback…")

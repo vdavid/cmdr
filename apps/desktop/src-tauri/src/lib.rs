@@ -110,6 +110,7 @@ pub mod icons;
 pub mod importance;
 pub mod indexing;
 mod install_id;
+mod instance_lock;
 pub mod licensing;
 #[cfg(target_os = "linux")]
 pub(crate) mod linux_distro;
@@ -421,6 +422,19 @@ pub fn run() {
                     "Log storage enabled: keep up to {} × 50 MB ({} MB cap)",
                     pluralize::pluralize(n as u64, "file"),
                     n * 50,
+                ),
+            }
+
+            // Claim the data dir before anything opens a database or shows a window. Two processes
+            // on one data dir means two index writers handing out the same entry IDs, which
+            // corrupts the index silently. This is the earliest point that has both a logger (so
+            // the refusal is recorded) and a resolved data dir. On refusal the process exits here
+            // and never touches an index file. See `instance_lock.rs`.
+            match config::resolved_app_data_dir(app.handle()) {
+                Ok(dir) => instance_lock::claim_data_dir_or_exit(&dir),
+                Err(e) => log::warn!(
+                    target: "instance_lock",
+                    "Couldn't resolve the data dir for the instance lock: {e}. Continuing without it."
                 ),
             }
 

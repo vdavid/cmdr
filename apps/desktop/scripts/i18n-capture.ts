@@ -212,6 +212,27 @@ process.on('SIGINT', () => {
 })
 
 /**
+ * Stops the app and waits for it to actually be gone (up to `timeoutMs`).
+ *
+ * Every pass relaunches against the same data dir, and only one Cmdr may hold that dir's instance
+ * lock at a time (`src-tauri/src/instance_lock.rs`). Overlapping two launches still works (the new
+ * process retries), it just stalls the next pass for the length of the retry window, so we wait
+ * out the SIGTERM instead. If the wait times out we carry on and let the lock's retry cover it.
+ */
+async function killAppAndWait(timeoutMs = 10000): Promise<void> {
+  const proc = appProc
+  killApp()
+  if (proc?.pid == null || proc.exitCode !== null || proc.signalCode !== null) return
+  await new Promise<void>((resolve) => {
+    const timer = setTimeout(resolve, timeoutMs)
+    proc.once('exit', () => {
+      clearTimeout(timer)
+      resolve()
+    })
+  })
+}
+
+/**
  * Warns (does not block) if another Cmdr is already running. Teardown only stops
  * the PID we launch and the native screenshot targets our own window IDs, so a
  * foreign instance (a dev session in another worktree) is safe to coexist with.
@@ -434,8 +455,9 @@ async function launchAndCapture(
       },
     })
   } finally {
-    // Always stop THIS pass's app before the next launch (or before exit).
-    killApp()
+    // Always stop THIS pass's app, and wait for it to go, before the next launch (or before exit):
+    // the next pass reuses the same data dir and has to take its instance lock.
+    await killAppAndWait()
   }
 }
 

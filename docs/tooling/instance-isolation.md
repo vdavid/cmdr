@@ -28,6 +28,39 @@ trimmed. Rejection happens in Node before any Rust process spawns. Source of tru
 
 ## Per-resource breakdown
 
+### Instance lock
+
+Isolation keeps instances off each other's data dir; the instance lock enforces the other half: **at most one process
+per data dir**, whatever the instance ID says. Two processes on one data dir means two index writers on one SQLite file,
+both seeding their entry-ID counter from `SELECT MAX(id)+1`, handing out the same IDs, and producing a flood of
+`UNIQUE constraint failed: entries.id` plus a `SQLITE_BUSY` storm. That's silent index corruption, so it's made
+structurally impossible rather than merely discouraged.
+
+Mechanism: an advisory whole-file lock (`std::fs::File::try_lock`, `flock` on unix, `LockFileEx` on Windows) on
+`<data dir>/.instance.lock`, taken in the Tauri `setup` hook right after the logger is up and before anything opens a
+database or shows a window. The `File` is parked in a process-lifetime `OnceLock`; dropping it would close the
+descriptor and release the lock, letting a second Cmdr in mid-session.
+
+Details worth knowing:
+
+- **Not a PID file, on purpose.** The kernel releases the lock when the process dies for any reason, `SIGKILL` and
+  panics included, so a stale lock can't exist and nothing has to clean one up. The pid written into the file is
+  diagnostics only: it names the holder in the refusal log line. Unreadable or garbage content means "unknown holder".
+- **Bounded retry, ~5 s at a 50 ms poll**, not a single attempt. Two legitimate flows briefly overlap two processes on
+  one data dir: `apps/desktop/scripts/i18n-capture.ts` (relaunches per capture pass; it also waits for the previous
+  process to exit) and the in-app updater's `relaunch()` (spawns the new process before the old one exits). A user
+  quitting and immediately relaunching lands in the same window.
+- **On refusal**: an error log line naming the data dir and the holder, a native "Cmdr is already running" alert
+  (`NSAlert`, run synchronously; `tauri-plugin-dialog`'s `blocking_show` must not run on the main thread, which is where
+  `setup` lives), then `exit(1)` before a single index file is touched. Under `CMDR_E2E_MODE=1` the alert is skipped
+  (nobody clicks OK in a test run, and a stuck modal would surface as an opaque harness timeout).
+- **An I/O problem is not a refusal.** An unwritable data dir or a filesystem with no `flock` logs an error and startup
+  continues unlocked (a warning, not an error), so an unrelated filesystem fault never becomes "Cmdr won't start".
+- E2E is unaffected: each macOS Playwright shard gets its own `/tmp/cmdr-e2e-data-<instance>/`, Linux Docker runs one
+  app per container, and Rust tests never spawn the binary.
+
+Authoritative file: [`instance_lock.rs`](../../apps/desktop/src-tauri/src/instance_lock.rs).
+
 ### Data dir
 
 `CMDR_DATA_DIR` env wins; otherwise Tauri's `app_data_dir()` resolves from the identifier in the generated config.
@@ -236,15 +269,16 @@ fixed at the same time).
 
 ## Generated and on-disk files
 
-| File                                                     | Owner        | Lifetime                                         | Purpose                                                                   |
-| -------------------------------------------------------- | ------------ | ------------------------------------------------ | ------------------------------------------------------------------------- |
-| `$TMPDIR/cmdr-tauri-instance-<rand>/tauri.instance.json` | wrapper      | per-launch (cleaned on exit / SIGINT)            | Tauri `-c` override for identifier, productName, devUrl, updater endpoint |
-| `<data_dir>/mcp.port`                                    | Rust         | server lifetime (best-effort delete on shutdown) | actual bound port of the Cmdr MCP HTTP server                             |
-| `<data_dir>/tauri-mcp.port`                              | wrapper      | per-launch (best-effort delete on exit)          | wrapper-allocated port the Tauri MCP bridge will bind                     |
-| `/tmp/cmdr-e2e-fixtures-cache/`                          | Node         | persistent (rebuild on file-shape change)        | shared hardlink source for E2E bulk `.dat` fixtures                       |
-| `/tmp/cmdr-e2e-fixtures-<instance>-<ts>/`                | Node         | per-run                                          | per-shard fixture root                                                    |
-| `/tmp/cmdr-e2e-data-<instance>/`                         | Go checker   | per-run                                          | per-shard data dir                                                        |
-| `/tmp/tauri-playwright-<instance>.sock`                  | Tauri plugin | per-run                                          | per-shard Playwright IPC socket                                           |
+| File                                                     | Owner        | Lifetime                                           | Purpose                                                                         |
+| -------------------------------------------------------- | ------------ | -------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `$TMPDIR/cmdr-tauri-instance-<rand>/tauri.instance.json` | wrapper      | per-launch (cleaned on exit / SIGINT)              | Tauri `-c` override for identifier, productName, devUrl, updater endpoint       |
+| `<data_dir>/.instance.lock`                              | Rust         | process lifetime (never deleted; lock is advisory) | flock'd single-instance guard; contents are the holder's pid (diagnostics only) |
+| `<data_dir>/mcp.port`                                    | Rust         | server lifetime (best-effort delete on shutdown)   | actual bound port of the Cmdr MCP HTTP server                                   |
+| `<data_dir>/tauri-mcp.port`                              | wrapper      | per-launch (best-effort delete on exit)            | wrapper-allocated port the Tauri MCP bridge will bind                           |
+| `/tmp/cmdr-e2e-fixtures-cache/`                          | Node         | persistent (rebuild on file-shape change)          | shared hardlink source for E2E bulk `.dat` fixtures                             |
+| `/tmp/cmdr-e2e-fixtures-<instance>-<ts>/`                | Node         | per-run                                            | per-shard fixture root                                                          |
+| `/tmp/cmdr-e2e-data-<instance>/`                         | Go checker   | per-run                                            | per-shard data dir                                                              |
+| `/tmp/tauri-playwright-<instance>.sock`                  | Tauri plugin | per-run                                            | per-shard Playwright IPC socket                                                 |
 
 ## Precedence rules
 
