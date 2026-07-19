@@ -62,6 +62,23 @@ recent lines in-process at crash time, and a flood-then-crash (the worst case fo
 lines that matter. Coalescing keeps the synchronous path and only removes redundant duplicate writes, so the crash tail
 and error-report completeness are preserved while the CPU-burn lever is closed.
 
+**The key is the EXACT line, so a variable payload defeats coalescing entirely.** `attempt=27`, a file name, or a
+count makes every occurrence a distinct key, and the flood passes through untouched. The safety net catches identical
+lines only; a per-event line with a varying payload has to be fixed where it's logged. Two shapes that work, both in
+the tree today:
+
+- **Per-episode instead of per-event.** The writer's SQLite busy handler tallies retries and logs ONE summary when the
+  lock wait ends ("writer waited 340 ms over 27 attempts for the write lock") instead of a line per attempt. Strictly
+  more diagnostic than the ladder, and bounded by episodes rather than retries. See `indexing/DETAILS.md` § "The busy
+  handler logs per episode".
+- **Only when the result changes.** Index enrichment runs on every listing refresh (about twice a second per pane) and
+  logs only when the outcome differs from the last pass for that listing, so an idle pane is silent. See
+  `indexing/enrichment.rs`'s `EnrichResultMemo`.
+
+Normalizing the key (stripping digits, say) is deliberately NOT done: counts and attempt numbers are usually the whole
+diagnostic, merging `moved 3 files` with `moved 4 files` would silently lose real events, and `[+N identical
+suppressed]` would stop being true. Payload floods get fixed at the call site.
+
 **Timestamp placement gotcha**: the ISO-8601 stamp is prepended by the writer at emit time, NOT in the fern `.format()`
 closure. The dedup key must be timestamp-free, or two identical messages a millisecond apart would hash differently and
 never coalesce. Don't move `file_timestamp()` back into the file-chain format. The on-disk line shape is unchanged

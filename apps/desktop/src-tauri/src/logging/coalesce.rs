@@ -308,7 +308,7 @@ mod tests {
         let sink = Sink::new();
         let mut w = CoalescingWriter::with_config(sink.clone(), WINDOW, BURST_THRESHOLD, MAX_KEYS, fixed_ts);
         for _ in 0..10_000 {
-            feed(&mut w, "WARN stall_probe::sqlite_busy  writer busy_handler attempt");
+            feed(&mut w, "WARN storage  index write failed, retrying");
         }
         // The whole loop runs well inside one 1s window, so only the burst threshold is
         // written; everything past it is suppressed.

@@ -468,20 +468,15 @@ impl IndexWriter {
         volume_id: String,
     ) -> Result<Self, IndexStoreError> {
         let conn = IndexStore::open_write_connection(db_path)?;
-        // SQLite busy retry logger. Brief contention is routine (WAL checkpoints, long-lived
-        // readers), so per-attempt logging stays at debug; sustained contention (>=20 attempts
-        // = >100ms lock wait) is a genuine stall signal and logs at warn — EXCEPT while this
-        // thread is inside `handle_wal_checkpoint`, whose TRUNCATE deliberately waits out
-        // readers to ~attempt 51. `busy_handler_should_warn` applies that policy (it reads the
-        // maintenance-owned checkpoint flag).
+        // SQLite busy retry accounting. The handler only tallies the attempt; the ONE
+        // summary line ("writer waited 340 ms over 27 attempts for the write lock") is
+        // emitted when the episode closes, from `flush_busy_episode` in the writer loop.
+        // A per-attempt line here is a log flood by construction, and the varying
+        // `attempt=` payload defeats the log writer's identical-line coalescing.
         conn.busy_handler(Some(|attempt: i32| {
-            if maintenance::busy_handler_should_warn(attempt) {
-                log::warn!(target: "stall_probe::sqlite_busy", "writer busy_handler attempt={attempt}");
-            } else {
-                log::debug!(target: "stall_probe::sqlite_busy", "writer busy_handler attempt={attempt}");
-            }
-            // Same back-off behaviour as default busy timeout (sleep up to ~100ms).
-            if attempt > 50 {
+            maintenance::note_busy_attempt(attempt);
+            // Same back-off behaviour as default busy timeout (sleep up to ~250ms).
+            if attempt > maintenance::BUSY_GIVE_UP_ATTEMPT {
                 false
             } else {
                 thread::sleep(Duration::from_millis(5));
@@ -490,6 +485,10 @@ impl IndexWriter {
         }))?;
 
         let initial_next_id = IndexStore::get_next_id(&conn)?;
+        // This read ran on the SPAWNING thread with the handler already installed, so
+        // close any episode it opened here — the writer loop's flush only ever sees its
+        // own thread's.
+        maintenance::flush_busy_episode();
         let (sender, receiver) = mpsc::sync_channel::<WriteMessage>(WRITER_CHANNEL_CAPACITY);
         let expected_total_entries = Arc::new(AtomicU64::new(0));
         let expected_total_clone = Arc::clone(&expected_total_entries);
@@ -1001,6 +1000,10 @@ fn writer_loop(
         );
         probe.time_in_processing += proc_start.elapsed();
         probe.messages_processed += 1;
+        // The busy handler has no "you got the lock" callback, so a contention
+        // episode is closed here, once the message that contended is done. One
+        // summary line per episode instead of one per retry.
+        maintenance::flush_busy_episode();
 
         if should_exit {
             log::debug!("Writer: shutdown after processing {} messages", stats.current.total);

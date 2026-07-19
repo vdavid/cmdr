@@ -427,7 +427,7 @@ WAL mode, 16 MB page cache, `auto_vacuum = INCREMENTAL`. Free pages reclaimed bo
 
 **Gotcha — row-yielding pragmas need per-row stepping, not `execute_batch`.** `PRAGMA incremental_vacuum(N)` compiles to a loop that frees ONE page per `sqlite3_step()`, yielding a result row after each; `execute_batch` steps a statement exactly once, so it frees a single page regardless of `N`. The vacuum call sites therefore route through `crate::sqlite_util::run_incremental_vacuum(conn, cap)`, which prepares the pragma and steps to exhaustion (`operation_log` uses the same helper). `wal_checkpoint(TRUNCATE)` also returns a row, so it goes through `query_row`. Never send either through `execute_batch` — the freelist then drains one page per 30 s tick and the file never shrinks.
 
-**Gotcha — the busy handler stays quiet during the checkpoint's reader wait.** The writer connection's busy handler escalates to `warn` past attempt 20 (a real stall signal), but `handle_wal_checkpoint`'s TRUNCATE deliberately waits readers out to ~attempt 51 before degrading to PASSIVE, so a persistent reader used to spew ~32 warn lines per checkpoint. `handle_wal_checkpoint` now brackets the TRUNCATE in a `WalCheckpointGuard` (a writer-thread-local flag); the busy handler calls `busy_handler_should_warn`, which reads that flag through the pure `busy_handler_escalates(attempt, in_checkpoint)` and keeps the expected wait at debug. Every other contention still warns.
+**Gotcha — the busy handler stays quiet during the checkpoint's reader wait.** The writer connection's busy handler escalates to `warn` past attempt 20 (a real stall signal), but `handle_wal_checkpoint`'s TRUNCATE deliberately waits readers out to ~attempt 51 before degrading to PASSIVE, so a persistent reader would warn on a wait that's working as designed. `handle_wal_checkpoint` brackets the TRUNCATE in a `WalCheckpointGuard` (a writer-thread-local flag); the busy handler stamps that flag onto the episode, and the episode's summary line applies the pure `busy_handler_escalates(attempt, in_checkpoint)` to keep the expected wait at debug (and say "(WAL checkpoint reader wait)"). Every other contention still warns. See § "The busy handler logs per episode".
 
 **WAL/checkpoint cadence — bounded autocheckpoint + `journal_size_limit`.** `apply_pragmas` (write connection only, in `store/mod.rs`) sets `PRAGMA wal_autocheckpoint = 4000` (~16 MiB at the 4 KiB default page size) and `PRAGMA journal_size_limit = 67108864` (64 MiB). Why: with `synchronous = NORMAL` + WAL, ordinary commits don't fsync — the F_FULLFSYNC barriers land at CHECKPOINT time (fsync WAL → copy pages into the main DB → fsync main DB). SQLite's default 1 000-page (~4 MiB) autocheckpoint fires a PASSIVE checkpoint inline on the committing connection every ~4 MiB of WAL, so the `ComputeAllAggregates` finalize (the write loop in `aggregator/mod.rs` commits ~464 chunked 1 000-row autocommit transactions) crosses that boundary many times and turns finalize into an fsync storm — with the concurrent SMB media indexer adding process-wide disk pressure. That is the **most likely trigger** of the `SQLITE_IOERR` the root index hit mid-scan and never recovered from (extended code likely `IOERR_FSYNC (1034)` / `IOERR_WRITE (778)`); this is hardening, NOT a reproduced root-cause fix. The **confirm path** is the resilience work's extended-code logging: the next occurrence trips `IndexPhase::Failed` and logs the SQLite primary+extended code, so it self-classifies. The 4 000-page threshold makes implicit checkpoints fire ~4x less often (fewer fsync barriers) while keeping the WAL small enough (matching the `-16384` / 16 MB page cache) that readers still scan it fast. `journal_size_limit` caps the on-disk `-wal` after a checkpoint resets it — a backstop between the 30 s `wal_checkpoint(TRUNCATE)` maintenance ticks and the post-scan checkpoint; 64 MiB is 4x the autocheckpoint size, so the file is reused in place in steady state (no trim/regrow churn) yet a burst, or a long-lived reader blocking checkpoints, can't strand a multi-hundred-MiB `-wal`. No explicit per-chunk checkpoint was added to the aggregate loop: the bounded autocheckpoint already gives a controlled cadence, and a manual PASSIVE checkpoint every N chunks would fsync on the writer thread mid-finalize (re-introducing stalls) for no gain over the pragma. Consistent in spirit with the media/importance WAL-hygiene plan (`docs/specs/resource-use-plan.md` § M9), which reaches the same ≤16 MB-at-rest goal via TRUNCATE at quiet points.
 
@@ -784,9 +784,35 @@ triager needs without the per-directory `list_directory` flood. Error reports re
 existence-of-drift and scan-progress signals. To get the per-event detail back:
 `RUST_LOG=cmdr_lib::indexing::reconciler=trace,cmdr_lib::indexing::writer=trace,cmdr_lib::file_system::volume::backends::smb=trace,debug`.
 
-The writer's SQLite busy retry logger (`stall_probe::sqlite_busy` in `writer/mod.rs::spawn`) logs
-per-attempt at DEBUG: brief contention is routine (WAL checkpoints, long-lived readers). It
-escalates to WARN at attempt >= 20 (>100ms of lock wait), which signals a genuine stall.
+### The busy handler logs per episode
+
+The writer's SQLite busy handler (`writer/mod.rs::spawn`) emits ONE `stall_probe::sqlite_busy` line per contention
+episode, not per retry: "writer waited 340 ms over 27 attempts for the write lock", or "writer gave up waiting for the
+write lock after 260 ms over 52 attempts" once it passes `BUSY_GIVE_UP_ATTEMPT` (50, ~255 ms at 5 ms a retry). Brief
+contention is routine (WAL checkpoints, long-lived readers), so a short episode stays at DEBUG; a sustained one
+(peak attempt >= 20, >100 ms of lock wait) is a genuine stall signal and goes to WARN, via the same pure
+`busy_handler_escalates(attempt, in_checkpoint)` policy.
+
+A per-attempt ladder is a log flood by construction (a measured run: 107 lines in three bursts, up to 52 in 0.9 s), and
+the varying `attempt=` payload defeats the log writer's identical-line coalescing completely, so it lands in `cmdr.log`
+and every crash/error-report bundle regardless of console level. The episode line is also strictly more diagnostic:
+total wait and retry count in one place.
+
+**How an episode closes**, given SQLite calls the handler only while it's blocked and never says "you got the lock":
+`note_busy_attempt` accumulates into a thread-local (per writer thread, which owns its connection), and
+`flush_busy_episode` emits it from the writer loop right after each message is processed. A second episode inside the
+same message closes itself: SQLite restarts `attempt` at 0 for each new locking event, so a 0 both proves the previous
+episode ended and opens the next. `in_checkpoint` is captured onto the episode, since the WAL-checkpoint guard has
+already dropped by flush time.
+
+### Enrichment logs only when the result changes
+
+`enrichment.rs` runs on every `get_file_range`, which a live pane triggers about twice a second whether or not anything
+changed, per pane. A per-pass line is ~14 000 lines an hour from two idle panes, and the varying counts and path make
+it invisible to the log writer's coalescer. So the pass keeps ONE line, `enrich: 12/14 dirs got sizes under <parent>`,
+gated on `EnrichResultMemo`: it fires only when `(dir_count, enriched)` differs from the last logged pass for that
+`(volume_id, parent_path)`. An idle pane is silent; "sizes aren't showing up here" and every change to it still shows.
+The memo is bounded (256 listings, cleared wholesale when full, at worst one extra line per listing afterwards).
 
 ## Gotchas
 

@@ -6,6 +6,7 @@
 //! mutate no `entries` rows, so they don't bump the writer generation.
 
 use std::cell::Cell;
+use std::time::{Duration, Instant};
 
 use crate::indexing::IndexFailureSignal;
 use crate::indexing::store::IndexStoreError;
@@ -38,19 +39,99 @@ impl Drop for WalCheckpointGuard {
     }
 }
 
+// ── Busy episodes (one log line per lock wait) ───────────────────────
+
+/// Last attempt the busy handler retries; past it, it returns `false` and SQLite
+/// gives the write up with `SQLITE_BUSY`. At 5 ms per retry that caps a wait at
+/// ~255 ms — short on purpose, since the writer thread stalls every queued write
+/// behind it.
+pub(super) const BUSY_GIVE_UP_ATTEMPT: i32 = 50;
+
+/// One contention episode: SQLite couldn't take the write lock, so it drove the
+/// busy handler in a retry loop until the lock came free (or the handler gave up).
+#[derive(Clone, Copy)]
+struct BusyEpisode {
+    /// When the handler first fired for this locking event.
+    started: Instant,
+    /// Highest `attempt` the handler saw. Invocations = `peak_attempt + 1`.
+    peak_attempt: i32,
+    /// Whether any part of the wait happened inside the WAL checkpoint's
+    /// deliberate reader wait. Captured here because the flag is already reset
+    /// by the time the episode is flushed.
+    in_checkpoint: bool,
+}
+
+thread_local! {
+    /// The episode in progress on THIS writer thread, if any. Per-thread because
+    /// each writer owns its own connection and drives its own busy handler.
+    static BUSY_EPISODE: Cell<Option<BusyEpisode>> = const { Cell::new(None) };
+}
+
 /// Whether the writer's busy handler escalates to warn at `attempt`. Sustained
 /// contention (>= 20 attempts, ~100 ms lock wait) is a genuine stall signal —
 /// except during the WAL checkpoint's deliberate reader wait, which is working
-/// as designed and stays at debug. Pure, so the policy is unit-testable;
-/// [`busy_handler_should_warn`] supplies the live flag.
+/// as designed and stays at debug. Pure, so the policy is unit-testable.
 pub(super) fn busy_handler_escalates(attempt: i32, in_checkpoint: bool) -> bool {
     attempt >= 20 && !in_checkpoint
 }
 
-/// The live decision the writer's busy handler (in `writer/mod.rs`) calls: reads
-/// the per-thread checkpoint flag and applies [`busy_handler_escalates`].
-pub(super) fn busy_handler_should_warn(attempt: i32) -> bool {
-    busy_handler_escalates(attempt, IN_WAL_CHECKPOINT.with(|f| f.get()))
+/// The one line an episode emits: `(warn, message)`. Pure, so the shape and the
+/// warn-vs-debug policy are unit-testable without touching the logger.
+fn busy_episode_summary(peak_attempt: i32, waited: Duration, in_checkpoint: bool) -> (bool, String) {
+    let attempts = pluralize((peak_attempt as u64) + 1, "attempt");
+    let ms = waited.as_millis();
+    let mut message = if peak_attempt > BUSY_GIVE_UP_ATTEMPT {
+        format!("writer gave up waiting for the write lock after {ms} ms over {attempts}")
+    } else {
+        format!("writer waited {ms} ms over {attempts} for the write lock")
+    };
+    if in_checkpoint {
+        message.push_str(" (WAL checkpoint reader wait)");
+    }
+    (busy_handler_escalates(peak_attempt, in_checkpoint), message)
+}
+
+/// Record one busy-handler invocation. Called from the handler itself, which
+/// SQLite drives with `attempt` counting from 0 for each new locking event — so
+/// a 0 both opens a fresh episode and proves the previous one is over (the write
+/// either got its lock or gave up), which is when the previous one is logged.
+pub(super) fn note_busy_attempt(attempt: i32) {
+    if attempt == 0 {
+        flush_busy_episode();
+    }
+    BUSY_EPISODE.with(|slot| {
+        let in_checkpoint = IN_WAL_CHECKPOINT.with(|f| f.get());
+        let episode = match slot.get() {
+            Some(mut e) => {
+                e.peak_attempt = e.peak_attempt.max(attempt);
+                e.in_checkpoint |= in_checkpoint;
+                e
+            }
+            None => BusyEpisode {
+                started: Instant::now(),
+                peak_attempt: attempt,
+                in_checkpoint,
+            },
+        };
+        slot.set(Some(episode));
+    });
+}
+
+/// Close the open episode, if any, and log its one summary line. Called by the
+/// writer loop after every message: the busy handler has no "you got the lock"
+/// callback, so the episode is closed from the outside once the work that
+/// contended is done. (A back-to-back episode within the same message is closed
+/// by [`note_busy_attempt`]'s `attempt == 0` instead.)
+pub(super) fn flush_busy_episode() {
+    let Some(episode) = BUSY_EPISODE.with(|slot| slot.take()) else {
+        return;
+    };
+    let (warn, message) = busy_episode_summary(episode.peak_attempt, episode.started.elapsed(), episode.in_checkpoint);
+    if warn {
+        log::warn!(target: "stall_probe::sqlite_busy", "{message}");
+    } else {
+        log::debug!(target: "stall_probe::sqlite_busy", "{message}");
+    }
 }
 
 /// Cap thresholds for the tiered incremental-vacuum policy. Below `MIN`,
@@ -166,6 +247,52 @@ mod tests {
     use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
     use crate::indexing::writer::tests::setup_db;
     use crate::indexing::writer::{IndexWriter, WriteMessage};
+
+    // ── Busy-episode summary ─────────────────────────────────────────
+
+    /// One line per episode carries what the per-attempt ladder used to spread
+    /// over dozens of lines: how long the writer waited and how many retries it
+    /// took. Short contention is routine, so it stays at debug.
+    #[test]
+    fn busy_episode_summary_reports_total_wait_and_attempts() {
+        let (warn, msg) = busy_episode_summary(4, Duration::from_millis(25), false);
+        assert!(!warn, "a five-attempt wait is routine contention");
+        assert_eq!(msg, "writer waited 25 ms over 5 attempts for the write lock");
+    }
+
+    /// Sustained contention (the old attempt >= 20 warn threshold) still warns,
+    /// now once per episode instead of once per attempt.
+    #[test]
+    fn busy_episode_summary_warns_on_sustained_contention() {
+        let (warn, msg) = busy_episode_summary(26, Duration::from_millis(340), false);
+        assert!(warn, "27 attempts is a genuine stall signal");
+        assert_eq!(msg, "writer waited 340 ms over 27 attempts for the write lock");
+    }
+
+    /// The WAL checkpoint's TRUNCATE deliberately waits readers out to ~attempt
+    /// 51, so its episode stays at debug and says so.
+    #[test]
+    fn busy_episode_summary_stays_quiet_during_the_checkpoint_reader_wait() {
+        let (warn, msg) = busy_episode_summary(50, Duration::from_millis(255), true);
+        assert!(!warn, "the checkpoint's reader wait is working as designed");
+        assert!(
+            msg.ends_with("(WAL checkpoint reader wait)"),
+            "the checkpoint context belongs in the line, got: {msg}"
+        );
+    }
+
+    /// Past the retry cap the handler returns false and SQLite gives up, which
+    /// the summary must say outright — that's the difference between "we waited"
+    /// and "the write didn't get the lock".
+    #[test]
+    fn busy_episode_summary_says_it_gave_up_past_the_retry_cap() {
+        let (warn, msg) = busy_episode_summary(BUSY_GIVE_UP_ATTEMPT + 1, Duration::from_millis(260), false);
+        assert!(warn);
+        assert_eq!(
+            msg,
+            "writer gave up waiting for the write lock after 260 ms over 52 attempts"
+        );
+    }
 
     // ── DB hygiene tests ─────────────────────────────────────────────
 

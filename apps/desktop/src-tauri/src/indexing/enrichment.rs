@@ -148,6 +148,61 @@ pub(crate) fn test_read_pool_lock() -> std::sync::MutexGuard<'static, ()> {
     READ_POOL_TEST_MUTEX.lock_ignore_poison()
 }
 
+// ── Enrichment result memo (log only on change) ──────────────────────
+
+/// Remembers the last enrichment outcome per listing, so a re-listing that
+/// produced the same result logs nothing.
+///
+/// Enrichment runs on every `get_file_range`, which a live pane triggers about
+/// twice a second whether or not anything changed — a per-pass line is ~14 000
+/// lines an hour of noise in `cmdr.log` and every error-report bundle, and the
+/// varying counts and path defeat the log writer's identical-line coalescing.
+/// What a triager actually needs ("sizes aren't showing up here") is the outcome
+/// and every change to it, which is exactly what survives this filter.
+struct EnrichResultMemo {
+    /// `(volume_id, parent_path)` → the last `(dir_count, enriched)` logged.
+    last: std::collections::HashMap<(String, String), (usize, usize)>,
+    /// Cap on tracked listings. A long browsing session visits many directories;
+    /// over the cap the map is cleared, which at worst re-logs one line per
+    /// listing the next time it's visited.
+    max_entries: usize,
+}
+
+impl EnrichResultMemo {
+    fn new(max_entries: usize) -> Self {
+        Self {
+            last: std::collections::HashMap::new(),
+            max_entries,
+        }
+    }
+
+    /// Whether this pass's result differs from the last one logged for this
+    /// listing (and record it). `true` means "worth a log line".
+    fn changed(&mut self, volume_id: &str, parent_path: &str, dir_count: usize, enriched: usize) -> bool {
+        let key = (volume_id.to_string(), parent_path.to_string());
+        if self.last.get(&key) == Some(&(dir_count, enriched)) {
+            return false;
+        }
+        if self.last.len() >= self.max_entries {
+            self.last.clear();
+        }
+        self.last.insert(key, (dir_count, enriched));
+        true
+    }
+
+    #[cfg(test)]
+    fn len(&self) -> usize {
+        self.last.len()
+    }
+}
+
+/// Tracked listings before the memo resets. Generous enough to cover both panes'
+/// browsing history in a session, small enough to be invisible in RAM.
+const ENRICH_MEMO_MAX_ENTRIES: usize = 256;
+
+static ENRICH_RESULT_MEMO: LazyLock<std::sync::Mutex<EnrichResultMemo>> =
+    LazyLock::new(|| std::sync::Mutex::new(EnrichResultMemo::new(ENRICH_MEMO_MAX_ENTRIES)));
+
 /// The common parent directory of a sibling listing (all entries in a listing share one
 /// parent). Returns `None` when the listing has no enrichable directory entry or the
 /// first such entry's path is malformed (no `/`). Firmlink-normalized so it matches the
@@ -249,8 +304,6 @@ pub fn enrich_entries_with_index_on_volume(volume_id: &str, entries: &mut [FileE
         }
     };
 
-    log::debug!("enrich: {} under {parent_path}", pluralize(dir_count as u64, "dir"));
-
     // Read the volume's `current_epoch` once for this enrichment pass, on the
     // same connection that does the stats lookup. Absent (older / first-run DB)
     // reads as 1 (`read_current_epoch`), so a volume with no recorded epoch
@@ -278,7 +331,17 @@ pub fn enrich_entries_with_index_on_volume(volume_id: &str, entries: &mut [FileE
         .iter()
         .filter(|e| e.is_directory && !e.is_symlink && e.recursive_size.is_some())
         .count();
-    log::debug!("enrich: {enriched}/{} got sizes", pluralize(dir_count as u64, "dir"));
+    // Only when the outcome moved: a pane re-listing an unchanged directory is
+    // silent, while "sizes aren't showing up" and every change to it still shows.
+    if ENRICH_RESULT_MEMO
+        .lock_ignore_poison()
+        .changed(volume_id, &parent_path, dir_count, enriched)
+    {
+        log::debug!(
+            "enrich: {enriched}/{} got sizes under {parent_path}",
+            pluralize(dir_count as u64, "dir")
+        );
+    }
 }
 
 /// Copy a directory's aggregated stats onto its `FileEntry`, deriving the
@@ -478,6 +541,55 @@ mod tests {
         apply_dir_stats(&mut e, &stats_with_epoch(3), current_epoch);
         assert_eq!(e.recursive_size_complete, Some(true));
         assert_eq!(e.recursive_size_stale, Some(true));
+    }
+
+    // ── Enrichment result memo (log only on change) ──────────────────
+
+    /// A pane re-listing an unchanged directory (twice a second, forever) must
+    /// log nothing after the first pass: same dir count, same enriched count.
+    #[test]
+    fn repeat_enrichment_of_an_unchanged_listing_is_silent() {
+        let mut memo = EnrichResultMemo::new(8);
+        assert!(memo.changed("root", "/Users/x", 14, 14), "the first pass is news");
+        for _ in 0..1000 {
+            assert!(!memo.changed("root", "/Users/x", 14, 14), "an unchanged repeat is not");
+        }
+    }
+
+    /// The diagnostic that matters ("sizes aren't showing up") is a change in how
+    /// many dirs got sizes, so any change in either count logs again.
+    #[test]
+    fn a_changed_enrichment_result_logs_again() {
+        let mut memo = EnrichResultMemo::new(8);
+        assert!(memo.changed("root", "/Users/x", 14, 0));
+        assert!(memo.changed("root", "/Users/x", 14, 9), "more dirs got sizes");
+        assert!(memo.changed("root", "/Users/x", 15, 9), "a dir appeared");
+        assert!(!memo.changed("root", "/Users/x", 15, 9));
+    }
+
+    /// Listings are tracked per volume and per parent, so two panes on different
+    /// directories don't mask each other.
+    #[test]
+    fn listings_are_tracked_per_volume_and_parent() {
+        let mut memo = EnrichResultMemo::new(8);
+        assert!(memo.changed("root", "/a", 1, 1));
+        assert!(
+            memo.changed("root", "/b", 1, 1),
+            "a different parent is its own listing"
+        );
+        assert!(memo.changed("smb-1", "/a", 1, 1), "so is a different volume");
+        assert!(!memo.changed("root", "/a", 1, 1));
+    }
+
+    /// Browsing many directories must not grow the memo without bound; going over
+    /// the cap clears it (at worst one extra line the next time each is listed).
+    #[test]
+    fn the_memo_stays_bounded() {
+        let mut memo = EnrichResultMemo::new(8);
+        for i in 0..100 {
+            memo.changed("root", &format!("/dir-{i}"), 1, 1);
+        }
+        assert!(memo.len() <= 8, "memo must stay within its cap, got {}", memo.len());
     }
 
     #[test]
