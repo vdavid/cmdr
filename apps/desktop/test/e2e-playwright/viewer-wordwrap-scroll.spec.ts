@@ -44,9 +44,9 @@ const lastLineSelector = `.line[data-line="${String(fileContent.split('\n').leng
 //  - long lines of space-separated tokens carrying control bytes (0x01-0x06):
 //    wrap to several rows, AND a canvas `measureText` predictor mis-measures the
 //    control-byte advances, so a predictor drifts where DOM measurement holds;
-//  - an unbreakable no-space run ('W'*200): the real flex `.line-text` renders
-//    it on ONE overflowing row, so the measurer must NOT wrap it (guards the
-//    flex-layout replication in `measureLineHeightsViaDom`);
+//  - an unbreakable no-space run ('W'*200): `.line-text`'s `min-width:0` lets
+//    break-word wrap it to fit, so the measurer must wrap it the SAME way (guards
+//    that the flex-layout probe in `measureLineHeightsViaDom` mirrors `.line`);
 //  - a short line: one row.
 const binaryFilePath = path.join(fixtureRoot, 'left', 'binary-drift.bin')
 const binaryContent: Buffer = (() => {

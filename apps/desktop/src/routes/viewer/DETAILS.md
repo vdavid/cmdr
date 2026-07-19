@@ -269,12 +269,12 @@ glyphs (the a11y labels and tooltips carry the real copy). The runtime works in 
 - **An empty line measures 0 px; `buildPrefixSum` clamps each line to `getLineHeight()`.** The DOM renders every `.line`
   row at least one line tall (the gutter number keeps the row open), so without the clamp the height map under-counts by
   one row per empty line and the scroll mapping drifts on files with many blank lines.
-- **The offscreen measurer wraps each line inside a `display:flex` row, mirroring `.line`, NOT a plain block.** A flex
-  item's `min-width:auto` makes `overflow-wrap:break-word` ineffective on an unbreakable run (no break opportunities,
-  e.g. `WWWW…`): the real viewer renders such a run on one overflowing row, so its height is one line. A plain-block
-  probe breaks that run to fit and over-counts the height, drifting the scroll exactly like the predictor bug this
-  replaced. Don't "simplify" the probe to a bare `<div>`. Pinned by the no-space-run line in
-  `viewer-wordwrap-scroll.spec.ts` (E2E).
+- **The offscreen measurer mirrors the real `.line` flex layout, including `.line-text`'s `min-width:0`, NOT a bare
+  block.** A flex item's default `min-width:auto` (= min-content) changes whether `overflow-wrap:break-word` can break
+  an unbreakable run (no break opportunities, e.g. a long base64 blob): with `min-width:0` on `.word-wrap .line-text`
+  the run wraps to fit; without it, it overflows on one row. The probe must reproduce whatever `.line-text` does, or it
+  over/under-counts and drifts the scroll. Keep the probe's flex row + `min-width:0` in lockstep with
+  `.word-wrap .line-text` in `+page.svelte`. Pinned by the no-space-run line in `viewer-wordwrap-scroll.spec.ts` (E2E).
 - `closeWindow()`'s `setTimeout(() => …, 0)` before `currentWindow.close()` is load-bearing — not decoration. Calling
   `close()` synchronously from inside a webview event handler runs webkit2gtk's destruction on the same GTK main-loop
   tick, stalling other webviews' IPC for an undefined duration. The settings page (`routes/settings/+page.svelte`'s

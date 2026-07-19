@@ -69,12 +69,12 @@ function measureLineHeightsViaDom(lines: string[], maxWidth: number): Float64Arr
   host.style.cssText = `position:absolute;left:-99999px;top:0;visibility:hidden;contain:layout style;width:${String(maxWidth)}px;`
 
   // Each row mirrors the real `.line` EXACTLY: a `display:flex` row (the text
-  // column width) with the `.line-text` as a flex item. This matters because a
-  // flex item's `min-width:auto` makes `overflow-wrap:break-word` ineffective on
-  // an unbreakable run (no spaces): the real viewer renders such a run on one
-  // row, overflowing, NOT wrapped. A plain-block probe would wrap it and
-  // over-count the height, drifting the scroll. Replicating the flex context
-  // makes the probe wrap identically to what's on screen.
+  // column width) with the `.line-text` as a flex item, including its
+  // `min-width:0`. The flex context is load-bearing: a flex item's default
+  // `min-width:auto` changes whether `overflow-wrap:break-word` can break an
+  // unbreakable run to fit, so a plain-block probe would wrap differently from
+  // what's on screen and drift the scroll. Keep this in lockstep with
+  // `.word-wrap .line-text` in `+page.svelte`.
   const rows: HTMLDivElement[] = new Array<HTMLDivElement>(n)
   const frag = document.createDocumentFragment()
   for (let i = 0; i < n; i++) {
@@ -82,7 +82,7 @@ function measureLineHeightsViaDom(lines: string[], maxWidth: number): Float64Arr
     row.style.cssText = 'display:flex'
     const text = document.createElement('div')
     text.style.cssText =
-      'font-family:var(--font-mono);font-size:var(--font-size-sm);line-height:1.5;white-space:pre-wrap;overflow-wrap:break-word;'
+      'min-width:0;font-family:var(--font-mono);font-size:var(--font-size-sm);line-height:1.5;white-space:pre-wrap;overflow-wrap:break-word;'
     text.textContent = lines[i]
     row.appendChild(text)
     rows[i] = row

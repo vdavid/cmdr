@@ -1401,6 +1401,13 @@
     .word-wrap .line-text {
         white-space: pre-wrap;
         overflow-wrap: break-word;
+        /* `.line-text` is a flex item; its default `min-width: auto` (= min-content)
+         * would let an unbreakable run (no break opportunities, e.g. a long base64
+         * blob or `WWWW…`) grow to full width and overflow instead of wrapping,
+         * making `overflow-wrap: break-word` a no-op. `min-width: 0` lets the item
+         * shrink so break-word actually breaks the run to fit. The height-map probe
+         * in `viewer-line-heights.svelte.ts` mirrors this; keep them in sync. */
+        min-width: 0;
     }
 
     mark {
