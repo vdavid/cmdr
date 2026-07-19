@@ -30,7 +30,8 @@ Shared tooling: the Go check runner ([`scripts/check/CLAUDE.md`](scripts/check/C
   a pointer to each area's docs).
 - **A procedure** (release, screenshots, deps, adding a window or icon): [`docs/guides/`](docs/guides) and the skills.
 - **Debugging a running app / reading logs**: [This](docs/tooling/logging.md) is the first stop, not `Console.app` or
-  grepping code. It gives all (FE & BE) log-file paths, format, and `RUST_LOG` recipes.
+  grepping code. It gives all (FE & BE) log-file paths, format, and `RUST_LOG` recipes. Watch RAM per line with
+  `CMDR_LOG_RAM_USE=1`.
 - **Branding / marketing**: [`brand/CLAUDE.md`](brand/CLAUDE.md), `apps/website/`, and [`README.md`](README.md). You
   don't need app internals.
 - **Writing, code, or UI-copy style**: [`docs/style-guide.md`](docs/style-guide.md) (read before writing user-facing
