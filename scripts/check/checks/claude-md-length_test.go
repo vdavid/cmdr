@@ -176,6 +176,32 @@ func TestRunClaudeMdLength_AllowlistExceeded(t *testing.T) {
 	}
 }
 
+func TestRunClaudeMdLength_PerFileBudgetOverride(t *testing.T) {
+	tmp := t.TempDir()
+	// The indexing submodule has a 1000-word override (claudeMdBudgetOverrides).
+	rel := filepath.Join("apps", "desktop", "src-tauri", "src", "indexing", "CLAUDE.md")
+
+	// 800 words: over the default 600, but under this submodule's 1000 budget.
+	writeClaudeMd(t, tmp, rel, 800)
+	result, err := RunClaudeMdLength(&CheckContext{RootDir: tmp})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Code != ResultSuccess {
+		t.Errorf("expected success (under the 1000 override), got code %d: %s", result.Code, result.Message)
+	}
+
+	// 1100 words: over its own 1000 budget → warns.
+	writeClaudeMd(t, tmp, rel, 1100)
+	result, err = RunClaudeMdLength(&CheckContext{RootDir: tmp})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Code != ResultWarning {
+		t.Errorf("expected warning (over the 1000 override), got code %d: %s", result.Code, result.Message)
+	}
+}
+
 func TestLoadClaudeMdLengthAllowlist_Missing(t *testing.T) {
 	tmp := t.TempDir()
 	result := loadClaudeMdLengthAllowlist(tmp)

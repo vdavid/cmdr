@@ -21,6 +21,29 @@ const (
 	claudeMdAllowlistBufferPct = 10
 )
 
+// claudeMdBudgetOverrides raises the push-tier word budget for a few
+// exceptionally large submodules whose CLAUDE.md genuinely can't hold its
+// must-knows under the default without dropping load-bearing guardrails. This is
+// a deliberate per-file ceiling (David's call per submodule), NOT the
+// shrink-wrapping allowlist: the allowlist ratchets any slack back down to the
+// current count, so it can't express "this file may grow to N". Keep this map
+// tiny and justified; prefer condensing or splitting a dir over adding an entry.
+var claudeMdBudgetOverrides = map[string]int{
+	// The indexing subsystem is exceptionally large (scanner, writer, aggregator,
+	// reconciler, event loop, SMB/MTP, freshness, rescan throttle); its invariants
+	// don't compress under 600 words without losing must-know guardrails.
+	"apps/desktop/src-tauri/src/indexing/CLAUDE.md": 1000,
+}
+
+// claudeMdBudgetFor returns the word budget for relPath: a per-file override if
+// one exists, else the default claudeMdWarnWords.
+func claudeMdBudgetFor(relPath string) int {
+	if budget, ok := claudeMdBudgetOverrides[relPath]; ok {
+		return budget
+	}
+	return claudeMdWarnWords
+}
+
 type longClaudeMd struct {
 	relPath string
 	words   int
@@ -78,9 +101,9 @@ func shrinkwrapClaudeMdLengthAllowlist(rootDir string, list *claudeMdLengthAllow
 		case err != nil:
 			delete(list.Files, path)
 			changes = append(changes, fmt.Sprintf("removed %s (file no longer exists)", path))
-		case wordCount <= claudeMdWarnWords:
+		case wordCount <= claudeMdBudgetFor(path):
 			delete(list.Files, path)
-			changes = append(changes, fmt.Sprintf("removed %s (now %d words, under the %d threshold)", path, wordCount, claudeMdWarnWords))
+			changes = append(changes, fmt.Sprintf("removed %s (now %d words, under the %d threshold)", path, wordCount, claudeMdBudgetFor(path)))
 		case wordCount <= allowed*(100-claudeMdAllowlistBufferPct)/100:
 			list.Files[path] = wordCount
 			changes = append(changes, fmt.Sprintf("ratcheted %s: %d → %d words", path, allowed, wordCount))
@@ -107,7 +130,7 @@ func scanClaudeMdLengths(rootDir string, allowlist claudeMdLengthAllowlist) (cla
 
 	for _, relPath := range claudeFiles {
 		wordCount, err := countWords(filepath.Join(rootDir, relPath))
-		if err != nil || wordCount <= claudeMdWarnWords {
+		if err != nil || wordCount <= claudeMdBudgetFor(relPath) {
 			continue
 		}
 		if allowedWords, ok := allowlist.Files[relPath]; ok && wordCount <= allowedWords*(100+claudeMdAllowlistBufferPct)/100 {
