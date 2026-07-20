@@ -6,6 +6,15 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 
 ## In progress
 
+- [ ] 2026-07-20 [sealed-subtrees-plan.md](sealed-subtrees-plan.md) - Bound the cost of pathological high-churn
+      directories without lying about folder sizes. Motivated by a measured 7-minute, 1 GB cold-start stall caused by
+      one directory (Google DriveFS `fetch_temp`, 1.14M empty files). M1 ships alone: a two-teeth child-count guard in
+      post-replay verification that declines oversized directories without touching `listed_epoch` (writing 0 there
+      would propagate incompleteness to `~` via the 0-absorbing epoch min). M2-M4 land together: seal a subtree to its
+      `dir_stats` aggregate plus a bounded head of large files, making sealed dirs opaque leaves for every recompute
+      path, choosing the seal root by rolling churn up the ancestor chain, and re-anchoring periodically because
+      deletes in a sealed subtree resolve against the index and inflate the aggregate monotonically. M5 adds a distinct
+      "approximate" size state. Non-goals: a user-facing settings table, SMB/MTP, replacing the existing throttles.
 - [ ] 2026-07-19 [indexing-churn-resilience.md](indexing-churn-resilience.md) - Routing + ingestion fixes for a
       high-churn boot disk, following the per-subtree rescan throttle. Fix 1: depth-split `MustScanSubDirs` routing
       (shallow/root-scale → the visible scanner path, deep/narrow → the throttled reconcile) + a root-rescan cooldown,
