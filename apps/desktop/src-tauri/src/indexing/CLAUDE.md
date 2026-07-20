@@ -33,7 +33,16 @@ Writer discipline (one thread per DB):
 - **A fatal storage error STOPS + FAILS the index, never retries** (one incident logged 12,700 warnings in 8 min);
   recovery is rebuild; BUSY/LOCKED stay retried.
 - **`MustScanSubDirs` is depth-split** (`reconciler/rescan_route.rs`): SHALLOW (`depth ≤ 2`) → VISIBLE scanner
-  (`start_scan`, 45 s cooldown), no hourglass hold; DEEP → per-subtree-throttled reconcile drain.
+  (`start_scan`), no hourglass hold; DEEP → per-subtree-throttled reconcile drain.
+- **A shallow anchor sweeps at most ONCE A DAY, on the BOOT DISK ONLY** (`SHALLOW_RESCAN_MIN_INTERVAL`); a
+  mount-rooted volume keeps the short `EXTERNAL_SHALLOW_RESCAN_MIN_INTERVAL`. Don't unify them: the storm was measured
+  on `/`, and the per-navigation verifier is root-scoped, so an external drive has NO cover between sweeps.
+- **Coalesced anchors are counted, not forgotten** (`SweepRecord.coalesced_since_sweep`, "since the last COMPLETED
+  sweep", never lifetime), surfaced on `VolumeIndexStatus` for the tooltip. The badge stays green by design: once-a-day
+  sweeping is the intended operating state, not a fault.
+- **The window is WALL-CLOCK and persisted, seeded from `max(meta.shallow_sweep_at, meta.scan_completed_at)`.** A
+  TRIGGERED sweep stamps `shallow_sweep_at` immediately, because `start_scan` DELETES `scan_completed_at` before
+  walking; keying off completion alone would make an interrupted sweep look "never swept" and rescan every launch.
 - **The watcher→loop channel is UNBOUNDED**: backpressure dropped FSEvents and forced full scans. Don't re-bound it;
   `classify_ingestion_pressure` caps memory.
 

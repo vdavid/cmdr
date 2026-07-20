@@ -237,6 +237,50 @@ async fn root_scale_must_scan_routes_to_scanner_without_a_stuck_hold() {
     writer.shutdown();
 }
 
+/// End to end through the live path: the SECOND root-scale `MustScanSubDirs`
+/// must not reach the scanner, and must not fall back onto the reconcile drain
+/// either.
+///
+/// Scope, deliberately stated: this pins that the live path CONSULTS the window
+/// and that a coalesced anchor goes nowhere. It does NOT pin the window's length
+/// — it fires both events in the same second, which the old 45 s cooldown would
+/// have coalesced too. The length is pinned by `rescan_route`'s unit tests, which
+/// inject the clock; `route_shallow_to_scanner` reads the wall clock directly, so
+/// a day-long window can't be exercised here without injecting a clock through
+/// the live path.
+#[tokio::test]
+async fn a_second_root_scale_must_scan_does_not_reach_the_scanner() {
+    use crate::indexing::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes};
+    let _guard = PENDING_SIZES_TEST_MUTEX.lock().expect("test mutex");
+    *PENDING_SIZES.lock().expect("install tracker") = Some(Arc::new(PendingSizes::new()));
+    rescan_route::reset_cooldown_for_test();
+
+    let (writer, _dir, conn) = setup_test_writer();
+    let mut reconciler = EventReconciler::new();
+    reconciler.switch_to_live();
+    let sink = Arc::new(Mutex::new(Vec::<String>::new()));
+    reconciler.set_recording_scan_trigger(Arc::clone(&sink));
+
+    let mut pending = HashSet::new();
+    // Two root-scale anchors, exactly the shape production sees: `/` twice.
+    reconciler.process_live_event(&make_event("/", 1, must_scan_dir_flags()), &conn, &writer, &mut pending);
+    reconciler.process_live_event(&make_event("/", 2, must_scan_dir_flags()), &conn, &writer, &mut pending);
+
+    assert_eq!(
+        sink.lock().unwrap().len(),
+        1,
+        "only the leading-edge anchor sweeps; the second is coalesced for the day"
+    );
+    // And the coalesced one still didn't fall back onto the reconcile drain.
+    assert!(
+        reconciler.pending_rescans_snapshot().is_empty(),
+        "a coalesced shallow anchor must not queue an invisible reconcile instead"
+    );
+
+    *PENDING_SIZES.lock().expect("uninstall") = None;
+    writer.shutdown();
+}
+
 /// The counterpart: a deep/narrow `MustScanSubDirs` anchor keeps the throttled
 /// reconcile drain (holds the hourglass, queues the anchor). Routing splits by
 /// depth, so the deep path must NOT reach the scanner.

@@ -45,6 +45,14 @@ mod rescan_route;
 mod rescan_throttle;
 mod throttle;
 use escalation::resolve_escalation_anchor;
+/// The shallow-anchor sweep window, re-exported for its out-of-module users:
+/// `manager::resume_or_scan` reseeds it from `meta` at index start,
+/// `scan_completion` restarts it whenever a full walk finishes, and `queries`
+/// reads the record for the volume status surface.
+pub(in crate::indexing) use rescan_route::{
+    SHALLOW_COALESCED_KEY, SHALLOW_RESCAN_MIN_INTERVAL, SHALLOW_SWEEP_AT_KEY, now_unix, record_sweep_completed,
+    seed_from_meta, sweep_record,
+};
 use rescan_throttle::RescanThrottle;
 use throttle::{Throttle, ThrottleOutcome};
 

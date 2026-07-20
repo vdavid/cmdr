@@ -7387,6 +7387,25 @@ export type VolumeIndexStatus = {
    *  From `meta.scan_duration_ms`; `None` if no scan has completed.
    */
   scanDurationMs: number | null
+  /**
+   *  How many shallow `MustScanSubDirs` anchors were coalesced SINCE THE LAST
+   *  COMPLETED SWEEP — the times macOS told us it lost track of changes and we
+   *  deliberately didn't rescan (see `reconciler/rescan_route.rs`). `0` means
+   *  nothing was skipped. Feeds the tooltip's "macOS lost track of file system
+   *  changes N times" line; the badge itself does NOT branch on this, because
+   *  once-a-day sweeping is the designed operating state, not a fault.
+   *
+   *  Deliberately NOT a lifetime total, which would only measure how long the
+   *  app has been installed.
+   */
+  coalescedSignalsSinceSweep: number
+  /**
+   *  Unix seconds when the next full sweep becomes due for this volume (the last
+   *  sweep plus the volume's window). Lets the tooltip say "next full check in N
+   *  hours" without duplicating the policy constant in the frontend. `None` until
+   *  a first sweep has been recorded.
+   */
+  nextSweepDueAt: number | null
 }
 
 /**

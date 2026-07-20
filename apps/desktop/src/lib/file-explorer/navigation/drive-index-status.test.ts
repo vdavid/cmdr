@@ -18,6 +18,8 @@ function makeStatus(overrides: Partial<VolumeIndexStatus> = {}): VolumeIndexStat
     failure: null,
     scanCompletedAt: 1_750_000_000,
     scanDurationMs: 134_000,
+    coalescedSignalsSinceSweep: 0,
+    nextSweepDueAt: null,
     ...overrides,
   }
 }

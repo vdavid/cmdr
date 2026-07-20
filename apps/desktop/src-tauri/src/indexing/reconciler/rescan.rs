@@ -28,26 +28,56 @@ impl EventReconciler {
     ///   is exactly what it's good at.
     pub(in crate::indexing) fn route_must_scan_sub_dirs(&mut self, path: PathBuf, writer: &IndexWriter) {
         match rescan_route::classify(path_prefix::depth(&path.to_string_lossy())) {
-            RescanRoute::Scanner => self.route_shallow_to_scanner(path),
+            RescanRoute::Scanner => self.route_shallow_to_scanner(path, writer),
             RescanRoute::Reconcile => self.queue_must_scan_sub_dirs(path, writer),
         }
     }
 
     /// Request a VISIBLE full (re)scan for a shallow/root-scale anchor, gated by the
-    /// per-volume root-rescan cooldown. Deliberately takes NO hourglass hold and
+    /// per-volume once-a-day sweep window. Deliberately takes NO hourglass hold and
     /// never enters `pending_rescans`: the scanner path is visible and single-flight,
     /// and holding the per-dir hourglass for a root-scale reconcile is the stuck-
-    /// hourglass bug this replaces. Within the cooldown the redundant demand is
-    /// coalesced (dropped): safe, because `start_scan` is single-flight and FSEvents
-    /// replays from the last event id, so the next scan catches interim changes.
-    fn route_shallow_to_scanner(&mut self, anchor: PathBuf) {
+    /// hourglass bug this replaces.
+    ///
+    /// Inside the window we do NOT sweep, and the skipped signal is not forgotten:
+    /// it's COUNTED and persisted, so the volume tooltip can say how many change
+    /// signals macOS lost and when the next sweep is due. The badge deliberately
+    /// stays green — once-a-day sweeping is the DESIGNED operating state, not a
+    /// fault, and a fault colour shown all day trains people to ignore it.
+    ///
+    /// The window is boot-disk-only ([`rescan_route::min_interval_for`]); a
+    /// mount-rooted external drive keeps the short cooldown. See
+    /// `rescan_route::SHALLOW_RESCAN_MIN_INTERVAL` for the measurements.
+    fn route_shallow_to_scanner(&mut self, anchor: PathBuf, writer: &IndexWriter) {
         DEBUG_STATS.record_must_scan(&anchor.to_string_lossy());
-        if !rescan_route::allow_scanner_rescan(&self.volume_id, Instant::now()) {
-            log::debug!(
-                "MustScanSubDirs: coalescing shallow anchor {} (root-rescan cooldown)",
-                anchor.display()
+        let (action, record) = rescan_route::decide_shallow_anchor(
+            &self.volume_id,
+            now_unix(),
+            rescan_route::min_interval_for(self.space.is_boot_disk()),
+        );
+        if action == rescan_route::ShallowAnchorAction::Coalesce {
+            log::info!(
+                "MustScanSubDirs: shallow anchor {} inside the sweep window; coalescing ({} since the last sweep)",
+                anchor.display(),
+                record.coalesced_since_sweep,
             );
+            // Mirror the count into `meta` so it survives relaunch: the window spans
+            // many restarts, and a count that reset on launch would under-report.
+            let _ = writer.send(WriteMessage::UpdateMeta {
+                key: SHALLOW_COALESCED_KEY.to_string(),
+                value: record.coalesced_since_sweep.to_string(),
+            });
             return;
+        }
+        // Stamp the TRIGGER time, not only the completion: `start_scan` deletes
+        // `scan_completed_at` before walking, so without this an interrupted sweep
+        // would leave the window looking permanently expired and we'd sweep on every
+        // launch. See `rescan_route::SweepRecord::last_sweep_unix`.
+        if let Some(at) = record.last_sweep_unix {
+            let _ = writer.send(WriteMessage::UpdateMeta {
+                key: SHALLOW_SWEEP_AT_KEY.to_string(),
+                value: at.to_string(),
+            });
         }
         let label = format!("shallow MustScanSubDirs ({})", anchor.display());
         log::info!(

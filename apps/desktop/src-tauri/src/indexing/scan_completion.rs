@@ -236,6 +236,23 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
                     key: "scan_completed_at".to_string(),
                     value: now,
                 });
+                // Any completed full walk restarts the shallow-`MustScanSubDirs`
+                // sweep window and clears its coalesced count (the drift those
+                // skipped signals stood for has now been repaired). Not only a
+                // shallow-triggered sweep: the window means "a full walk happened
+                // recently", so the user's own "Rescan now" counts too. See
+                // `reconciler/rescan_route.rs`.
+                let sweep = reconciler::record_sweep_completed(&volume_id, reconciler::now_unix());
+                if let Some(at) = sweep.last_sweep_unix {
+                    let _ = writer.send(WriteMessage::UpdateMeta {
+                        key: reconciler::SHALLOW_SWEEP_AT_KEY.to_string(),
+                        value: at.to_string(),
+                    });
+                }
+                let _ = writer.send(WriteMessage::UpdateMeta {
+                    key: reconciler::SHALLOW_COALESCED_KEY.to_string(),
+                    value: "0".to_string(),
+                });
                 let _ = writer.send(WriteMessage::UpdateMeta {
                     key: "scan_duration_ms".to_string(),
                     value: summary.duration_ms.to_string(),

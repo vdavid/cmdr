@@ -15,7 +15,9 @@ use super::firmlinks;
 use super::manager::IndexManager;
 use super::pending_sizes::get_pending_sizes_for;
 use super::routing::{index_read_path, volume_id_for_local_path};
-use super::state::{INDEX_REGISTRY, IndexPhase, ROOT_VOLUME_ID, get_freshness, index_failure, is_active};
+use super::state::{
+    INDEX_REGISTRY, IndexPhase, IndexVolumeKind, ROOT_VOLUME_ID, get_freshness, index_failure, is_active, volume_kind,
+};
 use super::store::{self, DirStats, IndexStore};
 
 /// Per-volume index status for the per-drive freshness badge.
@@ -46,6 +48,24 @@ pub fn get_volume_index_status(volume_id: &str) -> VolumeIndexStatus {
         })
         .unwrap_or((None, None));
 
+    // The shallow-anchor sweep bookkeeping (how many "macOS lost track of changes"
+    // signals we coalesced since the last sweep, and when the next one is due).
+    // Computing `next_sweep_due_at` here rather than in the frontend keeps the
+    // window length in one place: the policy module.
+    //
+    // ONLY the boot disk has a scheduled daily sweep. A mount-rooted volume runs
+    // the short cooldown (`EXTERNAL_SHALLOW_RESCAN_MIN_INTERVAL`), which is a
+    // debounce, not a schedule: there is no meaningful "next full check" to
+    // promise, so we send `None` rather than a number that would read as the same
+    // kind of statement. Without this the tooltip would tell a USB drive's owner
+    // their next full check is a day away while its real window is 45 seconds.
+    let sweep = super::reconciler::sweep_record(volume_id);
+    let has_daily_sweep = volume_kind(volume_id).is_some_and(IndexVolumeKind::has_event_journal);
+    let next_sweep_due_at = sweep
+        .last_sweep_unix
+        .filter(|_| has_daily_sweep)
+        .map(|at| at + super::reconciler::SHALLOW_RESCAN_MIN_INTERVAL.as_secs());
+
     VolumeIndexStatus {
         volume_id: volume_id.to_string(),
         enabled,
@@ -53,6 +73,8 @@ pub fn get_volume_index_status(volume_id: &str) -> VolumeIndexStatus {
         failure: index_failure(volume_id),
         scan_completed_at,
         scan_duration_ms,
+        coalesced_signals_since_sweep: sweep.coalesced_since_sweep,
+        next_sweep_due_at,
     }
 }
 

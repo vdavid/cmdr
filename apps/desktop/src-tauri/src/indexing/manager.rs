@@ -354,6 +354,29 @@ impl IndexManager {
             .map_err(|e| format!("Failed to get index status: {e}"))?;
         let stored_event_id = status.last_event_id.as_deref().and_then(|s| s.parse::<u64>().ok());
 
+        // Reload the shallow-`MustScanSubDirs` sweep window AND its coalesced count
+        // from disk. Both live in a process-global ledger, so without this a
+        // relaunch would hand the next shallow anchor a free full sweep and reset
+        // the count to zero — and a once-a-day policy that resets on every launch
+        // is not a once-a-day policy. See `reconciler/rescan_route.rs`.
+        //
+        // The window takes the LATER of two facts, which is what makes an
+        // interrupted sweep safe: `scan_completed_at` (any full walk FINISHED, and
+        // `start_scan` deletes it before walking) and `shallow_sweep_at` (a sweep
+        // was TRIGGERED, which survives a walk that never finished).
+        let read_conn = self.store.read_conn();
+        let sweep_at = IndexStore::get_meta(read_conn, super::reconciler::SHALLOW_SWEEP_AT_KEY)
+            .ok()
+            .flatten()
+            .and_then(|v| v.parse::<u64>().ok());
+        let completed_at = status.scan_completed_at.as_deref().and_then(|s| s.parse::<u64>().ok());
+        let coalesced = IndexStore::get_meta(read_conn, super::reconciler::SHALLOW_COALESCED_KEY)
+            .ok()
+            .flatten()
+            .and_then(|v| v.parse::<u32>().ok())
+            .unwrap_or(0);
+        super::reconciler::seed_from_meta(&self.volume_id, sweep_at.max(completed_at), coalesced);
+
         // One-shot ledger heal (see `indexing/DETAILS.md` § "The dir_stats ledger").
         // A DB that has never healed still carries pre-ledger drift; arm the
         // writer latch so the next full aggregate rebuilds and marks it. EVERY

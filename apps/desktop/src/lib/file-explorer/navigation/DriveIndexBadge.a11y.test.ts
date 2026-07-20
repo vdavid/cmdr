@@ -42,6 +42,8 @@ function makeStatus(freshness: Freshness | null, enabled = freshness != null): V
     failure: null,
     scanCompletedAt: freshness === 'fresh' ? 1_750_000_000 : null,
     scanDurationMs: freshness === 'fresh' ? 134_000 : null,
+    coalescedSignalsSinceSweep: 0,
+    nextSweepDueAt: null,
   }
 }
 

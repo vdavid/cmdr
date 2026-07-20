@@ -270,6 +270,15 @@ impl IndexPathSpace {
         self.scope.mount_root()
     }
 
+    /// Whether this is the `/`-rooted boot disk (as opposed to a mount-rooted
+    /// external drive). Read back from the scope, which owns the mount root.
+    ///
+    /// The shallow-`MustScanSubDirs` sweep window branches on this: the once-a-day
+    /// window is boot-disk-only (see `reconciler/rescan_route.rs`).
+    pub(crate) fn is_boot_disk(&self) -> bool {
+        self.mount_root().is_none()
+    }
+
     /// Override the inode-trust flag (builder form). Used by `for_volume` and by
     /// tests exercising the FAT/exFAT nulling path.
     pub(crate) fn with_inodes_trustworthy(mut self, trustworthy: bool) -> Self {

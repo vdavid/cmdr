@@ -36,6 +36,8 @@ vi.mock('$lib/ipc/bindings', () => ({
           failure: null,
           scanCompletedAt: null,
           scanDurationMs: null,
+          coalescedSignalsSinceSweep: 0,
+          nextSweepDueAt: null,
         },
       }),
   },
@@ -90,6 +92,8 @@ describe('maybePromptFirstConnect gating', () => {
       failure: null,
       scanCompletedAt: null,
       scanDurationMs: null,
+      coalescedSignalsSinceSweep: 0,
+      nextSweepDueAt: null,
     }
     await maybePromptFirstConnect('smb-e', 'Share E', actions)
     expect(addToast).not.toHaveBeenCalled()
