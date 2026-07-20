@@ -39,7 +39,7 @@
     "apps/desktop/src-tauri/src/indexing/integration_tests.rs": 1111,
     "apps/desktop/src-tauri/src/indexing/manager.rs": 1147,
     "apps/desktop/src-tauri/src/indexing/reconciler.rs": 1337,
-    "apps/desktop/src-tauri/src/indexing/reconciler/tests.rs": 1602,
+    "apps/desktop/src-tauri/src/indexing/reconciler/tests.rs": 1804,
     "apps/desktop/src-tauri/src/indexing/scanner/tests.rs": 940,
     "apps/desktop/src-tauri/src/indexing/state.rs": 1356,
     "apps/desktop/src-tauri/src/indexing/store/tests.rs": 1800,
