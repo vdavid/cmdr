@@ -260,9 +260,9 @@ downgraded. Same word, opposite operation. **Leave `listed_epoch` untouched.**
 - The "1.14M `EntryRow`s are a large share of the 1.01 GB peak" claim is **unmeasured**. Back-of-envelope it is ~130–160
   MB plus a comparable transient for the per-parent name `HashSet`. Measure before advertising a RAM win.
 
-**The instrument for the n=1 question.** Not an in-memory list from verification: `verify_affected_dirs` runs only after
-a journal-gap replay, so on a machine that never gaps it stays empty regardless of how many pathological directories
-exist.
+**The instrument for the severity question.** Not an in-memory list from verification: `verify_affected_dirs` runs only
+after a journal-gap replay, so on a machine that never gaps it stays empty regardless of how many pathological
+directories exist.
 
 The guarded walker alone is not enough either: a populated, previously-completed index **never runs it** — that rescan
 takes `local_reconcile.rs` (`build_live_children:232`, per `DETAILS.md:533-545`), and the walker only runs on a first
@@ -503,13 +503,15 @@ inside it churns.
 
 **Spike B, unfinished:** the hysteresis constants are still unmeasured. The 4-hour window yielded 10 minutes of live
 observation across a 42-minute wall span (24% coverage, stitched from three live-loop runs), because a shallow
-`MustScanSubDirs` anchor superseded live mode with a rescan still running 85 minutes later, and the monitor only
-observes live mode. Underneath that: **14 of 28 recorded scans were triggered by `shallow MustScanSubDirs`**, roughly
-one every two hours. Any design assuming "the live loop is generally running" should verify that first. Tracked
-separately from this plan.
+`MustScanSubDirs` anchor superseded live mode with a reconcile rescan that had still not finished 2h03m later when it
+was interrupted, and the monitor only observes live mode. Underneath that: **14 of 28 recorded scans were triggered by
+`shallow MustScanSubDirs`**, roughly one every two hours, and a reconcile rescan of the boot volume is far slower than
+the ~5 minutes a fresh scan of the same volume takes. Any design assuming "the live loop is generally running" should
+verify that first. Tracked separately from this plan.
 
-**Spike C:** one machine, one pathological directory (plus a 119k-child runner-up). M1's census now answers this on real
-machines before M2–M4 commit.
+**Spike C:** four unbounded scratch directories from four unrelated vendors on one machine, so the pathological
+directory is a recurring class rather than a Google Drive quirk. The census now measures the residual severity that
+gates M2–M4.
 
 ## Spikes (do these before M2–M4)
 
@@ -559,18 +561,30 @@ Not throwaway: this instrumentation _is_ most of Phase B's churn accounting, so 
 Deliverable: a few hours of collected data plus an analysis note in `docs/notes/`. A short window is sufficient — the
 motivating churn sources (DriveFS log rotation ~1/min, `fetch_temp`, a `cargo build`) all cycle in minutes.
 
-### Spike C — the n=1 question (cheap, opportunistic)
+### Spike C — is one pathological directory a freak or a class? (answered)
 
-Query child-count distributions from the existing index DBs. One machine is already known (`fetch_temp`, plus a
-119k-child runner-up); the gap is _other_ machines, which is what M1's counter rides along to answer over time.
+The question worth asking is not "how many machines have one" but "is `fetch_temp` a Google-Drive-specific freak, or an
+instance of a recurring class". One machine already answers it: four unbounded scratch directories from four unrelated
+vendors (`fetch_temp` at 1.4M entries, WebKit `Resource` at 119k, Chrome `Cache_Data` at 107k, and cargo's
+`target/debug`). Vendors will keep shipping these; the class is real.
+
+❌ Do not reach for cross-machine telemetry here. It was proposed and rejected: a few dozen beta users is a
+statistically useless sample, and it would cost a privacy decision and a trust question to buy nothing that the
+reasoning above doesn't already give us. This is a question for thinking, not for measuring.
+
+What is still worth measuring, locally, is _severity_: how much a pathological directory costs after the guard already
+bounds the worst path. That is what the `huge_dirs_seen` census is for.
 
 ## Gates and open questions
 
 In order:
 
-1. **Gate on M2–M4 existing at all: the n=1 answer** (Spike C + M1's counter). If it comes back n≈1 across real
-   machines, then **M1 alone is the whole feature** and this five-phase change to the ledger is not justified. Do not
-   sequence M2–M4 unconditionally after M1.
+1. **Gate on M2–M4 existing at all: residual pain after the guard.** The verification guard already removed the measured
+   incident (a 7-minute, 1 GB cold start). The question left is whether what remains still hurts enough on a real
+   machine to justify a five-phase change to the `dir_stats` ledger, the one part of this subsystem with four documented
+   size-corruption incidents. Answer it from the `huge_dirs_seen` census and observed startup cost, not from the fact
+   that the plan exists. If the guard turns out to be the whole fix, **M1 alone is the whole feature**. Do not sequence
+   M2–M4 unconditionally after M1.
 2. **Gate on starting M2–M4: re-anchor cost** (Spike A). **Passed 2026-07-20**, with the three Phase C conditions above.
 3. **Gate on Phase A: seal-state identity** (Decision 1). A silent-data-loss question, not a cost question, so it
    outranks the remaining ones.
