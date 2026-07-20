@@ -56,6 +56,18 @@ pub enum MtpConnectionError {
         device_id: String,
         dest_folder: String,
     },
+    /// mtp-rs reset the device in software to recover from a wedged transfer
+    /// cancel. The PTP session is gone, but the device is STILL PLUGGED IN and
+    /// reopenable with no replug — ❌ never treat this as a disconnect.
+    ///
+    /// Reachable in Cmdr through `PtpSession::recover_if_needed()`: a data-phase
+    /// op whose future is dropped mid-flight (the `MTP_TIMEOUT_SECS` timeout
+    /// around a window read, or a task abort on a cancelled transfer) leaves an
+    /// armed `TransactionScope`, and the NEXT op drains it via `cancel_transfer`
+    /// and propagates that drain's outcome verbatim.
+    SessionReset {
+        device_id: String,
+    },
     Other {
         device_id: String,
         message: String,
@@ -111,6 +123,12 @@ impl std::fmt::Display for MtpConnectionError {
             Self::StaleParentHandle { device_id, dest_folder } => {
                 write!(f, "Stale destination folder handle on {device_id}: {dest_folder}")
             }
+            Self::SessionReset { device_id } => {
+                write!(
+                    f,
+                    "The connection to {device_id} restarted; it's still plugged in and can be reopened"
+                )
+            }
             Self::Other { device_id, message } => {
                 write!(f, "Error for {device_id}: {message}")
             }
@@ -163,6 +181,17 @@ pub(super) fn map_mtp_error(e: mtp_rs::Error, device_id: &str) -> MtpConnectionE
             device_id,
             path: "(stale object handle)".to_string(),
         },
+        // A software device reset, NOT a disconnect: the device is still present
+        // (`Error::is_disconnected()` is deliberately false for it) and only the
+        // PTP session died. Its own log line so a reset is diagnosable in a log
+        // instead of hiding inside the generic `Other` bucket.
+        E::DeviceReset => {
+            log::warn!(
+                target: "mtp_connection",
+                "Device {device_id} was reset in software to recover a wedged transfer cancel: the PTP session is gone, the device is still attached"
+            );
+            MtpConnectionError::SessionReset { device_id }
+        }
         E::NotFound => MtpConnectionError::ObjectNotFound {
             device_id,
             path: "(not found)".to_string(),
@@ -330,6 +359,31 @@ mod tests {
             // Each should have non-empty display
             assert!(!err.to_string().is_empty());
         }
+    }
+
+    #[test]
+    fn device_reset_maps_to_a_typed_variant_not_the_catch_all() {
+        // A software device reset is a distinct, diagnosable condition: the PTP
+        // session is gone but the device is still plugged in. Landing in the
+        // `#[non_exhaustive]` catch-all as `Other` erases that.
+        let mapped = map_mtp_error(mtp_rs::Error::DeviceReset, "mtp-1-5");
+        assert!(
+            matches!(mapped, MtpConnectionError::SessionReset { .. }),
+            "DeviceReset must map to SessionReset, got {mapped:?}"
+        );
+    }
+
+    #[test]
+    fn device_reset_is_not_a_disconnect() {
+        // mtp-rs is explicit that the device is still present and reopenable
+        // after a reset, and `Error::is_disconnected()` is deliberately false for
+        // it. Mapping it to `Disconnected` would tear down a live device: the
+        // volume leaves the sidebar and the index flips Stale for nothing.
+        let mapped = map_mtp_error(mtp_rs::Error::DeviceReset, "mtp-1-5");
+        assert!(
+            !matches!(mapped, MtpConnectionError::Disconnected { .. }),
+            "DeviceReset must not be conflated with a disconnect, got {mapped:?}"
+        );
     }
 
     #[test]

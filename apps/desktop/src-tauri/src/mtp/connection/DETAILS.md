@@ -165,6 +165,24 @@ upload failures now also `log::warn!` under `target: "mtp_upload"`, so a bare pr
 Pinned by `upload_into_stale_parent_handle_heals_and_retry_succeeds` (connection layer) and
 `stream_pipe_file_retries_once_on_stale_destination_handle` (engine).
 
+## Session reset is not a disconnect (`MtpConnectionError::SessionReset`)
+
+mtp-rs's `Error::DeviceReset` means IT reset the device in software to recover from a wedged transfer cancel: the PTP
+session is gone, the device is still plugged in and reopenable with no replug. `map_mtp_error` gives it its own typed
+variant and its own `warn!` line, so a reset is diagnosable in a log instead of hiding in the generic `Other` bucket,
+and ❌ it never maps to `Disconnected` / `VolumeError::DeviceDisconnected` — that would drop a live device out of the
+sidebar and flip its index Stale for nothing. mtp-rs agrees: `Error::is_disconnected()` is deliberately false for it.
+
+**How Cmdr reaches it** (the 0.24.0 changelog's "cancel-only" framing understates this): not via `FileDownload::cancel`
+(Cmdr never calls `download()`), but via `PtpSession::recover_if_needed()`. Every data-phase op arms a
+`TransactionScope`; if that future is dropped before it disarms, the NEXT op drains the pipe with `cancel_transfer` and
+propagates the drain's outcome verbatim. Cmdr drops op futures mid-flight by design — the `MTP_TIMEOUT_SECS`
+`tokio::time::timeout` around `read_next_window`, and task aborts on cancelled transfers.
+
+There is deliberately NO reopen state machine yet (drop the device, quiet pause, backoff): it would be speculative
+without hardware evidence of how often this actually fires. The typed variant plus the log line is what makes gathering
+that evidence possible.
+
 ## Pathful change events: handle → path resolution (`handle_resolver.rs`)
 
 PTP change events carry only an opaque `ObjectHandle` (a `u32`), never a path: every event on the interrupt endpoint is

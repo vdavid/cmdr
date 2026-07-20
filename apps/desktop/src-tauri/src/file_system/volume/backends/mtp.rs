@@ -1105,6 +1105,13 @@ fn map_mtp_error(e: MtpConnectionError) -> VolumeError {
         }
         MtpConnectionError::Cancelled { .. } => VolumeError::Cancelled(e.to_string()),
         MtpConnectionError::Disconnected { .. } => VolumeError::DeviceDisconnected(e.to_string()),
+        // ❌ NOT `DeviceDisconnected`: a session reset leaves the device plugged
+        // in and reopenable, so tearing down the volume would throw away a live
+        // device. It stays a plain I/O failure of the one operation.
+        MtpConnectionError::SessionReset { .. } => VolumeError::IoError {
+            message: e.to_string(),
+            raw_os_error: None,
+        },
         MtpConnectionError::Timeout { .. } => VolumeError::ConnectionTimeout(e.to_string()),
         MtpConnectionError::StorageFull { .. } => VolumeError::StorageFull { message: e.to_string() },
         MtpConnectionError::StoreReadOnly { .. } => VolumeError::ReadOnly(e.to_string()),

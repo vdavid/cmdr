@@ -5442,6 +5442,18 @@ export type MtpConnectionError =
    *  destination-correct message if the retry also fails.
    */
   | { type: 'staleParentHandle'; device_id: string; dest_folder: string }
+  /**
+   *  mtp-rs reset the device in software to recover from a wedged transfer
+   *  cancel. The PTP session is gone, but the device is STILL PLUGGED IN and
+   *  reopenable with no replug — ❌ never treat this as a disconnect.
+   *
+   *  Reachable in Cmdr through `PtpSession::recover_if_needed()`: a data-phase
+   *  op whose future is dropped mid-flight (the `MTP_TIMEOUT_SECS` timeout
+   *  around a window read, or a task abort on a cancelled transfer) leaves an
+   *  armed `TransactionScope`, and the NEXT op drains it via `cancel_transfer`
+   *  and propagates that drain's outcome verbatim.
+   */
+  | { type: 'sessionReset'; device_id: string }
   | { type: 'other'; device_id: string; message: string }
 
 /**

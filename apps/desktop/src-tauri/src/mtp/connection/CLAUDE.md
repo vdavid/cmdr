@@ -22,7 +22,7 @@ The MTP session layer: opens devices, owns the per-device tokio task, and expose
 ## Must-knows
 
 - **Device lock**: `Arc<tokio::sync::Mutex<MtpDevice>>` held across `.await` for one USB I/O call; ops serialize per
-  device, 30 s timeout (`MTP_TIMEOUT_SECS`). Event polling sidesteps it by cloning `MtpDevice` (cheap `Arc`).
+  device, 30 s timeout (`MTP_TIMEOUT_SECS`). Event polling sidesteps it by cloning `MtpDevice`.
 - **Foreground-priority scheduler (`scheduler.rs`)**: ❌ Every foreground device op (nav, delete, rename, move, upload,
   visible-pane resolve) MUST take `foreground_guard(device_id)` for its lifetime, or background users won't yield. ❌ A
   READ (download / drag-out) takes NO guard — it would make a copy yield to itself forever. Two background users consult
@@ -31,8 +31,7 @@ The MTP session layer: opens devices, owns the per-device tokio task, and expose
   between them. ❌ Gate the live index feed BEFORE device resolve (`feed_index_added_or_changed` →
   `indexing::buffer_mtp_handle_if_scanning` first). [DETAILS.md](DETAILS.md) § "Foreground-priority device scheduler".
 - **`resolve_path_to_handle()` is cache-only**: `ObjectNotFound` unless a prior `list_directory()` saw the path (no
-  on-demand walk), so list ancestors first; whole-tree ops that skip list-first fail here, not at the USB call. (Its
-  inverse `resolve_handle_to_path()` *does* walk on demand — for pathless PTP events.)
+  on-demand walk), so list ancestors first; whole-tree ops that skip list-first fail here, not at the USB call.
 - **`PathHandleCache` is bidirectional; insert ONLY via `PathHandleCache::insert`**, never `path_to_handle.insert(...)`:
   a forward-only insert silently desyncs the reverse map the resolver short-circuits on.
 - **`ListingCache` TTL is per-entry and NOT invalidated by mutations**: inside the 5 s window a reader still sees the
@@ -40,15 +39,16 @@ The MTP session layer: opens devices, owns the per-device tokio task, and expose
 - **Disconnect from the event loop must clear the device registry**: on `next_event()` → `Error::Disconnected`,
   `event_loop.rs` calls `handle_device_disconnected(...)`. Skipping it leaves a dead `devices` entry and the next
   `connect()` fails as "already connected". It ALSO flips every indexed storage Stale
-  (`indexing::on_mtp_device_disconnected`, freshness D4) — drop that and a Fresh index lies post-unplug.
+  (`indexing::on_mtp_device_disconnected`, freshness D4) — drop that and a Fresh index lies post-unplug. ❌ A
+  `SessionReset` (mtp-rs `DeviceReset`) is NOT a disconnect: the device is still attached, only the PTP session died.
 - **The event loop feeds the per-volume index, not just the live pane.** `ObjectAdded`/`ObjectInfoChanged` →
   `feed_index_added_or_changed` (upsert STORING the handle in `inode`); `ObjectRemoved` → `feed_index_removed` (resolves
   by that STORED handle). Buffering: `indexing/mtp_watch.rs`.
 - **`MtpDisconnectReason` is load-bearing for logs/UI**: `User` only for the settings-toggle / explicit-disconnect
   path; hotplug loss and I/O drops are `Removed`. Misclassifying makes unstable USB look like repeated unplugs.
 - **Failed PTP uploads must delete the partial object** (`UploadError.partial`; mtp-rs doesn't auto-delete).
-  `upload_from_stream` best-effort `storage.delete`s it (cancel too) before surfacing the error. [DETAILS.md](DETAILS.md)
-  § "Upload partial cleanup".
+  `upload_from_stream` best-effort `storage.delete`s it (cancel too) first. [DETAILS.md](DETAILS.md) § "Upload partial
+  cleanup".
 - **Stale cached parent handle on upload self-heals, then signals a one-shot retry.** A re-keyed handle fails
   `SendObjectInfo`; `upload_from_stream` refreshes and returns `StaleParentHandle`, `stream_pipe_file` retries. ❌ DROP
   the device lock before `refresh_dir_handle` (it re-lists; the per-device `Mutex` isn't reentrant → deadlock), and never
