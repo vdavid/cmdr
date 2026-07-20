@@ -42,6 +42,28 @@ A count that grows every period means it's running. Zero means the app is still 
 The `dev-sealed-subtrees` data dir already holds a completed scan (a verification run on 2026-07-20 built it), so a
 relaunch reaches live mode in a couple of minutes rather than re-scanning `/`. Don't delete it before the collection.
 
+### If no `churn_period` lines appear
+
+Churn only flows while a **live event loop** is running. There is no live loop during a scan or rescan, so the spike is
+silent then — that is the instrument being honest, not broken. Three checks tell you which state you're in, over
+`L=~/Library/Application\ Support/com.veszelovszki.cmdr-dev-sealed-subtrees/logs/cmdr.log`:
+
+- `Live event processing: started` or `Replay: switching to live mode` — a live loop was entered.
+- `routing shallow anchor` and `local scan:` — a scan superseded it.
+- `Replay event loop: stopped` — the post-replay live loop exited.
+
+The trap, seen for real on 2026-07-20: a cold start with a journal gap can replay a `MustScanSubDirs` event whose anchor
+is shallow (`/`, `/System`). `reconciler/rescan.rs` routes a shallow anchor to the **visible scanner**, which stops the
+replay watcher, ends the post-replay live loop within seconds, and starts a full reconcile rescan of the volume. That
+rescan runs for many minutes, and no churn is recorded until it completes and live mode restarts. The log says so
+plainly (`routing shallow anchor /System to the visible scanner` → `Replay event loop: stopped` → `local scan: reconcile
+rescan`), but only if you look for it.
+
+**So don't restart to "fix" a silent spike.** Two reasons: a restart replays the journal again and can draw the same
+shallow anchor, and killing the app *during* a scan makes the next launch do a full fresh scan from scratch
+(`local scan: fresh scan (truncate) … (incomplete previous scan)`). Check the three signals above first; if a scan is
+running, wait it out.
+
 The log dir is per instance: `~/Library/Application Support/com.veszelovszki.cmdr-dev-<slug>/logs/`. Files rotate at 50
 MB (`cmdr.log`, `cmdr.log.1`, …), so pass the glob to the analyser, not just the live file.
 
