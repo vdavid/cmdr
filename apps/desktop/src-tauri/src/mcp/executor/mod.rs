@@ -14,6 +14,7 @@ pub(crate) mod downloads;
 pub(crate) mod eject;
 pub(crate) mod favorites;
 pub(crate) mod file_ops;
+pub(crate) mod image_facts;
 pub(crate) mod indexing;
 pub(crate) mod nav;
 pub(crate) mod operation_log;

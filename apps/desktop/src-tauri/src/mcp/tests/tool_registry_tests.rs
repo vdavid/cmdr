@@ -63,14 +63,15 @@ const EXPECTED_TOOL_NAMES: &[&str] = &[
     "operations_get",
     "operations_rollback",
     "search_photos",
+    "image_facts",
 ];
 
 #[test]
 fn test_all_tools_count() {
     // 6 nav + 2 cursor + 1 selection + 8 file_op + 1 tag + 3 view + 1 tab + 2 dialog + 3 app
     // + 2 search + 1 settings + 1 indexing + 1 queue + 1 favorites + 3 network + 1 eject + 1
-    // await + 1 downloads + 3 operation_log + 1 photo search = 43
-    assert_eq!(get_all_tools().len(), 43);
+    // await + 1 downloads + 3 operation_log + 2 photo (search + facts) = 44
+    assert_eq!(get_all_tools().len(), 44);
 }
 
 #[test]
@@ -594,6 +595,7 @@ fn test_gate_table_is_complete_and_correct() {
         ("operations_get", TokenGate::Open),
         ("operations_rollback", TokenGate::IfAutoConfirm),
         ("search_photos", TokenGate::Open),
+        ("image_facts", TokenGate::Open),
     ]
     .into_iter()
     .collect();
@@ -654,6 +656,7 @@ const EXPECTED_AGENT_TOOL_NAMES: &[&str] = &[
     "operations_list",
     "operations_get",
     "search_photos",
+    "image_facts",
 ];
 
 /// Set-equality: the agent view equals exactly its authored `consumers:[agent]` entries. This is

@@ -319,6 +319,34 @@ is the fts5 sanitizer: raw user input must NEVER hit `MATCH ?` (parens, colons, 
 error, and binding doesn't help — the string is parsed as query syntax), so each whitespace token is quoted into a
 literal. Same gotcha as `agent/store`'s `sanitize_fts_query`.
 
+### The lookup direction (`facts_for_paths`)
+
+Every other read is query-direction (a query in, matching paths out). `facts_for_paths(&[&str]) -> Vec<ImageFacts>` is
+the opposite: the caller already has the paths (the user navigated to a folder) and asks what's stored for each. It
+backs the `image_facts` MCP tool and the natural-language bulk-rename flow that needs to know what's IN an image before
+proposing a name. Four properties it exists to guarantee:
+
+- **The FULL stored text, not a snippet.** `search_ocr` returns `snippet(media_ocr, 2, …)` because a UI highlights a
+  match; a model naming a file has to read the whole thing.
+- **OCR text and tags stay DISTINCT.** `media_ocr` holds up to two rows per path behind an UNINDEXED `source` column
+  (`'ocr'` = recognized text, `'tag'` = the space-joined tag labels folded in for keyword search), so the text read
+  filters `source = 'ocr'`; without that filter the tag labels come back dressed as recognized text. Tags are read from
+  the STRUCTURED `media_tags` table instead, so each keeps its own label and score rather than the folded, score-less
+  FTS row.
+- **One row per requested path, in request order, keyed by the path AS REQUESTED.** A never-enriched file is
+  representable (`indexed: false`), never silently dropped, so a caller can tell "ask again once indexing catches up"
+  from "indexed, and there's genuinely no text in it" (`indexed: true`, `ocr_text: None`). A missing `media.db` answers
+  every path as not-indexed rather than erroring, keeping the module's empty-not-error convention while still honoring
+  the one-row-per-path contract.
+- **Chunked at 900 paths per `IN (…)`.** SQLite's default host-parameter ceiling is 999 and a rename over a big folder
+  clears that immediately.
+
+Gotcha: `media_status.path` and `media_tags.path` carry `COLLATE platform_case`, but `media_ocr.path` is an fts5
+UNINDEXED column and compares BINARY. Rows are matched back to the request string exactly, so a caller passing a
+differently-cased spelling than the indexer stored reads as not-indexed. Callers pass paths from the same index/UI the
+enrichment pass saw, so this doesn't bite in practice; don't "fix" it by lowercasing, which would break
+case-sensitive volumes.
+
 ### The OCR search command (`commands.rs`)
 
 `media_index_search_ocr(volume_id, query, limit?)` is the IPC door onto the read API (plan Decision 8): it resolves the

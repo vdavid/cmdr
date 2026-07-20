@@ -87,11 +87,11 @@ fn test_total_tool_count() {
     // and gate together. It just flags an unintended add/remove.
     // 6 nav + 2 cursor + 1 select + 8 file_op + 1 tag + 3 view + 1 tab + 2 dialog + 3 app + 2
     // search + 1 settings + 1 indexing + 1 queue + 1 favorites + 3 network + 1 eject + 1 await + 1
-    // downloads + 3 operation_log + 1 photo search = 43
+    // downloads + 3 operation_log + 2 photo (search + facts) = 44
     assert_eq!(
         tools.len(),
-        43,
-        "Expected 43 tools, got {}. Did you add/remove tools?",
+        44,
+        "Expected 44 tools, got {}. Did you add/remove tools?",
         tools.len()
     );
 }

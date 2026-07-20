@@ -25,6 +25,14 @@ Depth for the MCP tool-execution layer. `CLAUDE.md` holds the must-knows.
   the search UI (Auto composes semantic + OCR, degrades to OCR with no CLIP model), reuses `media_index::commands::volume_state`
   for coverage honesty, and returns a typed status (`imageIndexingOff` / `semanticModelNotInstalled` / `ok`). Pure mode
   resolution, hit merging, coverage derivation, and the no-bytes property are unit-tested in-file.
+- **`image_facts.rs`**: `image_facts` (shared `[AiClient, Agent]` read), the LOOKUP direction of the same index that
+  `search_photos` queries: the caller already has the paths and needs to know what's IN each image (a natural-language
+  bulk rename). Shapes `MediaIndex::facts_for_paths` into the same kind of TEXT-ONLY DTO, and imports `photos.rs`'s
+  `resolve_search_volumes` / `derive_coverage` / `build_note` rather than re-deriving them, so the two tools can't drift
+  on volume resolution or coverage honesty. Per-path `state` is a typed `indexed` / `notIndexed`, never an absent
+  field the caller has to sniff for. Bounded twice: at most 200 paths (over that is `INVALID_PARAMS`, never a silent
+  cut) and 2,000 characters of text per file (a cut sets `textTruncated`). Params parse, truncation, the
+  first-volume-wins merge, and the no-bytes property are unit-tested in-file.
 - **`tests.rs`**: unit tests for the dispatcher and shared helpers; per-category tests live alongside their handlers.
 
 ## Ack contract

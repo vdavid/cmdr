@@ -44,8 +44,8 @@ use serde_json::Value;
 
 use super::executor::{ToolError, ToolResult};
 use super::executor::{
-    app, async_tools, dialogs, downloads, eject, favorites, file_ops, indexing, nav, operation_log, photos, queue,
-    search, tags, view,
+    app, async_tools, dialogs, downloads, eject, favorites, file_ops, image_facts, indexing, nav, operation_log,
+    photos, queue, search, tags, view,
 };
 use super::tools::Tool;
 
@@ -603,6 +603,19 @@ mcp_tools! {
         consumers: &[Consumer::AiClient, Consumer::Agent],
         access: Access::Read,
         run: app_params photos::execute_search_photos
+    },
+    // The LOOKUP direction of the same index (`search_photos` is the query direction): the
+    // caller already has the paths and needs to know what's IN each image. Same sharing,
+    // access, and gate as its sibling. PRIVACY: it returns the FULL stored OCR text, not a
+    // snippet — the most sensitive thing either photo tool emits. See
+    // `executor/image_facts.rs`.
+    "image_facts" => {
+        desc: "Look up what Cmdr's image index stored for images you already have: the full recognized text (OCR) plus Vision tags, per path. Use it to name or describe files you already know. Up to 200 paths; each answers indexed or notIndexed. Needs image indexing on.",
+        schema: image_facts::image_facts_schema(),
+        gate: TokenGate::Open,
+        consumers: &[Consumer::AiClient, Consumer::Agent],
+        access: Access::Read,
+        run: app_params image_facts::execute_image_facts
     },
 
     // ── Agent read-only tools ─────────────────────────────────────────────────

@@ -1164,6 +1164,30 @@
         "type": "object"
       },
       "name": "search_photos"
+    },
+    {
+      "description": "Look up what Cmdr's image index stored for images you already have: the full recognized text (OCR) plus Vision tags, per path. Use it to name or describe files you already know. Up to 200 paths; each answers indexed or notIndexed. Needs image indexing on.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "paths": {
+            "description": "The absolute paths of the images to look up (at most 200 per call). Use this when you already know the files, for example everything in the folder the user is looking at.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "volumeId": {
+            "description": "Restrict the lookup to one volume id (see list_volumes / cmdr://state). Omit to check every local and SMB volume that's indexed.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "paths"
+        ],
+        "type": "object"
+      },
+      "name": "image_facts"
     }
   ]
 }

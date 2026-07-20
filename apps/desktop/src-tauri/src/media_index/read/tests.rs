@@ -157,6 +157,146 @@ fn tag_search_is_case_insensitive() {
     );
 }
 
+// ── Lookup direction: facts_for_paths ─────────────────────────────────────
+
+/// Seed one enriched image with OCR text and tags.
+fn seed_facts(writer: &MediaWriter, path: &str, ocr: &str, tags: Vec<Tag>) {
+    writer
+        .upsert(
+            MediaStatusRow {
+                path: path.to_string(),
+                mtime: Some(1),
+                size: Some(2),
+                media_kind: MediaKind::Image,
+                state: EnrichmentState::Done,
+                engine_version: "e1".to_string(),
+                clip_stamp: String::new(),
+            },
+            Some(UpsertAnalysis {
+                ocr_text: ocr.to_string(),
+                tags,
+                ..Default::default()
+            }),
+        )
+        .expect("seed facts");
+}
+
+/// The lookup direction: given paths the caller already has, return the stored facts.
+/// Pins the three properties the rename flow depends on: the FULL OCR text (not a
+/// snippet), OCR text and tags as DISTINCT fields (they share `media_ocr` behind a
+/// `source` column, so a naive read would fold the tag labels into the text), and one
+/// entry per requested path so a never-enriched file is representable rather than dropped.
+#[test]
+fn facts_for_paths_returns_full_text_distinct_tags_and_keeps_unknown_paths() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let db_path = media_db_path(dir.path(), "root");
+    MediaStore::open(&db_path).expect("open store");
+    let writer = MediaWriter::spawn(&db_path).expect("writer");
+
+    let long_text = "Invoice 2026-07-14 total 1 234 SEK paid by card, thank you for your business";
+    seed_facts(
+        &writer,
+        "/photos/receipt.jpg",
+        long_text,
+        vec![
+            Tag {
+                label: "document".to_string(),
+                score: 0.91,
+            },
+            Tag {
+                label: "paper".to_string(),
+                score: 0.44,
+            },
+        ],
+    );
+    // An enriched image with tags but no recognized text.
+    seed_facts(
+        &writer,
+        "/photos/sky.jpg",
+        "",
+        vec![Tag {
+            label: "sky".to_string(),
+            score: 0.8,
+        }],
+    );
+    writer.flush_blocking().expect("flush");
+
+    let index = MediaIndex::open(dir.path(), "root");
+    let facts = index
+        .facts_for_paths(&["/photos/receipt.jpg", "/photos/sky.jpg", "/photos/never.jpg"])
+        .expect("facts");
+
+    assert_eq!(facts.len(), 3, "one entry per requested path, in request order");
+    assert_eq!(facts[0].path, "/photos/receipt.jpg");
+    assert_eq!(facts[1].path, "/photos/sky.jpg");
+    assert_eq!(facts[2].path, "/photos/never.jpg");
+
+    // The FULL stored text, not a snippet: a model reasons over the whole thing.
+    assert!(facts[0].indexed);
+    assert_eq!(facts[0].ocr_text.as_deref(), Some(long_text));
+    // Tags come back structurally, highest score first — never folded into `ocr_text`.
+    let labels: Vec<&str> = facts[0].tags.iter().map(|t| t.label.as_str()).collect();
+    assert_eq!(labels, vec!["document", "paper"]);
+    assert!((facts[0].tags[0].score - 0.91).abs() < 1e-6);
+    assert!(
+        !facts[0].ocr_text.as_deref().expect("text").contains("document"),
+        "the folded `source = 'tag'` FTS row must not leak into the OCR text"
+    );
+
+    // Enriched, no text found ⇒ indexed with no `ocr_text`, distinct from never-indexed.
+    assert!(facts[1].indexed);
+    assert_eq!(facts[1].ocr_text, None);
+    assert_eq!(facts[1].tags.len(), 1);
+
+    // Never enriched ⇒ present but flagged, so the caller can say "not indexed yet".
+    assert!(!facts[2].indexed);
+    assert_eq!(facts[2].ocr_text, None);
+    assert!(facts[2].tags.is_empty());
+
+    writer.shutdown();
+}
+
+/// A missing DB (never enriched, or offline and purged) must never error — the module's
+/// convention — and must still answer per-path so the caller can tell "not indexed yet".
+#[test]
+fn facts_for_paths_on_a_missing_db_answers_not_indexed_rather_than_erroring() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let index = MediaIndex::open(dir.path(), "never-enriched");
+    let facts = index.facts_for_paths(&["/a.jpg", "/b.jpg"]).expect("no error");
+    assert_eq!(facts.len(), 2);
+    assert!(
+        facts
+            .iter()
+            .all(|f| !f.indexed && f.ocr_text.is_none() && f.tags.is_empty())
+    );
+    assert!(index.facts_for_paths(&[]).expect("empty").is_empty());
+}
+
+/// More paths than SQLite's 999-host-parameter ceiling must chunk, not throw. A rename
+/// over a big folder hits this immediately.
+#[test]
+fn facts_for_paths_chunks_past_the_sqlite_parameter_limit() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let db_path = media_db_path(dir.path(), "root");
+    MediaStore::open(&db_path).expect("open store");
+    let writer = MediaWriter::spawn(&db_path).expect("writer");
+    seed_facts(&writer, "/photos/img-1500.jpg", "needle", vec![]);
+    writer.flush_blocking().expect("flush");
+
+    let paths: Vec<String> = (0..2_000).map(|i| format!("/photos/img-{i}.jpg")).collect();
+    let refs: Vec<&str> = paths.iter().map(String::as_str).collect();
+    let facts = MediaIndex::open(dir.path(), "root")
+        .facts_for_paths(&refs)
+        .expect("chunked read");
+
+    assert_eq!(facts.len(), 2_000);
+    let seeded = facts.iter().find(|f| f.path == "/photos/img-1500.jpg").expect("seeded");
+    assert_eq!(seeded.ocr_text.as_deref(), Some("needle"));
+    assert_eq!(facts.iter().filter(|f| f.indexed).count(), 1);
+
+    writer.shutdown();
+}
+
 // ── Semantic (CLIP) search (plan M3) ───────────────────────────────────────
 
 /// Seed a status row + a CLIP embedding for `path` (CLIP requires an existing status row,

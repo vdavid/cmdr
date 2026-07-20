@@ -23,8 +23,9 @@ so later proactive slices (proposals, notifications) grow here too.
 ## Must-knows
 
 - **Read-only by construction.** No write tool, no arbitrary file-content-read tool. Names, paths, and metadata reach
-  the provider (spec §2.1); the ONE derived-content egress is `search_photos`, returning in-image OCR snippets + Vision
-  tags (image-derived TEXT, never image bytes; see `mcp/executor/photos.rs`). That egress is named in the consent copy
+  the provider (spec §2.1); the ONLY derived-content egress is the photo pair, `search_photos` (in-image OCR snippets +
+  Vision tags) and `image_facts` (the FULL stored OCR text + tags for paths the caller names). Image-derived TEXT,
+  never image bytes; see `mcp/executor/photos.rs` and `image_facts.rs`. That egress is named in the consent copy
   (`askCmdr.consent.*`), so bump `CONSENT_COPY_VERSION` if what it can send changes. This is a structural privacy line;
   don't add a tool that widens it without revisiting the whole consent + gating story.
 - **The runtime drives the seams; the IPC is wired.** `chat::runtime` consumes the `AgentLlm` seam, store queries, and

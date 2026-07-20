@@ -34,6 +34,43 @@ pub struct OcrHit {
     pub snippet: String,
 }
 
+/// How many paths one `IN (…)` clause binds. SQLite's default host-parameter ceiling is
+/// 999, and a rename over a big folder blows past that, so [`MediaIndex::facts_for_paths`]
+/// chunks rather than building one giant statement.
+const PATH_CHUNK: usize = 900;
+
+/// Everything the media index stored for ONE image — the lookup direction's row. Always
+/// carries the requested `path`, so a caller gets an answer for every path it asked about.
+///
+/// `indexed == false` means "no `media_status` row": never enriched, or on a volume whose
+/// `media.db` doesn't exist. `indexed == true` with `ocr_text: None` means the opposite:
+/// enrichment ran and found no text. Keeping the two apart is the point — one says "ask
+/// again later", the other says "there's nothing to find".
+///
+/// The OCR text is image-derived USER CONTENT (a passport scan's text IS the passport
+/// number). Anything shipping this off-device needs the Ask Cmdr consent gate; see
+/// `mcp/executor/image_facts.rs` and `docs/security.md`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ImageFacts {
+    /// The path exactly as requested (not the stored spelling).
+    pub path: String,
+    /// Whether the media index has an enrichment row for this path at all.
+    pub indexed: bool,
+    /// The FULL recognized text, or `None` when the image has none (or isn't indexed).
+    pub ocr_text: Option<String>,
+    /// The Vision scene/object tags, highest confidence first.
+    pub tags: Vec<ImageTag>,
+}
+
+/// One stored Vision tag: its taxonomy label and confidence.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ImageTag {
+    /// The taxonomy label, as stored (lowercase).
+    pub label: String,
+    /// The tag's confidence in `[0.0, 1.0]`.
+    pub score: f32,
+}
+
 /// A read handle over a volume's `media.db`. Cheap to hold; the read connection is
 /// opened lazily per call. A consumer keeps one per volume it searches.
 pub struct MediaIndex {
@@ -148,6 +185,89 @@ impl MediaIndex {
                 score: hit.score,
             })
             .collect()
+    }
+
+    /// The stored image facts for paths the caller ALREADY has — the lookup direction,
+    /// the mirror of the query-direction searches above. Returns exactly one
+    /// [`ImageFacts`] per requested path, in request order, so a never-enriched file is
+    /// representable ("not indexed yet") rather than silently dropped. A missing DB
+    /// (never enriched, offline and purged) answers every path as not-indexed rather
+    /// than erroring, matching [`Self::search_ocr`]'s empty-not-error convention.
+    ///
+    /// Unlike `search_ocr`, this returns the FULL stored OCR text, not a snippet: the
+    /// caller is a model reasoning over what's in the image (naming a file after its
+    /// contents), not a UI highlighting a match.
+    pub fn facts_for_paths(&self, paths: &[&str]) -> Result<Vec<ImageFacts>, MediaStoreError> {
+        let mut facts: Vec<ImageFacts> = paths
+            .iter()
+            .map(|p| ImageFacts {
+                path: (*p).to_string(),
+                indexed: false,
+                ocr_text: None,
+                tags: Vec::new(),
+            })
+            .collect();
+        if facts.is_empty() || !self.db_path.exists() {
+            return Ok(facts);
+        }
+        let mut by_path: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
+        for (i, p) in paths.iter().enumerate() {
+            by_path.entry(p).or_insert(i);
+        }
+
+        let conn = open_read_connection(&self.db_path)?;
+        for chunk in paths.chunks(PATH_CHUNK) {
+            let placeholders = std::iter::repeat_n("?", chunk.len()).collect::<Vec<_>>().join(",");
+            let params = rusqlite::params_from_iter(chunk.iter());
+
+            // Enrichment presence: a `media_status` row is what makes "indexed, no text
+            // found" distinguishable from "never enriched".
+            let mut stmt = conn.prepare(&format!("SELECT path FROM media_status WHERE path IN ({placeholders})"))?;
+            let rows = stmt.query_map(params, |row| row.get::<_, String>(0))?;
+            for row in rows {
+                if let Some(&i) = by_path.get(row?.as_str()) {
+                    facts[i].indexed = true;
+                }
+            }
+
+            // ONLY the `source = 'ocr'` rows. `media_ocr` also holds a `source = 'tag'`
+            // row per path (the space-joined tag labels folded in for keyword search), so
+            // an unfiltered read would hand the caller tag labels dressed up as OCR text.
+            let mut stmt = conn.prepare(&format!(
+                "SELECT path, text FROM media_ocr WHERE source = 'ocr' AND path IN ({placeholders})"
+            ))?;
+            let rows = stmt.query_map(rusqlite::params_from_iter(chunk.iter()), |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+            })?;
+            for row in rows {
+                let (path, text) = row?;
+                if let Some(&i) = by_path.get(path.as_str())
+                    && !text.is_empty()
+                {
+                    facts[i].ocr_text = Some(text);
+                }
+            }
+
+            // Tags come from the STRUCTURED `media_tags` table, so each keeps its own
+            // label and confidence instead of the folded, score-less FTS row.
+            let mut stmt = conn.prepare(&format!(
+                "SELECT path, label, score FROM media_tags WHERE path IN ({placeholders}) ORDER BY score DESC, label ASC"
+            ))?;
+            let rows = stmt.query_map(rusqlite::params_from_iter(chunk.iter()), |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, f64>(2)? as f32,
+                ))
+            })?;
+            for row in rows {
+                let (path, label, score) = row?;
+                if let Some(&i) = by_path.get(path.as_str()) {
+                    facts[i].tags.push(ImageTag { label, score });
+                }
+            }
+        }
+        Ok(facts)
     }
 
     /// The images tagged `label` at or above `min_score`, each with the matching

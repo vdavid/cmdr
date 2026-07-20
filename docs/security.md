@@ -139,9 +139,11 @@ with their own API key. Privacy posture:
   re-accept.
 - **Read-only, no arbitrary file contents.** The agent has no write tool and no tool that reads a file's bytes. What
   reaches the provider is file/folder names, paths, sizes, dates, and the app-state envelope (spec §2.1).
-- **Photo search sends image-derived TEXT, not "just metadata".** The `search_photos` tool (`mcp/executor/photos.rs`)
-  returns matched image paths plus the in-image OCR snippet and Vision tags — a passport scan's OCR snippet IS the
-  passport number, so this is sensitive derived content, gated by the same consent above and named in its copy. Image
-  bytes and thumbnails NEVER egress: the result DTO is text-only by construction (pinned by a test).
+- **The photo tools send image-derived TEXT, not "just metadata".** `search_photos` (`mcp/executor/photos.rs`) returns
+  matched image paths plus the in-image OCR snippet and Vision tags; `image_facts` (`mcp/executor/image_facts.rs`)
+  returns the FULL stored OCR text (up to 2,000 characters per file, for up to 200 files) plus tags for paths the caller
+  names. A passport scan's OCR text IS the passport number, so this is sensitive derived content, gated by the same
+  consent above and named in its copy. Image bytes and thumbnails NEVER egress: both result DTOs are text-only by
+  construction (each pinned by a test).
 - **Chats and optional call logs stay local.** Conversations live in a local `main.db`; the optional LLM call log writes
   to a local folder and is never transmitted.

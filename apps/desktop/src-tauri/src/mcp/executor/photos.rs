@@ -263,8 +263,9 @@ fn sort_and_cap(mut hits: Vec<PhotoHit>, limit: usize) -> Vec<PhotoHit> {
 }
 
 /// Derive the per-volume coverage row from `media_index`'s own state. A volume is
-/// `incomplete` when a pass is running, or fewer images are enriched than qualify.
-fn derive_coverage(volume: &str, state: &MediaIndexVolumeState) -> VolumeCoverage {
+/// `incomplete` when a pass is running, or fewer images are enriched than qualify. Shared
+/// with the `image_facts` tool so the two can't drift apart on honesty.
+pub(super) fn derive_coverage(volume: &str, state: &MediaIndexVolumeState) -> VolumeCoverage {
     let incomplete = state.indexing || state.qualifying_count.is_some_and(|q| state.enriched_count < q);
     VolumeCoverage {
         volume: volume.to_string(),
@@ -277,7 +278,8 @@ fn derive_coverage(volume: &str, state: &MediaIndexVolumeState) -> VolumeCoverag
 
 /// The coverage caveat to relay, if any: OCR degradation leads (it changes what was
 /// searched), then a still-indexing note when any searched volume is incomplete.
-fn build_note(degraded_to_ocr: bool, coverage: &[VolumeCoverage]) -> Option<String> {
+/// `image_facts` shares this with `degraded_to_ocr: false` (it never runs a CLIP query).
+pub(super) fn build_note(degraded_to_ocr: bool, coverage: &[VolumeCoverage]) -> Option<String> {
     if degraded_to_ocr {
         return Some(
             "No photo-search model is installed, so this searched in-image text only, not descriptions. \
@@ -375,7 +377,8 @@ fn shape(result: &SearchPhotosResult) -> ToolResult {
 /// The volumes to search: the one requested id, or every local/SMB volume (the enrichable
 /// kinds — MTP is on-demand, Network is synthetic). An un-enriched volume searches to empty
 /// cheaply (the read API short-circuits on a missing `media.db`), so listing extra is safe.
-async fn resolve_search_volumes(volume_filter: Option<String>) -> Vec<String> {
+/// Shared with the `image_facts` tool, which resolves its volumes the same way.
+pub(super) async fn resolve_search_volumes(volume_filter: Option<String>) -> Vec<String> {
     if let Some(id) = volume_filter {
         return vec![id];
     }

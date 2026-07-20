@@ -9,8 +9,8 @@ list): [DETAILS.md](DETAILS.md).
 
 - `read/`: one file per family — `state` (`app_state`), `listing` (`list_dir` + `largest_dirs`), `importance`
   (`important_folders` + `folder_importance`), `volumes` (`list_volumes`). The `operations_list` / `operations_get` and
-  `search_photos` (photo search) tools are shared with the ai-client view, so their handlers live in `mcp/executor/`
-  (`operation_log.rs`, `photos.rs`), not here.
+  `search_photos` / `image_facts` (photo search and image lookup) tools are shared with the ai-client view, so their
+  handlers live in `mcp/executor/` (`operation_log.rs`, `photos.rs`, `image_facts.rs`), not here.
 - `view.rs`: the gated dispatch — `dispatch` + `refuse_unavailable` (the read-only choke point).
 - `mod.rs`: `agent_tool_declarations()` (registry view → `ToolDeclaration`s).
 

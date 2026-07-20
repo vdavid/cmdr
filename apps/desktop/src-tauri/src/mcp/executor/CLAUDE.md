@@ -11,7 +11,8 @@ typed ack before returning `OK`. Up: [`../CLAUDE.md`](../CLAUDE.md).
 - **`ack.rs`**: the ack contract (`AckSignal` variants, `snapshot_generation`, `wait_for_ack`, default budgets).
 - Category handlers: `app.rs`, `view.rs`, `nav.rs`, `file_ops.rs`, `dialogs.rs`, `async_tools.rs`, `search.rs`,
   `downloads.rs`, `operation_log.rs` (`operations_*` journal), `photos.rs` (`search_photos`, text-only DTO over the
-  `media_index` read API). Per-file tool lists in DETAILS.md.
+  `media_index` read API), `image_facts.rs` (`image_facts`, the lookup direction over the same index; reuses
+  `photos.rs`'s volume/coverage helpers). Per-file tool lists in DETAILS.md.
 
 ## Must-knows
 

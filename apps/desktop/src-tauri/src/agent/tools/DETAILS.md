@@ -8,7 +8,7 @@ The read-only toolset the Ask Cmdr chat agent dispatches in-process. Must-knows:
 
 There is ONE authored tool table (`mcp/tool_registry/mod.rs`, `mcp_tools!`). Each entry declares `consumers`
 (`AiClient` / `Agent`) and `access` (`Read` / `Write`). The agent's tools are `consumers: [Agent], access: Read`
-entries; `operations_list` / `operations_get` / `search_photos` are shared `[AiClient, Agent]`. `agent_tool_view()` is the agent's slice;
+entries; `operations_list` / `operations_get` / `search_photos` / `image_facts` are shared `[AiClient, Agent]`. `agent_tool_view()` is the agent's slice;
 `get_all_tools()` is the ai-client slice (agent-only entries filtered out, so the ai-client wire snapshot is unchanged).
 `execute_tool(app, Consumer::Agent, name, params)` dispatches only the agent view. See
 [`mcp/tool_registry` + `mcp/DETAILS.md`](../../mcp/DETAILS.md) § Consumer and access views for the mechanism.
@@ -50,6 +50,12 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
   per-volume coverage honesty, and returns a typed status when indexing is off, still building, or the CLIP model isn't
   installed. Privacy: the OCR snippet + tags it returns are image-derived text that egresses to the provider — named in
   the Ask Cmdr consent copy (see `mcp/executor/photos.rs` and `docs/security.md`).
+- **`image_facts`** (`mcp/executor/image_facts.rs`, shared `[AiClient, Agent]`) — the lookup direction of the same
+  index: given paths the agent already has, the FULL stored OCR text (capped at 2,000 characters, a cut flagged) plus
+  the Vision tags for each. Backs naming/describing files the user is looking at. Same text-only DTO, same coverage
+  honesty (it reuses `photos.rs`'s helpers), and a typed per-path `indexed` / `notIndexed` so a not-yet-enriched file
+  is never read as an empty one. Privacy: this is the widest derived-content egress the agent has (full recognized
+  text, not a snippet) — same consent gate, same copy.
 
 ## The honesty (coverage) contract
 

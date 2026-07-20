@@ -166,6 +166,9 @@ pub enum ToolId {
     /// Search the user's photos by description, in-image text, or tag (shared with the
     /// ai-client view). Reads the media index; text-only, no image bytes.
     SearchPhotos,
+    /// What the media index stored for images the agent already has: the full recognized
+    /// text plus tags, per path (shared with the ai-client view). Text-only, no image bytes.
+    ImageFacts,
     /// A tool name the agent does not recognize (hallucinated, a typo, or a
     /// write/non-view tool). Carries the raw name for the transparent UI and the
     /// typed "tool not available" result; always refused by dispatch.
@@ -176,7 +179,7 @@ impl ToolId {
     /// Every known read-only variant, in wire order. Excludes [`ToolId::Unrecognized`]
     /// by design (it's the refusal case, never a view entry). The 1:1 structural test
     /// asserts these map exactly onto `agent_tool_view()`.
-    pub const KNOWN: [ToolId; 9] = [
+    pub const KNOWN: [ToolId; 10] = [
         ToolId::AppState,
         ToolId::ListDir,
         ToolId::LargestDirs,
@@ -186,6 +189,7 @@ impl ToolId {
         ToolId::OperationsList,
         ToolId::OperationsGet,
         ToolId::SearchPhotos,
+        ToolId::ImageFacts,
     ];
 
     /// The wire name for this tool: the genai `fn_name`, the DB token, and the IPC
@@ -201,6 +205,7 @@ impl ToolId {
             ToolId::OperationsList => "operations_list",
             ToolId::OperationsGet => "operations_get",
             ToolId::SearchPhotos => "search_photos",
+            ToolId::ImageFacts => "image_facts",
             ToolId::Unrecognized(name) => name.as_str(),
         }
     }
@@ -220,6 +225,7 @@ impl ToolId {
             "operations_list" => ToolId::OperationsList,
             "operations_get" => ToolId::OperationsGet,
             "search_photos" => ToolId::SearchPhotos,
+            "image_facts" => ToolId::ImageFacts,
             other => ToolId::Unrecognized(other.to_string()),
         }
     }

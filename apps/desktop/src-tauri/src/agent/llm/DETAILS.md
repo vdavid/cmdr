@@ -92,7 +92,7 @@ name resolves to `Unrecognized` rather than failing, so the raw name stays repre
 typed "tool not available" result. The read-only guarantee is that `Unrecognized` (and any future write tool) is never
 in `agent_tool_view()`, so dispatch refuses it — a typed view-membership check, not a string match. The known variants
 are the read-only families (`AppState`, `ListDir`, `LargestDirs`, `ImportantFolders`, `FolderImportance`, `ListVolumes`,
-`OperationsList`, `OperationsGet`), pinned 1:1 to `agent_tool_view()` by a structural test in `agent/tools`;
+`OperationsList`, `OperationsGet`, `SearchPhotos`, `ImageFacts`), pinned 1:1 to `agent_tool_view()` by a structural test in `agent/tools`;
 `ToolId::KNOWN` excludes `Unrecognized` by design.
 
 ## Tests
