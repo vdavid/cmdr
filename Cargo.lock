@@ -1315,7 +1315,6 @@ dependencies = [
  "notify",
  "notify-debouncer-full",
  "nucleo-matcher",
- "nusb",
  "objc2 0.6.4",
  "objc2-app-kit 0.3.2",
  "objc2-core-foundation",
@@ -5487,9 +5486,9 @@ dependencies = [
 
 [[package]]
 name = "mtp-rs"
-version = "0.26.0"
+version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ac16fa2c437e77760f1c6f34f2d15e9caf4994b08a5ac61ce46244843bb24b1"
+checksum = "093ea7731e85d51235cacf24bd7817c486f2d29437a48ceea168fe848c429d6f"
 dependencies = [
  "async-trait",
  "bytes",

@@ -50,12 +50,31 @@ but a single marker can't order events across the whole tree. Keeping the watche
 entirely; the rescan is order-independent because it reads disk, not events. Don't reintroduce a resume in the
 fixture-sync path.
 
+## Hotplug watching
+
+`watcher.rs` drives off `mtp_rs::mtp::watch_devices()`, a `Stream<Item = HotplugEvent>` of `Arrived(MtpDeviceInfo)` /
+`Left(MtpDeviceInfo)`. mtp-rs owns the parts Cmdr used to hand-roll over raw `nusb`: it filters to MTP-capable devices
+(a mouse or a hub never wakes us), applies its own settle delay before enumerating (`DEFAULT_SETTLE_DELAY`, 500 ms), and
+reports devices already plugged in as `Arrived` on the first poll.
+
+Each event is only a trigger; `check_for_device_changes()` stays the reconciler, for three reasons:
+
+- **Virtual devices.** mtp-rs's watch is USB-only, so the E2E / `virtual-mtp` device produces no event. Only
+  `list_mtp_devices()` sees both it and real hardware.
+- **The `MTP_ENABLED` gate.** Events arrive while auto-connect is off; the `KNOWN_DEVICES` diff is what picks the device
+  up when it's switched back on.
+- **Cmdr's ids.** Auto-connect keys on `identity::device_id_for(serial, location_id)`, derived in `discovery.rs`.
+
+**No double-count at startup:** `start_mtp_watcher` enumerates and seeds `KNOWN_DEVICES` synchronously, *before* it
+spawns the watcher task, so the stream's initial already-connected `Arrived` burst diffs to nothing. When MTP is
+disabled at startup the seed is deliberately left empty (we're not connecting those devices), so a later
+`set_mtp_enabled(true)` still sees them as new; that mirrors the disable path, which clears the set.
+
 ## Architecture / data flow
 
 ```
 USB plug-in
-  → nusb hotplug event (watcher.rs)
-  → 500 ms delay
+  → mtp_rs HotplugEvent::Arrived (watcher.rs; mtp-rs filters to MTP devices and owns the settle delay)
   → check MTP_ENABLED gate, skip if disabled
   → list_mtp_devices() (discovery.rs)
   → auto_connect_device() (watcher.rs)
@@ -68,7 +87,7 @@ USB plug-in
     → broadcast::emit_volumes_changed()
 
 USB unplug
-  → nusb hotplug event (watcher.rs)
+  → mtp_rs HotplugEvent::Left (watcher.rs)
   → auto_disconnect_device() (watcher.rs)
     → MtpConnectionManager::disconnect()
     → emit mtp-device-disconnected
@@ -120,7 +139,6 @@ is fully quiet, which avoids provoking the bug in practice.
 
 ## Dependencies
 
-- `mtp_rs`: MTP session, object listing, file transfer.
-- `nusb`: USB hotplug events.
+- `mtp_rs`: MTP session, object listing, file transfer, and hotplug events (`mtp::watch_devices()`).
 - `futures_util`: `StreamExt` for the hotplug stream.
 - `crate::file_system`: `VolumeManager`, `MtpVolume`, `FileEntry`, `compute_diff`.

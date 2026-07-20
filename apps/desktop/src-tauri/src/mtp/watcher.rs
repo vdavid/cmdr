@@ -1,12 +1,12 @@
 //! USB hotplug watcher for MTP devices.
 //!
-//! Watches for USB device connect/disconnect events via nusb's hotplug API.
+//! Watches for MTP devices arriving and leaving via `mtp_rs::mtp::watch_devices()`.
 //! On detection, auto-connects devices and emits `mtp-device-connected` /
 //! `mtp-device-disconnected` events (via the connection manager). The frontend
 //! is a passive consumer. It never orchestrates connections.
 
 use log::{debug, error, info, warn};
-use nusb::hotplug::HotplugEvent;
+use mtp_rs::mtp::HotplugEvent;
 use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
@@ -128,6 +128,17 @@ fn check_for_device_changes() {
     }
 }
 
+/// What `KNOWN_DEVICES` should hold once the watcher starts, given the devices
+/// found at startup and whether MTP is enabled.
+///
+/// When MTP is off we're not connecting those devices, so recording them as
+/// known would make a later `set_mtp_enabled(true)` see no change and leave an
+/// already-plugged device unconnected until it's physically replugged. An empty
+/// set makes them read as new, mirroring the disable path (which clears the set).
+fn initial_known_devices(enabled: bool, discovered: &HashSet<String>) -> HashSet<String> {
+    if enabled { discovered.clone() } else { HashSet::new() }
+}
+
 /// Spawns an async task to connect a newly detected MTP device.
 fn auto_connect_device(device_id: String) {
     let app = APP_HANDLE.get().cloned();
@@ -177,11 +188,15 @@ pub fn start_mtp_watcher(app: &AppHandle) {
         warn!("MTP watcher app handle already set");
     }
 
-    // Initialize known devices with current state
+    // Enumerate what's already plugged in. This runs synchronously, before the
+    // watcher task spawns, so the stream's initial `Arrived` burst diffs to
+    // nothing instead of connecting the same devices twice. It also covers
+    // virtual devices, which mtp-rs's USB-only watch never reports.
+    let enabled = MTP_ENABLED.load(Ordering::SeqCst);
     let initial_devices = get_current_mtp_devices();
     let known = KNOWN_DEVICES.get_or_init(|| Mutex::new(HashSet::new()));
     if let Ok(mut known_guard) = known.lock() {
-        *known_guard = initial_devices.clone();
+        *known_guard = initial_known_devices(enabled, &initial_devices);
         debug!("Initial MTP devices: {:?}", known_guard);
     }
 
@@ -191,7 +206,7 @@ pub fn start_mtp_watcher(app: &AppHandle) {
     );
 
     // Auto-connect any devices already plugged in at startup (skip if MTP is disabled)
-    if !initial_devices.is_empty() && MTP_ENABLED.load(Ordering::SeqCst) {
+    if !initial_devices.is_empty() && enabled {
         #[cfg(target_os = "macos")]
         suppress_ptpcamerad_if_needed();
 
@@ -209,43 +224,53 @@ pub fn start_mtp_watcher(app: &AppHandle) {
 }
 
 /// The async hotplug watcher loop.
+///
+/// `mtp_rs::mtp::watch_devices()` only wakes us for devices that are actually
+/// MTP-capable, and it applies its own settle delay before enumerating, so mice,
+/// hubs, and chargers never reach this loop and there's no local sleep.
+///
+/// Each event is a TRIGGER, not the source of truth: we still reconcile through
+/// [`check_for_device_changes`]. The event payload can't drive auto-connect on its
+/// own because mtp-rs's watch is USB-only, so a virtual device (E2E, `virtual-mtp`)
+/// never produces one; `list_mtp_devices()` is the enumeration that sees both.
+/// The `MTP_ENABLED` gate also means events can arrive while auto-connect is off,
+/// which the `KNOWN_DEVICES` diff reconciles when it's switched back on.
+///
+/// The stream reports already-connected devices as `Arrived` on its first poll.
+/// That can't double-count: `start_mtp_watcher` seeds `KNOWN_DEVICES` synchronously
+/// before spawning this task, so the initial burst diffs to nothing.
 async fn run_hotplug_watcher(_app: AppHandle) {
-    // Use nusb's watch_devices to get notified of USB device changes
-    let hotplug_stream = match nusb::watch_devices() {
+    let hotplug_stream = match mtp_rs::mtp::watch_devices() {
         Ok(stream) => stream,
         Err(e) => {
-            error!("Failed to start USB hotplug watcher: {}", e);
+            error!("Failed to start MTP hotplug watcher: {}", e);
             return;
         }
     };
 
-    debug!("USB hotplug watcher started");
+    debug!("MTP hotplug watcher started");
 
-    // Process hotplug events
     use futures_util::StreamExt;
     let mut stream = hotplug_stream;
     while let Some(event) = stream.next().await {
         match event {
-            HotplugEvent::Connected(device_info) => {
+            HotplugEvent::Arrived(info) => {
                 debug!(
-                    "USB device connected: {:04x}:{:04x} at {}:{}",
-                    device_info.vendor_id(),
-                    device_info.product_id(),
-                    device_info.bus_id(),
-                    device_info.device_address()
+                    "MTP device arrived: {:04x}:{:04x} at location {} (serial {:?})",
+                    info.vendor_id, info.product_id, info.location_id, info.serial_number
                 );
-                // Give the device a moment to initialize
-                tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-                check_for_device_changes();
             }
-            HotplugEvent::Disconnected(device_id) => {
-                debug!("USB device disconnected: {:?}", device_id);
-                check_for_device_changes();
+            HotplugEvent::Left(info) => {
+                debug!(
+                    "MTP device left: {:04x}:{:04x} at location {} (serial {:?})",
+                    info.vendor_id, info.product_id, info.location_id, info.serial_number
+                );
             }
         }
+        check_for_device_changes();
     }
 
-    warn!("USB hotplug watcher stream ended unexpectedly");
+    warn!("MTP hotplug watcher stream ended unexpectedly");
 }
 
 /// Suppresses ptpcamerad before connecting to MTP devices.
@@ -325,6 +350,22 @@ mod tests {
         let devices = get_current_mtp_devices();
         // The function should complete without error (even if empty)
         assert!(devices.is_empty() || !devices.is_empty());
+    }
+
+    #[test]
+    fn seeds_known_devices_when_mtp_is_enabled() {
+        // The seed is what keeps the hotplug stream's initial `Arrived` burst
+        // from connecting the same devices a second time.
+        let discovered = HashSet::from(["mtp-A".to_string(), "mtp-B".to_string()]);
+        assert_eq!(initial_known_devices(true, &discovered), discovered);
+    }
+
+    #[test]
+    fn leaves_known_devices_empty_when_mtp_is_disabled() {
+        // Pre-fix this seeded the set regardless, so toggling MTP on later
+        // diffed to no change and the plugged-in device never connected.
+        let discovered = HashSet::from(["mtp-A".to_string()]);
+        assert!(initial_known_devices(false, &discovered).is_empty());
     }
 
     #[test]

@@ -12,8 +12,8 @@
 //!
 //! # Platform Support
 //!
-//! MTP support works on macOS and Linux. The underlying crates (`mtp-rs`, `nusb`)
-//! are pure Rust and support both platforms.
+//! MTP support works on macOS and Linux. The underlying crate (`mtp-rs`) is pure
+//! Rust and supports both platforms.
 //! On macOS, the system daemon `ptpcamerad` may claim devices first;
 //! see `macos_workaround` module for handling this.
 //! On Linux, USB device permissions may require udev rules.

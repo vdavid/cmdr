@@ -66,10 +66,6 @@ use tauri_plugin_updater as _;
 // mtp-rs is used in mtp/ module for Android device support (macOS + Linux)
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use mtp_rs as _;
-//noinspection ALL
-// nusb is used in mtp/watcher.rs for USB hotplug detection
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-use nusb as _;
 
 mod ignore_poison;
 pub use ignore_poison::IgnorePoison;

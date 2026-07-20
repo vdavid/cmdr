@@ -14,7 +14,8 @@ picker, reactive volume state). The frontend is a passive consumer: it subscribe
   `mtp_rs::UsbSpeed` via `crate::usb_speed::UsbSpeed`.
 - `discovery.rs`: `list_mtp_devices()`; device IDs via `identity::device_id_for` (see Must-knows).
 - `identity.rs`: device/volume id derivation (`device_id_for`) and the ONE robust parser (`split_volume_id` and friends).
-- `watcher.rs`: nusb hotplug watcher; 500 ms connect delay; auto-connect/disconnect; owns the `MTP_ENABLED` gate.
+- `watcher.rs`: hotplug watcher over `mtp_rs::mtp::watch_devices()`; auto-connect/disconnect; owns the `MTP_ENABLED`
+  gate.
 - `macos_workaround.rs` (macOS-only): ptpcamerad suppression (see below).
 - `connection/`: per-device session layer (`MtpConnectionManager` singleton, connect/disconnect, event loop, list / read
   / write / mutate / bulk ops). See [`connection/CLAUDE.md`](connection/CLAUDE.md) for locks, caches, and gotchas.
@@ -23,14 +24,17 @@ picker, reactive volume state). The frontend is a passive consumer: it subscribe
 
 ## Must-knows
 
+- **Hotplug events are a TRIGGER, never the source of truth.** ❌ Don't auto-connect off a `mtp_rs` `HotplugEvent`
+  payload: that watch is USB-only, so E2E's virtual device would never connect. Every event funnels into
+  `check_for_device_changes()`, which re-enumerates and diffs `KNOWN_DEVICES`. Why the initial `Arrived` burst can't
+  double-connect: DETAILS.md.
 - **`MTP_ENABLED` (`AtomicBool`, default `true`, in `watcher.rs`) gates all auto-connect.** The watcher loop always runs
   (`OnceLock`, no shutdown channel); `check_for_device_changes()` returns early when disabled. Setting key:
   `fileOperations.mtpEnabled` in `settings.json`, read by `settings/loader.rs` at startup.
-  - `set_mtp_enabled_flag(bool)`: sets the flag with no side effects; called at startup before `start_mtp_watcher()` so
-    the initial auto-connect respects the persisted setting.
-  - `set_mtp_enabled(bool)`: async runtime path (the `set_mtp_enabled` Tauri command). Disabling disconnects all devices,
-    clears `KNOWN_DEVICES`, and restores ptpcamerad (macOS); enabling re-runs `check_for_device_changes()` to pick up
-    already-plugged devices.
+  - `set_mtp_enabled_flag(bool)`: sets the flag, no side effects; called before `start_mtp_watcher()` so startup respects
+    the persisted setting.
+  - `set_mtp_enabled(bool)`: the Tauri-command path. Disabling disconnects all devices, clears `KNOWN_DEVICES`, and
+    restores ptpcamerad (macOS); enabling re-runs `check_for_device_changes()`.
 - **Write-capability probe.** `probe_write_capability()` creates a hidden `.cmdr_write_probe` folder to detect cameras
   that advertise write support but reject writes (`StoreReadOnly`). Timeout or non-fatal errors are treated as writable
   (benefit of the doubt).
