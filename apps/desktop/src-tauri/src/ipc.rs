@@ -70,7 +70,7 @@ use crate::ipc_collectors::collect_all_types;
 use crate::media_index::events::{MediaEnrichProgressEvent, MediaEnrichTerminalEvent};
 use crate::mtp::{
     MtpDeviceConnected, MtpDeviceDisconnected, MtpExclusiveAccessError, MtpPermissionError, MtpPtpcameradRestored,
-    MtpPtpcameradSuppressed, MtpStorageRemoved, MtpTransferProgress,
+    MtpPtpcameradSuppressed, MtpStorageRemoved,
 };
 use crate::network::{
     NetworkDiscoveryStateChanged, NetworkHostContextAction, NetworkHostFound, NetworkHostLost, NetworkHostResolved,
@@ -765,7 +765,6 @@ pub fn builder() -> Builder<tauri::Wry> {
             MtpDeviceConnected,
             MtpDeviceDisconnected,
             MtpStorageRemoved,
-            MtpTransferProgress,
             MtpExclusiveAccessError,
             MtpPermissionError,
             MtpPtpcameradSuppressed,

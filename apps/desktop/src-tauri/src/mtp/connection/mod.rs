@@ -55,38 +55,6 @@ const MTP_TIMEOUT_SECS: u64 = 30;
 /// [DETAILS.md](DETAILS.md) § "Bounded-window reads".
 pub(crate) const MTP_READ_WINDOW: u32 = 8 * 1024 * 1024;
 
-// ============================================================================
-// Progress events for MTP file operations
-// ============================================================================
-
-/// Progress event for MTP file transfers (download/upload).
-///
-/// Kebab-cases to the `mtp-transfer-progress` wire name, so no `event_name` override.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
-#[serde(rename_all = "camelCase")]
-pub struct MtpTransferProgress {
-    /// Unique operation ID.
-    pub operation_id: String,
-    /// Device ID.
-    pub device_id: String,
-    /// Type of transfer.
-    pub transfer_type: MtpTransferType,
-    /// Current file being transferred.
-    pub current_file: String,
-    /// Bytes transferred so far.
-    pub bytes_done: u64,
-    /// Total bytes to transfer.
-    pub bytes_total: u64,
-}
-
-/// Type of MTP transfer operation.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
-#[serde(rename_all = "snake_case")]
-pub enum MtpTransferType {
-    Download,
-    Upload,
-}
-
 /// Why an MTP device was disconnected.
 ///
 /// Surfaced on the `mtp-device-disconnected` event so logs and UI can
@@ -1057,40 +1025,8 @@ mod tests {
     }
 
     // ========================================================================
-    // Transfer types and result tests
+    // Object info tests
     // ========================================================================
-
-    #[test]
-    fn test_transfer_type_serialization() {
-        let download = MtpTransferType::Download;
-        let upload = MtpTransferType::Upload;
-
-        let download_json = serde_json::to_string(&download).unwrap();
-        let upload_json = serde_json::to_string(&upload).unwrap();
-
-        assert_eq!(download_json, "\"download\"");
-        assert_eq!(upload_json, "\"upload\"");
-    }
-
-    #[test]
-    fn test_transfer_progress_serialization() {
-        let progress = MtpTransferProgress {
-            operation_id: "op-123".to_string(),
-            device_id: "mtp-1-5".to_string(),
-            transfer_type: MtpTransferType::Download,
-            current_file: "photo.jpg".to_string(),
-            bytes_done: 1024,
-            bytes_total: 4096,
-        };
-
-        let json = serde_json::to_string(&progress).unwrap();
-        assert!(json.contains("\"operationId\":\"op-123\""));
-        assert!(json.contains("\"deviceId\":\"mtp-1-5\""));
-        assert!(json.contains("\"transferType\":\"download\""));
-        assert!(json.contains("\"currentFile\":\"photo.jpg\""));
-        assert!(json.contains("\"bytesDone\":1024"));
-        assert!(json.contains("\"bytesTotal\":4096"));
-    }
 
     #[test]
     fn test_object_info_serialization() {

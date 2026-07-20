@@ -3085,7 +3085,6 @@ export const events = {
   mtpPtpcameradRestored: makeEvent<MtpPtpcameradRestored>('mtp-ptpcamerad-restored'),
   mtpPtpcameradSuppressed: makeEvent<MtpPtpcameradSuppressed>('mtp-ptpcamerad-suppressed'),
   mtpStorageRemoved: makeEvent<MtpStorageRemoved>('mtp-storage-removed'),
-  mtpTransferProgress: makeEvent<MtpTransferProgress>('mtp-transfer-progress'),
   networkDiscoveryStateChanged: makeEvent<NetworkDiscoveryStateChanged>('network-discovery-state-changed'),
   networkHostContextAction: makeEvent<NetworkHostContextAction>('network-host-context-action'),
   networkHostFound: makeEvent<NetworkHostFound>('network-host-found'),
@@ -5541,29 +5540,6 @@ export type MtpStorageRemoved = {
   deviceId: string
   storageId: number
 }
-
-/**
- *  Progress event for MTP file transfers (download/upload).
- *
- *  Kebab-cases to the `mtp-transfer-progress` wire name, so no `event_name` override.
- */
-export type MtpTransferProgress = {
-  // Unique operation ID.
-  operationId: string
-  // Device ID.
-  deviceId: string
-  // Type of transfer.
-  transferType: MtpTransferType
-  // Current file being transferred.
-  currentFile: string
-  // Bytes transferred so far.
-  bytesDone: number
-  // Total bytes to transfer.
-  bytesTotal: number
-}
-
-// Type of MTP transfer operation.
-export type MtpTransferType = 'download' | 'upload'
 
 export type NegotiatedSummaryDto = {
   dialect: string
