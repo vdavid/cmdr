@@ -72,8 +72,14 @@ the limiting factor:
 - **Cost**: aggregation runs once per flush tick, never per event. No locks, no per-event allocation, no per-event
   logging.
 
-Caveat worth remembering when reading the numbers: the input is the loop's **deduplicated** batch, so one file touched
-40× in a second counts once. `raw_events` on the period line gives the dedup ratio.
+Two caveats worth remembering when reading the numbers:
+
+- The input is the loop's **deduplicated** batch, so one file touched 40× in a second counts once. `raw_events` on the
+  period line gives the dedup ratio.
+- A period closes on the next live batch after the configured length elapses, and under a heavy drain the event loop can
+  starve its own flush tick for tens of seconds. So periods stretch (`period_ms=43762` was observed right after a
+  replay handoff). That's why `period_ms` is measured rather than assumed, and why the analyser derives its timings from
+  it: rates stay honest, the time base just gets coarser when the machine is busiest.
 
 ## Log format
 
@@ -141,8 +147,11 @@ comma in a path can't shift columns.
 
 - `apps/desktop/src-tauri/src/indexing/churn_monitor.rs` — the aggregator, pure and clock-injected (same shape as
   `reconciler/rescan_throttle.rs`), with its unit tests in `churn_monitor/tests.rs`.
-- `apps/desktop/src-tauri/src/indexing/event_loop/live.rs` — the single call site, on the flush tick, before the batch
-  drains.
+- `apps/desktop/src-tauri/src/indexing/event_loop/live.rs` — the single call site, inside `process_live_batch`, before
+  the batch drains. It lives there rather than at a loop's flush tick because **there are two live loops**: `live.rs`'s
+  `run_live_event_loop` (post-scan) and `replay.rs` Phase 3 (post-journal-replay, the cold-start route). Both funnel
+  through `process_live_batch`, which takes a `ChurnObserver` by `&mut`, so the hook is compiler-enforced at every live
+  batch. `churn_monitor/tests.rs::every_live_loop_owns_a_real_churn_observer` catches a third loop appearing.
 - `scripts/churn-analysis/` — the offline analyser.
 
 The aggregator is designed to be promoted into the sealed-subtrees churn accounting rather than deleted: only the sink

@@ -265,6 +265,89 @@ impl ChurnMonitor {
     }
 }
 
+/// The live batch's view of the monitor: the optional monitor plus the volume
+/// it belongs to and the raw-event baseline it diffs against.
+///
+/// **This type exists to make forgetting the instrumentation impossible.**
+/// `process_live_batch` takes one by `&mut`, and there is more than one live
+/// loop (`live.rs` and `replay.rs` Phase 3 both drive live batches). Passing an
+/// observer is therefore compiler-enforced at every live batch, present and
+/// future; opting out has to be spelled out as [`ChurnObserver::disabled`].
+pub(in crate::indexing) struct ChurnObserver {
+    monitor: Option<ChurnMonitor>,
+    volume_id: String,
+    /// Cumulative raw events the owning loop had seen at the previous batch, so
+    /// the per-period raw count is a diff of a counter the loop already keeps
+    /// (no per-event work is added anywhere).
+    last_raw_total: u64,
+    /// Raw events accumulated since the last `observe`.
+    pending_raw: u64,
+}
+
+impl ChurnObserver {
+    /// An observer wired to the env-gated monitor. `None` inside (and free)
+    /// unless `CMDR_CHURN_SPIKE` is truthy.
+    pub(in crate::indexing) fn from_env(volume_id: &str, now: Instant) -> Self {
+        Self {
+            monitor: ChurnMonitor::from_env(now),
+            volume_id: volume_id.to_string(),
+            last_raw_total: 0,
+            pending_raw: 0,
+        }
+    }
+
+    /// An observer that never records. Test-only on purpose: production code
+    /// has no way to opt out, so every live batch carries a real observer.
+    #[cfg(test)]
+    pub(in crate::indexing) fn disabled() -> Self {
+        Self {
+            monitor: None,
+            volume_id: String::new(),
+            last_raw_total: 0,
+            pending_raw: 0,
+        }
+    }
+
+    /// Supply the owning loop's cumulative raw-event count for this batch.
+    /// Returns `&mut self` so the call reads as one expression at the
+    /// `process_live_batch` call site, which is what keeps the count honest
+    /// without a second thing to remember.
+    pub(in crate::indexing) fn with_raw_total(&mut self, raw_total: u64) -> &mut Self {
+        // Saturating: a loop that restarts its own counter must not underflow.
+        self.pending_raw += raw_total.saturating_sub(self.last_raw_total);
+        self.last_raw_total = raw_total;
+        self
+    }
+
+    /// Fold one batch of deduplicated paths in, then emit if the period closed.
+    /// Called from `process_live_batch` before the batch drains.
+    pub(in crate::indexing) fn observe<'a>(&mut self, paths: impl Iterator<Item = &'a str>, now: Instant) {
+        let raw = std::mem::take(&mut self.pending_raw);
+        let Some(monitor) = self.monitor.as_mut() else {
+            return;
+        };
+        monitor.record_batch(paths, raw);
+        if let Some(report) = monitor.rollup(now) {
+            report.log(&self.volume_id);
+        }
+    }
+
+    #[cfg(test)]
+    fn enabled_for_test(volume_id: &str, period: Duration, top_n: usize, now: Instant) -> Self {
+        Self {
+            monitor: Some(ChurnMonitor::new(period, top_n, now)),
+            volume_id: volume_id.to_string(),
+            last_raw_total: 0,
+            pending_raw: 0,
+        }
+    }
+
+    #[cfg(test)]
+    fn take_report(&mut self, now: Instant) -> Option<ChurnReport> {
+        self.monitor.as_mut().and_then(|m| m.rollup(now))
+    }
+}
+
 /// Stable-within-a-process hash of a child name. Only cardinality is reported,
 /// so collisions cost at most an undercount of one child in a 128-slot set.
 fn hash_name(name: &str) -> u64 {

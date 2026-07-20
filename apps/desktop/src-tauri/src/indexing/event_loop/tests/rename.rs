@@ -115,6 +115,7 @@ fn run_live_batch(
             &conn,
             writer,
             &mut pending_paths,
+            &mut crate::indexing::churn_monitor::ChurnObserver::disabled(),
         );
     });
     writer.flush_blocking().unwrap();
@@ -710,6 +711,7 @@ fn process_live_batch_rename_preserves_dir_stats_and_old_path_no_ops() {
             &conn,
             &writer,
             &mut pending_paths,
+            &mut crate::indexing::churn_monitor::ChurnObserver::disabled(),
         );
     });
     writer.flush_blocking().unwrap();

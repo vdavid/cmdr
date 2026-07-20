@@ -198,6 +198,92 @@ fn a_pathological_depth_is_cut_and_counted() {
     assert_eq!(node(&report, "/").events, 1, "the shallow end is still credited");
 }
 
+// ── The observer: the seam that made the instrumentation miss production ──
+
+/// The bug this pins: the churn hook lived at ONE live loop's flush tick, and
+/// the cold-start journal-replay path runs a SECOND live loop that never calls
+/// it, so a whole boot route measured nothing while every unit test passed.
+///
+/// Both live loops now funnel through `process_live_batch`, which takes a
+/// `ChurnObserver` by `&mut` — so the compiler enforces the hook at every live
+/// batch. This test guards the remaining hole the compiler can't see: a NEW
+/// live loop appearing in a third file, or an existing one quietly downgrading
+/// to `ChurnObserver::disabled()`.
+#[test]
+fn every_live_loop_owns_a_real_churn_observer() {
+    let event_loop = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/indexing/event_loop");
+    let mut drivers: Vec<String> = Vec::new();
+    for entry in std::fs::read_dir(&event_loop).expect("event_loop dir") {
+        let path = entry.expect("dir entry").path();
+        if path.extension().is_none_or(|e| e != "rs") {
+            continue;
+        }
+        let src = std::fs::read_to_string(&path).expect("read source");
+        if !src.contains("process_live_batch(") {
+            continue;
+        }
+        let name = path.file_name().expect("file name").to_string_lossy().to_string();
+        assert!(
+            src.contains("ChurnObserver::from_env("),
+            "{name} drives live batches but never builds a real ChurnObserver, \
+             so the churn spike would silently measure nothing on that route"
+        );
+        drivers.push(name);
+    }
+    drivers.sort();
+    assert_eq!(
+        drivers,
+        vec!["live.rs".to_string(), "replay.rs".to_string()],
+        "the set of live-batch drivers changed; wire the new one's ChurnObserver, then update this list"
+    );
+}
+
+#[test]
+fn an_idle_period_still_closes_so_the_time_series_has_no_holes() {
+    let t0 = Instant::now();
+    let mut obs = ChurnObserver::enabled_for_test("root", Duration::from_secs(30), 10, t0);
+
+    // No paths at all for a whole period: the rollup must still fire, or a
+    // subtree going quiet reads as missing data rather than as quiet.
+    obs.observe(std::iter::empty(), t0 + Duration::from_secs(30));
+    let next = obs.take_report(t0 + Duration::from_secs(60)).expect("second period");
+    assert_eq!(next.seq, 1, "the idle period closed and advanced the sequence");
+}
+
+#[test]
+fn raw_totals_are_diffed_from_the_loops_cumulative_counter() {
+    let t0 = Instant::now();
+    let mut obs = ChurnObserver::enabled_for_test("root", Duration::from_secs(30), 10, t0);
+
+    obs.with_raw_total(100).observe(["/a/f.txt"].into_iter(), t0);
+    obs.with_raw_total(250).observe(["/a/f.txt"].into_iter(), t0);
+    let report = obs.take_report(t0 + Duration::from_secs(30)).expect("period elapsed");
+
+    assert_eq!(report.raw_events, 250, "cumulative counter is diffed, not re-added");
+    assert_eq!(report.batch_paths, 2);
+}
+
+#[test]
+fn a_restarted_loop_counter_does_not_underflow() {
+    let t0 = Instant::now();
+    let mut obs = ChurnObserver::enabled_for_test("root", Duration::from_secs(30), 10, t0);
+
+    obs.with_raw_total(500).observe(["/a/f.txt"].into_iter(), t0);
+    // A counter that goes backwards contributes nothing rather than wrapping.
+    obs.with_raw_total(7).observe(["/a/f.txt"].into_iter(), t0);
+    let report = obs.take_report(t0 + Duration::from_secs(30)).expect("period elapsed");
+
+    assert_eq!(report.raw_events, 500);
+}
+
+#[test]
+fn a_disabled_observer_records_nothing() {
+    let t0 = Instant::now();
+    let mut obs = ChurnObserver::disabled();
+    obs.with_raw_total(1000).observe(["/a/f.txt"].into_iter(), t0);
+    assert!(obs.take_report(t0 + Duration::from_secs(30)).is_none());
+}
+
 #[test]
 fn root_and_empty_paths_are_ignored_without_panicking() {
     let t0 = Instant::now();

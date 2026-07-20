@@ -17,7 +17,7 @@ use tauri::AppHandle;
 
 use super::super::DEBUG_STATS;
 use super::super::IndexPathSpace;
-use super::super::churn_monitor::ChurnMonitor;
+use super::super::churn_monitor::ChurnObserver;
 use super::super::events::{RescanReason, emit_rescan_notification};
 use super::super::metadata;
 use super::super::path_prefix;
@@ -123,13 +123,10 @@ pub(in crate::indexing) async fn run_live_event_loop(
     // Rate-limiter for the "ingestion falling behind" warning (Fix 2).
     let mut last_ingestion_warn: Option<Instant> = None;
 
-    // Spike B churn observability: `None` (and free) unless `CMDR_CHURN_SPIKE` is
-    // set. Read-only — it observes the deduplicated batch on the flush tick and
-    // logs a rollup per period; it writes nothing and changes no behaviour. The
-    // per-event arm below is deliberately untouched (the raw count is derived
-    // from `event_count`, which the loop already maintains).
-    let mut churn = ChurnMonitor::from_env(Instant::now());
-    let mut churn_last_raw = 0u64;
+    // Spike B churn observability: inert (and free) unless `CMDR_CHURN_SPIKE` is
+    // set. `process_live_batch` does the recording; this only owns the state and
+    // feeds it the raw-event counter the loop already maintains.
+    let mut churn = ChurnObserver::from_env(&volume_id, Instant::now());
 
     loop {
         tokio::select! {
@@ -166,7 +163,7 @@ pub(in crate::indexing) async fn run_live_event_loop(
                         // Channel closed: process remaining events before exit
                         process_live_batch(
                             &mut pending_events, &mut reconciler, &space, &conn,
-                            &writer, &mut pending_paths,
+                            &writer, &mut pending_paths, churn.with_raw_total(event_count),
                         );
                         if !pending_paths.is_empty() {
                             let _ = writer.send(WriteMessage::EmitDirUpdated(
@@ -250,21 +247,11 @@ pub(in crate::indexing) async fn run_live_event_loop(
                         break;
                     }
 
-                // Observe the batch BEFORE it drains. Runs on the flush tick (once
-                // per second), never per event, and only when the spike is on.
-                if let Some(monitor) = churn.as_mut() {
-                    monitor.record_batch(pending_events.keys().map(String::as_str), event_count - churn_last_raw);
-                    churn_last_raw = event_count;
-                    if let Some(report) = monitor.rollup(Instant::now()) {
-                        report.log(&volume_id);
-                    }
-                }
-
                 let batch_size = pending_events.len() as u64;
                 let batch_start = Instant::now();
                 process_live_batch(
                     &mut pending_events, &mut reconciler, &space, &conn,
-                    &writer, &mut pending_paths,
+                    &writer, &mut pending_paths, churn.with_raw_total(event_count),
                 );
                 let batch_ms = batch_start.elapsed().as_millis();
                 batches_since_heartbeat += 1;
@@ -344,7 +331,20 @@ pub(in crate::indexing) fn process_live_batch(
     conn: &Connection,
     writer: &IndexWriter,
     pending_paths: &mut HashSet<String>,
+    churn: &mut ChurnObserver,
 ) {
+    // Spike B observability, BEFORE the early return and before the drain: an
+    // idle period must still close and emit, or the time series grows holes
+    // exactly where "this subtree went quiet" is the answer we're after.
+    // Read-only — it writes nothing and decides nothing.
+    //
+    // This lives INSIDE `process_live_batch`, not at a loop's flush tick, on
+    // purpose: there is more than one live loop (`live.rs` and `replay.rs`
+    // Phase 3), and hooking one of them silently measured nothing on the
+    // cold-start replay path. Every live batch funnels through here, so this is
+    // the only site that cannot be forgotten.
+    churn.observe(pending_events.keys().map(String::as_str), Instant::now());
+
     if pending_events.is_empty() {
         return;
     }

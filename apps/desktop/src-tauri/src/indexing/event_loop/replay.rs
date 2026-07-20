@@ -18,6 +18,7 @@ use tauri_specta::Event;
 use super::super::ActivityPhase;
 use super::super::DEBUG_STATS;
 use super::super::IndexPathSpace;
+use super::super::churn_monitor::ChurnObserver;
 use super::super::events::{
     IndexReplayCompleteEvent, IndexReplayProgressEvent, RescanReason, emit_rescan_notification, set_phase_for,
 };
@@ -439,6 +440,11 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     }
 
     let mut live_count = 0u64;
+    // Spike B churn observability, same as `run_live_event_loop`: this loop
+    // drives live batches too (the cold-start replay path never reaches
+    // `run_live_event_loop`), so it needs its own observer or the whole
+    // journal-replay route measures nothing.
+    let mut churn = ChurnObserver::from_env(&volume_id, Instant::now());
     let mut live_pending_paths = HashSet::<String>::new();
     let mut live_pending_events = HashMap::<String, watcher::FsChangeEvent>::new();
     let mut flush_interval = tokio::time::interval(Duration::from_millis(LIVE_FLUSH_INTERVAL_MS));
@@ -478,7 +484,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                     None => {
                         process_live_batch(
                             &mut live_pending_events, &mut reconciler, &space, &conn,
-                            &writer, &mut live_pending_paths,
+                            &writer, &mut live_pending_paths, churn.with_raw_total(live_count),
                         );
                         if !live_pending_paths.is_empty() {
                             let changed = mark_pending_and_drain(&volume_id, &mut live_pending_paths);
@@ -547,7 +553,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
 
                 process_live_batch(
                     &mut live_pending_events, &mut reconciler, &space, &conn,
-                    &writer, &mut live_pending_paths,
+                    &writer, &mut live_pending_paths, churn.with_raw_total(live_count),
                 );
                 if !live_pending_paths.is_empty() {
                     let changed = mark_pending_and_drain(&volume_id, &mut live_pending_paths);
