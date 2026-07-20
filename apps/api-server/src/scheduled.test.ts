@@ -77,6 +77,87 @@ beforeEach(() => {
 })
 
 describe('handleCrashNotifications', () => {
+  it('surfaces the panic message in the email', async () => {
+    // The message is what makes a crash diagnosable at a glance; without it the email
+    // only names a function. Rows from older clients have none and must still render.
+    const responses = new Map<string, unknown>([
+      [
+        'SELECT id',
+        {
+          results: [
+            {
+              id: 1,
+              app_version: '1.0.0',
+              os_version: '15.3',
+              arch: 'arm64',
+              signal: 'panic',
+              top_function: 'cmdr_lib::file_system::listing::caching::notify_directory_changed',
+              created_at: '2026-03-23T10:00:00Z',
+              build_mode: 'release',
+              short_id: 'CRASH-26SBB',
+              email: null,
+              panic_message: 'there is no reactor running, must be called from the context of a Tokio 1.x runtime',
+            },
+            {
+              id: 2,
+              app_version: '0.9.0',
+              os_version: '15.3',
+              arch: 'arm64',
+              signal: 'SIGSEGV',
+              top_function: 'cmdr::sync::run',
+              created_at: '2026-03-23T11:00:00Z',
+              build_mode: 'release',
+              short_id: 'CRASH-B6789',
+              email: null,
+              panic_message: null,
+            },
+          ],
+        },
+      ],
+    ])
+    const { db } = createMockD1(responses)
+    const env = createBaseEnv({ TELEMETRY_DB: db })
+
+    await handleCrashNotifications(env as never)
+
+    const emailCall = lastEmailCall()
+    expect(emailCall.html).toContain('there is no reactor running')
+    // The signal-crash row has no message and renders an em-dash placeholder, not "null".
+    expect(emailCall.html).not.toContain('>null<')
+  })
+
+  it('escapes HTML in the panic message', async () => {
+    const responses = new Map<string, unknown>([
+      [
+        'SELECT id',
+        {
+          results: [
+            {
+              id: 1,
+              app_version: '1.0.0',
+              os_version: '15.3',
+              arch: 'arm64',
+              signal: 'panic',
+              top_function: 'cmdr_lib::x::y',
+              created_at: '2026-03-23T10:00:00Z',
+              build_mode: 'release',
+              short_id: 'CRASH-A2345',
+              email: null,
+              panic_message: '<img src=x onerror=alert(1)>',
+            },
+          ],
+        },
+      ],
+    ])
+    const { db } = createMockD1(responses)
+    const env = createBaseEnv({ TELEMETRY_DB: db })
+
+    await handleCrashNotifications(env as never)
+
+    expect(lastEmailCall().html).not.toContain('<img src=x')
+    expect(lastEmailCall().html).toContain('&lt;img src=x')
+  })
+
   it('sends one row per un-notified crash report', async () => {
     const responses = new Map<string, unknown>([
       [

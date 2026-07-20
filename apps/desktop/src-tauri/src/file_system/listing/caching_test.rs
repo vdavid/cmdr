@@ -894,3 +894,34 @@ fn carry_forward_does_not_overwrite_incoming_tags() {
     );
     cleanup_listing(&id);
 }
+
+// ============================================================================
+// FullRefresh dispatch from a runtime-less thread
+// ============================================================================
+
+#[test]
+fn spawn_full_refresh_survives_a_thread_with_no_tokio_runtime() {
+    // The notify-rs debouncer, the SMB/MTP watcher threads, and the git watcher all
+    // call `notify_directory_changed(FullRefresh)` from a plain OS thread that was
+    // never entered from a Tokio runtime. A bare `tokio::spawn` panics there ("there
+    // is no reactor running"), which took the whole app down in v0.24.0 (CRASH-26SBB).
+    use super::caching::spawn_full_refresh;
+
+    let handle = std::thread::spawn(|| {
+        spawn_full_refresh(
+            "no-such-volume".to_string(),
+            PathBuf::from("/test/spawn_full_refresh"),
+            vec![(
+                "sfr_listing".to_string(),
+                SortColumn::Name,
+                SortOrder::Ascending,
+                DirectorySortMode::LikeFiles,
+            )],
+        );
+    });
+
+    assert!(
+        handle.join().is_ok(),
+        "dispatching a FullRefresh from a runtime-less thread must not panic"
+    );
+}

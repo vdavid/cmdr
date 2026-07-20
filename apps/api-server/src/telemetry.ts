@@ -7,6 +7,27 @@ const telemetry = new Hono<{ Bindings: Bindings }>()
 const maxCrashReportBytes = 64 * 1024
 const crashReportRequiredFields = ['appVersion', 'osVersion', 'arch', 'signal'] as const
 const maxBacktraceBytes = 5_000
+/**
+ * Server-side cap on the stored panic message, in UTF-16 code units. The client caps at the
+ * same 2,000 (counting code points), so this only catches a client that skipped its own
+ * capping; we truncate rather than reject so one fat message can't cost us the whole report.
+ */
+const maxPanicMessageChars = 2_000
+const panicMessageTruncationMarker = '… (truncated)'
+
+/**
+ * Truncate an over-long panic message, marking it so it never reads as complete. Slices by
+ * UTF-16 code unit and then drops a trailing lone high surrogate, so the cut never lands
+ * inside a surrogate pair and leaves a replacement char in the column.
+ */
+function capPanicMessage(message: string | null | undefined): string | null {
+  if (message === undefined || message === null) return null
+  if (message.length <= maxPanicMessageChars) return message
+  let cut = message.slice(0, maxPanicMessageChars)
+  const lastCode = cut.charCodeAt(cut.length - 1)
+  if (lastCode >= 0xd800 && lastCode <= 0xdbff) cut = cut.slice(0, -1)
+  return cut + panicMessageTruncationMarker
+}
 
 interface CrashReport {
   appVersion: string
@@ -25,6 +46,12 @@ interface CrashReport {
   diagId?: string
   /** Optional. A beta tester's contact email, attached only when they tick the box at send time. */
   email?: string
+  /**
+   * Optional. The panic payload string, already PII-redacted and capped by the client
+   * (`crash_reporter::sanitize_panic_message`). Absent for signal crashes (SIGSEGV/SIGBUS/
+   * SIGABRT carry no payload) and for clients older than the field.
+   */
+  panicMessage?: string
   backtraceFrames?: string[]
   [key: string]: unknown
 }
@@ -34,13 +61,47 @@ const crashShortIdPattern = /^CRASH-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{5}$/
 // fails this check by construction, so the analytics id can never land in a crash column.
 const diagIdPattern = /^diag_[0-9a-f-]{36}$/
 
-/** Extract the first app-code frame from a backtrace (contains `cmdr` or `cmdr_lib`). */
+/**
+ * Frames belonging to the panic machinery rather than to the code that broke. Every panic
+ * backtrace opens with the same prelude, and `cmdr_lib::crash_reporter::install_panic_hook`
+ * is itself app code, so without this skip list every panic groups under one bucket and the
+ * nightly crash email can't tell unrelated bugs apart. Substring match: frame text carries
+ * generics, closure suffixes (`::{{closure}}`), and `<T as Trait>` wrappers.
+ */
+const panicMachineryMarkers = [
+  'crash_reporter',
+  'std::panicking',
+  'core::panicking',
+  'rust_begin_unwind', // covers `__rustc::rust_begin_unwind`
+  'std::backtrace',
+  'std::sys::backtrace',
+  'core::str::slice_error_fail',
+  'core::option::unwrap_failed',
+  'core::option::expect_failed',
+  'core::result::unwrap_failed',
+  'core::result::unwrap_fail',
+] as const
+
+/** App-code frames: the `cmdr` binary crate and the `cmdr_lib` library crate. */
+const appFramePattern = /\bcmdr(_lib)?::/
+
+function isPanicMachinery(frame: string): boolean {
+  return panicMachineryMarkers.some((marker) => frame.includes(marker))
+}
+
+/**
+ * Derive the grouping key: the topmost frame that is real application code. Panic-machinery
+ * frames are skipped first, then the first `cmdr` / `cmdr_lib` frame wins. Non-app frames
+ * (`tokio::…`, `std::…`) are never the key even when they're the immediate cause: they'd
+ * group unrelated bugs by their shared library call. A backtrace with no app frame at all
+ * stays `'unknown'` rather than grouping under some library internals.
+ */
 function extractTopFunction(frames: string[] | undefined): string {
   if (!frames || !Array.isArray(frames)) return 'unknown'
   for (const frame of frames) {
-    if (typeof frame === 'string' && (frame.includes('cmdr') || frame.includes('cmdr_lib'))) {
-      return frame
-    }
+    if (typeof frame !== 'string') continue
+    if (isPanicMachinery(frame)) continue
+    if (appFramePattern.test(frame)) return frame
   }
   return 'unknown'
 }
@@ -76,6 +137,12 @@ function validateCrashReportShape(report: Record<string, unknown>): string | nul
   const buildMode = report.buildMode
   if (buildMode !== undefined && buildMode !== null && buildMode !== 'release' && buildMode !== 'debug') {
     return 'Invalid buildMode'
+  }
+  // Free text, so only the type is checked; over-length is truncated at write time rather
+  // than rejected (losing the whole report over a fat message is worse than losing its tail).
+  const panicMessage = report.panicMessage
+  if (panicMessage !== undefined && panicMessage !== null && typeof panicMessage !== 'string') {
+    return 'Invalid panicMessage'
   }
   // `diagId` is the `diag_<uuid>` diagnostics id; an `anal_`-prefixed value fails this shape
   // check, so the analytics id can never land in a crash column. `email` is loosely
@@ -150,14 +217,15 @@ interface CrashReportDerived {
 }
 
 /**
- * Fire-and-forget D1 insert of a crash report. `build_mode`, `short_id`, `diag_id`, and `email`
- * are nullable; rows from older clients (or reports without an attached email) stay NULL.
+ * Fire-and-forget D1 insert of a crash report. `build_mode`, `short_id`, `diag_id`, `email`, and
+ * `panic_message` are nullable; rows from older clients (or reports without an attached email,
+ * or signal crashes, which carry no panic payload) stay NULL.
  */
 function writeCrashReportToD1(db: D1Database, report: CrashReport, derived: CrashReportDerived): Promise<unknown> {
   return db
     .prepare(
-      `INSERT INTO crash_reports (hashed_ip, app_version, os_version, arch, signal, top_function, backtrace, build_mode, short_id, diag_id, email)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO crash_reports (hashed_ip, app_version, os_version, arch, signal, top_function, backtrace, build_mode, short_id, diag_id, email, panic_message)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       derived.hashedIp,
@@ -171,6 +239,7 @@ function writeCrashReportToD1(db: D1Database, report: CrashReport, derived: Cras
       report.shortId ?? null,
       report.diagId ?? null,
       report.email ?? null,
+      capPanicMessage(report.panicMessage),
     )
     .run()
     .catch(() => {}) // Don't let D1 failure block the response

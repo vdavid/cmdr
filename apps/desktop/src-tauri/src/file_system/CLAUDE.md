@@ -24,7 +24,10 @@ via `set_tags` / `toggle_color` behind the `toggle_tags` command).
 - **Never `tokio::spawn` from the notify-rs debouncer callback.** It runs on the notify-rs internal thread with no Tokio
   runtime, so `tokio::spawn` panics with "there is no reactor running". Use `tauri::async_runtime::spawn` (same as
   `indexing::watcher`). This bit the watcher's full-reread fallback path (`watcher.rs`, `>500` events or ambiguous event
-  kinds).
+  kinds), and again in v0.24.0 via `git::watcher::refresh_local_listings_under` →
+  `listing::caching::notify_directory_changed(FullRefresh)` (CRASH-26SBB), which is why FullRefresh dispatch now funnels
+  through `caching::spawn_full_refresh`. The rule covers every watcher OS thread (git, SMB, MTP, archive), not just
+  notify-rs.
 - **Watcher event paths must be rebased into the listing's path space** (`watcher.rs::rebase_event_path`). On macOS,
   FSEvents reports canonical paths (`/private/tmp/…`) while `LISTING_CACHE` holds the user-navigated form (`/tmp/…`).
   The incremental handler compares the firmlink-normalized forms (`indexing::firmlinks::normalize_path`) and rebases

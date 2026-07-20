@@ -365,3 +365,34 @@ fn make_test_report() -> CrashReport {
         system_snapshot: None,
     }
 }
+
+#[test]
+fn sanitize_caps_a_runaway_panic_message() {
+    // `assert_eq!` on big structs produces multi-KB payloads. The whole report body is
+    // capped at 64 KB by the ingestion endpoint, so an uncapped message would take the
+    // entire report down with a 400 instead of just losing its own tail.
+    let msg = "x".repeat(PANIC_MESSAGE_MAX_CHARS * 3);
+    let sanitized = sanitize_panic_message(&msg);
+    assert!(
+        sanitized.chars().count() <= PANIC_MESSAGE_MAX_CHARS + PANIC_MESSAGE_TRUNCATION_MARKER.chars().count(),
+        "capped message was {} chars",
+        sanitized.chars().count()
+    );
+    assert!(sanitized.ends_with(PANIC_MESSAGE_TRUNCATION_MARKER));
+}
+
+#[test]
+fn sanitize_caps_on_a_char_boundary() {
+    // Truncating by byte index inside a multi-byte char panics inside the panic hook,
+    // which would abort with no report at all.
+    let msg = "é".repeat(PANIC_MESSAGE_MAX_CHARS * 2);
+    let sanitized = sanitize_panic_message(&msg);
+    assert!(sanitized.starts_with('é'));
+    assert!(sanitized.ends_with(PANIC_MESSAGE_TRUNCATION_MARKER));
+}
+
+#[test]
+fn sanitize_leaves_a_short_message_unmarked() {
+    let sanitized = sanitize_panic_message("index out of bounds: the len is 3 but the index is 7");
+    assert!(!sanitized.ends_with(PANIC_MESSAGE_TRUNCATION_MARKER));
+}

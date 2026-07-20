@@ -18,7 +18,10 @@ lifecycle and the exact payload catalog.
 - Exception type + signal, faulting address.
 - App version, macOS version, CPU architecture.
 - App uptime, thread count.
-- Sanitized panic message.
+- Sanitized panic message (`panicMessage`): redacted through `crate::redact`, then capped at
+  `PANIC_MESSAGE_MAX_CHARS` (2,000) with a `… (truncated)` marker. `None` for signal crashes, which carry no payload.
+  The cap exists because the ingestion endpoint rejects a report body over 64 KB, so an uncapped `assert_eq!` dump of a
+  big struct would cost the whole report instead of its own tail. The api server caps again on its side.
 - Active feature flags (booleans/enums only: `indexing.enabled`, `ai.provider`, `developer.mcpEnabled`,
   `developer.verboseLogging`).
 - `buildMode` (`"release"` or `"debug"`, from `cfg!(debug_assertions)`): lets the api server distinguish dev-run crashes

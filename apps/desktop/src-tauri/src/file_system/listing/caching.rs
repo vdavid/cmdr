@@ -526,9 +526,10 @@ pub fn notify_directory_changed(volume_id: &str, parent_path: &Path, change: Dir
         return;
     }
 
-    // Skip if no AppHandle is registered yet (test or pre-init context).
-    // Without it the `tokio::spawn` in FullRefresh has no runtime, and the
-    // coalesced flush would never emit anyway.
+    // Skip if no AppHandle is registered yet (test or pre-init context): every arm
+    // below ends in `enqueue_diff`, whose coalesced flush needs the handle to emit,
+    // so the whole re-read would be wasted work. This says nothing about async
+    // context — see `spawn_full_refresh` for why the runtime is resolved globally.
     let has_app = WATCHER_MANAGER.read().ok().and_then(|m| m.app_handle.clone()).is_some();
     if !has_app {
         return;
@@ -571,17 +572,14 @@ pub fn notify_directory_changed(volume_id: &str, parent_path: &Path, change: Dir
                 // Refresh all listings on this volume instead.
                 let volume_listings = find_listings_on_volume(volume_id);
                 for (lid, path, sort_by, sort_order, dir_sort_mode) in volume_listings {
-                    let volume_id = volume_id.to_string();
-                    tokio::spawn(notify_full_refresh(
-                        volume_id,
+                    spawn_full_refresh(
+                        volume_id.to_string(),
                         path,
                         vec![(lid, sort_by, sort_order, dir_sort_mode)],
-                    ));
+                    );
                 }
             } else {
-                let volume_id = volume_id.to_string();
-                let parent_path = parent_path.to_path_buf();
-                tokio::spawn(notify_full_refresh(volume_id, parent_path, listings));
+                spawn_full_refresh(volume_id.to_string(), parent_path.to_path_buf(), listings);
             }
         }
     }
@@ -688,6 +686,22 @@ fn notify_modified(listing_id: &str, mut entry: FileEntry) {
     };
 
     enqueue_diff(listing_id, changes);
+}
+
+/// Dispatches a `FullRefresh` re-read onto Tauri's global async runtime.
+///
+/// Every `FullRefresh` producer (the notify-rs debouncer, the git watcher, the SMB
+/// and MTP watcher threads) runs on a plain OS thread with no Tokio runtime in
+/// thread-local context, so a bare `tokio::spawn` panics with "there is no reactor
+/// running" and takes the app down. `tauri::async_runtime::spawn` resolves the
+/// process-global runtime instead of a thread-local one, so it works from any
+/// thread. Same rule as `file_system::watcher` and `volume::backends::archive::watch`.
+pub(super) fn spawn_full_refresh(
+    volume_id: String,
+    parent_path: PathBuf,
+    listings: Vec<(String, SortColumn, SortOrder, DirectorySortMode)>,
+) {
+    tauri::async_runtime::spawn(notify_full_refresh(volume_id, parent_path, listings));
 }
 
 /// Re-reads a directory via the Volume trait, computes a diff, and queues it.

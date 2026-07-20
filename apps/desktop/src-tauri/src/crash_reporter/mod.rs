@@ -25,6 +25,12 @@ const CRASH_LOOP_THRESHOLD_SECS: u64 = 5;
 /// Short-ID prefix used in `CRASH-XXXXX`. The alphabet lives in [`crate::short_id`]
 /// and is shared with error reports.
 const CRASH_SHORT_ID_PREFIX: &str = "CRASH";
+/// Max chars kept from a redacted panic message. Generous enough for a real message plus a
+/// chained `caused by:` tail, small enough that it can't crowd out the backtrace in the
+/// 64 KB report budget. The api server caps again on its own side.
+const PANIC_MESSAGE_MAX_CHARS: usize = 2_000;
+/// Appended when [`cap_panic_message`] trims, so a truncated message never reads as complete.
+const PANIC_MESSAGE_TRUNCATION_MARKER: &str = "… (truncated)";
 
 /// `"release"` or `"debug"` resolved at compile time. Same shape the error reporter
 /// already ships in its manifest, so the api server can store both report types
@@ -205,11 +211,30 @@ fn extract_panic_message(info: &std::panic::PanicHookInfo<'_>) -> Option<String>
     Some(info.to_string())
 }
 
-/// Strip PII from panic messages. Thin wrapper around the shared redactor; kept here so
-/// callers don't need to know about `crate::redact` and so existing tests have a stable
-/// entry point during the migration.
+/// Strip PII from panic messages, then cap the length. Redaction is the shared
+/// [`crate::redact`] pipeline (same one the error reporter runs over log lines), so path,
+/// URL-userinfo, and home-dir scrubbing stay single-sourced.
 fn sanitize_panic_message(message: &str) -> String {
-    redact::redact_panic_message(message)
+    let redacted = redact::redact_panic_message(message);
+    cap_panic_message(redacted)
+}
+
+/// Cap a redacted panic message. `assert_eq!` on large structs yields multi-KB payloads,
+/// and the ingestion endpoint rejects the whole report body over 64 KB, so an uncapped
+/// message would cost us the entire report rather than just its own tail. Counts chars,
+/// not bytes: slicing mid-codepoint would panic inside the panic hook.
+fn cap_panic_message(message: String) -> String {
+    if message.chars().count() <= PANIC_MESSAGE_MAX_CHARS {
+        return message;
+    }
+    let cut = message
+        .char_indices()
+        .nth(PANIC_MESSAGE_MAX_CHARS)
+        .map_or(message.len(), |(i, _)| i);
+    let mut capped = message;
+    capped.truncate(cut);
+    capped.push_str(PANIC_MESSAGE_TRUNCATION_MARKER);
+    capped
 }
 
 fn parse_backtrace_frames(backtrace_str: &str) -> Vec<String> {

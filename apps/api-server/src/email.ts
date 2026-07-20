@@ -19,6 +19,11 @@ export interface CrashEmailRow {
   version: string
   /** Contact email the tester voluntarily attached at send time, or `null` if none. */
   email: string | null
+  /**
+   * `panic_message`: the panic payload, already redacted and capped by the client. `null` for
+   * signal crashes (no payload) and for rows written before the column existed.
+   */
+  message: string | null
 }
 
 interface CrashNotificationParams {
@@ -46,6 +51,11 @@ export async function sendCrashNotificationEmail(params: CrashNotificationParams
               entry.email
                 ? `<a href="mailto:${escapeHtml(entry.email)}" style="color: #2563eb;">${escapeHtml(entry.email)}</a>`
                 : '<span style="color: #9ca3af;">—</span>'
+            }</td>
+        </tr>
+        <tr>
+            <td colspan="7" style="padding: 6px 12px 12px; border: 1px solid #e5e7eb; border-top: 0; font-family: monospace; font-size: 12px; color: #b91c1c; word-break: break-word;">${
+              entry.message ? escapeHtml(entry.message) : '<span style="color: #9ca3af; font-family: inherit;">—</span>'
             }</td>
         </tr>`,
     )

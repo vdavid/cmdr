@@ -381,3 +381,150 @@ describe('POST /crash-report', () => {
     }
   })
 })
+
+/**
+ * Grouping quality: `top_function` is the only column the nightly crash email groups on,
+ * so it has to name the code that actually broke. Every panic backtrace starts with the
+ * same panic-machinery prelude (the hook, `std::panicking`, `core::panicking`), which
+ * collapsed unrelated bugs into one bucket. These use real production backtraces.
+ */
+describe('top_function derivation', () => {
+  async function topFunctionFor(backtraceFrames: string[]): Promise<unknown> {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+    await postCrashReport({ ...validCrashReport, backtraceFrames }, bindings)
+    return bindMock.mock.calls[0][5]
+  }
+
+  /** The prelude every panic backtrace carries, verbatim from production reports. */
+  const panicPrelude = [
+    'std::backtrace::Backtrace::create',
+    'cmdr_lib::crash_reporter::install_panic_hook::{{closure}}',
+    'std::panicking::rust_panic_with_hook',
+    'std::panicking::begin_panic_handler::{{closure}}',
+    'std::sys::backtrace::__rust_end_short_backtrace',
+    '__rustc::rust_begin_unwind',
+    'core::panicking::panic_fmt',
+  ]
+
+  it('skips the panic machinery and names the reconciler frame', async () => {
+    expect(
+      await topFunctionFor([
+        ...panicPrelude,
+        'core::str::slice_error_fail',
+        'cmdr_lib::indexing::reconciler::unknown_path_skips::record',
+        'cmdr_lib::indexing::reconciler::reconcile',
+      ]),
+    ).toBe('cmdr_lib::indexing::reconciler::unknown_path_skips::record')
+  })
+
+  it('skips the panic machinery and names the bundle-builder frame', async () => {
+    expect(
+      await topFunctionFor([
+        ...panicPrelude,
+        'core::str::slice_error_fail',
+        'cmdr_lib::error_reporter::bundle_builder::build_bundle_legacy_window',
+        'cmdr_lib::error_reporter::auto_dispatcher::dispatch',
+      ]),
+    ).toBe('cmdr_lib::error_reporter::bundle_builder::build_bundle_legacy_window')
+  })
+
+  it('skips the panic machinery and names the caching frame', async () => {
+    expect(
+      await topFunctionFor([
+        ...panicPrelude,
+        'tokio::task::spawn::spawn',
+        'cmdr_lib::file_system::listing::caching::notify_directory_changed',
+        'cmdr_lib::file_system::git::watcher::refresh_local_listings_under',
+      ]),
+    ).toBe('cmdr_lib::file_system::listing::caching::notify_directory_changed')
+  })
+
+  it('derives distinct buckets for three unrelated real crashes', async () => {
+    const derived = [
+      await topFunctionFor([...panicPrelude, 'core::str::slice_error_fail', 'cmdr_lib::indexing::reconciler::record']),
+      await topFunctionFor([...panicPrelude, 'core::str::slice_error_fail', 'cmdr_lib::error_reporter::bundle::build']),
+      await topFunctionFor([...panicPrelude, 'tokio::task::spawn::spawn', 'cmdr_lib::file_system::caching::notify']),
+    ]
+    expect(new Set(derived).size).toBe(3)
+  })
+
+  it('skips unwrap and expect helpers', async () => {
+    expect(
+      await topFunctionFor([
+        ...panicPrelude,
+        'core::option::unwrap_failed',
+        'core::result::unwrap_failed',
+        'core::option::expect_failed',
+        'cmdr_lib::settings::load_settings',
+      ]),
+    ).toBe('cmdr_lib::settings::load_settings')
+  })
+
+  it('falls back to unknown when the panic machinery is all there is', async () => {
+    expect(await topFunctionFor(panicPrelude)).toBe('unknown')
+  })
+})
+
+/**
+ * The panic message is the single most diagnostic field in a crash report: it turns
+ * "something panicked in `caching`" into "there is no reactor running". The client
+ * redacts and caps it before it leaves the machine (`crash_reporter::sanitize_panic_message`);
+ * the server caps again so a client that skips that step can't blow the column up.
+ */
+describe('panicMessage', () => {
+  /** bindArgs index of `panic_message` in the INSERT. */
+  const panicMessageIndex = 11
+
+  it('stores the panic message when supplied', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const report = { ...validCrashReport, panicMessage: 'there is no reactor running' }
+    const res = await postCrashReport(report, bindings)
+
+    expect(res.status).toBe(204)
+    expect(bindMock.mock.calls[0][panicMessageIndex]).toBe('there is no reactor running')
+  })
+
+  it('stores NULL when the field is absent', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    await postCrashReport(validCrashReport, bindings)
+    expect(bindMock.mock.calls[0][panicMessageIndex]).toBeNull()
+  })
+
+  it('accepts an explicit null (Rust serializes Option::None that way)', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const res = await postCrashReport({ ...validCrashReport, panicMessage: null }, bindings)
+
+    expect(res.status).toBe(204)
+    expect(bindMock.mock.calls[0][panicMessageIndex]).toBeNull()
+  })
+
+  it('rejects a non-string panic message', async () => {
+    const bindings = createBindings()
+    const res = await postCrashReport({ ...validCrashReport, panicMessage: { evil: true } }, bindings)
+
+    expect(res.status).toBe(400)
+    const body = await res.json<{ error: string }>()
+    expect(body.error).toBe('Invalid panicMessage')
+  })
+
+  it('truncates an over-long panic message instead of rejecting the report', async () => {
+    // Losing the whole report over a fat message would be worse than losing its tail.
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const report = { ...validCrashReport, panicMessage: 'y'.repeat(10_000) }
+    const res = await postCrashReport(report, bindings)
+
+    expect(res.status).toBe(204)
+    const stored = bindMock.mock.calls[0][panicMessageIndex] as string
+    expect(stored.length).toBeLessThanOrEqual(2_100)
+    expect(stored.endsWith('… (truncated)')).toBe(true)
+  })
+})
