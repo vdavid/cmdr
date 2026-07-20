@@ -145,6 +145,16 @@ impl MtpConnectionManager {
             }
             DeviceEvent::StorageInfoChanged { storage_id } => {
                 debug!("MTP storage info changed: {:?} on {}", storage_id, device_id);
+                // The cached `Storage` handle carries a snapshot of the storage
+                // info; drop it so the next bounded read re-resolves rather than
+                // serving stale free-space/capacity numbers.
+                let device_id = device_id.to_string();
+                let storage_id = storage_id.0 as u32;
+                tokio::spawn(async move {
+                    connection_manager()
+                        .invalidate_storage_cache(&device_id, Some(storage_id))
+                        .await;
+                });
             }
             DeviceEvent::StoreAdded { storage_id } => {
                 info!("MTP storage added: {:?} on {}", storage_id, device_id);

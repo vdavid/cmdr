@@ -76,6 +76,23 @@ serialization. **Drop-safety:** a window-read future dropped mid-flight (task ab
 session — mtp-rs's `TransactionScope` flags the pipe and the next op drains it under the operation lock (one ~300 ms
 self-heal). That's what makes the buffered-window model safe to abort at any point.
 
+**Ranged reads take the DIRECT path, not a session.** A bounded read (`MtpVolume::read_range`, driving archive
+browsing and extraction) wants bytes at an offset, not a session, so it goes through `read_range_direct`: one
+`GetPartialObject64` under the device lock, and nothing else. Routing it through `open_read_session` instead would add
+two USB round trips per call whose products the caller discards — `GetStorageInfo` (`device.storage()`) and
+`GetObjectInfo` (`download_windowed` reads `total_size`) — and rc-zip's `EntryFsm` issues one read per 256 KiB, so that
+overhead scaled with every extracted byte. Measured on a Pixel 9 Pro XL (mtp-rs 0.28.0, 30 iterations, medians, disjoint
+walking offsets, 2026-07-20): the two wasted round trips cost ~2.3 ms against ~6 ms of useful read.
+
+The storage handle comes from a per-`(device, storage)` cache on `DeviceEntry` (`storage_cache`), so the
+`GetStorageInfo` is paid once per device, not once per read. That cache is safe because an `mtp_rs::Storage` is
+`{ Arc<dyn MtpBackend>, id, info }` and `Storage::read_range` goes straight to the backend: a stale entry can only serve
+a stale `info()` snapshot (free space, capacity), never stale bytes, and the backend `Arc` is the same one the
+`MtpDevice` holds, so it stays valid for the entry's whole life. It's invalidated on `StorageInfoChanged` and
+`StoreRemoved` (both via `invalidate_storage_cache`), and a disconnect needs no invalidation at all — the whole
+`DeviceEntry` leaves the registry. ❌ Don't point the COPY path at `read_range_direct`: there the single `GetObjectInfo`
+amortizes over hundreds of windows, and `total_size` is what anchors progress, ETA, and the foreground-yield checkpoint.
+
 **Two background consumers, not one.** The scan is no longer the only yielding background user of the gate. A RUNNING MTP transfer is the second: its between-window checkpoint polls `MtpConnectionManager::foreground_pending(device_id)` and, when foreground pends, simply does NOT start the next window — it awaits `background_yield_point(device_id)`, then resumes reading from the current offset (it stays `Running`, not Paused). Because the read is already bounded windows (see "Bounded-window reads" above), the session is free between windows, so this yield is cheap and needs no release/reopen — there is no in-flight transaction to abort/drain (`cancel_and_release` is a no-op, never called by the copy path). This is the "navigate the phone DURING a transfer" feature; the gate sees a transfer exactly as it sees the scan — a background user that consults `foreground_pending` / `background_yield_point` between work units. The manager exposes both `foreground_pending(device_id) -> bool` (the gate's `foreground_pending()`, `false` if absent) and `background_yield_point(device_id)` for this. Lane budget 1 on the MTP device means the only foreground contender is a listing/nav/metadata op, never a second transfer, so there's no transfer-vs-transfer or transfer-vs-scan priority inversion — both yield to the same signal. Mechanics + the debounce/min-progress-floor tuning live in `write_operations/transfer/DETAILS.md` § "Foreground auto-yield".
 
 **Gate-before-resolve (`event_loop.rs` + `indexing/mtp_watch.rs`).** `feed_index_added_or_changed` now asks

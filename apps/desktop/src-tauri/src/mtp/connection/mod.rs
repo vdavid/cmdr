@@ -175,6 +175,22 @@ struct DeviceEntry {
     /// before touching the device; the background index scan yields to them at
     /// every unit boundary. See `scheduler.rs`.
     priority_gate: DevicePriorityGate,
+    /// `mtp_rs::Storage` handles resolved for this device, keyed by storage id.
+    ///
+    /// `MtpDevice::storage()` is a real `GetStorageInfo` USB round trip, so the
+    /// bounded-read path (`read_range_direct`) resolves each storage once and
+    /// reuses the handle. A `Storage` is `{ Arc<dyn MtpBackend>, id, info }`:
+    /// reads go straight to the backend, so a cached one can only serve stale
+    /// `info()` (free space), never stale bytes. Invalidated on
+    /// `StorageInfoChanged` / `StoreRemoved`, and dropped with the whole entry
+    /// on disconnect. Held behind its own `Arc` so a reader can clone the handle
+    /// out without re-locking `devices` while it owns the device lock.
+    storage_cache: Arc<RwLock<HashMap<u32, Arc<mtp_rs::Storage>>>>,
+    /// Test-only tally of `GetStorageInfo` round trips the read paths issued for
+    /// this device. Pins the "one storage lookup per device, not per read"
+    /// contract that `read_range_direct` exists to hold.
+    #[cfg(test)]
+    storage_lookups: Arc<std::sync::atomic::AtomicUsize>,
 }
 
 /// Global connection manager for MTP devices.
@@ -386,6 +402,9 @@ impl MtpConnectionManager {
                     path_cache: RwLock::new(HashMap::new()),
                     listing_cache: RwLock::new(HashMap::new()),
                     priority_gate: DevicePriorityGate::default(),
+                    storage_cache: Arc::new(RwLock::new(HashMap::new())),
+                    #[cfg(test)]
+                    storage_lookups: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
                 },
             );
         }
@@ -667,6 +686,40 @@ impl MtpConnectionManager {
         crate::volume_broadcast::emit_volumes_changed();
     }
 
+    /// Drops the cached `mtp_rs::Storage` handle(s) for a device so the next
+    /// bounded read re-resolves them: `Some(id)` for one storage, `None` for all
+    /// of them.
+    ///
+    /// Call this whenever the device says its storage picture moved
+    /// (`StorageInfoChanged`, `StoreRemoved`). A disconnect needs no call — the
+    /// whole `DeviceEntry`, cache included, is removed from the registry.
+    pub(crate) async fn invalidate_storage_cache(&self, device_id: &str, storage_id: Option<u32>) {
+        let devices = self.devices.lock().await;
+        if let Some(entry) = devices.get(device_id)
+            && let Ok(mut cache) = entry.storage_cache.write()
+        {
+            match storage_id {
+                Some(id) => {
+                    cache.remove(&id);
+                }
+                None => cache.clear(),
+            }
+            debug!("Invalidated MTP storage cache for {device_id} (storage={storage_id:?})");
+        }
+    }
+
+    /// Test-only: how many `GetStorageInfo` round trips the bounded-read path has
+    /// issued for this device. See `DeviceEntry::storage_lookups`. Only the
+    /// virtual-device tests can assert it, so it carries that gate too.
+    #[cfg(all(test, feature = "virtual-mtp"))]
+    pub(crate) async fn storage_lookup_count(&self, device_id: &str) -> usize {
+        let devices = self.devices.lock().await;
+        devices
+            .get(device_id)
+            .map(|entry| entry.storage_lookups.load(std::sync::atomic::Ordering::Relaxed))
+            .unwrap_or(0)
+    }
+
     /// Handles a StoreRemoved event: unregisters the volume and broadcasts the change.
     pub async fn handle_storage_removed(&self, device_id: &str, storage_id: u32, app: &AppHandle) {
         let volume_id = crate::mtp::identity::mtp_volume_id(device_id, storage_id);
@@ -676,6 +729,9 @@ impl MtpConnectionManager {
             let mut devices = self.devices.lock().await;
             if let Some(entry) = devices.get_mut(device_id) {
                 entry.storages.retain(|s| s.id != storage_id);
+                if let Ok(mut cache) = entry.storage_cache.write() {
+                    cache.remove(&storage_id);
+                }
             }
         }
 

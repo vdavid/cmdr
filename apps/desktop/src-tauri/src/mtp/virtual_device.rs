@@ -224,6 +224,31 @@ pub fn resume_virtual_watcher() {
     }
 }
 
+/// Serializes tests that stand up their own virtual MTP device.
+///
+/// Every virtual device registers under the SAME serial, so Cmdr's device id
+/// (`mtp-{serial}`) is identical for all of them: `resolve_device_location_id`
+/// matches the FIRST registration with that id, `connect()` is idempotent per
+/// device id, and `rescan_virtual_device` resolves by serial too. Two tests
+/// running at once would silently share one connection pointed at whichever
+/// backing dir registered first. Hold this guard across the whole
+/// register → connect → use → disconnect → unregister span.
+#[cfg(test)]
+pub(crate) fn virtual_device_test_lock() -> &'static tokio::sync::Mutex<()> {
+    static LOCK: std::sync::OnceLock<tokio::sync::Mutex<()>> = std::sync::OnceLock::new();
+    LOCK.get_or_init(|| tokio::sync::Mutex::new(()))
+}
+
+/// Removes a virtual device registration (test teardown).
+///
+/// Required, not hygiene: a leftover registration keeps answering to the shared
+/// device id, so the next test's `connect()` would open the previous test's
+/// backing dir. Pairs with [`setup_virtual_mtp_device_at`].
+#[cfg(test)]
+pub(crate) fn unregister_virtual_mtp_device(location_id: u64) {
+    mtp_rs::unregister_virtual_device(location_id);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -32,7 +32,7 @@ fn archive_test_zip() -> Vec<u8> {
 /// and returns `(device_id, storage_id)` of the writable internal storage, with
 /// the root path cache primed.
 #[cfg(feature = "virtual-mtp")]
-async fn connect_virtual_device_with_zip(root: &Path, zip_bytes: &[u8]) -> (String, u32) {
+async fn connect_virtual_device_with_zip(root: &Path, zip_bytes: &[u8]) -> (String, u32, u64) {
     use crate::mtp::virtual_device::{rescan_virtual_device, setup_virtual_mtp_device_at};
 
     let location_id = setup_virtual_mtp_device_at(root);
@@ -55,7 +55,18 @@ async fn connect_virtual_device_with_zip(root: &Path, zip_bytes: &[u8]) -> (Stri
         .list_directory(&device_id, storage_id, "/")
         .await
         .expect("list root should succeed");
-    (device_id, storage_id)
+    (device_id, storage_id, location_id)
+}
+
+/// Disconnects and unregisters, so the next test doesn't inherit this device's
+/// registration under the shared virtual-device id.
+#[cfg(feature = "virtual-mtp")]
+async fn teardown(device_id: &str, location_id: u64) {
+    connection_manager()
+        .disconnect(device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+        .await
+        .ok();
+    crate::mtp::virtual_device::unregister_virtual_mtp_device(location_id);
 }
 
 /// Streams a virtual-MTP zip back off the device and parses it into a
@@ -100,8 +111,9 @@ async fn virtual_mtp_archive_browses_and_extracts_via_read_range() {
         out
     }
 
+    let _guard = crate::mtp::virtual_device::virtual_device_test_lock().lock().await;
     let root = tempfile::tempdir().expect("tmp device root");
-    let (device_id, storage_id) = connect_virtual_device_with_zip(root.path(), &archive_test_zip()).await;
+    let (device_id, storage_id, location_id) = connect_virtual_device_with_zip(root.path(), &archive_test_zip()).await;
 
     let vol = Arc::new(MtpVolume::new(&device_id, storage_id, "Internal"));
     assert!(!vol.supports_local_fs_access(), "MTP is not local-FS-backed");
@@ -128,10 +140,7 @@ async fn virtual_mtp_archive_browses_and_extracts_via_read_range() {
     assert_eq!(drain(&archive, "a.txt").await, b"hello from mtp");
     assert_eq!(drain(&archive, "dir/b.txt").await, b"deflated over usb");
 
-    connection_manager()
-        .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
-        .await
-        .ok();
+    teardown(&device_id, location_id).await;
 }
 
 /// A remote EDIT (delete an inner entry) commits on a virtual MTP device through
@@ -147,8 +156,9 @@ async fn virtual_mtp_remote_zip_edit_deletes_an_entry_through_the_device() {
     struct NoHooks;
     impl MutationHooks for NoHooks {}
 
+    let _guard = crate::mtp::virtual_device::virtual_device_test_lock().lock().await;
     let root = tempfile::tempdir().expect("tmp device root");
-    let (device_id, storage_id) = connect_virtual_device_with_zip(root.path(), &archive_test_zip()).await;
+    let (device_id, storage_id, location_id) = connect_virtual_device_with_zip(root.path(), &archive_test_zip()).await;
 
     let vol = Arc::new(MtpVolume::new(&device_id, storage_id, "Internal"));
     // MTP allows same-name siblings, so the swap MUST take delete-then-rename.
@@ -198,8 +208,5 @@ async fn virtual_mtp_remote_zip_edit_deletes_an_entry_through_the_device() {
         "no leftover upload temp on the device"
     );
 
-    connection_manager()
-        .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
-        .await
-        .ok();
+    teardown(&device_id, location_id).await;
 }

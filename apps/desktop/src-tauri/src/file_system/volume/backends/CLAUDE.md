@@ -39,6 +39,9 @@ Depth for all of these is in [DETAILS.md](DETAILS.md) (§§ Per-backend decision
 - **`MtpReadStream` reads in bounded windows, freeing the session between them** (`cancel_and_release` is a no-op; a
   mid-window drop self-heals via mtp-rs `TransactionScope`). Don't re-add a `Drop`/cancel. Offset/EOF rules:
   `mtp/connection/DETAILS.md` § "Bounded-window reads".
+- **`MtpVolume::read_range` uses `read_range_direct`, NOT a read session**: one `GetPartialObject64` per call, no
+  `GetStorageInfo`/`GetObjectInfo`. Archive extraction issues one per 256 KiB, so re-routing it through
+  `open_read_session` would triple the USB round trips. Same doc, § "Ranged reads take the DIRECT path".
 - **SMB watcher filenames need normalizing** (backslash→slash, NFC→NFD) before cache lookups.
 - **SMB auto-upgrade is gated on `network.directSmbConnection`** and no-ops with no SMB mounts (fires no macOS Local
   Network prompt).

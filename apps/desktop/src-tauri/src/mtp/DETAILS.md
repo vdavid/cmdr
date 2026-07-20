@@ -27,6 +27,15 @@ defaults model a modern Android device (`supports_rename` and `supports_partial_
 the Pixel 9 this fixture stands in for; set `supports_partial_object_64: false` explicitly if you ever want to exercise
 mtp-rs's 32-bit `GetPartialObject` fallback (the PTP-camera path).
 
+**Rust tests that stand up their own device must serialize on `virtual_device_test_lock()` and unregister on
+teardown.** Every virtual device registers under the same serial (`cmdr-e2e-virtual`), so they all share ONE Cmdr device
+id (`mtp-cmdr-e2e-virtual`): `resolve_device_location_id` matches the FIRST registration carrying that id, `connect()`
+is idempotent per device id, and `rescan_virtual_device` resolves by serial too. Without the lock, two concurrent tests
+silently share one connection pointed at whichever backing dir registered first — the reads come back with the other
+test's bytes. Without the unregister (`unregister_virtual_mtp_device(location_id)`), a finished test's registration keeps
+answering for the shared id and the next test opens ITS backing dir. Hold the guard across the whole
+register → connect → use → disconnect → unregister span; `backends/mtp_read_range_test.rs` is the reference shape.
+
 ### Virtual device watcher in E2E
 
 The virtual device (via mtp-rs) runs a filesystem watcher over its backing dirs that turns out-of-band disk writes into

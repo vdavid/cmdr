@@ -152,6 +152,89 @@ impl MtpConnectionManager {
         }
     }
 
+    /// Reads ONE bounded range of an object in a single `GetPartialObject64`,
+    /// with no session setup: the direct path behind `MtpVolume::read_range`.
+    ///
+    /// A bounded read wants bytes, not a session. Going through
+    /// [`open_read_session`](Self::open_read_session) would cost two extra USB
+    /// round trips per call — `GetStorageInfo` (`device.storage()`) plus
+    /// `GetObjectInfo` (`download_windowed` reads `total_size`) — to produce
+    /// bookkeeping the caller discards. This path resolves the storage from the
+    /// per-device cache and issues only the read, so an archive extraction loop
+    /// pays one round trip per window instead of three.
+    ///
+    /// Returns what the device delivered, which may be SHORT: a legal partial
+    /// read mid-file, or fewer bytes near EOF. Callers loop (see
+    /// `MtpVolume::read_range`) rather than assume `len` bytes.
+    ///
+    /// Takes the per-device lock for the one read, like every other device op,
+    /// so the foreground-priority scheduler still sees this read take its turn.
+    /// Takes NO `foreground_guard` — a read is a background gate user
+    /// (see [`open_read_session`](Self::open_read_session)).
+    pub async fn read_range_direct(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        path: &str,
+        offset: u64,
+        len: u32,
+    ) -> Result<Vec<u8>, MtpConnectionError> {
+        let (device_arc, object_handle, storage_cache, cached) = {
+            let devices = self.devices.lock().await;
+            let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
+                device_id: device_id.to_string(),
+            })?;
+            let handle = self.resolve_path_to_handle(entry, storage_id, path)?;
+            let cache = Arc::clone(&entry.storage_cache);
+            // Clone the handle out under the entry's own lock so the read below
+            // never has to re-enter `devices` while holding the device lock.
+            let cached = cache.read().ok().and_then(|m| m.get(&storage_id).cloned());
+            (Arc::clone(&entry.device), handle, cache, cached)
+        };
+        #[cfg(test)]
+        let storage_lookups = {
+            let devices = self.devices.lock().await;
+            devices.get(device_id).map(|entry| Arc::clone(&entry.storage_lookups))
+        };
+
+        let device = acquire_device_lock(&device_arc, device_id, "read_range_direct").await?;
+
+        let storage = match cached {
+            Some(storage) => storage,
+            None => {
+                #[cfg(test)]
+                if let Some(lookups) = &storage_lookups {
+                    lookups.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                }
+                let storage = Arc::new(
+                    tokio::time::timeout(
+                        Duration::from_secs(MTP_TIMEOUT_SECS),
+                        device.storage(StorageId(u64::from(storage_id))),
+                    )
+                    .await
+                    .map_err(|_| MtpConnectionError::Timeout {
+                        device_id: device_id.to_string(),
+                    })?
+                    .map_err(|e| map_mtp_error(e, device_id))?,
+                );
+                if let Ok(mut cache) = storage_cache.write() {
+                    cache.insert(storage_id, Arc::clone(&storage));
+                }
+                storage
+            }
+        };
+
+        tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            storage.read_range(object_handle, offset, len),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))
+    }
+
     /// Uploads pre-collected chunks to the MTP device.
     ///
     /// This variant takes already-collected chunks instead of a stream reference,

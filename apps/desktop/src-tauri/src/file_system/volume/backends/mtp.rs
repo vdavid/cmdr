@@ -867,32 +867,34 @@ impl Volume for MtpVolume {
                 return Ok(Vec::new());
             }
             let mtp_path = self.to_mtp_path(path);
-            // One bounded window sized to the request: `GetPartialObject64` at
-            // `offset` for up to `len` bytes. A single window suffices for the
-            // archive source's reads (a tail-sized central-directory read or a
-            // bounded entry chunk, both ≤ the source's window); we still loop in
-            // case the device returns a short window before EOF.
+            // ONE `GetPartialObject64` per call, straight to the device: no
+            // session, no `GetStorageInfo`, no `GetObjectInfo`. A bounded read
+            // discards everything those two round trips would produce, and the
+            // archive extraction loop issues one of these per 256 KiB, so the
+            // saving is the whole extraction. (`open_read_session` stays the
+            // right shape for a streaming copy, where one `GetObjectInfo`
+            // amortizes over hundreds of windows and anchors progress.)
             let window = u32::try_from(len).unwrap_or(u32::MAX);
-            let mut session = connection_manager()
-                .open_read_session(&self.device_id, self.storage_id, &mtp_path, offset, window)
-                .await
-                .map_err(map_mtp_error)?;
             let mut out = Vec::with_capacity(len.min(window as usize));
             while out.len() < len {
-                match connection_manager()
-                    .read_next_window(&mut session, &self.device_id)
+                let remaining = u32::try_from(len - out.len()).unwrap_or(u32::MAX);
+                let chunk = connection_manager()
+                    .read_range_direct(
+                        &self.device_id,
+                        self.storage_id,
+                        &mtp_path,
+                        offset + out.len() as u64,
+                        remaining,
+                    )
                     .await
-                    .map_err(map_mtp_error)?
-                {
-                    Some(chunk) => {
-                        let take = (len - out.len()).min(chunk.len());
-                        out.extend_from_slice(&chunk[..take]);
-                        if take < chunk.len() || chunk.is_empty() {
-                            break;
-                        }
-                    }
-                    None => break,
+                    .map_err(map_mtp_error)?;
+                // A short read is legal mid-file, so keep asking for the rest.
+                // An EMPTY read is the terminator (EOF, or a device with nothing
+                // more to give): stop instead of spinning.
+                if chunk.is_empty() {
+                    break;
                 }
+                out.extend_from_slice(&chunk);
             }
             Ok(out)
         })

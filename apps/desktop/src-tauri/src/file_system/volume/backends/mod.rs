@@ -52,4 +52,10 @@ mod local_posix_test;
 #[cfg(all(test, any(target_os = "macos", target_os = "linux"), feature = "virtual-mtp"))]
 mod mtp_archive_test;
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod mtp_read_bench;
+// `mtp_read_range_test` drives every test against a virtual MTP device, so it
+// carries the `virtual-mtp` gate like `mtp_archive_test`.
+#[cfg(all(test, any(target_os = "macos", target_os = "linux"), feature = "virtual-mtp"))]
+mod mtp_read_range_test;
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
 mod mtp_test;
