@@ -1,9 +1,11 @@
 // Re-anchor cost measurement: how long a full metadata walk of a huge directory takes via readdir, lstat, and getattrlistbulk.
 //
-// A Phase C re-anchor is a streaming one-level walk of a sealed directory that
-// sums its children's sizes: no DB reads, no writer messages, no row writes.
-// This tool times exactly that shape, three ways, so the spike can answer "at
-// what cadence is a re-anchor affordable?" with numbers instead of judgment:
+// A "re-anchor" is a streaming one-level walk of a directory that sums its
+// children's sizes without touching the index: no DB reads, no writer messages,
+// no row writes. It is the cheapest way to refresh an aggregate for a directory
+// whose per-file rows we deliberately don't keep. This tool times exactly that
+// shape, three ways, to answer "at what cadence is a re-anchor affordable?" with
+// numbers instead of judgment:
 //
 //	enumerate  readdir only, no attributes (the floor)
 //	lstat      readdir + one lstat per entry (the naive re-anchor)

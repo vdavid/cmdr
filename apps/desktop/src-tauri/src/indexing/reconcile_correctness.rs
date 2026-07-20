@@ -469,4 +469,40 @@ mod tests {
 
         h.writer.shutdown();
     }
+
+    // ── 4. The small-scope walk feeds the pathological-directory census ──
+
+    /// `reconcile_subtree` is the DEEP `MustScanSubDirs` route, which triggers
+    /// roughly half the scans on a real machine, so a census blind to it
+    /// undercounts exactly where huge churny directories get re-listed most.
+    ///
+    /// The counters live on the process-global `DEBUG_STATS`; the check runner
+    /// uses `cargo nextest` (process per test), so `before` is 0 there and the
+    /// assertion is exact. Under a shared-process `cargo test --lib` it degrades
+    /// to a lower bound, never to a flake.
+    #[test]
+    fn the_small_scope_reconcile_walk_feeds_the_pathological_dir_census() {
+        use crate::indexing::DEBUG_STATS;
+
+        let h = setup();
+        let root = tree_root();
+        let root_path = root.path();
+        ensure_path_in_db(&h, &norm(root_path));
+
+        let children = 17;
+        for i in 0..children {
+            std::fs::write(root_path.join(format!("f{i:02}.txt")), b"x").unwrap();
+        }
+
+        let before = DEBUG_STATS.largest_dir_children.load(Ordering::Relaxed);
+        reconcile_full(&h, root_path);
+        let after = DEBUG_STATS.largest_dir_children.load(Ordering::Relaxed);
+
+        assert!(
+            after >= children as u64,
+            "reconcile_subtree must record its per-directory child counts (before {before}, after {after})"
+        );
+
+        h.writer.shutdown();
+    }
 }

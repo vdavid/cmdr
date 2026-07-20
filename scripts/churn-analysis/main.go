@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
@@ -413,6 +414,26 @@ func avgPeriodSec(ps []period) float64 {
 	return sum / n
 }
 
+// periodSpread reports the measured period lengths in seconds (min, median,
+// max) plus their total. A single mean hides the thing a reader most needs:
+// collections are often stitched together from several live-loop runs with
+// different `CMDR_CHURN_SPIKE_PERIOD_S` settings, and every timing this tool
+// prints is quantised to one period.
+func periodSpread(ps []period) (minS, medS, maxS, totalS float64) {
+	var v []float64
+	for _, p := range ps {
+		if p.periodMs > 0 {
+			v = append(v, float64(p.periodMs)/1000)
+			totalS += float64(p.periodMs) / 1000
+		}
+	}
+	if len(v) == 0 {
+		return 0, 0, 0, 0
+	}
+	sort.Float64s(v)
+	return v[0], v[len(v)/2], v[len(v)-1], totalS
+}
+
 func ts(ms int64) string {
 	if ms == 0 {
 		return "—"
@@ -456,8 +477,13 @@ func printCollection(vol string, ps []period) {
 		dedup = float64(raw) / float64(paths)
 	}
 	fmt.Printf("════════ volume %s ════════\n", vol)
-	fmt.Printf("Collection: %d periods (~%.0f s each) spanning %s, %s → %s\n",
-		len(ps), avgPeriodSec(ps), span.Round(time.Minute), ts(ps[0].tMs), ts(ps[len(ps)-1].tMs))
+	lo, med, hi, total := periodSpread(ps)
+	fmt.Printf("Collection: %d periods, %s → %s (wall span %s)\n",
+		len(ps), ts(ps[0].tMs), ts(ps[len(ps)-1].tMs), span.Round(time.Minute))
+	fmt.Printf("Live coverage: %s of measured periods (%.0f%% of the wall span; the rest is time no live loop ran)\n",
+		(time.Duration(total) * time.Second).Round(time.Second), 100*total/math.Max(span.Seconds(), 1))
+	fmt.Printf("Period length: %.0f–%.0f s, median %.0f s. Every timing below is quantised to one period.\n",
+		lo, hi, med)
 	fmt.Printf("Events: %d raw, %d deduplicated paths (%.1f× dedup), peak %d directories tracked in a period\n",
 		raw, paths, dedup, maxNodes)
 	if dropped > 0 || deep > 0 {
@@ -469,7 +495,7 @@ func printCollection(vol string, ps []period) {
 func printQ1(ps []period, factor float64, minPeak uint64, sustainedNeeded int) {
 	all := summarize(ps, factor, sustainedNeeded)
 	top := ranked(all, minPeak)
-	secs := avgPeriodSec(ps)
+	lo, med, hi, _ := periodSpread(ps)
 
 	fmt.Println("── Q1. Separation from background noise ──")
 	fmt.Printf("A node is \"hot\" when its rolled-up events reach %.0f× the period's average per-directory churn.\n", factor)
@@ -486,7 +512,10 @@ func printQ1(ps []period, factor float64, minPeak uint64, sustainedNeeded int) {
 	if len(top) == 0 {
 		fmt.Printf("(nothing reached the --min-peak=%d floor)\n", minPeak)
 	}
-	fmt.Printf("\nPeriod length ~%.0f s, so one period of resolution is the floor on every timing above.\n\n", secs)
+	fmt.Printf("\nResolution: one period (%.0f–%.0f s here, median %.0f s). A \"SEPARATED\" reading equal to one period\n"+
+		"means \"already hot by the next period\", NOT \"in exactly that many seconds\"; the true value is anywhere\n"+
+		"from instant to one period. Readings that span a gap between live-loop runs are upper bounds only.\n\n",
+		lo, hi, med)
 }
 
 func medianPerPeriod(ps []period, path string) string {
@@ -502,8 +531,8 @@ func medianPerPeriod(ps []period, path string) string {
 // printQ2 walks each hot node's ancestor chain and prints the child/parent
 // rolled-up ratio at every step. A "ratio drop" is a step where the child
 // carries a small fraction of the parent's churn: the parent holds churn that
-// does not come from that child, which is the seal-root boundary the plan's
-// worked example assumes exists.
+// does not come from that child. That boundary is what a seal-root rule needs
+// to find: the highest directory whose churn really is all one subtree's.
 func printQ2(ps []period, factor float64, minPeak uint64, want int) {
 	all := summarize(ps, factor, 1)
 	top := ranked(all, minPeak)
@@ -610,6 +639,8 @@ func printQ3(ps []period, factor float64, minPeak uint64) {
 	secs := avgPeriodSec(ps)
 
 	fmt.Println("── Q3. Hysteresis constants suggested by the data ──")
+	fmt.Printf("Durations here are period COUNTS × the mean period (%.0f s), so they are coarser than Q1's\n"+
+		"timestamp-derived figures. Read them as \"about N periods\", not as wall-clock seconds.\n", secs)
 	fmt.Printf("Hot run = consecutive hot periods. Quiet gap = consecutive non-hot periods after a node's first hot period.\n\n")
 	fmt.Printf("%9s %9s %9s %9s %9s %9s  %s\n", "RUNS", "RUN p50", "RUN p90", "GAPS", "GAP p50", "GAP p90", "PATH")
 	var allRuns, allGaps []int

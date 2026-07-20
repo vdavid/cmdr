@@ -440,7 +440,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     }
 
     let mut live_count = 0u64;
-    // Spike B churn observability, same as `run_live_event_loop`: this loop
+    // Per-subtree churn observability, same as `run_live_event_loop`: this loop
     // drives live batches too (the cold-start replay path never reaches
     // `run_live_event_loop`), so it needs its own observer or the whole
     // journal-replay route measures nothing.

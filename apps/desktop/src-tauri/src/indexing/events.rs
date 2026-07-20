@@ -439,11 +439,21 @@ impl DebugStats {
     /// an instrument, and an interleaved max between two threads costs at most one
     /// slightly-low reading of a monotone gauge.
     ///
-    /// **Call it from every walk that lists a directory.** A populated,
-    /// previously-completed index never runs the guarded walker (it reconciles), so
-    /// a walker-only census reads zero on exactly the established machines worth
-    /// sampling. Today that means `scanner::InsertVisitor::visit_dir` (fresh scan /
-    /// subtree scan) and `local_reconcile::build_live_children` (full rescan).
+    /// **Call it from every walk that materialises a full directory listing.** A
+    /// populated, previously-completed index never runs the guarded walker (it
+    /// reconciles), so a walker-only census reads zero on exactly the established
+    /// machines worth sampling. The three hooked walks are
+    /// `scanner::InsertVisitor::visit_dir` (fresh scan / subtree scan),
+    /// `local_reconcile::build_live_children` (full rescan), and
+    /// `reconciler::reconcile_subtree` (the DEEP `MustScanSubDirs` drain and the
+    /// other small-scope live fills, which is where a huge churny directory gets
+    /// re-listed most often).
+    ///
+    /// **Deliberately not hooked:** `event_loop/verification.rs`'s per-navigation
+    /// diff. Its `read_dir` loop is a stream that `verify_guard` stops at
+    /// `HUGE_DIR_CHILDREN` iterations, so the only count it could report is
+    /// censored exactly at the pathological end this census exists to measure.
+    /// `verify_declined_dirs` / `verify_truncated_dirs` cover that route instead.
     pub(crate) fn record_dir_listing(&self, child_count: usize) {
         let n = child_count as u64;
         if n >= HUGE_DIR_CHILD_FLOOR {

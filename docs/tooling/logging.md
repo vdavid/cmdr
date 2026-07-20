@@ -135,6 +135,7 @@ Copy-paste commands for common debugging scenarios. All include `info` as the ba
 - **Drive indexing**: `RUST_LOG=cmdr_lib::indexing=debug,info pnpm dev`
 - **Indexing scanner only**: `RUST_LOG=cmdr_lib::indexing::scanner=debug,info pnpm dev`
 - **Indexing FSEvents**: `RUST_LOG=cmdr_lib::indexing::watcher=debug,info pnpm dev`
+- **Per-subtree churn** (needs `CMDR_CHURN_SPIKE`, see below): `RUST_LOG=cmdr_lib::indexing::churn=debug,info pnpm dev`
 - **File operations (copy/move/delete)**: `RUST_LOG=cmdr_lib::file_system::write_operations=debug,info pnpm dev`
 - **Directory listing**: `RUST_LOG=cmdr_lib::file_system::listing=debug,info pnpm dev`
 - **File viewer**: `RUST_LOG=cmdr_lib::file_viewer=debug,FE:viewer=debug,info pnpm dev`
@@ -171,6 +172,23 @@ for that). Works in dev, E2E, and prod builds. Accepts `1`/`true`/`yes`/`on`.
 The number is `phys_footprint` (Activity Monitor's "Memory" metric, not RSS) of the Rust backend process only, sampled
 every 100 ms. Cmdr's WebView runs in separate processes, so it's not included. Mechanism and the file-dedup caveat:
 `apps/desktop/src-tauri/src/logging/DETAILS.md` § "RAM gauge".
+
+## Churn instrumentation (`CMDR_CHURN_SPIKE`)
+
+Set `CMDR_CHURN_SPIKE=1` to make the live FSEvents loop log per-subtree churn, rolled up the ancestor chain, on the
+`indexing::churn` target at Debug. It's read-only: it writes no index state and changes no behaviour, and it costs
+nothing when the variable is unset.
+
+```bash
+CMDR_CHURN_SPIKE=1 pnpm dev
+```
+
+Two knobs: `CMDR_CHURN_SPIKE_PERIOD_S` (rollup period, default `30`) and `CMDR_CHURN_SPIKE_TOP_N` (directories logged
+per period, default `40`). Output is `1 + top_n` lines per period per volume.
+
+**It only records while a live event loop runs**, so it's silent during a scan or rescan. That's the instrument being
+honest, not broken. Line format, the offline analyser, and how to read a collection:
+[`/docs/notes/churn-observability-spike.md`](../notes/churn-observability-spike.md).
 
 ## Verbose logging
 

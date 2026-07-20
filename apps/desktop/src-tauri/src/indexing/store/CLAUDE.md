@@ -15,6 +15,10 @@ factories), `entries.rs` (entry-tree CRUD), `dir_stats.rs`, `meta.rs`; tests in 
   insert with `INSERT OR IGNORE`, never `INSERT OR REPLACE`.** The UNIQUE constraint is the safety net against two
   writers double-inserting a row (observed once as a 1.83 TB ghost size); `OR REPLACE` would reassign integer IDs and
   orphan children; `name_folded` is the pre-folded key that keeps the composite index binary-collated and fast.
+- **Ask "are there more than N children?" with `count_children_capped`, never `COUNT(*)`.** It wraps the count in an
+  inner `SELECT 1 … LIMIT`, so the answer reads at most `cap` rows off the `parent_id` index. A plain `COUNT(*)` is
+  O(children), which is exactly the cost the caller (verification's tooth-1 probe) exists to avoid on a 1.14M-child
+  directory.
 - **The index is a disposable cache, but only PROVEN garbage is thrown away.** A schema-version mismatch or corruption
   (`indicates_corruption()`: `SQLITE_CORRUPT*` / `SQLITE_NOTADB`) deletes the DB file and recreates it fresh
   (`delete_and_recreate`), reclaiming disk with no freelist; no online migrations. Every OTHER `open` failure keeps the

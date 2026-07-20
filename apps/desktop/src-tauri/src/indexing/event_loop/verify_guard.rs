@@ -35,8 +35,9 @@
 ///
 /// The `huge_dirs_seen` census (`indexing/events.rs`) is the instrument for
 /// revisiting this: it counts every directory listing at or over
-/// `HUGE_DIR_CHILD_FLOOR` across the guarded walker and the reconcile walk, so
-/// the constant can be re-derived from real machines instead of one.
+/// `HUGE_DIR_CHILD_FLOOR` across the guarded walker, the full-rescan walk, and
+/// the small-scope reconcile walk, so the constant can be re-derived from real
+/// machines instead of one.
 pub(in crate::indexing) const HUGE_DIR_CHILDREN: usize = 200_000;
 
 /// What verification should do with a directory (or with one more iteration of

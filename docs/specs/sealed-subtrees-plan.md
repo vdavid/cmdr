@@ -472,43 +472,44 @@ choices beats a pattern table.
 All three spikes ran. Notes: [`../notes/reanchor-cost-spike.md`](../notes/reanchor-cost-spike.md) and
 [`../notes/churn-observability-spike.md`](../notes/churn-observability-spike.md).
 
-**Spike A: GO, with conditions.** A re-anchor of the worst directory (1.44M entries) costs 97–181 s wall, 19–29 s
-CPU, zero writer messages, and a flat 128 KiB using `getattrlistbulk` — about a quarter of the 426 s verification
-pass it replaces, with none of the queue or memory pressure. Three conditions fall out of the numbers: schedule
-anchors on a **cost budget, not a fixed clock** (per-entry cost is 1.9 µs at 100k entries and 80 µs at 1.43M); split
-the anchor into a **cheap count pass** (`readdir`, 15–20× cheaper, hourly is affordable) and an expensive byte pass
-(every 6–12 h); and **cap the walk and degrade honestly** when it would exceed budget, since `fetch_temp` grows
-100–250 entries/min unchecked. An unconditional hourly full byte re-anchor would have been a no-go.
+**Spike A: GO, with conditions.** A re-anchor of the worst directory (1.44M entries) costs 96–181 s wall, 19–29 s CPU,
+zero writer messages, and a flat 128 KiB using `getattrlistbulk` — about a quarter of the 426 s verification pass it
+replaces, with none of the queue or memory pressure. Three conditions fall out of the numbers: schedule anchors on a
+**cost budget, not a fixed clock** (per-entry cost is 1.9 µs at 100k entries and 80 µs at 1.43M); split the anchor into
+a **cheap count pass** (`readdir`, ~17× cheaper at the median, hourly is affordable) and an expensive byte pass (every
+6–12 h); and **cap the walk and degrade honestly** when it would exceed budget, since `fetch_temp` grows 100–250
+entries/min unchecked. An unconditional hourly full byte re-anchor would have been a no-go.
 
-Two hypotheses died usefully: the cost is **IO wait, not syscalls** (16–23% CPU, ~1 random metadata read per entry),
-and the **FileProvider theory is refuted** — `fetch_temp`, the Chrome cache, and the control all sit on `disk3s5`
-with no FileProvider filesystem mounted. It's a container *directory*, not a container *filesystem*. Warm equals
-cold above ~400k entries because the metadata working set stops fitting in cache.
+Two hypotheses died usefully: the cost is **IO wait, not syscalls** (16–23% CPU, ~1 random metadata read per entry), and
+the **FileProvider theory is refuted** — `fetch_temp`, the Chrome cache, and the control all sit on `disk3s5` with no
+FileProvider filesystem mounted. It's a container _directory_, not a container _filesystem_. Warm equals cold above
+~400k entries because the metadata working set stops fitting in cache.
 
-**Spike B: the seal-root rule is wrong as written, and this is the important result.** Separation is fast, so
-Decision 4 holds (`fetch_temp` separates in 10 s, `target/` in 31 s; a classifier stands alone). But
-"climb while uniformly churny, stop at the first ratio drop" **over-climbs on real data**: it selects
-`~/Library/Containers` for `fetch_temp` and `~/Library/Caches` for the WebKit cache. Sealing either would seal every
-app's container or every app's cache.
+**Spike B: the seal-root rule is wrong as written, and this is the important result.** Separation is fast, so Decision 4
+holds: `fetch_temp` was classifiable within one rollup period and `target/` within three, on a run whose period was 10 s
+(so ≤10 s and ≤31 s, with 10 s of resolution). A classifier stands alone. But "climb while uniformly churny, stop at the
+first ratio drop" **over-climbs on real data**: it selects `~/Library/Containers` for `fetch_temp` and
+`~/Library/Caches` for the WebKit cache. Sealing either would seal every app's container or every app's cache.
 
-The cause: `fpext`→`Containers` measures a 0.971 churn share, indistinguishable from "uniformly churny", purely
-because the other ~40 containers were quiet during the window. **Churn share alone cannot distinguish "this parent is
-entirely churny" from "this parent's churn is dominated by one child right now."**
+The cause: `fpext`→`Containers` measures a 0.971 churn share, indistinguishable from "uniformly churny", purely because
+the other ~40 containers were quiet during the window. **Churn share alone cannot distinguish "this parent is entirely
+churny" from "this parent's churn is dominated by one child right now."**
 
-So Phase B must combine churn share with a **content ratio** (entries and/or bytes below the candidate versus below
-its parent) — the "by descendant count and by bytes" half of the rule that this spike did not implement and that
-turns out to be load-bearing, not decorative. Add `~/Library/Containers` and `~/Library/Caches` to the hard stops as
+So Phase B must combine churn share with a **content ratio** (entries and/or bytes below the candidate versus below its
+parent) — the "by descendant count and by bytes" half of the rule that this spike did not implement and that turns out
+to be load-bearing, not decorative. Add `~/Library/Containers` and `~/Library/Caches` to the hard stops as
 belt-and-braces. Without this, Phase B ships a rule that seals a user's whole container tree the first time one app
 inside it churns.
 
-**Spike B, unfinished:** the hysteresis constants are still unmeasured. The 4-hour window yielded 42 minutes,
-because a shallow `MustScanSubDirs` anchor superseded live mode with a rescan still running 85 minutes later, and
-the monitor only observes live mode. Underneath that: **14 of 28 recorded scans were triggered by
-`shallow MustScanSubDirs`**, roughly one every two hours. Any design assuming "the live loop is generally running"
-should verify that first. Tracked separately from this plan.
+**Spike B, unfinished:** the hysteresis constants are still unmeasured. The 4-hour window yielded 10 minutes of live
+observation across a 42-minute wall span (24% coverage, stitched from three live-loop runs), because a shallow
+`MustScanSubDirs` anchor superseded live mode with a rescan still running 85 minutes later, and the monitor only
+observes live mode. Underneath that: **14 of 28 recorded scans were triggered by `shallow MustScanSubDirs`**, roughly
+one every two hours. Any design assuming "the live loop is generally running" should verify that first. Tracked
+separately from this plan.
 
-**Spike C:** one machine, one pathological directory (plus a 119k-child runner-up). M1's census now answers this on
-real machines before M2–M4 commit.
+**Spike C:** one machine, one pathological directory (plus a 119k-child runner-up). M1's census now answers this on real
+machines before M2–M4 commit.
 
 ## Spikes (do these before M2–M4)
 
@@ -521,20 +522,21 @@ Measured 2026-07-20. Full numbers, method, and reasoning:
 [`../notes/reanchor-cost-spike.md`](../notes/reanchor-cost-spike.md). Tool:
 [`../../scripts/reanchor-cost`](../../scripts/reanchor-cost).
 
-**Result: go.** One `getattrlistbulk` re-anchor of `fetch_temp` (now 1.44M entries) is 97–181 s wall, 19–29 s CPU, no
+**Result: go.** One `getattrlistbulk` re-anchor of `fetch_temp` (now 1.44M entries) is 96–181 s wall, 19–29 s CPU, no
 writer messages, and flat 128 KiB memory, against 426 s plus a pegged writer queue plus 1.01 GB for the verification
 pass it replaces. Three conditions bind Phase C:
 
 1. **Cadence per directory, from its own measured walk cost**, not one global timer: per-entry cost runs 1.9 µs at 100k
    entries and 80 µs at 1.43M, so no single interval fits both.
-2. **Split the anchor**: a `readdir`-only count pass is 5.4–8.1 s at 1.44M (15–20× cheaper) and fixes count drift, so it
-   can run hourly while the byte pass runs every 6–12 h.
+2. **Split the anchor**: a `readdir`-only count pass is 5.4–10.8 s at ~1.44M (10.6–28× cheaper across the six paired
+   runs, median ~17×) and fixes count drift, so it can run hourly while the byte pass runs every 6–12 h.
 3. **Cap the walk and fall back to the approximate state** when a pass would exceed its budget. `fetch_temp` grows
    100–250 entries/min with nothing pruning it, and per-entry cost rises with size, so the walk gets worse over time.
 
 Two planning assumptions the data corrected: the cost is directory size, not the FileProvider container (a self-made
 1.43M-entry directory outside any container is just as slow), and `getattrlistbulk` does not collapse the cost at
-pathological scale (1.2–1.6× over `lstat` there, though 4–20× on ordinary directories, so still worth using).
+pathological scale (1.2–1.8× over `lstat` there, though 2–24× on ordinary directories depending on cache state, so still
+worth using).
 
 ### Spike B — churn observability (passive collection, ~4 h window)
 

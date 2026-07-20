@@ -151,7 +151,9 @@ Flags:
 
 - **Q1 section** — one row per hot directory: total, peak and median events per period, how many periods it was hot, and
   `SEPARATED`, the time from its first appearance to a sustained hot run. **That column is the answer to question 1.**
-  Resolution is one period, so a `30s` reading means "within the first period", not "in exactly 30 seconds".
+  Resolution is one period, so a reading equal to one period means "already hot by the next period", not "in exactly
+  that many seconds". The header block prints the measured period range; if a collection stitches several live-loop runs
+  together, a reading that spans a gap between runs is an artefact of the gap, not a measurement.
 - **Q2 section** — for each hot leaf, its chain from `/` down with `SHARE` = this directory's churn as a fraction of its
   parent's. A share near 1.0 means the parent's churn comes entirely from this child; a low share is the **ratio drop**,
   the boundary where a churny subtree hangs off a directory that also holds quiet content. The steepest drop is called
@@ -182,22 +184,44 @@ changes (a decision instead of a log line), and the ancestor rollup plus the dis
 
 ## Results (2026-07-20)
 
-Collected on David's machine, 11:30–12:12, 31 periods spanning 42 minutes: 71,562 raw events, 42,207 deduplicated paths
-(1.7× dedup), peak 1,683 directories tracked in a period. No instrument cap engaged (`nodes_dropped=0`,
-`deep_truncated=0`), so the numbers are the machine's behaviour, not the tool's limits.
+Collected on David's machine between 11:30:03 and 12:12:05. **Read the shape of the collection before reading any number
+from it**, because it is not one continuous window:
+
+- **Three live-loop runs, not one.** 20 periods at `CMDR_CHURN_SPIKE_PERIOD_S=10` (11:30:03–11:33:21, `top_n=15`), then
+  4 periods at `=30` (12:05:22–12:06:54), then 7 more at `=30` (12:08:12–12:12:05). Each restart resets `seq`, so the
+  runs join only on `t_ms`.
+- **10 m 07 s of measured periods inside a 42-minute wall span**, 24% coverage. The other ~32 minutes are time no live
+  loop was running (see Q3), and nothing at all was observed then.
+- **Measured period lengths: 10–59 s, median 11 s.** The 30-second runs stretched to 31–59 s under drain pressure, which
+  is why `period_ms` is measured rather than assumed.
+- 71,562 raw events, 42,207 deduplicated paths (1.7× dedup), peak 1,683 directories tracked in a period. No instrument
+  cap engaged (`nodes_dropped=0`, `deep_truncated=0`), so the numbers are the machine's behaviour, not the tool's
+  limits.
+
+**Instrument resolution is one whole period.** `ChurnMonitor::rollup` returns nothing until a period elapses, and the
+analyser derives every timing from differences between period timestamps. So the smallest non-zero reading it can
+produce is one period, and a reading _equal_ to one period means "already hot by the next period", not "in exactly that
+many seconds": the true value is anywhere between instant and one period. `go run ./scripts/churn-analysis` prints all
+of this at the top of its report.
 
 ### Q1. Separation is fast, so the seed list is genuinely unnecessary
 
 A node counts as hot at 10× the period's average per-directory churn. Time from first appearance to two consecutive hot
-periods:
+periods. The first two were observed inside the 10-second run, so each is an upper bound with 10 s of resolution:
 
-- `…/domain-temp-gdrive-…/fetch_temp`: **10 s** (one period).
-- `…/worktrees/sealed-subtrees/target` and `target/debug`: **31 s**.
-- `~/Library/Caches/cmdr/WebKit/NetworkCache/…`: 1 m 18 s.
+- `…/domain-temp-gdrive-…/fetch_temp`: hot in its first period and the next, so **≤10 s (one period)**.
+- `…/worktrees/sealed-subtrees/target` and `target/debug`: **≤31 s (three periods)**.
+- `~/Library/Caches/cmdr/WebKit/NetworkCache/…`: the analyser prints 1 m 18 s, but that reading **spans a live-loop
+  restart** (last period of the 12:05 run, first period of the 12:08 run, nothing observed in between). It bounds
+  nothing useful; treat the cache as unmeasured.
 
-Every motivating case separates within a minute. That settles the open question behind Decision 4: a churn classifier
-converges fast enough to stand alone, and provisional-seal-on-size only has to cover the first scan, not a long learning
-period.
+What the data supports: the two motivating cases that were observed continuously became classifiable within one to three
+periods of first being seen, tens of seconds at the finest resolution collected. Nothing here suggests a classifier
+needs minutes, let alone hours. That settles the open question behind Decision 4: a churn classifier converges fast
+enough to stand alone, and provisional-seal-on-size only has to cover the first scan, not a long learning period.
+
+What the data does _not_ support: any claim finer than 10 s. If Phase B ever needs the actual convergence curve, collect
+with `CMDR_CHURN_SPIKE_PERIOD_S=2` and keep one live loop alive throughout.
 
 ### Q2. The boundary is real, but the ratio-drop rule as specified picks the wrong node
 
@@ -228,10 +252,10 @@ time one app inside it churns.
 
 ### Q3. Under-answered, and the reason is itself a finding
 
-The intended 4-hour window produced 42 minutes of data. A shallow `MustScanSubDirs` anchor at `/System` at 12:12:53
-superseded live mode with a full reconcile rescan that was still running 85 minutes later, and **the churn monitor only
-observes live mode**. Restarting to recover makes it worse: each cold start replays the journal and can draw the same
-shallow anchor.
+The intended 4-hour window produced 10 minutes of live observation across a 42-minute wall span. A shallow
+`MustScanSubDirs` anchor at `/System` at 12:12:53 superseded live mode with a full reconcile rescan that was still
+running 85 minutes later, and **the churn monitor only observes live mode**. Restarting to recover makes it worse: each
+cold start replays the journal and can draw the same shallow anchor. The 24%-coverage figure above _is_ the finding.
 
 So the hysteresis constants are not yet grounded in data, and Phase C should still treat them as unmeasured.
 

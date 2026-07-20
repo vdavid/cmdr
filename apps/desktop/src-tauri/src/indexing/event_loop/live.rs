@@ -123,9 +123,10 @@ pub(in crate::indexing) async fn run_live_event_loop(
     // Rate-limiter for the "ingestion falling behind" warning (Fix 2).
     let mut last_ingestion_warn: Option<Instant> = None;
 
-    // Spike B churn observability: inert (and free) unless `CMDR_CHURN_SPIKE` is
-    // set. `process_live_batch` does the recording; this only owns the state and
-    // feeds it the raw-event counter the loop already maintains.
+    // Per-subtree churn observability (`indexing/churn_monitor.rs`): inert (and
+    // free) unless `CMDR_CHURN_SPIKE` is set. `process_live_batch` does the
+    // recording; this only owns the state and feeds it the raw-event counter the
+    // loop already maintains.
     let mut churn = ChurnObserver::from_env(&volume_id, Instant::now());
 
     loop {
@@ -333,7 +334,7 @@ pub(in crate::indexing) fn process_live_batch(
     pending_paths: &mut HashSet<String>,
     churn: &mut ChurnObserver,
 ) {
-    // Spike B observability, BEFORE the early return and before the drain: an
+    // Churn observability, BEFORE the early return and before the drain: an
     // idle period must still close and emit, or the time series grows holes
     // exactly where "this subtree went quiet" is the answer we're after.
     // Read-only — it writes nothing and decides nothing.

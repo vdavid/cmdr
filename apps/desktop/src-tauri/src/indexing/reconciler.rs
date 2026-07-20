@@ -924,6 +924,12 @@ pub(super) fn reconcile_subtree(
         // still counts). Stamp it at the current epoch after the walk.
         listed_dir_ids.push(dir_id);
 
+        // Pathological-directory census. `MustScanSubDirs` drives roughly half the
+        // scans on a real machine, so without this hook the deep-anchor route (the
+        // one that walks huge churny dirs most often) would undercount. See
+        // `DebugStats::record_dir_listing`.
+        DEBUG_STATS.record_dir_listing(fs_children.len());
+
         let db_children =
             IndexStore::list_children_on(dir_id, conn).map_err(|e| format!("list_children_on({dir_id}): {e}"))?;
 

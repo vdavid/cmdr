@@ -9,7 +9,7 @@ Measured 2026-07-20 with [`../../scripts/reanchor-cost`](../../scripts/reanchor-
 
 ## Verdict: go, with conditions
 
-**Go.** A re-anchor of the worst directory on this machine (1.44M entries) costs **97–181 s wall, 19–29 s CPU, zero
+**Go.** A re-anchor of the worst directory on this machine (1.44M entries) costs **96–181 s wall, 19–29 s CPU, zero
 writer messages, and a flat 128 KiB of memory** using `getattrlistbulk`. The verification pass it replaces cost 426 s,
 pegged the writer queue at its 20,001 cap, and peaked at 1.01 GB (`sealed-subtrees-plan.md` § "The incident"). So one
 anchor is roughly a quarter of one verification pass, with none of the queue or memory pressure, and the row/RAM saving
@@ -21,9 +21,10 @@ Three conditions, each falling out of the numbers below:
    entries and 80 µs at 1.43M. A single global "anchor every hour" is simultaneously wasteful for small sealed dirs and
    unaffordable for the big one. Derive each dir's cadence from its own last measured walk time (suggestion: cadence ≥
    200 × walk time, so background metadata IO stays under ~0.5% duty).
-2. **Split the anchor into a count pass and a byte pass.** `readdir` alone is 5.4–8.1 s at 1.44M entries, 15–20× cheaper
-   than reading sizes, and near-linear. Count drift (which `expected_totals` cares about) can therefore be refreshed
-   hourly on even the pathological directory for ~0.2% duty, while the expensive byte pass runs every 6–12 h.
+2. **Split the anchor into a count pass and a byte pass.** `readdir` alone is 5.4–10.8 s at ~1.44M entries (5.4–8.1 s on
+   `fetch_temp` itself), 10.6–28× cheaper than reading sizes across the six paired runs, median ~17×, and near-linear.
+   Count drift (which `expected_totals` cares about) can therefore be refreshed hourly on even the pathological
+   directory for ~0.2–0.3% duty, while the expensive byte pass runs every 6–12 h.
 3. **Cap the walk and degrade honestly.** `fetch_temp` is growing at 100–250 entries/min and nothing prunes it, so the
    anchor cost grows with it, superlinearly. Phase C needs a "this walk would exceed its budget, skip it and keep the
    aggregate marked approximate" path, otherwise the treadmill reappears.
@@ -51,21 +52,23 @@ s / 97.0 s / 99.1 s over three runs (67–69 µs/entry), lstat 148.0 s and 180.4
 
 Four things stand out.
 
-**`getattrlistbulk` is a large win at ordinary scale and a modest one at pathological scale.** It is 4–20× faster than
-`lstat` up to ~400k entries (and beats `readdir` alone, since it fetches names and sizes in one pass), but only 1.2–1.6×
-at 1.44M. Use it, and do not budget as if it collapses the cost: at the size that matters the walk is IO-bound, and a
-cheaper syscall does not remove the reads. It also runs at 16–23% CPU versus 21–28% for `lstat`, so it roughly halves
-CPU for the same work.
+**`getattrlistbulk` is a large win at ordinary scale and a modest one at pathological scale.** It is 2–24× faster than
+`lstat` up to ~400k entries (and beats `readdir` alone, since it fetches names and sizes in one pass), but only 1.2–1.8×
+at 1.44M. That wide low-end range is cache state, not noise: a cold-ish first pass gives 4–24×, a warm second pass 2–4×.
+Use it, and do not budget as if it collapses the cost: at the size that matters the walk is IO-bound, and a cheaper
+syscall does not remove the reads. It also runs at 16–23% CPU versus 21–28% for `lstat`, so it roughly halves CPU for
+the same work.
 
-**The cost is IO wait, not syscalls.** CPU time is 16–23% of wall on the big directories, versus 91–100% on the small
-warm ones. Sampling `iostat -d disk0` during a `fetch_temp` bulk walk showed a sustained 9,300–11,000 transfers/s at
-44–63 MB/s (verified on macOS 26.5.2, `iostat` sampling, 2026-07-20), which is about one random metadata read per
-directory entry.
+**The cost is IO wait, not syscalls.** CPU time is 16–23% of wall on the big directories, versus 85–91% on the warm
+100k-scale `bulk` runs. Sampling `iostat -d disk0` during a `fetch_temp` bulk walk showed a sustained 9,300–11,000
+transfers/s at 44–63 MB/s (verified on macOS 26.5.2, `iostat` sampling, 2026-07-20), which is about one random metadata
+read per directory entry.
 
-**Warm equals cold above the cache knee, and that knee is capacity.** At 100k entries the second run is 3–5× faster than
-the first and hits 91–100% CPU: the metadata is cached. At 1.43M the second run is no faster than the first and CPU
-stays near 20%: the working set no longer fits, so every pass re-reads it from the SSD. This confirms David's Python
-observation (150.2 s warm vs 150.9 s cold) and explains it.
+**Warm equals cold above the cache knee, and that knee is capacity.** At 100k entries the second `lstat` run is 5–6×
+faster than the first (21× for the Chrome cache) and its CPU share of wall climbs (41→49%, 51→65%, 27→94%): the metadata
+is cached, so what's left is syscall work. At 1.43M the second run is no faster than the first and CPU stays near 20%:
+the working set no longer fits, so every pass re-reads it from the SSD. This confirms David's Python observation (150.2
+s warm vs 150.9 s cold) and explains it.
 
 **Python was not inflating anything.** David's probe measured 106 µs/entry for `readdir` + `lstat` on `fetch_temp`; the
 Go tool measures 98–184 µs/entry for the same work. Per-call interpreter overhead is in the noise next to a ~70 µs

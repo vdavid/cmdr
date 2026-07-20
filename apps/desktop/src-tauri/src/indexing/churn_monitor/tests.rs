@@ -90,8 +90,8 @@ fn distinct_children_saturates_at_the_cap_and_flags_it() {
 fn ratio_drop_boundary_is_visible_along_the_chain() {
     let t0 = Instant::now();
     let mut m = monitor(t0);
-    // The shape Phase B's seal-root rule depends on: a uniformly churny subtree
-    // hanging off a directory that also holds quiet, keep-worthy siblings.
+    // The shape a seal-root rule depends on: a uniformly churny subtree hanging
+    // off a directory that also holds quiet, keep-worthy siblings.
     let mut paths: Vec<String> = (0..200).map(|i| format!("/home/proj/target/debug/{i}.o")).collect();
     paths.push("/home/proj/src/main.rs".to_string());
     let report = roll(&mut m, t0, &paths.iter().map(String::as_str).collect::<Vec<_>>());
@@ -209,20 +209,46 @@ fn a_pathological_depth_is_cut_and_counted() {
 /// batch. This test guards the remaining hole the compiler can't see: a NEW
 /// live loop appearing in a third file, or an existing one quietly downgrading
 /// to `ChurnObserver::disabled()`.
+///
+/// The scan is RECURSIVE: a live loop added in a subdirectory of `event_loop/`
+/// would otherwise slip past the very guard this test exists to be. `tests`
+/// directories are skipped, since a test harness driving `process_live_batch`
+/// with a disabled observer is legitimate.
 #[test]
 fn every_live_loop_owns_a_real_churn_observer() {
-    let event_loop = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/indexing/event_loop");
-    let mut drivers: Vec<String> = Vec::new();
-    for entry in std::fs::read_dir(&event_loop).expect("event_loop dir") {
-        let path = entry.expect("dir entry").path();
-        if path.extension().is_none_or(|e| e != "rs") {
-            continue;
+    /// Collect every non-test `.rs` file under `dir`, recursively, as a path
+    /// relative to the `event_loop` root (so a subdirectory driver is named
+    /// unambiguously in the failure message).
+    fn collect(dir: &std::path::Path, prefix: &str, out: &mut Vec<(String, std::path::PathBuf)>) {
+        for entry in std::fs::read_dir(dir).expect("event_loop dir") {
+            let path = entry.expect("dir entry").path();
+            let name = path.file_name().expect("file name").to_string_lossy().to_string();
+            let rel = if prefix.is_empty() {
+                name.clone()
+            } else {
+                format!("{prefix}/{name}")
+            };
+            if path.is_dir() {
+                if name == "tests" {
+                    continue;
+                }
+                collect(&path, &rel, out);
+            } else if path.extension().is_some_and(|e| e == "rs") && !name.ends_with("tests.rs") {
+                out.push((rel, path));
+            }
         }
+    }
+
+    let event_loop = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/indexing/event_loop");
+    let mut sources: Vec<(String, std::path::PathBuf)> = Vec::new();
+    collect(&event_loop, "", &mut sources);
+
+    let mut drivers: Vec<String> = Vec::new();
+    for (name, path) in sources {
         let src = std::fs::read_to_string(&path).expect("read source");
         if !src.contains("process_live_batch(") {
             continue;
         }
-        let name = path.file_name().expect("file name").to_string_lossy().to_string();
         assert!(
             src.contains("ChurnObserver::from_env("),
             // allowed-pluralize-noun: `{name}` is a file name and `drives` is the verb, not a plural noun.
