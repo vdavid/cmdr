@@ -350,6 +350,16 @@ pub struct IndexDebugStatusResponse {
     pub phase_history: Vec<PhaseRecord>,
     /// Whether background verification is running concurrently with the current phase
     pub verifying: bool,
+    /// Directory listings seen at or over [`HUGE_DIR_CHILD_FLOOR`] children, across
+    /// the guarded walker and the LOCAL reconcile walk (the pathological-directory
+    /// census — see `DebugStats::record_dir_listing`).
+    pub huge_dirs_seen: u64,
+    /// The largest single-directory child count seen since start (0 if none).
+    pub largest_dir_children: u64,
+    /// Directories background verification declined outright (guard tooth 1).
+    pub verify_declined_dirs: u64,
+    /// Directories background verification diffed only partially (guard tooth 2).
+    pub verify_truncated_dirs: u64,
     /// Main DB file size (bytes), excluding WAL/SHM
     pub db_main_size: Option<u64>,
     /// WAL file size (bytes)
@@ -361,6 +371,14 @@ pub struct IndexDebugStatusResponse {
 }
 
 // ── Debug stats (shared atomics for the debug window) ────────────────
+
+/// Child count at or above which a directory listing is counted as huge.
+///
+/// Deliberately far below `verify_guard::HUGE_DIR_CHILDREN` (the decline
+/// threshold): the census exists to answer "how many machines have a directory
+/// like this, and how big?", so it has to see the shoulder of the distribution,
+/// not only the directories we already refuse.
+pub(crate) const HUGE_DIR_CHILD_FLOOR: u64 = 10_000;
 
 /// Shared counters for MustScanSubDirs events and live FS events.
 /// Updated by event loops, read by the debug status IPC command.
@@ -377,6 +395,14 @@ pub(crate) struct DebugStats {
     pub(crate) phase_started: std::sync::Mutex<Option<std::time::Instant>>,
     /// Whether background verification is running concurrently.
     pub(crate) verifying: AtomicBool,
+    /// Directory listings seen at or over [`HUGE_DIR_CHILD_FLOOR`] children.
+    pub(crate) huge_dirs_seen: AtomicU64,
+    /// The largest single-directory child count seen since start.
+    pub(crate) largest_dir_children: AtomicU64,
+    /// Directories background verification declined outright (guard tooth 1).
+    pub(crate) verify_declined_dirs: AtomicU64,
+    /// Directories background verification diffed only partially (guard tooth 2).
+    pub(crate) verify_truncated_dirs: AtomicU64,
 }
 
 impl DebugStats {
@@ -397,6 +423,36 @@ impl DebugStats {
             }]),
             phase_started: std::sync::Mutex::new(Some(std::time::Instant::now())),
             verifying: AtomicBool::new(false),
+            huge_dirs_seen: AtomicU64::new(0),
+            largest_dir_children: AtomicU64::new(0),
+            verify_declined_dirs: AtomicU64::new(0),
+            verify_truncated_dirs: AtomicU64::new(0),
+        }
+    }
+
+    /// Record one directory listing's child count — the pathological-directory
+    /// census.
+    ///
+    /// **Lock-free on purpose.** The guarded walker calls this from every rayon
+    /// thread, once per directory; `record_must_scan`'s `Mutex<Vec<_>>` ring would
+    /// put a lock on the scan hot path. Both atomics are `Relaxed`: the census is
+    /// an instrument, and an interleaved max between two threads costs at most one
+    /// slightly-low reading of a monotone gauge.
+    ///
+    /// **Call it from every walk that lists a directory.** A populated,
+    /// previously-completed index never runs the guarded walker (it reconciles), so
+    /// a walker-only census reads zero on exactly the established machines worth
+    /// sampling. Today that means `scanner::InsertVisitor::visit_dir` (fresh scan /
+    /// subtree scan) and `local_reconcile::build_live_children` (full rescan).
+    pub(crate) fn record_dir_listing(&self, child_count: usize) {
+        let n = child_count as u64;
+        if n >= HUGE_DIR_CHILD_FLOOR {
+            self.huge_dirs_seen.fetch_add(1, Ordering::Relaxed);
+        }
+        // Read-then-max: after the first few directories the load fails and no
+        // read-modify-write touches the shared cache line at all.
+        if n > self.largest_dir_children.load(Ordering::Relaxed) {
+            self.largest_dir_children.fetch_max(n, Ordering::Relaxed);
         }
     }
 
@@ -439,6 +495,10 @@ impl DebugStats {
             *started = Some(std::time::Instant::now());
         }
         self.verifying.store(false, Ordering::Relaxed);
+        self.huge_dirs_seen.store(0, Ordering::Relaxed);
+        self.largest_dir_children.store(0, Ordering::Relaxed);
+        self.verify_declined_dirs.store(0, Ordering::Relaxed);
+        self.verify_truncated_dirs.store(0, Ordering::Relaxed);
     }
 
     pub(crate) fn set_phase(&self, phase: ActivityPhase, trigger: &str) {

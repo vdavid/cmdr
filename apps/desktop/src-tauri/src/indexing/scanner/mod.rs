@@ -619,6 +619,10 @@ impl DirVisitor for InsertVisitor {
         // This directory's read succeeded → mark it listed at scan end.
         self.listed_ids.lock_ignore_poison().push(dir.id);
 
+        // Pathological-directory census. Lock-free by requirement: this runs on
+        // every rayon walk thread. See `DebugStats::record_dir_listing`.
+        super::DEBUG_STATS.record_dir_listing(children.len());
+
         let mut subdirs = Vec::new();
         for child in children {
             let path_str = child.path.to_string_lossy();

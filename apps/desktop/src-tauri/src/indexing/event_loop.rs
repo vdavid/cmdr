@@ -5,7 +5,8 @@
 //!   `process_live_batch`, the rename pre-pass).
 //! - [`replay`]: cold-start journal replay (`run_replay_event_loop`), boot disk
 //!   only, which hands off to live mode and spawns verification.
-//! - [`verification`]: post-replay bidirectional readdir diff.
+//! - [`verification`]: post-replay bidirectional readdir diff, and
+//!   [`verify_guard`]: the pure two-teeth cost guard it consults.
 //! - [`storm`]: removal-storm coalescing helpers used by `process_live_batch`.
 //!
 //! This root file keeps only what more than one loop shares: `merge_fs_events`
@@ -27,6 +28,7 @@ mod live;
 mod replay;
 mod storm;
 mod verification;
+mod verify_guard;
 
 // Re-export the loop entry points so external callers keep using the stable
 // `event_loop::…` paths (`manager.rs`, `scan_completion.rs`, and the indexing

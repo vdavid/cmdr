@@ -569,6 +569,33 @@ A scan whose ROOT listing yields ZERO children does NOT report a clean completio
 - **A genuinely empty volume** (vanishingly rare) is the accepted false-negative: it reads "not indexed" and self-heals the instant any file appears. The safe rule — never auto-complete an empty root — wins over indexing a real but empty volume.
 - Regression-locked by `volume_scanner::tests::empty_root_fresh_scan_does_not_complete`, `failed_root_listing_does_not_complete`, `reconcile_empty_root_does_not_complete`, and `local_reconcile::tests::reconcile_empty_root_keeps_prior_index_and_signals_empty_root` (the last two also assert the prior index isn't blanked).
 
+## Bounding verification cost (the two teeth)
+
+Post-replay verification (`event_loop/verification.rs::verify_affected_dirs`) is a bidirectional readdir diff, so it costs O(children) per affected directory. On 2026-07-19 a cold start replayed an 18,314-event journal gap into 288 affected dirs and then spent **7 min 6 s** at a **1.01 GB** `phys_footprint` peak with the writer channel pegged at its 20,000 cap the whole time. Essentially all of it came from ONE directory: `~/Library/Containers/com.google.drivefs.fpext/Data/tmp/domain-temp-gdrive-<id>/fetch_temp`, holding 1,138,220 empty files (1.41M and growing since). `0 new dirs` in that run: no recursive amplification, just one directory's one-level diff.
+
+Throttling can't fix this class. Re-syncing a directory costs O(children), not O(events) — the per-child events were dropped, so all you can do is readdir and diff. The existing throttles (`reconciler/throttle.rs` per-file, `rescan_throttle.rs` per-subtree) would only convert a continuous trickle into a 7-minute stall once per window, and `verification.rs` consults neither by design (it is the correctness catch-up after a cold start).
+
+So the cost is bounded instead, by two pure decisions in `event_loop/verify_guard.rs` (threshold-injected, `rescan_route::classify` shape). Both share ONE constant, `HUGE_DIR_CHILDREN` (200,000): the largest legitimate directory measured on the same machine held ~119k children, so the threshold sits ~1.7× above it and ~6× below the incident.
+
+- **Tooth 1 — a DB-side probe BEFORE the snapshot.** `IndexStore::count_children_capped(parent_id, conn, threshold + 1)` runs ahead of `list_children_on`. Phase 1 materialises `HashMap<String, (i64, Vec<EntryRow>)>` for EVERY affected path, so guarding only the upsert loop would leave 1.41M owned `EntryRow`s (~130–160 MB) in place. ❌ Not a `COUNT(*)`: the answer must not itself cost O(children).
+- **Tooth 2 — an ITERATION cap, not an upsert cap.** Phase 2's `read_dir` loop `continue`s past DB-known children before doing any work, so an already-indexed pathological directory produces near-zero upserts while iterating 1.41M times. **An upsert cap would have been a no-op on the measured incident.** This tooth also covers the inverse shape: a directory that is small in the index but huge on disk, which passes any DB-side count.
+
+**❌ A declined directory must NOT be marked `listed_epoch = 0`.** This reads like honesty and is the opposite. Affected dirs carry a POSITIVE epoch from the scan, and `absorbing_min_epoch` (`aggregator/mod.rs`) propagates a zero all the way up, so `min_subtree_epoch → 0` for every ancestor to `~` and `/`. The read side derives `recursive_size_complete = min_subtree_epoch > 0`, so declining one temp directory would render the whole home folder incomplete and make `expected_totals::per_source_contribution` return `None` for every copy of `~`. The 32-failed-reads walker precedent does NOT apply: those dirs were never listed, so they stay at 0 and nothing is downgraded. Same word, opposite operation. Pinned by `verification::tests::a_declined_dir_leaves_its_epoch_and_every_ancestor_epoch_untouched`.
+
+**The honest cost. This is a trade, not a free win.**
+
+- Tooth 1 skips before the snapshot, so the stale-detection loop never runs for a declined directory: deletions from the journal gap are **not reaped**, and the ancestor chain stays inflated until some other path corrects it. Same delete-drift class that sealing (`docs/specs/sealed-subtrees-plan.md`) would have to solve.
+- Tooth 2 leaves a **partially diffed** directory: the entries it never reached are neither added nor checked.
+- A declined directory still reports `recursive_size_complete = true`. We knowingly decline to enumerate and keep claiming exact. Owned as debt here rather than papered over.
+- **Scope.** This fixes the STALL. It does not reclaim the search index's RAM (the rows stay in the DB — `fetch_temp` alone is ~16% of the 6.95M rows the search index loads), and it guards only `verify_affected_dirs`: a shallow `MustScanSubDirs` still routes to `start_scan` and re-walks, and `reconcile_subtree` still diffs on a deep anchor.
+- The "1.14M `EntryRow`s are a large share of the 1.01 GB peak" claim is **back-of-envelope, not measured** (~130–160 MB plus a comparable transient for the per-parent name `HashSet`). Measure before advertising a RAM win.
+
+**The pathological-directory census** (`DebugStats::record_dir_listing`, surfaced as `hugeDirsSeen` / `largestDirChildren` in the debug status and in `cmdr://indexing?volume=<id>`) is the instrument for the question this all hangs on: is a 1.14M-child directory an n=1 curiosity, or a class worth building sealing for? It counts every directory listing at or over `HUGE_DIR_CHILD_FLOOR` (10,000) plus a monotone max.
+
+- **It is hooked in BOTH walks on purpose.** `scanner::InsertVisitor::visit_dir` covers a fresh scan / `clear_index` / subtree scan; `local_reconcile::build_live_children` covers the full rescan. A populated, previously-completed index NEVER runs the guarded walker (it reconciles — see § "Non-destructive rescan"), so a walker-only census would read zero on exactly the established machines worth sampling. Both hooks are pinned by a test that drives the real walk, not the counter.
+- **Atomics, never a lock.** The guarded walker calls it from every rayon thread; `record_must_scan`'s `Mutex<Vec<_>>` ring on the scan hot path is not acceptable. The max is read-then-`fetch_max`, so after the first few directories no read-modify-write touches the shared cache line.
+- Verification's own outcomes ride the same surface: `verifyDeclinedDirs` (tooth 1) and `verifyTruncatedDirs` (tooth 2).
+
 ## How to test
 
 Run Rust tests:

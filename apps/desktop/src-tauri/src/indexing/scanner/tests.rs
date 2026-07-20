@@ -946,3 +946,43 @@ fn volume_root_that_never_lists_surfaces_root_unlistable() {
         "an unreadable volume root must surface RootUnlistable, got {result:?}"
     );
 }
+
+/// The pathological-directory census must be fed by the REAL guarded walk.
+///
+/// The counter is only useful if production reaches it: this covers the fresh-scan
+/// / `clear_index` / subtree-scan half, and
+/// `local_reconcile::tests::the_reconcile_walk_feeds_the_pathological_dir_census`
+/// covers the established-machine half. Counters are process-global; the check
+/// runner uses `cargo nextest` (process per test), so the assertion is exact
+/// there and degrades to a lower bound under a shared-process run.
+#[test]
+fn the_guarded_walk_feeds_the_pathological_dir_census() {
+    use crate::indexing::DEBUG_STATS;
+    use std::sync::atomic::Ordering;
+
+    let scan_root = scan_test_tempdir();
+    let children = 14;
+    for i in 0..children {
+        fs::write(scan_root.path().join(format!("f{i:02}.txt")), "x").unwrap();
+    }
+
+    let (writer, _db_path, _db_dir) = setup_writer();
+    let config = ScanConfig {
+        root: scan_root.path().to_path_buf(),
+        batch_size: 100,
+        num_threads: 1,
+        ..ScanConfig::default()
+    };
+
+    let before = DEBUG_STATS.largest_dir_children.load(Ordering::Relaxed);
+    let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
+    join_handle.join().expect("scan thread panicked").unwrap();
+    writer.flush_blocking().unwrap();
+    writer.shutdown();
+
+    let after = DEBUG_STATS.largest_dir_children.load(Ordering::Relaxed);
+    assert!(
+        after >= children as u64,
+        "InsertVisitor::visit_dir must record its per-directory child counts (before {before}, after {after})"
+    );
+}

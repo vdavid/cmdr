@@ -225,6 +225,7 @@ fn every_live_loop_owns_a_real_churn_observer() {
         let name = path.file_name().expect("file name").to_string_lossy().to_string();
         assert!(
             src.contains("ChurnObserver::from_env("),
+            // allowed-pluralize-noun: `{name}` is a file name and `drives` is the verb, not a plural noun.
             "{name} drives live batches but never builds a real ChurnObserver, \
              so the churn spike would silently measure nothing on that route"
         );

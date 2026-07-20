@@ -175,6 +175,10 @@ fn test_deep_view_includes_debug_detail() {
         must_scan_count: 5,
         must_scan_rescans_completed: 4,
         verifying: false,
+        huge_dirs_seen: 2,
+        largest_dir_children: 1_138_220,
+        verify_declined_dirs: 1,
+        verify_truncated_dirs: 0,
         db_main_size: Some(40_000_000),
         db_wal_size: Some(2_100_000),
         db_page_count: Some(12_000),
@@ -193,6 +197,14 @@ fn test_deep_view_includes_debug_detail() {
     assert!(text.contains("debug:"), "got: {text}");
     assert!(text.contains("watcher: on, 1,234 live events"), "got: {text}");
     assert!(text.contains("mustScan: 5 events, 4 rescans completed"), "got: {text}");
+    assert!(
+        text.contains("huge dirs: 2 seen with 10,000+ children, largest 1,138,220 children"),
+        "got: {text}"
+    );
+    assert!(
+        text.contains("verify guard: 1 declined, 0 partially diffed"),
+        "got: {text}"
+    );
     assert!(text.contains("db detail: main "), "got: {text}");
     assert!(text.contains("WAL "), "got: {text}");
     assert!(

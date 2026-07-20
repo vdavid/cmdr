@@ -41,6 +41,10 @@
         phaseDurationMs: number
         phaseHistory: PhaseRecord[]
         verifying: boolean
+        hugeDirsSeen: number
+        largestDirChildren: number
+        verifyDeclinedDirs: number
+        verifyTruncatedDirs: number
         dbMainSize: number | null
         dbWalSize: number | null
         dbPageCount: number | null
@@ -482,6 +486,34 @@
                         ></span
                     >
                     <span class="index-meta-value">{formatCount(debugStatus.mustScanRescansCompleted)}</span>
+                </div>
+                <div class="index-meta-row">
+                    <span class="index-meta-label"
+                        >Huge dirs seen <span
+                            class="info-icon"
+                            use:tooltip={{
+                                text: 'Directory listings with 10,000+ children, counted across the scan walker and the rescan walk. The number in brackets is the largest directory seen.',
+                            }}>i</span
+                        ></span
+                    >
+                    <span class="index-meta-value"
+                        >{formatCount(debugStatus.hugeDirsSeen)} ({formatCount(debugStatus.largestDirChildren)} max)</span
+                    >
+                </div>
+                <div class="index-meta-row">
+                    <span class="index-meta-label"
+                        >Verify guard <span
+                            class="info-icon"
+                            use:tooltip={{
+                                text: 'Directories post-replay verification declined outright, and directories it diffed only partially, because they were too large to diff affordably.',
+                            }}>i</span
+                        ></span
+                    >
+                    <span class="index-meta-value"
+                        >{formatCount(debugStatus.verifyDeclinedDirs)} declined, {formatCount(
+                            debugStatus.verifyTruncatedDirs
+                        )} partial</span
+                    >
                 </div>
             </div>
         {/if}

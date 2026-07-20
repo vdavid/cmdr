@@ -35,6 +35,20 @@ impl IndexStore {
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
     }
 
+    /// Count a directory's children, stopping at `cap` rows.
+    ///
+    /// Returns `min(actual_children, cap)`, so a caller passing `threshold + 1`
+    /// learns "more than the threshold?" while touching at most `cap` index rows.
+    /// ❌ Don't reach for `COUNT(*)` here: the whole point is that the answer must
+    /// not cost O(children) on the directory that motivated the question (1.14M
+    /// rows). The inner `SELECT 1 … LIMIT` reads the `parent_id` index only.
+    pub fn count_children_capped(parent_id: i64, conn: &Connection, cap: i64) -> Result<usize, IndexStoreError> {
+        let mut stmt =
+            conn.prepare_cached("SELECT COUNT(*) FROM (SELECT 1 FROM entries WHERE parent_id = ?1 LIMIT ?2)")?;
+        let count: i64 = stmt.query_row(params![parent_id, cap], |row| row.get(0))?;
+        Ok(count.max(0) as usize)
+    }
+
     /// List up to `limit` children of a directory. The operation log's search-leaf
     /// enumeration (`journal_search`) walks a subtree BEFORE a trash / same-FS move
     /// with a bounded budget, so it reads at most `cap + 1` rows total regardless of

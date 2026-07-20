@@ -38,6 +38,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel};
 use std::time::{Duration, Instant};
 
+use super::DEBUG_STATS;
 use super::IndexPathSpace;
 use super::metadata::extract_metadata;
 use super::reconciler::{self, LiveChild};
@@ -238,6 +239,12 @@ fn build_live_children(
     total_physical_bytes: &mut u64,
     progress: &ScanProgress,
 ) -> Vec<LiveChild> {
+    // Pathological-directory census. This hook is the one that reads non-zero on
+    // an established machine: a populated, previously-completed index reconciles
+    // rather than running the guarded walker, so a walker-only census would stay
+    // at zero on exactly the machines worth sampling.
+    DEBUG_STATS.record_dir_listing(fs_children.len());
+
     let mut live = Vec::with_capacity(fs_children.len());
     for (name, meta, is_symlink) in fs_children {
         let is_dir = meta.is_dir();
