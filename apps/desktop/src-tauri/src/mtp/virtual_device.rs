@@ -83,15 +83,49 @@ pub fn activate_from_env_if_requested() -> Option<u64> {
     Some(setup_virtual_mtp_device_at(&root))
 }
 
-/// Registers a virtual MTP device with two storages and pre-populated test files
-/// at the default fixture root ([`MTP_FIXTURE_ROOT`]).
-///
-/// Used by Rust integration tests that drive the device directly. The startup
-/// path goes through [`activate_from_env_if_requested`] instead (it derives the
-/// root from the environment).
+/// A registered virtual MTP device plus the temp dir backing it. Holding it
+/// keeps the backing dir alive; dropping it deletes the dir.
 #[cfg(test)]
-pub fn setup_virtual_mtp_device() -> u64 {
-    setup_virtual_mtp_device_at(Path::new(MTP_FIXTURE_ROOT))
+pub(crate) struct VirtualDeviceFixture {
+    pub(crate) location_id: u64,
+    root: tempfile::TempDir,
+}
+
+#[cfg(test)]
+impl VirtualDeviceFixture {
+    /// The storage backing dir, for tests that seed files directly on disk.
+    pub(crate) fn root(&self) -> &Path {
+        self.root.path()
+    }
+}
+
+/// Registers a virtual MTP device with two storages and pre-populated test files
+/// in a **fresh temp dir per call**.
+///
+/// ❌ Don't point this at the shared [`MTP_FIXTURE_ROOT`]: `setup_virtual_mtp_device_at`
+/// wipes its root, so two tests sharing one root delete each other's fixtures
+/// mid-run. Under `cargo nextest` (process per test) a shared root is the ONLY
+/// thing that can make these tests collide, since every other piece of state
+/// (mtp-rs registry, `connection_manager()`) is process-local. Under plain
+/// `cargo test` they additionally share the virtual device's serial, hence one
+/// Cmdr device id — [`virtual_device_test_lock`] covers that.
+///
+/// Used by Rust tests that drive the device directly. The startup path goes
+/// through [`activate_from_env_if_requested`] instead (it derives the root from
+/// the environment, which IS `MTP_FIXTURE_ROOT` for E2E).
+///
+/// Registers with the backing-dir WATCHER OFF. No Rust test needs it (they sync
+/// the object tree explicitly with [`rescan_virtual_device`]), and each watcher
+/// is a real FSEvents/inotify watch: under a saturated full-suite run, a handful
+/// of concurrent test processes each holding one starve each other's delivery
+/// and push these tests past nextest's 8 s cap. Only the E2E/dev startup path
+/// ([`setup_virtual_mtp_device_at`]) arms it, and E2E is the one consumer that
+/// exercises live watching.
+#[cfg(test)]
+pub(crate) fn setup_virtual_mtp_device() -> VirtualDeviceFixture {
+    let root = tempfile::tempdir().expect("failed to create a virtual-device fixture root");
+    let location_id = register_virtual_mtp_device_at(root.path(), false);
+    VirtualDeviceFixture { location_id, root }
 }
 
 /// Registers a virtual MTP device backed by `root`, with two storages and
@@ -100,6 +134,13 @@ pub fn setup_virtual_mtp_device() -> u64 {
 /// Must be called **before** `start_mtp_watcher()` so the device appears in the
 /// initial device snapshot.
 pub fn setup_virtual_mtp_device_at(root: &Path) -> u64 {
+    register_virtual_mtp_device_at(root, true)
+}
+
+/// The shared body of [`setup_virtual_mtp_device_at`] and (test-only)
+/// [`setup_virtual_mtp_device`]. `watch_backing_dirs` arms the device's
+/// filesystem watcher, which turns out-of-band disk writes into PTP events.
+fn register_virtual_mtp_device_at(root: &Path, watch_backing_dirs: bool) -> u64 {
     let internal = root.join("internal");
     let readonly = root.join("readonly");
 
@@ -165,7 +206,7 @@ pub fn setup_virtual_mtp_device_at(root: &Path) -> u64 {
         // stands in for a Pixel 9. Setting the latter false would exercise mtp-rs's
         // 32-bit GetPartialObject fallback instead (cameras like the Lumix TZ61).
         event_poll_interval: Duration::from_millis(100),
-        watch_backing_dirs: true,
+        watch_backing_dirs,
         ..Default::default()
     };
 

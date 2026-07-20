@@ -13,7 +13,7 @@
 
 use super::connection_manager;
 use crate::mtp::virtual_device::{
-    setup_virtual_mtp_device_at, unregister_virtual_mtp_device, virtual_device_test_lock,
+    VirtualDeviceFixture, setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
 };
 use mtp_rs::ObjectHandle;
 use std::path::{Path, PathBuf};
@@ -22,19 +22,17 @@ use std::path::{Path, PathBuf};
 struct Device {
     id: String,
     storage_id: u32,
-    location_id: u64,
-    _root: tempfile::TempDir,
+    fixture: VirtualDeviceFixture,
 }
 
 /// Connects a virtual MTP device with the root listing primed, so mutations can
 /// resolve their parent handles (`resolve_path_to_handle` is cache-only).
 async fn connect_device() -> Device {
-    let root = tempfile::tempdir().expect("tmp device root");
-    let location_id = setup_virtual_mtp_device_at(root.path());
+    let fixture = setup_virtual_mtp_device();
 
     let device_id = crate::mtp::list_mtp_devices()
         .into_iter()
-        .find(|d| d.location_id == location_id)
+        .find(|d| d.location_id == fixture.location_id)
         .map(|d| d.id)
         .expect("the virtual device must appear in discovery");
     let info = connection_manager()
@@ -49,8 +47,7 @@ async fn connect_device() -> Device {
     Device {
         id: device_id,
         storage_id,
-        location_id,
-        _root: root,
+        fixture,
     }
 }
 
@@ -59,7 +56,7 @@ async fn teardown(device: Device) {
         .disconnect(&device.id, None, super::MtpDisconnectReason::User)
         .await
         .ok();
-    unregister_virtual_mtp_device(device.location_id);
+    unregister_virtual_mtp_device(device.fixture.location_id);
 }
 
 async fn reverse_entry(device: &Device, handle: ObjectHandle) -> Option<PathBuf> {

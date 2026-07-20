@@ -205,10 +205,12 @@ fn test_listing_is_watched_false_when_device_not_connected() {
 #[cfg(feature = "virtual-mtp")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_listing_is_watched_flips_with_connection() {
-    use crate::mtp::virtual_device::setup_virtual_mtp_device;
+    use crate::mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
 
     // Register a virtual device backed by a tmp dir.
-    let location_id = setup_virtual_mtp_device();
+    let _guard = virtual_device_test_lock().lock().await;
+    let fixture = setup_virtual_mtp_device();
+    let location_id = fixture.location_id;
     let device_id = crate::mtp::list_mtp_devices()
         .into_iter()
         .find(|d| d.location_id == location_id)
@@ -271,9 +273,11 @@ impl futures_util::Stream for ErroringStream {
 #[cfg(feature = "virtual-mtp")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn upload_failure_deletes_partial_object_on_device() {
-    use crate::mtp::virtual_device::setup_virtual_mtp_device;
+    use crate::mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
 
-    let location_id = setup_virtual_mtp_device();
+    let _guard = virtual_device_test_lock().lock().await;
+    let fixture = setup_virtual_mtp_device();
+    let location_id = fixture.location_id;
     let device_id = crate::mtp::list_mtp_devices()
         .into_iter()
         .find(|d| d.location_id == location_id)
@@ -356,9 +360,11 @@ impl futures_util::Stream for CancellingStream {
 #[cfg(feature = "virtual-mtp")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn upload_cancel_deletes_partial_and_surfaces_cancelled() {
-    use crate::mtp::virtual_device::setup_virtual_mtp_device;
+    use crate::mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
 
-    let location_id = setup_virtual_mtp_device();
+    let _guard = virtual_device_test_lock().lock().await;
+    let fixture = setup_virtual_mtp_device();
+    let location_id = fixture.location_id;
     let device_id = crate::mtp::list_mtp_devices()
         .into_iter()
         .find(|d| d.location_id == location_id)
@@ -438,9 +444,11 @@ impl futures_util::Stream for OneShotStream {
 #[cfg(feature = "virtual-mtp")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn upload_into_stale_parent_handle_heals_and_retry_succeeds() {
-    use crate::mtp::virtual_device::{VIRTUAL_DEVICE_SERIAL, setup_virtual_mtp_device};
+    use crate::mtp::virtual_device::{VIRTUAL_DEVICE_SERIAL, setup_virtual_mtp_device, virtual_device_test_lock};
 
-    let location_id = setup_virtual_mtp_device();
+    let _guard = virtual_device_test_lock().lock().await;
+    let fixture = setup_virtual_mtp_device();
+    let location_id = fixture.location_id;
     let device_id = crate::mtp::list_mtp_devices()
         .into_iter()
         .find(|d| d.location_id == location_id)
@@ -534,9 +542,11 @@ async fn upload_into_stale_parent_handle_heals_and_retry_succeeds() {
 #[cfg(feature = "virtual-mtp")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn bounded_window_read_assembles_byte_exact() {
-    use crate::mtp::virtual_device::{rescan_virtual_device, setup_virtual_mtp_device};
+    use crate::mtp::virtual_device::{rescan_virtual_device, setup_virtual_mtp_device, virtual_device_test_lock};
 
-    let location_id = setup_virtual_mtp_device();
+    let _guard = virtual_device_test_lock().lock().await;
+    let fixture = setup_virtual_mtp_device();
+    let location_id = fixture.location_id;
     // Derive the device id the way discovery does (serial-based when the
     // device reports one), not `format!("mtp-{location_id}")`.
     let device_id = crate::mtp::list_mtp_devices()
@@ -548,7 +558,7 @@ async fn bounded_window_read_assembles_byte_exact() {
     // Write a fixture larger than one (shrunk) window into the internal
     // backing dir, then rescan so the virtual device hands it a handle.
     let payload: Vec<u8> = (0..3500u32).map(|i| (i % 251) as u8).collect();
-    let internal = Path::new(crate::mtp::virtual_device::MTP_FIXTURE_ROOT).join("internal");
+    let internal = fixture.root().join("internal");
     std::fs::write(internal.join("bigfile.bin"), &payload).expect("write fixture");
     rescan_virtual_device();
 

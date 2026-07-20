@@ -27,15 +27,15 @@ use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use crate::file_system::volume::{MtpVolume, Volume};
 use crate::mtp::connection::{MtpDisconnectReason, connection_manager};
-use crate::mtp::virtual_device::setup_virtual_mtp_device;
+use crate::mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
 
 use super::backends::mtp::test_hooks;
 
-// `setup_virtual_mtp_device` wipes and recreates a shared backing-dir fixture
-// root at `/tmp/cmdr-mtp-e2e-fixtures`. Tests in this module + the existing
-// `test_listing_is_watched_flips_with_connection` in `mtp.rs` would clobber
-// each other if nextest scheduled them concurrently. They run inside the
-// `virtual-mtp` test-group (max-threads = 1) per `.config/nextest.toml`.
+// `setup_virtual_mtp_device` gives every call its own temp backing root, so these
+// tests don't contend on the filesystem. They still take
+// `virtual_device_test_lock()` (via `VirtualDeviceGuard`): all virtual devices
+// register under one serial, hence one Cmdr device id, which matters whenever
+// several run in the SAME process (plain `cargo test`; nextest forks per test).
 
 /// Unique-per-test counter so parallel tests don't collide in the listing cache.
 fn unique(suffix: &str) -> String {
@@ -91,12 +91,24 @@ fn remove_listing(id: &str) {
     cache.remove(id);
 }
 
+/// Keeps a test's virtual device alive and exclusive: the process-wide lock (all
+/// virtual devices share one serial, hence one Cmdr device id) plus the fixture
+/// owning its temp backing dir. Held for the test body, released on drop.
+struct VirtualDeviceGuard {
+    _lock: tokio::sync::MutexGuard<'static, ()>,
+    fixture: crate::mtp::virtual_device::VirtualDeviceFixture,
+}
+
 /// Connects the virtual MTP device, builds an `MtpVolume` for its first
 /// storage, and returns `(device_id, volume, volume_id)`. The volume_id format
 /// matches what `MtpVolume::new` computes internally
 /// (`"{device_id}:{storage_id}"`); see `mtp/CLAUDE.md` § Volume IDs.
-async fn connect_virtual_device() -> (String, Arc<MtpVolume>, String) {
-    let location_id = setup_virtual_mtp_device();
+async fn connect_virtual_device() -> (String, Arc<MtpVolume>, String, VirtualDeviceGuard) {
+    let guard = VirtualDeviceGuard {
+        _lock: virtual_device_test_lock().lock().await,
+        fixture: setup_virtual_mtp_device(),
+    };
+    let location_id = guard.fixture.location_id;
     // Derive the canonical device id from discovery, not `mtp-{location_id}`: the
     // virtual device reports a serial, so its id is serial-based
     // (`device_id_for`), and the connect path resolves by matching the live
@@ -113,7 +125,7 @@ async fn connect_virtual_device() -> (String, Arc<MtpVolume>, String) {
     let storage_id = info.storages.first().expect("at least one virtual storage").id;
     let vol = Arc::new(MtpVolume::new(&device_id, storage_id, "Test"));
     let volume_id = format!("{}:{}", device_id, storage_id);
-    (device_id, vol, volume_id)
+    (device_id, vol, volume_id, guard)
 }
 
 /// Test 1: on oracle hit, the MTP override skips its `list_directory` call
@@ -121,7 +133,7 @@ async fn connect_virtual_device() -> (String, Arc<MtpVolume>, String) {
 /// aggregate; no MTP I/O happens for those entries.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn mtp_scan_uses_oracle_on_hit_skips_list_directory() {
-    let (device_id, vol, vid) = connect_virtual_device().await;
+    let (device_id, vol, vid, _guard) = connect_virtual_device().await;
     // Register the volume so the oracle's `VolumeManager::get(vid)` finds it
     // and the `listing_is_watched` gate returns true (device connected).
     get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
@@ -180,7 +192,7 @@ async fn mtp_scan_uses_oracle_on_hit_skips_list_directory() {
 /// `list_directory` calls.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn mtp_scan_cold_cache_still_uses_parent_grouping() {
-    let (device_id, vol, vid) = connect_virtual_device().await;
+    let (device_id, vol, vid, _guard) = connect_virtual_device().await;
     get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
 
     // MTP needs the parent's path-handle cached before it can list any path

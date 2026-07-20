@@ -378,6 +378,21 @@ depends on the canonical path persisting — no CI artifact upload, and threshol
 config — so isolation applies everywhere, with no CI split. Manual `pnpm test:coverage` (no env var set) still writes
 `./coverage`.
 
+## `desktop-rust-tests` runs with `--features virtual-mtp`
+
+The MTP tests that drive a virtual device (`backends/mtp_test`, `mtp_archive_test`, `mtp_read_range_test`,
+`mtp_scan_oracle_tests`, `connection/path_cache_sync_test` — ~29 tests) only COMPILE under the `virtual-mtp` feature.
+Without it `cargo nextest` silently filters them out, so they protected nothing while looking like coverage. The check
+passes the feature so they run in the default lane.
+
+The feature is test-only (it never enters a production build) and costs ~2-4 s on a ~27 s suite. `rust-tests-linux`
+deliberately does NOT pass it: that lane is already tight against the 8 s per-test cap on a slower VM, and MTP's
+virtual-device coverage doesn't differ by platform. Revisit if Linux-specific MTP behavior ever needs pinning.
+
+Prerequisites these tests rely on (per-test temp backing root, watcher off, `virtual_device_test_lock()`):
+[`apps/desktop/src-tauri/src/mtp/DETAILS.md`](../../../apps/desktop/src-tauri/src/mtp/DETAILS.md) § "Rust tests that
+drive the device".
+
 ## Apps and check counts
 
 Checks by app and tech:

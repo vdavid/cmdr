@@ -20,7 +20,13 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 		}
 	}
 
-	cmd := exec.Command("cargo", "nextest", "run", "--locked")
+	// `--features virtual-mtp` compiles in the virtual MTP device, which is the
+	// only way ~29 MTP tests (backends/mtp_test, mtp_archive_test,
+	// mtp_read_range_test, mtp_scan_oracle_tests, connection/path_cache_sync_test)
+	// can run at all. Without it they're silently filtered out and protect
+	// nothing. The feature is test-only and never enters a production build; it
+	// costs ~2-4 s on a ~27 s suite.
+	cmd := exec.Command("cargo", "nextest", "run", "--locked", "--features", "virtual-mtp")
 	cmd.Dir = rustDir
 	output, err := RunCommand(cmd, true)
 	if err != nil {

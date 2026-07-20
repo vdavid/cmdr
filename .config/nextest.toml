@@ -25,12 +25,14 @@
 # etc.). "It just takes that long" is not a reason — refactor the test instead.
 
 [test-groups]
-# Tests in the `virtual-mtp` group share a single backing-dir fixture root at
-# `/tmp/cmdr-mtp-e2e-fixtures` (see `mtp::virtual_device::setup_virtual_mtp_device`),
-# so running them concurrently races on a shared filesystem resource and one
-# wins with `DirectoryNotEmpty`. Cap concurrency at 1 to serialize them across
-# nextest's per-process forks.
-virtual-mtp = { max-threads = 1 }
+# NOTE: there is deliberately no `virtual-mtp` group. Virtual-MTP tests used to
+# need one because `setup_virtual_mtp_device()` wiped a single shared backing-dir
+# root, so concurrent tests deleted each other's fixtures. Each call now gets its
+# own temp root, and nextest forks a process per test, so nothing is shared —
+# they run fully parallel. (Under plain `cargo test`, where one process runs them
+# all, they still share the virtual device's serial; `virtual_device_test_lock()`
+# in `mtp::virtual_device` serializes that.) Don't reintroduce a group here to
+# fix a virtual-MTP flake: find the shared resource instead.
 # Tests that block on REAL OS file-watcher delivery (FSEvents). Running several
 # at once multiplies live watches and event storms, and under a saturated suite
 # (which grew with the archive milestones' real zip I/O) delivery starvation
@@ -51,10 +53,6 @@ disk-image = { max-threads = 1 }
 # concurrent I/O (hundreds of MB). Running them at once — or alongside each other
 # — self-contends on the one server. Serialize them.
 smb-stress = { max-threads = 1 }
-
-[[profile.default.overrides]]
-filter = 'test(mtp_scan) + test(listing_is_watched_flips_with_connection)'
-test-group = 'virtual-mtp'
 
 [[profile.default.overrides]]
 # Disk-image fixtures: hdiutil create+attach+detach plus, for the FSEvents

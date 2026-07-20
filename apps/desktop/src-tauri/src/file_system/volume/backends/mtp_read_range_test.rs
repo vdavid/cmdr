@@ -22,17 +22,17 @@ struct Device {
     id: String,
     storage_id: u32,
     location_id: u64,
-    _root: tempfile::TempDir,
+    _fixture: crate::mtp::virtual_device::VirtualDeviceFixture,
 }
 
 /// Connects a virtual MTP device seeded with `bytes` at `internal/blob.bin`, with
 /// the root path cache primed (`read_range` resolves handles cache-only).
 async fn connect_device_with_blob(bytes: &[u8]) -> Device {
-    use crate::mtp::virtual_device::{rescan_virtual_device, setup_virtual_mtp_device_at};
+    use crate::mtp::virtual_device::{rescan_virtual_device, setup_virtual_mtp_device};
 
-    let root = tempfile::tempdir().expect("tmp device root");
-    let location_id = setup_virtual_mtp_device_at(root.path());
-    std::fs::write(root.path().join("internal/blob.bin"), bytes).expect("seed blob on device");
+    let fixture = setup_virtual_mtp_device();
+    let location_id = fixture.location_id;
+    std::fs::write(fixture.root().join("internal/blob.bin"), bytes).expect("seed blob on device");
     rescan_virtual_device();
 
     let device_id = crate::mtp::list_mtp_devices()
@@ -53,7 +53,7 @@ async fn connect_device_with_blob(bytes: &[u8]) -> Device {
         id: device_id,
         storage_id,
         location_id,
-        _root: root,
+        _fixture: fixture,
     }
 }
 

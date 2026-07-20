@@ -27,14 +27,27 @@ defaults model a modern Android device (`supports_rename` and `supports_partial_
 the Pixel 9 this fixture stands in for; set `supports_partial_object_64: false` explicitly if you ever want to exercise
 mtp-rs's 32-bit `GetPartialObject` fallback (the PTP-camera path).
 
-**Rust tests that stand up their own device must serialize on `virtual_device_test_lock()` and unregister on
-teardown.** Every virtual device registers under the same serial (`cmdr-e2e-virtual`), so they all share ONE Cmdr device
-id (`mtp-cmdr-e2e-virtual`): `resolve_device_location_id` matches the FIRST registration carrying that id, `connect()`
-is idempotent per device id, and `rescan_virtual_device` resolves by serial too. Without the lock, two concurrent tests
-silently share one connection pointed at whichever backing dir registered first — the reads come back with the other
-test's bytes. Without the unregister (`unregister_virtual_mtp_device(location_id)`), a finished test's registration keeps
-answering for the shared id and the next test opens ITS backing dir. Hold the guard across the whole
-register → connect → use → disconnect → unregister span; `backends/mtp_read_range_test.rs` is the reference shape.
+### Rust tests that drive the device
+
+`setup_virtual_mtp_device()` is the one entry point: it hands back a `VirtualDeviceFixture` owning a **fresh temp
+backing root** and registers with the **watcher off**. Three properties matter, and the tests run in `pnpm check`
+(`desktop-rust-tests` passes `--features virtual-mtp`), so breaking one shows up as suite flake:
+
+- **Per-test root.** `setup_virtual_mtp_device_at` WIPES its root, so any two tests sharing one delete each other's
+  fixtures mid-run. ❌ Never point a test at `MTP_FIXTURE_ROOT`; that's the E2E/dev startup root.
+- **Watcher off.** Each device's backing-dir watch is a real FSEvents/inotify watch. Several concurrent test processes
+  each holding one starve delivery and push these tests past nextest's 8 s cap. Tests sync the object tree explicitly
+  with `rescan_virtual_device()` instead, so nothing needs the watcher. Only the E2E path arms it.
+- **Lock + unregister.** Every virtual device registers under the same serial (`cmdr-e2e-virtual`), so they share ONE
+  Cmdr device id: `resolve_device_location_id` matches the FIRST registration with that id, and `connect()` is
+  idempotent per device id. Under `cargo nextest` (process per test) that's harmless, but under plain `cargo test` two
+  tests would silently share one connection pointed at the wrong backing dir. `virtual_device_test_lock()` covers it;
+  `unregister_virtual_mtp_device(location_id)` on teardown stops a finished test's registration from answering for the
+  next one. Hold the guard across register → connect → use → disconnect → unregister;
+  `connection/path_cache_sync_test.rs` is the reference shape.
+
+There is deliberately NO nextest `virtual-mtp` test-group any more: with no shared resource left, serializing would
+only hide the next real race.
 
 ### Virtual device watcher in E2E
 
