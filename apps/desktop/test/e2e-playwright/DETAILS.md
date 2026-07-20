@@ -97,16 +97,15 @@ the final CI-green check.
 With the app already running (see "Manually" above), filter by file or by name. The same `; pkill -f 'target.*Cmdr'`
 cleanup applies — chain it after every iteration so the next launch isn't a stale process.
 
-The `pnpm test:e2e:playwright` script already hardcodes `--project tauri`, so a positional spec path collides with
-playwright's project arg parser ("Project not found"). For file filters, call `npx playwright test` directly; for name
-filters, the `pnpm` script form works since `--grep` is a flag.
+`pnpm test:e2e:playwright` pins the project as `--project=tauri` (the `=` form), so a positional spec path passes
+straight through. ❌ Don't change it to `--project tauri`: playwright's `--project` takes multiple values, so the space
+form swallows the following positional and the run dies with `Project(s) "<spec-path>" not found`.
 
 ```bash
 cd apps/desktop
 
-# By file path: bypass the pnpm script so the spec path isn't read as a --project arg.
-CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures npx playwright test \
-    --config test/e2e-playwright/playwright.config.ts --project tauri \
+# By file path
+CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright \
     test/e2e-playwright/brief-cursor-visibility.spec.ts ; pkill -f 'target.*Cmdr'
 
 # By test-name substring (matches `test('...')` and `describe('...')` titles)
@@ -116,6 +115,21 @@ CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright \
 
 The checker invocation (`pnpm check desktop-e2e-playwright`) doesn't support filtering: it always runs the whole suite.
 So during iteration, prefer the manual flow.
+
+## Slow-check results are unreliable under concurrent builds
+
+**Re-run a failing `--include-slow` serially before believing it.** The E2E lanes share a machine with whatever else is
+compiling, and the suite's per-test waits (5 s for a dialog, 3 s for a toast) are wall-clock. Under load the failures
+are numerous, scattered across unrelated specs, and different every run — that pattern is saturation, not a regression.
+Measured on one branch: 25 failures with `desktop-e2e-playwright`, `desktop-e2e-linux`, and `rust-tests-linux` running
+together, 1 failure running them one at a time, and the MTP shard went 34/34 green. Run the failing checks one per
+invocation, and if they still fail, run the same check on the parent commit as a control before concluding the change
+caused it.
+
+A related tell: the fixture tree under `/tmp/cmdr-e2e-fixtures` is SHARED and mutated by the file-op specs, so one
+failure leaves it dirty and the next spec that needs a fixture reports something like
+`entry "sample.zip" should be in the focused pane`. That's a downstream symptom of the first failure, not an independent
+bug.
 
 ## Running on Linux (Docker)
 

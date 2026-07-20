@@ -9,6 +9,16 @@
 //!   cargo test -p cmdr --lib mtp_read_range_hardware_bench -- --ignored --nocapture
 //! ```
 //!
+//! Under nextest, `--run-ignored all` is required or it reports "0 tests run":
+//!
+//! ```text
+//! CMDR_MTP_BENCH_SERIAL=46061FDAS000A4 cargo nextest run --locked \
+//!   --run-ignored all -E 'test(mtp_read_range_hardware_bench)' --no-capture
+//! ```
+//!
+//! It fails FAST when the device isn't there (the serial lookup panics before any
+//! USB open), so a wrong serial or an unplugged phone costs no timeout.
+//!
 //! Methodology (mirrors `docs/notes/`-style round-robin benches): warmup
 //! iterations discarded, medians not means, and every iteration reads a fresh
 //! disjoint offset so the device can never serve a block one phase already

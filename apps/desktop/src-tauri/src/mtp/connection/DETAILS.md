@@ -81,8 +81,23 @@ browsing and extraction) wants bytes at an offset, not a session, so it goes thr
 `GetPartialObject64` under the device lock, and nothing else. Routing it through `open_read_session` instead would add
 two USB round trips per call whose products the caller discards — `GetStorageInfo` (`device.storage()`) and
 `GetObjectInfo` (`download_windowed` reads `total_size`) — and rc-zip's `EntryFsm` issues one read per 256 KiB, so that
-overhead scaled with every extracted byte. Measured on a Pixel 9 Pro XL (mtp-rs 0.28.0, 30 iterations, medians, disjoint
-walking offsets, 2026-07-20): the two wasted round trips cost ~2.3 ms against ~6 ms of useful read.
+overhead scaled with every extracted byte.
+
+**What the change is worth: ~2.3-2.7 ms of protocol overhead per bounded read, i.e. the two round trips.** That's the
+durable number. ❌ Don't quote a percentage as a property of the change: the useful read itself swings hard with device
+state (thermal, recent heavy I/O, where the file sits in flash), so the same saving is anywhere from ~20% to ~45%.
+Measured on a Pixel 9 Pro XL, mtp-rs 0.28.0, 256 KiB reads, 30 iterations, medians, warmup discarded, disjoint walking
+offsets, two sessions on 2026-07-20/21:
+
+- Session 1 (cool device): waste 2.27 ms, bare read 6.06 ms, old path 11.18 ms.
+- Session 2 (warm device): waste 2.70 ms, bare read 11.02 ms, old path 13.63 ms.
+
+The waste is stable across both; the bare read nearly doubled. In session 2 `old path - bare read` (2.62 ms) reconciles
+with the measured waste (2.70 ms) almost exactly, which is the check that the model is right. Cmdr's own `read_range`
+path, measured through `backends/mtp_read_bench.rs` in session 1, went from ~7.6-10.0 ms to ~5.7-6.2 ms per 256 KiB.
+
+An earlier reading suggested `next_window` was ~2.45 ms slower than a bare `read_range` for the same bytes. It did NOT
+reproduce (session 2 had it faster), so it was noise: don't build anything on it.
 
 The storage handle comes from a per-`(device, storage)` cache on `DeviceEntry` (`storage_cache`), so the
 `GetStorageInfo` is paid once per device, not once per read. That cache is safe because an `mtp_rs::Storage` is
