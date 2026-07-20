@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use super::super::*;
 use super::*;
 use crate::search::index::SearchEntry;
 use crate::search::types::PatternType;

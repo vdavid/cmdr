@@ -23,6 +23,10 @@ automate it, and survives `oxfmt` (which collapses whitespace in regular markdow
   monthly, batched with the npm/Rust sweep.
 - **Bump pinned tool versions in `.mise.toml`**: Node, Go, Rust toolchain, pnpm itself. These are pinned in `.mise.toml`
   and need explicit bumps. Frequency: quarterly, or when a security CVE on a toolchain forces it.
+- **Bump the pinned nightly for `cargo-udeps`**: the udeps check runs on a dated nightly pinned in
+  `scripts/check/checks/desktop-rust-cargo-udeps.go`, so a nightly lint tightening can't break the scheduled "Slow
+  checks" job out of the blue. Procedure: [`scripts/check/checks/DETAILS.md`](../scripts/check/checks/DETAILS.md) §
+  "Bumping the pinned nightly". Frequency: quarterly, batched with the `.mise.toml` toolchain bumps.
 - **Bump GitHub Actions**: Update `actions/checkout`, `actions/cache`, `jdx/mise-action`, etc. to the latest Node
   runtime ahead of GitHub's deprecation deadlines. Frequency: roughly every 6 months, driven by the Node-runtime
   deprecation cycle.

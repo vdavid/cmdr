@@ -37,7 +37,9 @@ see [`../CLAUDE.md`](../CLAUDE.md).
   output" and "cargo test output" decisions for the section-aware patterns to follow.
 - **Pin every tool install.** `EnsureGoTool` `installPath` pins `@vX.Y.Z` (never `@latest`); `cargo install` pins both
   `--version` and `--locked`. Every operational `cargo` command in a check passes `--locked`. Unpinned installs let a
-  compromised tool repo auto-propagate to every fresh checkout.
+  compromised tool repo auto-propagate to every fresh checkout. Toolchains count too: `cargo-udeps` runs on the dated
+  nightly in `desktop-rust-cargo-udeps.go`'s `nightlyToolchain`, the single source CI reads via `check --print-nightly`.
+  Bump procedure: DETAILS.md "Bumping the pinned nightly".
 - **Wire allowlist staleness from day one.** If a check grows an allowlist or an opt-out comment, dead entries must
   auto-remove or fail, and orphaned opt-out comments must fail. Reuse `directiveTracker` / `writeJSONAllowlist`. Agents
   never add or raise an allowlist entry (file-length, e2e-duration, bundle-size baseline) without David's OK.

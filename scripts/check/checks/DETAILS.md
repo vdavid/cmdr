@@ -417,13 +417,33 @@ Checks by app and tech:
 re-resolves `Cargo.lock` whenever upstream metadata shifts (a yank, a new transitive dep version). For a 1028-crate
 lockfile, that resolution window is wide and lets a freshly-published malicious version land mid-build. `--locked` fails
 loudly if the lockfile would change. Applies to `cargo clippy`, `cargo nextest run` (in both `desktop-rust-tests` and
-`desktop-rust-integration-tests`), and `cargo +nightly udeps`. Audit/deny/machete read `Cargo.lock` without updating it,
-so `--locked` is moot for them, but the install of those tools still uses `--locked` to lock the tool's own dep tree.
+`desktop-rust-integration-tests`), and `cargo udeps` (which runs on the pinned nightly). Audit/deny/machete read
+`Cargo.lock` without updating it, so `--locked` is moot for them, but the install of those tools still uses `--locked`
+to lock the tool's own dep tree.
 
 **Decision**: every tool install pins `--version` and `--locked` (cargo) or `@vX.Y.Z` (Go). **Why**: an unpinned tool
 install (`cargo install cargo-audit` or `EnsureGoTool(..., "@latest")`) means each fresh checkout pulls whatever's
 latest. A wave-1-2-class compromise of any of these tool repositories would auto-propagate. Pinning is the Go-side
 equivalent of the pnpm `minimum-release-age` defense (a fresh version can't land without a deliberate bump).
+
+**Decision**: `cargo-udeps` runs on a dated nightly pinned in `desktop-rust-cargo-udeps.go`, not on floating `+nightly`.
+**Why**: udeps needs nightly, but a floating one makes an unrelated upstream lint change break the scheduled "Slow
+checks" job at an arbitrary time (a `unused_imports` tightening did exactly that), and a compromised nightly would land
+transparently. Same reasoning as the stable pin in `rust-toolchain.toml`. The check installs the pin itself when rustup
+lacks it (reading `rustup toolchain list`, rather than classifying a cargo failure by its message), and CI's "Install
+nightly toolchain" step asks the check tool for the version via `./scripts/check/check --print-nightly`, so the date
+exists in exactly one place. Renovate can't track it: dated Rust nightlies aren't a Renovate datasource (there's no
+registry of nightly dates to query, and the `rust`/`rust-version` datasources cover stable releases only), so the bump
+is a maintenance task instead, listed in [`docs/maintenance.md`](../../../docs/maintenance.md).
+
+### Bumping the pinned nightly
+
+1. Pick a nightly at least 3 days old (the same stability window `minimumReleaseAge` gives dependencies). Confirm it
+   exists: `curl -sI https://static.rust-lang.org/dist/<YYYY-MM-DD>/channel-rust-nightly.toml` returns `200`.
+2. Edit `nightlyToolchain` in `checks/desktop-rust-cargo-udeps.go`. That's the only place the date appears.
+3. Run `pnpm check cargo-udeps` (it installs the toolchain if needed) and fix whatever new lints the newer nightly
+   surfaces. Nightly lints are usually genuine (the `unused_imports` tightening flagged real redundant imports), so fix
+   the code rather than reaching for an `allow`.
 
 **Decision**: `cargo-deny` advisories check disabled; use `cargo-audit` instead. **Why**: Tauri's transitive
 dependencies (gtk3-rs, unic-\*, fxhash, proc-macro-error, etc.) trigger unmaintained-crate advisories we can't control.

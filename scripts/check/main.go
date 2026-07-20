@@ -57,6 +57,7 @@ type cliFlags struct {
 	graph           bool   // render the DependsOn graph (with weights + lanes) and exit
 	graphFormat     string // tree (default) | mermaid | dot
 	docsGraph       bool   // render the doc-discoverability tree (rooted at AGENTS.md) and exit
+	printNightly    bool   // print the pinned nightly toolchain (used by CI) and exit
 }
 
 func main() {
@@ -97,6 +98,13 @@ func main() {
 	if err != nil {
 		printError("%v", err)
 		os.Exit(1)
+	}
+
+	// --print-nightly lets CI install the exact nightly cargo-udeps pins without
+	// duplicating the version in a workflow file.
+	if flags.printNightly {
+		fmt.Println(checks.NightlyToolchain())
+		return
 	}
 
 	rootDir, err := findRootDir()
@@ -310,6 +318,7 @@ func parseFlags(args []string) (*cliFlags, error) {
 		graph           = fs.Bool("graph", false, "Render the check dependency graph (with CPU weights + size lanes) and exit")
 		graphFormat     = fs.String("graph-format", "tree", "Graph output format: tree | mermaid | dot")
 		docsGraph       = fs.Bool("docs-graph", false, "Render the doc-discoverability tree (CLAUDE.md / DETAILS.md / docs, rooted at AGENTS.md) and exit")
+		printNightly    = fs.Bool("print-nightly", false, "Print the pinned nightly toolchain cargo-udeps runs on, and exit")
 		help            = fs.Bool("help", false, "Show help message")
 		h               = fs.Bool("h", false, "Show help message")
 	)
@@ -352,6 +361,7 @@ func parseFlags(args []string) (*cliFlags, error) {
 		graph:           *graph,
 		graphFormat:     *graphFormat,
 		docsGraph:       *docsGraph,
+		printNightly:    *printNightly,
 	}
 
 	if err := applyPositionalSelectors(flags, positionals); err != nil {
@@ -691,6 +701,7 @@ func showUsage() {
 	fmt.Println("    --graph                  Render the check dependency graph (weights + lanes) and exit")
 	fmt.Println("    --graph-format FORMAT    Graph output format: tree (default) | mermaid | dot")
 	fmt.Println("    --docs-graph             Render the doc-discoverability tree (rooted at AGENTS.md) and exit")
+	fmt.Println("    --print-nightly          Print the pinned nightly toolchain cargo-udeps runs on, and exit")
 	fmt.Println("    -h, --help               Show this help message")
 	fmt.Println()
 	fmt.Println("If nothing is named, runs all non-slow checks for all apps.")

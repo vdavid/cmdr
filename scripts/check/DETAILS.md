@@ -71,8 +71,8 @@ It renders before the slow/fast/CI filters, so every lane shows with its size ba
 `~<median wall-time>` from the recent (last 20) passing runs in `~/cmdr-check-log.csv`, so the graph doubles as a perf
 dashboard — pairing the CPU-weight (how heavy) with the typical duration (how long) for spotting the next optimization
 target. Missing log (CI / `--no-log` / fresh machine) just omits the times. `mermaid` output pastes into a Markdown
-```mermaid block or https://mermaid.live; `dot` pipes to Graphviz (`pnpm check --graph --graph-format dot | dot -Tpng -o
-checks.png`).
+```mermaid block or https://mermaid.live; `dot` pipes to Graphviz
+(`pnpm check --graph --graph-format dot | dot -Tpng -o checks.png`).
 
 **Quiet mode (`-q` / `--quiet`)** trims the output for agents, which only ever see the final captured stdout anyway (the
 live "Waiting for:" status line is already TTY-only). It drops the `📦 pnpm` and `🔍 Running N checks` headers and
