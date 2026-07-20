@@ -1,6 +1,7 @@
 # Agent tools — details
 
-The read-only toolset the Ask Cmdr chat agent dispatches in-process. Must-knows: [CLAUDE.md](CLAUDE.md). Contract:
+The toolset the Ask Cmdr chat agent dispatches in-process: read tools today, plus the `Propose` tier it may grow into.
+Must-knows: [CLAUDE.md](CLAUDE.md). Contract:
 [`docs/specs/ask-cmdr-plan.md`](../../../../../../docs/specs/ask-cmdr-plan.md) § M4 and
 [`ask-cmdr-spec.md`](../../../../../../docs/specs/ask-cmdr-spec.md) §2.4.
 
@@ -65,19 +66,27 @@ authoritative or the path isn't indexed. `SizeStats::from_dir_stats` carries the
 / has-symlinks flags verbatim from `DirStats`. Importance staleness is `asOfGeneration < recomputeGeneration`. These are
 the flags spec §2.4 makes load-bearing; the system prompt requires the model to voice them.
 
-## The read-only dispatch gate
+## The dispatch gate
 
 `view.rs::refuse_unavailable(call_id, tool)` is the runtime enforcement point:
 
 - `ToolId::Unrecognized(_)` (any non-view name — a hallucinated `delete`, a typo) ⇒ a typed `{ available: false, … }`
   result, returned BEFORE `execute_tool`. The parse (`ToolId::from_wire_name`) is the choke point.
-- A known name the registry doesn't classify `Access::Read` ⇒ also refused (a runtime backstop against a mis-tagged
-  entry; belt to the structural all-`Read` test's suspenders).
+- A known name the registry classifies `Access::Write`, or doesn't classify at all ⇒ also refused (a runtime backstop
+  against a mis-tagged entry; belt to the structural `test_agent_tool_view_never_writes` suspenders).
 - Otherwise `None` ⇒ `dispatch` calls `execute_tool(app, Consumer::Agent, …)`, which itself refuses any name outside the
   agent view (a second, structural backstop).
 
+The access half lives in the pure `access_is_dispatchable(Option<Access>) -> bool`: `Read` and `Propose` dispatch,
+`Write` and an unclassified name don't. It's separate so the rule is unit-testable against EVERY `Access` variant
+without authoring a tool per variant — with zero `Propose` tools in the registry, a name-driven test would cover the
+`Propose` arm vacuously, and the widened gate would go unexercised until some future commit.
+
 The negative test (`view.rs`) drives the fake `AgentLlm`'s `CallRawTool("delete", …)` and asserts the refusal end to
 end; it was proven red (gate disabled ⇒ "delete" not refused) before green.
+
+The refusal copy still says "Ask Cmdr is read-only", which is accurate while no `Propose` tool is authored. The first
+`Propose` tool has to reword it: the agent can ask, not act.
 
 ## Cross-module symbols the toolset reuses
 

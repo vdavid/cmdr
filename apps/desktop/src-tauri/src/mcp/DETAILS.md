@@ -69,9 +69,10 @@ agent-only table**). Two per-entry dimensions express the split:
   the ai-client wire snapshot (agent-only entries are filtered out of `get_all_tools()`; a shared entry stays byte-
   identical there). Agent handlers/schemas live under [`agent/tools`](../agent/tools/CLAUDE.md), named by path from
   the entry.
-- **`access`** (`Read` / `Write`): whether the tool reads or mutates. `Write` covers any mutation of the filesystem OR
-  app state — nav, cursor, selection, tabs, dialogs, settings, connect/eject, file ops, rollback-cancel; when in doubt,
-  `Write`. Only genuine read surfaces (`search`, `ai_search`, `await`, `operations_list`, `operations_get`) are `Read`.
+- **`access`** (`Read` / `Propose` / `Write`): whether the tool reads, asks, or mutates. `Write` covers any mutation of
+  the filesystem OR app state — nav, cursor, selection, tabs, dialogs, settings, connect/eject, file ops,
+  rollback-cancel; when in doubt, `Write`. Only genuine read surfaces (`search`, `ai_search`, `await`,
+  `operations_list`, `operations_get`) are `Read`. `Propose` is the third tier, described below.
 
 **Consumer-gated dispatch.** `execute_tool` takes a `Consumer` and refuses a name outside that consumer's view before
 dispatch (via `tool_available_to`, a typed `Consumer`-set check — not a string). So the HTTP server (constructed as
@@ -83,12 +84,37 @@ equals its list view (`test_dispatch_view_equals_list_view_per_consumer`).
 non-`Open`-gated tool is absent from the agent view." That is necessary but **not sufficient**, because `TokenGate::Open`
 is not "read-only": its remit includes destructive ops that still prompt the user, and the file-mutating ops
 (`copy` / `move` / `delete`) carry `IfAutoConfirm` — effectively open when `autoConfirm` is absent. A gate-based filter
-would therefore admit a destructive tool into a read-only agent's view. The explicit `access` dimension is the correct
-guarantee: the agent view must equal exactly its authored `[agent]` entries **and** every one must be `Access::Read`.
-The two structural tests (`test_agent_tool_view_is_exactly_expected_set` + `test_agent_tool_view_is_all_read`) pin both
-halves against `EXPECTED_AGENT_TOOL_NAMES`. This is the read-only-by-construction line the plan calls the effort's most
-safety-critical invariant; the runtime side (`agent::tools::view`) adds a matching `tool_access == Read` check before
-dispatch so a mis-tagged entry is refused at runtime too.
+would therefore admit a destructive tool into the agent's view. The explicit `access` dimension is the correct
+guarantee: the agent view must equal exactly its authored `[agent]` entries **and** every one must be `Access::Read` or
+`Access::Propose`, never `Access::Write`. The two structural tests (`test_agent_tool_view_is_exactly_expected_set` +
+`test_agent_tool_view_never_writes`) pin both halves against `EXPECTED_AGENT_TOOL_NAMES`. This is the line the plan
+calls the effort's most safety-critical invariant; the runtime side (`agent::tools::view::access_is_dispatchable`) adds
+a matching check before dispatch so a mis-tagged entry is refused at runtime too.
+
+### The `Propose` tier
+
+**The invariant: the agent can propose; only the user can approve.** Approval originates in the frontend as a user
+action. There is no tool, and never will be a tool, that approves a proposal. Without that, `Propose` is `Write` with
+extra steps. A `Propose` tool stages a proposal and opens a review surface; it mutates nothing — no filesystem write, no
+silent config mutation. That is its entire power.
+
+Three things make it hold rather than merely be intended:
+
+- **A hand-authored allowlist, not inference.** No structural check can prove a handler doesn't mutate, so
+  `EXPECTED_PROPOSE_TOOL_NAMES` (in `tests/tool_registry_tests.rs`) lists every `Propose` tool by name, and
+  `test_propose_tools_are_an_explicit_allowlist` fails if a registry entry is tagged `Propose` without being listed.
+  Widening the agent's power is therefore a deliberate act a human signs off, having read the handler. Empty today.
+- **No proposal reaches the confirmation bypass.** `autoConfirm` (plus `queue`'s `rollback` and `dialog`'s
+  `action: "confirm"`) lets a token-holding MCP client skip the user's confirmation dialog — exactly the approval a
+  proposal must never grant itself. `test_no_agent_tool_reaches_the_confirmation_bypass` asserts every agent-view tool
+  carries `TokenGate::Open` and declares no bypass parameter in its schema.
+- **Payloads are capped, per tool.** A `Propose` payload must be bounded the way `image_facts` caps at 200 paths: a
+  proposal the user can't actually review is one they can only rubber-stamp, which dissolves the invariant. The cap
+  can't be enforced generically (payload shapes differ), so it's the contract the first `Propose` tool honours
+  explicitly and pins with its own test.
+
+**Consent is unaffected.** Proposals flow agent → user, never to the provider. `Propose` adds no egress, so the
+provider-egress question and `CONSENT_COPY_VERSION` are unchanged by this tier.
 
 **Param naming is camelCase** (`tabId`, `timeoutSeconds`, `sizeMin`, `autoConfirm`). Tool names stay snake_case. Don't add snake_case params; agents pattern-match across tools and every inconsistency is a guessed-wrong call.
 

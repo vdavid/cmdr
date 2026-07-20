@@ -1,6 +1,6 @@
 # Agent tools (`agent/tools/`)
 
-The Ask Cmdr agent's in-process read-only tool layer: the five v1 read families, authored as
+The Ask Cmdr agent's in-process tool layer: the five v1 read families, authored as
 `consumers: [Agent], access: Read` entries in the shared `mcp_tools!` registry (agent-spec D49, one authored source), with
 their handlers + typed result shapes colocated here. Depth (tool catalog, the top-N-by-size gap, the shim/visibility
 list): [DETAILS.md](DETAILS.md).
@@ -27,8 +27,12 @@ list): [DETAILS.md](DETAILS.md).
 - **`Unrecognized` is out of the view AND out of dispatch.** A raw provider tool name resolves through
   `ToolId::from_wire_name`; any non-view name (a hallucinated `delete`/`copy`, a typo) becomes `ToolId::Unrecognized`,
   which `refuse_unavailable` turns into a typed "not available" result BEFORE `execute_tool` is reached. That parse step
-  is the runtime read-only gate; `refuse_unavailable` also refuses any known name the registry doesn't classify
-  `Access::Read` (a backstop). Keep `ToolId::KNOWN` 1:1 with `agent_tool_view()` (the structural test pins it).
+  is the runtime gate; `refuse_unavailable` also refuses any known name the registry classifies `Access::Write` or
+  doesn't classify at all (a backstop). Keep `ToolId::KNOWN` 1:1 with `agent_tool_view()` (the structural test pins it).
+- **The agent can propose; only the user can approve.** Dispatch admits `Access::Read` and `Access::Propose`, never
+  `Access::Write`. A `Propose` tool stages a proposal and opens a review surface: it mutates nothing, it can't
+  self-approve (no tool approves a proposal, ever), and it must cap its payload the way `image_facts` caps at 200 paths.
+  Adding one also means adding its name to `EXPECTED_PROPOSE_TOOL_NAMES` by hand. Depth: [DETAILS.md](DETAILS.md).
 - **Handlers read Rust-side stores + SQLite only — never a live `statfs`/`readdir` on a mount.** The index and
   importance DBs answer everything, so a dead NAS can't hang a tool (the whole point of reading the cache).
 - **The registry couples `mcp` ↔ `agent`.** The `mcp_tools!` entries reference `crate::agent::tools::read::*` handler +

@@ -24,7 +24,7 @@ Construction plan: [`docs/specs/ask-cmdr-plan.md`](../../../../../docs/specs/ask
 - `store/`: the `main.db` durable store — a forward-migration ladder (mirroring `operation_log/store/`),
   FTS5 over message text, and a per-day cost meter. `agent::start(app)` (open the DB, register the `AgentDb` handle)
   lands here, modeled on `operation_log::start`. Depth: [`store/DETAILS.md`](store/DETAILS.md).
-- `tools/`: the in-process read-only toolset — the five read families authored as `consumers: [Agent]`
+- `tools/`: the in-process toolset — the five read families authored as `consumers: [Agent]`
   entries in the consolidated registry (agent-spec D49, extend-don't-fork), their handlers/result shapes that reuse the
   shipped cores (drive index, importance, operation log, volumes, app state), and the gated dispatch that refuses any
   non-view name before `execute_tool`. Depth: [`tools/DETAILS.md`](tools/DETAILS.md).
@@ -32,11 +32,31 @@ Construction plan: [`docs/specs/ask-cmdr-plan.md`](../../../../../docs/specs/ask
   crash-safe persistence, the `AgentChatEvent` seam) and the pure, TDD-heavy context-assembly core (stable prefix,
   elide-only compaction, the fresh context envelope on the latest user turn only). Depth: [`chat/DETAILS.md`](chat/DETAILS.md).
 
-## Read-only by construction
+## The agent can propose; only the user can approve
 
-The v1 agent can only look and speak (spec §2.1): no write tool exists in its dispatch view, and there is no
-content-read tool, so only names, paths, and metadata ever reach the provider — never file contents. This is the
-privacy line and it is structural, not a runtime guard. The registry carries a `consumers` + `access` dimension so
-the agent's view is pinned to exactly its `access: Read` entries; the runtime's `ToolId` parse step is the runtime choke
-point (an unrecognized name resolves to `ToolId::Unrecognized`, which is never in the agent view, so dispatch refuses
-it). Revisit the whole consent + gating story before adding the first write or content-read tool.
+**The invariant.** The agent can propose. Only the user can approve. Approval originates in the frontend as a user
+action. There is no tool, and never will be a tool, that approves a proposal. Without that, `Propose` is `Write` with
+extra steps.
+
+The agent can look, speak, and ask (spec §2.1): no write tool exists in its dispatch view, and there is no content-read
+tool, so only names, paths, and metadata ever reach the provider — never file contents. This is the privacy line and it
+is structural, not a runtime guard. The registry's `consumers` + `access` dimensions pin the agent's view to exactly its
+authored `[agent]` entries, every one `Access::Read` or `Access::Propose`, never `Access::Write`; the runtime's `ToolId`
+parse step is the runtime choke point (an unrecognized name resolves to `ToolId::Unrecognized`, which is never in the
+agent view, so dispatch refuses it). Revisit the whole consent + gating story before adding the first write or
+content-read tool.
+
+**What a `Propose` tool may do.** Stage a proposal and open a review surface. That is its entire power: no filesystem
+write, no silent config mutation, no self-approval. Because no structural check can prove a handler doesn't mutate,
+`Propose` tools are an explicit hand-authored allowlist (`EXPECTED_PROPOSE_TOOL_NAMES` in
+`mcp/tests/tool_registry_tests.rs`) rather than something inferred — adding one is a deliberate act a human signs off,
+having read the handler. It is empty today; that's the correct state until the first proposing feature ships.
+
+**Consent is unaffected.** Proposals flow agent → user, never to the provider. `Propose` adds no egress, so the
+provider-egress question and `CONSENT_COPY_VERSION` are unchanged by this tier. Don't re-litigate it: only a change to
+what reaches the provider touches consent.
+
+**Bounding is the tool's contract.** A `Propose` payload must be capped the way `image_facts` caps at 200 paths. A
+proposal the user can't actually review is a proposal they can only rubber-stamp, which quietly dissolves the invariant
+above. The cap can't be enforced generically (each tool's payload shape differs), so the first `Propose` tool has to
+honour it explicitly and pin it with a test.

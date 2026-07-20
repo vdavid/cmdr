@@ -26,10 +26,10 @@ For adding or changing tools, see `docs/guides/mcp-development.md`.
   everything else needs none. A structural test fails if an `autoConfirm`/`rollback` tool is left `Open`. Don't widen it
   to reads/nav or narrow it past the auto-confirm bypass. Full model: DETAILS.md § Authentication.
 - **One registry, two consumer views (agent-spec D49/D59).** Each entry declares `consumers` (`ai_client`/`agent`) +
-  `access` (`Read`/`Write`); each transport dispatches only its own view. The agent view is **read-only by
-  construction** — `[agent]` entries, all `access: Read`, pinned structurally. `access` is stronger than
-  `TokenGate::Open`, so tag any mutating tool `Write`. Agent handlers live under
-  [`agent/tools`](../agent/tools/CLAUDE.md). DETAILS.md § Consumer and access views.
+  `access` (`Read`/`Propose`/`Write`); each transport dispatches only its own view. **The agent can propose; only the
+  user can approve**: `[agent]` entries are `Read` or `Propose`, never `Write` (pinned structurally), and no tool
+  approves a proposal. `access` beats `TokenGate::Open`, so tag any mutating tool `Write`. Agent handlers:
+  [`agent/tools`](../agent/tools/CLAUDE.md). DETAILS.md § The `Propose` tier.
 - **Token rejection is an in-band JSON-RPC error at HTTP 200, NOT 401** (401 makes clients launch an OAuth discovery
   flow; the Streamable-HTTP spec reserves it for that). Keep it 200 + JSON-RPC `error`. The gate fails closed (no token
   → reject). One uniform message for missing-vs-wrong token (no oracle); never echo the token.
@@ -46,8 +46,8 @@ For adding or changing tools, see `docs/guides/mcp-development.md`.
   existing server up (`McpServerOutcome::PortInUse`) and drops no in-flight request; startup uses `ProbeOnCollision`.
   Two stop flavors + token-clear-on-stop: [DETAILS.md](DETAILS.md).
 - **Live MCP control (`set_mcp_enabled`/`set_mcp_port`) only works from the settings window**; the main window's
-  `settings-applier.ts` ignores these to avoid double-firing. A tool toggling its own server while settings is closed
-  saves the setting but applies only on restart (circular; acceptable).
+  `settings-applier.ts` ignores these to avoid double-firing. A tool toggling its own server with settings closed saves
+  the setting but applies on restart.
 - **`select_volume` polls `volume_name`, not path change**: re-selecting the same volume is an instant no-op; virtual
   volumes like `Network` work even without a path change.
 - **JSON-RPC error codes are spec-defined** (`INVALID_PARAMS = -32602`, etc.). Don't change them.

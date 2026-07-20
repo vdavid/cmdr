@@ -634,13 +634,19 @@ fn test_requires_token_arg_logic() {
     assert!(!TokenGate::Open.requires_token(Some(&json!({"autoConfirm": true}))));
 }
 
-// ── Consumer + access dimensions (the read-only-by-construction gate) ──────
+// ── Consumer + access dimensions (the no-write gate) ──────
 //
 // One authored registry, two consumer views (agent-spec D49/D59). `consumers` is the exposure
-// axis; `access` is a stronger read-only guarantee than `TokenGate::Open` can give (Open covers
+// axis; `access` is a stronger guarantee than `TokenGate::Open` can give (Open covers
 // destructive-but-prompting ops). These tests pin the agent view to exactly its authored
-// `[agent]` entries AND require every one to be `Access::Read`. With an empty agent view both hold
-// vacuously; once entries are authored they enforce the exposure and read-only axes.
+// `[agent]` entries AND require every one to be `Access::Read` or `Access::Propose`, never
+// `Access::Write`.
+//
+// The agent can propose; only the user can approve. `Propose` widens what the agent may ASK for,
+// never what it may DO — so these tests also pin the hand-authored Propose allowlist and the
+// absence of any confirmation bypass in the agent's view. The access axis of the runtime gate is
+// exercised per-variant in `agent/tools/view.rs`, since with no Propose tool authored yet the
+// registry-level assertions would cover `Propose` vacuously.
 
 /// The exact set of tool names in the agent's read-only view. Pins the set so a stray
 /// agent-visible tool (or a dropped one) is a hard failure, mirroring `EXPECTED_TOOL_NAMES`
@@ -670,19 +676,78 @@ fn test_agent_tool_view_is_exactly_expected_set() {
     assert_eq!(actual, expected, "agent tool view drifted from the expected set");
 }
 
-/// Read-only by construction: every tool in the agent's view is `Access::Read`. This is the
-/// guarantee `TokenGate::Open` cannot give — `Open` covers destructive ops that still prompt the
-/// user (`copy`/`move`/`delete` with `autoConfirm` absent carry `IfAutoConfirm`), so a gate-based
-/// filter would let a `Write` tool into a read-only view. The regression anchor for the read-only agent view.
+/// The agent's `Propose` tools, authored by hand. A `Propose` tool stages a proposal and opens a
+/// review surface; it mutates nothing. No structural check can PROVE a handler doesn't mutate, so
+/// this allowlist is the deliberate act: adding a `Propose` tool means a human puts its name here
+/// on purpose, having read the handler. Empty is the correct state until the first one ships.
+///
+/// A `Propose` tool must also cap its payload the way `image_facts` caps at 200 paths — a proposal
+/// the user can't review is a proposal they can only rubber-stamp. That contract can't be enforced
+/// generically; see `mcp/DETAILS.md` § Consumer and access views.
+const EXPECTED_PROPOSE_TOOL_NAMES: &[&str] = &[];
+
+/// The agent can propose; only the user can approve. Structurally: every tool in the agent's view
+/// is `Access::Read` or `Access::Propose`, and NEVER `Access::Write`. This is the guarantee
+/// `TokenGate::Open` cannot give — `Open` covers destructive ops that still prompt the user
+/// (`copy`/`move`/`delete` with `autoConfirm` absent carry `IfAutoConfirm`), so a gate-based filter
+/// would let a `Write` tool into the agent's view. The regression anchor for "the agent still can't
+/// write, and can now ask".
 #[test]
-fn test_agent_tool_view_is_all_read() {
+fn test_agent_tool_view_never_writes() {
     for tool in agent_tool_view() {
-        assert_eq!(
-            tool_access(&tool.name),
-            Some(Access::Read),
-            "agent-visible tool '{}' is not Access::Read — the agent view must be read-only by construction",
+        let access = tool_access(&tool.name);
+        assert!(
+            matches!(access, Some(Access::Read) | Some(Access::Propose)),
+            "agent-visible tool '{}' is {access:?} — the agent view admits only Read and Propose, never Write",
             tool.name
         );
+    }
+}
+
+/// A `Propose` tool only exists if a human authored it into `EXPECTED_PROPOSE_TOOL_NAMES`. Tagging
+/// an entry `access: Propose` without listing it here fails: `Propose` is a widened power, so it
+/// can't be acquired as a side effect of editing a registry line.
+#[test]
+fn test_propose_tools_are_an_explicit_allowlist() {
+    use std::collections::BTreeSet;
+    let allowed: BTreeSet<&str> = EXPECTED_PROPOSE_TOOL_NAMES.iter().copied().collect();
+    let actual: BTreeSet<String> = agent_tool_view()
+        .into_iter()
+        .filter(|t| tool_access(&t.name) == Some(Access::Propose))
+        .map(|t| t.name)
+        .collect();
+    let actual_refs: BTreeSet<&str> = actual.iter().map(String::as_str).collect();
+    assert_eq!(
+        actual_refs, allowed,
+        "the registry's Propose tools differ from the hand-authored allowlist"
+    );
+}
+
+/// No proposal path inherits the confirmation bypass. `autoConfirm` (and the `queue` tool's
+/// `rollback`, and `dialog`'s `action: "confirm"`) let a token-holding MCP client skip the user's
+/// confirmation dialog — exactly the approval a proposal must never grant itself. So every tool in
+/// the agent's view carries `TokenGate::Open` (it has no bypass to gate) AND declares no bypass
+/// parameter in its schema, which is what makes "only the user can approve" true rather than
+/// merely intended.
+#[test]
+fn test_no_agent_tool_reaches_the_confirmation_bypass() {
+    let view = agent_tool_view();
+    assert!(!view.is_empty(), "an empty agent view would make this vacuous");
+    for tool in &view {
+        assert_eq!(
+            tool_gate(&tool.name),
+            Some(TokenGate::Open),
+            "agent-visible tool '{}' carries a non-Open gate — the agent view must contain no bypassable tool",
+            tool.name
+        );
+        let properties = tool.input_schema.get("properties");
+        for bypass in ["autoConfirm", "rollback"] {
+            assert!(
+                properties.and_then(|p| p.get(bypass)).is_none(),
+                "agent-visible tool '{}' declares a '{bypass}' parameter — a proposal must never carry the confirmation bypass",
+                tool.name
+            );
+        }
     }
 }
 

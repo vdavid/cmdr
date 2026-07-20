@@ -12,8 +12,8 @@ so later proactive slices (proposals, notifications) grow here too.
 - `store/`: the `main.db` durable store (migration ladder, conversations, messages, FTS5 search, cost meter).
   `start(app)` opens the DB + registers `AgentDb`. See [`store/CLAUDE.md`](store/CLAUDE.md).
 - `types.rs`: store-only token enums (`ConversationOrigin`) + `token_enum!` macro.
-- `tools/`: the in-process read-only toolset, five read families as `consumers: [Agent]` registry entries, plus gated
-  dispatch (the read-only choke point). See [`tools/CLAUDE.md`](tools/CLAUDE.md).
+- `tools/`: the in-process toolset, five read families as `consumers: [Agent]` registry entries, plus gated dispatch
+  (the no-write choke point). See [`tools/CLAUDE.md`](tools/CLAUDE.md).
 - `chat/`: the chat runtime (`run_turn` + `ChatRuntime`: single-flight, budgets, cancellation, crash-safe persistence,
   the `AgentChatEvent` seam) + pure context assembly. See [`chat/CLAUDE.md`](chat/CLAUDE.md).
 - `consent.rs`: the consent gate (`CONSENT_COPY_VERSION` + `has_current_consent`, fails closed).
@@ -22,7 +22,11 @@ so later proactive slices (proposals, notifications) grow here too.
 
 ## Must-knows
 
-- **Read-only by construction.** No write tool, no arbitrary file-content-read tool. Names, paths, and metadata reach
+- **The agent can propose; only the user can approve.** No write tool, no arbitrary file-content-read tool. The agent
+  view admits `access: Read` and `access: Propose` entries, never `Write`. A `Propose` tool mutates nothing: it stages a
+  proposal and opens a review surface. Approval originates in the frontend as a user action, and there is no tool (and
+  never will be one) that approves a proposal. **Consent is unaffected by `Propose`**: proposals flow agent → user,
+  never to the provider, so egress and `CONSENT_COPY_VERSION` don't change. Names, paths, and metadata reach
   the provider (spec §2.1); the ONLY derived-content egress is the photo pair, `search_photos` (in-image OCR snippets +
   Vision tags) and `image_facts` (the FULL stored OCR text + tags for paths the caller names). Image-derived TEXT,
   never image bytes; see `mcp/executor/photos.rs` and `image_facts.rs`. That egress is named in the consent copy

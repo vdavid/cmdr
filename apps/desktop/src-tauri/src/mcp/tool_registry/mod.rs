@@ -7,7 +7,7 @@
 //! - [`get_all_tools`] — the AI-client `tools/list` payload (entries whose `consumers` include
 //!   [`Consumer::AiClient`]; non-generic; server + tests read it).
 //! - [`agent_tool_view`] — the in-process agent's tool set (entries whose `consumers` include
-//!   [`Consumer::Agent`]): the read-only families the chat agent dispatches.
+//!   [`Consumer::Agent`]): the read (and, once authored, propose) families the chat agent dispatches.
 //! - [`execute_tool`] — the `tools/call` dispatch (generic over `Runtime`), gated to the caller's
 //!   consumer view: a name outside the caller's view is refused before dispatch.
 //! - [`tool_gate`] + [`TokenGate`] — the auth classification `auth.rs` reads.
@@ -21,11 +21,13 @@
 //! **Two view dimensions, why both (agent-spec D49/D59):** one authored registry feeds two
 //! consumers. `consumers` is the exposure axis — the agent's dispatch view physically excludes
 //! every tool not tagged `[agent]`, so its write path is absent by construction, not policy.
-//! `access` is a stronger read-only guarantee than the gate can give: [`TokenGate::Open`] covers
+//! `access` is a stronger guarantee than the gate can give: [`TokenGate::Open`] covers
 //! destructive-but-prompting ops (`copy`/`move`/`delete` with `autoConfirm` absent carry
 //! `IfAutoConfirm`, effectively open), so a gate-based agent filter would let a destructive tool
-//! into a read-only view. The structural tests pin the agent view to exactly its authored
-//! `[agent]` entries AND require every one to be [`Access::Read`].
+//! into the agent's view. The structural tests pin the agent view to exactly its authored
+//! `[agent]` entries AND require every one to be [`Access::Read`] or [`Access::Propose`], never
+//! [`Access::Write`]. **The agent can propose; only the user can approve** — no tool approves a
+//! proposal.
 //!
 //! Wire output must stay byte-identical: each schema is the exact `json!` block (hoisted into
 //! [`schemas`] verbatim), and the tool order is the historical category concatenation. The
@@ -57,22 +59,40 @@ use super::tools::Tool;
 pub enum Consumer {
     /// External MCP clients over the HTTP transport (dev tooling, Claude Code, E2E).
     AiClient,
-    /// The in-process Ask Cmdr agent runtime, which dispatches the read-only agent view via
+    /// The in-process Ask Cmdr agent runtime, which dispatches the agent view via
     /// [`execute_tool`] with this identity (`crate::agent::tools`).
     Agent,
 }
 
-/// Whether a tool reads or mutates. `Write` covers any mutation of the filesystem OR app state
-/// (nav, cursor, selection, tabs, dialogs, settings, connect/eject, file ops, rollback-cancel);
-/// when in doubt a tool is `Write`. The agent view must contain zero `Write` tools — this is the
-/// read-only-by-construction guarantee [`TokenGate`] alone can't give (see the module docs).
+/// Whether a tool reads, asks, or mutates. The agent view admits `Read` and `Propose` and must
+/// contain zero `Write` tools — this is the guarantee [`TokenGate`] alone can't give (see the
+/// module docs).
 ///
-/// The agent dispatch (`crate::agent::tools`) reads [`tool_access`] as a runtime backstop:
-/// it refuses to execute any tool not classified `Read`, so read-only holds even against a
+/// The agent dispatch (`crate::agent::tools`) reads [`tool_access`] as a runtime backstop: it
+/// refuses to execute any tool classified `Write`, so "the agent can't act" holds even against a
 /// mis-tagged entry. It's registry metadata, not a field on the emitted `Tool`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Access {
+    /// Reads state and mutates nothing.
     Read,
+    /// Stages a proposal and opens a review surface for the user. Mutates nothing: no filesystem
+    /// write, no silent config change. **The agent can propose; only the user can approve** —
+    /// approval originates in the frontend as a user action, and there is no tool that approves a
+    /// proposal. A `Propose` tool is authored by hand into the test allowlist
+    /// (`EXPECTED_PROPOSE_TOOL_NAMES`), because no structural check can prove a handler doesn't
+    /// mutate.
+    ///
+    /// No registry entry is tagged `Propose` yet, so `#![deny(unused)]` would reject the variant.
+    /// The tier ships before its first tool on purpose: the boundary is reviewed on its own, not
+    /// bundled into a feature. Drop this `allow` when the first `Propose` tool is authored.
+    #[allow(
+        dead_code,
+        reason = "no Propose tool is authored yet; the tier lands before its first tool"
+    )]
+    Propose,
+    /// Mutates the filesystem OR app state (nav, cursor, selection, tabs, dialogs, settings,
+    /// connect/eject, file ops, rollback-cancel); when in doubt a tool is `Write`. Never reachable
+    /// from the agent view.
     Write,
 }
 

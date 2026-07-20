@@ -137,8 +137,14 @@ with their own API key. Privacy posture:
   resolves the LLM; an absent or stale acceptance refuses the send (not just a UI affordance). The consent copy
   (`askCmdr.consent.*`) enumerates exactly what egresses; bump `CONSENT_COPY_VERSION` when that set changes so users
   re-accept.
-- **Read-only, no arbitrary file contents.** The agent has no write tool and no tool that reads a file's bytes. What
-  reaches the provider is file/folder names, paths, sizes, dates, and the app-state envelope (spec §2.1).
+- **The agent can propose; only the user can approve.** The agent has no write tool and no tool that reads a file's
+  bytes. Its dispatch view admits `Access::Read` and `Access::Propose` entries and never `Access::Write` (pinned
+  structurally in `mcp/tests/tool_registry_tests.rs`, and again at runtime in `agent/tools/view.rs`). A `Propose` tool
+  mutates nothing: it stages a proposal and opens a review surface. Approval originates in the frontend as a user
+  action, and there is no tool — and never will be one — that approves a proposal. No agent-visible tool can reach the
+  `autoConfirm` confirmation bypass. `Propose` adds no egress: proposals flow agent → user, never to the provider, so
+  consent is unchanged by it. What reaches the provider is file/folder names, paths, sizes, dates, and the app-state
+  envelope (spec §2.1). Depth: `apps/desktop/src-tauri/src/mcp/DETAILS.md` § The `Propose` tier.
 - **The photo tools send image-derived TEXT, not "just metadata".** `search_photos` (`mcp/executor/photos.rs`) returns
   matched image paths plus the in-image OCR snippet and Vision tags; `image_facts` (`mcp/executor/image_facts.rs`)
   returns the FULL stored OCR text (up to 2,000 characters per file, for up to 200 files) plus tags for paths the caller
