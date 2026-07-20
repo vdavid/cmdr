@@ -1,9 +1,28 @@
 # Pinned deps for the one-off CLIP → Core ML conversion (see README.md).
 # Dev-only, out-of-tree: NEVER installed by CI or pnpm. Run in a throwaway venv on
 # Python 3.11 or 3.12 (coremltools/torch have no cp314 wheels as of 2026-07).
-# coremltools 9.0 constrains the torch/numpy it converts against; these pins are a
-# known-compatible set. If uv resolution fails on your machine, relax the torch/numpy
-# pins to the newest coremltools 9.0 accepts.
+#
+# THESE PINS ARE A PROVENANCE RECORD, NOT A DEPENDENCY SET TO KEEP CURRENT.
+# They are the exact versions that produced the `.mlpackage` artifacts currently
+# hosted on Hugging Face and pinned by SHA-256 in `media_index/clip/install.rs`.
+# Bumping them changes nothing on its own: the shipped model only moves if someone
+# re-runs `convert.py`, re-uploads, and re-pins the hashes, at which point every
+# user re-downloads the towers. So a routine version bump here is pure drift
+# between what this file claims and what actually built the shipped model.
+# Renovate is disabled on this path for that reason (`renovate.json`).
+#
+# Do NOT assume the resolver validates anything. coremltools 9.0 declares no
+# torch/transformers bound at all (only numpy/protobuf/sympy/tqdm/packaging/attrs/
+# cattrs/pyaml), so `uv pip compile` happily resolves torch 2.13 + transformers 5.x
+# — which would sail past the `from transformers import CLIPModel` API this script
+# is written against. Compatibility here is about what coremltools can CONVERT and
+# what the transformers CLIP API looks like, neither of which pip can check.
+#
+# To move the model deliberately: bump the pins, re-run `emit_reference.py` and
+# `convert.py`, and confirm the fidelity cosines in the regenerated
+# `reference-vectors.json` still match the checked-in ones before uploading. That
+# comparison is the only real validation; treat a cosine regression as a failed
+# bump, not a new baseline.
 coremltools==9.0
 torch==2.5.1
 transformers==4.49.0

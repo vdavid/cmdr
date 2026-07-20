@@ -1,0 +1,11 @@
+version: 2
+
+secret:
+  ignored-paths:
+    # Translated UI copy. Every locale spells "password" in its own language
+    # ("Passwort erforderlich", "Lösenord krävs", "Contraseña necesaria", …) for
+    # the archive-password dialog, and the Generic Password detector flags each
+    # one. Five false-positive incidents came from a single translation commit;
+    # adding a locale would create five more. No real credential ever lives here:
+    # the catalog is display strings only, checked by `no-raw-user-facing-string`.
+    - apps/desktop/src/lib/intl/messages/**

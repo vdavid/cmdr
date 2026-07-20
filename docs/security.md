@@ -112,6 +112,22 @@ file activity (what was copied, moved, trashed, renamed, and where). Privacy pos
   completeness check then degrades that op to "can't undo" or "search marked partial" rather than silently
   under-reversing or claiming false coverage.
 
+## Secret scanning (GitGuardian)
+
+GitGuardian watches the repo and opens an incident per suspected secret. Two independent surfaces, configured
+separately:
+
+- **`.gitguardian.yaml`** (repo root) is the ggshield config: it covers CI and pre-commit runs. `secret.ignored-paths`
+  excludes `apps/desktop/src/lib/intl/messages/**`, because every locale spells "password" in its own language for the
+  archive-password dialog and the Generic Password detector flags each translation.
+- **The dashboard's workspace exclusions** are what the GitHub App's realtime scanning honors; it does NOT read
+  `.gitguardian.yaml`. Mirror any path added above under Settings → Secrets detection → Custom exclusions in workspace
+  `677563`, or the incidents keep arriving. The API does not expose exclusions on this plan, so this step is manual.
+
+Triage order for a real hit is rotate at the provider first, then remove from the repo, then resolve the incident: git
+history keeps the old value, so resolving without rotating fixes nothing. Access details and API recipes live in
+`~/Dropbox/obsidian/agents/tooling/gitguardian.md`.
+
 ## Ask Cmdr agent egress (to the user's LLM provider)
 
 Ask Cmdr is the one subsystem that deliberately sends user data OFF the Mac — to the AI provider the user configured,

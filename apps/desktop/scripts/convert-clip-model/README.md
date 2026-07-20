@@ -15,6 +15,18 @@ regenerate the shippable artifacts when the model or its preprocessing changes.
 - Verify the license from the model card before regenerating: it must stay MIT (or another commercial-OK license).
   Record what you found in the commit.
 
+## The pins are frozen on purpose
+
+`requirements.txt` records the versions that produced the artifacts currently hosted on Hugging Face and pinned by
+SHA-256 in `media_index/clip/install.rs`. It's provenance, not a dependency set to keep current, so Renovate is disabled
+on it (`renovate.json`) and a routine bump is drift rather than maintenance. Note that `coremltools` declares no `torch`
+/ `transformers` bound at all, so resolving cleanly proves nothing: `uv pip compile` will happily give you
+`transformers` 5.x, which this script's `from transformers import CLIPModel` predates.
+
+Moving the model is a deliberate act: bump the pins, re-run both steps below, and confirm the fidelity cosines in the
+regenerated `reference-vectors.json` still match the checked-in ones before uploading. That comparison is the only real
+validation. A cosine regression is a failed bump, not a new baseline.
+
 ## Run
 
 Requires Python 3.11 or 3.12 (coremltools/torch have no cp314 wheels as of 2026-07). With

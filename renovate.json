@@ -8,10 +8,42 @@
   "minimumReleaseAge": "3 days",
   "packageRules": [
     {
-      "description": "Group all non-major updates into one weekly PR",
-      "groupName": "all non-major updates",
+      "description": "Default lane for non-major updates. Split per app below, because one repo-wide batch pooled five unrelated breakages (a genai field, a new stylelint rule, an oxfmt reformat, two typecheck breaks) into a single 2,300-line PR that couldn't be reviewed or bisected. Per-app groups stay small enough to fix in one sitting.",
+      "groupName": "non-major updates",
       "matchUpdateTypes": ["patch", "minor", "pin", "digest"],
       "automerge": true
+    },
+    {
+      "description": "Desktop app deps, Rust and JS together (a specta bump regenerates bindings.ts, so they have to land as one).",
+      "matchFileNames": ["apps/desktop/**", "crates/**", "rust-toolchain.toml"],
+      "matchUpdateTypes": ["patch", "minor", "pin", "digest"],
+      "groupName": "desktop non-major updates"
+    },
+    {
+      "description": "Website deps.",
+      "matchFileNames": ["apps/website/**"],
+      "matchUpdateTypes": ["patch", "minor", "pin", "digest"],
+      "groupName": "website non-major updates"
+    },
+    {
+      "description": "Worker + dashboard deps: both are Cloudflare-targeted and share workers-types.",
+      "matchFileNames": ["apps/api-server/**", "apps/analytics-dashboard/**"],
+      "matchUpdateTypes": ["patch", "minor", "pin", "digest"],
+      "groupName": "cloudflare apps non-major updates"
+    },
+    {
+      "description": "Linters and formatters land on their own: a version bump here rewrites or re-flags tracked files across every app, which is noise to review mixed in with real dependency changes.",
+      "matchPackageNames": [
+        "oxfmt",
+        "oxlint",
+        "stylelint",
+        "prettier",
+        "eslint",
+        "/^stylelint-/",
+        "/^eslint-/",
+        "/^@typescript-eslint//"
+      ],
+      "groupName": "linters and formatters"
     },
     {
       "description": "Group all major updates into one monthly PR",
@@ -36,6 +68,11 @@
       "groupName": null
     },
     {
+      "description": "The specta trio stays on rc.24 / 0.0.11. rc.25 types every plain `f32`/`f64` as `number | null`. On return values that's defensible (serde_json renders NaN/Infinity as null), but it does the same to PARAMETERS, where it's wrong: `viewer_get_lines(target_value: f64)` and the four `media_index_*_threshold` commands take non-Option floats and serde rejects a JSON null for them. Adopting it trades a latent, never-observed hazard for a live one, plus ~25 sites of null-handling. Rationale: `apps/desktop/src-tauri/DETAILS.md` § Number types over IPC. Re-evaluate on the next rc; bump all three together or not at all.",
+      "matchPackageNames": ["specta", "tauri-specta", "specta-typescript"],
+      "enabled": false
+    },
+    {
       "description": "rand_core stays 0.6.x: the test-only keygen must match ed25519-dalek 2.x's rand_core API, and the `getrandom` feature is gone in later versions, so a bump can't resolve.",
       "matchPackageNames": ["rand_core"],
       "allowedVersions": "<0.7.0"
@@ -43,6 +80,11 @@
     {
       "description": "The SMB benchmark harness pins sspi and smb-rpc in lockstep with smb 0.11's internal pins; independent bumps can never resolve, so leave the whole harness alone.",
       "matchFileNames": ["benchmarks/smb/**"],
+      "enabled": false
+    },
+    {
+      "description": "The CLIP → Core ML conversion pins record which versions built the SHA-256-pinned model artifacts on Hugging Face, so they're provenance, not a dependency set. coremltools declares no torch/transformers bound, meaning the resolver validates nothing; the only real check is re-running convert.py and comparing fidelity cosines. A bot bump would be drift at best and a silently broken script at worst. See the file's header.",
+      "matchFileNames": ["apps/desktop/scripts/convert-clip-model/requirements.txt"],
       "enabled": false
     }
   ],
