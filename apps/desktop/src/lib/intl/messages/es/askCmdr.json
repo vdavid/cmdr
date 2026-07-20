@@ -108,6 +108,22 @@
   "@askCmdr.tool.operationsGet.done": {
     "sourceHash": "80fe1e9"
   },
+  "askCmdr.tool.searchPhotos.doing": "Buscando en tus fotos",
+  "@askCmdr.tool.searchPhotos.doing": {
+    "sourceHash": "da1265d"
+  },
+  "askCmdr.tool.searchPhotos.done": "Se buscó en tus fotos",
+  "@askCmdr.tool.searchPhotos.done": {
+    "sourceHash": "cb3dede"
+  },
+  "askCmdr.tool.imageFacts.doing": "Leyendo el contenido de tus fotos",
+  "@askCmdr.tool.imageFacts.doing": {
+    "sourceHash": "b70691b"
+  },
+  "askCmdr.tool.imageFacts.done": "Se leyó el contenido de tus fotos",
+  "@askCmdr.tool.imageFacts.done": {
+    "sourceHash": "fc24aac"
+  },
   "askCmdr.tool.unknown.doing": "Trabajando",
   "@askCmdr.tool.unknown.doing": {
     "sourceHash": "a92f044"

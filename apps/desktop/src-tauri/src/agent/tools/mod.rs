@@ -53,6 +53,40 @@ mod tests {
         );
     }
 
+    /// Every agent tool needs a rail label, or its tool line silently falls back to the
+    /// generic "Working" / "Used a tool" copy — the transparent tool line is how the user
+    /// sees what the agent touched, so a missing label quietly costs transparency rather
+    /// than breaking anything. The map is authored in TypeScript, so this reads it as text
+    /// (there's no shared wire-name binding to assert against).
+    #[test]
+    fn every_known_tool_has_an_ask_cmdr_rail_label() {
+        let labels_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../src/lib/ask-cmdr/ask-cmdr-labels.ts")
+            .canonicalize()
+            .expect("ask-cmdr-labels.ts sits at a fixed path relative to src-tauri/");
+        let source = std::fs::read_to_string(&labels_path).expect("ask-cmdr-labels.ts is readable");
+        // Take the record BODY, not the `Record<string, { … }>` type annotation that
+        // precedes it: split past the `= {` opener, then stop at the closing brace in
+        // column 0.
+        let map = source
+            .split_once("const TOOL_LABEL_KEYS")
+            .and_then(|(_, rest)| rest.split_once("= {"))
+            .and_then(|(_, body)| body.split_once("\n}"))
+            .map(|(entries, _)| entries.to_string())
+            .expect("TOOL_LABEL_KEYS is a literal record in ask-cmdr-labels.ts");
+
+        let unlabeled: Vec<&str> = ToolId::KNOWN
+            .iter()
+            .map(|t| t.as_wire_name())
+            .filter(|name| !map.contains(&format!("{name}:")))
+            .collect();
+        assert!(
+            unlabeled.is_empty(),
+            "these agent tools have no rail label in ask-cmdr-labels.ts, so they'd show the generic \
+             fallback copy: {unlabeled:?}"
+        );
+    }
+
     /// Every view entry becomes a declaration, and every declaration is a known
     /// tool (no `Unrecognized` leaked into the view). `ToolDeclaration` has no
     /// strict flag, so declarations are never `strict: true` by construction.

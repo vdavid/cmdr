@@ -107,6 +107,22 @@
   "@askCmdr.tool.operationsGet.done": {
     "description": "Past-tense label after the assistant read one file operation's detail."
   },
+  "askCmdr.tool.searchPhotos.doing": "Searching your photos",
+  "@askCmdr.tool.searchPhotos.doing": {
+    "description": "Present-tense status on a tool line in the Ask Cmdr chat rail, shown while the assistant searches the user's photos by description, by text recognized inside them, or by tag. Keep it short: it sits on one line beside a spinner."
+  },
+  "askCmdr.tool.searchPhotos.done": "Searched your photos",
+  "@askCmdr.tool.searchPhotos.done": {
+    "description": "Past-tense label on the same tool line once the photo search finished. Pairs with askCmdr.tool.searchPhotos.doing; keep both the same length where the language allows."
+  },
+  "askCmdr.tool.imageFacts.doing": "Reading what’s in your photos",
+  "@askCmdr.tool.imageFacts.doing": {
+    "description": "Present-tense status on a tool line in the Ask Cmdr chat rail, shown while the assistant reads the text and tags Cmdr recognized inside specific photos the user is looking at (not a search: it already knows which files). This line is a transparency surface, so the wording should make clear that image content is being read. The apostrophe is U+2019."
+  },
+  "askCmdr.tool.imageFacts.done": "Read what’s in your photos",
+  "@askCmdr.tool.imageFacts.done": {
+    "description": "Past-tense label on the same tool line once the assistant finished reading what Cmdr recognized inside those photos. Pairs with askCmdr.tool.imageFacts.doing. The apostrophe is U+2019."
+  },
   "askCmdr.tool.unknown.doing": "Working",
   "@askCmdr.tool.unknown.doing": {
     "description": "Present-tense fallback status for a tool the rail doesn't have a specific label for."

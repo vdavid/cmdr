@@ -108,6 +108,22 @@
   "@askCmdr.tool.operationsGet.done": {
     "sourceHash": "80fe1e9"
   },
+  "askCmdr.tool.searchPhotos.doing": "Đang tìm kiếm trong ảnh của bạn",
+  "@askCmdr.tool.searchPhotos.doing": {
+    "sourceHash": "da1265d"
+  },
+  "askCmdr.tool.searchPhotos.done": "Đã tìm kiếm trong ảnh của bạn",
+  "@askCmdr.tool.searchPhotos.done": {
+    "sourceHash": "cb3dede"
+  },
+  "askCmdr.tool.imageFacts.doing": "Đang đọc nội dung trong ảnh của bạn",
+  "@askCmdr.tool.imageFacts.doing": {
+    "sourceHash": "b70691b"
+  },
+  "askCmdr.tool.imageFacts.done": "Đã đọc nội dung trong ảnh của bạn",
+  "@askCmdr.tool.imageFacts.done": {
+    "sourceHash": "fc24aac"
+  },
   "askCmdr.tool.unknown.doing": "Đang xử lý",
   "@askCmdr.tool.unknown.doing": {
     "sourceHash": "a92f044"

@@ -108,6 +108,22 @@
   "@askCmdr.tool.operationsGet.done": {
     "sourceHash": "80fe1e9"
   },
+  "askCmdr.tool.searchPhotos.doing": "A fotóid átvizsgálása",
+  "@askCmdr.tool.searchPhotos.doing": {
+    "sourceHash": "da1265d"
+  },
+  "askCmdr.tool.searchPhotos.done": "A fotóid átvizsgálva",
+  "@askCmdr.tool.searchPhotos.done": {
+    "sourceHash": "cb3dede"
+  },
+  "askCmdr.tool.imageFacts.doing": "A fotóid tartalmának olvasása",
+  "@askCmdr.tool.imageFacts.doing": {
+    "sourceHash": "b70691b"
+  },
+  "askCmdr.tool.imageFacts.done": "A fotóid tartalma elolvasva",
+  "@askCmdr.tool.imageFacts.done": {
+    "sourceHash": "fc24aac"
+  },
   "askCmdr.tool.unknown.doing": "Folyamatban",
   "@askCmdr.tool.unknown.doing": {
     "sourceHash": "a92f044"

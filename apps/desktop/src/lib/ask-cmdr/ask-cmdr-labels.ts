@@ -18,6 +18,8 @@ const TOOL_LABEL_KEYS: Record<string, { doing: MessageKey; done: MessageKey }> =
   list_volumes: { doing: 'askCmdr.tool.listVolumes.doing', done: 'askCmdr.tool.listVolumes.done' },
   operations_list: { doing: 'askCmdr.tool.operationsList.doing', done: 'askCmdr.tool.operationsList.done' },
   operations_get: { doing: 'askCmdr.tool.operationsGet.doing', done: 'askCmdr.tool.operationsGet.done' },
+  search_photos: { doing: 'askCmdr.tool.searchPhotos.doing', done: 'askCmdr.tool.searchPhotos.done' },
+  image_facts: { doing: 'askCmdr.tool.imageFacts.doing', done: 'askCmdr.tool.imageFacts.done' },
 }
 
 const UNKNOWN_TOOL_KEYS = { doing: 'askCmdr.tool.unknown.doing', done: 'askCmdr.tool.unknown.done' } as const

@@ -35,6 +35,7 @@ list): [DETAILS.md](DETAILS.md).
   schema paths, and `agent::tools` calls back into `crate::mcp::{execute_tool, agent_tool_view, tool_access, Consumer,
   Access, ToolError, ToolResult}` (re-exported from `mcp` for exactly this). Same-crate cycle, intended (D49: one
   registry, two consumers). New agent tool = one registry entry + a handler/schema/result here + a `ToolId` variant +
-  its name in `EXPECTED_AGENT_TOOL_NAMES` and `ToolId::KNOWN`.
+  its name in `EXPECTED_AGENT_TOOL_NAMES` and `ToolId::KNOWN` + a rail label in `ask-cmdr-labels.ts` (miss it and the
+  tool line shows the generic "Working" fallback, costing transparency silently; a structural test pins it).
 
 Depth: [DETAILS.md](DETAILS.md).
