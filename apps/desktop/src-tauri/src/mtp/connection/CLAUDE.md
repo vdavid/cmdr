@@ -15,7 +15,8 @@ The MTP session layer: opens devices, owns the per-device tokio task, and expose
   index (see Must-knows).
 - **`handle_resolver.rs`**: `resolve_handle_to_path()` (parent-chain walk, the pathless-PTP-event fix) and
   `resolve_object_for_index()` (adds metadata for an index upsert).
-- **`file_ops.rs`**: download/upload/stream ops (emit `mtp-transfer-progress`). **`mutation_ops.rs`**: `delete()`
+- **`file_ops.rs`**: streaming transfer ops (`open_read_session` + `read_next_window`, `upload_from_stream`).
+  **`mutation_ops.rs`**: `delete()`
   (recursive), `create_folder()`, `rename()`, `move_object()` — no copy+delete fallback.
 
 ## Must-knows
@@ -47,8 +48,8 @@ The MTP session layer: opens devices, owns the per-device tokio task, and expose
 - **`MtpDisconnectReason` is load-bearing for logs/UI**: pass `User` only for the settings-toggle / explicit-disconnect
   path; hotplug loss and I/O drops are `Removed`. Misclassifying makes unstable USB look like repeated unplugs.
 - **Failed PTP uploads must delete the partial object** (`UploadError { partial: Some(handle), .. }`; mtp-rs doesn't
-  auto-delete). Both `file_ops.rs` call sites best-effort `storage.delete(handle)` (cancel too) before surfacing the
-  error. See [DETAILS.md](DETAILS.md) § "Upload partial cleanup".
+  auto-delete). `upload_from_stream` best-effort `storage.delete(handle)`s (cancel too) before surfacing the error. See
+  [DETAILS.md](DETAILS.md) § "Upload partial cleanup".
 - **Stale cached parent handle on upload self-heals, then signals a one-shot retry.** A re-keyed handle makes
   `SendObjectInfo` fail `InvalidParentObject` / `InvalidObjectHandle`; `upload_from_stream` refreshes and returns
   `StaleParentHandle`, `stream_pipe_file` retries. ❌ DROP the device lock before `refresh_dir_handle` (it re-lists; the

@@ -2478,40 +2478,6 @@ export const commands = {
    */
   getPtpcameradWorkaroundCommand: () => __TAURI_INVOKE<string>('get_ptpcamerad_workaround_command'),
   /**
-   *  Downloads a file from an MTP device to the local filesystem.
-   *
-   *  Emits `mtp-transfer-progress` events during the transfer.
-   *
-   *  # Arguments
-   *
-   *  * `device_id` - The connected device ID
-   *  * `storage_id` - The storage ID within the device
-   *  * `object_path` - Virtual path on the device (for example, "/DCIM/photo.jpg")
-   *  * `local_dest` - Local destination path
-   *  * `operation_id` - Unique operation ID for progress tracking
-   */
-  downloadMtpFile: (deviceId: string, storageId: number, objectPath: string, localDest: string, operationId: string) =>
-    typedError<MtpOperationResult, MtpConnectionError>(
-      __TAURI_INVOKE('download_mtp_file', { deviceId, storageId, objectPath, localDest, operationId }),
-    ),
-  /**
-   *  Uploads a file from the local filesystem to an MTP device.
-   *
-   *  Emits `mtp-transfer-progress` events during the transfer.
-   *
-   *  # Arguments
-   *
-   *  * `device_id` - The connected device ID
-   *  * `storage_id` - The storage ID within the device
-   *  * `local_path` - Local file path to upload
-   *  * `dest_folder` - Destination folder path on device (for example, "/DCIM")
-   *  * `operation_id` - Unique operation ID for progress tracking
-   */
-  uploadToMtp: (deviceId: string, storageId: number, localPath: string, destFolder: string, operationId: string) =>
-    typedError<MtpObjectInfo, MtpConnectionError>(
-      __TAURI_INVOKE('upload_to_mtp', { deviceId, storageId, localPath, destFolder, operationId }),
-    ),
-  /**
    *  Deletes an object (file or folder) from an MTP device.
    *
    *  For folders, this recursively deletes all contents first since MTP
@@ -5517,16 +5483,6 @@ export type MtpObjectInfo = {
   isDirectory: boolean
   // Size in bytes (None for directories).
   size: number | null
-}
-
-// Result of a successful MTP operation.
-export type MtpOperationResult = {
-  // Operation ID (for tracking).
-  operationId: string
-  // Number of files processed.
-  filesProcessed: number
-  // Total bytes transferred.
-  bytesTransferred: number
 }
 
 /**

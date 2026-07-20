@@ -49,7 +49,7 @@ single-digit-to-low-tens of ms over USB, so 32 keeps a unit well under ~1 s whil
 negligible against the round trips. Retune the constant in `directory_ops.rs` if the latency target changes.
 
 **Which ops are foreground.** `list_directory*` (pane nav), `delete_object*`, `create_folder`, `rename_object`,
-`move_object`, `upload_file`, `upload_from_stream`, and `resolve_handle_to_path` (the visible-pane live update) each take
+`move_object`, `upload_from_stream`, and `resolve_handle_to_path` (the visible-pane live update) each take
 a guard. Nested guards (e.g. recursive `delete`, or `upload_from_stream` → `refresh_dir_handle` → `list_directory`) just
 stack the count — harmless, they keep the scan yielded for the whole op. ❌ A READ (download / drag-out) takes NO guard:
 it's a *background* gate user that yields TO foreground, so raising `foreground_pending` would make a copy yield to
@@ -63,8 +63,7 @@ returning an `MtpReadSession` the caller caches; each `read_next_window` then ta
 window (~80 ms on a Pixel) and releases it. **Between windows nothing is in flight and the single PTP session is free**,
 so a foreground listing/nav slips in at window granularity — the whole "navigate the phone during a copy" property, with
 no abort/drain (the old held-open `GetObject` pinned mtp-rs's `operation_lock` for the entire file, starving everything
-until a ~35 s CLASS_CANCEL drain). Both `MtpVolume`'s read stream (copy + drag-out) and `download_file_with_progress`
-(the single-file command) route through this same pair.
+until a ~35 s CLASS_CANCEL drain). `MtpVolume`'s read stream (copy + drag-out) is the one consumer of this pair.
 
 **mtp-rs owns the window bookkeeping; Cmdr owns the LOCK.** The offset tracking, clamp-to-remaining, EOF (`None`),
 advance-by-bytes-actually-returned (a short read mid-file is legal), and the 0-byte-before-EOF stall (surfaced as an
@@ -106,9 +105,9 @@ data phase fails (a genuine error or a user cancel), mtp-rs's `Storage::upload` 
 `partial: Some(handle)` carries the created-but-incomplete object. The library deliberately does not auto-delete it; the
 caller owns the cleanup-or-resume decision.
 
-Per cmdr's no-corrupt-artifact policy (AGENTS.md principle #4), both upload call sites in `file_ops.rs` (`upload_file`,
-`upload_from_stream`) best-effort delete the partial via `storage.delete(handle)` before returning, then surface the
-mapped `upload_err.source` error. This holds for cancel too: on cancel, `source` is `Error::Cancelled` and `partial` is
+Per cmdr's no-corrupt-artifact policy (AGENTS.md principle #4), `upload_from_stream` in `file_ops.rs` best-effort
+deletes the partial via `storage.delete(handle)` before returning, then surfaces the mapped `upload_err.source` error.
+This holds for cancel too: on cancel, `source` is `Error::Cancelled` and `partial` is
 `Some`, so a cancelled upload also deletes the half-file (the user cancelled, don't leave it on their phone), and
 `map_mtp_error(Error::Cancelled)` still yields `MtpConnectionError::Cancelled`, preserving cancel classification for the
 write-op layer.

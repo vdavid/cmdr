@@ -162,18 +162,6 @@ pub struct MtpPtpcameradSuppressed;
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
 pub struct MtpPtpcameradRestored;
 
-/// Result of a successful MTP operation.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct MtpOperationResult {
-    /// Operation ID (for tracking).
-    pub operation_id: String,
-    /// Number of files processed.
-    pub files_processed: usize,
-    /// Total bytes transferred.
-    pub bytes_transferred: u64,
-}
-
 /// Information about an object on the device (returned after creation).
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -792,7 +780,7 @@ impl MtpConnectionManager {
 // Remaining impl blocks are in submodules:
 // - directory_ops.rs: list_directory, resolve_path_to_handle, handle_device_disconnected
 // - event_loop.rs: start_event_loop, stop_event_loop, event handling
-// - file_ops.rs: download_file, upload_file, open_read_session + read_next_window (bounded-window reads), upload_from_stream
+// - file_ops.rs: open_read_session + read_next_window (bounded-window reads), upload_from_stream
 // - mutation_ops.rs: delete_object, create_folder, rename_object, move_object
 // - bulk_ops.rs: scan_for_copy, upload_recursive
 
@@ -1102,20 +1090,6 @@ mod tests {
         assert!(json.contains("\"currentFile\":\"photo.jpg\""));
         assert!(json.contains("\"bytesDone\":1024"));
         assert!(json.contains("\"bytesTotal\":4096"));
-    }
-
-    #[test]
-    fn test_operation_result_serialization() {
-        let result = MtpOperationResult {
-            operation_id: "op-456".to_string(),
-            files_processed: 5,
-            bytes_transferred: 1_000_000,
-        };
-
-        let json = serde_json::to_string(&result).unwrap();
-        assert!(json.contains("\"operationId\":\"op-456\""));
-        assert!(json.contains("\"filesProcessed\":5"));
-        assert!(json.contains("\"bytesTransferred\":1000000"));
     }
 
     #[test]

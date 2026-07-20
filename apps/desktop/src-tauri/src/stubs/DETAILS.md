@@ -6,7 +6,7 @@ Per-stub behavior and rationale. `CLAUDE.md` holds the invariants; the catalog b
 
 - **`accent_color.rs`**: `get_accent_color` returns `"#d4a006"` (brand gold fallback).
 - **`mtp.rs`**: all MTP commands return `MtpConnectionError::NotSupported`. Defines a local `FileEntry` subset plus stub
-  types `ConnectedDeviceInfo`, `MtpOperationResult`, `MtpObjectInfo`, `MtpScanResult`.
+  types `ConnectedDeviceInfo`, `MtpObjectInfo`, `MtpScanResult`.
 - **`network.rs`**: all network commands return empty results or errors; types mirror the macOS shapes for JSON
   compatibility.
 - **`permissions.rs`**: `check_full_disk_access` / `check_full_disk_access_quiet` return `true`;

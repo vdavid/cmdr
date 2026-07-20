@@ -264,9 +264,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         crate::commands::mtp::list_mtp_directory,
         #[cfg(any(target_os = "macos", target_os = "linux"))]
-        crate::commands::mtp::download_mtp_file,
         #[cfg(any(target_os = "macos", target_os = "linux"))]
-        crate::commands::mtp::upload_to_mtp,
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         crate::commands::mtp::delete_mtp_object,
         #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -300,9 +298,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         crate::stubs::mtp::list_mtp_directory,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-        crate::stubs::mtp::download_mtp_file,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-        crate::stubs::mtp::upload_to_mtp,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         crate::stubs::mtp::delete_mtp_object,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
