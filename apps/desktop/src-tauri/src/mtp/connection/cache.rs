@@ -3,7 +3,7 @@
 
 use mtp_rs::ObjectHandle;
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::RwLock;
 use std::time::{Duration, Instant};
 
@@ -37,6 +37,23 @@ impl PathHandleCache {
     pub(super) fn insert(&mut self, path: PathBuf, handle: ObjectHandle) {
         self.path_to_handle.insert(path.clone(), handle);
         self.handle_to_path.insert(handle, path);
+    }
+
+    /// Forgets `path` in both directions.
+    ///
+    /// Always remove through this (never `path_to_handle.remove` directly).
+    /// Dropping only the forward entry leaves the reverse map claiming a path for
+    /// a handle that no longer holds it — and MTP devices REUSE object handles, so
+    /// the next object to inherit it would resolve to the removed object's path.
+    pub(super) fn remove_path(&mut self, path: &Path) {
+        if let Some(handle) = self.path_to_handle.remove(path) {
+            // Only if the reverse entry still points AT this path: a rename
+            // re-inserts the handle under its new path, and that newer mapping
+            // must survive a later removal of the stale forward entry.
+            if self.handle_to_path.get(&handle).is_some_and(|p| p == path) {
+                self.handle_to_path.remove(&handle);
+            }
+        }
     }
 }
 

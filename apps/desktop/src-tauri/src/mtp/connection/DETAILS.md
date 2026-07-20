@@ -217,6 +217,26 @@ filter). Treating only `ROOT` as root would fail the walk for those devices.
 trees are a handful of levels deep; the cap exists only so a bad device can't wedge the walk — it fails cleanly and the
 caller falls back.
 
+### Keeping both directions in lockstep
+
+Every write to `PathHandleCache` goes through `insert` or `remove_path`, which touch both maps. ❌ Never poke
+`path_to_handle` (or `handle_to_path`) directly — the desync is invisible at the time and expensive later:
+
+- **A missing reverse entry costs round trips.** `resolve_handle_to_path` falls back to a USB parent-chain walk when the
+  handle isn't cached, so a one-sided write doesn't fail, it just makes every subsequent PTP event for objects Cmdr
+  itself created re-walk to the storage root.
+- **A stale reverse entry returns the WRONG path.** `walk_handle_to_path` consults the reverse cache FIRST, so a handle
+  left pointing at a removed or renamed path resolves to it. MTP devices reuse object handles, so the next object to
+  inherit that handle lands a targeted refresh on the wrong directory and an index upsert at the wrong path.
+
+`remove_path` deletes the reverse entry only when it still points at the path being removed. A rename is
+`remove_path(old)` then `insert(new, handle)`; without that guard, a later cleanup of a stale forward entry would erase
+the handle's current, correct reverse mapping.
+
+Pinned by `path_cache_sync_test.rs` (create folder, rename, move, upload, delete), which asserts the reverse map through
+a test-only accessor rather than through `resolve_handle_to_path` — the USB fallback would otherwise make a desynced
+cache look healthy.
+
 ### Reverse cache (`PathHandleCache::handle_to_path`)
 
 **Decision:** `PathHandleCache` keeps both `path → handle` (forward, for browsing's `resolve_path_to_handle`) and

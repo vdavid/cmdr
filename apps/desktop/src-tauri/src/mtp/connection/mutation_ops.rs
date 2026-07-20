@@ -208,7 +208,7 @@ impl MtpConnectionManager {
                 && let Ok(mut cache_map) = entry.path_cache.write()
                 && let Some(storage_cache) = cache_map.get_mut(&storage_id)
             {
-                storage_cache.path_to_handle.remove(&object_path_normalized);
+                storage_cache.remove_path(&object_path_normalized);
             }
         }
 
@@ -300,7 +300,7 @@ impl MtpConnectionManager {
                 && let Ok(mut cache_map) = entry.path_cache.write()
             {
                 let storage_cache = cache_map.entry(storage_id).or_default();
-                storage_cache.path_to_handle.insert(new_path.clone(), new_handle);
+                storage_cache.insert(new_path.clone(), new_handle);
             }
         }
 
@@ -408,8 +408,8 @@ impl MtpConnectionManager {
                 && let Ok(mut cache_map) = entry.path_cache.write()
                 && let Some(storage_cache) = cache_map.get_mut(&storage_id)
             {
-                storage_cache.path_to_handle.remove(&old_path);
-                storage_cache.path_to_handle.insert(new_path.clone(), object_handle);
+                storage_cache.remove_path(&old_path);
+                storage_cache.insert(new_path.clone(), object_handle);
             }
         }
 
@@ -524,8 +524,8 @@ impl MtpConnectionManager {
                         && let Ok(mut cache_map) = entry.path_cache.write()
                         && let Some(storage_cache) = cache_map.get_mut(&storage_id)
                     {
-                        storage_cache.path_to_handle.remove(&old_path);
-                        storage_cache.path_to_handle.insert(new_path.clone(), object_handle);
+                        storage_cache.remove_path(&old_path);
+                        storage_cache.insert(new_path.clone(), object_handle);
                     }
                 }
 

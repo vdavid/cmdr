@@ -20,6 +20,9 @@ mod event_loop;
 mod file_ops;
 mod handle_resolver;
 mod mutation_ops;
+/// Every test here drives a virtual MTP device, so it carries that feature gate.
+#[cfg(all(test, feature = "virtual-mtp"))]
+mod path_cache_sync_test;
 mod scheduler;
 
 use cache::{EVENT_DEBOUNCE_MS, EventDebouncer, ListingCache, PathHandleCache};
@@ -706,6 +709,52 @@ impl MtpConnectionManager {
             }
             debug!("Invalidated MTP storage cache for {device_id} (storage={storage_id:?})");
         }
+    }
+
+    /// Test-only: the REVERSE (`handle_to_path`) side of the path cache for one
+    /// handle. Lets tests assert the bidirectional invariant directly, which is
+    /// otherwise invisible: `resolve_handle_to_path` silently falls back to a USB
+    /// parent-chain walk when the reverse entry is missing, so a desync looks
+    /// like correct behavior until a handle is reused or the object is gone.
+    #[cfg(all(test, feature = "virtual-mtp"))]
+    pub(crate) async fn cached_path_for_handle(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        handle: mtp_rs::ObjectHandle,
+    ) -> Option<PathBuf> {
+        let devices = self.devices.lock().await;
+        devices
+            .get(device_id)?
+            .path_cache
+            .read()
+            .ok()?
+            .get(&storage_id)?
+            .handle_to_path
+            .get(&handle)
+            .cloned()
+    }
+
+    /// Test-only: the FORWARD (`path_to_handle`) side, for tests that need an
+    /// object's handle without re-listing (a re-list would repopulate BOTH
+    /// directions and mask exactly the desync under test).
+    #[cfg(all(test, feature = "virtual-mtp"))]
+    pub(crate) async fn cached_handle_for_path(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        path: &Path,
+    ) -> Option<mtp_rs::ObjectHandle> {
+        let devices = self.devices.lock().await;
+        devices
+            .get(device_id)?
+            .path_cache
+            .read()
+            .ok()?
+            .get(&storage_id)?
+            .path_to_handle
+            .get(path)
+            .copied()
     }
 
     /// Test-only: how many `GetStorageInfo` round trips the bounded-read path has

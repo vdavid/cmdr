@@ -402,7 +402,7 @@ impl MtpConnectionManager {
                 && let Ok(mut cache_map) = entry.path_cache.write()
             {
                 let storage_cache = cache_map.entry(storage_id).or_default();
-                storage_cache.path_to_handle.insert(new_path.clone(), new_handle);
+                storage_cache.insert(new_path.clone(), new_handle);
             }
         }
 
