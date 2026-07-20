@@ -317,15 +317,16 @@ sealed subtree _in this unit_. Only the FE affordance and copy belong in M5.
 
 #### Phase B — Choosing the seal root
 
-- Churn accounting rolled up the ancestor chain (new mechanism).
+- Churn accounting rolled up the ancestor chain (new mechanism), promoted from Spike B's instrumentation.
 - `pick_seal_root`: pure, clock-injected, hard stops applied.
-- A shipped seed list of known-churny patterns so scan #1 is cheap: `target/`, `node_modules/.cache`,
-  `~/Library/Containers/*/Data/tmp`, DriveFS logs and `fetch_temp`, Cmdr's own dev data dir. This is the useful core of
-  the settings-table idea, as an internal seed rather than user-facing configuration.
+- **Provisional seal on size at scan time** (the guarded walker), so the first scan is bounded without a path list. Size
+  defers; only churn confirms. See Decision 4.
+- **No seed list.** Decision 4 explains why, and what replaces it.
 
 **Tests (test-first — the risky logic).** Table-driven over synthetic trees: flat pathological dir seals itself;
-`something/cache/{hex}/{hex}` seals `cache`, never `something`; **a quiet 60k-file photo library is not sealed** (the
-regression that matters most — seal on churn, never size alone); hard-stop paths never selected.
+`something/cache/{hex}/{hex}` seals `cache`, never `something`; **a quiet 60k-file photo library is provisionally sealed
+at scan time and then unseals on sustained quiet** (the regression that matters most — size defers, only churn
+confirms); hard-stop paths never selected. Constants come from Spike B, not from invention.
 
 #### Phase C — Delta maintenance, re-anchor, and unseal
 
@@ -394,10 +395,18 @@ which is its own scope.
 
 ## Sequencing and parallelism
 
-Strictly sequential: M1 → (M2–M4 as one unit, phases A → B → C) → M5. Every phase touches the `dir_stats` ledger,
-single-writer by invariant with a documented leak history (A and D); parallel agents here would be actively unsafe.
+**Start Spike B's collection first**, before anything else: it is passive and wall-clock-bound, so it should be running
+while other work happens rather than blocking on it.
 
-M1 is genuinely independent and shippable on its own.
+Then: Spike A → M1 → re-decide M2–M4 on the data → (M2–M4 as one unit, phases A → B → C) → M5.
+
+Every phase of M2–M4 touches the `dir_stats` ledger, single-writer by invariant with a documented leak history (A and
+D); parallel agents there would be actively unsafe.
+
+M1 is genuinely independent and shippable on its own, whatever the spikes say.
+
+The one safe overlap: Spike B collects passively in the background while Spike A and M1 proceed. Nothing else here runs
+in parallel.
 
 ## Non-goals
 
@@ -422,9 +431,33 @@ size is being displayed". Listings come from the filesystem, not the index, so n
 sizes. Full unseal-on-navigate means one `cd` into `fetch_temp` re-inserts 1.14M rows on the user's interaction path —
 the incident, on demand.
 
-**Decision 4 — Phase B scope: learned classifier, or seed list only for v1?** Recommendation: **seed list only.** The
-seeds cover every motivating example, and the churn-rate distributions needed to tune a classifier honestly don't exist
-yet. Defer the classifier until M1's counter says whether it's needed.
+**Decision 4 — Seed list: dropped. The churn classifier is the only thing that confirms a seal.** (Settled 2026-07-20.)
+
+An earlier draft shipped a list of known-churny patterns (`target/`, `node_modules/.cache`,
+`~/Library/Containers/*/Data/tmp`, DriveFS logs, Cmdr's own dev data dir) as a cold-start prior. Dropped, for a stronger
+reason than the obvious maintenance burden (Google renames a path and we're stale; `uv` and `bun` ship cache layouts
+we've never seen; one machine's churn isn't another's):
+
+**A seed list hides classifier failures.** If the seeds catch `target/` and `fetch_temp`, the classifier never gets
+exercised on the two cases we actually understand, and we'd ship it having never watched it work on a known-answer
+input. We'd find out it was broken on a user's machine, on a directory we've never heard of.
+
+It is also a direct reversal of `8b0e70ae5`'s own principle: "no per-folder allowlist: the OS-provided churn signal
+self-identifies the busy subtrees."
+
+**What fills the hole it leaves.** The seed list did one job the classifier structurally cannot: cover the **first
+scan**, where no churn history exists yet. M1's guard covers only `verify_affected_dirs`; the guarded walker has no cap,
+so without seeds a first scan (or any `clear_index`) still fully indexes 1.14M empty files.
+
+The replacement is the same generic mechanism applied earlier, not a path list: **provisionally seal on size at scan
+time, and let churn be the only thing that decides whether the seal persists.**
+
+- `fetch_temp`: provisionally sealed at scan (1.14M rows never written), churn confirms, stays sealed. Cost ~0.
+- A quiet 60k-file photo library: provisionally sealed, goes quiet, unseals within a window, ends up correctly indexed.
+  Cost ~1.5× one subtree scan.
+
+So **size is never a seal decision, only a defer decision** — the "reversible beats correct" trade this plan already
+commits to, now applied at scan time. One mechanism, no hardcoded paths, first-scan cost bounded.
 
 **Decision 5 — Settings UI in v1?** Recommendation: **no.** The original idea was a Settings > Behavior > File system
 watching ignorelist (path pattern / throttle / reason). Reasons to defer: it's a developer control in a consumer file
@@ -434,25 +467,66 @@ cuts against `8b0e70ae5`'s own principle: "no per-folder allowlist: the OS-provi
 busy subtrees." If user control is still wanted later, a right-click "index this folder less often" with three named
 choices beats a pattern table.
 
+## Spikes (do these before M2–M4)
+
+Four of the gates below were really "someone should measure this", which is a plan smell. These resolve them with data
+instead of judgment. **None require the feature to exist.**
+
+### Spike A — re-anchor cost (hours, decisive, do first)
+
+Time a streaming `readdir` + `lstat` + sum over `fetch_temp` (1.14M entries) and a few other large directories, cold and
+warm. No DB reads, no writer messages, no row writes — the shape Phase C's re-anchor would actually use.
+
+**This gates the entire feature.** Phase C makes the periodic re-anchor the primary correctness mechanism, and a
+re-anchor is the same O(children) walk this design exists to avoid, just on a timer. If keeping drift tolerable needs an
+hourly 1.14M-entry walk, sealing nets close to zero on the metric it was built for and M1 is the whole feature. Cheapest
+and most decisive, so it runs first.
+
+Deliverable: timings in `docs/notes/`, and a go/no-go on M2–M4.
+
+### Spike B — churn observability (passive collection, ~4 h window)
+
+Log per-subtree churn from the existing FSEvents stream, rolled up the ancestor chain. Read-only instrumentation on the
+live event loop; it writes no index state and changes no behaviour.
+
+Answers three things at once:
+
+- **How fast does `fetch_temp` / `target/` separate from background noise?** This is the "can we drop the seed list"
+  question (Decision 4), answered with data rather than judgment. If separation takes hours, provisional-seal-on-size is
+  carrying more weight than assumed and Decision 4 needs revisiting.
+- **What does the ratio-drop boundary look like on a real tree?** Phase B's seal-root selection is the riskiest logic in
+  this plan and currently rests on an invented worked example (`something/cache/{hex}/{hex}`). Real ancestor-chain churn
+  ratios either support it or don't.
+- **What hysteresis constants does the data suggest?** Currently an open question the plan explicitly refused to guess
+  at.
+
+Not throwaway: this instrumentation _is_ most of Phase B's churn accounting, so it gets promoted rather than deleted.
+
+Deliverable: a few hours of collected data plus an analysis note in `docs/notes/`. A short window is sufficient — the
+motivating churn sources (DriveFS log rotation ~1/min, `fetch_temp`, a `cargo build`) all cycle in minutes.
+
+### Spike C — the n=1 question (cheap, opportunistic)
+
+Query child-count distributions from the existing index DBs. One machine is already known (`fetch_temp`, plus a
+119k-child runner-up); the gap is _other_ machines, which is what M1's counter rides along to answer over time.
+
 ## Gates and open questions
 
 In order:
 
-1. **Gate on M2–M4 existing at all: the n=1 answer.** M1's counter is the instrument. If it comes back n≈1 across real
-   machines, then **the seed list plus M1 is the whole feature** and this five-phase change to the ledger is not
-   justified. Do not sequence M2–M4 unconditionally after M1.
-2. **Gate on Phase A: seal-state identity** (Decision 1). This is a silent-data-loss question, not a cost question, so
-   it outranks the others.
-3. **Gate on Phase A: the directory-rows question** (Decision 2).
-4. **Gate on starting M2–M4: measure the re-anchor cost** on a real 1.14M-entry directory. If the cadence needed to keep
-   drift tolerable makes it hourly, revisit the whole approach.
-5. **Gate on Phase C: unseal-on-navigate** (Decision 3), a UX/cost tradeoff.
+1. **Gate on M2–M4 existing at all: the n=1 answer** (Spike C + M1's counter). If it comes back n≈1 across real
+   machines, then **M1 alone is the whole feature** and this five-phase change to the ledger is not justified. Do not
+   sequence M2–M4 unconditionally after M1.
+2. **Gate on starting M2–M4: re-anchor cost** (Spike A).
+3. **Gate on Phase A: seal-state identity** (Decision 1). A silent-data-loss question, not a cost question, so it
+   outranks the remaining ones.
+4. **Gate on Phase A: the directory-rows question** (Decision 2).
+5. **Gate on Phase B: churn separation speed and the boundary shape** (Spike B). Also supplies Phase C's hysteresis
+   constants.
+6. **Gate on Phase C: unseal-on-navigate** (Decision 3), a UX/cost tradeoff.
 
 Open beyond the gates:
 
-- Real churn-rate distributions, needed to pick Phase C's hysteresis constants honestly. Phase B currently ships a
-  learned churn classifier while those distributions sit unmeasured. **The cheaper v1 is the seed list alone**,
-  deferring the classifier — the seeds cover every motivating example in this plan.
 - Cost item, not a correctness one: a sealed subtree keeps raising `MustScanSubDirs` and keeps consuming the 60 s
   throttle drain for a walk that now does nothing. `route_must_scan_sub_dirs` needs no correctness change (it is a
   router; the walkers downstream are guarded), but the wasted drain slot is worth measuring.
