@@ -52,21 +52,40 @@ pub(crate) struct ExclusionScope {
     /// mount (`/Volumes/X`, an SMB share, an MTP store). The single source of both
     /// the tier and the volume-root position.
     mount_root: Option<String>,
-    /// How to recognize a File Provider domain root, injected so tests don't need a
-    /// live domain on the machine. See [`DomainRootProbe`].
-    domain_root_probe: DomainRootProbe,
+    /// The filesystem questions the pseudo-filesystem rule asks about a candidate's
+    /// parent, injected so tests need neither a live provider domain nor a Unix root
+    /// on the machine. See [`RootProbes`].
+    probes: RootProbes,
 }
 
-/// Recognizes a File Provider domain root (a cloud provider's or MacDroid's tree
-/// grafted into the home dir). Domain roots are volume roots for the
-/// pseudo-filesystem rule, but they're discovered mid-walk rather than known up
-/// front, so this is a probe rather than a path.
+/// The two filesystem questions [`is_pseudo_fs_at_volume_root`] asks about a
+/// candidate directory's parent. Injected as a unit ([`RootProbes::REAL`] in
+/// production) so the rule stays unit-testable without a real File Provider domain
+/// or a real Unix root filesystem.
 ///
-/// A plain `fn` pointer, so [`ExclusionScope`] stays `Send + Sync + Clone` for the
+/// Plain `fn` pointers, so [`ExclusionScope`] stays `Send + Sync + Clone` for the
 /// rayon walk threads that share it.
-pub(crate) type DomainRootProbe = fn(&str) -> bool;
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct RootProbes {
+    /// Is this directory a File Provider domain root (a cloud provider's or
+    /// MacDroid's tree grafted into the home dir)? Domain roots are volume roots for
+    /// the rule, but they're discovered mid-walk rather than known up front, so this
+    /// is a probe rather than a path.
+    is_domain_root: fn(&str) -> bool,
+    /// Does this directory hold ALL of `proc`, `sys`, and `dev` as child
+    /// directories, i.e. does it actually look like a Unix root filesystem?
+    is_unix_like_root: fn(&str) -> bool,
+}
 
-/// The production probe: a File Provider domain root carries the
+impl RootProbes {
+    /// The production probes.
+    const REAL: Self = Self {
+        is_domain_root: is_file_provider_domain_root,
+        is_unix_like_root: has_pseudo_fs_trio,
+    };
+}
+
+/// The production domain-root probe: a File Provider domain root carries the
 /// `com.apple.file-provider-domain-id` xattr (~5 µs, no XPC, no hang risk). Always
 /// `false` off macOS, which has no File Provider.
 ///
@@ -85,12 +104,26 @@ fn is_file_provider_domain_root(path: &str) -> bool {
     }
 }
 
+/// Whether `dir` holds ALL of `proc`, `sys`, and `dev` as child DIRECTORIES: the
+/// corroboration that makes the pseudo-filesystem rule safe (see
+/// [`is_pseudo_fs_at_volume_root`]).
+///
+/// Three `symlink_metadata` calls, never a directory enumeration, so the cost
+/// doesn't scale with how big the root is. It doesn't follow symlinks: a symlink
+/// named `proc` is not the real thing (an Android root has a symlink `d` alongside
+/// its real `proc`, `sys`, and `dev`).
+fn has_pseudo_fs_trio(dir: &str) -> bool {
+    PSEUDO_FS_BASENAMES
+        .iter()
+        .all(|name| std::fs::symlink_metadata(std::path::Path::new(dir).join(name)).is_ok_and(|meta| meta.is_dir()))
+}
+
 impl ExclusionScope {
     /// The `/`-rooted boot-disk scope: both tiers apply, and `/` is the volume root.
     pub(crate) fn boot_disk() -> Self {
         Self {
             mount_root: None,
-            domain_root_probe: is_file_provider_domain_root,
+            probes: RootProbes::REAL,
         }
     }
 
@@ -99,15 +132,18 @@ impl ExclusionScope {
     pub(crate) fn mount_rooted(mount_root: impl Into<String>) -> Self {
         Self {
             mount_root: Some(mount_root.into()),
-            domain_root_probe: is_file_provider_domain_root,
+            probes: RootProbes::REAL,
         }
     }
 
-    /// Swap the File Provider probe (tests only), so the domain-root rule can be
-    /// exercised without a real provider domain on the machine.
+    /// Swap the filesystem probes (tests only), so the pseudo-filesystem rule can be
+    /// exercised without a real provider domain or a real Unix root on the machine.
     #[cfg(test)]
-    pub(crate) fn with_domain_root_probe(mut self, probe: DomainRootProbe) -> Self {
-        self.domain_root_probe = probe;
+    pub(crate) fn with_probes(mut self, is_domain_root: fn(&str) -> bool, is_unix_like_root: fn(&str) -> bool) -> Self {
+        self.probes = RootProbes {
+            is_domain_root,
+            is_unix_like_root,
+        };
         self
     }
 
@@ -238,24 +274,42 @@ pub(in crate::indexing) const FIRMLINKED_SYSTEM_PREFIXES: &[&str] = &[
 /// boot root (`/.Spotlight-V100`) and under a mount (`/Volumes/X/.Spotlight-V100`)
 /// alike. A user folder that merely contains a junk name as a substring is not
 /// matched.
-/// Whether `path_str` is a kernel pseudo-filesystem tree sitting DIRECTLY at a
-/// volume root, so it's skipped in EVERY [`ExclusionTier`].
+fn is_junk_basename(path_str: &str) -> bool {
+    std::path::Path::new(path_str)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .is_some_and(|name| JUNK_BASENAMES.contains(&name))
+}
+
+/// Whether `path_str` is a kernel pseudo-filesystem tree sitting DIRECTLY at the
+/// root of a Unix-like filesystem, so it's skipped in EVERY [`ExclusionTier`].
 ///
-/// Keying on root POSITION (not on the name) is what makes this safe: a user's
-/// `~/projects/myapp/proc` is an ordinary folder and stays indexed; only
-/// `<volume root>/proc` goes. A volume root is `/`, a `/Volumes/X` mount, an SMB
-/// or MTP scan root — all of them `scope.volume_root()` — or a File Provider
-/// domain root, which is grafted into the home dir mid-walk and so needs the
-/// probe.
+/// Both halves are load-bearing, and either one alone would be wrong:
 ///
-/// **The name test runs FIRST, before any probe**, so the ~5 µs xattr read fires
-/// only for the handful of directories actually called `proc`, `sys`, or `dev`,
-/// never per scanned directory.
+/// - **Root POSITION**, so a user's `~/projects/myapp/proc` (somebody's source
+///   directory) stays indexed and only `<volume root>/proc` goes. A volume root is
+///   `/`, a `/Volumes/X` mount, an SMB or MTP scan root (all of them
+///   [`ExclusionScope::volume_root`]), or a File Provider domain root, which is
+///   grafted into the home dir mid-walk and so needs a probe.
+/// - **Corroboration that the root really is a Unix filesystem**: all three of
+///   `proc`, `sys`, and `dev` present as sibling directories ([`has_pseudo_fs_trio`]).
+///   The name alone is far too loose, because `dev` is an extremely ordinary name for
+///   a real folder: without this, a developer's `~/Library/CloudStorage/Dropbox/dev`
+///   (whose parent IS a domain root) or a `dev` at the top of a USB stick would
+///   vanish from the index and from folder sizes with no error at all, and a wrong
+///   size nobody is told about is worse than a slow walk. All three co-occurring is
+///   diagnostic; any one alone is just a folder name.
 ///
-/// Why it matters: MacDroid mounts an Android phone as a File Provider domain,
-/// and that phone's Linux `proc/<pid>/task/<tid>/{attr,ns,fd,net,map_files}` tree
-/// cost ~454 s of a measured 21m49s reconcile walk (~35%). Only the boot volume's
-/// `/proc` was caught before, as an absolute prefix.
+/// **The name test runs FIRST, before any probe**, so the syscalls fire only for
+/// directories actually called `proc`, `sys`, or `dev` (at most three per volume
+/// root), never per scanned directory.
+///
+/// Why it matters: MacDroid mounts an Android phone as a File Provider domain, and
+/// that phone's Linux `proc/<pid>/task/<tid>/{attr,ns,fd,net,map_files}` tree cost
+/// ~454 s of a measured 21m49s reconcile walk (~35%). Its root lists `proc`, `sys`,
+/// and `dev` among `bin`, `etc`, `sdcard`, …, so it corroborates; a cloud drive's
+/// root never does. Only the boot volume's `/proc` was caught before, as an
+/// absolute prefix.
 fn is_pseudo_fs_at_volume_root(path_str: &str, scope: &ExclusionScope) -> bool {
     let path = std::path::Path::new(path_str);
     let is_pseudo_fs_name = path
@@ -268,14 +322,15 @@ fn is_pseudo_fs_at_volume_root(path_str: &str, scope: &ExclusionScope) -> bool {
     let Some(parent) = path.parent().and_then(|p| p.to_str()) else {
         return false;
     };
-    if trim_trailing_slash(parent) == trim_trailing_slash(scope.volume_root()) {
-        return true;
-    }
-    // The domain probe is a syscall, and a mount-rooted scope can sit on a network
-    // mount where any syscall blocks indefinitely. It's also pointless there:
-    // providers register their domains in the home dir, on the boot disk. So probe
-    // under the boot-disk tier only, where the path is local by construction.
-    scope.tier() == ExclusionTier::BootDisk && (scope.domain_root_probe)(parent)
+    let sits_at_a_volume_root = trim_trailing_slash(parent) == trim_trailing_slash(scope.volume_root())
+        // The domain probe is a syscall, and a mount-rooted scope can sit on a
+        // network mount where any syscall blocks indefinitely. It's also pointless
+        // there: providers register their domains in the home dir, on the boot disk.
+        // So probe under the boot-disk tier only, where the path is local by
+        // construction.
+        || (scope.tier() == ExclusionTier::BootDisk && (scope.probes.is_domain_root)(parent));
+
+    sits_at_a_volume_root && (scope.probes.is_unix_like_root)(parent)
 }
 
 /// A path without its trailing slash, except for bare `/` (which IS its root).
@@ -285,13 +340,6 @@ fn trim_trailing_slash(path: &str) -> &str {
         "" => "/",
         trimmed => trimmed,
     }
-}
-
-fn is_junk_basename(path_str: &str) -> bool {
-    std::path::Path::new(path_str)
-        .file_name()
-        .and_then(|n| n.to_str())
-        .is_some_and(|name| JUNK_BASENAMES.contains(&name))
 }
 
 /// Returns the E2E allowlist path from `CMDR_E2E_START_PATH`, if set.
@@ -428,33 +476,110 @@ mod tests {
         }
     }
 
+    /// Nothing on this machine is a File Provider domain root or a Unix root.
+    fn no_probe(_path: &str) -> bool {
+        false
+    }
+
+    /// Everything is a Unix root (paired with a specific domain probe, this isolates
+    /// the root-POSITION half of the rule).
+    fn every_dir_is_a_unix_root(_path: &str) -> bool {
+        true
+    }
+
     /// A directory named after a Linux pseudo-filesystem is skipped when it sits
-    /// DIRECTLY at the volume root, in every scope: the boot disk's `/proc`, an
-    /// external drive's `/Volumes/X/proc`, an MTP-style scan root's. This is what
-    /// keeps an Android phone's `proc/<pid>/task/<tid>/…` tree out of the index;
-    /// before it, only the boot volume's absolute `/proc` prefix was caught.
+    /// DIRECTLY at the volume root of a Unix-like filesystem, in every scope: the
+    /// boot disk's `/proc`, an external drive's `/Volumes/X/proc`, an MTP-style scan
+    /// root's. This is what keeps an Android phone's `proc/<pid>/task/<tid>/…` tree
+    /// out of the index; before it, only the boot volume's absolute `/proc` prefix
+    /// was caught.
     #[test]
-    fn pseudo_fs_at_a_volume_root_is_skipped_in_every_scope() {
+    fn pseudo_fs_at_a_unix_like_volume_root_is_skipped_in_every_scope() {
+        let unix_root = |scope: ExclusionScope| scope.with_probes(no_probe, every_dir_is_a_unix_root);
         for name in PSEUDO_FS_BASENAMES {
             assert!(
-                should_exclude(&format!("/{name}"), &ExclusionScope::boot_disk()),
+                should_exclude(&format!("/{name}"), &unix_root(ExclusionScope::boot_disk())),
                 "{name} at the boot root",
             );
             assert!(
                 should_exclude(
                     &format!("/Volumes/USB/{name}"),
-                    &ExclusionScope::mount_rooted("/Volumes/USB"),
+                    &unix_root(ExclusionScope::mount_rooted("/Volumes/USB")),
                 ),
                 "{name} at a mount root",
             );
             assert!(
                 should_exclude(
                     &format!("mtp://mtp-PIXEL9/65537/{name}"),
-                    &ExclusionScope::mount_rooted("mtp://mtp-PIXEL9/65537"),
+                    &unix_root(ExclusionScope::mount_rooted("mtp://mtp-PIXEL9/65537")),
                 ),
                 "{name} at an MTP scan root",
             );
         }
+    }
+
+    /// The name alone is NOT enough. Someone's Dropbox with a top-level `dev` folder
+    /// (a very ordinary name for a real folder) must keep being indexed: excluding it
+    /// would drop it from sizes with no error at all, which is worse than a slow walk.
+    ///
+    /// So the rule also demands corroboration that the root really is a Unix-like
+    /// filesystem: all three of `proc`, `sys`, and `dev` present as siblings. A cloud
+    /// folder has none of the other two, an Android root has all three.
+    #[test]
+    fn a_cloud_folder_named_dev_is_not_mistaken_for_a_pseudo_filesystem() {
+        const DROPBOX: &str = "/Users/me/Library/CloudStorage/Dropbox";
+        fn dropbox_is_a_domain_root(path: &str) -> bool {
+            path == DROPBOX
+        }
+        // A real domain root, but its only pseudo-fs-shaped child is `dev`.
+        let scope = ExclusionScope::boot_disk().with_probes(dropbox_is_a_domain_root, no_probe);
+
+        for name in PSEUDO_FS_BASENAMES {
+            assert!(
+                !should_exclude(&format!("{DROPBOX}/{name}"), &scope),
+                "{name} in a cloud drive is a user folder, not a pseudo-filesystem",
+            );
+        }
+    }
+
+    /// Same corroboration on a `/Volumes/X` mount root: a `dev` folder at the top of
+    /// someone's USB stick or backup drive stays indexed.
+    #[test]
+    fn a_folder_named_dev_at_a_mount_root_is_not_mistaken_for_a_pseudo_filesystem() {
+        let scope = ExclusionScope::mount_rooted("/Volumes/Backup").with_probes(no_probe, no_probe);
+
+        for name in PSEUDO_FS_BASENAMES {
+            assert!(
+                !should_exclude(&format!("/Volumes/Backup/{name}"), &scope),
+                "{name} at the root of a plain drive is a user folder",
+            );
+        }
+    }
+
+    /// The corroboration probe itself, against real directories: a temp dir holding
+    /// all three of `proc`, `sys`, and `dev` reads as a Unix-like root; the same dir
+    /// with only `dev` does not, and neither does a symlink standing in for `proc`
+    /// (an Android root has a symlink `d` alongside its real `proc`/`sys`/`dev`).
+    #[test]
+    fn the_unix_root_probe_needs_all_three_real_directories() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let root = dir.path().to_string_lossy().into_owned();
+
+        std::fs::create_dir(dir.path().join("dev")).expect("create dev");
+        assert!(!has_pseudo_fs_trio(&root), "`dev` alone is just a folder name");
+
+        std::fs::create_dir(dir.path().join("sys")).expect("create sys");
+        assert!(!has_pseudo_fs_trio(&root), "two of three is still not a Unix root");
+
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(dir.path().join("sys"), dir.path().join("proc")).expect("symlink proc");
+            assert!(!has_pseudo_fs_trio(&root), "a symlink named proc is not the real thing");
+            std::fs::remove_file(dir.path().join("proc")).expect("remove the symlink");
+        }
+
+        std::fs::create_dir(dir.path().join("proc")).expect("create proc");
+        assert!(has_pseudo_fs_trio(&root), "all three present reads as a Unix-like root");
     }
 
     /// The rule keys on root POSITION, not on the name: an ordinary folder that
@@ -491,15 +616,17 @@ mod tests {
 
     /// A File Provider domain root (Dropbox, Google Drive, iCloud Drive, MacDroid)
     /// counts as a volume root, so the phone's `proc` tree MacDroid grafts under
-    /// `~/Library/CloudStorage/MacDroid-…` is skipped. The domain probe is injected,
-    /// so this doesn't need a real provider domain on the machine.
+    /// `~/Library/CloudStorage/MacDroid-…` is skipped: the phone's root really is a
+    /// Unix root (its listing carries `proc`, `sys`, AND `dev` among `bin`, `etc`,
+    /// `sdcard`, …). Both probes are injected, so this needs neither a real provider
+    /// domain nor a phone attached.
     #[test]
     fn pseudo_fs_at_a_file_provider_domain_root_is_skipped() {
         const DOMAIN: &str = "/Users/me/Library/CloudStorage/MacDroid-pixel";
         fn fake_domain_probe(path: &str) -> bool {
             path == DOMAIN
         }
-        let scope = ExclusionScope::boot_disk().with_domain_root_probe(fake_domain_probe);
+        let scope = ExclusionScope::boot_disk().with_probes(fake_domain_probe, every_dir_is_a_unix_root);
 
         assert!(
             should_exclude(&format!("{DOMAIN}/proc"), &scope),
