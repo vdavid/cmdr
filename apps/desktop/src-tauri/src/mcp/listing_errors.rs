@@ -81,9 +81,18 @@ pub fn clear_for_test() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ignore_poison::IgnorePoison;
+
+    /// `BUFFER` is process-global, so these tests can't run concurrently: each one clears it
+    /// and then asserts on exactly what it recorded. Under a thread-per-test runner they
+    /// interleave and clobber each other (they pass under nextest, which is process-per-test,
+    /// so `pnpm check` stays green while a bare `cargo test` fails ~4 runs in 5). Every test
+    /// here takes this lock for its whole body.
+    static TEST_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn record_pushes_to_buffer_and_snapshot_returns_in_order() {
+        let _guard = TEST_LOCK.lock_ignore_poison();
         clear_for_test();
         record("l1", "v1", "/a", "boom");
         record("l2", "v1", "/b", "kaboom");
@@ -95,6 +104,7 @@ mod tests {
 
     #[test]
     fn buffer_drops_oldest_past_capacity() {
+        let _guard = TEST_LOCK.lock_ignore_poison();
         clear_for_test();
         for i in 0..(CAPACITY + 5) {
             record(&format!("l{i}"), "v", "/p", "err");
@@ -109,6 +119,7 @@ mod tests {
 
     #[test]
     fn snapshot_since_filters_by_timestamp() {
+        let _guard = TEST_LOCK.lock_ignore_poison();
         clear_for_test();
         record("l1", "v", "/p", "err");
         let mid = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64;
