@@ -17,6 +17,7 @@ use tauri::AppHandle;
 
 use super::super::DEBUG_STATS;
 use super::super::IndexPathSpace;
+use super::super::churn_monitor::ChurnMonitor;
 use super::super::events::{RescanReason, emit_rescan_notification};
 use super::super::metadata;
 use super::super::path_prefix;
@@ -121,6 +122,14 @@ pub(in crate::indexing) async fn run_live_event_loop(
 
     // Rate-limiter for the "ingestion falling behind" warning (Fix 2).
     let mut last_ingestion_warn: Option<Instant> = None;
+
+    // Spike B churn observability: `None` (and free) unless `CMDR_CHURN_SPIKE` is
+    // set. Read-only — it observes the deduplicated batch on the flush tick and
+    // logs a rollup per period; it writes nothing and changes no behaviour. The
+    // per-event arm below is deliberately untouched (the raw count is derived
+    // from `event_count`, which the loop already maintains).
+    let mut churn = ChurnMonitor::from_env(Instant::now());
+    let mut churn_last_raw = 0u64;
 
     loop {
         tokio::select! {
@@ -240,6 +249,16 @@ pub(in crate::indexing) async fn run_live_event_loop(
                         while event_rx.recv().await.is_some() {}
                         break;
                     }
+
+                // Observe the batch BEFORE it drains. Runs on the flush tick (once
+                // per second), never per event, and only when the spike is on.
+                if let Some(monitor) = churn.as_mut() {
+                    monitor.record_batch(pending_events.keys().map(String::as_str), event_count - churn_last_raw);
+                    churn_last_raw = event_count;
+                    if let Some(report) = monitor.rollup(Instant::now()) {
+                        report.log(&volume_id);
+                    }
+                }
 
                 let batch_size = pending_events.len() as u64;
                 let batch_start = Instant::now();

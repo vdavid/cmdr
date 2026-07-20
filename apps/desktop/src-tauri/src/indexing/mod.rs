@@ -9,6 +9,7 @@
 //! `IndexManager` + `ReadPool` bootstrap) lives in [`state`].
 
 pub mod aggregator;
+mod churn_monitor;
 mod enrichment;
 mod event_loop;
 mod events;
