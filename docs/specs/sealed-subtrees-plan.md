@@ -472,17 +472,26 @@ choices beats a pattern table.
 Four of the gates below were really "someone should measure this", which is a plan smell. These resolve them with data
 instead of judgment. **None require the feature to exist.**
 
-### Spike A — re-anchor cost (hours, decisive, do first)
+### Spike A — re-anchor cost — DONE, go with conditions
 
-Time a streaming `readdir` + `lstat` + sum over `fetch_temp` (1.14M entries) and a few other large directories, cold and
-warm. No DB reads, no writer messages, no row writes — the shape Phase C's re-anchor would actually use.
+Measured 2026-07-20. Full numbers, method, and reasoning:
+[`../notes/reanchor-cost-spike.md`](../notes/reanchor-cost-spike.md). Tool:
+[`../../scripts/reanchor-cost`](../../scripts/reanchor-cost).
 
-**This gates the entire feature.** Phase C makes the periodic re-anchor the primary correctness mechanism, and a
-re-anchor is the same O(children) walk this design exists to avoid, just on a timer. If keeping drift tolerable needs an
-hourly 1.14M-entry walk, sealing nets close to zero on the metric it was built for and M1 is the whole feature. Cheapest
-and most decisive, so it runs first.
+**Result: go.** One `getattrlistbulk` re-anchor of `fetch_temp` (now 1.44M entries) is 97–181 s wall, 19–29 s CPU, no
+writer messages, and flat 128 KiB memory, against 426 s plus a pegged writer queue plus 1.01 GB for the verification
+pass it replaces. Three conditions bind Phase C:
 
-Deliverable: timings in `docs/notes/`, and a go/no-go on M2–M4.
+1. **Cadence per directory, from its own measured walk cost**, not one global timer: per-entry cost runs 1.9 µs at 100k
+   entries and 80 µs at 1.43M, so no single interval fits both.
+2. **Split the anchor**: a `readdir`-only count pass is 5.4–8.1 s at 1.44M (15–20× cheaper) and fixes count drift, so it
+   can run hourly while the byte pass runs every 6–12 h.
+3. **Cap the walk and fall back to the approximate state** when a pass would exceed its budget. `fetch_temp` grows
+   100–250 entries/min with nothing pruning it, and per-entry cost rises with size, so the walk gets worse over time.
+
+Two planning assumptions the data corrected: the cost is directory size, not the FileProvider container (a self-made
+1.43M-entry directory outside any container is just as slow), and `getattrlistbulk` does not collapse the cost at
+pathological scale (1.2–1.6× over `lstat` there, though 4–20× on ordinary directories, so still worth using).
 
 ### Spike B — churn observability (passive collection, ~4 h window)
 
@@ -517,7 +526,7 @@ In order:
 1. **Gate on M2–M4 existing at all: the n=1 answer** (Spike C + M1's counter). If it comes back n≈1 across real
    machines, then **M1 alone is the whole feature** and this five-phase change to the ledger is not justified. Do not
    sequence M2–M4 unconditionally after M1.
-2. **Gate on starting M2–M4: re-anchor cost** (Spike A).
+2. **Gate on starting M2–M4: re-anchor cost** (Spike A). **Passed 2026-07-20**, with the three Phase C conditions above.
 3. **Gate on Phase A: seal-state identity** (Decision 1). A silent-data-loss question, not a cost question, so it
    outranks the remaining ones.
 4. **Gate on Phase A: the directory-rows question** (Decision 2).

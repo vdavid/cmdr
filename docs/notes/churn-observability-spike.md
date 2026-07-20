@@ -56,11 +56,11 @@ The trap, seen for real on 2026-07-20: a cold start with a journal gap can repla
 is shallow (`/`, `/System`). `reconciler/rescan.rs` routes a shallow anchor to the **visible scanner**, which stops the
 replay watcher, ends the post-replay live loop within seconds, and starts a full reconcile rescan of the volume. That
 rescan runs for many minutes, and no churn is recorded until it completes and live mode restarts. The log says so
-plainly (`routing shallow anchor /System to the visible scanner` → `Replay event loop: stopped` → `local scan: reconcile
-rescan`), but only if you look for it.
+plainly (`routing shallow anchor /System to the visible scanner` → `Replay event loop: stopped` →
+`local scan: reconcile rescan`), but only if you look for it.
 
 **So don't restart to "fix" a silent spike.** Two reasons: a restart replays the journal again and can draw the same
-shallow anchor, and killing the app *during* a scan makes the next launch do a full fresh scan from scratch
+shallow anchor, and killing the app _during_ a scan makes the next launch do a full fresh scan from scratch
 (`local scan: fresh scan (truncate) … (incomplete previous scan)`). Check the three signals above first; if a scan is
 running, wait it out.
 
@@ -99,9 +99,9 @@ Two caveats worth remembering when reading the numbers:
 - The input is the loop's **deduplicated** batch, so one file touched 40× in a second counts once. `raw_events` on the
   period line gives the dedup ratio.
 - A period closes on the next live batch after the configured length elapses, and under a heavy drain the event loop can
-  starve its own flush tick for tens of seconds. So periods stretch (`period_ms=43762` was observed right after a
-  replay handoff). That's why `period_ms` is measured rather than assumed, and why the analyser derives its timings from
-  it: rates stay honest, the time base just gets coarser when the machine is busiest.
+  starve its own flush tick for tens of seconds. So periods stretch (`period_ms=43762` was observed right after a replay
+  handoff). That's why `period_ms` is measured rather than assumed, and why the analyser derives its timings from it:
+  rates stay honest, the time base just gets coarser when the machine is busiest.
 
 ## Log format
 
