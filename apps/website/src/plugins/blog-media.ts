@@ -144,7 +144,7 @@ function icon(className: string, children: ElementContent[]): Element {
       viewBox: '0 0 24 24',
       fill: 'none',
       stroke: 'currentColor',
-      strokeWidth: 2,
+      strokeWidth: '2',
       strokeLinecap: 'round',
       strokeLinejoin: 'round',
       ariaHidden: 'true',

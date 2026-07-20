@@ -160,9 +160,13 @@ pub fn setup_virtual_mtp_device_at(root: &Path) -> u64 {
                 read_only: true,
             },
         ],
-        supports_rename: true,
+        // `supports_rename` and `supports_partial_object_64` come from the default
+        // (both true), which models a modern Android device: the virtual device
+        // stands in for a Pixel 9. Setting the latter false would exercise mtp-rs's
+        // 32-bit GetPartialObject fallback instead (cameras like the Lumix TZ61).
         event_poll_interval: Duration::from_millis(100),
         watch_backing_dirs: true,
+        ..Default::default()
     };
 
     let device_info = mtp_rs::register_virtual_device(&config);

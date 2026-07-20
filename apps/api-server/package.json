@@ -21,19 +21,19 @@
   "dependencies": {
     "@noble/ed25519": "^3.1.0",
     "aws4fetch": "^1.0.20",
-    "hono": "^4.12.15",
-    "resend": "^6.12.2"
+    "hono": "^4.12.30",
+    "resend": "^6.17.2"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260426.1",
+    "@cloudflare/workers-types": "^4.20260702.1",
     "@eslint/js": "^10.0.1",
-    "eslint": "^10.2.1",
+    "eslint": "^10.7.0",
     "eslint-config-prettier": "^10.1.8",
-    "globals": "^17.5.0",
-    "prettier": "^3.8.3",
+    "globals": "^17.7.0",
+    "prettier": "^3.9.5",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.59.0",
-    "vitest": "^4.1.5",
-    "wrangler": "^4.85.0"
+    "typescript-eslint": "^8.64.0",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.107.1"
   }
 }

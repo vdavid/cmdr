@@ -95,7 +95,11 @@ impl AgentLlm for GenaiAgentLlm {
 /// Builds the genai request from the assembled prompt. System and tools go into
 /// their dedicated request slots; the message history maps part-for-part.
 fn build_request(system: &str, tools: &[ToolDeclaration], messages: &[AgentMessage]) -> ChatRequest {
-    let chat_messages: Vec<ChatMessage> = messages.iter().map(agent_message_to_genai).collect();
+    let tool_names = tool_names_by_call_id(messages);
+    let chat_messages: Vec<ChatMessage> = messages
+        .iter()
+        .map(|message| agent_message_to_genai(message, &tool_names))
+        .collect();
     let mut request = ChatRequest::new(chat_messages).with_system(system);
     if !tools.is_empty() {
         let genai_tools: Vec<GenaiTool> = tools.iter().map(tool_declaration_to_genai).collect();
@@ -132,21 +136,45 @@ fn tool_declaration_to_genai(decl: &ToolDeclaration) -> GenaiTool {
     tool.with_schema(decl.schema.clone())
 }
 
-fn agent_message_to_genai(message: &AgentMessage) -> ChatMessage {
+fn agent_message_to_genai<'a>(message: &'a AgentMessage, tool_names: &ToolNames<'a>) -> ChatMessage {
     let role = match message.role {
         AgentRole::System => ChatRole::System,
         AgentRole::User => ChatRole::User,
         AgentRole::Assistant => ChatRole::Assistant,
         AgentRole::Tool => ChatRole::Tool,
     };
-    let parts: Vec<ContentPart> = message.parts.iter().flat_map(agent_part_to_genai).collect();
+    let parts: Vec<ContentPart> = message
+        .parts
+        .iter()
+        .flat_map(|part| agent_part_to_genai(part, tool_names))
+        .collect();
     ChatMessage::new(role, MessageContent::from_parts(parts))
+}
+
+/// Wire tool name per `call_id`, resolved across the whole assembled transcript.
+type ToolNames<'a> = std::collections::HashMap<&'a str, &'a str>;
+
+/// Indexes every tool CALL in the transcript by `call_id`, so the tool RESULT that
+/// answers it can be replayed carrying the originating function name. Gemini's
+/// `functionResponse.name` keys on that name rather than the call ID, so an unnamed
+/// result degrades tool calling there; the other adapters correlate by call ID and
+/// ignore it. A result whose call is no longer in the window resolves to `None`
+/// rather than to a guess.
+fn tool_names_by_call_id(messages: &[AgentMessage]) -> ToolNames<'_> {
+    messages
+        .iter()
+        .flat_map(|message| message.parts.iter())
+        .filter_map(|part| match part {
+            AgentPart::ToolCall(call) => Some((call.call_id.as_str(), call.tool.as_wire_name())),
+            _ => None,
+        })
+        .collect()
 }
 
 /// Maps one agent part to zero-or-more genai parts. A reasoning part that genai
 /// can't represent (e.g. an Anthropic thinking blob — Gap A) maps to nothing; v1
 /// runs those paths reasoning-off, so it does not arise in practice.
-fn agent_part_to_genai(part: &AgentPart) -> Vec<ContentPart> {
+fn agent_part_to_genai(part: &AgentPart, tool_names: &ToolNames<'_>) -> Vec<ContentPart> {
     match part {
         AgentPart::Text(text) => vec![ContentPart::Text(text.clone())],
         AgentPart::ToolCall(call) => vec![ContentPart::ToolCall(GenaiToolCall {
@@ -157,6 +185,7 @@ fn agent_part_to_genai(part: &AgentPart) -> Vec<ContentPart> {
         })],
         AgentPart::ToolResult(result) => vec![ContentPart::ToolResponse(GenaiToolResponse {
             call_id: result.call_id.clone(),
+            fn_name: tool_names.get(result.call_id.as_str()).map(|name| (*name).to_string()),
             content: value_to_tool_content(&result.content),
         })],
         AgentPart::Reasoning(state) => {
@@ -412,7 +441,7 @@ mod tests {
         // failure this asserts against.
         let original = gemini_tool_call_message();
 
-        let genai_message = agent_message_to_genai(&original);
+        let genai_message = agent_message_to_genai(&original, &tool_names_by_call_id(std::slice::from_ref(&original)));
         let parts = genai_content_to_agent_parts(&genai_message.content, ProviderTag::Gemini);
         let rebuilt = AgentMessage {
             role: AgentRole::Assistant,
@@ -456,6 +485,67 @@ mod tests {
             call.reasoning.as_ref().expect("reasoning on the call").blob,
             json!({ "thought_signatures": ["sig-abc"] })
         );
+    }
+
+    #[test]
+    fn tool_result_carries_the_originating_tool_name() {
+        // Gemini's `functionResponse.name` keys on the FUNCTION NAME, not the call ID,
+        // so a result replayed without `fn_name` silently degrades tool calling there.
+        // The name comes from the originating call earlier in the transcript.
+        let transcript = vec![
+            gemini_tool_call_message(),
+            AgentMessage {
+                role: AgentRole::Tool,
+                parts: vec![AgentPart::ToolResult(AgentToolResult {
+                    call_id: "call-1".into(),
+                    content: json!({ "ok": true }),
+                    elided: false,
+                })],
+                at: 1_001,
+            },
+        ];
+
+        let request = build_request("system", &[], &transcript);
+        let response = request
+            .messages
+            .iter()
+            .flat_map(|message| message.content.parts())
+            .find_map(|part| match part {
+                ContentPart::ToolResponse(response) => Some(response.clone()),
+                _ => None,
+            })
+            .expect("the tool result must map to a genai tool response");
+
+        assert_eq!(response.call_id, "call-1");
+        assert_eq!(response.fn_name.as_deref(), Some(ToolId::AppState.as_wire_name()));
+    }
+
+    #[test]
+    fn tool_result_without_a_matching_call_omits_the_tool_name() {
+        // A result whose call fell out of the assembled window has no name to claim.
+        // Sending a wrong one is worse than sending none, so it goes out unnamed.
+        let transcript = vec![AgentMessage {
+            role: AgentRole::Tool,
+            parts: vec![AgentPart::ToolResult(AgentToolResult {
+                call_id: "orphan".into(),
+                content: json!({ "ok": true }),
+                elided: false,
+            })],
+            at: 1_001,
+        }];
+
+        let request = build_request("system", &[], &transcript);
+        let response = request
+            .messages
+            .iter()
+            .flat_map(|message| message.content.parts())
+            .find_map(|part| match part {
+                ContentPart::ToolResponse(response) => Some(response.clone()),
+                _ => None,
+            })
+            .expect("the tool result must still map to a genai tool response");
+
+        assert_eq!(response.fn_name, None);
     }
 
     #[test]

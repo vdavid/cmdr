@@ -18,8 +18,8 @@ single-threaded trials, which on a 16-core box with free cores reflects unconten
 ## The two questions and the bars
 
 Per decided-question #7: median absolute error ≤ 15% overall, worst-mix median ≤ 30%, sampling adds ≤ 20% of scan
-wall-time (or ≤ ~300 ms absolute on a large mix); remote sources are suppressed unless extension ratios ALONE clear the
-same bars. Estimate is always shown as explicitly approximate ("~").
+wall-time (or ≤ ~~300 ms absolute on a large mix); remote sources are suppressed unless extension ratios ALONE clear the
+same bars. Estimate is always shown as explicitly approximate ("~~").
 
 ## Method
 
@@ -137,8 +137,8 @@ to 833%.
 **(a) Local-FS sampling estimator — GO.** On all five realistic mixes it clears both bars with enormous margin (overall
 median 1.3%, worst realistic mix 6.9% at levels 6/9, ≤ 11.7% even at the level-1 "Faster" end). The only mix over 30% is
 the deliberately adversarial synthetic one (37%), whose failure mode is understood, bounded, and in the safe
-overestimate direction. Cost is bounded at ~105 ms worst case and near-zero for media-heavy folders. Ship it, styled as
-explicitly approximate ("~"), cancelled with the scan, sampling off the walk thread.
+overestimate direction. Cost is bounded at ~~105 ms worst case and near-zero for media-heavy folders. Ship it, styled as
+explicitly approximate ("~~"), cancelled with the scan, sampling off the walk thread.
 
 **(b) Extension-only for remote — NO-GO; suppress the estimate on remote sources** (matches the lead default). Nuance
 worth recording: by the strict letter of decided-question #7, extension-only DOES clear the bars on the five realistic

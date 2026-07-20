@@ -98,8 +98,18 @@ async function buildPresignedUrl(env: Bindings, key: string): Promise<string | n
   return signed.url
 }
 
-/** Hono `c.executionCtx.waitUntil` wrapper that falls back to inline await in tests. */
-function scheduleBackground(c: { executionCtx: ExecutionContext }, work: Promise<void>): Promise<void> {
+/**
+ * Hono `c.executionCtx.waitUntil` wrapper that falls back to inline await in tests.
+ *
+ * Takes only the `waitUntil` shape it actually calls: Hono's `Context.executionCtx` is its own
+ * `ExecutionContext<unknown>`, which carries members (`tracing`) that the ambient
+ * `@cloudflare/workers-types` `ExecutionContext` doesn't, so naming either type here breaks the
+ * other whenever the two drift.
+ */
+function scheduleBackground(
+  c: { executionCtx: { waitUntil: (promise: Promise<unknown>) => void } },
+  work: Promise<void>,
+): Promise<void> {
   try {
     c.executionCtx.waitUntil(work)
     return Promise.resolve()

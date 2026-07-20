@@ -10,7 +10,12 @@ services:
 
   # Caddy route needed: comments.getcmdr.com -> remark42:8080
   remark42:
-    image: umputun/remark42:v1.15.0
+    # v1.16.x is a security release: stored XSS via the image proxy, an OAuth
+    # open-redirect, path traversal in /picture/, and SSRF in the title
+    # extractor. Deploy deliberately; the open-redirect fix wires
+    # `AllowedRedirectHosts`, so verify Google/GitHub sign-in still completes
+    # after the first deploy.
+    image: umputun/remark42:v1.16.4
     container_name: remark42
     restart: unless-stopped
     volumes:

@@ -58,7 +58,14 @@ blockExoticSubdeps: true
 overrides:
   serialize-javascript: '>=7.0.3'
   lodash: '>=4.17.23'
-  cookie: '>=0.7.0'
+  # Floor: cookie <0.7.0 accepts out-of-bounds characters in name/value
+  # (GHSA-pxg6-pf52-xh8x). Ceiling: cookie 2.0 renamed the whole API
+  # (`parse`/`serialize` became `parseCookie`/`stringifyCookie`/`parseSetCookie`/
+  # `stringifySetCookie`), and `@sveltejs/kit` still does
+  # `import { parse, serialize } from 'cookie'`, so 2.x breaks the SvelteKit
+  # build with `[MISSING_EXPORT] "parse" is not exported`. Kit itself asks for
+  # `^0.6.0`; only raise the ceiling once Kit's runtime uses the 2.x names.
+  cookie: '>=0.7.0 <2'
   tmp: '>=0.2.4'
 
 # pnpm 11 requires explicit per-package build-script approval. The legacy

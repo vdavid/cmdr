@@ -35,15 +35,14 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = ["macos-private-api"] }
 tauri-plugin-opener = "2"
-tauri-plugin-mcp-bridge = "0.11"
+tauri-plugin-mcp-bridge = "0.12"
 tauri-plugin-store = "2"
 tauri-plugin-dialog = "2.6"
 tauri-plugin-notification = "2.3.3"
 # Global system-wide keyboard shortcut (default ⌃⌥⌘J for "reveal latest download"). On
 # macOS, the plugin uses Carbon's `RegisterEventHotKey` so it needs no extra TCC grant
-# (Accessibility/Input Monitoring not required). Pinned at 2.3.1 (published 2025-10-27,
-# ~7 months old; the 2.3.2 release from 2026-05-28 is still within the 14-day age policy).
-tauri-plugin-global-shortcut = "=2.3.1"
+# (Accessibility/Input Monitoring not required). Pinned at 2.3.2 (published 2026-05-28).
+tauri-plugin-global-shortcut = "=2.3.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 notify = "8"
@@ -89,7 +88,7 @@ futures-util = "0.3"
 # enables runtime integration (token wakeups via tokio's reactor). 0.7.18 is the latest
 # stable (published 2026-01-04). MIT license; tracks tokio's release cadence.
 tokio-util = { version = "0.7.18", features = ["rt"] }
-tower-http = { version = "0.6", features = ["cors"] }
+tower-http = { version = "0.7", features = ["cors"] }
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 memchr = "2"
@@ -104,12 +103,12 @@ arc-swap = "1.9.1"
 walkdir = "2"
 # Drive indexing: SQLite store and macOS FSEvents watcher (the parallel directory
 # walker is now the in-tree `indexing::scanner::walker`, not a dependency)
-rusqlite = { version = "0.39", features = ["bundled", "collation", "fallible_uint"] }
+rusqlite = { version = "0.40", features = ["bundled", "collation", "fallible_uint"] }
 # For chunked copy metadata preservation (network filesystems)
 xattr = "1"
 filetime = "0.2"
-exacl = "0.12"
-sysinfo = { version = "0.38.4", default-features = false, features = ["system"] }
+exacl = "0.13"
+sysinfo = { version = "0.39.0", default-features = false, features = ["system"] }
 time = { version = "0.3", features = ["parsing", "macros", "formatting"] }
 # Playwright E2E testing plugin: socket bridge for direct webview injection (optional, feature-gated, dev-only).
 # Provides multi-window command targeting and label-aware macOS native screenshots (so E2E can capture
@@ -167,7 +166,7 @@ zeroize = "1.9.0"
 # Error reporter: short-ID generation (`ERR-XXXXX`) using rejection sampling.
 rand = "0.10"
 # Pure-Rust git library for the git browser (M1: discover, repo info, status).
-# Pinned at 0.81.0 (published 2026-03-22, ~5 weeks old at landing) per
+# Pinned at 0.85.0 (published 2026-06-22, ~4 weeks old at landing) per
 # project rule on avoiding 0-day vulns. Default features include `status`,
 # `basic`, and `extras` which cover discover + ahead/behind + status walk.
 # `tree-editor` opts into the in-memory `Repository::edit_tree()` API used
@@ -176,7 +175,7 @@ rand = "0.10"
 # loaded machine; one fixture chain used to spawn ~31 of them and time
 # out the 8 s nextest cap under check.sh contention). Pure API addition,
 # no extra runtime cost on the prod read paths.
-gix = { version = "0.81", features = ["tree-editor"] }
+gix = { version = "0.85", features = ["tree-editor"] }
 # Multi-provider LLM client. Normalizes OpenAI / OpenAI Responses / Anthropic / Gemini /
 # xAI / Groq / DeepSeek / Ollama / OpenRouter / etc. Auto-routes `gpt-5*` / `*-codex` /
 # `*-pro` to the Responses API; uses native protocols for Anthropic + Gemini. Replaces
@@ -184,17 +183,15 @@ gix = { version = "0.81", features = ["tree-editor"] }
 # that reject custom `temperature` (HTTP 400) and (2) Responses-only models that 404 on
 # `/v1/chat/completions`.
 #
-# Pinned at the EXACT 0.6.0-beta.19 (published 2026-05-06). 0.6 is in active beta with
-# weekly releases, but the API surface we use is stable across the 0.6 line, and this is
-# the first version that auto-routes plain `gpt-5*` to the Responses API (PR #167); 0.5.3
-# only routed `*-pro` and `*-codex`. Stable 0.6.0 isn't out yet; bumping to a future
-# `0.6.0-beta.20` should be a no-op for us, but pin exact to avoid surprise breakage on
-# `cargo update`. Solo maintainer; MIT/Apache-2.0; ~25k LOC if we ever need to fork.
-genai = "=0.6.0-beta.19"
+# Pinned at the EXACT 0.6.5 (published 2026-06-06). The 0.6 line ships often, so pin exact
+# to avoid surprise breakage on `cargo update` — 0.6.5 added the required `ToolResponse.fn_name`
+# field, which is the kind of churn a caret range would have landed silently. The 0.7 line is
+# still in beta. Solo maintainer; MIT/Apache-2.0; ~25k LOC if we ever need to fork.
+genai = "=0.6.5"
 # Type-safe IPC: typed Rust↔TS bindings for tauri commands and events.
 # Generated `bindings.ts` lands in `apps/desktop/src/lib/ipc/`; the frontend
 # imports `commands.commandName(args)` instead of `invoke('command_name', ...)`.
-# Pinned at 2.0.0-rc.24 (published 2026-03-30, ~5 weeks old at landing); the
+# Pinned at 2.0.0-rc.25 (published 2026-05-08); the
 # v1 line is for Tauri 1, v2 RC line is the active branch for Tauri 2.
 tauri-specta = { version = "=2.0.0-rc.24", features = ["derive", "typescript"] }
 specta = { version = "=2.0.0-rc.24", features = ["derive", "serde_json"] }
@@ -230,12 +227,12 @@ mime_guess = "2"
 
 [target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
 # MTP (Android device) support via pure Rust implementation.
-mtp-rs = "0.23.0"
+mtp-rs = "0.26.0"
 # USB hotplug detection for MTP device watcher
 nusb = "0.2.3"
 bytes = "1"
 # mDNS discovery for network host browsing (pure Rust, cross-platform)
-mdns-sd = { version = "0.19", features = ["logging"] }
+mdns-sd = { version = "0.20", features = ["logging"] }
 # SMB2/3 protocol client for share enumeration (pure Rust, pipelined I/O).
 # When bumping: also re-vendor the test containers per
 # apps/desktop/test/smb-servers/.compose/VENDORED.md

@@ -21,9 +21,9 @@
     "check": "./scripts/check.sh"
   },
   "devDependencies": {
-    "oxfmt": "^0.46.0"
+    "oxfmt": "^0.59.0"
   },
-  "packageManager": "pnpm@11.9.0",
+  "packageManager": "pnpm@11.13.1",
   "engines": {
     "pnpm": ">=11"
   }

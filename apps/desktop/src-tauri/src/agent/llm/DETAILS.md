@@ -35,8 +35,13 @@ Agent → genai (request / replay), per `agent_part_to_genai`:
 - `Text(s)` → `ContentPart::Text(s)`.
 - `ToolCall{call_id, tool, arguments, reasoning}` → `ContentPart::ToolCall{call_id, fn_name = tool.as_wire_name(),
   fn_arguments = arguments, thought_signatures = blob.thought_signatures}`.
-- `ToolResult{call_id, content}` → `ContentPart::ToolResponse{call_id, content = JSON string}` (a bare string passes
-  through unquoted so it round-trips; a structured value serializes to JSON text).
+- `ToolResult{call_id, content}` → `ContentPart::ToolResponse{call_id, fn_name, content = JSON string}` (a bare string
+  passes through unquoted so it round-trips; a structured value serializes to JSON text). `AgentToolResult` carries no
+  tool name of its own, so `build_request` first indexes the whole assembled transcript by `call_id`
+  (`tool_names_by_call_id`) and looks `fn_name` up from the originating `ToolCall`. Gemini's `functionResponse.name`
+  keys on the function name rather than the call ID, so an unnamed result degrades tool calling there; every other
+  adapter correlates by call ID and ignores the field. A result whose call already fell out of the assembled window
+  resolves to `None` (unnamed beats wrongly named).
 - `Reasoning(state)` → `ThoughtSignature` part(s) if the blob carries signatures, else a `ReasoningContent` part if it
   carries reasoning text, else nothing. An Anthropic thinking blob has no lossless genai representation (Gap A) and maps
   to nothing — v1 runs Anthropic reasoning-off, so it doesn't arise.

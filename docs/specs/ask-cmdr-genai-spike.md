@@ -395,5 +395,6 @@ an OpenAI-cc finding.
 
 **$0.00.** The one set of live runs that succeeded — all four scenarios against Cmdr's **local** llama-server — cost
 nothing (on-device). OpenAI: every call `429 insufficient_quota` (unbilled). OpenRouter: free-tier `:free` models only,
-usage stayed `$0` (`limit_remaining=$10` untouched). The source audit carries the cloud verdicts, and the harness is
-staged for a one-command-per-provider cloud pass once keys are refreshed.
+usage stayed `$0` (`limit_remaining=$10`
+untouched). The source audit carries the cloud verdicts, and the harness is staged for a one-command-per-provider cloud
+pass once keys are refreshed.

@@ -833,9 +833,7 @@ describe('MyComponent a11y', () => {
     document.body.appendChild(target)
     mount(MyComponent, {
       target,
-      props: {
-        /* default props */
-      },
+      props: {/* default props */},
     })
     await tick()
     await expectNoA11yViolations(target)

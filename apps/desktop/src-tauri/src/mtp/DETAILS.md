@@ -20,6 +20,13 @@ none of those env vars stays inert and matches a plain build; the dev opt-in is 
 `CMDR_VIRTUAL_MTP=<dir>` backs it with a custom dir. The fixture tree mirrors `test/e2e-shared/mtp-fixtures.ts`. The
 gating logic (`decide_startup_root`) is pure and unit-tested in `virtual_device.rs::tests`.
 
+**Build `VirtualDeviceConfig` with `..Default::default()`** and state only the fields this fixture actually cares
+about. mtp-rs 0.26 added `Default` precisely so a new field doesn't break us: every prior field addition was a compile
+error here (0.24's `supports_partial_object_64` broke CI). Don't re-expand the literal to name every field. The
+defaults model a modern Android device (`supports_rename` and `supports_partial_object_64` both true), which matches
+the Pixel 9 this fixture stands in for; set `supports_partial_object_64: false` explicitly if you ever want to exercise
+mtp-rs's 32-bit `GetPartialObject` fallback (the PTP-camera path).
+
 ### Virtual device watcher in E2E
 
 The virtual device (via mtp-rs) runs a filesystem watcher over its backing dirs that turns out-of-band disk writes into

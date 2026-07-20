@@ -2,7 +2,7 @@
 # Pinned to a specific stable version, not the floating "stable" channel.
 # A compromised rustc release would land transparently otherwise. Bump
 # deliberately, with a few days between Rust's release and our pin update.
-channel = "1.95.0"
+channel = "1.97.1"
 # rustup installs only the minimal profile for a pinned channel by default
 # (rustc + cargo + rust-std). CI invokes `cargo fmt` and `cargo clippy`, both
 # of which need their respective components installed. Declare them here so
