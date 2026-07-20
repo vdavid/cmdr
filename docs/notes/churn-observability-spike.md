@@ -179,3 +179,63 @@ comma in a path can't shift columns.
 The aggregator is designed to be promoted into the sealed-subtrees churn accounting rather than deleted: only the sink
 changes (a decision instead of a log line), and the ancestor rollup plus the distinct-children signal are exactly what
 `pick_seal_root` needs.
+
+## Results (2026-07-20)
+
+Collected on David's machine, 11:30–12:12, 31 periods spanning 42 minutes: 71,562 raw events, 42,207 deduplicated paths
+(1.7× dedup), peak 1,683 directories tracked in a period. No instrument cap engaged (`nodes_dropped=0`,
+`deep_truncated=0`), so the numbers are the machine's behaviour, not the tool's limits.
+
+### Q1. Separation is fast, so the seed list is genuinely unnecessary
+
+A node counts as hot at 10× the period's average per-directory churn. Time from first appearance to two consecutive hot
+periods:
+
+- `…/domain-temp-gdrive-…/fetch_temp`: **10 s** (one period).
+- `…/worktrees/sealed-subtrees/target` and `target/debug`: **31 s**.
+- `~/Library/Caches/cmdr/WebKit/NetworkCache/…`: 1 m 18 s.
+
+Every motivating case separates within a minute. That settles the open question behind Decision 4: a churn classifier
+converges fast enough to stand alone, and provisional-seal-on-size only has to cover the first scan, not a long learning
+period.
+
+### Q2. The boundary is real, but the ratio-drop rule as specified picks the wrong node
+
+The good news: uniform churn along a chain is clearly visible. Below `com.google.drivefs.fpext` the share is exactly
+1.000 at every level down to `fetch_temp` (0.888), and below `Library/Caches/cmdr` it is 0.999–1.000 down to `Resource`.
+Sealable subtrees really do announce themselves as a run of ~1.0 shares.
+
+The bad news, and the main finding of this spike: **"climb while uniformly churny, stop at the first ratio drop"
+over-climbs.** Applied to the real chains it selects:
+
+- `~/Library/Containers` for `fetch_temp` (share 0.369 entering it, 0.971 from `fpext` into it)
+- `~/Library/Caches` for the WebKit cache (share 0.408)
+
+Both are far too high. Sealing `~/Library/Containers` would seal every app's container; `~/Library/Caches`, every app's
+cache. The rule fails because `fpext`→`Containers` reads 0.971 — indistinguishable from "uniformly churny" — only
+because the other ~40 containers happened to be quiet during the window. Churn share alone cannot separate "this parent
+is entirely churny" from "this parent's churn is dominated by one child right now".
+
+**What the rule needs.** The plan already says the ratio should be measured "by descendant count and by bytes"; only the
+churn dimension was implemented here, and the miss is exactly the omitted dimension. A parent should block the climb
+when it holds substantial _quiet content_, not merely when its churn share drops. `~/Library/Containers` holds dozens of
+other apps' data that never churned; `fpext/Data/tmp` holds essentially nothing else. Phase B must combine churn share
+with a content ratio (entries and/or bytes below the candidate versus below its parent), and the hard-stop list should
+include `~/Library/Containers` and `~/Library/Caches` as belt-and-braces.
+
+Without this correction, Phase B would have shipped a rule that seals a user's entire container or cache tree the first
+time one app inside it churns.
+
+### Q3. Under-answered, and the reason is itself a finding
+
+The intended 4-hour window produced 42 minutes of data. A shallow `MustScanSubDirs` anchor at `/System` at 12:12:53
+superseded live mode with a full reconcile rescan that was still running 85 minutes later, and **the churn monitor only
+observes live mode**. Restarting to recover makes it worse: each cold start replays the journal and can draw the same
+shallow anchor.
+
+So the hysteresis constants are not yet grounded in data, and Phase C should still treat them as unmeasured.
+
+The finding underneath: on a real dev machine, live mode is a minority of the app's life. Across the available logs,
+**14 of 28 recorded scans were triggered by `shallow MustScanSubDirs`**, roughly one every two hours including
+overnight. Any future design that assumes "the live event loop is generally running" should check that assumption first.
+Raw trigger list preserved during this spike; the rescan-frequency question is being tracked separately.

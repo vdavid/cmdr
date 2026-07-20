@@ -1,4 +1,4 @@
-// Re-anchor cost measurement for Spike A of the sealed-subtrees plan.
+// Re-anchor cost measurement: how long a full metadata walk of a huge directory takes via readdir, lstat, and getattrlistbulk.
 //
 // A Phase C re-anchor is a streaming one-level walk of a sealed directory that
 // sums its children's sizes: no DB reads, no writer messages, no row writes.

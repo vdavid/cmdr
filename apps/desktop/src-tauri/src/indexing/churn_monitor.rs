@@ -1,4 +1,4 @@
-//! Per-subtree churn observability for the live FSEvents loop (Spike B).
+//! Per-subtree churn observability for the live FSEvents loop: which directories churn, how hard, and how that rolls up an ancestor chain.
 //!
 //! Read-only measurement: it writes no index state, sends no writer messages,
 //! and changes no behaviour. It watches the live loop's already-deduplicated

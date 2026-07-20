@@ -1,4 +1,4 @@
-// Churn analysis for Spike B of the sealed-subtrees plan.
+// Churn analysis: turns the indexing::churn rollup logs into per-subtree time series, separation times, and ancestor-chain churn shares.
 //
 // Reads Cmdr log files containing `indexing::churn` rollup lines (emitted when
 // the app runs with CMDR_CHURN_SPIKE=1) and answers the spike's three questions:
