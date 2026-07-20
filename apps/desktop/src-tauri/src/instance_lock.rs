@@ -56,9 +56,11 @@ const ALERT_BODY: &str =
 /// Long enough that someone who launched Cmdr and glanced away still gets to read it; short enough
 /// that a dialog nobody comes back to doesn't sit on screen (with a refused process behind it) for
 /// the rest of the session. There's no decision to make in it, only an "OK" to acknowledge.
+#[cfg(target_os = "macos")]
 const ALERT_TIMEOUT: Duration = Duration::from_secs(60);
 
 /// Extra slack the watchdog gives the alert to return on its own before ending the process anyway.
+#[cfg(target_os = "macos")]
 const ALERT_WATCHDOG_GRACE: Duration = Duration::from_secs(10);
 
 /// Path of the lock file for a given data dir.
