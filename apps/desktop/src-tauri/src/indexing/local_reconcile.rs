@@ -38,6 +38,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel};
 use std::time::{Duration, Instant};
 
+mod latency_probe;
+
+use latency_probe::LatencyProbe;
+
 use super::DEBUG_STATS;
 use super::IndexPathSpace;
 use super::metadata::extract_metadata;
@@ -74,6 +78,9 @@ struct GuardedReader {
     timeout: Duration,
     req_tx: Sender<PathBuf>,
     res_rx: Receiver<FsChildrenResult>,
+    /// Per-directory latency observability, `None` unless
+    /// `CMDR_RECONCILE_LATENCY_SPIKE` is set. See [`latency_probe`].
+    latency: Option<LatencyProbe>,
 }
 
 impl GuardedReader {
@@ -94,6 +101,7 @@ impl GuardedReader {
             timeout,
             req_tx,
             res_rx,
+            latency: LatencyProbe::from_env(Instant::now()),
         }
     }
 
@@ -128,17 +136,35 @@ impl GuardedReader {
 
     /// List a directory, returning `None` if it can't be listed OR the read exceeds
     /// the timeout.
+    ///
+    /// Every read is timed for the latency probe (when enabled), including the
+    /// timed-out ones: an abandoned read still costs the serial walk its full
+    /// `timeout`, so leaving it out would flatter the numbers.
     fn read(&mut self, path: &Path) -> FsChildrenResult {
+        if self.latency.is_none() {
+            return self.read_uninstrumented(path).0;
+        }
+        let started = Instant::now();
+        let (result, timed_out) = self.read_uninstrumented(path);
+        let now = Instant::now();
+        if let Some(probe) = self.latency.as_mut() {
+            probe.record(path, now.duration_since(started), timed_out, now);
+        }
+        result
+    }
+
+    /// The read itself. Returns the listing and whether it hit the timeout.
+    fn read_uninstrumented(&mut self, path: &Path) -> (FsChildrenResult, bool) {
         if self.req_tx.send(path.to_path_buf()).is_err() {
             // Worker gone (a previous read is still parked, or it panicked): get a
             // fresh one and retry once.
             self.respawn();
             if self.req_tx.send(path.to_path_buf()).is_err() {
-                return None;
+                return (None, false);
             }
         }
         match self.res_rx.recv_timeout(self.timeout) {
-            Ok(result) => result,
+            Ok(result) => (result, false),
             Err(RecvTimeoutError::Timeout) => {
                 log::warn!(
                     "local reconcile: read timed out after {:?}, abandoning {} (kept stale, heals later)",
@@ -146,14 +172,22 @@ impl GuardedReader {
                     path.display()
                 );
                 self.respawn();
-                None
+                (None, true)
             }
             Err(RecvTimeoutError::Disconnected) => {
                 // The worker exited without answering (e.g. `read_fn` panicked). Get a
                 // fresh one; report this read as unlistable.
                 self.respawn();
-                None
+                (None, false)
             }
+        }
+    }
+}
+
+impl Drop for GuardedReader {
+    fn drop(&mut self) {
+        if let Some(probe) = self.latency.as_ref() {
+            probe.finish(Instant::now());
         }
     }
 }
