@@ -257,7 +257,7 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                 // Per-navigation verification runs on the boot disk today, so
                 // `BootDisk`; a mount-rooted verifier threads the kind scope here.
                 let child_path = format!("{}/{}", parent_prefix, disk_entry.name);
-                if scanner::should_exclude(&child_path, scanner::ExclusionScope::BootDisk) {
+                if scanner::should_exclude(&child_path, &scanner::ExclusionScope::boot_disk()) {
                     continue;
                 }
 
@@ -378,7 +378,7 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
 
         let cancelled = std::sync::atomic::AtomicBool::new(false);
         for new_dir in &new_dir_paths {
-            if scanner::should_exclude(new_dir, scanner::ExclusionScope::BootDisk) {
+            if scanner::should_exclude(new_dir, &scanner::ExclusionScope::boot_disk()) {
                 continue;
             }
             match scanner::scan_subtree(Path::new(new_dir), writer, &cancelled) {

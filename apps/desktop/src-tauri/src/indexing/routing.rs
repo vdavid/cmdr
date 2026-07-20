@@ -25,6 +25,8 @@ use rusqlite::Connection;
 
 use super::firmlinks;
 use super::scanner::ExclusionScope;
+#[cfg(test)]
+use super::scanner::ExclusionTier;
 use super::state::{IndexVolumeKind, ROOT_VOLUME_ID, VolumeId};
 use super::store::{self, IndexStoreError};
 
@@ -91,6 +93,25 @@ fn mtp_volume_id_for_path(path: &str) -> Option<VolumeId> {
     let device_id = parts.next().filter(|s| !s.is_empty())?;
     let storage = parts.next().filter(|s| s.parse::<u32>().is_ok())?;
     Some(format!("{device_id}:{storage}"))
+}
+
+/// The exclusion scope for a volume id on the READ side, where only the id is at
+/// hand (enrichment). `root` is the boot disk; every other registered volume is
+/// mount-rooted at its registered root, so its own subtree isn't excluded wholesale.
+///
+/// An UNREGISTERED non-root id yields an empty mount root: still mount-rooted (the
+/// tier that matters), but no path can sit at that root, so the root-position
+/// pseudo-filesystem rule simply never fires. That's inert in practice — the same
+/// registry lookup in [`index_read_path`] runs a moment later and drops the path.
+pub(crate) fn exclusion_scope_for_volume(volume_id: &str) -> ExclusionScope {
+    if volume_id == ROOT_VOLUME_ID {
+        return ExclusionScope::boot_disk();
+    }
+    let mount_root = crate::file_system::get_volume_manager()
+        .get(volume_id)
+        .map(|v| v.root().to_string_lossy().into_owned())
+        .unwrap_or_default();
+    ExclusionScope::mount_rooted(mount_root)
 }
 
 /// Map a listing/dir-stats path into the path space the volume's index stores it
@@ -205,9 +226,11 @@ pub(crate) fn index_read_path(volume_id: &str, abs_path: &str) -> Option<String>
 /// [`resolve_abs`]: IndexPathSpace::resolve_abs
 #[derive(Clone, Debug)]
 pub(crate) struct IndexPathSpace {
-    /// `None` for the `/`-rooted boot disk; `Some(mount_root)` for a mount-rooted
-    /// volume (the prefix stripped to reach the index-relative path).
-    mount_root: Option<String>,
+    /// Where this volume is rooted, held AS the [`ExclusionScope`] the pipeline
+    /// gates paths with (`boot_disk` for `/`, `mount_rooted` for the prefix stripped
+    /// to reach the index-relative path). One home for the mount root, so the space
+    /// and the exclusion gate can't disagree about where the volume starts.
+    scope: ExclusionScope,
     /// Whether this volume's filesystem inode is a trustworthy identity, resolved
     /// ONCE per scan from the volume's [`FilesystemKind`](crate::file_system::filesystem_kind::FilesystemKind).
     /// `false` only for a local external drive on FAT/exFAT (derived, unstable
@@ -225,7 +248,7 @@ impl IndexPathSpace {
     /// normalization). The boot disk is APFS, so inodes are trustworthy.
     pub(crate) fn root() -> Self {
         Self {
-            mount_root: None,
+            scope: ExclusionScope::boot_disk(),
             inodes_trustworthy: true,
         }
     }
@@ -236,9 +259,15 @@ impl IndexPathSpace {
     /// FAT/exFAT drive's untrusted-inode fact.
     pub(crate) fn mount_rooted(mount_root: impl Into<String>) -> Self {
         Self {
-            mount_root: Some(mount_root.into()),
+            scope: ExclusionScope::mount_rooted(mount_root),
             inodes_trustworthy: true,
         }
+    }
+
+    /// The mount root, or `None` for the `/`-rooted boot disk. Read back from the
+    /// scope, which owns it.
+    fn mount_root(&self) -> Option<&str> {
+        self.scope.mount_root()
     }
 
     /// Override the inode-trust flag (builder form). Used by `for_volume` and by
@@ -280,19 +309,16 @@ impl IndexPathSpace {
     /// The volume's root path as a string: `/Volumes/X` for a mount-rooted drive, `/`
     /// for the boot disk. Used for the stored `volume_path` meta.
     pub(crate) fn volume_root_string(&self) -> String {
-        self.mount_root.clone().unwrap_or_else(|| "/".to_string())
+        self.scope.volume_root().to_string()
     }
 
     /// The exclusion scope this volume's scan/live gate uses. A mount-rooted scan
-    /// skips only per-volume junk basenames — under `BootDisk` its own `/Volumes/X`
+    /// skips only the per-volume tier — under `BootDisk` its own `/Volumes/X`
     /// subtree would be excluded and the scan would falsely complete empty. The boot
-    /// disk keeps the absolute-prefix tier.
-    pub(crate) fn exclusion_scope(&self) -> ExclusionScope {
-        if self.mount_root.is_some() {
-            ExclusionScope::MountRooted
-        } else {
-            ExclusionScope::BootDisk
-        }
+    /// disk keeps the absolute-prefix tier. Either way the scope carries the volume
+    /// ROOT, so the root-position pseudo-filesystem skip works on every volume.
+    pub(crate) fn exclusion_scope(&self) -> &ExclusionScope {
+        &self.scope
     }
 
     /// Canonicalize a raw FSEvents/`read_dir` path into the absolute path this
@@ -301,7 +327,7 @@ impl IndexPathSpace {
     /// symlinks, Data firmlinks); a mount-rooted external drive keeps the raw path —
     /// firmlink semantics are boot-disk-only and don't apply under `/Volumes`.
     pub(crate) fn absolute(&self, raw_path: &str) -> String {
-        if self.mount_root.is_some() {
+        if self.mount_root().is_some() {
             raw_path.to_string()
         } else {
             firmlinks::normalize_path(raw_path)
@@ -316,7 +342,7 @@ impl IndexPathSpace {
     /// skip/no-op (mirrors the SMB read side dropping an off-volume path rather than
     /// mis-rooting it at `ROOT_ID`). Drop-in for a direct `store::resolve_path` call.
     pub(crate) fn resolve_abs(&self, conn: &Connection, absolute: &str) -> Result<Option<i64>, IndexStoreError> {
-        match &self.mount_root {
+        match self.mount_root() {
             None => store::resolve_path(conn, absolute),
             Some(root) => match super::smb_watch::index_relative_path(root, absolute) {
                 Some(rel) => store::resolve_path(conn, &rel),
@@ -430,26 +456,29 @@ mod tests {
         use std::path::Path;
 
         let root = IndexPathSpace::root();
-        assert_eq!(root.exclusion_scope(), ExclusionScope::BootDisk);
+        assert_eq!(root.exclusion_scope().tier(), ExclusionTier::BootDisk);
         assert_eq!(root.volume_root_string(), "/");
         // Root's `absolute` firmlink-normalizes; a plain path is already canonical.
         assert_eq!(root.absolute("/Users/me/x"), "/Users/me/x");
 
         let mount = IndexPathSpace::mount_rooted("/Volumes/NONAME");
-        assert_eq!(mount.exclusion_scope(), ExclusionScope::MountRooted);
+        assert_eq!(mount.exclusion_scope().tier(), ExclusionTier::MountRooted);
         assert_eq!(mount.volume_root_string(), "/Volumes/NONAME");
         // A mount-rooted space keeps the raw absolute path (no firmlink normalization).
         assert_eq!(mount.absolute("/Volumes/NONAME/sub"), "/Volumes/NONAME/sub");
 
         // `for_volume` derives the space from the kind + root.
         assert_eq!(
-            IndexPathSpace::for_volume(IndexVolumeKind::Local, Path::new("/"), true).exclusion_scope(),
-            ExclusionScope::BootDisk,
+            IndexPathSpace::for_volume(IndexVolumeKind::Local, Path::new("/"), true)
+                .exclusion_scope()
+                .tier(),
+            ExclusionTier::BootDisk,
         );
         assert_eq!(
             IndexPathSpace::for_volume(IndexVolumeKind::LocalExternal, Path::new("/Volumes/NONAME"), true)
-                .exclusion_scope(),
-            ExclusionScope::MountRooted,
+                .exclusion_scope()
+                .tier(),
+            ExclusionTier::MountRooted,
         );
     }
 

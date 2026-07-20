@@ -283,12 +283,8 @@ pub fn enrich_entries_with_index_on_volume(volume_id: &str, entries: &mut [FileE
     // applies only the per-volume junk tier: it must NOT exclude its own
     // `/Volumes/X/...` paths (those ARE its index), only junk like a
     // `.Spotlight-V100` a user navigated into.
-    let scope = if volume_id == ROOT_VOLUME_ID {
-        super::scanner::ExclusionScope::BootDisk
-    } else {
-        super::scanner::ExclusionScope::MountRooted
-    };
-    if super::scanner::should_exclude(&parent_path, scope) {
+    let scope = super::routing::exclusion_scope_for_volume(volume_id);
+    if super::scanner::should_exclude(&parent_path, &scope) {
         return;
     }
 
@@ -618,14 +614,14 @@ mod tests {
     fn excluded_listing_parents_are_skipped() {
         let parent = listing_parent_path(&[dir("/proc/123/fd")]).expect("has a parent");
         assert!(
-            super::super::scanner::should_exclude(&parent, super::super::scanner::ExclusionScope::BootDisk),
+            super::super::scanner::should_exclude(&parent, &super::super::scanner::ExclusionScope::boot_disk()),
             "an excluded system path must be skipped by enrichment"
         );
         // A boot-volume listing is NOT excluded — enrichment must still run there.
         let home = listing_parent_path(&[dir("/Users/veszelovszki/project")]).expect("has a parent");
         assert!(!super::super::scanner::should_exclude(
             &home,
-            super::super::scanner::ExclusionScope::BootDisk
+            &super::super::scanner::ExclusionScope::boot_disk()
         ));
     }
 }

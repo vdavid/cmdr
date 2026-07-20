@@ -93,7 +93,7 @@ impl Default for ScanConfig {
             root: PathBuf::from("/"),
             batch_size: 2000,
             num_threads: 0,
-            scope: ExclusionScope::BootDisk,
+            scope: ExclusionScope::boot_disk(),
             inodes_trustworthy: true,
         }
     }
@@ -260,7 +260,7 @@ pub fn scan_volume(
                 config.batch_size,
                 config.num_threads,
                 true, // volume scan: root always maps to ROOT_ID
-                config.scope,
+                config.scope.clone(),
                 config.inodes_trustworthy,
                 reader,
                 LOCAL_LIST_TIMEOUT,
@@ -308,8 +308,8 @@ pub fn scan_subtree(root: &Path, writer: &IndexWriter, cancelled: &AtomicBool) -
         0,
         false,
         // Subtree scans don't apply global exclusions (the subtree was chosen
-        // explicitly), so the scope is inert here; pass `BootDisk`.
-        ExclusionScope::BootDisk,
+        // explicitly), so the scope is inert here; pass the boot-disk one.
+        ExclusionScope::boot_disk(),
         // Subtree scans back post-replay background verification, which is
         // root-only (the boot disk, APFS) — trustworthy inodes.
         true,
@@ -632,7 +632,7 @@ impl DirVisitor for InsertVisitor {
             // from the volume kind: `BootDisk` for the `/`-rooted boot scan,
             // `MountRooted` for an external drive rooted at `/Volumes/X` (which must
             // index its own subtree, skipping only junk basenames).
-            if self.is_volume_root && should_exclude(&path_str, self.scope) {
+            if self.is_volume_root && should_exclude(&path_str, &self.scope) {
                 continue;
             }
             // Skip canonicalization aliases (/tmp, /var, /etc, Data-volume

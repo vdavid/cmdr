@@ -89,7 +89,7 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
             let cancelled = AtomicBool::new(false);
             for dir_path in &scan_dirs {
                 // Background verification is root-scoped (boot disk), so `BootDisk`.
-                if scanner::should_exclude(dir_path, scanner::ExclusionScope::BootDisk) {
+                if scanner::should_exclude(dir_path, &scanner::ExclusionScope::boot_disk()) {
                     continue;
                 }
                 match scanner::scan_subtree(Path::new(dir_path), &scan_writer, &cancelled) {
@@ -140,7 +140,7 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
         let visible_new_dirs: Vec<String> = verify_result
             .new_dir_paths
             .iter()
-            .filter(|p| !scanner::should_exclude(p, scanner::ExclusionScope::BootDisk))
+            .filter(|p| !scanner::should_exclude(p, &scanner::ExclusionScope::boot_disk()))
             .cloned()
             .collect();
         if !visible_new_dirs.is_empty() {
@@ -366,7 +366,7 @@ fn verify_affected_dirs_with(affected_paths: &HashSet<String>, writer: &IndexWri
 
             // Skip excluded system paths (e.g. /System, /dev, /Volumes).
             // Root-scoped background verification (boot disk), so `BootDisk`.
-            if scanner::should_exclude(&normalized, scanner::ExclusionScope::BootDisk) {
+            if scanner::should_exclude(&normalized, &scanner::ExclusionScope::boot_disk()) {
                 continue;
             }
 

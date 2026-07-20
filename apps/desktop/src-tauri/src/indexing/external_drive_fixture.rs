@@ -599,7 +599,7 @@ mod tests {
             .with_inodes_trustworthy(inodes_trustworthy);
         let config = ScanConfig {
             root: mount.clone(),
-            scope: space.exclusion_scope(),
+            scope: space.exclusion_scope().clone(),
             inodes_trustworthy: space.inodes_trustworthy(),
             ..ScanConfig::default()
         };

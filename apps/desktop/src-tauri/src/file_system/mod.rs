@@ -1,6 +1,8 @@
 //! File system module - operations, watchers, volumes, and providers.
 
 pub mod cloud_actions;
+#[cfg(target_os = "macos")]
+pub(crate) mod file_provider;
 pub mod filesystem_kind;
 pub mod git;
 #[cfg(target_os = "linux")]

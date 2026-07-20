@@ -762,7 +762,7 @@ impl IndexManager {
                 root: self.volume_root.clone(),
                 // A mount-rooted drive uses `MountRooted` so its `/Volumes/X` subtree
                 // isn't excluded (which would falsely complete the scan empty).
-                scope: space.exclusion_scope(),
+                scope: space.exclusion_scope().clone(),
                 // A FAT/exFAT drive's derived inodes are untrusted, so the scanner
                 // stores `inode: None` (keeping the rename pre-pass inert).
                 inodes_trustworthy: space.inodes_trustworthy(),
