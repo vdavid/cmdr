@@ -952,6 +952,8 @@ export type MessageKey =
   | 'fileExplorer.navigation.driveIndex.refusedGeneric'
   | 'fileExplorer.navigation.driveIndex.refusedInternal'
   | 'fileExplorer.navigation.driveIndex.refusedUpgradeFailed'
+  | 'fileExplorer.navigation.driveIndex.tooltipCoalesced'
+  | 'fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck'
   | 'fileExplorer.navigation.driveIndex.tooltipDisabled'
   | 'fileExplorer.navigation.driveIndex.tooltipFailed'
   | 'fileExplorer.navigation.driveIndex.tooltipFresh'

@@ -210,3 +210,55 @@ describe('DriveIndexBadge scanning tooltip', () => {
     expect(target.querySelector('.scan-tooltip-body')).toBeNull()
   })
 })
+
+describe('DriveIndexBadge coalesced-signal note', () => {
+  /**
+   * A status whose last full check was just under 24 h ago (the spans round UP,
+   * so a hair over would read as 25), with the next one `inHours` away.
+   */
+  function sweptStatus(count: number, inHours: number | null): VolumeIndexStatus {
+    const nowSeconds = Math.floor(Date.now() / 1000)
+    return makeStatus({
+      coalescedSignalsSinceSweep: count,
+      scanCompletedAt: nowSeconds - (24 * 3600 - 60),
+      nextSweepDueAt: inHours == null ? null : nowSeconds + inHours * 3600,
+    })
+  }
+
+  it('says nothing extra when macOS never lost track', () => {
+    const { target } = render(sweptStatus(0, 6))
+    expect(ariaLabel(target)).not.toContain('lost track')
+  })
+
+  it('reads in the singular for a single skipped signal', () => {
+    const { target } = render(sweptStatus(1, 6))
+    expect(ariaLabel(target)).toContain(
+      'macOS lost track of file system changes once in the last 24 hours, so a few folder sizes might be slightly off.',
+    )
+    expect(ariaLabel(target)).toContain("Cmdr's next full check in 6 hours will fix it.")
+  })
+
+  it('reads in the plural for several skipped signals', () => {
+    expect(ariaLabel(render(sweptStatus(12, 6)).target)).toContain(
+      'macOS lost track of file system changes 12 times in the last 24 hours',
+    )
+  })
+
+  it('says "an hour", not "1 hours", when the next check is close', () => {
+    expect(ariaLabel(render(sweptStatus(2, 1)).target)).toContain("Cmdr's next full check in an hour will fix it.")
+  })
+
+  it('drops the next-check promise for a drive with no scheduled sweep', () => {
+    // An external drive keeps a 45-second debounce, which is no promise of a
+    // future check, so the tooltip must not invent one.
+    const label = ariaLabel(render(sweptStatus(3, null)).target)
+    expect(label).toContain('macOS lost track of file system changes 3 times in the last 24 hours')
+    expect(label).toContain("It's usually caches full of small files, so it's no big deal.")
+    expect(label).not.toContain('next full check')
+  })
+
+  it('keeps the note out of the tooltip while a scan is running', () => {
+    const { target } = render({ ...sweptStatus(4, 6), freshness: 'scanning' })
+    expect(ariaLabel(target)).not.toContain('lost track')
+  })
+})

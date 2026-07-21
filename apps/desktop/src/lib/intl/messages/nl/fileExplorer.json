@@ -1269,6 +1269,14 @@
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7386b54"
   },
+  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS raakte {hours, plural, one {in het afgelopen uur} other {in de afgelopen {hoursText} uur}} {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijt, dus een paar mapgroottes kunnen iets afwijken. Meestal gaat het om caches vol kleine bestanden, en de volgende volledige controle van Cmdr {remaining, plural, one {over een uur} other {over {remainingText} uur}} zet dat weer recht.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
+    "sourceHash": "2b593c3"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS raakte {hours, plural, one {in het afgelopen uur} other {in de afgelopen {hoursText} uur}} {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijt, dus een paar mapgroottes kunnen iets afwijken. Meestal gaat het om caches vol kleine bestanden, dus het is geen probleem.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
+    "sourceHash": "428975f"
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "Zet indexeren aan voor deze schijf",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"

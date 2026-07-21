@@ -1817,6 +1817,28 @@
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "description": "Hover tooltip on the RED drive-index dot, shown when the drive''s index database hit a fatal storage problem (a disk I/O failure, a full or read-only disk, corruption) and indexing stopped for this drive. The index is a rebuildable cache, so the fix is to rescan. Keep it calm and actionable; active voice; never use the words ''error'' or ''failed''."
   },
+  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It''s usually caches full of small files, and Cmdr''s next full check in {remaining, plural, one {an hour} other {{remainingText} hours}} will fix it.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
+    "description": "Extra paragraph appended to the drive-index dot''s hover tooltip when macOS reported it had lost track of file system changes on this drive since the last full check, and Cmdr deliberately waited instead of rescanning right away. Reassuring, not alarming: the dot stays green because waiting is the intended behavior, and the next scheduled full check will bring folder sizes back in line. Keep the plural branches for all three numbers. Never use the words ''error'' or ''failed''.",
+    "placeholders": {
+      "count": "how many times macOS lost track since the last full check, as a raw number, used only to pick the plural branch",
+      "countText": "the same count, already formatted for the reader (e.g. 12)",
+      "hours": "whole hours since the drive''s last completed full check, as a raw number, used only to pick the plural branch (never below 1)",
+      "hoursText": "the same hour count, already formatted for the reader (e.g. 18)",
+      "remaining": "whole hours until the next scheduled full check, as a raw number, used only to pick the plural branch (never below 1)",
+      "remainingText": "the same remaining-hour count, already formatted for the reader (e.g. 6)"
+    }
+  },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It''s usually caches full of small files, so it''s no big deal.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
+    "description": "The variant of the tooltip paragraph above for a drive with no scheduled full check to promise (an external drive, or one whose check is already due). Same first sentence; the closing reassurance replaces the ''next full check in N hours'' promise, so don''t reintroduce a time here. Never use the words ''error'' or ''failed''.",
+    "placeholders": {
+      "count": "how many times macOS lost track since the last full check, as a raw number, used only to pick the plural branch",
+      "countText": "the same count, already formatted for the reader (e.g. 12)",
+      "hours": "whole hours since the drive''s last completed full check, as a raw number, used only to pick the plural branch (never below 1)",
+      "hoursText": "the same hour count, already formatted for the reader (e.g. 18)"
+    }
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "Turn on indexing for this drive",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "description": "Menu item to start indexing the drive (shown when indexing is off). Sentence case."

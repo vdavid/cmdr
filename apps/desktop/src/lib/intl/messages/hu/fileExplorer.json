@@ -1261,6 +1261,14 @@
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7386b54"
   },
+  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "A macOS {hours, plural, one {az elmúlt órában} other {az elmúlt {hoursText} órában}} {count, plural, one {egyszer} other {{countText} alkalommal}} elvesztette a fonalat a fájlrendszer-változásoknál, ezért néhány mappaméret kissé pontatlan lehet. Általában csak apró fájlokkal teli gyorsítótárakról van szó, és a Cmdr következő teljes átvizsgálása {remaining, plural, one {egy óra múlva} other {{remainingText} óra múlva}} ezt rendbe hozza.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
+    "sourceHash": "2b593c3"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "A macOS {hours, plural, one {az elmúlt órában} other {az elmúlt {hoursText} órában}} {count, plural, one {egyszer} other {{countText} alkalommal}} elvesztette a fonalat a fájlrendszer-változásoknál, ezért néhány mappaméret kissé pontatlan lehet. Általában csak apró fájlokkal teli gyorsítótárakról van szó, szóval nem nagy ügy.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
+    "sourceHash": "428975f"
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "Indexelés bekapcsolása ehhez a meghajtóhoz",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"

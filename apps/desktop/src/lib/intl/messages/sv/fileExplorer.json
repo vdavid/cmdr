@@ -1263,6 +1263,14 @@
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7386b54"
   },
+  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS tappade bort koll på ändringar i filsystemet {count, plural, one {en gång} other {{countText} gånger}} {hours, plural, one {under den senaste timmen} other {under de senaste {hoursText} timmarna}}, så ett par mappstorlekar kan vara lite missvisande. Oftast handlar det om cachar fulla av små filer, och Cmdrs nästa fullständiga genomsökning {remaining, plural, one {om en timme} other {om {remainingText} timmar}} rättar till det.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
+    "sourceHash": "2b593c3"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS tappade bort koll på ändringar i filsystemet {count, plural, one {en gång} other {{countText} gånger}} {hours, plural, one {under den senaste timmen} other {under de senaste {hoursText} timmarna}}, så ett par mappstorlekar kan vara lite missvisande. Oftast handlar det om cachar fulla av små filer, så det är ingen stor sak.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
+    "sourceHash": "428975f"
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "Slå på indexering för den här enheten",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"

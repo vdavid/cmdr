@@ -1269,6 +1269,14 @@
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7386b54"
   },
+  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS hat {hours, plural, one {in der letzten Stunde} other {in den letzten {hoursText} Stunden}} {count, plural, one {einmal} other {{countText}-mal}} den Überblick über Dateisystemänderungen verloren, daher können ein paar Ordnergrößen leicht abweichen. Meist sind es Caches voller kleiner Dateien, und Cmdrs nächster vollständiger Durchlauf {remaining, plural, one {in einer Stunde} other {in {remainingText} Stunden}} bringt das wieder in Ordnung.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
+    "sourceHash": "2b593c3"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS hat {hours, plural, one {in der letzten Stunde} other {in den letzten {hoursText} Stunden}} {count, plural, one {einmal} other {{countText}-mal}} den Überblick über Dateisystemänderungen verloren, daher können ein paar Ordnergrößen leicht abweichen. Meist sind es Caches voller kleiner Dateien, also halb so wild.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
+    "sourceHash": "428975f"
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "Indizierung für dieses Laufwerk einschalten",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"

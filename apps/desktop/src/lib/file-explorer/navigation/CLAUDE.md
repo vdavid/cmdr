@@ -20,24 +20,24 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
 - **`push()` vs `pushPath()`.** Callers holding per-entry resources (the search-results snapshot store, via
   `pushHistoryEntry`) must use `push()` — it returns `droppedEntries` to release dropped refs; `pushPath` discards them.
   A no-op push returns the same `history` ref, so `===` dedup still works.
-- **`MAX_HISTORY_PER_TAB = 100`, every volume uniformly.** Don't tighten (hurts deep-navigating power users) or bump
-  (each entry is three strings).
+- **`MAX_HISTORY_PER_TAB = 100`, every volume uniformly.** Don't tighten (hurts power users) or bump (three strings per
+  entry).
 - **`path-resolution.ts` is a separate module to break a cycle**: `app-status-store.ts` imports `resolveValidPath`, and
   `path-navigation.ts` imports `getLastUsedPathForVolume` from it. Keep `resolveValidPath` here.
 - **Two-layer timeout on every `pathExists`**: Rust `blocking_with_timeout` (2 s) plus a frontend `withTimeout`
   (per-call values in DETAILS); the faster wins, so a hung mount never blocks runtime.
-- **Stale volume-switch corrections are gated by a single GLOBAL `correctionGen`** (shared by both panes): a later
-  volume change on either pane bumps it and drops a superseded background `determineNavigationPath` correction. Not
-  per-pane.
+- **Stale volume-switch corrections are gated by a single GLOBAL `correctionGen`**: a later volume change on either pane
+  bumps it and drops a superseded background `determineNavigationPath` correction. Not per-pane.
 - **`containingVolumeId` is derived via `resolvePathVolume(currentPath)`, not the `volumeId` prop** (a favorite's
   virtual id), so the active checkmark tracks the real containing volume.
 - **The drive-index freshness badge (`DriveIndexBadge.svelte`) renders only on real DRIVE rows** (`isDriveRow`: not
-  favorites, `network` / `search-results`, or disk images). State→color/menu is the pure `drive-index-status.ts`;
+  favorites, `network` / `search-results`, or disk images). State→color/menu: the pure `drive-index-status.ts`;
   freshness stays live via `drive-index-manager`'s event subscriptions (NOT polling). The manager owns ONLY
-  freshness/menu facts (dot color + last-scan facts); LIVE scan progress comes from `$lib/indexing`'s `index-state` (the
-  single live-activity source — see its docs), read per-volume via `getVolumeActivity`; don't reintroduce a manager-side
-  progress map. The badge is a `<button>` (axe rejects `role="img"`), and a refused enable/rescan is classified by typed
-  `SmbIndexGateReason`, never text. Full contract: DETAILS § Drive index freshness badge.
+  freshness/menu facts; LIVE scan progress comes from `$lib/indexing`'s `index-state`, the single live-activity source,
+  read per-volume via `getVolumeActivity`; don't reintroduce a manager-side progress map. The badge is a `<button>` (axe
+  rejects `role="img"`); a refused enable/rescan is classified by typed `SmbIndexGateReason`, never text. Coalesced
+  sweep signals ride in the TOOLTIP (`driveIndexCoalescedNote`), never the dot's color; a null `nextSweepDueAt` drops
+  the next-check clause. Full contract: DETAILS § Drive index freshness badge.
 - **Favorites: mutate ONLY via the `commands.*` wrappers, always stripping the `fav-` prefix** (`stripFavoritePrefix`;
   the switcher id is `fav-<favoriteId>`, the commands take the bare id). The `volume-grouping.ts` favorites group always
   renders even when empty (the placeholder row) — don't tidy it into a hide-when-empty branch. "Add to favorites" is in

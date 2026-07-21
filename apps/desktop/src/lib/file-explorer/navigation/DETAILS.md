@@ -357,6 +357,19 @@ formatter are the pure `drive-index-status.ts` (unit-tested). Blue pulses (gated
   actions (`enable`/`rescan`/`disable`/`stop`) call back to `VolumeBreadcrumb`'s `handleDriveIndexAction`, which runs
   the per-drive IPC. ❌ Don't put `role="img"` on the button (axe rejects it; the button role + label already convey
   it).
+- **Coalesced "macOS lost track of changes" signals ride in the TOOLTIP, never in the dot's color**
+  (`driveIndexCoalescedNote`, pure + unit-tested). When `VolumeIndexStatus.coalescedSignalsSinceSweep > 0`, a second
+  paragraph joins the state line (the tooltip is `white-space: pre-line`, so a `\n` renders) saying how many times macOS
+  lost track, over how many hours, and when the next full check lands. The badge deliberately stays GREEN: once-a-day
+  sweeping is the designed operating state, and a badge that's yellow all day trains people to ignore it. Four
+  deliberate silences: count 0; any state but `fresh`/`stale` (while scanning the sweep may be the scan in flight;
+  disabled/failed have no live index to describe); no `scanCompletedAt` (nothing anchors the time window); and no
+  `nextSweepDueAt` or a sweep already due, which swaps in the `…NoNextCheck` variant that drops the "next full check in
+  N hours" clause. `nextSweepDueAt` is null for every volume WITHOUT a daily sweep (an external drive runs a 45-second
+  debounce, which promises nothing), so never render a zero there — it would be a lie about a USB drive. Both hour spans
+  round UP with a floor of one, so the tooltip never reads "in the last 0 hours" and the window it names always covers
+  what happened. Hours come from `scanCompletedAt` (the FE's only honest last-full-check anchor); don't reconstruct them
+  from `nextSweepDueAt` minus the window, that would duplicate the backend's policy constant.
 - **Refused enable/rescan is classified by TYPED variant** (`SmbIndexGateReason`), never message text:
   `credentials_needed` routes into the existing direct-connect/login flow (`handleSubmenuAction`); the others show a
   friendly toast.

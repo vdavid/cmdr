@@ -1266,6 +1266,14 @@
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7386b54"
   },
+  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "O macOS perdeu o controle das mudanças no sistema de arquivos {count, plural, one {uma vez} many {{countText} vezes} other {{countText} vezes}} {hours, plural, one {na última hora} many {nas últimas {hoursText} horas} other {nas últimas {hoursText} horas}}, então alguns tamanhos das pastas podem ficar um pouco imprecisos. Normalmente são caches cheios de arquivos pequenos, e a próxima análise completa do Cmdr, {remaining, plural, one {daqui a uma hora} many {daqui a {remainingText} horas} other {daqui a {remainingText} horas}}, vai acertar isso.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
+    "sourceHash": "2b593c3"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "O macOS perdeu o controle das mudanças no sistema de arquivos {count, plural, one {uma vez} many {{countText} vezes} other {{countText} vezes}} {hours, plural, one {na última hora} many {nas últimas {hoursText} horas} other {nas últimas {hoursText} horas}}, então alguns tamanhos das pastas podem ficar um pouco imprecisos. Normalmente são caches cheios de arquivos pequenos, então não é nada demais.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
+    "sourceHash": "428975f"
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "Ativar indexação para este drive",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"

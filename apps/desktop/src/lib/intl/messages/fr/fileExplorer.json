@@ -1267,6 +1267,14 @@
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7386b54"
   },
+  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS a perdu le fil des changements du système de fichiers {count, plural, one {une fois} many {{countText} fois} other {{countText} fois}} {hours, plural, one {au cours de la dernière heure} many {au cours des {hoursText} dernières heures} other {au cours des {hoursText} dernières heures}}, donc la taille de quelques dossiers peut être un peu décalée. Ce sont en général des caches pleins de petits fichiers, et la prochaine analyse complète de Cmdr, {remaining, plural, one {dans une heure} many {dans {remainingText} heures} other {dans {remainingText} heures}}, remettra tout d''aplomb.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
+    "sourceHash": "2b593c3"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS a perdu le fil des changements du système de fichiers {count, plural, one {une fois} many {{countText} fois} other {{countText} fois}} {hours, plural, one {au cours de la dernière heure} many {au cours des {hoursText} dernières heures} other {au cours des {hoursText} dernières heures}}, donc la taille de quelques dossiers peut être un peu décalée. Ce sont en général des caches pleins de petits fichiers, rien de grave donc.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
+    "sourceHash": "428975f"
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "Activer l''indexation pour ce disque",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"

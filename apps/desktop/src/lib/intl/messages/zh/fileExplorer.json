@@ -1260,6 +1260,14 @@
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7386b54"
   },
+  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "在过去 {hours, plural, other {{hoursText} 小时}}内，macOS 有 {count, plural, other {{countText} 次}}没能跟上文件系统的改动，因此少数文件夹大小可能略有偏差。这通常只是塞满小文件的缓存，Cmdr 将在 {remaining, plural, other {{remainingText} 小时}}后进行下一次完整检查，届时就会恢复准确。",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
+    "sourceHash": "2b593c3"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "在过去 {hours, plural, other {{hoursText} 小时}}内，macOS 有 {count, plural, other {{countText} 次}}没能跟上文件系统的改动，因此少数文件夹大小可能略有偏差。这通常只是塞满小文件的缓存，问题不大。",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
+    "sourceHash": "428975f"
+  },
   "fileExplorer.navigation.driveIndex.menuEnable": "为此驱动器打开索引",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"

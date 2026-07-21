@@ -15,12 +15,14 @@
     import type { VolumeIndexStatus } from '$lib/ipc/bindings'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { tString } from '$lib/intl/messages.svelte'
+    import { formatInteger } from '$lib/intl/number-format'
     import { formatDateForDisplay } from '$lib/settings/format-utils'
     import {
         driveIndexState,
         driveIndexMenuActions,
         driveIndexMenuLabelKey,
         driveIndexDuration,
+        driveIndexCoalescedNote,
         hasLastScanFacts,
         type DriveIndexMenuAction,
         type DriveIndexState,
@@ -83,10 +85,32 @@
     let scanBodyEl = $state<HTMLDivElement>()
     const useRichScanningTooltip = $derived(badgeState === 'scanning' && bodyActivity != null && scanBodyEl != null)
 
+    // The "macOS lost track of changes N times" paragraph, appended to the tooltip
+    // whenever signals were coalesced since the last full check. Recomputed when
+    // `status` changes (the manager refreshes it on index events), so the hour
+    // counts can lag a live clock by a few minutes — fine for whole hours.
+    const coalescedNote = $derived(driveIndexCoalescedNote(status, Date.now() / 1000))
+    const coalescedText = $derived.by(() => {
+        if (!coalescedNote) return ''
+        // Counts ride as preformatted `*Text` params (formatting is single-sourced
+        // in `$lib/intl`); the raw integers only drive the plural branches.
+        const params: Record<string, string | number> = {
+            count: coalescedNote.count,
+            countText: formatInteger(coalescedNote.count),
+            hours: coalescedNote.hours,
+            hoursText: formatInteger(coalescedNote.hours),
+        }
+        if (coalescedNote.remaining != null) {
+            params.remaining = coalescedNote.remaining
+            params.remainingText = formatInteger(coalescedNote.remaining)
+        }
+        return tString(coalescedNote.key, params)
+    })
+
     // The text tooltip per state. The `scanning` text is the static fallback for
     // the no-activity-yet window (the rich body replaces it once activity lands);
     // unified onto the `indexing.scan.*` family so both surfaces say the same.
-    const tooltipText = $derived.by(() => {
+    const stateTooltipText = $derived.by(() => {
         switch (badgeState) {
             case 'disabled':
                 return tString('fileExplorer.navigation.driveIndex.tooltipDisabled')
@@ -105,6 +129,10 @@
                 return tString('fileExplorer.navigation.driveIndex.tooltipFailed')
         }
     })
+
+    // The coalesced note is its own paragraph under the state line (`.cmdr-tooltip`
+    // is `white-space: pre-line`, so a newline renders).
+    const tooltipText = $derived(coalescedText ? `${stateTooltipText}\n${coalescedText}` : stateTooltipText)
 
     // The tooltip param: the rich DOM body while scanning with live activity,
     // else the text tooltip for this state. The template blanks it while the

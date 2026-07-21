@@ -7,6 +7,7 @@ import {
   driveIndexMenuLabelKey,
   driveIndexDuration,
   driveIndexRefusalMessageKey,
+  driveIndexCoalescedNote,
   hasLastScanFacts,
 } from './drive-index-status'
 
@@ -157,5 +158,115 @@ describe('driveIndexRefusalMessageKey', () => {
 
   it('returns null for credentials_needed (routes to the reconnect flow, no toast)', () => {
     expect(driveIndexRefusalMessageKey('credentials_needed')).toBeNull()
+  })
+})
+
+describe('driveIndexCoalescedNote', () => {
+  // `makeStatus`'s last scan is 1_750_000_000; NOW is exactly 24 hours later, and
+  // the default next sweep is another 6 hours out.
+  const NOW = 1_750_086_400
+  const IN_SIX_HOURS = NOW + 6 * 3600
+
+  it('renders nothing when macOS never lost track since the last full check', () => {
+    expect(driveIndexCoalescedNote(makeStatus({ coalescedSignalsSinceSweep: 0 }), NOW)).toBeNull()
+  })
+
+  it('reports a single skipped signal, with the next check ahead', () => {
+    expect(
+      driveIndexCoalescedNote(makeStatus({ coalescedSignalsSinceSweep: 1, nextSweepDueAt: IN_SIX_HOURS }), NOW),
+    ).toEqual({
+      key: 'fileExplorer.navigation.driveIndex.tooltipCoalesced',
+      count: 1,
+      hours: 24,
+      remaining: 6,
+    })
+  })
+
+  it('reports several skipped signals', () => {
+    expect(
+      driveIndexCoalescedNote(makeStatus({ coalescedSignalsSinceSweep: 11, nextSweepDueAt: IN_SIX_HOURS }), NOW),
+    ).toEqual({
+      key: 'fileExplorer.navigation.driveIndex.tooltipCoalesced',
+      count: 11,
+      hours: 24,
+      remaining: 6,
+    })
+  })
+
+  it('drops the next-check promise for a drive with no scheduled sweep', () => {
+    // `nextSweepDueAt` is null for every volume without a daily sweep (an external
+    // drive runs a 45-second debounce, which promises nothing). Saying "in 0 hours"
+    // there would be a lie, so the clause goes away entirely.
+    expect(driveIndexCoalescedNote(makeStatus({ coalescedSignalsSinceSweep: 3, nextSweepDueAt: null }), NOW)).toEqual({
+      key: 'fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck',
+      count: 3,
+      hours: 24,
+      remaining: null,
+    })
+  })
+
+  it('drops the next-check promise once the sweep is already due', () => {
+    expect(
+      driveIndexCoalescedNote(makeStatus({ coalescedSignalsSinceSweep: 3, nextSweepDueAt: NOW - 60 }), NOW),
+    ).toEqual({
+      key: 'fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck',
+      count: 3,
+      hours: 24,
+      remaining: null,
+    })
+  })
+
+  it('never says "in the last 0 hours" or "in 0 hours" under the hour', () => {
+    const note = driveIndexCoalescedNote(
+      makeStatus({
+        coalescedSignalsSinceSweep: 2,
+        scanCompletedAt: NOW - 90,
+        nextSweepDueAt: NOW + 90,
+      }),
+      NOW,
+    )
+    expect(note).toEqual({
+      key: 'fileExplorer.navigation.driveIndex.tooltipCoalesced',
+      count: 2,
+      hours: 1,
+      remaining: 1,
+    })
+  })
+
+  it('rounds partial hours up, so the window it names always covers what happened', () => {
+    const note = driveIndexCoalescedNote(
+      makeStatus({
+        coalescedSignalsSinceSweep: 2,
+        scanCompletedAt: NOW - (3 * 3600 + 60),
+        nextSweepDueAt: NOW + (4 * 3600 + 60),
+      }),
+      NOW,
+    )
+    expect(note?.hours).toBe(4)
+    expect(note?.remaining).toBe(5)
+  })
+
+  it('stays quiet on states where the note would confuse', () => {
+    // Scanning: the sweep may be the very scan in flight. Disabled/failed: there's
+    // no live index the note could describe.
+    for (const status of [
+      makeStatus({ coalescedSignalsSinceSweep: 4, freshness: 'scanning' }),
+      makeStatus({ coalescedSignalsSinceSweep: 4, enabled: false, freshness: null }),
+      makeStatus({ coalescedSignalsSinceSweep: 4, freshness: 'failed' }),
+    ]) {
+      expect(driveIndexCoalescedNote(status, NOW)).toBeNull()
+    }
+  })
+
+  it('renders on a stale drive too, not only a fresh one', () => {
+    expect(driveIndexCoalescedNote(makeStatus({ coalescedSignalsSinceSweep: 2, freshness: 'stale' }), NOW)?.key).toBe(
+      'fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck',
+    )
+  })
+
+  it('stays quiet when no completed scan anchors the time window', () => {
+    expect(
+      driveIndexCoalescedNote(makeStatus({ coalescedSignalsSinceSweep: 4, scanCompletedAt: null }), NOW),
+    ).toBeNull()
   })
 })

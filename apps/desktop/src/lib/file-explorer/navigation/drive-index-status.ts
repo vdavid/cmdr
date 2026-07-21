@@ -123,6 +123,71 @@ export function hasLastScanFacts(status: VolumeIndexStatus): boolean {
   return status.scanCompletedAt != null && status.scanDurationMs != null
 }
 
+/** The coalesced-signal note's key plus the numbers its plural branches select on. */
+export interface DriveIndexCoalescedNote {
+  key: MessageKey
+  /** Signals macOS coalesced since the last completed sweep. */
+  count: number
+  /** Whole hours since that sweep, never below 1. */
+  hours: number
+  /** Whole hours until the next sweep, never below 1; `null` when none is promised. */
+  remaining: number | null
+}
+
+const SECONDS_PER_HOUR = 3600
+
+/** Whole hours in a second span, rounded up, never below one. */
+function hoursAtLeastOne(seconds: number): number {
+  return Math.max(1, Math.ceil(seconds / SECONDS_PER_HOUR))
+}
+
+/**
+ * The extra tooltip paragraph for a drive where macOS reported it had lost track
+ * of file system changes and we deliberately waited instead of rescanning, or
+ * `null` when there's nothing to say. Resolving the key is the caller's job (it
+ * owns `t()`), keeping this pure.
+ *
+ * The badge stays GREEN through all of this: once-a-day sweeping is the designed
+ * operating state, not a fault, so the transparency lives here rather than in the
+ * dot's color.
+ *
+ * Four deliberate silences:
+ * - `count === 0`: nothing was skipped, so the normal tooltip stands alone.
+ * - Any state but `fresh`/`stale`: while scanning, the sweep may be the very scan
+ *   in flight; disabled and failed have no live index the note could describe.
+ * - No `scanCompletedAt`: the count is "since the last completed sweep", so with
+ *   no completed scan there's no honest window to name.
+ * - No `nextSweepDueAt` (a volume with no daily sweep: an external drive runs a
+ *   45-second debounce, which promises nothing), or a sweep already due: the
+ *   "next full check in N hours" clause would be a lie, so a variant WITHOUT it
+ *   is used, never a zero.
+ *
+ * Both spans round UP to whole hours with a floor of one, so the tooltip never
+ * reads "in the last 0 hours" / "in 0 hours", the window it names always covers
+ * what happened, and the wait it promises is never shorter than the real one.
+ */
+export function driveIndexCoalescedNote(status: VolumeIndexStatus, nowSeconds: number): DriveIndexCoalescedNote | null {
+  const count = status.coalescedSignalsSinceSweep
+  if (count <= 0) return null
+
+  const state = driveIndexState(status)
+  if (state !== 'fresh' && state !== 'stale') return null
+
+  if (status.scanCompletedAt == null) return null
+  const hours = hoursAtLeastOne(nowSeconds - status.scanCompletedAt)
+
+  const secondsToSweep = status.nextSweepDueAt != null ? status.nextSweepDueAt - nowSeconds : null
+  if (secondsToSweep == null || secondsToSweep <= 0) {
+    return { key: 'fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck', count, hours, remaining: null }
+  }
+  return {
+    key: 'fileExplorer.navigation.driveIndex.tooltipCoalesced',
+    count,
+    hours,
+    remaining: hoursAtLeastOne(secondsToSweep),
+  }
+}
+
 /**
  * The toast message key for a typed SMB index refusal, or `null` for
  * `credentials_needed` (which routes into the reconnect/login flow instead of a
