@@ -266,12 +266,19 @@ fn sort_and_cap(mut hits: Vec<PhotoHit>, limit: usize) -> Vec<PhotoHit> {
 /// `incomplete` when a pass is running, or fewer images are enriched than qualify. Shared
 /// with the `image_facts` tool so the two can't drift apart on honesty.
 pub(super) fn derive_coverage(volume: &str, state: &MediaIndexVolumeState) -> VolumeCoverage {
-    let incomplete = state.indexing || state.qualifying_count.is_some_and(|q| state.enriched_count < q);
+    // The denominator must match what the current scope actually covers, not the whole
+    // volume. In the "only folders I choose" scope a fully-indexed pair of folders is 4
+    // enriched against ~230k qualifying images drive-wide, which would report incomplete
+    // forever and make the agent tell the user their folder isn't indexed when it is.
+    // `covered_qualifying_count` is the scope-aware count the settings progress line
+    // already uses; fall back to the volume total only when it isn't available.
+    let denominator = state.covered_qualifying_count.or(state.qualifying_count);
+    let incomplete = state.indexing || denominator.is_some_and(|q| state.enriched_count < q);
     VolumeCoverage {
         volume: volume.to_string(),
         indexing: state.indexing,
         enriched_count: state.enriched_count,
-        qualifying_count: state.qualifying_count,
+        qualifying_count: denominator,
         incomplete,
     }
 }
@@ -610,6 +617,30 @@ mod tests {
         assert!(!derive_coverage("root", &state(false, 20, Some(20))).incomplete);
         // Unknown denominator, idle ⇒ not flagged incomplete off a missing count.
         assert!(!derive_coverage("root", &state(false, 20, None)).incomplete);
+    }
+
+    /// The scope-aware denominator wins over the volume total. In the "only folders I
+    /// choose" scope, fully-indexed chosen folders are a handful of images against the
+    /// whole drive's qualifying count, so comparing against the volume total reports
+    /// incomplete forever and the agent tells the user their indexed folder isn't
+    /// indexed. Regression anchor for exactly that.
+    #[test]
+    fn derive_coverage_prefers_the_scope_aware_denominator() {
+        let mut covered = state(false, 4, Some(229_945));
+        covered.covered_qualifying_count = Some(4);
+        let coverage = derive_coverage("root", &covered);
+        assert!(!coverage.incomplete, "4 of 4 covered images is complete, not incomplete");
+        assert_eq!(coverage.qualifying_count, Some(4), "reports the covered denominator");
+
+        // Still short within the covered set ⇒ genuinely incomplete.
+        let mut partial = state(false, 3, Some(229_945));
+        partial.covered_qualifying_count = Some(10);
+        assert!(derive_coverage("root", &partial).incomplete);
+
+        // No scope-aware count ⇒ fall back to the volume total, unchanged behaviour.
+        let mut fallback = state(false, 5, Some(20));
+        fallback.covered_qualifying_count = None;
+        assert!(derive_coverage("root", &fallback).incomplete);
     }
 
     #[test]
