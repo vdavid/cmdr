@@ -115,7 +115,7 @@ fn check_for_mount_changes() {
     }
 
     // Unmounted
-    for (path, _fstype) in known_guard.iter() {
+    for path in known_guard.keys() {
         if !current.contains_key(path) {
             debug!("Volume unmounted: {}", path);
             emit_volume_unmounted(path);
