@@ -23,7 +23,7 @@
       "id": "image-search",
       "name": "Image search",
       "status": "alpha",
-      "note": "Search the things (dogs, sunset, document, etc., and also text via OCR) inside your photos and screenshots. Runs on your Mac, fully local."
+      "note": "Search the things (dogs, sunset, document, etc., and also text via OCR) inside your photos and screenshots. You pick which folders to index. Runs on your Mac, fully local."
     },
     {
       "id": "archives",
@@ -41,7 +41,7 @@
       "id": "ask-cmdr",
       "name": "Ask Cmdr",
       "status": "alpha",
-      "note": "Chat with an AI agent about your files. It reads names, paths, sizes, and history, plus any files you attach, and shows what each reply costs. Early, with rough edges. Read-only for now. On-device or Cloud via API key, your choice."
+      "note": "Chat with an AI agent about your files. It reads names, paths, sizes, and history, plus any files you attach, and shows what each reply costs. It can propose changes like a bulk rename, but only you can approve them. Early, with rough edges. On-device or Cloud via API key, your choice."
     },
     {
       "id": "network-drives",
@@ -130,8 +130,8 @@
     {
       "id": "ai-rename",
       "name": "AI rename",
-      "status": "planned",
-      "note": "Rename files by describing what you want, with a full preview before anything changes."
+      "status": "alpha",
+      "note": "Describe the names you want and Ask Cmdr proposes them, reading the text inside your images. You allow or deny each row before anything changes, and the whole batch is one undoable operation."
     },
     {
       "id": "ai-batch",
