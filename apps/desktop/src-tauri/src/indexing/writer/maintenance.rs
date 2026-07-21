@@ -207,7 +207,40 @@ pub(super) fn handle_incremental_vacuum(conn: &rusqlite::Connection, signal: &In
 /// debug for the whole reader wait rather than escalating to warn past attempt 20
 /// — a persistent reader here is working-as-designed, not a stall. Every OTHER
 /// writer contention still warns past attempt 20.
-pub(super) fn handle_wal_checkpoint(conn: &rusqlite::Connection, signal: &IndexFailureSignal) {
+/// Run the periodic WAL checkpoint, or park it until the open batch transaction
+/// commits. Returns whether the checkpoint was parked.
+///
+/// `PRAGMA wal_checkpoint(TRUNCATE)` cannot run inside a transaction: SQLite
+/// refuses it with `SQLITE_LOCKED` ("database table is locked"). A journal replay
+/// wraps its entire run in one `BeginTransaction`, so an undeferred maintenance
+/// tick fails on every tick for the whole replay — and the WAL grows unchecked
+/// exactly when write volume is highest. Parking it means the truncate happens
+/// once, right after the commit, which is when it can actually reclaim the space.
+pub(super) fn request_wal_checkpoint(conn: &rusqlite::Connection, signal: &IndexFailureSignal, deferred: &mut bool) {
+    if conn.is_autocommit() {
+        handle_wal_checkpoint(conn, signal);
+    } else {
+        log::debug!("Writer: wal_checkpoint deferred until the open transaction commits");
+        *deferred = true;
+    }
+}
+
+/// Run a checkpoint parked by [`request_wal_checkpoint`], if any. Called after a
+/// commit. Re-checks `is_autocommit`: a COMMIT that itself failed leaves the
+/// transaction open, and the checkpoint stays parked for the next chance rather
+/// than reporting the same non-error again.
+pub(super) fn run_deferred_wal_checkpoint(
+    conn: &rusqlite::Connection,
+    signal: &IndexFailureSignal,
+    deferred: &mut bool,
+) {
+    if *deferred && conn.is_autocommit() {
+        *deferred = false;
+        handle_wal_checkpoint(conn, signal);
+    }
+}
+
+fn handle_wal_checkpoint(conn: &rusqlite::Connection, signal: &IndexFailureSignal) {
     let _guard = WalCheckpointGuard::enter();
     // `PRAGMA wal_checkpoint(TRUNCATE)` returns a single row with three
     // columns: (busy, log_size, checkpointed). `busy = 0` means everything
@@ -429,6 +462,60 @@ mod tests {
         assert!(
             free_after < 100,
             "TruncateData's uncapped vacuum must drain the freelist; residual={free_after}"
+        );
+
+        writer.shutdown();
+    }
+
+    /// A maintenance tick that lands mid-batch (the replay wraps its whole run in
+    /// one `BeginTransaction`) must not call the TRUNCATE at all: SQLite refuses a
+    /// checkpoint inside an open transaction with `SQLITE_LOCKED`, so every tick
+    /// would report a storage error that isn't one. The checkpoint is deferred to
+    /// the commit instead, so the WAL still gets truncated — which is the point of
+    /// the tick.
+    #[test]
+    fn wal_checkpoint_defers_out_of_an_open_transaction() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        writer.send(WriteMessage::BeginTransaction).unwrap();
+        let entries: Vec<EntryRow> = (0..2000)
+            .map(|i| EntryRow {
+                id: 300 + i,
+                parent_id: ROOT_ID,
+                name: format!("deferred-checkpoint-entry-{i:08}"),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(1024),
+                physical_size: Some(1024),
+                modified_at: None,
+                inode: None,
+            })
+            .collect();
+        writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
+
+        // The maintenance tick, arriving while the batch transaction is open.
+        writer.send(WriteMessage::WalCheckpoint).unwrap();
+        writer.flush_blocking().unwrap();
+
+        assert_eq!(
+            writer.failure_signal().note_count(),
+            0,
+            "a checkpoint skipped because a transaction is open is not a storage error"
+        );
+
+        let wal_path = format!("{}-wal", db_path.display());
+        let wal_size_before = std::fs::metadata(&wal_path).map(|m| m.len()).unwrap_or(0);
+        assert!(wal_size_before > 0, "test setup: expected a grown WAL, got {wal_size_before}"); // allowed-pluralize-noun: assertion-failure-only message guarded by `> 0`
+
+        writer.send(WriteMessage::CommitTransaction).unwrap();
+        writer.flush_blocking().unwrap();
+
+        let wal_size_after = std::fs::metadata(&wal_path).map(|m| m.len()).unwrap_or(0);
+        assert!(
+            wal_size_after < wal_size_before,
+            "the deferred checkpoint must run once the transaction commits; \
+             before={wal_size_before}, after={wal_size_after}"
         );
 
         writer.shutdown();

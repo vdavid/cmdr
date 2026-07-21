@@ -41,7 +41,7 @@ use entries::{
     handle_delete_entry_by_id, handle_delete_subtree_by_id, handle_insert_entries_v2, handle_move_entry_v2,
     handle_truncate_data, handle_upsert_entry_v2,
 };
-use maintenance::{handle_incremental_vacuum, handle_wal_checkpoint};
+use maintenance::{handle_incremental_vacuum, request_wal_checkpoint, run_deferred_wal_checkpoint};
 
 // ── Aggregation progress events ──────────────────────────────────────
 
@@ -943,6 +943,9 @@ fn writer_loop(
     // `false`: a DB that already healed never re-arms, so routine aggregates
     // don't rewrite the key.
     let mut heal_latch = false;
+    // A maintenance tick that landed inside an open batch transaction, waiting for
+    // the commit to run its checkpoint. See `maintenance::request_wal_checkpoint`.
+    let mut deferred_checkpoint = false;
     // Chains a failed `dir_stats` read/write left drifted, drained below once the
     // writer is idle again. See `deferred_repair.rs`.
     let repairs = DeferredRepairs::new();
@@ -996,6 +999,7 @@ fn writer_loop(
                 &mut probe,
                 &mut propagate_deltas,
                 &mut heal_latch,
+                &mut deferred_checkpoint,
                 &repairs,
                 &failure_signal,
             )
@@ -1014,6 +1018,7 @@ fn writer_loop(
             &mut probe,
             &mut propagate_deltas,
             &mut heal_latch,
+            &mut deferred_checkpoint,
             &repairs,
             &failure_signal,
         );
@@ -1139,6 +1144,7 @@ fn process_message(
     probe: &mut ProbeStats,
     propagate_deltas: &mut bool,
     heal_latch: &mut bool,
+    deferred_checkpoint: &mut bool,
     repairs: &DeferredRepairs,
     signal: &IndexFailureSignal,
 ) -> bool {
@@ -1339,6 +1345,10 @@ fn process_message(
                     "commit_slow ms={elapsed_ms}",
                 );
             }
+            // The batch is closed, so a maintenance tick parked during it can run
+            // now. A long batch (a journal replay) is exactly when the WAL grew
+            // most, so this is the truncate that matters.
+            run_deferred_wal_checkpoint(conn, signal, deferred_checkpoint);
         }
         WriteMessage::BackfillMissingDirStats => {
             handle_backfill_missing_dir_stats(conn, repairs, signal);
@@ -1379,7 +1389,7 @@ fn process_message(
             handle_incremental_vacuum(conn, signal);
         }
         WriteMessage::WalCheckpoint => {
-            handle_wal_checkpoint(conn, signal);
+            request_wal_checkpoint(conn, signal, deferred_checkpoint);
         }
         WriteMessage::EmitDirUpdated(paths) => {
             #[cfg(test)]

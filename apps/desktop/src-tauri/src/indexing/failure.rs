@@ -21,7 +21,7 @@
 //! supervisor, so a dead index emits a handful of lines, never thousands.
 
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use tokio::sync::Notify;
 
@@ -35,11 +35,16 @@ pub(crate) struct IndexFailureSignal {
     tripped: AtomicBool,
     reason: Mutex<Option<IndexFailure>>,
     notify: Notify,
+    /// Every [`note`](IndexFailureSignal::note) call, fatal or not. Tests assert on
+    /// it to prove a handler treated a situation as normal rather than routing it
+    /// here: a non-fatal note logs a warn and returns, leaving no other trace.
+    notes: AtomicUsize,
 }
 
 impl IndexFailureSignal {
     pub(crate) fn new() -> Self {
         Self {
+            notes: AtomicUsize::new(0),
             tripped: AtomicBool::new(false),
             reason: Mutex::new(None),
             notify: Notify::new(),
@@ -59,6 +64,7 @@ impl IndexFailureSignal {
     /// Only ever called from an error branch, so the `context` format never runs on
     /// the hot success path.
     pub(crate) fn note(&self, err: &IndexStoreError, context: &str) -> bool {
+        self.notes.fetch_add(1, Ordering::Relaxed);
         let Some(failure) = err.as_index_failure() else {
             log::warn!("{context}: {err}");
             return false;
@@ -85,6 +91,12 @@ impl IndexFailureSignal {
     /// and the live event loop to stop.
     pub(crate) fn is_tripped(&self) -> bool {
         self.tripped.load(Ordering::Acquire)
+    }
+
+    /// How many errors have been noted here, fatal or not.
+    #[cfg(test)]
+    pub(crate) fn note_count(&self) -> usize {
+        self.notes.load(Ordering::Relaxed)
     }
 
     /// The recorded failure reason, if tripped.
