@@ -463,6 +463,14 @@ pub(crate) async fn read_directory_with_progress(
             path_for_task.display(),
         );
         let on_progress = |p: crate::file_system::volume::ListingProgress| {
+            // A cancelled listing keeps running until the backend reaches a safe
+            // boundary (see the cancel arm below), but its listing_id is spent —
+            // the caller already emitted `listing-cancelled` and the pane moved
+            // on. Stay quiet so a superseded listing can't post progress against
+            // an id the frontend has retired.
+            if cancel_for_task.load(Ordering::Relaxed) {
+                return;
+            }
             // Streaming listing UI shows "Loaded N entries…", so it wants total
             // entry count, not just files. `ListingProgress::entries()` sums
             // files + dirs for that.
