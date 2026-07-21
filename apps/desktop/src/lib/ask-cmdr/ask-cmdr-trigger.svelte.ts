@@ -15,6 +15,7 @@
 import { saveAppStatus } from '$lib/app-status-store'
 import { explorerState } from '$lib/file-explorer/pane/explorer-state.svelte'
 import { getAppLogger } from '$lib/logging/logger'
+import { SvelteSet } from 'svelte/reactivity'
 import { consentState, refreshConsent } from './ask-cmdr-consent.svelte'
 import { growMainWindowForRail, shrinkMainWindowForRail } from './rail-window'
 import {
@@ -89,6 +90,7 @@ export interface BulkRenameReviewRow {
   destinationName: string
   allowed: boolean
   blockedReason: string | null
+  warnings: Array<'extensionChanged' | 'cycle'>
 }
 
 export interface BulkRenameReview {
@@ -548,7 +550,7 @@ function openRenameReview(proposal: Extract<AskCmdrStreamEvent, { type: 'proposa
   discardRenameReview()
   askCmdrState.renameReview = {
     proposalId: proposal.proposalId,
-    rows: proposal.rows.map((row) => ({ ...row, allowed: true, blockedReason: null })),
+    rows: proposal.rows.map((row) => ({ ...row, allowed: true, blockedReason: null, warnings: [] })),
     preflighting: false,
     expired: false,
     requestVersion: 0,
@@ -581,6 +583,18 @@ export function denyAllRenameRows(): void {
   if (!review) return
   for (const row of review.rows) row.allowed = false
   void refreshRenamePreflight()
+}
+
+/** Revalidates a review when the pane's existing file watcher reports a name
+ * that participates in the proposal. The backend remains authoritative; this
+ * name filter only avoids unrelated watcher traffic causing extra IPC. */
+export async function renameReviewListingChanged(
+  changes: ReadonlyArray<{ type?: string; entry: { name: string } }>,
+): Promise<void> {
+  const review = askCmdrState.renameReview
+  if (!review) return
+  const reviewedNames = new SvelteSet(review.rows.flatMap((row) => [row.sourceName, row.destinationName]))
+  if (changes.some((change) => reviewedNames.has(change.entry.name))) await refreshRenamePreflight()
 }
 
 /** Cancel closes the review and consumes its server-owned proposal. */
@@ -623,7 +637,10 @@ async function refreshRenamePreflight(): Promise<void> {
   const version = review.requestVersion + 1
   review.requestVersion = version
   review.preflighting = true
-  const allowedRowIds = review.rows.filter((row) => row.allowed).map((row) => row.rowId)
+  // Validate every displayed row, including denied and previously blocked rows.
+  // Otherwise a target that disappears after blocking its row could never make
+  // that row reviewable again. Apply still submits only the user's allowed ids.
+  const allowedRowIds = review.rows.map((row) => row.rowId)
   try {
     const result = await preflightBulkRename(review.proposalId, allowedRowIds)
     const current = askCmdrState.renameReview
@@ -634,6 +651,7 @@ async function refreshRenamePreflight(): Promise<void> {
     for (const row of current.rows) {
       const backend = result.rows.find((candidate) => candidate.rowId === row.rowId)
       row.blockedReason = backend?.status === 'blocked' ? backend.reason : null
+      if (backend) row.warnings = backend.warnings
       if (row.blockedReason) row.allowed = false
     }
   } catch (e) {

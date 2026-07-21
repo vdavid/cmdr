@@ -394,6 +394,38 @@
   "@askCmdr.renameReview.blocked": {
     "sourceHash": "868541c"
   },
+  "askCmdr.renameReview.overwriteBadge": "(sobrescrever!)",
+  "@askCmdr.renameReview.overwriteBadge": {
+    "sourceHash": "762fd52"
+  },
+  "askCmdr.renameReview.overwriteTooltip": "Outro arquivo já usa esse nome e não faz parte deste plano de renomeação. Esta renomeação está bloqueada para proteger o arquivo.",
+  "@askCmdr.renameReview.overwriteTooltip": {
+    "sourceHash": "f3448fc"
+  },
+  "askCmdr.renameReview.sourceMissingBadge": "(não existe)",
+  "@askCmdr.renameReview.sourceMissingBadge": {
+    "sourceHash": "fbb0106"
+  },
+  "askCmdr.renameReview.sourceMissingTooltip": "Este arquivo de origem não existe mais. Ele pode ter sido apagado ou renomeado fora do Cmdr.",
+  "@askCmdr.renameReview.sourceMissingTooltip": {
+    "sourceHash": "acd6306"
+  },
+  "askCmdr.renameReview.extensionBadge": "(extensão)",
+  "@askCmdr.renameReview.extensionBadge": {
+    "sourceHash": "bcc0b2c"
+  },
+  "askCmdr.renameReview.extensionTooltip": "Extensão alterada. O conteúdo do arquivo não será convertido.",
+  "@askCmdr.renameReview.extensionTooltip": {
+    "sourceHash": "7da4864"
+  },
+  "askCmdr.renameReview.cycleBadge": "(ciclo)",
+  "@askCmdr.renameReview.cycleBadge": {
+    "sourceHash": "5a2772b"
+  },
+  "askCmdr.renameReview.cycleTooltip": "Ciclo de renomeação. O Cmdr usará um nome temporário enquanto gira esses arquivos.",
+  "@askCmdr.renameReview.cycleTooltip": {
+    "sourceHash": "d76a0af"
+  },
   "askCmdr.renameReview.expired": "Esta revisão expirou. Peça ao Ask Cmdr para a preparar novamente.",
   "@askCmdr.renameReview.expired": {
     "sourceHash": "4e6482a"

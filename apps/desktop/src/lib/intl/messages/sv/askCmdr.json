@@ -393,6 +393,38 @@
   "@askCmdr.renameReview.blocked": {
     "sourceHash": "868541c"
   },
+  "askCmdr.renameReview.overwriteBadge": "(skriv över!)",
+  "@askCmdr.renameReview.overwriteBadge": {
+    "sourceHash": "762fd52"
+  },
+  "askCmdr.renameReview.overwriteTooltip": "En annan fil använder redan namnet och ingår inte i den här namnbytesplanen. Namnbytet blockeras för att skydda filen.",
+  "@askCmdr.renameReview.overwriteTooltip": {
+    "sourceHash": "f3448fc"
+  },
+  "askCmdr.renameReview.sourceMissingBadge": "(finns inte)",
+  "@askCmdr.renameReview.sourceMissingBadge": {
+    "sourceHash": "fbb0106"
+  },
+  "askCmdr.renameReview.sourceMissingTooltip": "Den här källfilen finns inte längre. Den kan ha raderats eller bytt namn utanför Cmdr.",
+  "@askCmdr.renameReview.sourceMissingTooltip": {
+    "sourceHash": "acd6306"
+  },
+  "askCmdr.renameReview.extensionBadge": "(filtillägg)",
+  "@askCmdr.renameReview.extensionBadge": {
+    "sourceHash": "bcc0b2c"
+  },
+  "askCmdr.renameReview.extensionTooltip": "Filtillägget har ändrats. Filens innehåll konverteras inte.",
+  "@askCmdr.renameReview.extensionTooltip": {
+    "sourceHash": "7da4864"
+  },
+  "askCmdr.renameReview.cycleBadge": "(cykel)",
+  "@askCmdr.renameReview.cycleBadge": {
+    "sourceHash": "5a2772b"
+  },
+  "askCmdr.renameReview.cycleTooltip": "Namnbytescykel. Cmdr använder ett tillfälligt namn medan filerna roteras.",
+  "@askCmdr.renameReview.cycleTooltip": {
+    "sourceHash": "d76a0af"
+  },
   "askCmdr.renameReview.expired": "Den här granskningen har gått ut. Be Ask Cmdr att förbereda den igen.",
   "@askCmdr.renameReview.expired": {
     "sourceHash": "4e6482a"

@@ -392,6 +392,38 @@
   "@askCmdr.renameReview.blocked": {
     "sourceHash": "868541c"
   },
+  "askCmdr.renameReview.overwriteBadge": "(felülírás!)",
+  "@askCmdr.renameReview.overwriteBadge": {
+    "sourceHash": "762fd52"
+  },
+  "askCmdr.renameReview.overwriteTooltip": "Ezt a nevet már egy másik fájl használja, amely nem része ennek az átnevezési tervnek. A fájl védelme érdekében ez az átnevezés blokkolva van.",
+  "@askCmdr.renameReview.overwriteTooltip": {
+    "sourceHash": "f3448fc"
+  },
+  "askCmdr.renameReview.sourceMissingBadge": "(nem létezik)",
+  "@askCmdr.renameReview.sourceMissingBadge": {
+    "sourceHash": "fbb0106"
+  },
+  "askCmdr.renameReview.sourceMissingTooltip": "Ez a forrásfájl már nem létezik. Lehet, hogy a Cmdren kívül törölték vagy átnevezték.",
+  "@askCmdr.renameReview.sourceMissingTooltip": {
+    "sourceHash": "acd6306"
+  },
+  "askCmdr.renameReview.extensionBadge": "(kiterjesztés)",
+  "@askCmdr.renameReview.extensionBadge": {
+    "sourceHash": "bcc0b2c"
+  },
+  "askCmdr.renameReview.extensionTooltip": "A kiterjesztés megváltozott. A fájl tartalma nem lesz átalakítva.",
+  "@askCmdr.renameReview.extensionTooltip": {
+    "sourceHash": "7da4864"
+  },
+  "askCmdr.renameReview.cycleBadge": "(ciklus)",
+  "@askCmdr.renameReview.cycleBadge": {
+    "sourceHash": "5a2772b"
+  },
+  "askCmdr.renameReview.cycleTooltip": "Átnevezési ciklus. A fájlok körbeforgatásához a Cmdr egy ideiglenes nevet fog használni.",
+  "@askCmdr.renameReview.cycleTooltip": {
+    "sourceHash": "d76a0af"
+  },
   "askCmdr.renameReview.expired": "Ez az áttekintés lejárt. Kérd meg az Ask Cmdr-t, hogy készítse el újra.",
   "@askCmdr.renameReview.expired": {
     "sourceHash": "4e6482a"

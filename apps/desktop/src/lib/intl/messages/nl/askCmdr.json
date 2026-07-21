@@ -396,6 +396,38 @@
   "@askCmdr.renameReview.blocked": {
     "sourceHash": "868541c"
   },
+  "askCmdr.renameReview.overwriteBadge": "(overschrijven!)",
+  "@askCmdr.renameReview.overwriteBadge": {
+    "sourceHash": "762fd52"
+  },
+  "askCmdr.renameReview.overwriteTooltip": "Een ander bestand gebruikt deze naam al en maakt geen deel uit van dit hernoemingsplan. Deze hernoeming is geblokkeerd om het bestand te beschermen.",
+  "@askCmdr.renameReview.overwriteTooltip": {
+    "sourceHash": "f3448fc"
+  },
+  "askCmdr.renameReview.sourceMissingBadge": "(bestaat niet)",
+  "@askCmdr.renameReview.sourceMissingBadge": {
+    "sourceHash": "fbb0106"
+  },
+  "askCmdr.renameReview.sourceMissingTooltip": "Dit bronbestand bestaat niet meer. Het is mogelijk buiten Cmdr verwijderd of hernoemd.",
+  "@askCmdr.renameReview.sourceMissingTooltip": {
+    "sourceHash": "acd6306"
+  },
+  "askCmdr.renameReview.extensionBadge": "(extensie)",
+  "@askCmdr.renameReview.extensionBadge": {
+    "sourceHash": "bcc0b2c"
+  },
+  "askCmdr.renameReview.extensionTooltip": "Extensie gewijzigd. De bestandsinhoud wordt niet geconverteerd.",
+  "@askCmdr.renameReview.extensionTooltip": {
+    "sourceHash": "7da4864"
+  },
+  "askCmdr.renameReview.cycleBadge": "(cyclus)",
+  "@askCmdr.renameReview.cycleBadge": {
+    "sourceHash": "5a2772b"
+  },
+  "askCmdr.renameReview.cycleTooltip": "Hernoemingscyclus. Cmdr gebruikt één tijdelijke naam terwijl deze bestanden worden geroteerd.",
+  "@askCmdr.renameReview.cycleTooltip": {
+    "sourceHash": "d76a0af"
+  },
   "askCmdr.renameReview.expired": "Deze beoordeling is verlopen. Vraag Ask Cmdr om deze opnieuw voor te bereiden.",
   "@askCmdr.renameReview.expired": {
     "sourceHash": "4e6482a"

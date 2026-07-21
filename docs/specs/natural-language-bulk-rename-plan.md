@@ -189,9 +189,10 @@ The operation:
 3. Creates `WriteOperationState`, an operation event sink, and one queued `OperationDescriptor`; use
    `manager::spawn_managed`, not `rename_managed` / `run_instant`. The operation returns its id immediately, reserves
    its volume lane when admitted, reports row-count progress, and honours cancellation between filesystem calls.
-4. Renames in a collision-safe order. For cycles, swaps, and case-only paths it first assigns unique, same-directory
-   temporary names, then performs final names. On a mid-operation stop, it records completed and skipped rows honestly;
-   it does not attempt an unreviewed rollback.
+4. Renames in a collision-safe dependency order. Independent rows rename directly; acyclic chains run backward from
+   their free destination; each cycle uses one unique, same-directory temporary; and case-only paths retain one
+   temporary on case-insensitive filesystems. The review marks cycle rows and explains the temporary rotation. On a
+   mid-operation stop, it records completed and skipped rows honestly; it does not attempt an unreviewed rollback.
 5. Opens one operation-log header on admission with `item_count = allowed rows`, writes one item row per final outcome,
    and reuses the existing local/volume rename routes, Downloads watcher write-ignore handling, listing notifications,
    busy state, and journal helpers. It never writes through a raw filesystem shortcut.

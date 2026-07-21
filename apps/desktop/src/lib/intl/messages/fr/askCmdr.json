@@ -392,6 +392,40 @@
   "@askCmdr.renameReview.blocked": {
     "sourceHash": "868541c"
   },
+  "askCmdr.renameReview.overwriteBadge": "(écrasement !)",
+  "@askCmdr.renameReview.overwriteBadge": {
+    "sourceHash": "762fd52"
+  },
+  "askCmdr.renameReview.overwriteTooltip": "Un autre fichier utilise déjà ce nom et ne fait pas partie de ce plan de renommage. Ce renommage est bloqué pour le protéger.",
+  "@askCmdr.renameReview.overwriteTooltip": {
+    "sourceHash": "f3448fc"
+  },
+  "askCmdr.renameReview.sourceMissingBadge": "(n’existe pas)",
+  "@askCmdr.renameReview.sourceMissingBadge": {
+    "sourceHash": "fbb0106"
+  },
+  "askCmdr.renameReview.sourceMissingTooltip": "Ce fichier source n’existe plus. Il a peut-être été supprimé ou renommé en dehors de Cmdr.",
+  "@askCmdr.renameReview.sourceMissingTooltip": {
+    "sourceHash": "acd6306"
+  },
+  "askCmdr.renameReview.extensionBadge": "(extension)",
+  "@askCmdr.renameReview.extensionBadge": {
+    "sourceHash": "bcc0b2c",
+    "sameAsSourceJustification": "Le mot « extension » est identique en français et correspond au terme utilisé par macOS."
+  },
+  "askCmdr.renameReview.extensionTooltip": "Extension modifiée. Le contenu du fichier ne sera pas converti.",
+  "@askCmdr.renameReview.extensionTooltip": {
+    "sourceHash": "7da4864"
+  },
+  "askCmdr.renameReview.cycleBadge": "(cycle)",
+  "@askCmdr.renameReview.cycleBadge": {
+    "sourceHash": "5a2772b",
+    "sameAsSourceJustification": "Le mot « cycle » est identique en français et décrit le même enchaînement circulaire."
+  },
+  "askCmdr.renameReview.cycleTooltip": "Cycle de renommage. Cmdr utilisera un nom temporaire pendant la rotation de ces fichiers.",
+  "@askCmdr.renameReview.cycleTooltip": {
+    "sourceHash": "d76a0af"
+  },
   "askCmdr.renameReview.expired": "Cette vérification a expiré. Demandez à Ask Cmdr de la préparer à nouveau.",
   "@askCmdr.renameReview.expired": {
     "sourceHash": "4e6482a"

@@ -2,12 +2,16 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import { onDirectoryDiff } from '$lib/tauri-commands'
+    import { onMount } from 'svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import {
         applyRenameReview,
         allowAllRenameRows,
         askCmdrState,
         cancelRenameReview,
         denyAllRenameRows,
+        renameReviewListingChanged,
         setRenameRowAllowed,
     } from './ask-cmdr-trigger.svelte'
 
@@ -19,6 +23,15 @@
     function toggleRow(rowId: string, checked: boolean): void {
         setRenameRowAllowed(rowId, checked)
     }
+
+    onMount(() => {
+        const listener = onDirectoryDiff((diff) => {
+            void renameReviewListingChanged(diff.changes)
+        })
+        return () => {
+            void listener.then((unlisten) => { unlisten(); }).catch(() => {})
+        }
+    })
 </script>
 
 {#if review}
@@ -72,6 +85,42 @@
                                     <td title={row.sourceName}><span>{row.sourceName}</span></td>
                                     <td title={row.destinationName}>
                                         <span>{row.destinationName}</span>
+                                        {#if row.warnings.includes('extensionChanged')}
+                                            <span
+                                                class="warning-badge"
+                                                data-rename-warning="extensionChanged"
+                                                tabindex="0"
+                                                aria-label={tString('askCmdr.renameReview.extensionTooltip')}
+                                                use:tooltip={tString('askCmdr.renameReview.extensionTooltip')}
+                                            >{tString('askCmdr.renameReview.extensionBadge')}</span>
+                                        {/if}
+                                        {#if row.warnings.includes('cycle')}
+                                            <span
+                                                class="warning-badge"
+                                                data-rename-warning="cycle"
+                                                tabindex="0"
+                                                aria-label={tString('askCmdr.renameReview.cycleTooltip')}
+                                                use:tooltip={tString('askCmdr.renameReview.cycleTooltip')}
+                                            >{tString('askCmdr.renameReview.cycleBadge')}</span>
+                                        {/if}
+                                        {#if row.blockedReason === 'targetExists'}
+                                            <span
+                                                class="danger-badge"
+                                                data-warning="overwrite"
+                                                tabindex="0"
+                                                aria-label={tString('askCmdr.renameReview.overwriteTooltip')}
+                                                use:tooltip={tString('askCmdr.renameReview.overwriteTooltip')}
+                                            >{tString('askCmdr.renameReview.overwriteBadge')}</span>
+                                        {/if}
+                                        {#if row.blockedReason === 'sourceMissing'}
+                                            <span
+                                                class="danger-badge"
+                                                data-warning="source-missing"
+                                                tabindex="0"
+                                                aria-label={tString('askCmdr.renameReview.sourceMissingTooltip')}
+                                                use:tooltip={tString('askCmdr.renameReview.sourceMissingTooltip')}
+                                            >{tString('askCmdr.renameReview.sourceMissingBadge')}</span>
+                                        {/if}
                                         {#if row.blockedReason}
                                             <small>{tString('askCmdr.renameReview.blocked')}</small>
                                         {/if}
@@ -170,5 +219,29 @@
         display: block;
         margin-top: var(--spacing-xxs);
         color: var(--color-text-secondary);
+    }
+
+    .warning-badge {
+        display: inline-flex;
+        width: fit-content;
+        margin-top: var(--spacing-xxs);
+        padding: 0 var(--spacing-xs);
+        border-radius: var(--radius-sm);
+        color: var(--color-warning-text);
+        background: var(--color-warning-bg);
+        font-size: var(--font-size-xs);
+        white-space: nowrap;
+    }
+
+    .danger-badge {
+        display: inline-flex;
+        width: fit-content;
+        margin-top: var(--spacing-xxs);
+        padding: 0 var(--spacing-xs);
+        border-radius: var(--radius-sm);
+        color: var(--color-error-text);
+        background: var(--color-error-bg);
+        font-size: var(--font-size-xs);
+        white-space: nowrap;
     }
 </style>

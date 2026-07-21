@@ -3425,11 +3425,14 @@ export type BulkRenamePreflightRow = {
   rowId: string
   status: BulkRenameRowStatus
   reason: BulkRenameBlockReason | null
+  warnings: BulkRenameWarning[]
 }
 
 export type BulkRenamePreflightStatus = 'ready' | 'blocked' | 'expired'
 
 export type BulkRenameRowStatus = 'ready' | 'blocked'
+
+export type BulkRenameWarning = 'extensionChanged' | 'cycle'
 
 /**
  *  Logical-pixel rectangle. `f64` mirrors what Tauri's `LogicalPosition` /
