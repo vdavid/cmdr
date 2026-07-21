@@ -36,6 +36,10 @@ VolumeManager (registry)
 `VolumeScanner` and `VolumeWatcher` are separate sub-traits returned by `Volume::scanner()` and `Volume::watcher()`.
 Only `LocalPosixVolume` implements both today.
 
+Every non-forced `LocalPosixVolume::rename` is atomic-no-overwrite. macOS uses `renamex_np(RENAME_EXCL)` and Linux uses
+`renameat2(RENAME_NOREPLACE)`, covering the boot volume, attached local volumes, and cloud folders registered under
+their own volume IDs. A separate metadata check followed by plain `rename` is not an acceptable substitute.
+
 ## Trait capability model
 
 Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new volume types can be added incrementally. Key capability flags:
