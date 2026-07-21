@@ -41,8 +41,6 @@
         phaseDurationMs: number
         phaseHistory: PhaseRecord[]
         verifying: boolean
-        hugeDirsSeen: number
-        largestDirChildren: number
         verifyDeclinedDirs: number
         verifyTruncatedDirs: number
         reconcileBudgetSubtrees: number
@@ -488,19 +486,6 @@
                         ></span
                     >
                     <span class="index-meta-value">{formatCount(debugStatus.mustScanRescansCompleted)}</span>
-                </div>
-                <div class="index-meta-row">
-                    <span class="index-meta-label"
-                        >Huge dirs seen <span
-                            class="info-icon"
-                            use:tooltip={{
-                                text: 'Directory listings with 10,000+ children, counted across the scan walker and the rescan walk. The number in brackets is the largest directory seen.',
-                            }}>i</span
-                        ></span
-                    >
-                    <span class="index-meta-value"
-                        >{formatCount(debugStatus.hugeDirsSeen)} ({formatCount(debugStatus.largestDirChildren)} max)</span
-                    >
                 </div>
                 <div class="index-meta-row">
                     <span class="index-meta-label"

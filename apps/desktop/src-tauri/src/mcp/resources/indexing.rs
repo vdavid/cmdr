@@ -65,11 +65,6 @@ pub(crate) struct VolumeIndexingDebug {
     pub must_scan_count: u64,
     pub must_scan_rescans_completed: u64,
     pub verifying: bool,
-    /// Directory listings seen with ≥ 10,000 children (the pathological-directory
-    /// census), and the largest single directory seen. This is the instrument for
-    /// "is the 1.14M-child directory an n=1 curiosity or a real class?".
-    pub huge_dirs_seen: u64,
-    pub largest_dir_children: u64,
     /// Directories background verification declined (tooth 1) or diffed only
     /// partially (tooth 2).
     pub verify_declined_dirs: u64,
@@ -315,11 +310,6 @@ pub(crate) fn build_volume_debug_text(snap: &VolumeIndexingSnapshot, now_unix_s:
             format_number(debug.must_scan_count),
             format_number(debug.must_scan_rescans_completed)
         ));
-        lines.push(format!(
-            "    huge dirs: {} seen with 10,000+ children, largest {} children",
-            format_number(debug.huge_dirs_seen),
-            format_number(debug.largest_dir_children)
-        ));
         if debug.verify_declined_dirs > 0 || debug.verify_truncated_dirs > 0 {
             lines.push(format!(
                 "    verify guard: {} declined, {} partially diffed",
@@ -440,8 +430,6 @@ fn collect_volume_snapshot(volume_id: &str, with_debug: bool) -> VolumeIndexingS
             must_scan_count: d.must_scan_count,
             must_scan_rescans_completed: d.must_scan_rescans_completed,
             verifying: d.verifying,
-            huge_dirs_seen: d.huge_dirs_seen,
-            largest_dir_children: d.largest_dir_children,
             verify_declined_dirs: d.verify_declined_dirs,
             verify_truncated_dirs: d.verify_truncated_dirs,
             reconcile_budget_subtrees: d.reconcile_budget_subtrees,

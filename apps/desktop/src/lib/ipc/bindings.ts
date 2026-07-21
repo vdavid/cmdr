@@ -4498,14 +4498,6 @@ export type IndexDebugStatusResponse = {
   phaseHistory: PhaseRecord[]
   // Whether background verification is running concurrently with the current phase
   verifying: boolean
-  /**
-   *  Directory listings seen at or over [`HUGE_DIR_CHILD_FLOOR`] children, across
-   *  the guarded walker and the LOCAL reconcile walk (the pathological-directory
-   *  census — see `DebugStats::record_dir_listing`).
-   */
-  hugeDirsSeen: number
-  // The largest single-directory child count seen since start (0 if none).
-  largestDirChildren: number
   // Directories background verification declined outright (guard tooth 1).
   verifyDeclinedDirs: number
   // Directories background verification diffed only partially (guard tooth 2).

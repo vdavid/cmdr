@@ -643,12 +643,16 @@ So the cost is bounded instead, by two pure decisions in `event_loop/verify_guar
 - **Scope.** This fixes the STALL. It does not reclaim the search index's RAM (the rows stay in the DB — `fetch_temp` alone is ~16% of the 6.95M rows the search index loads), and it guards only `verify_affected_dirs`: a shallow `MustScanSubDirs` still routes to `start_scan` and re-walks, and `reconcile_subtree` still diffs on a deep anchor.
 - The "1.14M `EntryRow`s are a large share of the 1.01 GB peak" claim is **back-of-envelope, not measured** (~130–160 MB plus a comparable transient for the per-parent name `HashSet`). Measure before advertising a RAM win.
 
-**The pathological-directory census** (`DebugStats::record_dir_listing`, surfaced as `hugeDirsSeen` / `largestDirChildren` in the debug status and in `cmdr://indexing?volume=<id>`) is the instrument for the question this all hangs on: is a 1.14M-child directory an n=1 curiosity, or a class worth building sealing for? It counts every directory listing at or over `HUGE_DIR_CHILD_FLOOR` (10,000) plus a monotone max.
+**How to measure pathological directories.** One SQL query over an existing index answers "how common are enormous directories?" more completely than any counter could, because a full scan already enumerates every directory:
 
-- **It is hooked in all THREE walks that materialise a listing, on purpose.** `scanner::InsertVisitor::visit_dir` covers a fresh scan / `clear_index` / subtree scan; `local_reconcile::build_live_children` covers the full rescan; `reconciler::reconcile_subtree` covers the DEEP `MustScanSubDirs` drain and the other small-scope live fills. A populated, previously-completed index NEVER runs the guarded walker (it reconciles — see § "Non-destructive rescan"), so a walker-only census would read zero on exactly the established machines worth sampling, and `MustScanSubDirs` triggers roughly half the scans on a real machine (Spike B, `docs/notes/churn-observability-spike.md`), so a census blind to it would undercount the busiest route. The scanner and rescan hooks are pinned by tests that drive the real walk, not the counter.
-- **The per-navigation verifier is deliberately NOT hooked.** `event_loop/verification.rs` streams `read_dir` and `verify_guard` stops it at `HUGE_DIR_CHILDREN` iterations, so the only child count it could report is censored exactly at the pathological end the census exists to measure. Its outcomes ride the sibling counters below instead.
-- **Atomics, never a lock.** The guarded walker calls it from every rayon thread; `record_must_scan`'s `Mutex<Vec<_>>` ring on the scan hot path is not acceptable. The max is read-then-`fetch_max`, so after the first few directories no read-modify-write touches the shared cache line.
-- Verification's own outcomes ride the same surface: `verifyDeclinedDirs` (tooth 1) and `verifyTruncatedDirs` (tooth 2).
+```sql
+SELECT COUNT(*) FROM (SELECT parent_id FROM entries GROUP BY parent_id HAVING COUNT(*) >= 10000);
+```
+
+Measured on David's production index (7,325,641 rows, 2026-07-21): 29 such directories, topped by Google Drive's `fetch_temp` at 955,724, then test fixtures, then WebKit 129,930 / Chrome 103,245 / Firefox 74,024 caches, then `target/debug/deps` across five repos.
+
+- **The index UNDERCOUNTS the worst directories.** A read abandoned at `LOCAL_LIST_TIMEOUT` skips the subtree, so the pathological end is exactly where the index is thinnest: `fetch_temp` reads 955,724 rows against ~1.4M on disk. Treat every number from this query as a lower bound, never as exact.
+- **The guard's own activations are NOT answerable this way, so they stay counted**: `verifyDeclinedDirs` (tooth 1) and `verifyTruncatedDirs` (tooth 2), plus `reconcileBudgetSubtrees` / `reconcileBudgetSkippedDirs` (§ "The reconcile cost budget"). No query over the index can report how often a guard fired.
 
 ## How to test
 

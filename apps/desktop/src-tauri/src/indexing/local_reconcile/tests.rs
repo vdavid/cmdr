@@ -738,40 +738,6 @@ fn cancelled_reconcile_leaves_prior_index_and_writes_no_marks() {
     );
 }
 
-/// The pathological-directory census must be fed by the REAL reconcile walk, not
-/// only by a unit test of the counter.
-///
-/// This hook is the load-bearing one: a populated, previously-completed index
-/// never runs the guarded walker (it reconciles here), so a walker-only census
-/// would read zero on exactly the established machines worth sampling. The
-/// counters live on the process-global `DEBUG_STATS`; the check runner uses
-/// `cargo nextest` (process per test), so `before` is 0 there and the assertion
-/// is exact. Under a shared-process `cargo test --lib` it degrades to a lower
-/// bound, never to a flake.
-#[test]
-fn the_reconcile_walk_feeds_the_pathological_dir_census() {
-    use crate::indexing::DEBUG_STATS;
-
-    let h = setup();
-    let root = tree_root();
-    let rp = root.path();
-    ensure_path_in_db(&h, &norm(rp));
-
-    let children = 12;
-    for i in 0..children {
-        std::fs::write(rp.join(format!("f{i:02}.txt")), b"x").unwrap();
-    }
-
-    let before = DEBUG_STATS.largest_dir_children.load(Ordering::Relaxed);
-    run_reconcile(&h, rp, false).expect("reconcile");
-    let after = DEBUG_STATS.largest_dir_children.load(Ordering::Relaxed);
-
-    assert!(
-        after >= children as u64,
-        "run_local_reconcile must record its per-directory child counts (before {before}, after {after})"
-    );
-}
-
 /// The per-read timeout guard, and what the cost budget does to the walk (its
 /// pure decision is tested in `cost_budget.rs` itself).
 mod cost_budget_walk;
