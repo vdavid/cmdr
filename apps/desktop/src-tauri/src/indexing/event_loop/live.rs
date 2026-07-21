@@ -26,8 +26,8 @@ use super::super::store::{self, IndexStore};
 use super::super::watcher;
 use super::super::writer::{IndexWriter, WriteMessage};
 use super::{
-    INGESTION_WARN_INTERVAL, IngestionPressure, LIVE_FLUSH_INTERVAL_MS, THROTTLE_SWEEP_INTERVAL_MS,
-    classify_ingestion_pressure, merge_fs_events, open_read_conn_with_retry, storm,
+    BacklogTracker, IngestionPressure, LIVE_FLUSH_INTERVAL_MS, THROTTLE_SWEEP_INTERVAL_MS,
+    classify_ingestion_pressure, merge_fs_events, open_read_conn_with_retry, report_backlog, storm,
 };
 use crate::pluralize::pluralize;
 
@@ -120,8 +120,9 @@ pub(in crate::indexing) async fn run_live_event_loop(
     // the watcher down, but this doesn't wait for that).
     let failure_signal = writer.failure_signal();
 
-    // Rate-limiter for the "ingestion falling behind" warning (Fix 2).
-    let mut last_ingestion_warn: Option<Instant> = None;
+    // Backlog reporting: reports the TREND, so a backlog that's draining steadily
+    // reads as progress and only a stuck queue warns.
+    let mut backlog = BacklogTracker::new();
 
     // Per-subtree churn observability (`indexing/churn_monitor.rs`): inert (and
     // free) unless `CMDR_CHURN_SPIKE` is set. `process_live_batch` does the
@@ -215,15 +216,9 @@ pub(in crate::indexing) async fn run_live_event_loop(
                         break;
                     }
                     IngestionPressure::FallingBehind => {
-                        if last_ingestion_warn.is_none_or(|t| t.elapsed() >= INGESTION_WARN_INTERVAL) {
-                            log::warn!(
-                                "Live event processing: falling behind, {} events queued (draining, not dropping)",
-                                event_rx.len()
-                            );
-                            last_ingestion_warn = Some(Instant::now());
-                        }
+                        report_backlog(&mut backlog, "Live event processing", event_rx.len());
                     }
-                    IngestionPressure::Healthy => {}
+                    IngestionPressure::Healthy => backlog.reset(),
                 }
 
                 // Check if the FSEvents channel overflowed. Events were dropped

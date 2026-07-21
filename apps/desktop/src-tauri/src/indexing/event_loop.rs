@@ -16,13 +16,14 @@
 //! constants live in [`replay`].
 
 use std::path::Path;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use rusqlite::Connection;
 
 use super::IndexPathSpace;
 use super::store::{self, IndexStore};
 use super::watcher;
+use crate::pluralize::{grouped, pluralize_grouped};
 
 mod live;
 mod replay;
@@ -75,8 +76,9 @@ pub(super) const INGESTION_BACKLOG_WARN: usize = 20_000;
 /// memory watchdog (`memory_watchdog.rs`) that stops all indexing.
 pub(super) const INGESTION_HARD_CAP: usize = 5_000_000;
 
-/// Minimum gap between "ingestion falling behind" warnings, so a sustained backlog
-/// logs at a steady cadence rather than every flush tick. Shared by both loops.
+/// Minimum gap between backlog reports, so a sustained backlog logs at a steady
+/// cadence rather than every flush tick. Also the sampling interval [`BacklogTracker`]
+/// measures the drain trend over. Shared by both loops.
 pub(super) const INGESTION_WARN_INTERVAL: Duration = Duration::from_secs(5);
 
 /// How much pressure the unbounded ingestion queue is under, derived from its
@@ -86,7 +88,8 @@ pub(super) const INGESTION_WARN_INTERVAL: Duration = Duration::from_secs(5);
 pub(super) enum IngestionPressure {
     /// Draining fine; do nothing.
     Healthy,
-    /// Above the healthy watermark: log "falling behind" (rate-limited), never drop.
+    /// Above the healthy watermark: report the backlog (rate-limited, and warn only
+    /// if it isn't draining — see [`BacklogTracker`]), never drop.
     FallingBehind,
     /// Past the RAM-guard hard cap: deliberately fall back to a full scan.
     Overflowing,
@@ -100,6 +103,99 @@ pub(super) fn classify_ingestion_pressure(queue_len: usize) -> IngestionPressure
         IngestionPressure::FallingBehind
     } else {
         IngestionPressure::Healthy
+    }
+}
+
+/// Reports on a backlog by its TREND, not its depth.
+///
+/// A cold start hands the replay hundreds of thousands of queued events and it
+/// drains monotonically for minutes. Reporting on depth alone made that trip a
+/// "falling behind" warning ~90 times during a completely healthy drain, which is
+/// how a log stops being read. The queue depth says nothing about whether anything
+/// is wrong; the direction it's moving does. So a shrinking queue reports progress
+/// at `info`, and only a flat-or-growing one warns.
+///
+/// One sample is taken per report, at most one per [`INGESTION_WARN_INTERVAL`], and
+/// each is compared against the previous one. [`reset`](Self::reset) ends the
+/// episode when the queue drops back to healthy, so a later backlog is never
+/// compared against a depth from minutes ago.
+pub(super) struct BacklogTracker {
+    /// When the last report went out, and the depth it saw.
+    last: Option<(Instant, usize)>,
+}
+
+impl BacklogTracker {
+    pub(super) fn new() -> Self {
+        Self { last: None }
+    }
+
+    /// Forget the current episode. Called when the queue is healthy again.
+    pub(super) fn reset(&mut self) {
+        self.last = None;
+    }
+
+    /// Take a sample. Returns `(warn, message)` when it's time to report, `None`
+    /// while the previous report is still inside the interval. Pure apart from its
+    /// own bookkeeping, so both the policy and the wording are unit-tested.
+    pub(super) fn sample(&mut self, label: &str, queued: usize, now: Instant) -> Option<(bool, String)> {
+        let previous = match self.last {
+            Some((at, _)) if now.duration_since(at) < INGESTION_WARN_INTERVAL => return None,
+            other => other,
+        };
+        self.last = Some((now, queued));
+
+        let depth = pluralize_grouped(queued as u64, "event");
+        let Some((at, before)) = previous else {
+            // Nothing to compare against yet: report the depth, claim no trend.
+            return Some((false, format!("{label}: working through a backlog of {depth}")));
+        };
+
+        let elapsed = now.duration_since(at).as_secs_f64();
+        if queued < before {
+            let drained = before - queued;
+            let eta = eta_phrase(queued, drained, elapsed);
+            Some((
+                false,
+                format!(
+                    "{label}: working through a backlog of {depth} (down {} in {elapsed:.1}s{eta})",
+                    grouped(drained as u64)
+                ),
+            ))
+        } else {
+            Some((
+                true,
+                format!(
+                    "{label}: ingestion queue not draining, {depth} queued (up {} in {elapsed:.1}s)",
+                    grouped((queued - before) as u64)
+                ),
+            ))
+        }
+    }
+}
+
+/// Sample the backlog and log the report if one is due. A draining backlog is
+/// progress, so it goes out at `info`; only a queue that isn't draining warns.
+pub(super) fn report_backlog(tracker: &mut BacklogTracker, label: &str, queued: usize) {
+    if let Some((warn, line)) = tracker.sample(label, queued, Instant::now()) {
+        if warn {
+            log::warn!("{line}");
+        } else {
+            log::info!("{line}");
+        }
+    }
+}
+
+/// How long the remaining backlog takes at the rate just measured, as a phrase to
+/// append inside the report's parentheses (empty when the rate can't be trusted).
+fn eta_phrase(remaining: usize, drained: usize, elapsed_secs: f64) -> String {
+    if drained == 0 || elapsed_secs <= 0.0 {
+        return String::new();
+    }
+    let secs = remaining as f64 * elapsed_secs / drained as f64;
+    if secs < 90.0 {
+        format!(", ~{secs:.0}s left at this rate")
+    } else {
+        format!(", ~{:.0} min left at this rate", secs / 60.0)
     }
 }
 

@@ -31,6 +31,9 @@
 #[cfg(target_os = "macos")]
 use std::sync::atomic::{AtomicBool, Ordering};
 
+#[cfg(target_os = "macos")]
+use crate::pluralize::grouped;
+
 /// 8 GB in bytes.
 #[cfg(target_os = "macos")]
 const WARN_THRESHOLD: u64 = 8 * 1024 * 1024 * 1024;
@@ -146,22 +149,6 @@ fn gb(bytes: u64) -> f64 {
 #[cfg(target_os = "macos")]
 fn mb(bytes: u64) -> f64 {
     bytes as f64 / (1024.0 * 1024.0)
-}
-
-/// Group a count with thousands separators, so a multi-million event count is
-/// readable at a glance in the log line.
-#[cfg(target_os = "macos")]
-fn grouped(n: u64) -> String {
-    let digits = n.to_string();
-    let bytes = digits.as_bytes();
-    let mut out = String::with_capacity(digits.len() + digits.len() / 3);
-    for (i, &b) in bytes.iter().enumerate() {
-        if i > 0 && (bytes.len() - i).is_multiple_of(3) {
-            out.push(',');
-        }
-        out.push(b as char);
-    }
-    out
 }
 
 // ── Memory snapshot ──────────────────────────────────────────────────
@@ -505,16 +492,6 @@ mod tests {
                 "report should mention {needle}; got:\n{report}"
             );
         }
-    }
-
-    #[cfg(target_os = "macos")]
-    #[test]
-    fn grouped_formats_thousands_separators() {
-        assert_eq!(grouped(0), "0");
-        assert_eq!(grouped(42), "42");
-        assert_eq!(grouped(1_000), "1,000");
-        assert_eq!(grouped(1_649_321), "1,649,321");
-        assert_eq!(grouped(1_000_000), "1,000,000");
     }
 
     #[cfg(target_os = "macos")]

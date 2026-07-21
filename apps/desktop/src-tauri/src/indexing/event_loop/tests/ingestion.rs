@@ -31,6 +31,83 @@ fn classifier_thresholds() {
     );
 }
 
+// ── Backlog trend ────────────────────────────────────────────────────
+
+/// A cold start hands the replay a backlog in the hundreds of thousands and it
+/// drains monotonically for minutes. That is the system working, so every report
+/// along the way must read as progress, never as a warning: the queue DEPTH says
+/// nothing about whether anything is wrong.
+#[test]
+fn a_draining_backlog_reports_progress_not_a_warning() {
+    let mut tracker = BacklogTracker::new();
+    let t0 = Instant::now();
+
+    // The first sample has nothing to compare against, so it can only report depth.
+    let (warn, line) = tracker
+        .sample("Replay", 831_060, t0)
+        .expect("the first sample always reports");
+    assert!(!warn, "a backlog we know nothing about yet is not a warning");
+    assert!(line.contains("831,060 events"), "got: {line}");
+
+    // Draining: the number that matters is the trend, and it belongs in the line.
+    let (warn, line) = tracker
+        .sample("Replay", 787_194, t0 + INGESTION_WARN_INTERVAL)
+        .expect("a sample past the interval reports");
+    assert!(!warn, "a backlog that is draining is progress, not a warning");
+    assert!(line.contains("down 43,866"), "the trend belongs in the line; got: {line}");
+}
+
+/// The condition that actually needs attention: the queue is NOT draining. Only
+/// then does the line escalate to a warning.
+#[test]
+fn a_backlog_that_is_not_draining_warns() {
+    let mut tracker = BacklogTracker::new();
+    let t0 = Instant::now();
+    tracker.sample("Replay", 500_000, t0);
+
+    let (warn, line) = tracker
+        .sample("Replay", 512_000, t0 + INGESTION_WARN_INTERVAL)
+        .expect("a sample past the interval reports");
+    assert!(warn, "a growing queue is the case worth waking someone for");
+    assert!(line.contains("not draining"), "got: {line}");
+    assert!(line.contains("up 12,000"), "got: {line}");
+
+    // Flat counts as not draining too: no progress is being made.
+    let (warn, _) = tracker
+        .sample("Replay", 512_000, t0 + INGESTION_WARN_INTERVAL * 2)
+        .expect("a sample past the interval reports");
+    assert!(warn, "a flat queue is not draining either");
+}
+
+/// A sustained backlog reports at a steady cadence, not on every flush tick.
+#[test]
+fn backlog_reports_are_rate_limited() {
+    let mut tracker = BacklogTracker::new();
+    let t0 = Instant::now();
+    assert!(tracker.sample("Replay", 400_000, t0).is_some());
+    assert!(
+        tracker.sample("Replay", 390_000, t0 + Duration::from_millis(200)).is_none(),
+        "a report inside the interval is suppressed"
+    );
+    assert!(tracker.sample("Replay", 380_000, t0 + INGESTION_WARN_INTERVAL).is_some());
+}
+
+/// Dropping back to healthy ends the episode: the next backlog is compared
+/// against its own first sample, not against a depth from minutes ago.
+#[test]
+fn a_healthy_queue_ends_the_episode() {
+    let mut tracker = BacklogTracker::new();
+    let t0 = Instant::now();
+    tracker.sample("Replay", 500_000, t0);
+    tracker.reset();
+
+    let (warn, line) = tracker
+        .sample("Replay", 600_000, t0 + Duration::from_millis(10))
+        .expect("a fresh episode reports immediately");
+    assert!(!warn, "a fresh episode has no trend yet, so it cannot warn");
+    assert!(!line.contains("up "), "no stale comparison; got: {line}");
+}
+
 /// Fix 2 repro: a backlog that would have tripped the OLD bounded 20K channel
 /// (blocking the forward task → upstream FSEvents overflow → forced full scan) is
 /// now absorbed by the unbounded buffer. The producer never blocks, nothing is

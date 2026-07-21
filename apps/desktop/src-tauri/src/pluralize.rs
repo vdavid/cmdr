@@ -43,9 +43,50 @@ pub fn pluralize_with(count: u64, singular: &str, plural: &str) -> String {
     }
 }
 
+/// A count with thousands separators, so a six- or seven-figure number is
+/// readable at a glance in a log line: `1649321` → `1,649,321`.
+pub fn grouped(count: u64) -> String {
+    let digits = count.to_string();
+    let bytes = digits.as_bytes();
+    let mut out = String::with_capacity(digits.len() + digits.len() / 3);
+    for (i, &b) in bytes.iter().enumerate() {
+        if i > 0 && (bytes.len() - i).is_multiple_of(3) {
+            out.push(',');
+        }
+        out.push(b as char);
+    }
+    out
+}
+
+/// [`pluralize`] with the count grouped by [`grouped`]: `"620,483 events"`.
+/// Use it wherever the number can plausibly reach six figures.
+pub fn pluralize_grouped(count: u64, singular: &str) -> String {
+    if count == 1 {
+        format!("1 {singular}")
+    } else {
+        format!("{} {singular}s", grouped(count))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn grouped_formats_thousands_separators() {
+        assert_eq!(grouped(0), "0");
+        assert_eq!(grouped(42), "42");
+        assert_eq!(grouped(1_000), "1,000");
+        assert_eq!(grouped(1_649_321), "1,649,321");
+        assert_eq!(grouped(1_000_000), "1,000,000");
+    }
+
+    #[test]
+    fn pluralize_grouped_groups_and_pluralizes() {
+        assert_eq!(pluralize_grouped(1, "event"), "1 event");
+        assert_eq!(pluralize_grouped(0, "event"), "0 events");
+        assert_eq!(pluralize_grouped(831_060, "event"), "831,060 events");
+    }
 
     #[test]
     fn regular_plural_defaults_to_plus_s() {

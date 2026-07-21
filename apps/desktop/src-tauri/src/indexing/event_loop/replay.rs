@@ -29,8 +29,8 @@ use super::super::writer::{IndexWriter, WriteMessage};
 use super::live::{mark_pending_and_drain, process_live_batch};
 use super::verification::run_background_verification;
 use super::{
-    INGESTION_WARN_INTERVAL, IngestionPressure, JOURNAL_GAP_THRESHOLD, LIVE_FLUSH_INTERVAL_MS, ReplayConfig,
-    THROTTLE_SWEEP_INTERVAL_MS, classify_ingestion_pressure, merge_fs_events, open_read_conn_with_retry,
+    BacklogTracker, IngestionPressure, JOURNAL_GAP_THRESHOLD, LIVE_FLUSH_INTERVAL_MS, ReplayConfig,
+    THROTTLE_SWEEP_INTERVAL_MS, classify_ingestion_pressure, merge_fs_events, open_read_conn_with_retry, report_backlog,
 };
 use crate::pluralize::pluralize;
 
@@ -104,9 +104,9 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     let mut first_event_checked = false;
     let mut fallback_tx = Some(fallback_tx);
     let mut last_event_id = since_event_id;
-    // Rate-limiter for the "ingestion falling behind" warning (Fix 2), shared
-    // across both replay phases.
-    let mut last_ingestion_warn: Option<Instant> = None;
+    // Backlog reporting for both replay phases: reports the TREND, so a large
+    // cold-start backlog draining steadily reads as progress, not as a warning.
+    let mut backlog = BacklogTracker::new();
 
     // Collect all affected parent paths during replay (deduplicated).
     // Capped at MAX_AFFECTED_PATHS; beyond that we emit a full refresh.
@@ -287,15 +287,9 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                     return Ok(());
                 }
                 IngestionPressure::FallingBehind => {
-                    if last_ingestion_warn.is_none_or(|t| t.elapsed() >= INGESTION_WARN_INTERVAL) {
-                        log::warn!(
-                            "Replay: falling behind, {} events queued (draining, not dropping)",
-                            event_rx.len()
-                        );
-                        last_ingestion_warn = Some(Instant::now());
-                    }
+                    report_backlog(&mut backlog, "Replay", event_rx.len());
                 }
-                IngestionPressure::Healthy => {}
+                IngestionPressure::Healthy => backlog.reset(),
             }
         }
 
@@ -540,15 +534,9 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                         return Ok(());
                     }
                     IngestionPressure::FallingBehind => {
-                        if last_ingestion_warn.is_none_or(|t| t.elapsed() >= INGESTION_WARN_INTERVAL) {
-                            log::warn!(
-                                "Replay (live): falling behind, {} events queued (draining, not dropping)",
-                                event_rx.len()
-                            );
-                            last_ingestion_warn = Some(Instant::now());
-                        }
+                        report_backlog(&mut backlog, "Replay (live)", event_rx.len());
                     }
-                    IngestionPressure::Healthy => {}
+                    IngestionPressure::Healthy => backlog.reset(),
                 }
 
                 process_live_batch(
