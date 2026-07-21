@@ -1,6 +1,9 @@
 //! Engine tests for the guarded walker. A mock [`ReadDirFn`] serves an in-memory
 //! tree and can block on chosen paths, so hang tolerance, honest-skip, and
-//! parallel correctness are tested without a real hung mount.
+//! parallel correctness are tested without a real hung mount. A second mock
+//! ([`batched_reader`]) delivers entries over time, which is what pins the
+//! progress-vs-elapsed-time boundary: big-and-healthy, stalled, silent, and
+//! trickling reads are four different verdicts.
 
 use super::*;
 use std::collections::{BTreeSet, HashMap, HashSet};
@@ -19,17 +22,22 @@ struct MockFs {
 
 impl MockFs {
     fn reader(self: Arc<Self>) -> ReadDirFn {
-        Arc::new(move |p: &Path| {
+        Arc::new(move |p: &Path, progress: &ReadProgress| {
             if self.hang.contains(p) {
+                // A hung mount publishes nothing while it blocks — the whole point
+                // of the signal.
                 std::thread::sleep(self.hang_dur);
             }
             match self.dirs.get(p) {
                 Some(children) => Ok(children
                     .iter()
-                    .map(|(name, ft)| RawDirEntry {
-                        path: p.join(name),
-                        file_type: *ft,
-                        stat: None,
+                    .map(|(name, ft)| {
+                        progress.record_entries(1);
+                        RawDirEntry {
+                            path: p.join(name),
+                            file_type: *ft,
+                            stat: None,
+                        }
                     })
                     .collect()),
                 None => Err(std::io::Error::new(std::io::ErrorKind::NotFound, "no such mock dir")),
@@ -145,7 +153,8 @@ impl DirVisitor for RecordingVisitor {
 fn fast_cfg(num_threads: usize) -> WalkConfig {
     WalkConfig {
         num_threads,
-        read_timeout: Duration::from_millis(50),
+        stall_timeout: Duration::from_millis(50),
+        per_entry_allowance: DEFAULT_PER_ENTRY_ALLOWANCE,
         watchdog_interval: Duration::from_millis(5),
         // The default budget (32) is far above any existing test's failure count,
         // so the give-up path stays out of the way here; its own test sets a small
@@ -174,7 +183,196 @@ fn edges_by_path(rec: &Recorded) -> BTreeSet<(PathBuf, PathBuf)> {
         .collect()
 }
 
+// ── Batched reader (progress-timeout tests) ──────────────────────────
+
+/// How a mock read of `/r/big` behaves over time. `/r` itself always lists
+/// `/r/big` instantly; every other path errors.
+#[derive(Clone, Copy)]
+struct BatchPlan {
+    /// Batches the read delivers before returning.
+    batches: usize,
+    /// Entries per batch.
+    per_batch: usize,
+    /// Time the read spends producing each batch.
+    gap: Duration,
+    /// Whether the read publishes its batches through [`ReadProgress`]. `false`
+    /// models a reader with no progress signal (it only returns a `Vec` at the end).
+    publish: bool,
+}
+
+/// A reader whose `/r/big` follows `plan` — the shape of a big healthy directory
+/// arriving in `getattrlistbulk` batches, and of every degenerate variant of it.
+fn batched_reader(plan: BatchPlan) -> ReadDirFn {
+    Arc::new(move |p: &Path, progress: &ReadProgress| {
+        if p == Path::new("/r") {
+            progress.record_entries(1);
+            return Ok(vec![RawDirEntry {
+                path: PathBuf::from("/r/big"),
+                file_type: RawFileType::Dir,
+                stat: None,
+            }]);
+        }
+        if p != Path::new("/r/big") {
+            return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "no such mock dir"));
+        }
+        let mut out = Vec::new();
+        for batch in 0..plan.batches {
+            std::thread::sleep(plan.gap);
+            if plan.publish {
+                progress.record_entries(plan.per_batch as u64);
+            }
+            for i in 0..plan.per_batch {
+                out.push(RawDirEntry {
+                    path: PathBuf::from(format!("/r/big/f{batch}-{i}")),
+                    file_type: RawFileType::File,
+                    stat: None,
+                });
+            }
+        }
+        Ok(out)
+    })
+}
+
+/// Walk `/r` with `plan` and a 50 ms stall timeout, returning the stats and
+/// whether `/r/big` was read to completion.
+fn walk_plan(plan: BatchPlan, cfg: WalkConfig) -> (WalkStats, bool) {
+    let visitor = Arc::new(RecordingVisitor::new());
+    let stats = walk(
+        root_task("/r"),
+        cfg,
+        batched_reader(plan),
+        visitor.clone(),
+        Arc::new(AtomicBool::new(false)),
+    );
+    let rec = visitor.rec.lock().unwrap_or_else(|e| e.into_inner());
+    let read = rec.read_ok.contains(Path::new("/r/big"));
+    drop(rec);
+    (stats, read)
+}
+
 // ── Tests ────────────────────────────────────────────────────────────
+
+#[test]
+fn a_read_that_keeps_delivering_is_never_abandoned() {
+    // A big HEALTHY directory: 20 batches, 30 ms apart, so the read runs ~600 ms —
+    // 12x the stall timeout. Elapsed time can't tell this from a hung mount, which
+    // is how a real 200,000-entry directory got dropped from a whole fresh scan.
+    // Progress can: this read never stops delivering, so it must be read in full.
+    let plan = BatchPlan {
+        batches: 20,
+        per_batch: 100,
+        gap: Duration::from_millis(30),
+        publish: true,
+    };
+    let (stats, big_read) = walk_plan(plan, fast_cfg(2));
+
+    assert_eq!(
+        stats.timed_out, 0,
+        "a read that keeps delivering must never be abandoned"
+    );
+    assert!(big_read, "the big directory must be read to completion");
+    assert_eq!(stats.dirs_read, 2, "both /r and /r/big were read");
+}
+
+#[test]
+fn a_read_that_stops_delivering_is_abandoned_promptly() {
+    // Progress-based, not "progressed once, therefore trusted forever": this read
+    // delivers two batches and then blocks, exactly like a File Provider mount that
+    // drops mid-listing. It must be abandoned about one stall timeout later — and
+    // the 10,000 entries it already delivered bought it ~10 s of per-entry
+    // allowance, so only the stall rule can end it this fast.
+    let plan = BatchPlan {
+        batches: 2,
+        per_batch: 5_000,
+        gap: Duration::from_millis(10),
+        publish: true,
+    };
+    let stalling = Arc::new(AtomicBool::new(false));
+    let reader = {
+        let inner = batched_reader(plan);
+        let stalling = Arc::clone(&stalling);
+        let reader: ReadDirFn = Arc::new(move |p: &Path, progress: &ReadProgress| {
+            let out = inner(p, progress)?;
+            if p == Path::new("/r/big") {
+                stalling.store(true, Ordering::SeqCst);
+                std::thread::sleep(Duration::from_secs(5)); // never returns in time
+            }
+            Ok(out)
+        });
+        reader
+    };
+
+    let visitor = Arc::new(RecordingVisitor::new());
+    let start = Instant::now();
+    let stats = walk(
+        root_task("/r"),
+        fast_cfg(2),
+        reader,
+        visitor.clone(),
+        Arc::new(AtomicBool::new(false)),
+    );
+    let elapsed = start.elapsed();
+
+    assert!(stalling.load(Ordering::SeqCst), "the read must have reached its stall");
+    assert_eq!(stats.timed_out, 1, "the stalled read is abandoned");
+    assert!(
+        elapsed < Duration::from_secs(1),
+        "abandonment must follow the stall, not wait out the 5 s block (elapsed {elapsed:?})",
+    );
+    let rec = visitor.rec.lock().unwrap_or_else(|e| e.into_inner());
+    assert!(
+        rec.errors.iter().any(|(p, timed)| p == Path::new("/r/big") && *timed),
+        "the stalled dir is reported as a timeout, so its subtree stays honest-stale",
+    );
+}
+
+#[test]
+fn a_reader_that_cannot_report_progress_is_still_bounded() {
+    // A reader with no progress signal (`publish: false`) must NOT become
+    // unkillable. With nothing to observe, both rules collapse to the plain
+    // total-duration cap the walker has always had.
+    let plan = BatchPlan {
+        batches: 20,
+        per_batch: 100,
+        gap: Duration::from_millis(30), // ~600 ms of silent work
+        publish: false,
+    };
+    let start = Instant::now();
+    let (stats, big_read) = walk_plan(plan, fast_cfg(2));
+
+    assert_eq!(stats.timed_out, 1, "a silent read is still capped at the stall timeout");
+    assert!(!big_read, "a silent over-cap read is abandoned, never marked read");
+    assert!(
+        start.elapsed() < Duration::from_secs(1),
+        "the walk must not wait out a reader it cannot observe (elapsed {:?})",
+        start.elapsed(),
+    );
+}
+
+#[test]
+fn a_trickling_read_is_abandoned_by_the_per_entry_allowance() {
+    // The floor under the stall rule. This read never stalls for a whole timeout
+    // (a batch lands every 40 ms against a 50 ms stall timeout), but it delivers
+    // one entry per batch, so it would crawl for hours. The per-entry allowance
+    // gives it 50 ms + 1 ms per entry delivered, which it blows through in a few
+    // batches.
+    let plan = BatchPlan {
+        batches: 1_000,
+        per_batch: 1,
+        gap: Duration::from_millis(40),
+        publish: true,
+    };
+    let start = Instant::now();
+    let (stats, big_read) = walk_plan(plan, fast_cfg(2));
+
+    assert_eq!(stats.timed_out, 1, "a trickle must be abandoned, not indulged");
+    assert!(!big_read, "the trickling dir is never marked read");
+    assert!(
+        start.elapsed() < Duration::from_secs(2),
+        "the allowance must bite early, not after the full 40 s trickle (elapsed {:?})",
+        start.elapsed(),
+    );
+}
 
 #[test]
 fn walks_full_tree_and_attributes_parents() {
@@ -410,7 +608,8 @@ fn cancellation_returns_promptly() {
         root_task("/r"),
         WalkConfig {
             num_threads: 2,
-            read_timeout: Duration::from_secs(10), // long, so only cancel can end it
+            stall_timeout: Duration::from_secs(10), // long, so only cancel can end it
+            per_entry_allowance: DEFAULT_PER_ENTRY_ALLOWANCE,
             watchdog_interval: Duration::from_millis(5),
             give_up_after: DEFAULT_GIVE_UP_AFTER,
         },
@@ -460,7 +659,8 @@ fn gives_up_on_a_dead_subtree_and_keeps_walking_a_healthy_sibling() {
     let visitor = Arc::new(RecordingVisitor::new());
     let cfg = WalkConfig {
         num_threads: NUM_THREADS,
-        read_timeout: Duration::from_millis(50),
+        stall_timeout: Duration::from_millis(50),
+        per_entry_allowance: DEFAULT_PER_ENTRY_ALLOWANCE,
         watchdog_interval: Duration::from_millis(5),
         give_up_after: GIVE_UP_AFTER,
     };

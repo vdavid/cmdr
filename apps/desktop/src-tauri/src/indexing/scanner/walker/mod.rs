@@ -10,12 +10,29 @@
 //! the whole scan on one such read, and the reconcile path's serial `read_dir`
 //! froze every rescan.
 //!
-//! This engine walks directories in parallel and puts a wall-clock cap on every
-//! single read. A read that exceeds [`WalkConfig::read_timeout`] is *abandoned*:
-//! the directory is reported as a read error (its subtree pruned, the dir left
-//! unmarked so freshness stays honest), a replacement worker is spawned to keep
-//! pool capacity, and the rest of the walk proceeds. A hung dir therefore costs
-//! at most one worker for at most the timeout — never the whole scan.
+//! This engine walks directories in parallel and guards every single read. A read
+//! the guard condemns is *abandoned*: the directory is reported as a read error
+//! (its subtree pruned, the dir left unmarked so freshness stays honest), a
+//! replacement worker is spawned to keep pool capacity, and the rest of the walk
+//! proceeds. A hung dir therefore costs at most one worker for at most the
+//! timeout — never the whole scan.
+//!
+//! # The guard measures PROGRESS, not elapsed time
+//!
+//! Elapsed time cannot tell a BIG directory from a BROKEN one. A total-duration
+//! cap of 15 s did exactly that: a fresh scan reported "complete" with 6,001,637
+//! entries while having silently dropped 661,411 rows in five directories whose
+//! only sin was being large (up to 200,000 entries), all of which the serial
+//! reconcile then read in under 11 s each. See `indexing/DETAILS.md`
+//! § "The walker's progress timeout".
+//!
+//! So each read publishes what it has delivered through a [`ReadProgress`] handle,
+//! and the watchdog judges THAT (see `Engine::verdict`): a read is abandoned when
+//! it has delivered nothing for [`WalkConfig::stall_timeout`], or when its total
+//! time has outrun the [`WalkConfig::per_entry_allowance`] its delivered entries
+//! earn it. A disconnected mount blocks in the syscall and is abandoned exactly as
+//! promptly as before; a 200,000-entry directory is read to completion however long
+//! it honestly takes.
 //!
 //! # The abandon/replace protocol (the non-obvious part)
 //!
@@ -28,7 +45,7 @@
 //! - Worker finishes its read, `CAS(READING → COMPLETED)`. On success it processes
 //!   the result and accounts the task done. On failure (watchdog already abandoned
 //!   it) it drops the result and exits — its slot was replaced.
-//! - Watchdog sees a read older than the timeout, `CAS(READING → ABANDONED)`. On
+//! - Watchdog condemns a read, `CAS(READING → ABANDONED)`. On
 //!   success it reports the timeout, accounts the task done, and spawns a
 //!   replacement worker. The stuck worker thread is left parked in the syscall; it
 //!   exits on its own once the File Provider layer finally errors. That lingering
@@ -41,9 +58,11 @@
 //!
 //! # Testability
 //!
-//! The directory read is injected as a [`ReadDirFn`], so the hang, honest-skip,
-//! and parallel-correctness behaviors are unit-tested with a mock reader — no real
-//! hung mount required. Production passes the platform [`default_reader`].
+//! The directory read is injected as a [`ReadDirFn`] and both thresholds live on
+//! [`WalkConfig`], so the hang, big-but-healthy, trickle, honest-skip, and
+//! parallel-correctness behaviors are unit-tested with a mock reader at
+//! millisecond scale — no real hung mount required. Production passes the platform
+//! [`default_reader`].
 
 use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
@@ -127,14 +146,43 @@ pub struct RawDirEntry {
 pub enum WalkReadError {
     /// `readdir` returned an error (permission denied, not a directory, …).
     Io(std::io::Error),
-    /// The read exceeded the timeout and was abandoned. The directory's contents
+    /// The read stopped making progress and was abandoned. The directory's contents
     /// are unknown this walk; the subtree is pruned and the dir is left unmarked.
     TimedOut,
 }
 
-/// Injected directory reader. Production uses [`std_read_dir`]; tests inject a
-/// reader that can block, to exercise the timeout without a real hung mount.
-pub type ReadDirFn = Arc<dyn Fn(&Path) -> std::io::Result<Vec<RawDirEntry>> + Send + Sync>;
+/// What an in-flight directory read has delivered so far, published by the reader
+/// and read by the watchdog. This is the signal that separates a BIG directory
+/// from a BROKEN one: a healthy 200,000-entry read keeps the count climbing for
+/// however many seconds it honestly needs, while a disconnected mount blocks in
+/// the syscall and never moves it.
+///
+/// A reader that can't report progress (one that only returns a whole `Vec` at
+/// the end) simply leaves the count at zero, which collapses the watchdog's rules
+/// back to a plain total-duration cap — bounded exactly as an unprogressed read is.
+#[derive(Debug, Default)]
+pub struct ReadProgress {
+    entries: AtomicU64,
+}
+
+impl ReadProgress {
+    /// Report `n` more entries delivered. Called by the reader after every batch
+    /// (macOS `getattrlistbulk`) or entry (`std_read_dir`) — never at the end, or
+    /// the watchdog learns nothing while the read is running.
+    pub fn record_entries(&self, n: u64) {
+        self.entries.fetch_add(n, Ordering::Relaxed);
+    }
+
+    fn entries(&self) -> u64 {
+        self.entries.load(Ordering::Relaxed)
+    }
+}
+
+/// Injected directory reader. Production uses [`default_reader`]; tests inject a
+/// reader that can block, to exercise the timeout without a real hung mount. The
+/// [`ReadProgress`] handle is the read's own; it must publish through it as it
+/// goes (see [`ReadProgress`]).
+pub type ReadDirFn = Arc<dyn Fn(&Path, &ReadProgress) -> std::io::Result<Vec<RawDirEntry>> + Send + Sync>;
 
 /// Per-directory semantics, driven by the engine. Called concurrently from
 /// worker threads, so implementors must be `Sync`.
@@ -158,13 +206,33 @@ pub trait DirVisitor: Send + Sync {
 /// value is if anything conservative.
 pub const DEFAULT_GIVE_UP_AFTER: usize = 32;
 
+/// Default per-entry time allowance (see [`WalkConfig::per_entry_allowance`]).
+///
+/// Deliberately enormous next to reality so it can never fire on a healthy read:
+/// the `getattrlistbulk` reader delivers a boot-volume directory at ~2 µs per
+/// entry (verified on macOS 15, `bulk_vs_std_walk_bench`, 2026-07-21), and the
+/// serial reconcile's per-entry allowance for calling a read *pathological* is
+/// 100 µs (`local_reconcile/cost_budget.rs`). 1 ms is 500× the measured cost and
+/// 10× that threshold, so it only ever catches a read moving orders of magnitude
+/// slower than any filesystem we've measured, while still bounding one that
+/// trickles below the stall rule's radar forever.
+pub const DEFAULT_PER_ENTRY_ALLOWANCE: Duration = Duration::from_millis(1);
+
 /// Walk tuning.
 #[derive(Debug, Clone)]
 pub struct WalkConfig {
     /// Worker threads. `0` = derive from available parallelism.
     pub num_threads: usize,
-    /// Wall-clock cap on a single directory read before it's abandoned.
-    pub read_timeout: Duration,
+    /// How long a single read may go WITHOUT delivering an entry before it's
+    /// abandoned. Not a cap on the read's total duration: a big directory that
+    /// keeps delivering is read to completion however long it honestly takes.
+    pub stall_timeout: Duration,
+    /// How much total time a read earns per entry it has delivered, on top of
+    /// [`Self::stall_timeout`]. The backstop against a read that trickles forever
+    /// without ever stalling long enough to trip the stall rule; a healthy read
+    /// clears it by orders of magnitude. `0` disables it, leaving only the stall
+    /// rule.
+    pub per_entry_allowance: Duration,
     /// How often the watchdog checks for over-timeout reads. Smaller = tighter
     /// abandon latency and cancellation latency, at a little more wakeup cost.
     pub watchdog_interval: Duration,
@@ -179,7 +247,8 @@ impl Default for WalkConfig {
     fn default() -> Self {
         Self {
             num_threads: 0,
-            read_timeout: Duration::from_secs(15),
+            stall_timeout: Duration::from_secs(15),
+            per_entry_allowance: DEFAULT_PER_ENTRY_ALLOWANCE,
             watchdog_interval: Duration::from_secs(1),
             give_up_after: DEFAULT_GIVE_UP_AFTER,
         }
@@ -210,9 +279,12 @@ pub struct WalkStats {
         reason = "macOS uses the getattrlistbulk reader; std_read_dir is the reader for other platforms"
     )
 )]
-pub fn std_read_dir(path: &Path) -> std::io::Result<Vec<RawDirEntry>> {
+pub fn std_read_dir(path: &Path, progress: &ReadProgress) -> std::io::Result<Vec<RawDirEntry>> {
     let mut out = Vec::new();
     for entry in std::fs::read_dir(path)? {
+        // The iterator yields one entry per `readdir` step, so every turn of this
+        // loop is real progress the watchdog can see.
+        progress.record_entries(1);
         let Ok(entry) = entry else { continue };
         let file_type = match entry.file_type() {
             Ok(ft) if ft.is_dir() => RawFileType::Dir,
@@ -272,7 +344,8 @@ pub fn walk<V: DirVisitor + 'static>(
         cancelled,
         reader,
         visitor,
-        timeout: cfg.read_timeout,
+        stall_timeout: cfg.stall_timeout,
+        per_entry_allowance: cfg.per_entry_allowance,
         give_up_after: cfg.give_up_after,
         slots: Mutex::new(Vec::with_capacity(num_threads)),
         dirs_read: AtomicU64::new(0),
@@ -408,6 +481,22 @@ struct InFlight {
     state: Arc<AtomicU8>,
     task: ScheduledTask,
     started: Instant,
+    /// What the read has delivered so far, published by the reader itself.
+    progress: Arc<ReadProgress>,
+    /// The watchdog's own bookkeeping (only it touches these, under the slot
+    /// lock): the entry count it last saw, and when it saw it move.
+    seen_entries: u64,
+    seen_at: Instant,
+}
+
+/// Why the watchdog abandoned a read (see [`Engine::verdict`]). Typed rather than
+/// inferred from the log line: the two cases mean different things in the field.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum AbandonReason {
+    /// Delivered nothing for a whole `stall_timeout` — a hung or dead mount.
+    Stalled,
+    /// Kept delivering, but far too slowly for the work it did.
+    OverAllowance,
 }
 
 /// A worker's current-read slot. `None` between reads. Each worker owns one; the
@@ -426,7 +515,8 @@ struct Engine<V: DirVisitor> {
     cancelled: Arc<AtomicBool>,
     reader: ReadDirFn,
     visitor: Arc<V>,
-    timeout: Duration,
+    stall_timeout: Duration,
+    per_entry_allowance: Duration,
     /// Per-subtree give-up budget threshold (see [`SubtreeBudget`]). Copied onto
     /// every budget the engine mints.
     give_up_after: usize,
@@ -526,12 +616,17 @@ impl<V: DirVisitor + 'static> Engine<V> {
             // Register the read so the watchdog can time it out, then do the
             // (potentially blocking) read.
             let state = Arc::new(AtomicU8::new(READING));
+            let progress = Arc::new(ReadProgress::default());
+            let started = Instant::now();
             *slot.lock_ignore_poison() = Some(InFlight {
                 state: Arc::clone(&state),
                 task: scheduled.clone(),
-                started: Instant::now(),
+                started,
+                progress: Arc::clone(&progress),
+                seen_entries: 0,
+                seen_at: started,
             });
-            let result = (self.reader)(&scheduled.task.path);
+            let result = (self.reader)(&scheduled.task.path, &progress);
 
             // Resolve the race with the watchdog. If it already abandoned this
             // read, drop the result and exit — a replacement worker took over.
@@ -572,6 +667,33 @@ impl<V: DirVisitor + 'static> Engine<V> {
         }
     }
 
+    /// Should this in-flight read be abandoned, and why? `None` means "still
+    /// working, leave it alone". Two rules, either of which fires:
+    ///
+    /// - **Stalled**: it has delivered nothing for a whole `stall_timeout`. This is
+    ///   the hung-mount rule, and it applies whether the read has produced a
+    ///   million entries or none — a mount that drops mid-listing is abandoned as
+    ///   promptly as one that never starts.
+    /// - **Over allowance**: its total time has outrun `stall_timeout` plus
+    ///   `per_entry_allowance` per entry delivered. The backstop for a read that
+    ///   trickles just fast enough to keep resetting the stall rule forever.
+    ///
+    /// A reader that publishes no progress leaves `entries` at 0, which makes both
+    /// rules the same plain total-duration cap. That's the honest verdict: a read
+    /// we cannot observe is indistinguishable from one that has produced nothing.
+    fn verdict(&self, f: &InFlight, now: Instant) -> Option<AbandonReason> {
+        if now.duration_since(f.seen_at) >= self.stall_timeout {
+            return Some(AbandonReason::Stalled);
+        }
+        let earned = self
+            .per_entry_allowance
+            .saturating_mul(u32::try_from(f.seen_entries).unwrap_or(u32::MAX));
+        if now.duration_since(f.started) >= self.stall_timeout.saturating_add(earned) {
+            return Some(AbandonReason::OverAllowance);
+        }
+        None
+    }
+
     fn run_watchdog(self: Arc<Self>, interval: Duration) {
         loop {
             std::thread::sleep(interval);
@@ -588,16 +710,23 @@ impl<V: DirVisitor + 'static> Engine<V> {
             // slots lock across per-slot work or a worker spawn.
             let slots = self.slots.lock_ignore_poison().clone();
             for slot in slots {
-                let inflight = slot
-                    .lock_ignore_poison()
-                    .as_ref()
-                    .map(|f| (Arc::clone(&f.state), f.task.clone(), f.started));
-                let Some((state, task, started)) = inflight else {
+                // Observe progress and judge under the slot lock (the watchdog is
+                // the only reader/writer of the `seen_*` fields), then act outside it.
+                let claim = {
+                    let mut guard = slot.lock_ignore_poison();
+                    guard.as_mut().and_then(|f| {
+                        let entries = f.progress.entries();
+                        if entries > f.seen_entries {
+                            f.seen_entries = entries;
+                            f.seen_at = now;
+                        }
+                        self.verdict(f, now)
+                            .map(|reason| (Arc::clone(&f.state), f.task.clone(), reason, entries))
+                    })
+                };
+                let Some((state, task, reason, entries)) = claim else {
                     continue;
                 };
-                if now.duration_since(started) < self.timeout {
-                    continue;
-                }
                 // Try to claim the abandonment. If the worker just finished, its
                 // CAS won and this fails — leave it alone.
                 if state
@@ -608,12 +737,23 @@ impl<V: DirVisitor + 'static> Engine<V> {
                 }
                 *slot.lock_ignore_poison() = None;
                 self.timed_out.fetch_add(1, Ordering::Relaxed);
-                log::warn!(
-                    target: LOG_TARGET,
-                    "read timed out after {:?}, abandoning {} (subtree skipped this scan)",
-                    self.timeout,
-                    task.task.path.display(),
-                );
+                let delivered = crate::pluralize::pluralize_with(entries, "entry", "entries");
+                match reason {
+                    AbandonReason::Stalled => log::warn!(
+                        target: LOG_TARGET,
+                        "read produced nothing for {:?} ({delivered} so far), abandoning {} \
+                         (subtree skipped this scan)",
+                        self.stall_timeout,
+                        task.task.path.display(),
+                    ),
+                    AbandonReason::OverAllowance => log::warn!(
+                        target: LOG_TARGET,
+                        "read is trickling ({delivered}, past its {:?}-per-entry allowance), abandoning {} \
+                         (subtree skipped this scan)",
+                        self.per_entry_allowance,
+                        task.task.path.display(),
+                    ),
+                }
                 self.record_subtree_failure(&task);
                 self.visitor.visit_read_error(&task.task, &WalkReadError::TimedOut);
 

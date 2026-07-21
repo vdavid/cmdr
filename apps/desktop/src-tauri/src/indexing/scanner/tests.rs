@@ -819,7 +819,7 @@ fn scan_summary_total_physical_bytes_equals_final_counter() {
 
 #[test]
 fn timed_out_dir_is_not_marked_listed() {
-    use crate::indexing::scanner::walker::{RawDirEntry, RawFileType, ReadDirFn};
+    use crate::indexing::scanner::walker::{RawDirEntry, RawFileType, ReadDirFn, ReadProgress};
     use std::collections::HashMap;
 
     // Mock tree under "/root": "slow" (dir, its read hangs) and "ok" (dir, has a file).
@@ -833,17 +833,20 @@ fn timed_out_dir_is_not_marked_listed() {
     let reader: ReadDirFn = {
         let dirs = Arc::clone(&dirs);
         let slow = slow.clone();
-        Arc::new(move |p: &Path| {
+        Arc::new(move |p: &Path, progress: &ReadProgress| {
             if p == slow {
-                std::thread::sleep(Duration::from_secs(2)); // hang past the timeout
+                std::thread::sleep(Duration::from_secs(2)); // stall past the timeout
             }
             match dirs.get(p) {
                 Some(children) => Ok(children
                     .iter()
-                    .map(|(n, t)| RawDirEntry {
-                        path: p.join(n),
-                        file_type: *t,
-                        stat: None,
+                    .map(|(n, t)| {
+                        progress.record_entries(1);
+                        RawDirEntry {
+                            path: p.join(n),
+                            file_type: *t,
+                            stat: None,
+                        }
                     })
                     .collect()),
                 None => Err(std::io::Error::new(std::io::ErrorKind::NotFound, "no mock dir")),
@@ -919,7 +922,7 @@ fn timed_out_dir_is_not_marked_listed() {
 
 #[test]
 fn volume_root_that_never_lists_surfaces_root_unlistable() {
-    use crate::indexing::scanner::walker::ReadDirFn;
+    use crate::indexing::scanner::walker::{ReadDirFn, ReadProgress};
 
     // A volume-root scan whose ROOT read FAILS (the mount vanished mid-scan): the
     // reader errors on every path, so the root is never listed (`dirs_read == 0`).
@@ -927,7 +930,7 @@ fn volume_root_that_never_lists_surfaces_root_unlistable() {
     // "completing" with zero entries (which would false-complete an empty index).
     // Distinct from an empty-but-readable root, which lists successfully.
     let root = PathBuf::from("/vanished-volume-root");
-    let reader: ReadDirFn = Arc::new(|_p: &Path| {
+    let reader: ReadDirFn = Arc::new(|_p: &Path, _progress: &ReadProgress| {
         Err(std::io::Error::new(
             std::io::ErrorKind::NotFound,
             "mount vanished (test)",

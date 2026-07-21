@@ -76,15 +76,16 @@ SMB/MTP + external-drive indexing:
   (`force_scan`): SMB/MTP → `start_volume_scan`, local → `start_scan`; never `start_scan` a trait-scanned volume (it
   false-completes).
 - **Never write `scan_completed_at` for an empty root** (`EmptyRoot`) or an unlistable one (`RootUnlistable`).
-- **The local walker gives up on a subtree after 32 consecutive failed reads**; descendants stay honest-stale
-  (`listed_epoch=0`).
+- **The local walker abandons a read that STOPPED PRODUCING (15 s, via `ReadProgress`), never a merely long one.**
+  ❌ Never re-cap total duration: it can't tell a 200,000-entry dir from a dead mount (dropped 661,411 rows from a
+  "complete" scan). Progress-less readers stay capped at 15 s. Subtree give-up after 32 consecutive failed reads;
+  descendants stay honest-stale (`listed_epoch=0`).
 - **`should_exclude(path, &ExclusionScope)` derives scope from the volume KIND, never `is_volume_root`.** The scope
-  carries the volume ROOT, so `<volume root>/{proc,sys,dev}` is skipped on EVERY volume (a phone's `proc` tree was 35%
-  of one reconcile walk) while a deeper `~/projects/x/proc` stays indexed. TWO conditions, both required: root POSITION
-  (never the name alone), AND all three of `proc`/`sys`/`dev` present as siblings. Don't drop the second: `dev` is an
-  ordinary folder name, and a Dropbox `dev` would silently vanish from sizes. A File Provider domain root
-  (`com.apple.file-provider-domain-id` xattr) counts as a volume root; that detection is an OPTIMIZATION, never a
-  guarantee, so never let it stand in for the cost-budget backstop.
+  carries the volume ROOT, so `<volume root>/{proc,sys,dev}` is skipped on EVERY volume (a phone's `proc` was 35% of one
+  reconcile walk) while `~/projects/x/proc` stays indexed. BOTH conditions required: root POSITION (never the name
+  alone), AND all three of `proc`/`sys`/`dev` as siblings — `dev` is an ordinary folder name, and a Dropbox `dev` would
+  silently vanish from sizes. A File Provider domain root (`com.apple.file-provider-domain-id` xattr) counts as a volume
+  root, but that detection is an OPTIMIZATION: never let it stand in for the cost-budget backstop.
 - **The LOCAL pipeline is mount-relative via `IndexPathSpace`**: strip the mount root ONLY at `resolve_abs`; path sets +
   FE emit stay ABSOLUTE.
 - **Live watch runs with NO pane open** (`apply_smb_change` hooks before the pane early-return). **Freshness has ONE

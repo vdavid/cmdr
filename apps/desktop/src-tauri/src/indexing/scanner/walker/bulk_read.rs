@@ -8,6 +8,9 @@
 //! how the former third-party directory-walking crate enumerated on macOS; here it also carries the sizes
 //! inline, eliminating the separate stat the old scanner still paid.
 //!
+//! Each batch is published through [`super::ReadProgress`] as it arrives, which is
+//! how the walker's watchdog knows this read is working rather than hung.
+//!
 //! # Correctness is fallback-protected
 //!
 //! The packed attribute buffer is parsed by hand (unaligned reads at a running
@@ -24,7 +27,7 @@ use std::ffi::CString;
 use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 
-use super::{InlineStat, RawDirEntry, RawFileType};
+use super::{InlineStat, RawDirEntry, RawFileType, ReadProgress};
 
 // ── getattrlist ABI ──────────────────────────────────────────────────
 //
@@ -77,7 +80,7 @@ const ATTR_BUF_SIZE: usize = 64 * 1024;
 /// `symlink_metadata` per entry when an attribute is missing. Fails (propagating
 /// the `io::Error`) only when the directory itself can't be opened — matching
 /// `std::fs::read_dir`'s contract, so the walker treats it like any unlistable dir.
-pub(super) fn bulk_read_dir(path: &Path) -> std::io::Result<Vec<RawDirEntry>> {
+pub(super) fn bulk_read_dir(path: &Path, progress: &ReadProgress) -> std::io::Result<Vec<RawDirEntry>> {
     let c_path = CString::new(path.as_os_str().as_bytes())
         .map_err(|_| std::io::Error::new(std::io::ErrorKind::InvalidInput, "path contains a NUL byte"))?;
 
@@ -134,6 +137,11 @@ pub(super) fn bulk_read_dir(path: &Path) -> std::io::Result<Vec<RawDirEntry>> {
             break; // no more entries
         }
 
+        // Publish the batch before parsing it: a directory of any size keeps this
+        // climbing every syscall, which is how the watchdog tells this read apart
+        // from one blocked forever in `getattrlistbulk` on a dead mount.
+        progress.record_entries(count.unsigned_abs().into());
+
         // Parse `count` variable-length entries packed back-to-back in `buf`.
         let mut base = 0usize;
         for _ in 0..count {
@@ -158,8 +166,11 @@ pub(super) fn bulk_read_dir(path: &Path) -> std::io::Result<Vec<RawDirEntry>> {
 
 /// Parse one packed `getattrlistbulk` record from the front of `bytes`. Returns
 /// `(record_length, entry)`. `entry` is `None` when the record can't be trusted
-/// (missing name/type, or a file missing size/link attrs) — the caller drops such
-/// records here and they're re-listed via `symlink_metadata` fallback below.
+/// (missing name/type, or a file missing size/link attrs), and the caller drops it.
+/// `FSOPT_PACK_INVAL_ATTRS` makes every requested attribute present on the
+/// filesystems we've measured, so this is the never-taken safety branch rather
+/// than a routine path — a parse mistake loses an entry instead of writing a wrong
+/// size, and `bulk_matches_symlink_metadata` is what keeps it never-taken.
 fn parse_entry(bytes: &[u8], dir: &Path) -> (usize, Option<RawDirEntry>) {
     // Fixed field layout after `FSOPT_PACK_INVAL_ATTRS` (every requested attr
     // present): u32 length | attribute_set_t returned (5×u32) | attrreference_t
@@ -319,7 +330,13 @@ mod tests {
         // A hardlink pair (nlink == 2) to check link-count parsing.
         std::fs::hard_link(root.join("small.txt"), root.join("small_alias.txt")).unwrap();
 
-        let entries = bulk_read_dir(root).expect("bulk read");
+        let progress = ReadProgress::default();
+        let entries = bulk_read_dir(root, &progress).expect("bulk read");
+        assert_eq!(
+            progress.entries(),
+            entries.len() as u64,
+            "the reader must publish every entry it delivered, or the watchdog can't see it working"
+        );
         // getattrlistbulk omits "." and ".."; we created 8 named entries.
         assert_eq!(
             entries.len(),
@@ -377,7 +394,10 @@ mod tests {
 
     #[test]
     fn bulk_read_dir_errors_on_missing_directory() {
-        let err = bulk_read_dir(Path::new("/nonexistent-cmdr-bulk-test-dir-xyz"));
+        let err = bulk_read_dir(
+            Path::new("/nonexistent-cmdr-bulk-test-dir-xyz"),
+            &ReadProgress::default(),
+        );
         assert!(err.is_err(), "opening a missing directory must error");
     }
 
@@ -397,7 +417,9 @@ mod tests {
             let mut n = 0u64;
             let mut stack = vec![root.to_path_buf()];
             while let Some(d) = stack.pop() {
-                let Ok(children) = bulk_read_dir(&d) else { continue };
+                let Ok(children) = bulk_read_dir(&d, &ReadProgress::default()) else {
+                    continue;
+                };
                 for c in children {
                     n += 1;
                     let _ = c.stat; // sizes already in hand

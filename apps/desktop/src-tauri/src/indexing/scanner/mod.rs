@@ -26,15 +26,20 @@ pub(in crate::indexing) use exclusions::*;
 
 mod walker;
 use walker::{
-    DEFAULT_GIVE_UP_AFTER, DirTask, DirVisitor, RawDirEntry, RawFileType, ReadDirFn, WalkConfig, WalkReadError,
-    default_reader, walk,
+    DEFAULT_GIVE_UP_AFTER, DEFAULT_PER_ENTRY_ALLOWANCE, DirTask, DirVisitor, RawDirEntry, RawFileType, ReadDirFn,
+    WalkConfig, WalkReadError, default_reader, walk,
 };
 
-/// Per-directory read timeout for the LOCAL walk. Sits above any legitimate
-/// slow-but-alive provider listing (an online cloud dir lists in well under a
-/// second) while abandoning a disconnected File Provider mount quickly; a
-/// timed-out dir prunes its subtree, so a dead mount costs a handful of frontier
-/// dirs, not thousands. (The network scanner's 120 s is tuned for SMB-over-WAN.)
+/// How long one LOCAL directory read may go without producing anything before
+/// it's abandoned. It measures a STALL, never total duration: a disconnected File
+/// Provider mount blocks and delivers nothing (abandoned in 15 s, its subtree
+/// pruned, so a dead mount costs a handful of frontier dirs), while a big healthy
+/// directory keeps delivering and is read to completion however long it takes.
+///
+/// The serial reconcile's `GuardedReader` reuses this constant on a reader with no
+/// progress signal, where it acts as a plain total cap — the same 15 s verdict for
+/// a read that has produced nothing. (The network scanner's 120 s is tuned for
+/// SMB-over-WAN.)
 pub(in crate::indexing) const LOCAL_LIST_TIMEOUT: Duration = Duration::from_secs(15);
 
 /// How often the walker watchdog checks for over-timeout reads (also the ceiling
@@ -339,8 +344,9 @@ pub fn scan_subtree(root: &Path, writer: &IndexWriter, cancelled: &AtomicBool) -
 /// Parent attribution needs no path→id map: [`walk`] carries each directory's id
 /// to its own read, so children take their parent's id directly. Ids come from the
 /// shared `IndexWriter` counter. The scan root maps to `ROOT_ID` (volume scans) or
-/// its existing entry id (subtree scans). `read_timeout` is the per-directory
-/// wall-clock cap (production passes `LOCAL_LIST_TIMEOUT`; tests pass a short one).
+/// its existing entry id (subtree scans). `stall_timeout` is how long one read may
+/// go without delivering an entry (production passes `LOCAL_LIST_TIMEOUT`; tests
+/// pass a short one).
 #[allow(
     clippy::too_many_arguments,
     reason = "internal scan entry point threading writer/progress/config; a param struct would add indirection without clarity"
@@ -356,7 +362,7 @@ fn run_scan(
     scope: ExclusionScope,
     inodes_trustworthy: bool,
     reader: ReadDirFn,
-    read_timeout: Duration,
+    stall_timeout: Duration,
 ) -> Result<(ScanSummary, Vec<i64>, u64, i64), ScanError> {
     let start = Instant::now();
 
@@ -404,10 +410,11 @@ fn run_scan(
 
     // Watchdog ticks faster than the timeout (production 15s → 1s; a short test
     // timeout scales down, floored at 5ms).
-    let watchdog_interval = (read_timeout / 15).clamp(Duration::from_millis(5), WATCHDOG_INTERVAL);
+    let watchdog_interval = (stall_timeout / 15).clamp(Duration::from_millis(5), WATCHDOG_INTERVAL);
     let cfg = WalkConfig {
         num_threads,
-        read_timeout,
+        stall_timeout,
+        per_entry_allowance: DEFAULT_PER_ENTRY_ALLOWANCE,
         watchdog_interval,
         give_up_after: DEFAULT_GIVE_UP_AFTER,
     };
@@ -449,9 +456,9 @@ fn run_scan(
 
     if walk_stats.timed_out > 0 {
         log::warn!(
-            "Scanner: {} skipped after {}s each (hung / disconnected dirs)",
+            "Scanner: {} skipped after producing nothing for {}s each (hung / disconnected dirs)",
             pluralize(walk_stats.timed_out, "dir"),
-            read_timeout.as_secs(),
+            stall_timeout.as_secs(),
         );
     }
     if walk_stats.subtrees_abandoned > 0 {

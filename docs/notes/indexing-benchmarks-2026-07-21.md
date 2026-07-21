@@ -75,10 +75,16 @@ The serial reconcile read all five without trouble (10.8 s, 7.2 s, 4.9 s, 3.9 s,
 machine are far cheaper than parallel ones under rayon contention. Index rows went from 6,001,637 after the scan to
 **6,663,048** after the reconcile.
 
+**Acted on.** The walker's guard now measures STALLED PROGRESS instead of elapsed time: a read publishes each batch it
+delivers, and it is abandoned only when it delivers nothing for 15 s (or trickles past a per-entry allowance). These
+five directories are read to completion; a disconnected mount is still abandoned in 15 s. See
+`apps/desktop/src-tauri/src/indexing/DETAILS.md` § "The walker's progress timeout".
+
 **This matters for the swap-scan plan** (`docs/notes/swap-scan-feasibility.md`): replacing the reconcile with a parallel
-build would make every rescan ~10% incomplete on this machine, and the missing 10% is exactly the big directories whose
-sizes users are most likely to look up. The 52.7 s figure buys its speed partly by giving up. Any swap-scan design has
-to answer this before the duration comparison means anything.
+build would have made every rescan ~10% incomplete on this machine, and the missing 10% was exactly the big directories
+whose sizes users are most likely to look up: the 52.7 s figure bought its speed partly by giving up. The progress
+timeout removes that objection, at the cost of the scan now spending however long those directories honestly take. Any
+swap-scan design should re-measure the fresh-scan wall time before comparing it with the reconcile's.
 
 ## CPU and memory
 
