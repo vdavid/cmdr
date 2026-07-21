@@ -103,7 +103,8 @@ Three things make it hold rather than merely be intended:
 - **A hand-authored allowlist, not inference.** No structural check can prove a handler doesn't mutate, so
   `EXPECTED_PROPOSE_TOOL_NAMES` (in `tests/tool_registry_tests.rs`) lists every `Propose` tool by name, and
   `test_propose_tools_are_an_explicit_allowlist` fails if a registry entry is tagged `Propose` without being listed.
-  Widening the agent's power is therefore a deliberate act a human signs off, having read the handler. Empty today.
+  `propose_rename_plan` is the current entry. Widening the agent's power remains a deliberate act a human signs off,
+  having read the handler.
 - **No proposal reaches the confirmation bypass.** `autoConfirm` (plus `queue`'s `rollback` and `dialog`'s
   `action: "confirm"`) lets a token-holding MCP client skip the user's confirmation dialog — exactly the approval a
   proposal must never grant itself. `test_no_agent_tool_reaches_the_confirmation_bypass` asserts every agent-view tool

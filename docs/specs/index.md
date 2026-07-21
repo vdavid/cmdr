@@ -6,6 +6,11 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 
 ## In progress
 
+- [ ] 2026-07-20 [natural-language-bulk-rename-plan.md](natural-language-bulk-rename-plan.md) - Let Ask Cmdr turn a
+      natural-language request into an image-index-informed, same-folder batch rename proposal: the first
+      `Access::Propose` tool stages at most 200 canonical rows, an accessible review dialog makes every per-row decision
+      user-owned, and one managed batch operation revalidates, handles rename cycles safely, updates listings, and
+      journals every row for later rollback. No agent tool can approve or write.
 - [ ] 2026-07-20 [sealed-subtrees-plan.md](sealed-subtrees-plan.md) - Bound the cost of pathological high-churn
       directories without lying about folder sizes. Motivated by a measured 7-minute, 1 GB cold-start stall caused by
       one directory (Google DriveFS `fetch_temp`, 1.14M empty files). M1 ships alone: a two-teeth child-count guard in

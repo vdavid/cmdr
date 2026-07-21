@@ -131,6 +131,10 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 
 ## Decisions
 
+`agent.rs` adapts Ask Cmdr's channel-only stream events. Its `ProposalReady` snapshot is display-only; rename review
+commands accept only opaque proposal and row ids. `apply_bulk_rename` consumes an exact accepted preflight then delegates
+the batch to `write_operations::start_bulk_rename`; it never accepts frontend paths or model approval.
+
 **One commands file per domain, no business logic in commands.** Tauri command functions are the IPC boundary
 (deserialization, state extraction, error mapping). Mixing business logic here makes it untestable (Tauri commands need
 a running app to invoke); thin pass-throughs keep the real logic in independently unit-testable subsystem modules.

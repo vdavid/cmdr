@@ -15,8 +15,8 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
 
 ## Must-knows
 
-- **Exactly one pane is focused.** `focusedPane` lives in the explorer store; `setFocusedPane` is its ONLY mutator.
-  Pane-switch (Tab) clears type-to-jump and rename mode on both.
+- **One pane is always focused.** Only `setFocusedPane` mutates it. Pane-switch clears type-to-jump and rename. Startup
+  calls `updateFocusedPane`; otherwise Rust's left default misdirects Ask Cmdr/MCP.
 - **Explorer-store fields are module-private with exactly one mutator each.** Assigning any store property outside
   `explorer-state.svelte.ts` is a lint error (`cmdr/no-explorer-state-writes`). `cursorIndex`, selection, and listing UI
   state stay LOCAL to `FilePane` (perf P3).

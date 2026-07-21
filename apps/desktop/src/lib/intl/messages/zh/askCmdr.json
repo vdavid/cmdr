@@ -36,6 +36,10 @@
   "@askCmdr.thinking": {
     "sourceHash": "a02f1ce"
   },
+  "askCmdr.stalled": "这次耗时比平时更长。你可以继续等待或停止。",
+  "@askCmdr.stalled": {
+    "sourceHash": "c171aab"
+  },
   "askCmdr.softCap.message": "这段聊天已经有点长了，开一段新的能让回复更快、更专注。",
   "@askCmdr.softCap.message": {
     "sourceHash": "60d2c54"
@@ -123,6 +127,14 @@
   "askCmdr.tool.imageFacts.done": "已读取你照片中的内容",
   "@askCmdr.tool.imageFacts.done": {
     "sourceHash": "fc24aac"
+  },
+  "askCmdr.tool.proposeRenamePlan.doing": "正在准备重命名计划",
+  "@askCmdr.tool.proposeRenamePlan.doing": {
+    "sourceHash": "540f1d9"
+  },
+  "askCmdr.tool.proposeRenamePlan.done": "已准备好重命名计划",
+  "@askCmdr.tool.proposeRenamePlan.done": {
+    "sourceHash": "a271302"
   },
   "askCmdr.tool.unknown.doing": "正在处理",
   "@askCmdr.tool.unknown.doing": {
@@ -335,5 +347,57 @@
   "askCmdr.cost.label": "这次聊天的用量",
   "@askCmdr.cost.label": {
     "sourceHash": "3b0dd81"
+  },
+  "askCmdr.renameReview.title": "检查文件重命名",
+  "@askCmdr.renameReview.title": {
+    "sourceHash": "f923506"
+  },
+  "askCmdr.renameReview.description": "Cmdr 只会重命名你允许的文件。",
+  "@askCmdr.renameReview.description": {
+    "sourceHash": "de95869"
+  },
+  "askCmdr.renameReview.originalName": "当前名称",
+  "@askCmdr.renameReview.originalName": {
+    "sourceHash": "0619bd6"
+  },
+  "askCmdr.renameReview.newName": "新名称",
+  "@askCmdr.renameReview.newName": {
+    "sourceHash": "04eea2a"
+  },
+  "askCmdr.renameReview.allow": "允许",
+  "@askCmdr.renameReview.allow": {
+    "sourceHash": "e213c16"
+  },
+  "askCmdr.renameReview.deny": "拒绝",
+  "@askCmdr.renameReview.deny": {
+    "sourceHash": "05a2d73"
+  },
+  "askCmdr.renameReview.allowAll": "全部允许",
+  "@askCmdr.renameReview.allowAll": {
+    "sourceHash": "56ac845"
+  },
+  "askCmdr.renameReview.denyAll": "全部拒绝",
+  "@askCmdr.renameReview.denyAll": {
+    "sourceHash": "5a41803"
+  },
+  "askCmdr.renameReview.cancel": "取消",
+  "@askCmdr.renameReview.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "askCmdr.renameReview.rename": "重命名 {count, plural, other {# 个文件}}",
+  "@askCmdr.renameReview.rename": {
+    "sourceHash": "d4b5c18"
+  },
+  "askCmdr.renameReview.blocked": "此重命名需要处理后才能继续。",
+  "@askCmdr.renameReview.blocked": {
+    "sourceHash": "868541c"
+  },
+  "askCmdr.renameReview.expired": "此审核已过期。请让 Ask Cmdr 再次准备。",
+  "@askCmdr.renameReview.expired": {
+    "sourceHash": "4e6482a"
+  },
+  "askCmdr.renameReview.status": "{allowed, plural, other {已允许 # 项重命名}}；{blocked, plural, other {已阻止 # 项}}",
+  "@askCmdr.renameReview.status": {
+    "sourceHash": "9f70789"
   }
 }

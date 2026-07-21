@@ -25,7 +25,7 @@
 {#if message.kind === 'user'}
     <div class="msg user">
         <div class="user-stack">
-            <div class="bubble">{message.text}</div>
+            <div class="bubble" data-text-region>{message.text}</div>
             {#if message.attachments.length > 0}
                 <div class="user-attachments">
                     {#each message.attachments as attachment (attachment.path)}
@@ -44,14 +44,14 @@
                 {/each}
             </div>
         {/if}
-        {#if message.thinking}
-            <div class="thinking" role="status">
-                <Spinner size="sm" />
-                <span>{tString('askCmdr.thinking')}</span>
+        {#if message.thinking || message.stalled}
+            <div class="status-line" role="status">
+                <span class="status-glyph"><Spinner size="sm" /></span>
+                <span>{message.stalled ? tString('askCmdr.stalled') : tString('askCmdr.thinking')}</span>
             </div>
         {/if}
         {#if message.text}
-            <div class="prose" aria-live="polite">
+            <div class="prose" data-text-region aria-live="polite">
                 <!-- eslint-disable-next-line svelte/no-at-html-tags -- untrusted model text is HTML-entity-escaped (escapeForMarkdownLite) before snarkdown inside renderAssistantMarkdown; this is the XSS boundary. -->
                 {@html renderAssistantMarkdown(message.text)}{#if message.streaming}<span
                         class="cursor"
@@ -119,18 +119,34 @@
     .tools {
         display: flex;
         flex-direction: column;
-        gap: var(--spacing-xxs);
+        gap: var(--spacing-xs);
         margin-bottom: var(--spacing-xs);
     }
 
-    .thinking {
+    .status-line {
         display: flex;
         align-items: center;
         gap: var(--spacing-xs);
+        min-height: 28px;
+        padding: var(--spacing-xxs) var(--spacing-xs);
         margin-bottom: var(--spacing-xs);
         font-size: var(--font-size-xs);
         color: var(--color-text-secondary);
     }
+
+    .status-glyph {
+        display: flex;
+        flex: none;
+        width: 16px;
+        justify-content: center;
+    }
+
+    .bubble,
+    .prose {
+        user-select: text;
+        -webkit-user-select: text;
+    }
+
 
     .prose {
         font-size: var(--font-size-sm);
@@ -171,6 +187,7 @@
         background: var(--color-accent);
         animation: blink 1s step-start infinite;
     }
+
 
     @media (prefers-reduced-motion: reduce) {
         .cursor {

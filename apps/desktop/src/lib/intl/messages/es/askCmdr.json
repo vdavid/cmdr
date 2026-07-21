@@ -36,6 +36,10 @@
   "@askCmdr.thinking": {
     "sourceHash": "a02f1ce"
   },
+  "askCmdr.stalled": "Esto está tardando más de lo habitual. Puedes seguir esperando o detenerlo.",
+  "@askCmdr.stalled": {
+    "sourceHash": "c171aab"
+  },
   "askCmdr.softCap.message": "Este chat se está alargando. Uno nuevo mantiene las respuestas rápidas y concisas.",
   "@askCmdr.softCap.message": {
     "sourceHash": "60d2c54"
@@ -123,6 +127,14 @@
   "askCmdr.tool.imageFacts.done": "Se leyó el contenido de tus fotos",
   "@askCmdr.tool.imageFacts.done": {
     "sourceHash": "fc24aac"
+  },
+  "askCmdr.tool.proposeRenamePlan.doing": "Preparando un plan de cambio de nombre",
+  "@askCmdr.tool.proposeRenamePlan.doing": {
+    "sourceHash": "540f1d9"
+  },
+  "askCmdr.tool.proposeRenamePlan.done": "Preparó un plan de cambio de nombre",
+  "@askCmdr.tool.proposeRenamePlan.done": {
+    "sourceHash": "a271302"
   },
   "askCmdr.tool.unknown.doing": "Trabajando",
   "@askCmdr.tool.unknown.doing": {
@@ -337,5 +349,57 @@
   "askCmdr.cost.label": "El uso de este chat",
   "@askCmdr.cost.label": {
     "sourceHash": "3b0dd81"
+  },
+  "askCmdr.renameReview.title": "Revisar cambios de nombre",
+  "@askCmdr.renameReview.title": {
+    "sourceHash": "f923506"
+  },
+  "askCmdr.renameReview.description": "Cmdr cambiará el nombre solo de los archivos que permitas.",
+  "@askCmdr.renameReview.description": {
+    "sourceHash": "de95869"
+  },
+  "askCmdr.renameReview.originalName": "Nombre actual",
+  "@askCmdr.renameReview.originalName": {
+    "sourceHash": "0619bd6"
+  },
+  "askCmdr.renameReview.newName": "Nombre nuevo",
+  "@askCmdr.renameReview.newName": {
+    "sourceHash": "04eea2a"
+  },
+  "askCmdr.renameReview.allow": "Permitir",
+  "@askCmdr.renameReview.allow": {
+    "sourceHash": "e213c16"
+  },
+  "askCmdr.renameReview.deny": "Denegar",
+  "@askCmdr.renameReview.deny": {
+    "sourceHash": "05a2d73"
+  },
+  "askCmdr.renameReview.allowAll": "Permitir todos",
+  "@askCmdr.renameReview.allowAll": {
+    "sourceHash": "56ac845"
+  },
+  "askCmdr.renameReview.denyAll": "Denegar todos",
+  "@askCmdr.renameReview.denyAll": {
+    "sourceHash": "5a41803"
+  },
+  "askCmdr.renameReview.cancel": "Cancelar",
+  "@askCmdr.renameReview.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "askCmdr.renameReview.rename": "{count, plural, one {Cambiar nombre de # archivo} many {Cambiar nombre de # archivos} other {Cambiar nombre de # archivos}}",
+  "@askCmdr.renameReview.rename": {
+    "sourceHash": "d4b5c18"
+  },
+  "askCmdr.renameReview.blocked": "Este cambio de nombre necesita atención antes de continuar.",
+  "@askCmdr.renameReview.blocked": {
+    "sourceHash": "868541c"
+  },
+  "askCmdr.renameReview.expired": "Esta revisión caducó. Pide a Ask Cmdr que la prepare de nuevo.",
+  "@askCmdr.renameReview.expired": {
+    "sourceHash": "4e6482a"
+  },
+  "askCmdr.renameReview.status": "{allowed, plural, one {# cambio de nombre permitido} many {# cambios de nombre permitidos} other {# cambios de nombre permitidos}}; {blocked, plural, one {# bloqueado} many {# bloqueados} other {# bloqueados}}",
+  "@askCmdr.renameReview.status": {
+    "sourceHash": "9f70789"
   }
 }

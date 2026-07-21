@@ -18,6 +18,7 @@
     import OperationLogDialog from '$lib/operation-log/OperationLogDialog.svelte'
     import { operationLogState } from '$lib/operation-log/operation-log-trigger.svelte'
     import AskCmdrRail from '$lib/ask-cmdr/AskCmdrRail.svelte'
+    import BulkRenameReviewDialog from '$lib/ask-cmdr/BulkRenameReviewDialog.svelte'
     import { askCmdrState } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
     import { goToPath } from '$lib/go-to-path/go-to-path'
     import {
@@ -848,6 +849,9 @@
                     <AskCmdrRail />
                 {/if}
             </div>
+            {#if askCmdrState.renameReview}
+                <BulkRenameReviewDialog />
+            {/if}
             <IndexingStatusIndicator />
             <StaleDriveDialog />
         {/if}

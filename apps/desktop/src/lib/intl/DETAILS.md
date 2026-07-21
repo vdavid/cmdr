@@ -79,6 +79,9 @@ checks guard the rest: `desktop-message-keys-fresh` (regenerate-and-diff `keys.g
 content, `title`/`label`/`placeholder`/ `aria-label` props, `.svelte` text nodes; an area allowlist widened per migrated
 area).
 
+Ask Cmdr tool labels are literal-keyed in `ask-cmdr-labels.ts`, so proposal status remains localized without dynamic
+message-key construction. New English keys require translated catalog entries and a regenerated `keys.gen.ts`.
+
 ## The locale-aware formatting layer
 
 ## What this layer owns vs. doesn't

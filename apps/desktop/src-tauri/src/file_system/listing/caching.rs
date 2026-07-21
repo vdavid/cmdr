@@ -277,6 +277,20 @@ pub fn find_listings_for_path_on_volume(
         .collect()
 }
 
+/// Returns the newest cached pane listing for a `(volume_id, path)` pair.
+///
+/// Unlike [`try_get_watched_listing`], this doesn't require a watcher: SMB, MTP, and
+/// other virtual panes still have a UI listing cache. No filesystem call happens here.
+pub(crate) fn get_cached_listing(volume_id: &str, path: &Path) -> Option<Vec<FileEntry>> {
+    let cache = LISTING_CACHE.read().ok()?;
+    let listing = cache
+        .values()
+        .filter(|listing| listing.volume_id == volume_id && listing.path == path)
+        .max_by_key(|listing| (listing.sequence.load(Ordering::Relaxed), listing.created_at))?;
+    listing.touch();
+    Some(listing.entries.clone())
+}
+
 /// Finds all cached listings belonging to a volume, regardless of path.
 ///
 /// Used by `FullRefresh` when the SMB watcher emits `STATUS_NOTIFY_ENUM_DIR` for

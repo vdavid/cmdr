@@ -23,6 +23,11 @@ use super::manager::{self, OperationDescriptor, OperationSummaryText};
 use super::types::WriteOperationType;
 use crate::file_system::volume::backends::archive;
 use crate::file_system::volume::backends::archive::mutator::Changeset;
+use crate::operation_log::types::{Initiator, OpKind};
+
+mod bulk;
+
+pub(crate) use bulk::{BulkRenameFingerprint, BulkRenameRow, start_bulk_rename};
 
 /// Result of a rename validity check.
 #[derive(Debug, Clone, serde::Serialize, specta::Type)]
@@ -70,7 +75,7 @@ pub(crate) async fn rename_managed(
     to: PathBuf,
     force: bool,
     volume_id: String,
-    initiator: crate::operation_log::types::Initiator,
+    initiator: Initiator,
 ) -> Result<(), String> {
     // Renaming a path INSIDE an archive is a zip mutation: route it to the
     // managed archive-edit driver. The `.zip` file itself is a regular file —
@@ -108,14 +113,7 @@ pub(crate) async fn rename_managed(
             None => false,
         }
     };
-    super::journal::open_volume_op(
-        &op_id,
-        crate::operation_log::types::OpKind::Rename,
-        initiator,
-        &journal_volume_id,
-        None,
-        1,
-    );
+    super::journal::open_volume_op(&op_id, OpKind::Rename, initiator, &journal_volume_id, None, 1);
     let journal_snapshot = Some((from.clone(), to.clone(), local_meta, volume_is_dir));
 
     let result = manager::manager()

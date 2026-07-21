@@ -2125,6 +2125,23 @@ export const commands = {
    */
   askCmdrCancel: (conversationId: number) => __TAURI_INVOKE<void>('ask_cmdr_cancel', { conversationId }),
   /**
+   *  Revalidates the user-selected subset of a server-owned rename proposal. The
+   *  frontend supplies opaque ids only, never source paths or destination names.
+   */
+  preflightBulkRename: (proposalId: string, allowedRowIds: string[]) =>
+    typedError<BulkRenamePreflight, IpcError>(__TAURI_INVOKE('preflight_bulk_rename', { proposalId, allowedRowIds })),
+  /**
+   *  Starts the user-approved subset of a server-owned rename plan. Paths and
+   *  names never cross this IPC boundary: the frontend submits only opaque ids.
+   */
+  applyBulkRename: (proposalId: string, allowedRowIds: string[]) =>
+    typedError<WriteOperationStartResult, IpcError>(__TAURI_INVOKE('apply_bulk_rename', { proposalId, allowedRowIds })),
+  /**
+   *  Discards a staged proposal after the user closes its review. There is no
+   *  agent-controlled approval route: only this user action consumes the plan.
+   */
+  cancelBulkRenameProposal: (proposalId: string) => __TAURI_INVOKE<void>('cancel_bulk_rename_proposal', { proposalId }),
+  /**
    *  A settings change may have switched the model for an open thread: record it as a
    *  conversation event once any in-flight turn finishes (the turn keeps its already-resolved
    *  model; the event marks the boundary). Returns the persisted event's display view, or
@@ -3386,6 +3403,33 @@ export type BetaSignupResult =
    *  try-again. Covers a network failure, a non-2xx server response, or a missing-config 500.
    */
   | { kind: 'softFailure' }
+
+export type BulkRenameBlockReason =
+  | 'unknownRow'
+  | 'duplicateDestination'
+  | 'sourceMissing'
+  | 'sourceChanged'
+  | 'targetExists'
+  | 'volumeUnavailable'
+
+/**
+ *  A row's user-action-time validation result. It deliberately contains no
+ *  path or destination authority: the frontend retains only opaque row ids.
+ */
+export type BulkRenamePreflight = {
+  status: BulkRenamePreflightStatus
+  rows: BulkRenamePreflightRow[]
+}
+
+export type BulkRenamePreflightRow = {
+  rowId: string
+  status: BulkRenameRowStatus
+  reason: BulkRenameBlockReason | null
+}
+
+export type BulkRenamePreflightStatus = 'ready' | 'blocked' | 'expired'
+
+export type BulkRenameRowStatus = 'ready' | 'blocked'
 
 /**
  *  Logical-pixel rectangle. `f64` mirrors what Tauri's `LogicalPosition` /

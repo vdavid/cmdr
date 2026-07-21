@@ -29,6 +29,9 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
 - **`app_state`** (`read/state.rs`) — both panes (path, cursor item, selection count, view/sort) plus the volume list.
   Built from `PaneStateStore` (`get_focused_pane` returns the SIDE; the path comes from that side's state) +
   `snapshot_volumes`. Not the private `build_state_yaml` — typed data, not parsed YAML.
+- **`list_pane_files`** (`read/pane_listing.rs`) — up to 200 compact rows from the focused pane's existing Rust
+  listing cache. It uses the current selection when present, otherwise the whole folder, and returns the exact volume
+  ID plus one shared parent path for `propose_rename_plan`. It never queries the index or starts a filesystem listing.
 - **`list_dir`** (`read/listing.rs`) — a directory's immediate children (`indexing::list_dir_children`, a new
   path-based helper added beside `get_dir_stats`) plus its recursive size stats (`get_dir_stats`) and a `Coverage`
   block. `Ok(None)` children ⇒ typed "not in index" / "no index", distinguished by whether the volume is indexed.

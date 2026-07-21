@@ -313,6 +313,9 @@ export type { OperationRow, OperationItemView, OperationLogDetail } from './oper
 export {
   sendAskCmdrMessage,
   cancelAskCmdr,
+  applyBulkRename,
+  preflightBulkRename,
+  cancelBulkRenameProposal,
   recordAskCmdrModelChange,
   getAskCmdrConversation,
   listAskCmdrConversations,

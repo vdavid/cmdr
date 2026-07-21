@@ -28,6 +28,9 @@ Frontend                          Backend
 - **`LISTING_CACHE`**: global `RwLock<HashMap<String, CachedListing>>`, keyed by `listing_id` (UUID per navigation).
 - **`CachedListing`**: `{ volume_id, path, entries, sort_by, sort_order, directory_sort_mode, sequence, created_at,
   last_accessed_ms }`.
+- **Focused-pane reads**: `get_cached_listing(volume_id, path)` clones the newest matching cached listing without
+  requiring watcher coverage. Agent reads use it for the already-open pane, including SMB and MTP, and never start a
+  new filesystem listing.
 - **`caching::snapshot_listings()`**: lightweight summary of every active listing (id, volume, path, entry count, age).
   Used by `cmdr://state` so error reports surface orphan listings (started but not bound to a pane).
 - **Concurrency**: multiple listings coexist (different panes, rapid navigation), each with a unique ID.

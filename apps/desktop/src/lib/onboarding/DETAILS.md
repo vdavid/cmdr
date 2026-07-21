@@ -23,7 +23,8 @@ finishes onboarding.
 - **`CloudProviderPicker.svelte`**: Step 2 left column: scrollable listbox of all 15 cloud providers. Single tab stop
   via `aria-activedescendant` (no roving focus); Arrow / Home / End / type-to-jump move the active option.
 - **`CloudProviderSetup.svelte`**: Step 2 right column: per-provider numbered tutorial with API-key persist +
-  auto-check + model combobox.
+  auto-check + model combobox. Providers with editable OpenAI-compatible endpoints, including Custom, still require a
+  stored API key before the endpoint check runs.
 - **`StepBeta.svelte`**: Step 3 (Open beta, non-skippable): personal open-beta intro (feedback channels: in-app, GitHub,
   Discord, book-a-call) + anonymous-analytics disclosure + `analytics.enabled` opt-out switch + optional
   `analytics.email` contact field. Footer = "Start using Cmdr!" (finish here) + "One more optional setup step"

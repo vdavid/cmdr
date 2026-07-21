@@ -618,6 +618,7 @@
         explorerState.setTabMgr('left', persistedState.leftTabMgr)
         explorerState.setTabMgr('right', persistedState.rightTabMgr)
         explorerState.setFocusedPane(persistedState.focusedPane)
+        await updateFocusedPane(persistedState.focusedPane)
         explorerState.setShowHiddenFiles(persistedState.showHiddenFiles)
         explorerState.setLeftPaneWidthPercent(persistedState.leftPaneWidthPercent)
 

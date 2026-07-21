@@ -70,6 +70,10 @@ export type AskCmdrStreamEvent =
   | { type: 'reasoningTick' }
   | { type: 'toolCallStarted'; callId: string; tool: string }
   | { type: 'toolCallFinished'; callId: string; ok: boolean }
+  | {
+      type: 'proposalReady'
+      proposal: { proposalId: string; rows: Array<{ rowId: string; sourceName: string; destinationName: string }> }
+    }
   | { type: 'done'; messageId: number; seq: number; stop: StopReason; usage: AskCmdrUsage }
   /** `detail` is the source error's own wording for display under the typed headline
    * (a retired model slug, a quota reset time); never branch on it. */
@@ -103,6 +107,26 @@ export function sendAskCmdrMessage(
 /** Stop the in-flight turn for a thread. Idempotent; safe after natural completion. */
 export async function cancelAskCmdr(conversationId: number): Promise<void> {
   await commands.askCmdrCancel(conversationId)
+}
+
+/** Rechecks the user-selected rows of a server-owned rename proposal. Only opaque ids
+ * cross the IPC boundary: source paths and destination names stay in the backend. */
+export async function preflightBulkRename(proposalId: string, allowedRowIds: string[]) {
+  const res = await commands.preflightBulkRename(proposalId, allowedRowIds)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/** Starts the one queued operation for the exact rows the user allowed after preflight. */
+export async function applyBulkRename(proposalId: string, allowedRowIds: string[]) {
+  const res = await commands.applyBulkRename(proposalId, allowedRowIds)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/** Discard a staged rename proposal after the user closes its review. */
+export async function cancelBulkRenameProposal(proposalId: string): Promise<void> {
+  await commands.cancelBulkRenameProposal(proposalId)
 }
 
 /** Record that a settings change switched a thread's effective model. Resolves once any

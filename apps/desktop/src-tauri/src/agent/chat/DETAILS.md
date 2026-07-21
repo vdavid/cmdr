@@ -52,7 +52,8 @@ shows the soft-cap nudge — summarize-on-overflow is deferred (spec §3).
 ## Constants table (§10; initial values, tune with use)
 
 - `MAX_TOOL_TURNS = 8` — per message; the loop stops before the 9th tool respond fires.
-- `MAX_WALL_TIME = 60s` — per message wall-clock ceiling across the whole loop.
+- `MAX_WALL_TIME = 120s` — per message wall-clock ceiling across the whole loop; leaves room for reasoning-heavy
+  OpenAI-compatible models while the tool-turn cap still prevents a runaway loop.
 - `CONTEXT_TOKEN_BUDGET = 8_000` — target assembled-prompt size (spec's 6–10k band).
 - `ELIDE_TOOL_RESULTS_AFTER_TURNS = 3` — tool results this many turns back (or more) elide.
 - `THREAD_SOFT_CAP_MESSAGES = 40` — past this the UI nudges "start a fresh one?".
@@ -93,6 +94,9 @@ state is unambiguous:
 `AgentChatEvent`s already told the frontend everything.
 
 ### Model-change events
+
+`ProposalReady` is a display-only stream event. The runtime emits it only after the proposal dispatcher staged
+immutable rows in `RenameProposalStore`; chat history persists the concise tool result, not proposal authority.
 
 A settings change can switch a thread's effective model mid-conversation; the thread logs
 it honestly as a UI-facing event row (`store::ConversationEvent::ModelChanged`) so the

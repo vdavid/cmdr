@@ -31,3 +31,6 @@ re-evaluate on the next rc and bump all three together or not at all.
 
 `bindings.ts` is generated: change this behavior at the `builder()` call site and regenerate with
 `pnpm bindings:regen`, never by hand-editing the output.
+
+The Ask Cmdr bulk-rename review commands register in the same builder and type collector as every other typed command.
+Their authority and filesystem behavior live with the agent and write-operation modules, not at this registration edge.

@@ -218,12 +218,15 @@ fn program_to_deltas(program: Program) -> Vec<Result<AgentDelta, AgentLlmError>>
 struct OkDispatcher;
 
 impl ToolDispatcher for OkDispatcher {
-    fn dispatch<'a>(&'a self, call: &'a AgentToolCall) -> BoxFuture<'a, AgentToolResult> {
+    fn dispatch<'a>(&'a self, call: &'a AgentToolCall) -> BoxFuture<'a, ToolDispatchOutcome> {
         async move {
-            AgentToolResult {
-                call_id: call.call_id.clone(),
-                content: json!({ "looked_at": call.tool.as_wire_name() }),
-                elided: false,
+            ToolDispatchOutcome {
+                result: AgentToolResult {
+                    call_id: call.call_id.clone(),
+                    content: json!({ "looked_at": call.tool.as_wire_name() }),
+                    elided: false,
+                },
+                proposal: None,
             }
         }
         .boxed()
@@ -237,13 +240,16 @@ struct SleepingDispatcher {
 }
 
 impl ToolDispatcher for SleepingDispatcher {
-    fn dispatch<'a>(&'a self, call: &'a AgentToolCall) -> BoxFuture<'a, AgentToolResult> {
+    fn dispatch<'a>(&'a self, call: &'a AgentToolCall) -> BoxFuture<'a, ToolDispatchOutcome> {
         async move {
             tokio::time::sleep(Duration::from_secs(self.secs)).await;
-            AgentToolResult {
-                call_id: call.call_id.clone(),
-                content: json!({ "ok": true }),
-                elided: false,
+            ToolDispatchOutcome {
+                result: AgentToolResult {
+                    call_id: call.call_id.clone(),
+                    content: json!({ "ok": true }),
+                    elided: false,
+                },
+                proposal: None,
             }
         }
         .boxed()
@@ -256,13 +262,16 @@ struct CancellingDispatcher {
 }
 
 impl ToolDispatcher for CancellingDispatcher {
-    fn dispatch<'a>(&'a self, call: &'a AgentToolCall) -> BoxFuture<'a, AgentToolResult> {
+    fn dispatch<'a>(&'a self, call: &'a AgentToolCall) -> BoxFuture<'a, ToolDispatchOutcome> {
         async move {
             self.token.cancel();
-            AgentToolResult {
-                call_id: call.call_id.clone(),
-                content: json!({ "ok": true }),
-                elided: false,
+            ToolDispatchOutcome {
+                result: AgentToolResult {
+                    call_id: call.call_id.clone(),
+                    content: json!({ "ok": true }),
+                    elided: false,
+                },
+                proposal: None,
             }
         }
         .boxed()
@@ -354,11 +363,12 @@ async fn max_wall_time_halts_the_loop() {
     let llm = ProgrammableLlm::new(programs);
     let (tx, _rx) = unbounded_channel();
 
-    // Each dispatch burns 61 virtual seconds, so the wall-time ceiling trips after one
-    // tool round.
+    // One dispatch crosses the configured wall-time ceiling, so it trips after one tool round.
     let result = run_turn(
         &llm,
-        &SleepingDispatcher { secs: 61 },
+        &SleepingDispatcher {
+            secs: MAX_WALL_TIME.as_secs() + 1,
+        },
         &conn,
         &[],
         &params(id, Some("slow please")),

@@ -35,6 +35,10 @@
   "@askCmdr.thinking": {
     "description": "Shown while the assistant is reasoning before it starts replying. Ends with an ellipsis character (…)."
   },
+  "askCmdr.stalled": "This is taking longer than usual. You can keep waiting or stop.",
+  "@askCmdr.stalled": {
+    "description": "Ask Cmdr status shown after 30 seconds with no visible assistant text or tool progress. It reassures the user and points to the existing Stop control; avoid the words error and failed."
+  },
   "askCmdr.softCap.message": "This chat is getting long. A fresh one keeps replies fast and focused.",
   "@askCmdr.softCap.message": {
     "description": "A gentle nudge shown once an Ask Cmdr conversation grows past its soft length cap. Friendly, not a hard limit."
@@ -122,6 +126,14 @@
   "askCmdr.tool.imageFacts.done": "Read what’s in your photos",
   "@askCmdr.tool.imageFacts.done": {
     "description": "Past-tense label on the same tool line once the assistant finished reading what Cmdr recognized inside those photos. Pairs with askCmdr.tool.imageFacts.doing. The apostrophe is U+2019."
+  },
+  "askCmdr.tool.proposeRenamePlan.doing": "Preparing a rename plan",
+  "@askCmdr.tool.proposeRenamePlan.doing": {
+    "description": "Present-tense label in the Ask Cmdr chat tool line while it prepares a file rename proposal for the user to review. The tool does not rename anything."
+  },
+  "askCmdr.tool.proposeRenamePlan.done": "Prepared a rename plan",
+  "@askCmdr.tool.proposeRenamePlan.done": {
+    "description": "Past-tense label on the Ask Cmdr chat tool line after it prepared a file rename proposal. The user still reviews and approves rows separately. Pairs with askCmdr.tool.proposeRenamePlan.doing."
   },
   "askCmdr.tool.unknown.doing": "Working",
   "@askCmdr.tool.unknown.doing": {
@@ -341,5 +353,62 @@
   "askCmdr.cost.label": "This chat’s usage",
   "@askCmdr.cost.label": {
     "description": "Accessible label for the chat's cost footer region (token count and estimated cost). The apostrophe is U+2019."
+  },
+  "askCmdr.renameReview.title": "Review file renames",
+  "@askCmdr.renameReview.title": {
+    "description": "Title of the modal where the user reviews an Ask Cmdr rename proposal before files change."
+  },
+  "askCmdr.renameReview.description": "Cmdr will rename only the files you allow.",
+  "@askCmdr.renameReview.description": {
+    "description": "Short explanation under the bulk rename review title. Reassures the user that denied rows will not change."
+  },
+  "askCmdr.renameReview.originalName": "Current name",
+  "@askCmdr.renameReview.originalName": {
+    "description": "Column heading for the original file name in the bulk rename review table."
+  },
+  "askCmdr.renameReview.newName": "New name",
+  "@askCmdr.renameReview.newName": {
+    "description": "Column heading for the proposed file name in the bulk rename review table."
+  },
+  "askCmdr.renameReview.allow": "Allow",
+  "@askCmdr.renameReview.allow": {
+    "description": "Button that lets one proposed file rename proceed."
+  },
+  "askCmdr.renameReview.deny": "Deny",
+  "@askCmdr.renameReview.deny": {
+    "description": "Button that prevents one proposed file rename from proceeding."
+  },
+  "askCmdr.renameReview.allowAll": "Allow all",
+  "@askCmdr.renameReview.allowAll": {
+    "description": "Button that allows every currently reviewable rename in the proposal."
+  },
+  "askCmdr.renameReview.denyAll": "Deny all",
+  "@askCmdr.renameReview.denyAll": {
+    "description": "Button that denies every rename in the proposal."
+  },
+  "askCmdr.renameReview.cancel": "Cancel",
+  "@askCmdr.renameReview.cancel": {
+    "description": "Button that closes the bulk rename review and discards its proposal without renaming files."
+  },
+  "askCmdr.renameReview.rename": "Rename {count, plural, one {# file} other {# files}}",
+  "@askCmdr.renameReview.rename": {
+    "description": "Disabled-until-apply primary action label in the bulk rename review. count is the number of allowed rows.",
+    "placeholders": { "count": { "content": "The number of allowed rename rows." } }
+  },
+  "askCmdr.renameReview.blocked": "This rename needs attention before it can continue.",
+  "@askCmdr.renameReview.blocked": {
+    "description": "Generic per-row message when backend preflight blocks a proposed rename."
+  },
+  "askCmdr.renameReview.expired": "This review expired. Ask Cmdr to prepare it again.",
+  "@askCmdr.renameReview.expired": {
+    "description": "Message when the short-lived server-side rename proposal has expired."
+  },
+  "askCmdr.renameReview.status": "{allowed, plural, one {# rename allowed} other {# renames allowed}}; {blocked, plural, one {# blocked} other {# blocked}}",
+  "@askCmdr.renameReview.status": {
+    "description": "Screen-reader status summary for the bulk rename review list. allowed and blocked are raw counts.",
+    "placeholders": {
+      "allowed": { "content": "The number of currently allowed rows." },
+      "blocked": { "content": "The number of rows blocked by preflight." }
+    }
   }
 }

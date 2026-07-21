@@ -243,10 +243,11 @@ file map, the 50-50 split-layout rule, and the `SettingPasswordInput` store-driv
 
 ### Other files
 
-- **cloud-providers.ts**: Cloud provider preset definitions (OpenAI, Anthropic, Groq, etc.) and per-provider config
-  helpers (`getProviderConfigs`, `setProviderConfig`, `resolveCloudConfig`). Used by `AiSection` and the startup flow in
-  `+layout.svelte` to resolve the effective base URL and model. The API key is fetched separately from the OS secret
-  store via `getAiApiKey(providerId)` before calling `configureAi`.
+- **cloud-providers.ts**: Cloud provider preset definitions (OpenAI, Anthropic, Qwen, Groq, etc.) and per-provider
+  config helpers (`getProviderConfigs`, `setProviderConfig`, `resolveCloudConfig`). Used by `AiSection` and the startup
+  flow in `+layout.svelte` to resolve the effective base URL and model. Custom is an API-key-backed OpenAI-compatible
+  provider with an editable base URL; Qwen presets DashScope's compatible endpoint. API keys are fetched separately from
+  the OS secret store via `getAiApiKey(providerId)` before calling `configureAi`.
 - **settings-search.ts**: Fuzzy search over setting definitions; returns ranked matches with highlight ranges
 - **settings-applier.ts**: Listens for setting changes and applies side effects (CSS vars, backend config sync). The
   `passthroughBackendHandlers` table includes three entries for `ai.provider` / `ai.cloudProvider` /

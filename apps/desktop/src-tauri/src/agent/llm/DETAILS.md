@@ -93,7 +93,8 @@ typed "tool not available" result. The read-only guarantee is that `Unrecognized
 in `agent_tool_view()`, so dispatch refuses it — a typed view-membership check, not a string match. The known variants
 are the read-only families (`AppState`, `ListDir`, `LargestDirs`, `ImportantFolders`, `FolderImportance`, `ListVolumes`,
 `OperationsList`, `OperationsGet`, `SearchPhotos`, `ImageFacts`), pinned 1:1 to `agent_tool_view()` by a structural test in `agent/tools`;
-`ToolId::KNOWN` excludes `Unrecognized` by design.
+`ToolId::KNOWN` excludes `Unrecognized` by design. `ProposeRenamePlan` is the one proposing variant: it stages a
+reviewable plan and remains subject to the same typed-view gate, never an approval or write route.
 
 ## Tests
 

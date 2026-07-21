@@ -36,6 +36,10 @@
   "@askCmdr.thinking": {
     "sourceHash": "a02f1ce"
   },
+  "askCmdr.stalled": "Việc này mất nhiều thời gian hơn bình thường. Bạn có thể tiếp tục chờ hoặc dừng lại.",
+  "@askCmdr.stalled": {
+    "sourceHash": "c171aab"
+  },
   "askCmdr.softCap.message": "Cuộc trò chuyện này đang dài dần. Một cuộc trò chuyện mới sẽ giúp câu trả lời nhanh và tập trung hơn.",
   "@askCmdr.softCap.message": {
     "sourceHash": "60d2c54"
@@ -123,6 +127,14 @@
   "askCmdr.tool.imageFacts.done": "Đã đọc nội dung trong ảnh của bạn",
   "@askCmdr.tool.imageFacts.done": {
     "sourceHash": "fc24aac"
+  },
+  "askCmdr.tool.proposeRenamePlan.doing": "Đang chuẩn bị kế hoạch đổi tên",
+  "@askCmdr.tool.proposeRenamePlan.doing": {
+    "sourceHash": "540f1d9"
+  },
+  "askCmdr.tool.proposeRenamePlan.done": "Đã chuẩn bị kế hoạch đổi tên",
+  "@askCmdr.tool.proposeRenamePlan.done": {
+    "sourceHash": "a271302"
   },
   "askCmdr.tool.unknown.doing": "Đang xử lý",
   "@askCmdr.tool.unknown.doing": {
@@ -335,5 +347,57 @@
   "askCmdr.cost.label": "Mức sử dụng của cuộc trò chuyện này",
   "@askCmdr.cost.label": {
     "sourceHash": "3b0dd81"
+  },
+  "askCmdr.renameReview.title": "Xem lại việc đổi tên tệp",
+  "@askCmdr.renameReview.title": {
+    "sourceHash": "f923506"
+  },
+  "askCmdr.renameReview.description": "Cmdr chỉ đổi tên những tệp bạn cho phép.",
+  "@askCmdr.renameReview.description": {
+    "sourceHash": "de95869"
+  },
+  "askCmdr.renameReview.originalName": "Tên hiện tại",
+  "@askCmdr.renameReview.originalName": {
+    "sourceHash": "0619bd6"
+  },
+  "askCmdr.renameReview.newName": "Tên mới",
+  "@askCmdr.renameReview.newName": {
+    "sourceHash": "04eea2a"
+  },
+  "askCmdr.renameReview.allow": "Cho phép",
+  "@askCmdr.renameReview.allow": {
+    "sourceHash": "e213c16"
+  },
+  "askCmdr.renameReview.deny": "Từ chối",
+  "@askCmdr.renameReview.deny": {
+    "sourceHash": "05a2d73"
+  },
+  "askCmdr.renameReview.allowAll": "Cho phép tất cả",
+  "@askCmdr.renameReview.allowAll": {
+    "sourceHash": "56ac845"
+  },
+  "askCmdr.renameReview.denyAll": "Từ chối tất cả",
+  "@askCmdr.renameReview.denyAll": {
+    "sourceHash": "5a41803"
+  },
+  "askCmdr.renameReview.cancel": "Hủy",
+  "@askCmdr.renameReview.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "askCmdr.renameReview.rename": "Đổi tên {count, plural, other {# tệp}}",
+  "@askCmdr.renameReview.rename": {
+    "sourceHash": "d4b5c18"
+  },
+  "askCmdr.renameReview.blocked": "Việc đổi tên này cần được chú ý trước khi tiếp tục.",
+  "@askCmdr.renameReview.blocked": {
+    "sourceHash": "868541c"
+  },
+  "askCmdr.renameReview.expired": "Lần xem lại này đã hết hạn. Hãy yêu cầu Ask Cmdr chuẩn bị lại.",
+  "@askCmdr.renameReview.expired": {
+    "sourceHash": "4e6482a"
+  },
+  "askCmdr.renameReview.status": "{allowed, plural, other {# lần đổi tên được cho phép}}; {blocked, plural, other {# mục bị chặn}}",
+  "@askCmdr.renameReview.status": {
+    "sourceHash": "9f70789"
   }
 }

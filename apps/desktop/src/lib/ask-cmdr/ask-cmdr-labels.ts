@@ -12,6 +12,7 @@ import type { MessageKey } from '$lib/intl/keys.gen'
 const TOOL_LABEL_KEYS: Record<string, { doing: MessageKey; done: MessageKey }> = {
   app_state: { doing: 'askCmdr.tool.appState.doing', done: 'askCmdr.tool.appState.done' },
   list_dir: { doing: 'askCmdr.tool.listDir.doing', done: 'askCmdr.tool.listDir.done' },
+  list_pane_files: { doing: 'askCmdr.tool.listDir.doing', done: 'askCmdr.tool.listDir.done' },
   largest_dirs: { doing: 'askCmdr.tool.largestDirs.doing', done: 'askCmdr.tool.largestDirs.done' },
   important_folders: { doing: 'askCmdr.tool.importantFolders.doing', done: 'askCmdr.tool.importantFolders.done' },
   folder_importance: { doing: 'askCmdr.tool.folderImportance.doing', done: 'askCmdr.tool.folderImportance.done' },
@@ -20,6 +21,7 @@ const TOOL_LABEL_KEYS: Record<string, { doing: MessageKey; done: MessageKey }> =
   operations_get: { doing: 'askCmdr.tool.operationsGet.doing', done: 'askCmdr.tool.operationsGet.done' },
   search_photos: { doing: 'askCmdr.tool.searchPhotos.doing', done: 'askCmdr.tool.searchPhotos.done' },
   image_facts: { doing: 'askCmdr.tool.imageFacts.doing', done: 'askCmdr.tool.imageFacts.done' },
+  propose_rename_plan: { doing: 'askCmdr.tool.proposeRenamePlan.doing', done: 'askCmdr.tool.proposeRenamePlan.done' },
 }
 
 const UNKNOWN_TOOL_KEYS = { doing: 'askCmdr.tool.unknown.doing', done: 'askCmdr.tool.unknown.done' } as const

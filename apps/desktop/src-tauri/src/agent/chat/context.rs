@@ -34,7 +34,7 @@ pub const MAX_TOOL_TURNS: usize = 8;
 
 /// Per user message wall-clock ceiling across the whole tool loop. Initial value;
 /// tune with use.
-pub const MAX_WALL_TIME: Duration = Duration::from_secs(60);
+pub const MAX_WALL_TIME: Duration = Duration::from_secs(120);
 
 /// Target assembled-prompt size per call, in estimated tokens (spec's 6-10k band).
 /// Assembly elides older tool results until it fits, never touching assistant prose.

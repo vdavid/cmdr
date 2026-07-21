@@ -652,6 +652,14 @@ mcp_tools! {
         access: Access::Read,
         run: app_params crate::agent::tools::read::state::execute_app_state
     },
+    "propose_rename_plan" => {
+        desc: "Prepare a same-folder image-file rename plan for the user to review. It stages no filesystem change, never approves a proposal, and accepts at most 200 rows.",
+        schema: crate::agent::tools::propose::rename::propose_rename_plan_schema(),
+        gate: TokenGate::Open,
+        consumers: &[Consumer::Agent],
+        access: Access::Propose,
+        run: app_params crate::agent::tools::propose::rename::execute_propose_rename_plan
+    },
     "list_dir" => {
         desc: "List a directory's immediate children (names, folder/file, size, modified) plus its recursive size totals, from the drive index. Reports index freshness honestly (fresh / scanning / stale) and returns a typed 'no index' when the volume isn't indexed, never a wrong zero. Reads the index only — it never touches the disk.",
         schema: crate::agent::tools::read::listing::list_dir_schema(),
@@ -659,6 +667,14 @@ mcp_tools! {
         consumers: &[Consumer::Agent],
         access: Access::Read,
         run: app_params crate::agent::tools::read::listing::execute_list_dir
+    },
+    "list_pane_files" => {
+        desc: "List up to 200 entries from the focused pane's current backend listing cache, using the selection when one exists and otherwise the folder. Returns the exact volume ID and shared parent path needed for a rename proposal. It never reads the drive index or filesystem.",
+        schema: crate::agent::tools::read::pane_listing::list_pane_files_schema(),
+        gate: TokenGate::Open,
+        consumers: &[Consumer::Agent],
+        access: Access::Read,
+        run: app_params crate::agent::tools::read::pane_listing::execute_list_pane_files
     },
     "largest_dirs" => {
         desc: "Find the largest subdirectories directly under a path, by recursive size (largest first). Batches directory-size lookups over the index and sorts them. Reports freshness and whether each size is an exact total or a lower bound.",

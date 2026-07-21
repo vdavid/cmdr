@@ -182,6 +182,34 @@ describe('DualPaneExplorer', () => {
 
     expect(target.textContent).toContain('Loading')
   })
+
+  it('syncs the restored focused pane to the backend at startup', async () => {
+    const { loadAppStatus } = await import('$lib/app-status-store')
+    const { updateFocusedPane } = await import('$lib/tauri-commands')
+    vi.mocked(loadAppStatus).mockResolvedValue({
+      leftPath: '~/Downloads',
+      rightPath: '~/_ignored/screenshots',
+      focusedPane: 'right',
+      leftVolumeId: 'root',
+      rightVolumeId: 'root',
+      leftSortBy: 'name',
+      rightSortBy: 'name',
+      leftViewMode: 'brief',
+      rightViewMode: 'brief',
+      leftPaneWidthPercent: 50,
+      askCmdrRailOpen: false,
+      askCmdrRailWidth: 340,
+    })
+    vi.mocked(updateFocusedPane).mockClear()
+
+    const target = document.createElement('div')
+    mount(DualPaneExplorer, { target })
+    for (let i = 0; i < 10; i++) await tick()
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    await tick()
+
+    expect(updateFocusedPane).toHaveBeenCalledWith('right')
+  })
 })
 
 describe('Sorting integration', () => {

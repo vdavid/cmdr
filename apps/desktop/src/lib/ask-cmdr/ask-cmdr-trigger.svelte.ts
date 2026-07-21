@@ -18,10 +18,13 @@ import { getAppLogger } from '$lib/logging/logger'
 import { consentState, refreshConsent } from './ask-cmdr-consent.svelte'
 import { growMainWindowForRail, shrinkMainWindowForRail } from './rail-window'
 import {
+  applyBulkRename,
   cancelAskCmdr,
+  cancelBulkRenameProposal,
   getAskCmdrConversation,
   listAskCmdrConversations,
   recordAskCmdrModelChange,
+  preflightBulkRename,
   sendAskCmdrMessage,
   type AskCmdrErrorKind,
   type AskCmdrStreamEvent,
@@ -40,6 +43,10 @@ export const THREAD_SOFT_CAP_MESSAGES = 40
  * page is usually the whole thread; paging is the insurance for a long one. Loading is
  * tail-first (newest page), with "load earlier" prepending older pages. */
 export const MESSAGE_PAGE = 50
+const STALL_AFTER_MS = 30_000
+const STOP_AFTER_MS = 90_000
+let stallTimer: ReturnType<typeof setTimeout> | null = null
+let stopTimer: ReturnType<typeof setTimeout> | null = null
 
 /** One tool call the assistant made, as the collapsible "looked at X" line shows it. */
 export interface RailToolCall {
@@ -57,7 +64,15 @@ export interface RailToolCall {
  * stored blocks). */
 export type RailMessage =
   | { kind: 'user'; id: number | null; text: string; attachments: AttachmentRef[] }
-  | { kind: 'assistant'; id: number | null; text: string; tools: RailToolCall[]; thinking: boolean; streaming: boolean }
+  | {
+      kind: 'assistant'
+      id: number | null
+      text: string
+      tools: RailToolCall[]
+      thinking: boolean
+      stalled?: boolean
+      streaming: boolean
+    }
   | {
       kind: 'error'
       errorKind: AskCmdrErrorKind
@@ -67,6 +82,22 @@ export type RailMessage =
     }
   /** A timeline line marking that the thread's effective model changed between turns. */
   | { kind: 'modelChange'; model: string }
+
+export interface BulkRenameReviewRow {
+  rowId: string
+  sourceName: string
+  destinationName: string
+  allowed: boolean
+  blockedReason: string | null
+}
+
+export interface BulkRenameReview {
+  proposalId: string
+  rows: BulkRenameReviewRow[]
+  preflighting: boolean
+  expired: boolean
+  requestVersion: number
+}
 
 interface AskCmdrState {
   open: boolean
@@ -85,6 +116,7 @@ interface AskCmdrState {
   loadingOlder: boolean
   /** Files/folders staged in the composer for the next send (path + kind only). */
   attachments: AttachmentRef[]
+  renameReview: BulkRenameReview | null
 }
 
 export const RAIL_MIN_WIDTH = 280
@@ -102,6 +134,7 @@ export const askCmdrState = $state<AskCmdrState>({
   historyCount: 0,
   loadingOlder: false,
   attachments: [],
+  renameReview: null,
 })
 
 /** True once the thread grows past the soft cap (drives the "start a fresh one?" nudge). */
@@ -190,12 +223,14 @@ export function newChat(): void {
   askCmdrState.messageTotal = 0
   askCmdrState.historyCount = 0
   askCmdrState.attachments = []
+  discardRenameReview()
 }
 
 /** Switch the rail to an existing thread and load its most recent page. */
 export async function switchToThread(id: number): Promise<void> {
   if (askCmdrState.streaming) stopStreaming()
   askCmdrState.attachments = []
+  discardRenameReview()
   await loadConversation(id)
 }
 
@@ -333,6 +368,7 @@ export function sendMessage(text: string): void {
   const attachments = askCmdrState.attachments
   askCmdrState.messages.push({ kind: 'user', id: null, text: trimmed, attachments })
   askCmdrState.streaming = true
+  resetProgressWatchdog()
   askCmdrState.attachments = []
   void sendAskCmdrMessage(askCmdrState.conversationId, trimmed, attachments, handleStreamEvent).then(
     (id) => {
@@ -340,6 +376,7 @@ export function sendMessage(text: string): void {
     },
     (e: unknown) => {
       log.warn('sending a message failed: {error}', { error: String(e) })
+      if (askCmdrState.streaming) applyFailed('provider', String(e))
     },
   )
 }
@@ -368,6 +405,7 @@ export function stopStreaming(): void {
   if (askCmdrState.conversationId !== null) void cancelAskCmdr(askCmdrState.conversationId)
   finalizeAssistant()
   askCmdrState.streaming = false
+  clearProgressWatchdog()
 }
 
 function handleStreamEvent(event: AskCmdrStreamEvent): void {
@@ -381,7 +419,22 @@ function handleStreamEvent(event: AskCmdrStreamEvent): void {
       applyUserPersisted(event.messageId)
       return
     case 'assistantStarted':
-      askCmdrState.messages.push({ kind: 'assistant', id: null, text: '', tools: [], thinking: false, streaming: true })
+      {
+        const assistant = currentAssistant()
+        if (assistant) {
+          assistant.streaming = true
+        } else {
+          askCmdrState.messages.push({
+            kind: 'assistant',
+            id: null,
+            text: '',
+            tools: [],
+            thinking: false,
+            stalled: false,
+            streaming: true,
+          })
+        }
+      }
       return
     case 'textDelta':
       applyTextDelta(event.text)
@@ -394,6 +447,9 @@ function handleStreamEvent(event: AskCmdrStreamEvent): void {
       return
     case 'toolCallFinished':
       applyToolFinished(event.callId, event.ok)
+      return
+    case 'proposalReady':
+      openRenameReview(event.proposal)
       return
     case 'done':
       applyDone(event.messageId)
@@ -416,6 +472,8 @@ function applyTextDelta(text: string): void {
   if (assistant) {
     assistant.text += text
     assistant.thinking = false
+    assistant.stalled = false
+    resetProgressWatchdog()
   }
 }
 
@@ -426,30 +484,55 @@ function applyThinking(): void {
 
 function applyToolStarted(callId: string, tool: string): void {
   currentAssistant()?.tools.push({ callId, tool, running: true, ok: true, path: null })
+  resetProgressWatchdog()
 }
 
 function applyToolFinished(callId: string, ok: boolean): void {
-  const tool = currentAssistant()?.tools.find((t) => t.callId === callId)
+  const tool = askCmdrState.messages
+    .findLast(
+      (message): message is Extract<RailMessage, { kind: 'assistant' }> =>
+        message.kind === 'assistant' && message.tools.some((candidate) => candidate.callId === callId),
+    )
+    ?.tools.find((candidate) => candidate.callId === callId)
   if (tool) {
     tool.running = false
     tool.ok = ok
   }
+  resetProgressWatchdog()
 }
 
 function applyDone(messageId: number): void {
-  const assistant = currentAssistant()
-  if (assistant) {
-    assistant.streaming = false
-    assistant.thinking = false
-    assistant.id = messageId
-  }
+  finalizeAssistant(messageId)
   askCmdrState.streaming = false
+  clearProgressWatchdog()
 }
 
 function applyFailed(kind: AskCmdrErrorKind, detail: string | null): void {
   finalizeAssistant()
   askCmdrState.messages.push({ kind: 'error', errorKind: kind, detail: detail ?? undefined })
   askCmdrState.streaming = false
+  clearProgressWatchdog()
+}
+
+function resetProgressWatchdog(): void {
+  clearProgressWatchdog()
+  if (!askCmdrState.streaming) return
+  stallTimer = setTimeout(() => {
+    const assistant = currentAssistant()
+    if (assistant?.streaming) assistant.stalled = true
+  }, STALL_AFTER_MS)
+  stopTimer = setTimeout(() => {
+    if (!askCmdrState.streaming) return
+    stopStreaming()
+    askCmdrState.messages.push({ kind: 'error', errorKind: 'timeout' })
+  }, STOP_AFTER_MS)
+}
+
+function clearProgressWatchdog(): void {
+  if (stallTimer) clearTimeout(stallTimer)
+  if (stopTimer) clearTimeout(stopTimer)
+  stallTimer = null
+  stopTimer = null
 }
 
 /** The model changed between the previous turn and this one, so the line belongs BEFORE
@@ -459,6 +542,106 @@ function applyModelChanged(model: string): void {
   const lastUserIndex = askCmdrState.messages.findLastIndex((m) => m.kind === 'user')
   if (lastUserIndex >= 0) askCmdrState.messages.splice(lastUserIndex, 0, item)
   else askCmdrState.messages.push(item)
+}
+
+function openRenameReview(proposal: Extract<AskCmdrStreamEvent, { type: 'proposalReady' }>['proposal']): void {
+  discardRenameReview()
+  askCmdrState.renameReview = {
+    proposalId: proposal.proposalId,
+    rows: proposal.rows.map((row) => ({ ...row, allowed: true, blockedReason: null })),
+    preflighting: false,
+    expired: false,
+    requestVersion: 0,
+  }
+  void refreshRenamePreflight()
+}
+
+/** Change one row's user decision, then revalidate the exact allowed subset. */
+export function setRenameRowAllowed(rowId: string, allowed: boolean): void {
+  const review = askCmdrState.renameReview
+  const row = review?.rows.find((candidate) => candidate.rowId === rowId)
+  if (!review || !row || (row.blockedReason && allowed)) return
+  row.allowed = allowed
+  void refreshRenamePreflight()
+}
+
+/** Allow every row the latest preflight did not block. */
+export function allowAllRenameRows(): void {
+  const review = askCmdrState.renameReview
+  if (!review) return
+  for (const row of review.rows) {
+    if (!row.blockedReason) row.allowed = true
+  }
+  void refreshRenamePreflight()
+}
+
+/** Deny every row. This sends no filesystem request and creates no operation. */
+export function denyAllRenameRows(): void {
+  const review = askCmdrState.renameReview
+  if (!review) return
+  for (const row of review.rows) row.allowed = false
+  void refreshRenamePreflight()
+}
+
+/** Cancel closes the review and consumes its server-owned proposal. */
+export function cancelRenameReview(): void {
+  const review = askCmdrState.renameReview
+  if (!review) return
+  askCmdrState.renameReview = null
+  void cancelBulkRenameProposal(review.proposalId)
+}
+
+/** Starts the one managed operation for the rows the user currently allows. */
+export async function applyRenameReview(): Promise<void> {
+  const review = askCmdrState.renameReview
+  if (!review || review.preflighting || review.expired) return
+  const allowedRowIds = review.rows.filter((row) => row.allowed && !row.blockedReason).map((row) => row.rowId)
+  if (allowedRowIds.length === 0) return
+  review.preflighting = true
+  try {
+    await applyBulkRename(review.proposalId, allowedRowIds)
+    if (askCmdrState.renameReview?.proposalId === review.proposalId) askCmdrState.renameReview = null
+  } catch (e) {
+    const current = askCmdrState.renameReview
+    if (!current || current.proposalId !== review.proposalId) return
+    current.preflighting = false
+    log.warn('starting the rename plan failed: {error}', { error: String(e) })
+    void refreshRenamePreflight()
+  }
+}
+
+function discardRenameReview(): void {
+  const review = askCmdrState.renameReview
+  if (!review) return
+  askCmdrState.renameReview = null
+  void cancelBulkRenameProposal(review.proposalId)
+}
+
+async function refreshRenamePreflight(): Promise<void> {
+  const review = askCmdrState.renameReview
+  if (!review) return
+  const version = review.requestVersion + 1
+  review.requestVersion = version
+  review.preflighting = true
+  const allowedRowIds = review.rows.filter((row) => row.allowed).map((row) => row.rowId)
+  try {
+    const result = await preflightBulkRename(review.proposalId, allowedRowIds)
+    const current = askCmdrState.renameReview
+    if (!current || current.proposalId !== review.proposalId || current.requestVersion !== version) return
+    current.preflighting = false
+    current.expired = result.status === 'expired'
+    if (current.expired) return
+    for (const row of current.rows) {
+      const backend = result.rows.find((candidate) => candidate.rowId === row.rowId)
+      row.blockedReason = backend?.status === 'blocked' ? backend.reason : null
+      if (row.blockedReason) row.allowed = false
+    }
+  } catch (e) {
+    const current = askCmdrState.renameReview
+    if (!current || current.proposalId !== review.proposalId || current.requestVersion !== version) return
+    current.preflighting = false
+    log.warn('checking the rename plan failed: {error}', { error: String(e) })
+  }
 }
 
 /** How long to wait after a model-affecting settings change before asking the backend to
@@ -511,13 +694,16 @@ function lastUserMessage(): Extract<RailMessage, { kind: 'user' }> | null {
   return null
 }
 
-/** Finalize the streaming assistant bubble: stop its cursor, and drop it if it never
- * produced anything (an empty bubble left by a failure or a cancel before any output). */
-function finalizeAssistant(): void {
+/** Finalize the streaming assistant bubble: retire unfinished activity, stop its cursor,
+ * and drop it if it never produced anything. Finished tool history stays visible. */
+function finalizeAssistant(messageId?: number): void {
   const assistant = currentAssistant()
   if (!assistant) return
   assistant.streaming = false
   assistant.thinking = false
+  assistant.stalled = false
+  assistant.tools = assistant.tools.filter((tool) => !tool.running)
+  if (messageId !== undefined) assistant.id = messageId
   if (assistant.text.length === 0 && assistant.tools.length === 0) {
     askCmdrState.messages.pop()
   }
