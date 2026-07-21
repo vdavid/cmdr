@@ -5,6 +5,96 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.35.0] - 2026-07-21
+
+Rename a pile of files by describing what you want and approving each row, choose exactly which folders get
+image-indexed instead of guessing at a slider, and browse a NAS at full speed while it's being indexed.
+
+### Added
+
+- Rename a batch of files by describing what you want: Ask Cmdr proposes each new name, you allow or deny row by row,
+  and it applies as one undoable operation ([df87ec51](https://github.com/vdavid/cmdr/commit/df87ec51),
+  [d6c4cff6](https://github.com/vdavid/cmdr/commit/d6c4cff6),
+  [7e63b4c6](https://github.com/vdavid/cmdr/commit/7e63b4c6),
+  [c1654a3c](https://github.com/vdavid/cmdr/commit/c1654a3c))
+- Pick which folders get image-indexed in Settings › AI › Image search, or add one from its right-click menu; each pane
+  says whether the folder you're in is covered ([51995f4a](https://github.com/vdavid/cmdr/commit/51995f4a),
+  [f6168b22](https://github.com/vdavid/cmdr/commit/f6168b22))
+
+### Changed
+
+- Browse a NAS at full speed while it's being indexed or copied from: opening a folder mid-scan dropped from 10.7 s to
+  instant ([6d9df62d](https://github.com/vdavid/cmdr/commit/6d9df62d))
+- Read MTP archives about 35% faster: a ranged read now costs one USB round trip instead of three
+  ([8e9efebe](https://github.com/vdavid/cmdr/commit/8e9efebe))
+- Stop rescanning the boot disk roughly ten times a day when macOS loses track; it sweeps once daily and counts what it
+  coalesced ([49da9914](https://github.com/vdavid/cmdr/commit/49da9914))
+- Name the photo tools in Ask Cmdr's tool line instead of showing "Working"
+  ([f629af77](https://github.com/vdavid/cmdr/commit/f629af77))
+
+### Fixed
+
+- Fix a fresh scan silently dropping your biggest folders: one run lost 661,411 entries across five directories whose
+  only fault was size ([44cf3b74](https://github.com/vdavid/cmdr/commit/44cf3b74))
+- Fix a rescan refusing a large healthy folder while walking browser caches instead
+  ([596390b5](https://github.com/vdavid/cmdr/commit/596390b5),
+  [c67e1f2c](https://github.com/vdavid/cmdr/commit/c67e1f2c))
+- Stop one pathological subtree eating a whole rescan, and cap the cost of a cold start behind a huge temp folder
+  ([90e4784c](https://github.com/vdavid/cmdr/commit/90e4784c),
+  [8034df2e](https://github.com/vdavid/cmdr/commit/8034df2e))
+- Fix a rename replacing a file created in the moment between the safety check and the rename itself
+  ([8cb4e073](https://github.com/vdavid/cmdr/commit/8cb4e073))
+- Make two Cmdr processes on one data dir impossible, which was corrupting the index
+  ([af9bed4d](https://github.com/vdavid/cmdr/commit/af9bed4d),
+  [1f96465e](https://github.com/vdavid/cmdr/commit/1f96465e))
+- Stop a slow file-event replay cascading into a forced full scan
+  ([e9b10c32](https://github.com/vdavid/cmdr/commit/e9b10c32),
+  [6c35074c](https://github.com/vdavid/cmdr/commit/6c35074c))
+- Repair folder sizes after a failed write instead of dropping them, and heal a drifted entry counter
+  ([765d49d8](https://github.com/vdavid/cmdr/commit/765d49d8),
+  [f6fe1db2](https://github.com/vdavid/cmdr/commit/f6fe1db2),
+  [1abad37b](https://github.com/vdavid/cmdr/commit/1abad37b))
+- Fix an interrupted rescan leaving folders claiming exact sizes they can't know
+  ([bed0e936](https://github.com/vdavid/cmdr/commit/bed0e936))
+- Keep the size of a folder named `dev`; only real Unix roots are skipped now
+  ([79b58b21](https://github.com/vdavid/cmdr/commit/79b58b21))
+- Recover on your own from a dead phone session instead of needing a replug
+  ([cb612afe](https://github.com/vdavid/cmdr/commit/cb612afe),
+  [e5f9e023](https://github.com/vdavid/cmdr/commit/e5f9e023))
+- Fix a phone's index drifting after an upload, rename, move, or delete
+  ([b47fee96](https://github.com/vdavid/cmdr/commit/b47fee96))
+- Stop a slow phone wedging mid-operation ([f69c930c](https://github.com/vdavid/cmdr/commit/f69c930c))
+- Wake the phone watcher only for actual phones, not every USB event
+  ([e65980a7](https://github.com/vdavid/cmdr/commit/e65980a7))
+- Hard-wrap unbreakable lines in the file viewer and fix word-wrap scroll drift
+  ([7822523b](https://github.com/vdavid/cmdr/commit/7822523b),
+  [2602a29c](https://github.com/vdavid/cmdr/commit/2602a29c))
+- Keep the app up when a git portal refreshes, and group crashes by the code that broke
+  ([8f4e6411](https://github.com/vdavid/cmdr/commit/8f4e6411))
+- Explain skipped rescans in the drive tooltip, in all ten languages
+  ([46809911](https://github.com/vdavid/cmdr/commit/46809911))
+- Stop a superseded listing reporting progress against an id the pane already retired
+  ([b6ede325](https://github.com/vdavid/cmdr/commit/b6ede325))
+
+### Non-app
+
+- Re-translate the newest three features across all nine non-English locales, fixing a European Portuguese leak and term
+  drift in every language ([0582089a](https://github.com/vdavid/cmdr/commit/0582089a))
+- Restore the Linux build, which `#![deny(unused)]` had been failing since the instance lock landed
+  ([40ed4946](https://github.com/vdavid/cmdr/commit/40ed4946))
+- Cut recurring secret-scanning and Renovate noise at the source
+  ([4b4c051d](https://github.com/vdavid/cmdr/commit/4b4c051d),
+  [c129fba5](https://github.com/vdavid/cmdr/commit/c129fba5))
+- Convert `apps/desktop/scripts/` to TypeScript and run every script through one runner
+  ([a5890bf7](https://github.com/vdavid/cmdr/commit/a5890bf7),
+  [7f7d3109](https://github.com/vdavid/cmdr/commit/7f7d3109),
+  [2b36ddd2](https://github.com/vdavid/cmdr/commit/2b36ddd2))
+- Measure the indexing hot paths and record what three spikes actually found, including the rule they refuted
+  ([aa7656d0](https://github.com/vdavid/cmdr/commit/aa7656d0),
+  [ec948e23](https://github.com/vdavid/cmdr/commit/ec948e23),
+  [5665a049](https://github.com/vdavid/cmdr/commit/5665a049),
+  [403a35e5](https://github.com/vdavid/cmdr/commit/403a35e5))
+
 ## [0.34.0] - 2026-07-18
 
 1. Ask Cmdr: a built-in AI assistant that has access to your files to answer questions (alpha, read-only).
