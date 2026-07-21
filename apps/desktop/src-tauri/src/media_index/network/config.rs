@@ -55,6 +55,23 @@ impl NetworkEnrichConfig {
     pub fn is_excluded(&self, os_path: &str) -> bool {
         self.excluded_folders.iter().any(|f| path_is_within(os_path, f))
     }
+
+    /// Whether this EXACT folder is on the chosen-folder list. Distinct from
+    /// [`Self::covers`]: the folder context menu offers "remove" only for a real entry,
+    /// never for a folder some ancestor covers (removing what isn't there would be a
+    /// lie). Trailing slashes don't change membership.
+    pub fn is_chosen_folder(&self, os_path: &str) -> bool {
+        let path = os_path.trim_end_matches('/');
+        self.always_index_folders
+            .iter()
+            .any(|f| f.trim_end_matches('/') == path)
+    }
+
+    /// Whether an ANCESTOR (never the folder itself) is on the chosen-folder list, so
+    /// this folder is already covered and adding it would write a redundant entry.
+    pub fn is_covered_by_parent_folder(&self, os_path: &str) -> bool {
+        !self.is_chosen_folder(os_path) && self.always_index_folders.iter().any(|f| path_is_within(os_path, f))
+    }
 }
 
 /// Whether `path` is `ancestor` itself or lives under it. Pure path-prefix arithmetic
@@ -143,6 +160,17 @@ pub fn is_excluded(os_path: &str) -> bool {
     CONFIG.read_ignore_poison().is_excluded(os_path)
 }
 
+/// Whether this EXACT folder is on the chosen-folder list (the folder context menu's
+/// remove-vs-add decision).
+pub fn is_chosen_folder(os_path: &str) -> bool {
+    CONFIG.read_ignore_poison().is_chosen_folder(os_path)
+}
+
+/// Whether an ancestor folder (never this one) is on the chosen-folder list.
+pub fn is_covered_by_parent_folder(os_path: &str) -> bool {
+    CONFIG.read_ignore_poison().is_covered_by_parent_folder(os_path)
+}
+
 /// Mark a volume paused (its enrichment stopped on a disconnect; resumes on reconnect).
 pub fn mark_paused(volume_id: &str) {
     PAUSED.write_ignore_poison().insert(volume_id.to_string());
@@ -185,5 +213,23 @@ mod tests {
         // Folder override on a different volume.
         assert!(cfg.covers("other", "/Volumes/naspi/Photos/2026/x.jpg"));
         assert!(!cfg.covers("other", "/Volumes/naspi/Docs/x.jpg"));
+    }
+
+    #[test]
+    fn chosen_membership_is_exact_and_parent_coverage_is_not() {
+        let cfg = NetworkEnrichConfig {
+            always_index_folders: ["/Users/dave/Photos/".to_string()].into_iter().collect(),
+            ..NetworkEnrichConfig::default()
+        };
+        // The exact entry, trailing slash either side.
+        assert!(cfg.is_chosen_folder("/Users/dave/Photos"));
+        assert!(cfg.is_chosen_folder("/Users/dave/Photos/"));
+        assert!(!cfg.is_covered_by_parent_folder("/Users/dave/Photos"));
+        // A child is covered, but isn't itself an entry.
+        assert!(!cfg.is_chosen_folder("/Users/dave/Photos/2026"));
+        assert!(cfg.is_covered_by_parent_folder("/Users/dave/Photos/2026"));
+        // An unrelated folder is neither.
+        assert!(!cfg.is_chosen_folder("/Users/dave/Docs"));
+        assert!(!cfg.is_covered_by_parent_folder("/Users/dave/Docs"));
     }
 }

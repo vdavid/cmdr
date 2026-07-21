@@ -76,6 +76,7 @@ describe('SelectionInfo a11y', () => {
           selectedPhysicalSize: null,
         },
         selectedCount: 0,
+        currentPath: '',
       },
     })
     await tick()
@@ -102,6 +103,7 @@ describe('SelectionInfo a11y', () => {
           selectedPhysicalSize: null,
         },
         selectedCount: 0,
+        currentPath: '',
       },
     })
     await tick()
@@ -128,6 +130,7 @@ describe('SelectionInfo a11y', () => {
           selectedPhysicalSize: null,
         },
         selectedCount: 0,
+        currentPath: '',
       },
     })
     await tick()
@@ -154,6 +157,7 @@ describe('SelectionInfo a11y', () => {
           selectedPhysicalSize: null,
         },
         selectedCount: 3,
+        currentPath: '',
       },
     })
     await tick()

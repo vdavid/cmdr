@@ -913,6 +913,50 @@
   "@fileExplorer.dateTooltip.lastModified": {
     "sourceHash": "0fe1058"
   },
+  "fileExplorer.imageIndex.indexed": "Bilder indexiert",
+  "@fileExplorer.imageIndex.indexed": {
+    "sourceHash": "f4b2ca5"
+  },
+  "fileExplorer.imageIndex.indexedTooltip": "Dieser Ordner steht auf deiner Liste der zu indexierenden Ordner. Neues hier kommt beim nächsten Durchlauf dazu.",
+  "@fileExplorer.imageIndex.indexedTooltip": {
+    "sourceHash": "3c9dd0c"
+  },
+  "fileExplorer.imageIndex.indexing": "Bilder werden indexiert",
+  "@fileExplorer.imageIndex.indexing": {
+    "sourceHash": "41f1298"
+  },
+  "fileExplorer.imageIndex.indexingTooltip": "Cmdr indexiert gerade Bilder auf diesem Laufwerk, {percent}% sind geschafft.",
+  "@fileExplorer.imageIndex.indexingTooltip": {
+    "sourceHash": "ee54884"
+  },
+  "fileExplorer.imageIndex.indexingTooltipNoProgress": "Cmdr indexiert gerade Bilder auf diesem Laufwerk.",
+  "@fileExplorer.imageIndex.indexingTooltipNoProgress": {
+    "sourceHash": "d7b5450"
+  },
+  "fileExplorer.imageIndex.notIndexed": "Bilder nicht indexiert",
+  "@fileExplorer.imageIndex.notIndexed": {
+    "sourceHash": "b089c28"
+  },
+  "fileExplorer.imageIndex.notIndexedTooltip": "Die Bildersuche deckt nur die Ordner ab, die du ausgewählt hast, und dieser gehört nicht dazu.",
+  "@fileExplorer.imageIndex.notIndexedTooltip": {
+    "sourceHash": "922fbec"
+  },
+  "fileExplorer.imageIndex.excluded": "Bilder ausgeschlossen",
+  "@fileExplorer.imageIndex.excluded": {
+    "sourceHash": "18a83cc"
+  },
+  "fileExplorer.imageIndex.excludedTooltip": "Du hast diesen Ordner von der Bildersuche ausgeschlossen, hier wird also nichts indexiert.",
+  "@fileExplorer.imageIndex.excludedTooltip": {
+    "sourceHash": "1d0bb6d"
+  },
+  "fileExplorer.imageIndex.automatic": "Bilder automatisch indexiert",
+  "@fileExplorer.imageIndex.automatic": {
+    "sourceHash": "645c593"
+  },
+  "fileExplorer.imageIndex.automaticTooltip": "Cmdr wählt die zu indexierenden Ordner danach aus, wie viel du mit ihnen arbeitest, dieser kann also dabei sein oder nicht.",
+  "@fileExplorer.imageIndex.automaticTooltip": {
+    "sourceHash": "8fd2bde"
+  },
   "fileExplorer.selectionInfo.nothingHere": "Hier ist nichts.",
   "@fileExplorer.selectionInfo.nothingHere": {
     "sourceHash": "140a431"

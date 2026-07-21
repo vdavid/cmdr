@@ -384,7 +384,7 @@ export {
 } from './appearance'
 
 // Native-menu events
-export { onViewModeChanged, onMenuSort, onMediaIndexFolderExclusion } from './menu-events'
+export { onViewModeChanged, onMenuSort, onMediaIndexFolderExclusion, onMediaIndexFolderChoice } from './menu-events'
 
 // Directory-watcher events
 export { onDirectoryDiff, onDirectoryDeleted } from './directory-watcher'

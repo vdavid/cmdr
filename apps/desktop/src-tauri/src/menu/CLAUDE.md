@@ -6,12 +6,12 @@ user shortcuts, and enables/disables items by focus context.
 ## Module map
 
 - `mod.rs`: shared types, enums, event structs, and menu state.
-- `command_map.rs`: the menu item ID constants and the `menu_id_to_command` / `command_id_to_menu_id` mapping
-  functions (re-exported via `mod.rs`).
+- `command_map.rs`: menu item ID constants + the `menu_id_to_command` / `command_id_to_menu_id` maps (re-exported via
+  `mod.rs`).
 - `menu_items.rs` / `menu_structure.rs`: small-piece builders and hierarchical assembly (`build_menu` dispatcher,
   context menus, viewer menu).
-- `menu_handlers.rs`: event handling + live-update helpers. `macos.rs` / `linux.rs`: platform menu bars. `open_with.rs`
-  (macOS): the "Open with" submenu.
+- `menu_handlers.rs`: event handling + live-update helpers. `media_index_items.rs`: the image-search-items decider.
+  `macos.rs` / `linux.rs`: platform menu bars. `open_with.rs`: the "Open with" submenu (macOS).
 
 ## Must-knows
 

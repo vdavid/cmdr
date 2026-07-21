@@ -910,6 +910,50 @@
   "@fileExplorer.dateTooltip.lastModified": {
     "sourceHash": "0fe1058"
   },
+  "fileExplorer.imageIndex.indexed": "Imágenes indexadas",
+  "@fileExplorer.imageIndex.indexed": {
+    "sourceHash": "f4b2ca5"
+  },
+  "fileExplorer.imageIndex.indexedTooltip": "Esta carpeta está en tu lista de carpetas para indexar. Lo nuevo se recoge en la siguiente pasada.",
+  "@fileExplorer.imageIndex.indexedTooltip": {
+    "sourceHash": "3c9dd0c"
+  },
+  "fileExplorer.imageIndex.indexing": "Indexando imágenes",
+  "@fileExplorer.imageIndex.indexing": {
+    "sourceHash": "41f1298"
+  },
+  "fileExplorer.imageIndex.indexingTooltip": "Cmdr está indexando imágenes en esta unidad ahora mismo, va por el {percent}%.",
+  "@fileExplorer.imageIndex.indexingTooltip": {
+    "sourceHash": "ee54884"
+  },
+  "fileExplorer.imageIndex.indexingTooltipNoProgress": "Cmdr está indexando imágenes en esta unidad ahora mismo.",
+  "@fileExplorer.imageIndex.indexingTooltipNoProgress": {
+    "sourceHash": "d7b5450"
+  },
+  "fileExplorer.imageIndex.notIndexed": "Imágenes sin indexar",
+  "@fileExplorer.imageIndex.notIndexed": {
+    "sourceHash": "b089c28"
+  },
+  "fileExplorer.imageIndex.notIndexedTooltip": "La búsqueda de imágenes solo cubre las carpetas que elegiste, y esta no es una de ellas.",
+  "@fileExplorer.imageIndex.notIndexedTooltip": {
+    "sourceHash": "922fbec"
+  },
+  "fileExplorer.imageIndex.excluded": "Imágenes excluidas",
+  "@fileExplorer.imageIndex.excluded": {
+    "sourceHash": "18a83cc"
+  },
+  "fileExplorer.imageIndex.excludedTooltip": "Excluiste esta carpeta de la búsqueda de imágenes, así que aquí no se indexa nada.",
+  "@fileExplorer.imageIndex.excludedTooltip": {
+    "sourceHash": "1d0bb6d"
+  },
+  "fileExplorer.imageIndex.automatic": "Imágenes indexadas automáticamente",
+  "@fileExplorer.imageIndex.automatic": {
+    "sourceHash": "645c593"
+  },
+  "fileExplorer.imageIndex.automaticTooltip": "Cmdr elige qué carpetas indexar según cuánto trabajas con ellas, así que esta puede estar cubierta o no.",
+  "@fileExplorer.imageIndex.automaticTooltip": {
+    "sourceHash": "8fd2bde"
+  },
   "fileExplorer.selectionInfo.nothingHere": "Aquí no hay nada.",
   "@fileExplorer.selectionInfo.nothingHere": {
     "sourceHash": "140a431"

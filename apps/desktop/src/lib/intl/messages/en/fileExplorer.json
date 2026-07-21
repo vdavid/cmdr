@@ -1343,6 +1343,53 @@
     "description": "Label in a file''s date tooltip for when its contents were last changed."
   },
 
+  "fileExplorer.imageIndex.indexed": "Images indexed",
+  "@fileExplorer.imageIndex.indexed": {
+    "description": "Status-bar label below a pane: the images in the current folder are covered by image search, because the folder (or a parent of it) is on the user''s list of folders to index."
+  },
+  "fileExplorer.imageIndex.indexedTooltip": "This folder is on your list of folders to index. Anything new here gets picked up on the next pass.",
+  "@fileExplorer.imageIndex.indexedTooltip": {
+    "description": "Hover tooltip for the \"Images indexed\" status-bar label. Says why the folder is covered, and stays honest that indexing may not have caught up yet."
+  },
+  "fileExplorer.imageIndex.indexing": "Indexing images",
+  "@fileExplorer.imageIndex.indexing": {
+    "description": "Status-bar label below a pane: the current folder is covered by image search and an indexing pass is running on this drive right now."
+  },
+  "fileExplorer.imageIndex.indexingTooltip": "Cmdr is indexing images on this drive right now, {percent}% of the way through.",
+  "@fileExplorer.imageIndex.indexingTooltip": {
+    "description": "Hover tooltip for the \"Indexing images\" status-bar label. The progress figure is for the whole drive, not this folder, so the wording says ''this drive''.",
+    "placeholders": {
+      "percent": "whole-number progress percentage for the drive, 0-100"
+    }
+  },
+  "fileExplorer.imageIndex.indexingTooltipNoProgress": "Cmdr is indexing images on this drive right now.",
+  "@fileExplorer.imageIndex.indexingTooltipNoProgress": {
+    "description": "Hover tooltip for the \"Indexing images\" status-bar label before any progress figure has arrived."
+  },
+  "fileExplorer.imageIndex.notIndexed": "Images not indexed",
+  "@fileExplorer.imageIndex.notIndexed": {
+    "description": "Status-bar label below a pane: image search skips the current folder, because the user picked specific folders to index and this isn''t one of them."
+  },
+  "fileExplorer.imageIndex.notIndexedTooltip": "Image search covers only the folders you picked, and this isn''t one of them.",
+  "@fileExplorer.imageIndex.notIndexedTooltip": {
+    "description": "Hover tooltip for the \"Images not indexed\" status-bar label. Informational only: the action to add the folder lives in its right-click menu."
+  },
+  "fileExplorer.imageIndex.excluded": "Images excluded",
+  "@fileExplorer.imageIndex.excluded": {
+    "description": "Status-bar label below a pane: the user excluded the current folder (or a parent of it) from image search, so nothing here is indexed."
+  },
+  "fileExplorer.imageIndex.excludedTooltip": "You excluded this folder from image search, so nothing here is indexed.",
+  "@fileExplorer.imageIndex.excludedTooltip": {
+    "description": "Hover tooltip for the \"Images excluded\" status-bar label."
+  },
+  "fileExplorer.imageIndex.automatic": "Images indexed automatically",
+  "@fileExplorer.imageIndex.automatic": {
+    "description": "Status-bar label below a pane: image search picks folders by itself (by how much the user works with them), so whether this folder is covered isn''t something the pane can state."
+  },
+  "fileExplorer.imageIndex.automaticTooltip": "Cmdr picks which folders to index by how much you work with them, so this one may or may not be covered.",
+  "@fileExplorer.imageIndex.automaticTooltip": {
+    "description": "Hover tooltip for the \"Images indexed automatically\" status-bar label. Deliberately says ''may or may not'': the frontend can''t know a folder''s importance score."
+  },
   "fileExplorer.selectionInfo.nothingHere": "Nothing in here.",
   "@fileExplorer.selectionInfo.nothingHere": {
     "description": "Status-bar text shown below a pane when the current folder is empty.",

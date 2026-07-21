@@ -23,6 +23,7 @@ mod command_map;
 mod linux;
 #[cfg(target_os = "macos")]
 mod macos;
+mod media_index_items;
 mod menu_handlers;
 mod menu_items;
 mod menu_structure;
@@ -44,6 +45,7 @@ use tauri::{
 // All menu item ID constants and the ID ↔ command-registry mapping functions live in
 // `command_map`; the glob keeps every existing `crate::menu::…` / `super::…` import path valid.
 pub use command_map::*;
+pub use media_index_items::{ImageIndexMenuState, image_index_menu_items};
 #[cfg(target_os = "macos")]
 pub use menu_handlers::{cleanup_macos_menus, cleanup_macos_menus_from_command, set_macos_menu_icons};
 pub use menu_handlers::{
@@ -99,6 +101,19 @@ pub struct MenuSort {
 pub struct MediaIndexFolderExclusion {
     pub folder: String,
     pub excluded: bool,
+}
+
+/// `media-index-folder-choice`: a folder's "Add to indexed folders" / "Remove from
+/// indexed folders" context-menu item was clicked. Carries the right-clicked folder's
+/// absolute path and the target membership. The FE listens and drives its persist +
+/// live-apply path (`mediaIndex.alwaysIndexFolders` + `media_index_set_always_index_folder`,
+/// which kicks a pass on an add), so the choice survives a restart (the native menu can't
+/// write the FE settings store). Emitted `emit_to("main")`.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type, tauri_specta::Event)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaIndexFolderChoice {
+    pub folder: String,
+    pub chosen: bool,
 }
 
 /// Whether a command requires the main window to be focused.

@@ -909,6 +909,50 @@
   "@fileExplorer.dateTooltip.lastModified": {
     "sourceHash": "0fe1058"
   },
+  "fileExplorer.imageIndex.indexed": "Képek indexelve",
+  "@fileExplorer.imageIndex.indexed": {
+    "sourceHash": "f4b2ca5"
+  },
+  "fileExplorer.imageIndex.indexedTooltip": "Ez a mappa rajta van az indexelendő mappák listáján. Az újdonságokat a következő kör szedi össze.",
+  "@fileExplorer.imageIndex.indexedTooltip": {
+    "sourceHash": "3c9dd0c"
+  },
+  "fileExplorer.imageIndex.indexing": "Képek indexelése",
+  "@fileExplorer.imageIndex.indexing": {
+    "sourceHash": "41f1298"
+  },
+  "fileExplorer.imageIndex.indexingTooltip": "A Cmdr éppen indexeli a képeket ezen a meghajtón, {percent}%-nál tart.",
+  "@fileExplorer.imageIndex.indexingTooltip": {
+    "sourceHash": "ee54884"
+  },
+  "fileExplorer.imageIndex.indexingTooltipNoProgress": "A Cmdr éppen indexeli a képeket ezen a meghajtón.",
+  "@fileExplorer.imageIndex.indexingTooltipNoProgress": {
+    "sourceHash": "d7b5450"
+  },
+  "fileExplorer.imageIndex.notIndexed": "Képek nincsenek indexelve",
+  "@fileExplorer.imageIndex.notIndexed": {
+    "sourceHash": "b089c28"
+  },
+  "fileExplorer.imageIndex.notIndexedTooltip": "A képkeresés csak az általad kiválasztott mappákra terjed ki, és ez nincs köztük.",
+  "@fileExplorer.imageIndex.notIndexedTooltip": {
+    "sourceHash": "922fbec"
+  },
+  "fileExplorer.imageIndex.excluded": "Képek kihagyva",
+  "@fileExplorer.imageIndex.excluded": {
+    "sourceHash": "18a83cc"
+  },
+  "fileExplorer.imageIndex.excludedTooltip": "Kihagytad ezt a mappát a képkeresésből, így itt semmit sem indexel a Cmdr.",
+  "@fileExplorer.imageIndex.excludedTooltip": {
+    "sourceHash": "1d0bb6d"
+  },
+  "fileExplorer.imageIndex.automatic": "Képek automatikusan indexelve",
+  "@fileExplorer.imageIndex.automatic": {
+    "sourceHash": "645c593"
+  },
+  "fileExplorer.imageIndex.automaticTooltip": "A Cmdr az alapján választja ki az indexelendő mappákat, hogy mennyit dolgozol velük, így ez lehet, hogy köztük van, lehet, hogy nem.",
+  "@fileExplorer.imageIndex.automaticTooltip": {
+    "sourceHash": "8fd2bde"
+  },
   "fileExplorer.selectionInfo.nothingHere": "Itt nincs semmi.",
   "@fileExplorer.selectionInfo.nothingHere": {
     "sourceHash": "140a431"

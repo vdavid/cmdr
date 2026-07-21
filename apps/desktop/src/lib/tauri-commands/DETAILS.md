@@ -44,7 +44,9 @@ commands, and notable non-obvious placements.
 - **`appearance.ts`**: one-shot OS environment reads (`getAccentColor`, `getShouldReduceTransparency`,
   `getSystemTextSizeMultiplier`, `getLocalizedSystemStrings`) plus `onAccentColorChanged` /
   `onReduceTransparencyChanged` / `onSystemTextSizeChanged` over the OS appearance / text-size events.
-- **`menu-events.ts`**: `onViewModeChanged` / `onMenuSort` over the direct (non-`execute-command`) native-menu events.
+- **`menu-events.ts`**: `onViewModeChanged` / `onMenuSort` / `onMediaIndexFolderExclusion` / `onMediaIndexFolderChoice`
+  over the direct (non-`execute-command`) native-menu events. The two media-index ones carry the right-clicked folder
+  plus its target state; `listener-setup.ts` routes each into the ONE FE helper that also backs the Settings list.
 - **`directory-watcher.ts`**: `onDirectoryDiff` / `onDirectoryDeleted` over the file-watcher events (`onDirectoryDiff`
   casts the generated payload to the FE `DirectoryDiff` whose `entry` is the FE `FileEntry`).
 - **`native-drag.ts`**: `onDragImageSize` / `onDragModifiers` (macOS drag overlay) + `onDragOutSessionStarted` /

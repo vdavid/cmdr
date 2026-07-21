@@ -63,6 +63,13 @@ pub const CLOUD_REMOVE_DOWNLOAD_ID: &str = "cloud_remove_download";
 pub const MEDIA_INDEX_EXCLUDE_FOLDER_ID: &str = "media_index_exclude_folder";
 pub const MEDIA_INDEX_INCLUDE_FOLDER_ID: &str = "media_index_include_folder";
 
+/// Menu item IDs for the per-folder chosen-folder membership (`mediaIndex.alwaysIndexFolders`,
+/// the "Folders to index" list in Settings). Same shape and same handling as the exclusion
+/// pair above: exactly one of the two shows, keyed on whether the folder is already on the
+/// list, and both act on the right-clicked folder rather than the focused-pane selection.
+pub const MEDIA_INDEX_ADD_FOLDER_ID: &str = "media_index_add_folder";
+pub const MEDIA_INDEX_REMOVE_FOLDER_ID: &str = "media_index_remove_folder";
+
 /// Menu item ID prefix for the seven Finder-tag color items in the file context menu
 /// (macOS). Followed by the color index (1..=7), e.g. `tag-color:6`. Prefix-routed in
 /// `handle_menu_event` (like `open-with:`) straight to the tag write, NOT through

@@ -92,7 +92,7 @@ use crate::downloads::global_shortcut::GlobalShortcutFired;
 use crate::downloads::watcher::DownloadDetectedEvent;
 use crate::error_reporter::auto_dispatcher::ErrorReportAutoSent;
 use crate::file_system::watcher::{DirectoryDeletedEvent, DirectoryDiff};
-use crate::menu::{MediaIndexFolderExclusion, MenuSort, SettingsChanged, ViewModeChanged};
+use crate::menu::{MediaIndexFolderChoice, MediaIndexFolderExclusion, MenuSort, SettingsChanged, ViewModeChanged};
 use crate::quick_look::{QuickLookClosed, QuickLookKeyEvent};
 use crate::restricted_paths::RestrictedPathsChangedPayload;
 use crate::system_events::{
@@ -807,6 +807,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             ViewModeChanged,           // emit_to("main")
             MenuSort,                  // emit_to("main")
             MediaIndexFolderExclusion, // emit_to("main") = "media-index-folder-exclusion"
+            MediaIndexFolderChoice,    // emit_to("main") = "media-index-folder-choice"
             GlobalShortcutFired,
             DragImageSize,
             DragModifiers,

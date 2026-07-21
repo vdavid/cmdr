@@ -224,7 +224,9 @@ local whole-drive index) — only the image grid follows the pane.
 **Per-folder override — the chosen folders.** `media_index_set_always_index_folder` +
 `mediaIndex.alwaysIndexFolders` back the chosen-folders list in Settings > AI > Image search
 (`MediaIndexChosenFolders.svelte`, adding via the native folder picker). In the `ChosenFolders` scope these folders ARE
-the coverage (§ The indexing scope). A folder right-click trigger for the same setter is still open.
+the coverage (§ The indexing scope). A folder's context menu drives the SAME setter through the same FE helper
+(`always-index-folders.ts`), so a folder added by right-click shows up in the Settings list and vice versa; the menu's
+label/enabled decision lives in `menu/media_index_items.rs` (§ Image-search group in `menu/DETAILS.md`).
 
 ## Schema (`store/`)
 
@@ -945,11 +947,14 @@ top-k over a single user's library is low-ms. Measure on a real corpus and recor
 
 ## What's left for later
 
-- **Per-folder "always index" from a right-click:** Settings has the chosen-folders list; the folder context-menu
-  trigger for the same setter is still open (the same native-menu shape the exclude trigger uses, § Per-folder
-  photo-search exclude). A per-folder indexing-state indicator in the pane is open too — there's no cheap per-folder
-  count today (it would mean a `media.db` prefix scan per folder per poll), so anything showing one needs a counts
-  query designed for it.
+- **Per-folder COUNTS:** there's still no cheap per-folder count (it would mean a `media.db` prefix scan per folder per
+  poll), so nothing voices "N of M images indexed here". The pane's per-folder readout
+  (`$lib/media-index/FolderIndexStatus.svelte` + `folder-index-state.ts`, in each pane's status bar) works around it by
+  describing COVERAGE, not completion: it reads the toggle, the scope, and the two folder lists, plus the live
+  per-volume enrichment activity, and says `indexed` / `indexing` / `not indexed` / `excluded` / `automatic`. Two honest
+  gaps follow from having no query: in the `ByImportance` scope a folder's importance score is a backend fact the FE
+  can't get, so it says "indexed automatically" rather than yes or no; and the readout is LOCAL panes only, since only a
+  local pane's path is the absolute OS path the folder lists match on. A real per-folder counts query would close both.
 - **CLIP model size:** the shipped towers are non-palettized (~392 MB) because 8-bit palettization NaN'd the text tower;
   a per-layer palettization exclusion would cut it toward ~138 MB.
 - **Later:** faces (detect/embed/cluster/name), the durable identity store, and LLM captions.

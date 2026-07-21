@@ -18,13 +18,14 @@ use crate::ignore_poison::IgnorePoison;
 use super::menu_items::{brief_view_label, full_view_label};
 use super::{
     CLOSE_TAB_ID, CommandScope, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, EJECT_VOLUME_ID, FAVORITE_REMOVE_ID,
-    FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, MEDIA_INDEX_EXCLUDE_FOLDER_ID, MEDIA_INDEX_INCLUDE_FOLDER_ID,
-    MediaIndexFolderExclusion, MenuItemEntry, MenuSort, MenuState, NETWORK_HOST_DISCONNECT_ID,
-    NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, SELECT_ALL_ID, SHOW_HIDDEN_FILES_ID,
-    SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID,
-    SORT_DESCENDING_ID, SettingsChanged, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID,
-    VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, VIEWER_WORD_WRAP_ID, ViewMode,
-    ViewModeChanged, menu_id_to_command,
+    FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, MEDIA_INDEX_ADD_FOLDER_ID, MEDIA_INDEX_EXCLUDE_FOLDER_ID,
+    MEDIA_INDEX_INCLUDE_FOLDER_ID, MEDIA_INDEX_REMOVE_FOLDER_ID, MediaIndexFolderChoice, MediaIndexFolderExclusion,
+    MenuItemEntry, MenuSort, MenuState, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID,
+    NETWORK_HOST_FORGET_SERVER_ID, SELECT_ALL_ID, SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID,
+    SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SettingsChanged,
+    TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID,
+    VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewModeChanged,
+    menu_id_to_command,
 };
 
 /// Removes macOS system-injected items from the Edit menu and registers the Help menu.
@@ -471,6 +472,26 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         let _ = MediaIndexFolderExclusion {
             folder,
             excluded: id == MEDIA_INDEX_EXCLUDE_FOLDER_ID,
+        }
+        .emit_to(app, "main");
+        return;
+    }
+
+    // === Image-search chosen-folder membership (media_index "Folders to index") ===
+    // Same shape as the exclusion above: acts on the RIGHT-CLICKED folder and emits the
+    // target membership to the FE, which persists `mediaIndex.alwaysIndexFolders` and
+    // calls `media_index_set_always_index_folder` (adding kicks a pass backend-side).
+    if id == MEDIA_INDEX_ADD_FOLDER_ID || id == MEDIA_INDEX_REMOVE_FOLDER_ID {
+        let menu_state = app.state::<MenuState<tauri::Wry>>();
+        let folder = menu_state.context.lock_ignore_poison().path.clone();
+        if folder.is_empty() {
+            log::warn!(target: "media_index", "folder choice clicked with no context path, ignoring");
+            return;
+        }
+        use tauri_specta::Event as _;
+        let _ = MediaIndexFolderChoice {
+            folder,
+            chosen: id == MEDIA_INDEX_ADD_FOLDER_ID,
         }
         .emit_to(app, "main");
         return;

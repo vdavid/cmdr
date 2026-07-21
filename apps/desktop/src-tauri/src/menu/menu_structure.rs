@@ -29,9 +29,9 @@ use super::{CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, GET_INFO_ID, QUICK_
 use super::{
     COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, EJECT_VOLUME_ID, FAVORITE_REMOVE_ID,
     FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID,
-    FILE_VIEW_ID, MEDIA_INDEX_EXCLUDE_FOLDER_ID, MEDIA_INDEX_INCLUDE_FOLDER_ID, MenuItems, NETWORK_HOST_DISCONNECT_ID,
-    NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID, SHOW_IN_FINDER_ID,
-    TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewerMenuItems,
+    FILE_VIEW_ID, ImageIndexMenuState, MenuItems, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID,
+    NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID, SHOW_IN_FINDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID,
+    TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewerMenuItems, image_index_menu_items,
 };
 
 /// Per-file information needed to build a fully-populated context menu.
@@ -104,11 +104,10 @@ pub fn build_context_menu<R: Runtime>(
     )]
     info: &FileContextInfo,
     restrict_destination_actions: bool,
-    // Media-index image-search exclusion: whether the master toggle is on (gates whether
-    // the folder-only exclude/un-exclude item shows at all) and whether THIS folder is
-    // already excluded (picks which of the two items to show).
-    image_index_enabled: bool,
-    image_index_excluded: bool,
+    // Media-index image-search facts about the right-clicked folder; `image_index_menu_items`
+    // turns them into the folder-only chosen/exclusion items (empty when the master toggle
+    // is off).
+    image_index: ImageIndexMenuState,
 ) -> tauri::Result<ContextMenuResult<R>> {
     let menu = Menu::new(app)?;
 
@@ -206,20 +205,19 @@ pub fn build_context_menu<R: Runtime>(
         menu.append(&add_favorite_item)?;
     }
 
-    // Image-search exclusion (media_index privacy veto): a folder-only toggle, shown
-    // only when image indexing is enabled. Exactly one item, keyed on whether the
-    // folder is already excluded. Handled specially in `handle_menu_event` (it acts on
-    // the right-clicked folder and drives a FE persist path), never via
-    // `menu_id_to_command`.
-    if is_directory && image_index_enabled {
-        let (id, label) = if image_index_excluded {
-            (MEDIA_INDEX_INCLUDE_FOLDER_ID, "Index images here again")
-        } else {
-            (MEDIA_INDEX_EXCLUDE_FOLDER_ID, "Don't index images in this folder")
-        };
-        let exclusion_item = MenuItem::with_id(app, id, label, true, None::<&str>)?;
-        menu.append(&PredefinedMenuItem::separator(app)?)?;
-        menu.append(&exclusion_item)?;
+    // Image-search group (media_index): folder-only, and only while image indexing is
+    // enabled. `image_index_menu_items` decides the labels and which items are clickable.
+    // Handled specially in `handle_menu_event` (they act on the right-clicked folder and
+    // drive a FE persist path), never via `menu_id_to_command`.
+    if is_directory {
+        let items = image_index_menu_items(image_index);
+        if !items.is_empty() {
+            menu.append(&PredefinedMenuItem::separator(app)?)?;
+            for item in items {
+                let menu_item = MenuItem::with_id(app, item.id, item.label, item.enabled, None::<&str>)?;
+                menu.append(&menu_item)?;
+            }
+        }
     }
 
     // Cloud actions (macOS File Provider): only show when the file is in a

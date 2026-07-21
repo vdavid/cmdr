@@ -265,7 +265,3 @@ export async function mediaIndexDownloadClipModel(): Promise<void> {
   const res = await commands.mediaIndexDownloadClipModel()
   if (res.status === 'error') throwIpcError(res.error)
 }
-
-// A typed wrapper for the per-folder override (`media_index_set_always_index_folder`) is
-// deliberately omitted this slice: its trigger is a folder right-click action in the native
-// (Rust) file context menu, a small backend follow-up. The raw `commands.*` binding is ready.

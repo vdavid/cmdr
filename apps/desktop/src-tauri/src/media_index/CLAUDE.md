@@ -52,6 +52,6 @@ A PORT of `importance/`'s patterns (store, writer, scheduler, read API): read `i
   `analyze_media(want_vision, want_clip)`. ❌ NEVER compare CLIP against the Vision feature print. Off with no model
   installed (`search_semantic` returns `[]`).
 
-Still open: always-index from a folder right-click, per-folder state in the pane, MTP on-demand, faces/captions.
+Still open: per-folder COUNTS (no cheap scan; the pane readout voices coverage, not completion), MTP, faces/captions.
 
 Depth for every § above, plus architecture and decisions: [DETAILS.md](DETAILS.md). Read it before non-trivial work.

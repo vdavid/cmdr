@@ -435,6 +435,12 @@
         }
     })
 
+    // The folder path the status bar's image-search readout judges: LOCAL panes only.
+    // Image indexing matches folders by absolute OS path, and only a local pane's path
+    // is one — an archive, MTP, or virtual pane's path would silently miss every list
+    // and read as "not indexed", so those panes say nothing instead.
+    const imageIndexFolderPath = $derived(caps.kind === 'local' ? (canonicalPath ?? '') : '')
+
     // ── Git browser ─────────────────────────────────────────────────────
     // The breadcrumb repo chip + file-list git-status column: their toggles,
     // the reactive RepoInfo lookup, and the subscribe/unsubscribe lifecycle live
@@ -2407,6 +2413,7 @@
             currentDirModifiedAt={undefined}
             stats={listingStats}
             selectedCount={selection.selectedIndices.size}
+            currentPath={imageIndexFolderPath}
             volumeSpace={diskSpace.volumeSpace}
             {mtpSpaceHint}
         />

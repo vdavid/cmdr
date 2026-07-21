@@ -70,7 +70,7 @@ function mountFileInfo(entry: ReturnType<typeof makeDir>, volumeId = 'root'): HT
   document.body.appendChild(target)
   mount(SelectionInfo, {
     target,
-    props: { viewMode: 'brief', volumeId, entry, stats: STATS, selectedCount: 0 },
+    props: { viewMode: 'brief', volumeId, entry, stats: STATS, selectedCount: 0, currentPath: '' },
   })
   return target
 }

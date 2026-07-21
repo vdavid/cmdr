@@ -31,25 +31,25 @@ lives in `FilePane.svelte` as a `Set<number>`).
   (Full, no selection), `file-info` (Brief, no selection).
 - **Middle truncation in `file-info` mode uses the `useShortenMiddle` action** (`$lib/utils/`) with `preferBreakAt: '.'`
   and `startRatio: 0.7`, NOT CSS `text-overflow: ellipsis`: CSS truncates from the right and loses the file extension.
-  The action uses pretext for pixel-accurate measurement plus a built-in ResizeObserver.
-- **Counts, size decimals, and triad separators all follow the active locale via `$lib/intl`** (`formatNumber`,
-  `formatSizeTriads`); never hardcode a locale or separator. Keep an ASCII space between size value and unit, since
+- **Counts, size decimals, and triad separators follow the active locale via `$lib/intl`** (`formatNumber`,
+  `formatSizeTriads`); never hardcode a locale or separator. Keep an ASCII space between size value and unit:
   `colorizeSizeString` parses the unit by the last ASCII space. See [`$lib/intl/CLAUDE.md`](../../intl/CLAUDE.md).
 - **`SortableHeader`'s shortcut shows only when `isFocused` is true** (the `sort.by*` commands act on the focused pane).
   Hovering the unfocused pane's header shows the command name only; clicking still sorts that pane. Pinned by
   `SortableHeader.svelte.test.ts`.
-- **`FileIcon` fallback is the bundled macOS default icon, not an emoji.** Shown only on cache miss (cold launch, or
-  after a theme/accent change clears the cache); it swaps to the live accent-tinted OS icon once `get_icons`
-  repopulates, re-rendering via `$iconCacheVersion`.
+- **`FileIcon` fallback is the bundled macOS default icon, not an emoji.** Shown only on cache miss; it swaps to the
+  live accent-tinted OS icon once `get_icons` repopulates (`$iconCacheVersion`).
 
 ## Status-bar hints (`SelectionInfo`)
 
 - **Phone-storage hint (MTP)** tooltips the free-space readout on `caps.kind === 'mtp'` volumes (`mtpSpaceHint` from
-  `FilePane`), explaining the folders-vs-used-space gap. See [DETAILS.md](DETAILS.md).
+  `FilePane`), explaining the folders-vs-used-space gap.
 - **Stale (hourglass) indicator** appears when directory sizes may be incomplete: in `selection-summary` mode while
   `isVolumeScanning(volumeId)` and dirs are selected, and in `file-info` mode via shared `getDirSizeDisplayState(...)`
   (one decider with FullList, so Brief matches Full's size column). Both key on the pane's `volumeId`. Only directory
   sizes get the hint; file sizes are always accurate.
+- **Image-search readout** (`$lib/media-index/FolderIndexStatus.svelte`): what image search covers in this folder. LOCAL
+  panes only (the lists match OS paths); voices COVERAGE, never completion. [DETAILS.md](DETAILS.md).
 - **Symlink hint (info glyph)** appears next to a directory's size in `file-info` mode when
   `entry.recursiveHasSymlinks === true`. Explains why a folder of symlinks may show `0 bytes`: Cmdr deliberately matches
   `du`/Finder by not double-counting symlinked content. The flag is computed by indexing (`recursive_has_symlinks` on

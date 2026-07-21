@@ -83,17 +83,27 @@ Exceptions that do NOT use `"execute-command"`:
     (yellow) reads on light/dark menus; colors mirror the light-mode `--color-tag-*` tokens. The 14
     bitmaps (7 colors × {normal, checked}) are cached once in a `LazyLock`. macOS-only — Linux menus
     carry no icons.
-- **Image-search folder exclusion** (media_index privacy veto): a folder's context menu carries ONE
-  of "Don't index images in this folder" / "Index images here again", shown only while image indexing
-  is enabled and keyed on whether the folder is already excluded (`build_context_menu` takes
-  `image_index_enabled` + `image_index_excluded`, computed in `show_file_context_menu` from
-  `media_index::gate::is_enabled` + `network::config::is_excluded`). IDs
-  `media_index_{exclude,include}_folder`. Like tag colors, it acts on the RIGHT-CLICKED folder
-  (`MenuState.context.path`), so it's special-cased in `handle_menu_event` (NOT in
-  `menu_id_to_command`) — but instead of doing the work in Rust it emits a `MediaIndexFolderExclusion`
-  event to the FE, which persists `mediaIndex.excludedFolders` and calls `media_index_set_excluded_folder`
-  (the native menu can't write the FE settings store). Full backend flow: `media_index/DETAILS.md`
-  § Per-folder photo-search exclude.
+- **Image-search group** (media_index): a folder's context menu carries TWO items, shown only while
+  image indexing is enabled: chosen-folder membership ("Add to indexed folders" / "Remove from indexed
+  folders", `media_index_{add,remove}_folder`) and the privacy veto ("Don't index images in this
+  folder" / "Index images here again", `media_index_{exclude,include}_folder`). `show_file_context_menu`
+  reads the four live facts into an `ImageIndexMenuState` (`gate::is_enabled` plus
+  `network::config::{is_excluded, is_chosen_folder, is_covered_by_parent_folder}`) and the pure
+  `media_index_items::image_index_menu_items` turns them into labels + enabled flags.
+
+  **Decision: an add that would do nothing is DISABLED, never silently accepted.** The veto beats
+  membership backend-side, and an ancestor entry already covers a child, so in both cases the add item
+  shows disabled with the reason in its label; the un-exclude item sits right below it as the way out.
+  Removal stays enabled even under the veto (it takes a real entry off the list). Why: a click that
+  persists a list entry which indexes nothing is the kind of inferred model wave 1 removed.
+
+  Like tag colors, both items act on the RIGHT-CLICKED folder (`MenuState.context.path`), so they're
+  special-cased in `handle_menu_event` (NOT in `menu_id_to_command`) — but instead of doing the work in
+  Rust each emits an event (`MediaIndexFolderExclusion` / `MediaIndexFolderChoice`) to the FE, which
+  persists `mediaIndex.excludedFolders` / `mediaIndex.alwaysIndexFolders` through the SAME helpers the
+  Settings list uses (`excluded-folders.ts` / `always-index-folders.ts`), so menu and Settings can't
+  drift (the native menu can't write the FE settings store). Full backend flow:
+  `media_index/DETAILS.md` § Per-folder photo-search exclude.
 
 ### MenuState
 

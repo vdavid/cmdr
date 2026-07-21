@@ -3116,6 +3116,7 @@ export const events = {
   mcpSettingsClose: makeEvent<McpSettingsClose>('mcp-settings-close'),
   mediaEnrichProgress: makeEvent<MediaEnrichProgressEvent>('media-enrich-progress'),
   mediaEnrichTerminal: makeEvent<MediaEnrichTerminalEvent>('media-enrich-terminal'),
+  mediaIndexFolderChoice: makeEvent<MediaIndexFolderChoice>('media-index-folder-choice'),
   mediaIndexFolderExclusion: makeEvent<MediaIndexFolderExclusion>('media-index-folder-exclusion'),
   menuSort: makeEvent<MenuSort>('menu-sort'),
   mtpDeviceConnected: makeEvent<MtpDeviceConnected>('mtp-device-connected'),
@@ -5251,6 +5252,19 @@ export type MediaEnrichTerminalReason =
   | { kind: 'cancelled' }
   // The pass bubbled an error (e.g. a writer-send failure). The row must still clear.
   | { kind: 'failed' }
+
+/**
+ *  `media-index-folder-choice`: a folder's "Add to indexed folders" / "Remove from
+ *  indexed folders" context-menu item was clicked. Carries the right-clicked folder's
+ *  absolute path and the target membership. The FE listens and drives its persist +
+ *  live-apply path (`mediaIndex.alwaysIndexFolders` + `media_index_set_always_index_folder`,
+ *  which kicks a pass on an add), so the choice survives a restart (the native menu can't
+ *  write the FE settings store). Emitted `emit_to("main")`.
+ */
+export type MediaIndexFolderChoice = {
+  folder: string
+  chosen: boolean
+}
 
 /**
  *  `media-index-folder-exclusion`: a folder's "Don't index images in this folder" /

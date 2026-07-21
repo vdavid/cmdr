@@ -74,6 +74,33 @@ Other layout: filename truncation uses `useShortenMiddle` with `preferBreakAt: '
 `measureDateColumnWidth(formatDateTime)` to stay in sync with FullList; `formatDateTime` comes from
 `reactive-settings.svelte`.
 
+## Image-search readout (`FolderIndexStatus`)
+
+What image search covers in the pane's current folder, rendered by `SelectionInfo` in all four display modes. The
+component lives with its feature (`$lib/media-index/FolderIndexStatus.svelte`); the decision is the pure
+`folder-index-state.ts::deriveFolderIndexState`.
+
+- **Placement**: it's the last child of `.selection-info`, but CSS `order` puts it between the mode-specific content
+  (order 0) and the free-space text (order 2). That's what keeps one instance serving four modes whose markup differs;
+  rendering it inside each mode branch would be four copies to keep in step.
+- **States and where each comes from**: `excluded` (an `mediaIndex.excludedFolders` entry at or above the folder — the
+  hard veto, checked first because the backend gives it precedence too), `indexing` (covered AND this volume has live
+  non-paused `media-enrich-progress` activity), `indexed` (a `mediaIndex.alwaysIndexFolders` entry at or above the
+  folder), `automatic` (`ByImportance` scope, no explicit entry), `notIndexed` (`ChosenFolders` scope, no entry), and
+  `off` (master toggle off, or no OS path), which renders nothing.
+- **Decision: coverage, never completion.** There's no cheap per-folder count (`media_index/DETAILS.md` § What's left
+  for later), so nothing here claims images ARE indexed, only that the settings cover them; the tooltips carry the
+  caveat, and the progress percentage in the `indexing` tooltip is explicitly voiced as the whole drive's.
+- **Decision: `automatic` is a state, not a guess.** In the `ByImportance` scope a folder's importance score is a
+  backend fact with no FE query, so the readout says the choice is automatic rather than picking yes or no. Inventing a
+  per-folder importance IPC just to color this label wasn't worth a new query on the pane's hot path.
+- **Decision: local panes only.** `FilePane` passes an empty `currentPath` unless `caps.kind === 'local'`. The folder
+  lists match absolute OS paths, and an archive / MTP / virtual pane's path isn't one, so it would miss every list and
+  read as "not indexed". A mounted SMB share loses the readout too (the `smb` kind also covers direct-SMB volumes, whose
+  paths aren't OS paths) — an honest omission, and closable when the two are distinguishable.
+- **Informational, not actionable**: no button, matching the deliberate call not to make the bulk-rename bail
+  actionable. The add/remove and exclude actions live in the folder's right-click menu.
+
 ## Phone-storage hint (MTP)
 
 On a phone reached over USB (MTP), the disk-space readout reports the whole device userdata partition, but Cmdr can only

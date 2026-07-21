@@ -20,6 +20,7 @@ import {
   onViewModeChanged,
   onMenuSort,
   onMediaIndexFolderExclusion,
+  onMediaIndexFolderChoice,
   onExecuteCommand,
   onOpenSettings,
   onFocusAbout,
@@ -33,6 +34,7 @@ import {
 } from '$lib/tauri-commands'
 import { markDispatchSource } from './dispatch-dedup'
 import { setFolderExcluded } from '$lib/media-index/excluded-folders'
+import { setFolderChosen } from '$lib/media-index/always-index-folders'
 import { isCommandId, type CommandId, type CommandDispatchArgs } from '$lib/commands'
 import type { ViewMode } from '$lib/app-status-store'
 import { openSettingsWindow } from '$lib/settings/settings-window'
@@ -286,6 +288,16 @@ export async function setupMenuListeners(ctx: ListenerSetupContext): Promise<voi
   unlistenFns.push(
     await onMediaIndexFolderExclusion((payload) => {
       void setFolderExcluded(payload.folder, payload.excluded).catch(() => {})
+    }),
+  )
+
+  // Folder "Add to indexed folders" / "Remove from indexed folders" click. Same shape as
+  // the exclusion above, through the ONE chosen-folder path (`setFolderChosen`), so the
+  // menu and the Settings list write the same setting and stay in agreement. Adding kicks
+  // an indexing pass backend-side. The helper rolls back + logs on failure.
+  unlistenFns.push(
+    await onMediaIndexFolderChoice((payload) => {
+      void setFolderChosen(payload.folder, payload.chosen).catch(() => {})
     }),
   )
 }

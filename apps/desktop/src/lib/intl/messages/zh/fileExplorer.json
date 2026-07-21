@@ -908,6 +908,50 @@
   "@fileExplorer.dateTooltip.lastModified": {
     "sourceHash": "0fe1058"
   },
+  "fileExplorer.imageIndex.indexed": "图片已索引",
+  "@fileExplorer.imageIndex.indexed": {
+    "sourceHash": "f4b2ca5"
+  },
+  "fileExplorer.imageIndex.indexedTooltip": "这个文件夹在你要索引的文件夹列表里。新增的图片会在下一轮索引时加进来。",
+  "@fileExplorer.imageIndex.indexedTooltip": {
+    "sourceHash": "3c9dd0c"
+  },
+  "fileExplorer.imageIndex.indexing": "正在索引图片",
+  "@fileExplorer.imageIndex.indexing": {
+    "sourceHash": "41f1298"
+  },
+  "fileExplorer.imageIndex.indexingTooltip": "Cmdr 正在索引这个驱动器上的图片，已完成 {percent}%。",
+  "@fileExplorer.imageIndex.indexingTooltip": {
+    "sourceHash": "ee54884"
+  },
+  "fileExplorer.imageIndex.indexingTooltipNoProgress": "Cmdr 正在索引这个驱动器上的图片。",
+  "@fileExplorer.imageIndex.indexingTooltipNoProgress": {
+    "sourceHash": "d7b5450"
+  },
+  "fileExplorer.imageIndex.notIndexed": "图片未索引",
+  "@fileExplorer.imageIndex.notIndexed": {
+    "sourceHash": "b089c28"
+  },
+  "fileExplorer.imageIndex.notIndexedTooltip": "图片搜索只涵盖你选择的文件夹，这个不在其中。",
+  "@fileExplorer.imageIndex.notIndexedTooltip": {
+    "sourceHash": "922fbec"
+  },
+  "fileExplorer.imageIndex.excluded": "图片已排除",
+  "@fileExplorer.imageIndex.excluded": {
+    "sourceHash": "18a83cc"
+  },
+  "fileExplorer.imageIndex.excludedTooltip": "你把这个文件夹排除在图片搜索之外了，所以这里不会索引任何内容。",
+  "@fileExplorer.imageIndex.excludedTooltip": {
+    "sourceHash": "1d0bb6d"
+  },
+  "fileExplorer.imageIndex.automatic": "图片自动索引",
+  "@fileExplorer.imageIndex.automatic": {
+    "sourceHash": "645c593"
+  },
+  "fileExplorer.imageIndex.automaticTooltip": "Cmdr 会根据你使用文件夹的频率来决定索引哪些，所以这个文件夹可能包含在内，也可能不在。",
+  "@fileExplorer.imageIndex.automaticTooltip": {
+    "sourceHash": "8fd2bde"
+  },
   "fileExplorer.selectionInfo.nothingHere": "这里什么都没有。",
   "@fileExplorer.selectionInfo.nothingHere": {
     "sourceHash": "140a431"
