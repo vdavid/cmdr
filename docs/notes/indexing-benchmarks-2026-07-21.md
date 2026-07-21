@@ -173,8 +173,20 @@ All sandboxed app containers, all within 7 ms of a round five seconds:
 5001.3  Library/Containers/com.apple.lighthouse.BiomeSELFIngestor/Data/Library/Preferences
 ```
 
-Eight reads landing that tightly on a round number is a timeout being hit, not disk latency — most likely a sandbox or
-permission evaluation for another app's container. 40 s of the walk, and its own bug. Nobody has looked at it yet.
+Eight reads landing that tightly on a round number looks like a timeout rather than disk latency, and it cost 40 s of
+the walk. **But two obvious explanations are already refuted, so treat this as unexplained rather than diagnosed:**
+
+- NOT a permission/TCC stall. The run's own log records `FDA probe: read OK on …/Safari/History.db → FDA`, so the build
+  had Full Disk Access, and only four `Operation not permitted` lines appear in the whole run (none of them these
+  paths).
+- NOT inherent to the directories. Timed from a shell the next day, the same four paths read in **74-190 ms** (`ls -f`,
+  warm).
+- NOT a Cmdr constant: there is no 5-second timeout anywhere in `indexing/` or `file_system/` (`busy_timeout = 5000` is
+  SQLite's, on a different path entirely).
+
+What remains: something transient during that window. `spotlightknowledged.updater` was at 84% CPU and `fileproviderd`
+at 33% while the scan ran, so contention on those specific containers is plausible but unproven. Before chasing this,
+reproduce it: if a later run shows no 5 s cluster, it was environmental and there is nothing to fix.
 
 ## Reconcile, run 2 (load 12-24, not comparable to the 476.9 s idle figure)
 
