@@ -110,3 +110,74 @@ entry), and indexing an SMB volume requires a direct smb2 connection, which need
 Worth investigating separately: Cmdr's Keychain lookup does not find the entry Finder created for the same server,
 because Finder stores an internet-password item keyed by server + protocol rather than the `smb://…` account strings
 Cmdr searches for. Whether a guest direct connection is possible at all is a separate question.
+
+# Run 2, same day, after the three fixes, on a BUSY machine
+
+Re-run at commit `b3ca98045` (after the ledger-debt fix, the latency-based cost budget, and the progress-based walker
+watchdog), deliberately under real working load (load average 12-24) because that is the representative case. Wall-clock
+here is NOT comparable to the idle numbers above; the counts are.
+
+## The walker fix holds, and recovered more than predicted
+
+| run                   | conditions | entries       | dirs        | dirs abandoned          |
+| --------------------- | ---------- | ------------- | ----------- | ----------------------- |
+| run 1, before the fix | idle       | 6,001,637     | 625,371     | **5** (656,476 entries) |
+| run 2, after the fix  | load ~11   | 6,989,382     | 656,543     | **0**                   |
+| run 2b, after the fix | load 24    | **7,273,543** | **678,319** | **0**                   |
+
+Zero abandoned directories and zero timeouts under load 24, which is stronger evidence than the idle run: contention is
+precisely what used to push those five reads past 15 s. The recovery (+987,745 entries over the pre-fix run) EXCEEDS the
+656,476 the five named directories held, because directories BELOW an abandoned one were never queued and so never
+appeared in any log. The true loss was always larger than the log could show.
+
+## The cost budget is still size-biased, and this is the third iteration on it
+
+Under load the budget fired FIVE times (twice when idle). Slow-read counts against subtree size:
+
+| subtree                                   |    dirs | slow reads | fraction  |
+| ----------------------------------------- | ------: | ---------: | --------- |
+| `.cache/github-copilot/project-context`   |      62 |         14 | **22.6%** |
+| `CloudStorage/MacDroid-googlePixel9ProXL` |      91 |         18 | **19.8%** |
+| `Library/pnpm/store`                      |   6,669 |         62 | 0.93%     |
+| `projects-git/vdavid/cmdr`                | 105,441 |        101 | **0.10%** |
+| `CommandLineTools/SDKs/MacOSX13.3.sdk`    |   6,828 |          4 | **0.06%** |
+
+Two orders of magnitude of separation. Genuinely pathological subtrees run ~20% slow reads; healthy ones are at or below
+1% and get refused anyway.
+
+**Diagnosis: the budget is an absolute total (10 s) while the OPPORTUNITY to accumulate scales with subtree size.** A
+105,441-directory repo reaches 10 s of slow time eventually however healthy it is. The SDK is the same failure from the
+other end: four unlucky reads condemning 6,828 directories, having barely cleared the 3-read sample floor.
+
+Load is NOT the main cause, contrary to the first reading of this data: ordinary reads averaged 1.04 ms against 0.56 ms
+idle, only 1.86x slower.
+
+**Fix direction: make the rule a FRACTION, not a total** — refuse when a high proportion of a subtree's reads are
+pathological. That is size-invariant by construction (the phone trips at 20% at any size; the repo at 0.1% never does).
+Keep the sample floor so a 3-directory subtree cannot hit 33% on one bad read, and add a minimum wasted-time floor so a
+subtree that has only cost 200 ms is never refused. Change the SHAPE of the rule, not the constant: this is the third
+tuning attempt.
+
+## Separate finding: eight reads take exactly 5.000 s
+
+All sandboxed app containers, all within 7 ms of a round five seconds:
+
+```
+5007.2  Library/Containers/com.apple.AMSUIPaymentViewService/Data
+5006.6  Library/Containers/com.apple.Sound-Settings.SoundIntents/Data
+5004.4  Library/Group Containers/.SiriTodayViewExtension/Library
+5002.8  Library/Containers/com.google.drivefs.finderhelper.findersync/Data
+5002.3  Library/Containers/com.apple.Music.MusicStorageExtension/Data/Library
+5001.6  Library/Group Containers/G7HH3F8CAK.com.getdropbox.dropbox.sync/ssa_events
+5001.4  Library/Containers/com.apple.sharing.ShareSheetUI/Data/Library/Application Scripts
+5001.3  Library/Containers/com.apple.lighthouse.BiomeSELFIngestor/Data/Library/Preferences
+```
+
+Eight reads landing that tightly on a round number is a timeout being hit, not disk latency — most likely a sandbox or
+permission evaluation for another app's container. 40 s of the walk, and its own bug. Nobody has looked at it yet.
+
+## Reconcile, run 2 (load 12-24, not comparable to the 476.9 s idle figure)
+
+601,357 reads, 817.2 s wall, 639.3 s in reads, 735.9 dirs/s, **zero timeouts**. Ordinary reads 1.04 ms mean, synthetic
+2.55 ms (down from 4.84 ms). Peak `phys_footprint` 1.39 GB during the fresh scan of 7.27M entries, versus 903 MB for
+6.0M — worth watching, but it tracks the extra million entries rather than growing on its own.
