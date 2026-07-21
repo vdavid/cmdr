@@ -20,11 +20,19 @@ fn scripted_reader(marker: &'static str, slow: Duration) -> GuardedReader {
     )
 }
 
-/// Anchors one level below the walk root, 150 ms each: `pricey` (300 ms per read)
-/// blows it on its own first read, while `cheap`'s three tiny tempdir reads stay
-/// orders of magnitude below it even on a loaded machine.
+/// Anchors one level below the walk root. A read counts as slow past 50 ms (plus
+/// 1 ms per entry), and one slow read is enough to condemn a subtree that spends
+/// more than 150 ms in slow reads: `pricey` (300 ms for a one-entry directory)
+/// blows it on its own first read, while `cheap`'s tiny tempdir reads stay orders
+/// of magnitude below the slow line even on a loaded machine.
 fn tiny_budget() -> CostBudget {
-    CostBudget::new(1, Duration::from_millis(150))
+    CostBudget::new(
+        1,
+        Duration::from_millis(50),
+        Duration::from_millis(1),
+        Duration::from_millis(150),
+        1,
+    )
 }
 
 /// Build `cheap/a/b/leaf.txt` + `pricey/deep/deeper/keep.txt` and index it all at

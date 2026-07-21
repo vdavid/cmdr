@@ -22,12 +22,14 @@
 //!
 //! ## Two limits, two different questions
 //!
-//! The reader's timeout bounds ONE read. [`cost_budget`] bounds a SUBTREE's total
-//! read time, which is the limit that matters in practice: the measured 21-minute
-//! walk hit one timeout while spending minutes inside directories that answered
-//! successfully, just slowly. Over budget, the walk stops DESCENDING into that
-//! subtree — it never treats it as listed-and-empty, and never touches its epoch.
-//! See `indexing/DETAILS.md` § "The reconcile cost budget".
+//! The reader's timeout bounds ONE read. [`cost_budget`] bounds how much time a
+//! SUBTREE may lose to reads that are slow for the work they did, which is the
+//! limit that matters in practice: the measured 21-minute walk hit one timeout
+//! while spending minutes inside directories that answered successfully, just
+//! slowly. It deliberately does NOT bound total read time, because a big healthy
+//! tree spends that too. Over budget, the walk stops DESCENDING into that subtree
+//! — it never treats it as listed-and-empty, and never touches its epoch. See
+//! `indexing/DETAILS.md` § "The reconcile cost budget".
 //!
 //! ## Integration shape
 //!
@@ -50,7 +52,7 @@ use std::time::{Duration, Instant};
 mod cost_budget;
 mod latency_probe;
 
-use cost_budget::{Anchorage, BudgetVerdict, CostBudget};
+use cost_budget::{Anchorage, BudgetVerdict, CostBudget, ReadCost};
 use latency_probe::LatencyProbe;
 
 use super::DEBUG_STATS;
@@ -202,10 +204,10 @@ impl Drop for GuardedReader {
     }
 }
 
-/// The walk's two injectable pieces: how a directory gets read, and how much read
-/// time one subtree may spend before the walk stops descending into it.
-/// Production builds both from constants; the walk tests substitute a scripted
-/// reader and a millisecond-scale budget.
+/// The walk's two injectable pieces: how a directory gets read, and how much
+/// pathologically slow reading one subtree may pay for before the walk stops
+/// descending into it. Production builds both from constants; the walk tests
+/// substitute a scripted reader and a millisecond-scale budget.
 struct WalkTools {
     reader: GuardedReader,
     budget: CostBudget,
@@ -438,8 +440,8 @@ fn run_local_reconcile(
             return Ok(summary(total_entries, total_dirs, total_physical_bytes, start, true));
         }
 
-        // Cost backstop: this directory's subtree has already spent more read time
-        // than its budget, so don't descend.
+        // Cost backstop: this directory's subtree has already lost more time to
+        // pathologically slow reads than its budget allows, so don't descend.
         //
         // ❌ Skipping is "we never listed it", NEVER "we listed it and it was
         // empty". Don't be tempted to run the diff with an empty listing here:
@@ -457,14 +459,22 @@ fn run_local_reconcile(
             continue;
         }
 
-        let (fs_children, read_cost) = reader.read(&dir_path);
+        let (fs_children, read_duration) = reader.read(&dir_path);
+        // The entry count is half the cost signal: it's what tells a slow
+        // filesystem apart from a big directory. An unlistable read returned
+        // nothing, and is measured against the fixed allowance alone.
+        let read_cost = ReadCost {
+            duration: read_duration,
+            entries: fs_children.as_ref().map_or(0, Vec::len),
+        };
         if let Some(tripped) = cost_budget.charge(&anchorage, read_cost) {
             budget_subtrees += 1;
             DEBUG_STATS.record_reconcile_budget_trip();
             log::warn!(
-                "local reconcile: subtree {} spent {:.1}s of read time (budget exceeded) — not descending further into it, its index rows stay as they are",
+                "local reconcile: subtree {} spent {:.1}s across {} pathologically slow reads (budget exceeded) — not descending further into it, its index rows stay as they are",
                 tripped.path.display(),
-                tripped.spent.as_secs_f64(),
+                tripped.slow_spent.as_secs_f64(),
+                tripped.slow_reads,
             );
         }
         let fs_children = match fs_children {

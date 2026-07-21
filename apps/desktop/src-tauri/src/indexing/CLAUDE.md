@@ -62,10 +62,10 @@ Coverage epochs and verification cost:
 
 - **Never write `listed_epoch = 0` for a directory we DID list but chose to skip.** `0` absorbs up the whole chain: one
   skipped dir renders `~` incomplete. Post-replay verification declines oversized dirs, epoch untouched.
-- **The reconcile walk stops descending into a subtree that spends its read-time budget** (30 s per anchor, anchors at
-  depth 5; `local_reconcile/cost_budget.rs`). A skip means "never listed": ❌ never hand the diff an empty listing (it
-  reaps the subtree and strips its bytes from every ancestor) and never stamp an epoch. Cost is the signal, not
-  failures: the measured 21-minute walk had ONE timeout.
+- **The reconcile walk stops descending into a subtree that loses 10 s to SLOW reads** (≥3 reads over a 20 ms +
+  100 µs/entry allowance; anchors depth 5; `local_reconcile/cost_budget.rs`). ❌ Not cumulative time: it refused a big
+  healthy repo. A skip means "never listed": ❌ never hand the diff an empty listing (it reaps the subtree, stripping
+  its bytes from every ancestor) and never stamp an epoch.
 - **`verify_affected_dirs` guards BOTH phases**: a `LIMIT`-probe before the DB snapshot, and a `read_dir` ITERATION cap
   (not an upsert cap: known children are skipped first).
 

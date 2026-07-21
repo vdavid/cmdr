@@ -4504,7 +4504,7 @@ export type IndexDebugStatusResponse = {
   verifyTruncatedDirs: number
   /**
    *  Subtrees the reconcile walk stopped descending into because they spent
-   *  their read-time budget (`local_reconcile/cost_budget.rs`).
+   *  their slow-read budget (`local_reconcile/cost_budget.rs`).
    */
   reconcileBudgetSubtrees: number
   // Directories the reconcile walk left undescended inside those subtrees.

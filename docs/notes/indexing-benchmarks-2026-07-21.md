@@ -45,6 +45,10 @@ Latency histogram: 552,911 reads under 1 ms, 12 in the 1-5 s band, 2 in 5-15 s, 
 
 10,177 directories were left undescended across the two.
 
+**Acted on.** The budget now scores read LATENCY against the entry count a read returned, never cumulative time, and
+charges only the slow reads; see `apps/desktop/src-tauri/src/indexing/DETAILS.md` § "The reconcile cost budget". The
+analysis that led there:
+
 **The budget's metric is wrong.** Cumulative read time cannot distinguish "expensive per read" from "lots of cheap
 reads", so it penalises whichever subtree is largest. The measured pathology was always "1.7% of directories consume 71%
 of read time", which is a statement about PER-READ LATENCY. A mean- latency (or cost-per-entry) threshold would refuse
