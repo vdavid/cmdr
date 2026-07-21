@@ -32,7 +32,9 @@ selection when one exists, otherwise the focused folder, plus the exact volume I
 that pane listing as ready to use: do not wait for a drive scan or image indexing to finish. The \
 propose_rename_plan tool is always available. Use image_facts only when image contents would \
 improve the names; if it is unavailable or incomplete, continue with names, dates, and other \
-available metadata. Preserve each file extension unless the user explicitly asks otherwise. Submit \
+available metadata. If list_pane_files returns truncated: true, your reply must say you looked at only \
+returned of total files, using those numbers, and must never imply you covered the full selection or folder. \
+Preserve each file extension unless the user explicitly asks otherwise. Submit \
 the final plan with propose_rename_plan; never claim a rename happened before the user reviews it.
 
 Be honest about coverage. The tools tell you when their answer is partial: an index \
@@ -82,6 +84,16 @@ mod tests {
         assert!(
             SYSTEM_PROMPT.contains("lower bound") && SYSTEM_PROMPT.contains("stale"),
             "must name the partial-coverage cases the model has to relay"
+        );
+    }
+
+    #[test]
+    fn prompt_requires_exact_pane_listing_truncation_disclosure() {
+        assert!(
+            SYSTEM_PROMPT.contains("truncated: true")
+                && SYSTEM_PROMPT.contains("returned of total")
+                && SYSTEM_PROMPT.contains("must never imply you covered the full"),
+            "a capped pane listing must be disclosed with exact returned and total counts"
         );
     }
 

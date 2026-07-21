@@ -226,6 +226,7 @@ pub struct BulkRenamePreflightRow {
     pub row_id: String,
     pub status: BulkRenameRowStatus,
     pub reason: Option<BulkRenameBlockReason>,
+    pub warnings: Vec<BulkRenameWarning>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
@@ -245,6 +246,13 @@ pub enum BulkRenameBlockReason {
     SourceChanged,
     TargetExists,
     VolumeUnavailable,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum BulkRenameWarning {
+    ExtensionChanged,
+    Cycle,
 }
 
 pub struct RenameDispatchOutcome {
@@ -359,7 +367,7 @@ fn preflight_local(proposal: &RenameProposal, allowed_row_ids: &[String]) -> Pre
     let allowed_sources: HashSet<&str> = allowed.iter().map(|row| row.source_path.as_str()).collect();
     let mut fingerprints = Vec::new();
 
-    for row in allowed {
+    for row in &allowed {
         let Some(status) = rows.get_mut(&row.row_id) else {
             continue;
         };
@@ -386,6 +394,7 @@ fn preflight_local(proposal: &RenameProposal, allowed_row_ids: &[String]) -> Pre
         }
         fingerprints.push(local_fingerprint(&row.row_id, &source_meta));
     }
+    mark_cycle_warnings(&allowed, &mut rows);
     finish_preflight(rows, fingerprints)
 }
 
@@ -407,7 +416,7 @@ async fn preflight_remote(proposal: &RenameProposal, allowed_row_ids: &[String])
         return finish_preflight(rows, fingerprints);
     };
 
-    for row in allowed {
+    for row in &allowed {
         let Some(status) = rows.get_mut(&row.row_id) else {
             continue;
         };
@@ -436,6 +445,7 @@ async fn preflight_remote(proposal: &RenameProposal, allowed_row_ids: &[String])
             modified: source_meta.modified_at.map(|modified| modified as i64),
         });
     }
+    mark_cycle_warnings(&allowed, &mut rows);
     finish_preflight(rows, fingerprints)
 }
 
@@ -452,10 +462,43 @@ fn initial_rows(proposal: &RenameProposal, allowed_row_ids: &[String]) -> HashMa
                     BulkRenameRowStatus::Blocked
                 },
                 reason: (!known.contains(row_id.as_str())).then_some(BulkRenameBlockReason::UnknownRow),
+                warnings: proposal
+                    .rows
+                    .iter()
+                    .find(|row| row.row_id == *row_id)
+                    .map_or_else(Vec::new, |row| rename_warnings(&row.source_path, &row.destination_name)),
             };
             (row_id.clone(), row)
         })
         .collect()
+}
+
+fn rename_warnings(source_path: &str, destination_name: &str) -> Vec<BulkRenameWarning> {
+    let source_name = Path::new(source_path)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or(source_path);
+    if extensions_match(source_name, destination_name) {
+        Vec::new()
+    } else {
+        vec![BulkRenameWarning::ExtensionChanged]
+    }
+}
+
+fn extensions_match(source_name: &str, destination_name: &str) -> bool {
+    match (
+        Path::new(source_name).extension(),
+        Path::new(destination_name).extension(),
+    ) {
+        (Some(source), Some(destination)) => {
+            let (Some(source), Some(destination)) = (source.to_str(), destination.to_str()) else {
+                return source == destination;
+            };
+            source.eq_ignore_ascii_case(destination)
+        }
+        (None, None) => true,
+        (Some(_), None) | (None, Some(_)) => false,
+    }
 }
 
 fn allowed_rows<'a>(
@@ -497,6 +540,56 @@ fn mark_duplicate_destinations(rows: &[&RenameProposalRow], statuses: &mut HashM
             if let Some(status) = statuses.get_mut(*row_id) {
                 block(status, BulkRenameBlockReason::DuplicateDestination);
             }
+        }
+    }
+}
+
+/// Marks the rows left after repeatedly peeling free destinations. Preflight
+/// has already rejected duplicate destinations, so every remaining component
+/// is a closed rename cycle. Case-only self-edges are staging requirements, not
+/// multi-file cycles, and get no cycle warning.
+fn mark_cycle_warnings(rows: &[&RenameProposalRow], statuses: &mut HashMap<String, BulkRenamePreflightRow>) {
+    let mut remaining: HashSet<&str> = rows
+        .iter()
+        .filter(|row| {
+            statuses
+                .get(&row.row_id)
+                .is_some_and(|status| status.status == BulkRenameRowStatus::Ready)
+        })
+        .map(|row| row.row_id.as_str())
+        .collect();
+    loop {
+        let source_keys: HashSet<String> = rows
+            .iter()
+            .filter(|row| remaining.contains(row.row_id.as_str()))
+            .map(|row| crate::indexing::store::normalize_for_comparison(&row.source_path))
+            .collect();
+        let free: Vec<&str> = rows
+            .iter()
+            .filter(|row| remaining.contains(row.row_id.as_str()))
+            .filter(|row| {
+                let source = crate::indexing::store::normalize_for_comparison(&row.source_path);
+                let destination = Path::new(&row.source_path)
+                    .parent()
+                    .unwrap_or(Path::new(""))
+                    .join(&row.destination_name);
+                let destination = crate::indexing::store::normalize_for_comparison(&destination.to_string_lossy());
+                source == destination || !source_keys.contains(&destination)
+            })
+            .map(|row| row.row_id.as_str())
+            .collect();
+        if free.is_empty() {
+            break;
+        }
+        for row_id in free {
+            remaining.remove(row_id);
+        }
+    }
+    for row_id in remaining {
+        if let Some(status) = statuses.get_mut(row_id)
+            && !status.warnings.contains(&BulkRenameWarning::Cycle)
+        {
+            status.warnings.push(BulkRenameWarning::Cycle);
         }
     }
 }
@@ -621,12 +714,15 @@ fn build_proposal<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Result<Rena
                 "Destination names must be unique on this volume.",
             ));
         }
-        let entry = scope
-            .get(rename.source_path.as_str())
-            .ok_or_else(|| ToolError::invalid_params("Every source must be in the focused pane's effective scope."))?;
-        if entry.is_directory {
+        if let Some(entry) = scope.get(rename.source_path.as_str()) {
+            if entry.is_directory {
+                return Err(ToolError::invalid_params(
+                    "Rename plans can contain files, not folders.",
+                ));
+            }
+        } else if !missing_local_child(&state, &volume_id, &rename.source_path) {
             return Err(ToolError::invalid_params(
-                "Rename plans can contain files, not folders.",
+                "Every source must be in the focused pane's effective scope.",
             ));
         }
         if crate::file_system::volume::backends::archive::archive_boundary_candidate(Path::new(&rename.source_path))
@@ -647,6 +743,18 @@ fn build_proposal<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Result<Rena
         proposal_id: Uuid::new_v4().to_string(),
         rows,
     })
+}
+
+/// A model may invent a filename that is not in the pane cache. Keep that row
+/// reviewable only when it names a nonexistent direct child of the focused local
+/// folder; preflight then reports `SourceMissing`. Existing out-of-scope files and
+/// every remote path stay rejected at the proposal boundary.
+fn missing_local_child(state: &PaneState, volume_id: &str, source_path: &str) -> bool {
+    if !volume_uses_local_paths(volume_id) || std::fs::symlink_metadata(source_path).is_ok() {
+        return false;
+    }
+    let source = Path::new(source_path);
+    source.parent() == Some(Path::new(&state.path)) && source.file_name().is_some()
 }
 
 fn focused_state(store: &PaneStateStore) -> PaneState {
@@ -687,6 +795,126 @@ fn validate_destination_name(name: &str) -> Result<(), ToolError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cycle_warnings_mark_only_closed_dependency_components() {
+        let proposal = RenameProposal {
+            proposal_id: "proposal".into(),
+            rows: vec![
+                proposal_row("chain-a", "/x/a", "b"),
+                proposal_row("chain-b", "/x/b", "free"),
+                proposal_row("cycle-a", "/x/c", "d"),
+                proposal_row("cycle-b", "/x/d", "c"),
+            ],
+        };
+        let allowed_ids: Vec<String> = proposal.rows.iter().map(|row| row.row_id.clone()).collect();
+        let mut statuses = initial_rows(&proposal, &allowed_ids);
+        let allowed = allowed_rows(&proposal, &allowed_ids, &mut statuses);
+
+        mark_cycle_warnings(&allowed, &mut statuses);
+
+        assert!(statuses["chain-a"].warnings.is_empty());
+        assert!(statuses["chain-b"].warnings.is_empty());
+        assert_eq!(statuses["cycle-a"].warnings, vec![BulkRenameWarning::Cycle]);
+        assert_eq!(statuses["cycle-b"].warnings, vec![BulkRenameWarning::Cycle]);
+    }
+
+    fn proposal_row(row_id: &str, source_path: &str, destination_name: &str) -> RenameProposalRow {
+        RenameProposalRow {
+            row_id: row_id.into(),
+            source_path: source_path.into(),
+            volume_id: "root".into(),
+            destination_name: destination_name.into(),
+        }
+    }
+
+    #[test]
+    fn extension_warnings_cover_changes_additions_removals_and_filename_edges() {
+        for (source, destination) in [
+            ("photo.png", "photo.jpg"),
+            ("photo.png", "photo"),
+            ("README", "README.md"),
+            (".env", ".env.txt"),
+            ("archive.tar.gz", "archive.tar.zip"),
+            ("trailing.", "trailing"),
+        ] {
+            assert_eq!(
+                rename_warnings(source, destination),
+                vec![BulkRenameWarning::ExtensionChanged],
+                "expected an extension warning for {source:?} -> {destination:?}"
+            );
+        }
+
+        for (source, destination) in [
+            ("photo.png", "renamed.png"),
+            ("photo.PNG", "renamed.png"),
+            (".env", ".config"),
+            ("archive.tar.gz", "renamed.gz"),
+        ] {
+            assert!(
+                rename_warnings(source, destination).is_empty(),
+                "did not expect an extension warning for {source:?} -> {destination:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn local_preflight_blocks_a_source_that_no_longer_exists() {
+        let temp = tempfile::tempdir().expect("temp directory");
+        let missing = temp.path().join("missing.png");
+        let proposal = RenameProposal {
+            proposal_id: "proposal".into(),
+            rows: vec![proposal_row(
+                "row",
+                missing.to_str().expect("UTF-8 temp path"),
+                "renamed.png",
+            )],
+        };
+
+        let outcome = preflight_local(&proposal, &["row".into()]);
+
+        assert_eq!(outcome.status, BulkRenamePreflightStatus::Blocked);
+        assert_eq!(
+            outcome.response.rows[0].reason,
+            Some(BulkRenameBlockReason::SourceMissing)
+        );
+        assert!(outcome.fingerprints.is_empty());
+    }
+
+    #[test]
+    fn only_a_missing_direct_child_can_enter_review_without_a_pane_entry() {
+        let temp = tempfile::tempdir().expect("temp directory");
+        let state = PaneState {
+            path: temp.path().to_string_lossy().into_owned(),
+            ..PaneState::default()
+        };
+        let missing = temp.path().join("imagined.png");
+        let nested = temp.path().join("nested").join("imagined.png");
+        let existing = temp.path().join("existing.png");
+        std::fs::write(&existing, b"present").expect("write fixture");
+
+        assert!(missing_local_child(
+            &state,
+            "root",
+            missing.to_str().expect("UTF-8 path")
+        ));
+        assert!(!missing_local_child(
+            &state,
+            "root",
+            nested.to_str().expect("UTF-8 path")
+        ));
+        assert!(!missing_local_child(
+            &state,
+            "root",
+            existing.to_str().expect("UTF-8 path")
+        ));
+        assert!(!missing_local_child(
+            &state,
+            "mtp-device",
+            missing.to_str().expect("UTF-8 path")
+        ));
+    }
+
     #[test]
     fn destination_names_reject_paths_and_dot_entries() {
         for name in ["", ".", "..", "folder/name.png", "folder\\name.png"] {

@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
-const { state, actions } = vi.hoisted(() => ({
+const { state, actions, watcher } = vi.hoisted(() => ({
   state: {
     renameReview: null as {
       proposalId: string
@@ -19,6 +19,7 @@ const { state, actions } = vi.hoisted(() => ({
         destinationName: string
         allowed: boolean
         blockedReason: string | null
+        warnings: Array<'extensionChanged' | 'cycle'>
       }>
       preflighting: boolean
       expired: boolean
@@ -31,6 +32,10 @@ const { state, actions } = vi.hoisted(() => ({
     cancel: vi.fn(),
     denyAll: vi.fn(),
     setAllowed: vi.fn(),
+    listingChanged: vi.fn(),
+  },
+  watcher: {
+    handler: null as ((diff: { changes: unknown[] }) => void) | null,
   },
 }))
 
@@ -51,16 +56,25 @@ vi.mock('./ask-cmdr-trigger.svelte', () => ({
   setRenameRowAllowed: (rowId: string, allowed: boolean) => {
     actions.setAllowed(rowId, allowed)
   },
+  renameReviewListingChanged: (changes: unknown[]) => {
+    actions.listingChanged(changes)
+  },
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
+  onDirectoryDiff: vi.fn((handler: (diff: { changes: unknown[] }) => void) => {
+    watcher.handler = handler
+    return Promise.resolve(vi.fn())
+  }),
 }))
 
 import BulkRenameReviewDialog from './BulkRenameReviewDialog.svelte'
 
-function review(overrides: Partial<NonNullable<typeof state.renameReview>> = {}) {
+function review(
+  overrides: Partial<NonNullable<typeof state.renameReview>> = {},
+): NonNullable<typeof state.renameReview> {
   return {
     proposalId: 'opaque-proposal-id',
     rows: [
@@ -70,6 +84,7 @@ function review(overrides: Partial<NonNullable<typeof state.renameReview>> = {})
         destinationName: 'after-one.png',
         allowed: true,
         blockedReason: null,
+        warnings: ['extensionChanged'],
       },
       {
         rowId: 'opaque-row-two',
@@ -77,6 +92,7 @@ function review(overrides: Partial<NonNullable<typeof state.renameReview>> = {})
         destinationName: 'after-two.png',
         allowed: true,
         blockedReason: null,
+        warnings: ['cycle'],
       },
       {
         rowId: 'opaque-row-blocked',
@@ -84,6 +100,15 @@ function review(overrides: Partial<NonNullable<typeof state.renameReview>> = {})
         destinationName: 'after-three.png',
         allowed: false,
         blockedReason: 'targetExists',
+        warnings: [],
+      },
+      {
+        rowId: 'opaque-row-missing',
+        sourceName: 'imagined.png',
+        destinationName: 'after-four.png',
+        allowed: false,
+        blockedReason: 'sourceMissing',
+        warnings: [],
       },
     ],
     preflighting: false,
@@ -125,6 +150,8 @@ beforeEach(() => {
   actions.cancel.mockReset()
   actions.denyAll.mockReset()
   actions.setAllowed.mockReset()
+  actions.listingChanged.mockReset()
+  watcher.handler = null
   document.body.replaceChildren()
 })
 
@@ -133,10 +160,25 @@ describe('BulkRenameReviewDialog', () => {
     const target = mountDialog()
     await tick()
 
-    expect(requiredElement(target, '[role="status"]').textContent).toContain('2 renames allowed; 1 blocked')
+    expect(requiredElement(target, '[role="status"]').textContent).toContain('2 renames allowed; 2 blocked')
     expect(requiredButton(target, 'button[aria-label="Rename 2 files"]').disabled).toBe(false)
     expect(requiredInput(target, 'input[aria-label="Deny: before-one.png"]').checked).toBe(true)
     expect(requiredInput(target, 'input[aria-label="Allow: occupied.png"]').disabled).toBe(true)
+    const overwriteBadge = requiredElement(target, '[data-warning="overwrite"]')
+    expect(overwriteBadge.textContent).toContain('(overwrite!)')
+    expect(overwriteBadge.getAttribute('aria-label')).toContain("isn't part of this rename plan")
+    const missingBadge = requiredElement(target, '[data-warning="source-missing"]')
+    expect(missingBadge.textContent).toContain("(doesn't exist)")
+    expect(missingBadge.getAttribute('aria-label')).toContain('no longer exists')
+    expect(requiredInput(target, 'input[aria-label="Allow: imagined.png"]').disabled).toBe(true)
+    const extensionBadge = requiredElement(target, '[data-rename-warning="extensionChanged"]')
+    expect(extensionBadge.textContent).toBe('(extension)')
+    expect(extensionBadge.getAttribute('aria-label')).toBe(
+      'Extension changed. The file contents will not be converted.',
+    )
+    const cycleBadge = requiredElement(target, '[data-rename-warning="cycle"]')
+    expect(cycleBadge.textContent).toBe('(cycle)')
+    expect(cycleBadge.getAttribute('aria-label')).toContain('one temporary name')
     await expectNoA11yViolations(target)
   })
 
@@ -159,6 +201,16 @@ describe('BulkRenameReviewDialog', () => {
     expect(actions.denyAll).toHaveBeenCalledOnce()
     expect(actions.apply).toHaveBeenCalledOnce()
     expect(actions.cancel).toHaveBeenCalledOnce()
+  })
+
+  it('forwards pane file-watcher changes for live preflight', async () => {
+    mountDialog()
+    await tick()
+    const changes = [{ type: 'add', entry: { name: 'after-three.png' } }]
+
+    watcher.handler?.({ changes })
+
+    expect(actions.listingChanged).toHaveBeenCalledWith(changes)
   })
 
   it('disables and labels Apply when no valid row remains allowed', async () => {

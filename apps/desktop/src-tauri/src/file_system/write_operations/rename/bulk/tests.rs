@@ -37,6 +37,68 @@ fn assert_no_staging_paths(dir: &Path) {
     assert!(staging_paths.is_empty(), "unexpected staging paths: {staging_paths:?}");
 }
 
+fn planning_row(source: &str, destination: &str) -> BulkRenameRow {
+    BulkRenameRow {
+        row_id: source.to_string(),
+        source: PathBuf::from(source),
+        destination: PathBuf::from(destination),
+        expected_fingerprint: BulkRenameFingerprint::Local {
+            device: 0,
+            inode: 0,
+            size: 0,
+            modified_nanos: None,
+        },
+    }
+}
+
+#[test]
+fn execution_plan_renames_independent_rows_directly_without_temporaries() {
+    let rows = vec![planning_row("a", "renamed-a"), planning_row("b", "renamed-b")];
+
+    assert_eq!(
+        build_execution_plan(&rows, &[true, true]),
+        vec![RenamePlanStep::Direct(0), RenamePlanStep::Direct(1)]
+    );
+}
+
+#[test]
+fn execution_plan_orders_chains_from_the_free_destination_without_temporaries() {
+    let rows = vec![planning_row("a", "b"), planning_row("b", "c"), planning_row("c", "d")];
+
+    assert_eq!(
+        build_execution_plan(&rows, &[true, true, true]),
+        vec![
+            RenamePlanStep::Direct(2),
+            RenamePlanStep::Direct(1),
+            RenamePlanStep::Direct(0),
+        ]
+    );
+}
+
+#[test]
+fn execution_plan_uses_one_temporary_step_per_cycle() {
+    let rows = vec![
+        planning_row("a", "b"),
+        planning_row("b", "c"),
+        planning_row("c", "a"),
+        planning_row("x", "y"),
+        planning_row("y", "x"),
+    ];
+
+    assert_eq!(
+        build_execution_plan(&rows, &[true, true, true, true, true]),
+        vec![RenamePlanStep::Cycle(vec![0, 1, 2]), RenamePlanStep::Cycle(vec![3, 4]),]
+    );
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn execution_plan_keeps_a_temporary_step_for_case_only_renames() {
+    let rows = vec![planning_row("screenshot.png", "Screenshot.png")];
+
+    assert_eq!(build_execution_plan(&rows, &[true]), vec![RenamePlanStep::CaseOnly(0)]);
+}
+
 #[test]
 fn bulk_local_rename_preserves_chains_and_cycles() {
     let tmp = create_test_dir("chain_cycle");
@@ -157,18 +219,74 @@ fn bulk_local_rename_honours_cancel_before_staging() {
 }
 
 #[test]
-fn restoring_cancelled_local_staging_path_recovers_the_source_name() {
-    let tmp = create_test_dir("cancel_restore");
+fn case_only_staging_recovers_the_source_when_the_destination_is_occupied() {
+    let tmp = create_test_dir("case_restore");
     let source = tmp.join("before.txt");
     let destination = tmp.join("after.txt");
     fs::write(&source, "reviewed").expect("write fixture");
-    let row = local_row("restore", source.clone(), destination);
-    let temporary = unique_temporary_path(&source, &row.row_id).expect("temporary path");
-    fs::rename(&source, &temporary).expect("stage fixture source");
+    fs::write(&destination, "external").expect("write occupied destination");
+    let row = local_row("restore", source.clone(), destination.clone());
+    let mut outcome = BulkRenameOutcome::Skipped;
 
-    restore_local_temporaries(&[row], &[Some(temporary)], &[BulkRenameOutcome::Skipped]);
+    rename_local_case_only(&row, &mut outcome);
 
+    assert_eq!(outcome, BulkRenameOutcome::Skipped);
     assert_eq!(fs::read_to_string(&source).expect("read restored source"), "reviewed");
+    assert_eq!(fs::read_to_string(&destination).expect("read destination"), "external");
+    assert_no_staging_paths(&tmp);
+    let _ = fs::remove_dir_all(&tmp);
+}
+
+#[test]
+fn exclusive_local_rename_moves_into_an_empty_name() {
+    let tmp = create_test_dir("exclusive_empty");
+    let source = tmp.join("before.txt");
+    let destination = tmp.join("after.txt");
+    fs::write(&source, "reviewed").expect("write fixture");
+
+    rename_local_exclusive(&source, &destination).expect("exclusive rename into empty name");
+
+    assert!(!source.exists(), "the source name must be released");
+    assert_eq!(fs::read_to_string(&destination).expect("read destination"), "reviewed");
+    let _ = fs::remove_dir_all(&tmp);
+}
+
+#[test]
+fn exclusive_local_rename_never_replaces_an_existing_destination() {
+    let tmp = create_test_dir("exclusive_conflict");
+    let source = tmp.join("before.txt");
+    let destination = tmp.join("after.txt");
+    fs::write(&source, "reviewed").expect("write source fixture");
+    fs::write(&destination, "appeared after preflight").expect("write destination fixture");
+
+    let result = rename_local_exclusive(&source, &destination);
+
+    assert!(result.is_err(), "an occupied destination must reject the rename");
+    assert_eq!(fs::read_to_string(&source).expect("read preserved source"), "reviewed");
+    assert_eq!(
+        fs::read_to_string(&destination).expect("read preserved destination"),
+        "appeared after preflight"
+    );
+    let _ = fs::remove_dir_all(&tmp);
+}
+
+#[test]
+fn bulk_local_rename_preserves_a_destination_created_after_review() {
+    let tmp = create_test_dir("late_destination");
+    let source = tmp.join("before.txt");
+    let destination = tmp.join("after.txt");
+    fs::write(&source, "reviewed").expect("write source fixture");
+    let row = local_row("late-conflict", source.clone(), destination.clone());
+    fs::write(&destination, "appeared after review").expect("write late destination");
+
+    let run = bulk_rename_local(&[row], &AtomicU8::new(OperationIntent::Running as u8));
+
+    assert_ne!(run.outcomes, vec![BulkRenameOutcome::Done]);
+    assert_eq!(fs::read_to_string(&source).expect("read preserved source"), "reviewed");
+    assert_eq!(
+        fs::read_to_string(&destination).expect("read preserved destination"),
+        "appeared after review"
+    );
     assert_no_staging_paths(&tmp);
     let _ = fs::remove_dir_all(&tmp);
 }

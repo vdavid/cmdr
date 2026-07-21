@@ -399,6 +399,38 @@
   "@askCmdr.renameReview.blocked": {
     "description": "Generic per-row message when backend preflight blocks a proposed rename."
   },
+  "askCmdr.renameReview.overwriteBadge": "(overwrite!)",
+  "@askCmdr.renameReview.overwriteBadge": {
+    "description": "Compact red warning badge beside a proposed filename when another file already occupies that name. Keep the parentheses and exclamation mark."
+  },
+  "askCmdr.renameReview.overwriteTooltip": "Another file already uses this name and isn''t part of this rename plan. This rename is blocked to protect it.",
+  "@askCmdr.renameReview.overwriteTooltip": {
+    "description": "Accessible tooltip for the overwrite warning badge. Explains that the existing file is outside the rename plan and will not be replaced."
+  },
+  "askCmdr.renameReview.sourceMissingBadge": "(doesn''t exist)",
+  "@askCmdr.renameReview.sourceMissingBadge": {
+    "description": "Compact red warning badge beside a bulk rename row whose proposed source file does not exist. Keep the parentheses."
+  },
+  "askCmdr.renameReview.sourceMissingTooltip": "This source file no longer exists. It may have been deleted or renamed outside Cmdr.",
+  "@askCmdr.renameReview.sourceMissingTooltip": {
+    "description": "Accessible tooltip for the missing-source warning badge. Explains that the row is blocked because its original file is gone."
+  },
+  "askCmdr.renameReview.extensionBadge": "(extension)",
+  "@askCmdr.renameReview.extensionBadge": {
+    "description": "Compact yellow warning badge beside a proposed filename when the rename changes, adds, or removes its filename extension. Keep the parentheses."
+  },
+  "askCmdr.renameReview.extensionTooltip": "Extension changed. The file contents will not be converted.",
+  "@askCmdr.renameReview.extensionTooltip": {
+    "description": "Accessible tooltip for the extension-change warning badge in the bulk rename review. Explains that renaming an extension does not convert the file format."
+  },
+  "askCmdr.renameReview.cycleBadge": "(cycle)",
+  "@askCmdr.renameReview.cycleBadge": {
+    "description": "Compact yellow warning badge beside each proposed rename that belongs to a dependency cycle. Keep the parentheses."
+  },
+  "askCmdr.renameReview.cycleTooltip": "Rename cycle. Cmdr will use one temporary name while rotating these files.",
+  "@askCmdr.renameReview.cycleTooltip": {
+    "description": "Accessible tooltip for the rename-cycle warning badge. Explains that Cmdr needs one temporary filename to rotate the files safely."
+  },
   "askCmdr.renameReview.expired": "This review expired. Ask Cmdr to prepare it again.",
   "@askCmdr.renameReview.expired": {
     "description": "Message when the short-lived server-side rename proposal has expired."

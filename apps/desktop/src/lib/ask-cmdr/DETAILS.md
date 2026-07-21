@@ -151,6 +151,20 @@ approval from the model. The backend requires that exact subset to have passed t
 client is stale, consumes the proposal once, then returns a queued operation id. The dialog closes only after that
 operation has started.
 
+Backend preflight verifies every source still exists and blocks any missing source, including one removed after the
+dialog opened. The dialog deselects that row and shows a red, accessible warning; a matching watcher event rechecks it
+if the source returns. Preflight also supplies additive row warnings. The dialog keeps extension changes allowed but
+marks them with an accessible yellow badge explaining that a rename does not convert file contents; dependency cycles
+use the same warning channel. Its cycle tooltip explains that Cmdr uses one temporary name while rotating the files.
+Blockers remain separate and automatically clear the row's Allow decision.
+
+The dialog subscribes to the same `directory-diff` stream that updates the file panes. A change whose filename matches a
+proposal source or destination reruns the authoritative preflight for every displayed row, including denied and
+previously blocked rows. This keeps target-exists and source-missing warnings live and lets a row recover when an
+external process removes the clash or restores a missing source; matching names are only an IPC filter, never filesystem
+authority. `TargetExists` and `SourceMissing` rows are deselected and show specific red warnings, while the write
+engine's exclusive final rename remains the data-safety boundary.
+
 ## The E2E fake-LLM path
 
 The stream also carries a display-only `proposalReady` rename-plan snapshot. The review dialog owns it in the next

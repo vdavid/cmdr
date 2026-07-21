@@ -392,6 +392,38 @@
   "@askCmdr.renameReview.blocked": {
     "sourceHash": "868541c"
   },
+  "askCmdr.renameReview.overwriteBadge": "(ghi đè!)",
+  "@askCmdr.renameReview.overwriteBadge": {
+    "sourceHash": "762fd52"
+  },
+  "askCmdr.renameReview.overwriteTooltip": "Một tệp khác đã dùng tên này và không nằm trong kế hoạch đổi tên. Lần đổi tên này bị chặn để bảo vệ tệp đó.",
+  "@askCmdr.renameReview.overwriteTooltip": {
+    "sourceHash": "f3448fc"
+  },
+  "askCmdr.renameReview.sourceMissingBadge": "(không tồn tại)",
+  "@askCmdr.renameReview.sourceMissingBadge": {
+    "sourceHash": "fbb0106"
+  },
+  "askCmdr.renameReview.sourceMissingTooltip": "Tệp nguồn này không còn tồn tại. Tệp có thể đã bị xóa hoặc đổi tên bên ngoài Cmdr.",
+  "@askCmdr.renameReview.sourceMissingTooltip": {
+    "sourceHash": "acd6306"
+  },
+  "askCmdr.renameReview.extensionBadge": "(đuôi tệp)",
+  "@askCmdr.renameReview.extensionBadge": {
+    "sourceHash": "bcc0b2c"
+  },
+  "askCmdr.renameReview.extensionTooltip": "Đuôi tệp đã thay đổi. Nội dung tệp sẽ không được chuyển đổi.",
+  "@askCmdr.renameReview.extensionTooltip": {
+    "sourceHash": "7da4864"
+  },
+  "askCmdr.renameReview.cycleBadge": "(chu trình)",
+  "@askCmdr.renameReview.cycleBadge": {
+    "sourceHash": "5a2772b"
+  },
+  "askCmdr.renameReview.cycleTooltip": "Chu trình đổi tên. Cmdr sẽ dùng một tên tạm thời khi xoay vòng các tệp này.",
+  "@askCmdr.renameReview.cycleTooltip": {
+    "sourceHash": "d76a0af"
+  },
   "askCmdr.renameReview.expired": "Lần xem lại này đã hết hạn. Hãy yêu cầu Ask Cmdr chuẩn bị lại.",
   "@askCmdr.renameReview.expired": {
     "sourceHash": "4e6482a"

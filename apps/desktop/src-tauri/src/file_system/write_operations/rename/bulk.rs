@@ -1,11 +1,12 @@
 //! Managed batch rename for Ask Cmdr's reviewed rename proposals.
 //!
-//! This module owns the server-side rows and collision-safe driver. It stages
-//! sources through same-directory temporary names so a chain, cycle, swap, or
-//! case-only rename never overwrites a reviewed source.
+//! This module owns the server-side rows and collision-safe driver. Independent
+//! rows and chains rename directly in dependency order. Each cycle and each
+//! case-only rename uses one same-directory temporary name.
 
 use std::collections::HashSet;
 use std::future::Future;
+use std::io;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
@@ -23,6 +24,59 @@ use super::super::types::{
 };
 use crate::file_system::volume::{LaneKey, Volume};
 use crate::operation_log::types::{EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind};
+
+/// Atomically renames a local file only when `destination` is unoccupied.
+///
+/// The review-time existence check is advisory. This syscall-level exclusion
+/// is the write boundary that prevents a destination created after review from
+/// being silently replaced.
+#[cfg(target_os = "macos")]
+pub(super) fn rename_local_exclusive(source: &Path, destination: &Path) -> io::Result<()> {
+    use std::ffi::CString;
+    use std::os::unix::ffi::OsStrExt;
+
+    let source = CString::new(source.as_os_str().as_bytes())
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "source path contains a null byte"))?;
+    let destination = CString::new(destination.as_os_str().as_bytes())
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "destination path contains a null byte"))?;
+    // SAFETY: Both pointers come from live `CString`s and remain valid for the
+    // duration of the call. `RENAME_EXCL` asks the kernel to combine the
+    // destination-absence check and rename into one operation.
+    let result = unsafe { libc::renamex_np(source.as_ptr(), destination.as_ptr(), libc::RENAME_EXCL) };
+    if result == 0 {
+        Ok(())
+    } else {
+        Err(io::Error::last_os_error())
+    }
+}
+
+#[cfg(target_os = "linux")]
+pub(super) fn rename_local_exclusive(source: &Path, destination: &Path) -> io::Result<()> {
+    use std::ffi::CString;
+    use std::os::unix::ffi::OsStrExt;
+
+    let source = CString::new(source.as_os_str().as_bytes())
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "source path contains a null byte"))?;
+    let destination = CString::new(destination.as_os_str().as_bytes())
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "destination path contains a null byte"))?;
+    // SAFETY: Both pointers come from live `CString`s and remain valid for the
+    // duration of the call. `RENAME_NOREPLACE` provides Linux's equivalent
+    // atomic no-overwrite contract.
+    let result = unsafe {
+        libc::renameat2(
+            libc::AT_FDCWD,
+            source.as_ptr(),
+            libc::AT_FDCWD,
+            destination.as_ptr(),
+            libc::RENAME_NOREPLACE,
+        )
+    };
+    if result == 0 {
+        Ok(())
+    } else {
+        Err(io::Error::last_os_error())
+    }
+}
 
 /// Server-owned source identity captured by the rename-review preflight. The
 /// frontend never creates this data; the Ask Cmdr command maps its accepted
@@ -234,9 +288,85 @@ impl BulkRenameRun {
     }
 }
 
-/// Local batch engine used on the blocking pool. Every currently valid source
-/// moves to a unique sibling temporary name before any final destination is
-/// occupied, which makes chains, swaps, cycles, and case-only changes safe.
+/// One collision-safe unit in a batch rename. Direct steps consume a free
+/// destination. A cycle rotates through one temporary name, while a case-only
+/// change uses one because the volume may treat both spellings as the same key.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum RenamePlanStep {
+    Direct(usize),
+    Cycle(Vec<usize>),
+    CaseOnly(usize),
+}
+
+/// Orders active rows without filesystem access. The rename graph is
+/// functional after preflight: every source and destination has at most one
+/// owner. Removing rows whose destination is currently free peels all acyclic
+/// chains in execution order; the remaining components are cycles.
+fn build_execution_plan(rows: &[BulkRenameRow], active: &[bool]) -> Vec<RenamePlanStep> {
+    let mut remaining: HashSet<usize> = rows
+        .iter()
+        .enumerate()
+        .filter(|(index, row)| active[*index] && row.source != row.destination)
+        .map(|(index, _)| index)
+        .collect();
+    let mut plan = Vec::with_capacity(remaining.len());
+
+    loop {
+        let source_to_index: std::collections::HashMap<String, usize> = remaining
+            .iter()
+            .map(|index| (normalized_path(&rows[*index].source), *index))
+            .collect();
+        let mut ready: Vec<usize> = remaining
+            .iter()
+            .copied()
+            .filter(|index| {
+                let source = normalized_path(&rows[*index].source);
+                let destination = normalized_path(&rows[*index].destination);
+                source == destination || !source_to_index.contains_key(&destination)
+            })
+            .collect();
+        ready.sort_unstable();
+        if ready.is_empty() {
+            break;
+        }
+        for index in ready {
+            if !remaining.remove(&index) {
+                continue;
+            }
+            if normalized_path(&rows[index].source) == normalized_path(&rows[index].destination) {
+                plan.push(RenamePlanStep::CaseOnly(index));
+            } else {
+                plan.push(RenamePlanStep::Direct(index));
+            }
+        }
+    }
+
+    while let Some(start) = remaining.iter().min().copied() {
+        let source_to_index: std::collections::HashMap<String, usize> = remaining
+            .iter()
+            .map(|index| (normalized_path(&rows[*index].source), *index))
+            .collect();
+        let mut cycle = vec![start];
+        let mut current = start;
+        loop {
+            let destination = normalized_path(&rows[current].destination);
+            let next = source_to_index[&destination];
+            if next == start {
+                break;
+            }
+            cycle.push(next);
+            current = next;
+        }
+        for index in &cycle {
+            remaining.remove(index);
+        }
+        plan.push(RenamePlanStep::Cycle(cycle));
+    }
+    plan
+}
+
+/// Local batch engine used on the blocking pool. Acyclic rows move directly in
+/// dependency order. Only cycles and case-only changes use a sibling temporary.
 fn bulk_rename_local(rows: &[BulkRenameRow], intent: &AtomicU8) -> BulkRenameRun {
     let mut outcomes = vec![BulkRenameOutcome::Skipped; rows.len()];
     let mut active: Vec<bool> = rows
@@ -244,71 +374,24 @@ fn bulk_rename_local(rows: &[BulkRenameRow], intent: &AtomicU8) -> BulkRenameRun
         .map(|row| local_fingerprint(&row.source).is_some_and(|actual| actual == row.expected_fingerprint))
         .collect();
     settle_local_conflicts(rows, &mut active);
-    let mut temporary_paths = vec![None; rows.len()];
-
-    for (index, row) in rows.iter().enumerate() {
-        if !active[index] || row.source == row.destination {
-            continue;
-        }
-        if is_cancelled(intent) {
-            restore_local_temporaries(rows, &temporary_paths, &outcomes);
-            return BulkRenameRun {
-                outcomes,
-                cancelled: true,
-            };
-        }
-        if !local_fingerprint(&row.source).is_some_and(|actual| actual == row.expected_fingerprint) {
-            active[index] = false;
-            continue;
-        }
-        let Some(temporary) = unique_temporary_path(&row.source, &row.row_id) else {
-            outcomes[index] = BulkRenameOutcome::Failed;
-            active[index] = false;
-            continue;
-        };
-        note_rename_write(&row.source, &temporary);
-        if std::fs::rename(&row.source, &temporary).is_ok() {
-            temporary_paths[index] = Some(temporary);
-        } else {
-            outcomes[index] = BulkRenameOutcome::Failed;
-            active[index] = false;
-        }
-    }
-
-    for (index, row) in rows.iter().enumerate() {
-        if !active[index] {
-            continue;
-        }
+    for (index, row) in rows.iter().enumerate().filter(|(index, _)| active[*index]) {
         if row.source == row.destination {
             outcomes[index] = BulkRenameOutcome::Done;
-            continue;
         }
+    }
+    for step in build_execution_plan(rows, &active) {
         if is_cancelled(intent) {
-            restore_local_temporaries(rows, &temporary_paths, &outcomes);
             return BulkRenameRun {
                 outcomes,
                 cancelled: true,
             };
         }
-        let Some(temporary) = temporary_paths[index].as_ref() else {
-            continue;
-        };
-        if !local_fingerprint(temporary).is_some_and(|actual| actual == row.expected_fingerprint) {
-            outcomes[index] = BulkRenameOutcome::Failed;
-            continue;
+        match step {
+            RenamePlanStep::Direct(index) => rename_local_direct(&rows[index], &mut outcomes[index]),
+            RenamePlanStep::CaseOnly(index) => rename_local_case_only(&rows[index], &mut outcomes[index]),
+            RenamePlanStep::Cycle(indices) => rename_local_cycle(rows, &indices, &mut outcomes),
         }
-        if destination_occupied_by_other_local(&row.destination, temporary) {
-            outcomes[index] = BulkRenameOutcome::Skipped;
-            continue;
-        }
-        note_rename_write(temporary, &row.destination);
-        outcomes[index] = if std::fs::rename(temporary, &row.destination).is_ok() {
-            BulkRenameOutcome::Done
-        } else {
-            BulkRenameOutcome::Failed
-        };
     }
-    restore_local_temporaries(rows, &temporary_paths, &outcomes);
     BulkRenameRun {
         outcomes,
         cancelled: false,
@@ -325,73 +408,231 @@ async fn bulk_rename_remote(rows: &[BulkRenameRow], volume_id: &str, intent: &At
         active.push(remote_fingerprint_matches(volume.as_ref(), &row.source, &row.expected_fingerprint).await);
     }
     settle_remote_conflicts(rows, &mut active, volume.as_ref()).await;
-    let mut temporary_paths = vec![None; rows.len()];
-
-    for (index, row) in rows.iter().enumerate() {
-        if !active[index] || row.source == row.destination {
-            continue;
-        }
-        if is_cancelled(intent) {
-            restore_remote_temporaries(volume.as_ref(), rows, &temporary_paths, &outcomes).await;
-            return BulkRenameRun {
-                outcomes,
-                cancelled: true,
-            };
-        }
-        if !remote_fingerprint_matches(volume.as_ref(), &row.source, &row.expected_fingerprint).await {
-            active[index] = false;
-            continue;
-        }
-        let Some(temporary) = unique_remote_temporary_path(volume.as_ref(), &row.source, &row.row_id).await else {
-            outcomes[index] = BulkRenameOutcome::Failed;
-            active[index] = false;
-            continue;
-        };
-        note_rename_write(&row.source, &temporary);
-        if volume.rename(&row.source, &temporary, false).await.is_ok() {
-            temporary_paths[index] = Some(temporary);
-        } else {
-            outcomes[index] = BulkRenameOutcome::Failed;
-            active[index] = false;
-        }
-    }
-
-    for (index, row) in rows.iter().enumerate() {
-        if !active[index] {
-            continue;
-        }
+    for (index, row) in rows.iter().enumerate().filter(|(index, _)| active[*index]) {
         if row.source == row.destination {
             outcomes[index] = BulkRenameOutcome::Done;
-            continue;
         }
+    }
+    for step in build_execution_plan(rows, &active) {
         if is_cancelled(intent) {
-            restore_remote_temporaries(volume.as_ref(), rows, &temporary_paths, &outcomes).await;
             return BulkRenameRun {
                 outcomes,
                 cancelled: true,
             };
         }
-        let Some(temporary) = temporary_paths[index].as_ref() else {
-            continue;
-        };
-        if !remote_fingerprint_matches_at_temporary_path(volume.as_ref(), temporary, &row.expected_fingerprint).await
-            || volume.get_metadata(&row.destination).await.is_ok()
-        {
-            outcomes[index] = BulkRenameOutcome::Skipped;
-            continue;
+        match step {
+            RenamePlanStep::Direct(index) => {
+                rename_remote_direct(volume.as_ref(), &rows[index], &mut outcomes[index]).await;
+            }
+            RenamePlanStep::CaseOnly(index) => {
+                rename_remote_case_only(volume.as_ref(), &rows[index], &mut outcomes[index]).await;
+            }
+            RenamePlanStep::Cycle(indices) => {
+                rename_remote_cycle(volume.as_ref(), rows, &indices, &mut outcomes).await;
+            }
         }
-        note_rename_write(temporary, &row.destination);
-        outcomes[index] = if volume.rename(temporary, &row.destination, false).await.is_ok() {
-            BulkRenameOutcome::Done
-        } else {
-            BulkRenameOutcome::Failed
-        };
     }
-    restore_remote_temporaries(volume.as_ref(), rows, &temporary_paths, &outcomes).await;
     BulkRenameRun {
         outcomes,
         cancelled: false,
     }
+}
+
+fn rename_local_direct(row: &BulkRenameRow, outcome: &mut BulkRenameOutcome) {
+    if !local_fingerprint(&row.source).is_some_and(|actual| actual == row.expected_fingerprint) {
+        return;
+    }
+    note_rename_write(&row.source, &row.destination);
+    *outcome = match rename_local_exclusive(&row.source, &row.destination) {
+        Ok(()) => BulkRenameOutcome::Done,
+        Err(error) if error.kind() == io::ErrorKind::AlreadyExists => BulkRenameOutcome::Skipped,
+        Err(_) => BulkRenameOutcome::Failed,
+    };
+}
+
+fn rename_local_case_only(row: &BulkRenameRow, outcome: &mut BulkRenameOutcome) {
+    if !local_fingerprint(&row.source).is_some_and(|actual| actual == row.expected_fingerprint) {
+        return;
+    }
+    let Some(temporary) = unique_temporary_path(&row.source, &row.row_id) else {
+        *outcome = BulkRenameOutcome::Failed;
+        return;
+    };
+    note_rename_write(&row.source, &temporary);
+    if rename_local_exclusive(&row.source, &temporary).is_err() {
+        *outcome = BulkRenameOutcome::Failed;
+        return;
+    }
+    note_rename_write(&temporary, &row.destination);
+    *outcome = match rename_local_exclusive(&temporary, &row.destination) {
+        Ok(()) => BulkRenameOutcome::Done,
+        Err(error) => {
+            note_rename_write(&temporary, &row.source);
+            let _ = rename_local_exclusive(&temporary, &row.source);
+            if error.kind() == io::ErrorKind::AlreadyExists {
+                BulkRenameOutcome::Skipped
+            } else {
+                BulkRenameOutcome::Failed
+            }
+        }
+    };
+}
+
+/// Rotates a closed dependency component with one temporary. Once staging has
+/// started, the bounded component finishes or rolls back before cancellation is
+/// observed again, so Cmdr never intentionally strands a private temp name.
+fn rename_local_cycle(rows: &[BulkRenameRow], indices: &[usize], outcomes: &mut [BulkRenameOutcome]) {
+    if indices.iter().any(|index| {
+        !local_fingerprint(&rows[*index].source).is_some_and(|actual| actual == rows[*index].expected_fingerprint)
+    }) {
+        return;
+    }
+    let first = indices[0];
+    let Some(temporary) = unique_temporary_path(&rows[first].source, &rows[first].row_id) else {
+        outcomes[first] = BulkRenameOutcome::Failed;
+        return;
+    };
+    note_rename_write(&rows[first].source, &temporary);
+    if rename_local_exclusive(&rows[first].source, &temporary).is_err() {
+        outcomes[first] = BulkRenameOutcome::Failed;
+        return;
+    }
+
+    let mut moved = Vec::with_capacity(indices.len() - 1);
+    for index in indices.iter().skip(1).rev().copied() {
+        let row = &rows[index];
+        note_rename_write(&row.source, &row.destination);
+        if rename_local_exclusive(&row.source, &row.destination).is_err() {
+            restore_local_cycle(rows, first, &temporary, &moved);
+            outcomes[index] = BulkRenameOutcome::Failed;
+            return;
+        }
+        moved.push(index);
+    }
+    note_rename_write(&temporary, &rows[first].destination);
+    if rename_local_exclusive(&temporary, &rows[first].destination).is_err() {
+        restore_local_cycle(rows, first, &temporary, &moved);
+        outcomes[first] = BulkRenameOutcome::Failed;
+        return;
+    }
+    for index in indices {
+        outcomes[*index] = BulkRenameOutcome::Done;
+    }
+}
+
+fn restore_local_cycle(rows: &[BulkRenameRow], first: usize, temporary: &Path, moved: &[usize]) {
+    for index in moved.iter().rev().copied() {
+        note_rename_write(&rows[index].destination, &rows[index].source);
+        let _ = rename_local_exclusive(&rows[index].destination, &rows[index].source);
+    }
+    note_rename_write(temporary, &rows[first].source);
+    let _ = rename_local_exclusive(temporary, &rows[first].source);
+}
+
+async fn rename_remote_direct(volume: &dyn Volume, row: &BulkRenameRow, outcome: &mut BulkRenameOutcome) {
+    if !remote_fingerprint_matches(volume, &row.source, &row.expected_fingerprint).await {
+        return;
+    }
+    note_rename_write(&row.source, &row.destination);
+    *outcome = if volume.rename(&row.source, &row.destination, false).await.is_ok() {
+        BulkRenameOutcome::Done
+    } else if volume.get_metadata(&row.destination).await.is_ok() {
+        BulkRenameOutcome::Skipped
+    } else {
+        BulkRenameOutcome::Failed
+    };
+}
+
+async fn rename_remote_case_only(volume: &dyn Volume, row: &BulkRenameRow, outcome: &mut BulkRenameOutcome) {
+    if !remote_fingerprint_matches(volume, &row.source, &row.expected_fingerprint).await {
+        return;
+    }
+    let Some(temporary) = unique_remote_temporary_path(volume, &row.source, &row.row_id).await else {
+        *outcome = BulkRenameOutcome::Failed;
+        return;
+    };
+    note_rename_write(&row.source, &temporary);
+    if volume.rename(&row.source, &temporary, false).await.is_err() {
+        *outcome = BulkRenameOutcome::Failed;
+        return;
+    }
+    note_rename_write(&temporary, &row.destination);
+    if volume.rename(&temporary, &row.destination, false).await.is_ok() {
+        *outcome = BulkRenameOutcome::Done;
+    } else {
+        note_rename_write(&temporary, &row.source);
+        let destination_exists = volume.get_metadata(&row.destination).await.is_ok();
+        let _ = volume.rename(&temporary, &row.source, false).await;
+        *outcome = if destination_exists {
+            BulkRenameOutcome::Skipped
+        } else {
+            BulkRenameOutcome::Failed
+        };
+    }
+}
+
+async fn rename_remote_cycle(
+    volume: &dyn Volume,
+    rows: &[BulkRenameRow],
+    indices: &[usize],
+    outcomes: &mut [BulkRenameOutcome],
+) {
+    for index in indices {
+        if !remote_fingerprint_matches(volume, &rows[*index].source, &rows[*index].expected_fingerprint).await {
+            return;
+        }
+    }
+    let first = indices[0];
+    let Some(temporary) = unique_remote_temporary_path(volume, &rows[first].source, &rows[first].row_id).await else {
+        outcomes[first] = BulkRenameOutcome::Failed;
+        return;
+    };
+    note_rename_write(&rows[first].source, &temporary);
+    if volume.rename(&rows[first].source, &temporary, false).await.is_err() {
+        outcomes[first] = BulkRenameOutcome::Failed;
+        return;
+    }
+    let mut moved = Vec::with_capacity(indices.len() - 1);
+    for index in indices.iter().skip(1).rev().copied() {
+        let row = &rows[index];
+        note_rename_write(&row.source, &row.destination);
+        if volume.rename(&row.source, &row.destination, false).await.is_err() {
+            restore_remote_cycle(volume, rows, first, &temporary, &moved).await;
+            outcomes[index] = BulkRenameOutcome::Failed;
+            return;
+        }
+        moved.push(index);
+    }
+    note_rename_write(&temporary, &rows[first].destination);
+    if volume
+        .rename(&temporary, &rows[first].destination, false)
+        .await
+        .is_err()
+    {
+        restore_remote_cycle(volume, rows, first, &temporary, &moved).await;
+        outcomes[first] = BulkRenameOutcome::Failed;
+        return;
+    }
+    for index in indices {
+        outcomes[*index] = BulkRenameOutcome::Done;
+    }
+}
+
+async fn restore_remote_cycle(
+    volume: &dyn Volume,
+    rows: &[BulkRenameRow],
+    first: usize,
+    temporary: &Path,
+    moved: &[usize],
+) {
+    for index in moved.iter().rev().copied() {
+        note_rename_write(&rows[index].destination, &rows[index].source);
+        let _ = volume
+            .rename(&rows[index].destination, &rows[index].source, false)
+            .await;
+    }
+    note_rename_write(temporary, &rows[first].source);
+    let _ = volume.rename(temporary, &rows[first].source, false).await;
 }
 
 fn settle_local_conflicts(rows: &[BulkRenameRow], active: &mut [bool]) {
@@ -476,53 +717,6 @@ async fn unique_remote_temporary_path(volume: &dyn Volume, source: &Path, row_id
     None
 }
 
-fn destination_occupied_by_other_local(destination: &Path, temporary: &Path) -> bool {
-    match (
-        std::fs::symlink_metadata(destination),
-        std::fs::symlink_metadata(temporary),
-    ) {
-        (Ok(destination_meta), Ok(temporary_meta)) => !same_local_file(&destination_meta, &temporary_meta),
-        (Ok(_), Err(_)) => true,
-        _ => false,
-    }
-}
-
-/// A cancellation never leaves Cmdr's private staging names visible. Restoring
-/// a temporary path to its original source is safe recovery, not an unreviewed
-/// rollback: no final user-visible rename has occurred for that row.
-fn restore_local_temporaries(
-    rows: &[BulkRenameRow],
-    temporary_paths: &[Option<PathBuf>],
-    outcomes: &[BulkRenameOutcome],
-) {
-    for ((row, temporary), outcome) in rows.iter().zip(temporary_paths).zip(outcomes) {
-        if *outcome != BulkRenameOutcome::Done
-            && let Some(temporary) = temporary
-            && std::fs::symlink_metadata(&row.source).is_err()
-        {
-            note_rename_write(temporary, &row.source);
-            let _ = std::fs::rename(temporary, &row.source);
-        }
-    }
-}
-
-async fn restore_remote_temporaries(
-    volume: &dyn Volume,
-    rows: &[BulkRenameRow],
-    temporary_paths: &[Option<PathBuf>],
-    outcomes: &[BulkRenameOutcome],
-) {
-    for ((row, temporary), outcome) in rows.iter().zip(temporary_paths).zip(outcomes) {
-        if *outcome != BulkRenameOutcome::Done
-            && let Some(temporary) = temporary
-            && volume.get_metadata(&row.source).await.is_err()
-        {
-            note_rename_write(temporary, &row.source);
-            let _ = volume.rename(temporary, &row.source, false).await;
-        }
-    }
-}
-
 fn note_rename_write(from: &Path, to: &Path) {
     crate::downloads::note_pending_write_for_cmdr(from);
     crate::downloads::note_pending_write_for_cmdr(to);
@@ -585,20 +779,6 @@ async fn remote_fingerprint_matches(volume: &dyn Volume, path: &Path, expected: 
     if normalized_path != &crate::indexing::store::normalize_for_comparison(&path.to_string_lossy()) {
         return false;
     }
-    let Ok(metadata) = volume.get_metadata(path).await else {
-        return false;
-    };
-    !metadata.is_directory && metadata.size == *size && metadata.modified_at.map(|value| value as i64) == *modified
-}
-
-async fn remote_fingerprint_matches_at_temporary_path(
-    volume: &dyn Volume,
-    path: &Path,
-    expected: &BulkRenameFingerprint,
-) -> bool {
-    let BulkRenameFingerprint::Remote { size, modified, .. } = expected else {
-        return false;
-    };
     let Ok(metadata) = volume.get_metadata(path).await else {
         return false;
     };

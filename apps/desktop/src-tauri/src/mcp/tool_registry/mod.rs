@@ -81,14 +81,6 @@ pub enum Access {
     /// proposal. A `Propose` tool is authored by hand into the test allowlist
     /// (`EXPECTED_PROPOSE_TOOL_NAMES`), because no structural check can prove a handler doesn't
     /// mutate.
-    ///
-    /// No registry entry is tagged `Propose` yet, so `#![deny(unused)]` would reject the variant.
-    /// The tier ships before its first tool on purpose: the boundary is reviewed on its own, not
-    /// bundled into a feature. Drop this `allow` when the first `Propose` tool is authored.
-    #[allow(
-        dead_code,
-        reason = "no Propose tool is authored yet; the tier lands before its first tool"
-    )]
     Propose,
     /// Mutates the filesystem OR app state (nav, cursor, selection, tabs, dialogs, settings,
     /// connect/eject, file ops, rollback-cancel); when in doubt a tool is `Write`. Never reachable

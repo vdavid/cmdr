@@ -17,6 +17,7 @@ const recordMock = vi.fn<(id: number) => Promise<unknown>>()
 const saveMock = vi.fn()
 const growWindowMock = vi.fn<(w: number) => Promise<void>>()
 const shrinkWindowMock = vi.fn<(w: number) => Promise<void>>()
+const preflightRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
 
 vi.mock('$lib/tauri-commands', () => ({
   sendAskCmdrMessage: (c: number | null, t: string, a: unknown[], o: (e: AskCmdrStreamEvent) => void) =>
@@ -25,6 +26,9 @@ vi.mock('$lib/tauri-commands', () => ({
   listAskCmdrConversations: (...a: unknown[]) => listMock(...a),
   getAskCmdrConversation: (...a: unknown[]) => getMock(...a),
   recordAskCmdrModelChange: (id: number) => recordMock(id),
+  preflightBulkRename: (...args: unknown[]) => preflightRenameMock(...args),
+  cancelBulkRenameProposal: vi.fn(() => Promise.resolve()),
+  applyBulkRename: vi.fn(() => Promise.resolve()),
 }))
 vi.mock('$lib/app-status-store', () => ({
   saveAppStatus: (s: unknown) => {
@@ -60,6 +64,7 @@ import {
   closeRail,
   newChat,
   noteModelSettingChanged,
+  renameReviewListingChanged,
   openRail,
   pathFromArguments,
   RAIL_MAX_WIDTH,
@@ -91,6 +96,8 @@ beforeEach(() => {
   recordMock.mockReset()
   growWindowMock.mockReset()
   shrinkWindowMock.mockReset()
+  preflightRenameMock.mockReset()
+  preflightRenameMock.mockResolvedValue({ status: 'ready', rows: [] })
   growWindowMock.mockResolvedValue()
   shrinkWindowMock.mockResolvedValue()
   listMock.mockResolvedValue([])
@@ -236,6 +243,103 @@ describe('sendMessage + streaming', () => {
     fire({ type: 'modelChanged', messageId: 9, seq: 0, model: 'model-two' })
     expect(askCmdrState.messages.map((m) => m.kind)).toEqual(['modelChange', 'user', 'assistant'])
     expect(askCmdrState.messages[0]).toEqual({ kind: 'modelChange', model: 'model-two' })
+  })
+})
+
+describe('rename review listing updates', () => {
+  it('rechecks a proposed target when the pane watcher reports it appeared', async () => {
+    preflightRenameMock.mockResolvedValue({
+      status: 'blocked',
+      rows: [{ rowId: 'row-1', status: 'blocked', reason: 'targetExists' }],
+    })
+    sendMessage('rename it')
+    fire({
+      type: 'proposalReady',
+      proposal: {
+        proposalId: 'proposal-1',
+        rows: [{ rowId: 'row-1', sourceName: 'before.png', destinationName: 'after.png' }],
+      },
+    })
+    await vi.waitFor(() => {
+      expect(preflightRenameMock).toHaveBeenCalledTimes(1)
+    })
+    preflightRenameMock.mockClear()
+
+    await renameReviewListingChanged([{ type: 'add', entry: { name: 'after.png' } }])
+
+    await vi.waitFor(() => {
+      expect(preflightRenameMock).toHaveBeenCalledWith('proposal-1', ['row-1'])
+    })
+    expect(askCmdrState.renameReview?.rows[0]).toMatchObject({
+      allowed: false,
+      blockedReason: 'targetExists',
+    })
+
+    preflightRenameMock.mockResolvedValue({
+      status: 'ready',
+      rows: [{ rowId: 'row-1', status: 'ready', reason: null, warnings: [] }],
+    })
+    await renameReviewListingChanged([{ type: 'remove', entry: { name: 'after.png' } }])
+
+    await vi.waitFor(() => {
+      expect(askCmdrState.renameReview?.rows[0]?.blockedReason).toBeNull()
+    })
+    expect(askCmdrState.renameReview?.rows[0]?.allowed).toBe(false)
+  })
+
+  it('ignores watcher changes unrelated to the reviewed names', async () => {
+    sendMessage('rename it')
+    fire({
+      type: 'proposalReady',
+      proposal: {
+        proposalId: 'proposal-1',
+        rows: [{ rowId: 'row-1', sourceName: 'before.png', destinationName: 'after.png' }],
+      },
+    })
+    await vi.waitFor(() => {
+      expect(preflightRenameMock).toHaveBeenCalledTimes(1)
+    })
+    preflightRenameMock.mockClear()
+
+    await renameReviewListingChanged([{ type: 'modify', entry: { name: 'other.png' } }])
+
+    await Promise.resolve()
+    expect(preflightRenameMock).not.toHaveBeenCalled()
+  })
+
+  it('deselects a missing source and rechecks it when the pane watcher reports its return', async () => {
+    preflightRenameMock.mockResolvedValue({
+      status: 'blocked',
+      rows: [{ rowId: 'row-1', status: 'blocked', reason: 'sourceMissing', warnings: [] }],
+    })
+    sendMessage('rename it')
+    fire({
+      type: 'proposalReady',
+      proposal: {
+        proposalId: 'proposal-1',
+        rows: [{ rowId: 'row-1', sourceName: 'before.png', destinationName: 'after.png' }],
+      },
+    })
+
+    await vi.waitFor(() => {
+      expect(askCmdrState.renameReview?.rows[0]).toMatchObject({
+        allowed: false,
+        blockedReason: 'sourceMissing',
+      })
+    })
+    preflightRenameMock.mockResolvedValue({
+      status: 'ready',
+      rows: [{ rowId: 'row-1', status: 'ready', reason: null, warnings: [] }],
+    })
+    preflightRenameMock.mockClear()
+
+    await renameReviewListingChanged([{ type: 'add', entry: { name: 'before.png' } }])
+
+    await vi.waitFor(() => {
+      expect(askCmdrState.renameReview?.rows[0]?.blockedReason).toBeNull()
+    })
+    expect(preflightRenameMock).toHaveBeenCalledWith('proposal-1', ['row-1'])
+    expect(askCmdrState.renameReview?.rows[0]?.allowed).toBe(false)
   })
 })
 
