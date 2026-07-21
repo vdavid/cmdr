@@ -2,6 +2,7 @@ import type { Component } from 'svelte'
 import IconArchive from '~icons/lucide/archive'
 import IconArchiveRestore from '~icons/lucide/archive-restore'
 import IconArrowLeft from '~icons/lucide/arrow-left'
+import IconArrowRight from '~icons/lucide/arrow-right'
 import IconCheck from '~icons/lucide/check'
 import IconChevronDown from '~icons/lucide/chevron-down'
 import IconChevronRight from '~icons/lucide/chevron-right'
@@ -70,6 +71,7 @@ export const ICON_COMPONENTS = {
   archive: IconArchive,
   'archive-restore': IconArchiveRestore,
   'arrow-left': IconArrowLeft,
+  'arrow-right': IconArrowRight,
   check: IconCheck,
   'chevron-down': IconChevronDown,
   'chevron-right': IconChevronRight,
