@@ -158,12 +158,13 @@ pub(crate) async fn volume_state<R: tauri::Runtime>(
 
     let data_dir = crate::config::resolved_app_data_dir(app)?;
     let threshold = gate::importance_threshold();
+    let scope = gate::scope();
     let vid = volume_id.to_string();
     // The threshold-aware stored-coverage split (`covered_qualifying_count` + `kept_count`)
     // needs the volume's OS mount root to map override/exclude config; resolving
     // it here (a reclaim-eligible enabled volume only) keeps the split `None` for a
     // volume that isn't background-enriched.
-    let mount_root = resolve_reclaim_volumes(std::slice::from_ref(&vid))
+    let mount_root = resolve_enabled_volumes(std::slice::from_ref(&vid))
         .0
         .into_iter()
         .next()
@@ -184,11 +185,11 @@ pub(crate) async fn volume_state<R: tauri::Runtime>(
                 let index = ImportanceIndex::open(&data_dir, &vid, SignalSet::all());
                 coverage::importance_scored(&index)
             };
-            // The threshold-aware split (`None` unless the volume is reclaim-eligible AND
-            // importance has scored it — the SAME single source as the reclaim numbers,
-            // via `stored_coverage_counts`, so they never disagree).
+            // The scope- and threshold-aware split (`None` unless the volume is
+            // reclaim-eligible AND the partition is safe — the SAME single source as the
+            // reclaim numbers, via `stored_coverage_counts`, so they never disagree).
             let coverage_counts = match (&scheduler, &mount_root) {
-                (Some(scheduler), Some(mount)) => scheduler.stored_coverage_counts(&vid, mount, threshold),
+                (Some(scheduler), Some(mount)) => scheduler.stored_coverage_counts(&vid, mount, threshold, scope),
                 _ => None,
             };
             Ok::<_, String>((enriched, qualifying, importance_scored, coverage_counts))
@@ -196,9 +197,12 @@ pub(crate) async fn volume_state<R: tauri::Runtime>(
         .await
         .map_err(|e| format!("media volume state task panicked: {e}"))??;
 
-    // Deferred-on-importance: enabled, the index is ready (a real qualifying count),
-    // but importance has no data yet, so enrichment waits on the recompute.
-    let waiting_for_importance = enabled && qualifying_count.is_some() && !importance_scored;
+    // Deferred-on-importance: enabled, the index is ready (a real qualifying count), but
+    // importance has no data yet, so enrichment waits on the recompute. Only in the
+    // automatic scope — the narrow one never consults importance, so reporting a wait
+    // there would voice a wait that isn't happening.
+    let waiting_for_importance =
+        enabled && scope.consults_importance() && qualifying_count.is_some() && !importance_scored;
 
     Ok(MediaIndexVolumeState {
         enabled,
@@ -212,129 +216,6 @@ pub(crate) async fn volume_state<R: tauri::Runtime>(
         covered_qualifying_count: coverage_counts.as_ref().map(|c| c.covered_qualifying),
         kept_count: coverage_counts.as_ref().map(|c| c.doomed_stored),
     })
-}
-
-/// Set (or clear) a volume's opt-in for background network (SMB) image enrichment
-/// (network enrichment). Off by default: turning on the master toggle does NOT auto-enrich
-/// network volumes. Enabling kicks an immediate pass so the user sees progress without
-/// waiting for the next scan completion. Live-applied (no restart); the frontend
-/// persists `mediaIndex.networkVolumes` and calls this on change (network-enrichment UI).
-#[tauri::command]
-#[specta::specta]
-pub fn media_index_set_network_volume_enabled(app: AppHandle, volume_id: String, enabled: bool) {
-    network_config::set_opted_in(&volume_id, enabled);
-    if enabled
-        && gate::is_enabled()
-        && let Some(scheduler) = app.try_state::<Arc<MediaScheduler>>()
-    {
-        scheduler::kick_network_pass(Arc::clone(scheduler.inner()), volume_id);
-    }
-}
-
-/// Set (or clear) a whole-volume "always index" override: enrich regardless of the
-/// importance threshold (a rarely-browsed NAS scores low, so without this its photos
-/// defer forever — plan Decision 6). Enabling kicks an immediate pass. Live-applied;
-/// the frontend persists `mediaIndex.alwaysIndexVolumes` and calls this on change.
-#[tauri::command]
-#[specta::specta]
-pub fn media_index_set_always_index_volume(app: AppHandle, volume_id: String, always: bool) {
-    network_config::set_always_index_volume(&volume_id, always);
-    if always
-        && gate::is_enabled()
-        && network_config::is_opted_in(&volume_id)
-        && let Some(scheduler) = app.try_state::<Arc<MediaScheduler>>()
-    {
-        scheduler::kick_network_pass(Arc::clone(scheduler.inner()), volume_id);
-    }
-}
-
-/// Set (or clear) a folder "always index" override: every image at or under `folder`
-/// (an absolute OS-mount path) enriches regardless of importance. Live-applied; the
-/// frontend persists `mediaIndex.alwaysIndexFolders` and calls this on change.
-#[tauri::command]
-#[specta::specta]
-pub fn media_index_set_always_index_folder(folder: String, always: bool) {
-    network_config::set_always_index_folder(&folder, always);
-}
-
-/// Set (or clear) a per-folder photo-search EXCLUSION: no image at or under `folder`
-/// (an absolute OS path) enriches (the privacy complement to the opt-in — plan §
-/// Privacy). A hard veto that beats any "always index" override.
-///
-/// EXCLUDING retro-deletes existing rows at or under the folder across the reachable
-/// volumes, so already-extracted OCR text stops being searchable at once (privacy is a
-/// hard requirement, not "eventually on the next GC"). The sequence is deliberate:
-///
-/// 1. set the live veto FIRST, so any in-flight pass re-checks against the excluded
-///    state and can't re-insert rows behind the delete (the pre-upsert TOCTOU close);
-/// 2. THEN retro-delete (a double-tap through each volume's one writer thread, so a
-///    straggler upsert that squeezed in is swept), off the IPC thread.
-///
-/// Un-EXCLUDING only clears the veto: NO re-delete and NO auto re-enrich — the next
-/// natural pass picks the folder up again. An offline network volume is skipped by the
-/// retro-delete (no mount root) and re-fires on reconnect via the registration bus.
-/// Live-applied; the frontend persists `mediaIndex.excludedFolders` and calls this on
-/// change (rolling the persisted value back if this rejects).
-#[tauri::command]
-#[specta::specta]
-pub async fn media_index_set_excluded_folder(app: AppHandle, folder: String, excluded: bool) -> Result<(), String> {
-    // Live state FIRST (step 1): the veto must precede any delete.
-    network_config::set_excluded_folder(&folder, excluded);
-
-    if !excluded {
-        return Ok(());
-    }
-    // Step 2: retro-delete across reachable volumes. Skip cleanly if the scheduler isn't
-    // managed yet (nothing has been enriched, so there's nothing to purge).
-    let Some(scheduler) = app.try_state::<Arc<MediaScheduler>>() else {
-        return Ok(());
-    };
-    let scheduler = Arc::clone(scheduler.inner());
-    // The reachable volumes + their mount roots. An unmounted volume isn't listed, so
-    // its retro-delete re-fires on reconnect (`wire_volume`).
-    let mounts: Vec<(String, String)> = crate::file_system::get_volume_manager()
-        .list_volumes_with_handles()
-        .into_iter()
-        .map(|(id, vol)| (id, vol.root().to_string_lossy().into_owned()))
-        .collect();
-    // The prune blocks on the writer thread, so run it off the IPC thread.
-    tauri::async_runtime::spawn_blocking(move || {
-        scheduler.retro_delete_excluded_folder(&folder, &mounts);
-    })
-    .await
-    .map_err(|e| format!("retro-delete task panicked: {e}"))
-}
-
-/// Set the folder-importance threshold the scheduler enriches by — the importance settings
-/// slider's typed value (`0.0..=1.0`, clamped), never a string (`no-string-matching`).
-/// Below-threshold folders are deferred; an override still forces enrichment. Live-
-/// applied; the frontend persists `mediaIndex.importanceThreshold` and calls this.
-///
-/// A DECREASE broadens coverage, so newly-covered folders should start enriching now
-/// rather than waiting for the next scan — this kicks a pass. A RAISE only defers
-/// future work (forward-only semantics: nothing to enrich now, and the deferred rows
-/// persist), so kicking on a raise would re-walk the index for nothing. The comparison
-/// reads the stored value BEFORE and AFTER the (clamped) set, so a clamp can't
-/// misclassify the direction.
-#[tauri::command]
-#[specta::specta]
-pub fn media_index_set_importance_threshold(app: AppHandle, threshold: f64) {
-    let previous = gate::importance_threshold();
-    gate::set_importance_threshold(threshold);
-    let next = gate::importance_threshold();
-    if threshold_change_should_kick(previous, next, gate::is_enabled()) {
-        scheduler::kick_all_ready_passes(&app);
-    }
-}
-
-/// Whether committing a threshold change from `previous` to `next` should kick an
-/// immediate pass: a DECREASE (broader coverage) while the feature is enabled. A raise
-/// only defers future work (forward-only semantics — nothing to enrich now, and the
-/// deferred rows persist), and a disabled feature has no pass to run. Extracted from
-/// [`media_index_set_importance_threshold`] so the decide-then-kick decision is testable
-/// without an `AppHandle`.
-fn threshold_change_should_kick(previous: f64, next: f64, enabled: bool) -> bool {
-    gate::threshold_decreased(previous, next) && enabled
 }
 
 /// The live preview behind the importance slider: across the ENABLED volumes in
@@ -372,44 +253,38 @@ pub async fn media_index_covered_count(
         });
     }
     let data_dir = crate::config::resolved_app_data_dir(&app)?;
+    let scope = gate::scope();
 
     tauri::async_runtime::spawn_blocking(move || {
-        use crate::indexing::IndexVolumeKind;
-        // Typed kind per ready volume (never an id-string branch); an unlisted volume
-        // is offline / not scanned.
-        let kinds: std::collections::HashMap<String, IndexVolumeKind> =
-            crate::indexing::ready_volumes_with_kind().into_iter().collect();
+        // The enabled volumes + their OS mount roots, resolved by the ONE shared rule
+        // (local always, SMB only when opted in, MTP / LocalExternal never); a requested
+        // volume that isn't ready comes back `pending`.
+        let (volumes, mut pending) = resolve_enabled_volumes(&volume_ids);
 
         let mut folders = 0u64;
         let mut images = 0u64;
-        let mut pending = false;
 
-        for vid in &volume_ids {
-            // Enabled = master on (checked above) AND the scheduler would enrich this
-            // volume: a local volume always, an SMB volume only when opted in, MTP and
-            // LocalExternal never (MTP is on-demand; a LocalExternal drive's index paths
-            // are mount-relative, so it's skipped until mapped — see `wire_volume`).
-            let enabled = match kinds.get(vid) {
-                Some(IndexVolumeKind::Local) => true,
-                Some(IndexVolumeKind::Smb) => network_config::is_opted_in(vid),
-                Some(IndexVolumeKind::Mtp | IndexVolumeKind::LocalExternal) | None => false,
-            };
-            if !enabled {
-                // An offline / not-ready requested volume that the user expects to
-                // count is pending; a genuinely-disabled one just contributes nothing.
-                if !kinds.contains_key(vid) {
-                    pending = true;
-                }
-                continue;
-            }
-            let (Some(counts), Some(scores)) =
-                (coverage::get_or_build(vid), coverage::importance_scores(&data_dir, vid))
-            else {
-                // Index not ready or importance not scored yet ⇒ unknown for now.
+        for (vid, mount_root) in &volumes {
+            let Some(counts) = coverage::get_or_build(vid) else {
+                // The drive index isn't ready ⇒ unknown for now.
                 pending = true;
                 continue;
             };
-            let (f, i) = coverage::covered_for_volume(&counts, &scores, threshold);
+            // The automatic scope needs importance; the narrow one counts the chosen
+            // folders alone, so an unscored volume is answerable there.
+            let scores = match coverage::importance_scores(&data_dir, vid) {
+                Some(scores) => scores,
+                None if !scope.consults_importance() => std::collections::HashMap::new(),
+                None => {
+                    pending = true;
+                    continue;
+                }
+            };
+            // Override coverage is OS-path keyed; map each folder into OS space, as the
+            // enrichment gate and the reclaim partition both do.
+            let config = network_config::snapshot();
+            let is_override = |folder: &str| config.covers(vid, &super::network::fetch::os_join(mount_root, folder));
+            let (f, i) = coverage::covered_in_scope(&counts, &scores, threshold, scope, &is_override);
             folders += f;
             images += i;
         }
@@ -459,12 +334,16 @@ pub struct ReclaimResult {
     pub freed_bytes: u64,
 }
 
-/// Resolve the enabled media-index volumes to reclaim over from `volume_ids`, each with
-/// the OS mount root the stored (index) paths map into: a local volume (mount `/`), or an
-/// opted-in SMB volume (its mount root). MTP and non-opted-in SMB are dropped. The
-/// `pending` flag is set when a requested volume the user expects isn't ready (offline /
-/// not scanned, or opted-in-but-unmounted SMB), so the caller can caveat the totals.
-fn resolve_reclaim_volumes(volume_ids: &[String]) -> (Vec<(String, String)>, bool) {
+/// Resolve the ENABLED media-index volumes from `volume_ids`, each with the OS mount root
+/// the stored (index) paths map into: a local volume (mount `/`), or an opted-in SMB volume
+/// (its mount root). MTP and non-opted-in SMB are dropped. The `pending` flag is set when a
+/// requested volume the user expects isn't ready (offline / not scanned, or
+/// opted-in-but-unmounted SMB), so the caller can caveat the totals.
+///
+/// The ONE enabled-volume rule, shared by the covered-count preview, the reclaim preview,
+/// the prune, and the per-volume state — so none of them can disagree about which volumes
+/// count, or map a stored path into OS space differently.
+fn resolve_enabled_volumes(volume_ids: &[String]) -> (Vec<(String, String)>, bool) {
     use crate::indexing::IndexVolumeKind;
     let kinds: std::collections::HashMap<String, IndexVolumeKind> =
         crate::indexing::ready_volumes_with_kind().into_iter().collect();
@@ -528,14 +407,17 @@ pub async fn media_index_reclaim_preview(
     let Some(scheduler) = app.try_state::<Arc<MediaScheduler>>().map(|s| Arc::clone(s.inner())) else {
         return Ok(ReclaimPreview { pending: true, ..empty });
     };
+    // The scope isn't a hypothetical the UI previews (unlike `threshold`, which the
+    // slider passes at its live position), so it's read from the gate here.
+    let scope = gate::scope();
     tauri::async_runtime::spawn_blocking(move || {
-        let (volumes, mut pending) = resolve_reclaim_volumes(&volume_ids);
+        let (volumes, mut pending) = resolve_enabled_volumes(&volume_ids);
         let mut total_stored = 0u64;
         let mut covered_stored = 0u64;
         let mut doomed_count = 0u64;
         let mut estimated_bytes = 0u64;
         for (vid, mount) in &volumes {
-            match scheduler.stored_coverage(vid, mount, threshold) {
+            match scheduler.stored_coverage(vid, mount, threshold, scope) {
                 Some(cov) => {
                     total_stored += cov.surviving_stored + cov.doomed_stored;
                     covered_stored += cov.surviving_stored;
@@ -581,12 +463,15 @@ pub async fn media_index_prune_below_threshold(
     let Some(scheduler) = app.try_state::<Arc<MediaScheduler>>().map(|s| Arc::clone(s.inner())) else {
         return Ok(empty);
     };
+    // Same live-gate read as the preview, so the prune deletes exactly the set the
+    // preview counted.
+    let scope = gate::scope();
     tauri::async_runtime::spawn_blocking(move || {
-        let (volumes, _pending) = resolve_reclaim_volumes(&volume_ids);
+        let (volumes, _pending) = resolve_enabled_volumes(&volume_ids);
         let mut deleted_rows = 0u64;
         let mut freed_bytes = 0u64;
         for (vid, mount) in &volumes {
-            let outcome = scheduler.prune_below_threshold(vid, mount, threshold);
+            let outcome = scheduler.prune_below_threshold(vid, mount, threshold, scope);
             deleted_rows += outcome.deleted_rows;
             freed_bytes += outcome.freed_bytes;
         }
@@ -845,6 +730,8 @@ pub async fn media_index_download_clip_model(app: AppHandle) -> Result<(), Strin
     }
     Ok(())
 }
+
+pub mod policy;
 
 #[cfg(test)]
 mod tests;

@@ -2534,5 +2534,50 @@
       "kept": "raw kept count, drives plural",
       "keptText": "kept images, formatted (e.g. 200,000)"
     }
+  },
+
+  "settings.mediaIndex.scope.label": "Which folders to index",
+  "@settings.mediaIndex.scope.label": {
+    "description": "Label above the radio group that picks how Cmdr decides which folders to image-index. In Settings > AI > Image search."
+  },
+  "settings.mediaIndex.scope.description": "Pick the folders yourself, or let Cmdr work out which ones matter to you.",
+  "@settings.mediaIndex.scope.description": {
+    "description": "Help text under the \"Which folders to index\" label, summarizing the two choices below it."
+  },
+  "settings.mediaIndex.scope.opt.chosen": "Only folders I choose",
+  "@settings.mediaIndex.scope.opt.chosen": {
+    "description": "The first (and default) choice for which folders to image-index: nothing is indexed except the folders the user adds to the list below it."
+  },
+  "settings.mediaIndex.scope.opt.importance": "Automatically, by folder importance",
+  "@settings.mediaIndex.scope.opt.importance": {
+    "description": "The second choice for which folders to image-index: Cmdr ranks folders by how much the user works with them and indexes the ones above the slider. 'importance' is the app's ranking of how much a folder matters to this user."
+  },
+
+  "settings.mediaIndex.chosenFolders.title": "Folders to index",
+  "@settings.mediaIndex.chosenFolders.title": {
+    "description": "Title above the list of folders the user picked for image indexing. In Settings > AI > Image search."
+  },
+  "settings.mediaIndex.chosenFolders.help": "Photos in these folders are indexed whatever else you pick above. Removing a folder stops new indexing; what''s already indexed stays searchable.",
+  "@settings.mediaIndex.chosenFolders.help": {
+    "description": "Help text under the \"Folders to index\" title. Says these folders always count, and reassures that removing one is not a deletion."
+  },
+  "settings.mediaIndex.chosenFolders.empty": "No folders yet. Add one to start indexing its photos.",
+  "@settings.mediaIndex.chosenFolders.empty": {
+    "description": "Shown in place of the folder list when the user hasn't chosen any folder yet."
+  },
+  "settings.mediaIndex.chosenFolders.add": "Add a folder\u2026",
+  "@settings.mediaIndex.chosenFolders.add": {
+    "description": "Label for the button that opens the macOS folder picker to add a folder to the image-indexing list. The ellipsis signals that a dialog opens."
+  },
+  "settings.mediaIndex.chosenFolders.remove": "Remove",
+  "@settings.mediaIndex.chosenFolders.remove": {
+    "description": "Label for the button on each row of the folder list that takes that folder off the image-indexing list."
+  },
+  "settings.mediaIndex.chosenFolders.removeAria": "Remove {folder} from indexing",
+  "@settings.mediaIndex.chosenFolders.removeAria": {
+    "description": "Accessible label for the per-row remove button, so screen-reader users hear which folder the button removes.",
+    "placeholders": {
+      "folder": "the folder's absolute path, like /Users/dave/Photos"
+    }
   }
 }

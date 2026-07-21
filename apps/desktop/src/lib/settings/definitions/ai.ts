@@ -167,9 +167,36 @@ export const aiSettings: SettingDefinitionSource[] = [
     hidden: true,
   },
   {
+    // WHICH folders image indexing may cover. `chosen` (the default) indexes only the
+    // folders and drives the user named; `importance` adds every folder scoring at or
+    // above the threshold slider, which is shown only in that mode. Rendered as a radio
+    // group by the bespoke `MediaIndexScope.svelte` inside the "Image search" card (not
+    // an auto row), so `hidden`. An install that already had image indexing on migrates
+    // to `importance` (settings-store `migrateSettings`, schema 3) so its behavior
+    // doesn't change under it; the Rust `gate::scope_from_settings` applies the same rule
+    // on the launch before that migration writes the key.
+    // Live-applied via the `settings-applier.ts` passthrough → `media_index_set_scope`.
+    id: 'mediaIndex.scope',
+    section: ['AI', 'Image search'],
+    labelKey: 'settings.mediaIndex.scope.label',
+    descriptionKey: 'settings.mediaIndex.scope.description',
+    keywords: ['image', 'photo', 'index', 'folders', 'scope', 'coverage', 'which', 'choose'],
+    type: 'enum',
+    default: 'chosen',
+    component: 'radio',
+    hidden: true,
+    constraints: {
+      options: [
+        { value: 'chosen', labelKey: 'settings.mediaIndex.scope.opt.chosen' },
+        { value: 'importance', labelKey: 'settings.mediaIndex.scope.opt.importance' },
+      ],
+    },
+  },
+  {
     // Internal (FE-owned): JSON array of absolute OS-mount folder paths marked "always
-    // index". Set by the per-folder override; persisted here AND pushed via
-    // `media_index_set_always_index_folder`.
+    // index" — the chosen folders. In the `chosen` scope these ARE the coverage. Managed
+    // by `MediaIndexChosenFolders.svelte`; persisted here AND pushed via
+    // `media_index_set_always_index_folder` (which kicks a pass when a folder is added).
     id: 'mediaIndex.alwaysIndexFolders',
     section: ['AI', 'Image search'],
     labelKey: 'settings.mediaIndex.alwaysIndexFolders.label',

@@ -3,7 +3,9 @@
 //! (`search_finds_the_image_by_ocr_text_and_survives_unmount`); here we cover the
 //! command-specific limit resolution.
 
-use super::{DEFAULT_LIMIT, MAX_LIMIT, resolve_limit, threshold_change_should_kick};
+use super::policy::{folder_override_should_kick, scope_change_should_kick, threshold_change_should_kick};
+use super::{DEFAULT_LIMIT, MAX_LIMIT, resolve_limit};
+use crate::media_index::gate::IndexScope;
 
 #[test]
 fn a_missing_limit_takes_the_default() {
@@ -47,4 +49,54 @@ fn an_unchanged_threshold_never_kicks() {
 fn a_decrease_while_disabled_never_kicks() {
     // With the feature off there is no pass to run.
     assert!(!threshold_change_should_kick(0.6, 0.3, false));
+}
+
+// ── The chosen-folder and scope kick decisions ───────────────────────────────
+// Same shape: the commands need an `AppHandle` to kick, so the decision is extracted.
+
+#[test]
+fn choosing_a_folder_while_enabled_kicks_a_pass() {
+    // Without this the folder sits unindexed until some volume happens to rescan, and
+    // the whole "add the folder, watch it index" promise falls over.
+    assert!(folder_override_should_kick(true, true));
+}
+
+#[test]
+fn removing_a_chosen_folder_never_kicks() {
+    // Coverage only narrows; the rows persist (forward-only) until a reclaim.
+    assert!(!folder_override_should_kick(false, true));
+}
+
+#[test]
+fn choosing_a_folder_while_disabled_never_kicks() {
+    assert!(!folder_override_should_kick(true, false));
+}
+
+#[test]
+fn broadening_the_scope_while_enabled_kicks_a_pass() {
+    assert!(scope_change_should_kick(
+        IndexScope::ChosenFolders,
+        IndexScope::ByImportance,
+        true
+    ));
+}
+
+#[test]
+fn narrowing_the_scope_never_kicks() {
+    // Narrowing has nothing new to enrich; the now-uncovered rows stay searchable and
+    // surface as the reclaim offer instead.
+    assert!(!scope_change_should_kick(
+        IndexScope::ByImportance,
+        IndexScope::ChosenFolders,
+        true
+    ));
+}
+
+#[test]
+fn broadening_the_scope_while_disabled_never_kicks() {
+    assert!(!scope_change_should_kick(
+        IndexScope::ChosenFolders,
+        IndexScope::ByImportance,
+        false
+    ));
 }

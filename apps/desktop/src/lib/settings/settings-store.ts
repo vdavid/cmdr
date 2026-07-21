@@ -41,7 +41,7 @@ interface SettingChangedPayload {
 // Store Configuration
 // ============================================================================
 
-const SCHEMA_VERSION = 2
+const SCHEMA_VERSION = 3
 
 let storeInstance: Store | null = null
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
@@ -339,6 +339,22 @@ async function migrateSettings(store: Store, fromVersion: number): Promise<void>
     const dateColors = await store.get<string>('appearance.dateColors')
     if (dateColors === 'off') {
       await store.set('appearance.dateColors', 'none')
+      changed = true
+    }
+  }
+
+  if (fromVersion < 3) {
+    // `mediaIndex.scope` split "which folders do we index?" out of the importance
+    // slider, and its default is the narrow "only folders I choose". Anyone who
+    // already had image indexing ON is running the automatic behavior, so state it
+    // for them rather than silently narrowing what they've already indexed. Everyone
+    // else (the feature is off by default) takes the new default. Idempotent: it only
+    // writes when the key is still absent. The Rust `gate::scope_from_settings` applies
+    // the same rule at startup, so the launch before this runs behaves the same.
+    const scope = await store.get<string>('mediaIndex.scope')
+    const imageIndexOn = await store.get<boolean>('mediaIndex.enabled')
+    if (scope === undefined && imageIndexOn === true) {
+      await store.set('mediaIndex.scope', 'importance')
       changed = true
     }
   }

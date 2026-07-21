@@ -2047,5 +2047,45 @@
   "settings.mediaIndex.progress.kept": "{kept, plural, one {mais {keptText} imagem indexada de uma configuração mais ampla, ainda pesquisável} other {mais {keptText} imagens indexadas de uma configuração mais ampla, ainda pesquisáveis} many {mais {keptText} imagens indexadas de uma configuração mais ampla, ainda pesquisáveis}}",
   "@settings.mediaIndex.progress.kept": {
     "sourceHash": "24bf4ee"
+  },
+  "settings.mediaIndex.scope.label": "Quais pastas indexar",
+  "@settings.mediaIndex.scope.label": {
+    "sourceHash": "fa14b86"
+  },
+  "settings.mediaIndex.scope.description": "Escolha as pastas você mesmo, ou deixe o Cmdr descobrir quais são importantes para você.",
+  "@settings.mediaIndex.scope.description": {
+    "sourceHash": "051ad07"
+  },
+  "settings.mediaIndex.scope.opt.chosen": "Somente as pastas que eu escolher",
+  "@settings.mediaIndex.scope.opt.chosen": {
+    "sourceHash": "a573613"
+  },
+  "settings.mediaIndex.scope.opt.importance": "Automaticamente, pela importância da pasta",
+  "@settings.mediaIndex.scope.opt.importance": {
+    "sourceHash": "0a66efe"
+  },
+  "settings.mediaIndex.chosenFolders.title": "Pastas para indexar",
+  "@settings.mediaIndex.chosenFolders.title": {
+    "sourceHash": "1aa33d2"
+  },
+  "settings.mediaIndex.chosenFolders.help": "As fotos destas pastas são indexadas independentemente do que você escolher acima. Remover uma pasta interrompe novas indexações; o que já foi indexado continua pesquisável.",
+  "@settings.mediaIndex.chosenFolders.help": {
+    "sourceHash": "c48ff3f"
+  },
+  "settings.mediaIndex.chosenFolders.empty": "Nenhuma pasta ainda. Adicione uma para começar a indexar as fotos dela.",
+  "@settings.mediaIndex.chosenFolders.empty": {
+    "sourceHash": "da00cf9"
+  },
+  "settings.mediaIndex.chosenFolders.add": "Adicionar uma pasta…",
+  "@settings.mediaIndex.chosenFolders.add": {
+    "sourceHash": "6505f14"
+  },
+  "settings.mediaIndex.chosenFolders.remove": "Remover",
+  "@settings.mediaIndex.chosenFolders.remove": {
+    "sourceHash": "c3812fc"
+  },
+  "settings.mediaIndex.chosenFolders.removeAria": "Remover {folder} da indexação",
+  "@settings.mediaIndex.chosenFolders.removeAria": {
+    "sourceHash": "338e30a"
   }
 }

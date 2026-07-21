@@ -2045,5 +2045,45 @@
   "settings.mediaIndex.progress.kept": "{kept, plural, one {még {keptText} kép indexelve egy tágabb beállításból, továbbra is kereshető} other {még {keptText} kép indexelve egy tágabb beállításból, továbbra is kereshető}}",
   "@settings.mediaIndex.progress.kept": {
     "sourceHash": "24bf4ee"
+  },
+  "settings.mediaIndex.scope.label": "Mely mappák legyenek indexelve",
+  "@settings.mediaIndex.scope.label": {
+    "sourceHash": "fa14b86"
+  },
+  "settings.mediaIndex.scope.description": "Válaszd ki magad a mappákat, vagy hagyd, hogy a Cmdr találja ki, melyek fontosak neked.",
+  "@settings.mediaIndex.scope.description": {
+    "sourceHash": "051ad07"
+  },
+  "settings.mediaIndex.scope.opt.chosen": "Csak az általam kiválasztott mappák",
+  "@settings.mediaIndex.scope.opt.chosen": {
+    "sourceHash": "a573613"
+  },
+  "settings.mediaIndex.scope.opt.importance": "Automatikusan, a mappa fontossága szerint",
+  "@settings.mediaIndex.scope.opt.importance": {
+    "sourceHash": "0a66efe"
+  },
+  "settings.mediaIndex.chosenFolders.title": "Indexelendő mappák",
+  "@settings.mediaIndex.chosenFolders.title": {
+    "sourceHash": "1aa33d2"
+  },
+  "settings.mediaIndex.chosenFolders.help": "Ezekben a mappákban a fotók akkor is indexelve lesznek, ha fent mást választasz. Ha eltávolítasz egy mappát, új indexelés nem indul; ami már indexelve van, továbbra is kereshető marad.",
+  "@settings.mediaIndex.chosenFolders.help": {
+    "sourceHash": "c48ff3f"
+  },
+  "settings.mediaIndex.chosenFolders.empty": "Még nincs mappa. Adj hozzá egyet, hogy induljon a fotói indexelése.",
+  "@settings.mediaIndex.chosenFolders.empty": {
+    "sourceHash": "da00cf9"
+  },
+  "settings.mediaIndex.chosenFolders.add": "Mappa hozzáadása…",
+  "@settings.mediaIndex.chosenFolders.add": {
+    "sourceHash": "6505f14"
+  },
+  "settings.mediaIndex.chosenFolders.remove": "Eltávolítás",
+  "@settings.mediaIndex.chosenFolders.remove": {
+    "sourceHash": "c3812fc"
+  },
+  "settings.mediaIndex.chosenFolders.removeAria": "{folder} eltávolítása az indexelésből",
+  "@settings.mediaIndex.chosenFolders.removeAria": {
+    "sourceHash": "338e30a"
   }
 }

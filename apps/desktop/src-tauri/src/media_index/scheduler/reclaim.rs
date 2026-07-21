@@ -13,8 +13,10 @@
 //!
 //! [`stored_coverage`]: MediaScheduler::stored_coverage
 
+use std::collections::HashMap;
 use std::collections::HashSet;
 
+use crate::media_index::gate::IndexScope;
 use crate::media_index::{coverage, network, store, vector};
 
 use super::MediaScheduler;
@@ -63,6 +65,23 @@ pub struct PruneOutcome {
 }
 
 impl MediaScheduler {
+    /// The folder scores the stored-row partition should run against, for `volume_id`
+    /// under `scope` — the ONE place both stored-coverage entry points resolve them, so
+    /// they can't disagree about when a partition is safe.
+    ///
+    /// The automatic scope NEEDS importance: an unscored volume returns `None` and the
+    /// caller reports pending rather than proposing a destructive count off scores it
+    /// doesn't have. The narrow scope doesn't consult importance at all, so it
+    /// partitions safely against an EMPTY score map — a reclaim offer (and the kept-rows
+    /// line) stays available on a volume importance has never touched, which is exactly
+    /// the volume a user narrowing their scope is most likely to be looking at.
+    fn partition_scores(&self, volume_id: &str, scope: IndexScope) -> Option<HashMap<String, f64>> {
+        if !scope.consults_importance() {
+            return Some(HashMap::new());
+        }
+        coverage::importance_scores(&self.data_dir, volume_id)
+    }
+
     /// The single-source stored-coverage split for `volume_id` at `threshold`:
     /// how many stored `media.db` rows fall INSIDE the current setting
     /// (`surviving_stored`) vs OUTSIDE it (`doomed_stored` + the `doomed_paths` a reclaim
@@ -74,14 +93,19 @@ impl MediaScheduler {
     /// `mount_root` maps a stored (index-relative) path into OS space for the
     /// override/exclude config lookup ("/" on a local volume, the mount root on a network
     /// one), exactly as enrichment does; importance keys on the index identity directly.
-    /// Returns `None` when importance hasn't scored the volume (importance's scoring makes that transient) —
-    /// the partition can't be computed safely, so the caller reports pending rather than
-    /// proposing a destructive count. The selection reuses [`coverage::partition_stored`]
-    /// (the enrichment precedence) and the [`coverage`] cache (the slider's qualifying
-    /// counts), never a second derivation.
-    pub fn stored_coverage(&self, volume_id: &str, mount_root: &str, threshold: f64) -> Option<StoredCoverage> {
-        // Importance must be scored to partition safely.
-        let scores = coverage::importance_scores(&self.data_dir, volume_id)?;
+    /// Returns `None` when the partition can't be computed safely (the automatic scope on a
+    /// volume importance hasn't scored — transient), so the caller reports pending rather
+    /// than proposing a destructive count. See [`partition_scores`](Self::partition_scores).
+    /// The selection reuses [`coverage::partition_stored`] (the enrichment precedence) and
+    /// the [`coverage`] cache (the slider's qualifying counts), never a second derivation.
+    pub fn stored_coverage(
+        &self,
+        volume_id: &str,
+        mount_root: &str,
+        threshold: f64,
+        scope: IndexScope,
+    ) -> Option<StoredCoverage> {
+        let scores = self.partition_scores(volume_id, scope)?;
 
         // The stored-row paths (empty when the volume was never enriched).
         let db_path = store::media_db_path(&self.data_dir, volume_id);
@@ -96,11 +120,11 @@ impl MediaScheduler {
         let is_override =
             |index_path: &str| config.covers(volume_id, &network::fetch::os_join(&mount_root, index_path));
         let is_excluded = |index_path: &str| config.is_excluded(&network::fetch::os_join(&mount_root, index_path));
-        let partition = coverage::partition_stored(&stored, &scores, threshold, &is_override, &is_excluded);
+        let partition = coverage::partition_stored(&stored, &scores, threshold, scope, &is_override, &is_excluded);
 
         // Covered qualifying reuses the slider-preview cache path (single-source).
         let covered_qualifying = coverage::get_or_build(volume_id)
-            .map(|counts| coverage::covered_for_volume(&counts, &scores, threshold).1)
+            .map(|counts| coverage::covered_in_scope(&counts, &scores, threshold, scope, &is_override).1)
             .unwrap_or(0);
 
         Some(StoredCoverage {
@@ -124,8 +148,9 @@ impl MediaScheduler {
         volume_id: &str,
         mount_root: &str,
         threshold: f64,
+        scope: IndexScope,
     ) -> Option<StoredCoverageCounts> {
-        let scores = coverage::importance_scores(&self.data_dir, volume_id)?;
+        let scores = self.partition_scores(volume_id, scope)?;
 
         let db_path = store::media_db_path(&self.data_dir, volume_id);
         let stored: Vec<String> = store::open_read_connection(&db_path)
@@ -142,7 +167,7 @@ impl MediaScheduler {
         let mut surviving_stored = 0u64;
         let mut doomed_stored = 0u64;
         for path in &stored {
-            if coverage::stored_row_survives(path, &scores, threshold, &is_override, &is_excluded) {
+            if coverage::stored_row_survives(path, &scores, threshold, scope, &is_override, &is_excluded) {
                 surviving_stored += 1;
             } else {
                 doomed_stored += 1;
@@ -150,7 +175,7 @@ impl MediaScheduler {
         }
 
         let covered_qualifying = coverage::get_or_build(volume_id)
-            .map(|counts| coverage::covered_for_volume(&counts, &scores, threshold).1)
+            .map(|counts| coverage::covered_in_scope(&counts, &scores, threshold, scope, &is_override).1)
             .unwrap_or(0);
 
         Some(StoredCoverageCounts {
@@ -176,8 +201,8 @@ impl MediaScheduler {
             .unwrap_or(0)
     }
 
-    /// Prune the stored rows OUTSIDE the current setting for `volume_id` at `threshold`
-    /// (reclaim): compute the doomed set via [`stored_coverage`], estimate the
+    /// Prune the stored rows OUTSIDE the current setting for `volume_id` at `threshold` and
+    /// `scope` (reclaim): compute the doomed set via [`stored_coverage`], estimate the
     /// content bytes it frees, delete it through the volume's ONE writer thread (the
     /// serialization guarantee — the prune and any concurrent pass can't interleave
     /// mid-batch, and a concurrent pass only enriches ABOVE-threshold rows, a disjoint
@@ -185,11 +210,17 @@ impl MediaScheduler {
     /// USER-EXPLICIT deletion: it derives ONLY from settings state, so like the privacy
     /// retro-delete it needs no completed-scan edge (see `DETAILS.md` § GC safety).
     /// Returns the rows deleted and the freed-byte estimate; a no-op (all zeros) when
-    /// importance is unscored or nothing is doomed.
+    /// the partition isn't safe or nothing is doomed.
     ///
     /// [`stored_coverage`]: MediaScheduler::stored_coverage
-    pub fn prune_below_threshold(&self, volume_id: &str, mount_root: &str, threshold: f64) -> PruneOutcome {
-        let Some(coverage) = self.stored_coverage(volume_id, mount_root, threshold) else {
+    pub fn prune_below_threshold(
+        &self,
+        volume_id: &str,
+        mount_root: &str,
+        threshold: f64,
+        scope: IndexScope,
+    ) -> PruneOutcome {
+        let Some(coverage) = self.stored_coverage(volume_id, mount_root, threshold, scope) else {
             return PruneOutcome::default();
         };
         if coverage.doomed_paths.is_empty() {

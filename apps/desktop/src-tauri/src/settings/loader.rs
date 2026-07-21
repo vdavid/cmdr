@@ -131,6 +131,13 @@ pub struct Settings {
     /// complement to the opt-in). Seeded + live-applied like the opt-in.
     #[serde(alias = "mediaIndex.excludedFolders", default)]
     pub media_index_excluded_folders: Vec<String>,
+    /// Which folders image indexing may cover: `"chosen"` (only the folders/volumes the
+    /// user named) or `"importance"` (those plus every folder above the threshold).
+    /// Absent on any install predating the setting, which `media_index::gate::scope_from_settings`
+    /// resolves against `image_index_enabled`. Seeded into `media_index::gate` at
+    /// startup; live changes flow through `media_index_set_scope`.
+    #[serde(alias = "mediaIndex.scope", default)]
+    pub media_index_scope: Option<String>,
 }
 
 fn default_show_hidden() -> bool {
@@ -177,6 +184,7 @@ impl Default for Settings {
             media_index_always_index_folders: Vec::new(),
             media_index_importance_threshold: None,
             media_index_excluded_folders: Vec::new(),
+            media_index_scope: None,
         }
     }
 }
@@ -254,6 +262,10 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     let media_index_always_index_folders = parse_string_array(&json, "mediaIndex.alwaysIndexFolders");
     let media_index_importance_threshold = json.get("mediaIndex.importanceThreshold").and_then(|v| v.as_f64());
     let media_index_excluded_folders = parse_string_array(&json, "mediaIndex.excludedFolders");
+    let media_index_scope = json
+        .get("mediaIndex.scope")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
 
     Ok(Settings {
         show_hidden_files,
@@ -285,6 +297,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         media_index_always_index_folders,
         media_index_importance_threshold,
         media_index_excluded_folders,
+        media_index_scope,
     })
 }
 

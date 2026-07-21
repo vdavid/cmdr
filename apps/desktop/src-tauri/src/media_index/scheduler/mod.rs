@@ -199,10 +199,11 @@ impl MediaScheduler {
             .writer_for(&self.data_dir, volume_id)
             .map_err(|e| e.to_string())?;
 
-        // Importance-prioritized enrichment (plan Cross-cutting): read the folder
-        // scores at the user's threshold, enrich the qualifying folders (high score
-        // first), and defer the rest. When importance hasn't scored this volume yet
-        // (`None`), DEFER the importance-gated remainder while still honoring an
+        // Coverage per the user's SCOPE (§ Indexing scope). In the narrow scope
+        // ("only folders I choose") coverage is override-only and importance is never
+        // read. In the automatic scope, enrich the folders qualifying at the user's
+        // threshold (high score first) and defer the rest; when importance hasn't
+        // scored this volume yet, DEFER the gated remainder while still honoring an
         // explicit "always index" override — never enrich the whole volume, or a
         // first-run race (importance's multi-second recompute hasn't finished) would
         // over-index everything permanently (forward-only semantics). The unscored →
@@ -210,12 +211,13 @@ impl MediaScheduler {
         // "always index" override always enriches; a user-excluded folder never does
         // (privacy veto).
         let threshold = gate::importance_threshold();
-        let scores = self.folder_scores(volume_id, threshold);
-        if scores.is_none() {
+        let coverage = lifecycle::pass_coverage(gate::scope(), || self.folder_scores(volume_id, threshold));
+        if coverage.deferred_on_importance {
             // Importance unavailable ⇒ this pass deferred its gated remainder; the
             // importance subscriber re-kicks once a recompute completes.
             self.mark_deferred_for_importance(volume_id);
         }
+        let scores = coverage.scores;
         // Coverage (override + importance threshold) is read from the START-OF-PASS
         // snapshot; the privacy exclusion is read LIVE (`network::config::is_excluded`),
         // so a folder excluded WHILE this pass runs is vetoed immediately — the veto is
@@ -427,11 +429,13 @@ impl MediaScheduler {
         // never enriches (privacy veto); otherwise enrich when an "always index"
         // override covers it OR its folder importance meets the slider threshold.
         // Importance keys on the INDEX identity, so strip the mount root off the OS
-        // path to look it up. When importance is unavailable (`None`) the network path
-        // stays conservative — override-only — never dragging the whole NAS.
+        // path to look it up. Both the narrow SCOPE and an unavailable importance store
+        // leave `scores` `None`, which keeps the network path conservative —
+        // override-only — never dragging the whole NAS.
         let threshold = gate::importance_threshold();
-        let scores = self.folder_scores(volume_id, threshold);
-        if scores.is_none() {
+        let coverage = lifecycle::pass_coverage(gate::scope(), || self.folder_scores(volume_id, threshold));
+        let scores = coverage.scores;
+        if coverage.deferred_on_importance {
             // Same bridge as the local pass: importance unavailable ⇒ this pass ran
             // override-only; re-kick once a recompute completes so the threshold
             // applies (the network fallback stays conservative until then).

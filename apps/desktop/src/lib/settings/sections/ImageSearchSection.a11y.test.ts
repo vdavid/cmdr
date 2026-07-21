@@ -2,9 +2,11 @@
  * Tier 3 a11y + composition tests for `ImageSearchSection.svelte` (the `AI › Image search`
  * subsection). This file OWNS the section's own contract: the master toggle + the on-device
  * privacy note always render, and the bespoke slider / network-volume controls reveal only
- * once `mediaIndex.enabled` is on. The composed children (`MediaIndexImportanceSlider`,
- * `MediaIndexNetworkVolumes`, `MediaIndexReclaim`) have their own dedicated tests; here they
- * mount under the same deterministic IPC/prefs mocks purely to prove the gating.
+ * once `mediaIndex.enabled` is on. The composed children (`MediaIndexScope`,
+ * `MediaIndexChosenFolders`, `MediaIndexImportanceSlider`, `MediaIndexNetworkVolumes`,
+ * `MediaIndexReclaim`) have their own dedicated tests; here they mount under the same
+ * deterministic IPC/prefs mocks purely to prove the gating. The mocked scope is the
+ * automatic one, so the slider (a gated child this file asserts on) renders at all.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -12,7 +14,12 @@ import { mount, flushSync, tick } from 'svelte'
 import type { CoveredCount, MediaIndexVolumeState } from '$lib/ipc/bindings'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
-const settingValues: Record<string, unknown> = { 'mediaIndex.enabled': false, 'mediaIndex.importanceThreshold': 0 }
+const settingValues: Record<string, unknown> = {
+  'mediaIndex.enabled': false,
+  'mediaIndex.importanceThreshold': 0,
+  'mediaIndex.scope': 'importance',
+  'mediaIndex.alwaysIndexFolders': [],
+}
 
 vi.mock('$lib/settings', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -30,6 +37,12 @@ vi.mock('$lib/tauri-commands', () => ({
 
 vi.mock('$lib/media-index/enabled-volumes', () => ({
   getEnabledMediaIndexVolumeIds: () => ['root'],
+}))
+
+vi.mock('$lib/media-index/always-index-folders', () => ({
+  getChosenFolders: () => [],
+  isFolderChosen: () => false,
+  setFolderChosen: vi.fn(),
 }))
 
 vi.mock('$lib/media-index/network-volume-prefs', () => ({

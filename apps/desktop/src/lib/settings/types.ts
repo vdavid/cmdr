@@ -184,6 +184,13 @@ export const VOLUME_TINT_COLORS: readonly Exclude<VolumeTintColor, 'none'>[] = [
   'pink',
   'brown',
 ] as const
+/**
+ * Which folders image indexing may cover: only the ones the user chose, or those plus every
+ * folder above the importance threshold. Mirrors the backend `media_index::gate::IndexScope`
+ * tokens.
+ */
+export type MediaIndexScope = 'chosen' | 'importance'
+
 export type DownloadsNotificationsMode = 'in-app' | 'macos' | 'both' | 'neither'
 export type LowDiskSpaceNotificationsMode = 'in-app' | 'macos' | 'off'
 
@@ -350,6 +357,17 @@ export interface SettingsValues {
    * card (`MediaIndexImportanceSlider.svelte`), not an auto row, so it's `hidden`.
    */
   'mediaIndex.importanceThreshold': number
+  /**
+   * WHICH folders image indexing may cover. `'chosen'` (the default) indexes only the folders
+   * and drives the user named — the `mediaIndex.alwaysIndexFolders` / `alwaysIndexVolumes`
+   * overrides — and never consults folder importance, so `mediaIndex.importanceThreshold` has
+   * no effect at all. `'importance'` adds every folder at or above that threshold, and is the
+   * only value where the slider is shown. Live-applied via `media_index_set_scope`; broadening
+   * kicks a pass, narrowing deletes nothing (the now-uncovered rows stay searchable and surface
+   * as the reclaim offer). Rendered by `MediaIndexScope.svelte`, not an auto row, so it's
+   * `hidden`.
+   */
+  'mediaIndex.scope': MediaIndexScope
 
   // File system watching - downloads notifications + global go-to-latest shortcut.
   'behavior.fileSystemWatching.downloadsNotifications': DownloadsNotificationsMode

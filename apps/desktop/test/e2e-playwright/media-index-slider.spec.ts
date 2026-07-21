@@ -2,8 +2,10 @@
  * E2E for the image-index importance slider (`mediaIndex.importanceThreshold`).
  *
  * The required slider E2E: the slider persists a new level and its live preview updates as the
- * user moves it. The slider only shows once the master "Index image contents" toggle is on,
- * so the spec enables that first (and turns it back off at the end so no state leaks).
+ * user moves it. The slider only shows once the master "Index image contents" toggle is on AND
+ * the scope is the automatic one, so the spec sets both first (and turns indexing back off at
+ * the end so no state leaks). The default scope indexes only the folders the user chose, where
+ * the threshold has no effect and the slider is deliberately absent.
  *
  * The slider renders named buckets over a typed `0.0..=1.0` threshold; the rightmost bucket
  * (the default) is threshold `0.0` ("everywhere"). Pressing ArrowLeft on the thumb moves one
@@ -24,6 +26,7 @@ const MASTER_LABEL = 'Index image contents'
 const SECTION_ID = 'ai-image-search'
 const MASTER_KEY = 'mediaIndex.enabled'
 const THRESHOLD_KEY = 'mediaIndex.importanceThreshold'
+const AUTOMATIC_SCOPE = 'importance'
 
 const settingsFilePath = (() => {
   const dataDir = process.env.CMDR_DATA_DIR
@@ -60,6 +63,16 @@ function clickMasterJs(): string {
     if (!root) return false;
     var control = root.querySelector('.switch-control') || root;
     control.click();
+    return true;
+  })()`
+}
+
+/** Clicks the automatic-scope radio option; returns false if absent. */
+function clickAutomaticScopeJs(): string {
+  return `(function() {
+    var input = document.querySelector('input[value=${JSON.stringify(AUTOMATIC_SCOPE)}]');
+    if (!input) return false;
+    input.click();
     return true;
   })()`
 }
@@ -103,9 +116,18 @@ test.describe('Image-index importance slider', () => {
     const main = tauriPage as TauriPage
     const settings = await openSettings(main)
 
-    // Enable image indexing so the slider reveals.
+    // Enable image indexing so the scope control reveals.
     expect(await settings.evaluate<boolean>(clickMasterJs())).toBe(true)
     await expect.poll(() => settingOnDisk(MASTER_KEY), { timeout: 3000 }).toBe(true)
+    await settings.waitForSelector('.mi-scope', 3000)
+
+    // The default scope is "only folders I choose", where the threshold does nothing — so the
+    // slider isn't there at all. Pick the automatic scope to reveal it.
+    expect(await settings.evaluate<string>(bucketLabelJs()), 'no slider in the default scope').toBe('')
+    expect(await settings.evaluate<boolean>(clickAutomaticScopeJs())).toBe(true)
+    // The slider appearing IS the scope taking effect, so wait on that rather than on the
+    // debounced settings write — this spec's subject is the threshold's persistence, and
+    // `mediaIndex.scope`'s has its own coverage in `MediaIndexScope.a11y.test.ts`.
     await settings.waitForSelector('.mi-slider-thumb', 3000)
 
     // Default position is the broadest bucket ("everywhere"), threshold 0.0 (sparse ⇒ unset).

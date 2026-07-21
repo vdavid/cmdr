@@ -126,6 +126,28 @@ export async function mediaIndexSetAlwaysIndexVolume(volumeId: string, always: b
 }
 
 /**
+ * Set (or clear) a per-folder "always index" override — a CHOSEN folder. Every image at or
+ * under it is indexed whatever the importance slider says, and in the "only folders I choose"
+ * scope these folders are the entire coverage. Adding one kicks an immediate pass backend-side,
+ * so the folder starts indexing right away rather than at the next scan. The FE also persists
+ * `mediaIndex.alwaysIndexFolders`; both happen together in `always-index-folders.ts`.
+ */
+export async function mediaIndexSetAlwaysIndexFolder(folder: string, always: boolean): Promise<void> {
+  await commands.mediaIndexSetAlwaysIndexFolder(folder, always)
+}
+
+/**
+ * Set which folders image indexing may cover: `chosen` (only the folders and drives the user
+ * named) or `importance` (those plus every folder above the threshold). Broadening kicks a pass;
+ * narrowing deletes nothing — the now-uncovered rows stay searchable and surface as the reclaim
+ * offer. Live-applied via the `settings-applier.ts` passthrough after the FE persists
+ * `mediaIndex.scope`.
+ */
+export async function mediaIndexSetScope(scope: string): Promise<void> {
+  await commands.mediaIndexSetScope(scope)
+}
+
+/**
  * Set (or clear) a per-folder image-search EXCLUSION (the privacy veto): no image at or under
  * `folder` is enriched, beating any "always index" override. Excluding also retro-deletes the
  * folder's already-indexed rows backend-side; un-excluding just clears the veto. The FE also

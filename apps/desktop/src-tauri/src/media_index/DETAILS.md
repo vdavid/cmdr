@@ -184,12 +184,17 @@ real now; the on-demand-per-visit trigger itself is a later slice (a clear TODO 
 
 ### Backend commands + typed state for the network-enrichment UI
 
-The backend provides three setters + the extended state:
+The backend provides three setters + the extended state. They live in `commands/policy.rs` with the other
+coverage-changing commands (the scope, the threshold, the privacy exclusion), split from the read/query surface in
+`commands.rs`: each mutates live `gate` / `network::config` state and has to decide whether the change BROADENS coverage
+and needs an immediate pass, and each of those decisions is a pure `*_should_kick` fn tested in `commands/tests.rs`.
 
 - `media_index_set_network_volume_enabled(volume_id, enabled)` — the per-volume SMB opt-in (live-applied; enabling kicks a
   pass).
 - `media_index_set_always_index_volume(volume_id, always)` / `media_index_set_always_index_folder(folder, always)` — the
-  overrides (live-applied; the folder setter does NOT kick a pass, next scan picks it up).
+  overrides (live-applied). ADDING kicks a pass, removing doesn't: the volume setter kicks that volume's network pass
+  when it's opted in, the folder setter kicks every ready volume (a path doesn't say which volume it's on) — § The
+  indexing scope.
 - `media_index_volume_state` extended with `network_opt_in`, `always_indexed`, `paused` (the "paused, resumes on
   reconnect" honesty).
 
@@ -216,10 +221,10 @@ so browsing a NAS pane searches that NAS's `media.db` and hits resolve under its
 search-results snapshot) falls back to the local root. Filename search stays deliberately root-scoped (it reads the
 local whole-drive index) — only the image grid follows the pane.
 
-**Per-folder override — FE trigger deferred.** The `media_index_set_always_index_folder` command +
-`mediaIndex.alwaysIndexFolders` setting are ready, but no FE control sets them yet: the natural trigger is a folder
-right-click action, and the file context menu is a NATIVE (Rust) menu (`show_file_context_menu`), so adding the item +
-its menu-event handler is a small backend follow-up rather than an FE change.
+**Per-folder override — the chosen folders.** `media_index_set_always_index_folder` +
+`mediaIndex.alwaysIndexFolders` back the chosen-folders list in Settings > AI > Image search
+(`MediaIndexChosenFolders.svelte`, adding via the native folder picker). In the `ChosenFolders` scope these folders ARE
+the coverage (§ The indexing scope). A folder right-click trigger for the same setter is still open.
 
 ## Schema (`store/`)
 
@@ -503,6 +508,49 @@ Threshold lives in `gate` as an `f64`-bits atomic (`set_importance_threshold` / 
 Default `0.0` (`DEFAULT_IMPORTANCE_THRESHOLD`): enrich every scored folder, the slider raises it to defer low-importance
 folders. Importance keys on the INDEX identity, so the network gate strips the mount root off the OS path before the lookup.
 
+### The indexing scope: chosen folders vs automatic (`gate::IndexScope`)
+
+WHICH folders indexing may cover is an explicit user choice, not something inferred from a number:
+
+- **`ChosenFolders`** (the default): coverage is the "always index" overrides and nothing else. Importance is never
+  READ, so the threshold has no effect at any position.
+- **`ByImportance`**: the overrides PLUS every folder at or above the threshold — the automatic behavior, and the only
+  scope where the slider is shown.
+
+**Decision: an explicit enum, not a sentinel threshold.** A "threshold 1.01 means chosen-only" encoding would put the
+model back where this feature came from — inferred, undocumented, and impossible to read off the settings file. The
+scope lives in `gate` as an `AtomicU8` beside the threshold, seeded from `mediaIndex.scope` and live-applied by
+`media_index_set_scope`.
+
+**Decision: the narrow scope REUSES the override-only path, it doesn't add a second gate.** `local_should_enrich`
+already treats `scores: None` as override-only (the unscored-volume fallback, § Defer-until-scored), which is exactly
+what "only folders I choose" means. `lifecycle::pass_coverage(scope, load_scores)` is the one place that resolves it: in
+the narrow scope it returns `scores: None` WITHOUT calling `load_scores`, and — the part that matters — WITHOUT marking
+the volume deferred-on-importance. Marking it would have the unscored → scored bridge re-kick a pass that has nothing
+new to enrich. `coverage::stored_row_survives` takes the same scope so the reclaim partition can never propose deleting
+a row a pass would keep, and `volume_state`'s `waiting_for_importance` is false in the narrow scope (there's no wait to
+voice).
+
+**Decision: narrowing the scope deletes nothing.** Switching to `ChosenFolders` re-partitions the stored rows — the
+importance-covered ones become "doomed" — but nothing is written. Those rows stay searchable and surface through the
+EXISTING kept-rows line and reclaim offer (§ Reclaim space), the same forward-only contract the slider has. There is no
+new deletion path: reclaim's user-explicit prune is still the only way rows leave. `stored_coverage*` additionally
+partitions without importance in the narrow scope (an empty score map rather than `None`), so the reclaim offer works on
+a volume importance never scored — exactly the volume someone narrowing their scope is likely looking at.
+
+**Decision: adding a chosen folder kicks a pass.** `media_index_set_always_index_folder` kicks every ready volume when
+a folder is ADDED and the feature is on (the path alone doesn't say which volume it's on; a pass on an unrelated volume
+is a fast staleness no-op and the coordinator coalesces). Removing kicks nothing. This mirrors the SMB opt-in and the
+threshold-decrease kicks: without it a chosen folder would sit unindexed until the next scan completion, which on a
+quiet local drive can be hours, and the feature would look inert at the exact moment the user acts.
+
+**Migration.** `gate::scope_from_settings(scope_token, was_enabled)`: a stated scope wins; with none, an install that
+already had image indexing ON resolves to `ByImportance` (someone running it today is running the automatic behavior,
+and narrowing their indexed set at launch is a change they never asked for), everyone else to the default. Image
+indexing is off by default, so that second group is nearly everyone. The frontend `migrateSettings` (schema 3) writes
+the key once with the same rule; the Rust fallback covers the launch before that migration runs, so the two can't
+disagree.
+
 ### Defer-until-scored
 
 When `folder_scores` is `None` (importance unavailable), BOTH the local and network passes DEFER their
@@ -550,7 +598,8 @@ only guard.
 — exactly `(importance ≥ threshold) AND opted-in`, never a non-opted-in SMB/MTP volume. The qualifying-image count per
 folder is an O(entries) index walk, so it's cached per volume (`coverage::get_or_build`, a `folder → count` map) and the
 threshold is applied cheaply by intersecting with `above_threshold` — a debounced drag
-only re-runs the cheap importance read + `covered_for_volume` (pure, unit-tested). `pending` is `true` when any enabled
+only re-runs the cheap importance read + `covered_in_scope` (pure, unit-tested; it dispatches on the scope, so the
+count follows the same rule the enrichment gate does — § The indexing scope). `pending` is `true` when any enabled
 requested volume isn't ready (still scanning / not yet scored), so the UI voices "naspi still scanning" rather than a
 confident wrong number. `media_index_volume_state` gained `qualifying_count: Option<u64>` (the honest denominator for
 "12,000 of 38,900 images", `None` when offline/scanning); ETA math lives UI-side off `(enriched_count, qualifying_count)`.
@@ -627,12 +676,13 @@ the four the slider's forward-only contract allows.
   `keptCount`, the SAME set), and `covered_qualifying` (drive-index qualifying images in covered folders — the slider
   preview's number, a DIFFERENT thing: it counts what WOULD be indexed, not what IS). It guarantees `total_stored =
   surviving_stored + doomed_stored`, and reuses the `coverage.rs` cache path for `covered_qualifying` (never a second
-  derivation). It returns `None` when importance hasn't scored the volume (importance's scoring makes that transient) — the partition
-  can't be computed safely, so the command reports `pending` and the UI hides the reclaim line rather than proposing a
-  destructive count off a lower bound.
+  derivation). In the AUTOMATIC scope it returns `None` when importance hasn't scored the volume (importance's scoring
+  makes that transient) — the partition can't be computed safely, so the command reports `pending` and the UI hides the
+  reclaim line rather than proposing a destructive count off a lower bound. In the narrow scope importance isn't an
+  input, so it partitions against an empty score map and stays answerable (§ The indexing scope).
 - **The partition rule** (`coverage::partition_stored`, pure) reuses the SAME precedence enrichment does: a stored row
-  survives when it's NOT under an excluded folder AND (covered by an "always index" override OR its parent folder scores
-  at or above the threshold). Crucially it keys on score-MAP MEMBERSHIP, not a `>= 0.0` on a defaulted score: a folder
+  survives when it's NOT under an excluded folder AND (covered by an "always index" override OR — in the automatic
+  scope only — its parent folder scores at or above the threshold). Crucially it keys on score-MAP MEMBERSHIP, not a `>= 0.0` on a defaulted score: a folder
   with NO importance row (floored junk, or scored away since enrichment) is treated as below any threshold → doomed,
   even at threshold 0.0. Spell this out — otherwise a floored folder's rows leak into neither bucket. `is_override` /
   `is_excluded` take the stored (index) path; the wrapper wires the OS-mount mapping (`os_join`, identity on a local
@@ -700,7 +750,8 @@ it every few seconds). Both share the ONE canonical survival rule (`coverage::st
 cache, so they can never disagree with the reclaim preview. `covered_qualifying_count` drives the settings progress line
 "N of M in your covered folders" (N = `enriched_count − kept_count`, capped); `kept_count` (= the reclaim doomed count) drives
 the quiet "K more indexed from broader settings, still searchable" line, gated by the SAME `shouldOfferReclaim` floor so
-it never duplicates the reclaim offer. Both `None` when importance hasn't scored the volume.
+it never duplicates the reclaim offer. Both `None` when the partition isn't safe (the automatic scope on an unscored
+volume). `waiting_for_importance` is likewise false in the narrow scope — there's no wait to voice there.
 
 ### Live enrichment: follow the index
 
@@ -894,10 +945,11 @@ top-k over a single user's library is low-ms. Measure on a real corpus and recor
 
 ## What's left for later
 
-- **Per-folder "always index" UI (FE trigger):** the backend setter (`media_index_set_always_index_folder`) + the
-  `mediaIndex.alwaysIndexFolders` setting are ready, but no FE control sets them yet. The natural trigger is a folder
-  right-click action, the same native-menu shape the exclude trigger now uses (§ Per-folder photo-search exclude), so
-  it's a small backend/menu follow-up.
+- **Per-folder "always index" from a right-click:** Settings has the chosen-folders list; the folder context-menu
+  trigger for the same setter is still open (the same native-menu shape the exclude trigger uses, § Per-folder
+  photo-search exclude). A per-folder indexing-state indicator in the pane is open too — there's no cheap per-folder
+  count today (it would mean a `media.db` prefix scan per folder per poll), so anything showing one needs a counts
+  query designed for it.
 - **CLIP model size:** the shipped towers are non-palettized (~392 MB) because 8-bit palettization NaN'd the text tower;
   a per-layer palettization exclusion would cut it toward ~138 MB.
 - **Later:** faces (detect/embed/cluster/name), the durable identity store, and LLM captions.

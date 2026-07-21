@@ -2054,5 +2054,45 @@
   "settings.mediaIndex.progress.kept": "{kept, plural, one {nog {keptText} afbeelding geïndexeerd uit een bredere instelling, nog steeds doorzoekbaar} other {nog {keptText} afbeeldingen geïndexeerd uit een bredere instelling, nog steeds doorzoekbaar}}",
   "@settings.mediaIndex.progress.kept": {
     "sourceHash": "24bf4ee"
+  },
+  "settings.mediaIndex.scope.label": "Welke mappen worden geïndexeerd",
+  "@settings.mediaIndex.scope.label": {
+    "sourceHash": "fa14b86"
+  },
+  "settings.mediaIndex.scope.description": "Kies de mappen zelf, of laat Cmdr uitzoeken welke er voor jou toe doen.",
+  "@settings.mediaIndex.scope.description": {
+    "sourceHash": "051ad07"
+  },
+  "settings.mediaIndex.scope.opt.chosen": "Alleen mappen die ik kies",
+  "@settings.mediaIndex.scope.opt.chosen": {
+    "sourceHash": "a573613"
+  },
+  "settings.mediaIndex.scope.opt.importance": "Automatisch, op belang van de map",
+  "@settings.mediaIndex.scope.opt.importance": {
+    "sourceHash": "0a66efe"
+  },
+  "settings.mediaIndex.chosenFolders.title": "Mappen om te indexeren",
+  "@settings.mediaIndex.chosenFolders.title": {
+    "sourceHash": "1aa33d2"
+  },
+  "settings.mediaIndex.chosenFolders.help": "Foto''s in deze mappen worden geïndexeerd, wat je hierboven ook kiest. Een map verwijderen stopt nieuwe indexering; wat al geïndexeerd is, blijft doorzoekbaar.",
+  "@settings.mediaIndex.chosenFolders.help": {
+    "sourceHash": "c48ff3f"
+  },
+  "settings.mediaIndex.chosenFolders.empty": "Nog geen mappen. Voeg er een toe om de foto''s erin te indexeren.",
+  "@settings.mediaIndex.chosenFolders.empty": {
+    "sourceHash": "da00cf9"
+  },
+  "settings.mediaIndex.chosenFolders.add": "Map toevoegen…",
+  "@settings.mediaIndex.chosenFolders.add": {
+    "sourceHash": "6505f14"
+  },
+  "settings.mediaIndex.chosenFolders.remove": "Verwijderen",
+  "@settings.mediaIndex.chosenFolders.remove": {
+    "sourceHash": "c3812fc"
+  },
+  "settings.mediaIndex.chosenFolders.removeAria": "{folder} uit de indexering verwijderen",
+  "@settings.mediaIndex.chosenFolders.removeAria": {
+    "sourceHash": "338e30a"
   }
 }

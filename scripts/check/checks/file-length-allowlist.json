@@ -52,7 +52,6 @@
     "apps/desktop/src-tauri/src/ipc.rs": 801,
     "apps/desktop/src-tauri/src/lib.rs": 953,
     "apps/desktop/src-tauri/src/mcp/server.rs": 1008,
-    "apps/desktop/src-tauri/src/media_index/commands.rs": 850,
     "apps/desktop/src-tauri/src/media_index/scheduler/enrich_tests.rs": 1111,
     "apps/desktop/src-tauri/src/mtp/connection/directory_ops.rs": 983,
     "apps/desktop/src-tauri/src/mtp/connection/mod.rs": 1204,

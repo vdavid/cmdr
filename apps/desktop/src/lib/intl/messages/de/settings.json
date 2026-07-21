@@ -2053,5 +2053,45 @@
   "settings.mediaIndex.progress.kept": "{kept, plural, one {{keptText} weiteres Bild aus einer breiteren Einstellung indiziert, weiterhin durchsuchbar} other {{keptText} weitere Bilder aus einer breiteren Einstellung indiziert, weiterhin durchsuchbar}}",
   "@settings.mediaIndex.progress.kept": {
     "sourceHash": "24bf4ee"
+  },
+  "settings.mediaIndex.scope.label": "Welche Ordner indiziert werden",
+  "@settings.mediaIndex.scope.label": {
+    "sourceHash": "fa14b86"
+  },
+  "settings.mediaIndex.scope.description": "Wähle die Ordner selbst aus, oder lass Cmdr herausfinden, welche für dich wichtig sind.",
+  "@settings.mediaIndex.scope.description": {
+    "sourceHash": "051ad07"
+  },
+  "settings.mediaIndex.scope.opt.chosen": "Nur Ordner, die ich auswähle",
+  "@settings.mediaIndex.scope.opt.chosen": {
+    "sourceHash": "a573613"
+  },
+  "settings.mediaIndex.scope.opt.importance": "Automatisch, nach Ordner-Wichtigkeit",
+  "@settings.mediaIndex.scope.opt.importance": {
+    "sourceHash": "0a66efe"
+  },
+  "settings.mediaIndex.chosenFolders.title": "Zu indizierende Ordner",
+  "@settings.mediaIndex.chosenFolders.title": {
+    "sourceHash": "1aa33d2"
+  },
+  "settings.mediaIndex.chosenFolders.help": "Fotos in diesen Ordnern werden indiziert, egal was du oben auswählst. Wenn du einen Ordner entfernst, wird nichts Neues mehr indiziert; das bereits Indizierte bleibt durchsuchbar.",
+  "@settings.mediaIndex.chosenFolders.help": {
+    "sourceHash": "c48ff3f"
+  },
+  "settings.mediaIndex.chosenFolders.empty": "Noch keine Ordner. Füge einen hinzu, um seine Fotos zu indizieren.",
+  "@settings.mediaIndex.chosenFolders.empty": {
+    "sourceHash": "da00cf9"
+  },
+  "settings.mediaIndex.chosenFolders.add": "Ordner hinzufügen…",
+  "@settings.mediaIndex.chosenFolders.add": {
+    "sourceHash": "6505f14"
+  },
+  "settings.mediaIndex.chosenFolders.remove": "Entfernen",
+  "@settings.mediaIndex.chosenFolders.remove": {
+    "sourceHash": "c3812fc"
+  },
+  "settings.mediaIndex.chosenFolders.removeAria": "{folder} aus der Indizierung entfernen",
+  "@settings.mediaIndex.chosenFolders.removeAria": {
+    "sourceHash": "338e30a"
   }
 }

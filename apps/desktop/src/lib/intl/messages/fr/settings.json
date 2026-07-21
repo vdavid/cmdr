@@ -2055,5 +2055,45 @@
   "settings.mediaIndex.progress.kept": "{kept, plural, one {{keptText} image de plus indexée depuis un réglage plus large, toujours consultable} other {{keptText} images de plus indexées depuis un réglage plus large, toujours consultables} many {{keptText} images de plus indexées depuis un réglage plus large, toujours consultables}}",
   "@settings.mediaIndex.progress.kept": {
     "sourceHash": "24bf4ee"
+  },
+  "settings.mediaIndex.scope.label": "Quels dossiers indexer",
+  "@settings.mediaIndex.scope.label": {
+    "sourceHash": "fa14b86"
+  },
+  "settings.mediaIndex.scope.description": "Choisissez les dossiers vous-même, ou laissez Cmdr déterminer ceux qui comptent pour vous.",
+  "@settings.mediaIndex.scope.description": {
+    "sourceHash": "051ad07"
+  },
+  "settings.mediaIndex.scope.opt.chosen": "Uniquement les dossiers que je choisis",
+  "@settings.mediaIndex.scope.opt.chosen": {
+    "sourceHash": "a573613"
+  },
+  "settings.mediaIndex.scope.opt.importance": "Automatiquement, selon l''importance du dossier",
+  "@settings.mediaIndex.scope.opt.importance": {
+    "sourceHash": "0a66efe"
+  },
+  "settings.mediaIndex.chosenFolders.title": "Dossiers à indexer",
+  "@settings.mediaIndex.chosenFolders.title": {
+    "sourceHash": "1aa33d2"
+  },
+  "settings.mediaIndex.chosenFolders.help": "Les photos de ces dossiers sont indexées quel que soit votre choix ci-dessus. Retirer un dossier arrête les nouvelles indexations ; ce qui est déjà indexé reste consultable.",
+  "@settings.mediaIndex.chosenFolders.help": {
+    "sourceHash": "c48ff3f"
+  },
+  "settings.mediaIndex.chosenFolders.empty": "Aucun dossier pour l''instant. Ajoutez-en un pour indexer ses photos.",
+  "@settings.mediaIndex.chosenFolders.empty": {
+    "sourceHash": "da00cf9"
+  },
+  "settings.mediaIndex.chosenFolders.add": "Ajouter un dossier…",
+  "@settings.mediaIndex.chosenFolders.add": {
+    "sourceHash": "6505f14"
+  },
+  "settings.mediaIndex.chosenFolders.remove": "Retirer",
+  "@settings.mediaIndex.chosenFolders.remove": {
+    "sourceHash": "c3812fc"
+  },
+  "settings.mediaIndex.chosenFolders.removeAria": "Retirer {folder} de l''indexation",
+  "@settings.mediaIndex.chosenFolders.removeAria": {
+    "sourceHash": "338e30a"
   }
 }

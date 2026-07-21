@@ -635,6 +635,8 @@ export {
   mediaIndexDropThumbnailTokens,
   mediaIndexSetNetworkVolumeEnabled,
   mediaIndexSetAlwaysIndexVolume,
+  mediaIndexSetAlwaysIndexFolder,
+  mediaIndexSetScope,
   mediaIndexSetExcludedFolder,
   setImageImportanceThreshold,
   mediaIndexCoveredCount,

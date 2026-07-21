@@ -2048,5 +2048,45 @@
   "settings.mediaIndex.progress.kept": "{kept, plural, one {{keptText} imagen más indexada de una configuración más amplia, todavía se puede buscar} other {{keptText} imágenes más indexadas de una configuración más amplia, todavía se pueden buscar} many {{keptText} imágenes más indexadas de una configuración más amplia, todavía se pueden buscar}}",
   "@settings.mediaIndex.progress.kept": {
     "sourceHash": "24bf4ee"
+  },
+  "settings.mediaIndex.scope.label": "Qué carpetas indexar",
+  "@settings.mediaIndex.scope.label": {
+    "sourceHash": "fa14b86"
+  },
+  "settings.mediaIndex.scope.description": "Elige las carpetas tú mismo, o deja que Cmdr descubra cuáles te importan.",
+  "@settings.mediaIndex.scope.description": {
+    "sourceHash": "051ad07"
+  },
+  "settings.mediaIndex.scope.opt.chosen": "Solo las carpetas que yo elija",
+  "@settings.mediaIndex.scope.opt.chosen": {
+    "sourceHash": "a573613"
+  },
+  "settings.mediaIndex.scope.opt.importance": "Automáticamente, según la importancia de la carpeta",
+  "@settings.mediaIndex.scope.opt.importance": {
+    "sourceHash": "0a66efe"
+  },
+  "settings.mediaIndex.chosenFolders.title": "Carpetas que se indexan",
+  "@settings.mediaIndex.chosenFolders.title": {
+    "sourceHash": "1aa33d2"
+  },
+  "settings.mediaIndex.chosenFolders.help": "Las fotos de estas carpetas se indexan sea cual sea la opción de arriba. Si quitas una carpeta, deja de indexarse lo nuevo; lo ya indexado sigue siendo buscable.",
+  "@settings.mediaIndex.chosenFolders.help": {
+    "sourceHash": "c48ff3f"
+  },
+  "settings.mediaIndex.chosenFolders.empty": "Todavía no hay carpetas. Añade una para empezar a indexar sus fotos.",
+  "@settings.mediaIndex.chosenFolders.empty": {
+    "sourceHash": "da00cf9"
+  },
+  "settings.mediaIndex.chosenFolders.add": "Añadir una carpeta…",
+  "@settings.mediaIndex.chosenFolders.add": {
+    "sourceHash": "6505f14"
+  },
+  "settings.mediaIndex.chosenFolders.remove": "Quitar",
+  "@settings.mediaIndex.chosenFolders.remove": {
+    "sourceHash": "c3812fc"
+  },
+  "settings.mediaIndex.chosenFolders.removeAria": "Quitar {folder} de la indexación",
+  "@settings.mediaIndex.chosenFolders.removeAria": {
+    "sourceHash": "338e30a"
   }
 }

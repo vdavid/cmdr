@@ -417,6 +417,12 @@ Reactive settings must live in `reactive-settings.svelte.ts` (not `.ts`). Svelte
 When modifying the settings format, increment `SCHEMA_VERSION` in `settings-store.ts` and add a migration case to
 `migrateSettings()`. Otherwise old settings files may cause crashes.
 
+Current cases: v2 renamed `appearance.dateColors`'s "off" value to "none"; v3 states `mediaIndex.scope` for installs
+that already had image indexing on, so the new "only folders I choose" default doesn't silently narrow what they've
+already indexed. A migration that changes a BACKEND-read setting also needs the same rule applied Rust-side (v3:
+`media_index::gate::scope_from_settings`), because the backend reads `settings.json` at startup and would otherwise see
+the raw default on the launch before the migration writes the key.
+
 ### Settings cache is write-through
 
 `setSetting()` updates both the in-memory cache and schedules a debounced save. If the app crashes between the cache

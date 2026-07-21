@@ -8,7 +8,8 @@ use crate::importance::store::{ImportanceStore, importance_db_path};
 use crate::importance::writer::{ImportanceWriter, WeightRow};
 use crate::media_index::backend::fake::FakeVisionBackend;
 // Share the kick tests' tiny-index builder + gate reset (same shape).
-use super::kick_tests::{build_index, reset_gate};
+use super::kick_tests::{build_index, reset_gate, use_automatic_scope};
+use crate::media_index::gate::IndexScope;
 use crate::media_index::network::config::NetworkEnrichConfig;
 use crate::media_index::predicate::MediaKind;
 use crate::media_index::store::{EnrichmentState, MediaStatusRow, MediaStore, media_db_path};
@@ -103,7 +104,9 @@ fn stored_coverage_partitions_rows_by_the_threshold_and_counts_qualifying() {
     network::config::set_config(NetworkEnrichConfig::default());
 
     let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
-    let cov = sched.stored_coverage(ROOT, "/", 0.5).expect("scored");
+    let cov = sched
+        .stored_coverage(ROOT, "/", 0.5, IndexScope::ByImportance)
+        .expect("scored");
     assert_eq!(cov.surviving_stored, 1, "the /keep row survives");
     assert_eq!(cov.doomed_stored, 1, "the /drop row is doomed");
     assert_eq!(cov.doomed_paths, vec!["/drop/c.jpg".to_string()]);
@@ -121,12 +124,86 @@ fn stored_coverage_partitions_rows_by_the_threshold_and_counts_qualifying() {
 
 #[test]
 fn stored_coverage_is_none_when_importance_is_unscored() {
-    // No importance store ⇒ can't partition safely ⇒ `None` (the command reports pending
-    // and the reclaim UI stays hidden rather than proposing a destructive number).
+    // No importance store ⇒ the AUTOMATIC scope can't partition safely ⇒ `None` (the
+    // command reports pending and the reclaim UI stays hidden rather than proposing a
+    // destructive number).
     let dir = tempfile::tempdir().expect("temp");
     seed_media_row(dir.path(), ROOT, "/keep/a.jpg");
     let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
-    assert!(sched.stored_coverage(ROOT, "/", 0.0).is_none());
+    assert!(
+        sched
+            .stored_coverage(ROOT, "/", 0.0, IndexScope::ByImportance)
+            .is_none()
+    );
+}
+
+#[test]
+fn the_narrow_scope_partitions_without_importance_at_all() {
+    // "Only folders I choose" doesn't consult importance, so an unscored volume is
+    // perfectly answerable — and it's exactly the volume someone narrowing their scope
+    // is likely looking at. The row outside the chosen folders is DOOMED (reclaimable),
+    // never deleted here.
+    // The `network::config` this drives is process-global, so serialize like the other
+    // config-touching tests here.
+    let _guard = crate::indexing::test_read_pool_lock();
+    let dir = tempfile::tempdir().expect("temp");
+    seed_media_row(dir.path(), ROOT, "/chosen/a.jpg");
+    seed_media_row(dir.path(), ROOT, "/elsewhere/b.jpg");
+    network::config::set_config(NetworkEnrichConfig {
+        always_index_folders: ["/chosen".to_string()].into_iter().collect(),
+        ..Default::default()
+    });
+
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+    let cov = sched
+        .stored_coverage(ROOT, "/", 0.0, IndexScope::ChosenFolders)
+        .expect("answerable without importance");
+    assert_eq!(cov.surviving_stored, 1, "the chosen folder's row stays covered");
+    assert_eq!(cov.doomed_paths, vec!["/elsewhere/b.jpg".to_string()]);
+
+    network::config::set_config(NetworkEnrichConfig::default());
+}
+
+#[test]
+fn narrowing_the_scope_keeps_every_row_until_the_user_reclaims() {
+    // The data-safety line for the mode switch: flipping to "only folders I choose"
+    // re-partitions (the /important row becomes doomed) but deletes NOTHING on its own —
+    // both rows are still on disk. Only the explicit reclaim prune removes them, and it
+    // spares the chosen folder.
+    // The `network::config` this drives is process-global, so serialize like the other
+    // config-touching tests here.
+    let _guard = crate::indexing::test_read_pool_lock();
+    let dir = tempfile::tempdir().expect("temp");
+    seed_importance(dir.path(), ROOT, &[("/important", 0.9)]);
+    seed_media_row(dir.path(), ROOT, "/important/a.jpg");
+    seed_media_row(dir.path(), ROOT, "/chosen/b.jpg");
+    network::config::set_config(NetworkEnrichConfig {
+        always_index_folders: ["/chosen".to_string()].into_iter().collect(),
+        ..Default::default()
+    });
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+
+    // The switch itself: the partition changes, the disk doesn't.
+    let cov = sched
+        .stored_coverage(ROOT, "/", 0.0, IndexScope::ChosenFolders)
+        .expect("partitionable");
+    assert_eq!(cov.doomed_paths, vec!["/important/a.jpg".to_string()]);
+    assert!(
+        stored_exists(dir.path(), ROOT, "/important/a.jpg"),
+        "narrowing the scope must not delete a row by itself"
+    );
+    assert!(stored_exists(dir.path(), ROOT, "/chosen/b.jpg"));
+
+    // The user then explicitly reclaims: only the uncovered row goes.
+    let outcome = sched.prune_below_threshold(ROOT, "/", 0.0, IndexScope::ChosenFolders);
+    assert_eq!(outcome.deleted_rows, 1);
+    assert!(!stored_exists(dir.path(), ROOT, "/important/a.jpg"));
+    assert!(
+        stored_exists(dir.path(), ROOT, "/chosen/b.jpg"),
+        "the chosen folder's rows survive the reclaim"
+    );
+
+    network::config::set_config(NetworkEnrichConfig::default());
 }
 
 #[test]
@@ -147,7 +224,7 @@ fn prune_below_threshold_deletes_the_doomed_set_and_keeps_the_rest() {
     network::config::set_config(NetworkEnrichConfig::default());
 
     let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
-    let outcome = sched.prune_below_threshold(ROOT, "/", 0.5);
+    let outcome = sched.prune_below_threshold(ROOT, "/", 0.5, IndexScope::ByImportance);
     assert_eq!(outcome.deleted_rows, 1, "one doomed row deleted");
     assert!(outcome.freed_bytes > 0, "a positive freed-byte estimate");
 
@@ -166,6 +243,9 @@ fn a_pass_enriching_covered_rows_and_a_prune_touch_disjoint_sets() {
     // doomed /drop row) leaves /keep enriched and /drop gone — neither steps on the other.
     let _guard = crate::indexing::test_read_pool_lock();
     reset_gate();
+    // Importance-driven coverage, so ask for the automatic scope (the default indexes
+    // only the user's chosen folders).
+    use_automatic_scope();
     gate::set_enabled(true);
     gate::set_importance_threshold(0.5);
 
@@ -190,7 +270,7 @@ fn a_pass_enriching_covered_rows_and_a_prune_touch_disjoint_sets() {
     );
 
     // The prune removes the doomed /drop row, leaving the just-enriched /keep row intact.
-    let outcome = sched.prune_below_threshold(ROOT, "/", 0.5);
+    let outcome = sched.prune_below_threshold(ROOT, "/", 0.5, IndexScope::ByImportance);
     assert_eq!(outcome.deleted_rows, 1, "only the doomed /drop row is pruned");
     assert!(
         stored_exists(dir.path(), ROOT, "/keep/a.jpg"),
@@ -226,7 +306,7 @@ fn prune_leaves_an_override_covered_row_below_threshold() {
     });
 
     let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
-    let outcome = sched.prune_below_threshold(ROOT, "/", 0.8);
+    let outcome = sched.prune_below_threshold(ROOT, "/", 0.8, IndexScope::ByImportance);
     assert_eq!(outcome.deleted_rows, 0, "the override-covered row is not pruned");
     assert!(
         stored_exists(dir.path(), ROOT, "/archive/a.jpg"),

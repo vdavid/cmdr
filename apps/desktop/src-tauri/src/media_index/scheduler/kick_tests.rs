@@ -250,8 +250,18 @@ fn seed_media_row(data_dir: &std::path::Path, path: &str) {
 
 pub(super) fn reset_gate() {
     gate::set_enabled(false);
+    gate::set_scope(gate::DEFAULT_SCOPE);
     gate::set_importance_threshold(gate::DEFAULT_IMPORTANCE_THRESHOLD);
     network::config::set_config(NetworkEnrichConfig::default());
+}
+
+/// Put the process-global gate in the AUTOMATIC scope, for the tests that exercise
+/// importance-driven coverage. The default scope indexes only the user's chosen
+/// folders, so a test about the importance threshold has to say so — it's asking for
+/// the non-default mode. The narrow scope has its own tests (`lifecycle`, `coverage`,
+/// `reclaim_tests`).
+pub(super) fn use_automatic_scope() {
+    gate::set_scope(gate::IndexScope::ByImportance);
 }
 
 /// Poll `cond` up to `iters` × 20 ms, returning whether it ever held. The kick paths
@@ -304,6 +314,9 @@ fn wire_volume_kicks_an_initial_pass_for_a_fresh_at_launch_volume() {
     // Pre-fix this stays un-enriched (the regression).
     let _guard = crate::indexing::test_read_pool_lock();
     reset_gate();
+    // Importance-driven coverage, so ask for the automatic scope (the default indexes
+    // only the user's chosen folders).
+    use_automatic_scope();
     gate::set_enabled(true);
     let dir = tempfile::tempdir().expect("temp");
     let index_path = dir.path().join("index-root.db");
@@ -334,6 +347,9 @@ fn kick_runs_a_pass_for_a_ready_volume_only_when_enabled() {
     // controlled list keeps this hermetic — no process-global index registry.
     let _guard = crate::indexing::test_read_pool_lock();
     reset_gate();
+    // Importance-driven coverage, so ask for the automatic scope (the default indexes
+    // only the user's chosen folders).
+    use_automatic_scope();
     let dir = tempfile::tempdir().expect("temp");
     let index_path = dir.path().join("index-root.db");
     build_index(&index_path, &[("/keep", "a.jpg")]);
@@ -381,6 +397,9 @@ fn a_pass_no_ops_while_disabled_and_enriches_once_enabled() {
     // the same pass enrich. Importance is seeded scored so nothing defers.
     let _guard = crate::indexing::test_read_pool_lock();
     reset_gate();
+    // Importance-driven coverage, so ask for the automatic scope (the default indexes
+    // only the user's chosen folders).
+    use_automatic_scope();
     let dir = tempfile::tempdir().expect("temp");
     let index_path = dir.path().join("index-root.db");
     build_index(&index_path, &[("/keep", "a.jpg")]);
@@ -425,6 +444,58 @@ fn a_pass_no_ops_while_disabled_and_enriches_once_enabled() {
 }
 
 #[test]
+fn the_narrow_scope_enriches_only_the_chosen_folder_end_to_end() {
+    // The feature's whole promise, through a real pass: with the scope at its default,
+    // a high-importance folder nobody chose stays unindexed while the chosen one
+    // enriches — at the BROADEST slider position (0.0), so the threshold is provably not
+    // what's holding the other folder back.
+    let _guard = crate::indexing::test_read_pool_lock();
+    reset_gate();
+    gate::set_enabled(true);
+    gate::set_importance_threshold(0.0);
+
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(&index_path, &[("/chosen", "a.jpg"), ("/important", "b.jpg")]);
+    crate::indexing::test_install_root_read_pool(index_path).expect("install pool");
+    // Importance scores /important highly — in the automatic scope it would be covered.
+    seed_importance_full_pass(dir.path(), &[("/important", 1.0)]);
+    network::config::set_config(config_with(&["/chosen"], &[]));
+
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+    assert_eq!(sched.run_pass_blocking(ROOT).expect("pass"), 1, "one image enriched");
+    let store = MediaStore::open(&media_db_path(dir.path(), ROOT)).expect("open");
+    assert!(
+        store.status_for("/chosen/a.jpg").expect("read").is_some(),
+        "the folder the user chose is indexed"
+    );
+    assert!(
+        store.status_for("/important/b.jpg").expect("read").is_none(),
+        "a folder nobody chose stays unindexed, however important it scores"
+    );
+    assert!(
+        !sched.take_deferred_for_importance(ROOT),
+        "nothing is deferred on importance: this scope isn't waiting for it"
+    );
+
+    // Same setup, the other scope: now importance broadens coverage to both.
+    use_automatic_scope();
+    assert_eq!(
+        sched.run_pass_blocking(ROOT).expect("pass"),
+        1,
+        "the importance-covered folder enriches once the scope allows it"
+    );
+    let store = MediaStore::open(&media_db_path(dir.path(), ROOT)).expect("open");
+    assert!(
+        store.status_for("/important/b.jpg").expect("read").is_some(),
+        "the automatic scope picks it up"
+    );
+
+    crate::indexing::test_uninstall_root_read_pool();
+    reset_gate();
+}
+
+#[test]
 fn defers_until_importance_scores_then_enriches_at_the_threshold() {
     // The slider-integrity regression, end to end. Seed a GENUINELY EMPTY importance
     // store (no weights, no generation) so `folder_scores` is `None` and the volume
@@ -432,6 +503,9 @@ fn defers_until_importance_scores_then_enriches_at_the_threshold() {
     // would read it as scored and it would never defer.
     let _guard = crate::indexing::test_read_pool_lock();
     reset_gate();
+    // Importance-driven coverage, so ask for the automatic scope (the default indexes
+    // only the user's chosen folders).
+    use_automatic_scope();
     gate::set_enabled(true);
     gate::set_importance_threshold(0.0);
 
@@ -626,6 +700,9 @@ fn a_live_tick_re_enriches_a_modified_covered_image() {
     // staleness predicate marks it dirty and the tick re-analyzes it.
     let _guard = crate::indexing::test_read_pool_lock();
     reset_gate();
+    // Importance-driven coverage, so ask for the automatic scope (the default indexes
+    // only the user's chosen folders).
+    use_automatic_scope();
     gate::set_enabled(true);
     let dir = tempfile::tempdir().expect("temp");
     let index_path = dir.path().join("index-root.db");

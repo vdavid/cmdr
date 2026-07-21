@@ -1880,11 +1880,34 @@ export const commands = {
     __TAURI_INVOKE<void>('media_index_set_always_index_volume', { volumeId, always }),
   /**
    *  Set (or clear) a folder "always index" override: every image at or under `folder`
-   *  (an absolute OS-mount path) enriches regardless of importance. Live-applied; the
-   *  frontend persists `mediaIndex.alwaysIndexFolders` and calls this on change.
+   *  (an absolute OS-mount path) enriches regardless of importance, in EITHER scope —
+   *  in the narrow one ("only folders I choose") these overrides are the whole coverage.
+   *  Live-applied; the frontend persists `mediaIndex.alwaysIndexFolders` and calls this
+   *  on change.
+   *
+   *  ADDING a folder kicks an immediate pass, the same way opting a network volume in
+   *  does: the folder is the user asking for these photos NOW, and waiting for the next
+   *  scan completion (which on a quiet local drive may be hours) would make the feature
+   *  look inert. Every ready volume is kicked because the folder can sit on any of them
+   *  and the path alone doesn't say which; a pass on a volume the folder isn't under is a
+   *  fast staleness no-op, and the coordinator folds a kick that races a running pass.
+   *  REMOVING one kicks nothing: coverage only narrows, and the rows persist
+   *  (forward-only) until the user reclaims them.
    */
   mediaIndexSetAlwaysIndexFolder: (folder: string, always: boolean) =>
     __TAURI_INVOKE<void>('media_index_set_always_index_folder', { folder, always }),
+  /**
+   *  Set the indexing SCOPE: index only the folders the user chose, or index
+   *  automatically by folder importance. The typed token (`no-string-matching`: an
+   *  unknown one falls back to the narrow default rather than branching on wording).
+   *  Live-applied; the frontend persists `mediaIndex.scope` and calls this on change.
+   *
+   *  BROADENING (narrow → automatic) kicks a pass so the newly-covered folders start
+   *  enriching now. NARROWING never deletes: the rows outside the new scope stay
+   *  searchable and surface as the existing kept-rows / reclaim offer, so a scope switch
+   *  can't silently destroy an index the user spent hours building.
+   */
+  mediaIndexSetScope: (scope: string) => __TAURI_INVOKE<void>('media_index_set_scope', { scope }),
   /**
    *  Set (or clear) a per-folder photo-search EXCLUSION: no image at or under `folder`
    *  (an absolute OS path) enriches (the privacy complement to the opt-in — plan §

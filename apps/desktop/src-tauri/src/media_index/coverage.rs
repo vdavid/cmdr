@@ -19,6 +19,7 @@ use std::sync::{Arc, LazyLock, Mutex};
 
 use crate::ignore_poison::IgnorePoison;
 
+use super::gate::IndexScope;
 use super::scheduler::enrich::{ImageEntry, parent_dir, walk_image_entries};
 
 /// The qualifying-image counts for one volume: how many images each folder holds, and
@@ -190,13 +191,14 @@ pub fn partition_stored(
     stored_paths: &[String],
     folder_scores: &HashMap<String, f64>,
     threshold: f64,
+    scope: IndexScope,
     is_override: &dyn Fn(&str) -> bool,
     is_excluded: &dyn Fn(&str) -> bool,
 ) -> StoredPartition {
     let mut surviving = 0u64;
     let mut doomed = Vec::new();
     for path in stored_paths {
-        if stored_row_survives(path, folder_scores, threshold, is_override, is_excluded) {
+        if stored_row_survives(path, folder_scores, threshold, scope, is_override, is_excluded) {
             surviving += 1;
         } else {
             doomed.push(path.clone());
@@ -209,19 +211,81 @@ pub fn partition_stored(
 /// survival rule, shared by [`partition_stored`] (which collects the doomed paths for a
 /// prune) and the counts-only [`MediaScheduler::stored_coverage_counts`] (which the
 /// volume-state poll calls without allocating a 200k-path list). A row survives when
-/// it's NOT under an excluded folder AND (covered by an "always index" override OR its
-/// parent folder scores at or above `threshold`); keys on score-MAP MEMBERSHIP, so a
-/// floored folder (no row) is below any threshold.
+/// it's NOT under an excluded folder AND (covered by an "always index" override OR, in
+/// the automatic SCOPE only, its parent folder scores at or above `threshold`); the
+/// score term keys on score-MAP MEMBERSHIP, so a floored folder (no row) is below any
+/// threshold.
+///
+/// In the narrow scope the threshold term drops out entirely, matching the enrichment
+/// gate ([`local_should_enrich`]) exactly — the destructive reclaim selection can never
+/// propose deleting a row a pass would keep, or keep one a pass would never write.
 ///
 /// [`MediaScheduler::stored_coverage_counts`]: crate::media_index::scheduler::MediaScheduler::stored_coverage_counts
+/// [`local_should_enrich`]: crate::media_index::scheduler
 pub(crate) fn stored_row_survives(
     path: &str,
     folder_scores: &HashMap<String, f64>,
     threshold: f64,
+    scope: IndexScope,
     is_override: &dyn Fn(&str) -> bool,
     is_excluded: &dyn Fn(&str) -> bool,
 ) -> bool {
-    !is_excluded(path) && (is_override(path) || folder_scores.get(parent_dir(path)).is_some_and(|s| *s >= threshold))
+    if is_excluded(path) {
+        return false;
+    }
+    if is_override(path) {
+        return true;
+    }
+    scope.consults_importance() && folder_scores.get(parent_dir(path)).is_some_and(|s| *s >= threshold)
+}
+
+/// The chosen-folder counts for ONE volume: how many folders holding qualifying images
+/// are covered by an "always index" override, and how many images they hold. The narrow
+/// scope's counterpart to [`covered_for_volume`] — same two quantities, the other
+/// coverage rule — so the settings preview and progress lines stay honest in both
+/// scopes off the one cached [`FolderImageCounts`]. `is_override` takes the STORED
+/// (index-relative) folder path; the caller wires the OS-mount mapping, as everywhere
+/// else here.
+pub fn chosen_for_volume(counts: &FolderImageCounts, is_override: &dyn Fn(&str) -> bool) -> (u64, u64) {
+    let mut folders = 0u64;
+    let mut images = 0u64;
+    for (folder, count) in &counts.per_folder {
+        if is_override(folder) {
+            folders += 1;
+            images += count;
+        }
+    }
+    (folders, images)
+}
+
+/// The covered folder + image counts for one volume under the CURRENT scope: the
+/// chosen folders alone, or those plus every folder at or above `threshold`. The one
+/// dispatcher both the settings preview and the per-volume progress line go through, so
+/// neither can drift from the enrichment gate.
+pub fn covered_in_scope(
+    counts: &FolderImageCounts,
+    folder_scores: &HashMap<String, f64>,
+    threshold: f64,
+    scope: IndexScope,
+    is_override: &dyn Fn(&str) -> bool,
+) -> (u64, u64) {
+    match scope {
+        IndexScope::ChosenFolders => chosen_for_volume(counts, is_override),
+        IndexScope::ByImportance => {
+            // The automatic scope covers the above-threshold folders PLUS the chosen
+            // ones; a chosen folder that scores below (or isn't scored at all) would
+            // otherwise be missing from a count the enrichment gate does include.
+            let (mut folders, mut images) = covered_for_volume(counts, folder_scores, threshold);
+            for (folder, count) in &counts.per_folder {
+                let scored_in = folder_scores.get(folder.as_str()).is_some_and(|s| *s >= threshold);
+                if !scored_in && is_override(folder) {
+                    folders += 1;
+                    images += count;
+                }
+            }
+            (folders, images)
+        }
+    }
 }
 
 /// Convenience: read a volume's importance folder scores as a `folder → score` map, or
@@ -414,7 +478,7 @@ mod tests {
         ];
         let folder_scores = scores(&[("/at", 0.4), ("/below", 0.2)]);
         let no = |_: &str| false;
-        let part = partition_stored(&stored, &folder_scores, 0.4, &no, &no);
+        let part = partition_stored(&stored, &folder_scores, 0.4, IndexScope::ByImportance, &no, &no);
         assert_eq!(part.surviving, 1, "the at-threshold folder survives");
         assert_eq!(
             part.doomed,
@@ -433,9 +497,120 @@ mod tests {
         let folder_scores = scores(&[]);
         let is_override = |p: &str| p.starts_with("/archive/");
         let no = |_: &str| false;
-        let part = partition_stored(&stored, &folder_scores, 0.8, &is_override, &no);
+        let part = partition_stored(
+            &stored,
+            &folder_scores,
+            0.8,
+            IndexScope::ByImportance,
+            &is_override,
+            &no,
+        );
         assert_eq!(part.surviving, 1, "an override-covered row survives");
         assert!(part.doomed.is_empty());
+    }
+
+    #[test]
+    fn narrowing_the_scope_dooms_the_importance_covered_rows_but_keeps_the_chosen_ones() {
+        // Switching to "only folders I choose" doesn't delete anything by itself: the
+        // rows an above-threshold folder earned simply fall OUTSIDE coverage, becoming
+        // the same kept/doomed set the reclaim line already offers to free. The chosen
+        // folder's rows survive, whatever importance thinks of it.
+        let stored = vec!["/important/a.jpg".to_string(), "/chosen/b.jpg".to_string()];
+        let folder_scores = scores(&[("/important", 0.9)]);
+        let is_override = |p: &str| p.starts_with("/chosen/");
+        let no = |_: &str| false;
+
+        let automatic = partition_stored(
+            &stored,
+            &folder_scores,
+            0.0,
+            IndexScope::ByImportance,
+            &is_override,
+            &no,
+        );
+        assert_eq!(automatic.surviving, 2, "both are covered automatically");
+
+        let chosen = partition_stored(
+            &stored,
+            &folder_scores,
+            0.0,
+            IndexScope::ChosenFolders,
+            &is_override,
+            &no,
+        );
+        assert_eq!(chosen.surviving, 1, "only the chosen folder stays covered");
+        assert_eq!(
+            chosen.doomed,
+            vec!["/important/a.jpg".to_string()],
+            "the importance-covered row is reclaimable, not deleted here"
+        );
+        // The partition invariant still holds, so the reclaim arithmetic adds up.
+        assert_eq!(chosen.surviving as usize + chosen.doomed.len(), stored.len());
+    }
+
+    #[test]
+    fn the_narrow_scope_ignores_the_threshold_entirely() {
+        // No sentinel threshold: at the broadest slider position (0.0) a scored folder
+        // still isn't covered in the narrow scope. Only the chosen folders are.
+        let stored = vec!["/scored/a.jpg".to_string()];
+        let folder_scores = scores(&[("/scored", 1.0)]);
+        let no = |_: &str| false;
+        for threshold in [0.0, 0.5, 1.0] {
+            let part = partition_stored(&stored, &folder_scores, threshold, IndexScope::ChosenFolders, &no, &no);
+            assert_eq!(part.surviving, 0, "threshold {threshold} must not matter");
+        }
+    }
+
+    #[test]
+    fn an_exclusion_still_beats_a_chosen_folder() {
+        // The privacy veto is a hard veto in BOTH scopes; naming a folder can't unblock it.
+        let stored = vec!["/chosen/secret.jpg".to_string()];
+        let always = |_: &str| true;
+        let excluded = |_: &str| true;
+        for scope in [IndexScope::ChosenFolders, IndexScope::ByImportance] {
+            let part = partition_stored(&stored, &scores(&[]), 0.0, scope, &always, &excluded);
+            assert_eq!(part.surviving, 0);
+            assert_eq!(part.doomed, vec!["/chosen/secret.jpg".to_string()]);
+        }
+    }
+
+    #[test]
+    fn counts_follow_the_scope_the_same_way_the_gate_does() {
+        let counts = FolderImageCounts {
+            per_folder: [("/important".to_string(), 100u64), ("/chosen".to_string(), 7)]
+                .into_iter()
+                .collect(),
+            total: 107,
+        };
+        let folder_scores = scores(&[("/important", 0.9)]);
+        let is_override = |p: &str| p == "/chosen";
+
+        // Narrow: only the chosen folder counts, however broad the slider.
+        assert_eq!(
+            covered_in_scope(&counts, &folder_scores, 0.0, IndexScope::ChosenFolders, &is_override),
+            (1, 7)
+        );
+        // Automatic: the above-threshold folders PLUS the chosen one (which importance
+        // doesn't score at all, so a plain threshold count would miss it).
+        assert_eq!(
+            covered_in_scope(&counts, &folder_scores, 0.5, IndexScope::ByImportance, &is_override),
+            (2, 107)
+        );
+    }
+
+    #[test]
+    fn the_automatic_scope_never_double_counts_a_chosen_and_scored_folder() {
+        // A folder that is BOTH above the threshold and explicitly chosen contributes once.
+        let counts = FolderImageCounts {
+            per_folder: [("/photos".to_string(), 12u64)].into_iter().collect(),
+            total: 12,
+        };
+        let folder_scores = scores(&[("/photos", 0.9)]);
+        let always = |_: &str| true;
+        assert_eq!(
+            covered_in_scope(&counts, &folder_scores, 0.5, IndexScope::ByImportance, &always),
+            (1, 12)
+        );
     }
 
     #[test]
@@ -446,7 +621,14 @@ mod tests {
         let folder_scores = scores(&[]);
         let always = |_: &str| true; // override covers everything
         let is_excluded = |p: &str| p.starts_with("/archive/");
-        let part = partition_stored(&stored, &folder_scores, 0.0, &always, &is_excluded);
+        let part = partition_stored(
+            &stored,
+            &folder_scores,
+            0.0,
+            IndexScope::ByImportance,
+            &always,
+            &is_excluded,
+        );
         assert_eq!(part.surviving, 0, "an excluded row never survives");
         assert_eq!(part.doomed, vec!["/archive/secret.jpg".to_string()]);
     }
@@ -458,7 +640,7 @@ mod tests {
         let stored = vec!["/scored/a.jpg".to_string(), "/floored/b.jpg".to_string()];
         let folder_scores = scores(&[("/scored", 0.0)]);
         let no = |_: &str| false;
-        let part = partition_stored(&stored, &folder_scores, 0.0, &no, &no);
+        let part = partition_stored(&stored, &folder_scores, 0.0, IndexScope::ByImportance, &no, &no);
         assert_eq!(part.surviving, 1, "the scored folder survives at threshold 0");
         assert_eq!(
             part.doomed,

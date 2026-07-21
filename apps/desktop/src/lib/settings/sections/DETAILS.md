@@ -77,9 +77,23 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   image-content (OCR) search. One `SectionCard` (titled by `settings.mediaIndex.card`) holding the `mediaIndex.enabled`
   master toggle, an explicit on-device privacy note (`settings.mediaIndex.privacyNote` — this feature touches no AI
   provider or API key, unlike the rest of AI, so the note says so), and, once the toggle is on, the bespoke
-  `MediaIndexImportanceSlider` (which itself hosts `MediaIndexReclaim`) and the `MediaIndexNetworkVolumes` opt-in list.
-  Composes the self-contained media components — it renders and gates them; the logic lives in each. The `mediaIndex.*`
-  registry entries all live at `section: ['AI', 'Image search']` (a setting's one home).
+  `MediaIndexScope` (which itself hosts `MediaIndexImportanceSlider`, which hosts `MediaIndexReclaim`),
+  `MediaIndexChosenFolders`, and the `MediaIndexNetworkVolumes` opt-in list. Composes the self-contained media
+  components — it renders and gates them; the logic lives in each. The `mediaIndex.*` registry entries all live at
+  `section: ['AI', 'Image search']` (a setting's one home).
+- **`MediaIndexScope.svelte`**: the `mediaIndex.scope` radio group — index only the folders the user chose (the default)
+  or automatically by folder importance. It OWNS the importance slider's visibility: the slider renders only in the
+  automatic scope, because in the narrow one the threshold has no effect at all and showing it would promise a control
+  that does nothing. It also hosts `MediaIndexReclaim` in the NARROW scope: the offer normally rides inside the slider,
+  and narrowing is precisely when leftover rows appear, so losing it with the slider would strand the disk space with no
+  way to free it. Exactly one `MediaIndexReclaim` renders in either scope. Backend contract (what each scope covers, why
+  narrowing deletes nothing): `src-tauri/src/media_index/DETAILS.md` § The indexing scope.
+- **`MediaIndexChosenFolders.svelte`**: the add/remove list bound to `mediaIndex.alwaysIndexFolders`, via
+  `$lib/media-index/always-index-folders.ts` (persist + IPC together, like the other media-index prefs). Adding uses the
+  native folder picker (`@tauri-apps/plugin-dialog`'s `open({ directory: true })`, which needs `dialog:allow-open` in
+  the settings window's capability) — an absolute path is the only thing the backend matches on, so there's no free-text
+  field. Deliberately shows NO per-folder progress: there's no cheap per-folder count backend-side (it would mean a
+  `media.db` prefix scan per folder per poll), so progress stays a per-drive line rather than a faked per-row one.
 - **`MediaIndexImportanceSlider.svelte`** / **`MediaIndexReclaim.svelte`** / **`MediaIndexNetworkVolumes.svelte`**: the
   three self-contained image-search controls `ImageSearchSection` composes — the importance-threshold slider with its
   live coverage preview and honest wait lines (`waitingForDriveIndex` off `qualifyingCount === null` when the drive scan

@@ -143,10 +143,12 @@ impl MediaScheduler {
             .writer_for(&self.data_dir, volume_id)
             .map_err(|e| e.to_string())?;
 
-        // The SAME coverage gates as the full pass (importance threshold + override), read
-        // from the start-of-tick snapshot; the privacy exclusion is read LIVE.
+        // The SAME coverage gates as the full pass (scope + importance threshold +
+        // override), read from the start-of-tick snapshot; the privacy exclusion is read
+        // LIVE. A tick never marks the volume deferred-on-importance: it walks only the
+        // touched dirs, so the bridge re-kick it would ask for belongs to a full pass.
         let threshold = gate::importance_threshold();
-        let scores = self.folder_scores(volume_id, threshold);
+        let scores = super::lifecycle::pass_coverage(gate::scope(), || self.folder_scores(volume_id, threshold)).scores;
         let config = network::config::snapshot();
         let should_enrich = |path: &str| -> bool { local_should_enrich(path, scores.as_ref(), &config, volume_id) };
         let is_excluded = |path: &str| -> bool { network::config::is_excluded(path) };

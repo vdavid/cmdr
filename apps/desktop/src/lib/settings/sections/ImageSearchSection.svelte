@@ -5,11 +5,12 @@
   — no cloud, no API key — so it carries an explicit privacy note, since the rest of the AI
   section otherwise implies the configured provider.
 
-  Composes the three self-contained media-index components: the master `mediaIndex.enabled`
-  toggle (its own card, titled by `cardKey`), the importance-threshold slider
-  (`MediaIndexImportanceSlider`, which itself hosts `MediaIndexReclaim`), and the per-network-
-  volume opt-in list (`MediaIndexNetworkVolumes`). The slider and network list only mean anything
-  once indexing is on, so both gate on the live master toggle (no restart — matches live-apply).
+  Composes the self-contained media-index components: the master `mediaIndex.enabled` toggle (its
+  own card, titled by `cardKey`), the scope control (`MediaIndexScope`, which hosts the
+  importance-threshold slider — itself hosting `MediaIndexReclaim` — in the automatic scope only),
+  the chosen-folders list (`MediaIndexChosenFolders`), and the per-network-volume opt-in list
+  (`MediaIndexNetworkVolumes`). Everything below the toggle only means anything once indexing is
+  on, so it all gates on the live master toggle (no restart — matches live-apply).
 -->
 <script lang="ts">
     import { onMount } from 'svelte'
@@ -19,7 +20,8 @@
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
     import { getBadgeStatus } from '$lib/feature-status'
-    import MediaIndexImportanceSlider from './MediaIndexImportanceSlider.svelte'
+    import MediaIndexScope from './MediaIndexScope.svelte'
+    import MediaIndexChosenFolders from './MediaIndexChosenFolders.svelte'
     import MediaIndexNetworkVolumes from './MediaIndexNetworkVolumes.svelte'
     import MediaIndexClipModel from './MediaIndexClipModel.svelte'
     import { tString } from '$lib/intl/messages.svelte'
@@ -72,11 +74,12 @@
                  provider: on-device via Apple's Vision framework, nothing leaves the machine. -->
             <p class="privacy-note">{tString('settings.mediaIndex.privacyNote')}</p>
 
-            <!-- The importance-threshold slider ("how deep do I index?") + its per-volume
-                 progress and reclaim line. Refines the master toggle, so it's only shown when
-                 indexing is on. -->
+            <!-- The scope ("which folders?") + the chosen-folders list. The scope control
+                 hosts the importance slider, which only exists in the automatic scope. All
+                 of it refines the master toggle, so it shows only when indexing is on. -->
             {#if imageIndexEnabled}
-                <MediaIndexImportanceSlider />
+                <MediaIndexScope />
+                <MediaIndexChosenFolders />
             {/if}
 
             <!-- The on-device CLIP model for natural-language semantic search (plan M3).

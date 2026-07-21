@@ -48,6 +48,48 @@ pub(super) fn local_should_enrich(
     }
 }
 
+/// The coverage inputs one pass runs with: the folder scores to gate on, and whether
+/// the pass left an importance-gated remainder behind.
+pub(super) struct PassCoverage {
+    /// The folder scores the coverage gate consults, or `None` for OVERRIDE-ONLY
+    /// coverage (see [`local_should_enrich`]).
+    pub(super) scores: Option<HashMap<String, f64>>,
+    /// Whether this pass DEFERRED an importance-gated remainder, so the unscored →
+    /// scored bridge should re-kick it once importance lands.
+    pub(super) deferred_on_importance: bool,
+}
+
+/// Resolve a pass's coverage inputs from the user's [`IndexScope`], loading the folder
+/// scores through `load_scores` only when the scope actually needs them.
+///
+/// - [`ChosenFolders`](IndexScope::ChosenFolders): override-only coverage (`scores:
+///   None`), and importance is never READ — it isn't an input to this scope, so a pass
+///   must not pay for the query, and must NOT mark the volume deferred-on-importance
+///   (there's no remainder waiting on a recompute; the user asked for exactly their
+///   folders, and a bridge re-kick would be a pass with nothing new to do).
+/// - [`ByImportance`](IndexScope::ByImportance): the scores, and an unavailable
+///   importance store (`None`) means this pass DID defer its gated remainder.
+///
+/// Both scopes land on the SAME override-only gate when `scores` is `None`, so the
+/// narrow scope is the existing unscored-volume path made deliberate, not a second
+/// mechanism.
+pub(super) fn pass_coverage(
+    scope: gate::IndexScope,
+    load_scores: impl FnOnce() -> Option<HashMap<String, f64>>,
+) -> PassCoverage {
+    if !scope.consults_importance() {
+        return PassCoverage {
+            scores: None,
+            deferred_on_importance: false,
+        };
+    }
+    let scores = load_scores();
+    PassCoverage {
+        deferred_on_importance: scores.is_none(),
+        scores,
+    }
+}
+
 /// Kick a coalesced enrichment pass for every volume ready to enrich right now —
 /// the user-action entry point behind the master toggle, a persisted-on restart, and
 /// a threshold decrease. Resolves the managed scheduler and delegates to
@@ -116,6 +158,13 @@ pub fn start(app: &AppHandle) {
     // settings (all off/empty by default; sparse-persisted, so absent keys mean off).
     let settings = crate::settings::load_settings(app);
     gate::set_enabled(settings.image_index_enabled == Some(true));
+    // The scope, with the pre-setting fallback applied (see `gate::scope_from_settings`):
+    // an install that already had image indexing on keeps the automatic behavior even on
+    // the launch before the frontend migration writes the key.
+    gate::set_scope(gate::scope_from_settings(
+        settings.media_index_scope.as_deref(),
+        settings.image_index_enabled,
+    ));
     gate::set_importance_threshold(
         settings
             .media_index_importance_threshold
@@ -423,6 +472,87 @@ fn spawn_pass(scheduler: Arc<MediaScheduler>, volume_id: String, kind: PassKind)
 mod tests {
     use super::*;
     use crate::media_index::network::enrich::PauseReason;
+
+    /// A config with one always-index folder, for the coverage-gate tests.
+    fn config_with_folder(folder: &str) -> network::config::NetworkEnrichConfig {
+        network::config::NetworkEnrichConfig {
+            always_index_folders: [folder.to_string()].into_iter().collect(),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn the_chosen_folders_scope_never_reads_importance_and_defers_nothing() {
+        // The narrow scope isn't waiting on anything: reading importance would be a
+        // query for an input it doesn't use, and marking the volume deferred would have
+        // the unscored → scored bridge re-kick a pass with nothing new to enrich.
+        let mut read_importance = false;
+        let coverage = pass_coverage(gate::IndexScope::ChosenFolders, || {
+            read_importance = true;
+            Some(HashMap::from([("/anything".to_string(), 1.0)]))
+        });
+        assert!(!read_importance, "the narrow scope must not read importance at all");
+        assert!(coverage.scores.is_none(), "override-only coverage");
+        assert!(!coverage.deferred_on_importance, "nothing is deferred on importance");
+    }
+
+    #[test]
+    fn the_automatic_scope_defers_only_when_importance_is_unavailable() {
+        let scored = pass_coverage(gate::IndexScope::ByImportance, || {
+            Some(HashMap::from([("/photos".to_string(), 0.9)]))
+        });
+        assert!(scored.scores.is_some());
+        assert!(!scored.deferred_on_importance);
+
+        let unscored = pass_coverage(gate::IndexScope::ByImportance, || None);
+        assert!(unscored.scores.is_none(), "unavailable importance ⇒ override-only");
+        assert!(
+            unscored.deferred_on_importance,
+            "the gated remainder waits for the bridge re-kick"
+        );
+    }
+
+    #[test]
+    fn the_chosen_folders_scope_enriches_a_chosen_folder_and_nothing_else() {
+        // The whole point: a folder the user named enriches even though importance
+        // would rank it nowhere, and a high-importance folder they didn't name doesn't.
+        let config = config_with_folder("/Users/dave/Photos");
+        let coverage = pass_coverage(gate::IndexScope::ChosenFolders, || {
+            Some(HashMap::from([("/Users/dave/Work".to_string(), 1.0)]))
+        });
+        let covered = |path: &str| local_should_enrich(path, coverage.scores.as_ref(), &config, "vol");
+
+        assert!(covered("/Users/dave/Photos/2026/a.jpg"), "a chosen folder enriches");
+        assert!(covered("/Users/dave/Photos/a.jpg"));
+        assert!(
+            !covered("/Users/dave/Work/screenshot.png"),
+            "a folder nobody chose never enriches, however important it scores"
+        );
+        assert!(!covered("/Users/dave/Downloads/a.jpg"));
+    }
+
+    #[test]
+    fn the_automatic_scope_adds_the_above_threshold_folders_to_the_chosen_ones() {
+        // Same chosen folder, same scores, the other scope: now importance broadens it.
+        let config = config_with_folder("/Users/dave/Photos");
+        let coverage = pass_coverage(gate::IndexScope::ByImportance, || {
+            Some(HashMap::from([("/Users/dave/Work".to_string(), 1.0)]))
+        });
+        let covered = |path: &str| local_should_enrich(path, coverage.scores.as_ref(), &config, "vol");
+
+        assert!(
+            covered("/Users/dave/Photos/2026/a.jpg"),
+            "the chosen folder still enriches"
+        );
+        assert!(
+            covered("/Users/dave/Work/screenshot.png"),
+            "and so does an important one"
+        );
+        assert!(
+            !covered("/Users/dave/Downloads/a.jpg"),
+            "an unscored folder still doesn't"
+        );
+    }
 
     #[test]
     fn only_a_not_idle_pause_retries_when_idle() {

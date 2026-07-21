@@ -19,6 +19,7 @@
         "core:app:allow-set-app-theme",
         "core:webview:allow-internal-toggle-devtools",
         "store:default",
-        "dialog:allow-ask"
+        "dialog:allow-ask",
+        "dialog:allow-open"
     ]
 }
