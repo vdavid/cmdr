@@ -179,6 +179,8 @@ fn test_deep_view_includes_debug_detail() {
         largest_dir_children: 1_138_220,
         verify_declined_dirs: 1,
         verify_truncated_dirs: 0,
+        reconcile_budget_subtrees: 0,
+        reconcile_budget_skipped_dirs: 0,
         db_main_size: Some(40_000_000),
         db_wal_size: Some(2_100_000),
         db_page_count: Some(12_000),

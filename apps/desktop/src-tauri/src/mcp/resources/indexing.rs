@@ -74,6 +74,10 @@ pub(crate) struct VolumeIndexingDebug {
     /// partially (tooth 2).
     pub verify_declined_dirs: u64,
     pub verify_truncated_dirs: u64,
+    /// Subtrees the reconcile walk stopped descending into on its read-time
+    /// budget, and the directories that left undescended.
+    pub reconcile_budget_subtrees: u64,
+    pub reconcile_budget_skipped_dirs: u64,
     pub db_main_size: Option<u64>,
     pub db_wal_size: Option<u64>,
     pub db_page_count: Option<u64>,
@@ -323,6 +327,13 @@ pub(crate) fn build_volume_debug_text(snap: &VolumeIndexingSnapshot, now_unix_s:
                 format_number(debug.verify_truncated_dirs)
             ));
         }
+        if debug.reconcile_budget_subtrees > 0 {
+            lines.push(format!(
+                "    reconcile budget: {} subtrees over budget, {} dirs left undescended",
+                format_number(debug.reconcile_budget_subtrees),
+                format_number(debug.reconcile_budget_skipped_dirs)
+            ));
+        }
 
         let mut db_detail = Vec::new();
         if let Some(main) = debug.db_main_size {
@@ -433,6 +444,8 @@ fn collect_volume_snapshot(volume_id: &str, with_debug: bool) -> VolumeIndexingS
             largest_dir_children: d.largest_dir_children,
             verify_declined_dirs: d.verify_declined_dirs,
             verify_truncated_dirs: d.verify_truncated_dirs,
+            reconcile_budget_subtrees: d.reconcile_budget_subtrees,
+            reconcile_budget_skipped_dirs: d.reconcile_budget_skipped_dirs,
             db_main_size: d.db_main_size,
             db_wal_size: d.db_wal_size,
             db_page_count: d.db_page_count,

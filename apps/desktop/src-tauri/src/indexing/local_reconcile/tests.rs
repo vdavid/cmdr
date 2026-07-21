@@ -8,44 +8,6 @@ use crate::indexing::firmlinks;
 use crate::indexing::store::{self, DirStatsById, IndexStore, ROOT_ID};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 
-#[test]
-fn guarded_reader_returns_a_quick_result() {
-    let read_fn: ReadFn = Arc::new(|_p| Some(vec![]));
-    let mut reader = GuardedReader::with_read_fn(Duration::from_secs(5), read_fn);
-    assert!(reader.read(Path::new("/x")).is_some(), "a fast read returns its result");
-}
-
-#[test]
-fn guarded_reader_abandons_a_hung_read_and_recovers() {
-    use std::sync::atomic::AtomicUsize;
-    // Only the FIRST read hangs; later reads are fast. This proves both that the
-    // hung read is abandoned near the timeout (not waited out) AND that the reader
-    // recovers — respawns a worker — for the next read.
-    let calls = Arc::new(AtomicUsize::new(0));
-    let read_fn: ReadFn = {
-        let calls = Arc::clone(&calls);
-        Arc::new(move |_p| {
-            if calls.fetch_add(1, Ordering::SeqCst) == 0 {
-                std::thread::sleep(Duration::from_secs(2));
-            }
-            Some(vec![])
-        })
-    };
-    let mut reader = GuardedReader::with_read_fn(Duration::from_millis(50), read_fn);
-
-    let start = Instant::now();
-    assert!(reader.read(Path::new("/hang")).is_none(), "a hung read returns None");
-    assert!(
-        start.elapsed() < Duration::from_secs(1),
-        "must abandon near the timeout, not wait out the ~2s hang (elapsed {:?})",
-        start.elapsed()
-    );
-    assert!(
-        reader.read(Path::new("/ok")).is_some(),
-        "the reader recovers after a timeout and serves the next read",
-    );
-}
-
 struct Harness {
     writer: IndexWriter,
     db_path: PathBuf,
@@ -188,15 +150,39 @@ fn no_panic_passes_the_result_through() {
     assert!(matches!(errored, Err(ScanError::EmptyRoot)));
 }
 
+/// The shipped reader and budget, for the tests that don't script either.
+fn production_tools(space: IndexPathSpace) -> WalkTools {
+    WalkTools {
+        reader: GuardedReader::for_fs(LOCAL_LIST_TIMEOUT, space),
+        budget: CostBudget::production(),
+    }
+}
+
 /// Run the reconcile walk synchronously and flush. `cancel` pre-trips the cancel
 /// flag (deterministic interruption).
 fn run_reconcile(h: &Harness, root: &Path, cancel: bool) -> Result<ScanSummary, ScanError> {
-    let progress = ScanProgress::new();
-    let flag = AtomicBool::new(cancel);
     // The existing tests seed the FULL absolute path chain in the DB, so the
     // `root` space (absolute == index-relative) is what round-trips them; the
     // mount-rooted variant is exercised by `reconcile_resolves_mount_rooted_root`.
-    let result = run_local_reconcile(root, &IndexPathSpace::root(), &h.writer, &progress, &flag);
+    run_reconcile_with(h, root, production_tools(IndexPathSpace::root()), cancel)
+}
+
+/// Run the reconcile walk synchronously with a scripted reader and/or budget.
+fn run_reconcile_with(h: &Harness, root: &Path, tools: WalkTools, cancel: bool) -> Result<ScanSummary, ScanError> {
+    run_reconcile_in(h, root, IndexPathSpace::root(), tools, cancel)
+}
+
+/// Run the reconcile walk synchronously in `space`, then flush.
+fn run_reconcile_in(
+    h: &Harness,
+    root: &Path,
+    space: IndexPathSpace,
+    tools: WalkTools,
+    cancel: bool,
+) -> Result<ScanSummary, ScanError> {
+    let progress = ScanProgress::new();
+    let flag = AtomicBool::new(cancel);
+    let result = run_local_reconcile(root, &space, &h.writer, &progress, &flag, tools);
     h.writer.flush_blocking().unwrap();
     result
 }
@@ -658,25 +644,21 @@ fn reconcile_resolves_mount_rooted_root_via_strip() {
     // `root` space walks the absolute mount path from `ROOT_ID` and misses → the
     // pre-fix `root is not in the index` failure. (Typed variant match, no string
     // match per the `no-string-matching` rule.)
-    let progress = ScanProgress::new();
-    let flag = AtomicBool::new(false);
-    let red = run_local_reconcile(rp, &IndexPathSpace::root(), &h.writer, &progress, &flag);
+    let red = run_reconcile_in(
+        &h,
+        rp,
+        IndexPathSpace::root(),
+        production_tools(IndexPathSpace::root()),
+        false,
+    );
     assert!(
         matches!(red, Err(ScanError::Io(_))),
         "root space can't resolve the mount root from ROOT_ID: {red:?}"
     );
 
     // `mount_rooted` space strips the mount root to `/` → `ROOT_ID` → reconciles.
-    let progress2 = ScanProgress::new();
-    let flag2 = AtomicBool::new(false);
-    let green = run_local_reconcile(
-        rp,
-        &IndexPathSpace::mount_rooted(mount_root),
-        &h.writer,
-        &progress2,
-        &flag2,
-    );
-    h.writer.flush_blocking().unwrap();
+    let space = IndexPathSpace::mount_rooted(mount_root);
+    let green = run_reconcile_in(&h, rp, space.clone(), production_tools(space), false);
     assert!(
         green.is_ok(),
         "mount-rooted space resolves the root and reconciles: {green:?}"
@@ -716,15 +698,8 @@ fn reconcile_vanished_root_surfaces_root_unlistable_not_empty_root() {
     let _ = std::fs::remove_dir_all(&missing);
     assert!(!missing.exists(), "precondition: the mount root must be absent");
 
-    let progress = ScanProgress::new();
-    let flag = AtomicBool::new(false);
-    let result = run_local_reconcile(
-        &missing,
-        &IndexPathSpace::mount_rooted(missing.to_string_lossy().to_string()),
-        &h.writer,
-        &progress,
-        &flag,
-    );
+    let space = IndexPathSpace::mount_rooted(missing.to_string_lossy().to_string());
+    let result = run_reconcile_in(&h, &missing, space.clone(), production_tools(space), false);
     assert!(
         matches!(result, Err(ScanError::RootUnlistable)),
         "a vanished mount root must surface RootUnlistable, got {result:?}"
@@ -796,3 +771,8 @@ fn the_reconcile_walk_feeds_the_pathological_dir_census() {
         "run_local_reconcile must record its per-directory child counts (before {before}, after {after})"
     );
 }
+
+/// The per-read timeout guard, and what the cost budget does to the walk (its
+/// pure decision is tested in `cost_budget.rs` itself).
+mod cost_budget_walk;
+mod guarded_reader;

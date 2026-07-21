@@ -942,6 +942,8 @@ impl IndexManager {
             largest_dir_children: DEBUG_STATS.largest_dir_children.load(Ordering::Relaxed),
             verify_declined_dirs: DEBUG_STATS.verify_declined_dirs.load(Ordering::Relaxed),
             verify_truncated_dirs: DEBUG_STATS.verify_truncated_dirs.load(Ordering::Relaxed),
+            reconcile_budget_subtrees: DEBUG_STATS.reconcile_budget_subtrees.load(Ordering::Relaxed),
+            reconcile_budget_skipped_dirs: DEBUG_STATS.reconcile_budget_skipped_dirs.load(Ordering::Relaxed),
             db_main_size,
             db_wal_size,
             db_page_count,

@@ -4510,6 +4510,13 @@ export type IndexDebugStatusResponse = {
   verifyDeclinedDirs: number
   // Directories background verification diffed only partially (guard tooth 2).
   verifyTruncatedDirs: number
+  /**
+   *  Subtrees the reconcile walk stopped descending into because they spent
+   *  their read-time budget (`local_reconcile/cost_budget.rs`).
+   */
+  reconcileBudgetSubtrees: number
+  // Directories the reconcile walk left undescended inside those subtrees.
+  reconcileBudgetSkippedDirs: number
   // Main DB file size (bytes), excluding WAL/SHM
   dbMainSize: number | null
   // WAL file size (bytes)

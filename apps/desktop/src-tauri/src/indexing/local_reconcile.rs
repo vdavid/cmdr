@@ -20,6 +20,15 @@
 //! a [`GuardedReader`] (15 s) so a hung File Provider mount can't freeze it; see
 //! `indexing/DETAILS.md` § "The guarded local walker".
 //!
+//! ## Two limits, two different questions
+//!
+//! The reader's timeout bounds ONE read. [`cost_budget`] bounds a SUBTREE's total
+//! read time, which is the limit that matters in practice: the measured 21-minute
+//! walk hit one timeout while spending minutes inside directories that answered
+//! successfully, just slowly. Over budget, the walk stops DESCENDING into that
+//! subtree — it never treats it as listed-and-empty, and never touches its epoch.
+//! See `indexing/DETAILS.md` § "The reconcile cost budget".
+//!
 //! ## Integration shape
 //!
 //! [`start_local_reconcile`] returns the SAME `(ScanHandle, JoinHandle<Result<
@@ -38,8 +47,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel};
 use std::time::{Duration, Instant};
 
+mod cost_budget;
 mod latency_probe;
 
+use cost_budget::{Anchorage, BudgetVerdict, CostBudget};
 use latency_probe::LatencyProbe;
 
 use super::DEBUG_STATS;
@@ -135,22 +146,21 @@ impl GuardedReader {
     }
 
     /// List a directory, returning `None` if it can't be listed OR the read exceeds
-    /// the timeout.
+    /// the timeout, plus what the read cost in wall-clock time.
     ///
-    /// Every read is timed for the latency probe (when enabled), including the
-    /// timed-out ones: an abandoned read still costs the serial walk its full
-    /// `timeout`, so leaving it out would flatter the numbers.
-    fn read(&mut self, path: &Path) -> FsChildrenResult {
-        if self.latency.is_none() {
-            return self.read_uninstrumented(path).0;
-        }
+    /// Every read is timed, including the timed-out ones: an abandoned read still
+    /// costs the serial walk its full `timeout`, so leaving it out would flatter
+    /// the latency probe's numbers AND hide a stuck subtree from the cost budget,
+    /// which is the case the budget exists for. One clock serves both.
+    fn read(&mut self, path: &Path) -> (FsChildrenResult, Duration) {
         let started = Instant::now();
         let (result, timed_out) = self.read_uninstrumented(path);
         let now = Instant::now();
+        let cost = now.duration_since(started);
         if let Some(probe) = self.latency.as_mut() {
-            probe.record(path, now.duration_since(started), timed_out, now);
+            probe.record(path, cost, timed_out, now);
         }
-        result
+        (result, cost)
     }
 
     /// The read itself. Returns the listing and whether it hit the timeout.
@@ -192,6 +202,15 @@ impl Drop for GuardedReader {
     }
 }
 
+/// The walk's two injectable pieces: how a directory gets read, and how much read
+/// time one subtree may spend before the walk stops descending into it.
+/// Production builds both from constants; the walk tests substitute a scripted
+/// reader and a millisecond-scale budget.
+struct WalkTools {
+    reader: GuardedReader,
+    budget: CostBudget,
+}
+
 /// Start a LOCAL full-tree reconcile on a background `std::thread`.
 ///
 /// Mirrors [`scanner::scan_volume`]'s return shape so `manager::start_scan`'s
@@ -217,7 +236,14 @@ pub(super) fn start_local_reconcile(
             // `Ok(Err(_))` (clean logged message + `ScanFailed` ⇒ Stale) rather
             // than a raw thread panic that surfaces as the handler's opaque
             // `Err(_)` "thread panicked" arm.
-            run_catching_panics(|| run_local_reconcile(&root, &space, &writer, &progress, &cancelled))
+            // Each directory read is capped at `LOCAL_LIST_TIMEOUT` (a hung File
+            // Provider mount is abandoned rather than freezing the rescan), and
+            // each subtree's total read time is capped by the cost budget.
+            let tools = WalkTools {
+                reader: GuardedReader::for_fs(LOCAL_LIST_TIMEOUT, space.clone()),
+                budget: CostBudget::production(),
+            };
+            run_catching_panics(|| run_local_reconcile(&root, &space, &writer, &progress, &cancelled, tools))
         })
         .map_err(ScanError::Io)?;
 
@@ -343,7 +369,12 @@ fn run_local_reconcile(
     writer: &IndexWriter,
     progress: &ScanProgress,
     cancelled: &AtomicBool,
+    tools: WalkTools,
 ) -> Result<ScanSummary, ScanError> {
+    let WalkTools {
+        mut reader,
+        budget: cost_budget,
+    } = tools;
     let start = Instant::now();
     let db_path = writer.db_path();
 
@@ -383,13 +414,17 @@ fn run_local_reconcile(
     let mut total_physical_bytes = 0u64;
     let (mut added, mut removed, mut updated) = (0u64, 0u64, 0u64);
 
-    // BFS by (absolute dir path, its DB id). New dirs discovered this pass are
-    // resolved to ids after a writer flush before we recurse into them.
-    let mut queue: VecDeque<(PathBuf, i64)> = VecDeque::new();
-    queue.push_back((root.to_path_buf(), root_id));
-    // (parent dir path, parent DB id, child name): resolved by `(parent_id, name)`
-    // after a level's flush, never by absolute path.
-    let mut new_dirs: Vec<(PathBuf, i64, String)> = Vec::new();
+    // BFS by (absolute dir path, its DB id, which subtree pays for reading it).
+    // New dirs discovered this pass are resolved to ids after a writer flush
+    // before we recurse into them.
+    let mut queue: VecDeque<(PathBuf, i64, Anchorage)> = VecDeque::new();
+    queue.push_back((root.to_path_buf(), root_id, cost_budget.root_anchorage(root)));
+    // (parent dir path, parent DB id, child name, the child's anchorage): resolved
+    // by `(parent_id, name)` after a level's flush, never by absolute path.
+    let mut new_dirs: Vec<(PathBuf, i64, String, Anchorage)> = Vec::new();
+    // Subtrees that ran out of budget, and directories left undescended because of
+    // it. Mirrored onto `DEBUG_STATS` for the debug surface.
+    let (mut budget_subtrees, mut budget_skipped) = (0u64, 0u64);
 
     // Suppress per-entry ancestor propagation for the bulk walk; the guard restores
     // it on EVERY exit (clean finish, cancel, empty-root, error). The shared finish
@@ -398,11 +433,7 @@ fn run_local_reconcile(
     // delta. See `reconciler::BulkReconcileGuard`.
     let _bulk_guard = reconciler::BulkReconcileGuard::begin(writer);
 
-    // Each directory read is capped at `LOCAL_LIST_TIMEOUT`: a hung File Provider
-    // mount is abandoned and treated as unlistable instead of freezing the rescan.
-    let mut reader = GuardedReader::for_fs(LOCAL_LIST_TIMEOUT, space.clone());
-
-    while let Some((dir_path, dir_id)) = queue.pop_front() {
+    while let Some((dir_path, dir_id, anchorage)) = queue.pop_front() {
         if cancelled.load(Ordering::Relaxed) {
             // Cancel: leave the prior index intact (no truncate ran) and send NO
             // marks/aggregate. Accepted drift window: the walk ran under the
@@ -414,7 +445,36 @@ fn run_local_reconcile(
             return Ok(summary(total_entries, total_dirs, total_physical_bytes, start, true));
         }
 
-        let fs_children = match reader.read(&dir_path) {
+        // Cost backstop: this directory's subtree has already spent more read time
+        // than its budget, so don't descend.
+        //
+        // ❌ Skipping is "we never listed it", NEVER "we listed it and it was
+        // empty". Don't be tempted to run the diff with an empty listing here:
+        // `diff_dir_against_db` reaps DB children the live listing lacks, so that
+        // would DELETE the whole subtree and strip its bytes out of every
+        // ancestor's `dir_stats` for good. And don't stamp `listed_epoch` (least
+        // of all `0`, which `absorbing_min_epoch` propagates up to `~` and `/`,
+        // marking the home folder incomplete). Leaving both alone keeps the
+        // subtree honestly stale: last-known sizes stay visible, the live watcher
+        // keeps maintaining it, and a later pass heals it. Same word as the
+        // verification guard's "decline", same reason, opposite of a delete.
+        if matches!(cost_budget.verdict(&anchorage), BudgetVerdict::Skip) {
+            budget_skipped += 1;
+            DEBUG_STATS.record_reconcile_budget_skip();
+            continue;
+        }
+
+        let (fs_children, read_cost) = reader.read(&dir_path);
+        if let Some(tripped) = cost_budget.charge(&anchorage, read_cost) {
+            budget_subtrees += 1;
+            DEBUG_STATS.record_reconcile_budget_trip();
+            log::warn!(
+                "local reconcile: subtree {} spent {:.1}s of read time (budget exceeded) — not descending further into it, its index rows stay as they are",
+                tripped.path.display(),
+                tripped.spent.as_secs_f64(),
+            );
+        }
+        let fs_children = match fs_children {
             Some(c) => c,
             None => {
                 if dir_path == *root {
@@ -469,10 +529,13 @@ fn run_local_reconcile(
         updated += diff.updated;
         // Recurse into EVERY matched child dir (changed or not).
         for (child_id, child_name) in diff.matched_child_dirs {
-            queue.push_back((dir_path.join(child_name), child_id));
+            let child_path = dir_path.join(child_name);
+            let child_anchorage = cost_budget.child(&anchorage, &child_path);
+            queue.push_back((child_path, child_id, child_anchorage));
         }
         for child_name in diff.new_child_dir_names {
-            new_dirs.push((dir_path.clone(), dir_id, child_name));
+            let child_anchorage = cost_budget.child(&anchorage, &dir_path.join(&child_name));
+            new_dirs.push((dir_path.clone(), dir_id, child_name, child_anchorage));
         }
 
         // Level drained + new dirs created: flush so the read connection sees their
@@ -483,12 +546,12 @@ fn run_local_reconcile(
             if let Err(e) = writer.flush_blocking() {
                 log::warn!("local reconcile: flush before resolving new dirs failed: {e}");
             }
-            for (parent_path, parent_id, child_name) in new_dirs.drain(..) {
+            for (parent_path, parent_id, child_name, child_anchorage) in new_dirs.drain(..) {
                 let child_path = parent_path.join(&child_name);
                 // Resolve by `(parent_id, name)`: single-component lookup under
                 // the id we already hold, robust to any root.
                 match IndexStore::resolve_component(&conn, parent_id, &child_name) {
-                    Ok(Some(id)) => queue.push_back((child_path, id)),
+                    Ok(Some(id)) => queue.push_back((child_path, id, child_anchorage)),
                     Ok(None) => log::debug!(
                         "local reconcile: couldn't resolve new dir after flush: {}",
                         child_path.display()
@@ -509,8 +572,17 @@ fn run_local_reconcile(
         .send(WriteMessage::WalCheckpoint)
         .map_err(|e| ScanError::WriterSend(e.to_string()))?;
 
+    let budget_note = if budget_subtrees > 0 {
+        format!(
+            ", {} over budget ({} left undescended)",
+            crate::pluralize::pluralize(budget_subtrees, "subtree"),
+            crate::pluralize::pluralize(budget_skipped, "dir"),
+        )
+    } else {
+        String::new()
+    };
     log::info!(
-        "local reconcile: complete for {}: +{added} -{removed} ~{updated} ({} re-listed) in {}ms",
+        "local reconcile: complete for {}: +{added} -{removed} ~{updated} ({} re-listed) in {}ms{budget_note}",
         root.display(),
         crate::pluralize::pluralize(total_dirs, "dir"),
         start.elapsed().as_millis()

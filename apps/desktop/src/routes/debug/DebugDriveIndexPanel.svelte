@@ -45,6 +45,8 @@
         largestDirChildren: number
         verifyDeclinedDirs: number
         verifyTruncatedDirs: number
+        reconcileBudgetSubtrees: number
+        reconcileBudgetSkippedDirs: number
         dbMainSize: number | null
         dbWalSize: number | null
         dbPageCount: number | null
@@ -513,6 +515,21 @@
                         >{formatCount(debugStatus.verifyDeclinedDirs)} declined, {formatCount(
                             debugStatus.verifyTruncatedDirs
                         )} partial</span
+                    >
+                </div>
+                <div class="index-meta-row">
+                    <span class="index-meta-label"
+                        >Reconcile budget <span
+                            class="info-icon"
+                            use:tooltip={{
+                                text: 'Subtrees the full-rescan walk stopped descending into because reading them cost more time than their budget, and how many directories it left undescended. Those keep their last known sizes.',
+                            }}>i</span
+                        ></span
+                    >
+                    <span class="index-meta-value"
+                        >{formatCount(debugStatus.reconcileBudgetSubtrees)} subtrees, {formatCount(
+                            debugStatus.reconcileBudgetSkippedDirs
+                        )} dirs skipped</span
                     >
                 </div>
             </div>

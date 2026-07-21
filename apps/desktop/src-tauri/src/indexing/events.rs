@@ -375,6 +375,11 @@ pub struct IndexDebugStatusResponse {
     pub verify_declined_dirs: u64,
     /// Directories background verification diffed only partially (guard tooth 2).
     pub verify_truncated_dirs: u64,
+    /// Subtrees the reconcile walk stopped descending into because they spent
+    /// their read-time budget (`local_reconcile/cost_budget.rs`).
+    pub reconcile_budget_subtrees: u64,
+    /// Directories the reconcile walk left undescended inside those subtrees.
+    pub reconcile_budget_skipped_dirs: u64,
     /// Main DB file size (bytes), excluding WAL/SHM
     pub db_main_size: Option<u64>,
     /// WAL file size (bytes)
@@ -418,6 +423,10 @@ pub(crate) struct DebugStats {
     pub(crate) verify_declined_dirs: AtomicU64,
     /// Directories background verification diffed only partially (guard tooth 2).
     pub(crate) verify_truncated_dirs: AtomicU64,
+    /// Subtrees the reconcile walk stopped descending into on its read-time
+    /// budget, and the directories that left undescended.
+    pub(crate) reconcile_budget_subtrees: AtomicU64,
+    pub(crate) reconcile_budget_skipped_dirs: AtomicU64,
 }
 
 impl DebugStats {
@@ -442,7 +451,22 @@ impl DebugStats {
             largest_dir_children: AtomicU64::new(0),
             verify_declined_dirs: AtomicU64::new(0),
             verify_truncated_dirs: AtomicU64::new(0),
+            reconcile_budget_subtrees: AtomicU64::new(0),
+            reconcile_budget_skipped_dirs: AtomicU64::new(0),
         }
+    }
+
+    /// One subtree just crossed the reconcile walk's per-subtree read-time
+    /// budget. Counted once per subtree, however many directories it then leaves
+    /// undescended.
+    pub(crate) fn record_reconcile_budget_trip(&self) {
+        self.reconcile_budget_subtrees.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// One directory the reconcile walk didn't descend into because its subtree
+    /// was over budget.
+    pub(crate) fn record_reconcile_budget_skip(&self) {
+        self.reconcile_budget_skipped_dirs.fetch_add(1, Ordering::Relaxed);
     }
 
     /// Record one directory listing's child count — the pathological-directory
@@ -524,6 +548,8 @@ impl DebugStats {
         self.largest_dir_children.store(0, Ordering::Relaxed);
         self.verify_declined_dirs.store(0, Ordering::Relaxed);
         self.verify_truncated_dirs.store(0, Ordering::Relaxed);
+        self.reconcile_budget_subtrees.store(0, Ordering::Relaxed);
+        self.reconcile_budget_skipped_dirs.store(0, Ordering::Relaxed);
     }
 
     pub(crate) fn set_phase(&self, phase: ActivityPhase, trigger: &str) {
