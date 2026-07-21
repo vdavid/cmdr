@@ -5,7 +5,8 @@ active). Dev build at commit `0ecdf4f44`, launched with `CMDR_LOG_RAM_USE=1` and
 against an empty `cmdr-dev-bench` data dir.
 
 Two independent memory sources: the app's own `phys_footprint` (logged per line) and an external `ps` sampler at 2 s
-intervals. They disagree by design; see "Memory" below.
+intervals (`scripts/cpu-rss-sampler`: `go run ./scripts/cpu-rss-sampler`, which matches the app's executable, not any
+process with the repo path in its arguments). They disagree by design; see "Memory" below.
 
 ## Fresh scan (truncate + parallel guarded walker)
 
