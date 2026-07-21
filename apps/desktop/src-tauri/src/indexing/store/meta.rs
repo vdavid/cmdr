@@ -25,20 +25,29 @@ impl IndexStore {
         Self::read_meta_value(conn, key)
     }
 
-    /// Whether the one-shot `dir_stats` ledger heal has already rebuilt this DB's
-    /// aggregates (the `LEDGER_HEAL_KEY` meta key is present). The launch heal
-    /// decision reads this to decide whether to arm the writer latch. Only
-    /// presence matters; the stored value is a marker.
+    /// Whether this DB's `dir_stats` aggregates are known-good (the
+    /// `LEDGER_HEAL_KEY` meta key is present). The launch heal decision reads
+    /// this to decide whether to arm the writer latch. Only presence matters;
+    /// the stored value is a marker.
     pub fn ledger_heal_done(conn: &Connection) -> Result<bool, IndexStoreError> {
         Ok(Self::read_meta_value(conn, LEDGER_HEAL_KEY)?.is_some())
     }
 
-    /// Mark the one-shot ledger heal complete: write the `LEDGER_HEAL_KEY` marker
-    /// so a later launch skips the heal. Called from the writer's
-    /// `ComputeAllAggregates` handler on success only (`set_heal_key_on_success`),
-    /// so a failed rebuild leaves the key unset and re-heals next launch.
+    /// Mark the ledger paid: write the `LEDGER_HEAL_KEY` marker so a later launch
+    /// skips the heal. Called from the writer's `ComputeAllAggregates` handler on
+    /// success only (`set_heal_key_on_success`), so a failed rebuild leaves the
+    /// key unset and re-heals next launch.
     pub fn mark_ledger_heal_done(conn: &Connection) -> Result<(), IndexStoreError> {
         Self::update_meta(conn, LEDGER_HEAL_KEY, "1")
+    }
+
+    /// Mark the ledger UNPAID: drop the `LEDGER_HEAL_KEY` marker because the
+    /// aggregates are about to drift knowingly (a bulk walk suppressing per-entry
+    /// propagation). It's durable on purpose: if the process dies mid-walk, the
+    /// missing marker is what tells the next launch to rebuild. Called from the
+    /// writer's `MarkLedgerUnpaid` handler.
+    pub fn clear_ledger_heal_done(conn: &Connection) -> Result<(), IndexStoreError> {
+        Self::delete_meta(conn, LEDGER_HEAL_KEY)
     }
 
     /// Read the volume's `current_epoch` from `meta`.

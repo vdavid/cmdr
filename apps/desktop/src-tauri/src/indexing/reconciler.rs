@@ -740,15 +740,28 @@ pub(super) fn finish_reconcile(listed_ids: &[i64], epoch: u64, writer: &IndexWri
 /// (`reconcile_subtree`, FSEvents) has NO final aggregate, so it MUST keep
 /// propagating — which is exactly why this guard restores the default on exit.
 ///
-/// Both sends are best-effort: on a hard writer-gone error the restore send fails
-/// and is ignored, matching how the surrounding walk already treats writer sends.
+/// Suppression is a DEBT, so the bracket also records it: `begin` marks the
+/// `dir_stats` ledger unpaid (durably, via `MarkLedgerUnpaid`) and the exit pays
+/// it (`PayLedgerIfUnpaid`, a no-op once the walk's own `ComputeAllAggregates`
+/// disarmed the latch). Without that, a walk that never reaches its terminal
+/// aggregate leaves every ancestor of a mid-walk-discovered directory claiming an
+/// exact size over a descendant at `listed_epoch = 0` — measured in production as
+/// 249 lying directories after a rescan the user quit 5 seconds in. The durable
+/// half is what covers process death, where no `Drop` runs at all.
+///
+/// All sends are best-effort: on a hard writer-gone error the send fails and is
+/// ignored, matching how the surrounding walk already treats writer sends.
 pub(super) struct BulkReconcileGuard {
     writer: IndexWriter,
 }
 
 impl BulkReconcileGuard {
-    /// Begin the bracket: disable per-entry propagation on the writer.
+    /// Begin the bracket: record the debt, then disable per-entry propagation.
+    ///
+    /// Order matters: the marker must be committed BEFORE the first suppressed
+    /// write, or a death between the two would leave drift with a paid ledger.
     pub(super) fn begin(writer: &IndexWriter) -> Self {
+        let _ = writer.send(WriteMessage::MarkLedgerUnpaid);
         let _ = writer.send(WriteMessage::SetDeltaPropagation(false));
         Self { writer: writer.clone() }
     }
@@ -756,8 +769,10 @@ impl BulkReconcileGuard {
 
 impl Drop for BulkReconcileGuard {
     fn drop(&mut self) {
-        // Re-enable per-entry propagation for the subsequent live path.
+        // Re-enable per-entry propagation for the subsequent live path, then pay
+        // the ledger if this walk never ran its own aggregate.
         let _ = self.writer.send(WriteMessage::SetDeltaPropagation(true));
+        let _ = self.writer.send(WriteMessage::PayLedgerIfUnpaid);
     }
 }
 

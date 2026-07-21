@@ -6,6 +6,7 @@ use rusqlite::Connection;
 use super::*;
 use crate::indexing::firmlinks;
 use crate::indexing::store::{self, DirStatsById, IndexStore, ROOT_ID};
+use crate::indexing::stress_test_helpers::check_db_consistency;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 
 struct Harness {
@@ -736,6 +737,78 @@ fn cancelled_reconcile_leaves_prior_index_and_writes_no_marks() {
         Some(1),
         "no marks sent on cancel: listed_epoch stays at the old value"
     );
+}
+
+/// The interrupted-walk leak, end to end: the walk DISCOVERS a directory (so it
+/// exists in `entries` at `listed_epoch = 0`) and is then cancelled before it can
+/// list it or run its terminal `ComputeAllAggregates`. Its whole ancestor chain
+/// must stop claiming an exact size.
+///
+/// Pre-fix this was the shipped behavior: the bulk window suppressed the
+/// per-entry ancestor walk, nothing paid the debt, and every ancestor kept the
+/// epoch from the last completed pass. Measured on the production index
+/// (2026-07-21): 249 directories claiming exact sizes over 379 such descendants,
+/// `~/Library` among them at 2.6M files.
+#[test]
+fn a_reconcile_cancelled_after_discovering_a_dir_leaves_no_exact_size_lies() {
+    let h = setup();
+    let root = tree_root();
+    let rp = root.path();
+    ensure_path_in_db(&h, &norm(rp));
+
+    std::fs::create_dir(rp.join("sub")).unwrap();
+    std::fs::write(rp.join("sub/f.txt"), b"body").unwrap();
+    run_reconcile(&h, rp, false).expect("first reconcile");
+    bump_epoch(&h); // -> 2
+
+    // A directory appears between passes. The walk will read `sub`, discover it,
+    // and be cancelled before the queue reaches it.
+    std::fs::create_dir(rp.join("sub/fresh")).unwrap();
+
+    let cancel = Arc::new(AtomicBool::new(false));
+    let trip = Arc::clone(&cancel);
+    let space = IndexPathSpace::root();
+    let reader = GuardedReader::with_read_fn(
+        Duration::from_secs(5),
+        Arc::new(move |p: &Path| {
+            let children = reconciler::read_fs_children(p, &space);
+            if p.ends_with("sub") {
+                trip.store(true, Ordering::Relaxed);
+            }
+            children
+        }),
+    );
+    let progress = ScanProgress::new();
+    let summary = run_local_reconcile(
+        rp,
+        &IndexPathSpace::root(),
+        &h.writer,
+        &progress,
+        &cancel,
+        WalkTools {
+            reader,
+            budget: CostBudget::production(),
+        },
+    )
+    .expect("a cancelled reconcile returns Ok");
+    h.writer.flush_blocking().unwrap();
+    assert!(summary.was_cancelled, "the walk must report the cancel");
+
+    let fresh = resolve(&h, &rp.join("sub/fresh")).expect("the walk discovered the new dir");
+    assert_eq!(
+        listed_epoch(&h, fresh),
+        Some(0),
+        "the walk never listed it, so it stays honestly unlisted"
+    );
+    let sub = resolve(&h, &rp.join("sub")).expect("sub indexed");
+    for id in [ROOT_ID, sub] {
+        assert_eq!(
+            dir_stats(&h, id).expect("stats row").min_subtree_epoch,
+            0,
+            "ancestor {id} must stop claiming an exact size over an unlisted descendant"
+        );
+    }
+    check_db_consistency(&conn(&h));
 }
 
 /// The per-read timeout guard, and what the cost budget does to the walk (its

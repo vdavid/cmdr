@@ -46,7 +46,7 @@ Writer discipline (one thread per DB):
 - **The watcher→loop channel is UNBOUNDED**: backpressure dropped FSEvents and forced full scans. Don't re-bound it;
   `classify_ingestion_pressure` caps memory.
 
-**The `dir_stats` ledger, three hard rules** (DETAILS § "The dir_stats ledger"):
+**The `dir_stats` ledger, four hard rules** (DETAILS § "The dir_stats ledger"):
 
 - **Never clamp the arithmetic**: a negative delta is drift; escalate to `repair_dir_stats_upward`, never `.max(0)`
   (floored a real 1.21 GB to "0 bytes").
@@ -54,6 +54,9 @@ Writer discipline (one thread per DB):
   row". Queue the id (`writer/deferred_repair.rs`).
 - **Structural rewrites repair ancestors ON THE WRITER**, never off-writer read-then-credit; full-aggregate senders
   declare `source: Maps|Sql` (`Maps` only for a fresh scan), and never clear the accumulator in the subtree handler.
+- **Suppressing propagation is a DEBT, only ever taken on inside `BulkReconcileGuard`**: it marks the ledger unpaid
+  durably (`MarkLedgerUnpaid`) and pays on exit (`PayLedgerIfUnpaid`), so a walk that never reaches its terminal
+  aggregate heals here or at the next launch. Bare `SetDeltaPropagation(false)` left 249 dirs claiming exact sizes.
 
 Coverage epochs and verification cost:
 

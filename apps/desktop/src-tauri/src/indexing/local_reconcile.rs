@@ -430,12 +430,11 @@ fn run_local_reconcile(
     while let Some((dir_path, dir_id, anchorage)) = queue.pop_front() {
         if cancelled.load(Ordering::Relaxed) {
             // Cancel: leave the prior index intact (no truncate ran) and send NO
-            // marks/aggregate. Accepted drift window: the walk ran under the
-            // `BulkReconcileGuard` (`SetDeltaPropagation(false)`), so entries
-            // already diffed this pass got NO ancestor `dir_stats` propagation and
-            // there's no final aggregate to reconcile them — those ancestors read
-            // stale until the next COMPLETED rescan heals them (with no
-            // `scan_completed_at`, the next launch re-reconciles).
+            // marks/aggregate. Entries already diffed this pass got no ancestor
+            // `dir_stats` propagation (the walk runs under `BulkReconcileGuard`,
+            // `SetDeltaPropagation(false)`) and there's no final aggregate here —
+            // so the guard's exit pays that debt with one `ComputeAllAggregates`,
+            // and the unpaid marker it wrote covers a death before that.
             return Ok(summary(total_entries, total_dirs, total_physical_bytes, start, true));
         }
 

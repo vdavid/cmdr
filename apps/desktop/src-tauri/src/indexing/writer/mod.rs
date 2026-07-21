@@ -379,6 +379,25 @@ pub enum WriteMessage {
     /// failed aggregate leaves the latch armed (re-heals next launch). Like
     /// `SetDeltaPropagation`, a control message: no `MutationTracker::bump()`.
     ArmLedgerHealLatch,
+    /// Declare the `dir_stats` ledger UNPAID for the duration of a bulk walk:
+    /// clear `LEDGER_HEAL_KEY` on disk and arm the heal latch. Sent by
+    /// `reconciler::BulkReconcileGuard::begin`, BEFORE any suppressed write, so
+    /// the debt is recorded durably from the first one.
+    ///
+    /// Under suppression every `UpsertEntryV2` / `Delete*` skips its ancestor
+    /// walk, and the ONLY thing that makes those ancestors true again is the
+    /// walk's terminal `ComputeAllAggregates`. A walk that never gets there
+    /// (process death, cancel, error) would otherwise leave ancestors silently
+    /// claiming exact sizes over a descendant at `listed_epoch = 0`. The cleared
+    /// marker makes the next launch heal; the armed latch lets the terminal
+    /// aggregate (or `PayLedgerIfUnpaid`) re-mark it paid in this session.
+    MarkLedgerUnpaid,
+    /// Pay the ledger IF it's still unpaid: run a full `ComputeAllAggregates`
+    /// when the heal latch is armed, and no-op when it isn't. Sent by
+    /// `BulkReconcileGuard`'s `Drop`, so an in-process interruption heals right
+    /// away instead of waiting for the next launch, while a walk that already
+    /// finished (its aggregate disarmed the latch) pays nothing twice.
+    PayLedgerIfUnpaid,
     /// Periodic housekeeping: reclaim free pages from deletes/rescans.
     /// Sent by a background timer, not counted in WriterStats.
     IncrementalVacuum,
@@ -1331,6 +1350,30 @@ fn process_message(
             // latch is a no-op.
             log::debug!("Writer: ArmLedgerHealLatch");
             *heal_latch = true;
+        }
+        WriteMessage::MarkLedgerUnpaid => {
+            // Durable first, latch second: if the process dies between them the
+            // DB still says "unpaid" and the next launch heals. The reverse order
+            // could lose the debt entirely.
+            if let Err(e) = IndexStore::clear_ledger_heal_done(conn) {
+                signal.note(&e, "clear_ledger_heal_done");
+            }
+            *heal_latch = true;
+        }
+        WriteMessage::PayLedgerIfUnpaid => {
+            if *heal_latch {
+                log::debug!("Writer: bulk window closed unpaid, rebuilding aggregates");
+                handle_compute_all_aggregates(
+                    conn,
+                    accumulator,
+                    app_handle,
+                    volume_id,
+                    expected_total_entries,
+                    AggSource::Sql,
+                    heal_latch,
+                    signal,
+                );
+            }
         }
         WriteMessage::IncrementalVacuum => {
             handle_incremental_vacuum(conn, signal);
