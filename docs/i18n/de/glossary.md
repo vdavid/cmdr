@@ -580,3 +580,44 @@ Terms settled while filling the drive-indexing checklist headers (`indexing.run.
   (`indexing.rescan.fallback`: "Ein neuer Laufwerksdurchlauf …") · high. The running-subject phrasing ("The drive scan
   is still running") uses the verb form `Das Laufwerk wird noch durchsucht` instead, matching `indexing.scan.label`.
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+## Bulk rename review + image-index scope (quality pass, 2026-07-20)
+
+Terms settled while re-checking the natural-language bulk-rename review (`askCmdr.renameReview.*`,
+`askCmdr.tool.proposeRenamePlan.*`), the per-pane image-index status labels (`fileExplorer.imageIndex.*`), and the
+image-index scope settings (`settings.mediaIndex.scope.*`, `.chosenFolders.*`).
+
+- **index (verb) → `indizieren`, NEVER `indexieren`** · macOS DE (`Indiziert`), Microsoft terminology
+  (`indizieren`/`Indizierung`; `indexieren` does not exist in the TBX at all), plus the whole shipped de catalog
+  (`Bildindizierung`, `Immer zu indizierende Ordner`, `{countText} Fotos indiziert`) · high. ❌ `indexieren` is a
+  false-friend anglicism; the `fileExplorer.imageIndex.*` family was the only place it had leaked in.
+- percent sign → **space before `%`** (`{percent} %`) · DIN 5008 and the rest of the de catalog (`Auf 100 % zoomen`,
+  `{freeText} frei ({percentText} %)`) · high. ❌ Never `{percent}%`.
+- allow / deny (per-row rename gate) → `Erlauben` / `Ablehnen`; "Allow all" / "Deny all" → `Alle erlauben` /
+  `Alle ablehnen` · macOS Finder ("Allow Anyway" → "Trotzdem erlauben", "allow opening" → "erlauben") · high. ❌ Not MS
+  terminology's harsher `verweigern`, and not macOS's permission-prompt `Nicht erlauben` (that's a system-dialog pair,
+  not a per-row toggle).
+- rename cycle → `Umbenennungszyklus`; the badge → `(Zyklus)` · Microsoft terminology (cycle → Zyklus, masc.) · high.
+  Tooltip stays active-voice ("Cmdr verwendet einen temporären Namen, während es diese Dateien zyklisch umbenennt"), per
+  the active-voice rule.
+- extension badge (compact) → `(Endung)`; the tooltip and prose keep the full `Dateiendung` · glossary file extension →
+  Endung; the catalog's shipped prose ("Das Ändern der Dateiendung ist nicht erlaubt", "Endungsänderungen immer
+  erlauben") · high. The badge is a tight chip beside a filename, so it takes the short form.
+- overwrite badge → `(Überschreiben!)` (capitalized nominalized verb) · glossary overwrite → überschreiben · high.
+  Lowercase `(überschreiben!)` reads as an imperative button ("overwrite it!"), the opposite of the warning intent; the
+  nominalized form labels the risk instead.
+- "needs attention" (a blocked row) → `Bei dieser Umbenennung ist noch etwas zu klären` · no direct source; the literal
+  `braucht Aufmerksamkeit` is an anglicism, and the voice rule bans a bare "Fehler" label · high. Note "continue" here
+  means _proceed_, not _resume_, so it renders `ausgeführt werden kann`, NOT the settled resume verb `fortsetzen`.
+- "Ask Cmdr to prepare it again" → `Lass Ask Cmdr sie erneut vorbereiten` · product voice · high. ❌ Don't open with
+  `Bitte Ask Cmdr, …`: sentence-initial "Bitte" reads as "please", so the imperative-of-_bitten_ meaning is lost.
+- importance (of a folder, as a ranking criterion) → `Wichtigkeit der Ordner` · the shipped catalog's own wording
+  (`askCmdr.tool.folderImportance.*` "Die Wichtigkeit eines Ordners", `importanceThreshold.waitingForImportance` "welche
+  Ordner wichtig sind") · high. ❌ Not the hyphenated ad-hoc compound `Ordner-Wichtigkeit`.
+- "the device holding `{path}`" → `das Gerät mit {path}` · already shipped in the sibling
+  `errors.listing.deviceDisconnected.explanation`; kept identical so the two device panels read as one family · high.
+- Tool doing/done pairs: `proposeRenamePlan` follows the settled passive-present pattern
+  (`Ein Umbenennungsplan wird vorbereitet` / `Ein Umbenennungsplan vorbereitet`), with the subject in the NOMINATIVE so
+  the done arm is the doing arm minus `wird`, exactly like `Ein Ordner wird aufgelistet` / `Ein Ordner aufgelistet` ·
+  high. ❌ A bare infinitive (`Einen Umbenennungsplan vorbereiten`) reads as a command, not a status.
+- No `sameAsSourceJustification` needed: every value differs from English.

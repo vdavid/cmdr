@@ -806,3 +806,52 @@ From the indexing run-kind + hour-scale-ETA pass (`indexing.run.*`, `indexing.et
   schijf", `waitingForDriveIndex` = "De schijf wordt nog doorzocht. …" (parallels the sibling `waitingForImportance`
   "Het indexeren van afbeeldingen begint direct daarna.") · high
 - No `sameAsSourceJustification` needed: all 7 values differ from English.
+
+From the quality pass over the bulk-rename / image-index-scope / Ask Cmdr-tool keys (54 keys across
+`askCmdr`/`errors`/`fileExplorer`/`settings`; re-mined `_ignored/i18n/nl/`, 2026-07-20):
+
+- rename (noun: one proposed rename, "renames", "rename plan") → `naamwijziging` (plural `naamwijzigingen`), compound
+  `naamwijzigingsplan` · Microsoft terminology renders the noun "rename suggestions" → "naamwijzigingsvoorstellen"
+  (NLD/BEL), which fixes both the noun `naamwijziging` and its `-s-` link before a following noun; the verb side stays
+  the settled `naam wijzigen` (macOS Finder "Rename"→"Wijzig naam", MS "Rename"→"Naam wijzigen") · high. ❌ NOT
+  `hernoeming`/`hernoemingsplan`: `hernoemen` has ZERO hits in `nl/macOS/` (Tier 1) and is a Tier-3-only form
+  (Nautilus/DC/Dolphin, 78 hits), so it loses to the doubly-corroborated macOS+Microsoft form.
+- allow (button) → `Sta toe`; allow all → `Sta alles toe` · macOS Finder ("Allow Anyway"→"Sta toch toe") + MS
+  ("allow"→"toestaan"); bare-stem imperative per the button rule, with the separable `toe` sentence-final, and the
+  "verb + alles" shape macOS uses ("Selecteer alles", "Vervang alles") · high
+- deny (button) → `Weiger`; deny all → `Weiger alles` · macOS AppKit "Weiger" + MS ("deny"→"weigeren"); already the
+  in-catalog form at `onboarding.stepFda.deny` · high
+- add (button, "Add a folder…") → `Voeg … toe` · macOS Finder ("Add Password"→"Voeg wachtwoord toe", "Add Tags"→"Voeg
+  tags toe", "Add"→"Voeg toe") · high. The Settings row button is "Voeg een map toe…".
+- remove (button) → `Verwijder` · macOS AppKit ("Remove"→"Verwijder"), Finder ("Remove from Sidebar"→"Verwijder uit
+  navigatiekolom"); matches the in-catalog `fileExplorer.network.browser.removeHostConfirmButton` · high
+- review (an approve/deny gate, not a read-through) → `beoordelen` / `beoordeling` · macOS renders "Review
+  Changes…"→"Bekijk wijzigingen…", but that is the look-over sense; the rename-review modal is a per-row allow/deny
+  decision, so the stronger `beoordelen` fits · tentative
+- rename cycle → `cyclus van naamwijzigingen`; "while rotating these files" → `terwijl deze bestanden van naam wisselen`
+  · "roteren" reads mechanical in Dutch for files swapping names; the badge stays the compact `(cyclus)` · tentative
+- convert (file contents) → `converteren` · macOS ("Converting…"→"Converteren…", AppKit "bij het converteren van …") ·
+  high
+- temporary → `tijdelijk` · macOS ("temporarily unavailable"→"tijdelijk niet beschikbaar") · high
+- image search (the feature, as referenced from outside Settings) → `het doorzoeken van afbeeldingen` · the Settings
+  card is `settings.mediaIndex.card` "Afbeeldingen doorzoeken", so prose references reuse that verb phrase rather than
+  coining "zoeken in afbeeldingen" · high
+- "Indexing images" (in-progress status label) → `Afbeeldingen worden geïndexeerd` · the passive-progress form the
+  glossary already uses ("wordt gedownload", "wordt geïnstalleerd"); a bare `Afbeeldingen indexeren` would read as the
+  infinitive "to index images" and collide with the sibling Settings labels · high
+- Recent-past events in status/tooltip prose take the PERFECT, not the simple past · macOS nl ("is mogelijk verplaatst
+  of verwijderd"); `driveIndex.tooltipCoalesced*` now reads "macOS is … het spoor … kwijtgeraakt" (was "macOS raakte …
+  kwijt") · high
+- No `sameAsSourceJustification` needed: all 54 values differ from English.
+
+REVIEW FLAGS (bulk-rename / image-index quality pass):
+
+- **`hernoemen` still survives OUTSIDE these 54 keys** and contradicts the settled `naam wijzigen` ruling:
+  `queue.row.label` rename arm ("Bezig met hernoemen"), `onboarding.stepAi.table.rowRename`/`.renameWithout`/
+  `.renameWith` ("Massaal hernoemen", "hernoempatroon"), and four `errors.*` prose lines ("verplaatst, hernoemd of
+  verwijderd"). Worth one locale-wide sweep; the past participle in flowing prose is the most defensible of them.
+- `askCmdr.renameReview.rename` "Rename {count} files" → `Wijzig # bestandsnaam` / `Wijzig # bestandsnamen` — the
+  compact "change N file names" shape, chosen over the literal "Wijzig de namen van # bestanden" so the primary button
+  stays short. Subjective.
+- `askCmdr.renameReview.title` "Review file renames" → `Naamwijzigingen beoordelen` (drops the explicit "file", which
+  the modal context supplies). Subjective.

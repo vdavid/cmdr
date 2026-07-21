@@ -132,7 +132,7 @@
   "@askCmdr.tool.proposeRenamePlan.doing": {
     "sourceHash": "540f1d9"
   },
-  "askCmdr.tool.proposeRenamePlan.done": "Preparó un plan de cambio de nombre",
+  "askCmdr.tool.proposeRenamePlan.done": "Se preparó un plan de cambio de nombre",
   "@askCmdr.tool.proposeRenamePlan.done": {
     "sourceHash": "a271302"
   },
@@ -350,11 +350,11 @@
   "@askCmdr.cost.label": {
     "sourceHash": "3b0dd81"
   },
-  "askCmdr.renameReview.title": "Revisar cambios de nombre",
+  "askCmdr.renameReview.title": "Revisar los cambios de nombre",
   "@askCmdr.renameReview.title": {
     "sourceHash": "f923506"
   },
-  "askCmdr.renameReview.description": "Cmdr cambiará el nombre solo de los archivos que permitas.",
+  "askCmdr.renameReview.description": "Cmdr solo renombrará los archivos que permitas.",
   "@askCmdr.renameReview.description": {
     "sourceHash": "de95869"
   },
@@ -386,7 +386,7 @@
   "@askCmdr.renameReview.cancel": {
     "sourceHash": "19766ed"
   },
-  "askCmdr.renameReview.rename": "{count, plural, one {Cambiar nombre de # archivo} many {Cambiar nombre de # archivos} other {Cambiar nombre de # archivos}}",
+  "askCmdr.renameReview.rename": "{count, plural, one {Renombrar # archivo} many {Renombrar # archivos} other {Renombrar # archivos}}",
   "@askCmdr.renameReview.rename": {
     "sourceHash": "d4b5c18"
   },

@@ -2055,7 +2055,7 @@
   "@settings.mediaIndex.scope.label": {
     "sourceHash": "fa14b86"
   },
-  "settings.mediaIndex.scope.description": "Välj mapparna själv, eller låt Cmdr räkna ut vilka som betyder något för dig.",
+  "settings.mediaIndex.scope.description": "Välj mapparna själv, eller låt Cmdr lista ut vilka som är viktiga för dig.",
   "@settings.mediaIndex.scope.description": {
     "sourceHash": "051ad07"
   },
@@ -2071,7 +2071,7 @@
   "@settings.mediaIndex.chosenFolders.title": {
     "sourceHash": "1aa33d2"
   },
-  "settings.mediaIndex.chosenFolders.help": "Bilderna i de här mapparna indexeras oavsett vad du väljer ovanför. Att ta bort en mapp stoppar ny indexering; det som redan är indexerat går fortfarande att söka i.",
+  "settings.mediaIndex.chosenFolders.help": "Bilderna i de här mapparna indexeras oavsett vad du annars väljer ovan. Att ta bort en mapp stoppar ny indexering; det som redan är indexerat går fortfarande att söka i.",
   "@settings.mediaIndex.chosenFolders.help": {
     "sourceHash": "c48ff3f"
   },

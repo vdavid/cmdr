@@ -2066,7 +2066,7 @@
   "@settings.mediaIndex.scope.opt.chosen": {
     "sourceHash": "a573613"
   },
-  "settings.mediaIndex.scope.opt.importance": "Automatisch, nach Ordner-Wichtigkeit",
+  "settings.mediaIndex.scope.opt.importance": "Automatisch, nach Wichtigkeit der Ordner",
   "@settings.mediaIndex.scope.opt.importance": {
     "sourceHash": "0a66efe"
   },

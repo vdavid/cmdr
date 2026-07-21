@@ -36,7 +36,7 @@
   "@askCmdr.thinking": {
     "sourceHash": "a02f1ce"
   },
-  "askCmdr.stalled": "Cela prend plus de temps que d''habitude. Vous pouvez continuer à attendre ou l''arrêter.",
+  "askCmdr.stalled": "Cela prend plus de temps que d''habitude. Vous pouvez continuer à attendre ou arrêter.",
   "@askCmdr.stalled": {
     "sourceHash": "c171aab"
   },
@@ -128,11 +128,11 @@
   "@askCmdr.tool.imageFacts.done": {
     "sourceHash": "fc24aac"
   },
-  "askCmdr.tool.proposeRenamePlan.doing": "Préparation d’un plan de renommage",
+  "askCmdr.tool.proposeRenamePlan.doing": "Préparation d''un plan de renommage",
   "@askCmdr.tool.proposeRenamePlan.doing": {
     "sourceHash": "540f1d9"
   },
-  "askCmdr.tool.proposeRenamePlan.done": "Plan de renommage préparé",
+  "askCmdr.tool.proposeRenamePlan.done": "A préparé un plan de renommage",
   "@askCmdr.tool.proposeRenamePlan.done": {
     "sourceHash": "a271302"
   },
@@ -388,7 +388,7 @@
   "@askCmdr.renameReview.rename": {
     "sourceHash": "d4b5c18"
   },
-  "askCmdr.renameReview.blocked": "Ce renommage nécessite une attention avant de continuer.",
+  "askCmdr.renameReview.blocked": "Ce renommage demande votre attention avant de pouvoir continuer.",
   "@askCmdr.renameReview.blocked": {
     "sourceHash": "868541c"
   },
@@ -400,37 +400,37 @@
   "@askCmdr.renameReview.overwriteTooltip": {
     "sourceHash": "f3448fc"
   },
-  "askCmdr.renameReview.sourceMissingBadge": "(n’existe pas)",
+  "askCmdr.renameReview.sourceMissingBadge": "(n''existe pas)",
   "@askCmdr.renameReview.sourceMissingBadge": {
     "sourceHash": "fbb0106"
   },
-  "askCmdr.renameReview.sourceMissingTooltip": "Ce fichier source n’existe plus. Il a peut-être été supprimé ou renommé en dehors de Cmdr.",
+  "askCmdr.renameReview.sourceMissingTooltip": "Ce fichier source n''existe plus. Il a peut-être été supprimé ou renommé en dehors de Cmdr.",
   "@askCmdr.renameReview.sourceMissingTooltip": {
     "sourceHash": "acd6306"
   },
   "askCmdr.renameReview.extensionBadge": "(extension)",
   "@askCmdr.renameReview.extensionBadge": {
     "sourceHash": "bcc0b2c",
-    "sameAsSourceJustification": "Le mot « extension » est identique en français et correspond au terme utilisé par macOS."
+    "sameAsSourceJustification": "« Extension » est le même mot en français et c'est le terme du Finder pour l'extension de nom de fichier (macOS : « Afficher toutes les extensions de fichiers », « Masquer l'extension »)."
   },
-  "askCmdr.renameReview.extensionTooltip": "Extension modifiée. Le contenu du fichier ne sera pas converti.",
+  "askCmdr.renameReview.extensionTooltip": "Extension modifiée. Cmdr ne convertit pas le contenu du fichier.",
   "@askCmdr.renameReview.extensionTooltip": {
     "sourceHash": "7da4864"
   },
   "askCmdr.renameReview.cycleBadge": "(cycle)",
   "@askCmdr.renameReview.cycleBadge": {
     "sourceHash": "5a2772b",
-    "sameAsSourceJustification": "Le mot « cycle » est identique en français et décrit le même enchaînement circulaire."
+    "sameAsSourceJustification": "« Cycle » est le même mot en français (Microsoft terminology FRA : cycle → « cycle », nom masculin) et décrit le même enchaînement circulaire de renommages."
   },
-  "askCmdr.renameReview.cycleTooltip": "Cycle de renommage. Cmdr utilisera un nom temporaire pendant la rotation de ces fichiers.",
+  "askCmdr.renameReview.cycleTooltip": "Cycle de renommage. Cmdr utilisera un nom temporaire le temps de permuter ces fichiers.",
   "@askCmdr.renameReview.cycleTooltip": {
     "sourceHash": "d76a0af"
   },
-  "askCmdr.renameReview.expired": "Cette vérification a expiré. Demandez à Ask Cmdr de la préparer à nouveau.",
+  "askCmdr.renameReview.expired": "Cette vérification a expiré. Demandez à Cmdr de la préparer à nouveau.",
   "@askCmdr.renameReview.expired": {
     "sourceHash": "4e6482a"
   },
-  "askCmdr.renameReview.status": "{allowed, plural, one {# renommage autorisé} many {# renommages autorisés} other {# renommages autorisés}}; {blocked, plural, one {# bloqué} many {# bloqués} other {# bloqués}}",
+  "askCmdr.renameReview.status": "{allowed, plural, one {# renommage autorisé} many {# renommages autorisés} other {# renommages autorisés}} ; {blocked, plural, one {# bloqué} many {# bloqués} other {# bloqués}}",
   "@askCmdr.renameReview.status": {
     "sourceHash": "9f70789"
   }

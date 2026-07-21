@@ -2052,7 +2052,7 @@
   "@settings.mediaIndex.scope.label": {
     "sourceHash": "fa14b86"
   },
-  "settings.mediaIndex.scope.description": "Escolha as pastas você mesmo, ou deixe o Cmdr descobrir quais são importantes para você.",
+  "settings.mediaIndex.scope.description": "Escolha as pastas por conta própria ou deixe o Cmdr descobrir quais são importantes para você.",
   "@settings.mediaIndex.scope.description": {
     "sourceHash": "051ad07"
   },

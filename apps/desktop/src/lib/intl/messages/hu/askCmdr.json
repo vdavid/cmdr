@@ -36,7 +36,7 @@
   "@askCmdr.thinking": {
     "sourceHash": "a02f1ce"
   },
-  "askCmdr.stalled": "Ez a szokásosnál tovább tart. Tovább várhatsz, vagy leállíthatod.",
+  "askCmdr.stalled": "Ez a szokásosnál tovább tart. Várhatsz még, vagy leállíthatod.",
   "@askCmdr.stalled": {
     "sourceHash": "c171aab"
   },
@@ -132,7 +132,7 @@
   "@askCmdr.tool.proposeRenamePlan.doing": {
     "sourceHash": "540f1d9"
   },
-  "askCmdr.tool.proposeRenamePlan.done": "Átnevezési terv elkészült",
+  "askCmdr.tool.proposeRenamePlan.done": "Átnevezési terv előkészítve",
   "@askCmdr.tool.proposeRenamePlan.done": {
     "sourceHash": "a271302"
   },
@@ -380,7 +380,7 @@
   "@askCmdr.renameReview.denyAll": {
     "sourceHash": "5a41803"
   },
-  "askCmdr.renameReview.cancel": "Mégse",
+  "askCmdr.renameReview.cancel": "Mégsem",
   "@askCmdr.renameReview.cancel": {
     "sourceHash": "19766ed"
   },
@@ -412,7 +412,7 @@
   "@askCmdr.renameReview.extensionBadge": {
     "sourceHash": "bcc0b2c"
   },
-  "askCmdr.renameReview.extensionTooltip": "A kiterjesztés megváltozott. A fájl tartalma nem lesz átalakítva.",
+  "askCmdr.renameReview.extensionTooltip": "A kiterjesztés megváltozott. A fájl tartalma ettől nem alakul át.",
   "@askCmdr.renameReview.extensionTooltip": {
     "sourceHash": "7da4864"
   },
@@ -420,11 +420,11 @@
   "@askCmdr.renameReview.cycleBadge": {
     "sourceHash": "5a2772b"
   },
-  "askCmdr.renameReview.cycleTooltip": "Átnevezési ciklus. A fájlok körbeforgatásához a Cmdr egy ideiglenes nevet fog használni.",
+  "askCmdr.renameReview.cycleTooltip": "Átnevezési ciklus. A fájlok körbeforgatásához a Cmdr egy ideiglenes nevet használ.",
   "@askCmdr.renameReview.cycleTooltip": {
     "sourceHash": "d76a0af"
   },
-  "askCmdr.renameReview.expired": "Ez az áttekintés lejárt. Kérd meg az Ask Cmdr-t, hogy készítse el újra.",
+  "askCmdr.renameReview.expired": "Ez az áttekintés lejárt. Kérd meg az Ask Cmdrt, hogy készítse el újra.",
   "@askCmdr.renameReview.expired": {
     "sourceHash": "4e6482a"
   },

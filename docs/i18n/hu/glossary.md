@@ -803,3 +803,54 @@ Settled while translating the network-drive image-indexing feature (`settings.me
   tone) · descriptive · high. "at a limited speed" = `korlátozott sebességgel`, "only while you''re not busy" =
   `csak amikor épp nem vagy elfoglalt` (informal `te`, conversational copy).
 - No `sameAsSourceJustification` needed: all 19 values differ from English.
+
+Settled in the QUALITY-REVIEW pass over the 54 bulk-rename / image-index-scope / Ask-Cmdr-tool keys (`askCmdr.json`,
+`errors.json`, `fileExplorer.json`, `settings.json`, 2026-07-20). These keys were first translated mid-feature without
+the process; this pass re-derived every term from the pile:
+
+- allow / deny (per-row approval buttons in the rename review) → `Engedélyezés` / `Elutasítás` · macOS Tier-1 directly
+  (AppKit alert button `Engedélyezés`, `Engedélyezés mindenképp`, and `Elutasítás`/`Elutasítva`/`Kérés elutasítva`), MS
+  (`allow` = `engedélyez`, `deny` = `elutasít`/`megtagad`) · high. "Allow all" / "Deny all" = `Összes engedélyezése` /
+  `Összes elutasítása`, reusing the settled `Összes kijelölése`/`Összes átugrása` pattern.
+- review (look over a set of proposed changes before applying) → `áttekintés` · macOS Finder/AppKit
+  (`Módosítások áttekintése…` = "Review Changes…", `Nem mentett áttekintése`) · high. NOT MS's `vélemény`, which is the
+  product-review sense (Microsoft wrong-sense trap 4). "Review file renames" = `Átnevezések áttekintése`; "This review
+  expired" = `Ez az áttekintés lejárt` (`expire → lejár`, MS · high).
+- **excluded (a folder the user took out of image indexing) → `kizár` / `kizárva`, NOT `kihagy`** · MS (`stop list` =
+  `kizárási lista`, which IS the search-index exclusion sense; `evict` = `kizár`) AND, decisively, in-catalog
+  consistency: the already-shipped `settings.mediaIndex.excludedFolders.label` = `Kizárt mappák` and its description
+  ("…amelyeket a felhasználó **kizárt** a képindexelésből") name the SAME feature, and `queryUi.scope.hint` uses
+  `kizáráshoz` · high. `kihagy`/`kihagyva` is already taken by the transfer `skipped` outcome (macOS
+  `Kihagyás`/`Kihagyva`), so reusing it here blurred the deliberate-exclusion vs not-picked distinction the status-bar
+  labels exist to make. Fixed `fileExplorer.imageIndex.excluded` → `Képek kizárva` and `.excludedTooltip` →
+  `Kizártad ezt a mappát…`.
+- blocked (a rename row preflight won't let through) → `blokkolva` · tentative. macOS attests `letiltva`, but that
+  renders the policy/permission "disabled by Screen Time" sense, not "prevented from proceeding"; `blokkolva` is the
+  common HU software word for the latter and is not an error word (the no-`hiba`/`sikertelen` voice rule holds). Used in
+  `overwriteTooltip` and the SR summary `status` (`{blocked} blokkolva`).
+- rename cycle → `átnevezési ciklus`; "rotating these files" → `a fájlok körbeforgatása`; "one temporary name" →
+  `egy ideiglenes név` · MS (`cycle` = `ciklus`, `rotate` = `forgat`, `temporary file` = `ideiglenes fájl`) · high.
+- **`cancel` in this dialog is `Mégsem`, never `Mégse`.** The pass found the catalog's single `Mégse` outlier
+  (`askCmdr.renameReview.cancel`) against 15 `Mégsem`; macOS ships `Mégsem` 52× and `Mégse` 0×, and `style.md` already
+  settled it. TC/DC say `Mégse` (42×), which is the Windows/Linux side of the split — not ours.
+- **Brand suffix takes NO hyphen: `Cmdrt`, not `Cmdr-t`.** `Cmdr` is pronounced "commander", so its last written letter
+  (`r`) does spell the last pronounced sound; AkH's hyphen rule (silent final letter / unusual letter cluster) doesn't
+  apply. The catalog majority agrees (`Cmdrt` 11×, `Cmdrnek` 19×, `Cmdrben` 8×, `Cmdrrel`, `Cmdren`). Fixed
+  `askCmdr.renameReview.expired` (`Ask Cmdr-t` → `Ask Cmdrt`). NOTE: three `licensing.json` values still write
+  `a Cmdr-t`; out of scope for this pass, flagged for the next `licensing.json` touch.
+- **`askCmdr.tool.*` done labels are `-va/-ve` PARTICIPLES, no exceptions.** `proposeRenamePlan.done` had drifted to
+  `Átnevezési terv elkészült` (a finite past verb saying the plan "got finished"), breaking the family pattern every
+  sibling follows (`listázva`, `ellenőrizve`, `megtalálva`, `átvizsgálva`, `használva`) and the doing/done parallelism
+  the tool rail relies on. Fixed to `Átnevezési terv előkészítve`, pairing with `Átnevezési terv előkészítése`.
+- `searchPhotos.doing`/`.done` → `A fotóid átvizsgálása` / `A fotóid átvizsgálva` KEPT as-is: even though the settled
+  term is `search → keresés`, the shipped sibling `operationsList` renders the identical English frame ("Searching your
+  X") as `A(z) X átvizsgálása`, and the `X keresése` pattern would read as "searching FOR your photos" rather than
+  "searching among them". In-family consistency wins; recorded so it isn't relitigated.
+- "next pass" (the next image-indexing sweep) → `a következő átvizsgálás` · reuses the settled `scan → átvizsgálás`,
+  which is the whole `driveIndex` family's term (`Újbóli átvizsgálás`, `Vizsgáld át újra`) · high. Replaced the vaguer
+  `a következő kör` in `imageIndex.indexedTooltip`.
+- "work out which ones matter to you" → `állapítsa meg, melyek fontosak neked` (not `találja ki`, which reads as
+  "guess") · descriptive; `importance → fontosság` is already settled (`folderImportance` tool key) · high.
+- `{percent}` may safely take `-nál` (`{percent}%-nál tart`): the suffix attaches to the `%` glyph, read `százaléknál`,
+  which is invariably back-vowel — the same constrained-domain reasoning as the FAT32 `{maxSize}-nál` entry · high.
+- No `sameAsSourceJustification` needed in this batch: all 54 values differ from English.

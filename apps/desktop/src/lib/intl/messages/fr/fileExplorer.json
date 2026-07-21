@@ -915,7 +915,7 @@
   "@fileExplorer.imageIndex.indexed": {
     "sourceHash": "f4b2ca5"
   },
-  "fileExplorer.imageIndex.indexedTooltip": "Ce dossier fait partie de votre liste de dossiers à indexer. Les nouveautés seront prises au prochain passage.",
+  "fileExplorer.imageIndex.indexedTooltip": "Ce dossier fait partie de votre liste de dossiers à indexer. Tout nouvel élément ici sera pris en compte au prochain passage.",
   "@fileExplorer.imageIndex.indexedTooltip": {
     "sourceHash": "3c9dd0c"
   },
@@ -923,7 +923,7 @@
   "@fileExplorer.imageIndex.indexing": {
     "sourceHash": "41f1298"
   },
-  "fileExplorer.imageIndex.indexingTooltip": "Cmdr indexe les images de ce disque en ce moment, {percent}% du travail est fait.",
+  "fileExplorer.imageIndex.indexingTooltip": "Cmdr indexe les images de ce disque en ce moment, {percent} % du travail est fait.",
   "@fileExplorer.imageIndex.indexingTooltip": {
     "sourceHash": "ee54884"
   },
@@ -951,7 +951,7 @@
   "@fileExplorer.imageIndex.automatic": {
     "sourceHash": "645c593"
   },
-  "fileExplorer.imageIndex.automaticTooltip": "Cmdr choisit les dossiers à indexer selon votre usage, celui-ci est donc peut-être couvert, peut-être pas.",
+  "fileExplorer.imageIndex.automaticTooltip": "Cmdr choisit les dossiers à indexer selon la fréquence à laquelle vous les utilisez ; celui-ci est donc peut-être couvert, peut-être pas.",
   "@fileExplorer.imageIndex.automaticTooltip": {
     "sourceHash": "8fd2bde"
   },

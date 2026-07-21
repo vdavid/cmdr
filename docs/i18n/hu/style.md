@@ -138,6 +138,10 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   placeholder needs care; prefer constructions that don't hinge on the inserted value's first sound.
 - **Sentence case is native** (Hungarian doesn't capitalize common nouns, days, or months), so the app's sentence-case
   rule applies cleanly. Don't capitalize the word after a colon unless it's a proper noun.
+- **Suffix the brand WITHOUT a hyphen: `Cmdrt`, `Cmdrben`, `Cmdrrel`, `Cmdrnek`.** `Cmdr` is pronounced "commander", so
+  its final written `r` does spell its final pronounced sound, and AkH's hyphen rule (silent final letter or an unusual
+  letter cluster spelling the last sound) doesn't apply. Vowel harmony keys off the spoken form, so the back-vowel
+  suffixes are the right ones. Same for the multiword product name: `Ask Cmdrt`.
 - **Quotation marks: `„…”`** (low opening, high closing) is the standard Hungarian form. macOS Finder uses it too (e.g.
   „^0”). Avoid English `"…"`.
 - **Numbers and dates come from the formatter layer.** Hungarian uses a comma decimal and space thousands separator, and

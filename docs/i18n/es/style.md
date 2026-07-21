@@ -125,6 +125,11 @@ strings are counted, so no plural branches are needed there.
   with three dots"), so the Spanish value uses three ASCII dots too: "Enviando...". macOS's own string is "Enviando…"
   (one Unicode char); we follow Cmdr's catalog convention, not macOS's, to keep the source/translation shapes aligned.
 - **Numbers and dates come from the formatter layer.** Never hardcode separators.
+- **Watch the quiet gendered words in emphatic English.** "yourself", "busy", "sure", "ready" all reach for a `-o`/`-a`
+  adjective in Spanish and silently gender the reader. Restructure with the pronoun instead of the adjective: "Pick the
+  folders yourself" → "Elige tú las carpetas" (not "Elige las carpetas tú mismo"); "while you're not busy" → "mientras
+  no estás usando el Mac". Same rule as the gendered-grammar decision above, but the trap hides in ordinary emphasis
+  rather than in role nouns.
 - **Length: Spanish runs ~15–25% longer than English.** Overflow-check tight buttons ("Copiar", "Descartar", "Enviar
   informe") against the pseudolocale (`en-XA`).
 

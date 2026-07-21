@@ -36,7 +36,7 @@
   "@askCmdr.thinking": {
     "sourceHash": "a02f1ce"
   },
-  "askCmdr.stalled": "Việc này mất nhiều thời gian hơn bình thường. Bạn có thể tiếp tục chờ hoặc dừng lại.",
+  "askCmdr.stalled": "Việc này đang mất nhiều thời gian hơn bình thường. Bạn có thể tiếp tục chờ hoặc dừng lại.",
   "@askCmdr.stalled": {
     "sourceHash": "c171aab"
   },
@@ -388,7 +388,7 @@
   "@askCmdr.renameReview.rename": {
     "sourceHash": "d4b5c18"
   },
-  "askCmdr.renameReview.blocked": "Việc đổi tên này cần được chú ý trước khi tiếp tục.",
+  "askCmdr.renameReview.blocked": "Lần đổi tên này cần được xem lại trước khi tiếp tục.",
   "@askCmdr.renameReview.blocked": {
     "sourceHash": "868541c"
   },
@@ -396,7 +396,7 @@
   "@askCmdr.renameReview.overwriteBadge": {
     "sourceHash": "762fd52"
   },
-  "askCmdr.renameReview.overwriteTooltip": "Một tệp khác đã dùng tên này và không nằm trong kế hoạch đổi tên. Lần đổi tên này bị chặn để bảo vệ tệp đó.",
+  "askCmdr.renameReview.overwriteTooltip": "Một tệp khác đang dùng tên này và không thuộc kế hoạch đổi tên hiện tại. Lần đổi tên này bị chặn để bảo vệ tệp đó.",
   "@askCmdr.renameReview.overwriteTooltip": {
     "sourceHash": "f3448fc"
   },
@@ -424,11 +424,11 @@
   "@askCmdr.renameReview.cycleTooltip": {
     "sourceHash": "d76a0af"
   },
-  "askCmdr.renameReview.expired": "Lần xem lại này đã hết hạn. Hãy yêu cầu Ask Cmdr chuẩn bị lại.",
+  "askCmdr.renameReview.expired": "Lần xem lại này đã hết hạn. Hãy nhờ Cmdr chuẩn bị lại.",
   "@askCmdr.renameReview.expired": {
     "sourceHash": "4e6482a"
   },
-  "askCmdr.renameReview.status": "{allowed, plural, other {# lần đổi tên được cho phép}}; {blocked, plural, other {# mục bị chặn}}",
+  "askCmdr.renameReview.status": "{allowed, plural, other {# lần đổi tên được cho phép}}; {blocked, plural, other {# lần bị chặn}}",
   "@askCmdr.renameReview.status": {
     "sourceHash": "9f70789"
   }

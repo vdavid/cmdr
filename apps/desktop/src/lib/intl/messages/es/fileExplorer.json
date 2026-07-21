@@ -914,7 +914,7 @@
   "@fileExplorer.imageIndex.indexed": {
     "sourceHash": "f4b2ca5"
   },
-  "fileExplorer.imageIndex.indexedTooltip": "Esta carpeta está en tu lista de carpetas para indexar. Lo nuevo se recoge en la siguiente pasada.",
+  "fileExplorer.imageIndex.indexedTooltip": "Esta carpeta está en tu lista de carpetas para indexar. Lo nuevo que aparezca aquí se recogerá en la siguiente pasada.",
   "@fileExplorer.imageIndex.indexedTooltip": {
     "sourceHash": "3c9dd0c"
   },
@@ -1307,11 +1307,11 @@
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7386b54"
   },
-  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS perdió la pista de los cambios en el sistema de archivos {count, plural, one {una vez} many {{countText} veces} other {{countText} veces}} en {hours, plural, one {la última hora} many {las últimas {hoursText} horas} other {las últimas {hoursText} horas}}, así que algunos tamaños de carpetas pueden no coincidir del todo. Suelen ser cachés llenas de archivos pequeños, y el próximo análisis completo de Cmdr, {remaining, plural, one {dentro de una hora} many {dentro de {remainingText} horas} other {dentro de {remainingText} horas}}, lo dejará al día.",
+  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS perdió la pista de los cambios en el sistema de archivos {count, plural, one {una vez} many {{countText} veces} other {{countText} veces}} en {hours, plural, one {la última hora} many {las últimas {hoursText} horas} other {las últimas {hoursText} horas}}, así que algunos tamaños de carpetas podrían no ser del todo exactos. Suelen ser cachés llenas de archivos pequeños, y el próximo análisis completo de Cmdr, {remaining, plural, one {dentro de una hora} many {dentro de {remainingText} horas} other {dentro de {remainingText} horas}}, lo dejará al día.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
     "sourceHash": "2b593c3"
   },
-  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS perdió la pista de los cambios en el sistema de archivos {count, plural, one {una vez} many {{countText} veces} other {{countText} veces}} en {hours, plural, one {la última hora} many {las últimas {hoursText} horas} other {las últimas {hoursText} horas}}, así que algunos tamaños de carpetas pueden no coincidir del todo. Suelen ser cachés llenas de archivos pequeños, así que no es para preocuparse.",
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS perdió la pista de los cambios en el sistema de archivos {count, plural, one {una vez} many {{countText} veces} other {{countText} veces}} en {hours, plural, one {la última hora} many {las últimas {hoursText} horas} other {las últimas {hoursText} horas}}, así que algunos tamaños de carpetas podrían no ser del todo exactos. Suelen ser cachés llenas de archivos pequeños, así que no es para preocuparse.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"
   },

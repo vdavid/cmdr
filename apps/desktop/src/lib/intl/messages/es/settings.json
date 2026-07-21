@@ -2053,7 +2053,7 @@
   "@settings.mediaIndex.scope.label": {
     "sourceHash": "fa14b86"
   },
-  "settings.mediaIndex.scope.description": "Elige las carpetas tú mismo, o deja que Cmdr descubra cuáles te importan.",
+  "settings.mediaIndex.scope.description": "Elige tú las carpetas, o deja que Cmdr descubra cuáles te importan.",
   "@settings.mediaIndex.scope.description": {
     "sourceHash": "051ad07"
   },
@@ -2065,11 +2065,11 @@
   "@settings.mediaIndex.scope.opt.importance": {
     "sourceHash": "0a66efe"
   },
-  "settings.mediaIndex.chosenFolders.title": "Carpetas que se indexan",
+  "settings.mediaIndex.chosenFolders.title": "Carpetas para indexar",
   "@settings.mediaIndex.chosenFolders.title": {
     "sourceHash": "1aa33d2"
   },
-  "settings.mediaIndex.chosenFolders.help": "Las fotos de estas carpetas se indexan sea cual sea la opción de arriba. Si quitas una carpeta, deja de indexarse lo nuevo; lo ya indexado sigue siendo buscable.",
+  "settings.mediaIndex.chosenFolders.help": "Las fotos de estas carpetas se indexan, elijas lo que elijas arriba. Si quitas una carpeta, deja de indexarse lo nuevo; lo que ya está indexado se puede seguir buscando.",
   "@settings.mediaIndex.chosenFolders.help": {
     "sourceHash": "c48ff3f"
   },
@@ -2077,7 +2077,7 @@
   "@settings.mediaIndex.chosenFolders.empty": {
     "sourceHash": "da00cf9"
   },
-  "settings.mediaIndex.chosenFolders.add": "Añadir una carpeta…",
+  "settings.mediaIndex.chosenFolders.add": "Añadir carpeta…",
   "@settings.mediaIndex.chosenFolders.add": {
     "sourceHash": "6505f14"
   },

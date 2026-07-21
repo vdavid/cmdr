@@ -51,11 +51,22 @@ Concrete vocabulary splits that matter for a file manager:
 Spelling: the 1990 Orthographic Agreement narrowed but did not erase the gap (e.g. accentuation and some consonant
 clusters still differ in practice and in vendor style guides).
 
-Recommendation: target **pt-BR as the primary** Portuguese locale and treat `pt` (the base) as pt-BR by default, since
-Brazil is ~80% of Portuguese speakers and the larger Cmdr audience; add `pt-PT` as a separate variant later if Portugal
-demand appears. Do NOT ship one blended "Portuguese". Confidence: high on the two-locale split being correct; the
-base=pt-BR default is a product call for David. Flag for David: confirm `pt` base resolves to Brazilian, and whether
-pt-PT is in scope for launch.
+**Settled: `pt` ships BRAZILIAN Portuguese (pt-BR).** Recorded in
+[`language-selection-decisions.md`](../language-selection-decisions.md) (pt = wave 1, ships as pt-BR; pt-PT = wave 2)
+and in the reference pile's own `_ignored/i18n/pt/_see-also.txt`. Never ship one blended "Portuguese", and never mine
+the bare `_ignored/i18n/pt/` folder: that one is EUROPEAN, and using it is the documented variant trap. Mine
+`_ignored/i18n/pt-BR/`.
+
+**pt-PT tells worth grepping for before you ship a batch** (each one is a real regression found in a shipped batch):
+
+- `ficheiro`/`ficheiros` → pt-BR **arquivo(s)**.
+- The `estar a` + infinitive progressive (`está a indexar`, `A indexar`) → pt-BR **gerund** (`está indexando`,
+  `Indexando`).
+- `consoante` (= "according to") → **conforme** / **pelo quanto**.
+- Proclitic object pronouns before an infinitive (`para a preparar`) → pt-BR enclisis on the infinitive
+  (`para prepará-la`).
+- `Rever` → **Revisar**. `alterar o nome` → **renomear**.
+- A dropped `você` where the verb form alone is ambiguous (`Excluiu esta pasta…` → `Você excluiu esta pasta…`).
 
 ### Spelling reform compliance
 
@@ -75,10 +86,11 @@ conventional unmarked masculine, matching every major. Don't use "x"/"@"/"-e" ne
 ### "Apagar" vs "Excluir" vs "Eliminar" for delete/trash
 
 A file manager hits delete constantly, and the verb choice is variant-coded AND semantically loaded (permanent delete vs
-move-to-trash), so it's the most likely consistency bug. **Now locked in the glossary** (pt-BR): delete → **Excluir**,
-delete permanently → **Excluir permanentemente**, the trash action → **Mover para o Lixo** (trash noun = **Lixo**, the
-macOS Finder Tier-1 value). Don't use "Apagar" (Finder's own delete verb): one catalog file drifted to it and was
-reconciled back to "Excluir" for cross-file consistency. See the glossary's reconciliation note.
+move-to-trash), so it's the most likely consistency bug. **Locked in the glossary** (pt-BR): delete → **Apagar**, delete
+permanently → **Apagar permanentemente**, the trash action → **Mover para o Lixo** (trash noun = **Lixo**, the macOS
+Finder Tier-1 value). Cmdr is a macOS app, so Finder's own "Apagar" beats the Windows-influenced "Excluir" (term-choice
+principle 2). "Excluir" survives only in its non-delete senses: query-scope exclude, and the AI-model deletion in
+`ai.json`. See the glossary's reconciliation note.
 
 ## Terminology and glossary
 
@@ -115,7 +127,7 @@ modern CLDR Portuguese (compact/large numbers), so plural messages must write a 
 
 ## Decisions to confirm with David
 
-- Does `pt` base resolve to Brazilian Portuguese (pt-BR), and is pt-PT in scope for launch? (Primary open question.)
+- None open. (The `pt` = pt-BR question is settled; see the variant section above.)
 
 ## Glossary
 

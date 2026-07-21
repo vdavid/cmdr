@@ -531,7 +531,7 @@
   "@errors.listing.deviceReconnecting.title": {
     "sourceHash": "6157c60"
   },
-  "errors.listing.deviceReconnecting.explanation": "与包含 `{path}` 的设备之间的连接已重启，因此这次操作没有完成。设备仍处于连接状态，Cmdr 正在重新打开它。这通常发生在传输被取消或中断之后。",
+  "errors.listing.deviceReconnecting.explanation": "与存放 `{path}` 的设备之间的连接已重启，因此这次操作没有完成。设备仍然插着，Cmdr 正在重新打开它。这通常发生在传输被取消或中断之后。",
   "@errors.listing.deviceReconnecting.explanation": {
     "sourceHash": "28b864d"
   },

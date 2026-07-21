@@ -917,11 +917,11 @@
   "@fileExplorer.imageIndex.indexed": {
     "sourceHash": "f4b2ca5"
   },
-  "fileExplorer.imageIndex.indexedTooltip": "Deze map staat op je lijst met mappen om te indexeren. Nieuwe bestanden komen er bij de volgende ronde bij.",
+  "fileExplorer.imageIndex.indexedTooltip": "Deze map staat op je lijst met mappen om te indexeren. Alles wat hier nieuw is, wordt bij de volgende ronde meegenomen.",
   "@fileExplorer.imageIndex.indexedTooltip": {
     "sourceHash": "3c9dd0c"
   },
-  "fileExplorer.imageIndex.indexing": "Afbeeldingen indexeren",
+  "fileExplorer.imageIndex.indexing": "Afbeeldingen worden geïndexeerd",
   "@fileExplorer.imageIndex.indexing": {
     "sourceHash": "41f1298"
   },
@@ -937,7 +937,7 @@
   "@fileExplorer.imageIndex.notIndexed": {
     "sourceHash": "b089c28"
   },
-  "fileExplorer.imageIndex.notIndexedTooltip": "Zoeken in afbeeldingen dekt alleen de mappen die je koos, en deze hoort daar niet bij.",
+  "fileExplorer.imageIndex.notIndexedTooltip": "Het doorzoeken van afbeeldingen dekt alleen de mappen die je hebt gekozen, en deze hoort daar niet bij.",
   "@fileExplorer.imageIndex.notIndexedTooltip": {
     "sourceHash": "922fbec"
   },
@@ -945,7 +945,7 @@
   "@fileExplorer.imageIndex.excluded": {
     "sourceHash": "18a83cc"
   },
-  "fileExplorer.imageIndex.excludedTooltip": "Je hebt deze map uitgesloten van zoeken in afbeeldingen, dus hier wordt niets geïndexeerd.",
+  "fileExplorer.imageIndex.excludedTooltip": "Je hebt deze map uitgesloten van het doorzoeken van afbeeldingen, dus hier wordt niets geïndexeerd.",
   "@fileExplorer.imageIndex.excludedTooltip": {
     "sourceHash": "1d0bb6d"
   },
@@ -1313,11 +1313,11 @@
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7386b54"
   },
-  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS raakte {hours, plural, one {in het afgelopen uur} other {in de afgelopen {hoursText} uur}} {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijt, dus een paar mapgroottes kunnen iets afwijken. Meestal gaat het om caches vol kleine bestanden, en de volgende volledige controle van Cmdr {remaining, plural, one {over een uur} other {over {remainingText} uur}} zet dat weer recht.",
+  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS is {hours, plural, one {in het afgelopen uur} other {in de afgelopen {hoursText} uur}} {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijtgeraakt, dus een paar mapgroottes kunnen iets afwijken. Meestal gaat het om caches vol kleine bestanden, en de volgende volledige controle van Cmdr {remaining, plural, one {over een uur} other {over {remainingText} uur}} zet dat weer recht.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
     "sourceHash": "2b593c3"
   },
-  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS raakte {hours, plural, one {in het afgelopen uur} other {in de afgelopen {hoursText} uur}} {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijt, dus een paar mapgroottes kunnen iets afwijken. Meestal gaat het om caches vol kleine bestanden, dus het is geen probleem.",
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS is {hours, plural, one {in het afgelopen uur} other {in de afgelopen {hoursText} uur}} {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijtgeraakt, dus een paar mapgroottes kunnen iets afwijken. Meestal gaat het om caches vol kleine bestanden, dus dat is geen probleem.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"
   },

@@ -913,27 +913,27 @@
   "@fileExplorer.dateTooltip.lastModified": {
     "sourceHash": "0fe1058"
   },
-  "fileExplorer.imageIndex.indexed": "Bilder indexiert",
+  "fileExplorer.imageIndex.indexed": "Bilder indiziert",
   "@fileExplorer.imageIndex.indexed": {
     "sourceHash": "f4b2ca5"
   },
-  "fileExplorer.imageIndex.indexedTooltip": "Dieser Ordner steht auf deiner Liste der zu indexierenden Ordner. Neues hier kommt beim nächsten Durchlauf dazu.",
+  "fileExplorer.imageIndex.indexedTooltip": "Dieser Ordner steht auf deiner Liste der zu indizierenden Ordner. Alles Neue hier kommt beim nächsten Durchlauf dazu.",
   "@fileExplorer.imageIndex.indexedTooltip": {
     "sourceHash": "3c9dd0c"
   },
-  "fileExplorer.imageIndex.indexing": "Bilder werden indexiert",
+  "fileExplorer.imageIndex.indexing": "Bilder werden indiziert",
   "@fileExplorer.imageIndex.indexing": {
     "sourceHash": "41f1298"
   },
-  "fileExplorer.imageIndex.indexingTooltip": "Cmdr indexiert gerade Bilder auf diesem Laufwerk, {percent}% sind geschafft.",
+  "fileExplorer.imageIndex.indexingTooltip": "Cmdr indiziert gerade Bilder auf diesem Laufwerk, {percent} % sind geschafft.",
   "@fileExplorer.imageIndex.indexingTooltip": {
     "sourceHash": "ee54884"
   },
-  "fileExplorer.imageIndex.indexingTooltipNoProgress": "Cmdr indexiert gerade Bilder auf diesem Laufwerk.",
+  "fileExplorer.imageIndex.indexingTooltipNoProgress": "Cmdr indiziert gerade Bilder auf diesem Laufwerk.",
   "@fileExplorer.imageIndex.indexingTooltipNoProgress": {
     "sourceHash": "d7b5450"
   },
-  "fileExplorer.imageIndex.notIndexed": "Bilder nicht indexiert",
+  "fileExplorer.imageIndex.notIndexed": "Bilder nicht indiziert",
   "@fileExplorer.imageIndex.notIndexed": {
     "sourceHash": "b089c28"
   },
@@ -945,15 +945,15 @@
   "@fileExplorer.imageIndex.excluded": {
     "sourceHash": "18a83cc"
   },
-  "fileExplorer.imageIndex.excludedTooltip": "Du hast diesen Ordner von der Bildersuche ausgeschlossen, hier wird also nichts indexiert.",
+  "fileExplorer.imageIndex.excludedTooltip": "Du hast diesen Ordner von der Bildersuche ausgeschlossen, hier wird also nichts indiziert.",
   "@fileExplorer.imageIndex.excludedTooltip": {
     "sourceHash": "1d0bb6d"
   },
-  "fileExplorer.imageIndex.automatic": "Bilder automatisch indexiert",
+  "fileExplorer.imageIndex.automatic": "Bilder automatisch indiziert",
   "@fileExplorer.imageIndex.automatic": {
     "sourceHash": "645c593"
   },
-  "fileExplorer.imageIndex.automaticTooltip": "Cmdr wählt die zu indexierenden Ordner danach aus, wie viel du mit ihnen arbeitest, dieser kann also dabei sein oder nicht.",
+  "fileExplorer.imageIndex.automaticTooltip": "Cmdr wählt die zu indizierenden Ordner danach aus, wie viel du mit ihnen arbeitest; dieser hier ist also vielleicht dabei, vielleicht auch nicht.",
   "@fileExplorer.imageIndex.automaticTooltip": {
     "sourceHash": "8fd2bde"
   },
@@ -1313,7 +1313,7 @@
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7386b54"
   },
-  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS hat {hours, plural, one {in der letzten Stunde} other {in den letzten {hoursText} Stunden}} {count, plural, one {einmal} other {{countText}-mal}} den Überblick über Dateisystemänderungen verloren, daher können ein paar Ordnergrößen leicht abweichen. Meist sind es Caches voller kleiner Dateien, und Cmdrs nächster vollständiger Durchlauf {remaining, plural, one {in einer Stunde} other {in {remainingText} Stunden}} bringt das wieder in Ordnung.",
+  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS hat {hours, plural, one {in der letzten Stunde} other {in den letzten {hoursText} Stunden}} {count, plural, one {einmal} other {{countText}-mal}} den Überblick über Dateisystemänderungen verloren, daher können ein paar Ordnergrößen leicht abweichen. Meist sind es Caches voller kleiner Dateien, und der nächste vollständige Durchlauf von Cmdr {remaining, plural, one {in einer Stunde} other {in {remainingText} Stunden}} bringt das wieder in Ordnung.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
     "sourceHash": "2b593c3"
   },

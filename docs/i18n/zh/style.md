@@ -34,6 +34,10 @@ Error and warning messages stay calm and actionable. Keep the English rule of av
 phrase what happened and the next step (Chinese has neutral framings like `无法…` / `無法…` "couldn't…") rather than a
 loud failure word like `错误`/`失敗`.
 
+**Demonstratives: prefer the spoken `这个` / `这项` / `这次` over the written `此` / `该`.** The catalog is dominated by
+`这…` (`这个文件夹`, `这项操作`, `这个传输`); `此` reads as legal/technical register and clashes with the friendly
+voice. Keep `此` only where it's already settled in a terse label (`此驱动器…` in the drive-index tooltips).
+
 Chinese runs SHORT: a Chinese string is often half the character count of the English, so overflow is rarely the risk
 (under-flow / too-sparse buttons can be). Still overflow-check, but the bigger care is that terse Chinese still reads
 naturally and isn't cryptically clipped.

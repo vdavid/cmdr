@@ -462,3 +462,75 @@ Settled while translating the Compress feature:
   "re-" prefix · high. `indexing.run.rescan`.
 - Quick update (replay recorded changes, the light path) · **Atualização rápida** · noun form of the glossary Refresh →
   **Atualizar** row; matches `indexing.step.updateIndex` "Atualizar o índice" · high. `indexing.run.update`.
+
+### Bulk-rename review terms (`askCmdr.renameReview.*` + `askCmdr.tool.proposeRenamePlan.*`, 2026-07-20)
+
+The Ask Cmdr rename-proposal modal: a table of proposed renames the user allows or denies row by row.
+
+- rename (the noun: one proposed rename, a rename plan) · **renomeação** · noun of the glossary `rename → Renomear` row;
+  already shipped in `askCmdr.renameReview.overwriteTooltip` ("plano de renomeação") · high. Feminine, so counts and
+  participles agree: "# renomeação permitida" / "# renomeações permitidas". ❌ Never "alteração de nome" (a pt-PT-shaped
+  circumlocution that also breaks the parallel with the `Renomear` verb).
+- Rename N files (the primary action) · **Renomear # arquivo / # arquivos** · GNOME Nautilus pt-BR verbatim ("Rename %d
+  Files" → "Renomear %d arquivos") · confirmed. `askCmdr.renameReview.rename`; the ICU plural wraps only the count +
+  noun, keeping "Renomear" outside the branches.
+- Review (verb, the modal title) · **Revisar**; the review itself (noun) · **revisão** · MS terminology pt-BR (review →
+  "revisão"/"examinar") · high. ❌ Not "Rever", which reads pt-PT. `renameReview.title` "Review file renames" → "Revisar
+  renomeações de arquivos"; `renameReview.expired` "This review expired" → "Esta revisão expirou".
+- Allow / Deny (per-row approval pair) · **Permitir** / **Negar** · macOS pt-BR ("Permitir", "Permitir Mesmo Assim"), MS
+  terminology pt-BR (Allow → "Permitir", Deny → "Negar", both BRA) · confirmed for Permitir, high for Negar (macOS has
+  no Deny label; its permission dialogs say "Não Permitir", which is Don't-Allow, not Deny). Chosen over "Recusar" (=
+  decline) because the pair is an approval gate, not an invitation.
+- Allow all / Deny all · **Permitir tudo** / **Negar tudo** · the shipped "tudo" pattern for a bare all-object (glossary
+  `Selecionar tudo` / `Desmarcar tudo`; macOS "Remover Tudo"; Total Commander "Substituir tudo") · high. "tudo" also
+  sidesteps gender agreement with the implied feminine "renomeações".
+- New name / Current name (table column headings) · **Novo nome** / **Nome atual** · **Novo nome** is unanimous across
+  all five file-manager corpora (Nautilus "Novo nome do arquivo", Double Commander, Thunar "Novo nome", Dolphin, and
+  Total Commander's multi-rename column set `1400="Nome antigo;Ext.;Novo nome;…"`) · confirmed. ❌ Not "Nome novo"
+  (reversed order, unsourced). "Nome atual" keeps the English's deliberate current-vs-old framing, matching the
+  catalog's "pasta atual".
+- overwrite (the red warning badge `(overwrite!)`) · **(substituição!)** · overwrite → **substituir** is unanimous in
+  the pile (MS terminology BRA, macOS Finder "Substituir", Total Commander `1334="Confirmar substituição"`, Double
+  Commander "Confirm overwrites" → "Confirmar substituições"); zero "sobrescrever" hits in macOS/Nautilus/Double
+  Commander · confirmed. The NOUN form keeps the badge family parallel: the sibling badges are nouns too ("(ciclo)",
+  "(extensão)"), and a bare "(substituir!)" would read as a button.
+- rename cycle (A→B, B→A) · **Ciclo de renomeação** · MS terminology (cycle → "ciclo") · high. The tooltip renders "one
+  temporary name while rotating these files" as "um nome temporário ao trocar os nomes desses arquivos entre si": the
+  literal "girar/rotacionar os arquivos" reads as rotating the images, and "entre si" is what carries the cycle.
+- extension (filename extension) · **extensão** · MS terminology pt-BR ("file name extension" → "extensão" / "extensão
+  de nome de arquivo") · confirmed. `extensionBadge`, `extensionTooltip`.
+- rename plan (the proposal the tool prepares) · **plano de renomeação** · compositional on the renomeação row · high.
+  `askCmdr.tool.proposeRenamePlan.*` keeps the doing/gerund + done/preterite tool-status pattern ("Preparando" /
+  "Preparou"), same as the `Conferindo`/`Conferiu` row above.
+- No `sameAsSourceJustification` needed: all 28 values differ from English.
+
+### Image-index status and scope terms (`fileExplorer.imageIndex.*` + `settings.mediaIndex.scope/chosenFolders.*` + `askCmdr.tool.imageFacts/searchPhotos.*`, 2026-07-20)
+
+- image search (the feature, when named in running text) · **busca de imagens** · matches the shipped card title
+  `settings.mediaIndex.card` "Image search" → "Busca de imagens" and the glossary search → **busca** row · confirmed. ❌
+  Not "pesquisa de imagens" when naming the feature. The adjective **pesquisável** stays where it already ships
+  (`settings.mediaIndex.reclaim.line`, `progress.kept`, `chosenFolders.help`): it's a property of the indexed item, not
+  the feature name.
+- indexing (in progress) · **Indexando** · pt-BR gerund, matching every sibling progress label (Copiando/Movendo/
+  Analisando/Baixando) and the shipped `search.imageResults.indexing` ("ainda estão sendo indexadas") · confirmed. ❌
+  Never the pt-PT `A indexar` / `está a indexar`. `fileExplorer.imageIndex.indexing`, `indexingTooltip*`.
+- indexing pass (one sweep of the image indexer) · **rodada** ("on the next pass" → "na próxima rodada") · standard
+  pt-BR for a periodic batch run; chosen over "passagem" (reads as passage/ticket) and over **varredura**, which is
+  reserved for the drive scan · high. `fileExplorer.imageIndex.indexedTooltip`.
+- full check (the drive index's next scheduled full walk) · **varredura completa** · the settled drive-scan noun; the
+  sibling drive-index tooltips already say "Faça uma nova varredura" / "Refaça a varredura" · confirmed. ❌ Not "análise
+  completa": **Análise/Analisar** is reserved for the transfer/delete pre-count sense.
+  `fileExplorer.navigation.driveIndex.tooltipCoalesced`.
+- "macOS lost track of file system changes" · **O macOS deixou de acompanhar as mudanças no sistema de arquivos** ·
+  high. ❌ Not "perdeu o controle", which reads as "lost control" and is alarming; these tooltips must stay reassuring
+  and may never use the words for error or failed. The closing "no big deal" → **não é nada preocupante** (warm,
+  unambiguous, and dodges the nada demais / nada de mais spelling fight).
+- covered (a folder is / isn't inside the indexed scope) · **coberta** ("may or may not be covered" → "pode ou não estar
+  coberta") · reuses the shipped `settings.mediaIndex.enabled.description` verb "cobre" · confirmed.
+- "Reading what's in your photos" (the image-facts transparency tool line) · **Lendo / Leu o conteúdo das suas fotos** ·
+  photo → **foto** (glossary row) + the doing/gerund + done/preterite tool-status pattern · high. "o conteúdo das suas
+  fotos" is deliberately explicit that image CONTENT is read; don't soften it to "suas fotos".
+- "you choose yourself" (gender-neutral restructure) · **por conta própria** · the gender rule bans a masculine-default
+  user adjective, and "você mesmo" is exactly that; "por conta própria" is invariable · high.
+  `settings.mediaIndex.scope.description`.
+- No `sameAsSourceJustification` needed: all 26 values differ from English.

@@ -4,8 +4,9 @@ Working notes for translating Cmdr into Vietnamese. Read [`README.md`](../README
 process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
 Vietnamese.
 
-Vietnamese is well-resourced: the pile has all five sources (`_ignored/i18n/vi/`: macOS Finder/AppKit, MS terminology +
-style guide, GNOME Nautilus, Xfce Thunar). Most terms reach `high`. Evidence verified against the pile on 2026-06-20.
+Vietnamese is well-resourced: the pile (`_ignored/i18n/vi/`) has macOS Finder/AppKit/SystemSettings, MS terminology +
+style guide, GNOME Nautilus, Xfce Thunar, KDE Dolphin, and Total Commander, so both UI families are covered. Most terms
+reach `high`. Evidence verified against the pile on 2026-06-20, source list re-checked 2026-07-21.
 
 ## Decisions to confirm with David
 

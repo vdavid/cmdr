@@ -112,19 +112,19 @@
   "@askCmdr.tool.operationsGet.done": {
     "sourceHash": "80fe1e9"
   },
-  "askCmdr.tool.searchPhotos.doing": "Söker i dina foton",
+  "askCmdr.tool.searchPhotos.doing": "Söker i dina bilder",
   "@askCmdr.tool.searchPhotos.doing": {
     "sourceHash": "da1265d"
   },
-  "askCmdr.tool.searchPhotos.done": "Sökte i dina foton",
+  "askCmdr.tool.searchPhotos.done": "Sökte i dina bilder",
   "@askCmdr.tool.searchPhotos.done": {
     "sourceHash": "cb3dede"
   },
-  "askCmdr.tool.imageFacts.doing": "Läser vad som finns i dina foton",
+  "askCmdr.tool.imageFacts.doing": "Läser vad som finns i dina bilder",
   "@askCmdr.tool.imageFacts.doing": {
     "sourceHash": "b70691b"
   },
-  "askCmdr.tool.imageFacts.done": "Läste vad som finns i dina foton",
+  "askCmdr.tool.imageFacts.done": "Läste vad som finns i dina bilder",
   "@askCmdr.tool.imageFacts.done": {
     "sourceHash": "fc24aac"
   },
@@ -349,11 +349,11 @@
   "@askCmdr.cost.label": {
     "sourceHash": "3b0dd81"
   },
-  "askCmdr.renameReview.title": "Granska filbyten",
+  "askCmdr.renameReview.title": "Granska namnbyten",
   "@askCmdr.renameReview.title": {
     "sourceHash": "f923506"
   },
-  "askCmdr.renameReview.description": "Cmdr byter bara namn på filerna som du tillåter.",
+  "askCmdr.renameReview.description": "Cmdr byter bara namn på de filer du tillåter.",
   "@askCmdr.renameReview.description": {
     "sourceHash": "de95869"
   },
@@ -389,15 +389,15 @@
   "@askCmdr.renameReview.rename": {
     "sourceHash": "d4b5c18"
   },
-  "askCmdr.renameReview.blocked": "Det här namnbytet behöver uppmärksamhet innan det kan fortsätta.",
+  "askCmdr.renameReview.blocked": "Det här namnbytet behöver ses över innan det kan fortsätta.",
   "@askCmdr.renameReview.blocked": {
     "sourceHash": "868541c"
   },
-  "askCmdr.renameReview.overwriteBadge": "(skriv över!)",
+  "askCmdr.renameReview.overwriteBadge": "(överskrivning!)",
   "@askCmdr.renameReview.overwriteBadge": {
     "sourceHash": "762fd52"
   },
-  "askCmdr.renameReview.overwriteTooltip": "En annan fil använder redan namnet och ingår inte i den här namnbytesplanen. Namnbytet blockeras för att skydda filen.",
+  "askCmdr.renameReview.overwriteTooltip": "En annan fil har redan det här namnet och ingår inte i den här namnbytesplanen. Namnbytet blockeras för att skydda den filen.",
   "@askCmdr.renameReview.overwriteTooltip": {
     "sourceHash": "f3448fc"
   },
@@ -421,11 +421,11 @@
   "@askCmdr.renameReview.cycleBadge": {
     "sourceHash": "5a2772b"
   },
-  "askCmdr.renameReview.cycleTooltip": "Namnbytescykel. Cmdr använder ett tillfälligt namn medan filerna roteras.",
+  "askCmdr.renameReview.cycleTooltip": "Namnbytescykel. Cmdr använder ett tillfälligt namn medan de här filerna roteras.",
   "@askCmdr.renameReview.cycleTooltip": {
     "sourceHash": "d76a0af"
   },
-  "askCmdr.renameReview.expired": "Den här granskningen har gått ut. Be Ask Cmdr att förbereda den igen.",
+  "askCmdr.renameReview.expired": "Den här granskningen har gått ut. Be Cmdr att förbereda den igen.",
   "@askCmdr.renameReview.expired": {
     "sourceHash": "4e6482a"
   },

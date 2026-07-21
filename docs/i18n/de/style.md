@@ -161,6 +161,8 @@ Dateien".
   catalog. Restructure the sentence so the placeholder stays nominative, or carries its own preposition.
 - **Numbers and dates come from the formatter layer** (comma decimal, period/space thousands). Never hardcode
   separators.
+- **A space goes before the percent sign** (`{percent} %`, "Auf 100 % zoomen"), per DIN 5008 and the rest of the
+  catalog. English writes `50%`; German doesn't. Same for unit symbols after a number.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

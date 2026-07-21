@@ -772,3 +772,67 @@ photo-content indexing + its status lines; `settings.mediaIndex.networkVolumes.*
   sibling: `Interne : …` lead, third-person `l''utilisateur` · high.
 - No `sameAsSourceJustification` needed: every value differs from English (each carries the FR ASCII-space-before-`:`, a
   translated term, or French agreement).
+
+Settled during the `quality-pass` review of the 54 keys added by the bulk-rename, image-index-scope, and Ask Cmdr tool
+features (`askCmdr.renameReview.*`, `askCmdr.tool.{searchPhotos,imageFacts,proposeRenamePlan}.*`, `askCmdr.stalled`,
+`errors.listing.deviceReconnecting.*`, `fileExplorer.imageIndex.*`,
+`fileExplorer.navigation.driveIndex.tooltipCoalesced*`, `settings.mediaIndex.*`). ICU values double their apostrophes;
+the three `errors.*` keys use single ones:
+
+- allow (per-row approval button) → `Autoriser`; allow all → `Tout autoriser` · macOS Finder ("Allow Anyway" →
+  "Autoriser quand même", "Allow me to be discovered by:" → "Autoriser la détection…") + the catalog-wide `Tout <verbe>`
+  all-variant pattern · high.
+- deny (per-row refusal button) → `Refuser`; deny all → `Tout refuser` · MS terminology FRA (`deny` verb → "refuser";
+  the button ProperNoun entry → "Refuser"); macOS has no Deny button string in the pile · high.
+- review (verb, the "check this list of proposed changes" action) → `vérifier`; the surface as a noun → `vérification` ·
+  macOS AppKit ("Review Changes…" → "Vérifier les modifications…") · high. So "Review file renames" → "Vérifier les
+  renommages" and "This review expired" → "Cette vérification a expiré". NOT "revoir" (macOS uses that for re-reading
+  documents) and NOT the MS noun "revue" (publishing sense).
+- rename cycle (A→B, B→A dependency loop) → `cycle de renommage`; the badge `(cycle)` is legitimately identical to
+  English · MS terminology FRA (`cycle` → "cycle", masc.) · high.
+- rotate (files through a name cycle) → `permuter` · MS terminology FRA (`swap` → "permuter"); deliberately NOT macOS's
+  "rotation"/"faire pivoter", which the pile reserves for the SPATIAL image-rotation sense ("rotation à gauche") and
+  would read as turning the photos · high.
+- filename extension → `extension` · macOS Finder ("Show all filename extensions" → "Afficher toutes les extensions de
+  fichiers", "Hide Extension" → "Masquer l'extension") · high — the `(extension)` badge is legitimately
+  identical-to-English and carries a `sameAsSourceJustification`.
+- overwrite (badge naming the clash) → `écrasement` (noun) · derived from the settled `overwrite → écraser` (macOS
+  "Écraser à la destination", "Écraser les extensions") · high. ASCII space before the `!` per the settled spacing rule:
+  `(écrasement !)`.
+- remove (take a folder off the indexing list) → `Retirer`, NOT `Supprimer` · DELIBERATE divergence from macOS Tier 1,
+  which renders "Remove" as "Supprimer" everywhere ("Remove from Sidebar" → "Supprimer de la barre latérale"). In this
+  catalog `supprimer` is the settled `delete` term, and the help text's whole job is to promise that removing a folder
+  is NOT a deletion, so `Supprimer` would say the opposite of the copy. `Retirer` matches the catalog's existing
+  `Retirer la pièce jointe` · high.
+- searchable (what stays findable after a folder leaves the list) → `reste disponible dans la recherche` · no pile term
+  for the adjective; rendered as a verb phrase anchored on the settled `search → recherche` so the promise stays about
+  SEARCH, not mere viewing ("consultable" loses that) · tentative.
+- indexing pass (one sweep of the indexer over a drive) → `passage` ("au prochain passage") · descriptive FR; pairs with
+  the settled `indexation` · tentative.
+
+Phrasing notes for this pass:
+
+- **Tool-line doing/done pairs keep the settled shape**: present = deverbal noun phrase, past = `A <participe> …`
+  (glossary, `ask-cmdr` pass). `proposeRenamePlan.done` had drifted to the participle-final "Plan de renommage préparé"
+  and is now `A préparé un plan de renommage`, parallel with its `Préparation d'un plan de renommage` twin and with all
+  nine sibling pairs.
+- `searchPhotos` keeps `Recherche dans vos photos` / `A cherché dans vos photos`: the `chercher` past participle looks
+  like a stem mismatch with `Recherche`, but it is EXACTLY what the sibling `operationsList` pair already ships, and
+  cross-pair consistency on the same rail outranks stem symmetry. Don't "fix" one without the other.
+- **Apostrophe form**: the whole `fr` catalog uses ASCII apostrophes (doubled `''` in ICU values, single `'` in
+  `errors.*`). Three of these keys had shipped the curly U+2019 (copied from the English source, which uses it) and were
+  normalized. A curly apostrophe is not an ICU escape, so it passes every check silently: it's a consistency break the
+  tooling can't catch. (Two pre-existing `fileExplorer.smbReauth.*` values still carry U+2019, outside this pass's
+  scope.)
+- `askCmdr.stalled` ends "…ou arrêter", mirroring the Stop button's own label `askCmdr.composer.stop` = "Arrêter". The
+  earlier "ou l'arrêter" left the pronoun `l'` with no antecedent (and an unknowable gender).
+- `askCmdr.renameReview.expired` says "Demandez à Cmdr…", not "Demandez à Ask Cmdr…": the English sentence uses the
+  brand as a verb phrase ("Ask Cmdr to prepare it again"), which in French collapses into the verb `demander`; keeping
+  the brand whole would read as "demandez à Ask". The brand still appears (`Cmdr`), so the don't-translate check holds.
+- `errors.listing.deviceReconnecting.suggestion` was the catalog's only `tu` address ("Patiente… réessaie…") and is now
+  `vous` ("Patientez quelques secondes, puis réessayez."), per the settled formality.
+- ASCII space before `%` in `fileExplorer.imageIndex.indexingTooltip` ("{percent} % du travail est fait") and before `;`
+  in the `renameReview.status` screen-reader summary, per the catalog-wide settled spacing rule.
+- The two `driveIndex.tooltipCoalesced*` tooltips were confirmed unchanged: FR CLDR `one`/`many`/`other` on all three
+  counts, no "erreur"/"échec" wording, and the calm close ("remettra tout d'aplomb" / "rien de grave donc") matches the
+  reassuring register the `@key` description asks for.

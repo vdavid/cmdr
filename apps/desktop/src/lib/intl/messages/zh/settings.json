@@ -2057,7 +2057,7 @@
   "@settings.mediaIndex.scope.opt.chosen": {
     "sourceHash": "a573613"
   },
-  "settings.mediaIndex.scope.opt.importance": "自动，按文件夹的重要程度",
+  "settings.mediaIndex.scope.opt.importance": "自动，按文件夹的重要性",
   "@settings.mediaIndex.scope.opt.importance": {
     "sourceHash": "0a66efe"
   },

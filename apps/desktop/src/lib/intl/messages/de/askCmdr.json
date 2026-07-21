@@ -128,11 +128,11 @@
   "@askCmdr.tool.imageFacts.done": {
     "sourceHash": "fc24aac"
   },
-  "askCmdr.tool.proposeRenamePlan.doing": "Einen Umbenennungsplan vorbereiten",
+  "askCmdr.tool.proposeRenamePlan.doing": "Ein Umbenennungsplan wird vorbereitet",
   "@askCmdr.tool.proposeRenamePlan.doing": {
     "sourceHash": "540f1d9"
   },
-  "askCmdr.tool.proposeRenamePlan.done": "Einen Umbenennungsplan vorbereitet",
+  "askCmdr.tool.proposeRenamePlan.done": "Ein Umbenennungsplan vorbereitet",
   "@askCmdr.tool.proposeRenamePlan.done": {
     "sourceHash": "a271302"
   },
@@ -390,15 +390,15 @@
   "@askCmdr.renameReview.rename": {
     "sourceHash": "d4b5c18"
   },
-  "askCmdr.renameReview.blocked": "Diese Umbenennung braucht Aufmerksamkeit, bevor sie fortgesetzt werden kann.",
+  "askCmdr.renameReview.blocked": "Bei dieser Umbenennung ist noch etwas zu klären, bevor sie ausgeführt werden kann.",
   "@askCmdr.renameReview.blocked": {
     "sourceHash": "868541c"
   },
-  "askCmdr.renameReview.overwriteBadge": "(überschreiben!)",
+  "askCmdr.renameReview.overwriteBadge": "(Überschreiben!)",
   "@askCmdr.renameReview.overwriteBadge": {
     "sourceHash": "762fd52"
   },
-  "askCmdr.renameReview.overwriteTooltip": "Eine andere Datei verwendet diesen Namen und gehört nicht zu diesem Umbenennungsplan. Diese Umbenennung ist zu ihrem Schutz blockiert.",
+  "askCmdr.renameReview.overwriteTooltip": "Eine andere Datei verwendet diesen Namen bereits und gehört nicht zu diesem Umbenennungsplan. Diese Umbenennung ist zu ihrem Schutz blockiert.",
   "@askCmdr.renameReview.overwriteTooltip": {
     "sourceHash": "f3448fc"
   },
@@ -410,7 +410,7 @@
   "@askCmdr.renameReview.sourceMissingTooltip": {
     "sourceHash": "acd6306"
   },
-  "askCmdr.renameReview.extensionBadge": "(Dateiendung)",
+  "askCmdr.renameReview.extensionBadge": "(Endung)",
   "@askCmdr.renameReview.extensionBadge": {
     "sourceHash": "bcc0b2c"
   },
@@ -422,11 +422,11 @@
   "@askCmdr.renameReview.cycleBadge": {
     "sourceHash": "5a2772b"
   },
-  "askCmdr.renameReview.cycleTooltip": "Umbenennungszyklus. Cmdr verwendet einen temporären Namen, während diese Dateien zyklisch umbenannt werden.",
+  "askCmdr.renameReview.cycleTooltip": "Umbenennungszyklus. Cmdr verwendet einen temporären Namen, während es diese Dateien zyklisch umbenennt.",
   "@askCmdr.renameReview.cycleTooltip": {
     "sourceHash": "d76a0af"
   },
-  "askCmdr.renameReview.expired": "Diese Prüfung ist abgelaufen. Bitte Ask Cmdr, sie erneut vorzubereiten.",
+  "askCmdr.renameReview.expired": "Diese Prüfung ist abgelaufen. Lass Ask Cmdr sie erneut vorbereiten.",
   "@askCmdr.renameReview.expired": {
     "sourceHash": "4e6482a"
   },

@@ -192,7 +192,9 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
 - **Apostrophes**: in ICU strings (everything outside `errors.*`), double every apostrophe (`d''incident`). In
   `errors.*` keys, use normal apostrophes. The crash-reporter strings are ICU, so they double. French elision makes
   apostrophes frequent ("d'incident", "l'élément", "n'a pas"): this trap bites more often in French than in most
-  languages, so check every value.
+  languages, so check every value. **Always the ASCII apostrophe (U+0027), never the curly U+2019**, even when the
+  English source string uses the curly one: the whole `fr` catalog is ASCII, and a curly apostrophe is not an ICU escape
+  character, so it slips past every check as a silent consistency break.
 - **Ellipsis**: keep the source's literal three dots ("Envoi...") rather than swapping to a single … character, to match
   the English catalog value.
 - **Length**: French runs roughly 15–20% longer than English. Overflow-check the layout against the pseudolocale

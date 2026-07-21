@@ -915,19 +915,19 @@
   "@fileExplorer.imageIndex.indexed": {
     "sourceHash": "f4b2ca5"
   },
-  "fileExplorer.imageIndex.indexedTooltip": "Esta pasta está na sua lista de pastas a indexar. As novidades entram na próxima passagem.",
+  "fileExplorer.imageIndex.indexedTooltip": "Esta pasta está na sua lista de pastas para indexar. Qualquer novidade aqui entra na próxima rodada.",
   "@fileExplorer.imageIndex.indexedTooltip": {
     "sourceHash": "3c9dd0c"
   },
-  "fileExplorer.imageIndex.indexing": "A indexar imagens",
+  "fileExplorer.imageIndex.indexing": "Indexando imagens",
   "@fileExplorer.imageIndex.indexing": {
     "sourceHash": "41f1298"
   },
-  "fileExplorer.imageIndex.indexingTooltip": "O Cmdr está a indexar imagens neste disco agora, já vai em {percent}%.",
+  "fileExplorer.imageIndex.indexingTooltip": "O Cmdr está indexando imagens neste disco agora, já vai em {percent}%.",
   "@fileExplorer.imageIndex.indexingTooltip": {
     "sourceHash": "ee54884"
   },
-  "fileExplorer.imageIndex.indexingTooltipNoProgress": "O Cmdr está a indexar imagens neste disco agora.",
+  "fileExplorer.imageIndex.indexingTooltipNoProgress": "O Cmdr está indexando imagens neste disco agora.",
   "@fileExplorer.imageIndex.indexingTooltipNoProgress": {
     "sourceHash": "d7b5450"
   },
@@ -935,7 +935,7 @@
   "@fileExplorer.imageIndex.notIndexed": {
     "sourceHash": "b089c28"
   },
-  "fileExplorer.imageIndex.notIndexedTooltip": "A pesquisa de imagens cobre apenas as pastas que escolheu, e esta não é uma delas.",
+  "fileExplorer.imageIndex.notIndexedTooltip": "A busca de imagens cobre apenas as pastas que você escolheu, e esta não é uma delas.",
   "@fileExplorer.imageIndex.notIndexedTooltip": {
     "sourceHash": "922fbec"
   },
@@ -943,7 +943,7 @@
   "@fileExplorer.imageIndex.excluded": {
     "sourceHash": "18a83cc"
   },
-  "fileExplorer.imageIndex.excludedTooltip": "Excluiu esta pasta da pesquisa de imagens, por isso nada aqui é indexado.",
+  "fileExplorer.imageIndex.excludedTooltip": "Você excluiu esta pasta da busca de imagens, então nada aqui é indexado.",
   "@fileExplorer.imageIndex.excludedTooltip": {
     "sourceHash": "1d0bb6d"
   },
@@ -951,7 +951,7 @@
   "@fileExplorer.imageIndex.automatic": {
     "sourceHash": "645c593"
   },
-  "fileExplorer.imageIndex.automaticTooltip": "O Cmdr escolhe as pastas a indexar consoante o quanto trabalha com elas, por isso esta pode estar coberta ou não.",
+  "fileExplorer.imageIndex.automaticTooltip": "O Cmdr escolhe as pastas para indexar pelo quanto você trabalha com elas, então esta pode ou não estar coberta.",
   "@fileExplorer.imageIndex.automaticTooltip": {
     "sourceHash": "8fd2bde"
   },
@@ -1310,11 +1310,11 @@
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7386b54"
   },
-  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "O macOS perdeu o controle das mudanças no sistema de arquivos {count, plural, one {uma vez} many {{countText} vezes} other {{countText} vezes}} {hours, plural, one {na última hora} many {nas últimas {hoursText} horas} other {nas últimas {hoursText} horas}}, então alguns tamanhos das pastas podem ficar um pouco imprecisos. Normalmente são caches cheios de arquivos pequenos, e a próxima análise completa do Cmdr, {remaining, plural, one {daqui a uma hora} many {daqui a {remainingText} horas} other {daqui a {remainingText} horas}}, vai acertar isso.",
+  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "O macOS deixou de acompanhar as mudanças no sistema de arquivos {count, plural, one {uma vez} many {{countText} vezes} other {{countText} vezes}} {hours, plural, one {na última hora} many {nas últimas {hoursText} horas} other {nas últimas {hoursText} horas}}, então alguns tamanhos de pastas podem estar um pouco imprecisos. Normalmente são caches cheios de arquivos pequenos, e a próxima varredura completa do Cmdr, {remaining, plural, one {daqui a uma hora} many {daqui a {remainingText} horas} other {daqui a {remainingText} horas}}, vai corrigir isso.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
     "sourceHash": "2b593c3"
   },
-  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "O macOS perdeu o controle das mudanças no sistema de arquivos {count, plural, one {uma vez} many {{countText} vezes} other {{countText} vezes}} {hours, plural, one {na última hora} many {nas últimas {hoursText} horas} other {nas últimas {hoursText} horas}}, então alguns tamanhos das pastas podem ficar um pouco imprecisos. Normalmente são caches cheios de arquivos pequenos, então não é nada demais.",
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "O macOS deixou de acompanhar as mudanças no sistema de arquivos {count, plural, one {uma vez} many {{countText} vezes} other {{countText} vezes}} {hours, plural, one {na última hora} many {nas últimas {hoursText} horas} other {nas últimas {hoursText} horas}}, então alguns tamanhos de pastas podem estar um pouco imprecisos. Normalmente são caches cheios de arquivos pequenos, então não é nada preocupante.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"
   },

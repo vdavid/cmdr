@@ -531,7 +531,7 @@
   "@errors.listing.deviceReconnecting.title": {
     "sourceHash": "6157c60"
   },
-  "errors.listing.deviceReconnecting.explanation": "De verbinding met het apparaat met `{path}` is opnieuw gestart, dus deze actie is niet doorgegaan. Het apparaat is nog steeds aangesloten en Cmdr opent het nu opnieuw. Dit gebeurt meestal na een geannuleerde of onderbroken overdracht.",
+  "errors.listing.deviceReconnecting.explanation": "De verbinding met het apparaat waarop `{path}` staat, is opnieuw gestart, dus deze actie is niet doorgegaan. Het apparaat is nog steeds aangesloten en Cmdr opent het nu opnieuw. Dit gebeurt meestal na een geannuleerde of onderbroken overdracht.",
   "@errors.listing.deviceReconnecting.explanation": {
     "sourceHash": "28b864d"
   },

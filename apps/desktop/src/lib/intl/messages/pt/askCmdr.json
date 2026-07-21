@@ -350,11 +350,11 @@
   "@askCmdr.cost.label": {
     "sourceHash": "3b0dd81"
   },
-  "askCmdr.renameReview.title": "Rever alterações de nome",
+  "askCmdr.renameReview.title": "Revisar renomeações de arquivos",
   "@askCmdr.renameReview.title": {
     "sourceHash": "f923506"
   },
-  "askCmdr.renameReview.description": "O Cmdr só vai alterar o nome dos ficheiros que permitir.",
+  "askCmdr.renameReview.description": "O Cmdr só vai renomear os arquivos que você permitir.",
   "@askCmdr.renameReview.description": {
     "sourceHash": "de95869"
   },
@@ -362,7 +362,7 @@
   "@askCmdr.renameReview.originalName": {
     "sourceHash": "0619bd6"
   },
-  "askCmdr.renameReview.newName": "Nome novo",
+  "askCmdr.renameReview.newName": "Novo nome",
   "@askCmdr.renameReview.newName": {
     "sourceHash": "04eea2a"
   },
@@ -370,15 +370,15 @@
   "@askCmdr.renameReview.allow": {
     "sourceHash": "e213c16"
   },
-  "askCmdr.renameReview.deny": "Recusar",
+  "askCmdr.renameReview.deny": "Negar",
   "@askCmdr.renameReview.deny": {
     "sourceHash": "05a2d73"
   },
-  "askCmdr.renameReview.allowAll": "Permitir todos",
+  "askCmdr.renameReview.allowAll": "Permitir tudo",
   "@askCmdr.renameReview.allowAll": {
     "sourceHash": "56ac845"
   },
-  "askCmdr.renameReview.denyAll": "Recusar todos",
+  "askCmdr.renameReview.denyAll": "Negar tudo",
   "@askCmdr.renameReview.denyAll": {
     "sourceHash": "5a41803"
   },
@@ -386,19 +386,19 @@
   "@askCmdr.renameReview.cancel": {
     "sourceHash": "19766ed"
   },
-  "askCmdr.renameReview.rename": "{count, plural, one {Alterar o nome de # ficheiro} many {Alterar o nome de # ficheiros} other {Alterar o nome de # ficheiros}}",
+  "askCmdr.renameReview.rename": "Renomear {count, plural, one {# arquivo} many {# arquivos} other {# arquivos}}",
   "@askCmdr.renameReview.rename": {
     "sourceHash": "d4b5c18"
   },
-  "askCmdr.renameReview.blocked": "Esta alteração de nome precisa de atenção antes de continuar.",
+  "askCmdr.renameReview.blocked": "Esta renomeação precisa de atenção antes de continuar.",
   "@askCmdr.renameReview.blocked": {
     "sourceHash": "868541c"
   },
-  "askCmdr.renameReview.overwriteBadge": "(sobrescrever!)",
+  "askCmdr.renameReview.overwriteBadge": "(substituição!)",
   "@askCmdr.renameReview.overwriteBadge": {
     "sourceHash": "762fd52"
   },
-  "askCmdr.renameReview.overwriteTooltip": "Outro arquivo já usa esse nome e não faz parte deste plano de renomeação. Esta renomeação está bloqueada para proteger o arquivo.",
+  "askCmdr.renameReview.overwriteTooltip": "Outro arquivo já usa este nome e não faz parte deste plano de renomeação. Esta renomeação está bloqueada para proteger esse arquivo.",
   "@askCmdr.renameReview.overwriteTooltip": {
     "sourceHash": "f3448fc"
   },
@@ -406,7 +406,7 @@
   "@askCmdr.renameReview.sourceMissingBadge": {
     "sourceHash": "fbb0106"
   },
-  "askCmdr.renameReview.sourceMissingTooltip": "Este arquivo de origem não existe mais. Ele pode ter sido apagado ou renomeado fora do Cmdr.",
+  "askCmdr.renameReview.sourceMissingTooltip": "Este arquivo de origem não existe mais. Pode ter sido apagado ou renomeado fora do Cmdr.",
   "@askCmdr.renameReview.sourceMissingTooltip": {
     "sourceHash": "acd6306"
   },
@@ -422,15 +422,15 @@
   "@askCmdr.renameReview.cycleBadge": {
     "sourceHash": "5a2772b"
   },
-  "askCmdr.renameReview.cycleTooltip": "Ciclo de renomeação. O Cmdr usará um nome temporário enquanto gira esses arquivos.",
+  "askCmdr.renameReview.cycleTooltip": "Ciclo de renomeação. O Cmdr vai usar um nome temporário ao trocar os nomes desses arquivos entre si.",
   "@askCmdr.renameReview.cycleTooltip": {
     "sourceHash": "d76a0af"
   },
-  "askCmdr.renameReview.expired": "Esta revisão expirou. Peça ao Ask Cmdr para a preparar novamente.",
+  "askCmdr.renameReview.expired": "Esta revisão expirou. Peça ao Ask Cmdr para prepará-la de novo.",
   "@askCmdr.renameReview.expired": {
     "sourceHash": "4e6482a"
   },
-  "askCmdr.renameReview.status": "{allowed, plural, one {# alteração de nome permitida} many {# alterações de nome permitidas} other {# alterações de nome permitidas}}; {blocked, plural, one {# bloqueada} many {# bloqueadas} other {# bloqueadas}}",
+  "askCmdr.renameReview.status": "{allowed, plural, one {# renomeação permitida} many {# renomeações permitidas} other {# renomeações permitidas}}; {blocked, plural, one {# bloqueada} many {# bloqueadas} other {# bloqueadas}}",
   "@askCmdr.renameReview.status": {
     "sourceHash": "9f70789"
   }

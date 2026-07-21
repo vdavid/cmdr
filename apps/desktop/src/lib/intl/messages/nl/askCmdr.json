@@ -129,11 +129,11 @@
   "@askCmdr.tool.imageFacts.done": {
     "sourceHash": "fc24aac"
   },
-  "askCmdr.tool.proposeRenamePlan.doing": "Een hernoemingsplan voorbereiden",
+  "askCmdr.tool.proposeRenamePlan.doing": "Bereidt een naamwijzigingsplan voor",
   "@askCmdr.tool.proposeRenamePlan.doing": {
     "sourceHash": "540f1d9"
   },
-  "askCmdr.tool.proposeRenamePlan.done": "Een hernoemingsplan voorbereid",
+  "askCmdr.tool.proposeRenamePlan.done": "Naamwijzigingsplan voorbereid",
   "@askCmdr.tool.proposeRenamePlan.done": {
     "sourceHash": "a271302"
   },
@@ -352,11 +352,11 @@
   "@askCmdr.cost.label": {
     "sourceHash": "3b0dd81"
   },
-  "askCmdr.renameReview.title": "Hernoemingen beoordelen",
+  "askCmdr.renameReview.title": "Naamwijzigingen beoordelen",
   "@askCmdr.renameReview.title": {
     "sourceHash": "f923506"
   },
-  "askCmdr.renameReview.description": "Cmdr hernoemt alleen de bestanden die je toestaat.",
+  "askCmdr.renameReview.description": "Cmdr wijzigt alleen de namen van de bestanden die je toestaat.",
   "@askCmdr.renameReview.description": {
     "sourceHash": "de95869"
   },
@@ -368,31 +368,31 @@
   "@askCmdr.renameReview.newName": {
     "sourceHash": "04eea2a"
   },
-  "askCmdr.renameReview.allow": "Toestaan",
+  "askCmdr.renameReview.allow": "Sta toe",
   "@askCmdr.renameReview.allow": {
     "sourceHash": "e213c16"
   },
-  "askCmdr.renameReview.deny": "Weigeren",
+  "askCmdr.renameReview.deny": "Weiger",
   "@askCmdr.renameReview.deny": {
     "sourceHash": "05a2d73"
   },
-  "askCmdr.renameReview.allowAll": "Alles toestaan",
+  "askCmdr.renameReview.allowAll": "Sta alles toe",
   "@askCmdr.renameReview.allowAll": {
     "sourceHash": "56ac845"
   },
-  "askCmdr.renameReview.denyAll": "Alles weigeren",
+  "askCmdr.renameReview.denyAll": "Weiger alles",
   "@askCmdr.renameReview.denyAll": {
     "sourceHash": "5a41803"
   },
-  "askCmdr.renameReview.cancel": "Annuleren",
+  "askCmdr.renameReview.cancel": "Annuleer",
   "@askCmdr.renameReview.cancel": {
     "sourceHash": "19766ed"
   },
-  "askCmdr.renameReview.rename": "{count, plural, one {# bestand hernoemen} other {# bestanden hernoemen}}",
+  "askCmdr.renameReview.rename": "{count, plural, one {Wijzig # bestandsnaam} other {Wijzig # bestandsnamen}}",
   "@askCmdr.renameReview.rename": {
     "sourceHash": "d4b5c18"
   },
-  "askCmdr.renameReview.blocked": "Deze hernoeming heeft aandacht nodig voordat je verdergaat.",
+  "askCmdr.renameReview.blocked": "Deze naamwijziging heeft aandacht nodig voordat die kan doorgaan.",
   "@askCmdr.renameReview.blocked": {
     "sourceHash": "868541c"
   },
@@ -400,7 +400,7 @@
   "@askCmdr.renameReview.overwriteBadge": {
     "sourceHash": "762fd52"
   },
-  "askCmdr.renameReview.overwriteTooltip": "Een ander bestand gebruikt deze naam al en maakt geen deel uit van dit hernoemingsplan. Deze hernoeming is geblokkeerd om het bestand te beschermen.",
+  "askCmdr.renameReview.overwriteTooltip": "Een ander bestand gebruikt deze naam al en maakt geen deel uit van dit naamwijzigingsplan. Deze naamwijziging is geblokkeerd om dat bestand te beschermen.",
   "@askCmdr.renameReview.overwriteTooltip": {
     "sourceHash": "f3448fc"
   },
@@ -408,7 +408,7 @@
   "@askCmdr.renameReview.sourceMissingBadge": {
     "sourceHash": "fbb0106"
   },
-  "askCmdr.renameReview.sourceMissingTooltip": "Dit bronbestand bestaat niet meer. Het is mogelijk buiten Cmdr verwijderd of hernoemd.",
+  "askCmdr.renameReview.sourceMissingTooltip": "Dit bronbestand bestaat niet meer. Het is misschien buiten Cmdr verwijderd of heeft een andere naam gekregen.",
   "@askCmdr.renameReview.sourceMissingTooltip": {
     "sourceHash": "acd6306"
   },
@@ -424,7 +424,7 @@
   "@askCmdr.renameReview.cycleBadge": {
     "sourceHash": "5a2772b"
   },
-  "askCmdr.renameReview.cycleTooltip": "Hernoemingscyclus. Cmdr gebruikt één tijdelijke naam terwijl deze bestanden worden geroteerd.",
+  "askCmdr.renameReview.cycleTooltip": "Cyclus van naamwijzigingen. Cmdr gebruikt één tijdelijke naam terwijl deze bestanden van naam wisselen.",
   "@askCmdr.renameReview.cycleTooltip": {
     "sourceHash": "d76a0af"
   },
@@ -432,7 +432,7 @@
   "@askCmdr.renameReview.expired": {
     "sourceHash": "4e6482a"
   },
-  "askCmdr.renameReview.status": "{allowed, plural, one {# hernoeming toegestaan} other {# hernoemingen toegestaan}}; {blocked, plural, one {# geblokkeerd} other {# geblokkeerd}}",
+  "askCmdr.renameReview.status": "{allowed, plural, one {# naamwijziging toegestaan} other {# naamwijzigingen toegestaan}}; {blocked, plural, one {# geblokkeerd} other {# geblokkeerd}}",
   "@askCmdr.renameReview.status": {
     "sourceHash": "9f70789"
   }

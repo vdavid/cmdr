@@ -668,3 +668,56 @@ sessions, attachments, consent screen, cost footer, settings section; macOS AppK
   NAS-archive case · high
 - No `sameAsSourceJustification` needed: every value differs from English (SMB kept verbatim inside a translated
   sentence, per do-not-translate).
+
+### Settled during the quality pass over the bulk-rename review + image-index scope + Ask Cmdr tool labels (`askCmdr.renameReview.*`, `askCmdr.tool.{imageFacts,searchPhotos,proposeRenamePlan}.*`, `fileExplorer.imageIndex.*`, `settings.mediaIndex.{scope,chosenFolders}.*`, `errors.listing.deviceReconnecting.*`; macOS Finder/AppKit + MS terminology greps, 2026-07-21)
+
+- **rename (the noun: one proposed name change) → cambio de nombre** · macOS Finder es ("Undo Rename" → "Deshacer cambio
+  de nombre", "Redo Rename" → "Rehacer cambio de nombre"; "El Finder quiere cambiar el nombre de ^0 ítems"). Spanish has
+  no noun for "a rename", and macOS itself uses this nominal phrase, so the review UI says "cambio de nombre" for the
+  row/plan noun while the VERB stays the settled `renombrar` · high
+- **rename (the verb / action button) → renombrar** · macOS Finder ("Renombrar", "Renombrar ^0 ítems…") + the whole es
+  catalog (`commands.fileRename.label`, `fileExplorer.functionKeyBar.rename*`, `operationLog.summary.rename`). So the
+  counted primary button "Rename {n} files" → "Renombrar # archivo(s)", NOT the longer "Cambiar nombre de # archivos" ·
+  high
+- **allow / deny (per-row review buttons) → Permitir / Denegar** · MS terminology ("allow"→"permitir" id 1054938/1132447
+  and the ProperNoun button "Allow"→"Permitir" id 184378/2507115; "deny"→"denegar" id 44527/44535 and "Deny"→"Denegar"
+  id 2158845/2202645, all regions incl. ESP/419); macOS es has "Permitir de todos modos". Plurals: "Permitir todos" /
+  "Denegar todos" (masc. pl. agreeing with "los cambios de nombre") · high
+- **Current name / New name (rename-table column headers) → Nombre actual / Nombre nuevo** · macOS puts the adjective
+  first in a field label ("Nuevo nombre para la imagen:"), but the two column headers are kept parallel in form so the
+  table reads as a pair; both orders are correct Spanish · high (Nombre actual), tentative (Nombre nuevo, parallelism
+  chosen over the macOS collocation)
+- **rename cycle (A→B→A dependency loop) → ciclo de cambios de nombre**; badge "(cycle)" → "(ciclo)" · composed from the
+  settled rename noun; no pile source names this concept · tentative
+- **"(overwrite!)" badge → "(¡sobrescribir!)"** · overwrite→sobrescribir (glossary, macOS Finder); Spanish opens the
+  exclamation with `¡`, so the badge carries both marks inside the parentheses · high
+- **tool-call done label: always impersonal "Se + preterite"** · a bare preterite ("Preparó un plan…") reads as a
+  third-person subject and breaks the pattern every sibling arm uses; `askCmdr.tool.proposeRenamePlan.done` is now "Se
+  preparó un plan de cambio de nombre", parallel with "Se leyó", "Se buscó", "Se encontraron" · high
+  (consistency-settled)
+- **image-index status labels (status bar under a pane) → Imágenes indexadas / Imágenes indexadas automáticamente /
+  Imágenes sin indexar / Imágenes excluidas / Indexando imágenes** · reuses index/indexing→índice/indexación +
+  image→imagen (glossary); "sin indexar" is the natural negative state (matches
+  `settings.mediaIndex.networkVolumes.notIndexedYet` = "Aún sin indexar") · high
+- **indexing pass → pasada** · "on the next pass" → "en la siguiente pasada"; kept distinct from the drive-index
+  scan→análisis (glossary), which names the full drive scan, not one incremental sweep · tentative
+- **"Folders to index" (the chosen-folders list title) → Carpetas para indexar** · matches the settled
+  `alwaysIndexFolders.label` = "Carpetas para indexar siempre", so the two lists read as siblings; the passive "Carpetas
+  que se indexan" broke that parallel · high (consistency-settled)
+- **remove (take a row off a list, NOT delete) → Quitar** · the es catalog already settles this
+  (`fileExplorer.network.browser.removeHostConfirmButton` = "Quitar", `askCmdr.attachment.remove` = "Quitar adjunto",
+  `shortcuts.section.removeShortcutTooltip` = "Quitar atajo"). macOS/MS both render "remove" as "eliminar", but
+  `eliminar` is the settled DELETE verb, and this button explicitly does not delete anything, so the catalog's "Quitar"
+  wins on unambiguity · high (consistency-settled; deliberate departure from macOS/MS Tier 1-2)
+- **add (button that opens a picker) → Añadir <noun>…, no article** · macOS es drops the article in button labels
+  ("Añadir personas", "Añadir contraseña", "Añadir a favoritos") and so does the catalog ("Añadir atajo"), so "Add a
+  folder…" → "Añadir carpeta…". Note "Añadir" is the peninsular form (LatAm macOS says "Agregar"); kept per the style
+  guide's peninsular-base decision · high
+- **"still searchable" → se puede seguir buscando** · matches the sibling `settings.mediaIndex.progress.kept` ("todavía
+  se puede buscar") and `reclaim.line` ("siguen disponibles para búsquedas"); the adjective "buscable" is not used
+  anywhere in the catalog and reads unnatural · high (consistency-settled)
+- **"whatever else you pick above" → elijas lo que elijas arriba** · the doubled-subjunctive concessive is the idiomatic
+  Spanish rendering of "whatever you pick"; clearer than the flatter "sea cual sea la opción de arriba" · high
+- **"might be slightly off" (folder sizes) → podrían no ser del todo exactos** · states what is inexact; "no coincidir
+  del todo" left open what the sizes fail to match · high
+- No `sameAsSourceJustification` needed anywhere in this pass: all 54 values differ from English.

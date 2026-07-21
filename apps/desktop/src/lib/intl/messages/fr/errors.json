@@ -535,7 +535,7 @@
   "@errors.listing.deviceReconnecting.explanation": {
     "sourceHash": "28b864d"
   },
-  "errors.listing.deviceReconnecting.suggestion": "Patiente quelques secondes, puis réessaie. Il n'y a rien à débrancher.",
+  "errors.listing.deviceReconnecting.suggestion": "Patientez quelques secondes, puis réessayez. Il n'y a rien à débrancher.",
   "@errors.listing.deviceReconnecting.suggestion": {
     "sourceHash": "2481e2a"
   },

@@ -160,6 +160,11 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
 - **Sentence case is native.** Swedish doesn't capitalize common nouns, days, or months, so the app's sentence-case rule
   applies without friction. Don't title-case.
 - **Quotation marks: `”…”`** (right double quote both sides) is the standard Swedish form. Avoid English `"…"`.
+- **Percent sign: always a space before `%`** ("100 %", "{percent} %"). Swedish typography, and what the rest of the sv
+  catalog does. Don't carry English's tight `50%` across, even inside a placeholder-heavy string.
+- **Warning badges are noun-shaped, not imperative.** A compact badge beside a row names a STATE, so it takes a noun
+  ("(överskrivning!)"), never the imperative that would double as a command to the user ("(skriv över!)"). The
+  underlying action verb (`skriv över`) is unchanged on buttons and menu items.
 - **Numbers and dates come from the formatter layer.** Swedish uses a comma decimal and space thousands separator (1
   000), but `formatNumber()`/`formatBytes()` produce these from the locale: never hardcode separators in a string.
 - **Length.** Swedish runs close to English in width, so overflow risk is lower than German, but still overflow-check

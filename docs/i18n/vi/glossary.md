@@ -721,3 +721,45 @@ below:
 - **The `indexed` ICU plural collapses to a single `other` branch** (vi has one CLDR category), keeping both `{count}`
   (selector) and `{countText}` (preformatted display): `{count, plural, other {Đã lập chỉ mục {countText} ảnh}}`.
 - No `sameAsSourceJustification` needed: all 19 values differ from English.
+
+Quality-review pass over the 54 keys of the bulk-rename review, image-index scope, and Ask Cmdr tool labels (2026-07-21;
+the keys had been translated mid-feature without the process, so this pass re-mined them against `_ignored/i18n/vi/`).
+Reuses prior terms (đổi tên, tệp/thư mục, ghi đè, hủy, ảnh vs hình ảnh, chỉ mục/lập chỉ mục, quét, ổ đĩa, thùng rác, thử
+lại, không thể, gỡ, mức độ quan trọng). New or newly-sourced below:
+
+- **review (verb + the review modal): `xem lại`** · macOS AppKit (`Review Changes…` → `Xem lại Thay đổi…`,
+  `Review Unsaved Items` → `Xem lại Mục chưa lưu`, and the running "Nếu bạn không xem lại…" alerts), sentence-cased for
+  Cmdr. Confirms the modal title `Xem lại việc đổi tên tệp` and "this review" → `Lần xem lại này`. `high`.
+- **allow / deny (per-row approval buttons): `Cho phép` / `Từ chối`** · MS terminology (`deny` Verb → `từ chối`;
+  `Allow …` entries → `Cho phép …`), macOS Finder AirDrop (`Decline` → `Từ chối`). "Allow all"/"Deny all" →
+  `Cho phép tất cả` / `Từ chối tất cả`. `high`.
+- **"this rename" (one proposed row): `lần đổi tên này`** · `lần` (instance/occurrence, the catalog's counter for a
+  single operation, as in `lần truyền` = a transfer). Unified across the row message, the overwrite tooltip, and the SR
+  status line; the generic heading keeps the gerund `việc đổi tên tệp`. `high` (catalog-consistent).
+- **"needs attention" (blocked row): `cần được xem lại`** · no `chú ý` anywhere in the macOS pile, and the passive "cần
+  được chú ý" reads stilted; `xem lại` (above) is both attested and the action the modal asks for. `high`.
+- **rename cycle (a → b → a dependency loop): `chu trình đổi tên`** · `chu trình` is the graph-theory "cycle" in
+  Vietnamese. MS's `chu kỳ` (time cycle) and `vòng tròn` (SmartArt circle) are the wrong senses (mining gotcha 2), and
+  the pile has no file-manager string for it. Badge `(chu trình)`, tooltip explains it. `tentative`.
+- **filename extension: `đuôi tệp`** (kept) · the shipped vi catalog uses `đuôi tệp` throughout
+  (`Cho phép đổi đuôi tệp`, `Đổi đuôi tệp?`, the `Đuôi` column), so the badge `(đuôi tệp)` and its tooltip match it.
+  macOS's fuller `phần mở rộng tệp` is the pile-ideal form but adopting it is a full-catalog migration, not a two-key
+  split, and it's too long for a compact badge. `high` (catalog-consistent).
+- **remove (from a list, not a deletion): `Gỡ`** (kept) · GNOME Nautilus (`Gỡ biểu tượng tự chọn` = Remove custom icon),
+  and the catalog's `Gỡ tệp đính kèm`. Deliberately NOT macOS's `Xóa` (`Xóa khỏi thanh bên` = Remove from Sidebar):
+  `xóa` is Cmdr's delete verb, and this button's own help text promises nothing is deleted. `high`.
+- **image (the feature-level word) vs photo: `hình ảnh` vs `ảnh`** · applied to the whole `fileExplorer.imageIndex.*`
+  status-bar family, which had drifted to `ảnh`. English splits them deliberately, and the same feature's settings pane
+  already ships `Tìm kiếm hình ảnh` (the card) and `Lập chỉ mục nội dung hình ảnh`, so the pane labels and their
+  tooltips now read `hình ảnh` and only the concrete per-drive photo counts keep `ảnh`. `high`.
+- **folder/file size: `kích cỡ`** (not `kích thước`) · `fileExplorer.json` uses `kích cỡ` for every listing and
+  drive-index size string (`kích cỡ thư mục`, `Không rõ kích cỡ`), so the two drive-index coalesced tooltips were
+  aligned to it. `kích thước` stays for the physical-dimension sense (`Đổi kích thước khung` = resize panes). `high`
+  (catalog-consistent).
+- **indexing pass: `lượt quét`** · `lượt` (round/turn) + the settled `quét` (scan); "on the next pass" →
+  `ở lượt quét tiếp theo`. `tentative` (no pile string; constructed on settled parts).
+- **"Ask Cmdr to prepare it again": `Hãy nhờ Cmdr chuẩn bị lại.`** · `nhờ` (ask someone to do something as a favor) is
+  the natural verb for asking a helper; `yêu cầu` (demand/request) reads formal and made the rail's brand name ("yêu cầu
+  Ask Cmdr") read as an object. The English is a deliberate double reading (the imperative "ask Cmdr" and the feature
+  name); Vietnamese keeps the imperative one, and `Cmdr` stays verbatim. `tentative`.
+- No `sameAsSourceJustification` needed anywhere in these 54: every value differs from English.

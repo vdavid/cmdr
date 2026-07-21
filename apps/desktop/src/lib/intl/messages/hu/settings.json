@@ -2050,7 +2050,7 @@
   "@settings.mediaIndex.scope.label": {
     "sourceHash": "fa14b86"
   },
-  "settings.mediaIndex.scope.description": "Válaszd ki magad a mappákat, vagy hagyd, hogy a Cmdr találja ki, melyek fontosak neked.",
+  "settings.mediaIndex.scope.description": "Válaszd ki magad a mappákat, vagy hagyd, hogy a Cmdr állapítsa meg, melyek fontosak neked.",
   "@settings.mediaIndex.scope.description": {
     "sourceHash": "051ad07"
   },
@@ -2066,7 +2066,7 @@
   "@settings.mediaIndex.chosenFolders.title": {
     "sourceHash": "1aa33d2"
   },
-  "settings.mediaIndex.chosenFolders.help": "Ezekben a mappákban a fotók akkor is indexelve lesznek, ha fent mást választasz. Ha eltávolítasz egy mappát, új indexelés nem indul; ami már indexelve van, továbbra is kereshető marad.",
+  "settings.mediaIndex.chosenFolders.help": "Ezekben a mappákban a fotók akkor is indexelve lesznek, ha fent mást választasz. Ha eltávolítasz egy mappát, új indexelés nem indul; ami már indexelve van, továbbra is kereshető.",
   "@settings.mediaIndex.chosenFolders.help": {
     "sourceHash": "c48ff3f"
   },

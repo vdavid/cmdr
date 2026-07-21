@@ -2076,7 +2076,7 @@
   "@settings.mediaIndex.chosenFolders.title": {
     "sourceHash": "1aa33d2"
   },
-  "settings.mediaIndex.chosenFolders.help": "Les photos de ces dossiers sont indexées quel que soit votre choix ci-dessus. Retirer un dossier arrête les nouvelles indexations ; ce qui est déjà indexé reste consultable.",
+  "settings.mediaIndex.chosenFolders.help": "Les photos de ces dossiers sont indexées quel que soit votre choix ci-dessus. Retirer un dossier arrête les nouvelles indexations ; ce qui est déjà indexé reste disponible dans la recherche.",
   "@settings.mediaIndex.chosenFolders.help": {
     "sourceHash": "c48ff3f"
   },

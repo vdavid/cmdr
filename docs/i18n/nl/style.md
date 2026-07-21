@@ -105,6 +105,11 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
   for "archive". Confirm this multi-word button reads fine next to its short siblings.
 - **"Ask Cmdr model" → "Ask Cmdr-model"**: hyphenating after a two-word English brand name is a judgment call (no exact
   pile precedent for a multi-word brand + suffix). Confirm it doesn't read as awkward.
+- **rename as a NOUN → "naamwijziging"** (with the compound "naamwijzigingsplan"), sourced from Microsoft's
+  "naamwijzigingsvoorstellen"; the Tier-3-only "hernoeming" is out. A few keys outside the bulk-rename feature still say
+  "hernoemen" (see the glossary's review flags); confirm a locale-wide sweep.
+- **"Review file renames" → "Naamwijzigingen beoordelen"**: "beoordelen" (decide) over macOS's look-over "bekijken",
+  because the modal is a per-row allow/deny gate. Confirm the register.
 
 ## Glossary
 

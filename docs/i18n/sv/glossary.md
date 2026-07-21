@@ -665,3 +665,64 @@ phrasing ("Läs texten i dina bilder så att du kan söka i den", "Körs på din
   Swedish CLDR one/other. `high`.
 
 No `sameAsSourceJustification` needed: all 19 values differ from English.
+
+## Quality pass: bulk rename, image-index scope, Ask Cmdr tool labels (2026-07-21)
+
+A re-translation review of the 54 keys added for natural-language bulk rename (`askCmdr.renameReview.*`,
+`askCmdr.tool.proposeRenamePlan.*`), image-indexing scope (`fileExplorer.imageIndex.*`,
+`settings.mediaIndex.scope.*`/`.chosenFolders.*`, `errors.listing.deviceReconnecting.*`,
+`fileExplorer.navigation.driveIndex.tooltipCoalesced*`), and the photo tool labels (`askCmdr.tool.searchPhotos.*`,
+`askCmdr.tool.imageFacts.*`). Reuses `byt namn`, `mapp`, `fil`, `enhet`, `genomsökning`, `indexering`, `granska`,
+`bild`. New/settled terms:
+
+- **rename (the noun, one proposed rename): `namnbyte`** (neuter: ett namnbyte, definite `namnbytet`, plural
+  `namnbyten`) · Thunar/Dolphin sv use the noun directly ("Namnbyte", "Avbryt namnbyte", "Namnbyte av flera objekt",
+  "Markera enbart filnamnet vid namnbyte"); macOS sv only ever has the verb phrase "Byt namn på …", so the noun comes
+  from the file-manager tier. Modal title "Review file renames" → **`Granska namnbyten`**. ❌ NOT `filbyte`, which reads
+  as swapping files, not renaming them. `high`.
+- **rename plan / rename cycle: `namnbytesplan` / `namnbytescykel`** · compounded on `namnbyte` with the standard `-s-`
+  linking element. The `(cycle)` badge stays `(cykel)`: it's the correct Swedish term for a cyclic dependency and the
+  tooltip ("Namnbytescykel. Cmdr använder ett tillfälligt namn medan de här filerna roteras.") disambiguates it from the
+  bicycle homonym, which is the only real risk. `tentative` for `(cykel)` (no pile hit for either `cykel` or `loop` in
+  this sense; review whether a Swedish user reads the bare badge as "bicycle").
+- **allow / deny (per-row review buttons): `Tillåt` / `Neka`; allow all / deny all → `Tillåt alla` / `Neka alla`** · MS
+  terminology (allow → `tillåta`, deny → `neka`), imperative per the style guide's button rule. `high`.
+- **overwrite (as a WARNING BADGE, not an action): `(överskrivning!)`** · the noun, from Total Commander sv
+  ("Överskrivning", "Överskrivning av filer", "Överskrivningsalternativ"). The settled action verb stays `skriv över`,
+  but an imperative badge beside a blocked row would read as an instruction to overwrite, which is the opposite of what
+  the row means. Badges are noun-shaped in sv: `(cykel)`, `(filtillägg)`, `(finns inte)`, `(överskrivning!)`. `high`.
+- **file extension (badge + tooltip): `filtillägg`** · macOS Finder sv ("Filtillägg", "Namn och filtillägg", "Om ett
+  befintligt filtillägg ska behållas eller skrivas över") and the shipped sv catalog ("Ändra filtillägg?", "Visa
+  filtillägg i namnkolumnen"). `filnamnstillägg` is Apple's long form; the short compound is what the catalog already
+  uses. `high`.
+- **needs attention (blocked row): `behöver ses över`** · "kräver uppmärksamhet" is a literal calque; `se över` is the
+  natural Swedish for "give this a look before it proceeds" and matches the modal's `granska` framing. `high`.
+- **exclude (a folder from indexing): `utesluta`, NOT `undanta`** · Total Commander sv ("Uteslut", "Vill du utesluta
+  sökning i följande kataloger"); in the pile `undantag` only ever means _exception_, never _exclusion_. Aligns the
+  status-bar labels with the already-shipped `settings.mediaIndex.excludedFolders.label` = "Uteslutna mappar" and
+  `search.systemDirExclude` = "Utesluter vanliga system- och byggmappar". So "Images excluded" → `Bilder uteslutna`,
+  "You excluded this folder" → `Du har uteslutit den här mappen`. `high`.
+- **lose track of (macOS losing filesystem change events): `tappa koll på`** · the Swedish idiom is `tappa koll på`;
+  `tappa bort koll på` is not idiomatic (you can `tappa bort` an object, but you `tappar koll` on a process). No pile
+  hit; corrected on grammar. `high`.
+- **caches (as a cause of wrong folder sizes): `cachemappar`** · the sv catalog keeps the loanword `cache` only in
+  compounds ("resurscache", "Cachetid", "cachas") and never pluralizes it, since sv has no settled plural (`cacher` vs
+  `cachar`). "It's usually caches full of small files" means cache DIRECTORIES, so `cachemappar fulla med små filer`
+  sidesteps the plural and reads concretely in a sentence about folder sizes. `high`.
+- **percent sign: always a space before `%`** · Swedish typography (and the rest of the sv catalog: "Zooma till 100 %",
+  "{percentText} %", "Zoom återställd till 100 %."). `fileExplorer.imageIndex.indexingTooltip` had `{percent}%`; fixed
+  to `{percent} %`. Note the contradicting `sameAsSourceJustification` on the out-of-scope key
+  `indexing.progress.percentEta` ("this locale uses the same percent spacing and comma as English") — that justification
+  is wrong for sv on both counts and is flagged for David. `high`.
+- **"Ask Cmdr to prepare it again" → `Be Cmdr att förbereda den igen`** · the EN "Ask" is the sentence-initial
+  imperative verb, not the feature name (the feature name would not be capitalized mid-sentence anywhere else in the
+  string). Rendering it as "Be Ask Cmdr att…" stacked the verb on the product name. The user is inside the Ask Cmdr
+  rail, so the referent is unambiguous. `high`.
+- **photo → `bild`, uniformly** · re-confirms the network-drive pass's decision (Apple localizes the Photos app to
+  "Bilder"). The four Ask Cmdr tool labels had drifted to `foton`; aligned to `bilder` so the whole photo-indexing
+  surface ("Bildsökning", "Bilder indexerade", "Indexera bildinnehåll") reads as one feature. ⚠️ Four OUT-OF-SCOPE
+  shipped keys still say `foton`/`Fotosökningen`: `askCmdr.consent.noContents`, `settings.mediaIndex.clip.description`,
+  `settings.mediaIndex.clip.ready`, and `onboarding.stepOptional.mtp.desc` (that last one is fine as-is, it's about
+  copying photos off a phone, not the search feature). They should be aligned in a follow-up. `high`.
+
+No `sameAsSourceJustification` needed: all 54 values differ from English.

@@ -2047,11 +2047,11 @@
   "@settings.mediaIndex.scope.label": {
     "sourceHash": "fa14b86"
   },
-  "settings.mediaIndex.scope.description": "Bạn tự chọn thư mục, hoặc để Cmdr tìm ra những thư mục quan trọng với bạn.",
+  "settings.mediaIndex.scope.description": "Bạn tự chọn thư mục, hoặc để Cmdr xác định những thư mục nào quan trọng với bạn.",
   "@settings.mediaIndex.scope.description": {
     "sourceHash": "051ad07"
   },
-  "settings.mediaIndex.scope.opt.chosen": "Chỉ những thư mục tôi chọn",
+  "settings.mediaIndex.scope.opt.chosen": "Chỉ các thư mục tôi chọn",
   "@settings.mediaIndex.scope.opt.chosen": {
     "sourceHash": "a573613"
   },

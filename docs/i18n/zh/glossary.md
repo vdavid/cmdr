@@ -687,3 +687,40 @@ Tier 2 cross-check. Reuses settled settings/errors-pass terms (`提供方`, `模
   `high`
 - No `sameAsSourceJustification` needed except the three literal "Ask Cmdr" product-name keys (`askCmdr.title`,
   `settings.section.askCmdr`, `commands.askCmdrToggle.label`), each justified per-key as the product name kept verbatim.
+
+### Bulk rename review, image-index scope, and Ask Cmdr tool labels (quality pass, 2026-07-20)
+
+macOS zh-CN Tier 1 (AppKit save/review dialogs, Finder), Microsoft zh-Hans TBX Tier 2, Double Commander zh-CN for the
+rename surface. Reuses settled `重命名`/`覆盖`/`移除`/`添加`/`索引`/`照片` terms.
+
+- **review (the modal where the user vets proposed changes before they apply)** · `复查` · macOS AppKit
+  (`Review Changes…` → `复查更改…`, `Review Unsaved` → `复查未保存的文稿`, `If you don''t review your documents…` →
+  `如果不复查你的文稿…`) — the same surface shape as Cmdr's rename-review modal. `askCmdr.renameReview.title` →
+  `复查文件重命名`; `…expired` → `这次复查已过期`. NOTE: `检查` is reserved for "check" (`检查更新`, `正在检查`) and is
+  used all over the catalog, so it can''t carry "review"; `审核` (audit/vetting, Microsoft `评审`) was rejected as
+  bureaucratic against style.md''s spoken register · `high`
+- **allow / deny (per-row approval of one proposed rename)** · `允许` / `拒绝` · Microsoft TBX (`Allow` → 允许, `Deny`
+  → 拒绝) + the onboarding-pass macOS permission verbs. "Allow all" / "Deny all" → `全部允许` / `全部拒绝` (settled
+  `全部` prefix) · `confirmed`
+- **filename extension** · `扩展名` · macOS Finder (`Whether to overwrite or preserve an existing file extension` →
+  `要覆盖还是保留现有文件扩展名`). Badge `（扩展名）`, full-width parens per style.md · `high`
+- **rename cycle (a→b→a dependency loop needing one temporary name)** · `重命名循环` · Microsoft TBX (`Cycle` → 循环;
+  the `周期` sense is time-period, wrong here). Badge `（循环）` · `high`
+- **source file (the original file behind a rename row)** · `源文件` · Double Commander zh-CN
+  (`Auto-rename source files` → `自动重命名源文件`), the same rename surface · `high`
+- **"needs attention" (a rename row blocked by preflight)** · `需要先处理` · the en is deliberately vague about WHAT is
+  wrong, so the Chinese stays equally open (`这项重命名需要先处理才能继续。`); no pile source names this state ·
+  `tentative`
+- **image, in the image-index surfaces** · `图像`, never `图片` · locale-wide consistency: `settings.mediaIndex.card`
+  `图像搜索`, `settings.section.imageSearch` `图像搜索`, `indexing.enrich.label` `图像索引`, `search.imageResults.*`
+  `图像`. The `fileExplorer.imageIndex.*` status-bar family was reconciled from `图片` to `图像` in this pass. The
+  warm/technical split from the 2026-07-13 network-drive pass still holds: actual pictures the user thinks of as photos
+  → `照片` (`settings.mediaIndex.chosenFolders.*`), the feature and its status labels → `图像` · `high`
+- **importance (Cmdr''s ranking of how much a folder matters to this user)** · `重要性` · matches
+  `askCmdr.tool.folderImportance` (`正在检查文件夹的重要性`); the scope radio reads `自动，按文件夹的重要性` (was
+  `重要程度`, reconciled to one noun) · `high`
+- **"lost track of file system changes" (macOS coalesced-events tooltip)** · `没能跟上文件系统的改动` · `改动` matches
+  `settings.advanced.fileWatcherDebounce.description` (`文件系统发生改动后…`); phrased as "couldn''t keep up", which
+  stays calm and avoids `错误`/`失败` per style.md · `high`
+- No `sameAsSourceJustification` needed anywhere in this pass: every value differs from English (only `Cmdr`, `macOS`,
+  `Ask Cmdr`, and the `{path}`/`{folder}`/`{percent}` placeholders stay verbatim).
