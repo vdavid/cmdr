@@ -191,8 +191,8 @@ sidebar and flip its index Stale for nothing. mtp-rs agrees: `Error::is_disconne
 **How Cmdr reaches it** (the 0.24.0 changelog's "cancel-only" framing understates this): not via `FileDownload::cancel`
 (Cmdr never calls `download()`), but via `PtpSession::recover_if_needed()`. Every data-phase op arms a
 `TransactionScope`; if that future is dropped before it disarms, the NEXT op drains the pipe with `cancel_transfer` and
-propagates the drain's outcome verbatim. Cmdr drops op futures mid-flight by design — the `MTP_TIMEOUT_SECS`
-`tokio::time::timeout` around `read_next_window`, and task aborts on cancelled transfers.
+propagates the drain's outcome verbatim. Cmdr no longer creates that state deliberately (see § "No dropping timeouts"
+below); the drain is the seatbelt for what's left: a genuine device disconnect mid-transfer.
 
 ### The recovery (`session_reset.rs`)
 
@@ -268,7 +268,7 @@ It's split in two on purpose:
 - **Phase 1 — `prefetch_handle_chain` (async, the only USB-touching half).** Follows parents hop-by-hop via
   `GetObjectInfo`, memoizing `(parent, filename)`, stopping at a cached ancestor, a root sentinel, or `MAX_WALK_DEPTH`.
   The device/storage open lazily on the first miss, so a fully-cached resolve issues **zero** USB calls. Each round trip
-  is `MTP_TIMEOUT_SECS`-bounded; the device lock is held across the (few, shallow) hops so an event burst can't
+  is bounded by mtp-rs's own per-transfer USB timeout; the device lock is held across the (few, shallow) hops so an event burst can't
   interleave them and thrash the session.
 - **Phase 2 — `walk_handle_to_path` (pure).** Assembles the path from the phase-1 memo plus the reverse cache. It owns
   the canonical stop/assembly logic (short-circuit, root sentinels, depth cap), so phase 1 only over-approximates "what
@@ -346,3 +346,46 @@ one). `feed_index_removed` is synchronous (DB + writer enqueue only, no USB): it
 storage, and the one that indexed the object resolves it by the STORED handle. The translation, ordering, and
 buffer-during-scan logic live in `indexing/mtp_watch.rs` (see `indexing/DETAILS.md` § "MTP indexing"); the event loop
 only resolves + forwards. The handle is stored in the index `inode` column at scan time too (`directory_ops.rs`).
+
+## No dropping timeouts
+
+**The rule:** nothing in this module wraps an mtp-rs call in `tokio::time::timeout`, and nothing aborts a task holding
+one. `pnpm check mtp-dropping-timeout` enforces it across `src/mtp/`.
+
+**Why.** A PTP transaction is command → data → response over one bulk pipe. Dropping the future mid-data-phase leaves
+the device expecting bytes nobody will send, or holding bytes nobody will read; the next transaction desyncs. mtp-rs's
+`TransactionScope` + `recover_if_needed` drain is a MITIGATION, and Cmdr's `SessionReset` path is a second one. Neither
+is a guarantee: on some devices the software recovery doesn't get them back, so the user replugs the phone. A
+wall-clock timeout that drops therefore CONVERTS A SLOW PHONE INTO A BROKEN ONE.
+
+**What bounds an op instead.** mtp-rs's transport applies `USB_TRANSFER_TIMEOUT_SECS` (30 s) to every bulk transfer and,
+on expiry, returns `PtpError::Timeout` while LEAVING the transfer pending on the endpoint — a clean failure that
+abandons nothing and that a retry can pick up. An outer `tokio::time::timeout` with the same budget is strictly worse:
+its clock starts EARLIER (it covers mtp-rs's operation-lock wait and recovery drain too), so it always fires first and
+can only ever preempt the clean failure with a wedge. That argument holds for every single-transaction call.
+
+**Multi-round-trip ops are unbounded in total, and that's correct.** A 2,000-entry `/DCIM/Camera` listing is 2,001
+transactions; a 30 s (or 120 s) wall-clock cap on it is wrong by construction, and crossing it is exactly the wedge
+users hit. Each round trip stays bounded, the listing reports honest progress as entries arrive, and a `CancelToken`
+gives a prompt out. The background scan additionally checks the token at every unit boundary.
+
+**Cancellation is cooperative everywhere.** `CancelToken` (`list_objects_with_cancel`, `list_objects_stream_with_cancel`,
+`delete_with_cancel`) is checked BETWEEN per-handle round trips, so a cancel lands within one round trip's latency —
+prompt from the user's point of view, and never mid-transaction. Windowed reads and `read_range_direct` are single
+bounded transactions, so a copy cancel simply stops issuing windows.
+
+**Detach, don't abort, when a caller must answer NOW.** Some callers genuinely have a deadline (an IPC reply, the index
+walk giving up on a directory). They run the work in its own task and race the deadline against that task's JOIN
+HANDLE. Dropping a `JoinHandle` DETACHES the task, it does not cancel it: the caller answers on time, the transaction
+finishes safely behind it. `commands::util::timeout_detached` is the shared helper; `indexing::volume_scanner`'s
+`list_one_directory` and the streaming listing's cancel arm use the same shape.
+
+**Where the drops used to be** (all fixed, listed so nobody reintroduces one): every `tokio::time::timeout` in
+`file_ops.rs` / `directory_ops.rs` / `mutation_ops.rs` / `handle_resolver.rs`, the 3 s connect-time
+`probe_write_capability`, the 300 s upload cap, `listing_task.abort()` in `file_system/listing/streaming.rs`, the 120 s
+`LIST_TIMEOUT` in `indexing/volume_scanner.rs`, and the 2 s / 5 s / 30 s IPC caps in `commands/rename.rs` and
+`commands/file_system/volume_copy.rs`.
+
+**The two deliberate exceptions**, both annotated `// allowed-dropping-timeout:`: the device-lock wait
+(`acquire_device_lock` — a `tokio::Mutex`, nothing on the wire) and the event loop's 5 s `next_event()` poll (the
+INTERRUPT endpoint, not the bulk pipe; mtp-rs leaves that transfer pending on drop and picks it up next poll).

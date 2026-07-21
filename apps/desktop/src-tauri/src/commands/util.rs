@@ -1,6 +1,7 @@
 //! Shared utilities for Tauri command modules.
 
 use serde::Serialize;
+use std::future::Future;
 use tokio::time::Duration;
 
 /// Wraps a value with a flag indicating whether the operation timed out.
@@ -86,6 +87,33 @@ pub async fn blocking_result_with_timeout<T: Send + 'static>(
     match tokio::time::timeout(timeout_duration, tokio::task::spawn_blocking(f)).await {
         Ok(Ok(result)) => result.map_err(IpcError::from_err),
         Ok(Err(e)) => Err(IpcError::from_err(e)),
+        Err(_) => Err(IpcError::timeout()),
+    }
+}
+
+/// Bounds how long the FRONTEND waits, never the work itself.
+///
+/// `fut` runs in its own task and the timeout races that task's join handle. On
+/// expiry the handle is dropped, which DETACHES the task: it keeps running to
+/// its own end. The caller gets `IpcError::timeout()` promptly, the work
+/// finishes safely behind it.
+///
+/// ❌ Use this, not a bare `tokio::time::timeout(d, fut)`, for anything that can
+/// reach a device backend. A bare timeout DROPS the future wherever it happens
+/// to be, and on MTP that abandons an in-flight PTP transaction and wedges the
+/// user's phone (`mtp/connection/CLAUDE.md`). An IPC deadline is a promise about
+/// the reply, not permission to abandon a half-written transaction.
+pub async fn timeout_detached<T, E>(
+    timeout_duration: Duration,
+    fut: impl Future<Output = Result<T, E>> + Send + 'static,
+) -> Result<T, IpcError>
+where
+    T: Send + 'static,
+    E: std::fmt::Display + Send + 'static,
+{
+    match tokio::time::timeout(timeout_duration, tokio::spawn(fut)).await {
+        Ok(Ok(result)) => result.map_err(IpcError::from_err),
+        Ok(Err(join_err)) => Err(IpcError::from_err(format!("Task failed: {join_err}"))),
         Err(_) => Err(IpcError::timeout()),
     }
 }

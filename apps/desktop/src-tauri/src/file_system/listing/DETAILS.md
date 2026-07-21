@@ -251,3 +251,25 @@ zeroing it would destroy custom folder icons and break `has_custom_folder_icon`.
 file is never half-written; a multi-file toggle that fails mid-loop leaves earlier files updated and propagates the
 error (the IPC command logs it rather than surfacing a hard failure — tags are low-stakes and the panes still reflect
 what's on disk).
+
+## Cancelling a listing detaches, never aborts
+
+`StreamingListingState.cancelled` is an `Arc<AtomicBool>` for one reason: it's handed to
+`Volume::list_directory_with_cancel` as the backend's cooperative cancel token. `cancel_listing()` sets it BEFORE
+`cancel_notify.notify_waiters()`, so by the time `read_directory_with_progress`'s `select!` cancel arm runs, the
+backend has already been told to stop.
+
+That arm then emits `listing-cancelled` and RETURNS, dropping the listing task's `JoinHandle`. Dropping a `JoinHandle`
+detaches the task; it does not cancel it. So the backend keeps running for exactly as long as it needs to reach its own
+safe boundary, while the user sees an instant cancel.
+
+❌ Never `listing_task.abort()` there. Abort drops the listing future at whatever await point it's sitting on. For MTP
+that's mid-PTP-transaction: the device is left expecting bytes nobody will send, and it wedges until the user replugs
+the phone (`mtp/connection/CLAUDE.md` § the dropping-timeout guardrail). MTP bails between per-handle `GetObjectInfo`
+round trips, so cooperative cancel costs at most one round trip of latency.
+
+Backends that ignore the token (local, in-memory, SMB today) run their listing to completion in the detached task.
+That's not a regression: local listings run inside `spawn_blocking`, which `abort()` never interrupted either.
+
+Pinned by `streaming_test::test_cancel_unwinds_the_listing_instead_of_aborting_it`, which drives a fake volume that
+only ends when its token flips and fails if its future is dropped first.

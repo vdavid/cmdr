@@ -168,6 +168,9 @@ jobs:
       - name: Check lock-poison
         run: ./scripts/check/check --check desktop-rust-lock-poison --ci
 
+      - name: Check mtp-dropping-timeout
+        run: ./scripts/check/check --check desktop-rust-mtp-dropping-timeout --ci
+
       - name: Check ipc-enum-camelcase
         run: ./scripts/check/check --check desktop-rust-ipc-enum-camelcase --ci
 

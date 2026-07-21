@@ -23,8 +23,8 @@ catalogs, diff coalescing, metadata tiers): [DETAILS.md](DETAILS.md).
 
 ## Invariants and gotchas
 
-- **`get_file_range()` indices are over VISIBLE items only.** With `include_hidden=false`, hidden entries are skipped, so
-  backend index N maps to a different absolute entry; the frontend sees a dense array. Filtering happens in Rust.
+- **`get_file_range()` indices are over VISIBLE items only.** With `include_hidden=false` the frontend sees a dense
+  array, so backend index N maps to a different absolute entry. Filtering happens in Rust.
 - **Watcher diffs must update the cache AND emit an event.** The cache is the source of truth for `get_file_range()`;
   the event tells the frontend to re-fetch the visible range. Miss either and you get stale data or no UI update.
 - **The full re-read watcher path re-sorts `new_entries` before `compute_diff` (looks like a double-sort, isn't).**
@@ -37,20 +37,20 @@ catalogs, diff coalescing, metadata tiers): [DETAILS.md](DETAILS.md).
   bumping `last_accessed_ms`, or the reaper (6 h idle window) could evict a live pane. Do NOT bump it from
   `refresh_listing_index_sizes` (background-indexing driven, not user activity).
 - **Listing cancellation sets both `AtomicBool` and `tokio::sync::Notify`.** `cancel_listing()` does
-  `cancelled.store(true)` + `cancel_notify.notify_waiters()`: the `Notify` drives instant async cancellation via
-  `select!`, the `AtomicBool` covers sync check points with no `.await`, and it's the per-entry `AtomicBool` check that
-  actually stops the task early (the frontend `loadGeneration` only discards stale results).
-- **Watcher callbacks run on OS threads, not the tokio runtime.** Async work from a callback
-  (`handle_directory_change`, `notify_directory_changed(FullRefresh)`) must use `tauri::async_runtime::spawn`, never
-  bare `tokio::spawn`, which panics with "there is no reactor running" and aborts the app. All FullRefresh dispatch
-  funnels through `caching::spawn_full_refresh`; keep it that way so every producer (FSEvents, git, SMB, MTP, archive)
-  is covered at once. The incremental path (`handle_directory_change_incremental`) stays sync. The AppHandle guard
-  there is about emitting (no handle, no `enqueue_diff` flush), not about async context.
+  `cancelled.store(true)` + `cancel_notify.notify_waiters()`: the `Notify` drives async cancellation via `select!`, the
+  `AtomicBool` covers sync check points and is what actually stops the task early. ❌ The `select!` cancel arm must
+  never `listing_task.abort()`: `cancelled` IS the backend's cancel token, so returning detaches a safely-unwinding
+  task, while aborting drops the listing mid-round-trip and wedges an MTP phone. [DETAILS.md](DETAILS.md) §
+  "Cancelling a listing detaches, never aborts".
+- **Watcher callbacks run on OS threads, not the tokio runtime.** Async work from a callback must use
+  `tauri::async_runtime::spawn`, never bare `tokio::spawn`, which panics with "there is no reactor running" and aborts
+  the app. All FullRefresh dispatch funnels through `caching::spawn_full_refresh`; keep it that way so every producer
+  (FSEvents, git, SMB, MTP, archive) is covered at once. The incremental path stays sync.
 - **Sequence counter lives on `CachedListing`, not `WatchedDirectory`.** SMB/MTP have no `WatchedDirectory`; keeping it
   there breaks `directory-diff` for those volumes.
-- **A sort change invalidates the frontend's cached range.** Bump `cacheGeneration` so the frontend re-fetches.
+- **A sort change invalidates the frontend's cached range.** Bump `cacheGeneration` to force a re-fetch.
 - **Finder tags are deferred and must survive re-stats.** `list_directory_core` never reads tags (`getxattr` is ~6× an
   `lstat`); `enrich_tags` fills them visible-range-first via `apply_tags_to_listing`, which replaces unconditionally so
   external removals propagate. A watcher re-stat builds entries with empty tags, so every modify path calls
-  `carry_forward_tags` BEFORE storing/emitting, or an mtime touch would blank a file's dots. Don't route the enrich path
-  through it (that would block real removals). [DETAILS.md](DETAILS.md).
+  `carry_forward_tags` BEFORE storing/emitting, else an mtime touch blanks a file's dots. Don't route the enrich path
+  through it (that would block real removals).

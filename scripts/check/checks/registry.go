@@ -153,6 +153,18 @@ var AllChecks = []CheckDefinition{
 		Run:               RunLockPoison,
 	},
 	{
+		ID:                "desktop-rust-mtp-dropping-timeout",
+		Nickname:          "mtp-dropping-timeout",
+		DisplayName:       "mtp-dropping-timeout",
+		App:               AppDesktop,
+		Tech:              "🦀 Rust",
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Inputs:            rustInputs,
+		Run:               RunMtpDroppingTimeout,
+	},
+	{
 		ID:                "desktop-pluralize-noun",
 		Nickname:          "pluralize-noun",
 		DisplayName:       "pluralize-noun",

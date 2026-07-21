@@ -3,7 +3,9 @@
 //! Uses `CollectorListingEventSink` and `InMemoryVolume` to test
 //! `read_directory_with_progress` without a Tauri runtime.
 
+use std::future::Future;
 use std::path::Path;
+use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -13,7 +15,7 @@ use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOr
 use crate::file_system::listing::streaming::{
     CollectorListingEventSink, ListingEventSink, StreamingListingState, read_directory_with_progress,
 };
-use crate::file_system::volume::InMemoryVolume;
+use crate::file_system::volume::{InMemoryVolume, ListingProgress, Volume, VolumeError};
 
 /// Creates a test file entry under the root directory.
 fn test_entry(name: &str, is_dir: bool) -> FileEntry {
@@ -46,7 +48,7 @@ fn cleanup(volume_id: &str, listing_id: &str) {
 
 fn new_state() -> Arc<StreamingListingState> {
     Arc::new(StreamingListingState {
-        cancelled: AtomicBool::new(false),
+        cancelled: Arc::new(AtomicBool::new(false)),
         cancel_notify: tokio::sync::Notify::new(),
     })
 }
@@ -220,7 +222,7 @@ async fn test_streaming_list_volume_not_found() {
 
     assert!(result.is_err());
     match result {
-        Err(crate::file_system::volume::VolumeError::NotFound(msg)) => {
+        Err(VolumeError::NotFound(msg)) => {
             assert!(msg.contains("Volume not found"), "Unexpected message: {}", msg);
         }
         other => panic!("Expected VolumeError::NotFound, got {:?}", other),
@@ -264,6 +266,198 @@ async fn test_streaming_list_empty_directory() {
     let complete = sink.complete.lock().unwrap();
     assert_eq!(complete.len(), 1);
     assert_eq!(complete[0].1, 0);
+
+    cleanup(volume_id, listing_id);
+}
+
+/// A volume whose listing only ends when its cancel flag flips: the stand-in for
+/// an MTP device, where the listing is a long chain of USB round trips and the
+/// backend bails between them.
+///
+/// Records which of the two exits happened. `finished` means the listing future
+/// ran to its own cooperative end; `aborted` means it was dropped mid-listing,
+/// which on a real phone abandons a PTP transaction and wedges the device.
+struct CooperativeCancelVolume {
+    root: std::path::PathBuf,
+    started: Arc<AtomicBool>,
+    finished: Arc<AtomicBool>,
+    aborted: Arc<AtomicBool>,
+}
+
+/// Flips `aborted` unless disarmed, so a dropped listing future is observable.
+struct AbortWitness {
+    aborted: Arc<AtomicBool>,
+    armed: bool,
+}
+
+impl Drop for AbortWitness {
+    fn drop(&mut self) {
+        if self.armed {
+            self.aborted.store(true, Ordering::SeqCst);
+        }
+    }
+}
+
+impl CooperativeCancelVolume {
+    fn new() -> Self {
+        Self {
+            root: std::path::PathBuf::from("/"),
+            started: Arc::new(AtomicBool::new(false)),
+            finished: Arc::new(AtomicBool::new(false)),
+            aborted: Arc::new(AtomicBool::new(false)),
+        }
+    }
+
+    /// The listing body both `list_directory` and `list_directory_with_cancel`
+    /// run: spin until the token flips, with a hard iteration cap so a missing
+    /// token fails the test instead of hanging the suite.
+    fn listing_body(
+        &self,
+        cancel: Option<Arc<AtomicBool>>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'static>> {
+        let started = Arc::clone(&self.started);
+        let finished = Arc::clone(&self.finished);
+        let aborted = Arc::clone(&self.aborted);
+        Box::pin(async move {
+            let mut witness = AbortWitness { aborted, armed: true };
+            started.store(true, Ordering::SeqCst);
+            for _ in 0..2_000 {
+                if cancel.as_ref().is_some_and(|c| c.load(Ordering::Relaxed)) {
+                    break;
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(2)).await;
+            }
+            witness.armed = false;
+            finished.store(true, Ordering::SeqCst);
+            Ok(Vec::new())
+        })
+    }
+}
+
+impl Volume for CooperativeCancelVolume {
+    fn name(&self) -> &str {
+        "Cooperative cancel volume"
+    }
+
+    fn root(&self) -> &Path {
+        &self.root
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn list_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+        _on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        // No token: this is the shape that can only be stopped by dropping the
+        // future, which is exactly what must not happen.
+        self.listing_body(None)
+    }
+
+    fn list_directory_with_cancel<'a>(
+        &'a self,
+        _path: &'a Path,
+        _on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+        cancel: Option<&'a Arc<AtomicBool>>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        self.listing_body(cancel.map(Arc::clone))
+    }
+
+    fn get_metadata<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Err(VolumeError::NotFound("not implemented".to_string())) })
+    }
+
+    fn exists<'a>(&'a self, _path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async { true })
+    }
+
+    fn is_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Ok(true) })
+    }
+}
+
+/// Waits up to ~2 s for `flag`, so the test reads a settled value rather than a
+/// racing one.
+async fn wait_for(flag: &Arc<AtomicBool>) -> bool {
+    for _ in 0..1_000 {
+        if flag.load(Ordering::SeqCst) {
+            return true;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(2)).await;
+    }
+    false
+}
+
+/// Cancelling a listing must let the backend unwind at its own safe boundary,
+/// never drop its future. On MTP a dropped future abandons an in-flight PTP
+/// transaction and wedges the phone.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_cancel_unwinds_the_listing_instead_of_aborting_it() {
+    let volume_id = &format!("test-coop-{}", uuid::Uuid::new_v4());
+    let listing_id = &format!("listing-coop-{}", uuid::Uuid::new_v4());
+
+    let volume = Arc::new(CooperativeCancelVolume::new());
+    let started = Arc::clone(&volume.started);
+    let finished = Arc::clone(&volume.finished);
+    let aborted = Arc::clone(&volume.aborted);
+    crate::file_system::get_volume_manager().register(volume_id, Arc::clone(&volume) as Arc<dyn Volume>);
+
+    let sink = Arc::new(CollectorListingEventSink::new());
+    let events: Arc<dyn ListingEventSink> = Arc::clone(&sink) as Arc<dyn ListingEventSink>;
+    let state = new_state();
+
+    let read = {
+        let events = Arc::clone(&events);
+        let state = Arc::clone(&state);
+        let volume_id = volume_id.clone();
+        let listing_id = listing_id.clone();
+        tokio::spawn(async move {
+            read_directory_with_progress(
+                &events,
+                &listing_id,
+                &state,
+                &volume_id,
+                Path::new("/"),
+                true,
+                SortColumn::Name,
+                SortOrder::Ascending,
+                DirectorySortMode::LikeFiles,
+            )
+            .await
+        })
+    };
+
+    assert!(wait_for(&started).await, "the listing must start before we cancel it");
+
+    // Same two steps as `cancel_listing`.
+    state.cancelled.store(true, Ordering::Relaxed);
+    state.cancel_notify.notify_waiters();
+
+    let result = read.await.expect("listing task must not panic");
+    assert!(result.is_ok());
+    assert_eq!(
+        sink.cancelled.lock().unwrap().len(),
+        1,
+        "the user must see a prompt cancel"
+    );
+
+    assert!(
+        wait_for(&finished).await,
+        "the backend must reach its own cooperative end after a cancel"
+    );
+    assert!(
+        !aborted.load(Ordering::SeqCst),
+        "the listing future was dropped mid-flight; on MTP that abandons a PTP transaction and wedges the device"
+    );
 
     cleanup(volume_id, listing_id);
 }

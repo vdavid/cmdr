@@ -356,9 +356,9 @@ Policy by staleness class:
 - **Numeric slack** (file-length, the website bundle-size baseline): auto-ratcheted; the entries carry no reason text,
   so the rewrite loses nothing.
 - **Orphaned opt-out comments** (`allowed-bare-poll` / `allowed-lock-poison` / `allowed-error-string-match` /
-  `allowed-btn-restyle` / `allowed-rustup-add`): the scanners track which directives excused a violation and fail on the
-  unused rest. Prose that merely mentions a directive (a comment line not starting with it) is not a site. Source-code
-  comments are never auto-edited.
+  `allowed-dropping-timeout` / `allowed-btn-restyle` / `allowed-rustup-add`): the scanners track which directives
+  excused a violation and fail on the unused rest. Prose that merely mentions a directive (a comment line not starting
+  with it) is not a site. Source-code comments are never auto-edited.
 
 External tools enforce the same principle natively: knip (`treatConfigHintsAsErrors` in `knip.json`), stylelint
 (`reportNeedlessDisables` in `.stylelintrc.mjs`), cargo-deny (`unused-allowed-license = "deny"` in `deny.toml`), and the
@@ -398,8 +398,8 @@ drive the device".
 Checks by app and tech:
 
 - **Desktop / Rust**: rustfmt, clippy, cargo-audit, cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd,
-  log-error-macro, error-string-match, lock-poison, bindings-fresh, ipc-enum-camelcase, tests, integration-tests (Docker
-  SMB), tests-linux (slow)
+  log-error-macro, error-string-match, lock-poison, mtp-dropping-timeout, bindings-fresh, ipc-enum-camelcase, tests,
+  integration-tests (Docker SMB), tests-linux (slow)
 - **Desktop / Svelte**: prettier, eslint, svelte-kit-sync, eslint-typecheck-svelte, eslint-typecheck-typescript,
   stylelint, css-unused, a11y-contrast, btn-restyle, bare-poll, svelte-check, import-cycles, message-keys-fresh
   (regenerate-and-diff `keys.gen.ts` from the message catalogs), message-key-naming (the `area.feature.leaf` shape +
@@ -511,6 +511,18 @@ modeled on `error-string-match`) that flags bare unwraps and non-poison `.expect
 through; `try_lock` / `try_read` / `try_write` are out of scope by name. Opt out with `// allowed-lock-poison: <reason>`
 on the line above or as a trailing comment. Unlike `error-string-match`, it skips in-file `#[cfg(test)]` mods (tracked
 by brace depth): a poisoned lock in a test means the test already panicked, so aborting there is harmless.
+
+**Decision**: `mtp-dropping-timeout` check to keep wall-clock timeouts and task aborts away from mtp-rs calls. **Why**:
+A PTP transaction is command → data → response over one bulk pipe, so dropping its future mid-data-phase leaves the
+device expecting bytes nobody will send — that's the single trigger behind every phone wedge we've reproduced, and the
+software recovery isn't guaranteed to get the device back. mtp-rs bounds each USB transfer itself and fails cleanly, so
+an outer deadline (whose clock starts earlier) can only preempt a clean failure with a wedge. The check is a fast-lane
+Go scanner over `apps/desktop/src-tauri/src/mtp/` (modeled on `lock-poison`, reusing its `#[cfg(test)]`-mod skip) that
+flags `tokio::time::timeout(` and `.abort()`. Opt out with `// allowed-dropping-timeout: <reason>` when the dropped
+future genuinely holds nothing on the wire; the two current exceptions are the device-lock wait and the event loop's
+interrupt-endpoint poll. Rationale in full:
+[`apps/desktop/src-tauri/src/mtp/connection/DETAILS.md`](../../../apps/desktop/src-tauri/src/mtp/connection/DETAILS.md)
+§ "No dropping timeouts".
 
 **Decision**: Split `desktop-svelte-eslint` into fast (non-type-aware) and slow (full) checks. **Why**: Type-aware rules
 (`no-floating-promises`, `no-unsafe-*`, etc.) take ~45% of lint time due to TypeScript project service startup. The fast

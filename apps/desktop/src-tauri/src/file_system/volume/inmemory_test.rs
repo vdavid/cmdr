@@ -212,7 +212,7 @@ fn test_streaming_state_lifecycle() {
     // Create and register a streaming state
     let listing_id = "integration-test-lifecycle";
     let state = Arc::new(StreamingListingState {
-        cancelled: AtomicBool::new(false),
+        cancelled: Arc::new(AtomicBool::new(false)),
         cancel_notify: tokio::sync::Notify::new(),
     });
 
@@ -258,7 +258,7 @@ fn test_multiple_concurrent_streaming_states() {
         .iter()
         .map(|_| {
             Arc::new(StreamingListingState {
-                cancelled: AtomicBool::new(false),
+                cancelled: Arc::new(AtomicBool::new(false)),
                 cancel_notify: tokio::sync::Notify::new(),
             })
         })

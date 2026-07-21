@@ -61,10 +61,11 @@ pub enum MtpConnectionError {
     /// reopenable with no replug — ❌ never treat this as a disconnect.
     ///
     /// Reachable in Cmdr through `PtpSession::recover_if_needed()`: a data-phase
-    /// op whose future is dropped mid-flight (the `MTP_TIMEOUT_SECS` timeout
-    /// around a window read, or a task abort on a cancelled transfer) leaves an
-    /// armed `TransactionScope`, and the NEXT op drains it via `cancel_transfer`
-    /// and propagates that drain's outcome verbatim.
+    /// op whose future is dropped mid-flight leaves an armed `TransactionScope`,
+    /// and the NEXT op drains it via `cancel_transfer` and propagates that
+    /// drain's outcome verbatim. ❌ Cmdr never drops one deliberately (see the
+    /// module `CLAUDE.md`), so this is the seatbelt for a genuine disconnect
+    /// mid-transfer, not a routine path.
     SessionReset {
         device_id: String,
     },

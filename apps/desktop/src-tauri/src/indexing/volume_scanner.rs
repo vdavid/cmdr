@@ -240,7 +240,7 @@ pub(crate) async fn scan_volume_via_trait(
             let vol = Arc::clone(&volume);
             let cancel = Arc::clone(&cancelled);
             inflight.push(async move {
-                let r = list_one_directory(vol.as_ref(), &dir, &cancel).await;
+                let r = list_one_directory(vol, dir.clone(), cancel).await;
                 (dir, r)
             });
         }
@@ -519,7 +519,7 @@ pub(crate) async fn reconcile_volume_via_trait(
             let vol = Arc::clone(&volume);
             let cancel = Arc::clone(&cancelled);
             inflight.push(async move {
-                let r = list_one_directory(vol.as_ref(), &dir, &cancel).await;
+                let r = list_one_directory(vol, dir.clone(), cancel).await;
                 ((dir, id), r)
             });
         }
@@ -729,31 +729,49 @@ fn finish_reconcile(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -> Res
         .map_err(|e| VolumeScanError::WriterSend(e.to_string()))
 }
 
-/// List one directory over the `Volume` trait, wrapped in a timeout and (macOS)
-/// an autoreleasepool. The pool is drained per round trip so autoreleased ObjC
-/// objects from the SMB listing path don't accumulate across a long walk.
+/// List one directory over the `Volume` trait, giving up on it after
+/// [`LIST_TIMEOUT`] and (macOS) draining the autoreleasepool. The pool is drained
+/// per round trip so autoreleased ObjC objects from the SMB listing path don't
+/// accumulate across a long walk.
 ///
 /// Uses `list_directory_for_scan` so a foreground-priority backend (MTP) walks
 /// the folder in yielding units; `cancelled` threads in so an in-flight listing
 /// bails within one round trip (the MTP path checks it at each unit and per
 /// `GetObjectInfo`), not just between directories.
+///
+/// ❌ The listing runs in its OWN task and the timeout races that task's join
+/// handle, never the listing future itself. Timing out drops the handle, which
+/// DETACHES the task; it does not cancel it. That distinction is load-bearing:
+/// wrapping the listing future directly would drop it mid-round-trip, and on MTP
+/// that abandons an in-flight PTP transaction and wedges the phone
+/// (`mtp/connection/CLAUDE.md`). The walk gives up on the directory either way;
+/// the difference is whether the device survives it. A background MTP scan hits
+/// this routinely: it parks at `background_yield_point` while the user is
+/// active, so a big folder easily outlives `LIST_TIMEOUT`.
 async fn list_one_directory(
-    volume: &dyn Volume,
-    dir_path: &Path,
-    cancelled: &Arc<AtomicBool>,
+    volume: Arc<dyn Volume>,
+    dir_path: PathBuf,
+    cancelled: Arc<AtomicBool>,
 ) -> Result<Vec<crate::file_system::listing::FileEntry>, VolumeScanError> {
-    let fut = async {
-        let result = volume.list_directory_for_scan(dir_path, Some(cancelled)).await;
+    let listing_path = dir_path.clone();
+    let listing = tokio::spawn(async move {
+        let result = volume.list_directory_for_scan(&listing_path, Some(&cancelled)).await;
         // Drain the autoreleased ObjC objects this listing created before the
         // future resolves. Cheap no-op on non-macOS.
         drain_autorelease_pool();
         result
-    };
+    });
 
-    match tokio::time::timeout(LIST_TIMEOUT, fut).await {
-        Ok(Ok(entries)) => Ok(entries),
-        Ok(Err(e)) => Err(VolumeScanError::Volume(e)),
-        Err(_elapsed) => Err(VolumeScanError::Timeout(dir_path.to_path_buf())),
+    match tokio::time::timeout(LIST_TIMEOUT, listing).await {
+        Ok(Ok(Ok(entries))) => Ok(entries),
+        Ok(Ok(Err(e))) => Err(VolumeScanError::Volume(e)),
+        Ok(Err(join_err)) => Err(VolumeScanError::Volume(
+            crate::file_system::volume::VolumeError::IoError {
+                message: format!("Directory listing task failed: {join_err}"),
+                raw_os_error: None,
+            },
+        )),
+        Err(_elapsed) => Err(VolumeScanError::Timeout(dir_path)),
     }
 }
 

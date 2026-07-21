@@ -258,7 +258,7 @@ SMB shares index into their own per-volume DB (`index-{smb_volume_id}.db`) exact
 Three disciplines for network round trips (plan rabbit hole #3), all in `list_one_directory`:
 
 - **Cancelable at every round trip**: the cancel flag is checked before each directory listing; a set flag flushes the current batch and returns `was_cancelled`.
-- **Timeout-wrapped**: each `list_directory` is `tokio::time::timeout(LIST_TIMEOUT=120s, …)`; a wedged mount yields `VolumeScanError::Timeout` instead of parking forever.
+- **Timeout-wrapped, but DETACHING**: each listing runs in its OWN task and `LIST_TIMEOUT` (120 s) races that task's JOIN HANDLE, so a wedged mount yields `VolumeScanError::Timeout` instead of parking forever. ❌ Never wrap the listing future directly: dropping the handle detaches the task, dropping the future cancels it mid-round-trip, and on MTP that abandons a PTP transaction and wedges the phone (`mtp/connection/CLAUDE.md`). A background MTP scan crosses 120 s routinely, since it parks at `background_yield_point` while the user is active.
 - **`autoreleasepool`-drained per listing on macOS**: the SMB listing path touches NSURL/`NSString`-adjacent ObjC, and unpooled autoreleases leak multi-GB over a long walk (same rule as the writer thread). We can't hold an `autoreleasepool` guard across an `.await` (it isn't `Send`), so we drain AFTER the await resolves (`drain_autorelease_pool` wraps a no-op closure), not around it.
 
 A sub-directory that fails to list (permission, transient) is skipped and the walk continues (like the local walker skipping errored dirs); failing to list the ROOT is fatal (nothing to index) so the caller discards.

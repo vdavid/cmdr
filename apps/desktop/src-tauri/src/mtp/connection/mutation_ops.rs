@@ -4,12 +4,9 @@ use log::{debug, warn};
 use mtp_rs::{CancelToken, ObjectHandle, StorageId};
 use std::path::Path;
 use std::sync::Arc;
-use std::time::Duration;
 
 use super::errors::MtpConnectionError;
-use super::{
-    MTP_TIMEOUT_SECS, MtpConnectionManager, MtpObjectInfo, acquire_device_lock, map_mtp_error, normalize_mtp_path,
-};
+use super::{MtpConnectionManager, MtpObjectInfo, acquire_device_lock, map_mtp_error, normalize_mtp_path};
 
 impl MtpConnectionManager {
     /// Deletes an object (file or folder) from the MTP device.
@@ -89,26 +86,16 @@ impl MtpConnectionManager {
         let device = acquire_device_lock(&device_arc, device_id, "delete_object").await?;
 
         // Get the storage
-        let storage = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(u64::from(storage_id))),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
+        let storage = device
+            .storage(StorageId(u64::from(storage_id)))
+            .await
+            .map_err(|e| map_mtp_error(e, device_id))?;
 
         // Get object info to check if it's a directory
-        let object_info = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            storage.get_object_info(object_handle),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
+        let object_info = storage
+            .get_object_info(object_handle)
+            .await
+            .map_err(|e| map_mtp_error(e, device_id))?;
 
         let is_dir = object_info.is_folder();
 
@@ -118,15 +105,10 @@ impl MtpConnectionManager {
             // 950-entry `/DCIM/Camera` listing bail at the next per-handle USB
             // boundary instead of running all 950 GetObjectInfo roundtrips to
             // completion.
-            let children = tokio::time::timeout(
-                Duration::from_secs(MTP_TIMEOUT_SECS),
-                storage.list_objects_with_cancel(Some(object_handle), cancel),
-            )
-            .await
-            .map_err(|_| MtpConnectionError::Timeout {
-                device_id: device_id.to_string(),
-            })?
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            let children = storage
+                .list_objects_with_cancel(Some(object_handle), cancel)
+                .await
+                .map_err(|e| map_mtp_error(e, device_id))?;
 
             drop(storage);
             drop(device);
@@ -166,38 +148,23 @@ impl MtpConnectionManager {
 
             // Re-acquire device and storage lock to delete the now-empty folder
             let device = acquire_device_lock(&device_arc, device_id, "delete_object (empty folder)").await?;
-            let storage = tokio::time::timeout(
-                Duration::from_secs(MTP_TIMEOUT_SECS),
-                device.storage(StorageId(u64::from(storage_id))),
-            )
-            .await
-            .map_err(|_| MtpConnectionError::Timeout {
-                device_id: device_id.to_string(),
-            })?
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            let storage = device
+                .storage(StorageId(u64::from(storage_id)))
+                .await
+                .map_err(|e| map_mtp_error(e, device_id))?;
 
-            tokio::time::timeout(
-                Duration::from_secs(MTP_TIMEOUT_SECS),
-                storage.delete_with_cancel(object_handle, cancel),
-            )
-            .await
-            .map_err(|_| MtpConnectionError::Timeout {
-                device_id: device_id.to_string(),
-            })?
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            storage
+                .delete_with_cancel(object_handle, cancel)
+                .await
+                .map_err(|e| map_mtp_error(e, device_id))?;
         } else {
             // For files, just delete directly. The cancel check inside
             // delete_with_cancel bails before the PTP `DeleteObject` request
             // is issued, so a cancelled token never touches the wire here.
-            tokio::time::timeout(
-                Duration::from_secs(MTP_TIMEOUT_SECS),
-                storage.delete_with_cancel(object_handle, cancel),
-            )
-            .await
-            .map_err(|_| MtpConnectionError::Timeout {
-                device_id: device_id.to_string(),
-            })?
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            storage
+                .delete_with_cancel(object_handle, cancel)
+                .await
+                .map_err(|e| map_mtp_error(e, device_id))?;
         }
 
         // Remove from path cache
@@ -258,15 +225,10 @@ impl MtpConnectionManager {
         let device = acquire_device_lock(&device_arc, device_id, "create_folder").await?;
 
         // Get the storage
-        let storage = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(u64::from(storage_id))),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
+        let storage = device
+            .storage(StorageId(u64::from(storage_id)))
+            .await
+            .map_err(|e| map_mtp_error(e, device_id))?;
 
         // Create the folder
         let parent_opt = if parent_handle == ObjectHandle::ROOT {
@@ -275,15 +237,10 @@ impl MtpConnectionManager {
             Some(parent_handle)
         };
 
-        let new_handle = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            storage.create_folder(parent_opt, folder_name),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
+        let new_handle = storage
+            .create_folder(parent_opt, folder_name)
+            .await
+            .map_err(|e| map_mtp_error(e, device_id))?;
 
         // Release device lock
         drop(storage);
@@ -357,40 +314,25 @@ impl MtpConnectionManager {
         let device = acquire_device_lock(&device_arc, device_id, "rename_object").await?;
 
         // Get the storage
-        let storage = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(u64::from(storage_id))),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
+        let storage = device
+            .storage(StorageId(u64::from(storage_id)))
+            .await
+            .map_err(|e| map_mtp_error(e, device_id))?;
 
         // Get object info to determine if it's a directory
-        let object_info = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            storage.get_object_info(object_handle),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
+        let object_info = storage
+            .get_object_info(object_handle)
+            .await
+            .map_err(|e| map_mtp_error(e, device_id))?;
 
         let is_dir = object_info.is_folder();
         let old_size = object_info.size;
 
         // Set the new filename using storage.rename()
-        tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            storage.rename(object_handle, new_name),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
+        storage
+            .rename(object_handle, new_name)
+            .await
+            .map_err(|e| map_mtp_error(e, device_id))?;
 
         // Release device and storage lock
         drop(storage);
@@ -467,26 +409,16 @@ impl MtpConnectionManager {
         let device = acquire_device_lock(&device_arc, device_id, "move_object").await?;
 
         // Get the storage
-        let storage = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(u64::from(storage_id))),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
+        let storage = device
+            .storage(StorageId(u64::from(storage_id)))
+            .await
+            .map_err(|e| map_mtp_error(e, device_id))?;
 
         // Get object info
-        let object_info = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            storage.get_object_info(object_handle),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
+        let object_info = storage
+            .get_object_info(object_handle)
+            .await
+            .map_err(|e| map_mtp_error(e, device_id))?;
 
         let is_dir = object_info.is_folder();
         let object_size = object_info.size;
@@ -500,18 +432,14 @@ impl MtpConnectionManager {
             new_parent_handle
         };
 
-        let move_result = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            storage.move_object(object_handle, new_parent_for_move, None),
-        )
-        .await;
+        let move_result = storage.move_object(object_handle, new_parent_for_move, None).await;
 
         // Release device and storage lock
         drop(storage);
         drop(device);
 
         match move_result {
-            Ok(Ok(())) => {
+            Ok(()) => {
                 // Move succeeded
                 let old_path = normalize_mtp_path(object_path);
                 let new_path = normalize_mtp_path(new_parent_path).join(&object_name);
@@ -545,7 +473,7 @@ impl MtpConnectionManager {
                     size: if is_dir { None } else { Some(object_size) },
                 })
             }
-            Ok(Err(e)) => {
+            Err(e) => {
                 // Move operation returned an error - might not be supported
                 warn!(
                     "MTP MoveObject failed for {}: {:?}. Device may not support this operation.",
@@ -556,9 +484,6 @@ impl MtpConnectionManager {
                     message: format!("Move operation not supported by device: {}", e),
                 })
             }
-            Err(_) => Err(MtpConnectionError::Timeout {
-                device_id: device_id.to_string(),
-            }),
         }
     }
 }

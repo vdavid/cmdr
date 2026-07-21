@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use tokio::time::Duration;
 
 use super::file_system::expand_tilde;
-use super::util::IpcError;
+use super::util::{IpcError, timeout_detached};
 use crate::file_system::write_operations::trash::trash_single_journaled;
 use crate::file_system::write_operations::{
     RenameValidityResult, check_rename_permission_sync, check_rename_validity_impl, rename_managed,
@@ -79,13 +79,13 @@ pub async fn check_rename_validity(
     let expanded_dir = expand_tilde(&dir);
     let volume_id_str = volume_id.unwrap_or_else(|| "root".to_string());
 
-    tokio::time::timeout(
+    // Detached: conflict detection on a non-local volume LISTS the directory, so
+    // on MTP a bare timeout would drop a listing mid-`GetObjectInfo`.
+    timeout_detached(
         Duration::from_secs(2),
         check_rename_validity_impl(expanded_dir, old_name, new_name, volume_id_str),
     )
     .await
-    .map_err(|_| IpcError::timeout())?
-    .map_err(IpcError::from_err)
 }
 
 /// Renames a file or directory. When `force` is true, proceeds even if the destination exists.
@@ -112,7 +112,10 @@ pub async fn rename_file(
         (PathBuf::from(expand_tilde(&from)), PathBuf::from(expand_tilde(&to)))
     };
 
-    tokio::time::timeout(
+    // Detached: the 5 s deadline bounds the FE's wait, not the rename. On MTP the
+    // rename is a PTP `SetObjectPropValue`, and dropping it mid-transaction
+    // wedges the phone; the op finishes behind the timeout instead.
+    timeout_detached(
         Duration::from_secs(5),
         rename_managed(
             from_path,
@@ -123,8 +126,6 @@ pub async fn rename_file(
         ),
     )
     .await
-    .map_err(|_| IpcError::timeout())?
-    .map_err(IpcError::from_err)
 }
 
 #[cfg(test)]

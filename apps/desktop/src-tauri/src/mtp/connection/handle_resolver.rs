@@ -28,12 +28,11 @@
 
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::time::Duration;
 
 use mtp_rs::{ObjectHandle, StorageId};
 
 use super::errors::MtpConnectionError;
-use super::{MTP_TIMEOUT_SECS, MtpConnectionManager, acquire_device_lock, map_mtp_error};
+use super::{MtpConnectionManager, acquire_device_lock, map_mtp_error};
 
 /// Upper bound on how many parent hops the walk will follow before giving up.
 /// Real MTP trees are shallow (a handful of levels); this only exists to bound a
@@ -138,9 +137,10 @@ impl MtpConnectionManager {
     ///   cheaper.
     /// - A root-level object resolves to `/<name>`; the root handle itself
     ///   resolves to `/`.
-    /// - Cancelable and bounded: every USB round trip is `MTP_TIMEOUT_SECS`-
-    ///   capped via the same device-lock discipline as the rest of this module,
-    ///   and the walk is depth-bounded against a cyclic parent chain.
+    /// - Cancelable and bounded: every USB round trip is capped by mtp-rs's own
+    ///   per-transfer timeout (❌ never an outer `tokio::time::timeout` — see the
+    ///   module `CLAUDE.md`), and the walk is depth-bounded against a cyclic
+    ///   parent chain.
     ///
     /// # Errors
     ///
@@ -232,7 +232,7 @@ impl MtpConnectionManager {
     /// ([`resolve_handle_to_path`](Self::resolve_handle_to_path), usually one
     /// round trip thanks to the reverse cache) plus one `GetObjectInfo` on the
     /// object itself for its metadata. Cancelable/bounded via the same
-    /// `MTP_TIMEOUT_SECS` discipline.
+    /// per-transfer discipline.
     ///
     /// # Errors
     ///
@@ -258,20 +258,13 @@ impl MtpConnectionManager {
             std::sync::Arc::clone(&entry.device)
         };
         let device = acquire_device_lock(&device_arc, device_id, "resolve_object_for_index").await?;
-        let storage = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(u64::from(storage_id))),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
-        let info = tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS), storage.get_object_info(handle))
+        let storage = device
+            .storage(StorageId(u64::from(storage_id)))
             .await
-            .map_err(|_| MtpConnectionError::Timeout {
-                device_id: device_id.to_string(),
-            })?
+            .map_err(|e| map_mtp_error(e, device_id))?;
+        let info = storage
+            .get_object_info(handle)
+            .await
             .map_err(|e| map_mtp_error(e, device_id))?;
 
         let is_directory = info.is_folder();
@@ -306,26 +299,19 @@ impl MtpConnectionManager {
         }
 
         let device = acquire_device_lock(device_arc, device_id, "resolve_handle_to_path").await?;
-        let storage = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(u64::from(storage_id))),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
+        let storage = device
+            .storage(StorageId(u64::from(storage_id)))
+            .await
+            .map_err(|e| map_mtp_error(e, device_id))?;
 
         let mut current = handle;
         for _ in 0..MAX_WALK_DEPTH {
             if reverse_cache.contains_key(&current) {
                 break;
             }
-            let info = tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS), storage.get_object_info(current))
+            let info = storage
+                .get_object_info(current)
                 .await
-                .map_err(|_| MtpConnectionError::Timeout {
-                    device_id: device_id.to_string(),
-                })?
                 .map_err(|e| map_mtp_error(e, device_id))?;
             let parent = info.parent;
             memo.insert(current, (parent, info.filename));

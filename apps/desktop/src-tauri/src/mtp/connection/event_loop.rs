@@ -61,6 +61,7 @@ impl MtpConnectionManager {
                     }
 
                     // Poll for next event (no device lock needed; interrupt endpoint is independent)
+                    // allowed-dropping-timeout: this reads the INTERRUPT endpoint, not the bulk pipe, so there's no PTP transaction to abandon. mtp-rs leaves the transfer pending on drop and picks it up on the next poll.
                     result = tokio::time::timeout(Duration::from_secs(5), event_device.next_event()) => {
                         result.unwrap_or(Err(mtp_rs::Error::Timeout))
                     }

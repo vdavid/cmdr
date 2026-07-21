@@ -106,8 +106,11 @@ pub struct ListingOpeningEvent {
 
 /// State for an in-progress streaming listing
 pub struct StreamingListingState {
-    /// Checked at sync cancellation points (before read, after read, at cache insert).
-    pub cancelled: AtomicBool,
+    /// Checked at sync cancellation points (before read, after read, at cache
+    /// insert), AND handed to the backend as its cooperative cancel token, so a
+    /// listing made of many round trips (MTP) stops on the wire, not just in the
+    /// loop above it. `Arc` because the backend takes `&Arc<AtomicBool>`.
+    pub cancelled: Arc<AtomicBool>,
     /// Async signal for `select!`-based cancellation during the listing I/O.
     pub cancel_notify: tokio::sync::Notify,
 }
@@ -289,7 +292,7 @@ pub async fn list_directory_start_streaming(
 
     // Create streaming state with cancellation flag
     let state = Arc::new(StreamingListingState {
-        cancelled: AtomicBool::new(false),
+        cancelled: Arc::new(AtomicBool::new(false)),
         cancel_notify: tokio::sync::Notify::new(),
     });
 
@@ -444,6 +447,7 @@ pub(crate) async fn read_directory_with_progress(
     let path_for_task = path.to_path_buf();
     let events_for_progress = Arc::clone(events);
     let listing_id_for_progress = listing_id.to_string();
+    let cancel_for_task = Arc::clone(&state.cancelled);
 
     let mut listing_task = tokio::spawn(async move {
         // Stall-probe: marker logged as the FIRST executable line inside the spawned task.
@@ -464,7 +468,9 @@ pub(crate) async fn read_directory_with_progress(
             // files + dirs for that.
             events_for_progress.emit_progress(&listing_id_for_progress, p.entries());
         };
-        volume_for_task.list_directory(&path_for_task, Some(&on_progress)).await
+        volume_for_task
+            .list_directory_with_cancel(&path_for_task, Some(&on_progress), Some(&cancel_for_task))
+            .await
     });
 
     // Wait for either listing completion or cancellation (no polling).
@@ -472,7 +478,14 @@ pub(crate) async fn read_directory_with_progress(
         biased;  // check cancellation first if both are ready
         _ = state.cancel_notify.notified() => {
             benchmark::log_event("read_directory_with_progress CANCELLED (during read_dir)");
-            listing_task.abort();
+            // ❌ Never `listing_task.abort()` here. `state.cancelled` is already
+            // set (`cancel_listing` sets it before notifying), so the backend
+            // sees the token and unwinds at its own safe boundary; aborting
+            // would instead DROP its future wherever it happens to be, which on
+            // MTP abandons an in-flight PTP transaction and wedges the phone
+            // (`mtp/connection/CLAUDE.md`). Dropping the `JoinHandle` on return
+            // detaches the task rather than cancelling it, so the user gets a
+            // prompt cancel while the backend finishes unwinding behind it.
             events.emit_cancelled(listing_id);
             return Ok(());
         }

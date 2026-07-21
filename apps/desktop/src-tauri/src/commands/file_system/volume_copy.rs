@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::time::Duration;
 
-use crate::commands::util::IpcError;
+use crate::commands::util::{IpcError, timeout_detached};
 use crate::file_system::volume::backends::archive;
 use crate::operation_log::types::Initiator;
 
@@ -289,14 +289,15 @@ pub async fn scan_volume_for_copy(
 
     let max_conflicts = max_conflicts.unwrap_or(100);
 
-    // Run scan (now async)
-    tokio::time::timeout(
-        Duration::from_secs(30),
-        ops_scan_for_volume_copy(&*source_volume, &source_paths, &*dest_volume, &dest_path, max_conflicts),
-    )
+    // Run scan (now async). Detached: a copy scan of an MTP source is a recursive
+    // listing that outlives 30 s on any photo-heavy folder, and dropping it
+    // mid-`GetObjectInfo` wedges the phone.
+    timeout_detached(Duration::from_secs(30), async move {
+        ops_scan_for_volume_copy(&*source_volume, &source_paths, &*dest_volume, &dest_path, max_conflicts)
+            .await
+            .map_err(|e| e.to_string())
+    })
     .await
-    .map_err(|_| IpcError::timeout())?
-    .map_err(|e| IpcError::from_err(e.to_string()))
 }
 
 /// Checks which source items already exist at the destination. Returns conflict details for UI.
@@ -343,29 +344,33 @@ pub async fn scan_volume_for_conflicts(
     if let (Some(src_volume_id), Some(src_paths)) = (source_volume_id, source_paths) {
         let paths: Vec<PathBuf> = src_paths.iter().map(PathBuf::from).collect();
         if let Some((src_volume, _)) = resolve_source(&src_volume_id, paths.first()).await {
-            match tokio::time::timeout(Duration::from_secs(30), src_volume.scan_for_copy_batch(&paths)).await {
-                Ok(Ok(batch)) => merge_source_types_from_batch(&mut source_items, &batch),
+            // Detached (see `timeout_detached`): the batch stat reaches the
+            // source device, so the deadline must not drop it.
+            let batch = timeout_detached(Duration::from_secs(30), async move {
+                src_volume.scan_for_copy_batch(&paths).await.map_err(|e| e.to_string())
+            })
+            .await;
+            match batch {
+                Ok(batch) => merge_source_types_from_batch(&mut source_items, &batch),
                 // A failed source-side stat is non-fatal: fall back to the
                 // name-only items the caller sent. Conflict detection still
                 // works by name; only the dir/size hints degrade.
-                Ok(Err(e)) => {
-                    log::debug!(target: "conflict_scan", "Source batch stat failed, using name-only items: {}", e);
-                }
-                Err(_) => {
-                    log::debug!(target: "conflict_scan", "Source batch stat timed out, using name-only items");
+                Err(e) => {
+                    log::debug!(target: "conflict_scan", "Source batch stat unavailable, using name-only items: {}", e.message);
                 }
             }
         }
     }
 
-    // Run conflict scan (now async)
-    tokio::time::timeout(
-        Duration::from_secs(30),
-        volume.scan_for_conflicts(&source_items, &dest_path),
-    )
+    // Run conflict scan (now async), detached so the destination device isn't
+    // left mid-transaction if the scan overruns.
+    timeout_detached(Duration::from_secs(30), async move {
+        volume
+            .scan_for_conflicts(&source_items, &dest_path)
+            .await
+            .map_err(|e| e.to_string())
+    })
     .await
-    .map_err(|_| IpcError::timeout())?
-    .map_err(|e| IpcError::from_err(e.to_string()))
 }
 
 /// Overlays authoritative `is_directory` + `size` from a source-volume batch

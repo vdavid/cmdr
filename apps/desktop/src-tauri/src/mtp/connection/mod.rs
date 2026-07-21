@@ -46,8 +46,28 @@ use tokio::sync::{Mutex, broadcast};
 use super::types::{MtpDeviceInfo, MtpStorageInfo};
 use crate::file_system::{MtpVolume, get_volume_manager};
 
-/// Default timeout for MTP operations (30 seconds - some devices are slow).
-const MTP_TIMEOUT_SECS: u64 = 30;
+/// Per-USB-transfer timeout handed to mtp-rs, the ONE bound that can stop a
+/// stuck device without abandoning anything.
+///
+/// mtp-rs applies it to each bulk transfer and, on expiry, returns
+/// `PtpError::Timeout` while LEAVING the transfer pending on the endpoint, so
+/// nothing is abandoned mid-transaction. This is the bound Cmdr relies on
+/// instead of wrapping calls in `tokio::time::timeout` (which drops the future).
+/// 30 s matches mtp-rs's own default; stated here so the choice is deliberate.
+const USB_TRANSFER_TIMEOUT_SECS: u64 = 30;
+
+/// How long an op waits for the per-device lock before giving up.
+///
+/// This bounds QUEUEING behind another op on the same device, never a device
+/// response: waiting on a `tokio::Mutex` holds nothing on the wire, so timing it
+/// out abandons nothing. That's why this is the ONE wall-clock timeout left in
+/// this module (see the `CLAUDE.md` guardrail).
+///
+/// It's generous because device ops are no longer capped at 30 s: a 2,000-entry
+/// folder listing is 2,000 `GetObjectInfo` round trips and legitimately runs for
+/// minutes. Too short a wait here would fail a queued nav that was only ever
+/// waiting its turn.
+const DEVICE_LOCK_WAIT_SECS: u64 = 300;
 
 /// Window size for one bounded MTP read transaction (`GetPartialObject64`).
 ///
@@ -216,7 +236,8 @@ async fn acquire_device_lock<'a>(
     device_id: &str,
     operation: &str,
 ) -> Result<tokio::sync::MutexGuard<'a, MtpDevice>, MtpConnectionError> {
-    tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS), device_arc.lock())
+    // allowed-dropping-timeout: waiting on a `tokio::Mutex` holds nothing on the wire, so giving up on the wait abandons no transaction.
+    tokio::time::timeout(Duration::from_secs(DEVICE_LOCK_WAIT_SECS), device_arc.lock())
         .await
         .map_err(|_| {
             error!("MTP {}: timed out waiting for device lock", operation);
@@ -274,7 +295,7 @@ impl MtpConnectionManager {
         debug!("Resolved device_id to location_id={}", location_id);
 
         // Find and open the device
-        debug!("Opening MTP device (timeout={}s)...", MTP_TIMEOUT_SECS);
+        debug!("Opening MTP device...");
         let device = match open_device(location_id).await {
             Ok(d) => d,
             Err(e) => {
@@ -886,7 +907,7 @@ fn resolve_device_location_id(device_id: &str) -> Option<u64> {
 /// Opens an MTP device by location_id.
 async fn open_device(location_id: u64) -> Result<MtpDevice, mtp_rs::Error> {
     MtpDeviceBuilder::new()
-        .timeout(Duration::from_secs(MTP_TIMEOUT_SECS))
+        .timeout(Duration::from_secs(USB_TRANSFER_TIMEOUT_SECS))
         .open_by_location(location_id)
         .await
 }
@@ -901,16 +922,13 @@ async fn open_device(location_id: u64) -> Result<MtpDevice, mtp_rs::Error> {
 /// if the device explicitly rejected writes with `StoreReadOnly` or `AccessDenied`.
 async fn probe_write_capability(storage: &mtp_rs::Storage, storage_name: &str) -> bool {
     const PROBE_FOLDER_NAME: &str = ".cmdr_write_probe";
-    const PROBE_TIMEOUT_SECS: u64 = 3;
 
-    // Try to create a hidden probe folder at the root
-    match tokio::time::timeout(
-        Duration::from_secs(PROBE_TIMEOUT_SECS),
-        storage.create_folder(None, PROBE_FOLDER_NAME),
-    )
-    .await
-    {
-        Ok(Ok(handle)) => {
+    // ❌ No wall-clock timeout around the probe. A slow device answering
+    // `CreateObject` in 4 s is common; abandoning the transaction at 3 s would
+    // wedge the phone at CONNECT time, which is the worst possible moment. The
+    // transport bounds each USB transfer on its own, so this stays bounded.
+    match storage.create_folder(None, PROBE_FOLDER_NAME).await {
+        Ok(handle) => {
             // Success! Clean up by deleting the probe folder
             debug!("Storage '{}': write probe succeeded, cleaning up", storage_name);
             if let Err(e) = storage.delete(handle).await {
@@ -918,7 +936,7 @@ async fn probe_write_capability(storage: &mtp_rs::Storage, storage_name: &str) -
             }
             true
         }
-        Ok(Err(e)) => {
+        Err(e) => {
             // A neutral `AccessDenied` (read-only storage or write-protected/denied)
             // means the device truly refuses writes. A stale-handle rejection (can't
             // create at root) is non-fatal: Android often blocks root creation but is
@@ -941,11 +959,6 @@ async fn probe_write_capability(storage: &mtp_rs::Storage, storage_name: &str) -
                 );
                 true
             }
-        }
-        Err(_) => {
-            // Timeout - assume writable (benefit of the doubt)
-            debug!("Storage '{}': write probe timed out (assuming writable)", storage_name);
-            true
         }
     }
 }

@@ -4,11 +4,10 @@ use log::debug;
 use mtp_rs::{ByteRange, MtpDevice, NewObjectInfo, ObjectHandle, StorageId, WindowedDownload};
 use std::path::Path;
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::Mutex;
 
 use super::errors::{MtpConnectionError, is_stale_handle_rejection, map_mtp_error};
-use super::{MTP_TIMEOUT_SECS, MtpConnectionManager, acquire_device_lock, normalize_mtp_path};
+use super::{MtpConnectionManager, acquire_device_lock, normalize_mtp_path};
 
 /// Cached state for a bounded-window MTP read.
 ///
@@ -83,25 +82,15 @@ impl MtpConnectionManager {
 
         let windowed = {
             let device = acquire_device_lock(&device_arc, device_id, "open_read_session").await?;
-            let storage = tokio::time::timeout(
-                Duration::from_secs(MTP_TIMEOUT_SECS),
-                device.storage(StorageId(u64::from(storage_id))),
-            )
-            .await
-            .map_err(|_| MtpConnectionError::Timeout {
-                device_id: device_id.to_string(),
-            })?
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            let storage = device
+                .storage(StorageId(u64::from(storage_id)))
+                .await
+                .map_err(|e| map_mtp_error(e, device_id))?;
 
-            tokio::time::timeout(
-                Duration::from_secs(MTP_TIMEOUT_SECS),
-                storage.download_windowed(object_handle, ByteRange::From(offset), window_size),
-            )
-            .await
-            .map_err(|_| MtpConnectionError::Timeout {
-                device_id: device_id.to_string(),
-            })?
-            .map_err(|e| map_mtp_error(e, device_id))?
+            storage
+                .download_windowed(object_handle, ByteRange::From(offset), window_size)
+                .await
+                .map_err(|e| map_mtp_error(e, device_id))?
         };
 
         debug!("MTP open_read_session: opened {} bytes for {}", windowed.size(), path);
@@ -127,11 +116,13 @@ impl MtpConnectionManager {
     /// Takes NO `foreground_guard` (a transfer is a background gate user; see
     /// `open_read_session`).
     ///
-    /// Drop-safety: if this future is dropped mid-flight (task abort, device
+    /// Drop-safety: ❌ don't rely on it. If this future IS dropped (a genuine
     /// disconnect), mtp-rs's `TransactionScope` flags the pipe and the next op
-    /// drains it under the operation lock (one ~300 ms self-heal), so an aborted
-    /// window never permanently desyncs the session. This is what makes the
-    /// buffered-window model safe to abort at any point.
+    /// drains it under the operation lock (one ~300 ms self-heal) — a seatbelt,
+    /// not a guarantee: some devices don't come back from an abandoned data
+    /// phase without a replug. So a copy cancel stops ISSUING windows rather
+    /// than dropping one in flight, and nothing wraps this in a timeout (see the
+    /// module `CLAUDE.md`).
     ///
     /// [`open_read_session`]: Self::open_read_session
     pub async fn read_next_window(
@@ -140,11 +131,7 @@ impl MtpConnectionManager {
         device_id: &str,
     ) -> Result<Option<Vec<u8>>, MtpConnectionError> {
         let _device = acquire_device_lock(&session.device_arc, device_id, "read_window").await?;
-        let outcome = tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS), session.windowed.next_window())
-            .await
-            .map_err(|_| MtpConnectionError::Timeout {
-                device_id: device_id.to_string(),
-            })?;
+        let outcome = session.windowed.next_window().await;
         match outcome {
             Some(Ok(bytes)) => Ok(Some(bytes)),
             Some(Err(e)) => Err(map_mtp_error(e, device_id)),
@@ -207,15 +194,10 @@ impl MtpConnectionManager {
                     lookups.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 }
                 let storage = Arc::new(
-                    tokio::time::timeout(
-                        Duration::from_secs(MTP_TIMEOUT_SECS),
-                        device.storage(StorageId(u64::from(storage_id))),
-                    )
-                    .await
-                    .map_err(|_| MtpConnectionError::Timeout {
-                        device_id: device_id.to_string(),
-                    })?
-                    .map_err(|e| map_mtp_error(e, device_id))?,
+                    device
+                        .storage(StorageId(u64::from(storage_id)))
+                        .await
+                        .map_err(|e| map_mtp_error(e, device_id))?,
                 );
                 if let Ok(mut cache) = storage_cache.write() {
                     cache.insert(storage_id, Arc::clone(&storage));
@@ -224,15 +206,10 @@ impl MtpConnectionManager {
             }
         };
 
-        tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            storage.read_range(object_handle, offset, len),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))
+        storage
+            .read_range(object_handle, offset, len)
+            .await
+            .map_err(|e| map_mtp_error(e, device_id))
     }
 
     /// Uploads pre-collected chunks to the MTP device.
@@ -290,15 +267,10 @@ impl MtpConnectionManager {
         let device = acquire_device_lock(&device_arc, device_id, "upload_from_stream").await?;
 
         // Get the storage
-        let storage = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(u64::from(storage_id))),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
+        let storage = device
+            .storage(StorageId(u64::from(storage_id)))
+            .await
+            .map_err(|e| map_mtp_error(e, device_id))?;
 
         // Create object info for the upload
         let object_info = NewObjectInfo::file(filename, size);
@@ -309,14 +281,7 @@ impl MtpConnectionManager {
             Some(parent_handle)
         };
 
-        let upload_result = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS * 10),
-            storage.upload(parent_opt, object_info, data_stream),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?;
+        let upload_result = storage.upload(parent_opt, object_info, data_stream).await;
 
         let new_handle = match upload_result {
             Ok(handle) => handle,

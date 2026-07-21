@@ -163,3 +163,23 @@ loading / suggestion pipelines / secret-store keys; poller init/start/watch). A 
 forwarding, so they register directly from their own modules, keeping the command surface co-located with the
 frequently-changing implementation. Space-poller commands: `watch_volume_space`, `unwatch_volume_space`,
 `set_disk_space_threshold`.
+
+## IPC deadlines detach, never drop
+
+An IPC deadline is a promise about the REPLY, not permission to abandon half-written work. `tokio::time::timeout(d,
+fut)` breaks that: when the deadline fires it drops `fut` wherever it happens to be.
+
+For anything that can reach a device backend (any command taking a `volume_id`: `rename_file`,
+`check_rename_validity`, `scan_for_volume_copy`, `scan_volume_for_conflicts`), dropping mid-flight means dropping a PTP
+transaction mid-data-phase on MTP, which leaves the phone expecting bytes nobody will send and wedges it until replug.
+See `mtp/connection/DETAILS.md` § "No dropping timeouts".
+
+`util::timeout_detached` is the shape to use: it spawns the future and races the deadline against the resulting JOIN
+HANDLE. On expiry the handle is dropped, which DETACHES the task rather than cancelling it, so the caller returns
+`IpcError::timeout()` on schedule and the transaction finishes safely behind it. The cost is that the work isn't
+actually stopped, which is the right trade for a device op (the alternative is a bricked device) and harmless for a
+local one (the deadline only ever fires on a hung mount, where dropping the future wouldn't unblock the syscall
+either).
+
+The `blocking_*` helpers already have this property for free: they wrap `spawn_blocking`, so their timeout races a join
+handle too, and the blocking closure is never interrupted.

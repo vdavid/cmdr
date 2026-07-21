@@ -4,15 +4,15 @@ use log::{debug, error, info};
 use mtp_rs::{CancelToken, ObjectHandle, StorageId};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use tauri::AppHandle;
 use tauri_specta::Event;
 
 use super::cache::{CachedListing, LISTING_CACHE_TTL_SECS};
 use super::errors::MtpConnectionError;
 use super::{
-    DeviceEntry, MTP_TIMEOUT_SECS, MtpConnectionManager, MtpDeviceDisconnected, MtpDisconnectReason,
-    acquire_device_lock, convert_mtp_datetime, get_mtp_icon_id, map_mtp_error, normalize_mtp_path,
+    DeviceEntry, MtpConnectionManager, MtpDeviceDisconnected, MtpDisconnectReason, acquire_device_lock,
+    convert_mtp_datetime, get_mtp_icon_id, map_mtp_error, normalize_mtp_path,
 };
 use crate::file_system::FileEntry;
 
@@ -225,25 +225,15 @@ impl MtpConnectionManager {
         }
         let mut listing = {
             let device = acquire_device_lock(&device_arc, device_id, "list_directory_for_scan[handles]").await?;
-            let storage = tokio::time::timeout(
-                Duration::from_secs(MTP_TIMEOUT_SECS),
-                device.storage(StorageId(u64::from(storage_id))),
-            )
-            .await
-            .map_err(|_| MtpConnectionError::Timeout {
-                device_id: device_id.to_string(),
-            })?
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            let storage = device
+                .storage(StorageId(u64::from(storage_id)))
+                .await
+                .map_err(|e| map_mtp_error(e, device_id))?;
 
-            tokio::time::timeout(
-                Duration::from_secs(MTP_TIMEOUT_SECS),
-                storage.list_objects_stream_with_cancel(parent_opt, cancel),
-            )
-            .await
-            .map_err(|_| MtpConnectionError::Timeout {
-                device_id: device_id.to_string(),
-            })?
-            .map_err(|e| map_mtp_error(e, device_id))?
+            storage
+                .list_objects_stream_with_cancel(parent_opt, cancel)
+                .await
+                .map_err(|e| map_mtp_error(e, device_id))?
             // `device` / `storage` drop here, releasing the lock before the
             // metadata batches below.
         };
@@ -263,8 +253,8 @@ impl MtpConnectionManager {
             let device = acquire_device_lock(&device_arc, device_id, "list_directory_for_scan[meta]").await?;
             let mut done = false;
             for _ in 0..SCAN_METADATA_BATCH {
-                match tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS), listing.next()).await {
-                    Ok(Some(Ok(info))) => {
+                match listing.next().await {
+                    Some(Ok(info)) => {
                         let is_dir = info.is_folder();
                         let child_path = parent_path.join(&info.filename);
                         cache_updates.push((child_path.clone(), info.handle));
@@ -284,7 +274,7 @@ impl MtpConnectionManager {
                             )
                         });
                     }
-                    Ok(Some(Err(e))) => {
+                    Some(Err(e)) => {
                         // A per-handle failure: cancel surfaces as Cancelled;
                         // anything else, skip this handle and keep walking (a
                         // single bad object shouldn't abort the folder).
@@ -294,14 +284,9 @@ impl MtpConnectionManager {
                         }
                         debug!("list_directory_for_scan: skipping a handle on {device_id}:{storage_id}: {mapped:?}");
                     }
-                    Ok(None) => {
+                    None => {
                         done = true;
                         break;
-                    }
-                    Err(_) => {
-                        return Err(MtpConnectionError::Timeout {
-                            device_id: device_id.to_string(),
-                        });
                     }
                 }
             }
@@ -430,15 +415,10 @@ impl MtpConnectionManager {
 
         // Get the storage object
         let usb_io_start = Instant::now();
-        let storage = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(u64::from(storage_id))),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
+        let storage = device
+            .storage(StorageId(u64::from(storage_id)))
+            .await
+            .map_err(|e| map_mtp_error(e, device_id))?;
         debug!(
             "MTP list_directory [req#{}]: got storage object in {:?}",
             request_id,
@@ -459,14 +439,9 @@ impl MtpConnectionManager {
             parent_opt,
             cancel.is_some()
         );
-        let object_infos = match tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            storage.list_objects_with_cancel(parent_opt, cancel),
-        )
-        .await
-        {
-            Ok(Ok(infos)) => infos,
-            Ok(Err(e)) => {
+        let object_infos = match storage.list_objects_with_cancel(parent_opt, cancel).await {
+            Ok(infos) => infos,
+            Err(e) => {
                 let mapped_err = map_mtp_error(e, device_id);
                 error!(
                     "MTP list_directory [req#{}]: list_objects failed after {:?}: {:?}",
@@ -475,16 +450,6 @@ impl MtpConnectionManager {
                     mapped_err
                 );
                 return Err(mapped_err);
-            }
-            Err(_) => {
-                error!(
-                    "MTP list_directory [req#{}]: list_objects timed out after {:?}",
-                    request_id,
-                    list_objects_start.elapsed()
-                );
-                return Err(MtpConnectionError::Timeout {
-                    device_id: device_id.to_string(),
-                });
             }
         };
 
@@ -582,15 +547,10 @@ impl MtpConnectionManager {
 
         // Get storage
         let usb_io_start = Instant::now();
-        let storage = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(u64::from(storage_id))),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
+        let storage = device
+            .storage(StorageId(u64::from(storage_id)))
+            .await
+            .map_err(|e| map_mtp_error(e, device_id))?;
 
         let parent_opt = if parent_handle == ObjectHandle::ROOT {
             None
@@ -600,15 +560,10 @@ impl MtpConnectionManager {
 
         // Get streaming listing (fast: single USB transaction for GetObjectHandles).
         // The cancel token threads into the per-handle GetObjectInfo loop below.
-        let mut listing = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            storage.list_objects_stream_with_cancel(parent_opt, cancel),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
+        let mut listing = storage
+            .list_objects_stream_with_cancel(parent_opt, cancel)
+            .await
+            .map_err(|e| map_mtp_error(e, device_id))?;
 
         let total = listing.total();
         debug!(
