@@ -248,6 +248,11 @@ string then.
 Hand an agent the block below as its system prompt, then feed it batches of keys with each key's `@key.description`,
 `placeholders`, and any `screenshot`/`screenshotNote`. Replace the bracketed parts; keep the rest verbatim.
 
+**Fanning out one agent per language: if you are yourself a subagent, spawn WITHOUT the `name` parameter.** The team
+roster is flat, so a named teammate can't spawn named teammates; passing `name` fails with "Teammates cannot spawn other
+teammates". Only the lead session can name them. Nine languages is also enough prompt text that it's worth writing each
+per-language brief to a file and pointing the agent at it, rather than inlining nine copies of the block below.
+
 ```
 You are translating UI strings for Cmdr, a macOS file manager, from English into [TARGET LANGUAGE].
 
