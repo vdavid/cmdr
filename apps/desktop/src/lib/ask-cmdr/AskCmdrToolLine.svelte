@@ -64,6 +64,7 @@
         align-items: center;
         gap: var(--spacing-xs);
         width: 100%;
+        min-height: 28px;
         padding: var(--spacing-xxs) var(--spacing-xs);
         border: none;
         background: none;
@@ -79,6 +80,8 @@
 
     .glyph {
         display: flex;
+        width: 16px;
+        justify-content: center;
         flex: none;
         color: var(--color-text-tertiary);
     }

@@ -52,6 +52,7 @@ use crate::ignore_poison::IgnorePoison;
 
 use super::context::{self, ContextEnvelope, MAX_TOOL_TURNS, MAX_WALL_TIME, PrefixInputs};
 use super::system_prompt::SYSTEM_PROMPT;
+use crate::agent::tools::propose::rename::RenameProposalSnapshot;
 
 const LOG_TARGET: &str = "agent::chat";
 
@@ -85,6 +86,9 @@ pub enum AgentChatEvent {
     /// A tool call finished dispatching. `ok` is false for a refusal or a handler
     /// problem (inspected from OUR OWN typed result shape, not external wording).
     ToolCallFinished { call_id: String, ok: bool },
+    /// A server-owned rename proposal is ready for the review surface. The
+    /// snapshot is display-only; later approval uses only opaque row ids.
+    ProposalReady { proposal: RenameProposalSnapshot },
     /// The turn produced its final answer. Carries the persisted assistant message id.
     Done {
         message_id: i64,
@@ -155,7 +159,12 @@ fn emit(sink: &ChatEventSink, event: AgentChatEvent) {
 /// read-only dispatch view ([`AppHandleDispatcher`]); tests inject a scripted double,
 /// so [`run_turn`] needs no Tauri app.
 pub trait ToolDispatcher: Send + Sync {
-    fn dispatch<'a>(&'a self, call: &'a AgentToolCall) -> BoxFuture<'a, AgentToolResult>;
+    fn dispatch<'a>(&'a self, call: &'a AgentToolCall) -> BoxFuture<'a, ToolDispatchOutcome>;
+}
+
+pub struct ToolDispatchOutcome {
+    pub result: AgentToolResult,
+    pub proposal: Option<RenameProposalSnapshot>,
 }
 
 /// The production dispatcher: every call goes through `agent::tools::view::dispatch`,
@@ -171,8 +180,15 @@ impl<R: Runtime> AppHandleDispatcher<R> {
 }
 
 impl<R: Runtime> ToolDispatcher for AppHandleDispatcher<R> {
-    fn dispatch<'a>(&'a self, call: &'a AgentToolCall) -> BoxFuture<'a, AgentToolResult> {
-        async move { crate::agent::tools::view::dispatch(&self.app, call).await }.boxed()
+    fn dispatch<'a>(&'a self, call: &'a AgentToolCall) -> BoxFuture<'a, ToolDispatchOutcome> {
+        async move {
+            let outcome = crate::agent::tools::view::dispatch(&self.app, call).await;
+            ToolDispatchOutcome {
+                result: outcome.result,
+                proposal: outcome.proposal,
+            }
+        }
+        .boxed()
     }
 }
 
@@ -431,7 +447,8 @@ pub async fn run_turn(
         tool_turns += 1;
         for part in &message.parts {
             let AgentPart::ToolCall(call) = part else { continue };
-            let result = dispatcher.dispatch(call).await;
+            let dispatch = dispatcher.dispatch(call).await;
+            let result = dispatch.result;
             emit(
                 sink,
                 AgentChatEvent::ToolCallFinished {
@@ -455,6 +472,9 @@ pub async fn run_turn(
                 params.now_secs,
             ) {
                 return persist_failed(sink, e);
+            }
+            if let Some(proposal) = dispatch.proposal {
+                emit(sink, AgentChatEvent::ProposalReady { proposal });
             }
             transcript.push(tool_message);
         }

@@ -36,6 +36,10 @@
   "@askCmdr.thinking": {
     "sourceHash": "a02f1ce"
   },
+  "askCmdr.stalled": "Cela prend plus de temps que d''habitude. Vous pouvez continuer à attendre ou l''arrêter.",
+  "@askCmdr.stalled": {
+    "sourceHash": "c171aab"
+  },
   "askCmdr.softCap.message": "Cette conversation devient longue. Une nouvelle conversation garde les réponses rapides et pertinentes.",
   "@askCmdr.softCap.message": {
     "sourceHash": "60d2c54"
@@ -123,6 +127,14 @@
   "askCmdr.tool.imageFacts.done": "A lu le contenu de vos photos",
   "@askCmdr.tool.imageFacts.done": {
     "sourceHash": "fc24aac"
+  },
+  "askCmdr.tool.proposeRenamePlan.doing": "Préparation d’un plan de renommage",
+  "@askCmdr.tool.proposeRenamePlan.doing": {
+    "sourceHash": "540f1d9"
+  },
+  "askCmdr.tool.proposeRenamePlan.done": "Plan de renommage préparé",
+  "@askCmdr.tool.proposeRenamePlan.done": {
+    "sourceHash": "a271302"
   },
   "askCmdr.tool.unknown.doing": "Travail en cours",
   "@askCmdr.tool.unknown.doing": {
@@ -335,5 +347,57 @@
   "askCmdr.cost.label": "Utilisation de cette conversation",
   "@askCmdr.cost.label": {
     "sourceHash": "3b0dd81"
+  },
+  "askCmdr.renameReview.title": "Vérifier les renommages",
+  "@askCmdr.renameReview.title": {
+    "sourceHash": "f923506"
+  },
+  "askCmdr.renameReview.description": "Cmdr renommera uniquement les fichiers que vous autorisez.",
+  "@askCmdr.renameReview.description": {
+    "sourceHash": "de95869"
+  },
+  "askCmdr.renameReview.originalName": "Nom actuel",
+  "@askCmdr.renameReview.originalName": {
+    "sourceHash": "0619bd6"
+  },
+  "askCmdr.renameReview.newName": "Nouveau nom",
+  "@askCmdr.renameReview.newName": {
+    "sourceHash": "04eea2a"
+  },
+  "askCmdr.renameReview.allow": "Autoriser",
+  "@askCmdr.renameReview.allow": {
+    "sourceHash": "e213c16"
+  },
+  "askCmdr.renameReview.deny": "Refuser",
+  "@askCmdr.renameReview.deny": {
+    "sourceHash": "05a2d73"
+  },
+  "askCmdr.renameReview.allowAll": "Tout autoriser",
+  "@askCmdr.renameReview.allowAll": {
+    "sourceHash": "56ac845"
+  },
+  "askCmdr.renameReview.denyAll": "Tout refuser",
+  "@askCmdr.renameReview.denyAll": {
+    "sourceHash": "5a41803"
+  },
+  "askCmdr.renameReview.cancel": "Annuler",
+  "@askCmdr.renameReview.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "askCmdr.renameReview.rename": "{count, plural, one {Renommer # fichier} many {Renommer # fichiers} other {Renommer # fichiers}}",
+  "@askCmdr.renameReview.rename": {
+    "sourceHash": "d4b5c18"
+  },
+  "askCmdr.renameReview.blocked": "Ce renommage nécessite une attention avant de continuer.",
+  "@askCmdr.renameReview.blocked": {
+    "sourceHash": "868541c"
+  },
+  "askCmdr.renameReview.expired": "Cette vérification a expiré. Demandez à Ask Cmdr de la préparer à nouveau.",
+  "@askCmdr.renameReview.expired": {
+    "sourceHash": "4e6482a"
+  },
+  "askCmdr.renameReview.status": "{allowed, plural, one {# renommage autorisé} many {# renommages autorisés} other {# renommages autorisés}}; {blocked, plural, one {# bloqué} many {# bloqués} other {# bloqués}}",
+  "@askCmdr.renameReview.status": {
+    "sourceHash": "9f70789"
   }
 }

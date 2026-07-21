@@ -655,6 +655,7 @@ fn test_requires_token_arg_logic() {
 const EXPECTED_AGENT_TOOL_NAMES: &[&str] = &[
     "app_state",
     "list_dir",
+    "list_pane_files",
     "largest_dirs",
     "important_folders",
     "folder_importance",
@@ -663,6 +664,7 @@ const EXPECTED_AGENT_TOOL_NAMES: &[&str] = &[
     "operations_get",
     "search_photos",
     "image_facts",
+    "propose_rename_plan",
 ];
 
 /// Set-equality: the agent view equals exactly its authored `consumers:[agent]` entries. This is
@@ -684,7 +686,7 @@ fn test_agent_tool_view_is_exactly_expected_set() {
 /// A `Propose` tool must also cap its payload the way `image_facts` caps at 200 paths — a proposal
 /// the user can't review is a proposal they can only rubber-stamp. That contract can't be enforced
 /// generically; see `mcp/DETAILS.md` § Consumer and access views.
-const EXPECTED_PROPOSE_TOOL_NAMES: &[&str] = &[];
+const EXPECTED_PROPOSE_TOOL_NAMES: &[&str] = &["propose_rename_plan"];
 
 /// The agent can propose; only the user can approve. Structurally: every tool in the agent's view
 /// is `Access::Read` or `Access::Propose`, and NEVER `Access::Write`. This is the guarantee

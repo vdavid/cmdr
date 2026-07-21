@@ -120,6 +120,9 @@ To add a new dialog:
 1. Add an entry to `SOFT_DIALOG_REGISTRY` in `dialog-registry.ts`.
 2. Pass the new id as `dialogId` to `ModalDialog`. MCP tracking is then automatic.
 
+`bulk-rename-review` is an Ask Cmdr-owned modal mounted beside the rail, rather than a pane command dialog. Its review
+rows are display-only; the frontend returns opaque proposal and row ids to the backend for preflight or apply.
+
 ### Generic close (`dialog-close-registry.ts`)
 
 The MCP `dialog` tool's generic `close` action closes any registered soft dialog by id. `dialog-close-registry.ts` holds

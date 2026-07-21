@@ -148,6 +148,9 @@ pub enum ToolId {
     /// One directory's immediate children plus its recursive size stats, from the
     /// drive index.
     ListDir,
+    /// Up to 200 entries from the focused pane's current backend listing cache,
+    /// scoped to the selection when present.
+    ListPaneFiles,
     /// The largest subdirectories under a path, by recursive size (batches dir
     /// stats and sorts).
     LargestDirs,
@@ -169,6 +172,9 @@ pub enum ToolId {
     /// What the media index stored for images the agent already has: the full recognized
     /// text plus tags, per path (shared with the ai-client view). Text-only, no image bytes.
     ImageFacts,
+    /// Stages a same-folder rename plan for the user to review. It never applies
+    /// a rename and has no approval path.
+    ProposeRenamePlan,
     /// A tool name the agent does not recognize (hallucinated, a typo, or a
     /// write/non-view tool). Carries the raw name for the transparent UI and the
     /// typed "tool not available" result; always refused by dispatch.
@@ -179,9 +185,10 @@ impl ToolId {
     /// Every known read-only variant, in wire order. Excludes [`ToolId::Unrecognized`]
     /// by design (it's the refusal case, never a view entry). The 1:1 structural test
     /// asserts these map exactly onto `agent_tool_view()`.
-    pub const KNOWN: [ToolId; 10] = [
+    pub const KNOWN: [ToolId; 12] = [
         ToolId::AppState,
         ToolId::ListDir,
+        ToolId::ListPaneFiles,
         ToolId::LargestDirs,
         ToolId::ImportantFolders,
         ToolId::FolderImportance,
@@ -190,6 +197,7 @@ impl ToolId {
         ToolId::OperationsGet,
         ToolId::SearchPhotos,
         ToolId::ImageFacts,
+        ToolId::ProposeRenamePlan,
     ];
 
     /// The wire name for this tool: the genai `fn_name`, the DB token, and the IPC
@@ -198,6 +206,7 @@ impl ToolId {
         match self {
             ToolId::AppState => "app_state",
             ToolId::ListDir => "list_dir",
+            ToolId::ListPaneFiles => "list_pane_files",
             ToolId::LargestDirs => "largest_dirs",
             ToolId::ImportantFolders => "important_folders",
             ToolId::FolderImportance => "folder_importance",
@@ -206,6 +215,7 @@ impl ToolId {
             ToolId::OperationsGet => "operations_get",
             ToolId::SearchPhotos => "search_photos",
             ToolId::ImageFacts => "image_facts",
+            ToolId::ProposeRenamePlan => "propose_rename_plan",
             ToolId::Unrecognized(name) => name.as_str(),
         }
     }
@@ -218,6 +228,7 @@ impl ToolId {
         match name {
             "app_state" => ToolId::AppState,
             "list_dir" => ToolId::ListDir,
+            "list_pane_files" => ToolId::ListPaneFiles,
             "largest_dirs" => ToolId::LargestDirs,
             "important_folders" => ToolId::ImportantFolders,
             "folder_importance" => ToolId::FolderImportance,
@@ -226,6 +237,7 @@ impl ToolId {
             "operations_get" => ToolId::OperationsGet,
             "search_photos" => ToolId::SearchPhotos,
             "image_facts" => ToolId::ImageFacts,
+            "propose_rename_plan" => ToolId::ProposeRenamePlan,
             other => ToolId::Unrecognized(other.to_string()),
         }
     }

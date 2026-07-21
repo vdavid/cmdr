@@ -36,6 +36,10 @@
   "@askCmdr.thinking": {
     "sourceHash": "a02f1ce"
   },
+  "askCmdr.stalled": "Ez a szokásosnál tovább tart. Tovább várhatsz, vagy leállíthatod.",
+  "@askCmdr.stalled": {
+    "sourceHash": "c171aab"
+  },
   "askCmdr.softCap.message": "Ez a csevegés egyre hosszabb lesz. Egy új csevegésben gyorsabbak és célratörőbbek maradnak a válaszok.",
   "@askCmdr.softCap.message": {
     "sourceHash": "60d2c54"
@@ -123,6 +127,14 @@
   "askCmdr.tool.imageFacts.done": "A fotóid tartalma elolvasva",
   "@askCmdr.tool.imageFacts.done": {
     "sourceHash": "fc24aac"
+  },
+  "askCmdr.tool.proposeRenamePlan.doing": "Átnevezési terv előkészítése",
+  "@askCmdr.tool.proposeRenamePlan.doing": {
+    "sourceHash": "540f1d9"
+  },
+  "askCmdr.tool.proposeRenamePlan.done": "Átnevezési terv elkészült",
+  "@askCmdr.tool.proposeRenamePlan.done": {
+    "sourceHash": "a271302"
   },
   "askCmdr.tool.unknown.doing": "Folyamatban",
   "@askCmdr.tool.unknown.doing": {
@@ -335,5 +347,57 @@
   "askCmdr.cost.label": "E csevegés felhasználása",
   "@askCmdr.cost.label": {
     "sourceHash": "3b0dd81"
+  },
+  "askCmdr.renameReview.title": "Átnevezések áttekintése",
+  "@askCmdr.renameReview.title": {
+    "sourceHash": "f923506"
+  },
+  "askCmdr.renameReview.description": "A Cmdr csak az általad engedélyezett fájlokat nevezi át.",
+  "@askCmdr.renameReview.description": {
+    "sourceHash": "de95869"
+  },
+  "askCmdr.renameReview.originalName": "Jelenlegi név",
+  "@askCmdr.renameReview.originalName": {
+    "sourceHash": "0619bd6"
+  },
+  "askCmdr.renameReview.newName": "Új név",
+  "@askCmdr.renameReview.newName": {
+    "sourceHash": "04eea2a"
+  },
+  "askCmdr.renameReview.allow": "Engedélyezés",
+  "@askCmdr.renameReview.allow": {
+    "sourceHash": "e213c16"
+  },
+  "askCmdr.renameReview.deny": "Elutasítás",
+  "@askCmdr.renameReview.deny": {
+    "sourceHash": "05a2d73"
+  },
+  "askCmdr.renameReview.allowAll": "Összes engedélyezése",
+  "@askCmdr.renameReview.allowAll": {
+    "sourceHash": "56ac845"
+  },
+  "askCmdr.renameReview.denyAll": "Összes elutasítása",
+  "@askCmdr.renameReview.denyAll": {
+    "sourceHash": "5a41803"
+  },
+  "askCmdr.renameReview.cancel": "Mégse",
+  "@askCmdr.renameReview.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "askCmdr.renameReview.rename": "{count, plural, one {# fájl átnevezése} other {# fájl átnevezése}}",
+  "@askCmdr.renameReview.rename": {
+    "sourceHash": "d4b5c18"
+  },
+  "askCmdr.renameReview.blocked": "Ez az átnevezés figyelmet igényel a folytatás előtt.",
+  "@askCmdr.renameReview.blocked": {
+    "sourceHash": "868541c"
+  },
+  "askCmdr.renameReview.expired": "Ez az áttekintés lejárt. Kérd meg az Ask Cmdr-t, hogy készítse el újra.",
+  "@askCmdr.renameReview.expired": {
+    "sourceHash": "4e6482a"
+  },
+  "askCmdr.renameReview.status": "{allowed, plural, one {# átnevezés engedélyezve} other {# átnevezés engedélyezve}}; {blocked, plural, one {# blokkolva} other {# blokkolva}}",
+  "@askCmdr.renameReview.status": {
+    "sourceHash": "9f70789"
   }
 }

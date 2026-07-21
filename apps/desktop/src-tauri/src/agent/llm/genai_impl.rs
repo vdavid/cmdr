@@ -33,6 +33,10 @@ use super::{AgentDeltaStream, AgentLlm};
 
 const LOG_TARGET: &str = "agent::llm";
 
+/// Per-call output room for reasoning-heavy OpenAI-compatible models. Reasoning tokens
+/// share this budget with visible text and tool calls.
+const AGENT_MAX_OUTPUT_TOKENS: u32 = 12_000;
+
 /// The genai-backed agent LLM. Wraps a configured [`AiBackend`] (the interactive
 /// model slot; the slot is resolved in the command layer) and reuses its adapter routing and
 /// stream-cancel model.
@@ -112,6 +116,7 @@ fn build_request(system: &str, tools: &[ToolDeclaration], messages: &[AgentMessa
 /// plus the per-provider reasoning posture.
 fn build_options(adapter: AdapterKind) -> ChatOptions {
     let options = ChatOptions::default()
+        .with_max_tokens(AGENT_MAX_OUTPUT_TOKENS)
         .with_capture_content(true)
         .with_capture_tool_calls(true)
         .with_capture_usage(true)
@@ -561,6 +566,12 @@ mod tests {
                 blob: json!({ "thought_signatures": ["sig-xyz"] }),
             })]
         );
+    }
+
+    #[test]
+    fn agent_calls_leave_room_for_reasoning_and_a_tool_call() {
+        let options = build_options(AdapterKind::OpenAI);
+        assert_eq!(options.max_tokens, Some(AGENT_MAX_OUTPUT_TOKENS));
     }
 
     #[test]

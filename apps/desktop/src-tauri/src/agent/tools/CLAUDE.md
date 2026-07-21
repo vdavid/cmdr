@@ -7,11 +7,13 @@ list): [DETAILS.md](DETAILS.md).
 
 ## Module map
 
-- `read/`: one file per family — `state` (`app_state`), `listing` (`list_dir` + `largest_dirs`), `importance`
+- `read/`: one file per family — `state` (`app_state`), `pane_listing` (`list_pane_files`), `listing` (`list_dir` +
+  `largest_dirs`), `importance`
   (`important_folders` + `folder_importance`), `volumes` (`list_volumes`). The `operations_list` / `operations_get` and
   `search_photos` / `image_facts` (photo search and image lookup) tools are shared with the ai-client view, so their
   handlers live in `mcp/executor/` (`operation_log.rs`, `photos.rs`, `image_facts.rs`), not here.
 - `view.rs`: the gated dispatch — `dispatch` + `refuse_unavailable` (the read-only choke point).
+- `propose/`: server-owned, immutable proposal staging. Its tools validate cached state only and never apply a change.
 - `mod.rs`: `agent_tool_declarations()` (registry view → `ToolDeclaration`s).
 
 ## Must-knows
@@ -33,8 +35,8 @@ list): [DETAILS.md](DETAILS.md).
   `Access::Write`. A `Propose` tool stages a proposal and opens a review surface: it mutates nothing, it can't
   self-approve (no tool approves a proposal, ever), and it must cap its payload the way `image_facts` caps at 200 paths.
   Adding one also means adding its name to `EXPECTED_PROPOSE_TOOL_NAMES` by hand. Depth: [DETAILS.md](DETAILS.md).
-- **Handlers read Rust-side stores + SQLite only — never a live `statfs`/`readdir` on a mount.** The index and
-  importance DBs answer everything, so a dead NAS can't hang a tool (the whole point of reading the cache).
+- **Handlers read Rust-side stores, pane caches, + SQLite only — never a live `statfs`/`readdir` on a mount.** The
+  existing pane listing, index, and importance DBs answer everything, so a dead NAS can't hang a tool.
 - **The registry couples `mcp` ↔ `agent`.** The `mcp_tools!` entries reference `crate::agent::tools::read::*` handler +
   schema paths, and `agent::tools` calls back into `crate::mcp::{execute_tool, agent_tool_view, tool_access, Consumer,
   Access, ToolError, ToolResult}` (re-exported from `mcp` for exactly this). Same-crate cycle, intended (D49: one

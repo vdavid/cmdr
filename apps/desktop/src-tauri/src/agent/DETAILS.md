@@ -34,6 +34,9 @@ Construction plan: [`docs/specs/ask-cmdr-plan.md`](../../../../../docs/specs/ask
 
 ## The agent can propose; only the user can approve
 
+`RenameProposalStore` is managed with the agent runtime. It holds short-lived immutable rename proposals by opaque id;
+the tool can stage one, but no agent path can approve or apply it.
+
 **The invariant.** The agent can propose. Only the user can approve. Approval originates in the frontend as a user
 action. There is no tool, and never will be a tool, that approves a proposal. Without that, `Propose` is `Write` with
 extra steps.

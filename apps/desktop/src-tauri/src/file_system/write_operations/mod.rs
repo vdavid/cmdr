@@ -108,7 +108,8 @@ pub(crate) use create::{create_directory_managed, create_file_managed};
 #[cfg(target_os = "macos")]
 pub(crate) use paste_clipboard::write_payload_to_dir;
 pub(crate) use rename::{
-    RenameValidityResult, check_rename_permission_sync, check_rename_validity_impl, rename_managed,
+    BulkRenameFingerprint, BulkRenameRow, RenameValidityResult, check_rename_permission_sync,
+    check_rename_validity_impl, rename_managed, start_bulk_rename,
 };
 // External busy-volume seam for the drag-out fulfillment service (see
 // `state.rs` § "External busy-volume seam"). `pub(crate)` so only in-crate

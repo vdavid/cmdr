@@ -40,6 +40,10 @@ stays simple:
 - `modelChanged` → insert a `{ kind: 'modelChange' }` timeline line BEFORE the current user bubble (the switch happened
   between the turns; the backend already persisted the event row).
 
+Every terminal path uses the same assistant finalizer. It clears thinking/stalled state and removes tool rows that never
+received `toolCallFinished`, while retaining completed tool history. This also covers local cancellation, the
+progress-watchdog timeout, and a send invocation that rejects before stream events can report a typed failure.
+
 **Model-change events, live path.** `settings-applier.ts` calls the trigger's `noteModelSettingChanged()` on the four
 model-affecting settings (`ai.provider` / `ai.cloudProvider` / `ai.cloudProviderConfigs` / `askCmdr.interactiveModel`),
 which debounces 1 s (outlasting the settings store's 500 ms disk flush, which the backend re-reads, and the model text
@@ -139,7 +143,18 @@ Opening the rail grows the MAIN window by the rail's width instead of squeezing 
   rail mounts on open); `markRailFocused` on composer focus; Escape → `returnFocusToPane`
   (`.dual-pane-explorer.focus()`).
 
+## Rename review apply
+
+`BulkRenameReviewDialog` owns the user's allow/deny decisions. Its Apply action sends only the staged proposal id and
+the currently allowed row ids to `apply_bulk_rename`; it cannot supply a path, destination name, fingerprint, or
+approval from the model. The backend requires that exact subset to have passed the latest preflight, rechecks it if the
+client is stale, consumes the proposal once, then returns a queued operation id. The dialog closes only after that
+operation has started.
+
 ## The E2E fake-LLM path
+
+The stream also carries a display-only `proposalReady` rename-plan snapshot. The review dialog owns it in the next
+feature slice; until then the rail deliberately does not treat the event as approval or a filesystem action.
 
 The app has no real AI provider under E2E, so `commands/agent.rs::resolve_agent_llm` routes the send through a scripted
 `FakeAgentLlm` when `CMDR_E2E_ASK_CMDR_FAKE=1` (set for the whole E2E run by the `desktop-svelte-e2e-playwright` check).

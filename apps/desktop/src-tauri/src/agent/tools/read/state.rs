@@ -22,6 +22,10 @@ use crate::mcp::{ToolError, ToolResult};
 pub struct PaneSnapshot {
     /// The pane's current folder.
     pub path: String,
+    /// The backing volume for this pane. Rename proposals use this exact id to keep
+    /// image-facts reads and the staged plan on the focused volume.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub volume_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub volume_name: Option<String>,
     /// The item under the cursor, or `None` when the pane is empty or the cursor
@@ -30,6 +34,11 @@ pub struct PaneSnapshot {
     pub cursor_item: Option<String>,
     /// How many items are selected right now.
     pub selected_count: usize,
+    /// The exact selected entries when every selected index is in the cached pane
+    /// window. `None` means a selected row is outside that window, so a tool must
+    /// refuse a scoped proposal instead of silently dropping that row.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub selected_entries: Option<Vec<SelectedEntrySnapshot>>,
     /// Total items in the folder (may exceed the loaded window on a huge dir).
     pub total_files: usize,
     pub view_mode: String,
@@ -38,6 +47,16 @@ pub struct PaneSnapshot {
     #[serde(skip_serializing_if = "String::is_empty")]
     pub sort_order: String,
     pub show_hidden: bool,
+}
+
+/// The subset of a selected pane entry that a proposal needs. It intentionally
+/// mirrors cached pane state and never probes the live filesystem.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SelectedEntrySnapshot {
+    pub name: String,
+    pub path: String,
+    pub is_directory: bool,
 }
 
 /// The whole app-state snapshot.
@@ -54,11 +73,24 @@ pub struct AppStateSnapshot {
 /// Flatten one pane's live state. Pure, so cursor/selection reporting is testable
 /// without an app handle.
 pub(crate) fn pane_snapshot(state: &PaneState) -> PaneSnapshot {
+    let selected_entries = state
+        .selected_indices
+        .iter()
+        .map(|&index| {
+            state.files.get(index).map(|entry| SelectedEntrySnapshot {
+                name: entry.name.clone(),
+                path: entry.path.clone(),
+                is_directory: entry.is_directory,
+            })
+        })
+        .collect::<Option<Vec<_>>>();
     PaneSnapshot {
         path: state.path.clone(),
+        volume_id: state.volume_id.clone(),
         volume_name: state.volume_name.clone(),
         cursor_item: state.files.get(state.cursor_index).map(|f| f.name.clone()),
         selected_count: state.selected_indices.len(),
+        selected_entries,
         total_files: state.total_files,
         view_mode: state.view_mode.clone(),
         sort_field: state.sort_field.clone(),
@@ -136,6 +168,22 @@ mod tests {
         assert_eq!(snap.selected_count, 2);
         assert_eq!(snap.path, "/Users/x/Documents");
         assert_eq!(snap.volume_name.as_deref(), Some("Macintosh HD"));
+        assert!(snap.selected_entries.is_some());
+    }
+
+    #[test]
+    fn selection_outside_the_cached_window_is_explicitly_unrepresentable() {
+        let state = PaneState {
+            path: "/big".to_string(),
+            files: vec![file("only-loaded")],
+            selected_indices: vec![0, 5_000],
+            total_files: 1_000_000,
+            ..Default::default()
+        };
+
+        let snapshot = pane_snapshot(&state);
+        assert_eq!(snapshot.selected_count, 2);
+        assert_eq!(snapshot.selected_entries, None);
     }
 
     #[test]

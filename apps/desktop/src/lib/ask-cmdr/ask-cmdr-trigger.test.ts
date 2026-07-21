@@ -150,6 +150,26 @@ describe('sendMessage + streaming', () => {
     expect(assistantAt(1).tools[0]).toMatchObject({ running: false, ok: true })
   })
 
+  it('a successful turn retires unfinished activity while keeping completed tool history', () => {
+    sendMessage('inspect this folder')
+    fire({ type: 'assistantStarted' })
+    fire({ type: 'toolCallStarted', callId: 'finished', tool: 'list_dir' })
+    fire({ type: 'toolCallFinished', callId: 'finished', ok: true })
+    fire({ type: 'toolCallStarted', callId: 'unfinished', tool: 'list_volumes' })
+    fire({ type: 'reasoningTick' })
+
+    fire({
+      type: 'done',
+      messageId: 42,
+      seq: 2,
+      stop: 'completed',
+      usage: { promptTokens: 1, completionTokens: 2 },
+    })
+
+    expect(assistantAt(1).tools.map((tool) => tool.callId)).toEqual(['finished'])
+    expect(assistantAt(1)).toMatchObject({ thinking: false, stalled: false, streaming: false })
+  })
+
   it('a typed failure ends streaming and shows an honest notice', () => {
     sendMessage('hi')
     fire({ type: 'assistantStarted' })
@@ -158,6 +178,38 @@ describe('sendMessage + streaming', () => {
     // The empty assistant bubble is dropped; an error item takes its place.
     const last = askCmdrState.messages.at(-1)
     expect(last).toEqual({ kind: 'error', errorKind: 'rateLimited', detail: undefined })
+  })
+
+  it('a typed failure retires unfinished tool activity', () => {
+    sendMessage('inspect this folder')
+    fire({ type: 'assistantStarted' })
+    fire({ type: 'toolCallStarted', callId: 'c1', tool: 'list_dir' })
+    fire({ type: 'textDelta', text: 'I found part of it.' })
+
+    fire({ type: 'failed', kind: 'budgetExhausted', detail: null })
+
+    expect(assistantAt(1).tools).toEqual([])
+    expect(assistantAt(1)).toMatchObject({ thinking: false, streaming: false })
+    expect(askCmdrState.messages.at(-1)).toEqual({
+      kind: 'error',
+      errorKind: 'budgetExhausted',
+      detail: undefined,
+    })
+  })
+
+  it('a rejected send settles the turn as a provider failure', async () => {
+    sendMock.mockRejectedValueOnce(new Error('connection closed'))
+    sendMessage('hello')
+
+    await vi.waitFor(() => {
+      expect(askCmdrState.streaming).toBe(false)
+    })
+
+    expect(askCmdrState.messages.at(-1)).toEqual({
+      kind: 'error',
+      errorKind: 'provider',
+      detail: 'Error: connection closed',
+    })
   })
 
   it("a failure with provider detail keeps the provider's wording for display", () => {
@@ -272,6 +324,38 @@ describe('stopStreaming', () => {
     expect(askCmdrState.streaming).toBe(false)
     expect(assistantAt(1).streaming).toBe(false)
     expect(assistantAt(1).text).toBe('partial')
+  })
+
+  it('removes unfinished tool activity when the user cancels', () => {
+    sendMessage('long one')
+    fire({ type: 'started', conversationId: 3 })
+    fire({ type: 'assistantStarted' })
+    fire({ type: 'textDelta', text: 'partial' })
+    fire({ type: 'toolCallStarted', callId: 'c1', tool: 'list_dir' })
+
+    stopStreaming()
+
+    expect(assistantAt(1).tools).toEqual([])
+    expect(assistantAt(1)).toMatchObject({ thinking: false, streaming: false })
+  })
+
+  it('removes unfinished tool activity when the progress watchdog times out', async () => {
+    vi.useFakeTimers()
+    try {
+      sendMessage('long one')
+      fire({ type: 'started', conversationId: 3 })
+      fire({ type: 'assistantStarted' })
+      fire({ type: 'textDelta', text: 'partial' })
+      fire({ type: 'toolCallStarted', callId: 'c1', tool: 'list_dir' })
+
+      await vi.advanceTimersByTimeAsync(90_000)
+
+      expect(assistantAt(1).tools).toEqual([])
+      expect(assistantAt(1)).toMatchObject({ thinking: false, stalled: false, streaming: false })
+      expect(askCmdrState.messages.at(-1)).toEqual({ kind: 'error', errorKind: 'timeout' })
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 

@@ -187,6 +187,12 @@ describe('CloudProviderSetup', () => {
     mountSetup('custom')
     await settle()
     if (!mounted) throw new Error('not mounted')
+    const keyInput = mounted.target.querySelector<HTMLInputElement>('input[aria-label="API key"]')
+    if (!keyInput) throw new Error('API key input missing')
+    keyInput.value = 'custom-test-key'
+    keyInput.dispatchEvent(new Event('input', { bubbles: true }))
+    await advanceTimers(400)
+    checkAiConnection.mockClear()
     const baseUrlInput = mounted.target.querySelector<HTMLInputElement>('#onboarding-cloud-base-url')
     if (!baseUrlInput) throw new Error('base URL input missing')
     baseUrlInput.value = 'https://example.test/v1'

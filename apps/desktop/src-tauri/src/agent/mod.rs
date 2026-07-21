@@ -75,6 +75,7 @@ pub fn start(app: &AppHandle) {
             app.manage(AgentDb {
                 db_path: db_path.clone(),
             });
+            app.manage(tools::propose::rename::RenameProposalStore::default());
             // Register the chat runtime against the same DB so the IPC command is a
             // thin pass-through (`app.state::<chat::runtime::ChatRuntime>()`).
             chat::runtime::register(app, db_path.clone());

@@ -12,6 +12,7 @@ describe('cloudProviderPresets', () => {
     const ids = cloudProviderPresets.map((p) => p.id)
     expect(ids).toContain('openai')
     expect(ids).toContain('anthropic')
+    expect(ids).toContain('qwen')
     expect(ids).toContain('ollama')
     expect(ids).toContain('custom')
   })
@@ -42,6 +43,14 @@ describe('getCloudProvider', () => {
 
   it('returns undefined for unknown ID', () => {
     expect(getCloudProvider('nonexistent')).toBeUndefined()
+  })
+
+  it('configures Qwen and Custom as API-key-backed providers', () => {
+    expect(getCloudProvider('qwen')).toMatchObject({
+      baseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+      requiresApiKey: true,
+    })
+    expect(getCloudProvider('custom')?.requiresApiKey).toBe(true)
   })
 })
 

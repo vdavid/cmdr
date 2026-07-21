@@ -9,7 +9,8 @@ Depth and rationale for the app orchestrator. `CLAUDE.md` holds the must-knows; 
 - **`+page.svelte`**: app shell: mounts `DualPaneExplorer`, owns top-level dialog visibility (`$state`) and the
   `explorerRef` handle, owns the keydown / context-menu handlers and onboarding / licensing gating, and orchestrates the
   extracted listener setup (`setupTauriEventListeners` calls into `listener-setup.ts`, then wires MCP + the event
-  bridges).
+  bridges). It also mounts Ask Cmdr's bulk-rename review beside the rail; the rail owns its user decisions and proposal
+  lifetime.
 - **`listener-setup.ts`**: the menu, MCP-dialog, and window-focus Tauri listener wiring, extracted out of the component
   to keep it focused on reactive `$state`. A plain `.ts` (no runes), so it can't hold `$state` directly: state crosses
   the boundary through `ListenerSetupContext` (getter functions for reads, setter callbacks for writes), which keeps the

@@ -16,6 +16,7 @@ use serde_json::json;
 use tauri::{AppHandle, Runtime};
 
 use crate::agent::llm::types::{AgentToolCall, AgentToolResult, ToolId};
+use crate::agent::tools::propose::rename::{RenameDispatchOutcome, RenameProposalSnapshot};
 use crate::mcp::{Access, Consumer, execute_tool, tool_access};
 
 /// The access axis of the gate: whether a registry access class may dispatch through the
@@ -40,14 +41,12 @@ pub fn refuse_unavailable(call_id: &str, tool: &ToolId) -> Option<AgentToolResul
     if dispatchable {
         return None;
     }
-    // The refusal reason says "read-only" because zero `Propose` tools are authored today, so
-    // it's accurate. The first `Propose` tool has to reword it (the agent can ask, not act).
     Some(AgentToolResult {
         call_id: call_id.to_string(),
         content: json!({
             "available": false,
             "requested": tool.as_wire_name(),
-            "reason": "That tool isn't available. Ask Cmdr is read-only: it can look at your files, their metadata, and the app state, but it can't act, change anything, or read file contents.",
+            "reason": "That tool isn't available. Ask Cmdr can prepare a rename plan for you to review, but it can't change anything, approve a proposal, or read file contents.",
         }),
         elided: false,
     })
@@ -58,11 +57,24 @@ pub fn refuse_unavailable(call_id: &str, tool: &ToolId) -> Option<AgentToolResul
 /// [`Consumer::Agent`] identity (which itself refuses any name outside the agent
 /// view — a second, structural backstop). A handler error comes back as a typed,
 /// non-fatal tool-result the model can relay.
-pub async fn dispatch<R: Runtime>(app: &AppHandle<R>, call: &AgentToolCall) -> AgentToolResult {
+pub struct DispatchOutcome {
+    pub result: AgentToolResult,
+    pub proposal: Option<RenameProposalSnapshot>,
+}
+
+pub async fn dispatch<R: Runtime>(app: &AppHandle<R>, call: &AgentToolCall) -> DispatchOutcome {
     if let Some(refusal) = refuse_unavailable(&call.call_id, &call.tool) {
-        return refusal;
+        return DispatchOutcome {
+            result: refusal,
+            proposal: None,
+        };
     }
-    match execute_tool(app, Consumer::Agent, call.tool.as_wire_name(), &call.arguments).await {
+    if call.tool == ToolId::ProposeRenamePlan {
+        let RenameDispatchOutcome { result, proposal } =
+            crate::agent::tools::propose::rename::dispatch(app, &call.call_id, &call.arguments).await;
+        return DispatchOutcome { result, proposal };
+    }
+    let result = match execute_tool(app, Consumer::Agent, call.tool.as_wire_name(), &call.arguments).await {
         Ok(content) => AgentToolResult {
             call_id: call.call_id.clone(),
             content,
@@ -73,7 +85,8 @@ pub async fn dispatch<R: Runtime>(app: &AppHandle<R>, call: &AgentToolCall) -> A
             content: json!({ "problem": err.message }),
             elided: false,
         },
-    }
+    };
+    DispatchOutcome { result, proposal: None }
 }
 
 #[cfg(test)]
