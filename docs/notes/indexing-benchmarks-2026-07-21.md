@@ -152,11 +152,12 @@ other end: four unlucky reads condemning 6,828 directories, having barely cleare
 Load is NOT the main cause, contrary to the first reading of this data: ordinary reads averaged 1.04 ms against 0.56 ms
 idle, only 1.86x slower.
 
-**Fix direction: make the rule a FRACTION, not a total** — refuse when a high proportion of a subtree's reads are
-pathological. That is size-invariant by construction (the phone trips at 20% at any size; the repo at 0.1% never does).
-Keep the sample floor so a 3-directory subtree cannot hit 33% on one bad read, and add a minimum wasted-time floor so a
-subtree that has only cost 200 ms is never refused. Change the SHAPE of the rule, not the constant: this is the third
-tuning attempt.
+**Acted on: the rule is now a FRACTION, not a total.** A subtree is refused when more than 5% of the reads charged to it
+were pathological, over at least 10 slow reads, having wasted more than 5 s. That is size-invariant by construction (the
+phone trips at 19.8% at any size; the repo at 0.10% never does), and it gets all five of the subtrees above right with
+~4× of margin on each side. The floors are measured too: the SDK's four slow reads are what proved a floor of three too
+low. Full rationale, arithmetic per subtree, and the residual prefix/latch risk:
+`apps/desktop/src-tauri/src/indexing/DETAILS.md` § "The reconcile cost budget".
 
 ## Separate finding: eight reads take exactly 5.000 s
 

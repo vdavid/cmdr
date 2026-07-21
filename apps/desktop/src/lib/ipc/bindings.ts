@@ -4503,8 +4503,9 @@ export type IndexDebugStatusResponse = {
   // Directories background verification diffed only partially (guard tooth 2).
   verifyTruncatedDirs: number
   /**
-   *  Subtrees the reconcile walk stopped descending into because they spent
-   *  their slow-read budget (`local_reconcile/cost_budget.rs`).
+   *  Subtrees the reconcile walk stopped descending into because too high a
+   *  share of their reads was pathologically slow
+   *  (`local_reconcile/cost_budget.rs`).
    */
   reconcileBudgetSubtrees: number
   // Directories the reconcile walk left undescended inside those subtrees.

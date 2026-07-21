@@ -1,5 +1,6 @@
-//! The cost backstop for the serial local reconcile walk: a slow-read budget per
-//! subtree, so one pathological corner of a volume can't eat the whole walk.
+//! The cost backstop for the serial local reconcile walk: a cap on the SHARE of a
+//! subtree's reads that may be pathologically slow, so one pathological corner of a
+//! volume can't eat the whole walk.
 //!
 //! Pure and threshold-injected (the `event_loop/verify_guard.rs` /
 //! `reconciler/rescan_route.rs` shape), so the boundary is pinned in the ms-scale
@@ -12,24 +13,34 @@
 //! pathological one both spend a lot of wall clock; only the pathological one
 //! spends it per unit of work. So each read gets an allowance proportional to what
 //! it returned ([`SLOW_READ_FIXED_ALLOWANCE`] plus
-//! [`SLOW_READ_PER_ENTRY_ALLOWANCE`] per entry), and only the time of reads that
-//! blow past their allowance is charged to a budget. A subtree of a million fast
-//! reads charges nothing however large it grows.
+//! [`SLOW_READ_PER_ENTRY_ALLOWANCE`] per entry), and a read that blows past its
+//! allowance is *slow*. That per-read verdict is the whole measurement; the rule
+//! below is a statistic over it.
 //!
 //! ## What it charges, and to whom
 //!
-//! Every SLOW directory read is charged to ONE accumulator: the walked directory's
-//! ancestor at [`ANCHOR_DEPTH`] below the volume root (its *anchor*). Once an
-//! anchor has spent more than the budget across at least [`MIN_SLOW_READS`] slow
-//! reads, the walk stops descending into that subtree and carries on everywhere
-//! else. Nothing above the anchor depth carries a budget, so the top of the tree is
-//! always walked.
+//! Every directory read is charged to ONE accumulator: the walked directory's
+//! ancestor at [`ANCHOR_DEPTH`] below the volume root (its *anchor*). Nothing above
+//! the anchor depth carries a budget, so the top of the tree is always walked.
 //!
-//! Charging each read up its WHOLE ancestor chain instead would decide the same
-//! thing more expensively: a node's accumulated cost is always ≥ any
-//! descendant's, so with one flat budget the shallowest budgeted ancestor always
-//! trips first, and pruning there prunes everything below it anyway. One
-//! accumulator per anchor is that same verdict at O(1) per read.
+//! ## The verdict is a FRACTION, never a total
+//!
+//! An anchor is refused when a high PROPORTION of its reads are pathological
+//! ([`MAX_SLOW_READ_FRACTION`]), not when a total is exceeded. A total is the wrong
+//! shape: the opportunity to accumulate one scales with subtree SIZE, so a big
+//! healthy tree reaches any total eventually while a small pathological one may
+//! never reach it. A fraction is size-invariant by construction. Two floors keep it
+//! honest: [`MIN_SLOW_READS`] (a fraction over a handful of reads is noise) and
+//! [`MIN_SLOW_TIME_WASTED`] (refusing costs a subtree's freshness, so it has to buy
+//! back real time).
+//!
+//! ❌ Don't give every directory its own accumulator by charging each read up its
+//! whole ancestor chain. A fraction needs a SAMPLE, and most directories are a
+//! handful of reads; per-directory fractions would be noise that the floors would
+//! then have to suppress one by one, and the unit refused would become "whichever
+//! depth tripped first", which is neither predictable nor explainable. One
+//! accumulator at a fixed depth gives a sample worth taking a fraction over, a
+//! refusal unit that is a property of the subtree alone, and O(1) work per read.
 //!
 //! ❌ Skipping means "don't descend", NEVER "listed and found nothing". See
 //! `indexing/DETAILS.md` § "The reconcile cost budget" for the two data-safety
@@ -63,33 +74,46 @@ pub(super) const SLOW_READ_FIXED_ALLOWANCE: Duration = Duration::from_millis(20)
 /// both a 2–5× margin while staying far under the pathological case.
 pub(super) const SLOW_READ_PER_ENTRY_ALLOWANCE: Duration = Duration::from_micros(100);
 
-/// Wall-clock time in SLOW reads one anchor subtree may spend before the walk
-/// stops descending into it. Fast reads never count towards it.
+/// The share of an anchor subtree's reads that may be pathological before the walk
+/// stops descending into it. THE rule; the two floors below only decide when it is
+/// allowed to speak.
 ///
-/// **Provisional.** It rests on one measured reconcile of one boot volume (see the
-/// benchmark note linked above): the whole 477 s walk spent 40.9 s in File Provider
-/// reads in total, so 10 s of *pathological* time inside ONE anchor subtree is
-/// already a large share of the walk's worst quarter. Ordinary subtrees never
-/// approach it: at 20 ms a read, a healthy subtree would need 500 reads that each
-/// blew their allowance.
-///
-/// The activation counters (`reconcileBudgetSubtrees` /
-/// `reconcileBudgetSkippedDirs` on the debug surface) are the instrument for
-/// retuning it: if real machines trip subtrees that should have been walked, this
-/// number moves, not the logic.
-pub(super) const SUBTREE_SLOW_READ_BUDGET: Duration = Duration::from_secs(10);
+/// **Measured, with two orders of magnitude to spare.** The 2026-07-21 loaded
+/// reconcile (see the benchmark note linked above) put every genuinely pathological
+/// subtree at ~20% slow reads (a Copilot cache at 22.6%, an Android phone at 19.8%)
+/// and every healthy one at or below 1% (a pnpm store at 0.93%, David's main repo
+/// at 0.10%, an Xcode SDK at 0.06%). 5% is the geometric middle of that gap: ~4×
+/// clear of the noisiest healthy subtree and ~4× under the mildest pathological
+/// one, so neither side needs the constant to be exactly right.
+pub(super) const MAX_SLOW_READ_FRACTION: f64 = 0.05;
 
-/// How many slow reads an anchor subtree must have seen before it can be refused
-/// at all.
+/// How many slow reads an anchor subtree must have seen before a fraction over them
+/// counts as evidence.
 ///
-/// **Provisional**, and a judgement rather than a measurement: one or two
-/// pathological directories are a local problem, not a verdict on their whole
-/// subtree, and refusing a subtree costs every innocent directory under it. Three
-/// says "this is systemic, not a hiccup" while still tripping the measured phone
-/// (thousands of slow reads) many times over. It also makes the floor independent
-/// of `scanner::LOCAL_LIST_TIMEOUT`: without it, two hung reads alone could condemn
-/// a subtree.
-pub(super) const MIN_SLOW_READS: u32 = 3;
+/// **Measured.** The same walk refused `CommandLineTools/SDKs/MacOSX13.3.sdk` over
+/// FOUR slow reads in 6,828 directories, so a floor of three was demonstrably too
+/// low. Ten sits above every measured false positive (four) and below every
+/// measured true one (14 for the Copilot cache, 18 for the phone). It doubles as
+/// the floor on the sample itself, since a slow read is a read: an anchor with
+/// fewer than ten reads in it can never be refused, so a three-directory subtree
+/// cannot hit 33% on one bad read. A separate floor on TOTAL reads would only ever
+/// delay the verdict on a small pathological subtree — the phone is 91 directories,
+/// so any total-read floor big enough to matter would exempt it entirely.
+pub(super) const MIN_SLOW_READS: u32 = 10;
+
+/// How much time an anchor subtree must have LOST to slow reads before it is worth
+/// refusing at all. Fast reads never count towards it.
+///
+/// **A judgement anchored on a measurement.** Refusing a subtree costs every
+/// directory under it its freshness, so the trip should pay for itself. Five
+/// seconds is more than the largest legitimate single read ever measured on this
+/// machine (3.9 s for the 200,000-entry fixture), so no amount of honest work can
+/// reach it, while a subtree running at the pathological ~20% has wasted enough for
+/// the projected remainder to be worth stopping. It is not the discriminator —
+/// every one of the five measured subtrees, right and wrong, was past 10 s — so it
+/// is set low enough to let a small pathological subtree trip before it has walked
+/// itself to the end.
+pub(super) const MIN_SLOW_TIME_WASTED: Duration = Duration::from_secs(5);
 
 /// Depth below the volume root at which budget anchors sit.
 ///
@@ -122,12 +146,14 @@ pub(super) enum BudgetVerdict {
     Skip,
 }
 
-/// One subtree's shared slow-read accumulator.
+/// One subtree's shared read accumulator.
 struct Anchor {
     path: PathBuf,
     /// Time spent in reads that blew their allowance. Fast reads add nothing.
     slow_spent: Cell<Duration>,
     slow_reads: Cell<u32>,
+    /// Every read charged to this subtree, slow or not: the denominator.
+    total_reads: Cell<u32>,
     /// Set the first time the subtree trips, so one trip is reported once however
     /// many directories it later refuses.
     reported: Cell<bool>,
@@ -147,43 +173,35 @@ pub(super) struct TrippedSubtree {
     pub(super) path: PathBuf,
     pub(super) slow_spent: Duration,
     pub(super) slow_reads: u32,
+    pub(super) total_reads: u32,
 }
 
-/// The budget policy: where anchors sit, what makes a read slow, and how much slow
-/// reading one subtree may pay for.
+/// The budget policy: where anchors sit, what makes a read slow, and what share of
+/// a subtree's reads may be slow before the walk gives up on it.
+///
+/// Every field is injected rather than read from the constants, so the walk tests
+/// drive a millisecond-scale policy and retuning never touches logic. Tests build
+/// one as `CostBudget { anchor_depth: 1, ..CostBudget::production() }`, which keeps
+/// each test's deviation from the shipped policy visible in one line.
 pub(super) struct CostBudget {
-    anchor_depth: usize,
-    fixed_allowance: Duration,
-    per_entry_allowance: Duration,
-    per_subtree: Duration,
-    min_slow_reads: u32,
+    pub(super) anchor_depth: usize,
+    pub(super) fixed_allowance: Duration,
+    pub(super) per_entry_allowance: Duration,
+    pub(super) max_slow_fraction: f64,
+    pub(super) min_slow_reads: u32,
+    pub(super) min_slow_time_wasted: Duration,
 }
 
 impl CostBudget {
     /// The shipped policy, from the constants above.
     pub(super) fn production() -> Self {
-        Self::new(
-            ANCHOR_DEPTH,
-            SLOW_READ_FIXED_ALLOWANCE,
-            SLOW_READ_PER_ENTRY_ALLOWANCE,
-            SUBTREE_SLOW_READ_BUDGET,
-            MIN_SLOW_READS,
-        )
-    }
-
-    pub(super) fn new(
-        anchor_depth: usize,
-        fixed_allowance: Duration,
-        per_entry_allowance: Duration,
-        per_subtree: Duration,
-        min_slow_reads: u32,
-    ) -> Self {
         Self {
-            anchor_depth,
-            fixed_allowance,
-            per_entry_allowance,
-            per_subtree,
-            min_slow_reads,
+            anchor_depth: ANCHOR_DEPTH,
+            fixed_allowance: SLOW_READ_FIXED_ALLOWANCE,
+            per_entry_allowance: SLOW_READ_PER_ENTRY_ALLOWANCE,
+            max_slow_fraction: MAX_SLOW_READ_FRACTION,
+            min_slow_reads: MIN_SLOW_READS,
+            min_slow_time_wasted: MIN_SLOW_TIME_WASTED,
         }
     }
 
@@ -204,6 +222,7 @@ impl CostBudget {
                 path: path.to_path_buf(),
                 slow_spent: Cell::new(Duration::ZERO),
                 slow_reads: Cell::new(0),
+                total_reads: Cell::new(0),
                 reported: Cell::new(false),
             }))
         } else {
@@ -221,11 +240,13 @@ impl CostBudget {
         }
     }
 
-    /// Charge one directory read to this directory's subtree. A read that stayed
-    /// within its allowance costs the subtree nothing. Returns the subtree on the
-    /// read that pushes it over, and only on that read.
+    /// Charge one directory read to this directory's subtree. Every read counts
+    /// towards the denominator; only a read that blew its allowance costs the
+    /// subtree time. Returns the subtree on the read that pushes it over, and only
+    /// on that read.
     pub(super) fn charge(&self, at: &Anchorage, read: ReadCost) -> Option<TrippedSubtree> {
         let anchor = at.anchor.as_ref()?;
+        anchor.total_reads.set(anchor.total_reads.get().saturating_add(1));
         if !self.is_slow(&read) {
             return None;
         }
@@ -233,6 +254,9 @@ impl CostBudget {
             .slow_spent
             .set(anchor.slow_spent.get().saturating_add(read.duration));
         anchor.slow_reads.set(anchor.slow_reads.get().saturating_add(1));
+        // Only a slow read can push a subtree over: it is the only one that moves
+        // the numerator or the clock. A fast read can only ever dilute the
+        // fraction, so re-evaluating after one would never find a new verdict.
         if !self.over(anchor) || anchor.reported.get() {
             return None;
         }
@@ -241,6 +265,7 @@ impl CostBudget {
             path: anchor.path.clone(),
             slow_spent: anchor.slow_spent.get(),
             slow_reads: anchor.slow_reads.get(),
+            total_reads: anchor.total_reads.get(),
         })
     }
 
@@ -256,11 +281,18 @@ impl CostBudget {
             .saturating_add(self.per_entry_allowance.saturating_mul(entries))
     }
 
-    /// A subtree that has spent EXACTLY its budget has honoured it and finishes;
-    /// only spending more than it stops the descent. The sample floor is a
-    /// precondition, not a tiebreak: too few slow reads is no verdict at all.
+    /// The verdict, evaluated on everything the subtree has shown so far: a high
+    /// enough SHARE of its reads is pathological, over a big enough sample, having
+    /// wasted enough time to be worth acting on. All three, or the walk carries on.
+    ///
+    /// Both floors are preconditions, not tiebreaks. A subtree sitting EXACTLY on a
+    /// floor (or exactly on the fraction) has honoured it and keeps being walked;
+    /// only passing one counts.
     fn over(&self, anchor: &Anchor) -> bool {
-        anchor.slow_reads.get() >= self.min_slow_reads && anchor.slow_spent.get() > self.per_subtree
+        let slow_reads = anchor.slow_reads.get();
+        slow_reads >= self.min_slow_reads
+            && anchor.slow_spent.get() > self.min_slow_time_wasted
+            && f64::from(slow_reads) > self.max_slow_fraction * f64::from(anchor.total_reads.get())
     }
 }
 
@@ -268,16 +300,137 @@ impl CostBudget {
 mod tests {
     use super::*;
 
-    /// Anchors one level down. A read is slow past 10 ms + 1 ms per entry, and a
-    /// subtree may spend 100 ms across at least two slow reads.
+    /// A millisecond-scale policy for the boundary tests: anchors one level down, a
+    /// read is slow past 10 ms + 1 ms per entry, and a subtree is refused once more
+    /// than half its reads are slow, over at least two of them, having wasted more
+    /// than 100 ms.
     fn budget() -> CostBudget {
-        CostBudget::new(
-            1,
-            Duration::from_millis(10),
-            Duration::from_millis(1),
-            Duration::from_millis(100),
-            2,
-        )
+        CostBudget {
+            anchor_depth: 1,
+            fixed_allowance: Duration::from_millis(10),
+            per_entry_allowance: Duration::from_millis(1),
+            max_slow_fraction: 0.5,
+            min_slow_reads: 2,
+            min_slow_time_wasted: Duration::from_millis(100),
+        }
+    }
+
+    /// The SHIPPED policy, moved to anchor depth 1 so a test can drive it with a
+    /// two-segment path. Every threshold is the production one, so the
+    /// measured-subtree tests below are the real arithmetic, not a scale model.
+    fn production_at_depth_1() -> CostBudget {
+        CostBudget {
+            anchor_depth: 1,
+            ..CostBudget::production()
+        }
+    }
+
+    /// An ordinary healthy read: 1 ms for ~10 entries, against a ~21 ms allowance.
+    fn ordinary_read() -> ReadCost {
+        read(1, 10)
+    }
+
+    /// A pathological read: `secs` seconds for three entries, hundreds of times
+    /// its allowance. The shape a File Provider mount produces.
+    fn pathological_read(secs: u64) -> ReadCost {
+        ReadCost {
+            duration: Duration::from_secs(secs),
+            entries: 3,
+        }
+    }
+
+    /// Charge `total` reads to `at`, of which `slow` are pathological, spread
+    /// evenly through the sequence in the order the walk would meet them.
+    fn charge_mixed(b: &CostBudget, at: &Anchorage, total: u32, slow: u32, slow_secs: u64) {
+        let every = total / slow.max(1);
+        for i in 0..total {
+            if i % every == 0 && i / every < slow {
+                b.charge(at, pathological_read(slow_secs));
+            } else {
+                b.charge(at, ordinary_read());
+            }
+        }
+    }
+
+    /// `~/projects-git/vdavid/cmdr`, measured at 101 slow reads in 105,441
+    /// directories (0.10%). It must stay walked at any size: a rule that refuses
+    /// it stops refreshing the folder David works in all day. This is the case
+    /// two absolute-total budgets got wrong.
+    #[test]
+    fn a_subtree_with_a_low_slow_read_fraction_is_never_refused_however_large_it_grows() {
+        let b = production_at_depth_1();
+        let chain = descend(&b, &["cmdr", "deep"]);
+        charge_mixed(&b, &chain[1], 105_441, 101, 3);
+        assert_eq!(
+            b.verdict(&chain[2]),
+            BudgetVerdict::Walk,
+            "0.10% slow reads is a healthy subtree, however much time 101 slow reads add up to"
+        );
+    }
+
+    /// `~/Library/CloudStorage/MacDroid-googlePixel9ProXL`, measured at 18 slow
+    /// reads in 91 directories (19.8%). Small, and genuinely pathological: size
+    /// must not buy it a reprieve.
+    #[test]
+    fn a_small_subtree_with_a_high_slow_read_fraction_is_refused() {
+        let b = production_at_depth_1();
+        let chain = descend(&b, &["phone", "deep"]);
+        charge_mixed(&b, &chain[1], 91, 18, 2);
+        assert_eq!(
+            b.verdict(&chain[2]),
+            BudgetVerdict::Skip,
+            "one read in five is pathological — that is a verdict on the subtree, not a hiccup"
+        );
+    }
+
+    /// `CommandLineTools/SDKs/MacOSX13.3.sdk`, measured at 4 slow reads in 6,828
+    /// directories (0.06%). Those four wasted 20 s between them, and refusing
+    /// 6,828 directories over four unlucky reads is the sample floor's whole job.
+    #[test]
+    fn a_handful_of_slow_reads_in_a_huge_healthy_subtree_never_trips_it() {
+        let b = production_at_depth_1();
+        let chain = descend(&b, &["sdk", "deep"]);
+        charge_mixed(&b, &chain[1], 6_828, 4, 5);
+        assert_eq!(
+            b.verdict(&chain[2]),
+            BudgetVerdict::Walk,
+            "four reads are not a sample, however much they cost"
+        );
+    }
+
+    /// A three-directory subtree whose every read is pathological is at 100%, and
+    /// still must not be refused: a fraction over three reads is noise, not
+    /// evidence.
+    #[test]
+    fn a_fraction_over_too_small_a_sample_is_never_a_verdict() {
+        let b = production_at_depth_1();
+        let chain = descend(&b, &["tiny", "deep"]);
+        for _ in 0..3 {
+            b.charge(&chain[1], pathological_read(15));
+        }
+        assert_eq!(
+            b.verdict(&chain[2]),
+            BudgetVerdict::Walk,
+            "100% of three reads is under the sample floor"
+        );
+    }
+
+    /// A subtree can be pathological by proportion and still not be worth
+    /// refusing: refusing costs a whole subtree's freshness, so it has to buy
+    /// back real time.
+    #[test]
+    fn a_high_fraction_that_has_wasted_little_time_is_not_refused() {
+        let b = production_at_depth_1();
+        let chain = descend(&b, &["twitchy", "deep"]);
+        for _ in 0..20 {
+            // 100 ms for three entries: slow, but 20 of them waste only 2 s.
+            b.charge(&chain[1], read(100, 3));
+        }
+        assert_eq!(
+            b.verdict(&chain[2]),
+            BudgetVerdict::Walk,
+            "2 s of waste does not pay for a subtree going stale"
+        );
     }
 
     /// A read that took `ms` and returned `entries` entries.
@@ -343,13 +496,10 @@ mod tests {
     /// directory is a local problem, not a verdict on everything around it.
     #[test]
     fn too_few_slow_reads_never_trip_the_budget() {
-        let b = CostBudget::new(
-            1,
-            Duration::from_millis(10),
-            Duration::from_millis(1),
-            Duration::from_millis(100),
-            3,
-        );
+        let b = CostBudget {
+            min_slow_reads: 3,
+            ..budget()
+        };
         let chain = descend(&b, &["one-dead-dir", "deep"]);
         assert!(b.charge(&chain[1], read(15_000, 0)).is_none());
         assert!(b.charge(&chain[1], read(15_000, 0)).is_none());
@@ -401,13 +551,11 @@ mod tests {
 
     #[test]
     fn everything_above_the_anchor_depth_is_always_walked() {
-        let b = CostBudget::new(
-            2,
-            Duration::from_millis(10),
-            Duration::from_millis(1),
-            Duration::from_millis(100),
-            1,
-        );
+        let b = CostBudget {
+            anchor_depth: 2,
+            min_slow_reads: 1,
+            ..budget()
+        };
         let chain = descend(&b, &["a", "b"]);
         // Charging the root and the depth-1 dir is a no-op: they carry no anchor.
         assert!(b.charge(&chain[0], read(60_000, 0)).is_none());
@@ -432,38 +580,50 @@ mod tests {
     fn a_trip_is_reported_once_with_the_subtree_and_what_it_spent() {
         let b = budget();
         let chain = descend(&b, &["pricey", "deep"]);
+        assert!(b.charge(&chain[1], read(1, 5)).is_none(), "a fast read costs nothing");
         assert!(b.charge(&chain[1], read(60, 0)).is_none());
         let tripped = b
             .charge(&chain[2], read(60, 0))
             .expect("the read that crosses the budget reports the subtree");
         assert_eq!(tripped.path, PathBuf::from("/vol/pricey"));
-        assert_eq!(tripped.slow_spent, Duration::from_millis(120));
+        assert_eq!(
+            tripped.slow_spent,
+            Duration::from_millis(120),
+            "only the slow reads' time is on the ledger"
+        );
         assert_eq!(tripped.slow_reads, 2);
+        assert_eq!(tripped.total_reads, 3, "the fast read is in the denominator");
         assert!(
             b.charge(&chain[2], read(60, 0)).is_none(),
             "later reads in an already-tripped subtree report nothing"
         );
     }
 
-    /// Fast reads inside an otherwise pathological subtree don't hurry the trip:
-    /// the budget only ever counts the time the subtree actually wasted.
+    /// The heart of the fraction rule: the same three pathological reads condemn a
+    /// subtree that is nothing else, and are harmless in one that is mostly
+    /// healthy. Under an absolute total the 10,000 fast reads were irrelevant;
+    /// here they are what saves the subtree, and no amount of growth can hurt it.
     #[test]
-    fn fast_reads_never_count_towards_the_budget() {
+    fn fast_reads_dilute_the_fraction_that_slow_ones_build() {
         let b = budget();
-        let chain = descend(&b, &["mixed", "deep"]);
+        let mixed = descend(&b, &["mixed", "deep"]);
+        let lonely = descend(&b, &["lonely", "deep"]);
         for _ in 0..10_000 {
-            b.charge(&chain[1], read(1, 5));
+            b.charge(&mixed[1], read(1, 5));
         }
-        assert_eq!(b.verdict(&chain[2]), BudgetVerdict::Walk);
-        let tripped = {
-            b.charge(&chain[1], read(60, 0));
-            b.charge(&chain[1], read(60, 0))
-                .expect("two slow reads blow the budget")
-        };
+        for _ in 0..3 {
+            b.charge(&mixed[1], read(60, 0));
+            b.charge(&lonely[1], read(60, 0));
+        }
         assert_eq!(
-            tripped.slow_spent,
-            Duration::from_millis(120),
-            "only the slow reads' time is on the ledger"
+            b.verdict(&mixed[2]),
+            BudgetVerdict::Walk,
+            "three slow reads in 10,003 is a hiccup, not a pathological subtree"
+        );
+        assert_eq!(
+            b.verdict(&lonely[2]),
+            BudgetVerdict::Skip,
+            "the very same three reads, with nothing healthy around them, are a verdict"
         );
     }
 }

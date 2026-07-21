@@ -22,12 +22,12 @@
 //!
 //! ## Two limits, two different questions
 //!
-//! The reader's timeout bounds ONE read. [`cost_budget`] bounds how much time a
-//! SUBTREE may lose to reads that are slow for the work they did, which is the
-//! limit that matters in practice: the measured 21-minute walk hit one timeout
-//! while spending minutes inside directories that answered successfully, just
-//! slowly. It deliberately does NOT bound total read time, because a big healthy
-//! tree spends that too. Over budget, the walk stops DESCENDING into that subtree
+//! The reader's timeout bounds ONE read. [`cost_budget`] bounds the SHARE of a
+//! subtree's reads that may be slow for the work they did, which is the limit that
+//! matters in practice: the measured 21-minute walk hit one timeout while spending
+//! minutes inside directories that answered successfully, just slowly. It
+//! deliberately bounds no TOTAL, because a big healthy tree runs up any total
+//! eventually. Over its share, the walk stops DESCENDING into that subtree
 //! — it never treats it as listed-and-empty, and never touches its epoch. See
 //! `indexing/DETAILS.md` § "The reconcile cost budget".
 //!
@@ -471,10 +471,12 @@ fn run_local_reconcile(
             budget_subtrees += 1;
             DEBUG_STATS.record_reconcile_budget_trip();
             log::warn!(
-                "local reconcile: subtree {} spent {:.1}s across {} pathologically slow reads (budget exceeded) — not descending further into it, its index rows stay as they are",
+                "local reconcile: subtree {} read {} directories, {} of them pathologically slow ({:.1}% costing {:.1}s) — not descending further into it, its index rows stay as they are",
                 tripped.path.display(),
-                tripped.slow_spent.as_secs_f64(),
+                tripped.total_reads,
                 tripped.slow_reads,
+                100.0 * f64::from(tripped.slow_reads) / f64::from(tripped.total_reads.max(1)),
+                tripped.slow_spent.as_secs_f64(),
             );
         }
         let fs_children = match fs_children {

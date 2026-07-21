@@ -369,8 +369,9 @@ pub struct IndexDebugStatusResponse {
     pub verify_declined_dirs: u64,
     /// Directories background verification diffed only partially (guard tooth 2).
     pub verify_truncated_dirs: u64,
-    /// Subtrees the reconcile walk stopped descending into because they spent
-    /// their slow-read budget (`local_reconcile/cost_budget.rs`).
+    /// Subtrees the reconcile walk stopped descending into because too high a
+    /// share of their reads was pathologically slow
+    /// (`local_reconcile/cost_budget.rs`).
     pub reconcile_budget_subtrees: u64,
     /// Directories the reconcile walk left undescended inside those subtrees.
     pub reconcile_budget_skipped_dirs: u64,

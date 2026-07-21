@@ -62,10 +62,11 @@ Coverage epochs and verification cost:
 
 - **Never write `listed_epoch = 0` for a directory we DID list but chose to skip.** `0` absorbs up the whole chain: one
   skipped dir renders `~` incomplete. Post-replay verification declines oversized dirs, epoch untouched.
-- **The reconcile walk stops descending into a subtree that loses 10 s to SLOW reads** (≥3 reads over a 20 ms +
-  100 µs/entry allowance; anchors depth 5; `local_reconcile/cost_budget.rs`). ❌ Not cumulative time: it refused a big
-  healthy repo. A skip means "never listed": ❌ never hand the diff an empty listing (it reaps the subtree, stripping
-  its bytes from every ancestor) and never stamp an epoch.
+- **The reconcile walk stops descending into a subtree whose reads are >5% SLOW** (≥10 of them, >5 s wasted, over a
+  20 ms + 100 µs/entry allowance; anchors depth 5; `local_reconcile/cost_budget.rs`). ❌ Never a TOTAL: the chance to
+  accumulate one scales with subtree size, so both total-based rules refused a big healthy repo. A skip means "never
+  listed": ❌ never hand the diff an empty listing (it reaps the subtree, stripping its bytes from every ancestor) and
+  never stamp an epoch.
 - **`verify_affected_dirs` guards BOTH phases**: a `LIMIT`-probe before the DB snapshot, and a `read_dir` ITERATION cap
   (not an upsert cap: known children are skipped first).
 
@@ -78,14 +79,14 @@ SMB/MTP + external-drive indexing:
 - **Never write `scan_completed_at` for an empty root** (`EmptyRoot`) or an unlistable one (`RootUnlistable`).
 - **The local walker abandons a read that STOPPED PRODUCING (15 s, via `ReadProgress`), never a merely long one.**
   ❌ Never re-cap total duration: it can't tell a 200,000-entry dir from a dead mount (dropped 661,411 rows from a
-  "complete" scan). Progress-less readers stay capped at 15 s. Subtree give-up after 32 consecutive failed reads;
-  descendants stay honest-stale (`listed_epoch=0`).
+  "complete" scan). Subtree give-up after 32 consecutive failed reads; descendants stay honest-stale
+  (`listed_epoch=0`).
 - **`should_exclude(path, &ExclusionScope)` derives scope from the volume KIND, never `is_volume_root`.** The scope
   carries the volume ROOT, so `<volume root>/{proc,sys,dev}` is skipped on EVERY volume (a phone's `proc` was 35% of one
-  reconcile walk) while `~/projects/x/proc` stays indexed. BOTH conditions required: root POSITION (never the name
-  alone), AND all three of `proc`/`sys`/`dev` as siblings — `dev` is an ordinary folder name, and a Dropbox `dev` would
-  silently vanish from sizes. A File Provider domain root (`com.apple.file-provider-domain-id` xattr) counts as a volume
-  root, but that detection is an OPTIMIZATION: never let it stand in for the cost-budget backstop.
+  reconcile walk) while `~/projects/x/proc` stays indexed. BOTH required: root POSITION (never the name alone), AND all
+  three of `proc`/`sys`/`dev` as siblings — a Dropbox `dev` would otherwise silently vanish from sizes. A File Provider
+  domain root (`com.apple.file-provider-domain-id` xattr) counts as a volume root, but that detection is an
+  OPTIMIZATION: never let it stand in for the cost-budget backstop.
 - **The LOCAL pipeline is mount-relative via `IndexPathSpace`**: strip the mount root ONLY at `resolve_abs`; path sets +
   FE emit stay ABSOLUTE.
 - **Live watch runs with NO pane open** (`apply_smb_change` hooks before the pane early-return). **Freshness has ONE
