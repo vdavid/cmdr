@@ -165,6 +165,18 @@ var AllChecks = []CheckDefinition{
 		Run:               RunMtpDroppingTimeout,
 	},
 	{
+		ID:                "desktop-rust-mtp-no-transport-reset",
+		Nickname:          "mtp-no-transport-reset",
+		DisplayName:       "mtp-no-transport-reset",
+		App:               AppDesktop,
+		Tech:              "🦀 Rust",
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Inputs:            rustInputs,
+		Run:               RunMtpNoTransportReset,
+	},
+	{
 		ID:                "desktop-pluralize-noun",
 		Nickname:          "pluralize-noun",
 		DisplayName:       "pluralize-noun",

@@ -85,6 +85,11 @@ impl MtpConnectionManager {
     /// reopen it with spaced backoff. The sibling of `handle_device_disconnected`
     /// — ❌ never call that one for a reset, it would remove a live device from
     /// the sidebar and can't reopen anything.
+    ///
+    /// ❌ Never add a USB transport reset between the two steps: on Android it's
+    /// a kill switch that costs the user a replug, and the reopen self-heals
+    /// without it. Evidence: [DETAILS.md](DETAILS.md) § "No transport reset in
+    /// recovery"; enforced by `pnpm check mtp-no-transport-reset`.
     pub(super) async fn handle_device_session_reset(&self, device_id: &str, app: Option<&AppHandle>) {
         if !self.tear_down_reset_session(device_id).await {
             return;
@@ -270,6 +275,19 @@ mod device_tests {
         }
     }
 
+    /// Polls `condition` until it holds, or gives up. The budget covers the
+    /// quiet pause plus a reopen attempt with room to spare.
+    async fn wait_for(mut condition: impl FnMut() -> bool) -> bool {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        while tokio::time::Instant::now() < deadline {
+            if condition() {
+                return true;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        condition()
+    }
+
     async fn teardown(device: Device) {
         connection_manager()
             .disconnect(&device.id, None, crate::mtp::connection::MtpDisconnectReason::User)
@@ -357,6 +375,80 @@ mod device_tests {
         assert!(
             connection_manager().is_connected(&device.id),
             "the device must be reopened after a session reset",
+        );
+
+        teardown(device).await;
+    }
+
+    /// The whole chain, driven through Cmdr's ordinary code path: an operation
+    /// hits a reset, and the device comes back on its own.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_wedged_listing_recovers_without_dropping_the_device() {
+        let _guard = virtual_device_test_lock().lock().await;
+        let device = connect_device().await;
+        let volume_id = crate::mtp::identity::mtp_volume_id(&device.id, device.storage_id);
+        super::super::directory_ops::disconnect_test_hooks::reset_count();
+
+        // Arm the one-shot, then drive a real listing. `/DCIM` (not `/`) so the
+        // 5 s `ListingCache` entry the primed root left behind can't answer from
+        // memory and skip the device entirely.
+        assert!(
+            mtp_rs::force_operation_wedge(crate::mtp::virtual_device::VIRTUAL_DEVICE_SERIAL),
+            "the connected virtual device must be armable",
+        );
+        let err = connection_manager()
+            .list_directory(&device.id, device.storage_id, "/DCIM")
+            .await
+            .expect_err("the wedged operation must fail");
+        assert!(
+            matches!(err, MtpConnectionError::SessionReset { .. }),
+            "a wedged operation must surface as a session reset, got {err:?}",
+        );
+
+        // Recovery is fire-and-forget, so the failing op returned before the
+        // spawned task had done anything. Wait for the teardown FIRST, or
+        // polling straight for `is_connected` passes on the not-yet-dropped entry.
+        assert!(
+            wait_for(|| !connection_manager().is_connected(&device.id)).await,
+            "recovery must drop the dead session",
+        );
+        assert!(
+            wait_for(|| connection_manager().is_connected(&device.id)).await,
+            "recovery must reopen the device on its own",
+        );
+
+        assert_eq!(
+            super::super::directory_ops::disconnect_test_hooks::count(),
+            0,
+            "the device never left, so nothing may run the disconnect teardown",
+        );
+        assert!(
+            crate::file_system::get_volume_manager().get(&volume_id).is_some(),
+            "the volume must stay in the sidebar throughout the recovery",
+        );
+        assert!(
+            connection_manager()
+                .cached_handle_for_path(&device.id, device.storage_id, Path::new("/DCIM"))
+                .await
+                .is_none(),
+            "handles don't survive a reset, so the reopened session must start with empty caches",
+        );
+
+        // The one-shot is spent: the device is genuinely usable again. Listing
+        // the root first isn't ceremony: `resolve_path_to_handle` is cache-only,
+        // so the emptied caches make a re-navigation start from the top, which is
+        // what the pane does anyway.
+        connection_manager()
+            .list_directory(&device.id, device.storage_id, "/")
+            .await
+            .expect("the recovered device must serve listings again");
+        let entries = connection_manager()
+            .list_directory(&device.id, device.storage_id, "/DCIM")
+            .await
+            .expect("the recovered device must serve listings again");
+        assert!(
+            entries.iter().any(|e| e.name == "Burst"),
+            "the recovered listing must show the fixture tree, got {entries:?}",
         );
 
         teardown(device).await;

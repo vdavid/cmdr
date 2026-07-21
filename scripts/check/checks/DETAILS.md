@@ -398,8 +398,8 @@ drive the device".
 Checks by app and tech:
 
 - **Desktop / Rust**: rustfmt, clippy, cargo-audit, cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd,
-  log-error-macro, error-string-match, lock-poison, mtp-dropping-timeout, bindings-fresh, ipc-enum-camelcase, tests,
-  integration-tests (Docker SMB), tests-linux (slow)
+  log-error-macro, error-string-match, lock-poison, mtp-dropping-timeout, mtp-no-transport-reset, bindings-fresh,
+  ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)
 - **Desktop / Svelte**: prettier, eslint, svelte-kit-sync, eslint-typecheck-svelte, eslint-typecheck-typescript,
   stylelint, css-unused, a11y-contrast, btn-restyle, bare-poll, svelte-check, import-cycles, message-keys-fresh
   (regenerate-and-diff `keys.gen.ts` from the message catalogs), message-key-naming (the `area.feature.leaf` shape +
@@ -523,6 +523,17 @@ future genuinely holds nothing on the wire; the two current exceptions are the d
 interrupt-endpoint poll. Rationale in full:
 [`apps/desktop/src-tauri/src/mtp/connection/DETAILS.md`](../../../apps/desktop/src-tauri/src/mtp/connection/DETAILS.md)
 § "No dropping timeouts".
+
+**Decision**: `mtp-no-transport-reset` check, with NO opt-out directive. **Why**: The Still Image Class `DEVICE_RESET`
+control request looks like the missing "unwedge the pipe" step in session-reset recovery, and it will keep looking like
+one to every future reader. On Android it's a kill switch: `MtpServer` answers it by dropping its FunctionFS endpoints
+and never re-arming them, while the USB controller stays `configured`, so the phone keeps enumerating and answering
+nothing until it's physically replugged (verified on a Pixel 9 Pro XL via `adb logcat`, 2026-07-21). The check is a
+fast-lane Go scanner over `apps/desktop/src-tauri/src/mtp/` flagging `reset_by_serial(` / `reset_by_location(` /
+`reset_first(` in any file, tests included. It has no directive on purpose: reintroducing a reset means deleting the
+check, and that deliberate act is the whole point. Rationale in full:
+[`apps/desktop/src-tauri/src/mtp/connection/DETAILS.md`](../../../apps/desktop/src-tauri/src/mtp/connection/DETAILS.md)
+§ "No transport reset in recovery".
 
 **Decision**: Split `desktop-svelte-eslint` into fast (non-type-aware) and slow (full) checks. **Why**: Type-aware rules
 (`no-floating-promises`, `no-unsafe-*`, etc.) take ~45% of lint time due to TypeScript project service startup. The fast

@@ -227,7 +227,7 @@ mime_guess = "2"
 
 [target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
 # MTP (Android device) support via pure Rust implementation.
-mtp-rs = "0.28.0"
+mtp-rs = "0.29.0"
 bytes = "1"
 # mDNS discovery for network host browsing (pure Rust, cross-platform)
 mdns-sd = { version = "0.20", features = ["logging"] }

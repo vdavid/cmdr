@@ -225,10 +225,47 @@ So `handle_device_session_reset` (the sibling of `handle_device_disconnected`, t
    A `DeviceNotFound` (unplugged mid-recovery) means this IS a disconnect now: it runs the real teardown and stops.
    Exhausting the budget does the same.
 
-mtp-rs's explicit transport `reset` from the repro isn't in the recovery: the neutral `MtpDevice` API doesn't expose
-one. Dropping the entry closes the session and releases the interface, which is the reachable equivalent, and the
-spaced reopen carried the recovery on its own. mtp-rs also self-heals `SessionAlreadyOpen` inside `PtpSession::open`
-(it closes and reopens), so step 4 doesn't special-case it.
+mtp-rs self-heals `SessionAlreadyOpen` inside `PtpSession::open` (it closes and reopens), so step 4 doesn't
+special-case it.
+
+### No transport reset in recovery
+
+**❌ Never add a USB transport reset (mtp-rs `reset_by_serial` / `reset_by_location` / `reset_first`) between steps 1
+and 4.** It reads like the obvious missing piece — the Still Image Class `DEVICE_RESET` control request is exactly the
+"unwedge the pipe" primitive, and it's the step the Galaxy repro sequence above contains. It isn't. Enforced by
+`pnpm check mtp-no-transport-reset`, which has no opt-out directive on purpose.
+
+**On Android the reset is a kill switch, not a recovery step** (verified on a Pixel 9 Pro XL running the reset against
+a HEALTHY device, `adb logcat`, 2026-07-21). Android's `MtpServer` answers it by tearing down and never re-arming:
+
+```
+MtpServer: got response 0x201E in MTP_OPERATION_OPEN_SESSION
+MtpServer: request read returned -1, errno: 125        <- ECANCELED
+d.process.media: Mtp got error event at 0 and 1 total: Broken pipe
+MtpServer: request read returned -1, errno: 32         <- EPIPE
+libpixelusb-UsbDataSessionMonitor: Update device state udc: configured
+```
+
+`MtpServer` then logs nothing further: no restart, no re-arm of its FunctionFS endpoints, while the USB device
+controller still reports `configured`. That's the failure users see as "the phone is listed but nothing works": it
+keeps enumerating and keeps showing up in a device list while answering no PTP at all, until a physical replug. So the
+reset takes a working phone and costs the user a replug.
+
+**And recovery doesn't need it.** A dropped-future wedge on a Pixel self-heals on a fresh open (observed: two hung
+in-process attempts, then normal answers once the process exited), which is precisely what steps 1 and 4 already do.
+Inserting a reset converts a self-healing situation into a replug.
+
+**The Galaxy evidence doesn't outweigh that**, even though the reset appeared to help there: the control was never run,
+so spaced reopens alone may well have carried it. Ambiguous evidence on one device loses to a proven kill on another.
+
+**Coverage** (`session_reset.rs` § `device_tests`). `mtp_rs::force_operation_wedge(serial)` (mtp-rs ≥ 0.29.0, feature
+`virtual-device`) arms a one-shot so the next PTP operation returns `DeviceReset`, which is what makes
+`a_wedged_listing_recovers_without_dropping_the_device` a real end-to-end run through Cmdr's own path: an ordinary
+`list_directory` trips it, and the test asserts the whole chain (mapped to `SessionReset`, recovery ran, the volume
+stayed in the sidebar, the disconnect teardown never ran, the caches came back empty, the device serves listings
+again). ❌ Don't reach for the older `force_cancel_wedge`: it arms on `cancel_transfer`, which Cmdr never calls. What
+the virtual device CANNOT model is the aftermath: a real session stays dead until a spaced-retry reopen, while the
+virtual one is healthy on the very next call, so the test proves the plumbing, not the timing.
 
 **The failing operation is not retried, and reports a RECOVERABLE reason.** `MtpConnectionError::SessionReset` maps to
 `VolumeError::DeviceSessionReset` → the `DeviceReconnecting` listing reason (`Transient`, retry hint) and
@@ -242,9 +279,8 @@ re-entering the write mid-stream — real surface in the engine's partial-cleanu
 that costs the user one click today. The retryable classification is what makes that click cheap. Revisit if field
 reports show resets hitting multi-GB copies often.
 
-**Testing without hardware.** No wedge can be armed on a virtual device today (mtp-rs's `force_cancel_wedge` arms only
-on the next `cancel_transfer`, which Cmdr never calls), so `session_reset.rs`'s tests drive the state machine
-directly: the backoff schedule is a pure function with its own tests, and the virtual-device tests call
+**Testing without hardware.** Alongside the end-to-end wedge above, `session_reset.rs`'s tests also drive the state
+machine directly: the backoff schedule is a pure function with its own tests, and the virtual-device tests call
 `tear_down_reset_session` / `reopen_after_session_reset` and assert the entry is dropped, the path cache cleared, the
 volume still registered, the device reopened, and `handle_device_disconnected` never reached (via a test-only call
 counter in `directory_ops.rs` — nothing else observable distinguishes the two paths in a unit test).
