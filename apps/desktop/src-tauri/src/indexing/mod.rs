@@ -26,6 +26,7 @@ mod progress_reporter;
 mod queries;
 mod routing;
 mod scan_completion;
+pub(crate) mod scan_pace;
 mod state;
 pub mod store;
 pub mod subsystem_stop;

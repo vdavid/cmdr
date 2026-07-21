@@ -29,6 +29,7 @@ use std::time::Duration;
 use tauri::AppHandle;
 
 mod events;
+mod foreground_yield;
 mod mapping;
 mod reconnect;
 mod scan;

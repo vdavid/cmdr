@@ -424,10 +424,11 @@ async fn auto_yield_cancel_while_yielding_keeps_no_partial() {
 #[tokio::test(flavor = "current_thread")]
 async fn non_mtp_source_never_auto_yields_for_foreground() {
     // Regression guard: a source that does NOT support foreground yield
-    // (`supports_foreground_yield() == false`, the default for local/SMB/
-    // in-memory) must never auto-yield, even with a tiny floor. `ReleasingSource`
-    // is MTP-shaped but does NOT opt into foreground-yield, so it's the right
-    // double — it parks in place for pause but never yields for foreground.
+    // (`supports_foreground_yield() == false`, the trait default — local FS and
+    // in-memory; MTP and SMB opt in) must never auto-yield, even with a tiny
+    // floor. `ReleasingSource` is MTP-shaped but does NOT opt into
+    // foreground-yield, so it's the right double — it parks in place for pause but
+    // never yields for foreground.
     use std::fs;
 
     let _tuning = AutoYieldTuningGuard::new(Duration::from_millis(0), REL_CHUNK as u64);

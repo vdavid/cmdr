@@ -306,6 +306,32 @@ fn supports_export_returns_true() {
     assert!(vol.supports_export());
 }
 
+/// The opt-in that makes a background SMB copy stand aside for navigation. A copy
+/// and the pane's listings share one SMB session, so without this the transfer
+/// never parks and the share stays sluggish for the whole copy.
+#[test]
+fn supports_foreground_yield_is_on() {
+    let vol = make_test_volume();
+    assert!(vol.supports_foreground_yield());
+}
+
+/// …and the probe behind it is scoped to THIS share: navigating the volume being
+/// copied from parks the copy, navigating anything else leaves it at full speed.
+#[tokio::test]
+async fn foreground_pending_tracks_navigation_on_this_share_only() {
+    let vol = make_test_volume();
+    assert!(!vol.foreground_pending().await, "nothing browsed yet");
+
+    crate::media_index::foreground::note_foreground_activity_on("some-other-volume");
+    assert!(
+        !vol.foreground_pending().await,
+        "browsing another volume must not park a copy off this share"
+    );
+
+    crate::media_index::foreground::note_foreground_activity_on(vol.volume_id());
+    assert!(vol.foreground_pending().await, "browsing this share parks the copy");
+}
+
 // ── Reconnect tests (no Docker, no real network) ────────────────
 
 /// Helper that flips a test volume into `Direct` so we can test the

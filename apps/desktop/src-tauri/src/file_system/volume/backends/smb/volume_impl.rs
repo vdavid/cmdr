@@ -222,6 +222,23 @@ impl Volume for SmbVolume {
         false
     }
 
+    fn supports_foreground_yield(&self) -> bool {
+        // A running copy and the pane's listings share ONE SMB session, so a
+        // transfer off this share competes with every navigation on it. Opting in
+        // tells `CheckpointStream` not to start the next chunk while the user is
+        // browsing this share. The read holds nothing between chunks, so this is a
+        // park in place, not a session release. See `foreground_yield.rs`.
+        true
+    }
+
+    fn foreground_pending<'a>(&'a self) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async move { foreground_yield::foreground_pending(&self.volume_id) })
+    }
+
+    fn wait_until_foreground_idle<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+        Box::pin(async move { foreground_yield::wait_until_foreground_idle(&self.volume_id).await })
+    }
+
     fn listing_is_watched(&self, _path: &Path) -> bool {
         // SMB watching is volume-level: the smb_watcher monitors the whole share
         // via CHANGE_NOTIFY. So once the watcher is alive and the session is

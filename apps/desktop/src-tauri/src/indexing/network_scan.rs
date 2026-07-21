@@ -292,12 +292,24 @@ impl IndexManager {
         // paths (symmetry with the local scan-completion path).
         let volume_root_str = self.volume_root.to_string_lossy().into_owned();
         let kind = self.kind;
+        // Pace the walk against foreground activity on THIS volume: while the user
+        // browses the share, the walk drops to one listing in flight so a navigation
+        // isn't queued behind the scan's backlog. See `indexing/scan_pace.rs`.
+        let pacer = super::scan_pace::ScanPacer::for_volume(self.volume_id.clone());
         tauri::async_runtime::spawn(async move {
             let result = if reconcile {
-                super::volume_scanner::reconcile_volume_via_trait(volume, root, writer.clone(), progress, cancelled)
-                    .await
+                super::volume_scanner::reconcile_volume_via_trait(
+                    volume,
+                    root,
+                    writer.clone(),
+                    progress,
+                    cancelled,
+                    pacer,
+                )
+                .await
             } else {
-                super::volume_scanner::scan_volume_via_trait(volume, root, writer.clone(), progress, cancelled).await
+                super::volume_scanner::scan_volume_via_trait(volume, root, writer.clone(), progress, cancelled, pacer)
+                    .await
             };
 
             scan_done.store(true, Ordering::Relaxed);

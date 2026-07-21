@@ -117,6 +117,7 @@ async fn smb_integration_volume_scan_indexes_share() {
         writer.clone(),
         progress(),
         cancelled,
+        crate::indexing::scan_pace::ScanPacer::unpaced(),
     )
     .await
     .expect("SMB volume scan should complete");
@@ -182,6 +183,7 @@ async fn smb_integration_watch_event_updates_index() {
         writer.clone(),
         progress(),
         cancelled,
+        crate::indexing::scan_pace::ScanPacer::unpaced(),
     )
     .await
     .expect("scan should complete");
@@ -306,6 +308,7 @@ async fn smb_integration_enrich_listing_shows_sizes() {
         writer.clone(),
         progress(),
         cancelled,
+        crate::indexing::scan_pace::ScanPacer::unpaced(),
     )
     .await
     .expect("SMB volume scan should complete");

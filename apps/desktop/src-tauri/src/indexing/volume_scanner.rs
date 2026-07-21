@@ -55,6 +55,7 @@ use futures_util::StreamExt;
 use futures_util::stream::FuturesUnordered;
 
 use crate::file_system::volume::Volume;
+use crate::indexing::scan_pace::ScanPacer;
 use crate::indexing::store::{EntryRow, IndexStore, ScanContext};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 
@@ -67,19 +68,6 @@ const LIST_TIMEOUT: Duration = Duration::from_secs(120);
 
 /// Batch size for `InsertEntriesV2` sends — matches the local guarded walker's default.
 const BATCH_SIZE: usize = 2000;
-
-/// How many `list_directory` round trips run concurrently during a walk. Directory
-/// listing is latency-bound (each dir is open+query+close network round trips over an
-/// otherwise-idle link), so keeping many in flight is a near-linear speedup until the
-/// server's SMB credits saturate. Only the network I/O is concurrent; results are
-/// processed serially on the walk task, so `ScanContext` id allocation and the writer
-/// stay single-owner. 64 is a deliberate balance: it captures essentially all the
-/// concurrency win, while staying gentle on a NAS that's also serving other load. Past
-/// it there's little to gain — on a real raidz1-HDD QNAP a fresh scan became bound by
-/// the single SQLite writer (its queue spiked into the thousands during big-directory
-/// bursts), NOT by listing parallelism: the disks sat ~15% busy (ZFS ARC served most
-/// metadata) and the NAS was never the ceiling. See DETAILS § "Bounded-concurrency walk".
-const SCAN_CONCURRENCY: usize = 64;
 
 /// Consecutive-failure backstop. A whole-volume disconnect that doesn't map to
 /// the typed `DeviceDisconnected`/`Disconnected` variant (e.g. a generic
@@ -170,12 +158,16 @@ impl std::error::Error for VolumeScanError {}
 /// Cancelable via `cancelled`; cancellation flushes the current batch and
 /// returns `was_cancelled: true`. A timeout / backend error returns `Err`; the
 /// caller discards the partial (D-interrupted).
+///
+/// `pacer` decides how many listings may be in flight at each top-up, so the walk
+/// gets out of the way while the user browses this share ([`ScanPacer`]).
 pub(crate) async fn scan_volume_via_trait(
     volume: Arc<dyn Volume>,
     root: PathBuf,
     writer: IndexWriter,
     progress: Arc<ScanProgress>,
     cancelled: Arc<AtomicBool>,
+    pacer: ScanPacer,
 ) -> Result<ScanSummary, VolumeScanError> {
     let start = Instant::now();
 
@@ -210,7 +202,7 @@ pub(crate) async fn scan_volume_via_trait(
     // on every successful listing; the backstop trips at `CONSECUTIVE_FAILURE_ABORT`.
     let mut consecutive_failures: usize = 0;
 
-    // Breadth-first, with up to SCAN_CONCURRENCY listings in flight at once. A dir's id
+    // Breadth-first, with up to FULL_LISTING_BUDGET listings in flight at once. A dir's id
     // is registered in `ScanContext` when its PARENT's listing is processed (serially,
     // on this task), BEFORE the child is enqueued — so the "parent id registered before
     // we list the child" invariant holds even though the network listings overlap. Only
@@ -229,13 +221,19 @@ pub(crate) async fn scan_volume_via_trait(
             return Ok(summary(total_entries, total_dirs, total_physical_bytes, start, true));
         }
 
-        // Keep the pipe full: launch listings until the concurrency cap or the queue
+        // Keep the pipe full: launch listings until the current budget or the queue
         // drains. Each future owns its clones (self-contained) and returns the dir path
         // alongside the result so the processor can resolve its parent id. Goes through
         // `list_directory_for_scan` (inside `list_one_directory`) so a backend sharing a
         // serialized resource with foreground work (MTP's single USB pipe) yields it
         // between bounded units rather than pinning it for the whole directory.
-        while inflight.len() < SCAN_CONCURRENCY {
+        //
+        // The budget is re-read here, not hoisted: it drops to 1 the moment the user
+        // navigates this share, so the in-flight backlog drains and a navigation
+        // queues behind one listing instead of 64. In-flight listings are never
+        // cancelled (that would waste a completed round trip), so the yield takes
+        // effect within one drain.
+        while inflight.len() < pacer.listing_budget() {
             let Some(dir) = queue.pop_front() else { break };
             let vol = Arc::clone(&volume);
             let cancel = Arc::clone(&cancelled);
@@ -288,7 +286,7 @@ pub(crate) async fn scan_volume_via_trait(
                 // A vanished volume that surfaces as an untyped error makes EVERY
                 // listing fail, so the backstop aborts the walk (terminal) instead of
                 // fabricating empties. Concurrency loosens "consecutive" (up to
-                // SCAN_CONCURRENCY failures can be in flight at once), but a real
+                // FULL_LISTING_BUDGET failures can be in flight at once), but a real
                 // disconnect piles failures with no successes to reset the counter, so
                 // it still trips; an isolated bad dir is reset by its many healthy peers.
                 consecutive_failures += 1;
@@ -453,6 +451,7 @@ pub(crate) async fn reconcile_volume_via_trait(
     writer: IndexWriter,
     progress: Arc<ScanProgress>,
     cancelled: Arc<AtomicBool>,
+    pacer: ScanPacer,
 ) -> Result<ScanSummary, VolumeScanError> {
     use crate::indexing::reconciler::{self, LiveChild};
     use crate::indexing::store::ROOT_ID;
@@ -511,10 +510,11 @@ pub(crate) async fn reconcile_volume_via_trait(
             return Ok(summary(total_entries, total_dirs, total_physical_bytes, start, true));
         }
 
-        // Keep up to SCAN_CONCURRENCY listings in flight — matched (existing) child dirs
-        // whose ids we already hold. Same overlap-the-latency-bound-I/O win as the fresh
-        // scan; processing (diff, writes) stays serial on this task and the DB read conn.
-        while inflight.len() < SCAN_CONCURRENCY {
+        // Keep up to the current budget of listings in flight — matched (existing) child
+        // dirs whose ids we already hold. Same overlap-the-latency-bound-I/O win as the
+        // fresh scan, and the same throttle while the user browses this share;
+        // processing (diff, writes) stays serial on this task and the DB read conn.
+        while inflight.len() < pacer.listing_budget() {
             let Some((dir, id)) = queue.pop_front() else { break };
             let vol = Arc::clone(&volume);
             let cancel = Arc::clone(&cancelled);
@@ -878,5 +878,7 @@ fn summary(entries: u64, dirs: u64, physical_bytes: u64, start: Instant, cancell
     }
 }
 
+#[cfg(test)]
+mod pace_tests;
 #[cfg(test)]
 mod tests;

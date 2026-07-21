@@ -6,9 +6,10 @@ use std::pin::Pin;
 use super::*;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{InMemoryVolume, ListingProgress, VolumeError};
+use crate::indexing::scan_pace::FULL_LISTING_BUDGET;
 use crate::indexing::store::{ROOT_ID, resolve_path};
 
-fn progress() -> Arc<ScanProgress> {
+pub(super) fn progress() -> Arc<ScanProgress> {
     // `ScanProgress::new` is private; build the public-fielded struct directly.
     Arc::new(ScanProgress {
         entries_scanned: Arc::new(AtomicU64::new(0)),
@@ -53,9 +54,16 @@ async fn scans_in_memory_tree_into_index() {
     let vol: Arc<dyn Volume> = Arc::new(vol);
 
     let cancelled = Arc::new(AtomicBool::new(false));
-    let summary = scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled)
-        .await
-        .expect("scan should complete");
+    let summary = scan_volume_via_trait(
+        vol,
+        PathBuf::from("/"),
+        writer.clone(),
+        progress(),
+        cancelled,
+        ScanPacer::unpaced(),
+    )
+    .await
+    .expect("scan should complete");
 
     assert!(!summary.was_cancelled);
     assert_eq!(summary.total_entries, 3, "2 files + 1 dir");
@@ -112,9 +120,16 @@ async fn skips_recursion_into_nas_system_dirs() {
     let vol: Arc<dyn Volume> = Arc::new(vol);
 
     let cancelled = Arc::new(AtomicBool::new(false));
-    scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled)
-        .await
-        .expect("scan should complete");
+    scan_volume_via_trait(
+        vol,
+        PathBuf::from("/"),
+        writer.clone(),
+        progress(),
+        cancelled,
+        ScanPacer::unpaced(),
+    )
+    .await
+    .expect("scan should complete");
 
     writer.flush().await.expect("flush");
     writer.shutdown();
@@ -227,9 +242,16 @@ async fn errored_listing_is_not_marked() {
     });
 
     let cancelled = Arc::new(AtomicBool::new(false));
-    let summary = scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled)
-        .await
-        .expect("scan should complete (a single bad subdir is skipped)");
+    let summary = scan_volume_via_trait(
+        vol,
+        PathBuf::from("/"),
+        writer.clone(),
+        progress(),
+        cancelled,
+        ScanPacer::unpaced(),
+    )
+    .await
+    .expect("scan should complete (a single bad subdir is skipped)");
     assert!(!summary.was_cancelled);
 
     writer.flush().await.expect("flush");
@@ -326,7 +348,7 @@ impl Volume for CountingDisconnectVolume {
 
 /// Build a wide tree: a root with `n_subdirs` empty subdirs. The BFS lists
 /// the root first (call 1), then each subdir in turn (calls 2..=n_subdirs+1).
-fn wide_tree(n_subdirs: usize) -> InMemoryVolume {
+pub(super) fn wide_tree(n_subdirs: usize) -> InMemoryVolume {
     let mut entries = Vec::new();
     for i in 0..n_subdirs {
         entries.push(entry(&format!("d{i}"), &format!("/d{i}"), true, None));
@@ -349,8 +371,8 @@ async fn disconnect_mid_walk_stops_promptly_and_returns_typed_error() {
     let _store = IndexStore::open(&db_path).expect("open store");
     let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
 
-    // Root + 200 empty subdirs (≫ SCAN_CONCURRENCY). BFS: list root (call 1)
-    // discovers 200 dirs, then lists them concurrently (up to SCAN_CONCURRENCY in
+    // Root + 200 empty subdirs (≫ FULL_LISTING_BUDGET). BFS: list root (call 1)
+    // discovers 200 dirs, then lists them concurrently (up to FULL_LISTING_BUDGET in
     // flight). The 4th list call returns a typed disconnect. The walk must stop
     // topping up and drop the in-flight listings rather than churning all 200.
     let n_subdirs = 200;
@@ -364,7 +386,15 @@ async fn disconnect_mid_walk_stops_promptly_and_returns_typed_error() {
     });
 
     let cancelled = Arc::new(AtomicBool::new(false));
-    let result = scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled).await;
+    let result = scan_volume_via_trait(
+        vol,
+        PathBuf::from("/"),
+        writer.clone(),
+        progress(),
+        cancelled,
+        ScanPacer::unpaced(),
+    )
+    .await;
 
     // The typed terminal error, NOT a clean Ok (which is today's bug: a clean
     // finish over silently-empty rows). Matched by the TYPED variant.
@@ -375,7 +405,7 @@ async fn disconnect_mid_walk_stops_promptly_and_returns_typed_error() {
 
     // Prompt stop: the walk bailed within ~one concurrency window of the disconnect
     // and did NOT churn the remaining queued dirs. With concurrency the count is no
-    // longer exactly `fail_after_calls` (up to SCAN_CONCURRENCY listings were already
+    // longer exactly `fail_after_calls` (up to FULL_LISTING_BUDGET listings were already
     // in flight), but it's bounded well below the full `n_subdirs`.
     let made = calls.load(Ordering::Relaxed) as usize;
     assert!(
@@ -383,7 +413,7 @@ async fn disconnect_mid_walk_stops_promptly_and_returns_typed_error() {
         "walk must stop at the disconnect, not churn all {n_subdirs} queued dirs (made {made})",
     );
     assert!(
-        made <= 1 + SCAN_CONCURRENCY + fail_after_calls,
+        made <= 1 + FULL_LISTING_BUDGET + fail_after_calls,
         "walk must stop within ~one concurrency window of the disconnect (made {made})",
     );
 
@@ -405,7 +435,7 @@ async fn consecutive_untyped_failures_trip_the_backstop() {
     let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
 
     // Enough subdirs that the backstop (N consecutive) trips well before the
-    // queue drains, even with up to SCAN_CONCURRENCY listings in flight. Root lists
+    // queue drains, even with up to FULL_LISTING_BUDGET listings in flight. Root lists
     // fine (call 1), then every subdir listing fails with an untyped IoError.
     let n_subdirs = CONSECUTIVE_FAILURE_ABORT * 6;
     let calls = Arc::new(AtomicU64::new(0));
@@ -417,7 +447,15 @@ async fn consecutive_untyped_failures_trip_the_backstop() {
     });
 
     let cancelled = Arc::new(AtomicBool::new(false));
-    let result = scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled).await;
+    let result = scan_volume_via_trait(
+        vol,
+        PathBuf::from("/"),
+        writer.clone(),
+        progress(),
+        cancelled,
+        ScanPacer::unpaced(),
+    )
+    .await;
 
     match result {
         Err(VolumeScanError::ConsecutiveFailures { count, .. }) => {
@@ -435,7 +473,7 @@ async fn consecutive_untyped_failures_trip_the_backstop() {
         "backstop must stop well short of churning the whole {n_subdirs}-dir queue (made {made})",
     );
     assert!(
-        made <= 1 + SCAN_CONCURRENCY + CONSECUTIVE_FAILURE_ABORT,
+        made <= 1 + FULL_LISTING_BUDGET + CONSECUTIVE_FAILURE_ABORT,
         "backstop stops within ~one concurrency window of the threshold (made {made})",
     );
 
@@ -472,9 +510,16 @@ async fn isolated_transient_failure_does_not_trip_backstop() {
     });
 
     let cancelled = Arc::new(AtomicBool::new(false));
-    let summary = scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled)
-        .await
-        .expect("an isolated transient failure is skipped, scan completes");
+    let summary = scan_volume_via_trait(
+        vol,
+        PathBuf::from("/"),
+        writer.clone(),
+        progress(),
+        cancelled,
+        ScanPacer::unpaced(),
+    )
+    .await
+    .expect("an isolated transient failure is skipped, scan completes");
     assert!(!summary.was_cancelled);
 
     writer.flush().await.expect("flush");
@@ -485,10 +530,10 @@ async fn isolated_transient_failure_does_not_trip_backstop() {
 /// flight at once. The `yield_now` lets sibling listings launched in the same
 /// `FuturesUnordered` batch coexist before any resolves, so the recorded max
 /// reflects real concurrency rather than instantly-ready mock timing.
-struct ConcurrencyTrackingVolume {
-    inner: InMemoryVolume,
-    in_flight: Arc<AtomicU64>,
-    max_in_flight: Arc<AtomicU64>,
+pub(super) struct ConcurrencyTrackingVolume {
+    pub(super) inner: InMemoryVolume,
+    pub(super) in_flight: Arc<AtomicU64>,
+    pub(super) max_in_flight: Arc<AtomicU64>,
 }
 
 impl Volume for ConcurrencyTrackingVolume {
@@ -527,7 +572,7 @@ impl Volume for ConcurrencyTrackingVolume {
 }
 
 /// THE speedup regression guard: the walk lists directories CONCURRENTLY, capped at
-/// `SCAN_CONCURRENCY`. With many sibling dirs queued, multiple `list_directory` round
+/// `FULL_LISTING_BUDGET`. With many sibling dirs queued, multiple `list_directory` round
 /// trips are in flight at once — a revert to a serial walk would record a max of 1.
 #[tokio::test]
 async fn walk_lists_directories_concurrently() {
@@ -538,20 +583,27 @@ async fn walk_lists_directories_concurrently() {
     let _store = IndexStore::open(&db_path).expect("open store");
     let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
 
-    // Root with many empty subdirs (≫ SCAN_CONCURRENCY): the root listing discovers
+    // Root with many empty subdirs (≫ FULL_LISTING_BUDGET): the root listing discovers
     // them all, then they list concurrently up to the cap.
     let in_flight = Arc::new(AtomicU64::new(0));
     let max_in_flight = Arc::new(AtomicU64::new(0));
     let vol: Arc<dyn Volume> = Arc::new(ConcurrencyTrackingVolume {
-        inner: wide_tree(SCAN_CONCURRENCY * 2),
+        inner: wide_tree(FULL_LISTING_BUDGET * 2),
         in_flight: Arc::clone(&in_flight),
         max_in_flight: Arc::clone(&max_in_flight),
     });
 
     let cancelled = Arc::new(AtomicBool::new(false));
-    scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled)
-        .await
-        .expect("scan completes");
+    scan_volume_via_trait(
+        vol,
+        PathBuf::from("/"),
+        writer.clone(),
+        progress(),
+        cancelled,
+        ScanPacer::unpaced(),
+    )
+    .await
+    .expect("scan completes");
     writer.flush().await.expect("flush");
     writer.shutdown();
 
@@ -561,8 +613,8 @@ async fn walk_lists_directories_concurrently() {
         "the walk must list concurrently, not serially (max in flight = {max})"
     );
     assert!(
-        max <= SCAN_CONCURRENCY,
-        "concurrency must stay capped at SCAN_CONCURRENCY (max in flight = {max})",
+        max <= FULL_LISTING_BUDGET,
+        "concurrency must stay capped at FULL_LISTING_BUDGET (max in flight = {max})",
     );
 }
 
@@ -653,7 +705,15 @@ async fn empty_root_fresh_scan_does_not_complete() {
     let vol: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("Test", vec![]));
 
     let cancelled = Arc::new(AtomicBool::new(false));
-    let result = scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled).await;
+    let result = scan_volume_via_trait(
+        vol,
+        PathBuf::from("/"),
+        writer.clone(),
+        progress(),
+        cancelled,
+        ScanPacer::unpaced(),
+    )
+    .await;
 
     match result {
         Err(VolumeScanError::EmptyRoot) => {}
@@ -686,7 +746,15 @@ async fn failed_root_listing_does_not_complete() {
     });
 
     let cancelled = Arc::new(AtomicBool::new(false));
-    let result = scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled).await;
+    let result = scan_volume_via_trait(
+        vol,
+        PathBuf::from("/"),
+        writer.clone(),
+        progress(),
+        cancelled,
+        ScanPacer::unpaced(),
+    )
+    .await;
 
     match result {
         Err(VolumeScanError::Volume(VolumeError::PermissionDenied(_))) => {}
@@ -712,9 +780,16 @@ async fn honors_cancellation_before_first_listing() {
     let vol: Arc<dyn Volume> = Arc::new(vol);
 
     let cancelled = Arc::new(AtomicBool::new(true));
-    let summary = scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled)
-        .await
-        .expect("cancelled scan still returns Ok");
+    let summary = scan_volume_via_trait(
+        vol,
+        PathBuf::from("/"),
+        writer.clone(),
+        progress(),
+        cancelled,
+        ScanPacer::unpaced(),
+    )
+    .await
+    .expect("cancelled scan still returns Ok");
     assert!(summary.was_cancelled);
     assert_eq!(summary.total_entries, 0, "nothing scanned after immediate cancel");
 
@@ -757,9 +832,16 @@ async fn fresh_scan(vol: Arc<dyn Volume>) -> (IndexWriter, PathBuf, tempfile::Te
     let _store = IndexStore::open(&db_path).expect("open store");
     let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
     let cancelled = Arc::new(AtomicBool::new(false));
-    scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled)
-        .await
-        .expect("fresh scan");
+    scan_volume_via_trait(
+        vol,
+        PathBuf::from("/"),
+        writer.clone(),
+        progress(),
+        cancelled,
+        ScanPacer::unpaced(),
+    )
+    .await
+    .expect("fresh scan");
     writer.flush().await.expect("flush");
     (writer, db_path, dir)
 }
@@ -807,6 +889,7 @@ async fn reconcile_noop_writes_zero_entry_rows() {
         writer.clone(),
         progress(),
         cancelled,
+        ScanPacer::unpaced(),
     )
     .await
     .expect("reconcile");
@@ -867,6 +950,7 @@ async fn reconcile_with_changes_matches_fresh_from_scratch() {
         writer.clone(),
         progress(),
         cancelled,
+        ScanPacer::unpaced(),
     )
     .await
     .expect("reconcile");
@@ -947,7 +1031,15 @@ async fn mid_reconcile_disconnect_keeps_prior_index() {
         IndexStore::bump_current_epoch(&wconn).unwrap();
     }
     let cancelled = Arc::new(AtomicBool::new(false));
-    let result = reconcile_volume_via_trait(vol_disc, PathBuf::from("/"), writer.clone(), progress(), cancelled).await;
+    let result = reconcile_volume_via_trait(
+        vol_disc,
+        PathBuf::from("/"),
+        writer.clone(),
+        progress(),
+        cancelled,
+        ScanPacer::unpaced(),
+    )
+    .await;
 
     match result {
         Err(VolumeScanError::Volume(VolumeError::DeviceDisconnected(_))) => {}
@@ -992,9 +1084,16 @@ async fn first_scan_builds_then_reconcile_is_a_no_op() {
         IndexStore::bump_current_epoch(&wconn).unwrap();
     }
     let cancelled = Arc::new(AtomicBool::new(false));
-    reconcile_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled)
-        .await
-        .expect("reconcile");
+    reconcile_volume_via_trait(
+        vol,
+        PathBuf::from("/"),
+        writer.clone(),
+        progress(),
+        cancelled,
+        ScanPacer::unpaced(),
+    )
+    .await
+    .expect("reconcile");
     writer.flush().await.expect("flush");
 
     let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
@@ -1064,9 +1163,16 @@ async fn reconcile_descends_into_existing_unchanged_child_dirs() {
     };
 
     let cancelled = Arc::new(AtomicBool::new(false));
-    reconcile_volume_via_trait(vol_full, PathBuf::from("/"), writer.clone(), progress(), cancelled)
-        .await
-        .expect("reconcile");
+    reconcile_volume_via_trait(
+        vol_full,
+        PathBuf::from("/"),
+        writer.clone(),
+        progress(),
+        cancelled,
+        ScanPacer::unpaced(),
+    )
+    .await
+    .expect("reconcile");
     writer.flush().await.expect("flush");
 
     let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
@@ -1130,7 +1236,15 @@ async fn reconcile_empty_root_does_not_complete() {
     // Now reconcile against a volume whose root lists EMPTY (the glitch).
     let empty: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("Test", vec![]));
     let cancelled = Arc::new(AtomicBool::new(false));
-    let result = reconcile_volume_via_trait(empty, PathBuf::from("/"), writer.clone(), progress(), cancelled).await;
+    let result = reconcile_volume_via_trait(
+        empty,
+        PathBuf::from("/"),
+        writer.clone(),
+        progress(),
+        cancelled,
+        ScanPacer::unpaced(),
+    )
+    .await;
 
     match result {
         Err(VolumeScanError::EmptyRoot) => {}
@@ -1191,7 +1305,7 @@ async fn reconcile_from_empty_db_with_non_root_mount_indexes_full_tree() {
     };
 
     let cancelled = Arc::new(AtomicBool::new(false));
-    let summary = reconcile_volume_via_trait(vol, root, writer.clone(), progress(), cancelled)
+    let summary = reconcile_volume_via_trait(vol, root, writer.clone(), progress(), cancelled, ScanPacer::unpaced())
         .await
         .expect("reconcile from empty DB on a non-`/` mount");
     assert!(!summary.was_cancelled);
