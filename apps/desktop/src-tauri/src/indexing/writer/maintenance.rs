@@ -506,7 +506,10 @@ mod tests {
 
         let wal_path = format!("{}-wal", db_path.display());
         let wal_size_before = std::fs::metadata(&wal_path).map(|m| m.len()).unwrap_or(0);
-        assert!(wal_size_before > 0, "test setup: expected a grown WAL, got {wal_size_before}"); // allowed-pluralize-noun: assertion-failure-only message guarded by `> 0`
+        assert!(
+            wal_size_before > 0,
+            "test setup: expected a grown WAL, got {wal_size_before}"
+        ); // allowed-pluralize-noun: assertion-failure-only message guarded by `> 0`
 
         writer.send(WriteMessage::CommitTransaction).unwrap();
         writer.flush_blocking().unwrap();

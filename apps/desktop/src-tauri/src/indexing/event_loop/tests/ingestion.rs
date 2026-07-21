@@ -54,7 +54,10 @@ fn a_draining_backlog_reports_progress_not_a_warning() {
         .sample("Replay", 787_194, t0 + INGESTION_WARN_INTERVAL)
         .expect("a sample past the interval reports");
     assert!(!warn, "a backlog that is draining is progress, not a warning");
-    assert!(line.contains("down 43,866"), "the trend belongs in the line; got: {line}");
+    assert!(
+        line.contains("down 43,866"),
+        "the trend belongs in the line; got: {line}"
+    );
 }
 
 /// The condition that actually needs attention: the queue is NOT draining. Only
@@ -86,10 +89,16 @@ fn backlog_reports_are_rate_limited() {
     let t0 = Instant::now();
     assert!(tracker.sample("Replay", 400_000, t0).is_some());
     assert!(
-        tracker.sample("Replay", 390_000, t0 + Duration::from_millis(200)).is_none(),
+        tracker
+            .sample("Replay", 390_000, t0 + Duration::from_millis(200))
+            .is_none(),
         "a report inside the interval is suppressed"
     );
-    assert!(tracker.sample("Replay", 380_000, t0 + INGESTION_WARN_INTERVAL).is_some());
+    assert!(
+        tracker
+            .sample("Replay", 380_000, t0 + INGESTION_WARN_INTERVAL)
+            .is_some()
+    );
 }
 
 /// Dropping back to healthy ends the episode: the next backlog is compared

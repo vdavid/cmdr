@@ -227,7 +227,7 @@ impl EventReconciler {
     /// immediately instead of lingering in `pending_rescans` for the production
     /// 60 s window. Cadence itself is covered by `rescan_throttle`'s unit tests.
     #[cfg(test)]
-    pub(in crate::indexing) fn set_rescan_throttle_window_for_test(&self, window: std::time::Duration) {
+    pub(in crate::indexing) fn set_rescan_throttle_window_for_test(&self, window: Duration) {
         *self.rescan_throttle.lock_ignore_poison() = RescanThrottle::with_window(window);
     }
 }
@@ -410,25 +410,8 @@ pub(super) fn start_next_rescan(
 
             let escalation = match reconcile_subtree(&path, &space_for_task, &conn, &writer, &cancelled) {
                 Ok(summary) => {
-                    if summary.duration.as_secs() > 10 {
-                        log::warn!(
-                            "MustScanSubDirs: reconcile slow for {} (+{} -{} ~{}, {}s)",
-                            path.display(),
-                            summary.added,
-                            summary.removed,
-                            summary.updated,
-                            summary.duration.as_secs(),
-                        );
-                    } else {
-                        log::info!(
-                            "MustScanSubDirs: reconcile complete for {} (+{} -{} ~{}, {}ms)",
-                            path.display(),
-                            summary.added,
-                            summary.removed,
-                            summary.updated,
-                            summary.duration.as_millis(),
-                        );
-                    }
+                    let (level, message) = reconcile_report(&path, &summary);
+                    log::log!(level, "{message}");
                     summary.escalation
                 }
                 Err(e) => {
@@ -492,9 +475,122 @@ pub(super) fn start_next_rescan(
     }
 }
 
+/// How long a reconcile has to run before it's worth a line above `info`.
+const RECONCILE_SLOW_SECS: u64 = 10;
+
+/// The line one finished subtree reconcile emits: `(level, message)`. Pure, so the
+/// wording and the level policy are unit-testable without a logger.
+///
+/// A long reconcile is only newsworthy if the walk itself was slow. Time parked on
+/// the writer queue lands inside the same duration with nothing to attribute it to,
+/// which is how "reconcile slow … (+7 -0 ~0, 21s)" came to mean "the writer was
+/// saturated for 19 of those seconds". So the wait is named in the line, and when
+/// it DOMINATES the line drops to `debug`: writer saturation already has its own
+/// signal (the writer heartbeat), and repeating it under the reconciler's name is
+/// worse than not repeating it at all.
+fn reconcile_report(path: &Path, summary: &ReconcileSummary) -> (log::Level, String) {
+    let changes = format!("+{} -{} ~{}", summary.added, summary.removed, summary.updated);
+    if summary.duration.as_secs() <= RECONCILE_SLOW_SECS {
+        return (
+            log::Level::Info,
+            format!(
+                "MustScanSubDirs: reconcile complete for {} ({changes}, {}ms)",
+                path.display(),
+                summary.duration.as_millis(),
+            ),
+        );
+    }
+
+    let waited = summary.writer_wait.min(summary.duration);
+    let wait_dominated = waited * 2 > summary.duration;
+    let attribution = if waited.as_secs() > 0 {
+        format!(", {}s waiting on the writer", waited.as_secs())
+    } else {
+        String::new()
+    };
+    let level = if wait_dominated {
+        log::Level::Debug
+    } else {
+        log::Level::Warn
+    };
+    let what = if wait_dominated {
+        "reconcile waited"
+    } else {
+        "reconcile slow"
+    };
+    (
+        level,
+        format!(
+            "MustScanSubDirs: {what} for {} ({changes}, {}s{attribution})",
+            path.display(),
+            summary.duration.as_secs(),
+        ),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn summary(duration: Duration, writer_wait: Duration) -> ReconcileSummary {
+        ReconcileSummary {
+            added: 7,
+            removed: 0,
+            updated: 0,
+            duration,
+            writer_wait,
+            escalation: None,
+        }
+    }
+
+    /// A long reconcile that was mostly WAITING is not a slow walk, and saying
+    /// "reconcile slow" sends a reader hunting in the reconciler when the whole
+    /// story is in the writer. The wait belongs in the line.
+    #[test]
+    fn a_reconcile_dominated_by_the_writer_wait_says_so_and_stays_quiet() {
+        let (level, message) = reconcile_report(
+            Path::new("/tmp/site-data"),
+            &summary(Duration::from_secs(21), Duration::from_secs(19)),
+        );
+        assert_eq!(
+            level,
+            log::Level::Debug,
+            "writer saturation is already reported by the writer heartbeat, so this line is a duplicate signal"
+        );
+        assert_eq!(
+            message,
+            "MustScanSubDirs: reconcile waited for /tmp/site-data (+7 -0 ~0, 21s, 19s waiting on the writer)"
+        );
+    }
+
+    /// A genuinely slow WALK (the reconcile really was doing the work) still warns,
+    /// which is what the line was for.
+    #[test]
+    fn a_slow_walk_that_was_not_waiting_still_warns() {
+        let (level, message) = reconcile_report(
+            Path::new("/tmp/deep-tree"),
+            &summary(Duration::from_secs(21), Duration::from_millis(300)),
+        );
+        assert_eq!(level, log::Level::Warn);
+        assert_eq!(
+            message,
+            "MustScanSubDirs: reconcile slow for /tmp/deep-tree (+7 -0 ~0, 21s)"
+        );
+    }
+
+    /// The ordinary case is unchanged: an info line with millisecond precision.
+    #[test]
+    fn a_quick_reconcile_reports_at_info() {
+        let (level, message) = reconcile_report(
+            Path::new("/tmp/quick"),
+            &summary(Duration::from_millis(120), Duration::ZERO),
+        );
+        assert_eq!(level, log::Level::Info);
+        assert_eq!(
+            message,
+            "MustScanSubDirs: reconcile complete for /tmp/quick (+7 -0 ~0, 120ms)"
+        );
+    }
 
     /// Picks the SHALLOWEST queued path and drops every queued strict descendant of
     /// it — the ancestor's reconcile re-lists the whole subtree, so a deeper queued
@@ -542,7 +638,7 @@ mod tests {
     /// subtree can't monopolize the single-flight drain by re-queueing.
     #[test]
     fn pick_skips_throttled_anchor_for_eligible_sibling() {
-        let window = std::time::Duration::from_millis(100);
+        let window = Duration::from_millis(100);
         let mut throttle = RescanThrottle::with_window(window);
         let t0 = Instant::now();
         throttle.record_completion(&PathBuf::from("/a"), t0); // /a just walked -> throttled
@@ -566,7 +662,7 @@ mod tests {
     /// is eligible again: the trailing edge that stops a busy subtree from starving.
     #[test]
     fn pick_none_when_all_throttled_then_eligible_after_window() {
-        let window = std::time::Duration::from_millis(100);
+        let window = Duration::from_millis(100);
         let mut throttle = RescanThrottle::with_window(window);
         let t0 = Instant::now();
         throttle.record_completion(&PathBuf::from("/a"), t0);

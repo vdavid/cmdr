@@ -30,6 +30,7 @@ mod delta;
 mod entries;
 mod maintenance;
 mod repair;
+pub(crate) mod wait_probe;
 
 use aggregation::{
     handle_backfill_missing_dir_stats, handle_compute_all_aggregates, handle_compute_partial_aggregates,
@@ -605,19 +606,10 @@ impl IndexWriter {
 
     /// Send a message to the writer thread. Blocks if the channel is full
     /// (backpressure), which slows down event processing rather than
-    /// consuming unlimited memory.
+    /// consuming unlimited memory. Any time spent parked is recorded in
+    /// [`wait_probe`], so a caller timing its own work can attribute it.
     pub fn send(&self, msg: WriteMessage) -> Result<(), IndexStoreError> {
-        // Phase 1 instrumentation: track best-effort channel depth.
-        self.queue_depth.fetch_add(1, Ordering::Relaxed);
-        self.sender.send(msg).map_err(|e| {
-            // Send failed. Undo the depth bump so the heartbeat doesn't drift.
-            self.queue_depth.fetch_sub(1, Ordering::Relaxed);
-            let _ = e;
-            IndexStoreError::Io(std::io::Error::new(
-                std::io::ErrorKind::BrokenPipe,
-                "Writer thread has shut down",
-            ))
-        })
+        send_blocking_with_depth(&self.sender, &self.queue_depth, msg)
     }
 
     /// Best-effort estimate of the writer channel depth: messages sent but not
@@ -654,11 +646,16 @@ impl IndexWriter {
     }
 
     /// Send a `Flush` and block until all prior messages have been committed.
-    /// Safe to call from synchronous code (no async runtime needed).
+    /// Safe to call from synchronous code (no async runtime needed). The wait for
+    /// the writer to catch up is recorded in [`wait_probe`], same as a parked send:
+    /// from the caller's side both are time spent waiting on the writer queue.
     pub fn flush_blocking(&self) -> Result<(), IndexStoreError> {
         let (tx, rx) = oneshot::channel();
         self.send(WriteMessage::Flush(tx))?;
-        rx.blocking_recv().map_err(|_| {
+        let parked = Instant::now();
+        let result = rx.blocking_recv();
+        wait_probe::note(parked.elapsed());
+        result.map_err(|_| {
             IndexStoreError::Io(std::io::Error::new(
                 std::io::ErrorKind::BrokenPipe,
                 "Writer thread dropped flush reply",
@@ -679,6 +676,48 @@ impl IndexWriter {
             log::warn!("Index writer thread panicked on shutdown: {e:?}");
         }
     }
+}
+
+/// Blocking send with depth accounting and writer-wait attribution. A free
+/// function over the raw channel + atomic (same reason as `try_send_with_depth`):
+/// the parking behaviour is testable against a bare `sync_channel`, without a
+/// draining writer thread.
+///
+/// The non-blocking attempt comes first so the common case costs nothing to
+/// measure: only a FULL channel parks the caller, and only that wait is timed and
+/// recorded. On `Full` the message comes back to us, so nothing is lost and the
+/// thread's own send order is preserved.
+fn send_blocking_with_depth(
+    sender: &mpsc::SyncSender<WriteMessage>,
+    queue_depth: &AtomicUsize,
+    msg: WriteMessage,
+) -> Result<(), IndexStoreError> {
+    fn gone() -> IndexStoreError {
+        IndexStoreError::Io(std::io::Error::new(
+            std::io::ErrorKind::BrokenPipe,
+            "Writer thread has shut down",
+        ))
+    }
+
+    // Phase 1 instrumentation: track best-effort channel depth.
+    queue_depth.fetch_add(1, Ordering::Relaxed);
+    let msg = match sender.try_send(msg) {
+        Ok(()) => return Ok(()),
+        Err(mpsc::TrySendError::Full(msg)) => msg,
+        Err(mpsc::TrySendError::Disconnected(_)) => {
+            // Send failed. Undo the depth bump so the heartbeat doesn't drift.
+            queue_depth.fetch_sub(1, Ordering::Relaxed);
+            return Err(gone());
+        }
+    };
+
+    let parked = Instant::now();
+    let result = sender.send(msg);
+    wait_probe::note(parked.elapsed());
+    result.map_err(|_| {
+        queue_depth.fetch_sub(1, Ordering::Relaxed);
+        gone()
+    })
 }
 
 /// Bump the depth counter, attempt a non-blocking `try_send`, and undo the bump

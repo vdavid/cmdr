@@ -20,7 +20,7 @@ use std::collections::{HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use rusqlite::Connection;
 use tauri::AppHandle;
@@ -291,7 +291,7 @@ impl EventReconciler {
     /// Test constructor with an explicit throttle window, so the trailing flush is
     /// exercised without sleeping a real [`THROTTLE_WINDOW`].
     #[cfg(test)]
-    pub(super) fn new_with_throttle_window(window: std::time::Duration) -> Self {
+    pub(super) fn new_with_throttle_window(window: Duration) -> Self {
         let mut reconciler = Self::with_space_and_throttle(
             ROOT_VOLUME_ID.to_string(),
             IndexPathSpace::root(),
@@ -504,12 +504,25 @@ pub(super) struct ReconcileSummary {
     pub added: u64,
     pub removed: u64,
     pub updated: u64,
-    pub duration: std::time::Duration,
+    pub duration: Duration,
+    /// How much of `duration` was spent parked on the writer queue (a full channel,
+    /// or a `flush_blocking` waiting for the writer to catch up), from
+    /// `writer::wait_probe`. Without it a walk that was mostly WAITING is
+    /// indistinguishable from a walk that was slow, and the log line blames the
+    /// wrong subsystem.
+    pub writer_wait: Duration,
     /// Set when the reconcile couldn't anchor because the subtree root's chain is
     /// still (partly) missing from the index (the skip branch, or a parent that
     /// resolves to a file). Carries the escalation anchor — a rescan root strictly
     /// closer to the volume root — for the caller to re-queue. `None` on success.
     pub escalation: Option<PathBuf>,
+}
+
+/// This walk's accumulated wait on the writer queue, and a rearm for the next one.
+/// `reconcile_subtree` arms the probe at its start, so every read covers exactly
+/// one walk. See `writer::wait_probe`.
+fn writer_wait() -> Duration {
+    crate::indexing::writer::wait_probe::take()
 }
 
 /// A live directory child, normalized to the fields the per-dir diff needs.
@@ -797,6 +810,8 @@ pub(super) fn reconcile_subtree(
     cancelled: &AtomicBool,
 ) -> Result<ReconcileSummary, String> {
     let start = Instant::now();
+    // Arm the writer-wait probe, discarding whatever ran on this thread before.
+    let _ = writer_wait();
     let mut added: u64 = 0;
     let mut removed: u64 = 0;
     let mut updated: u64 = 0;
@@ -842,6 +857,7 @@ pub(super) fn reconcile_subtree(
                             removed: 0,
                             updated: 0,
                             duration: start.elapsed(),
+                            writer_wait: writer_wait(),
                             escalation: resolve_escalation_anchor(space, conn, &root_str),
                         });
                     }
@@ -858,6 +874,7 @@ pub(super) fn reconcile_subtree(
                         removed: 0,
                         updated: 0,
                         duration: start.elapsed(),
+                        writer_wait: writer_wait(),
                         escalation: resolve_escalation_anchor(space, conn, &root_str),
                     });
                 }
@@ -877,6 +894,7 @@ pub(super) fn reconcile_subtree(
                         removed: 0,
                         updated: 0,
                         duration: start.elapsed(),
+                        writer_wait: writer_wait(),
                         escalation: None,
                     });
                 }
@@ -918,6 +936,7 @@ pub(super) fn reconcile_subtree(
                         removed: 0,
                         updated: 0,
                         duration: start.elapsed(),
+                        writer_wait: writer_wait(),
                         escalation: None,
                     });
                 }
@@ -1023,6 +1042,7 @@ pub(super) fn reconcile_subtree(
         removed,
         updated,
         duration: start.elapsed(),
+        writer_wait: writer_wait(),
         escalation: None,
     })
 }

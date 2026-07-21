@@ -26,8 +26,8 @@ use super::super::store::{self, IndexStore};
 use super::super::watcher;
 use super::super::writer::{IndexWriter, WriteMessage};
 use super::{
-    BacklogTracker, IngestionPressure, LIVE_FLUSH_INTERVAL_MS, THROTTLE_SWEEP_INTERVAL_MS,
-    classify_ingestion_pressure, merge_fs_events, open_read_conn_with_retry, report_backlog, storm,
+    BacklogTracker, IngestionPressure, LIVE_FLUSH_INTERVAL_MS, THROTTLE_SWEEP_INTERVAL_MS, classify_ingestion_pressure,
+    merge_fs_events, open_read_conn_with_retry, report_backlog, storm,
 };
 use crate::pluralize::pluralize;
 

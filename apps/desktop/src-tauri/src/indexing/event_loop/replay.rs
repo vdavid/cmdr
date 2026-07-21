@@ -30,7 +30,8 @@ use super::live::{mark_pending_and_drain, process_live_batch};
 use super::verification::run_background_verification;
 use super::{
     BacklogTracker, IngestionPressure, JOURNAL_GAP_THRESHOLD, LIVE_FLUSH_INTERVAL_MS, ReplayConfig,
-    THROTTLE_SWEEP_INTERVAL_MS, classify_ingestion_pressure, merge_fs_events, open_read_conn_with_retry, report_backlog,
+    THROTTLE_SWEEP_INTERVAL_MS, classify_ingestion_pressure, merge_fs_events, open_read_conn_with_retry,
+    report_backlog,
 };
 use crate::pluralize::pluralize;
 

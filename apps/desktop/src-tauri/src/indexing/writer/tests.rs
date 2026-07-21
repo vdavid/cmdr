@@ -615,6 +615,47 @@ fn try_send_with_depth_undoes_bump_on_full() {
     );
 }
 
+/// A send that doesn't park costs the caller nothing, and a send that DOES park
+/// records the wait — that's what lets a producer say how much of its own
+/// duration was the writer queue rather than its own work. Pinned against a raw
+/// `sync_channel(1)` so the park is deterministic.
+#[test]
+fn a_parked_send_records_its_wait_and_an_immediate_one_does_not() {
+    fn partial_agg() -> WriteMessage {
+        WriteMessage::ComputePartialAggregates {
+            hot_paths: vec![],
+            source: AggSource::Maps,
+        }
+    }
+
+    let (sender, receiver) = mpsc::sync_channel::<WriteMessage>(1);
+    let depth = AtomicUsize::new(0);
+
+    wait_probe::take();
+    send_blocking_with_depth(&sender, &depth, partial_agg()).expect("the single slot is free");
+    assert_eq!(
+        wait_probe::take(),
+        Duration::ZERO,
+        "a send into a free slot never parks, so it records nothing"
+    );
+
+    // The slot is full now, so this send parks until the receiver drains it.
+    let drain_after = Duration::from_millis(50);
+    let drainer = thread::spawn(move || {
+        thread::sleep(drain_after);
+        let _ = receiver.recv();
+        // Keep the channel alive so the parked send lands rather than erroring.
+        thread::sleep(Duration::from_millis(100));
+    });
+    send_blocking_with_depth(&sender, &depth, partial_agg()).expect("the drain lets the parked send land");
+    let waited = wait_probe::take();
+    assert!(
+        waited >= drain_after,
+        "a parked send must record the time it waited; got {waited:?}"
+    );
+    drainer.join().unwrap();
+}
+
 // ── Busy-handler escalation policy ───────────────────────────────────
 
 /// The busy handler escalates to warn only for sustained contention (attempt
