@@ -527,6 +527,18 @@
   "@errors.listing.deviceDisconnected.suggestion": {
     "sourceHash": "9f6c9a0"
   },
+  "errors.listing.deviceReconnecting.title": "Återansluter till enheten",
+  "@errors.listing.deviceReconnecting.title": {
+    "sourceHash": "6157c60"
+  },
+  "errors.listing.deviceReconnecting.explanation": "Anslutningen till enheten som innehåller `{path}` startades om, så den här åtgärden gick inte igenom. Enheten är fortfarande ansluten och Cmdr öppnar den igen just nu. Det här händer oftast efter en avbruten överföring.",
+  "@errors.listing.deviceReconnecting.explanation": {
+    "sourceHash": "28b864d"
+  },
+  "errors.listing.deviceReconnecting.suggestion": "Vänta några sekunder och försök igen. Du behöver inte koppla ur något.",
+  "@errors.listing.deviceReconnecting.suggestion": {
+    "sourceHash": "2481e2a"
+  },
   "errors.listing.readOnly.title": "Skrivskyddad",
   "@errors.listing.readOnly.title": {
     "sourceHash": "72bb908"

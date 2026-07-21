@@ -832,6 +832,25 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
 
+  "errors.listing.deviceReconnecting.title": "Reconnecting to the device",
+  "errors.listing.deviceReconnecting.explanation": "The connection to the device holding `{path}` restarted, so this action didn't go through. The device is still plugged in, and Cmdr is reopening it right now. This usually follows a cancelled or interrupted transfer.",
+  "errors.listing.deviceReconnecting.suggestion": "Give it a few seconds, then try again. There's nothing to unplug.",
+  "@errors.listing.deviceReconnecting.title": {
+    "description": "Title of the listing error panel when the device's session restarted and Cmdr is reopening it. The device is still connected. Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.listing.deviceReconnecting.explanation": {
+    "description": "Body of the listing error panel when the device's session restarted. Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path. \"Cmdr\" is the app name; do NOT translate.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.listing.deviceReconnecting.suggestion": {
+    "description": "Recovery suggestion when the device's session restarted: wait a moment and retry. Markdown.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+
   "errors.listing.readOnly.title": "Read-only",
   "errors.listing.readOnly.explanation": "This volume is read-only, so Cmdr can't make changes to it. This could be because the device has a physical write-protection switch, the disk image was mounted as read-only, or the file system doesn't support writing.",
   "errors.listing.readOnly.suggestion": "Here's what to try:\n- If the device has a physical write-protection switch (common on SD cards), flip it off\n- If this is a disk image, remount it with write access\n- Otherwise, copy the files to a writable location first",

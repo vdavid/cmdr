@@ -185,11 +185,17 @@ pub(super) fn map_mtp_error(e: mtp_rs::Error, device_id: &str) -> MtpConnectionE
         // (`Error::is_disconnected()` is deliberately false for it) and only the
         // PTP session died. Its own log line so a reset is diagnosable in a log
         // instead of hiding inside the generic `Other` bucket.
+        //
+        // This is also where recovery starts. Every device op funnels through
+        // this mapper, so it's the one choke point that sees a reset no matter
+        // which operation tripped it; `schedule_recovery` is fire-and-forget and
+        // deduplicates per device, so the failing op still returns right away.
         E::DeviceReset => {
             log::warn!(
                 target: "mtp_connection",
                 "Device {device_id} was reset in software to recover a wedged transfer cancel: the PTP session is gone, the device is still attached"
             );
+            super::session_reset::schedule_recovery(&device_id);
             MtpConnectionError::SessionReset { device_id }
         }
         E::NotFound => MtpConnectionError::ObjectNotFound {

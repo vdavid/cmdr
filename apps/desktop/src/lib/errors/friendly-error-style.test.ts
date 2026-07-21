@@ -93,6 +93,7 @@ const LISTING_REASONS: ListingErrorReason[] = [
   { reason: 'alreadyExists', path: PATH },
   { reason: 'cancelled' },
   { reason: 'deviceDisconnected', path: PATH },
+  { reason: 'deviceReconnecting', path: PATH },
   { reason: 'readOnly' },
   { reason: 'storageFull' },
   { reason: 'connectionTimedOut' },

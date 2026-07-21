@@ -225,6 +225,14 @@ pub enum VolumeError {
     NotSupported,
     /// Device went away mid-operation.
     DeviceDisconnected(String),
+    /// The device's session died mid-operation but the device itself is still
+    /// attached, and a reopen is already running in the background (MTP: a PTP
+    /// `DeviceReset`, typically after a cancelled or timed-out transfer). The
+    /// operation that tripped it is lost, but retrying in a few seconds works —
+    /// ❌ never map this to `DeviceDisconnected`, which would tear a live device
+    /// out of the sidebar. MTP-only today. See `mtp/connection/DETAILS.md`
+    /// § "Session reset is not a disconnect".
+    DeviceSessionReset(String),
     /// Device or volume is read-only.
     ReadOnly(String),
     /// Device storage is full.
@@ -282,6 +290,7 @@ impl std::fmt::Display for VolumeError {
             Self::AlreadyExists(path) => write!(f, "Already exists: {}", path),
             Self::NotSupported => write!(f, "Operation not supported"),
             Self::DeviceDisconnected(msg) => write!(f, "Device disconnected: {}", msg),
+            Self::DeviceSessionReset(msg) => write!(f, "Device session restarted: {}", msg),
             Self::ReadOnly(msg) => write!(f, "Read-only: {}", msg),
             Self::StorageFull { message } => write!(f, "Storage full: {}", message),
             Self::ConnectionTimeout(msg) => write!(f, "Connection timed out: {}", msg),

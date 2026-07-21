@@ -3,8 +3,8 @@
 //! MTP indexing is the USB analogue of SMB indexing (`smb_index.rs`): a phone or
 //! camera storage is scanned over the same `Volume` trait into its own per-volume
 //! index DB, kept Fresh by the live PTP event loop while the device is connected,
-//! and dropped to Stale the moment the device disconnects (plan D4 — MTP Fresh is
-//! as strong as SMB Fresh).
+//! and dropped to Stale the moment the live feed breaks — a disconnect or a PTP
+//! session reset (plan D4 — MTP Fresh is as strong as SMB Fresh).
 //!
 //! Two ways MTP enable differs from SMB:
 //!
@@ -55,16 +55,23 @@ pub(crate) fn start_indexing_for_mtp(app: AppHandle, volume_id: String) -> Resul
     Ok(())
 }
 
-/// Record that an MTP device's live event loop died (the device disconnected or
-/// the PTP `next_event()` loop returned). Flips a Fresh index to Stale via the
-/// shared freshness state machine — the MTP analogue of `on_smb_watcher_died`.
+/// Record that an MTP device's live event feed broke. Flips a Fresh index to
+/// Stale via the shared freshness state machine — the MTP analogue of
+/// `on_smb_watcher_died`.
+///
+/// Two callers, both a genuine continuity break: the device disconnected
+/// (`handle_device_disconnected`), and its PTP session reset
+/// (`handle_device_session_reset`). The reset case looks milder — the device is
+/// still attached and reopens in seconds — but events fired while the session
+/// was dead are lost just the same, AND the object handles the scan stored in
+/// `inode` may no longer identify the same objects, so a later `ObjectRemoved`
+/// could resolve to the wrong row. A Fresh badge would lie in both cases.
 ///
 /// Fired for EVERY MTP volume on the device (one device hosts N storages, each a
 /// separate index). A reconnect respawns the event loop, but continuity already
-/// broke (events were lost while unplugged), so the index stays Stale until a
-/// rescan — the model's "Stale ⇒ Fresh only via rescan" rule. No-op for an
-/// unindexed volume.
-pub(crate) fn on_mtp_device_disconnected(device_id: &str) {
+/// broke, so the index stays Stale until a rescan — the model's "Stale ⇒ Fresh
+/// only via rescan" rule. No-op for an unindexed volume.
+pub(crate) fn on_mtp_watch_continuity_lost(device_id: &str) {
     // Every registered MTP volume on this device transitions to Stale. The
     // registry is keyed by volume id (`{device_id}:{storage_id}`), so we match by
     // the device-id prefix plus a numeric storage tail (robust to a `:` in a
@@ -122,7 +129,7 @@ mod tests {
         let device_id = "mtp-DISC-TEST";
         let volume_id = crate::mtp::identity::mtp_volume_id(device_id, 65537);
         with_reserved_volume(&volume_id, Freshness::Fresh, || {
-            on_mtp_device_disconnected(device_id);
+            on_mtp_watch_continuity_lost(device_id);
             assert_eq!(
                 get_freshness(&volume_id),
                 Some(Freshness::Stale),
@@ -134,7 +141,7 @@ mod tests {
     #[test]
     fn device_disconnect_is_a_noop_for_an_unindexed_volume() {
         // No registered instance ⇒ nothing to transition; must not panic.
-        on_mtp_device_disconnected("mtp-never-registered");
+        on_mtp_watch_continuity_lost("mtp-never-registered");
         let volume_id = crate::mtp::identity::mtp_volume_id("mtp-never-registered", 65537);
         assert_eq!(get_freshness(&volume_id), None);
     }
@@ -149,7 +156,7 @@ mod tests {
         let vol_b = crate::mtp::identity::mtp_volume_id(dev_b, 65537);
         with_reserved_volume(&vol_a, Freshness::Fresh, || {
             with_reserved_volume(&vol_b, Freshness::Fresh, || {
-                on_mtp_device_disconnected(dev_a);
+                on_mtp_watch_continuity_lost(dev_a);
                 assert_eq!(
                     get_freshness(&vol_a),
                     Some(Freshness::Stale),

@@ -527,6 +527,18 @@
   "@errors.listing.deviceDisconnected.suggestion": {
     "sourceHash": "9f6c9a0"
   },
+  "errors.listing.deviceReconnecting.title": "Đang kết nối lại với thiết bị",
+  "@errors.listing.deviceReconnecting.title": {
+    "sourceHash": "6157c60"
+  },
+  "errors.listing.deviceReconnecting.explanation": "Kết nối tới thiết bị chứa `{path}` đã khởi động lại nên thao tác này không hoàn tất. Thiết bị vẫn đang được cắm và Cmdr đang mở lại kết nối ngay bây giờ. Điều này thường xảy ra sau một lần truyền bị hủy hoặc bị gián đoạn.",
+  "@errors.listing.deviceReconnecting.explanation": {
+    "sourceHash": "28b864d"
+  },
+  "errors.listing.deviceReconnecting.suggestion": "Hãy đợi vài giây rồi thử lại. Bạn không cần rút thiết bị ra.",
+  "@errors.listing.deviceReconnecting.suggestion": {
+    "sourceHash": "2481e2a"
+  },
   "errors.listing.readOnly.title": "Chỉ đọc",
   "@errors.listing.readOnly.title": {
     "sourceHash": "72bb908"

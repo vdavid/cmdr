@@ -111,7 +111,7 @@ pub(crate) use smb_watch::{apply_smb_change, discard_buffered_changes, replay_bu
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use local_external_index::{LocalExternalEnable, start_indexing_for_local_external};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use mtp_index::{on_mtp_device_disconnected, start_indexing_for_mtp};
+pub(crate) use mtp_index::{on_mtp_watch_continuity_lost, start_indexing_for_mtp};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use mtp_watch::{
     MtpUpsert, apply_mtp_added_or_changed, apply_mtp_removed, buffer_mtp_handle_if_scanning,

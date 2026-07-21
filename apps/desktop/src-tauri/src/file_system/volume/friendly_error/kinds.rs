@@ -98,6 +98,23 @@ pub(super) fn device_disconnected(path_display: &str, raw_detail: String) -> Lis
     }
 }
 
+/// The device's session died but the device is still attached and a reopen is
+/// already running. `Transient` with a retry hint, deliberately unlike
+/// [`device_disconnected`]: the user has nothing to plug in or unlock, they just
+/// need to try again in a moment.
+pub(super) fn device_reconnecting(path_display: &str, raw_detail: String) -> ListingError {
+    ListingError {
+        category: ErrorCategory::Transient,
+        reason: ListingErrorReason::DeviceReconnecting {
+            path: path_display.to_string(),
+        },
+        provider: None,
+        action_kind: None,
+        retry_hint: true,
+        raw_detail,
+    }
+}
+
 pub(super) fn read_only(raw_detail: String) -> ListingError {
     ListingError {
         category: ErrorCategory::NeedsAction,

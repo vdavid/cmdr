@@ -884,7 +884,15 @@ impl MtpConnectionManager {
     /// This cleans up the devices registry and emits a disconnection event.
     /// Called from the event loop when MTP reports a disconnect, ensuring that
     /// subsequent reconnection attempts don't fail with "already connected".
+    ///
+    /// ❌ NOT the path for a `SessionReset`: that device is still attached and
+    /// reopenable, so it goes through `handle_device_session_reset` instead (see
+    /// `session_reset.rs`). Emitting `Removed` for it would drop a live device
+    /// out of the sidebar.
     pub(super) async fn handle_device_disconnected(&self, device_id: &str, app: Option<&AppHandle>) {
+        #[cfg(all(test, feature = "virtual-mtp"))]
+        disconnect_test_hooks::bump_count();
+
         debug!(
             "handle_device_disconnected: cleaning up device {} from registry",
             device_id
@@ -908,7 +916,7 @@ impl MtpConnectionManager {
         // Freshness (D4): any disconnect breaks watch continuity, so flip every
         // indexed storage on this device to Stale. Continuity can't be re-claimed
         // by a reconnect (events were lost while unplugged) — only a rescan does.
-        crate::indexing::on_mtp_device_disconnected(device_id);
+        crate::indexing::on_mtp_watch_continuity_lost(device_id);
 
         if removed {
             info!("MTP device disconnected and removed from registry: {}", device_id);
@@ -980,4 +988,29 @@ fn convert_object_infos(
     }
 
     (entries, cache_updates)
+}
+
+/// Test-only tally of `handle_device_disconnected` calls.
+///
+/// Pins the negative half of the reset/disconnect split: a `SessionReset` must
+/// never reach the disconnect teardown, and nothing else observable tells the two
+/// apart in a unit test (both drop the entry, both flip the index Stale; the
+/// `Removed` event needs an `AppHandle`). Asserted by `session_reset.rs`.
+#[cfg(all(test, feature = "virtual-mtp"))]
+pub(super) mod disconnect_test_hooks {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    static CALLS: AtomicUsize = AtomicUsize::new(0);
+
+    pub(super) fn bump_count() {
+        CALLS.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub(in crate::mtp::connection) fn reset_count() {
+        CALLS.store(0, Ordering::Relaxed);
+    }
+
+    pub(in crate::mtp::connection) fn count() -> usize {
+        CALLS.load(Ordering::Relaxed)
+    }
 }

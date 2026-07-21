@@ -27,6 +27,21 @@ static WATCHER_STARTED: OnceLock<()> = OnceLock::new();
 /// but `check_for_device_changes()` returns early and no auto-connects happen.
 static MTP_ENABLED: AtomicBool = AtomicBool::new(true);
 
+/// The app handle the watcher emits from, once `start_mtp_watcher` has stored
+/// it. `None` before startup wiring and in unit tests. Shared so other MTP
+/// background work (the session-reset reopen) can emit the same lifecycle events
+/// an auto-connect does.
+pub(super) fn app_handle() -> Option<AppHandle> {
+    APP_HANDLE.get().cloned()
+}
+
+/// Whether MTP support is currently on. The session-reset reopen checks this
+/// between attempts so a recovery in flight doesn't resurrect a device the user
+/// just switched MTP off for.
+pub(super) fn is_mtp_enabled() -> bool {
+    MTP_ENABLED.load(Ordering::SeqCst)
+}
+
 /// Sets the MTP enabled flag without side effects. Used at startup before the
 /// watcher starts, so the initial auto-connect respects the persisted setting.
 pub fn set_mtp_enabled_flag(enabled: bool) {

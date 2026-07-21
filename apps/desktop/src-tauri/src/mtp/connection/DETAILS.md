@@ -194,9 +194,60 @@ sidebar and flip its index Stale for nothing. mtp-rs agrees: `Error::is_disconne
 propagates the drain's outcome verbatim. Cmdr drops op futures mid-flight by design — the `MTP_TIMEOUT_SECS`
 `tokio::time::timeout` around `read_next_window`, and task aborts on cancelled transfers.
 
-There is deliberately NO reopen state machine yet (drop the device, quiet pause, backoff): it would be speculative
-without hardware evidence of how often this actually fires. The typed variant plus the log line is what makes gathering
-that evidence possible.
+### The recovery (`session_reset.rs`)
+
+**Hardware evidence** (verified on Galaxy S23 Ultra SM-S918B, macOS/nusb, Cmdr's exact call shape, 2026-07-20). Dropping
+a windowed `GetPartialObject64` future mid-flight (8 MiB window, dropped after 25 ms) armed mtp-rs's
+`TransactionScope`. The NEXT op ran `recover_if_needed`'s drain and returned `Err(DeviceReset)`; `is_disconnected()`
+was **false**; a follow-up listing then returned `Timeout` — the session was dead and stayed dead until a physical
+replug. Recovery IS possible in software, but only with SPACED retries. What worked, in order: fresh open → `Timeout`;
+transport reset → "didn't answer yet"; fresh open → `SessionAlreadyOpen`; fresh open → SUCCESS. **Hammering re-wedges
+it into a hard `Timeout`** (mtp-rs's own notes say so, and it reproduced).
+
+So `handle_device_session_reset` (the sibling of `handle_device_disconnected`, triggered from `map_mtp_error`'s
+`DeviceReset` arm — the one choke point every device op funnels through, deduplicated per device by `RECOVERING`):
+
+1. **Drop the `DeviceEntry`** and stop the event loop. The path, listing, and storage caches live ON the entry, so
+   dropping it clears them — required, not hygiene: handles don't survive the reset, and a stale reverse
+   `PathHandleCache` entry resolves a NEW object to a dead path (devices reuse handles).
+2. **Flip every indexed storage Stale** (`indexing::on_mtp_watch_continuity_lost`). Same call the disconnect path
+   makes, for the same reason: events fired while the session was dead are lost, and the handles the scan stored in
+   `inode` may no longer identify the same objects, so an `ObjectRemoved` could resolve to the wrong row. The device
+   being present doesn't buy freshness back — the model's rule is "Stale ⇒ Fresh only via rescan". The cost is real
+   (a 2-second blip costs a phone rescan), and it's the right side to err on.
+3. **Keep the volume registered and emit NO `MtpDeviceDisconnected`.** The device is still attached, so it stays in the
+   sidebar while the reopen runs. ❌ Conflating this with a disconnect throws away a live device.
+4. **Reopen with idle-spaced backoff**: 1.5 s quiet pause, then ×1.5 per attempt capped at 15 s, 10 attempts (~100 s).
+   ❌ Don't collapse it to a single retry — on hardware attempts 1 and 2 failed (`Timeout`, then `SessionAlreadyOpen`)
+   and the third succeeded, so "try once and give up" declares a device dead that is two seconds from working. ❌ Don't
+   tighten the spacing either; that's what re-wedges the device. Between attempts it re-checks
+   `watcher::is_mtp_enabled()` so a recovery in flight can't resurrect a device the user just switched MTP off for.
+   A `DeviceNotFound` (unplugged mid-recovery) means this IS a disconnect now: it runs the real teardown and stops.
+   Exhausting the budget does the same.
+
+mtp-rs's explicit transport `reset` from the repro isn't in the recovery: the neutral `MtpDevice` API doesn't expose
+one. Dropping the entry closes the session and releases the interface, which is the reachable equivalent, and the
+spaced reopen carried the recovery on its own. mtp-rs also self-heals `SessionAlreadyOpen` inside `PtpSession::open`
+(it closes and reopens), so step 4 doesn't special-case it.
+
+**The failing operation is not retried, and reports a RECOVERABLE reason.** `MtpConnectionError::SessionReset` maps to
+`VolumeError::DeviceSessionReset` → the `DeviceReconnecting` listing reason (`Transient`, retry hint) and
+`WriteOperationError::ConnectionInterrupted` on the write path. ❌ Never `io_serious` (a dead end that tells the user
+their data is broken) and ❌ never `DeviceDisconnected` (tells them to re-plug a phone that never left).
+
+**No auto-resume of an in-flight transfer.** `MtpReadStream`'s offset is byte-exact and `open_read_session` already
+takes one, so resuming the READ side is trivial; the destination side isn't. `stream_pipe_file` writes through the
+safe-overwrite temp+rename path, and resuming would mean keeping a partial temp file alive across the reopen and
+re-entering the write mid-stream — real surface in the engine's partial-cleanup and progress accounting, for a case
+that costs the user one click today. The retryable classification is what makes that click cheap. Revisit if field
+reports show resets hitting multi-GB copies often.
+
+**Testing without hardware.** No wedge can be armed on a virtual device today (mtp-rs's `force_cancel_wedge` arms only
+on the next `cancel_transfer`, which Cmdr never calls), so `session_reset.rs`'s tests drive the state machine
+directly: the backoff schedule is a pure function with its own tests, and the virtual-device tests call
+`tear_down_reset_session` / `reopen_after_session_reset` and assert the entry is dropped, the path cache cleared, the
+volume still registered, the device reopened, and `handle_device_disconnected` never reached (via a test-only call
+counter in `directory_ops.rs` — nothing else observable distinguishes the two paths in a unit test).
 
 ## Pathful change events: handle → path resolution (`handle_resolver.rs`)
 

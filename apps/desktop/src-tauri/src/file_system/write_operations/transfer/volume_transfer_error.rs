@@ -87,6 +87,14 @@ pub(in crate::file_system::write_operations) fn map_volume_error(
         VolumeError::ConnectionTimeout(_) => WriteOperationError::ConnectionInterrupted {
             path: context_path.to_string(),
         },
+        // The device's session died mid-write but the device is still attached
+        // and a reopen is already running (MTP session reset). "Connection
+        // interrupted, try again" is exactly right, and ❌ it must never become
+        // `DeviceDisconnected`, which tells the user to go re-plug a phone that
+        // never left.
+        VolumeError::DeviceSessionReset(_) => WriteOperationError::ConnectionInterrupted {
+            path: context_path.to_string(),
+        },
         VolumeError::Cancelled(_) => WriteOperationError::Cancelled {
             message: "Operation cancelled by user".to_string(),
         },

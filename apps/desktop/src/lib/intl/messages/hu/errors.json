@@ -527,6 +527,18 @@
   "@errors.listing.deviceDisconnected.suggestion": {
     "sourceHash": "9f6c9a0"
   },
+  "errors.listing.deviceReconnecting.title": "Újracsatlakozás az eszközhöz",
+  "@errors.listing.deviceReconnecting.title": {
+    "sourceHash": "6157c60"
+  },
+  "errors.listing.deviceReconnecting.explanation": "A `{path}` elemet tároló eszközzel megszakadt és újraindult a kapcsolat, ezért ez a művelet nem ment végbe. Az eszköz továbbra is csatlakoztatva van, és a Cmdr éppen újra megnyitja. Ez általában megszakított vagy félbeszakadt átvitel után fordul elő.",
+  "@errors.listing.deviceReconnecting.explanation": {
+    "sourceHash": "28b864d"
+  },
+  "errors.listing.deviceReconnecting.suggestion": "Várj néhány másodpercet, majd próbáld újra. Semmit nem kell kihúznod.",
+  "@errors.listing.deviceReconnecting.suggestion": {
+    "sourceHash": "2481e2a"
+  },
   "errors.listing.readOnly.title": "Csak olvasható",
   "@errors.listing.readOnly.title": {
     "sourceHash": "72bb908"

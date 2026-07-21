@@ -185,6 +185,9 @@ pub enum ListingErrorReason {
     DeviceDisconnected {
         path: String,
     },
+    DeviceReconnecting {
+        path: String,
+    },
     ReadOnly,
     StorageFull,
     ConnectionTimedOut,
@@ -458,6 +461,15 @@ mod tests {
                 ErrorCategory::NeedsAction,
                 false,
                 |r| matches!(r, ListingErrorReason::DeviceDisconnected { .. }),
+            ),
+            (
+                // ❌ Deliberately NOT the `DeviceDisconnected` classification: the
+                // device is still attached and a reopen is already running, so the
+                // user needs to wait and retry, not go re-plug anything.
+                VolumeError::DeviceSessionReset("x".into()),
+                ErrorCategory::Transient,
+                true,
+                |r| matches!(r, ListingErrorReason::DeviceReconnecting { .. }),
             ),
             (
                 VolumeError::ReadOnly("x".into()),

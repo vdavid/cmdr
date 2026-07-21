@@ -104,6 +104,7 @@ export type ListingErrorReason =
   | { reason: 'alreadyExists'; path: string }
   | { reason: 'cancelled' }
   | { reason: 'deviceDisconnected'; path: string }
+  | { reason: 'deviceReconnecting'; path: string }
   | { reason: 'readOnly' }
   | { reason: 'storageFull' }
   | { reason: 'connectionTimedOut' }

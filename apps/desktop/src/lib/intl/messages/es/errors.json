@@ -527,6 +527,18 @@
   "@errors.listing.deviceDisconnected.suggestion": {
     "sourceHash": "9f6c9a0"
   },
+  "errors.listing.deviceReconnecting.title": "Reconectando con el dispositivo",
+  "@errors.listing.deviceReconnecting.title": {
+    "sourceHash": "6157c60"
+  },
+  "errors.listing.deviceReconnecting.explanation": "La conexión con el dispositivo que contiene `{path}` se reinició, así que esta acción no se completó. El dispositivo sigue conectado y Cmdr lo está reabriendo ahora mismo. Suele ocurrir después de una transferencia cancelada o interrumpida.",
+  "@errors.listing.deviceReconnecting.explanation": {
+    "sourceHash": "28b864d"
+  },
+  "errors.listing.deviceReconnecting.suggestion": "Espera unos segundos y vuelve a intentarlo. No hace falta desconectar nada.",
+  "@errors.listing.deviceReconnecting.suggestion": {
+    "sourceHash": "2481e2a"
+  },
   "errors.listing.readOnly.title": "Solo lectura",
   "@errors.listing.readOnly.title": {
     "sourceHash": "72bb908"

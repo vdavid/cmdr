@@ -24,6 +24,7 @@ mod mutation_ops;
 #[cfg(all(test, feature = "virtual-mtp"))]
 mod path_cache_sync_test;
 mod scheduler;
+mod session_reset;
 
 use cache::{EVENT_DEBOUNCE_MS, EventDebouncer, ListingCache, PathHandleCache};
 pub use errors::MtpConnectionError;
