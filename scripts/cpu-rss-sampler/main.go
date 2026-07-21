@@ -195,7 +195,7 @@ func snapshotAll() ([]Process, error) {
 		return nil, fmt.Errorf("running ps: %w", err)
 	}
 	var procs []Process
-	for _, line := range strings.Split(string(out), "\n") {
+	for line := range strings.SplitSeq(string(out), "\n") {
 		if p, ok := parsePSLine(line); ok {
 			procs = append(procs, p)
 		}
