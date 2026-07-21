@@ -643,6 +643,9 @@ async fn remove_dir_if_empty(vm: &VolumeManager, unit: &RollbackUnit) -> ItemRes
 }
 
 async fn restore_move(vm: &VolumeManager, unit: &RollbackUnit) -> ItemResult {
+    if unit.outcome != ItemOutcome::Done {
+        return ItemResult::Skipped(SkipReason::Failed);
+    }
     // Restore moves the item back FROM where it landed (dest) TO its original
     // (source). Both must be present in the row (move/trash/rename all record a
     // dest); a row without one is a journal shape bug — skip safe.

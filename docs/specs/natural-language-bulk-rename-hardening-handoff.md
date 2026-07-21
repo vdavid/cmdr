@@ -34,6 +34,17 @@ remains untouched.
 - Validation after these changes: `pnpm check --fast -q` passed 51 checks with the existing file-length warning;
   `pnpm check svelte-tests --fresh -q` passed the full Svelte lane, including all 6,815 tests.
 
+## Data-safety follow-up completed
+
+- Moved the atomic-exclusive local rename primitive into the shared local POSIX backend and made
+  `LocalPosixVolume::rename(..., force = false)` use it. This closes the no-clobber race for attached volumes and local
+  cloud roots with non-root IDs, not only the boot volume. Forced renames retain explicit replacement behavior.
+- Bulk rename now journals rollback leaves only for `Done` rows.
+- Rollback paging filters to `outcome = done`, and `restore_move` defensively skips any non-Done unit that reaches it.
+- Added a store regression proving skipped rollback units are excluded.
+- Updated volume, backend, write-operation, and operation-log DETAILS docs.
+- Validation: the full local Rust lane passed after the changes.
+
 ## Current worktree state
 
 Changed or added files at capture time:

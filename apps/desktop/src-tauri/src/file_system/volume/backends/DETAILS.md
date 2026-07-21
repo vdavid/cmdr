@@ -205,3 +205,6 @@ Tests: `smb_watcher/archive_refresh_test.rs` (a Modified `.zip` event refreshes 
   the single-shot integration tests can't see (credit leak, FD leak, memory growth, slowdown). Default mode:
   `CMDR_SOAK_ITERATIONS=100` (≈5 s against Docker). Long mode: `CMDR_SOAK_DURATION_SECS=1800` (30 min, via
   `./scripts/soak-smb.sh`). CI has a `workflow_dispatch`-only job in `slow-checks.yml`.
+`LocalPosixVolume` routes every non-forced rename through the shared atomic-exclusive primitive. This applies equally
+to `/`, attached disks, Dropbox, iCloud, and other local POSIX roots registered with non-root volume IDs. Forced
+renames retain normal POSIX replacement semantics because the caller explicitly authorized replacement.

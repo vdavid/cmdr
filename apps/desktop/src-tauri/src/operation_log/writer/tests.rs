@@ -266,7 +266,8 @@ fn rollback_units_page_streams_reverse_and_excludes_search_leaves() {
             execution_status: ExecutionStatus::Running,
         })
         .expect("open");
-    // Three rollback units (seq 0,1,2) on two volumes, plus one search-only leaf.
+    // Three completed rollback units (seq 0,1,2), one skipped rollback unit,
+    // plus one search-only leaf.
     let unit = |seq: i64, name: &str| JournalItem {
         seq,
         entry_type: EntryType::File,
@@ -286,8 +287,12 @@ fn rollback_units_page_streams_reverse_and_excludes_search_leaves() {
         row_role: RowRole::SearchOnly,
         ..unit(3, "inner.txt")
     };
+    let skipped = JournalItem {
+        outcome: ItemOutcome::Skipped,
+        ..unit(4, "untouched.txt")
+    };
     writer
-        .record_items("op", vec![unit(0, "a"), unit(1, "b"), unit(2, "c"), leaf])
+        .record_items("op", vec![unit(0, "a"), unit(1, "b"), unit(2, "c"), leaf, skipped])
         .expect("record");
     writer.flush_blocking().expect("flush");
 
@@ -310,7 +315,11 @@ fn rollback_units_page_streams_reverse_and_excludes_search_leaves() {
         .into_iter()
         .map(|u| u.seq)
         .collect();
-    assert_eq!(all, vec![2, 1, 0], "search_only leaf excluded from every page");
+    assert_eq!(
+        all,
+        vec![2, 1, 0],
+        "search-only and non-Done rollback rows are excluded from every page"
+    );
 
     writer.shutdown();
 }

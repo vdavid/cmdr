@@ -17,11 +17,10 @@ Subdirs:
 
 Implements the four destructive file operations as background tasks that stream Tauri events to the frontend. Every operation is cancellable, reports byte-level progress, and handles edge cases: symlink loops, same-inode overwrites, network mounts, cross-filesystem moves, and name/path length limits.
 
-Ask Cmdr bulk renames use the same managed-operation lifecycle. For local final destinations,
-`rename_local_exclusive` is the mandatory commit primitive: macOS uses `renamex_np(RENAME_EXCL)` and Linux uses
-`renameat2(RENAME_NOREPLACE)`. The dialog's target-exists preflight improves review UX, but it cannot prove that a name
-stays empty; only the exclusive kernel operation closes the check-to-rename race without replacing another process's
-new file.
+Ask Cmdr bulk renames use the same managed-operation lifecycle. `LocalPosixVolume` makes every non-forced local rename
+atomic-no-overwrite, including attached disks and cloud folders registered under non-root volume IDs: macOS uses
+`renamex_np(RENAME_EXCL)` and Linux uses `renameat2(RENAME_NOREPLACE)`. Root bulk-renames share that primitive directly.
+The dialog's target-exists preflight improves review UX, but only the kernel operation closes the check-to-rename race.
 
 Pre-flight scans reuse cached listings when the source volume reports an active watcher, avoiding redundant `list_directory` calls. The freshness contract and per-backend debounce windows are documented in `../volume/CLAUDE.md` and `../listing/caching.rs::try_get_watched_listing`.
 

@@ -488,13 +488,14 @@ pub fn read_rollback_units_page(
 ) -> Result<Vec<RollbackUnit>, OperationLogStoreError> {
     let sql = format!(
         "SELECT {ITEM_COLUMNS} FROM operation_items \
-         WHERE op_id = ?1 AND row_role = ?2 AND seq < ?3 \
-         ORDER BY seq DESC LIMIT ?4"
+         WHERE op_id = ?1 AND row_role = ?2 AND outcome = ?3 AND seq < ?4 \
+         ORDER BY seq DESC LIMIT ?5"
     );
     let mut stmt = conn.prepare_cached(&sql)?;
     let mut rows = stmt.query(rusqlite::params![
         op_id,
         RowRole::RollbackUnit.as_token(),
+        ItemOutcome::Done.as_token(),
         before_seq,
         limit
     ])?;

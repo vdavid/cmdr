@@ -991,6 +991,7 @@ pub mod eject;
 pub mod friendly_error;
 pub(crate) mod manager;
 
+pub(crate) use backends::rename_local_exclusive;
 pub use backends::{InMemoryVolume, LocalPosixVolume};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use backends::{MtpVolume, SmbVolume};

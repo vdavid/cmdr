@@ -316,6 +316,10 @@ cursor, `before_seq` = the smallest seq of the prior page), so a 1M-item op neve
 a dir removes only once its contents are gone, and pure `seq DESC` would hit a deep dir before the files it holds. Dirs
 are a small fraction of an op (interning shares them), so buffering just the dir rows stays bounded.
 
+Rollback eligibility is Done-only at both boundaries: mutation code journals rollback leaves only for committed rows,
+and `read_rollback_units_page` filters `outcome = done`. The executor also rejects any non-Done unit defensively. A
+skipped or unsuccessful planned rename must never make an untouched destination eligible for rename-back.
+
 ### The `rolling_back` state machine + startup reconcile (Finding 7 + 3)
 
 `rollback_operation` (the entry) reads the op, gates it (`check_rollbackable`: `UnknownOperation` / `AlreadyRollingBack`

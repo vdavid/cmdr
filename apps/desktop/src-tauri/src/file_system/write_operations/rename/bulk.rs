@@ -22,61 +22,8 @@ use super::super::types::{
     WriteCancelledEvent, WriteCompleteEvent, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
     WriteSourceItemDoneEvent,
 };
-use crate::file_system::volume::{LaneKey, Volume};
+use crate::file_system::volume::{LaneKey, Volume, rename_local_exclusive};
 use crate::operation_log::types::{EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind};
-
-/// Atomically renames a local file only when `destination` is unoccupied.
-///
-/// The review-time existence check is advisory. This syscall-level exclusion
-/// is the write boundary that prevents a destination created after review from
-/// being silently replaced.
-#[cfg(target_os = "macos")]
-pub(super) fn rename_local_exclusive(source: &Path, destination: &Path) -> io::Result<()> {
-    use std::ffi::CString;
-    use std::os::unix::ffi::OsStrExt;
-
-    let source = CString::new(source.as_os_str().as_bytes())
-        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "source path contains a null byte"))?;
-    let destination = CString::new(destination.as_os_str().as_bytes())
-        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "destination path contains a null byte"))?;
-    // SAFETY: Both pointers come from live `CString`s and remain valid for the
-    // duration of the call. `RENAME_EXCL` asks the kernel to combine the
-    // destination-absence check and rename into one operation.
-    let result = unsafe { libc::renamex_np(source.as_ptr(), destination.as_ptr(), libc::RENAME_EXCL) };
-    if result == 0 {
-        Ok(())
-    } else {
-        Err(io::Error::last_os_error())
-    }
-}
-
-#[cfg(target_os = "linux")]
-pub(super) fn rename_local_exclusive(source: &Path, destination: &Path) -> io::Result<()> {
-    use std::ffi::CString;
-    use std::os::unix::ffi::OsStrExt;
-
-    let source = CString::new(source.as_os_str().as_bytes())
-        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "source path contains a null byte"))?;
-    let destination = CString::new(destination.as_os_str().as_bytes())
-        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "destination path contains a null byte"))?;
-    // SAFETY: Both pointers come from live `CString`s and remain valid for the
-    // duration of the call. `RENAME_NOREPLACE` provides Linux's equivalent
-    // atomic no-overwrite contract.
-    let result = unsafe {
-        libc::renameat2(
-            libc::AT_FDCWD,
-            source.as_ptr(),
-            libc::AT_FDCWD,
-            destination.as_ptr(),
-            libc::RENAME_NOREPLACE,
-        )
-    };
-    if result == 0 {
-        Ok(())
-    } else {
-        Err(io::Error::last_os_error())
-    }
-}
 
 /// Server-owned source identity captured by the rename-review preflight. The
 /// frontend never creates this data; the Ask Cmdr command maps its accepted
@@ -116,14 +63,6 @@ impl BulkRenameOutcome {
     #[cfg(test)]
     fn is_done(self) -> bool {
         self == Self::Done
-    }
-
-    fn journal_outcome(self) -> ItemOutcome {
-        match self {
-            Self::Done => ItemOutcome::Done,
-            Self::Skipped => ItemOutcome::Skipped,
-            Self::Failed => ItemOutcome::Failed,
-        }
     }
 }
 
@@ -792,6 +731,9 @@ fn record_bulk_rename_outcomes(
     outcomes: &[BulkRenameOutcome],
 ) {
     for (row, outcome) in rows.iter().zip(outcomes.iter().copied()) {
+        if outcome != BulkRenameOutcome::Done {
+            continue;
+        }
         let size = match &row.expected_fingerprint {
             BulkRenameFingerprint::Local { size, .. } => Some(*size as i64),
             BulkRenameFingerprint::Remote { size, .. } => size.map(|size| size as i64),
@@ -805,7 +747,7 @@ fn record_bulk_rename_outcomes(
             size,
             None,
             false,
-            outcome.journal_outcome(),
+            ItemOutcome::Done,
         );
     }
 }

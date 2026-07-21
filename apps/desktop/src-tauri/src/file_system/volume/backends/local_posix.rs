@@ -12,12 +12,60 @@ use crate::indexing::scanner::{self, ScanConfig, ScanError, ScanHandle, ScanSumm
 use crate::indexing::watcher::{DriveWatcher, FsChangeEvent, WatcherError};
 use crate::indexing::writer::IndexWriter;
 use std::future::Future;
+use std::io;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::atomic::AtomicBool;
 use tokio::sync::mpsc;
 use tokio::task::spawn_blocking;
 use walkdir::WalkDir;
+
+/// Atomically renames a local path only when `destination` is unoccupied.
+#[cfg(target_os = "macos")]
+pub(crate) fn rename_local_exclusive(source: &Path, destination: &Path) -> io::Result<()> {
+    use std::ffi::CString;
+    use std::os::unix::ffi::OsStrExt;
+
+    let source = CString::new(source.as_os_str().as_bytes())
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "source path contains a null byte"))?;
+    let destination = CString::new(destination.as_os_str().as_bytes())
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "destination path contains a null byte"))?;
+    // SAFETY: Both live C strings remain valid for the call. RENAME_EXCL makes
+    // destination absence and the rename one kernel operation.
+    let result = unsafe { libc::renamex_np(source.as_ptr(), destination.as_ptr(), libc::RENAME_EXCL) };
+    if result == 0 {
+        Ok(())
+    } else {
+        Err(io::Error::last_os_error())
+    }
+}
+
+#[cfg(target_os = "linux")]
+pub(crate) fn rename_local_exclusive(source: &Path, destination: &Path) -> io::Result<()> {
+    use std::ffi::CString;
+    use std::os::unix::ffi::OsStrExt;
+
+    let source = CString::new(source.as_os_str().as_bytes())
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "source path contains a null byte"))?;
+    let destination = CString::new(destination.as_os_str().as_bytes())
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "destination path contains a null byte"))?;
+    // SAFETY: Both live C strings remain valid for the call. RENAME_NOREPLACE
+    // is Linux's atomic no-overwrite contract.
+    let result = unsafe {
+        libc::renameat2(
+            libc::AT_FDCWD,
+            source.as_ptr(),
+            libc::AT_FDCWD,
+            destination.as_ptr(),
+            libc::RENAME_NOREPLACE,
+        )
+    };
+    if result == 0 {
+        Ok(())
+    } else {
+        Err(io::Error::last_os_error())
+    }
+}
 
 /// A volume backed by the local POSIX file system.
 ///
@@ -381,10 +429,11 @@ impl Volume for LocalPosixVolume {
         }
         Box::pin(async move {
             spawn_blocking(move || {
-                if !force && from_abs != to_abs && std::fs::symlink_metadata(&to_abs).is_ok() {
-                    return Err(VolumeError::AlreadyExists(to_abs.display().to_string()));
+                if !force && from_abs != to_abs {
+                    rename_local_exclusive(&from_abs, &to_abs)?;
+                } else {
+                    std::fs::rename(&from_abs, &to_abs)?;
                 }
-                std::fs::rename(&from_abs, &to_abs)?;
                 Ok(())
             })
             .await
