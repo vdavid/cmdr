@@ -36,7 +36,15 @@ const DOMAIN_ID_XATTR: &str = "com.apple.file-provider-domain-id";
 /// non-UTF-8 value all collapse to `None`: this is a hint, so an unreadable path is
 /// simply "not recognized".
 pub(crate) fn domain_id_for_dir(path: &str) -> Option<String> {
-    let raw = xattr::get(path, DOMAIN_ID_XATTR).ok()??;
+    read_domain_id_xattr(path, DOMAIN_ID_XATTR)
+}
+
+/// The read itself, with the attribute name injected so tests can exercise it
+/// against a name they're allowed to write. macOS refuses `com.apple.*` xattrs to
+/// an unentitled process, so a test that builds its fixture with the real constant
+/// can never pass; see the tests below.
+fn read_domain_id_xattr(path: &str, name: &str) -> Option<String> {
+    let raw = xattr::get(path, name).ok()??;
     String::from_utf8(raw).ok()
 }
 
@@ -59,14 +67,35 @@ mod tests {
     }
 
     /// A directory carrying the domain-id xattr reads back as that domain, value
-    /// verbatim. Writing the xattr ourselves keeps the test off any real provider.
+    /// verbatim.
+    ///
+    /// ❌ Do NOT write `DOMAIN_ID_XATTR` here to build the fixture. macOS refuses
+    /// `com.apple.*` extended attributes to an unentitled process with EPERM, so a
+    /// test that sets it fails on a real machine no matter what this module does
+    /// (verified on macOS 26.5.2, 2026-07-21: `xattr -w com.apple.file-provider-domain-id`
+    /// → "Operation not permitted", while a `com.example.*` name succeeds). The
+    /// read path is exercised against a name we ARE allowed to write; the constant
+    /// itself is covered by `the_domain_id_xattr_name_is_the_one_macos_uses`.
     #[test]
-    fn directory_with_the_xattr_reports_its_domain_id() {
+    fn a_directory_carrying_the_xattr_reports_its_value_verbatim() {
         let dir = tempfile::tempdir().expect("temp dir");
         let path = dir.path().to_string_lossy().into_owned();
         let value = "com.example.provider/2f3c1a90-0000-4000-8000-000000000001";
-        xattr::set(&path, DOMAIN_ID_XATTR, value.as_bytes()).expect("set the domain-id xattr");
+        let writable_name = "com.example.file-provider-domain-id";
+        xattr::set(&path, writable_name, value.as_bytes()).expect("set the stand-in xattr");
 
-        assert_eq!(domain_id_for_dir(&path), Some(value.to_string()));
+        assert_eq!(
+            read_domain_id_xattr(&path, writable_name),
+            Some(value.to_string()),
+            "the reader returns the attribute's value unchanged"
+        );
+    }
+
+    /// The production constant is the name macOS actually uses. Split out because
+    /// the fixture above cannot use it (see that test's note), so without this the
+    /// name itself would be untested and a typo would silently disable detection.
+    #[test]
+    fn the_domain_id_xattr_name_is_the_one_macos_uses() {
+        assert_eq!(DOMAIN_ID_XATTR, "com.apple.file-provider-domain-id");
     }
 }
