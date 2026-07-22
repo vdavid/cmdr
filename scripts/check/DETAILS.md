@@ -64,7 +64,8 @@ nickname that would shadow a group/app keyword (`reservedSelectorNames` in `main
 - **`-q`, `--quiet`**: Collapse passing checks into a one-line count, for low-token agent runs (details below)
 - **`--graph`**: Render the check dependency graph (weights + lanes + median wall-time) and exit
 - **`--graph-format`**: Graph output: `tree` (default, colored terminal), `mermaid`, `dot`
-- **`--docs-graph`**: Render the doc-discoverability tree (rooted at the repo-root `CLAUDE.md`) with per-doc usage, and exit
+- **`--docs-graph`**: Render the doc-discoverability tree (rooted at the repo-root `CLAUDE.md`) with per-doc usage, and
+  exit
 - **`-h`, `--help`**: Show help message
 
 `--graph` honors the same selectors (positional or flag form), so `pnpm check rust --graph` graphs only the Rust checks.

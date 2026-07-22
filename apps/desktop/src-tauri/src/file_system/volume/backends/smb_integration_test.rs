@@ -635,7 +635,7 @@ async fn smb_integration_scan_pool_opens_lists_and_closes() {
         .await
         .expect("create b.txt");
 
-    let names = |mut entries: Vec<crate::file_system::listing::FileEntry>| -> Vec<String> {
+    let names = |mut entries: Vec<FileEntry>| -> Vec<String> {
         entries.sort_by(|a, b| a.name.cmp(&b.name));
         entries.into_iter().map(|e| e.name).collect::<Vec<_>>()
     };

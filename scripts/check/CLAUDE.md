@@ -16,8 +16,8 @@ see [DETAILS.md](DETAILS.md).
 - `checks/inputs.go`: shared `Inputs` building blocks (mined from ci.yml filters).
 - `smb_orchestrator.go` + `smblease/` + `smb-lease/`: runner-level SMB Docker lifecycle behind a machine-wide lease.
 - `freestyle.go`: all freestyle.sh remote-VM execution. `graph.go`: `--graph` (check dependency tree) renderer.
-  `docs_graph_render.go`: `--docs-graph` (doc-discoverability tree) renderer; `docs_graph_usage.go`: per-doc
-  read/write tallies mined from `~/.claude` transcripts for it. `stats.go`: CSV stats logging.
+  `docs_graph_render.go`: `--docs-graph` (doc-discoverability tree) renderer; `docs_graph_usage.go`: per-doc read/write
+  tallies mined from `~/.claude` transcripts for it. `stats.go`: CSV stats logging.
 
 ## Must-knows
 
