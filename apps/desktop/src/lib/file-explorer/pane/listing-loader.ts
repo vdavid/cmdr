@@ -104,6 +104,7 @@ export interface ListingLoaderDeps {
   setCursorIndexRaw: (index: number) => void
   clearEntryUnderCursor: () => void
   clearSyncStatusMap: () => void
+  clearIndexStatusMap: () => void
   clearSyncRetryTimer: () => void
   bumpCacheGeneration: () => void
 
@@ -285,6 +286,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     deps.setError(null)
     deps.setFriendlyError(null)
     deps.clearSyncStatusMap()
+    deps.clearIndexStatusMap()
     deps.clearSyncRetryTimer()
     deps.selection.clearSelection()
     deps.setTotalCount(0) // Reset to show empty list immediately

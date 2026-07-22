@@ -3,6 +3,7 @@
     import { type UnlistenFn } from '@tauri-apps/api/event'
     import { onGitStateChanged } from '$lib/tauri-commands'
     import type { FileEntry, SortColumn, SortOrder, SyncStatus } from '../types'
+    import type { FileIndexState } from '$lib/tauri-commands'
     import { calculateVirtualWindow, getScrollToPosition } from './virtual-scroll'
     import { startSelectionDragTracking, type DragFileInfo } from '../drag/drag-drop'
     import {
@@ -19,6 +20,7 @@
     import { fetchStatusMap, glyphFor, labelFor, type EntryStatusCode } from '../git/status-column'
     import {
         getSyncIconPath,
+        getImageIndexBadge,
         createParentEntry,
         getEntryAt as getEntryAtUtil,
         fetchVisibleRange as fetchVisibleRangeUtil,
@@ -92,6 +94,7 @@
         cursorIndex: number
         isFocused?: boolean
         syncStatusMap?: Record<string, SyncStatus>
+        indexStatusMap?: Record<string, FileIndexState>
         selectedIndices?: Set<number>
         hasParent: boolean
         parentPath: string
@@ -112,6 +115,7 @@
         onNavigate: (entry: FileEntry) => void
         onContextMenu?: (entry: FileEntry) => void
         onSyncStatusRequest?: (paths: string[]) => void
+        onIndexStatusRequest?: (paths: string[]) => void
         onSortChange?: (column: SortColumn) => void
         onVisibleRangeChange?: (start: number, end: number) => void
         /** Called when rename input value changes */
@@ -150,6 +154,7 @@
         cursorIndex,
         isFocused = true,
         syncStatusMap = {},
+        indexStatusMap = {},
         selectedIndices = new Set<number>(),
         hasParent,
         parentPath,
@@ -163,6 +168,7 @@
         onNavigate,
         onContextMenu,
         onSyncStatusRequest,
+        onIndexStatusRequest,
         onSortChange,
         onVisibleRangeChange,
         onRenameInput,
@@ -421,6 +427,7 @@
                 includeHidden,
                 cachedRange,
                 onSyncStatusRequest,
+                onIndexStatusRequest,
                 force,
             })
             if (result) {
@@ -892,6 +899,7 @@
             <div class="virtual-window" style="transform: translateY({virtualWindow.offset}px);">
                 {#each visibleFiles as { file, globalIndex } (file.path)}
                     {@const syncIcon = getSyncIconPath(syncStatusMap[file.path])}
+                    {@const imageIndexBadge = getImageIndexBadge(indexStatusMap[file.path])}
                     {@const dirDisplaySize = file.isDirectory
                         ? getDisplaySize(file.recursiveSize, file.recursivePhysicalSize, sizeDisplayMode)
                         : undefined}
@@ -927,7 +935,7 @@
                         role="option"
                         aria-selected={globalIndex === cursorIndex}
                     >
-                        <FileIcon {file} {syncIcon} />
+                        <FileIcon {file} {syncIcon} {imageIndexBadge} />
                         {#if renameState?.active && shouldMountRenameEditor(renameState.target, { path: file.path })}
                             <div
                                 class="col-rename"

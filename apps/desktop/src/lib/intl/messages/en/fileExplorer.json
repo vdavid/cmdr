@@ -1390,6 +1390,26 @@
   "@fileExplorer.imageIndex.automaticTooltip": {
     "description": "Hover tooltip for the \"Images indexed automatically\" status-bar label. Deliberately says ''may or may not'': the frontend can''t know a folder''s importance score."
   },
+  "fileExplorer.imageIndex.file.indexed": "Indexed for image search",
+  "@fileExplorer.imageIndex.file.indexed": {
+    "description": "Hover tooltip on a small badge over an image file''s icon in the file list. Means this image is fully indexed, so image search can find it by the text inside it."
+  },
+  "fileExplorer.imageIndex.file.pending": "Waiting to be indexed",
+  "@fileExplorer.imageIndex.file.pending": {
+    "description": "Hover tooltip on the badge over an image file''s icon. Means the image is queued for image-search indexing but hasn''t been processed yet."
+  },
+  "fileExplorer.imageIndex.file.stale": "Changed since indexing; will be re-indexed",
+  "@fileExplorer.imageIndex.file.stale": {
+    "description": "Hover tooltip on the badge over an image file''s icon. Means the file changed after it was indexed, so it''s scheduled to be indexed again."
+  },
+  "fileExplorer.imageIndex.file.failed": "Couldn''t be indexed",
+  "@fileExplorer.imageIndex.file.failed": {
+    "description": "Hover tooltip on the badge over an image file''s icon. Means indexing this image didn''t work. Keep it gentle; do not use the words \"error\" or \"failed\" in the visible copy."
+  },
+  "fileExplorer.imageIndex.file.excluded": "Not included in image search",
+  "@fileExplorer.imageIndex.file.excluded": {
+    "description": "Hover tooltip on the badge over an image file''s icon. Means this image is outside what image search covers (excluded folder, out of scope, unsupported type, or too big), so it won''t be indexed."
+  },
   "fileExplorer.selectionInfo.nothingHere": "Nothing in here.",
   "@fileExplorer.selectionInfo.nothingHere": {
     "description": "Status-bar text shown below a pane when the current folder is empty.",

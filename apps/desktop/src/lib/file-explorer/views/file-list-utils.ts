@@ -3,10 +3,12 @@
  */
 
 import type { FileEntry, SyncStatus } from '../types'
-import { enrichTags, getFileRange, getDirStatsBatch, type DirStats } from '$lib/tauri-commands'
+import { enrichTags, getFileRange, getDirStatsBatch, type DirStats, type FileIndexState } from '$lib/tauri-commands'
 import { prefetchIcons, prefetchCustomFolderIcons } from '$lib/icon-cache'
 import { getUseAppIconsForDocuments } from '$lib/settings/reactive-settings.svelte'
 import { getSetting } from '$lib/settings/settings-store'
+import type { IconName } from '$lib/ui/icons/icon-map'
+import type { MessageKey } from '$lib/intl/keys.gen'
 
 export type { DirStats } from '$lib/tauri-commands'
 
@@ -26,6 +28,37 @@ export function getSyncIconPath(status: SyncStatus | undefined): string | undefi
     unknown: undefined,
   }
   return iconMap[status]
+}
+
+/** The resolved top-right image-index badge for a file row: a glyph plus the i18n
+ *  key for its tooltip text. `null` means render no badge. */
+export interface ImageIndexBadge {
+  icon: IconName
+  tooltipKey: MessageKey
+}
+
+/**
+ * Maps a file's backend-classified image-index `state` to its top-right badge (glyph
+ * + tooltip i18n key), or `null` for no badge. `notApplicable` (a non-media file) and
+ * an absent state both render nothing. Pure and exhaustive over `FileIndexState`, so
+ * the compiler flags a missing case if the backend adds a state; unit-tested.
+ */
+export function getImageIndexBadge(state: FileIndexState | undefined): ImageIndexBadge | null {
+  if (!state) return null
+  switch (state) {
+    case 'indexed':
+      return { icon: 'circle-check', tooltipKey: 'fileExplorer.imageIndex.file.indexed' }
+    case 'pending':
+      return { icon: 'circle-dashed', tooltipKey: 'fileExplorer.imageIndex.file.pending' }
+    case 'stale':
+      return { icon: 'rotate-cw', tooltipKey: 'fileExplorer.imageIndex.file.stale' }
+    case 'failed':
+      return { icon: 'circle-x', tooltipKey: 'fileExplorer.imageIndex.file.failed' }
+    case 'excluded':
+      return { icon: 'circle-slash', tooltipKey: 'fileExplorer.imageIndex.file.excluded' }
+    case 'notApplicable':
+      return null
+  }
 }
 
 /**
@@ -93,6 +126,7 @@ export interface FetchRangeParams {
   includeHidden: boolean
   cachedRange: { start: number; end: number }
   onSyncStatusRequest?: (paths: string[]) => void
+  onIndexStatusRequest?: (paths: string[]) => void
   /**
    * Bypass the "already cached" short-circuit. Set when the backing listing
    * changed (e.g. a `directory-diff` event added/removed entries within the
@@ -153,6 +187,7 @@ export async function fetchVisibleRange(params: FetchRangeParams): Promise<Fetch
     includeHidden,
     cachedRange,
     onSyncStatusRequest,
+    onIndexStatusRequest,
     force,
   } = params
 
@@ -177,9 +212,10 @@ export async function fetchVisibleRange(params: FetchRangeParams): Promise<Fetch
   const visibleDirPaths = entries.filter((e) => e.isDirectory && !e.isSymlink).map((e) => e.path)
   void prefetchCustomFolderIcons(visibleDirPaths, useAppIcons)
 
-  // Request sync status for visible paths
+  // Request sync status + image-index status for visible paths
   const paths = entries.map((e) => e.path)
   onSyncStatusRequest?.(paths)
+  onIndexStatusRequest?.(paths)
 
   // Enrich Finder tags for the visible range, mirroring the custom-folder-icon
   // getxattr prefetch above. The backend defers the tag getxattr off the bulk

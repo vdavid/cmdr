@@ -4,13 +4,18 @@
     import { getIsCmdrGold } from '$lib/settings/reactive-settings.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import type { IconName } from '$lib/ui/icons/icon-map'
+    import type { ImageIndexBadge } from '../views/file-list-utils'
+    import { tooltip } from '$lib/tooltip/tooltip'
+    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         file: FileEntry
         syncIcon?: string
+        /** Resolved image-index overlay for this row (glyph + tooltip key), or null for none. */
+        imageIndexBadge?: ImageIndexBadge | null
     }
 
-    const { file, syncIcon }: Props = $props()
+    const { file, syncIcon, imageIndexBadge = null }: Props = $props()
 
     // Subscribe to cache version - this makes getIconUrl reactive
     const _cacheVersion = $derived($iconCacheVersion)
@@ -85,6 +90,11 @@
     {#if syncIcon}
         <img class="sync-badge" src={syncIcon} alt="" width="10" height="10" />
     {/if}
+    {#if imageIndexBadge}
+        <span class="image-index-badge" use:tooltip={tString(imageIndexBadge.tooltipKey)}>
+            <Icon name={imageIndexBadge.icon} size={10} />
+        </span>
+    {/if}
 </span>
 
 <style>
@@ -137,5 +147,17 @@
         right: -2px;
         width: 10px;
         height: 10px;
+    }
+
+    /* Image-index overlay: top-right (free corner; bottom-right + top-left are sync/symlink).
+       Deliberately quiet — a gray glyph, no background fill — so it never competes with the
+       file icon or the sync/symlink badges. */
+    .image-index-badge {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        display: inline-flex;
+        white-space: nowrap;
+        color: var(--color-text-tertiary);
     }
 </style>

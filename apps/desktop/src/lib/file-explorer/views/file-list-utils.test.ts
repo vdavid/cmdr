@@ -13,8 +13,10 @@ import {
   fetchVisibleRange,
   refetchIconsForEntries,
   updateIndexSizesInPlace,
+  getImageIndexBadge,
 } from './file-list-utils'
 import type { FileEntry } from '../types'
+import type { FileIndexState } from '$lib/tauri-commands'
 
 // Mock dependencies
 vi.mock('$lib/tauri-commands', () => ({
@@ -572,5 +574,47 @@ describe('updateIndexSizesInPlace', () => {
     const stats = await updateIndexSizesInPlace([], '/dir')
 
     expect(stats).toBeNull()
+  })
+})
+
+describe('getImageIndexBadge', () => {
+  it('maps each renderable state to its glyph and tooltip key', () => {
+    expect(getImageIndexBadge('indexed')).toEqual({
+      icon: 'circle-check',
+      tooltipKey: 'fileExplorer.imageIndex.file.indexed',
+    })
+    expect(getImageIndexBadge('pending')).toEqual({
+      icon: 'circle-dashed',
+      tooltipKey: 'fileExplorer.imageIndex.file.pending',
+    })
+    expect(getImageIndexBadge('stale')).toEqual({
+      icon: 'rotate-cw',
+      tooltipKey: 'fileExplorer.imageIndex.file.stale',
+    })
+    expect(getImageIndexBadge('failed')).toEqual({
+      icon: 'circle-x',
+      tooltipKey: 'fileExplorer.imageIndex.file.failed',
+    })
+    expect(getImageIndexBadge('excluded')).toEqual({
+      icon: 'circle-slash',
+      tooltipKey: 'fileExplorer.imageIndex.file.excluded',
+    })
+  })
+
+  it('renders no badge for notApplicable (non-media file)', () => {
+    expect(getImageIndexBadge('notApplicable')).toBeNull()
+  })
+
+  it('renders no badge when the state is absent (not yet fetched)', () => {
+    expect(getImageIndexBadge(undefined)).toBeNull()
+  })
+
+  it('covers every FileIndexState (no unmapped case slips through)', () => {
+    const states: FileIndexState[] = ['indexed', 'stale', 'failed', 'pending', 'excluded', 'notApplicable']
+    for (const state of states) {
+      // Must not throw and must return either a badge or null explicitly.
+      const badge = getImageIndexBadge(state)
+      expect(badge === null || typeof badge.icon === 'string').toBe(true)
+    }
   })
 })

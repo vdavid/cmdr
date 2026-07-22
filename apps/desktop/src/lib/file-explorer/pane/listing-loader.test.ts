@@ -148,6 +148,7 @@ function makeHarness(over: Partial<PaneState> = {}) {
     fetchListingStats: vi.fn(),
     clearEntryUnderCursor: vi.fn(),
     clearSyncStatusMap: vi.fn(),
+    clearIndexStatusMap: vi.fn(),
     clearSyncRetryTimer: vi.fn(),
     bumpCacheGeneration: vi.fn(),
     setSelectedIndices: vi.fn((idxs: number[]) => {
@@ -217,6 +218,7 @@ function makeHarness(over: Partial<PaneState> = {}) {
     },
     clearEntryUnderCursor: spies.clearEntryUnderCursor,
     clearSyncStatusMap: spies.clearSyncStatusMap,
+    clearIndexStatusMap: spies.clearIndexStatusMap,
     clearSyncRetryTimer: spies.clearSyncRetryTimer,
     bumpCacheGeneration: spies.bumpCacheGeneration,
     selection: {

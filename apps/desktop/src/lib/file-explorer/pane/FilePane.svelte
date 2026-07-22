@@ -18,12 +18,17 @@
         getPathsAtIndices,
         getSyncStatus,
         getTotalCount,
+        mediaIndexFileStatus,
+        onMediaEnrichProgress,
+        onMediaEnrichTerminal,
         onMtpDeviceDisconnected,
         openFile,
         refreshListingIndexSizes,
         showFileContextMenu,
         showParentRowContextMenu,
+        type FileIndexState,
         type Location,
+        type UnlistenFn,
         updateMenuContext,
     } from '$lib/tauri-commands'
     import { resolveLocationOrToast } from '../navigation/navigate-and-select'
@@ -107,7 +112,12 @@
     import { getVolumes as getStoreVolumes } from '$lib/stores/volume-store.svelte'
     import type { UnreachableState } from '../tabs/tab-types'
     import { getDiskUsageLevel, getUsedPercent, formatBarTooltip } from '../disk-space-utils'
-    import { getFileSizeFormat, getTypeToJumpResetDelay } from '$lib/settings/reactive-settings.svelte'
+    import {
+        getFileSizeFormat,
+        getTypeToJumpResetDelay,
+        getMediaIndexEnabled,
+        getMediaIndexShowFileStatusIcons,
+    } from '$lib/settings/reactive-settings.svelte'
     import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
 
     interface Props {
@@ -311,6 +321,9 @@
         clearSyncStatusMap: () => {
             syncStatusMap = {}
         },
+        clearIndexStatusMap: () => {
+            indexStatusMap = {}
+        },
         clearSyncRetryTimer: () => {
             clearTimeout(syncRetryTimer)
             syncRetryTimer = undefined
@@ -440,6 +453,14 @@
     // is one — an archive, MTP, or virtual pane's path would silently miss every list
     // and read as "not indexed", so those panes say nothing instead.
     const imageIndexFolderPath = $derived(caps.kind === 'local' ? (canonicalPath ?? '') : '')
+
+    // The per-file image-index overlay is fetched + rendered only when image indexing is on,
+    // the file-badge setting is on, AND this is a LOCAL pane (index paths == OS paths; an
+    // archive/MTP/virtual pane's paths would never match the index). Both settings are
+    // live-applied, so this re-derives without a restart.
+    const imageIndexFileStatusEnabled = $derived(
+        caps.kind === 'local' && getMediaIndexEnabled() && getMediaIndexShowFileStatusIcons(),
+    )
 
     // ── Git browser ─────────────────────────────────────────────────────
     // The breadcrumb repo chip + file-list git-status column: their toggles,
@@ -1137,6 +1158,9 @@
 
     // Sync status map for visible files
     let syncStatusMap = $state<Record<string, SyncStatus>>({})
+    // Image-index status for visible files, keyed by OS path (the file-icon overlay).
+    // Populated per visible range and refreshed on this volume's enrich activity.
+    let indexStatusMap = $state<Record<string, FileIndexState>>({})
     const syncPollIntervalMs = 3000
     let syncPollInterval: ReturnType<typeof setInterval>
     // Pending retry timer for timed-out sync status fetches (max 1 retry)
@@ -1193,6 +1217,17 @@
         }
     }, 100)
     const debouncedSyncMcp = createDebounce(() => void syncPaneStateToMcp(), 300)
+
+    // Image-index overlay refresh driven by THIS volume's enrichment activity, on top of the
+    // per-visible-range fetch the List components trigger. `media-enrich-progress` is throttled
+    // backend-side and further debounced here (badges only need to catch up, not track every
+    // tick); `media-enrich-terminal` does a final refresh so the last images flip to `indexed`.
+    // Both re-query the paths already in the map (the visible set), like the sync-status poll.
+    const mediaEnrichUnlisten: UnlistenFn[] = []
+    const debouncedRefreshIndexStatus = createDebounce(() => {
+        const paths = Object.keys(indexStatusMap)
+        if (paths.length > 0) void fetchIndexStatusForPaths(paths)
+    }, 400)
 
     /** Handle visible range change from list components */
     function handleVisibleRangeChange(start: number, end: number) {
@@ -1363,6 +1398,33 @@
             // Silently ignore - sync status is optional
         }
     }
+
+    // Fetch image-index status for visible entries (called by the List components, and by
+    // the enrich-event handlers for the already-known paths). Gated: when image indexing or
+    // the file-badge setting is off (or the pane isn't local), we neither fetch nor keep a
+    // map, so no badges render. The backend returns one entry per path in request order.
+    async function fetchIndexStatusForPaths(paths: string[]) {
+        if (!imageIndexFileStatusEnabled || paths.length === 0) return
+        try {
+            const statuses = await mediaIndexFileStatus(volumeId, paths)
+            const next: Record<string, FileIndexState> = { ...indexStatusMap }
+            for (const status of statuses) {
+                next[status.path] = status.state
+            }
+            indexStatusMap = next
+        } catch {
+            // Silently ignore - the image-index overlay is optional.
+        }
+    }
+
+    // Clear the map the moment the overlay is turned off (or the pane goes non-local), so
+    // stale badges don't linger. Turning it back on repopulates on the next visible-range
+    // fetch, navigation, or enrich tick.
+    $effect(() => {
+        if (!imageIndexFileStatusEnabled && Object.keys(indexStatusMap).length > 0) {
+            indexStatusMap = {}
+        }
+    })
 
     function handleSelect(index: number, shiftKey = false, metaKey = false) {
         if (shiftKey) {
@@ -2127,6 +2189,16 @@
             void fetchSyncStatusForPaths(paths)
         }, syncPollIntervalMs)
 
+        // Refresh the image-index overlay when THIS volume enriches (event-driven, not polled).
+        void onMediaEnrichProgress((payload) => {
+            if (payload.volumeId === volumeId) debouncedRefreshIndexStatus.call()
+        }).then((unlisten) => mediaEnrichUnlisten.push(unlisten))
+        void onMediaEnrichTerminal((payload) => {
+            if (payload.volumeId !== volumeId) return
+            const paths = Object.keys(indexStatusMap)
+            if (paths.length > 0) void fetchIndexStatusForPaths(paths)
+        }).then((unlisten) => mediaEnrichUnlisten.push(unlisten))
+
         // Poll to detect externally deleted directories (macOS FSEvents doesn't notify)
         dirExistsPollInterval = setInterval(() => {
             // Network / search-results panes have no real `currentPath` on disk
@@ -2194,6 +2266,9 @@
         clearInterval(syncPollInterval)
         clearTimeout(syncRetryTimer)
         clearInterval(dirExistsPollInterval)
+        // Drop the image-enrichment listeners + the pending overlay refresh.
+        for (const unlisten of mediaEnrichUnlisten) unlisten()
+        debouncedRefreshIndexStatus.cancel()
         debouncedFetchEntry.cancel()
         throttledFetchStats.cancel()
         debouncedMenuContext.cancel()
@@ -2340,6 +2415,7 @@
                 {cursorIndex}
                 {isFocused}
                 {syncStatusMap}
+                {indexStatusMap}
                 selectedIndices={selection.selectedIndices}
                 {hasParent}
                 {sortBy}
@@ -2351,6 +2427,7 @@
                 onNavigate={handleNavigate}
                 onContextMenu={handleContextMenu}
                 onSyncStatusRequest={fetchSyncStatusForPaths}
+                onIndexStatusRequest={fetchIndexStatusForPaths}
                 onSortChange={onSortChange
                     ? (column: SortColumn) => {
                           onSortChange(column)
@@ -2376,6 +2453,7 @@
                 {cursorIndex}
                 {isFocused}
                 {syncStatusMap}
+                {indexStatusMap}
                 selectedIndices={selection.selectedIndices}
                 {hasParent}
                 {sortBy}
@@ -2389,6 +2467,7 @@
                 onNavigate={handleNavigate}
                 onContextMenu={handleContextMenu}
                 onSyncStatusRequest={fetchSyncStatusForPaths}
+                onIndexStatusRequest={fetchIndexStatusForPaths}
                 onRenameInput={handleRenameInput}
                 onRenameSubmit={handleRenameSubmit}
                 onRenameCancel={handleRenameCancel}

@@ -36,6 +36,10 @@
     const shouldShow = $derived(createShouldShow(searchQuery))
 
     const imageIndexDef = getSettingDefinition('mediaIndex.enabled') ?? { label: '', description: '' }
+    const showFileStatusIconsDef = getSettingDefinition('mediaIndex.showFileStatusIcons') ?? {
+        label: '',
+        description: '',
+    }
     const imageSearchBadge = getBadgeStatus('image-search')
 
     // Live master-toggle state, so the slider and per-network-volume controls appear/disappear the
@@ -79,6 +83,19 @@
             {#if imageIndexEnabled}
                 <MediaIndexScope />
                 <MediaIndexChosenFolders />
+            {/if}
+
+            <!-- Whether the file list draws the small per-file image-index status badge.
+                 Only meaningful once indexing is on, so gate on the live master toggle. -->
+            {#if imageIndexEnabled && shouldShow('mediaIndex.showFileStatusIcons')}
+                <SettingRow
+                    id="mediaIndex.showFileStatusIcons"
+                    label={showFileStatusIconsDef.label}
+                    description={showFileStatusIconsDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="mediaIndex.showFileStatusIcons" />
+                </SettingRow>
             {/if}
 
             <!-- The on-device CLIP model for natural-language semantic search (plan M3).

@@ -43,6 +43,8 @@ let briefColumnWidthMode = $state<BriefColumnWidthMode>('paneWidth')
 let briefColumnWidthMaxPx = $state<number>(400)
 let networkEnabled = $state<boolean>(true)
 let typeToJumpResetDelay = $state<number>(1000)
+let mediaIndexEnabled = $state<boolean>(false)
+let mediaIndexShowFileStatusIcons = $state<boolean>(true)
 
 let initialized = false
 let unsubscribe: (() => void) | undefined
@@ -77,6 +79,8 @@ export async function initReactiveSettings(): Promise<void> {
     briefColumnWidthMaxPx = getSetting('listing.briefColumnWidthMaxPx')
     networkEnabled = getSetting('network.enabled')
     typeToJumpResetDelay = getSetting('fileExplorer.typeToJump.resetDelay')
+    mediaIndexEnabled = getSetting('mediaIndex.enabled')
+    mediaIndexShowFileStatusIcons = getSetting('mediaIndex.showFileStatusIcons')
 
     // Subscribe to changes (including cross-window changes). The arrow function delegates to
     // `applySettingChange` so the switch's case count stays under the per-fn complexity limit.
@@ -157,6 +161,12 @@ function applySettingChange(id: string, value: unknown): void {
       break
     case 'fileExplorer.typeToJump.resetDelay':
       typeToJumpResetDelay = value as number
+      break
+    case 'mediaIndex.enabled':
+      mediaIndexEnabled = value as boolean
+      break
+    case 'mediaIndex.showFileStatusIcons':
+      mediaIndexShowFileStatusIcons = value as boolean
       break
   }
 }
@@ -298,6 +308,20 @@ export function getNetworkEnabled(): boolean {
  */
 export function getTypeToJumpResetDelay(): number {
   return typeToJumpResetDelay
+}
+
+/** Whether image-content (OCR) indexing is on (the `mediaIndex.enabled` master toggle). */
+export function getMediaIndexEnabled(): boolean {
+  return mediaIndexEnabled
+}
+
+/**
+ * Whether per-file image-index status badges render in the file list
+ * (`mediaIndex.showFileStatusIcons`, default on). Gated together with the master toggle;
+ * when off, the file-icon overlay is neither fetched nor rendered.
+ */
+export function getMediaIndexShowFileStatusIcons(): boolean {
+  return mediaIndexShowFileStatusIcons
 }
 
 // ============================================================================

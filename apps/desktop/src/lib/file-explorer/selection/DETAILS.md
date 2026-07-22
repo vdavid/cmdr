@@ -177,3 +177,23 @@ live-updates so a focus flip or rebind mid-hover is reflected immediately.
 - `$lib/icon-cache`: `getCachedIcon`, `iconCacheVersion`.
 - `$lib/settings/reactive-settings.svelte`: `formatFileSize`, `formatDateTime`.
 - `$lib/indexing/index-state.svelte`: `isVolumeScanning`, `isVolumeAggregating` (keyed on the pane's `volumeId`).
+
+## Image-index overlay (`FileIcon.svelte`, top-right)
+
+The per-file image-search status badge: a subtle gray glyph over an image's icon, no background fill. Corner is
+top-right (bottom-right = sync, top-left = symlink-with-sync are already taken).
+
+- **State → badge** is the pure `getImageIndexBadge(state)` in [`../views/file-list-utils.ts`](../views/file-list-utils.ts)
+  (unit-tested, exhaustive over `FileIndexState`): `indexed` → `circle-check`, `pending` → `circle-dashed`, `stale` →
+  `rotate-cw`, `failed` → `circle-x`, `excluded` → `circle-slash`. `notApplicable` (non-media) and an absent state →
+  `null` (no badge). Returns `{ icon, tooltipKey }`; `FileIcon` renders the glyph + a `use:tooltip` from the key.
+- **Data flow mirrors `syncStatusMap`**: `FilePane` owns `indexStatusMap` (path → `FileIndexState`), populated by
+  `mediaIndexFileStatus(volumeId, visiblePaths)` via the views' `onIndexStatusRequest` (same visible-range channel as
+  sync status), and threaded to `FullList` / `BriefList`, which resolve per row with `getImageIndexBadge` and pass
+  `imageIndexBadge` to `FileIcon`.
+- **Gating**: fetched + rendered only when `mediaIndex.enabled` AND `mediaIndex.showFileStatusIcons` are on AND the pane
+  is local (index paths == OS paths). Read reactively via `getMediaIndexEnabled` / `getMediaIndexShowFileStatusIcons`
+  (`reactive-settings.svelte.ts`). Turning the setting off clears the map at once; the listing loader clears it on
+  navigation (`clearIndexStatusMap`).
+- **Refresh triggers** (event-driven, no poll): the per-visible-range fetch on listing change, plus a debounced refetch
+  of the known paths on `media-enrich-progress` for this volume and a final refetch on `media-enrich-terminal`.

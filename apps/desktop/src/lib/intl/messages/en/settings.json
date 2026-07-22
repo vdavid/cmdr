@@ -602,6 +602,14 @@
   "@settings.mediaIndex.enabled.description": {
     "description": "Help text under the \"Index image contents\" toggle. Reassures the user this is on-device (nothing is uploaded) and scopes it to local drives (network drives come later). \"OCR\" is not used in the copy on purpose; keep it plain."
   },
+  "settings.mediaIndex.showFileStatusIcons.label": "Show status badges on image files",
+  "@settings.mediaIndex.showFileStatusIcons.label": {
+    "description": "Label for the toggle that shows a small badge on each image file in the file list, marking whether it''s indexed for image search. On by default. In Settings > AI > Image search, under the \"Index image contents\" toggle."
+  },
+  "settings.mediaIndex.showFileStatusIcons.description": "Add a small badge to each image in the file list showing whether it''s been indexed for search.",
+  "@settings.mediaIndex.showFileStatusIcons.description": {
+    "description": "Help text under the \"Show status badges on image files\" toggle. Explains the badge marks each image''s indexing state (indexed, waiting, and so on) right in the file list."
+  },
   "settings.mediaIndex.networkVolumes.label": "Network drive image indexing",
   "@settings.mediaIndex.networkVolumes.label": {
     "description": "Internal (hidden setting): label for the list of network drives opted into image indexing."

@@ -631,6 +631,7 @@ export {
 export {
   mediaIndexSearchOcr,
   mediaIndexVolumeState,
+  mediaIndexFileStatus,
   mediaIndexThumbnailToken,
   mediaIndexDropThumbnailTokens,
   mediaIndexSetNetworkVolumeEnabled,
@@ -652,6 +653,8 @@ export {
 export type {
   ClipModelStatus,
   CoveredCount,
+  FileIndexState,
+  FileIndexStatus,
   MediaEnrichProgressEvent,
   MediaEnrichTerminalEvent,
   MediaEnrichTerminalReason,

@@ -319,6 +319,12 @@ export interface SettingsValues {
    */
   'mediaIndex.enabled': boolean
   /**
+   * Whether the file list draws a small per-file image-index status badge (indexed /
+   * pending / stale / excluded / couldn't-index). FE-only render toggle (default on); when
+   * off, the overlay is neither fetched nor drawn. Gated together with `mediaIndex.enabled`.
+   */
+  'mediaIndex.showFileStatusIcons': boolean
+  /**
    * Internal (FE-owned): volume ids opted into background network (SMB) image enrichment
    * (`media_index` network enrichment). Off by default per volume: turning on the master toggle does NOT
    * auto-enrich network drives. Persisted as a real JSON array so the Rust loader reads it

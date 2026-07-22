@@ -124,6 +124,21 @@ export const indexingSettings: SettingDefinitionSource[] = [
     component: 'switch',
   },
   {
+    // Whether the file list shows a small per-file image-index status badge (indexed /
+    // pending / stale / excluded / couldn't-index). FE-only render toggle: when off, the
+    // overlay is neither fetched nor drawn. Rendered under the master toggle in
+    // `ImageIndexingSection.svelte`, gated on `mediaIndex.enabled`.
+    id: 'mediaIndex.showFileStatusIcons',
+    section: ['Indexing', 'Image indexing'],
+    labelKey: 'settings.mediaIndex.showFileStatusIcons.label',
+    descriptionKey: 'settings.mediaIndex.showFileStatusIcons.description',
+    cardKey: 'settings.mediaIndex.card',
+    keywords: ['image', 'photo', 'badge', 'icon', 'overlay', 'indicator', 'status', 'indexed'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
     // Internal (FE-owned): JSON array of volume ids opted into background network (SMB)
     // image enrichment (network enrichment). Off by default per volume; the per-network-volume rows in
     // `ImageIndexingSection`'s "Image indexing" card toggle it, persisting here AND
