@@ -380,13 +380,21 @@ mercy of every OTHER test's writers. Two globals here bite:
 - **`PENDING_SIZES`** (root's global tracker). Every root writer's end-of-drain hook CLEARS it, so a test that installs
   it and asserts a mark survives flakes AND poisons `PENDING_SIZES_TEST_MUTEX`, cascading `.lock().unwrap()` panics into
   every other holder. The pending-sizes writer tests instead register a per-volume `IndexInstance` under a UNIQUE volume
-  id (`tests::TestInstanceGuard`, which removes the entry on drop, even on a failed assertion, so no stray instance leaks
-  into a registry sweep); the drain routes to that private tracker via `get_pending_sizes_for(volume_id)`, immune to any
-  concurrent root writer. Pinned by `tests::{non_root_writer_drain_clears_its_own_tracker_not_root,
-  writer_drain_clears_transient_marks_but_preserves_held_roots}`.
+  id (`stress_test_helpers::TestInstanceGuard`, the shared cross-module helper, which removes the entry on drop, even on
+  a failed assertion, so no stray instance leaks into a registry sweep); the drain routes to that private tracker via
+  `get_pending_sizes_for(volume_id)`, immune to any concurrent root writer. Pinned by
+  `tests::{non_root_writer_drain_clears_its_own_tracker_not_root, writer_drain_clears_transient_marks_but_preserves_held_roots}`.
 
 New writer tests must follow the same rule: use a per-writer probe or a per-volume instance, never a global before/after
 window. (Verified: bare `cargo test --lib indexing::writer` failed ~4 tests/run before, 0/15 after; 2026-07-22.)
+
+The SAME per-volume-instance pattern fixes the `reconcile::reconciler` and `tests::integration_tests` isolation flakes
+(the hourglass-hold routing tests, the enrichment/`dir_stats` pending-flag tests): route through a private
+`TestInstanceGuard` volume, never the root `PENDING_SIZES` / `READ_POOL` globals. Two corollaries the private-instance
+approach depends on: (1) a test must NEVER `INDEX_REGISTRY.clear()` (it wipes every concurrent test's private instance —
+`lifecycle/state/tests.rs` removes only its own ids); (2) `stress_test_helpers::TestInstanceGuard::register_identity_paths`
+uses an `mtp-` id so `get_dir_stats_on_volume` / `enrich_*_on_volume` map plain `/paths` identically (identity read-side
+routing) while staying private.
 
 ## Maintenance: vacuum and WAL checkpoint (`maintenance.rs`)
 

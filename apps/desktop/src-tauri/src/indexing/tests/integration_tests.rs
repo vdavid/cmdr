@@ -516,6 +516,13 @@ fn setup_db_for_pool() -> (PathBuf, tempfile::TempDir) {
 /// via the `ReadPool` without contending on it.
 #[test]
 fn enrichment_under_contention() {
+    // This is the one enrichment test that legitimately uses the process-global
+    // root `READ_POOL` (its whole point is that root's pool is decoupled from
+    // `INDEX_REGISTRY`, so it can't route through a private non-root instance whose
+    // pool lives IN the registry). Hold `INDEXING_TEST_GUARD` too, so a concurrent
+    // `reset_indexing_for_test` (the IndexPhase tests, which clear root `READ_POOL`
+    // under this same guard) can't wipe the pool mid-read.
+    let _reg_guard = INDEXING_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
     let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
     let (db_path, _dir) = setup_db_for_pool();
     let pool = Arc::new(ReadPool::new(db_path).expect("create pool"));
@@ -559,20 +566,25 @@ fn enrichment_under_contention() {
 /// to `enrich_entries_with_index` while the scan is still in flight.
 ///
 /// Deterministic by construction: each `flush_blocking` is a barrier, so this
-/// simulates a mid-scan prefix without racing a live scanner thread.
-/// `enrich_entries_with_index` reads the process-global `READ_POOL`, so the
-/// test installs a pool and serializes on `READ_POOL_TEST_MUTEX`; without the
-/// install, enrichment silently no-ops (proven by the teeth check below).
+/// simulates a mid-scan prefix without racing a live scanner thread. Enrichment
+/// runs through `enrich_via_parent_id_on` on a fresh read connection (the same
+/// integer-keyed path `enrich_entries_with_index` delegates to), so the test
+/// reads the committed `dir_stats` directly without touching the process-global
+/// `READ_POOL` — the shared global that made this test flake under `cargo test`.
 #[test]
 fn partial_aggregation_is_visible_to_enrichment_mid_scan() {
-    let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-
     let dir = tempfile::tempdir().expect("create temp dir");
     let db_path = dir.path().join("partial-enrich.db");
     let _store = IndexStore::open(&db_path).expect("open store");
     let writer = writer::IndexWriter::spawn(&db_path, None).expect("spawn writer");
 
-    *read::enrichment::READ_POOL.lock().unwrap() = Some(Arc::new(ReadPool::new(db_path.clone()).expect("create pool")));
+    // Enrich `entries` against a fresh read connection, exactly as the read path
+    // does after a `flush_blocking` barrier commits the writer's partial pass.
+    let enrich = |entries: &mut [FileEntry]| {
+        let conn = IndexStore::open_read_connection(&db_path).expect("open read conn");
+        let current_epoch = IndexStore::read_current_epoch(&conn).unwrap_or(1);
+        enrich_via_parent_id_on(entries, &conn, "/", current_epoch).expect("enrich");
+    };
 
     // Top-level dir /big (id=10, depth 1 — within the partial pass's depth cap).
     let big = EntryRow {
@@ -614,7 +626,7 @@ fn partial_aggregation_is_visible_to_enrichment_mid_scan() {
     // Enrich a /big FileEntry: a partial pass has run, so recursive_size is
     // non-null and reflects batch-1 contents only.
     let mut entries = vec![make_file_entry("big", "/big", true)];
-    enrich_entries_with_index(&mut entries);
+    enrich(&mut entries);
     assert_eq!(
         entries[0].recursive_size,
         Some(100),
@@ -644,7 +656,7 @@ fn partial_aggregation_is_visible_to_enrichment_mid_scan() {
     writer.flush_blocking().unwrap();
 
     let mut entries = vec![make_file_entry("big", "/big", true)];
-    enrich_entries_with_index(&mut entries);
+    enrich(&mut entries);
     assert_eq!(
         entries[0].recursive_size,
         Some(150),
@@ -652,7 +664,6 @@ fn partial_aggregation_is_visible_to_enrichment_mid_scan() {
     );
 
     writer.shutdown();
-    *read::enrichment::READ_POOL.lock().unwrap() = None;
 }
 
 /// Teeth for `partial_aggregation_is_visible_to_enrichment_mid_scan`: with the
@@ -661,14 +672,10 @@ fn partial_aggregation_is_visible_to_enrichment_mid_scan() {
 /// fail without the feature under test — they aren't vacuously green.
 #[test]
 fn enrichment_sees_no_partial_size_without_a_partial_pass() {
-    let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-
     let dir = tempfile::tempdir().expect("create temp dir");
     let db_path = dir.path().join("partial-enrich-teeth.db");
     let _store = IndexStore::open(&db_path).expect("open store");
     let writer = writer::IndexWriter::spawn(&db_path, None).expect("spawn writer");
-
-    *read::enrichment::READ_POOL.lock().unwrap() = Some(Arc::new(ReadPool::new(db_path.clone()).expect("create pool")));
 
     let batch = vec![
         EntryRow {
@@ -698,15 +705,18 @@ fn enrichment_sees_no_partial_size_without_a_partial_pass() {
     writer.send(writer::WriteMessage::InsertEntriesV2(batch)).unwrap();
     writer.flush_blocking().unwrap();
 
+    // Enrich against a fresh read connection (the same integer-keyed path the read
+    // side uses), no process-global `READ_POOL` involved.
+    let conn = IndexStore::open_read_connection(&db_path).expect("open read conn");
+    let current_epoch = IndexStore::read_current_epoch(&conn).unwrap_or(1);
     let mut entries = vec![make_file_entry("big", "/big", true)];
-    enrich_entries_with_index(&mut entries);
+    enrich_via_parent_id_on(&mut entries, &conn, "/", current_epoch).expect("enrich");
     assert_eq!(
         entries[0].recursive_size, None,
         "without a partial pass, no dir_stats row exists, so enrichment finds no size"
     );
 
     writer.shutdown();
-    *read::enrichment::READ_POOL.lock().unwrap() = None;
 }
 
 /// `get_dir_stats` reflects the in-memory pending-size tracker: a directory
@@ -714,32 +724,33 @@ fn enrichment_sees_no_partial_size_without_a_partial_pass() {
 /// and clears once the tracker is reset (writer drained).
 #[test]
 fn dir_stats_carry_pending_flag() {
-    let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-    let _pending_guard = read::pending_sizes::PENDING_SIZES_TEST_MUTEX.lock().unwrap();
-
+    // A private per-volume instance (identity path mapping) routes BOTH the read
+    // pool and the pending tracker per-volume, so this is immune to a foreign root
+    // writer clearing the process-global root `PENDING_SIZES` mid-assertion (the
+    // isolation flake that used to poison the shared test mutex and cascade).
     let (db_path, _dir) = setup_db_for_pool();
-    let pool = Arc::new(ReadPool::new(db_path).expect("create pool"));
-    *read::enrichment::READ_POOL.lock().unwrap() = Some(pool);
-    *read::pending_sizes::PENDING_SIZES.lock().unwrap() = Some(Arc::new(read::pending_sizes::PendingSizes::new()));
+    let instance = stress_test_helpers::TestInstanceGuard::register_identity_paths("dir-stats-pending", &db_path);
+    let vid = instance.volume_id.as_str();
 
     // Nothing marked yet: not pending.
-    let before = get_dir_stats("/projects").expect("get_dir_stats").expect("dir indexed");
+    let before = read::queries::get_dir_stats_on_volume(vid, "/projects")
+        .expect("get_dir_stats")
+        .expect("dir indexed");
     assert!(!before.recursive_size_pending, "no pending work => flag false");
 
     // A descendant change marks /projects (and its ancestors) as pending.
-    read::pending_sizes::get_pending_sizes()
-        .unwrap()
-        .mark("/projects/file.txt");
-    let during = get_dir_stats("/projects").expect("get_dir_stats").expect("dir indexed");
+    instance.tracker.mark("/projects/file.txt");
+    let during = read::queries::get_dir_stats_on_volume(vid, "/projects")
+        .expect("get_dir_stats")
+        .expect("dir indexed");
     assert!(during.recursive_size_pending, "pending work => flag true");
 
     // Draining clears the flag.
-    read::pending_sizes::get_pending_sizes().unwrap().clear();
-    let after = get_dir_stats("/projects").expect("get_dir_stats").expect("dir indexed");
+    instance.tracker.clear();
+    let after = read::queries::get_dir_stats_on_volume(vid, "/projects")
+        .expect("get_dir_stats")
+        .expect("dir indexed");
     assert!(!after.recursive_size_pending, "after drain => flag false");
-
-    *read::enrichment::READ_POOL.lock().unwrap() = None;
-    *read::pending_sizes::PENDING_SIZES.lock().unwrap() = None;
 }
 
 /// Thread-local connection reuse: calling `with_conn` twice from the same
@@ -1193,16 +1204,14 @@ fn shutdown_drain_does_not_hold_indexing_lock() {
     reset_indexing_for_test();
 }
 
-/// After clearing READ_POOL, `enrich_entries_with_index` returns early
-/// without panic and leaves entries unenriched.
+/// With no index registered for a volume, `enrich_entries_with_index_on_volume`
+/// returns early without panic and leaves entries unenriched (the `None`-pool
+/// skip gate, the post-shutdown state). Uses a never-registered private volume
+/// id, so it doesn't touch the process-global root `READ_POOL`.
 #[test]
 fn shutdown_enrichment_returns_early() {
-    let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-    // Ensure READ_POOL is empty (simulate post-shutdown state)
-    *read::enrichment::READ_POOL.lock().unwrap() = None;
-
     let mut entries = vec![make_file_entry("stuff", "/stuff", true)];
-    enrich_entries_with_index(&mut entries);
+    enrich_entries_with_index_on_volume("mtp-test-shutdown-unregistered:1", &mut entries);
 
     assert_eq!(entries[0].recursive_size, None, "unenriched after shutdown");
 }

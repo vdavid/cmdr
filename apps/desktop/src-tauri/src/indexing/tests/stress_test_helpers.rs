@@ -1,12 +1,93 @@
-//! Shared helpers for indexing stress tests.
+//! Shared helpers for indexing stress and integration tests.
 
 use std::collections::HashMap;
+use std::path::Path;
+use std::sync::Arc;
 
 use rusqlite::Connection;
 
 use crate::file_system::listing::FileEntry;
+use crate::indexing::lifecycle::state::{INDEX_REGISTRY, IndexInstance, IndexPhase, IndexVolumeKind};
+use crate::indexing::read::enrichment::ReadPool;
+use crate::indexing::read::pending_sizes::PendingSizes;
 use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
 use crate::indexing::writer::IndexWriter;
+
+/// A privately-registered per-volume `IndexInstance`, for tests that must NOT
+/// assert on the process-global root `PENDING_SIZES` / `READ_POOL`.
+///
+/// **Why this exists.** `cargo test` runs a crate's tests as threads in ONE
+/// process. Every `IndexWriter::spawn()` in the binary is a ROOT writer whose
+/// end-of-drain hook CLEARS the global root `PENDING_SIZES`, and `reset_indexing_for_test`
+/// clears the root `READ_POOL`. A test that installs one of those globals and
+/// asserts a mark/pool survives is therefore clobbered by any OTHER test's
+/// writer, flakes, and — worse — poisons the shared `*_TEST_MUTEX`, cascading
+/// `.lock().unwrap()` panics into every other holder. A crate-wide lock can't
+/// fix it: the clobbering writers are threads, not tests, and span the whole
+/// crate. Registering a PRIVATE instance under a UNIQUE volume id routes the
+/// state to a tracker + pool immune to any foreign root writer.
+///
+/// Removes its registry entry on drop — including on a failed assertion — so a
+/// panicking test never leaks a stray instance into another test's registry
+/// sweep. `freshness: None` keeps it out of the scheduler sweeps' `Fresh` filter
+/// while it's registered.
+///
+/// See `writer/DETAILS.md` § "Test isolation".
+pub struct TestInstanceGuard {
+    /// The unique volume id this instance is registered under.
+    pub volume_id: String,
+    /// The private pending-sizes tracker this volume's writer/reads route to.
+    pub tracker: Arc<PendingSizes>,
+}
+
+impl TestInstanceGuard {
+    /// Register a private instance for `volume_id` over `db_path`, with an
+    /// explicit `kind`. Use for tests that read the tracker DIRECTLY (the writer
+    /// and reconciler cases); a `smb://…` id is conventional there.
+    pub fn register(volume_id: impl Into<String>, db_path: &Path, kind: IndexVolumeKind) -> Self {
+        let volume_id = volume_id.into();
+        let tracker = Arc::new(PendingSizes::new());
+        // The read pool lives in the registry instance; per-volume reads
+        // (`get_read_pool_for` / `enrich_*_on_volume` / `get_dir_stats_on_volume`)
+        // resolve it from there by volume id, so the guard doesn't retain a handle.
+        let read_pool = Arc::new(ReadPool::new(db_path.to_path_buf()).expect("open read pool"));
+        INDEX_REGISTRY.lock().unwrap_or_else(|e| e.into_inner()).insert(
+            volume_id.clone(),
+            IndexInstance {
+                phase: IndexPhase::ShuttingDown,
+                kind,
+                read_pool,
+                pending_sizes: Arc::clone(&tracker),
+                freshness: Arc::new(std::sync::Mutex::new(None)),
+            },
+        );
+        Self { volume_id, tracker }
+    }
+
+    /// Register a private instance whose read-side path mapping is IDENTITY for
+    /// plain `/absolute` paths, so `get_dir_stats_on_volume` /
+    /// `enrich_entries_with_index_on_volume` can be driven with the same paths a
+    /// `root` test would use — but routed to a PRIVATE tracker + pool immune to
+    /// foreign root writers.
+    ///
+    /// Implemented via an `mtp-` volume id: MTP's read side maps a plain `/path`
+    /// unchanged (`paths::routing::index_read_path` → `mtp_index_relative_path`),
+    /// which is the only non-root id kind that gives identity mapping with zero
+    /// volume-manager setup. The MTP kind is incidental here; only the identity
+    /// path mapping matters. `tag` disambiguates the id per test.
+    pub fn register_identity_paths(tag: &str, db_path: &Path) -> Self {
+        Self::register(format!("mtp-test-{tag}:1"), db_path, IndexVolumeKind::Mtp)
+    }
+}
+
+impl Drop for TestInstanceGuard {
+    fn drop(&mut self) {
+        INDEX_REGISTRY
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .remove(&self.volume_id);
+    }
+}
 
 /// Spawn writer + open read connection against a fresh temp DB.
 pub fn setup_writer() -> (IndexWriter, Connection, tempfile::TempDir) {

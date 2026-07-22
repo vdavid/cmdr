@@ -590,10 +590,37 @@ fn fresh(initial: Option<Freshness>) -> Arc<std::sync::Mutex<Option<Freshness>>>
     Arc::new(std::sync::Mutex::new(initial))
 }
 
-/// Reset every registry-backed test global: the instance map plus the root
-/// read-path globals (which live outside the map).
+/// Reset every registry-backed test global: remove ONLY the volume ids these
+/// tests reserve, plus the root read-path globals (which live outside the map).
+///
+/// ❌ Never `INDEX_REGISTRY.clear()` here. The registry is a process-global shared
+/// with EVERY other test module, and under bare `cargo test` (threads in one
+/// process) concurrent tests register private per-volume instances into it
+/// (`stress_test_helpers::TestInstanceGuard`). A blanket clear wipes those
+/// mid-assertion, an isolation flake (a routed `hold_rescan` then finds no tracker
+/// and silently no-ops). So remove exactly the ids reserved in this file; keep
+/// this list in sync with them.
 fn clear_registry_and_pools() {
-    INDEX_REGISTRY.lock().unwrap().clear();
+    const STATE_TEST_VIDS: &[&str] = &[
+        ROOT_VOLUME_ID,
+        "smb-nas",
+        "vol-a",
+        "vol-b",
+        "deadlock-test",
+        "smb-fresh-test",
+        "smb-disco-test",
+        "smb-forget-test",
+        "smb-storm",
+        "mtp-storm:65537",
+        "sweep-fresh",
+        "sweep-stale",
+        "sweep-scanning",
+    ];
+    let mut reg = INDEX_REGISTRY.lock().unwrap();
+    for vid in STATE_TEST_VIDS {
+        reg.remove(*vid);
+    }
+    drop(reg);
     uninstall_read_pool(ROOT_VOLUME_ID);
     uninstall_pending_sizes(ROOT_VOLUME_ID);
 }

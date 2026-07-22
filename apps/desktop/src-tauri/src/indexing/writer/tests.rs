@@ -4,8 +4,9 @@
 //! live here and are imported by each writer submodule's `tests`. Extracted verbatim
 //! from `writer/mod.rs`'s `tests` module; pure code movement.
 use super::*;
-use crate::indexing::read::pending_sizes::PendingSizes;
+use crate::indexing::lifecycle::state::IndexVolumeKind;
 use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
+use crate::indexing::stress_test_helpers::TestInstanceGuard;
 
 // ── Search-generation gating (D7: search is single-volume / root-only) ──
 
@@ -260,54 +261,6 @@ fn spawn_and_shutdown() {
     let _ = result;
 }
 
-/// Registers a non-root `IndexInstance` for `volume_id` owning a fresh
-/// `PendingSizes`, so the writer's end-of-drain clear hook resolves the tracker
-/// by volume id (`get_pending_sizes_for`) instead of the process-global root
-/// `PENDING_SIZES`. That global is the crux of the isolation bug: EVERY
-/// `IndexWriter::spawn()` in the binary drains a ROOT writer that clears the
-/// shared root tracker, so a test that installs and asserts on the global flakes
-/// under `cargo test` (threads-in-one-process) and, worse, poisons
-/// `PENDING_SIZES_TEST_MUTEX` on the way down, cascading into every other holder.
-/// A per-volume instance keyed by a UNIQUE id sidesteps all of it.
-///
-/// Removes the registry entry on drop — including on a failed assertion — so a
-/// panicking test never leaks a stray instance into another test's registry
-/// sweep. `freshness: None` keeps it out of the scheduler sweeps' `Fresh` filter
-/// while it's registered.
-struct TestInstanceGuard {
-    volume_id: &'static str,
-    tracker: Arc<PendingSizes>,
-}
-
-impl TestInstanceGuard {
-    fn register(volume_id: &'static str, db_path: &Path) -> Self {
-        use crate::indexing::lifecycle::state::{INDEX_REGISTRY, IndexInstance, IndexPhase, IndexVolumeKind};
-        use crate::indexing::read::enrichment::ReadPool;
-
-        let tracker = Arc::new(PendingSizes::new());
-        INDEX_REGISTRY.lock().unwrap_or_else(|e| e.into_inner()).insert(
-            volume_id.to_string(),
-            IndexInstance {
-                phase: IndexPhase::ShuttingDown,
-                kind: IndexVolumeKind::Smb,
-                read_pool: Arc::new(ReadPool::new(db_path.to_path_buf()).expect("open read pool")),
-                pending_sizes: Arc::clone(&tracker),
-                freshness: Arc::new(std::sync::Mutex::new(None)),
-            },
-        );
-        Self { volume_id, tracker }
-    }
-}
-
-impl Drop for TestInstanceGuard {
-    fn drop(&mut self) {
-        crate::indexing::lifecycle::state::INDEX_REGISTRY
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .remove(self.volume_id);
-    }
-}
-
 /// A NON-root writer draining its queue routes its pending-sizes clear to ITS OWN
 /// volume's tracker (`get_pending_sizes_for(volume_id)`), never the root-only
 /// `get_pending_sizes`. Pre-fix the drain called the root-only lookup from every
@@ -325,7 +278,7 @@ fn non_root_writer_drain_clears_its_own_tracker_not_root() {
     let volume_id = "smb://writer-test-nonroot";
     let (db_path, _dir) = setup_db();
     let writer = IndexWriter::spawn_for(&db_path, None, false, volume_id.to_string()).unwrap();
-    let instance = TestInstanceGuard::register(volume_id, &db_path);
+    let instance = TestInstanceGuard::register(volume_id, &db_path, IndexVolumeKind::Smb);
 
     assert!(
         Arc::ptr_eq(
@@ -374,7 +327,7 @@ fn writer_drain_clears_transient_marks_but_preserves_held_roots() {
     let volume_id = "smb://writer-test-held-roots";
     let (db_path, _dir) = setup_db();
     let writer = IndexWriter::spawn_for(&db_path, None, false, volume_id.to_string()).unwrap();
-    let instance = TestInstanceGuard::register(volume_id, &db_path);
+    let instance = TestInstanceGuard::register(volume_id, &db_path, IndexVolumeKind::Smb);
 
     // A transient mark (dropped wholesale on drain) and a held rescan root (kept).
     instance.tracker.mark("/aaa/bbb/ccc");
@@ -769,6 +722,31 @@ fn a_fatal_storage_error_stops_the_writer_and_trips_the_signal() {
     let signal = Arc::new(IndexFailureSignal::new());
     let queue_depth = Arc::new(AtomicUsize::new(0));
 
+    // Buffer a write that fails READONLY, then MANY more, BEFORE spawning the loop.
+    // The channel capacity (20K) far exceeds 1,000, so all of them queue without a
+    // consumer; spawning the loop next lets it stop right after the first fatal
+    // error with the rest still buffered. Buffering first is what makes the test
+    // deterministic: if we sent WHILE the loop ran, under load the loop could stop
+    // and drop the receiver mid-send, failing the send (the loop stopping early is
+    // exactly what we're asserting, so that must not be read as a test failure).
+    // Mirror `IndexWriter::send`'s depth accounting.
+    for i in 0..1000 {
+        queue_depth.fetch_add(1, Ordering::Relaxed);
+        sender
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: ROOT_ID,
+                name: format!("f{i}.txt"),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(1),
+                physical_size: Some(1),
+                modified_at: None,
+                inode: None,
+                nlink: None,
+            })
+            .expect("channel has room for all 1,000 (no consumer yet)");
+    }
+
     let signal_for_loop = Arc::clone(&signal);
     let queue_depth_for_loop = Arc::clone(&queue_depth);
     let handle = thread::spawn(move || {
@@ -784,27 +762,6 @@ fn a_fatal_storage_error_stops_the_writer_and_trips_the_signal() {
             signal_for_loop,
         );
     });
-
-    // A write that fails READONLY, then MANY more. If the writer kept
-    // logging-and-retrying it would drain all 1,000; instead it must stop right
-    // after the first fatal error. Mirror `IndexWriter::send`'s depth accounting.
-    let send = |msg| {
-        queue_depth.fetch_add(1, Ordering::Relaxed);
-        sender.send(msg).expect("writer receiver alive");
-    };
-    for i in 0..1000 {
-        send(WriteMessage::UpsertEntryV2 {
-            parent_id: ROOT_ID,
-            name: format!("f{i}.txt"),
-            is_directory: false,
-            is_symlink: false,
-            logical_size: Some(1),
-            physical_size: Some(1),
-            modified_at: None,
-            inode: None,
-            nlink: None,
-        });
-    }
 
     // The loop must terminate ON ITS OWN — we keep the sender alive, so a
     // still-running loop would block on recv, not exit. Join with a timeout.

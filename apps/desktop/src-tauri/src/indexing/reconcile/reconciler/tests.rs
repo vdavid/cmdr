@@ -1,7 +1,7 @@
 use super::*;
-use crate::indexing::read::pending_sizes;
+use crate::indexing::lifecycle::state::IndexVolumeKind;
 use crate::indexing::store::{IndexStore, ROOT_ID};
-use crate::indexing::stress_test_helpers::check_db_consistency;
+use crate::indexing::stress_test_helpers::{TestInstanceGuard, check_db_consistency};
 use crate::indexing::watch::watcher::FsEventFlags;
 use std::time::Duration;
 
@@ -202,13 +202,12 @@ fn must_scan_dir_flags() -> FsEventFlags {
 /// hold, nothing queued on the drain.
 #[tokio::test]
 async fn root_scale_must_scan_routes_to_scanner_without_a_stuck_hold() {
-    use crate::indexing::read::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes};
-    let _guard = PENDING_SIZES_TEST_MUTEX.lock().expect("test mutex");
-    *PENDING_SIZES.lock().expect("install tracker") = Some(Arc::new(PendingSizes::new()));
-    rescan_route::reset_cooldown_for_test();
-
-    let (writer, _dir, conn) = setup_test_writer();
-    let mut reconciler = EventReconciler::new();
+    // A private per-volume instance (see `setup_private_writer`): the hold routes
+    // to a PRIVATE tracker, so a fresh volume id also gives the shallow anchor a
+    // clean sweep window without touching the process-global `SHALLOW_SWEEPS`.
+    let volume_id = "smb://reconciler-test-root-scale";
+    let (writer, _dir, conn, instance) = setup_private_writer(volume_id);
+    let mut reconciler = EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root());
     reconciler.switch_to_live();
     let sink = Arc::new(Mutex::new(Vec::<String>::new()));
     reconciler.set_recording_scan_trigger(Arc::clone(&sink));
@@ -224,9 +223,8 @@ async fn root_scale_must_scan_routes_to_scanner_without_a_stuck_hold() {
         "a shallow (root-scale) anchor routes to the scanner"
     );
     // ...and took NO reconcile hourglass hold, and queued nothing on the drain.
-    let tracker = pending_sizes::get_pending_sizes_for(ROOT_VOLUME_ID).expect("tracker");
     assert!(
-        !tracker.is_pending("/"),
+        !instance.tracker.is_pending("/"),
         "the scanner path must NOT hold the per-dir hourglass (the stuck-hold bug)"
     );
     assert!(
@@ -235,7 +233,6 @@ async fn root_scale_must_scan_routes_to_scanner_without_a_stuck_hold() {
     );
     assert!(!reconciler.is_rescan_active_for_test(), "no reconcile was spawned");
 
-    *PENDING_SIZES.lock().expect("uninstall") = None;
     writer.shutdown();
 }
 
@@ -252,13 +249,11 @@ async fn root_scale_must_scan_routes_to_scanner_without_a_stuck_hold() {
 /// the live path.
 #[tokio::test]
 async fn a_second_root_scale_must_scan_does_not_reach_the_scanner() {
-    use crate::indexing::read::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes};
-    let _guard = PENDING_SIZES_TEST_MUTEX.lock().expect("test mutex");
-    *PENDING_SIZES.lock().expect("install tracker") = Some(Arc::new(PendingSizes::new()));
-    rescan_route::reset_cooldown_for_test();
-
-    let (writer, _dir, conn) = setup_test_writer();
-    let mut reconciler = EventReconciler::new();
+    // Private per-volume instance; a fresh volume id starts with a clean sweep
+    // window, so the first `/` sweeps and the second coalesces.
+    let volume_id = "smb://reconciler-test-second-root-scale";
+    let (writer, _dir, conn, _instance) = setup_private_writer(volume_id);
+    let mut reconciler = EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root());
     reconciler.switch_to_live();
     let sink = Arc::new(Mutex::new(Vec::<String>::new()));
     reconciler.set_recording_scan_trigger(Arc::clone(&sink));
@@ -279,7 +274,6 @@ async fn a_second_root_scale_must_scan_does_not_reach_the_scanner() {
         "a coalesced shallow anchor must not queue an invisible reconcile instead"
     );
 
-    *PENDING_SIZES.lock().expect("uninstall") = None;
     writer.shutdown();
 }
 
@@ -288,13 +282,14 @@ async fn a_second_root_scale_must_scan_does_not_reach_the_scanner() {
 /// depth, so the deep path must NOT reach the scanner.
 #[tokio::test]
 async fn deep_must_scan_keeps_the_reconcile_drain() {
-    use crate::indexing::read::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes};
-    let _guard = PENDING_SIZES_TEST_MUTEX.lock().expect("test mutex");
-    *PENDING_SIZES.lock().expect("install tracker") = Some(Arc::new(PendingSizes::new()));
-    rescan_route::reset_cooldown_for_test();
-
-    let (writer, _dir, conn) = setup_test_writer();
-    let mut reconciler = EventReconciler::new();
+    // Private per-volume instance: the deep anchor's hourglass hold routes to this
+    // volume's PRIVATE tracker, so the `is_pending` assertion below is immune to a
+    // foreign root writer clearing the shared root tracker mid-assertion (this was
+    // the root-cause flake — its panic poisoned `PENDING_SIZES_TEST_MUTEX` and
+    // cascaded into every other holder).
+    let volume_id = "smb://reconciler-test-deep";
+    let (writer, _dir, conn, instance) = setup_private_writer(volume_id);
+    let mut reconciler = EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root());
     reconciler.switch_to_live();
     // Keep the queued anchor visible (no spawn), so we assert on the queue directly.
     reconciler.rescan_active.store(true, Ordering::Relaxed);
@@ -320,13 +315,11 @@ async fn deep_must_scan_keeps_the_reconcile_drain() {
         vec![PathBuf::from(deep)],
         "the deep anchor is queued on the reconcile drain"
     );
-    let tracker = pending_sizes::get_pending_sizes_for(ROOT_VOLUME_ID).expect("tracker");
     assert!(
-        tracker.is_pending(deep),
+        instance.tracker.is_pending(deep),
         "the reconcile drain holds the per-dir hourglass for a deep anchor"
     );
 
-    *PENDING_SIZES.lock().expect("uninstall") = None;
     writer.shutdown();
 }
 
@@ -1668,6 +1661,25 @@ fn setup_test_writer() -> (IndexWriter, tempfile::TempDir, Connection) {
     let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
     let conn = IndexStore::open_write_connection(&db_path).expect("open WAL conn for reads");
     (writer, dir, conn)
+}
+
+/// Set up a NON-root writer + a private per-volume `IndexInstance` for the
+/// hourglass-hold routing tests, so the reconciler's `hold_rescan` routes to a
+/// PRIVATE tracker (`get_pending_sizes_for(volume_id)`) immune to foreign root
+/// writers clearing the process-global root `PENDING_SIZES` mid-assertion (the
+/// isolation flake). Pair with `EventReconciler::new_for(volume_id,
+/// IndexPathSpace::root())`: the ROOT path space keeps `is_boot_disk()` true, so
+/// the shallow once-a-day sweep-window semantics are unchanged; only the volume
+/// id is private. The writer is spawned NON-root for the same id so ITS
+/// end-of-drain clear also targets the private tracker, never the shared global.
+fn setup_private_writer(volume_id: &str) -> (IndexWriter, tempfile::TempDir, Connection, TestInstanceGuard) {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let db_path = dir.path().join("test-reconciler.db");
+    let _store = IndexStore::open(&db_path).expect("open store");
+    let writer = IndexWriter::spawn_for(&db_path, None, false, volume_id.to_string()).expect("spawn writer");
+    let conn = IndexStore::open_write_connection(&db_path).expect("open WAL conn for reads");
+    let instance = TestInstanceGuard::register(volume_id, &db_path, IndexVolumeKind::Smb);
+    (writer, dir, conn, instance)
 }
 
 /// Ensure all components of an absolute path exist in the DB as directory entries.

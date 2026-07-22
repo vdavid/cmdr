@@ -262,16 +262,6 @@ fn seed_from_meta_in(
     record.coalesced_since_sweep = record.coalesced_since_sweep.max(coalesced);
 }
 
-/// Test-only: clear the PROCESS-GLOBAL ledger. Only for the `reconcile/reconciler/tests.rs`
-/// cases that drive a real event through `process_live_event` and therefore can't
-/// inject a ledger; those already serialize on `PENDING_SIZES_TEST_MUTEX`. The
-/// policy's own tests use a local ledger via [`decide_shallow_anchor_in`] instead,
-/// because clearing a shared global from parallel tests is a race.
-#[cfg(test)]
-pub(in crate::indexing) fn reset_cooldown_for_test() {
-    SHALLOW_SWEEPS.lock_ignore_poison().clear();
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

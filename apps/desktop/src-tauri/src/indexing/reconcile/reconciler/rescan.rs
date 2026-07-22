@@ -679,17 +679,24 @@ mod tests {
         assert_eq!(picked, PathBuf::from("/a"));
     }
 
-    use crate::indexing::read::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes};
+    use crate::indexing::lifecycle::state::IndexVolumeKind;
+    use crate::indexing::stress_test_helpers::TestInstanceGuard;
 
-    /// Spawn a real writer over a throwaway DB. The completion emit rides this
+    /// Spawn a real NON-root writer over a throwaway DB and register a PRIVATE
+    /// per-volume instance for `volume_id`, so the completion's hold-release
+    /// routes to a private tracker (`get_pending_sizes_for(volume_id)`) immune to
+    /// foreign root writers clearing the process-global root `PENDING_SIZES`
+    /// mid-assertion (the isolation flake; its panic used to poison
+    /// `PENDING_SIZES_TEST_MUTEX` and cascade). The completion emit rides this
     /// writer's channel, and `None` app handle makes the emit an observable-only
     /// no-op captured by the writer's test probe.
-    fn spawn_probe_writer() -> (IndexWriter, tempfile::TempDir) {
+    fn spawn_probe_writer_for(volume_id: &str) -> (IndexWriter, tempfile::TempDir, TestInstanceGuard) {
         let dir = tempfile::tempdir().expect("temp dir");
         let db_path = dir.path().join("rescan-emit.db");
         let _store = IndexStore::open(&db_path).expect("open store");
-        let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
-        (writer, dir)
+        let writer = IndexWriter::spawn_for(&db_path, None, false, volume_id.to_string()).expect("spawn writer");
+        let instance = TestInstanceGuard::register(volume_id, &db_path, IndexVolumeKind::Smb);
+        (writer, dir, instance)
     }
 
     /// On completion, `release_and_emit_completion` drops the root's hold, then
@@ -697,19 +704,23 @@ mod tests {
     /// (which reads `is_pending`) lands after the release and after the writes.
     #[test]
     fn completion_releases_then_emits_root_and_ancestors() {
-        let _guard = PENDING_SIZES_TEST_MUTEX.lock().expect("test mutex");
-        *PENDING_SIZES.lock().expect("install tracker") = Some(Arc::new(PendingSizes::new()));
-        let tracker = pending_sizes::get_pending_sizes_for(ROOT_VOLUME_ID).expect("tracker");
-        tracker.hold("/aaa/bbb/ccc");
-        assert!(tracker.is_pending("/aaa/bbb/ccc"), "held before completion");
+        let volume_id = "smb://rescan-test-release-emit";
+        let (writer, _dir, instance) = spawn_probe_writer_for(volume_id);
+        instance.tracker.hold("/aaa/bbb/ccc");
+        assert!(instance.tracker.is_pending("/aaa/bbb/ccc"), "held before completion");
 
-        let (writer, _dir) = spawn_probe_writer();
         let pending: Mutex<HashSet<PathBuf>> = Mutex::new(HashSet::new());
-        release_and_emit_completion(ROOT_VOLUME_ID, Path::new("/aaa/bbb/ccc"), &pending, &writer);
+        release_and_emit_completion(volume_id, Path::new("/aaa/bbb/ccc"), &pending, &writer);
 
         // Release happened (the FE refetch will read pending == false).
-        assert!(!tracker.is_pending("/aaa/bbb/ccc"), "hold released on completion");
-        assert!(!tracker.is_pending("/aaa"), "ancestor no longer pending via this root");
+        assert!(
+            !instance.tracker.is_pending("/aaa/bbb/ccc"),
+            "hold released on completion"
+        );
+        assert!(
+            !instance.tracker.is_pending("/aaa"),
+            "ancestor no longer pending via this root"
+        );
 
         // The emit rode the writer with the root + its ancestor chain.
         writer.flush_blocking().expect("flush");
@@ -723,7 +734,6 @@ mod tests {
             ]],
             "one EmitDirUpdated carrying root + ancestor chain"
         );
-        *PENDING_SIZES.lock().expect("uninstall") = None;
     }
 
     /// A storm re-queue of the active path leaves it in `pending_rescans` when the
@@ -731,19 +741,17 @@ mod tests {
     /// but the completion still emits so the in-place refresh fires.
     #[test]
     fn completion_skips_release_when_requeued() {
-        let _guard = PENDING_SIZES_TEST_MUTEX.lock().expect("test mutex");
-        *PENDING_SIZES.lock().expect("install tracker") = Some(Arc::new(PendingSizes::new()));
-        let tracker = pending_sizes::get_pending_sizes_for(ROOT_VOLUME_ID).expect("tracker");
-        tracker.hold("/aaa/bbb/ccc");
+        let volume_id = "smb://rescan-test-skip-release";
+        let (writer, _dir, instance) = spawn_probe_writer_for(volume_id);
+        instance.tracker.hold("/aaa/bbb/ccc");
 
-        let (writer, _dir) = spawn_probe_writer();
         let mut set = HashSet::new();
         set.insert(PathBuf::from("/aaa/bbb/ccc"));
         let pending = Mutex::new(set);
-        release_and_emit_completion(ROOT_VOLUME_ID, Path::new("/aaa/bbb/ccc"), &pending, &writer);
+        release_and_emit_completion(volume_id, Path::new("/aaa/bbb/ccc"), &pending, &writer);
 
         assert!(
-            tracker.is_pending("/aaa/bbb/ccc"),
+            instance.tracker.is_pending("/aaa/bbb/ccc"),
             "hold persists while the root is re-queued for a follow-up rescan"
         );
         writer.flush_blocking().expect("flush");
@@ -752,6 +760,5 @@ mod tests {
             1,
             "the completion still emits the refresh"
         );
-        *PENDING_SIZES.lock().expect("uninstall") = None;
     }
 }
