@@ -64,7 +64,7 @@ fn search_finds_the_image_by_ocr_text_and_survives_unmount() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = media_db_path(dir.path(), "root");
     MediaStore::open(&db_path).expect("open store");
-    let writer = MediaWriter::spawn(&db_path).expect("writer");
+    let writer = MediaWriter::spawn(&db_path, "root").expect("writer");
 
     writer
         .upsert(
@@ -115,7 +115,7 @@ fn tag_search_is_case_insensitive() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = media_db_path(dir.path(), "root");
     MediaStore::open(&db_path).expect("open store");
-    let writer = MediaWriter::spawn(&db_path).expect("writer");
+    let writer = MediaWriter::spawn(&db_path, "root").expect("writer");
 
     writer
         .upsert(
@@ -191,7 +191,7 @@ fn facts_for_paths_returns_full_text_distinct_tags_and_keeps_unknown_paths() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = media_db_path(dir.path(), "root");
     MediaStore::open(&db_path).expect("open store");
-    let writer = MediaWriter::spawn(&db_path).expect("writer");
+    let writer = MediaWriter::spawn(&db_path, "root").expect("writer");
 
     let long_text = "Invoice 2026-07-14 total 1 234 SEK paid by card, thank you for your business";
     seed_facts(
@@ -279,7 +279,7 @@ fn facts_for_paths_chunks_past_the_sqlite_parameter_limit() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = media_db_path(dir.path(), "root");
     MediaStore::open(&db_path).expect("open store");
-    let writer = MediaWriter::spawn(&db_path).expect("writer");
+    let writer = MediaWriter::spawn(&db_path, "root").expect("writer");
     seed_facts(&writer, "/photos/img-1500.jpg", "needle", vec![]);
     writer.flush_blocking().expect("flush");
 
@@ -326,7 +326,7 @@ fn search_semantic_ranks_by_clip_cosine_and_honors_k() {
     let dir = tempfile::tempdir().expect("temp");
     let db_path = media_db_path(dir.path(), "root");
     MediaStore::open(&db_path).expect("store");
-    let writer = MediaWriter::spawn(&db_path).expect("writer");
+    let writer = MediaWriter::spawn(&db_path, "root").expect("writer");
     // Three images at orthogonal directions in the (fake) CLIP space.
     seed_clip(&writer, "/cat.jpg", vec![1.0, 0.0, 0.0]);
     seed_clip(&writer, "/dog.jpg", vec![0.0, 1.0, 0.0]);
@@ -357,7 +357,7 @@ fn search_semantic_is_empty_without_clip_embeddings() {
     let dir = tempfile::tempdir().expect("temp");
     let db_path = media_db_path(dir.path(), "root");
     MediaStore::open(&db_path).expect("store");
-    let writer = MediaWriter::spawn(&db_path).expect("writer");
+    let writer = MediaWriter::spawn(&db_path, "root").expect("writer");
     writer
         .upsert(
             MediaStatusRow {

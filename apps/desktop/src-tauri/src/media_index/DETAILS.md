@@ -621,6 +621,72 @@ unchanged and invalidate is conservative — a cheap cold rebuild on a rare user
 streaming `walk_image_entries` (ordered by `parent_id`, one dir-group in memory at a time) keeps even that cold rebuild
 in constant memory instead of materializing every file row.
 
+### The per-folder accounted aggregate + the index-status indicators (`coverage.rs`, `commands.rs`)
+
+The covered-count cache above is the DENOMINATOR (`eligible`: images the drive index says qualify per folder). The quiet
+per-image / per-folder / per-drive index indicators also need the NUMERATOR: how many of those are actually indexed. So
+`coverage.rs` maintains a per-directory `accounted` count = images whose `media_status` row is `done` OR `failed` (both
+count — a `failed` image can't progress, so completion is `accounted == eligible`, else one corrupt file keeps a folder
+reading incomplete forever).
+
+**Why a SEPARATE cache from `COUNTS`, not a field on it.** The two aggregates have different sources and update models:
+`eligible` (`COUNTS`) is REBUILT from a whole-volume index walk each pass (`replace_from_entries`), reflecting the live
+filesystem; `accounted` (`ACCOUNTED`) is maintained INCREMENTALLY from the stored rows. Folding accounted into `COUNTS`
+would let the walk-driven `replace_from_entries` wipe the incrementally-maintained counts every pass. They're reported
+together by the folder-coverage command but live apart.
+
+**The maintenance invariants (mirroring how `eligible` is seeded and patched):**
+
+- **Seed** once from a `SELECT path, state FROM media_status` scan bucketed by parent dir. This happens on the ONE writer
+  thread as its FIRST action (`writer_loop` calls `coverage::seed_accounted_from_conn` before processing any message), OR
+  lazily via `ensure_accounted_seeded` when the folder-coverage command runs before the writer spawned this session
+  (feature just enabled / volume never enriched). Both go through `seed_accounted_if_absent` (insert-if-absent).
+- **Increment** on a genuinely-new completion: `apply_upsert` does a cheap PK existence check (`SELECT EXISTS(…)`) inside
+  its transaction and returns whether it INSERTED vs updated; the writer bumps `accounted[parent_dir] += 1` only on a new
+  `done`/`failed` row. A `done`↔`failed` transition or a re-enrich of an existing path does NOT move it (the path was
+  already counted).
+- **Decrement** on deletion: GC / prune / retro-delete return the paths whose `media_status` row actually existed
+  (`delete_rows_for_paths` collects the ones `DELETE` reported), and the writer `-1`s each parent dir (saturating, never
+  negative). `PurgeVolume` resets the whole aggregate.
+- **Subtree rollups**: `folder_coverage` returns each folder's `eligible` and `accounted` summed over the folder AND all
+  descendant dirs (`build_subtree_rollup` adds each dir's count to itself and every ancestor). The rollup is cached
+  alongside the per-dir map (`VolumeAccounted.subtree`, `ELIGIBLE_ROLLUP`) and invalidated on any change; a query is a
+  cached-map lookup, NEVER a `media_status` scan.
+
+**The concurrency line (why insert-if-absent is race-free).** The writer is the ONE mutator of both `media.db` and this
+volume's `accounted`, and it seeds BEFORE its first commit. So whenever a committed row could exist, the entry is already
+present, and a concurrent command-side seed either wins first (a complete on-disk baseline, since no writer delta can have
+landed yet) or finds the entry present and discards its scan. Either way the writer's deltas compose onto exactly one
+baseline. A delta on an unseeded volume is a no-op (never inserts a partial entry a later seed would wrongly trust).
+
+**Staleness caveat (accepted first cut).** A `done` row whose file changed since indexing still counts as `accounted`
+until it's re-enriched, so a folder / drive can briefly read "complete" while a changed file awaits re-work. Excluding
+stale rows would need a per-row `(mtime, size)` compare against the live index, out of scope here (the per-FILE badge
+does surface `stale` via `needs_enrichment`, but the folder/drive rollups don't subtract it).
+
+**The two commands** (both `spawn_blocking`, both speak the volume's INDEX-path space — == the OS path for a local
+volume; a network volume's mount-root mapping is a later slice, so the file overlay ships local-first):
+
+- `media_index_file_status(volume_id, paths) -> Vec<FileIndexStatus>`, one per input path IN ORDER.
+  `FileIndexStatus { path, state }` with `state` a camelCase enum: `indexed` (a `done` row, current per
+  `needs_enrichment`), `stale` (a stored row the live `(mtime, size)` or the analyze engine stamp made stale), `failed`
+  (a `failed` row), `pending` (an eligible image the coverage gate would enrich but which has no row yet), `excluded`
+  (an indexable image the gate would NOT enrich — out of scope / below threshold / under an excluded folder),
+  `notApplicable` (not a qualifying image → no badge). Backend does ALL classification: a bounded, dir-scoped
+  `walk_image_entries_in_dirs` supplies each path's live `(mtime, size)` + sibling-aware qualification, `media.db`
+  supplies the stored row, and `local_should_enrich` + the live exclusion veto split `pending` from `excluded` (only for
+  an un-enriched image). A stored row WINS over the gate: an indexed image reads `indexed`/`stale`/`failed` even if the
+  current setting no longer covers it (forward-only, the rows stay searchable). The `pending`/`excluded` scores are
+  threshold-filtered exactly as `pass_coverage` sees them (`coverage_scores`). The staleness engine stamp comes from
+  `MediaScheduler::current_analysis_stamp`; a missing scheduler falls back to each row's own stamp (only `(mtime, size)`
+  staleness).
+- `media_index_folder_coverage(volume_id, folder_paths) -> Vec<FolderCoverage>`, one per input folder in order.
+  `FolderCoverage { path, eligible, accounted }` (subtree totals). The frontend derives the two-state folder badge
+  (`accounted == eligible` vs `<`, no badge when `eligible == 0`) and the `accounted/eligible` tooltip. It calls
+  `ensure_accounted_seeded` first (in case the writer hasn't spawned), then reads the cached rollups.
+
+Both feature-off-short-circuit (`notApplicable` for every file, zeros for every folder), matching the other commands.
+
 ### Per-folder photo-search exclude + the privacy retro-delete
 
 `network::config` gained `excluded_folders` (seeded from `mediaIndex.excludedFolders`, live-applied by

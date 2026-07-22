@@ -2015,6 +2015,33 @@ export const commands = {
    */
   mediaIndexDownloadClipModel: () => typedError<null, string>(__TAURI_INVOKE('media_index_download_clip_model')),
   /**
+   *  Classify the index status of each file in `paths` (in request order) on `volume_id`.
+   *
+   *  **Paths are in the volume's INDEX-path space** — for a local volume that equals the
+   *  OS path, which is what the file lists show; a network volume's mount-root mapping is a
+   *  later slice (the file overlay ships local-first). The classification is bounded to the
+   *  paths passed (the visible rows), so a per-path drive-index lookup is cheap.
+   *
+   *  Backend-owned classification (smart-backend/thin-frontend): the drive index supplies
+   *  each path's live `(mtime, size)` and whether it qualifies as an image (sibling-aware
+   *  `qualify_dir`), `media.db` supplies the stored row, and the coverage gate
+   *  (`local_should_enrich` + the live exclusion veto) decides `pending` vs `excluded` for
+   *  an un-enriched image. A stored row wins over the gate: an already-indexed image reads
+   *  `indexed`/`stale`/`failed` even if the current setting no longer covers it (the rows
+   *  stay searchable, forward-only).
+   */
+  mediaIndexFileStatus: (volumeId: string, paths: string[]) =>
+    typedError<FileIndexStatus[], string>(__TAURI_INVOKE('media_index_file_status', { volumeId, paths })),
+  /**
+   *  The eligible + accounted subtree counts for each folder in `folder_paths` (in request
+   *  order) on `volume_id`. Reads the per-volume rollups the aggregate maintains
+   *  ([`coverage::folder_coverage`]); never scans `media.db` per query. Folder paths are in
+   *  the volume's INDEX-path space (== OS path for a local volume), matching the stored
+   *  rows and the eligible cache.
+   */
+  mediaIndexFolderCoverage: (volumeId: string, folderPaths: string[]) =>
+    typedError<FolderCoverage[], string>(__TAURI_INVOKE('media_index_folder_coverage', { volumeId, folderPaths })),
+  /**
    *  Called when the search dialog opens. Pre-loads the ROOT index in the background
    *  (the common case; scoped volumes load lazily on their first query). Returns
    *  immediately with `{ ready, entryCount }`; the dialog flips to ready on the
@@ -4252,6 +4279,46 @@ export type FileEntry = {
 }
 
 /**
+ *  The index status of ONE file, as the file-icon overlay reads it. Serialized
+ *  camelCase across the IPC boundary; classification is entirely backend-side (the
+ *  frontend renders an icon per state, never re-deriving from mtime/size).
+ */
+export type FileIndexState =
+  // A `done` row whose `(mtime, size)` + analyze stamp are current — fully indexed.
+  | 'indexed'
+  /**
+   *  A stored row whose live file changed since indexing (or the analyze engine
+   *  bumped): it needs re-enrichment. The same `needs_enrichment` predicate a pass uses.
+   */
+  | 'stale'
+  // A `failed` row (a broken/undecodable file). Won't progress on its own.
+  | 'failed'
+  /**
+   *  An indexable image that the coverage gate would enrich, but which has no stored
+   *  row yet (indexing hasn't reached it).
+   */
+  | 'pending'
+  /**
+   *  An indexable image the coverage gate would NOT enrich: out of scope, below the
+   *  importance threshold, or under an excluded folder.
+   */
+  | 'excluded'
+  /**
+   *  Not an indexable media type (a video, a document, a folder, a RAW deferring to a
+   *  JPEG sibling, or a file the index no longer holds) — the frontend renders no badge.
+   */
+  | 'notApplicable'
+
+/**
+ *  One file's path + its index status. `path` echoes the request exactly (the frontend
+ *  keys its per-path map by it).
+ */
+export type FileIndexStatus = {
+  path: string
+  state: FileIndexState
+}
+
+/**
  *  What a destination filesystem is. A factual classification used for the
  *  volume-picker label and to derive the per-file size limit. `Other` carries
  *  no detail of its own; the raw OS type string travels alongside in
@@ -4301,6 +4368,20 @@ export type FocusFileViewer = {
 
 // `focus-settings`: bring the settings window forward (MCP `dialog focus`).
 export type FocusSettings = null
+
+/**
+ *  One folder's index coverage: the eligible denominator and accounted numerator, each a
+ *  subtree total (the folder plus all its descendants). Serialized camelCase; the
+ *  frontend derives the two-state badge (`accounted == eligible` vs `accounted <
+ *  eligible`, no badge when `eligible == 0`) and the `accounted/eligible` tooltip.
+ */
+export type FolderCoverage = {
+  path: string
+  // Images under this folder (subtree) the drive index says qualify for indexing.
+  eligible: number
+  // Of those, how many have a stored `done`/`failed` row (both count as accounted).
+  accounted: number
+}
 
 /**
  *  One volume's index freshness. Carried by a `Running` index instance; gray /

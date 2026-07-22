@@ -79,7 +79,7 @@ fn build_index(path: &std::path::Path, files: &[(&str, &str, u64, u64)]) {
 fn media_writer(dir: &std::path::Path, volume_id: &str) -> MediaWriter {
     let db_path = media_db_path(dir, volume_id);
     MediaStore::open(&db_path).expect("open media store");
-    MediaWriter::spawn(&db_path).expect("media writer")
+    MediaWriter::spawn(&db_path, volume_id).expect("media writer")
 }
 
 /// A pass-hooks bundle that never cancels and drops progress on the floor — the default

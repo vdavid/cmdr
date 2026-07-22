@@ -206,7 +206,7 @@ fn seed_importance_incremental_only(data_dir: &std::path::Path, rows: &[(&str, f
 fn seed_media_row_for(data_dir: &std::path::Path, volume_id: &str, path: &str) {
     let db_path = media_db_path(data_dir, volume_id);
     MediaStore::open(&db_path).expect("open media store");
-    let writer = MediaWriter::spawn(&db_path).expect("media writer");
+    let writer = MediaWriter::spawn(&db_path, volume_id).expect("media writer");
     writer
         .upsert(
             MediaStatusRow {
@@ -229,7 +229,7 @@ fn seed_media_row_for(data_dir: &std::path::Path, volume_id: &str, path: &str) {
 fn seed_media_row(data_dir: &std::path::Path, path: &str) {
     let db_path = media_db_path(data_dir, ROOT);
     MediaStore::open(&db_path).expect("open media store");
-    let writer = MediaWriter::spawn(&db_path).expect("media writer");
+    let writer = MediaWriter::spawn(&db_path, ROOT).expect("media writer");
     writer
         .upsert(
             MediaStatusRow {

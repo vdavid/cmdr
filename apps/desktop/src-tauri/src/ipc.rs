@@ -620,6 +620,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::media_index::commands::media_index_search_semantic,
         crate::media_index::commands::media_index_clip_model_status,
         crate::media_index::commands::media_index_download_clip_model,
+        crate::media_index::commands::media_index_file_status,
+        crate::media_index::commands::media_index_folder_coverage,
         crate::commands::search::prepare_search_index,
         crate::commands::search::search_files,
         crate::commands::search::release_search_index,

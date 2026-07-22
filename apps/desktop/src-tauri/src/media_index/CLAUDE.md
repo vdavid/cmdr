@@ -52,6 +52,10 @@ A PORT of `importance/`'s patterns (store, writer, scheduler, read API): read `i
   `analyze_media(want_vision, want_clip)`. ❌ NEVER compare CLIP against the Vision feature print. Off with no model
   installed (`search_semantic` returns `[]`).
 
-Still open: per-folder COUNTS (no cheap scan; the pane readout voices coverage, not completion), MTP, faces/captions.
+- **Per-folder `accounted` aggregate** (`coverage.rs`; feeds `media_index_file_status`/`_folder_coverage`): ❌ INCREMENTAL
+  (writer `+1`/`-1`, seeded at spawn), never rebuilt from a walk (wipes it); SEPARATE `ACCOUNTED` cache, not `COUNTS`.
+  Invariants: `DETAILS.md`.
+
+Still open: MTP, faces/captions.
 
 Depth for every § above, plus architecture and decisions: [DETAILS.md](DETAILS.md). Read it before non-trivial work.

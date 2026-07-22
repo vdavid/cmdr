@@ -38,7 +38,7 @@ impl WriterRegistry {
         }
         let db_path = media_db_path(data_dir, volume_id);
         super::store::MediaStore::open(&db_path)?; // create file + schema.
-        let built = MediaWriter::spawn(&db_path)?;
+        let built = MediaWriter::spawn(&db_path, volume_id)?;
 
         let mut map = self.writers.lock_ignore_poison();
         let entry = map.entry(volume_id.to_string()).or_insert(built);

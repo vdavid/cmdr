@@ -9,6 +9,9 @@ import {
   events,
   type ClipModelStatus,
   type CoveredCount,
+  type FileIndexState,
+  type FileIndexStatus,
+  type FolderCoverage,
   type MediaEnrichProgressEvent,
   type MediaEnrichTerminalEvent,
   type MediaEnrichTerminalReason,
@@ -24,6 +27,9 @@ import { throwIpcError } from './ipc-types'
 export type {
   ClipModelStatus,
   CoveredCount,
+  FileIndexState,
+  FileIndexStatus,
+  FolderCoverage,
   MediaEnrichProgressEvent,
   MediaEnrichTerminalEvent,
   MediaEnrichTerminalReason,
@@ -82,6 +88,35 @@ export async function mediaIndexSearchOcr(
  */
 export async function mediaIndexVolumeState(volumeId: string): Promise<MediaIndexVolumeState> {
   const res = await commands.mediaIndexVolumeState(volumeId)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/**
+ * The index status of each file in `paths` on `volumeId`, one per input path in request
+ * order. The backend classifies every path (`indexed` / `stale` / `failed` / `pending` /
+ * `excluded` / `notApplicable`) from the drive index, `media.db`, and the coverage gate —
+ * the frontend just renders an icon per state. Paths are in the volume's index-path space
+ * (== the OS path shown in the file list for a local volume). Returns all `notApplicable`
+ * when image indexing is off.
+ */
+export async function mediaIndexFileStatus(volumeId: string, paths: string[]): Promise<FileIndexStatus[]> {
+  if (paths.length === 0) return []
+  const res = await commands.mediaIndexFileStatus(volumeId, paths)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/**
+ * The eligible + accounted subtree counts for each folder in `folderPaths` on `volumeId`,
+ * one per input folder in order. `eligible` is how many images under the folder qualify for
+ * indexing; `accounted` is how many of those have been indexed (`done` or `failed`). The
+ * frontend derives the folder badge (all-indexed vs some-pending, no badge when
+ * `eligible === 0`) and the `accounted/eligible` tooltip fraction.
+ */
+export async function mediaIndexFolderCoverage(volumeId: string, folderPaths: string[]): Promise<FolderCoverage[]> {
+  if (folderPaths.length === 0) return []
+  const res = await commands.mediaIndexFolderCoverage(volumeId, folderPaths)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }

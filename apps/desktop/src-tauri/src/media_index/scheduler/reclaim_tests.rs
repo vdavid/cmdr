@@ -46,7 +46,7 @@ fn seed_media_row(data_dir: &std::path::Path, volume_id: &str, path: &str) {
     use crate::media_index::backend::Tag;
     let db_path = media_db_path(data_dir, volume_id);
     MediaStore::open(&db_path).expect("open media store");
-    let writer = MediaWriter::spawn(&db_path).expect("media writer");
+    let writer = MediaWriter::spawn(&db_path, volume_id).expect("media writer");
     writer
         .upsert(
             MediaStatusRow {

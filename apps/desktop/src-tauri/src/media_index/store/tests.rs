@@ -101,7 +101,7 @@ fn status_round_trips_through_the_writer() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = media_db_path(dir.path(), "root");
     MediaStore::open(&db_path).expect("open");
-    let writer = MediaWriter::spawn(&db_path).expect("writer");
+    let writer = MediaWriter::spawn(&db_path, "root").expect("writer");
     writer
         .upsert(
             row(Some(7), Some(8), "e1"),
@@ -138,7 +138,7 @@ fn tags_and_embedding_round_trip_and_filter_by_score() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = media_db_path(dir.path(), "root");
     MediaStore::open(&db_path).expect("open");
-    let writer = MediaWriter::spawn(&db_path).expect("writer");
+    let writer = MediaWriter::spawn(&db_path, "root").expect("writer");
     writer
         .upsert(
             row(Some(1), Some(2), "e1"),
@@ -190,7 +190,7 @@ fn sum_bytes_for_paths_totals_the_doomed_rows_content_and_only_those() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = media_db_path(dir.path(), "root");
     MediaStore::open(&db_path).expect("open");
-    let writer = MediaWriter::spawn(&db_path).expect("writer");
+    let writer = MediaWriter::spawn(&db_path, "root").expect("writer");
 
     // Image a: OCR text "hello" (5 bytes) + a 2-float embedding (8 bytes), no tags.
     writer
@@ -276,7 +276,7 @@ fn re_enrichment_replaces_prior_tags_and_embedding() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = media_db_path(dir.path(), "root");
     MediaStore::open(&db_path).expect("open");
-    let writer = MediaWriter::spawn(&db_path).expect("writer");
+    let writer = MediaWriter::spawn(&db_path, "root").expect("writer");
     // First enrichment.
     writer
         .upsert(

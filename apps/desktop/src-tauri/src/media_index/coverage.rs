@@ -17,10 +17,13 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::{Arc, LazyLock, Mutex};
 
+use rusqlite::Connection;
+
 use crate::ignore_poison::IgnorePoison;
 
 use super::gate::IndexScope;
 use super::scheduler::enrich::{ImageEntry, parent_dir, walk_image_entries};
+use super::store::EnrichmentState;
 
 /// The qualifying-image counts for one volume: how many images each folder holds, and
 /// the volume total. Built from one index walk, cached until the next pass.
@@ -79,6 +82,8 @@ pub(crate) fn replace_from_entries(volume_id: &str, entries: &[ImageEntry]) {
     COUNTS
         .lock_ignore_poison()
         .insert(volume_id.to_string(), Arc::new(build_counts(entries)));
+    // The eligible set changed, so its cached subtree rollup is stale.
+    invalidate_eligible_rollup(volume_id);
 }
 
 /// The pure patch: `existing` with exactly `touched_dirs` replaced by their fresh per-tick
@@ -128,6 +133,9 @@ pub(crate) fn patch_touched_dirs(volume_id: &str, touched_dirs: &HashSet<String>
     };
     let patched = patch_counts(existing, touched_dirs, entries);
     cache.insert(volume_id.to_string(), Arc::new(patched));
+    drop(cache);
+    // The eligible set moved for the touched dirs, so its cached rollup is stale.
+    invalidate_eligible_rollup(volume_id);
 }
 
 /// Drop a volume's cached counts. Used by the rare reclaim / retro-delete prunes, which
@@ -135,6 +143,270 @@ pub(crate) fn patch_touched_dirs(volume_id: &str, touched_dirs: &HashSet<String>
 /// instead ([`replace_from_entries`] / [`patch_touched_dirs`]). The next preview rebuilds.
 pub fn invalidate(volume_id: &str) {
     COUNTS.lock_ignore_poison().remove(volume_id);
+    invalidate_eligible_rollup(volume_id);
+}
+
+// ── The per-directory "accounted" aggregate (the numerator) ─────────────────
+//
+// The eligible counts above are the DENOMINATOR (images the drive index says qualify
+// per folder). The `accounted` counts are the NUMERATOR: images whose `media_status`
+// row is `done` OR `failed` (both count — a failed image can't progress, so completion
+// is `accounted == eligible`, else one corrupt file would keep a folder reading
+// incomplete forever).
+//
+// The two aggregates have DIFFERENT sources and update models, so they live in separate
+// caches even though the folder-coverage command reports them together:
+// - `eligible` (`COUNTS`) is rebuilt from a whole-volume index walk each pass
+//   (`replace_from_entries`) — it reflects the live filesystem.
+// - `accounted` (`ACCOUNTED`) is maintained INCREMENTALLY: seeded once from a
+//   `media_status` scan, then bumped by the ONE writer thread per volume as rows are
+//   inserted (a genuinely-new `done`/`failed`) or deleted (GC/prune/purge). It reflects
+//   what enrichment has stored. Merging it into `COUNTS` would let the walk-driven
+//   `replace_from_entries` wipe the incrementally-maintained accounted counts.
+//
+// Staleness caveat (accepted first cut): a `done` row whose file changed since indexing
+// still counts as `accounted` until it's re-enriched, so a folder can briefly read
+// "complete" while a changed file awaits re-work. Excluding stale rows would need a
+// per-row `(mtime, size)` compare against the live index; out of scope here.
+
+/// One volume's accounted numerator: how many enriched (`done`/`failed`) rows sit
+/// DIRECTLY in each dir, plus a lazily-built subtree rollup (each dir's sum over itself
+/// and all descendants), invalidated on any mutation.
+#[derive(Default)]
+struct VolumeAccounted {
+    /// `dir → count of enriched rows whose parent dir is exactly `dir``. Only holds
+    /// dirs with ≥ 1 (a dir dropping to zero is removed), mirroring `per_folder`.
+    per_folder: HashMap<String, u64>,
+    /// `dir → sum over `dir` and all descendant dirs`. `None` until first queried or
+    /// after any mutation; rebuilt `O(dirs × depth)` on demand, never a `media_status`
+    /// scan per query.
+    subtree: Option<HashMap<String, u64>>,
+}
+
+/// The process-global per-volume accounted cache. Keyed by volume id like [`COUNTS`],
+/// with one entry per volume that has been SEEDED this session (a missing entry = not
+/// yet seeded). Mutated in place (unlike `COUNTS`'s whole-`Arc` replace) because the
+/// increment/decrement deltas are `O(1)` and a whole-map clone per enriched image would
+/// be `O(dirs)` per image.
+static ACCOUNTED: LazyLock<Mutex<HashMap<String, VolumeAccounted>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// A shared, immutable subtree rollup (`dir → subtree total`), cached per volume.
+type SharedRollup = Arc<HashMap<String, u64>>;
+
+/// Cached subtree rollups for the ELIGIBLE (`COUNTS`) side, built on demand from a
+/// volume's `per_folder` and dropped whenever `COUNTS` for the volume changes
+/// ([`invalidate_eligible_rollup`] at every `COUNTS` mutation site).
+static ELIGIBLE_ROLLUP: LazyLock<Mutex<HashMap<String, SharedRollup>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// Build a subtree rollup from a per-dir count map: every dir maps to the sum over
+/// itself and all its descendant dirs. Each `(dir, count)` adds `count` to `dir` and
+/// each of its ANCESTORS (so an ancestor dir holding no direct images still reports its
+/// descendants' total), terminating at the root. Pure, so the arithmetic is
+/// unit-testable.
+fn build_subtree_rollup(per_folder: &HashMap<String, u64>) -> HashMap<String, u64> {
+    let mut rollup: HashMap<String, u64> = HashMap::new();
+    for (dir, &count) in per_folder {
+        let mut cursor = dir.as_str();
+        loop {
+            *rollup.entry(cursor.to_string()).or_default() += count;
+            if cursor == "/" {
+                break;
+            }
+            cursor = parent_dir(cursor);
+        }
+    }
+    rollup
+}
+
+/// Scan a `media.db` connection's `media_status` rows into `dir → accounted count`,
+/// bucketing every `done`/`failed` row by its parent dir. Every stored row is
+/// `done`/`failed` (the store persists no other state), so both count; the `state`
+/// filter is explicit for robustness against a future state that shouldn't.
+fn scan_accounted(conn: &Connection) -> Result<HashMap<String, u64>, super::store::MediaStoreError> {
+    let mut stmt = conn.prepare("SELECT path, state FROM media_status")?;
+    let rows = stmt.query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))?;
+    let mut per_folder: HashMap<String, u64> = HashMap::new();
+    for row in rows {
+        let (path, state) = row?;
+        if matches!(
+            EnrichmentState::from_token(&state),
+            EnrichmentState::Done | EnrichmentState::Failed
+        ) {
+            *per_folder.entry(parent_dir(&path).to_string()).or_default() += 1;
+        }
+    }
+    Ok(per_folder)
+}
+
+/// Insert a seeded accounted entry for `volume_id`, but ONLY if none exists yet. The
+/// insert-if-absent is the concurrency line: the ONE writer thread per volume seeds
+/// BEFORE its first commit, so whenever a delta could exist the entry is already
+/// present, and a concurrent command-side seed either wins first (a complete on-disk
+/// baseline, since no writer delta can have landed) or finds the entry present and
+/// discards its scan. Either way the writer's deltas compose onto exactly one baseline.
+fn seed_accounted_if_absent(volume_id: &str, per_folder: HashMap<String, u64>) {
+    ACCOUNTED
+        .lock_ignore_poison()
+        .entry(volume_id.to_string())
+        .or_insert_with(|| VolumeAccounted {
+            per_folder,
+            subtree: None,
+        });
+}
+
+/// Seed the accounted aggregate for `volume_id` from a `media.db` write connection,
+/// scanning `media_status` once. Called by the writer thread as its FIRST action
+/// (before it processes any write), so every later insert/delete delta composes onto a
+/// correct baseline. A no-op when the volume was already seeded (by an earlier writer
+/// spawn this session, or a command-side [`ensure_accounted_seeded`]).
+pub(crate) fn seed_accounted_from_conn(volume_id: &str, conn: &Connection) {
+    if ACCOUNTED.lock_ignore_poison().contains_key(volume_id) {
+        return;
+    }
+    match scan_accounted(conn) {
+        Ok(per_folder) => seed_accounted_if_absent(volume_id, per_folder),
+        Err(e) => log::warn!(target: "media_index", "accounted seed scan failed for '{volume_id}': {e}"),
+    }
+}
+
+/// Ensure the accounted aggregate for `volume_id` is seeded, scanning its `media.db`
+/// read-side if it isn't yet. The folder-coverage command calls this before reading the
+/// rollups, in case the volume's writer hasn't spawned this session (feature just
+/// enabled, or the volume never enriched). A missing `media.db` seeds an empty map (no
+/// enriched rows), never creates the file.
+pub(crate) fn ensure_accounted_seeded(volume_id: &str, db_path: &Path) {
+    if ACCOUNTED.lock_ignore_poison().contains_key(volume_id) {
+        return;
+    }
+    if !db_path.exists() {
+        seed_accounted_if_absent(volume_id, HashMap::new());
+        return;
+    }
+    match super::store::open_read_connection(db_path).and_then(|conn| scan_accounted(&conn)) {
+        Ok(per_folder) => seed_accounted_if_absent(volume_id, per_folder),
+        Err(e) => {
+            // Seed empty rather than leave it unseeded (which would rescan every call);
+            // a transient read error just under-reports until the next writer reseed.
+            log::warn!(target: "media_index", "accounted seed read failed for '{volume_id}': {e}");
+            seed_accounted_if_absent(volume_id, HashMap::new());
+        }
+    }
+}
+
+/// Increment `accounted[dir]` for `volume_id` by one — a genuinely-new `done`/`failed`
+/// row landed directly in `dir`. A no-op when the volume isn't seeded yet (the writer
+/// seeds before any delta, so this never actually misses in production; the guard just
+/// avoids inserting a partial, un-seeded entry that a later `ensure_accounted_seeded`
+/// would wrongly trust). Invalidates the cached subtree rollup.
+pub(crate) fn accounted_inc(volume_id: &str, dir: &str) {
+    let mut cache = ACCOUNTED.lock_ignore_poison();
+    if let Some(entry) = cache.get_mut(volume_id) {
+        *entry.per_folder.entry(dir.to_string()).or_default() += 1;
+        entry.subtree = None;
+    }
+}
+
+/// Decrement `accounted[dir]` for `volume_id` by one — an enriched row under `dir` was
+/// deleted (GC/prune). Saturates at zero (never negative) and drops the dir when it
+/// falls to zero, mirroring `per_folder`. A no-op when the volume isn't seeded or the
+/// dir isn't tracked. Invalidates the cached subtree rollup.
+pub(crate) fn accounted_dec(volume_id: &str, dir: &str) {
+    let mut cache = ACCOUNTED.lock_ignore_poison();
+    if let Some(entry) = cache.get_mut(volume_id)
+        && let Some(count) = entry.per_folder.get_mut(dir)
+    {
+        *count -= 1;
+        if *count == 0 {
+            entry.per_folder.remove(dir);
+        }
+        entry.subtree = None;
+    }
+}
+
+/// Reset a volume's accounted counts to empty (every enriched row was dropped — the
+/// disable-and-purge path). Keeps the entry present (still seeded), so later inserts
+/// bump from zero. Invalidates the cached subtree rollup.
+pub(crate) fn accounted_reset(volume_id: &str) {
+    let mut cache = ACCOUNTED.lock_ignore_poison();
+    if let Some(entry) = cache.get_mut(volume_id) {
+        entry.per_folder.clear();
+        entry.subtree = None;
+    }
+}
+
+/// Drop a volume's accounted entry entirely (unseed it). Not used in production — the
+/// aggregate is maintained for the process lifetime — but lets tests isolate from the
+/// process-global cache.
+#[cfg(test)]
+pub(crate) fn invalidate_accounted(volume_id: &str) {
+    ACCOUNTED.lock_ignore_poison().remove(volume_id);
+}
+
+/// The accounted subtree total for each of `folders` (each = the sum over the folder and
+/// all its descendant dirs), built from the cached rollup. `0` for an unseeded volume or
+/// a folder with no enriched rows beneath it. The rollup is built once and cached until
+/// the next mutation, so a batch of visible folders shares one `O(dirs × depth)` build.
+pub(crate) fn accounted_subtrees(volume_id: &str, folders: &[String]) -> Vec<u64> {
+    let mut cache = ACCOUNTED.lock_ignore_poison();
+    let Some(entry) = cache.get_mut(volume_id) else {
+        return vec![0; folders.len()];
+    };
+    if entry.subtree.is_none() {
+        entry.subtree = Some(build_subtree_rollup(&entry.per_folder));
+    }
+    let rollup = entry.subtree.as_ref().expect("subtree just built above");
+    folders.iter().map(|f| rollup.get(f).copied().unwrap_or(0)).collect()
+}
+
+/// The cached ELIGIBLE subtree rollup for `volume_id`, built on demand from `COUNTS`.
+/// `None` when the volume's index isn't ready (`get_or_build` returns `None`).
+fn eligible_rollup(volume_id: &str) -> Option<SharedRollup> {
+    if let Some(rollup) = ELIGIBLE_ROLLUP.lock_ignore_poison().get(volume_id) {
+        return Some(Arc::clone(rollup));
+    }
+    let counts = get_or_build(volume_id)?;
+    let rollup = Arc::new(build_subtree_rollup(&counts.per_folder));
+    ELIGIBLE_ROLLUP
+        .lock_ignore_poison()
+        .insert(volume_id.to_string(), Arc::clone(&rollup));
+    Some(rollup)
+}
+
+/// The eligible subtree total for each of `folders`. `0` for a folder with no qualifying
+/// images beneath it, or for every folder when the index isn't ready.
+fn eligible_subtrees(volume_id: &str, folders: &[String]) -> Vec<u64> {
+    match eligible_rollup(volume_id) {
+        Some(rollup) => folders.iter().map(|f| rollup.get(f).copied().unwrap_or(0)).collect(),
+        None => vec![0; folders.len()],
+    }
+}
+
+/// Drop the cached eligible rollup for a volume (its `COUNTS` changed).
+fn invalidate_eligible_rollup(volume_id: &str) {
+    ELIGIBLE_ROLLUP.lock_ignore_poison().remove(volume_id);
+}
+
+/// One folder's coverage: the eligible denominator and accounted numerator, each a
+/// subtree total over the folder and its descendants.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct FolderCoverageCounts {
+    pub(crate) eligible: u64,
+    pub(crate) accounted: u64,
+}
+
+/// The eligible + accounted subtree totals for `folders` on `volume_id`, one per input
+/// folder in order — the folder-coverage command's core. The caller must have seeded the
+/// accounted aggregate first ([`ensure_accounted_seeded`]); the eligible side builds
+/// itself from the drive index on demand. Both come from cached rollups, never a
+/// `media_status` scan per query.
+pub(crate) fn folder_coverage(volume_id: &str, folders: &[String]) -> Vec<FolderCoverageCounts> {
+    let eligible = eligible_subtrees(volume_id, folders);
+    let accounted = accounted_subtrees(volume_id, folders);
+    eligible
+        .into_iter()
+        .zip(accounted)
+        .map(|(eligible, accounted)| FolderCoverageCounts { eligible, accounted })
+        .collect()
 }
 
 /// The covered folder + image counts for ONE volume at `threshold`, given its cached
@@ -631,6 +903,164 @@ mod tests {
         );
         assert_eq!(part.surviving, 0, "an excluded row never survives");
         assert_eq!(part.doomed, vec!["/archive/secret.jpg".to_string()]);
+    }
+
+    // ── The accounted numerator: seed, increment, decrement, subtree rollup ──────
+
+    #[test]
+    fn build_subtree_rollup_sums_over_a_dir_and_its_descendants() {
+        // `/a` holds no direct images but two descendant dirs do, so its subtree total is
+        // their sum; the root `/` totals everything; a leaf reports only its own count.
+        let per_folder: HashMap<String, u64> = [
+            ("/a/b".to_string(), 2u64),
+            ("/a/c".to_string(), 3),
+            ("/x".to_string(), 1),
+        ]
+        .into_iter()
+        .collect();
+        let rollup = build_subtree_rollup(&per_folder);
+        assert_eq!(rollup.get("/a/b").copied(), Some(2), "leaf is its own count");
+        assert_eq!(rollup.get("/a/c").copied(), Some(3));
+        assert_eq!(rollup.get("/a").copied(), Some(5), "/a rolls up its two child dirs");
+        assert_eq!(rollup.get("/x").copied(), Some(1));
+        assert_eq!(rollup.get("/").copied(), Some(6), "the root totals the whole volume");
+        assert_eq!(rollup.get("/missing"), None, "a dir with nothing under it is absent");
+    }
+
+    #[test]
+    fn accounted_seed_increment_decrement_and_subtree() {
+        let vid = "coverage-test-accounted-seed";
+        invalidate_accounted(vid);
+        // Seed one dir with two enriched rows, then add a sibling dir via increment.
+        seed_accounted_if_absent(vid, [("/a/b".to_string(), 2u64)].into_iter().collect());
+        accounted_inc(vid, "/a/c");
+        // The subtree of /a rolls up both dirs (2 + 1).
+        assert_eq!(accounted_subtrees(vid, &["/a".to_string()]), vec![3]);
+        assert_eq!(
+            accounted_subtrees(vid, &["/a/b".to_string(), "/a/c".to_string()]),
+            vec![2, 1]
+        );
+
+        // Decrement /a/b twice: it drains to zero and is dropped from the map.
+        accounted_dec(vid, "/a/b");
+        accounted_dec(vid, "/a/b");
+        assert_eq!(accounted_subtrees(vid, &["/a/b".to_string()]), vec![0], "/a/b drained");
+        assert_eq!(
+            accounted_subtrees(vid, &["/a".to_string()]),
+            vec![1],
+            "only /a/c remains"
+        );
+
+        // A decrement past zero never goes negative (a stray delete of an untracked dir).
+        accounted_dec(vid, "/a/b");
+        accounted_dec(vid, "/a/c");
+        accounted_dec(vid, "/a/c");
+        assert_eq!(accounted_subtrees(vid, &["/a".to_string()]), vec![0], "never negative");
+        invalidate_accounted(vid);
+    }
+
+    #[test]
+    fn accounted_ops_on_an_unseeded_volume_are_noops() {
+        // A delta before seeding must NOT insert a partial (un-seeded) entry that a later
+        // `ensure_accounted_seeded` would trust as a complete baseline.
+        let vid = "coverage-test-accounted-unseeded";
+        invalidate_accounted(vid);
+        accounted_inc(vid, "/a");
+        assert!(
+            !ACCOUNTED.lock_ignore_poison().contains_key(vid),
+            "an increment on an unseeded volume inserts nothing"
+        );
+        assert_eq!(accounted_subtrees(vid, &["/a".to_string()]), vec![0]);
+    }
+
+    #[test]
+    fn seed_if_absent_never_clobbers_an_existing_entry() {
+        // The insert-if-absent concurrency line: a second seed (e.g. a command scan that
+        // lost the race to the writer) must not overwrite the live counts.
+        let vid = "coverage-test-accounted-noclobber";
+        invalidate_accounted(vid);
+        seed_accounted_if_absent(vid, [("/a".to_string(), 5u64)].into_iter().collect());
+        accounted_inc(vid, "/a");
+        // A late, stale seed is discarded — the incremented count survives.
+        seed_accounted_if_absent(vid, [("/a".to_string(), 5u64)].into_iter().collect());
+        assert_eq!(accounted_subtrees(vid, &["/a".to_string()]), vec![6]);
+        invalidate_accounted(vid);
+    }
+
+    #[test]
+    fn accounted_reset_empties_but_keeps_the_volume_seeded() {
+        let vid = "coverage-test-accounted-reset";
+        invalidate_accounted(vid);
+        seed_accounted_if_absent(vid, [("/a".to_string(), 3u64)].into_iter().collect());
+        accounted_reset(vid);
+        assert_eq!(accounted_subtrees(vid, &["/a".to_string()]), vec![0], "emptied");
+        assert!(
+            ACCOUNTED.lock_ignore_poison().contains_key(vid),
+            "still seeded, so a later insert bumps from zero rather than re-scanning"
+        );
+        accounted_inc(vid, "/a");
+        assert_eq!(accounted_subtrees(vid, &["/a".to_string()]), vec![1]);
+        invalidate_accounted(vid);
+    }
+
+    #[test]
+    fn folder_coverage_rolls_up_eligible_and_accounted_over_subtrees() {
+        let vid = "coverage-test-folder-coverage";
+        invalidate(vid);
+        invalidate_accounted(vid);
+        // Eligible: three qualifying images across two leaf dirs under /a.
+        replace_from_entries(vid, &[img("/a/b/x.jpg"), img("/a/b/y.jpg"), img("/a/c/z.jpg")]);
+        // Accounted: only one of them enriched so far (in /a/b).
+        seed_accounted_if_absent(vid, [("/a/b".to_string(), 1u64)].into_iter().collect());
+
+        let folders = vec!["/a".to_string(), "/a/b".to_string(), "/a/c".to_string()];
+        let cov = folder_coverage(vid, &folders);
+        assert_eq!(
+            cov[0],
+            FolderCoverageCounts {
+                eligible: 3,
+                accounted: 1
+            },
+            "/a subtree"
+        );
+        assert_eq!(
+            cov[1],
+            FolderCoverageCounts {
+                eligible: 2,
+                accounted: 1
+            },
+            "/a/b"
+        );
+        assert_eq!(
+            cov[2],
+            FolderCoverageCounts {
+                eligible: 1,
+                accounted: 0
+            },
+            "/a/c has an eligible image but nothing accounted yet"
+        );
+        invalidate(vid);
+        invalidate_accounted(vid);
+    }
+
+    #[test]
+    fn folder_coverage_is_zero_for_an_unseeded_unbuilt_volume() {
+        // No eligible cache and no accounted seed ⇒ honest zeros, not a panic.
+        let vid = "coverage-test-folder-coverage-empty";
+        invalidate(vid);
+        invalidate_accounted(vid);
+        // Accounted must be seeded (as the command does) before reading; eligible has no
+        // index, so it stays zero.
+        ensure_accounted_seeded(vid, Path::new("/nonexistent/media.db"));
+        let cov = folder_coverage(vid, &["/anything".to_string()]);
+        assert_eq!(
+            cov,
+            vec![FolderCoverageCounts {
+                eligible: 0,
+                accounted: 0
+            }]
+        );
+        invalidate_accounted(vid);
     }
 
     #[test]

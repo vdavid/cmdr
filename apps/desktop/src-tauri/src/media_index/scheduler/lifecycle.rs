@@ -37,7 +37,7 @@ use crate::indexing::lifecycle::lifecycle_bus;
 ///   once importance lands.
 /// - When SCORED, cover an override-covered folder OR one whose parent folder met
 ///   the threshold (already filtered into `scores`).
-pub(super) fn local_should_enrich(
+pub(crate) fn local_should_enrich(
     path: &str,
     scores: Option<&HashMap<String, f64>>,
     config: &network::config::NetworkEnrichConfig,

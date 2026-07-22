@@ -41,7 +41,9 @@ use std::thread;
 use rusqlite::Connection;
 
 use super::backend::Tag;
-use super::store::{MediaStatusRow, MediaStoreError, encode_embedding, open_write_connection};
+use super::coverage;
+use super::scheduler::enrich::parent_dir;
+use super::store::{EnrichmentState, MediaStatusRow, MediaStoreError, encode_embedding, open_write_connection};
 use crate::ignore_poison::IgnorePoison;
 
 /// Bounded channel capacity. Enrichment sends one `Upsert` per image; a modest
@@ -131,16 +133,19 @@ pub struct MediaWriter {
 }
 
 impl MediaWriter {
-    /// Spawn the writer thread with its own write connection to `db_path`. The DB
-    /// file and schema must already exist (open the [`MediaStore`] first).
+    /// Spawn the writer thread with its own write connection to `db_path`, serving
+    /// `volume_id`'s `media.db`. The DB file and schema must already exist (open the
+    /// [`MediaStore`] first). The thread carries `volume_id` so it can maintain the
+    /// per-volume `accounted` aggregate ([`coverage`]) as rows are inserted/deleted.
     ///
     /// [`MediaStore`]: super::store::MediaStore
-    pub fn spawn(db_path: &Path) -> Result<Self, MediaStoreError> {
+    pub fn spawn(db_path: &Path, volume_id: &str) -> Result<Self, MediaStoreError> {
         let conn = open_write_connection(db_path)?;
         let (sender, receiver) = mpsc::sync_channel::<WriteMessage>(CHANNEL_CAPACITY);
+        let volume_id = volume_id.to_string();
         let handle = thread::Builder::new()
             .name("media-writer".into())
-            .spawn(move || writer_loop(conn, receiver))
+            .spawn(move || writer_loop(conn, receiver, volume_id))
             .map_err(MediaStoreError::Io)?;
         Ok(Self {
             sender,
@@ -255,12 +260,28 @@ impl MediaWriter {
 
 /// The writer thread's main loop: own the write connection, apply each message
 /// under a transaction, exit on `Shutdown` or when the channel closes.
-fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>) {
+///
+/// The loop is the ONE mutator of both `media.db` and this volume's `accounted`
+/// aggregate: it SEEDS the aggregate from the existing rows before processing any write
+/// (so every delta composes onto a correct baseline), then increments on a genuinely-new
+/// `done`/`failed` insert and decrements on each deleted row.
+fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>, volume_id: String) {
+    // Seed BEFORE the first write (§ accounted): if a row is ever committed, the seed
+    // already ran, so a concurrent command-side seed can never race a delta.
+    coverage::seed_accounted_from_conn(&volume_id, &conn);
     while let Ok(msg) = receiver.recv() {
         match msg {
             WriteMessage::Upsert { row, analysis } => {
-                if let Err(e) = apply_upsert(&mut conn, &row, analysis.as_ref()) {
-                    log::warn!(target: "media_index", "upsert failed for '{}': {e}", row.path);
+                match apply_upsert(&mut conn, &row, analysis.as_ref()) {
+                    // A genuinely-new `done`/`failed` row (no prior row for this path)
+                    // adds one to its dir's accounted count. A re-enrich or a
+                    // `done`↔`failed` transition on an existing path does NOT (the path
+                    // was already counted).
+                    Ok(true) if matches!(row.state, EnrichmentState::Done | EnrichmentState::Failed) => {
+                        coverage::accounted_inc(&volume_id, parent_dir(&row.path));
+                    }
+                    Ok(_) => {}
+                    Err(e) => log::warn!(target: "media_index", "upsert failed for '{}': {e}", row.path),
                 }
             }
             WriteMessage::UpsertClip {
@@ -272,24 +293,25 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>) {
                     log::warn!(target: "media_index", "clip upsert failed for '{path}': {e}");
                 }
             }
-            WriteMessage::GcPaths { paths } => {
-                if let Err(e) = apply_gc(&mut conn, &paths) {
-                    log::warn!(target: "media_index", "gc failed ({} paths): {e}", paths.len());
-                }
-            }
+            WriteMessage::GcPaths { paths } => match apply_gc(&mut conn, &paths) {
+                Ok(deleted) => decrement_accounted(&volume_id, &deleted),
+                Err(e) => log::warn!(target: "media_index", "gc failed ({} paths): {e}", paths.len()),
+            },
             WriteMessage::PrunePaths { paths, done } => {
-                let n = apply_prune_paths(&mut conn, &paths).unwrap_or_else(|e| {
+                let deleted = apply_prune_paths(&mut conn, &paths).unwrap_or_else(|e| {
                     log::warn!(target: "media_index", "prune ({} paths) failed: {e}", paths.len());
-                    0
+                    Vec::new()
                 });
-                let _ = done.send(n);
+                let _ = done.send(deleted.len());
+                decrement_accounted(&volume_id, &deleted);
             }
             WriteMessage::PrunePrefix { prefix, done } => {
-                let n = apply_prune_prefix(&mut conn, &prefix).unwrap_or_else(|e| {
+                let deleted = apply_prune_prefix(&mut conn, &prefix).unwrap_or_else(|e| {
                     log::warn!(target: "media_index", "prune under '{prefix}' failed: {e}");
-                    0
+                    Vec::new()
                 });
-                let _ = done.send(n);
+                let _ = done.send(deleted.len());
+                decrement_accounted(&volume_id, &deleted);
             }
             WriteMessage::Vacuum { done } => {
                 if let Err(e) = apply_vacuum(&conn) {
@@ -297,11 +319,10 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>) {
                 }
                 let _ = done.send(());
             }
-            WriteMessage::PurgeVolume => {
-                if let Err(e) = apply_purge(&conn) {
-                    log::warn!(target: "media_index", "purge_volume failed: {e}");
-                }
-            }
+            WriteMessage::PurgeVolume => match apply_purge(&conn) {
+                Ok(()) => coverage::accounted_reset(&volume_id),
+                Err(e) => log::warn!(target: "media_index", "purge_volume failed: {e}"),
+            },
             WriteMessage::Flush(done) => {
                 let _ = done.send(());
             }
@@ -316,12 +337,24 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>) {
 /// `Some` (a success). The OCR FTS row is written only for non-empty text; the folded
 /// tag FTS row + structured `media_tags` only for non-empty tags; the embedding only
 /// when present.
+///
+/// Returns whether this upsert INSERTED a new `media_status` row (no prior row for the
+/// path) vs updated an existing one — a cheap PK existence check inside the same
+/// transaction, so the caller can bump the accounted aggregate only on a genuinely-new
+/// completion (a re-enrich or `done`↔`failed` transition leaves the count unchanged).
 fn apply_upsert(
     conn: &mut Connection,
     row: &MediaStatusRow,
     analysis: Option<&UpsertAnalysis>,
-) -> Result<(), MediaStoreError> {
+) -> Result<bool, MediaStoreError> {
     let tx = conn.transaction()?;
+    // Distinguish insert from update BEFORE the upsert (a cheap point lookup on the PK).
+    let exists: i64 = tx.query_row(
+        "SELECT EXISTS(SELECT 1 FROM media_status WHERE path = ?1)",
+        rusqlite::params![row.path],
+        |r| r.get(0),
+    )?;
+    let inserted = exists == 0;
     {
         tx.execute(
             "INSERT INTO media_status (path, mtime, size, media_kind, state, engine_version)
@@ -380,7 +413,7 @@ fn apply_upsert(
         }
     }
     tx.commit()?;
-    Ok(())
+    Ok(inserted)
 }
 
 /// Stamp `path`'s `media_status.clip_stamp` and replace its `media_clip_embedding` in one
@@ -417,34 +450,27 @@ fn apply_upsert_clip(
 }
 
 /// Delete the status + text + tag + embedding + clip-embedding rows for each path in one
-/// transaction.
-fn apply_gc(conn: &mut Connection, paths: &[String]) -> Result<(), MediaStoreError> {
-    let tx = conn.transaction()?;
-    {
-        let mut del_status = tx.prepare_cached("DELETE FROM media_status WHERE path = ?1")?;
-        let mut del_ocr = tx.prepare_cached("DELETE FROM media_ocr WHERE path = ?1")?;
-        let mut del_tags = tx.prepare_cached("DELETE FROM media_tags WHERE path = ?1")?;
-        let mut del_emb = tx.prepare_cached("DELETE FROM media_embedding WHERE path = ?1")?;
-        let mut del_clip = tx.prepare_cached("DELETE FROM media_clip_embedding WHERE path = ?1")?;
-        for path in paths {
-            del_status.execute(rusqlite::params![path])?;
-            del_ocr.execute(rusqlite::params![path])?;
-            del_tags.execute(rusqlite::params![path])?;
-            del_emb.execute(rusqlite::params![path])?;
-            del_clip.execute(rusqlite::params![path])?;
-        }
-    }
-    tx.commit()?;
-    Ok(())
+/// transaction. Returns the paths whose `media_status` row actually existed and was
+/// deleted, so the caller decrements the accounted aggregate once per genuinely-removed
+/// row (a GC of a path with no row moves nothing).
+fn apply_gc(conn: &mut Connection, paths: &[String]) -> Result<Vec<String>, MediaStoreError> {
+    delete_rows_for_paths(conn, paths)
 }
 
-/// Prune the four tables for an explicit path list in one transaction, returning the
-/// count of `media_status` rows removed (the same delete primitive GC uses, but reused
-/// for the user-explicit prune). The count is `media_status` rows, so it matches the
-/// number of images the user removed even though four tables are touched.
-fn apply_prune_paths(conn: &mut Connection, paths: &[String]) -> Result<usize, MediaStoreError> {
+/// Prune the four tables for an explicit path list in one transaction (the same delete
+/// primitive GC uses, reused for the user-explicit prune). Returns the paths whose
+/// `media_status` row was actually removed, so the count matches the images the user
+/// removed and the caller can decrement the accounted aggregate per removed row.
+fn apply_prune_paths(conn: &mut Connection, paths: &[String]) -> Result<Vec<String>, MediaStoreError> {
+    delete_rows_for_paths(conn, paths)
+}
+
+/// Delete every table's rows for each path in one transaction, returning the paths whose
+/// `media_status` row existed (so `delete_status.execute` reported a removal). Shared by
+/// GC and the explicit prune so both report the SAME "rows that actually left" set.
+fn delete_rows_for_paths(conn: &mut Connection, paths: &[String]) -> Result<Vec<String>, MediaStoreError> {
     let tx = conn.transaction()?;
-    let mut deleted = 0usize;
+    let mut deleted = Vec::new();
     {
         let mut del_status = tx.prepare_cached("DELETE FROM media_status WHERE path = ?1")?;
         let mut del_ocr = tx.prepare_cached("DELETE FROM media_ocr WHERE path = ?1")?;
@@ -452,11 +478,14 @@ fn apply_prune_paths(conn: &mut Connection, paths: &[String]) -> Result<usize, M
         let mut del_emb = tx.prepare_cached("DELETE FROM media_embedding WHERE path = ?1")?;
         let mut del_clip = tx.prepare_cached("DELETE FROM media_clip_embedding WHERE path = ?1")?;
         for path in paths {
-            deleted += del_status.execute(rusqlite::params![path])?;
+            let removed = del_status.execute(rusqlite::params![path])?;
             del_ocr.execute(rusqlite::params![path])?;
             del_tags.execute(rusqlite::params![path])?;
             del_emb.execute(rusqlite::params![path])?;
             del_clip.execute(rusqlite::params![path])?;
+            if removed > 0 {
+                deleted.push(path.clone());
+            }
         }
     }
     tx.commit()?;
@@ -468,8 +497,9 @@ fn apply_prune_paths(conn: &mut Connection, paths: &[String]) -> Result<usize, M
 /// trailing-slash-safe [`path_is_within`](super::network::config::path_is_within) the
 /// exclusion veto uses (so the delete set can't drift from what the veto forbids), then
 /// deleted via [`apply_prune_paths`]. An empty `prefix` matches every path (the whole
-/// volume — the user excluded the mount root).
-fn apply_prune_prefix(conn: &mut Connection, prefix: &str) -> Result<usize, MediaStoreError> {
+/// volume — the user excluded the mount root). Returns the paths actually removed (for
+/// the accounted decrement + the delete count).
+fn apply_prune_prefix(conn: &mut Connection, prefix: &str) -> Result<Vec<String>, MediaStoreError> {
     let doomed: Vec<String> = {
         let mut stmt = conn.prepare_cached("SELECT path FROM media_status")?;
         let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
@@ -500,18 +530,26 @@ fn apply_purge(conn: &Connection) -> Result<(), MediaStoreError> {
     Ok(())
 }
 
+/// Decrement the accounted aggregate once per deleted path, bucketed by parent dir — the
+/// shared bookkeeping the GC and both prune paths run after committing their deletes.
+fn decrement_accounted(volume_id: &str, deleted: &[String]) {
+    for path in deleted {
+        coverage::accounted_dec(volume_id, parent_dir(path));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::media_index::backend::Tag;
     use crate::media_index::predicate::MediaKind;
-    use crate::media_index::store::{EnrichmentState, MediaStore, media_db_path, open_read_connection};
+    use crate::media_index::store::{MediaStore, media_db_path, open_read_connection};
 
     /// A fresh media store + writer over a scratch volume.
     fn writer(dir: &Path, volume_id: &str) -> MediaWriter {
         let db_path = media_db_path(dir, volume_id);
         MediaStore::open(&db_path).expect("open media store");
-        MediaWriter::spawn(&db_path).expect("media writer")
+        MediaWriter::spawn(&db_path, volume_id).expect("media writer")
     }
 
     /// Seed one fully-enriched image (a row in ALL FOUR tables), so a prune test can
@@ -632,5 +670,138 @@ mod tests {
         w.vacuum().expect("vacuum");
         assert_eq!(row_counts(&db_path, "/a/x.jpg"), (0, 0, 0, 0), "row gone after vacuum");
         w.shutdown();
+    }
+
+    // ── The accounted aggregate maintained through the writer path ───────────────
+    // These use a UNIQUE volume id per test: the accounted cache is process-global and
+    // keyed by volume id alone, so reusing one id would cross-contaminate.
+
+    /// Upsert one image with a given state through `w` and block until it lands.
+    fn upsert_state(w: &MediaWriter, path: &str, mtime: u64, state: EnrichmentState) {
+        w.upsert(
+            MediaStatusRow {
+                path: path.to_string(),
+                mtime: Some(mtime),
+                size: Some(2),
+                media_kind: MediaKind::Image,
+                state,
+                engine_version: "e1".to_string(),
+                clip_stamp: String::new(),
+            },
+            (state == EnrichmentState::Done).then(|| UpsertAnalysis::ocr_only("t")),
+        )
+        .expect("upsert");
+        w.flush_blocking().expect("flush");
+    }
+
+    /// The accounted subtree total for `dir` on `volume_id`.
+    fn accounted(volume_id: &str, dir: &str) -> u64 {
+        coverage::accounted_subtrees(volume_id, &[dir.to_string()])[0]
+    }
+
+    #[test]
+    fn accounted_increments_only_on_a_genuinely_new_done_or_failed_row() {
+        let dir = tempfile::tempdir().expect("temp");
+        let vid = "writer-test-accounted-increment";
+        coverage::invalidate_accounted(vid);
+        let w = writer(dir.path(), vid);
+
+        // A brand-new done row bumps its dir's accounted count.
+        upsert_state(&w, "/photos/a.jpg", 1, EnrichmentState::Done);
+        assert_eq!(accounted(vid, "/photos"), 1, "a genuinely-new done row counts");
+
+        // Re-enriching the SAME path (a later mtime, still done) must NOT double-count.
+        upsert_state(&w, "/photos/a.jpg", 2, EnrichmentState::Done);
+        assert_eq!(
+            accounted(vid, "/photos"),
+            1,
+            "a re-enrich of an existing path adds nothing"
+        );
+
+        // A done → failed transition on the existing path keeps accounted stable.
+        upsert_state(&w, "/photos/a.jpg", 2, EnrichmentState::Failed);
+        assert_eq!(
+            accounted(vid, "/photos"),
+            1,
+            "done↔failed on an existing path is stable"
+        );
+
+        // A brand-new FAILED row DOES count (a corrupt file is accounted, not pending).
+        upsert_state(&w, "/photos/b.jpg", 1, EnrichmentState::Failed);
+        assert_eq!(accounted(vid, "/photos"), 2, "a new failed row counts toward accounted");
+
+        w.shutdown();
+        coverage::invalidate_accounted(vid);
+    }
+
+    #[test]
+    fn accounted_decrements_on_delete_and_never_goes_negative() {
+        let dir = tempfile::tempdir().expect("temp");
+        let vid = "writer-test-accounted-decrement";
+        coverage::invalidate_accounted(vid);
+        let w = writer(dir.path(), vid);
+
+        upsert_state(&w, "/p/a.jpg", 1, EnrichmentState::Done);
+        upsert_state(&w, "/p/b.jpg", 1, EnrichmentState::Done);
+        assert_eq!(accounted(vid, "/p"), 2);
+
+        // GC of one path drops the count by one.
+        w.gc_paths(vec!["/p/a.jpg".to_string()]).expect("gc");
+        w.flush_blocking().expect("flush");
+        assert_eq!(accounted(vid, "/p"), 1, "a GC'd row leaves the accounted count");
+
+        // GC of a path with NO row moves nothing (no phantom decrement).
+        w.gc_paths(vec!["/p/never.jpg".to_string()]).expect("gc");
+        w.flush_blocking().expect("flush");
+        assert_eq!(accounted(vid, "/p"), 1, "GC of a non-existent row is a no-op");
+
+        // An explicit prune of the last row drains it to zero.
+        assert_eq!(w.prune_paths(vec!["/p/b.jpg".to_string()]).expect("prune"), 1);
+        assert_eq!(accounted(vid, "/p"), 0, "the folder drains to zero, never negative");
+
+        w.shutdown();
+        coverage::invalidate_accounted(vid);
+    }
+
+    #[test]
+    fn accounted_is_seeded_from_existing_rows_when_a_writer_spawns() {
+        // A row written this session, then the writer torn down and the cache dropped,
+        // simulates a fresh launch over a populated `media.db`: the NEW writer's spawn
+        // must seed accounted from the on-disk rows, not start at zero.
+        let dir = tempfile::tempdir().expect("temp");
+        let vid = "writer-test-accounted-seed-on-spawn";
+        coverage::invalidate_accounted(vid);
+        let w1 = writer(dir.path(), vid);
+        upsert_state(&w1, "/seed/a.jpg", 1, EnrichmentState::Done);
+        upsert_state(&w1, "/seed/b.jpg", 1, EnrichmentState::Failed);
+        w1.shutdown();
+
+        // Drop the in-memory aggregate, then spawn a fresh writer over the same DB.
+        coverage::invalidate_accounted(vid);
+        let w2 = writer(dir.path(), vid);
+        // A flush barrier guarantees the writer thread ran its seed (its first action).
+        w2.flush_blocking().expect("flush");
+        assert_eq!(accounted(vid, "/seed"), 2, "the spawn seeded both stored rows");
+
+        w2.shutdown();
+        coverage::invalidate_accounted(vid);
+    }
+
+    #[test]
+    fn purge_resets_the_accounted_aggregate() {
+        let dir = tempfile::tempdir().expect("temp");
+        let vid = "writer-test-accounted-purge";
+        coverage::invalidate_accounted(vid);
+        let w = writer(dir.path(), vid);
+        upsert_state(&w, "/x/a.jpg", 1, EnrichmentState::Done);
+        upsert_state(&w, "/y/b.jpg", 1, EnrichmentState::Done);
+        assert_eq!(accounted(vid, "/"), 2, "root rolls up both dirs");
+
+        w.purge_volume().expect("purge");
+        w.flush_blocking().expect("flush");
+        assert_eq!(accounted(vid, "/"), 0, "purge zeroes the whole aggregate");
+
+        w.shutdown();
+        coverage::invalidate_accounted(vid);
     }
 }

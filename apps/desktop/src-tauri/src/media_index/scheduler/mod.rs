@@ -62,7 +62,10 @@ mod coordinator;
 use coordinator::{BeginOutcome, FinishOutcome, PassCoordinator};
 
 mod lifecycle;
-use lifecycle::{PassOutcome, local_should_enrich, should_retry_when_idle};
+use lifecycle::{PassOutcome, should_retry_when_idle};
+// `local_should_enrich` is the enrichment coverage gate; the file-status command reuses
+// it (via this re-export) to tell `pending` from `excluded` for an un-enriched image.
+pub(crate) use lifecycle::local_should_enrich;
 pub use lifecycle::{kick_all_ready_passes, kick_all_ready_passes_with, kick_network_pass, start};
 // Re-exported into the scheduler namespace so the sibling `kick_tests` module reaches
 // them through its `use super::*` (they're otherwise only called within `lifecycle`).
@@ -172,6 +175,14 @@ impl MediaScheduler {
     /// incomplete" state; full counts + ETA are a later milestone.
     pub fn is_enriching(&self, volume_id: &str) -> bool {
         self.coordinator.is_running(volume_id)
+    }
+
+    /// The backend's current analyze provenance stamp (`engine_version` column value).
+    /// The file-status command reads it to run the SAME `needs_enrichment` staleness
+    /// check a pass would, so a stored row that an OS engine upgrade made stale reads as
+    /// `stale` rather than `indexed`.
+    pub fn current_analysis_stamp(&self) -> String {
+        self.backend.analysis_stamp()
     }
 
     /// Run one full enrichment pass for a volume synchronously (blocking).

@@ -26,7 +26,7 @@ const MOUNT: &str = "/Volumes/naspi";
 fn media_writer(dir: &std::path::Path, volume_id: &str) -> MediaWriter {
     let db_path = media_db_path(dir, volume_id);
     MediaStore::open(&db_path).expect("open media store");
-    MediaWriter::spawn(&db_path).expect("media writer")
+    MediaWriter::spawn(&db_path, volume_id).expect("media writer")
 }
 
 /// A qualifying image entry keyed on its index-relative path (as the walk produces).

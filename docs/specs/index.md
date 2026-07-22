@@ -23,6 +23,13 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
       round-robin pool with sibling-retry + single-flight member reconnect. M2 loosens the single SQLite writer
       (periodic explicit transactions around the fresh-scan inserts) so it keeps up with ~4× ingest without losing
       crash-safety.
+- [ ] 2026-07-22 [image-index-indicators.md](image-index-indicators.md) - Replace the `SelectionInfo` "Indexing images"
+      / "Images indexed" text strip with three quiet, glanceable indicators at their natural granularities: a per-image
+      icon overlay (backend-classified `indexed`/`stale`/`failed`/`pending`/`excluded`, top-right, toggleable), a
+      per-folder icon overlay (two states, subtree `accounted/eligible` fraction in the tooltip), and a per-drive dot
+      beside the filesystem-index dot (gray/yellow/green). Core new backend: a per-directory `accounted` (done+failed)
+      aggregate mirroring `coverage.rs`'s eligible-count map, with subtree rollups, plus `media_index_file_status` and
+      `media_index_folder_coverage` commands. Removes `FolderIndexStatus`/`folder-index-state`.
 - [ ] 2026-07-22 [indexing-reorg-plan.md](indexing-reorg-plan.md) - Reorganize the `indexing/` subsystem's ~45-file flat
       tail into 13 stage-based area dirs (lifecycle, resources, scanner, network_scanner, watch, reconcile, writer,
       aggregator, read, paths, events, transports, tests), each with colocated `CLAUDE.md` + `DETAILS.md` and a thin
