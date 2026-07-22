@@ -348,7 +348,7 @@
                         <Trans
                             key="licensing.dialog.serverInvalidBanner"
                             params={{ email: SUPPORT_EMAIL }}
-                            snippets={{ email }}
+                            snippets={{ supportEmail: email }}
                         />
                     </span>
                 </div>

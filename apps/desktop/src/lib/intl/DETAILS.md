@@ -26,6 +26,16 @@ possibly markdown), but they keep rendering through the existing snarkdown + `{@
 `getMessage()`, NOT `t()`/`<Trans>`. `<Trans>` is only for the handful of UI sentences with inline INTERACTIVE
 components (a `<LinkButton>` mid-sentence). Don't conflate the two.
 
+**Why a tag and its snippet must be renamed together.** The renderer is `{#if childSnippet}…{/if}` with no else, so a
+tag the call site doesn't supply a snippet for renders NOTHING: its inner text vanishes from the UI, at runtime, with no
+warning. The realistic way in is renaming a tag in the catalog (or the `snippets={{ … }}` key) and finishing only one
+side, which looks complete in review and passes every other check — the catalog is valid ICU, `i18n-parity` compares
+locales to each other rather than to the component, and nothing throws. `i18n-trans-snippets` closes that by comparing
+each call site's snippet keys against the English message's tags in both directions, so a half-finished rename names its
+own other half. It resolves what it can read statically and SKIPS the rest (a computed `key={…}`, or a snippets prop
+naming a variable rather than an inline object, as `NetworkBrowser` does), reporting the skipped count rather than
+guessing: a false positive would cost the check the only thing that makes it useful, that a failure means a real bug.
+
 ### The resolver: per-locale catalogs + fallback chain
 
 At module load, `import.meta.glob('./messages/*/*.json', { eager })` pulls EVERY locale dir's catalog files, not just

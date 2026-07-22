@@ -338,6 +338,20 @@ var AllChecks = []CheckDefinition{
 		Run:               RunI18nTagParamCollision,
 	},
 	{
+		ID:          "desktop-i18n-trans-snippet-parity",
+		Nickname:    "i18n-trans-snippets",
+		DisplayName: "i18n-trans-snippets",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		// ERROR class: a message tag with no matching snippet renders NOTHING, so
+		// the tag's inner text silently vanishes from the UI. Real CI gate.
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Inputs:            inputs([]string{"apps/desktop/src/lib/intl/messages/en/**", "apps/desktop/src/**/*.svelte"}),
+		Run:               RunI18nTransSnippetParity,
+	},
+	{
 		ID:          "desktop-i18n-plural",
 		Nickname:    "i18n-plural",
 		DisplayName: "i18n-plural",

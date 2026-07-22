@@ -34,7 +34,8 @@ text via ICU). Both read the locale from exactly one place here.
   lone `'` would happen to render fine.
 - **`<Trans>` renders a tag's inner content via a zero-arg `{#snippet content()}` inside the parts `{#each}`** (closing
   over `part.chunks`), passed to the consumer snippet. You can't call a snippet as a function to produce a value
-  (`invalid_snippet_arguments`). No `{@html}` → XSS-safe by construction.
+  (`invalid_snippet_arguments`). No `{@html}` → XSS-safe by construction. An unmatched tag renders NOTHING
+  (`i18n-trans-snippets` enforces the pairing).
 
 - **Read the locale ONLY via `getLocale()`; format ONLY through this layer + `$lib/settings/format-utils`.** Don't
   hardcode a locale, call `toLocaleString`, or build an `Intl.NumberFormat`/`DateTimeFormat` in feature code. Enforced

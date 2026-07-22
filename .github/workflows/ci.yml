@@ -284,6 +284,9 @@ jobs:
       - name: Check i18n tag/param name collisions
         run: ./scripts/check/check --check desktop-i18n-tag-param-collision --ci
 
+      - name: Check <Trans> snippet parity
+        run: ./scripts/check/check --check desktop-i18n-trans-snippet-parity --ci
+
       - name: Check i18n plural-category coverage
         run: ./scripts/check/check --check desktop-i18n-plural --ci
 
