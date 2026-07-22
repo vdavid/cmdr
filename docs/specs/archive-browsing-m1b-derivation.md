@@ -80,7 +80,7 @@ Fork on archive-inner target, returning typed not-supported (these same seams be
 - `register_if_absent(archive_id, ArchiveVolume::new(parent, zip_path))` on first resolve, after magic-byte
   confirmation. Precedents: `volumes/watcher.rs:202` (FSEvents), the SMB pre-registration.
 - Archive LRU (lead decision 4) in/next to `VolumeManager`: cap ~16, `unregister` + `ArchiveIndexCache` drop on
-  eviction. Modeled loosely on `indexing::retention::enforce_external_index_cap`.
+  eviction. Modeled loosely on `indexing::resources::retention::enforce_external_index_cap`.
 
 ## Frontend: what changes (kind-from-path model)
 

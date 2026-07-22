@@ -93,7 +93,7 @@ The refusal copy still says "Ask Cmdr is read-only", which is accurate while no 
 
 ## Cross-module symbols the toolset reuses
 
-- `indexing::queries::list_dir_children` — a path-based helper (re-exported from `crate::indexing`); the child-listing
+- `indexing::read::queries::list_dir_children` — a path-based helper (re-exported from `crate::indexing`); the child-listing
   analog of `get_dir_stats`, wrapping the read-pool + `index_read_path` + `resolve_path` + `IndexStore::list_children_on`
   wiring so the tool stays path-based (it lives in `indexing`, its elegant home).
 - `mcp::resources::volumes::VolumeKind::token` — `pub(crate)` so the volume mapper reuses the one kind→token mapping.

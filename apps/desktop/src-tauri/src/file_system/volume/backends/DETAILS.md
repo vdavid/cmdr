@@ -7,7 +7,7 @@ modifying `SmbVolume`, `MtpVolume`, `LocalPosixVolume`, the SMB watcher, or `InM
 
 ## Key files
 
-- **`local_posix.rs`**: `LocalPosixVolume`: real filesystem; delegates listing to `file_system::listing`, indexing to `indexing::scanner`, watching to `indexing::watcher` (FSEvents), copy scanning via `walkdir`. Uses `libc::statvfs` FFI for space info.
+- **`local_posix.rs`**: `LocalPosixVolume`: real filesystem; delegates listing to `file_system::listing`, indexing to `indexing::scanner`, watching to `indexing::watch::watcher` (FSEvents), copy scanning via `walkdir`. Uses `libc::statvfs` FFI for space info.
 - **`mtp.rs`**: `MtpVolume`: MTP device storage; async `Volume` trait with direct async MTP calls. Uses `MtpReadStream`, which reads in bounded `GetPartialObject64` windows over a cached `MtpReadSession` (mtp-rs `WindowedDownload`; the window/offset bookkeeping lives in mtp-rs, the per-window device lock in `mtp/connection`). Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`.
 - **`smb/`**: `SmbVolume`: SMB share storage; async `Volume` trait with direct async smb2 calls. A directory module,
   split by concern (behavior is identical to the former single `smb.rs`; the split is pure code movement):

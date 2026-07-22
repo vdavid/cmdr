@@ -432,7 +432,7 @@ Outcome pointer: §3 above / [`ask-cmdr-genai-spike.md`](ask-cmdr-genai-spike.md
   tasks, not literal drop-ins**):
   - app-state snapshot — reuse `mcp::resources` state building (`build_state_yaml` is private + takes `AppHandle<R>`
     plus opts; either call it through a small in-`mcp` shim or read `PaneStateStore` + `snapshot_volumes` directly).
-  - directory listing + stats — `indexing::queries::get_dir_stats*` +
+  - directory listing + stats — `indexing::read::queries::get_dir_stats*` +
     `EntryRow::list_children_on(parent_id: i64, conn: &Connection)` (a method on `EntryRow` in
     `indexing/store/entries.rs`, taking a resolved `parent_id` + a read connection, NOT a path-based `IndexStore` call).
     So the listing tool first resolves the path to a `parent_id` (`indexing::store::resolve_path`) and opens a read
@@ -683,7 +683,7 @@ call shapes (corrected against the tree):
   `operation_log::store::open_read_connection(&db_path)`.
 - `ImportanceIndex` is `&Path`-based already (offline-capable). Note `explain(path, now_secs: u64)` takes a wall-clock
   arg (recency is relative to now); the other query methods (`top_n`, `lookup`, `top_above_threshold`) don't.
-- drive index: `indexing::queries::get_dir_stats*` (globals) +
+- drive index: `indexing::read::queries::get_dir_stats*` (globals) +
   `EntryRow::list_children_on(parent_id: i64, conn: &Connection)` (a method on `EntryRow` in
   `indexing/store/entries.rs`, not a path-based `IndexStore` call), so listing wires up path→`parent_id` resolution
   (`indexing::store::resolve_path`) + a read connection first.

@@ -18,7 +18,7 @@ list): [DETAILS.md](DETAILS.md).
 
 ## Must-knows
 
-- **Reuse the shipped core; never re-derive.** Each handler calls a deterministic core (the `indexing::queries`, the
+- **Reuse the shipped core; never re-derive.** Each handler calls a deterministic core (the `indexing::read::queries`, the
   `importance` read API / the `cmdr://importance` `snapshot_*` functions, `snapshot_volumes`) and only SHAPES the result.
   Don't reimplement listing, scoring, or volume enumeration — a second copy rots against the first.
 - **Every result voices its coverage honestly (spec §2.4 — load-bearing).** A read that's a lower bound or stale MUST

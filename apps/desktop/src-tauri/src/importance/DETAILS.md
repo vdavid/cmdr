@@ -216,7 +216,7 @@ Recomputes a volume's folder weights when its index finishes scanning. Two trigg
   common restart case. The sweep wires each ready volume WITH its typed kind (so MTP is excluded and SMB degrades
   correctly — see "Multi-volume" below), then runs `enqueue_initial_full_pass_if_unscored` per volume to actually score a
   fresh/recreated store (see § The initial full pass).
-- **The registration bus** (`indexing::lifecycle_bus::subscribe_registrations`): a volume that registers AFTER the sweep
+- **The registration bus** (`indexing::lifecycle::lifecycle_bus::subscribe_registrations`): a volume that registers AFTER the sweep
   (a share mounted mid-session) is wired then. The scheduler subscribes to it BEFORE the sweep, so no volume registering
   in the gap is lost (plan M4 late-registering volumes).
 

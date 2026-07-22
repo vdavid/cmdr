@@ -13,7 +13,7 @@ macOS editors and every safe-overwrite (including this app's own temp+rename mut
 swap. So `start_watch` watches the archive's PARENT DIRECTORY (`RecursiveMode::NonRecursive`) — the directory inode is
 stable across the swap, so no re-arming is needed — and filters the directory's child events down to the archive file
 (`event_path_targets_archive`). The filter compares on the firmlink-normalized forms
-(`indexing::firmlinks::normalize_path`), the same rebasing `file_system::watcher` does, because FSEvents reports
+(`indexing::paths::firmlinks::normalize_path`), the same rebasing `file_system::watcher` does, because FSEvents reports
 canonical `/private/tmp/…` paths while the archive path is the user-navigated `/tmp/…` form. This mirrors the local
 listing watcher's own parent-directory-non-recursive shape.
 

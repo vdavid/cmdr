@@ -413,7 +413,7 @@ bounded transactions, so a copy cancel simply stops issuing windows.
 **Detach, don't abort, when a caller must answer NOW.** Some callers genuinely have a deadline (an IPC reply, the index
 walk giving up on a directory). They run the work in its own task and race the deadline against that task's JOIN
 HANDLE. Dropping a `JoinHandle` DETACHES the task, it does not cancel it: the caller answers on time, the transaction
-finishes safely behind it. `commands::util::timeout_detached` is the shared helper; `indexing::volume_scanner`'s
+finishes safely behind it. `commands::util::timeout_detached` is the shared helper; `indexing::network_scanner`'s
 `list_one_directory` and the streaming listing's cancel arm use the same shape.
 
 **Where the drops used to be** (all fixed, listed so nobody reintroduces one): every `tokio::time::timeout` in

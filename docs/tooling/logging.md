@@ -134,7 +134,7 @@ Copy-paste commands for common debugging scenarios. All include `info` as the ba
 - **Network/SMB**: `RUST_LOG=cmdr_lib::network=debug,mdns_sd=debug,smb=warn,sspi=warn,info pnpm dev`
 - **Drive indexing**: `RUST_LOG=cmdr_lib::indexing=debug,info pnpm dev`
 - **Indexing scanner only**: `RUST_LOG=cmdr_lib::indexing::scanner=debug,info pnpm dev`
-- **Indexing FSEvents**: `RUST_LOG=cmdr_lib::indexing::watcher=debug,info pnpm dev`
+- **Indexing FSEvents**: `RUST_LOG=cmdr_lib::indexing::watch::watcher=debug,info pnpm dev`
 - **Per-subtree churn** (needs `CMDR_CHURN_SPIKE`, see below): `RUST_LOG=cmdr_lib::indexing::churn=debug,info pnpm dev`
 - **File operations (copy/move/delete)**: `RUST_LOG=cmdr_lib::file_system::write_operations=debug,info pnpm dev`
 - **Directory listing**: `RUST_LOG=cmdr_lib::file_system::listing=debug,info pnpm dev`

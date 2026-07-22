@@ -97,7 +97,7 @@ client (`Volume::open_read_stream`). Why:
 - The direct-`smb2` `open_read_stream` is the chunked large-transfer/copy path; an OCR fetch wants the whole (bounded)
   compressed file, which a single `std::fs::read` gives simply.
 - The whole use case is an OS-mounted NAS. The mount root comes from `VolumeManager::get(volume_id).root()` — the same
-  source `indexing::routing::index_read_path` uses for its read-side mount strip.
+  source `indexing::paths::routing::index_read_path` uses for its read-side mount strip.
 
 **Path mapping.** An SMB index's `ROOT_ID` is the mount root, so `walk_image_entries` reconstructs MOUNT-RELATIVE paths
 (`/DCIM/x.jpg`). `os_join(mount_root, rel)` prepends the mount root to reach the real file (`/Volumes/naspi/DCIM/x.jpg`);
@@ -762,7 +762,7 @@ Without live enrichment, the only enrichment triggers are scan-completion edges,
 MODIFIED image would wait for the next completed scan, and a DELETED image's rows would linger until a later pass GC'd them. Live enrichment
 follows the index live, mirroring importance's incremental rescore rather than inventing a new mechanism.
 
-`scheduler/live.rs` subscribes each LOCAL volume to `indexing::lifecycle_bus::subscribe_dirs_changed` (the SAME per-volume
+`scheduler/live.rs` subscribes each LOCAL volume to `indexing::lifecycle::lifecycle_bus::subscribe_dirs_changed` (the SAME per-volume
 `watch<DirsChanged>` importance's `start_incremental` consumes) from `wire_volume`, AFTER its kind early-returns — so MTP
 and `LocalExternal` are auto-skipped, and SMB (which never publishes dir-changed batches; its live path only enqueues index
 writes) is left out too. Each batch's touched DIRECTORY paths accumulate into `pending_touched_dirs` and drive a coalesced,
