@@ -908,6 +908,50 @@
   "@fileExplorer.dateTooltip.lastModified": {
     "sourceHash": "0fe1058"
   },
+  "fileExplorer.imageIndex.file.indexed": "已为图像搜索建立索引",
+  "@fileExplorer.imageIndex.file.indexed": {
+    "sourceHash": "9b72aa0"
+  },
+  "fileExplorer.imageIndex.file.pending": "等待建立索引",
+  "@fileExplorer.imageIndex.file.pending": {
+    "sourceHash": "73eb99a"
+  },
+  "fileExplorer.imageIndex.file.stale": "索引后有改动，将重新索引",
+  "@fileExplorer.imageIndex.file.stale": {
+    "sourceHash": "1766bc3"
+  },
+  "fileExplorer.imageIndex.file.failed": "无法建立索引",
+  "@fileExplorer.imageIndex.file.failed": {
+    "sourceHash": "a88edd6"
+  },
+  "fileExplorer.imageIndex.file.excluded": "未纳入图像搜索",
+  "@fileExplorer.imageIndex.file.excluded": {
+    "sourceHash": "1f68cee"
+  },
+  "fileExplorer.imageIndex.folder.allIndexed": "已索引全部 {totalText} {total, plural, other {张图像}}",
+  "@fileExplorer.imageIndex.folder.allIndexed": {
+    "sourceHash": "c19fe12"
+  },
+  "fileExplorer.imageIndex.folder.someIndexed": "{totalText} {total, plural, other {张图像}}中已索引 {doneText} 张",
+  "@fileExplorer.imageIndex.folder.someIndexed": {
+    "sourceHash": "c7fd5ca"
+  },
+  "fileExplorer.imageIndex.drive.ariaLabel": "此驱动器的图像搜索状态",
+  "@fileExplorer.imageIndex.drive.ariaLabel": {
+    "sourceHash": "bea5d87"
+  },
+  "fileExplorer.imageIndex.drive.off": "此驱动器的图像搜索已关闭。",
+  "@fileExplorer.imageIndex.drive.off": {
+    "sourceHash": "a7f3c42"
+  },
+  "fileExplorer.imageIndex.drive.indexing": "此驱动器上 {totalText} {total, plural, other {张图像}}中已索引 {doneText} 张；仍在继续。",
+  "@fileExplorer.imageIndex.drive.indexing": {
+    "sourceHash": "23d351d"
+  },
+  "fileExplorer.imageIndex.drive.done": "此驱动器上全部 {totalText} {total, plural, other {张图像}}均已索引。",
+  "@fileExplorer.imageIndex.drive.done": {
+    "sourceHash": "0f4f795"
+  },
   "fileExplorer.selectionInfo.nothingHere": "这里什么都没有。",
   "@fileExplorer.selectionInfo.nothingHere": {
     "sourceHash": "140a431"

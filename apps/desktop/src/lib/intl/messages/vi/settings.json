@@ -491,6 +491,14 @@
   "@settings.mediaIndex.enabled.description": {
     "sourceHash": "118fc8d"
   },
+  "settings.mediaIndex.showFileStatusIcons.label": "Hiện huy hiệu trạng thái trên tệp hình ảnh",
+  "@settings.mediaIndex.showFileStatusIcons.label": {
+    "sourceHash": "a0a2372"
+  },
+  "settings.mediaIndex.showFileStatusIcons.description": "Thêm một huy hiệu nhỏ vào mỗi hình ảnh trong danh sách tệp, cho biết nó đã được lập chỉ mục để tìm kiếm hay chưa.",
+  "@settings.mediaIndex.showFileStatusIcons.description": {
+    "sourceHash": "62dda47"
+  },
   "settings.mediaIndex.networkVolumes.label": "Lập chỉ mục hình ảnh trên ổ đĩa mạng",
   "@settings.mediaIndex.networkVolumes.label": {
     "sourceHash": "9d12bf3"

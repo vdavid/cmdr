@@ -910,6 +910,50 @@
   "@fileExplorer.dateTooltip.lastModified": {
     "sourceHash": "0fe1058"
   },
+  "fileExplorer.imageIndex.file.indexed": "Indexerad för bildsökning",
+  "@fileExplorer.imageIndex.file.indexed": {
+    "sourceHash": "9b72aa0"
+  },
+  "fileExplorer.imageIndex.file.pending": "Väntar på att indexeras",
+  "@fileExplorer.imageIndex.file.pending": {
+    "sourceHash": "73eb99a"
+  },
+  "fileExplorer.imageIndex.file.stale": "Ändrad sedan indexeringen; indexeras om",
+  "@fileExplorer.imageIndex.file.stale": {
+    "sourceHash": "1766bc3"
+  },
+  "fileExplorer.imageIndex.file.failed": "Gick inte att indexera",
+  "@fileExplorer.imageIndex.file.failed": {
+    "sourceHash": "a88edd6"
+  },
+  "fileExplorer.imageIndex.file.excluded": "Ingår inte i bildsökningen",
+  "@fileExplorer.imageIndex.file.excluded": {
+    "sourceHash": "1f68cee"
+  },
+  "fileExplorer.imageIndex.folder.allIndexed": "Alla {totalText} {total, plural, one {bild indexerad} other {bilder indexerade}}",
+  "@fileExplorer.imageIndex.folder.allIndexed": {
+    "sourceHash": "c19fe12"
+  },
+  "fileExplorer.imageIndex.folder.someIndexed": "{doneText} av {totalText} {total, plural, one {bild indexerad} other {bilder indexerade}}",
+  "@fileExplorer.imageIndex.folder.someIndexed": {
+    "sourceHash": "c7fd5ca"
+  },
+  "fileExplorer.imageIndex.drive.ariaLabel": "Bildsökningsstatus för den här enheten",
+  "@fileExplorer.imageIndex.drive.ariaLabel": {
+    "sourceHash": "bea5d87"
+  },
+  "fileExplorer.imageIndex.drive.off": "Bildsökningen är avstängd för den här enheten.",
+  "@fileExplorer.imageIndex.drive.off": {
+    "sourceHash": "a7f3c42"
+  },
+  "fileExplorer.imageIndex.drive.indexing": "{doneText} av {totalText} {total, plural, one {bild på den här enheten är indexerad} other {bilder på den här enheten är indexerade}}; arbetar fortfarande.",
+  "@fileExplorer.imageIndex.drive.indexing": {
+    "sourceHash": "23d351d"
+  },
+  "fileExplorer.imageIndex.drive.done": "Alla {totalText} {total, plural, one {bild på den här enheten är indexerad} other {bilder på den här enheten är indexerade}}.",
+  "@fileExplorer.imageIndex.drive.done": {
+    "sourceHash": "0f4f795"
+  },
   "fileExplorer.selectionInfo.nothingHere": "Inget här.",
   "@fileExplorer.selectionInfo.nothingHere": {
     "sourceHash": "140a431"

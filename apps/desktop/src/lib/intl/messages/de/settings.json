@@ -495,6 +495,14 @@
   "@settings.mediaIndex.enabled.description": {
     "sourceHash": "118fc8d"
   },
+  "settings.mediaIndex.showFileStatusIcons.label": "Statussymbole auf Bilddateien anzeigen",
+  "@settings.mediaIndex.showFileStatusIcons.label": {
+    "sourceHash": "a0a2372"
+  },
+  "settings.mediaIndex.showFileStatusIcons.description": "Füge jedem Bild in der Dateiliste ein kleines Statussymbol hinzu, das zeigt, ob es für die Suche indiziert wurde.",
+  "@settings.mediaIndex.showFileStatusIcons.description": {
+    "sourceHash": "62dda47"
+  },
   "settings.mediaIndex.networkVolumes.label": "Bildindizierung für Netzlaufwerke",
   "@settings.mediaIndex.networkVolumes.label": {
     "sourceHash": "9d12bf3"

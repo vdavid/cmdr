@@ -493,6 +493,14 @@
   "@settings.mediaIndex.enabled.description": {
     "sourceHash": "118fc8d"
   },
+  "settings.mediaIndex.showFileStatusIcons.label": "Állapotjelvények megjelenítése a képfájlokon",
+  "@settings.mediaIndex.showFileStatusIcons.label": {
+    "sourceHash": "a0a2372"
+  },
+  "settings.mediaIndex.showFileStatusIcons.description": "A fájllistában minden képre kis jelvényt tesz, amely megmutatja, hogy indexelve van-e a kereséshez.",
+  "@settings.mediaIndex.showFileStatusIcons.description": {
+    "sourceHash": "62dda47"
+  },
   "settings.mediaIndex.networkVolumes.label": "Hálózati meghajtók képindexelése",
   "@settings.mediaIndex.networkVolumes.label": {
     "sourceHash": "9d12bf3"

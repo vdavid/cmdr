@@ -726,3 +726,37 @@ A re-translation review of the 54 keys added for natural-language bulk rename (`
   copying photos off a phone, not the search feature). They should be aligned in a follow-up. `high`.
 
 No `sameAsSourceJustification` needed: all 54 values differ from English.
+
+From the image-index-indicators pass (2026-07-22; the 11 `fileExplorer.imageIndex.*` badge/dot tooltips + 2
+`settings.mediaIndex.showFileStatusIcons.*` keys). Small status indicators on image files, folders, and drives showing
+image-search indexing state. Reuses the settled indexing family; new/confirmed terms:
+
+- **image search (the feature): `bildsökning`** · already the catalog's own term (`settings.mediaIndex.card` =
+  "Bildsökning"); definite `bildsökningen`. Compound `bildsökningsstatus` for the drive aria-label. `high`.
+- **indexed (as a status on a `bild`): `indexerad` / `indexerade`** · en-word agreement with `bild` (glossary index
+  family + shipped `settings.mediaIndex.networkVolumes.indexed` "{countText} bild indexerad / bilder indexerade"). The
+  standalone file badge takes the en-word `Indexerad` (implied subject `bilden`, en-word), NOT Apple's neuter supine
+  `Hämtat` pattern, because Cmdr's badge is always on an image. `high`.
+- **waiting to be indexed: `Väntar på att indexeras`** · mirrors Apple Finder's badge AX pattern "Väntar på
+  överföring/hämtning/uppdatering" (`macOS/Finder` AXBADGE4/5/6). Passive `indexeras` for the queued state. `high`.
+- **re-index: `indexera om` (passive `indexeras om`)** · the `montera om`/`söka igenom på nytt` re-prefix pattern
+  (glossary). "Changed since indexing; will be re-indexed" → "Ändrad sedan indexeringen; indexeras om" (`Ändrad` =
+  modified, en-word, matches the `Ändrad` column). `high`.
+- **couldn''t be indexed (calm failure): `Gick inte att indexera`** · reuses the settled calm-failure form
+  `Gick inte att slutföra` (`queue.json`); no bare "fel"/"misslyckades" per style.md. Tight badge tooltip. `high`.
+- **excluded from image search: `Ingår inte i bildsökningen`** · `ingå i` = to be included in; definite
+  `bildsökningen`. Distinct from the folder-exclusion verb `utesluta` (that's the user action; this is a passive state
+  on one image). `high`.
+- **status badge (the small overlay marker): `statussymbol` / `symbol`** · the catalog's own precedent for these
+  overlay indicators is `symbol` (`settings.listing.sizeMismatchWarning.description` "Visar en varningssymbol på
+  mappar"; `useAppIconsForDocuments` "appsymboler", "filtypssymboler"). "Show status badges on image files" → "Visa
+  statussymboler på bildfiler"; "a small badge" → "en liten symbol". `high` (catalog-internal precedent).
+- **image file: `bildfil`** · standard compound bild+fil. `high`.
+- **"is off" (a feature disabled for a drive): `är avstängd`** · en-word participle of `stänga av` (glossary
+  enable/disable), agreeing with `bildsökning(en)`. `high`.
+- **"still working" (indexing in progress, drive dot): `arbetar fortfarande`** · casual/friendly like the EN source;
+  implied subject Cmdr. `high` (natural phrasing; no direct pile hit).
+- Drive plural strings duplicate the invariant "på den här enheten är" inside both plural branches (the
+  `progress.ofTotal` pattern) so the `indexerad`/`indexerade` adjective agrees in number without a second ICU block.
+
+No `sameAsSourceJustification` needed: all 13 values differ from English.

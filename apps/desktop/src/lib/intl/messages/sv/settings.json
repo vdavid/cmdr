@@ -495,6 +495,14 @@
   "@settings.mediaIndex.enabled.description": {
     "sourceHash": "118fc8d"
   },
+  "settings.mediaIndex.showFileStatusIcons.label": "Visa statussymboler på bildfiler",
+  "@settings.mediaIndex.showFileStatusIcons.label": {
+    "sourceHash": "a0a2372"
+  },
+  "settings.mediaIndex.showFileStatusIcons.description": "Lägg till en liten symbol på varje bild i fillistan som visar om den har indexerats för sökning.",
+  "@settings.mediaIndex.showFileStatusIcons.description": {
+    "sourceHash": "62dda47"
+  },
   "settings.mediaIndex.networkVolumes.label": "Bildindexering för nätverksenheter",
   "@settings.mediaIndex.networkVolumes.label": {
     "sourceHash": "9d12bf3"

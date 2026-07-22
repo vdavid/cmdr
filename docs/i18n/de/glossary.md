@@ -621,3 +621,34 @@ image-index scope settings (`settings.mediaIndex.scope.*`, `.chosenFolders.*`).
   the done arm is the doing arm minus `wird`, exactly like `Ein Ordner wird aufgelistet` / `Ein Ordner aufgelistet` ·
   high. ❌ A bare infinitive (`Einen Umbenennungsplan vorbereiten`) reads as a command, not a status.
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+## Image-index status badges on files/folders/drives (2026-07-22)
+
+Terms settled while translating the 13 per-file/folder/drive image-index indicator strings
+(`fileExplorer.imageIndex.file.*`, `.folder.*`, `.drive.*`, and the `settings.mediaIndex.showFileStatusIcons.*` toggle).
+
+- status badge (the small overlay icon on an image/folder/drive row marking its image-index state) → `Statussymbol`
+  (plural `Statussymbole`) · tentative — no perfect direct source. Rejected: MS `Kennzeichen` maps to "flag" (MS TBX
+  id 54732 = flag), and MS `Abzeichen`/`Badge` are the achievement/reward-badge sense ("a small image indicating roles,
+  achievements…"), wrong register for a status overlay. `Statussymbol` reads as the native, transparent term for a
+  small status icon (Symbol = icon in DE UI). Flagged for David to confirm vs `Statuskennzeichen`.
+- indexed (image, adjective/participle) → `indiziert` · settled `index → indizieren`; matches the 33 shipped `indiziert`
+  uses and macOS `Indiziert` · high. "Indexed for image search" → `Für die Bildersuche indiziert`; image search →
+  `Bildersuche` (shipped term, `search.imageResults.*`).
+- "Waiting to be indexed" (pending status) → `Wartet auf die Indizierung` · `indexing → Indizierung` + natural status
+  phrasing · high.
+- "Changed since indexing; will be re-indexed" (stale status) → `Seit der Indizierung geändert; wird neu indiziert` ·
+  stale sense rendered as a full sentence (glossary stale → veraltet, but the source is a clause, not the bare word);
+  re-index → `neu indizieren`, passive present `wird neu indiziert` · high. Semicolon preserved from source.
+- "Couldn''t be indexed" (failed status, kept gentle) → `Ließ sich nicht indizieren` · glossary "Couldn't X" →
+  "X ließ sich nicht …" calm-rephrase pattern; avoids the banned "Fehler"/"fehlgeschlagen" · high.
+- "Not included in image search" (excluded status) → `Nicht in der Bildersuche enthalten` · included → enthalten +
+  Bildersuche · high.
+- folder/drive counts → `von` governs DATIVE, so the counted-noun plural branch is `Bildern` (dative pl), not `Bilder`:
+  `{doneText} von {totalText} {total, plural, one {Bild} other {Bildern}} indiziert` (someIndexed, drive.indexing). The
+  `alle …`/`sind indiziert` frames are NOMINATIVE, so those keep `Bilder`: `Alle {totalText} … {one {Bild} other
+  {Bilder}} …` (folder.allIndexed, drive.done). one-branch dative singular is bare `Bild` · high (style guide: "in 3
+  Ordnern", dative plural -n).
+- "on this drive" → `auf diesem Laufwerk`; "still working" → `läuft noch`; "Image search is off" → `Die Bildersuche ist
+  … deaktiviert` (turn off → deaktivieren) · high.
+- No `sameAsSourceJustification` needed: every value differs from English.

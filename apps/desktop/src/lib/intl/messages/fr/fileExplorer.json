@@ -911,6 +911,50 @@
   "@fileExplorer.dateTooltip.lastModified": {
     "sourceHash": "0fe1058"
   },
+  "fileExplorer.imageIndex.file.indexed": "Indexée pour la recherche d''images",
+  "@fileExplorer.imageIndex.file.indexed": {
+    "sourceHash": "9b72aa0"
+  },
+  "fileExplorer.imageIndex.file.pending": "En attente d''indexation",
+  "@fileExplorer.imageIndex.file.pending": {
+    "sourceHash": "73eb99a"
+  },
+  "fileExplorer.imageIndex.file.stale": "Modifiée depuis l''indexation ; sera réindexée",
+  "@fileExplorer.imageIndex.file.stale": {
+    "sourceHash": "1766bc3"
+  },
+  "fileExplorer.imageIndex.file.failed": "Indexation impossible",
+  "@fileExplorer.imageIndex.file.failed": {
+    "sourceHash": "a88edd6"
+  },
+  "fileExplorer.imageIndex.file.excluded": "Non incluse dans la recherche d''images",
+  "@fileExplorer.imageIndex.file.excluded": {
+    "sourceHash": "1f68cee"
+  },
+  "fileExplorer.imageIndex.folder.allIndexed": "{totalText} {total, plural, one {image indexée} many {images indexées} other {images indexées}}",
+  "@fileExplorer.imageIndex.folder.allIndexed": {
+    "sourceHash": "c19fe12"
+  },
+  "fileExplorer.imageIndex.folder.someIndexed": "{doneText} sur {totalText} {total, plural, one {image indexée} many {images indexées} other {images indexées}}",
+  "@fileExplorer.imageIndex.folder.someIndexed": {
+    "sourceHash": "c7fd5ca"
+  },
+  "fileExplorer.imageIndex.drive.ariaLabel": "État de la recherche d''images pour ce disque",
+  "@fileExplorer.imageIndex.drive.ariaLabel": {
+    "sourceHash": "bea5d87"
+  },
+  "fileExplorer.imageIndex.drive.off": "La recherche d''images est désactivée pour ce disque.",
+  "@fileExplorer.imageIndex.drive.off": {
+    "sourceHash": "a7f3c42"
+  },
+  "fileExplorer.imageIndex.drive.indexing": "Sur ce disque, {doneText} sur {totalText} {total, plural, one {image indexée} many {images indexées} other {images indexées}} ; indexation en cours.",
+  "@fileExplorer.imageIndex.drive.indexing": {
+    "sourceHash": "23d351d"
+  },
+  "fileExplorer.imageIndex.drive.done": "Sur ce disque, {totalText} {total, plural, one {image est indexée} many {images sont indexées} other {images sont indexées}}.",
+  "@fileExplorer.imageIndex.drive.done": {
+    "sourceHash": "0f4f795"
+  },
   "fileExplorer.selectionInfo.nothingHere": "Rien ici.",
   "@fileExplorer.selectionInfo.nothingHere": {
     "sourceHash": "140a431"

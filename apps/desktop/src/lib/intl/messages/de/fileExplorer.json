@@ -913,6 +913,50 @@
   "@fileExplorer.dateTooltip.lastModified": {
     "sourceHash": "0fe1058"
   },
+  "fileExplorer.imageIndex.file.indexed": "Für die Bildersuche indiziert",
+  "@fileExplorer.imageIndex.file.indexed": {
+    "sourceHash": "9b72aa0"
+  },
+  "fileExplorer.imageIndex.file.pending": "Wartet auf die Indizierung",
+  "@fileExplorer.imageIndex.file.pending": {
+    "sourceHash": "73eb99a"
+  },
+  "fileExplorer.imageIndex.file.stale": "Seit der Indizierung geändert; wird neu indiziert",
+  "@fileExplorer.imageIndex.file.stale": {
+    "sourceHash": "1766bc3"
+  },
+  "fileExplorer.imageIndex.file.failed": "Ließ sich nicht indizieren",
+  "@fileExplorer.imageIndex.file.failed": {
+    "sourceHash": "a88edd6"
+  },
+  "fileExplorer.imageIndex.file.excluded": "Nicht in der Bildersuche enthalten",
+  "@fileExplorer.imageIndex.file.excluded": {
+    "sourceHash": "1f68cee"
+  },
+  "fileExplorer.imageIndex.folder.allIndexed": "Alle {totalText} {total, plural, one {Bild} other {Bilder}} indiziert",
+  "@fileExplorer.imageIndex.folder.allIndexed": {
+    "sourceHash": "c19fe12"
+  },
+  "fileExplorer.imageIndex.folder.someIndexed": "{doneText} von {totalText} {total, plural, one {Bild} other {Bildern}} indiziert",
+  "@fileExplorer.imageIndex.folder.someIndexed": {
+    "sourceHash": "c7fd5ca"
+  },
+  "fileExplorer.imageIndex.drive.ariaLabel": "Status der Bildersuche für dieses Laufwerk",
+  "@fileExplorer.imageIndex.drive.ariaLabel": {
+    "sourceHash": "bea5d87"
+  },
+  "fileExplorer.imageIndex.drive.off": "Die Bildersuche ist für dieses Laufwerk deaktiviert.",
+  "@fileExplorer.imageIndex.drive.off": {
+    "sourceHash": "a7f3c42"
+  },
+  "fileExplorer.imageIndex.drive.indexing": "{doneText} von {totalText} {total, plural, one {Bild} other {Bildern}} auf diesem Laufwerk indiziert; läuft noch.",
+  "@fileExplorer.imageIndex.drive.indexing": {
+    "sourceHash": "23d351d"
+  },
+  "fileExplorer.imageIndex.drive.done": "Alle {totalText} {total, plural, one {Bild} other {Bilder}} auf diesem Laufwerk sind indiziert.",
+  "@fileExplorer.imageIndex.drive.done": {
+    "sourceHash": "0f4f795"
+  },
   "fileExplorer.selectionInfo.nothingHere": "Hier ist nichts.",
   "@fileExplorer.selectionInfo.nothingHere": {
     "sourceHash": "140a431"

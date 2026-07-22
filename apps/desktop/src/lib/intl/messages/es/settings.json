@@ -496,6 +496,14 @@
   "@settings.mediaIndex.enabled.description": {
     "sourceHash": "118fc8d"
   },
+  "settings.mediaIndex.showFileStatusIcons.label": "Mostrar insignias de estado en los archivos de imagen",
+  "@settings.mediaIndex.showFileStatusIcons.label": {
+    "sourceHash": "a0a2372"
+  },
+  "settings.mediaIndex.showFileStatusIcons.description": "Añade una pequeña insignia a cada imagen de la lista de archivos que indica si se ha indexado para la búsqueda.",
+  "@settings.mediaIndex.showFileStatusIcons.description": {
+    "sourceHash": "62dda47"
+  },
   "settings.mediaIndex.networkVolumes.label": "Indexación de imágenes en unidades de red",
   "@settings.mediaIndex.networkVolumes.label": {
     "sourceHash": "9d12bf3"

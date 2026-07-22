@@ -909,6 +909,50 @@
   "@fileExplorer.dateTooltip.lastModified": {
     "sourceHash": "0fe1058"
   },
+  "fileExplorer.imageIndex.file.indexed": "Đã lập chỉ mục cho tìm kiếm hình ảnh",
+  "@fileExplorer.imageIndex.file.indexed": {
+    "sourceHash": "9b72aa0"
+  },
+  "fileExplorer.imageIndex.file.pending": "Đang chờ lập chỉ mục",
+  "@fileExplorer.imageIndex.file.pending": {
+    "sourceHash": "73eb99a"
+  },
+  "fileExplorer.imageIndex.file.stale": "Đã thay đổi kể từ khi lập chỉ mục; sẽ được lập chỉ mục lại",
+  "@fileExplorer.imageIndex.file.stale": {
+    "sourceHash": "1766bc3"
+  },
+  "fileExplorer.imageIndex.file.failed": "Không thể lập chỉ mục",
+  "@fileExplorer.imageIndex.file.failed": {
+    "sourceHash": "a88edd6"
+  },
+  "fileExplorer.imageIndex.file.excluded": "Không nằm trong phạm vi tìm kiếm hình ảnh",
+  "@fileExplorer.imageIndex.file.excluded": {
+    "sourceHash": "1f68cee"
+  },
+  "fileExplorer.imageIndex.folder.allIndexed": "Đã lập chỉ mục tất cả {totalText} {total, plural, other {hình ảnh}}",
+  "@fileExplorer.imageIndex.folder.allIndexed": {
+    "sourceHash": "c19fe12"
+  },
+  "fileExplorer.imageIndex.folder.someIndexed": "Đã lập chỉ mục {doneText} trên {totalText} {total, plural, other {hình ảnh}}",
+  "@fileExplorer.imageIndex.folder.someIndexed": {
+    "sourceHash": "c7fd5ca"
+  },
+  "fileExplorer.imageIndex.drive.ariaLabel": "Trạng thái tìm kiếm hình ảnh của ổ đĩa này",
+  "@fileExplorer.imageIndex.drive.ariaLabel": {
+    "sourceHash": "bea5d87"
+  },
+  "fileExplorer.imageIndex.drive.off": "Tìm kiếm hình ảnh đang tắt cho ổ đĩa này.",
+  "@fileExplorer.imageIndex.drive.off": {
+    "sourceHash": "a7f3c42"
+  },
+  "fileExplorer.imageIndex.drive.indexing": "Trên ổ đĩa này, đã lập chỉ mục {doneText} trên {totalText} {total, plural, other {hình ảnh}}; vẫn đang xử lý.",
+  "@fileExplorer.imageIndex.drive.indexing": {
+    "sourceHash": "23d351d"
+  },
+  "fileExplorer.imageIndex.drive.done": "Đã lập chỉ mục tất cả {totalText} {total, plural, other {hình ảnh}} trên ổ đĩa này.",
+  "@fileExplorer.imageIndex.drive.done": {
+    "sourceHash": "0f4f795"
+  },
   "fileExplorer.selectionInfo.nothingHere": "Không có gì ở đây.",
   "@fileExplorer.selectionInfo.nothingHere": {
     "sourceHash": "140a431"

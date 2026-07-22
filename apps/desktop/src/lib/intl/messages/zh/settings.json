@@ -493,6 +493,14 @@
   "@settings.mediaIndex.enabled.description": {
     "sourceHash": "118fc8d"
   },
+  "settings.mediaIndex.showFileStatusIcons.label": "在图像文件上显示状态标记",
+  "@settings.mediaIndex.showFileStatusIcons.label": {
+    "sourceHash": "a0a2372"
+  },
+  "settings.mediaIndex.showFileStatusIcons.description": "在文件列表中为每张图像添加一个小标记，显示它是否已建立搜索索引。",
+  "@settings.mediaIndex.showFileStatusIcons.description": {
+    "sourceHash": "62dda47"
+  },
   "settings.mediaIndex.networkVolumes.label": "网络驱动器图像索引",
   "@settings.mediaIndex.networkVolumes.label": {
     "sourceHash": "9d12bf3"

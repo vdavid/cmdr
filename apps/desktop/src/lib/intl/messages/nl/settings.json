@@ -498,6 +498,14 @@
   "@settings.mediaIndex.enabled.description": {
     "sourceHash": "118fc8d"
   },
+  "settings.mediaIndex.showFileStatusIcons.label": "Statusmarkeringen op afbeeldingsbestanden tonen",
+  "@settings.mediaIndex.showFileStatusIcons.label": {
+    "sourceHash": "a0a2372"
+  },
+  "settings.mediaIndex.showFileStatusIcons.description": "Voeg aan elke afbeelding in de bestandenlijst een kleine markering toe die aangeeft of deze al is geïndexeerd voor zoeken.",
+  "@settings.mediaIndex.showFileStatusIcons.description": {
+    "sourceHash": "62dda47"
+  },
   "settings.mediaIndex.networkVolumes.label": "Afbeeldingen indexeren op netwerkschijven",
   "@settings.mediaIndex.networkVolumes.label": {
     "sourceHash": "9d12bf3"

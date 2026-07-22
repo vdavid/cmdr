@@ -854,3 +854,46 @@ the process; this pass re-derived every term from the pile:
 - `{percent}` may safely take `-nál` (`{percent}%-nál tart`): the suffix attaches to the `%` glyph, read `százaléknál`,
   which is invariably back-vowel — the same constrained-domain reasoning as the FAT32 `{maxSize}-nál` entry · high.
 - No `sameAsSourceJustification` needed in this batch: all 54 values differ from English.
+
+Settled while translating the image-index indicator badges (`fileExplorer.imageIndex.file/folder/drive.*` +
+`settings.mediaIndex.showFileStatusIcons.*`, 13 keys, 2026-07-22):
+
+- **badge (a small status overlay on a file/drive icon) → `jelvény`; status badge → `állapotjelvény`** · MS terminology
+  (`notification badge` = `értesítési jelvény`, `badge` = `jelvény`) AND macOS Finder Tier-1 concept parallel: Finder
+  overlays iCloud-sync status badges on file icons with the `BADGE_AX_LABEL` container + `AXBADGE*` state aria labels
+  (the exact same UI element Cmdr builds here) · high. status = `állapot` (settled, `driveIndex.ariaLabel` =
+  `indexállapot`). Settings label "Show status badges on image files" = `Állapotjelvények megjelenítése a képfájlokon`
+  (nominal; `képfájl` = image file, compound `kép`+`fájl`; "small badge" in the description = `kis jelvény`).
+- **badge STATE labels follow Finder's file-icon badge pattern: done = `-va/-ve` participle, waiting = `Várakozás a(z)
+  X-re`** · macOS Finder Tier-1 directly (`AXBADGE0` "Downloaded" = `Letöltve`, `AXBADGE4/5` "Waiting to upload/download"
+  = `Várakozás a feltöltésre`/`a letöltésre`) · high. So `file.indexed` "Indexed for image search" =
+  `Indexelve a képkereséshez` (`indexelve` state participle, settled; `képkeresés` allative `-hez`); `file.pending`
+  "Waiting to be indexed" = `Várakozás az indexelésre` (the Finder `Várakozás a(z) X-re` frame, `az` before the
+  vowel-initial `indexelés`). `file.stale` "Changed since indexing; will be re-indexed" =
+  `Megváltozott az indexelés óta; újra lesz indexelve` (`óta` postposition dodges suffixing; `újra lesz indexelve` =
+  future state).
+- **`file.failed` "Couldn''t be indexed" → `Nem sikerült indexelni`, NOT Finder''s `Hiba`** · the settled `nem sikerült`
+  calm-voice rule + the no-bare-"hiba"/"sikertelen" voice rule; the EN itself softened "failed" to "couldn''t", and
+  Finder''s badge `AXBADGE1` = `Hiba` is deliberately NOT followed here · high.
+- **`file.excluded` "Not included in image search" → `Nem szerepel a képkeresésben`, NOT `kizárva`** · the EN word is the
+  neutral "not included" (the `@key` lists several non-user reasons: out of scope, unsupported, too big), so the
+  deliberate-user-exclusion term `kizár`/`kizárva` (settled for `settings.mediaIndex.excludedFolders` = `Kizárt mappák`)
+  would over-claim. `szerepel` = to appear/be included; `képkeresés` inessive `-ben` (front) · high. Distinct on purpose
+  from the folder-level `imageIndex.excluded` (deliberate exclusion) which stays `kizárva`.
+- **image search (feature) → `Képkeresés`** · REUSED verbatim from the already-shipped `settings.mediaIndex.card` /
+  `settings.section.imageSearch` = `Képkeresés` · high. Don''t fork it.
+- **drive image-search dot aria (`drive.ariaLabel`) → `Meghajtó képkeresési állapota`** · parallels the sibling
+  index-status dot `fileExplorer.navigation.driveIndex.ariaLabel` = `Meghajtó indexállapota` (same nominal, no-article,
+  no-"this" shape; the two dots sit adjacent) · high. `drive.off` "Image search is off for this drive." =
+  `A képkeresés ki van kapcsolva ehhez a meghajtóhoz.` reuses the shipped `driveIndex.tooltipDisabled` frame
+  (`Az indexelés ki van kapcsolva ehhez a meghajtóhoz.`) verbatim, swapping the subject · high.
+- **count-of-count fragments use the `x / y` slash idiom, never a suffixed count placeholder** · the catalog''s settled
+  slash idiom (`viewer` match position `{current} / {total}`) dodges the vowel-harmony trap that a `{totalText}`-ból
+  elative "of" would hit. `folder.someIndexed` = `{doneText} / {totalText} {plural kép} indexelve`; `folder.allIndexed`
+  "All N images indexed" = `Mind a(z) {totalText} {plural kép} indexelve` (`Mind a/az` + numeral + SINGULAR counted noun,
+  no-pluralize-after-number rule → both plural branches are `kép`; `a(z)` for the unknown numeral''s article). Terse
+  fragments drop `van` (mirroring EN''s verbless "indexed"); the full-sentence `drive.done` "All N … are indexed." KEEPS
+  it (mirroring EN''s "are"): `Ezen a meghajtón mind a(z) {totalText} {plural kép} indexelve van.` `drive.indexing`
+  reuses the live-progress `folyamatban van` (shipped `search.imageResults.indexing`): `{doneText} / {totalText} {plural
+  kép} indexelve ezen a meghajtón; még folyamatban van.` · high.
+- No `sameAsSourceJustification` needed in this batch: all 13 values differ from English.

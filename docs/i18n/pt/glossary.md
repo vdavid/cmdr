@@ -534,3 +534,37 @@ The Ask Cmdr rename-proposal modal: a table of proposed renames the user allows 
   user adjective, and "você mesmo" is exactly that; "por conta própria" is invariable · high.
   `settings.mediaIndex.scope.description`.
 - No `sameAsSourceJustification` needed: all 26 values differ from English.
+
+### Image-index status badge terms (`fileExplorer.imageIndex.*` + `settings.mediaIndex.showFileStatusIcons.*`, 2026-07-22)
+
+The small per-file/folder/drive overlay indicators showing image-search indexing state, plus the Settings toggle for the
+per-file badge.
+
+- badge (small overlay marker on a file/folder icon) · **selo** · Microsoft terminology pt-BR (`badge` → `selo`, id
+  1354385; reinforced by "Selo digital", "Selo do OneNote", "Selos em destaque") · high. Chosen over "distintivo"
+  (reads as a police/ID badge) and "emblema" (heraldic). macOS localizes its own overlay badges only by their status
+  meaning (AXBADGE keys carry no noun), so MS's "selo" is the authority. `settings.mediaIndex.showFileStatusIcons.*`
+  ("status badges" → "selos de status", status kept verbatim per the glossary `status` row).
+- indexed-state file tooltips agree with feminine **imagem** · the five `file.*` tooltips are subject-less in English
+  ("Indexed", "Changed", "Not included"); pt picks feminine to agree with **imagem** and stay consistent with the
+  folder/drive strings' "imagens indexadas" and the network row's "foto indexada". So: **Indexada**, **Modificada**,
+  **incluída**, "indexada de novo" · high. `fileExplorer.imageIndex.file.indexed/pending/stale/failed/excluded`.
+- "Waiting to be indexed" · **Aguardando indexação** · glossary waiting/queued → **Aguardando** + indexing noun →
+  **indexação** · high. `file.pending`.
+- "Changed since indexing; will be re-indexed" · **Modificada desde a indexação; será indexada de novo** · "changed"
+  reuses the glossary `modified` → **Modificado(a)**; "re-indexed" → "indexada de novo" (the glossary `Full rescan` row's
+  preference for "nova"/"de novo" over a literal "re-" prefix, e.g. "Navegue até aqui de novo") · high. `file.stale`.
+- "Couldn''t be indexed" (gentle, no error/failed words) · **Não foi possível indexar** · the no-bare-error voice
+  ("Não foi possível …", glossary error-copy phrasings) · high. `file.failed`.
+- "Not included in image search" · **Não incluída na busca de imagens** · direct; busca de imagens per the image-search
+  row above · high. `file.excluded`.
+- "still working" (drive indexing in progress) · **ainda em andamento** · matches the operation-log running status
+  **Em andamento**; avoids a gerund clash with the sibling **Indexando** · high. `drive.indexing`.
+- "is off for this drive" (feature-off status) · **está desativada para este disco** · glossary Turn on/off →
+  status **está desativado/desativada** (fem here, agreeing with "a busca de imagens"); drive → **disco** · high.
+  `drive.off`. `drive.ariaLabel` "Image search status for this drive" → "Status da busca de imagens deste disco".
+- ICU plurals (`folder.allIndexed/someIndexed`, `drive.indexing/done`) select on `{total}` and write pt's `one`/`many`/
+  `other` branches. The **noun + participle** (imagem indexada / imagens indexadas) and any "Todas as" agreement go
+  INSIDE the branches so total=1 reads "1 imagem indexada", not "Todas as 1 imagem"; `{doneText}`/"deste disco"/"; ainda
+  em andamento." stay outside · high.
+- No `sameAsSourceJustification` needed: all 13 values differ from English.

@@ -724,3 +724,37 @@ rename surface. Reuses settled `重命名`/`覆盖`/`移除`/`添加`/`索引`/`
   stays calm and avoids `错误`/`失败` per style.md · `high`
 - No `sameAsSourceJustification` needed anywhere in this pass: every value differs from English (only `Cmdr`, `macOS`,
   `Ask Cmdr`, and the `{path}`/`{folder}`/`{percent}` placeholders stay verbatim).
+
+### Image-index status badges (`fileExplorer.imageIndex.*`, `settings.mediaIndex.showFileStatusIcons.*`, 2026-07-22)
+
+macOS zh-CN Tier 1 (AppKit `Indexed` → `已索引`), Total Commander zh-CN (`编入索引`), Dolphin/Nautilus for the index
+verb; Microsoft zh-Hans cross-check. Small per-file/folder/drive badges showing image-search indexing state. Reuses
+settled `图像搜索`/`图像`/`建立索引`/`已索引`/`驱动器`/`此驱动器` terms.
+
+- **"Indexed for image search" (file badge)** · `已为图像搜索建立索引` · settled `建立索引` + `图像搜索`, with `为…`
+  ("for…") carrying the purpose; faithful to the English "for image search" · `high`
+- **"Waiting to be indexed" (file badge, queued)** · `等待建立索引` · `等待` (waiting) + settled `建立索引` · `high`
+- **"Changed since indexing; will be re-indexed" (file badge, stale)** · `索引后有改动，将重新索引` · `改动` matches
+  `settings.advanced.fileWatcherDebounce.description`; `索引` used verbally here ("索引后" / "重新索引"), attested
+  verbal `索引` in Dolphin (`对您的文件进行索引`) · `high`
+- **"Couldn''t be indexed" (file badge, failed)** · `无法建立索引` · the `无法…` calm pattern (style.md: no 失败/错误) ·
+  `high`
+- **"Not included in image search" (file badge, excluded)** · `未纳入图像搜索` · `纳入` = include/incorporate;
+  covers excluded-folder / out-of-scope / unsupported / too-big without naming the reason (matches the vague English) ·
+  `high`
+- **folder / drive aggregate counts** · reuse the existing `已索引 {countText} 张照片` pattern (settings network-drive
+  pass) but with `图像` (feature register, not `照片`): all-indexed → `已索引全部 {totalText} 张图像`; partial →
+  `{totalText} 张图像中已索引 {doneText} 张`; drive-wide in-progress →
+  `此驱动器上 {totalText} 张图像中已索引 {doneText} 张；仍在继续。`; drive done →
+  `此驱动器上全部 {totalText} 张图像均已索引。`. Measure word `张` per the settled `张图像`/`张照片` pattern; Chinese
+  collapses each ICU plural to a single `other` branch holding `张图像` · `high`
+- **"still working" (drive in-progress tail)** · `仍在继续` · calm "still going" · `high`
+- **badge (small status indicator overlaid on a file icon)** · `标记` · no exact macOS/Microsoft "badge" noun in the
+  pile (macOS Finder's icon-overlay badges are the internal `AXBADGE`, surfaced only as verbs like `正在上传`); `标记`
+  (mark) is well-attested across the pile and reads naturally for "a small status mark on each image". `角标` (corner
+  badge) was the more literal alternative but is absent from the pile and reads more jargon-y. Label
+  `在图像文件上显示状态标记`; description `…添加一个小标记…` · `tentative` (term choice; the strings themselves read
+  cleanly)
+- **"indexed for search" (settings description)** · `已建立搜索索引` · settled `建立索引` + `搜索` · `high`
+- No `sameAsSourceJustification` needed: every value differs from English; only the `{doneText}`/`{totalText}`
+  placeholders stay verbatim.

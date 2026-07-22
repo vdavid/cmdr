@@ -496,6 +496,14 @@
   "@settings.mediaIndex.enabled.description": {
     "sourceHash": "118fc8d"
   },
+  "settings.mediaIndex.showFileStatusIcons.label": "Mostrar selos de status nos arquivos de imagem",
+  "@settings.mediaIndex.showFileStatusIcons.label": {
+    "sourceHash": "a0a2372"
+  },
+  "settings.mediaIndex.showFileStatusIcons.description": "Adicione um pequeno selo a cada imagem na lista de arquivos indicando se ela já foi indexada para busca.",
+  "@settings.mediaIndex.showFileStatusIcons.description": {
+    "sourceHash": "62dda47"
+  },
   "settings.mediaIndex.networkVolumes.label": "Indexação de imagens em disco de rede",
   "@settings.mediaIndex.networkVolumes.label": {
     "sourceHash": "9d12bf3"

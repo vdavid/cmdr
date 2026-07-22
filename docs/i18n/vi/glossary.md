@@ -763,3 +763,25 @@ lại, không thể, gỡ, mức độ quan trọng). New or newly-sourced below
   Ask Cmdr") read as an object. The English is a deliberate double reading (the imperative "ask Cmdr" and the feature
   name); Vietnamese keeps the imperative one, and `Cmdr` stays verbatim. `tentative`.
 - No `sameAsSourceJustification` needed anywhere in these 54: every value differs from English.
+
+Added during the image-index-indicator pass (2026-07-22): the 13 new keys for the per-file / per-folder / per-drive
+image-search status badges (`fileExplorer.imageIndex.file.*`, `.folder.*`, `.drive.*` + `settings.mediaIndex.showFileStatusIcons.*`).
+Reuses prior terms (image, feature-level → `hình ảnh` per the 2026-07-21 decision on the whole `fileExplorer.imageIndex.*`
+family; image search → `tìm kiếm hình ảnh` = `settings.mediaIndex.card`; index/indexed/re-index → `lập chỉ mục`/
+`đã lập chỉ mục`/`lập chỉ mục lại`; drive → `ổ đĩa`; file list → `danh sách tệp`; scope → `phạm vi`; can't → `không thể`;
+"of" in a count → `trên`, matching `settings.mediaIndex.progress.ofTotal`; toggle off → `tắt`). New/confirmed below:
+
+- **status badge (the small per-file indicator): `huy hiệu`** · reuses the settled toast/chip/**badge** → `huy hiệu`
+  rendering. "status badge" → `huy hiệu trạng thái`. `tentative` (descriptive; no single pile source).
+- **status (state indicator): `trạng thái`** · standard vi UI term (MS/macOS convention). "Image search status" →
+  `Trạng thái tìm kiếm hình ảnh`. `high`.
+- **waiting (queued to be indexed): `Đang chờ`** · reuses the queue lifecycle "Waiting" → `Đang chờ`. "Waiting to be
+  indexed" → `Đang chờ lập chỉ mục`. `high` (catalog-consistent).
+- **is off (a feature turned off for a drive): `đang tắt`** · the toggle `bật/tắt` verb in its present-state form.
+  "Image search is off for this drive." → `Tìm kiếm hình ảnh đang tắt cho ổ đĩa này.` `high`.
+- **still working (an indexing pass in progress): `vẫn đang xử lý`** · reuses the `đang xử lý` (processing) fallback
+  status. `tentative`.
+- **The four ICU-plural keys (`folder.allIndexed`/`someIndexed`, `drive.indexing`/`done`) collapse to a single `other`
+  branch wrapping just the noun** (`{total, plural, other {hình ảnh}}`; vi has one CLDR category), keeping the full
+  placeholder set. `drive.indexing` fronts the drive ("Trên ổ đĩa này, …") to avoid a double `trên` (of / on this drive).
+- No `sameAsSourceJustification` needed: all 13 values differ from English.

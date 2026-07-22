@@ -836,3 +836,48 @@ Phrasing notes for this pass:
 - The two `driveIndex.tooltipCoalesced*` tooltips were confirmed unchanged: FR CLDR `one`/`many`/`other` on all three
   counts, no "erreur"/"échec" wording, and the calm close ("remettra tout d'aplomb" / "rien de grave donc") matches the
   reassuring register the `@key` description asks for.
+
+Settled during the `image-index-indicators` pass (2026-07-22, the per-file/folder/drive image-search index status badges
+in the file list: `fileExplorer.imageIndex.{file,folder,drive}.*`, `settings.mediaIndex.showFileStatusIcons.*`, 13 keys).
+ICU values, so every apostrophe is doubled in the catalog:
+
+- image search (the OCR/photo-content search FEATURE) → `recherche d''images` · settled catalog-wide, NOT re-derived:
+  `settings.mediaIndex.card` and `settings.section.imageSearch` both already render "Recherche d''images", and
+  `search.imageResults.*` uses "images". Reused verbatim for every "image search" mention (`file.indexed`,
+  `file.excluded`, `drive.ariaLabel`, `drive.off`) · high.
+- image (the file/noun, feminine: "une image", "les images") → `image` · macOS/pile pervasive; same word as EN but
+  genuinely FR and gendered, so agreeing participles are feminine: "image indexée" / "images indexées". The badge sits on
+  an image file, so every per-file status agrees feminine (indexée, incluse, modifiée, réindexée) · high.
+- indexed (an image is in the image-search index) → `indexée` (fem., agrees with the implicit `image`); indexing (the
+  noun) → `indexation`; re-indexed → `réindexée` · reuses the style-guide glossary `index / indexing → index /
+  indexation` term; the `driveIndex.*` (folder-size disk index) surface already uses "indexation"/"indexé" · high.
+- badge / status badge (the small marker over a file icon; the small colored dot next to a drive) → `pastille` /
+  `pastille d''état` · reuses the settled (tentative) `chip / badge (status pill) → pastille` glossary term; "pastille"
+  (small disc/lozenge) fits both the file-icon badge and the literal drive "dot" · tentative (no exact reference-pile
+  hit; consistent with the prior badge choice).
+- "Couldn''t be indexed" (gentle, no "error"/"failed") → `Indexation impossible` · reuses the settled
+  `Couldn''t/Can''t X → "… impossible"` calm macOS pattern (the `errors` pass), staying away from "erreur"/"échec" per
+  the style guide · high.
+- off (image search turned off for a drive) → `désactivée` · mirrors the sibling `driveIndex.tooltipDisabled`
+  ("L''indexation est désactivée pour ce disque.") · high.
+- "X of Y" (progress count) → `{doneText} sur {totalText}` · macOS "sur" for counts (settled `free of → libre sur`);
+  used in `folder.someIndexed` and `drive.indexing` · high.
+
+Phrasing notes for this pass:
+
+- `folder.allIndexed` / `folder.someIndexed` are headline fragments (no trailing period, matching the EN per-file
+  tooltips): "{totalText} images indexées" and "{doneText} sur {totalText} images indexées". The English "All" is carried
+  by the ABSENCE of the "sur {doneText}" fraction (allIndexed shows only the total; someIndexed adds "done of"), so no
+  literal "toutes" is forced (which would break the FR `one` branch, "Toutes les 1 image"). FR CLDR `one`/`many`/`other`
+  with the past participle folded into each branch ("image indexée" / "images indexées"), `{totalText}` kept in a single
+  slot outside the plural so it appears in every rendering.
+- The two drive tooltips lead with "Sur ce disque," (locative) to keep the drive context and avoid burying "on this
+  drive" in a double-"sur" clash with the "X sur Y" count. `drive.indexing` closes "; indexation en cours." (calm "en
+  cours" progress convention, NOT "toujours en train de travailler"); `drive.done` uses present-tense "sont indexées"
+  (are indexed), which states completeness without a fragile "toutes les {n}".
+- Regular ASCII space before `;` in `file.stale` ("… ; sera réindexée") and `drive.indexing` ("… ; indexation en
+  cours."), per the catalog-wide settled spacing rule (style.md § Punctuation spacing); never U+202F.
+- `settings.mediaIndex.showFileStatusIcons.label/description` use infinitive-label "Afficher des pastilles d''état sur
+  les images" and third-person help "Ajoute une petite pastille sur chaque image de la liste des fichiers…" (settled
+  `file list → liste des fichiers`), matching the catalog's toggle-label + help-text register.
+- No `sameAsSourceJustification` needed: every value differs from English.

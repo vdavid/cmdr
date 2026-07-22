@@ -910,6 +910,50 @@
   "@fileExplorer.dateTooltip.lastModified": {
     "sourceHash": "0fe1058"
   },
+  "fileExplorer.imageIndex.file.indexed": "Indexada para la búsqueda de imágenes",
+  "@fileExplorer.imageIndex.file.indexed": {
+    "sourceHash": "9b72aa0"
+  },
+  "fileExplorer.imageIndex.file.pending": "Esperando a ser indexada",
+  "@fileExplorer.imageIndex.file.pending": {
+    "sourceHash": "73eb99a"
+  },
+  "fileExplorer.imageIndex.file.stale": "Ha cambiado desde que se indexó; se volverá a indexar",
+  "@fileExplorer.imageIndex.file.stale": {
+    "sourceHash": "1766bc3"
+  },
+  "fileExplorer.imageIndex.file.failed": "No se pudo indexar",
+  "@fileExplorer.imageIndex.file.failed": {
+    "sourceHash": "a88edd6"
+  },
+  "fileExplorer.imageIndex.file.excluded": "No se incluye en la búsqueda de imágenes",
+  "@fileExplorer.imageIndex.file.excluded": {
+    "sourceHash": "1f68cee"
+  },
+  "fileExplorer.imageIndex.folder.allIndexed": "{total, plural, one {{totalText} imagen indexada} many {Todas las {totalText} imágenes indexadas} other {Todas las {totalText} imágenes indexadas}}",
+  "@fileExplorer.imageIndex.folder.allIndexed": {
+    "sourceHash": "c19fe12"
+  },
+  "fileExplorer.imageIndex.folder.someIndexed": "{total, plural, one {{doneText} de {totalText} imagen indexada} many {{doneText} de {totalText} imágenes indexadas} other {{doneText} de {totalText} imágenes indexadas}}",
+  "@fileExplorer.imageIndex.folder.someIndexed": {
+    "sourceHash": "c7fd5ca"
+  },
+  "fileExplorer.imageIndex.drive.ariaLabel": "Estado de la búsqueda de imágenes de esta unidad",
+  "@fileExplorer.imageIndex.drive.ariaLabel": {
+    "sourceHash": "bea5d87"
+  },
+  "fileExplorer.imageIndex.drive.off": "La búsqueda de imágenes está desactivada para esta unidad.",
+  "@fileExplorer.imageIndex.drive.off": {
+    "sourceHash": "a7f3c42"
+  },
+  "fileExplorer.imageIndex.drive.indexing": "{total, plural, one {{doneText} de {totalText} imagen indexada} many {{doneText} de {totalText} imágenes indexadas} other {{doneText} de {totalText} imágenes indexadas}} en esta unidad; aún en curso.",
+  "@fileExplorer.imageIndex.drive.indexing": {
+    "sourceHash": "23d351d"
+  },
+  "fileExplorer.imageIndex.drive.done": "{total, plural, one {{totalText} imagen de esta unidad está indexada} many {Todas las {totalText} imágenes de esta unidad están indexadas} other {Todas las {totalText} imágenes de esta unidad están indexadas}}.",
+  "@fileExplorer.imageIndex.drive.done": {
+    "sourceHash": "0f4f795"
+  },
   "fileExplorer.selectionInfo.nothingHere": "Aquí no hay nada.",
   "@fileExplorer.selectionInfo.nothingHere": {
     "sourceHash": "140a431"
