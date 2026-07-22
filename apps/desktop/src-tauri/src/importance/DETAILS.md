@@ -209,7 +209,7 @@ up in the logs — the write phase dominates on a local root (compaction roughly
 
 Recomputes a volume's folder weights when its index finishes scanning. Two triggers, unified through one coalescing core:
 
-- **The lifecycle bus** ([`indexing/lifecycle_bus.rs`](../indexing/DETAILS.md) — the mechanism is documented there,
+- **The lifecycle bus** ([`indexing/lifecycle/lifecycle_bus.rs`](../indexing/DETAILS.md) — the mechanism is documented there,
   single-source): the scheduler subscribes per volume; a `ScanCompleted` publish ⇒ recompute.
 - **The startup registry sweep** (`indexing::ready_volumes_with_kind`): a volume already Fresh at launch never re-fires
   `ScanCompleted` (its retained bus value stays `Pending`), so wiring its subscription alone never recomputes it — the

@@ -40,7 +40,7 @@ tick. The `kick_*`/`start` entry points re-export through `mod.rs` so their publ
 
 ## The lifecycle bus
 
-`media_index`'s scheduler subscribes to `indexing/lifecycle_bus.rs` exactly as `importance`'s does — its OWN `start()`
+`media_index`'s scheduler subscribes to `indexing/lifecycle/lifecycle_bus.rs` exactly as `importance`'s does — its OWN `start()`
 mirrors the ordering (subscribe to registrations → sweep `ready_volumes_with_kind()` → wire per-volume subscriptions).
 It can't piggyback `importance`'s subscription; because `app.manage` is keyed by type, an `Arc<MediaScheduler>` coexists
 fine alongside `importance`'s scheduler. The bus mechanism (watch vs broadcast, late-subscriber replay, the registration
@@ -58,7 +58,7 @@ GC deletes a stored `media.db` row when its source path no longer appears as a q
 walk. The safety comes entirely from **when** a pass (and thus its GC) runs, not from generation arithmetic:
 
 - A pass runs ONLY on a `Completed` bus edge or the Fresh registry sweep. The `Completed` signal fires AFTER the index
-  writer flushes the truncate + repopulate (`indexing/scan_completion.rs`), so a triggered sweep always observes a
+  writer flushes the truncate + repopulate (`indexing/lifecycle/scan_completion.rs`), so a triggered sweep always observes a
   COMPLETE tree — never the mid-scan truncate window where every path transiently vanishes.
 - The edge is consumed via `borrow_and_update` / `has_changed`, NEVER a `borrow()` poll. The `watch` retains the last
   `Completed` across a new scan's truncate window; a poll could observe that stale `Completed` mid-truncate and GC live

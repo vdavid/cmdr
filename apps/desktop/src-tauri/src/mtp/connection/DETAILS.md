@@ -110,7 +110,7 @@ amortizes over hundreds of windows, and `total_size` is what anchors progress, E
 
 **Two background consumers, not one.** The scan is no longer the only yielding background user of the gate. A RUNNING MTP transfer is the second: its between-window checkpoint polls `MtpConnectionManager::foreground_pending(device_id)` and, when foreground pends, simply does NOT start the next window — it awaits `background_yield_point(device_id)`, then resumes reading from the current offset (it stays `Running`, not Paused). Because the read is already bounded windows (see "Bounded-window reads" above), the session is free between windows, so this yield is cheap and needs no release/reopen — there is no in-flight transaction to abort/drain (`cancel_and_release` is a no-op, never called by the copy path). This is the "navigate the phone DURING a transfer" feature; the gate sees a transfer exactly as it sees the scan — a background user that consults `foreground_pending` / `background_yield_point` between work units. The manager exposes both `foreground_pending(device_id) -> bool` (the gate's `foreground_pending()`, `false` if absent) and `background_yield_point(device_id)` for this. Lane budget 1 on the MTP device means the only foreground contender is a listing/nav/metadata op, never a second transfer, so there's no transfer-vs-transfer or transfer-vs-scan priority inversion — both yield to the same signal. Mechanics + the debounce/min-progress-floor tuning live in `write_operations/transfer/DETAILS.md` § "Foreground auto-yield".
 
-**Gate-before-resolve (`event_loop.rs` + `indexing/mtp_watch.rs`).** `feed_index_added_or_changed` now asks
+**Gate-before-resolve (`event_loop.rs` + `indexing/transports/mtp/watch.rs`).** `feed_index_added_or_changed` now asks
 `indexing::buffer_mtp_handle_if_scanning(volume_id, storage_id, handle)` FIRST, per indexed storage, with NO device
 touch. If that volume is scanning it buffers the RAW handle (`BufferedChange::UpsertHandle`) and the caller skips the
 resolve; only a non-scanning storage resolves live. Removals already buffered the bare handle; now adds/changes do too.
@@ -380,7 +380,7 @@ open — alongside the live-pane refresh above, not instead of it. `feed_index_a
 `indexing::MtpUpsert` carrying the handle; the first storage where the handle resolves wins (the object lives in exactly
 one). `feed_index_removed` is synchronous (DB + writer enqueue only, no USB): it forwards the bare handle to each indexed
 storage, and the one that indexed the object resolves it by the STORED handle. The translation, ordering, and
-buffer-during-scan logic live in `indexing/mtp_watch.rs` (see `indexing/DETAILS.md` § "MTP indexing"); the event loop
+buffer-during-scan logic live in `indexing/transports/mtp/watch.rs` (see `indexing/DETAILS.md` § "MTP indexing"); the event loop
 only resolves + forwards. The handle is stored in the index `inode` column at scan time too (`directory_ops.rs`).
 
 ## No dropping timeouts
@@ -419,7 +419,7 @@ finishes safely behind it. `commands::util::timeout_detached` is the shared help
 **Where the drops used to be** (all fixed, listed so nobody reintroduces one): every `tokio::time::timeout` in
 `file_ops.rs` / `directory_ops.rs` / `mutation_ops.rs` / `handle_resolver.rs`, the 3 s connect-time
 `probe_write_capability`, the 300 s upload cap, `listing_task.abort()` in `file_system/listing/streaming.rs`, the 120 s
-`LIST_TIMEOUT` in `indexing/volume_scanner.rs`, and the 2 s / 5 s / 30 s IPC caps in `commands/rename.rs` and
+`LIST_TIMEOUT` in `indexing/network_scanner/mod.rs`, and the 2 s / 5 s / 30 s IPC caps in `commands/rename.rs` and
 `commands/file_system/volume_copy.rs`.
 
 **The two deliberate exceptions**, both annotated `// allowed-dropping-timeout:`: the device-lock wait

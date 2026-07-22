@@ -73,7 +73,7 @@ the tree today:
   handler logs per episode".
 - **Only when the result changes.** Index enrichment runs on every listing refresh (about twice a second per pane) and
   logs only when the outcome differs from the last pass for that listing, so an idle pane is silent. See
-  `indexing/enrichment.rs`'s `EnrichResultMemo`.
+  `indexing/read/enrichment.rs`'s `EnrichResultMemo`.
 
 Normalizing the key (stripping digits, say) is deliberately NOT done: counts and attempt numbers are usually the whole
 diagnostic, merging `moved 3 files` with `moved 4 files` would silently lose real events, and `[+N identical

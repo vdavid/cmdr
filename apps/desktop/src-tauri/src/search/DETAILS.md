@@ -59,7 +59,7 @@ orchestration; `engine.rs` stays per-index and pure.
 ### Routing
 
 - **Scoped** (`include_paths` non-empty): each path routes to its owning volume via
-  [`volume_id_for_local_path`](../indexing/routing.rs) (SMB mount → `smb_volume_id`, `mtp://` → `{device}:{storage}`,
+  [`volume_id_for_local_path`](../indexing/paths/routing.rs) (SMB mount → `smb_volume_id`, `mtp://` → `{device}:{storage}`,
   registered external mount → its id, everything else → `root`). Paths group by volume; each target is `from_scope`.
 - **Unscoped**: `volumes::all_indexed_volume_ids` enumerates every `index-*.db` in the data dir (root first). Whole-volume each.
 
