@@ -29,13 +29,6 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       filesystem-index dot (gray/yellow/green). Core new backend: a per-directory `accounted` (done+failed) aggregate
       mirroring `coverage.rs`'s eligible-count map, with subtree rollups, plus `media_index_file_status` and
       `media_index_folder_coverage` commands. Removes `FolderIndexStatus`/`folder-index-state`.
-- [ ] 2026-07-22 `dialog-gallery-plan.md` - Add a dev-only "Soft dialogs" section to the Debug window that opens each of
-      the app's registered soft dialogs on demand, in its meaningful states, filled with fixture data, so they can be
-      design-reviewed without evoking them for real (a live transfer, a wired-up AI agent, a genuinely stale drive
-      index). Dialogs render in the MAIN window over the real two-pane backdrop, driven by one of three mechanisms
-      picked by how each dialog is already built (fixture props, seeding its `$state` store, or emitting the real
-      backend event), so no dialog gains a preview-only code path. `search` and `transfer-progress` are listed with
-      honest reasons rather than built.
 - [ ] 2026-07-22 `indexing-reorg-plan.md` - Reorganize the `indexing/` subsystem's ~45-file flat tail into 13
       stage-based area dirs (lifecycle, resources, scanner, network_scanner, watch, reconcile, writer, aggregator, read,
       paths, events, transports, tests), each with colocated `CLAUDE.md` + `DETAILS.md` and a thin top-level hub. Pure
@@ -158,6 +151,13 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 Done and merged; each entry stays until its durable intent is confirmed captured in the colocated C+D.md, then gets
 wiped.
 
+- [x] 2026-07-22 `dialog-gallery-plan.md` - Add a dev-only "Soft dialogs" section to the Debug window that opens each of
+      the app's registered soft dialogs on demand, in its meaningful states, filled with fixture data, so they can be
+      design-reviewed without evoking them for real (a live transfer, a wired-up AI agent, a genuinely stale drive
+      index). Dialogs render in the MAIN window over the real two-pane backdrop, driven by one of three mechanisms
+      picked by how each dialog is already built (fixture props, seeding its `$state` store, or emitting the real
+      backend event), so no dialog gains a preview-only code path. `search` and `transfer-progress` are listed with
+      honest reasons rather than built. SHIPPED
 - [x] 2026-07-15 `media-index-polish-plan.md` - Finish + polish image search: fix the dead-start bugs
       (toggle/startup/threshold now kick passes; defer-until-scored replaces the enrich-all race), the importance "never
       scored" detection (recreate-bound full-recompute trigger + weights-probe fallback), preview re-polling, the
