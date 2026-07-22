@@ -11,6 +11,10 @@ vi.mock('$lib/ui/toast', () => ({
   dismissToast: vi.fn(),
 }))
 
+vi.mock('$lib/tauri-commands', () => ({
+  onVolumeSpaceChanged: vi.fn(() => Promise.resolve(() => {})),
+}))
+
 vi.mock('$lib/settings/format-utils', () => ({
   formatFileSizeWithFormat: (bytes: number) => `${String(bytes)} B`,
 }))
@@ -29,8 +33,9 @@ describe('LowDiskSpaceToastContent a11y', () => {
       target,
       props: {
         toastId: 'low-disk-space:root',
+        volumeId: 'root',
         availableBytes: 42_000_000_000,
-        freePercent: 4.2,
+        totalBytes: 1_000_000_000_000,
       },
     })
     await tick()

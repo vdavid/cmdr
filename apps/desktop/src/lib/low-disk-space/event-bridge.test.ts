@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 /**
- * The bridge mounts one `low-disk-space` listener and dispatches to a
- * persistent warn toast OR the macOS native notification based on the
- * settings enum. These tests pump the listener callback the bridge registers
- * and assert the resulting calls.
+ * The bridge mounts one `low-disk-space` listener and dispatches per the
+ * settings enum. On the low edge (`isLow: true`) it shows a persistent warn
+ * toast OR sends the macOS native notification; on the recovery edge
+ * (`isLow: false`) it dismisses the toast (macOS no-ops). These tests pump the
+ * listener callback the bridge registers and assert the resulting calls.
  */
 
 type LowDiskSpaceListener = (payload: LowDiskSpacePayload) => void
@@ -14,6 +15,7 @@ interface LowDiskSpacePayload {
   availableBytes: number
   freePercent: number
   thresholdPercent: number
+  isLow: boolean
 }
 
 const {
@@ -22,12 +24,14 @@ const {
   ensureMacosNotificationPermissionMock,
   sendNotificationMock,
   addToastMock,
+  dismissToastMock,
 } = vi.hoisted(() => ({
   onLowDiskSpaceMock: vi.fn(),
   getLowDiskSpaceNotificationsModeMock: vi.fn<() => 'in-app' | 'macos' | 'off'>(),
   ensureMacosNotificationPermissionMock: vi.fn<() => Promise<boolean>>(),
   sendNotificationMock: vi.fn(),
   addToastMock: vi.fn<(content: unknown, options?: Record<string, unknown>) => string>(() => 'toast-id'),
+  dismissToastMock: vi.fn<(id: string) => void>(),
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
@@ -48,6 +52,7 @@ vi.mock('./notifications-mode', () => ({
 
 vi.mock('$lib/ui/toast', () => ({
   addToast: addToastMock,
+  dismissToast: dismissToastMock,
 }))
 
 vi.mock('$lib/settings/format-utils', () => ({
@@ -73,6 +78,7 @@ function payload(overrides: Partial<LowDiskSpacePayload> = {}): LowDiskSpacePayl
     availableBytes: 42_000_000_000,
     freePercent: 4.2,
     thresholdPercent: 5,
+    isLow: true,
     ...overrides,
   }
 }
@@ -99,6 +105,7 @@ describe('startLowDiskSpaceEventBridge', () => {
     ensureMacosNotificationPermissionMock.mockReset().mockResolvedValue(true)
     sendNotificationMock.mockReset()
     addToastMock.mockReset().mockReturnValue('toast-id')
+    dismissToastMock.mockReset()
   })
 
   it('subscribes to the low-disk-space event', async () => {
@@ -106,7 +113,7 @@ describe('startLowDiskSpaceEventBridge', () => {
     expect(onLowDiskSpaceMock).toHaveBeenCalledWith(expect.any(Function))
   })
 
-  it("mode 'in-app' dispatches a persistent warn toast with a per-volume dedup id", async () => {
+  it("mode 'in-app' dispatches a persistent warn toast with a per-volume dedup id and the boot volume's live-follow props", async () => {
     const listener = await startBridgeAndCaptureListener()
     listener(payload())
     await flushAsync()
@@ -116,8 +123,22 @@ describe('startLowDiskSpaceEventBridge', () => {
     expect(options?.level).toBe('warn')
     expect(options?.dismissal).toBe('persistent')
     expect(options?.id).toBe('low-disk-space:root')
-    expect(options?.props).toMatchObject({ availableBytes: 42_000_000_000, freePercent: 4.2 })
+    expect(options?.props).toMatchObject({
+      volumeId: 'root',
+      availableBytes: 42_000_000_000,
+      totalBytes: 1_000_000_000_000,
+    })
+    expect(dismissToastMock).not.toHaveBeenCalled()
     expect(sendNotificationMock).not.toHaveBeenCalled()
+  })
+
+  it("mode 'in-app' dismisses the toast on the recovery edge (isLow false)", async () => {
+    const listener = await startBridgeAndCaptureListener()
+    listener(payload({ isLow: false, freePercent: 6.5 }))
+    await flushAsync()
+
+    expect(dismissToastMock).toHaveBeenCalledWith('low-disk-space:root')
+    expect(addToastMock).not.toHaveBeenCalled()
   })
 
   it("mode 'macos' sends a native notification only", async () => {
@@ -130,6 +151,17 @@ describe('startLowDiskSpaceEventBridge', () => {
     const [notification] = sendNotificationMock.mock.calls[0] as [{ title: string; body: string }]
     expect(notification.title).toBe('Low disk space')
     expect(notification.body).toContain('4.2%')
+    expect(addToastMock).not.toHaveBeenCalled()
+  })
+
+  it("mode 'macos' no-ops on the recovery edge (a delivered notification can't be recalled)", async () => {
+    getLowDiskSpaceNotificationsModeMock.mockReturnValue('macos')
+    const listener = await startBridgeAndCaptureListener()
+    listener(payload({ isLow: false, freePercent: 6.5 }))
+    await flushAsync()
+
+    expect(sendNotificationMock).not.toHaveBeenCalled()
+    expect(dismissToastMock).not.toHaveBeenCalled()
     expect(addToastMock).not.toHaveBeenCalled()
   })
 

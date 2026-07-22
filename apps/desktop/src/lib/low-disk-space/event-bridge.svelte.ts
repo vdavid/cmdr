@@ -2,23 +2,29 @@
  * Low-disk-space event bridge.
  *
  * Subscribes ONCE to the backend `low-disk-space` Tauri event (emitted by
- * `space_poller.rs` when the boot volume's free space crosses below the
- * configured percent threshold) and dispatches it to the in-app toast OR the
- * macOS native notification per the current
+ * `space_poller.rs` on each hysteresis edge) and dispatches per the current
  * `behavior.fileSystemWatching.lowDiskSpaceNotifications` setting
  * (`'in-app' | 'macos' | 'off'`).
  *
+ * The event carries both edges via `is_low`:
+ * - `true` (free space fell below the threshold): show the in-app toast, or
+ *   send the macOS native notification.
+ * - `false` (free space recovered above the re-arm margin): dismiss the in-app
+ *   toast. A delivered macOS notification can't be recalled, so that mode
+ *   no-ops on recovery.
+ *
+ * While the in-app toast is up it live-follows the boot volume's space on its
+ * own (via `volume-space-changed`); this bridge only owns the show/dismiss
+ * edges. The toast uses a per-volume dedup id, so a re-fire after recovery
+ * replaces any lingering toast instead of stacking.
+ *
  * Mounted from `routes/(main)/+page.svelte` next to the downloads bridge. The
  * unsubscribe is returned so the caller can clean up on destroy.
- *
- * The in-app toast is persistent (no auto-dismiss — low disk space stays true
- * until the user acts) with a per-volume dedup id, so a re-fire after the
- * hysteresis re-arms replaces the visible toast instead of stacking.
  */
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
 import { sendNotification } from '@tauri-apps/plugin-notification'
-import { addToast } from '$lib/ui/toast'
+import { addToast, dismissToast } from '$lib/ui/toast'
 import { getAppLogger } from '$lib/logging/logger'
 import { ensureMacosNotificationPermission } from '$lib/notifications/macos-notification-permission'
 import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
@@ -50,17 +56,27 @@ async function handleLowDiskSpace(payload: LowDiskSpacePayload): Promise<void> {
   const mode = getLowDiskSpaceNotificationsMode()
   if (mode === 'off') return
 
-  log.debug('Dispatching low-disk-space ({mode}): {freePercent}% free on {volumeId}', {
+  log.debug('Dispatching low-disk-space ({mode}, low={isLow}): {freePercent}% free on {volumeId}', {
     mode,
+    isLow: payload.isLow,
     freePercent: payload.freePercent,
     volumeId: payload.volumeId,
   })
 
   if (mode === 'in-app') {
-    dispatchToast(payload)
-  } else {
-    await dispatchMacosNotification(payload)
+    if (payload.isLow) dispatchToast(payload)
+    else dismissToast(toastId(payload.volumeId))
+    return
   }
+
+  // macOS native: notify on the low edge only. A delivered notification can't
+  // be recalled, so recovery has nothing to do here.
+  if (payload.isLow) await dispatchMacosNotification(payload)
+}
+
+/** Per-volume dedup id, shared by show and dismiss. */
+function toastId(volumeId: string): string {
+  return `low-disk-space:${volumeId}`
 }
 
 function dispatchToast(payload: LowDiskSpacePayload): void {
@@ -68,11 +84,12 @@ function dispatchToast(payload: LowDiskSpacePayload): void {
     level: 'warn',
     dismissal: 'persistent',
     // Per-volume dedup: a re-fire replaces the visible toast in place.
-    id: `low-disk-space:${payload.volumeId}`,
+    id: toastId(payload.volumeId),
     closeTooltip: tString('lowDiskSpace.toast.closeTooltip'),
     props: {
+      volumeId: payload.volumeId,
       availableBytes: payload.availableBytes,
-      freePercent: payload.freePercent,
+      totalBytes: payload.totalBytes,
     },
   })
 }

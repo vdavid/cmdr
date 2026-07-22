@@ -5175,6 +5175,12 @@ export type LogLevel = 'debug' | 'info' | 'warn' | 'warning' | 'error'
  *  Typed `low-disk-space` Tauri event. The struct keeps its `Payload` suffix
  *  (used internally), so the wire name is pinned with `event_name` rather than
  *  letting the kebab-case of the ident drift to `low-disk-space-payload`.
+ *
+ *  One event carries both hysteresis transitions, distinguished by `is_low`:
+ *  `true` when free space crosses below the threshold (show the warning),
+ *  `false` when it recovers above threshold + [`LOW_SPACE_REARM_MARGIN_PERCENT`]
+ *  (dismiss it). The in-app toast acts on both; the macOS native notification
+ *  only on `is_low: true` (a delivered notification can't be recalled).
  */
 export type LowDiskSpacePayload = {
   volumeId: string
@@ -5182,6 +5188,7 @@ export type LowDiskSpacePayload = {
   availableBytes: number
   freePercent: number
   thresholdPercent: number
+  isLow: boolean
 }
 
 /**

@@ -9,10 +9,14 @@
 //!
 //! Also owns the low-disk-space warning: a permanent, backend-owned watcher on
 //! the boot volume (so the check works even when neither pane shows it) feeds
-//! a hysteresis detector that emits a `low-disk-space` event when free space
-//! crosses below the user-configured percent threshold. The poll loop already
-//! deduplicates by volume id, so a pane watching the boot volume shares the
-//! same single `statfs` per tick with the permanent watcher.
+//! a hysteresis detector that emits a `low-disk-space` event on each edge:
+//! `is_low: true` when free space crosses below the user-configured percent
+//! threshold, `is_low: false` when it recovers above the re-arm margin (so the
+//! frontend auto-dismisses the toast). The live free-space numbers shown while
+//! the toast is up ride the separate `volume-space-changed` stream, which the
+//! boot-volume watcher already emits every tick. The poll loop deduplicates by
+//! volume id, so a pane watching the boot volume shares the same single
+//! `statfs` per tick with the permanent watcher.
 
 use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
@@ -100,6 +104,12 @@ pub struct VolumeSpaceChanged {
 /// Typed `low-disk-space` Tauri event. The struct keeps its `Payload` suffix
 /// (used internally), so the wire name is pinned with `event_name` rather than
 /// letting the kebab-case of the ident drift to `low-disk-space-payload`.
+///
+/// One event carries both hysteresis transitions, distinguished by `is_low`:
+/// `true` when free space crosses below the threshold (show the warning),
+/// `false` when it recovers above threshold + [`LOW_SPACE_REARM_MARGIN_PERCENT`]
+/// (dismiss it). The in-app toast acts on both; the macOS native notification
+/// only on `is_low: true` (a delivered notification can't be recalled).
 #[derive(Clone, Serialize, Deserialize, specta::Type, Event)]
 #[tauri_specta(event_name = "low-disk-space")]
 #[serde(rename_all = "camelCase")]
@@ -109,6 +119,7 @@ pub struct LowDiskSpacePayload {
     pub available_bytes: u64,
     pub free_percent: f64,
     pub threshold_percent: u64,
+    pub is_low: bool,
 }
 
 /// Stores the app handle. Call once during setup.
@@ -277,8 +288,21 @@ async fn poll_loop() {
     }
 }
 
+/// Which edge, if any, a hysteresis step crossed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum LowSpaceTransition {
+    /// No edge crossed; emit nothing.
+    None,
+    /// Free space fell below the threshold: show the warning.
+    BecameLow,
+    /// Free space recovered above threshold + margin: dismiss the warning.
+    Recovered,
+}
+
 /// Runs the hysteresis detector on a fresh boot-volume space fetch and emits
-/// `low-disk-space` when the free percent crosses below the threshold.
+/// `low-disk-space` on each edge: `is_low: true` when free percent crosses
+/// below the threshold, `is_low: false` when it recovers above the re-arm
+/// margin (so the frontend can auto-dismiss the toast).
 fn check_low_space(volume_id: &str, space: &CachedSpace) {
     if !LOW_SPACE_ENABLED.load(Ordering::Relaxed) {
         return;
@@ -286,10 +310,12 @@ fn check_low_space(volume_id: &str, space: &CachedSpace) {
     let threshold = LOW_SPACE_THRESHOLD_PERCENT.load(Ordering::Relaxed);
     let free = free_percent(space.total_bytes, space.available_bytes);
     let armed = LOW_SPACE_ARMED.load(Ordering::Relaxed);
-    let (new_armed, fire) = low_space_transition(armed, free, threshold as f64);
+    let (new_armed, transition) = low_space_transition(armed, free, threshold as f64);
     LOW_SPACE_ARMED.store(new_armed, Ordering::Relaxed);
-    if fire {
-        emit_low_disk_space(volume_id, space, free, threshold);
+    match transition {
+        LowSpaceTransition::BecameLow => emit_low_disk_space(volume_id, space, free, threshold, true),
+        LowSpaceTransition::Recovered => emit_low_disk_space(volume_id, space, free, threshold, false),
+        LowSpaceTransition::None => {}
     }
 }
 
@@ -302,22 +328,23 @@ fn free_percent(total_bytes: u64, available_bytes: u64) -> f64 {
     available_bytes as f64 / total_bytes as f64 * 100.0
 }
 
-/// The pure hysteresis step: `(armed, free, threshold)` → `(new_armed, fire)`.
+/// The pure hysteresis step: `(armed, free, threshold)` → `(new_armed, transition)`.
 ///
-/// Fires exactly once per crossing below the threshold; re-arms only after
-/// free space recovers above threshold + [`LOW_SPACE_REARM_MARGIN_PERCENT`],
-/// so oscillation around the boundary can't re-fire.
-fn low_space_transition(armed: bool, free_percent: f64, threshold_percent: f64) -> (bool, bool) {
+/// Emits [`LowSpaceTransition::BecameLow`] exactly once per crossing below the
+/// threshold, then [`LowSpaceTransition::Recovered`] once free space climbs back
+/// above threshold + [`LOW_SPACE_REARM_MARGIN_PERCENT`] (which also re-arms it).
+/// The margin means oscillation around the boundary can't re-fire either edge.
+fn low_space_transition(armed: bool, free_percent: f64, threshold_percent: f64) -> (bool, LowSpaceTransition) {
     if armed && free_percent < threshold_percent {
-        return (false, true);
+        return (false, LowSpaceTransition::BecameLow);
     }
     if !armed && free_percent >= threshold_percent + LOW_SPACE_REARM_MARGIN_PERCENT {
-        return (true, false);
+        return (true, LowSpaceTransition::Recovered);
     }
-    (armed, false)
+    (armed, LowSpaceTransition::None)
 }
 
-fn emit_low_disk_space(volume_id: &str, space: &CachedSpace, free_percent: f64, threshold_percent: u64) {
+fn emit_low_disk_space(volume_id: &str, space: &CachedSpace, free_percent: f64, threshold_percent: u64, is_low: bool) {
     let Some(app) = APP_HANDLE.get() else { return };
     let payload = LowDiskSpacePayload {
         volume_id: volume_id.to_string(),
@@ -325,10 +352,16 @@ fn emit_low_disk_space(volume_id: &str, space: &CachedSpace, free_percent: f64, 
         available_bytes: space.available_bytes,
         free_percent,
         threshold_percent,
+        is_low,
     };
     info!(
-        "low-disk-space: {} at {:.1}% free ({} of {} bytes), threshold {}%",
-        volume_id, free_percent, space.available_bytes, space.total_bytes, threshold_percent
+        "low-disk-space ({}): {} at {:.1}% free ({} of {} bytes), threshold {}%",
+        if is_low { "low" } else { "recovered" },
+        volume_id,
+        free_percent,
+        space.available_bytes,
+        space.total_bytes,
+        threshold_percent
     );
     if let Err(e) = payload.emit(app) {
         warn!("Failed to emit low-disk-space: {}", e);
@@ -409,57 +442,71 @@ mod tests {
 
     #[test]
     fn fires_once_when_crossing_below_threshold() {
-        let (armed, fire) = low_space_transition(true, 4.9, 5.0);
+        let (armed, transition) = low_space_transition(true, 4.9, 5.0);
         assert!(!armed);
-        assert!(fire);
+        assert_eq!(transition, LowSpaceTransition::BecameLow);
     }
 
     #[test]
     fn does_not_fire_above_threshold() {
-        let (armed, fire) = low_space_transition(true, 5.0, 5.0);
+        let (armed, transition) = low_space_transition(true, 5.0, 5.0);
         assert!(armed);
-        assert!(!fire);
+        assert_eq!(transition, LowSpaceTransition::None);
     }
 
     #[test]
     fn does_not_refire_while_disarmed() {
-        let (armed, fire) = low_space_transition(false, 3.0, 5.0);
+        let (armed, transition) = low_space_transition(false, 3.0, 5.0);
         assert!(!armed);
-        assert!(!fire);
+        assert_eq!(transition, LowSpaceTransition::None);
     }
 
     #[test]
     fn stays_disarmed_inside_rearm_margin() {
         // Recovered above the threshold but not past the margin: no re-arm,
-        // so a dip back under 5% can't fire again.
-        let (armed, fire) = low_space_transition(false, 5.5, 5.0);
+        // so neither a dip back under 5% nor a recovery signal fires yet.
+        let (armed, transition) = low_space_transition(false, 5.5, 5.0);
         assert!(!armed);
-        assert!(!fire);
+        assert_eq!(transition, LowSpaceTransition::None);
     }
 
     #[test]
-    fn rearms_past_the_margin_then_fires_on_next_crossing() {
-        let (armed, fire) = low_space_transition(false, 6.0, 5.0);
+    fn recovers_past_the_margin() {
+        // Climbing above threshold + margin re-arms AND emits the recovery
+        // edge, so the frontend can auto-dismiss the toast.
+        let (armed, transition) = low_space_transition(false, 6.0, 5.0);
         assert!(armed);
-        assert!(!fire);
-        let (armed, fire) = low_space_transition(armed, 4.0, 5.0);
+        assert_eq!(transition, LowSpaceTransition::Recovered);
+    }
+
+    #[test]
+    fn recovers_then_fires_on_next_crossing() {
+        let (armed, transition) = low_space_transition(false, 6.0, 5.0);
+        assert!(armed);
+        assert_eq!(transition, LowSpaceTransition::Recovered);
+        let (armed, transition) = low_space_transition(armed, 4.0, 5.0);
         assert!(!armed);
-        assert!(fire);
+        assert_eq!(transition, LowSpaceTransition::BecameLow);
     }
 
     #[test]
     fn oscillation_around_threshold_fires_once() {
-        // 5.2 → 4.8 → 5.2 → 4.8: one warning, not two.
+        // 5.2 → 4.8 → 5.2 → 4.8: one BecameLow, no spurious recovery
+        // (never climbs past the 6% re-arm margin).
         let mut armed = true;
-        let mut fires = 0;
+        let mut lows = 0;
+        let mut recoveries = 0;
         for free in [5.2, 4.8, 5.2, 4.8] {
-            let (next, fire) = low_space_transition(armed, free, 5.0);
+            let (next, transition) = low_space_transition(armed, free, 5.0);
             armed = next;
-            if fire {
-                fires += 1;
+            match transition {
+                LowSpaceTransition::BecameLow => lows += 1,
+                LowSpaceTransition::Recovered => recoveries += 1,
+                LowSpaceTransition::None => {}
             }
         }
-        assert_eq!(fires, 1);
+        assert_eq!(lows, 1);
+        assert_eq!(recoveries, 0);
     }
 
     #[test]

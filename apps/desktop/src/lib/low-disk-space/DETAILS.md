@@ -3,17 +3,30 @@
 Depth for the frontend low-disk-space warning. `CLAUDE.md` holds the must-knows; the dispatch detail and Settings wiring
 live here.
 
+## The two hysteresis edges
+
+The backend `low-disk-space` event fires on both edges of the detector, distinguished by `isLow`:
+
+- `isLow: true`: free space crossed below the threshold. Show the warning.
+- `isLow: false`: free space recovered above threshold + the backend's 1% re-arm margin. Dismiss the warning.
+
+The backend owns the boundary (the margin is business logic), so the frontend never re-derives "recovered" from a raw
+percent compare; it just acts on the edge. This keeps auto-dismiss aligned exactly with the hysteresis re-arm: the same
+condition that re-arms the detector emits the dismiss.
+
 ## Settings-gated dispatch
 
 `startLowDiskSpaceEventBridge` (mounted from `routes/(main)/+page.svelte` next to the downloads bridge) reads
 `getLowDiskSpaceNotificationsMode()` per event and fans out to:
 
-- `'in-app'`: `addToast(LowDiskSpaceToastContent, ...)`, level `warn`, `dismissal: 'persistent'`, dedup id
-  `low-disk-space:<volumeId>`.
-- `'macos'`: `sendNotification(...)` via the shared permission flow in
+- `'in-app'`: `isLow: true` → `addToast(LowDiskSpaceToastContent, ...)`, level `warn`, `dismissal: 'persistent'`, dedup
+  id `low-disk-space:<volumeId>`. `isLow: false` → `dismissToast(low-disk-space:<volumeId>)` (a no-op if the user
+  already closed it).
+- `'macos'`: `isLow: true` → `sendNotification(...)` via the shared permission flow in
   `$lib/notifications/macos-notification-permission.ts` (one INFO toast on denial, no retries, setting stays put). The
   native notification is text-only: the plugin can't carry custom action buttons on desktop, so the disable affordance
-  lives only on the in-app toast and in Settings.
+  lives only on the in-app toast and in Settings. `isLow: false` → no-op: a delivered notification can't be recalled or
+  live-updated, which is why live-follow and auto-dismiss are in-app-only.
 - `'off'`: no-op.
 
 ## The two settings
@@ -28,11 +41,18 @@ Both live under **Behavior > File system watching > Low disk space** (`FileSyste
 `pushLowDiskSpaceConfigToBackend()` calls `setLowDiskSpaceConfig(mode !== 'off', threshold)`. On the Rust side the
 command updates the poller's atomics, re-arms the hysteresis, and registers or removes the boot-volume watcher.
 
-## Toast shape
+## Toast shape and live-follow
 
-Props-only (`toastId`, `availableBytes`, `freePercent`), snapshotted at event arrival. "Disable these notifications"
-flips the mode to `'off'` (the applier pushes the disable to the backend), dismisses the toast, and deep-links to the
-Settings sub-group so the user sees where to re-enable it.
+Props: `toastId`, `volumeId`, `availableBytes`, `totalBytes`. The bytes seed the readout at show time; the component
+then subscribes to `onVolumeSpaceChanged` (filtered to its `volumeId`) and updates the numbers live as the disk fills or
+drains. That stream already flows for the boot volume: the poller's permanent `low-space:boot` watcher keeps
+`volume-space-changed` emitting every tick while the warning is on, independent of what the panes show. The percent is
+computed on the frontend from `available / total` (mirroring the backend's `free_percent`, including the
+`total == 0 → 100` guard), so no pre-baked percent crosses the IPC boundary. The listener is unsubscribed on destroy,
+with a `disposed` guard for the case where the toast is dismissed before the async `listen` resolves.
+
+"Disable these notifications" flips the mode to `'off'` (the applier pushes the disable to the backend), dismisses the
+toast, and deep-links to the Settings sub-group so the user sees where to re-enable it.
 
 ## i18n
 
