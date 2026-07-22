@@ -64,6 +64,7 @@ nickname that would shadow a group/app keyword (`reservedSelectorNames` in `main
 - **`-q`, `--quiet`**: Collapse passing checks into a one-line count, for low-token agent runs (details below)
 - **`--graph`**: Render the check dependency graph (weights + lanes + median wall-time) and exit
 - **`--graph-format`**: Graph output: `tree` (default, colored terminal), `mermaid`, `dot`
+- **`--docs-graph`**: Render the doc-discoverability tree (rooted at the repo-root `CLAUDE.md`) with per-doc usage, and exit
 - **`-h`, `--help`**: Show help message
 
 `--graph` honors the same selectors (positional or flag form), so `pnpm check rust --graph` graphs only the Rust checks.
@@ -73,6 +74,41 @@ dashboard — pairing the CPU-weight (how heavy) with the typical duration (how 
 target. Missing log (CI / `--no-log` / fresh machine) just omits the times. `mermaid` output pastes into a Markdown
 ```mermaid block or https://mermaid.live; `dot` pipes to Graphviz
 (`pnpm check --graph --graph-format dot | dot -Tpng -o checks.png`).
+
+### `--docs-graph` and its usage enrichment
+
+`--docs-graph` (in `docs_graph_render.go`, over the graph from `checks/docs_graph.go`) prints the doc-discoverability
+tree rooted at the repo-root `CLAUDE.md`, then annotates every node with how it's actually used, e.g.
+`scripts/check/CLAUDE.md Read 63x (8%), written 1x`. That enrichment lives in `docs_graph_usage.go` and mines the Claude
+Code transcript store at `~/.claude/projects/`. The model:
+
+- **Session = one transcript JSONL file** (top-level or subagent, so subagents and team members count separately; a
+  post-compaction session with a new id counts separately too). The store is scanned across every `*cmdr*` project slug
+  (main clone, all worktree slugs, and the `/private/tmp/ab/cmdr` target clone), recursing into per-session subdirs for
+  subagent transcripts. Files are filtered by mtime to a rough ~30-day window (`usageWindow`); the boundary is coarse by
+  design, so a long session straddling it is kept or dropped whole.
+- **Touch = a `Read`/`Edit`/`Write`/`MultiEdit`/`NotebookEdit` naming a file.** Each file path is folded to a canonical
+  repo-relative path by splitting on `/cmdr/` and stripping any `.claude/worktrees/<name>/` prefix, so a doc edited in a
+  worktree or the target clone lands on the same node. Paths outside the repo, and files in since-moved locations, are
+  dropped (accepted data loss).
+- **Read count = sessions where the doc was loaded.** A touch of any file loads the `CLAUDE.md` of that file's directory
+  and every ancestor directory (Claude Code's autoload), plus those files' transitive `@`-imports (root `CLAUDE.md`
+  `@import`s `AGENTS.md`; plain Markdown links do NOT autoload). `DETAILS.md` and `docs/` files therefore only score a
+  read when a session explicitly `Read`s them.
+- **Write count = sessions that `Edit`/`Write` the doc.** A doc created fresh via `Write` can show writes > reads.
+- **Denominator = sessions that touched ≥1 repo file** (the `%` base). Because `.` is an ancestor of every path, the
+  root `CLAUDE.md` and `AGENTS.md` load in every counted session, so both must read **exactly 100%** — a built-in
+  correctness check: if either drifts off 100%, the computation is wrong. When the transcript store is missing, the tree
+  renders without annotations.
+
+The annotation is dim for scannability except the read percentage, which is colored by absolute threshold
+(`readColorFor`): never read is red (dead weight), read by up to 20% of sessions is yellow (domain-specific docs), and
+above 20% is green (broadly loaded). Orange is deliberately unused (too close to red to distinguish on screen), and
+thresholds are absolute rather than percentile-based so the buckets carry a fixed meaning instead of shifting with the
+distribution.
+
+The scan costs a few seconds (streaming JSONL, prefiltering to lines containing `"tool_use"`); it always runs, since
+`--docs-graph` is an on-demand diagnostic, not part of `pnpm check`.
 
 **Quiet mode (`-q` / `--quiet`)** trims the output for agents, which only ever see the final captured stdout anyway (the
 live "Waiting for:" status line is already TTY-only). It drops the `📦 pnpm` and `🔍 Running N checks` headers and

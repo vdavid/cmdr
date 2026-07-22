@@ -27,9 +27,26 @@ func renderDocsGraph(rootDir string, useColor bool) error {
 		return code + s + colorReset
 	}
 
-	fmt.Printf("%s\n\n", c(colorDim, fmt.Sprintf(
+	usage := computeDocUsage(rootDir, g)
+	nodes := make([]string, 0, len(g.Reached))
+	for n := range g.Reached {
+		nodes = append(nodes, n)
+	}
+	readColor := readColorBuckets(usage, nodes)
+
+	fmt.Printf("%s\n", c(colorDim, fmt.Sprintf(
 		"Doc reachability from %s — %d reachable, %d orphaned. Edge = \"is referenced by\".",
 		g.Root, len(g.Reached), len(g.Orphans))))
+	if usage.available {
+		fmt.Printf("%s\n", c(colorDim, fmt.Sprintf(
+			"Usage over ~30 days across %d agent sessions (read = doc loaded or explicitly read; %% of sessions). Read %% color: ",
+			usage.totalSessions))+
+			c(colorRed, "0 unread")+c(colorDim, ", ")+c(colorYellow, "≤20%")+c(colorDim, ", ")+
+			c(colorGreen, ">20%")+c(colorDim, "."))
+	} else {
+		fmt.Printf("%s\n", c(colorDim, "Usage unavailable (no transcripts found in ~/.claude/projects)."))
+	}
+	fmt.Println()
 
 	var printSubtree func(docPath, prefix string, isLast, isRoot bool)
 	printSubtree = func(docPath, prefix string, isLast, isRoot bool) {
@@ -47,6 +64,9 @@ func renderDocsGraph(rootDir string, useColor bool) error {
 		label := docPath
 		if r := g.Reached[docPath]; r != nil && r.ViaDir {
 			label += " " + c(colorDim, "(dir reference)")
+		}
+		if usage.available {
+			label += " " + usageAnnotation(usage, docPath, readColor[docPath], c)
 		}
 		fmt.Printf("%s%s%s\n", prefix, connector, label)
 		children := g.Children(docPath)
