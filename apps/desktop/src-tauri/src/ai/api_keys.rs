@@ -129,6 +129,11 @@ mod tests {
     /// doesn't race across nextest's per-test processes (which would share the prod app-support
     /// dir otherwise: secrets `save` succeeds but the subsequent `get` sees another test's write).
     ///
+    /// The dir is cleared before use, not just created. It's named after the PID, and macOS
+    /// recycles PIDs, so a run can draw the same name as an earlier one and inherit its
+    /// `secrets.json` — a key the test never saved, which fails the "store starts empty"
+    /// assertions (`!has(...)`, `NotFound`) intermittently and only on a machine with leftovers.
+    ///
     /// Must be called BEFORE the first secret store access in the test: the secret store backend
     /// is a `LazyLock` and reads these env vars exactly once.
     ///
@@ -139,6 +144,7 @@ mod tests {
         static COUNTER: AtomicU64 = AtomicU64::new(0);
         let id = COUNTER.fetch_add(1, Ordering::Relaxed);
         let dir = std::env::temp_dir().join(format!("cmdr-api-keys-test-{}-{}", std::process::id(), id));
+        let _ = std::fs::remove_dir_all(&dir); // a recycled PID must not inherit an old run's store
         std::fs::create_dir_all(&dir).expect("create test data dir");
         // SAFETY: `std::env::set_var` is unsound only under concurrent env access. Each nextest test
         // runs in its own process, and `isolate_secrets` is called at the top of each test on that
