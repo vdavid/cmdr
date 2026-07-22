@@ -150,29 +150,6 @@
         }
     }
 
-    /** Opens the modal TransferErrorDialog in the main window, using the same FriendlyError shape the live error path produces. */
-    async function triggerTransferErrorDialog(state: ErrorState) {
-        try {
-            const { invoke } = await import('@tauri-apps/api/core')
-            const listingError = await invoke<ListingError>('preview_friendly_error', {
-                errorCode: state.code ?? null,
-                variant: state.code === undefined ? state.name : null,
-                providerPath: null,
-            })
-            const friendly = renderListingError(listingError)
-            const { emitTo } = await import('@tauri-apps/api/event')
-            await emitTo('main', 'debug-trigger-transfer-error', { friendly })
-        } catch (error) {
-            // eslint-disable-next-line no-console -- Debug window is dev-only
-            console.error('triggerTransferErrorDialog failed:', error)
-        }
-    }
-
-    const dialogPreviewSamples: ErrorState[] = [
-        { code: 60, name: 'ETIMEDOUT', category: 'transient', title: 'Connection timed out' },
-        { code: 13, name: 'EACCES', category: 'needs_action', title: 'No permission' },
-        { code: 5, name: 'EIO', category: 'serious', title: 'Disk read problem' },
-    ]
 </script>
 
 <section class="debug-section">
@@ -265,25 +242,6 @@
         <div class="error-preview-actions">
             <button class="index-button" onclick={() => void resetErrors('both')}>Reset both panes</button>
         </div>
-    </div>
-</section>
-
-<section class="debug-section">
-    <h2>Transfer error dialog (modal)</h2>
-    <div class="error-preview-panel">
-        <div class="error-group-header">
-            Opens the modal TransferErrorDialog. Categories drive the container tint (serious = error, transient =
-            warning, needs action = neutral).
-        </div>
-        {#each dialogPreviewSamples as state (state.name)}
-            <div class="error-row">
-                <span class="error-label">
-                    {state.category}
-                    <span class="error-title">{state.title} ({state.name})</span>
-                </span>
-                <button class="error-trigger-btn" onclick={() => void triggerTransferErrorDialog(state)}>Open</button>
-            </div>
-        {/each}
     </div>
 </section>
 

@@ -40,9 +40,15 @@ real props, seeds the real state store, or emits the real backend event.
 
 `DebugDialogsPanel.svelte` emits `emitTo('main', 'debug-open-gallery-dialog', { dialogId, stateId })`;
 `routes/(main)/listener-setup.ts` consumes it inside the existing `if (import.meta.env.DEV)` block (the same seam
-`debug-inject-error` and `debug-trigger-transfer-error` use, recorded at `routes/(main)/DETAILS.md`). The listener calls
-`openGalleryDialog(...)` and then focuses the main window **from the main window's own side**: the Debug window's
-capability set is minimal and permission failures are silent, so it must not try to push focus itself.
+`debug-inject-error` uses, recorded at `routes/(main)/DETAILS.md`). The listener calls `openGalleryDialog(...)` and then
+focuses the main window **from the main window's own side**: the Debug window's capability set is minimal and permission
+failures are silent, so it must not try to push focus itself.
+
+**Gotcha: that focus call needs `core:window:allow-set-focus` in `capabilities/default.json`.** The main window's
+capability didn't grant it, so `focusMainWindow()` rejected and the previewed dialog opened BEHIND the Debug window,
+which reads as a dialog bug rather than a permissions one (Tauri permission failures are silent, and the old handler
+swallowed the rejection). It now logs the failure. Same call serves the confirmation-dialog focus request, so that path
+was broken too.
 
 `routes/(main)/+layout.svelte` mounts `DialogGallery.svelte` inside `{#if import.meta.env.DEV}`, alongside the other
 always-mounted dialogs (`crash-report`, `error-report`, `feedback`, `mtp-permission`, `ptpcamerad`). Not `+page.svelte`:
@@ -76,20 +82,64 @@ name.
 
 ## Adding an entry
 
-1. Add a row to `DIALOG_GALLERY_ENTRIES` with the `dialogId`, a sentence-case label, the `hostWindow` the dialog really
+1. **Check how the dialog is actually built before deciding the mechanism.** Open the component and read its props. If
+   it takes everything it renders as props it's prop-driven; if it reads a module store and takes no content props,
+   rendering it directly renders it EMPTY and it belongs to the store-seeded path instead. The dialog decides, not the
+   name.
+2. Add a row to `DIALOG_GALLERY_ENTRIES` with the `dialogId`, a sentence-case label, the `hostWindow` the dialog really
    lives in, and its states. The `dialog-gallery-coverage` check fails until the row exists.
-2. If you can't open it honestly yet, ship the row as `status: 'not-triggerable'` with a `reason` that's true. The check
+3. If you can't open it honestly yet, ship the row as `status: 'not-triggerable'` with a `reason` that's true. The check
    asserts id presence only, never state completeness, so an honest gap never fights the check. ❌ Don't invent a
    technical blocker for a dialog that simply isn't wired yet: publishing a false reason inside an instrument whose
    thesis is "must not lie" is the worst available outcome.
-3. Add fixtures under `fixtures/`, keyed by the state ids, and a case in `DialogGallery.svelte`'s `plan` derivation.
-4. **Fixture data is part of the design review.** Include the cases that break layouts: a very long filename, a
+4. Add fixtures under `fixtures/`, keyed by the state ids, register the record in `fixtures/index.ts`, and add an entry
+   to `DialogGallery.svelte`'s `planResolvers` table plus a branch in its template. Two tests cover the seams:
+   `fixtures.test.ts` walks `fixtureRecords` against the registry (a state id with no fixture, or a fixture with no
+   row), and `DialogGallery.svelte.test.ts` mounts EVERY advertised state and asserts the dialog reported its own id to
+   the tracker. A dead button fails there rather than mid-review.
+5. **Fixture data is part of the design review.** Include the cases that break layouts: a very long filename, a
    deeply-nested path, a large file count with thousands separators, a multi-line error. A gallery of tidy 12-character
    names hides exactly the problems this exists to surface.
-5. State coverage is the point. A dialog that's a comparison (`rename-conflict`) reviews nothing in a single state.
+6. State coverage is the point. A dialog that's a comparison (`rename-conflict`) reviews nothing in a single state.
+   Where a typed union drives the whole rendering (`transfer-error`), key the fixtures by an exhaustive `Record` over
+   that union so a new variant is a compile error here.
+7. **Say what the row can't show.** A dialog that reads live app state, or that has states props can't reach, or whose
+   buttons do something real, needs an entry `note` saying so. Those notes are the instrument, not decoration.
 
 `apps/desktop/test/e2e-playwright/i18n-capture-surfaces.ts` already stages many of these dialogs for screenshot capture,
 so the staging work is often already done there.
+
+## What the fixtures deliberately don't do
+
+Every fixture callback closes the preview and nothing else. `onResolve`, `onCommit`, `onSaveAs`, `onRetry`, and friends
+have nothing real behind them: the gallery has no rename in flight, no pane selection, no failed transfer. A no-op is
+honest; wiring a plausible-looking fake action wouldn't be.
+
+Some dialogs still act for real, because the ACTION lives inside the component rather than in a callback the gallery
+supplies. Dismissing `commercial-reminder` or `expiration` records the real flag; `extension-change` writes the real
+"always allow" setting; `license` activates and resets keys for real; `connect-to-server` opens a real socket and fires
+real mDNS; `crash-report`'s Send skips the upload in dev but still writes settings and deletes a pending crash file.
+Each of those rows carries a `note` saying so. Don't silence one by adding a preview branch to the component.
+
+## Rows that can't be fixtures
+
+`about` and `license` take only callbacks and read the licensing store's cached status plus an on-mount IPC, so a
+reviewer sees whatever license the dev machine has; their other states (existing-license panel, server-invalid retry,
+confirm-reset, loading) have no prop to reach them. `connect-to-server` is the same shape plus the mDNS side effect.
+They're `ready` with one state and a `note` that says exactly this, which beats both a false `not-triggerable` reason
+and a silent row that implies a curated preview.
+
+Seeding the licensing store to unlock the other `license` / `about` states is the obvious next step, but it's
+store-seeding: it mutates real app state and owes a restore-on-close, so it belongs with the other store-seeded entries
+rather than bolted onto a prop-driven row.
+
+## Why `transfer-error` isn't the Debug error panel's job any more
+
+`DebugErrorPreviewPanel` used to open this dialog too, by fabricating an `io_error` and stuffing a listing error's title
+into its `message`. That showed the io-error copy no matter which error you picked, which is the kind of quiet
+distortion this gallery exists to remove; the panel's pane-error injection (`debug-inject-error`, which genuinely uses
+`preview_friendly_error`) is untouched. The gallery renders the real component from a real typed `WriteOperationError`,
+one state per variant, so the copy, category tint, icon, and Retry visibility are all the production ones.
 
 ## The coverage check
 

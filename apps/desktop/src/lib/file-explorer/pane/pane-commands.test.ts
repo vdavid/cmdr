@@ -417,17 +417,6 @@ describe('delegating commands', () => {
     expect(dialogsStub.confirmOpenDialog).toHaveBeenCalledWith('transfer-confirmation', 'overwrite')
   })
 
-  it('triggerTransferError opens the dialog with a synthetic typed error', () => {
-    const cmds = create(buildAccess())
-    const friendly = { title: 'Boom' } as Parameters<ReturnType<typeof create>['triggerTransferError']>[0]
-    cmds.triggerTransferError(friendly)
-    expect(dialogsStub.handleTransferError).toHaveBeenCalledWith({
-      type: 'io_error',
-      path: '/debug/preview',
-      message: 'Boom',
-    })
-  })
-
   it('toggleVolumeChooser closes the other pane and toggles the target', () => {
     const left = buildPaneRef()
     const right = buildPaneRef()

@@ -1135,11 +1135,6 @@
         paneCommands.resetError(pane)
     }
 
-    /** Debug only: open the TransferErrorDialog with a synthetic error carrying the given FriendlyError. */
-    export function triggerTransferError(friendly: FriendlyError) {
-        paneCommands.triggerTransferError(friendly)
-    }
-
     /** E2E only: drive the native drag-and-drop entry path programmatically.
      *  Real OS drag can't be synthesized in Playwright, so this calls the SAME
      *  `dragDrop.handleFileDrop` the live `onDragDropEvent` 'drop' branch calls —

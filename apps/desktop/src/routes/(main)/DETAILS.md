@@ -162,12 +162,16 @@ the dispatch path can't rely on the keydown bail.
   synthesized in Playwright, so the harness emits this event to exercise drop handling end to end (shared destination
   guard, source-volume resolution, transfer dialog). See `test/e2e-playwright/DETAILS.md` § "Transfer-dialog counters +
   programmatic drop entry".
-- **Debug-error listeners.** The `debug-inject-error` / `debug-reset-error` / `debug-trigger-transfer-error` listeners
-  (gated by `import.meta.env.DEV`) call `explorerRef.injectError` / `resetError` / `triggerTransferError` directly. They
-  inject test state from the debug window's error-pane preview. Routing them through the bus would pollute the
-  `CommandId` union with dev-only ids for zero gain. See `lib/file-explorer/DETAILS.md` § "Debug preview".
+- **Debug-error listeners.** The `debug-inject-error` / `debug-reset-error` listeners (gated by `import.meta.env.DEV`)
+  call `explorerRef.injectError` / `resetError` directly. They inject test state from the debug window's error-pane
+  preview. Routing them through the bus would pollute the `CommandId` union with dev-only ids for zero gain. See
+  `lib/file-explorer/DETAILS.md` § "Debug preview". The transfer-error dialog is NOT one of them: it's a gallery entry
+  (below), which renders the real component from a typed `WriteOperationError` instead of a synthetic `io_error`.
 - **Dialog gallery listener.** `debug-open-gallery-dialog` (same DEV block) opens a soft dialog over the main window
   with fixture data, for design review from Debug > Soft dialogs. The handler seeds the gallery store and focuses the
   main window from this side (the Debug window's capability set is minimal and permission failures are silent). The
   harness itself mounts in `+layout.svelte`; `+page.svelte` only reads `isGalleryDialogOpen()` so global shortcuts don't
   fire behind a previewed dialog. See `lib/dialog-gallery/DETAILS.md`.
+- **`focusMainWindow()` needs `core:window:allow-set-focus` in `capabilities/default.json`**, and logs (never swallows)
+  a rejection. Without the permission the call fails silently and the dialog opens behind the window that asked for it,
+  which looks like a dialog bug. Both callers depend on it: the gallery listener and `onFocusConfirmation`.

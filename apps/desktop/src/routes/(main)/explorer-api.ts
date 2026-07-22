@@ -172,7 +172,6 @@ export interface ExplorerAPI {
   refreshNetworkHosts: () => void
   injectError: (pane: 'left' | 'right', friendly: FriendlyError) => void
   resetError: (pane: 'left' | 'right' | 'both') => void
-  triggerTransferError: (friendly: FriendlyError) => void
   /** E2E only: drive the native drag-and-drop drop entry programmatically (real
    *  OS drag can't be synthesized in Playwright). Wired only behind the E2E gate
    *  in `+page.svelte`; never reachable in production.

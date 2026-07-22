@@ -32,6 +32,7 @@ import {
   onCloseAbout,
   onCloseConfirmation,
 } from '$lib/tauri-commands'
+import { getAppLogger } from '$lib/logging/logger'
 import { markDispatchSource } from './dispatch-dedup'
 import { setFolderExcluded } from '$lib/media-index/excluded-folders'
 import { setFolderChosen } from '$lib/media-index/always-index-folders'
@@ -47,6 +48,8 @@ import { openGalleryDialog } from '$lib/dialog-gallery/gallery-state.svelte'
 import { getAppMode } from '$lib/app-mode'
 import type { ExplorerAPI } from './explorer-api'
 import type { FriendlyError, TransferOperationType } from '$lib/file-explorer/types'
+
+const log = getAppLogger('mainListeners')
 
 /**
  * The seam between the main component (owns `$state`) and the extracted listener
@@ -186,13 +189,19 @@ async function focusFileViewer(path?: string) {
   }
 }
 
-/** Focus the main window. */
+/**
+ * Brings the main window forward, for events fired from another window (the
+ * confirmation-dialog focus request, the dialog gallery). Needs
+ * `core:window:allow-set-focus` in `capabilities/default.json`: without it the
+ * call rejects and the dialog opens BEHIND whatever window asked for it, which
+ * reads as a dialog bug. Logged rather than swallowed for exactly that reason.
+ */
 async function focusMainWindow() {
   try {
     const { getCurrentWindow } = await import('@tauri-apps/api/window')
     await getCurrentWindow().setFocus()
-  } catch {
-    // Not in Tauri environment
+  } catch (error) {
+    log.warn('Focusing the main window failed: {error}', { error: String(error) })
   }
 }
 
@@ -413,10 +422,6 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
     await listenTauri('debug-reset-error', (event) => {
       const { pane } = event.payload as { pane: 'left' | 'right' | 'both' }
       getExplorer()?.resetError(pane)
-    })
-    await listenTauri('debug-trigger-transfer-error', (event) => {
-      const { friendly } = event.payload as { friendly: FriendlyError }
-      getExplorer()?.triggerTransferError(friendly)
     })
     // Debug > Soft dialogs: open a gallery dialog over the main window. The main
     // window focuses ITSELF here rather than the Debug window pushing it, because
