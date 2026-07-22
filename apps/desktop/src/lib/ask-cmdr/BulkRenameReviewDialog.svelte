@@ -2,6 +2,7 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
+    import Checkbox from '$lib/ui/Checkbox.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { onDirectoryDiff } from '$lib/tauri-commands'
     import { onMount } from 'svelte'
@@ -22,10 +23,6 @@
     const blockedCount = $derived(review?.rows.filter((row) => row.blockedReason).length ?? 0)
     const renameLabel = $derived(tString('askCmdr.renameReview.rename', { count: allowedCount }))
 
-    function toggleRow(rowId: string, checked: boolean): void {
-        setRenameRowAllowed(rowId, checked)
-    }
-
     onMount(() => {
         const listener = onDirectoryDiff((diff) => {
             void renameReviewListingChanged(diff.changes)
@@ -40,6 +37,7 @@
     <ModalDialog
         titleId="bulk-rename-review-title"
         dialogId="bulk-rename-review"
+        resizable
         containerStyle="width: min(640px, calc(100vw - 48px))"
         onclose={cancelRenameReview}
     >
@@ -66,69 +64,75 @@
                         <thead>
                             <tr>
                                 <th scope="col" class="allow-col">{tString('askCmdr.renameReview.allow')}</th>
-                                <th scope="col" class="current-col">{tString('askCmdr.renameReview.originalName')}</th>
+                                <th scope="col">{tString('askCmdr.renameReview.originalName')}</th>
                                 <th scope="col" class="arrow-col" aria-hidden="true"></th>
                                 <th scope="col">{tString('askCmdr.renameReview.newName')}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {#each review.rows as row (row.rowId)}
+                                {@const hasBadges =
+                                    row.warnings.includes('extensionChanged') ||
+                                    row.warnings.includes('cycle') ||
+                                    row.blockedReason === 'targetExists' ||
+                                    row.blockedReason === 'sourceMissing'}
                                 <tr class:blocked={row.blockedReason}>
                                     <td class="allow-cell">
-                                        <input
-                                            type="checkbox"
+                                        <Checkbox
                                             checked={row.allowed}
                                             disabled={Boolean(row.blockedReason) || review.preflighting}
-                                            aria-label={row.allowed
+                                            ariaLabel={row.allowed
                                                 ? `${tString('askCmdr.renameReview.deny')}: ${row.sourceName}`
                                                 : `${tString('askCmdr.renameReview.allow')}: ${row.sourceName}`}
-                                            onchange={(event) => { toggleRow(row.rowId, event.currentTarget.checked); }}
+                                            onCheckedChange={(checked: boolean) => { setRenameRowAllowed(row.rowId, checked); }}
                                         />
                                     </td>
-                                    <td class="name current">
+                                    <td class="name">
                                         <span class="fname" use:useShortenMiddle={{ text: row.sourceName, preferBreakAt: '.', startRatio: 0.7 }}></span>
                                     </td>
                                     <td class="arrow"><Icon name="arrow-right" size={14} aria-hidden="true" /></td>
-                                    <td class="name new">
+                                    <td class="name">
                                         <span class="fname" use:useShortenMiddle={{ text: row.destinationName, preferBreakAt: '.', startRatio: 0.7 }}></span>
-                                        <span class="badges">
-                                            {#if row.warnings.includes('extensionChanged')}
-                                                <span
-                                                    class="warning-badge"
-                                                    data-rename-warning="extensionChanged"
-                                                    tabindex="0"
-                                                    aria-label={tString('askCmdr.renameReview.extensionTooltip')}
-                                                    use:tooltip={tString('askCmdr.renameReview.extensionTooltip')}
-                                                >{tString('askCmdr.renameReview.extensionBadge')}</span>
-                                            {/if}
-                                            {#if row.warnings.includes('cycle')}
-                                                <span
-                                                    class="warning-badge"
-                                                    data-rename-warning="cycle"
-                                                    tabindex="0"
-                                                    aria-label={tString('askCmdr.renameReview.cycleTooltip')}
-                                                    use:tooltip={tString('askCmdr.renameReview.cycleTooltip')}
-                                                >{tString('askCmdr.renameReview.cycleBadge')}</span>
-                                            {/if}
-                                            {#if row.blockedReason === 'targetExists'}
-                                                <span
-                                                    class="danger-badge"
-                                                    data-warning="overwrite"
-                                                    tabindex="0"
-                                                    aria-label={tString('askCmdr.renameReview.overwriteTooltip')}
-                                                    use:tooltip={tString('askCmdr.renameReview.overwriteTooltip')}
-                                                >{tString('askCmdr.renameReview.overwriteBadge')}</span>
-                                            {/if}
-                                            {#if row.blockedReason === 'sourceMissing'}
-                                                <span
-                                                    class="danger-badge"
-                                                    data-warning="source-missing"
-                                                    tabindex="0"
-                                                    aria-label={tString('askCmdr.renameReview.sourceMissingTooltip')}
-                                                    use:tooltip={tString('askCmdr.renameReview.sourceMissingTooltip')}
-                                                >{tString('askCmdr.renameReview.sourceMissingBadge')}</span>
-                                            {/if}
-                                        </span>
+                                        {#if hasBadges}
+                                            <span class="badges">
+                                                {#if row.warnings.includes('extensionChanged')}
+                                                    <span
+                                                        class="warning-badge"
+                                                        data-rename-warning="extensionChanged"
+                                                        tabindex="0"
+                                                        aria-label={tString('askCmdr.renameReview.extensionTooltip')}
+                                                        use:tooltip={tString('askCmdr.renameReview.extensionTooltip')}
+                                                    >{tString('askCmdr.renameReview.extensionBadge')}</span>
+                                                {/if}
+                                                {#if row.warnings.includes('cycle')}
+                                                    <span
+                                                        class="warning-badge"
+                                                        data-rename-warning="cycle"
+                                                        tabindex="0"
+                                                        aria-label={tString('askCmdr.renameReview.cycleTooltip')}
+                                                        use:tooltip={tString('askCmdr.renameReview.cycleTooltip')}
+                                                    >{tString('askCmdr.renameReview.cycleBadge')}</span>
+                                                {/if}
+                                                {#if row.blockedReason === 'targetExists'}
+                                                    <span
+                                                        class="danger-badge"
+                                                        data-warning="overwrite"
+                                                        tabindex="0"
+                                                        aria-label={tString('askCmdr.renameReview.overwriteTooltip')}
+                                                        use:tooltip={tString('askCmdr.renameReview.overwriteTooltip')}
+                                                    >{tString('askCmdr.renameReview.overwriteBadge')}</span>
+                                                {/if}
+                                                {#if row.blockedReason === 'sourceMissing'}
+                                                    <span
+                                                        class="danger-badge"
+                                                        data-warning="source-missing"
+                                                        tabindex="0"
+                                                        aria-label={tString('askCmdr.renameReview.sourceMissingTooltip')}
+                                                        use:tooltip={tString('askCmdr.renameReview.sourceMissingTooltip')}
+                                                    >{tString('askCmdr.renameReview.sourceMissingBadge')}</span>
+                                                {/if}
+                                            </span>
+                                        {/if}
                                         {#if row.blockedReason}
                                             <small>{tString('askCmdr.renameReview.blocked')}</small>
                                         {/if}
@@ -154,12 +158,13 @@
 {/if}
 
 <style>
+    /* Fills the resizable modal body so the list, not the whole dialog, scrolls. */
     .dialog-body {
         display: flex;
         flex-direction: column;
         gap: var(--spacing-md);
-        /* Dialog body reads at 14px; without this the list inherits the 16px root
-           and every filename feels oversized against the chrome. */
+        height: 100%;
+        min-height: 0;
         font-size: var(--font-size-md);
         line-height: 1.4;
     }
@@ -189,11 +194,11 @@
         color: var(--color-text-secondary);
     }
 
+    /* The list scrolls; row dividers carry the structure, no surrounding border. */
     .rows {
-        max-height: min(52vh, 560px);
+        flex: 1 1 auto;
+        min-height: 0;
         overflow: auto;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
     }
 
     table {
@@ -202,7 +207,7 @@
         table-layout: fixed;
     }
 
-    /* Column headers are chrome: quiet, not the bold black the browser defaults to. */
+    /* Column headers are quiet chrome, not the browser's bold black default. */
     th {
         padding: var(--spacing-sm) var(--spacing-md);
         font-size: var(--font-size-sm);
@@ -226,33 +231,17 @@
         border-bottom: none;
     }
 
-    /* The checkbox column: fixed and centered. */
     .allow-col,
     .allow-cell {
         width: 56px;
         text-align: center;
     }
 
-    input[type='checkbox'] {
-        /* Interactive chrome follows the system accent, never a fixed hue. */
-        accent-color: var(--color-accent);
-        width: 15px;
-        height: 15px;
-        margin: 0;
-        vertical-align: middle;
+    .allow-cell {
+        line-height: 0;
     }
 
-    /* The two names flank a centered arrow so each row reads as one rename,
-       instead of drifting apart across the dialog width. */
-    .current-col,
-    .name.current {
-        text-align: right;
-    }
-
-    .arrow-col {
-        width: 32px;
-    }
-
+    .arrow-col,
     .arrow {
         width: 32px;
         text-align: center;
@@ -267,13 +256,10 @@
         display: block;
     }
 
-    .name.new .badges {
+    .name .badges {
         display: inline-flex;
         flex-wrap: wrap;
         gap: var(--spacing-xs);
-    }
-
-    .name.new .badges:not(:empty) {
         margin-top: var(--spacing-xs);
     }
 
@@ -294,7 +280,7 @@
         width: fit-content;
         padding: 0 var(--spacing-xs);
         border-radius: var(--radius-sm);
-        font-size: var(--font-size-xs);
+        font-size: var(--font-size-sm);
         white-space: nowrap;
     }
 

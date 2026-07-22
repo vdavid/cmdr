@@ -262,8 +262,9 @@ describe('ErrorReportDialog', () => {
     const target = await mountSettled()
     const checkbox = findAttachEmailCheckbox(target)
     if (!checkbox) throw new Error('checkbox missing')
-    checkbox.checked = true
-    checkbox.dispatchEvent(new Event('change', { bubbles: true }))
+    // The Checkbox primitive syncs state off the input's real click, not a manually
+    // assigned `.checked` + dispatched change, so drive it the way a user would.
+    checkbox.click()
     await tick()
 
     errorReportFlow.open = true

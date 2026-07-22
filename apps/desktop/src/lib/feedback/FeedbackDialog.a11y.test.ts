@@ -168,8 +168,9 @@ describe('FeedbackDialog', () => {
 
     const label = Array.from(target.querySelectorAll('label')).find((l) => l.textContent.includes('Attach my email'))
     const checkbox = label?.querySelector('input[type="checkbox"]') as HTMLInputElement
-    checkbox.checked = true
-    checkbox.dispatchEvent(new Event('change', { bubbles: true }))
+    // The Checkbox primitive syncs state off the input's real click, not a manually
+    // assigned `.checked` + dispatched change, so drive it the way a user would.
+    checkbox.click()
     await tick()
 
     findButton(target, 'Send feedback')?.click()

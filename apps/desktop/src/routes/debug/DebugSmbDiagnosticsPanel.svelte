@@ -2,6 +2,7 @@
     import { onDestroy, onMount } from 'svelte'
     import { commands, type SmbDiagnosticsDto, type SmbVolumeRef } from '$lib/ipc/bindings'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import Checkbox from '$lib/ui/Checkbox.svelte'
     import Select, { type SelectItem } from '$lib/ui/Select.svelte'
     import { formatInteger } from '$lib/intl/number-format'
 
@@ -178,10 +179,9 @@
                 </div>
             {/if}
         </label>
-        <label class="smb-control smb-control-inline">
-            <input type="checkbox" bind:checked={autoRefresh} />
-            <span>Auto-refresh</span>
-        </label>
+        <div class="smb-control smb-control-inline">
+            <Checkbox bind:checked={autoRefresh}>Auto-refresh</Checkbox>
+        </div>
         <label class="smb-control smb-control-inline">
             <span>every</span>
             <div class="smb-select-wrap smb-select-narrow">

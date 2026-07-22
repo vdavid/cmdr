@@ -81,7 +81,6 @@
 
 <style>
     .copy-dialog-body {
-        padding: 0 var(--spacing-xl);
         font-size: var(--font-size-md);
         line-height: 1.4;
         color: var(--color-text-secondary);

@@ -27,6 +27,18 @@
         ariaDescribedby?: string
         /** Inline style string for the dialog container (sizing, colors) */
         containerStyle?: string
+        /**
+         * Standard body padding (`0 24px`, horizontal). ModalDialog owns it so
+         * dialogs don't hand-roll their own. Set `false` for full-bleed bodies
+         * that manage their own padding (e.g. edge-to-edge lists).
+         */
+        padded?: boolean
+        /**
+         * Lets the user drag the bottom-right corner to resize the dialog. The
+         * body region grows and scrolls; the caller still passes the initial
+         * size via `containerStyle`. Off by default.
+         */
+        resizable?: boolean
         /** Renders × button and handles Escape key */
         onclose?: () => void
     }
@@ -43,6 +55,8 @@
         blur = false,
         ariaDescribedby,
         containerStyle = '',
+        padded = true,
+        resizable = false,
         onclose,
     }: Props = $props()
 
@@ -146,7 +160,7 @@
     onkeydown={handleOverlayKeydown}
     use:trapFocus={{ onEscape: onclose }}
 >
-    <div class="modal-dialog" class:dragging={isDragging} style={dialogStyle}>
+    <div class="modal-dialog" class:dragging={isDragging} class:resizable style={dialogStyle}>
         {#if onclose}
             <!--
                 tabindex=-1 keeps the × out of the tab cycle. The dialog's action buttons
@@ -162,7 +176,9 @@
                 {@render title()}
             </h2>
         </div>
-        {@render children()}
+        <div class="modal-body" class:no-footer={!footer} class:flush={!padded}>
+            {@render children()}
+        </div>
         {#if footer}
             <div class="modal-footer">
                 {@render footer()}
@@ -203,6 +219,31 @@
         border-radius: var(--radius-lg);
         box-shadow: var(--shadow-lg);
         position: relative;
+    }
+
+    /* Opt-in user resizing: the native corner grip lives at the bottom-right.
+       Flex column so the body owns the slack and scrolls while title bar and
+       footer keep their intrinsic height. `overflow: hidden` both clips the
+       rounded corners and gives `resize` a scroll container to grab.
+       min-* keep the dialog usable when dragged small; max-* keep it inside the
+       viewport (the overlay starts below the OS title bar). The caller's
+       `containerStyle` still sets the initial width/height. */
+    .modal-dialog.resizable {
+        display: flex;
+        flex-direction: column;
+        resize: both;
+        overflow: hidden;
+        /* No design token for these floors; they're layout minimums, not spacing. */
+        min-width: 360px;
+        min-height: 240px;
+        max-width: calc(100vw - 2 * var(--spacing-xl));
+        max-height: calc(100vh - var(--titlebar-height) - 2 * var(--spacing-xl));
+    }
+
+    .modal-dialog.resizable .modal-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: auto;
     }
 
     .modal-close-button {
@@ -246,6 +287,23 @@
         font-weight: 600;
         color: var(--color-text-primary);
         text-align: left;
+    }
+
+    /* Standard body padding, owned here so dialogs don't hand-roll it. The
+       horizontal 24px matches the title bar and footer; the title bar's bottom
+       padding supplies the top gap and the footer supplies the bottom. */
+    .modal-body {
+        padding: 0 var(--spacing-xl);
+    }
+
+    /* Footerless dialogs: the body owns the bottom padding the footer would give. */
+    .modal-body.no-footer {
+        padding-bottom: var(--spacing-xl);
+    }
+
+    /* Full-bleed opt-out (`padded={false}`): the body manages its own padding. */
+    .modal-body.flush {
+        padding: 0;
     }
 
     /* Right-aligned action footer (macOS convention: primary action rightmost).

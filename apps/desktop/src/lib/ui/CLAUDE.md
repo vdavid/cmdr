@@ -8,9 +8,13 @@ non-trivial work here: editing, planning, reorganizing, or advising.
 
 - Dialogs: `ModalDialog.svelte` (overlay + drag + Escape + focus + MCP tracking), `focus-trap.ts` (`use:trapFocus`),
   `dialog-registry.ts` (`SOFT_DIALOG_REGISTRY`), `AlertDialog.svelte`.
-- Primitives: `Icon`, `Spinner`, `Button`, `LinkButton`, `Select`, `Combobox`, `ShortcutChip`, the `toast/` system, and
-  more (full list: DETAILS § Key files). Tooltip is the sibling `../tooltip/tooltip.ts`. Ark UI (`@ark-ui/svelte`) backs
-  complex interactive components; simple ones are thin in-house wrappers.
+- Primitives: `Icon`, `Spinner`, `Button`, `LinkButton`, `Checkbox`, `RadioGroup`, `Select`, `Combobox`, `ShortcutChip`,
+  the `toast/` system, and more (full list: DETAILS § Key files). Tooltip is the sibling `../tooltip/tooltip.ts`. Ark UI
+  (`@ark-ui/svelte`) backs complex interactive components; simple ones are thin in-house wrappers.
+- Form controls: `Checkbox` and `RadioGroup` are the house checkbox and option-list (both wrap Ark UI). Use them instead
+  of raw `<input type="checkbox"|"radio">` (which grays out on window blur and can't theme). `ToggleGroup` is the
+  segmented toggle/tabs control, a separate thing. Settings wrappers `SettingCheckbox` / `SettingRadioGroup` delegate to
+  these. Bespoke visual pickers (onboarding radio-cards, the appearance color-swatch picker) stay hand-rolled.
 
 ## Must-knows
 

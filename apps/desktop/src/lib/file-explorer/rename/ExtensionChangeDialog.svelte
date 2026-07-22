@@ -1,6 +1,7 @@
 <script lang="ts">
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Checkbox from '$lib/ui/Checkbox.svelte'
     import { setSetting } from '$lib/settings'
     import { tString } from '$lib/intl/messages.svelte'
 
@@ -45,10 +46,9 @@
         {tString('fileExplorer.extensionChange.description', { oldExt: oldExtension, newExt: newExtension })}
     </p>
 
-    <label class="always-allow">
-        <input type="checkbox" bind:checked={alwaysAllow} />
-        <span>{tString('fileExplorer.extensionChange.alwaysAllow')}</span>
-    </label>
+    <div class="always-allow">
+        <Checkbox bind:checked={alwaysAllow}>{tString('fileExplorer.extensionChange.alwaysAllow')}</Checkbox>
+    </div>
 
     {#snippet footer()}
         <Button variant="secondary" onclick={onKeepOld}>{tString('fileExplorer.extensionChange.keepOld', { oldExt: oldExtension })}</Button>
@@ -59,24 +59,14 @@
 <style>
     .description {
         margin: 0;
-        padding: 0 var(--spacing-xl) var(--spacing-lg);
+        padding: 0 0 var(--spacing-lg);
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
         line-height: 1.5;
     }
 
     .always-allow {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        padding: 0 var(--spacing-xl) var(--spacing-lg);
-        font-size: var(--font-size-sm);
+        padding-bottom: var(--spacing-lg);
         color: var(--color-text-secondary);
-        cursor: default;
-    }
-
-    .always-allow input[type='checkbox'] {
-        margin: 0;
-        cursor: default;
     }
 </style>

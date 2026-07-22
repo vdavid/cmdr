@@ -10,6 +10,7 @@
     import { onMount, tick } from 'svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Checkbox from '$lib/ui/Checkbox.svelte'
     import { formatInteger } from '$lib/intl/number-format'
     import Size from '$lib/ui/Size.svelte'
     import { addToast } from '$lib/ui/toast'
@@ -180,7 +181,7 @@
 >
     {#snippet title()}{tString('errorReporter.dialog.title')}{/snippet}
 
-    <div class="body">
+    <div>
         <p id="error-report-body" class="description">
             {tString('errorReporter.dialog.description')}
         </p>
@@ -222,10 +223,9 @@
         {/if}
 
         {#if contactEmail}
-            <label class="attach-email">
-                <input type="checkbox" bind:checked={attachEmail} />
-                <span>{t('errorReporter.dialog.attachEmail', { email: contactEmail })}</span>
-            </label>
+            <div class="attach-email">
+                <Checkbox bind:checked={attachEmail}>{t('errorReporter.dialog.attachEmail', { email: contactEmail })}</Checkbox>
+            </div>
         {/if}
 
         <button
@@ -296,10 +296,6 @@
 </ModalDialog>
 
 <style>
-    .body {
-        padding: 0 var(--spacing-xl) var(--spacing-xl);
-    }
-
     .description {
         margin: 0 0 var(--spacing-md);
         font-size: var(--font-size-md);
@@ -386,17 +382,8 @@
     }
 
     .attach-email {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
         margin-bottom: var(--spacing-md);
-        font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
-        cursor: default;
-    }
-
-    .attach-email input[type='checkbox'] {
-        accent-color: var(--color-accent);
     }
 
     .details-toggle {

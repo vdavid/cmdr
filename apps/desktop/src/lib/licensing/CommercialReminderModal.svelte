@@ -52,10 +52,6 @@
 </ModalDialog>
 
 <style>
-    .modal-body {
-        padding: 0 var(--spacing-xl) var(--spacing-xl);
-    }
-
     .message {
         margin: 0 0 var(--spacing-sm);
         font-size: var(--font-size-md);

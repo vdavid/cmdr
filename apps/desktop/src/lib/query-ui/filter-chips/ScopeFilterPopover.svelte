@@ -8,6 +8,7 @@
      * footer buttons here expose ⌥C / ⌥V as first-class mouse affordances; the keyboard wiring
      * stays in the parent so the dialog-level keymap lives next to the popovers it targets.
      */
+    import Checkbox from '$lib/ui/Checkbox.svelte'
     import FilterPopover from '$lib/ui/FilterPopover.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
@@ -99,32 +100,27 @@
             />
         </div>
         <div class="popover-row scope-toggles">
-            <label class="popover-checkbox">
-                <input
-                    type="checkbox"
-                    checked={excludeSystemDirs}
-                    onchange={() => {
-                        onToggleExcludeSystemDirs()
-                    }}
-                    aria-label={tString('queryUi.scope.toggle.hideBoring')}
-                />
+            <Checkbox
+                checked={excludeSystemDirs}
+                onCheckedChange={() => {
+                    onToggleExcludeSystemDirs()
+                }}
+            >
                 <!-- "Hide boring folders" (the label is intentional, not "Hide
                      system folders"). Tooltip lists EVERY exclude (built by the
                      parent from the `get_system_dir_excludes` IPC); no
                      "+30 more" truncation. -->
                 <span use:tooltip={{ html: systemDirExcludeTooltip }}>{tString('queryUi.scope.toggle.hideBoring')}</span>
-            </label>
-            <label class="popover-checkbox">
-                <input
-                    type="checkbox"
-                    checked={caseSensitive}
-                    onchange={() => {
-                        onToggleCaseSensitive()
-                    }}
-                    aria-label={tString('queryUi.scope.toggle.caseSensitiveAria')}
-                />
-                <span>{tString('queryUi.scope.toggle.caseSensitive')}</span>
-            </label>
+            </Checkbox>
+            <Checkbox
+                checked={caseSensitive}
+                onCheckedChange={() => {
+                    onToggleCaseSensitive()
+                }}
+                ariaLabel={tString('queryUi.scope.toggle.caseSensitiveAria')}
+            >
+                {tString('queryUi.scope.toggle.caseSensitive')}
+            </Checkbox>
         </div>
         <!-- D9: scope shortcuts moved inside the popover. ⌥C "Use current
              folder", ⌥V "All folders". Only active while the popover is open
@@ -210,14 +206,6 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-xs);
-    }
-
-    .popover-checkbox {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--spacing-xs);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-primary);
     }
 
     .popover-footer {

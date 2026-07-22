@@ -7,6 +7,8 @@
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
+    import RadioGroup, { type RadioItem } from '$lib/ui/RadioGroup.svelte'
+    import Checkbox from '$lib/ui/Checkbox.svelte'
     import type { AuthMode, ConnectionMode, KnownNetworkShare, NetworkHost } from '../types'
     import { getUsernameHints, getKnownShareByName } from '$lib/tauri-commands'
     import { tString } from '$lib/intl/messages.svelte'
@@ -107,6 +109,11 @@
     const showGuestOption = $derived(authMode === 'guest_allowed')
     const canSubmit = $derived(connectionMode === 'guest' || username.trim() !== '')
 
+    const connectionModeItems: RadioItem[] = $derived([
+        { value: 'guest', label: tString('fileExplorer.network.login.connectAsGuest') },
+        { value: 'credentials', label: tString('fileExplorer.network.login.signInWithCredentials') },
+    ])
+
     function handleSubmit(e: Event) {
         e.preventDefault()
         if (!canSubmit || isConnecting) return
@@ -166,31 +173,15 @@
 
         <form onsubmit={handleSubmit}>
             {#if showGuestOption}
-                <fieldset class="connection-mode">
-                    <legend class="sr-only">{tString('fileExplorer.network.login.connectionModeLegend')}</legend>
-
-                    <label class="radio-option">
-                        <input
-                            type="radio"
-                            name="connectionMode"
-                            value="guest"
-                            bind:group={connectionMode}
-                            disabled={isConnecting}
-                        />
-                        <span class="radio-label">{tString('fileExplorer.network.login.connectAsGuest')}</span>
-                    </label>
-
-                    <label class="radio-option">
-                        <input
-                            type="radio"
-                            name="connectionMode"
-                            value="credentials"
-                            bind:group={connectionMode}
-                            disabled={isConnecting}
-                        />
-                        <span class="radio-label">{tString('fileExplorer.network.login.signInWithCredentials')}</span>
-                    </label>
-                </fieldset>
+                <div class="connection-mode">
+                    <RadioGroup
+                        items={connectionModeItems}
+                        value={connectionMode}
+                        onValueChange={(v) => (connectionMode = v as ConnectionMode)}
+                        disabled={isConnecting}
+                        ariaLabel={tString('fileExplorer.network.login.connectionModeLegend')}
+                    />
+                </div>
             {/if}
 
             <div class="credentials-fields" class:disabled={connectionMode === 'guest'}>
@@ -222,14 +213,11 @@
                     />
                 </div>
 
-                <label class="checkbox-option">
-                    <input
-                        type="checkbox"
-                        bind:checked={rememberInKeychain}
-                        disabled={connectionMode === 'guest' || isConnecting}
-                    />
-                    <span class="checkbox-label">{tString('fileExplorer.network.login.rememberInKeychain')}</span>
-                </label>
+                <div class="remember-row">
+                    <Checkbox bind:checked={rememberInKeychain} disabled={connectionMode === 'guest' || isConnecting}>
+                        {tString('fileExplorer.network.login.rememberInKeychain')}
+                    </Checkbox>
+                </div>
             </div>
 
             <div class="button-row">
@@ -325,27 +313,7 @@
     }
 
     .connection-mode {
-        border: none;
         margin-bottom: var(--spacing-lg);
-        padding: 0;
-    }
-
-    .radio-option {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        padding: var(--spacing-sm) 0;
-    }
-
-    .radio-option input[type='radio'] {
-        width: 16px;
-        height: 16px;
-        accent-color: var(--color-accent);
-    }
-
-    .radio-label {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-primary);
     }
 
     .credentials-fields {
@@ -397,20 +365,13 @@
         cursor: not-allowed;
     }
 
-    .checkbox-option {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
+    .remember-row {
         padding: var(--spacing-sm) 0;
     }
 
-    .checkbox-option input[type='checkbox'] {
-        width: 16px;
-        height: 16px;
-        accent-color: var(--color-accent);
-    }
-
-    .checkbox-label {
+    /* Keep the "remember" label at the compact form's `sm` size and muted color,
+       overriding the `Checkbox` primitive's default `md` label. */
+    .remember-row :global(.checkbox-label) {
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
     }
@@ -426,18 +387,5 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
-    }
-
-    /* Screen reader only */
-    .sr-only {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip-path: inset(50%);
-        white-space: nowrap;
-        border: 0;
     }
 </style>

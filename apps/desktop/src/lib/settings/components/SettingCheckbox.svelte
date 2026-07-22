@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { Checkbox } from '@ark-ui/svelte/checkbox'
     import {
         getSetting,
         setSetting,
@@ -8,7 +7,7 @@
         type SettingId,
         type SettingsValues,
     } from '$lib/settings'
-    import Icon from '$lib/ui/Icon.svelte'
+    import Checkbox from '$lib/ui/Checkbox.svelte'
     import { onMount } from 'svelte'
 
     interface Props {
@@ -28,68 +27,10 @@
         })
     })
 
-    function handleChange(details: { checked: boolean | 'indeterminate' }) {
-        const value = details.checked === true
+    function handleChange(value: boolean) {
         checked = value
         setSetting(id, value as SettingsValues[typeof id])
     }
 </script>
 
-<Checkbox.Root {checked} onCheckedChange={handleChange} {disabled} aria-label={label}>
-    <Checkbox.Control class="checkbox-control">
-        <Checkbox.Indicator class="checkbox-indicator">
-            <Icon name="check" size={12} aria-hidden="true" />
-        </Checkbox.Indicator>
-    </Checkbox.Control>
-    <Checkbox.HiddenInput />
-</Checkbox.Root>
-
-<style>
-    :global(.checkbox-control) {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 16px;
-        height: 16px;
-        background: var(--color-bg-tertiary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-xs);
-        cursor: default;
-        transition:
-            background-color var(--transition-base),
-            border-color var(--transition-base);
-    }
-
-    :global(.checkbox-control[data-state='checked']) {
-        background: var(--color-accent);
-        border-color: var(--color-accent);
-    }
-
-    :global(.checkbox-control[data-state='checked']:hover) {
-        background: var(--color-accent-hover);
-        border-color: var(--color-accent-hover);
-    }
-
-    :global(.checkbox-control:hover) {
-        border-color: var(--color-border-strong);
-    }
-
-    :global(.checkbox-control[data-disabled]) {
-        cursor: not-allowed;
-        opacity: 0.5;
-    }
-
-    :global(.checkbox-indicator) {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-    }
-
-    /* Ark UI uses data-focus attribute when the hidden input is focused */
-    :global(.checkbox-control[data-focus]) {
-        outline: 2px solid var(--color-accent);
-        outline-offset: 2px;
-        box-shadow: var(--shadow-focus);
-    }
-</style>
+<Checkbox {checked} {disabled} ariaLabel={label} onCheckedChange={handleChange} />

@@ -488,11 +488,20 @@ All dialogs use `ModalDialog.svelte`.
 
 | Property          | Value                                       | Why                                                           |
 | ----------------- | ------------------------------------------- | ------------------------------------------------------------- |
-| Body padding      | `0 24px 24px`                               | Wide enough for comfortable reading at 480px max width        |
+| Body padding      | `0 24px` (horizontal)                       | Owned by `ModalDialog`; bottom comes from the footer or, when footerless, `24px` on the body |
 | Title             | 16px, weight 600, centered                  | Clear hierarchy, centered for symmetry in floating dialogs    |
 | Button row        | `flex, gap 12px, justify-content: flex-end` | Right-aligned matches macOS convention (primary action right) |
 | Border-radius     | 8px (`--radius-lg`)                         | Matches macOS window chrome radius                            |
 | Max content width | 480px                                       | Optimal line length (~60 chars at 14px body)                  |
+
+`ModalDialog` owns the standard body padding, so dialogs don't set their own. The horizontal `24px` (`--spacing-xl`)
+matches the title bar and footer. The title bar's bottom padding supplies the gap above the body; the footer supplies
+the gap below, and a footerless dialog gets `24px` bottom padding on the body instead. Two opt-outs:
+
+- `padded={false}`: full-bleed body with no padding, for content that manages its own (edge-to-edge lists, for example).
+- `resizable`: lets the user drag the bottom-right corner to resize the dialog (default off). Turn it on for dialogs
+  that host resizable content like review lists; the body region grows and scrolls, and the caller still passes the
+  initial size via `containerStyle`. The dialog can't grow past the viewport or shrink below a usable minimum.
 
 Overlay: `background: rgba(0,0,0, 0.4)` in light mode, `rgba(0,0,0, 0.6)` in dark mode (higher opacity needed for
 contrast against dark chrome).

@@ -1,5 +1,6 @@
 <script lang="ts">
     import Button from '$lib/ui/Button.svelte'
+    import Checkbox from '$lib/ui/Checkbox.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import ProgressBar from '$lib/ui/ProgressBar.svelte'
@@ -71,14 +72,9 @@
 </script>
 
 <li class="queue-row" class:selected data-operation-id={snapshot.operationId} data-status={status}>
-    <label class="select-cell">
-        <input
-            type="checkbox"
-            checked={selected}
-            onchange={onToggleSelect}
-            aria-label={tString('queue.row.selectAria')}
-        />
-    </label>
+    <div class="select-cell">
+        <Checkbox checked={selected} onCheckedChange={onToggleSelect} ariaLabel={tString('queue.row.selectAria')} />
+    </div>
 
     <span class="type-cell" aria-hidden="true">
         <Icon name={typeIcon} size={16} />

@@ -328,6 +328,7 @@
     dialogId="license"
     onclose={handleClose}
     containerStyle="min-width: 400px; max-width: 500px"
+    padded={false}
 >
     {#snippet title()}
         {#if isLoading}

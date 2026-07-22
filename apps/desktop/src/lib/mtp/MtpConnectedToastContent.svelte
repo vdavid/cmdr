@@ -1,6 +1,7 @@
 <script lang="ts">
     import { dismissToast } from '$lib/ui/toast'
     import Button from '$lib/ui/Button.svelte'
+    import Checkbox from '$lib/ui/Checkbox.svelte'
     import { setSetting } from '$lib/settings'
     import { isMacOS } from '$lib/shortcuts/key-capture'
     import { getLastConnectedDeviceName } from './mtp-connected-toast-state.svelte'
@@ -34,10 +35,9 @@
             {tString('mtp.connectedToast.bodyOther')}
         {/if}
     </p>
-    <label class="dont-show-again">
-        <input type="checkbox" bind:checked={dontShowAgain} />
-        {tString('mtp.connectedToast.dontShowAgain')}
-    </label>
+    <div class="dont-show-again">
+        <Checkbox bind:checked={dontShowAgain}>{tString('mtp.connectedToast.dontShowAgain')}</Checkbox>
+    </div>
     <div class="actions">
         <Button size="mini" variant="secondary" onclick={handleDisableMtp}>{tString('mtp.connectedToast.disableMtp')}</Button>
         <Button size="mini" variant="primary" onclick={handleOk}>{tString('mtp.connectedToast.ok')}</Button>
@@ -66,18 +66,13 @@
     }
 
     .dont-show-again {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-xs);
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-        cursor: default;
         margin-top: var(--spacing-xs);
     }
 
-    .dont-show-again input[type='checkbox'] {
-        margin: 0;
-        cursor: default;
+    /* Keep the toast's compact scale: the house checkbox label defaults to md. */
+    .dont-show-again :global(.checkbox-label) {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
     }
 
     .actions {

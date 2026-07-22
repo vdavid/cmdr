@@ -5,6 +5,8 @@
     import Links from './sections/Links.svelte'
     import Groups from './sections/Groups.svelte'
     import ToggleGroupSection from './sections/ToggleGroupSection.svelte'
+    import CheckboxSection from './sections/CheckboxSection.svelte'
+    import RadioGroupSection from './sections/RadioGroupSection.svelte'
     import SelectSection from './sections/SelectSection.svelte'
     import ComboboxSection from './sections/ComboboxSection.svelte'
     import PopoverSection from './sections/PopoverSection.svelte'
@@ -42,6 +44,8 @@
         'links',
         'groups',
         'toggle-group',
+        'checkbox',
+        'radio-group',
         'select',
         'combobox',
         'popover',
@@ -161,6 +165,8 @@
         <Links />
         <Groups />
         <ToggleGroupSection />
+        <CheckboxSection />
+        <RadioGroupSection />
         <SelectSection />
         <ComboboxSection />
         <PopoverSection />

@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte'
+    import Checkbox from '$lib/ui/Checkbox.svelte'
 
     let isDarkMode = $state(true)
 
@@ -32,8 +33,8 @@
 
 <section class="debug-section">
     <h2>Appearance</h2>
-    <label class="toggle-row">
+    <div class="toggle-row">
         <span>Dark mode</span>
-        <input type="checkbox" checked={isDarkMode} onchange={handleThemeToggle} class="toggle-checkbox" />
-    </label>
+        <Checkbox checked={isDarkMode} onCheckedChange={handleThemeToggle} ariaLabel="Dark mode" />
+    </div>
 </section>

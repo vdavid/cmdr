@@ -322,10 +322,6 @@
 {#snippet dir(children: import('svelte').Snippet)}<span class="dir-name">{@render children()}</span>{/snippet}
 
 <style>
-    .dialog-body {
-        padding: 0 var(--spacing-xl);
-    }
-
     .subtitle {
         margin: 0 0 var(--spacing-lg);
         font-size: var(--font-size-md);

@@ -16,6 +16,7 @@ vi.mock('$lib/tauri-commands', () => ({
 
 const titleSnippet = createRawSnippet(() => ({ render: () => `<span>Dialog title</span>` }))
 const bodySnippet = createRawSnippet(() => ({ render: () => `<p>Body.</p>` }))
+const footerSnippet = createRawSnippet(() => ({ render: () => `<button>OK</button>` }))
 
 describe('ModalDialog focus restoration', () => {
   it('restores focus to the previously focused element on destroy', async () => {
@@ -69,6 +70,62 @@ describe('ModalDialog focus restoration', () => {
     }).not.toThrow()
     await tick()
 
+    target.remove()
+  })
+})
+
+describe('ModalDialog body padding and resizing', () => {
+  function mountDialog(props: Record<string, unknown>) {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ModalDialog, {
+      target,
+      props: { titleId: 't', title: titleSnippet, children: bodySnippet, ...props },
+    })
+    return target
+  }
+
+  it('wraps children in a .modal-body element', () => {
+    const target = mountDialog({})
+    const body = target.querySelector('.modal-body')
+    expect(body).not.toBeNull()
+    expect(body?.textContent).toContain('Body.')
+    target.remove()
+  })
+
+  it('adds .no-footer when there is no footer so the body owns bottom padding', () => {
+    const target = mountDialog({})
+    expect(target.querySelector('.modal-body')?.classList.contains('no-footer')).toBe(true)
+    target.remove()
+  })
+
+  it('drops .no-footer when a footer is present (footer owns bottom padding)', () => {
+    const target = mountDialog({ footer: footerSnippet })
+    expect(target.querySelector('.modal-body')?.classList.contains('no-footer')).toBe(false)
+    target.remove()
+  })
+
+  it('adds .flush when padded is false (full-bleed body)', () => {
+    const target = mountDialog({ padded: false })
+    expect(target.querySelector('.modal-body')?.classList.contains('flush')).toBe(true)
+    target.remove()
+  })
+
+  it('does not add .flush by default (padded defaults to true)', () => {
+    const target = mountDialog({})
+    expect(target.querySelector('.modal-body')?.classList.contains('flush')).toBe(false)
+    target.remove()
+  })
+
+  it('adds .resizable to the dialog when resizable is true', () => {
+    const target = mountDialog({ resizable: true })
+    expect(target.querySelector('.modal-dialog')?.classList.contains('resizable')).toBe(true)
+    target.remove()
+  })
+
+  it('does not add .resizable by default', () => {
+    const target = mountDialog({})
+    expect(target.querySelector('.modal-dialog')?.classList.contains('resizable')).toBe(false)
     target.remove()
   })
 })

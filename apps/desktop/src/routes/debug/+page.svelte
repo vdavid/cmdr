@@ -32,6 +32,8 @@
         | 'components-links'
         | 'components-groups'
         | 'components-toggle-group'
+        | 'components-checkbox'
+        | 'components-radio-group'
         | 'components-select'
         | 'components-combobox'
         | 'components-popover'
@@ -80,6 +82,8 @@
                 { id: 'components-links', label: 'Links' },
                 { id: 'components-groups', label: 'Groups' },
                 { id: 'components-toggle-group', label: 'Toggle group' },
+                { id: 'components-checkbox', label: 'Checkbox' },
+                { id: 'components-radio-group', label: 'Radio group' },
                 { id: 'components-select', label: 'Select' },
                 { id: 'components-combobox', label: 'Combobox' },
                 { id: 'components-popover', label: 'Popover' },
@@ -415,12 +419,6 @@
     :global(.toggle-row span) {
         font-size: var(--font-size-md);
         color: var(--color-text-primary);
-    }
-
-    :global(.toggle-checkbox) {
-        width: 18px;
-        height: 18px;
-        accent-color: var(--color-accent);
     }
 
     /* Small action button + inline status message shared across panels:

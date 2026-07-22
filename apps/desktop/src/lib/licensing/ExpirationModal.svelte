@@ -66,10 +66,6 @@
 </ModalDialog>
 
 <style>
-    .modal-body {
-        padding: 0 var(--spacing-xl);
-    }
-
     .org-name {
         margin: 0 0 var(--spacing-md);
         font-size: var(--font-size-md);

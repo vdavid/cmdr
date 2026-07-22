@@ -11,6 +11,7 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Select, { type SelectItem } from '$lib/ui/Select.svelte'
+    import RadioGroup, { type RadioItem } from '$lib/ui/RadioGroup.svelte'
     import {
         confirmLabelKey,
         deriveTransferLabel,
@@ -249,6 +250,15 @@
     const mergeFolderCount = $derived(conflicts.mergeFolderCount)
     const hasTypeMismatchConflict = $derived(conflicts.hasTypeMismatchConflict)
     const isCheckingConflicts = $derived(conflicts.isCheckingConflicts)
+
+    // File-conflict policy options for `RadioGroup`. The label pluralizes on the
+    // live conflict count ("Skip" vs "Skip all"), so the items rebuild reactively.
+    const conflictPolicyItems = $derived<RadioItem[]>(
+        conflictPolicies.map((policy) => ({
+            value: policy.value,
+            label: tString(policy.labelKey, { count: totalConflictCount }),
+        })),
+    )
 
     const dialogTitle = $derived(generateTitle(activeOperationType, fileCount, folderCount))
     const showHardlinkNote = $derived(
@@ -499,6 +509,7 @@
     dialogId="transfer-confirmation"
     onclose={handleCancel}
     containerStyle="width: 500px"
+    padded={false}
 >
     {#snippet title()}{dialogTitle}{/snippet}
 
@@ -663,12 +674,12 @@
                  a folder merge: a merge can surface file clashes mid-operation
                  the upfront check can't see, and the radios pre-answer them. -->
                 <div class="conflict-policy">
-                    {#each conflictPolicies as policy (policy.value)}
-                        <label class="policy-option">
-                            <input type="radio" bind:group={conflictPolicy} value={policy.value} />
-                            <span>{t(policy.labelKey, { count: totalConflictCount })}</span>
-                        </label>
-                    {/each}
+                    <RadioGroup
+                        items={conflictPolicyItems}
+                        value={conflictPolicy}
+                        onValueChange={(v) => (conflictPolicy = v as ConflictResolution)}
+                        orientation="horizontal"
+                    />
                 </div>
 
                 <!-- Cross-type guardrail: when a clash mixes a file and a same-named
@@ -920,28 +931,12 @@
         margin-top: 1px;
     }
 
+    /* Wrapper hook for the policy radios (E2E + component tests target
+       `.conflict-policy`); `RadioGroup` owns the option layout. The column flex
+       stretches the group to full width so its horizontal options wrap. */
     .conflict-policy {
         display: flex;
-        flex-wrap: wrap;
-        justify-content: flex-start;
-        column-gap: var(--spacing-lg);
-        row-gap: var(--spacing-sm);
-    }
-
-    .policy-option {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-    }
-
-    .policy-option input[type='radio'] {
-        margin: 0;
-    }
-
-    .policy-option:hover {
-        color: var(--color-text-primary);
+        flex-direction: column;
     }
 
     /* Copy/Move segmented control. Side inset comes from the parent `.field`. */

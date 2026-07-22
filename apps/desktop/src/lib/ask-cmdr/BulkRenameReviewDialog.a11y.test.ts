@@ -137,10 +137,17 @@ function requiredButton(target: ParentNode, selector: string): HTMLButtonElement
   return element
 }
 
-function requiredInput(target: ParentNode, selector: string): HTMLInputElement {
-  const element = target.querySelector<HTMLInputElement>(selector)
-  if (element === null) throw new Error(`Expected ${selector}`)
-  return element
+/**
+ * The row checkboxes render through the `Checkbox` primitive (Ark UI), which puts the
+ * accessible name on the wrapping label root, not the hidden `<input>`. Resolve the
+ * input via its labeled root so tests still target one row's checkbox by name.
+ */
+function checkboxByLabel(target: ParentNode, label: string): HTMLInputElement {
+  const root = target.querySelector(`[aria-label="${label}"]`)
+  if (root === null) throw new Error(`Expected checkbox labeled "${label}"`)
+  const input = root.querySelector<HTMLInputElement>('input[type="checkbox"]')
+  if (input === null) throw new Error(`Expected input inside checkbox labeled "${label}"`)
+  return input
 }
 
 beforeEach(() => {
@@ -162,15 +169,15 @@ describe('BulkRenameReviewDialog', () => {
 
     expect(requiredElement(target, '[role="status"]').textContent).toContain('2 renames allowed; 2 blocked')
     expect(requiredButton(target, 'button[aria-label="Rename 2 files"]').disabled).toBe(false)
-    expect(requiredInput(target, 'input[aria-label="Deny: before-one.png"]').checked).toBe(true)
-    expect(requiredInput(target, 'input[aria-label="Allow: occupied.png"]').disabled).toBe(true)
+    expect(checkboxByLabel(target, 'Deny: before-one.png').checked).toBe(true)
+    expect(checkboxByLabel(target, 'Allow: occupied.png').disabled).toBe(true)
     const overwriteBadge = requiredElement(target, '[data-warning="overwrite"]')
     expect(overwriteBadge.textContent).toContain('(overwrite!)')
     expect(overwriteBadge.getAttribute('aria-label')).toContain("isn't part of this rename plan")
     const missingBadge = requiredElement(target, '[data-warning="source-missing"]')
     expect(missingBadge.textContent).toContain("(doesn't exist)")
     expect(missingBadge.getAttribute('aria-label')).toContain('no longer exists')
-    expect(requiredInput(target, 'input[aria-label="Allow: imagined.png"]').disabled).toBe(true)
+    expect(checkboxByLabel(target, 'Allow: imagined.png').disabled).toBe(true)
     const extensionBadge = requiredElement(target, '[data-rename-warning="extensionChanged"]')
     expect(extensionBadge.textContent).toBe('(extension)')
     expect(extensionBadge.getAttribute('aria-label')).toBe(
@@ -186,7 +193,7 @@ describe('BulkRenameReviewDialog', () => {
     const target = mountDialog()
     await tick()
 
-    requiredInput(target, 'input[aria-label="Deny: before-one.png"]').click()
+    checkboxByLabel(target, 'Deny: before-one.png').click()
     const bulkButtons = target.querySelectorAll<HTMLButtonElement>('.bulk-actions button')
     if (bulkButtons.length < 2) throw new Error('Expected bulk rename action buttons')
     const allowAll = bulkButtons.item(0)

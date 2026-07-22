@@ -9,6 +9,7 @@
     import { onMount, tick } from 'svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Checkbox from '$lib/ui/Checkbox.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import { addToast } from '$lib/ui/toast'
     import { sendFeedback, openExternalUrl } from '$lib/tauri-commands'
@@ -128,7 +129,7 @@
 >
     {#snippet title()}{tString('feedback.dialog.title')}{/snippet}
 
-    <div class="body">
+    <div>
         <p id="feedback-dialog-body" class="description">
             {tString('feedback.dialog.description')}
         </p>
@@ -160,10 +161,9 @@
         {/if}
 
         {#if contactEmail}
-            <label class="attach-email">
-                <input type="checkbox" bind:checked={attachEmail} />
-                <span>{t('feedback.dialog.attachEmail', { email: contactEmail })}</span>
-            </label>
+            <div class="attach-email">
+                <Checkbox bind:checked={attachEmail}>{t('feedback.dialog.attachEmail', { email: contactEmail })}</Checkbox>
+            </div>
         {/if}
 
         <p class="more-ways">
@@ -184,10 +184,6 @@
 </ModalDialog>
 
 <style>
-    .body {
-        padding: 0 var(--spacing-xl);
-    }
-
     .description {
         margin: 0 0 var(--spacing-md);
         font-size: var(--font-size-md);
@@ -238,17 +234,8 @@
     }
 
     .attach-email {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
         margin-bottom: var(--spacing-md);
-        font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
-        cursor: default;
-    }
-
-    .attach-email input[type='checkbox'] {
-        accent-color: var(--color-accent);
     }
 
     .more-ways {

@@ -1,6 +1,7 @@
 <script lang="ts">
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Checkbox from '$lib/ui/Checkbox.svelte'
     import type { CrashReport } from '$lib/tauri-commands'
     import { sendCrashReport, dismissCrashReport } from '$lib/tauri-commands'
     import { getSetting, setSetting } from '$lib/settings'
@@ -84,7 +85,7 @@
 >
     {#snippet title()}{tString('crashReporter.dialog.title')}{/snippet}
 
-    <div class="body">
+    <div>
         <p id="crash-report-body" class="description">
             {tString('crashReporter.dialog.body')}
         </p>
@@ -116,17 +117,15 @@
         {/if}
 
         <!-- Always send checkbox -->
-        <label class="always-send">
-            <input type="checkbox" bind:checked={alwaysSend} />
-            <span>{tString('crashReporter.dialog.alwaysSend')}</span>
-        </label>
+        <div class="always-send">
+            <Checkbox bind:checked={alwaysSend}>{tString('crashReporter.dialog.alwaysSend')}</Checkbox>
+        </div>
 
         <!-- Attach-email checkbox, shown only when a beta contact email is on file -->
         {#if contactEmail}
-            <label class="always-send">
-                <input type="checkbox" bind:checked={attachEmail} />
-                <span>{t('crashReporter.dialog.attachEmail', { email: contactEmail })}</span>
-            </label>
+            <div class="always-send">
+                <Checkbox bind:checked={attachEmail}>{t('crashReporter.dialog.attachEmail', { email: contactEmail })}</Checkbox>
+            </div>
         {/if}
     </div>
 
@@ -141,10 +140,6 @@
 </ModalDialog>
 
 <style>
-    .body {
-        padding: 0 var(--spacing-xl);
-    }
-
     .description {
         margin: 0 0 var(--spacing-sm);
         font-size: var(--font-size-md);
@@ -239,16 +234,7 @@
     }
 
     .always-send {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
         margin-bottom: var(--spacing-lg);
-        font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
-        cursor: default;
-    }
-
-    .always-send input[type='checkbox'] {
-        accent-color: var(--color-accent);
     }
 </style>

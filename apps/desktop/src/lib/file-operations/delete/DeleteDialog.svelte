@@ -241,6 +241,7 @@
     onclose={handleCancel}
     ariaDescribedby={isPermanent ? 'delete-warning-text' : undefined}
     containerStyle="width: 500px"
+    padded={false}
 >
     {#snippet title()}{dialogTitle}{/snippet}
 

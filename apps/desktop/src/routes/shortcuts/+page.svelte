@@ -10,6 +10,7 @@
     import { requestOpenSettings } from '$lib/tauri-commands'
     import { trackOwnRect } from '$lib/window-positioning'
     import { getAppLogger } from '$lib/logging/logger'
+    import Checkbox from '$lib/ui/Checkbox.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import ShortcutsList from '$lib/shortcuts/ShortcutsList.svelte'
 
@@ -88,10 +89,9 @@
             <span class="title">Keyboard shortcuts</span>
             <LinkButton onclick={editShortcuts}>Edit shortcuts</LinkButton>
         </div>
-        <label class="hide-empty">
-            <input type="checkbox" bind:checked={hideEmpty} />
-            <span>Hide features with no shortcut</span>
-        </label>
+        <div class="hide-empty">
+            <Checkbox bind:checked={hideEmpty}>Hide features with no shortcut</Checkbox>
+        </div>
     </header>
 
     {#if initialized}
@@ -153,10 +153,7 @@
         font-weight: 600;
     }
 
-    .hide-empty {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-xs);
+    .hide-empty :global(.checkbox-label) {
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
     }

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { RadioGroup, type RadioGroupValueChangeDetails } from '@ark-ui/svelte/radio-group'
+    import RadioGroup, { type RadioItem } from '$lib/ui/RadioGroup.svelte'
     import {
         getSetting,
         setSetting,
@@ -23,6 +23,12 @@
     const label = definition?.label ?? id
     const options = definition?.constraints?.options ?? []
 
+    const items: RadioItem[] = options.map((option) => ({
+        value: String(option.value),
+        label: option.label,
+        description: option.description,
+    }))
+
     let value = $state(String(getSetting(id)))
 
     // Subscribe to setting changes (for external resets)
@@ -32,105 +38,23 @@
         })
     })
 
-    function handleValueChange(details: RadioGroupValueChangeDetails) {
-        if (details.value) {
-            value = details.value
-            setSetting(id, details.value as SettingsValues[typeof id])
-        }
+    function handleValueChange(newValue: string) {
+        setSetting(id, newValue as SettingsValues[typeof id])
     }
 </script>
 
-<RadioGroup.Root {value} onValueChange={handleValueChange} {disabled} aria-label={label}>
-    <div class="radio-group">
-        {#each options as option (option.value)}
-            <RadioGroup.Item value={String(option.value)} class="radio-item" {disabled}>
-                <RadioGroup.ItemControl class="radio-control" />
-                <RadioGroup.ItemText class="radio-text">
-                    <span class="radio-label">{option.label}</span>
-                    {#if option.description}
-                        <span class="radio-description">{option.description}</span>
-                    {/if}
-                </RadioGroup.ItemText>
-                <RadioGroup.ItemHiddenInput />
-            </RadioGroup.Item>
-        {/each}
-        <!-- Custom content rendered at end, visible only when 'custom' is selected -->
+<RadioGroup {items} bind:value {disabled} ariaLabel={label} onValueChange={handleValueChange}>
+    {#snippet footer(currentValue: string)}
         {#if customContent}
-            <div class="custom-content" class:hidden={value !== 'custom'}>
-                {@render customContent(value)}
+            <!-- Custom content rendered at end, visible only when 'custom' is selected -->
+            <div class="custom-content" class:hidden={currentValue !== 'custom'}>
+                {@render customContent(currentValue)}
             </div>
         {/if}
-    </div>
-</RadioGroup.Root>
+    {/snippet}
+</RadioGroup>
 
 <style>
-    .radio-group {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
-    }
-
-    :global(.radio-item) {
-        display: flex;
-        align-items: flex-start;
-        gap: var(--spacing-sm);
-        padding: var(--spacing-xs) 0;
-        cursor: default;
-    }
-
-    :global(.radio-item[data-disabled]) {
-        cursor: not-allowed;
-        opacity: 0.5;
-    }
-
-    :global(.radio-control) {
-        width: 16px;
-        height: 16px;
-        min-width: 16px;
-        min-height: 16px;
-        border: 2px solid var(--color-border-strong);
-        border-radius: var(--radius-full);
-        background: var(--color-bg-primary);
-        flex-shrink: 0;
-        margin-top: var(--spacing-xxs);
-        transition: all var(--transition-base);
-    }
-
-    :global(.radio-control[data-state='checked']) {
-        border-color: var(--color-accent);
-        background: var(--color-accent);
-        box-shadow: inset 0 0 0 3px var(--color-bg-primary);
-    }
-
-    :global(.radio-item:hover .radio-control[data-state='checked']) {
-        border-color: var(--color-accent-hover);
-        background: var(--color-accent-hover);
-    }
-
-    /* Ark UI uses data-focus attribute when the hidden input is focused */
-    :global(.radio-item[data-focus]) {
-        outline: 2px solid var(--color-accent);
-        outline-offset: 2px;
-        border-radius: var(--radius-sm);
-        box-shadow: var(--shadow-focus);
-    }
-
-    :global(.radio-text) {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xxs);
-    }
-
-    .radio-label {
-        color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
-    }
-
-    .radio-description {
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
-    }
-
     .custom-content {
         margin-left: var(--spacing-xl);
         margin-top: var(--spacing-xs);

@@ -41,9 +41,10 @@ Full architecture, data flows, auth-flow detail, and decision rationale: [DETAIL
   separate `VolumeInfo` entries with real IDs.
 - **Tab key in `NetworkLoginForm` calls `stopPropagation()`** so the parent pane handler doesn't read it as a
   pane-switch shortcut while tabbing between fields.
-- **`connectionMode` in `NetworkLoginForm` is `$derived.by` from `authMode`, with `bind:group` on the radios.** The
-  `bind:group` writes a `let` binding, not the read-only derived; the derived re-evaluates to reset the default when
-  `authMode` changes (for example on retry).
+- **`connectionMode` in `NetworkLoginForm` is `$derived.by` from `authMode`; the `RadioGroup` writes it via
+  `onValueChange` (not `bind:value`).** Assigning the derived sets a runtime override; it re-evaluates to reset the
+  default when `authMode` changes (for example on retry). One-way `value=` + `onValueChange` also sidesteps binding
+  `RadioGroup`'s `string` value to the narrower `ConnectionMode`.
 - **Host list MCP sync encodes metadata into the `name` field** as a flat string (MCP `PaneFileEntry` has only `name` /
   `path` / `isDirectory`), so agents read the IP, hostname, share count, and status the UI shows. The connect row syncs
   as `+ Connect to server...` with path `smb://connect`.

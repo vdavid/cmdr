@@ -105,10 +105,6 @@
 </ModalDialog>
 
 <style>
-    .dialog-body {
-        padding: 0 var(--spacing-xl);
-    }
-
     .input-group {
         margin-bottom: var(--spacing-lg);
     }
