@@ -8,19 +8,19 @@ use std::time::Duration;
 use tauri::AppHandle;
 use tauri_specta::Event;
 
+use super::state::{INDEX_REGISTRY, IndexPhase, IndexVolumeKind};
+use crate::ignore_poison::IgnorePoison;
 use crate::indexing::event_loop::{JOURNAL_GAP_THRESHOLD, ReplayConfig, run_replay_event_loop};
+use crate::indexing::events::progress_reporter::ScanProgressReporter;
 use crate::indexing::events::{
     ActivityPhase, DEBUG_STATS, IndexDebugStatusResponse, IndexScanStartedEvent, IndexStatusResponse, PhaseRecord,
     RescanReason, emit_rescan_notification, set_phase_for,
 };
 use crate::indexing::local_reconcile;
-use crate::indexing::events::progress_reporter::ScanProgressReporter;
 use crate::indexing::scanner::{self, ScanConfig};
-use super::state::{INDEX_REGISTRY, IndexPhase, IndexVolumeKind};
 use crate::indexing::store::IndexStore;
 use crate::indexing::watcher::{self, DriveWatcher};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
-use crate::ignore_poison::IgnorePoison;
 use crate::pluralize::pluralize;
 
 // ── IndexManager ─────────────────────────────────────────────────────

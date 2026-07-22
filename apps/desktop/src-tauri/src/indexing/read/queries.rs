@@ -10,10 +10,10 @@
 use std::sync::atomic::Ordering;
 
 use super::enrichment::get_read_pool_for;
+use super::pending_sizes::get_pending_sizes_for;
 use crate::indexing::events::{DEBUG_STATS, IndexDebugStatusResponse, IndexStatusResponse, VolumeIndexStatus};
 use crate::indexing::firmlinks;
 use crate::indexing::manager::IndexManager;
-use super::pending_sizes::get_pending_sizes_for;
 use crate::indexing::routing::{index_read_path, volume_id_for_local_path};
 use crate::indexing::state::{
     INDEX_REGISTRY, IndexPhase, IndexVolumeKind, ROOT_VOLUME_ID, get_freshness, index_failure, is_active, volume_kind,

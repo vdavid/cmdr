@@ -16,13 +16,13 @@ use std::sync::atomic::Ordering;
 
 use tauri_specta::Event;
 
+use super::manager::{IndexManager, ScanCalibration};
+use super::state::IndexVolumeKind;
+use crate::indexing::events::progress_reporter::ScanProgressReporter;
 use crate::indexing::events::{
     ActivityPhase, DEBUG_STATS, IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexScanAbortedEvent,
     IndexScanCompleteEvent, IndexScanStartedEvent, set_phase_for,
 };
-use super::manager::{IndexManager, ScanCalibration};
-use crate::indexing::events::progress_reporter::ScanProgressReporter;
-use super::state::IndexVolumeKind;
 use crate::indexing::store::IndexStore;
 use crate::indexing::writer::{AggSource, WriteMessage};
 
@@ -308,8 +308,15 @@ impl IndexManager {
                 )
                 .await
             } else {
-                crate::indexing::network_scanner::scan_volume_via_trait(volume, root, writer.clone(), progress, cancelled, pacer)
-                    .await
+                crate::indexing::network_scanner::scan_volume_via_trait(
+                    volume,
+                    root,
+                    writer.clone(),
+                    progress,
+                    cancelled,
+                    pacer,
+                )
+                .await
             };
 
             scan_done.store(true, Ordering::Relaxed);

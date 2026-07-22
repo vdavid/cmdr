@@ -80,7 +80,10 @@ pub(crate) fn on_mtp_watch_continuity_lost(device_id: &str) {
         // Continuity broke for this storage: bump the epoch (persisted dirs read
         // stale per the honest-sizes model), then flip the badge Stale.
         crate::indexing::state::bump_current_epoch_for(&volume_id);
-        crate::indexing::state::apply_freshness_event(&volume_id, crate::indexing::freshness::FreshnessEvent::WatcherDied);
+        crate::indexing::state::apply_freshness_event(
+            &volume_id,
+            crate::indexing::freshness::FreshnessEvent::WatcherDied,
+        );
     }
 }
 

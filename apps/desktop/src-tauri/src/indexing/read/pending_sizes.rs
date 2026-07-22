@@ -61,10 +61,10 @@
 use std::collections::HashSet;
 use std::sync::{Arc, LazyLock, Mutex};
 
-use crate::indexing::state::ROOT_VOLUME_ID;
+use crate::ignore_poison::IgnorePoison;
 use crate::indexing::firmlinks;
 use crate::indexing::paths::path_prefix;
-use crate::ignore_poison::IgnorePoison;
+use crate::indexing::state::ROOT_VOLUME_ID;
 
 /// In-memory set of directory paths with unprocessed index writes in flight.
 ///

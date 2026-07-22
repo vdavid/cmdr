@@ -25,10 +25,10 @@ use tauri_specta::Event;
 
 use super::IndexScanProgressEvent;
 use super::partial_agg;
+use crate::file_system::listing::caching;
 use crate::indexing::routing;
 use crate::indexing::scanner::ScanProgress;
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
-use crate::file_system::listing::caching;
 
 /// Drives the periodic scan-progress events and mid-scan partial aggregation for
 /// one full scan, on any scan path. Construct with [`ScanProgressReporter::new`],

@@ -319,7 +319,10 @@ pub(crate) fn on_smb_overflow(volume_id: &str) {
     // Continuity broke (the index may have drifted): bump the epoch so persisted
     // dirs read stale, then flip the badge Stale.
     crate::indexing::state::bump_current_epoch_for(volume_id);
-    crate::indexing::state::apply_freshness_event(volume_id, crate::indexing::freshness::FreshnessEvent::OverflowUnrecoverable);
+    crate::indexing::state::apply_freshness_event(
+        volume_id,
+        crate::indexing::freshness::FreshnessEvent::OverflowUnrecoverable,
+    );
 }
 
 #[cfg(test)]

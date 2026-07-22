@@ -161,7 +161,12 @@ pub(crate) async fn start_indexing_for_local_external(
             mount_root,
             inodes_trustworthy,
         } => {
-            crate::indexing::state::start_indexing_for_local_external_inner(&app, &volume_id, mount_root, inodes_trustworthy)?;
+            crate::indexing::state::start_indexing_for_local_external_inner(
+                &app,
+                &volume_id,
+                mount_root,
+                inodes_trustworthy,
+            )?;
 
             // A new external index DB just came online (or resumed): cap
             // accumulation by evicting the least-recently-used OFFLINE external

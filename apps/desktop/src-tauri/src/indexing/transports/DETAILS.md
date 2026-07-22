@@ -122,7 +122,7 @@ module, not here; the read-side `paths::routing` and this watch layer both consu
 gate, and FDA-independent (USB isn't TCC-protected), so `enable_drive_index` routes `mtp-*` ids straight here. A clean
 scan ⇒ Fresh while connected. `handle_device_disconnected` (any disconnect) flips EVERY indexed storage on the device to
 Stale via `FreshnessEvent::WatcherDied` (matched by `device_id_of_volume`, so it doesn't over-match a different device).
-A persisted MTP index loads Stale on launch (non-journaled). D4: **MTP Fresh is as strong as SMB.**
+A persisted MTP index loads Stale on launch (non-journaled). **MTP Fresh is as strong as SMB.**
 
 ### Live watch → index (`mtp/watch.rs`)
 

@@ -20,9 +20,9 @@ use std::sync::atomic::AtomicBool;
 
 use crate::file_system::volume::smb::{SmbConnectionParams, connect_smb_volume};
 use crate::file_system::volume::{Volume, smb_volume_id};
+use crate::indexing::network_scanner::scan_volume_via_trait;
 use crate::indexing::scanner::ScanProgress;
 use crate::indexing::store::{IndexStore, ROOT_ID};
-use crate::indexing::network_scanner::scan_volume_via_trait;
 use crate::indexing::writer::IndexWriter;
 
 fn guest_port() -> u16 {
@@ -156,8 +156,8 @@ async fn smb_integration_volume_scan_indexes_share() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_watch_event_updates_index() {
-    use crate::file_system::listing::caching::DirectoryChange;
     use super::watch::resolve_and_send_for_test;
+    use crate::file_system::listing::caching::DirectoryChange;
 
     let vol = connect_public().await;
 
@@ -274,9 +274,9 @@ async fn smb_integration_watch_event_updates_index() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_enrich_listing_shows_sizes() {
+    use super::watch::index_relative_path;
     use crate::file_system::listing::FileEntry;
     use crate::indexing::enrichment::enrich_via_parent_id_on;
-    use super::watch::index_relative_path;
 
     let vol = connect_public().await;
 

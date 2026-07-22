@@ -20,9 +20,9 @@ use std::time::{Duration, Instant};
 
 use rusqlite::Connection;
 
+use super::watcher;
 use crate::indexing::IndexPathSpace;
 use crate::indexing::store::{self, IndexStore};
-use super::watcher;
 use crate::pluralize::{grouped, pluralize_grouped};
 
 mod live;

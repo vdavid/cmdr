@@ -25,14 +25,14 @@ pub(crate) mod lifecycle;
 // Public API surface; real homes are lifecycle/{state,manager,network_scan,scan_completion,freshness,failure,lifecycle_bus}.rs.
 pub use lifecycle::freshness;
 pub(crate) use lifecycle::{failure, lifecycle_bus, manager, state};
-pub mod store;
 pub(crate) mod resources;
+pub mod store;
 pub mod writer;
 
 mod metadata;
-pub(crate) mod scanner;
 pub(crate) mod network_scanner;
 pub(crate) mod reconcile;
+pub(crate) mod scanner;
 // Public API surface; real homes are reconcile/{reconciler,local_reconcile,verifier}.rs.
 pub(crate) use reconcile::{local_reconcile, reconciler, verifier};
 pub(crate) mod transports;
@@ -42,18 +42,19 @@ mod tests;
 #[cfg(test)]
 pub(crate) use tests::stress_test_helpers;
 
+pub(crate) use events::DEBUG_STATS;
+pub use events::*;
 pub(crate) use read::enrichment::{ReadPool, get_read_pool, get_read_pool_for};
 pub use read::enrichment::{enrich_entries_with_index, enrich_entries_with_index_on_volume};
 #[cfg(test)]
 pub(crate) use read::enrichment::{test_install_root_read_pool, test_read_pool_lock, test_uninstall_root_read_pool};
-pub(crate) use events::DEBUG_STATS;
-pub use events::*;
 
 pub(crate) use failure::IndexFailureSignal;
 pub use read::queries::{
     get_debug_status, get_dir_stats, get_dir_stats_batch, get_status, get_volume_index_status,
     get_volume_index_status_for_path, list_dir_children,
 };
+pub use resources::subsystem_stop::register_subsystem_stop_hook;
 pub(crate) use routing::{IndexPathSpace, index_read_path, volume_id_for_local_path};
 pub(crate) use state::ROOT_VOLUME_ID;
 pub(crate) use state::get_freshness;
@@ -65,7 +66,6 @@ pub use state::{
     should_auto_start_indexing, start_indexing, stop_indexing, stop_scan, trigger_verification,
 };
 pub use store::IndexFailure;
-pub use resources::subsystem_stop::register_subsystem_stop_hook;
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use transports::smb::index::SmbIndexGateReason;
@@ -77,6 +77,8 @@ pub(crate) use transports::smb::index::{
 pub(crate) use transports::smb::watch::{apply_smb_change, discard_buffered_changes, replay_buffered_changes};
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) use state::registered_mtp_volume_ids_for_device;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use transports::local_external::index::{LocalExternalEnable, start_indexing_for_local_external};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use transports::mtp::index::{on_mtp_watch_continuity_lost, start_indexing_for_mtp};
@@ -85,5 +87,3 @@ pub(crate) use transports::mtp::watch::{
     MtpUpsert, apply_mtp_added_or_changed, apply_mtp_removed, buffer_mtp_handle_if_scanning,
     discard_buffered_mtp_changes, replay_buffered_mtp_changes,
 };
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use state::registered_mtp_volume_ids_for_device;

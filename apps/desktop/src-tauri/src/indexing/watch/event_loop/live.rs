@@ -15,20 +15,20 @@ use std::time::{Duration, Instant};
 use rusqlite::Connection;
 use tauri::AppHandle;
 
+use super::super::churn_monitor::ChurnObserver;
+use super::super::watcher;
+use super::{
+    BacklogTracker, IngestionPressure, LIVE_FLUSH_INTERVAL_MS, THROTTLE_SWEEP_INTERVAL_MS, classify_ingestion_pressure,
+    merge_fs_events, open_read_conn_with_retry, report_backlog, storm,
+};
 use crate::indexing::DEBUG_STATS;
 use crate::indexing::IndexPathSpace;
-use super::super::churn_monitor::ChurnObserver;
 use crate::indexing::events::{RescanReason, emit_rescan_notification};
 use crate::indexing::metadata;
 use crate::indexing::paths::path_prefix;
 use crate::indexing::reconciler::EventReconciler;
 use crate::indexing::store::{self, IndexStore};
-use super::super::watcher;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
-use super::{
-    BacklogTracker, IngestionPressure, LIVE_FLUSH_INTERVAL_MS, THROTTLE_SWEEP_INTERVAL_MS, classify_ingestion_pressure,
-    merge_fs_events, open_read_conn_with_retry, report_backlog, storm,
-};
 use crate::pluralize::pluralize;
 
 /// Mark every affected directory (and its ancestors) as having a recursive-size

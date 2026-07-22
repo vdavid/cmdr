@@ -11,11 +11,11 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use rusqlite::Connection;
 
+use crate::file_system::listing::FileEntry;
+use crate::ignore_poison::IgnorePoison;
 use crate::indexing::firmlinks;
 use crate::indexing::state::ROOT_VOLUME_ID;
 use crate::indexing::store::{self, DirStatsById, IndexStore, IndexStoreError};
-use crate::file_system::listing::FileEntry;
-use crate::ignore_poison::IgnorePoison;
 use crate::pluralize::pluralize;
 
 // ── Read pool (lock-free enrichment reads) ──────────────────────────

@@ -11,6 +11,7 @@ use std::time::Instant;
 
 use tauri::AppHandle;
 
+use super::verify_guard::{self, VerifyVerdict};
 use crate::indexing::DEBUG_STATS;
 use crate::indexing::ROOT_VOLUME_ID;
 use crate::indexing::enrichment::get_read_pool;
@@ -21,7 +22,6 @@ use crate::indexing::reconciler;
 use crate::indexing::scanner;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
-use super::verify_guard::{self, VerifyVerdict};
 use crate::pluralize::{pluralize, pluralize_with};
 
 /// Run post-replay verification in the background.

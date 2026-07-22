@@ -1669,7 +1669,7 @@ export const commands = {
          *  directory or a descendant (a big delete/copy in flight). The frontend
          *  shows a "size updating" hourglass so the number isn't read as settled.
          *  Sourced from the in-memory `pending_sizes` tracker at build time, not the
-         *  DB. See `indexing/pending_sizes.rs`.
+         *  DB. See `indexing/read/pending_sizes.rs`.
          */
         recursiveSizePending: boolean
         /**
@@ -3858,7 +3858,7 @@ export type DirStats = {
    *  directory or a descendant (a big delete/copy in flight). The frontend
    *  shows a "size updating" hourglass so the number isn't read as settled.
    *  Sourced from the in-memory `pending_sizes` tracker at build time, not the
-   *  DB. See `indexing/pending_sizes.rs`.
+   *  DB. See `indexing/read/pending_sizes.rs`.
    */
   recursiveSizePending: boolean
   /**
@@ -4305,7 +4305,7 @@ export type FocusSettings = null
 /**
  *  One volume's index freshness. Carried by a `Running` index instance; gray /
  *  not-indexed is the absence of an instance, not a variant here (see module
- *  docs and `state.rs`'s "disabled = no key" model).
+ *  docs and `lifecycle/state.rs`'s "disabled = no key" model).
  */
 export type Freshness =
   // A full scan (initial or rescan) is in progress. Blue.
@@ -4326,7 +4326,7 @@ export type Freshness =
    *  is still browsable and self-heals on rescan) and from gray/disabled (a
    *  deliberate off state). Red. Terminal in this table: only an explicit rescan
    *  (`ScanStarted`) leaves it, so a concurrent scan-completion handler can't
-   *  downgrade a dead index back to Stale/Fresh. See [`IndexFailure`](super::store::IndexFailure)
+   *  downgrade a dead index back to Stale/Fresh. See [`IndexFailure`](crate::indexing::store::IndexFailure)
    *  for the typed reason carried alongside on the `Failed` phase.
    */
   | 'failed'
@@ -4529,7 +4529,7 @@ export type IndexDebugStatusResponse = {
   /**
    *  Subtrees the reconcile walk stopped descending into because too high a
    *  share of their reads was pathologically slow
-   *  (`local_reconcile/cost_budget.rs`).
+   *  (`reconcile/local_reconcile/cost_budget.rs`).
    */
   reconcileBudgetSubtrees: number
   // Directories the reconcile walk left undescended inside those subtrees.
@@ -4553,7 +4553,7 @@ export type IndexDirUpdatedEvent = {
 /**
  *  A fatal storage failure that stopped a volume's index: the SQLite result codes
  *  that classified the DB as unusable (a dead disk, a corrupt file, a full or
- *  read-only volume). Carried on the `IndexPhase::Failed` phase (see `state.rs`)
+ *  read-only volume). Carried on the `IndexPhase::Failed` phase (see `lifecycle/state.rs`)
  *  and surfaced to the UI and logs so the failure is specific.
  *
  *  `code` is the primary SQLite result code (for example `SQLITE_IOERR` = 10);
@@ -7436,7 +7436,7 @@ export type VolumeIndexStatus = {
   /**
    *  How many shallow `MustScanSubDirs` anchors were coalesced SINCE THE LAST
    *  COMPLETED SWEEP — the times macOS told us it lost track of changes and we
-   *  deliberately didn't rescan (see `reconciler/rescan_route.rs`). `0` means
+   *  deliberately didn't rescan (see `reconcile/reconciler/rescan_route.rs`). `0` means
    *  nothing was skipped. Feeds the tooltip's "macOS lost track of file system
    *  changes N times" line; the badge itself does NOT branch on this, because
    *  once-a-day sweeping is the designed operating state, not a fault.

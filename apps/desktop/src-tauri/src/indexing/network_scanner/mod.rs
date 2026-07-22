@@ -320,7 +320,10 @@ pub(crate) async fn scan_volume_via_trait(
         let parent_id = match scan_ctx.lookup_parent(&dir_path) {
             Some(id) => id,
             None => {
-                log::debug!("network_scanner: parent id missing for {}, skipping", dir_path.display());
+                log::debug!(
+                    "network_scanner: parent id missing for {}, skipping",
+                    dir_path.display()
+                );
                 continue;
             }
         };

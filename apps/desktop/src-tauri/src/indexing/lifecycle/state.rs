@@ -35,10 +35,10 @@ use std::time::Duration;
 
 use tauri::AppHandle;
 
-use crate::indexing::enrichment::{ReadPool, install_read_pool, uninstall_read_pool};
 use super::failure::IndexFailureSignal;
 use super::freshness::{Freshness, FreshnessEvent};
 use super::manager::IndexManager;
+use crate::indexing::enrichment::{ReadPool, install_read_pool, uninstall_read_pool};
 use crate::indexing::pending_sizes::{PendingSizes, install_pending_sizes, uninstall_pending_sizes};
 use crate::indexing::store::{IndexFailure, IndexStore};
 use crate::indexing::verifier;

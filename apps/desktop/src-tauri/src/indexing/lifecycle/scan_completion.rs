@@ -14,6 +14,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::AppHandle;
 use tauri_specta::Event;
 
+use crate::ignore_poison::IgnorePoison;
 use crate::indexing::IndexPathSpace;
 use crate::indexing::event_loop::run_live_event_loop;
 use crate::indexing::events::{
@@ -25,7 +26,6 @@ use crate::indexing::scanner::{ScanError, ScanSummary};
 use crate::indexing::store::IndexStore;
 use crate::indexing::watcher::FsChangeEvent;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
-use crate::ignore_poison::IgnorePoison;
 use crate::pluralize::pluralize;
 
 /// Everything the post-scan completion task takes ownership of from

@@ -6,8 +6,8 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 
 ## In progress
 
-- [ ] 2026-07-22 [indexing-reorg-plan.md](indexing-reorg-plan.md) - Reorganize the `indexing/` subsystem's ~45-file
-      flat tail into 13 stage-based area dirs (lifecycle, resources, scanner, network_scanner, watch, reconcile, writer,
+- [ ] 2026-07-22 [indexing-reorg-plan.md](indexing-reorg-plan.md) - Reorganize the `indexing/` subsystem's ~45-file flat
+      tail into 13 stage-based area dirs (lifecycle, resources, scanner, network_scanner, watch, reconcile, writer,
       aggregator, read, paths, events, transports, tests), each with colocated `CLAUDE.md` + `DETAILS.md` and a thin
       top-level hub. Pure move (no behavior change): external importers stay unchanged via curated `mod.rs` facade
       re-exports; single-source doc homes for the cross-cutting invariants (honest sizes/ledger → writer, registry →

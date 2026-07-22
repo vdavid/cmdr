@@ -15,17 +15,8 @@ use rusqlite::Connection;
 use tauri::AppHandle;
 use tauri_specta::Event;
 
-use crate::indexing::ActivityPhase;
-use crate::indexing::DEBUG_STATS;
-use crate::indexing::IndexPathSpace;
 use super::super::churn_monitor::ChurnObserver;
-use crate::indexing::events::{
-    IndexReplayCompleteEvent, IndexReplayProgressEvent, RescanReason, emit_rescan_notification, set_phase_for,
-};
-use crate::indexing::lifecycle_bus;
-use crate::indexing::reconciler::{self, EventReconciler};
 use super::super::watcher;
-use crate::indexing::writer::{IndexWriter, WriteMessage};
 use super::live::{mark_pending_and_drain, process_live_batch};
 use super::verification::run_background_verification;
 use super::{
@@ -33,6 +24,15 @@ use super::{
     THROTTLE_SWEEP_INTERVAL_MS, classify_ingestion_pressure, merge_fs_events, open_read_conn_with_retry,
     report_backlog,
 };
+use crate::indexing::ActivityPhase;
+use crate::indexing::DEBUG_STATS;
+use crate::indexing::IndexPathSpace;
+use crate::indexing::events::{
+    IndexReplayCompleteEvent, IndexReplayProgressEvent, RescanReason, emit_rescan_notification, set_phase_for,
+};
+use crate::indexing::lifecycle_bus;
+use crate::indexing::reconciler::{self, EventReconciler};
+use crate::indexing::writer::{IndexWriter, WriteMessage};
 use crate::pluralize::pluralize;
 
 /// Cap on `affected_paths` during replay. When exceeded, individual path
