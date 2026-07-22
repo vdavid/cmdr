@@ -78,7 +78,7 @@ All under `apps/desktop/src/lib/`.
 - `routes/dev/components/`: Dev-only catalog of every `lib/ui/` primitive (Storybook replacement), in the Debug window
 - `dialog-gallery/`: Dev-only inventory of every registered soft dialog, opening each on demand with fixture data for
   design review; the two it can't open say why (Debug > Soft dialogs, rendered over the main window). See
-  [`apps/desktop/src/lib/dialog-gallery/CLAUDE.md`](../apps/desktop/src/lib/dialog-gallery/CLAUDE.md)
+  `apps/desktop/src/lib/dialog-gallery/CLAUDE.md`
 - `tooltip/`: Lightweight tooltip primitive
 - `stores/`: App-wide reactive Svelte stores: volume list, restricted-paths state
 - `updates/`: Auto-updater UI

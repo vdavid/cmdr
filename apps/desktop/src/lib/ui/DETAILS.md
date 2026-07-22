@@ -120,7 +120,7 @@ To add a new dialog:
 1. Add an entry to `SOFT_DIALOG_REGISTRY` in `dialog-registry.ts`.
 2. Pass the new id as `dialogId` to `ModalDialog`. MCP tracking is then automatic.
 3. Add a row to the dev dialog gallery so it's design-reviewable (`dialog-gallery-coverage` fails until you do). How to
-   write the row: [`../dialog-gallery/DETAILS.md`](../dialog-gallery/DETAILS.md) § Adding an entry.
+   write the row: `../dialog-gallery/DETAILS.md` § Adding an entry.
 
 `notifyDialogOpened` / `notifyDialogClosed` take a `SoftDialogId`, not a `string`. That's the seam a dialog can slip
 through untyped: `OnboardingWizard` calls them directly and never touches `ModalDialog`, so a loose type there would let

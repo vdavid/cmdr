@@ -1,13 +1,8 @@
 # UI primitives
 
-<<<<<<< HEAD
 Reusable components used across the desktop app. Almost every frontend session touches here, so only silent-breakage
 rules live in this file; catalogs, prop tables, and decisions sit in `DETAILS.md`. Read it before any non-trivial work
 here.
-=======
-Reusable components. Almost every frontend session touches here, so only silent-breakage rules live in this file;
-catalogs, prop tables, and decisions sit in [DETAILS.md](DETAILS.md); read it before any non-trivial work here.
->>>>>>> ec38917dc (Debug: open every soft dialog on demand, starting with a complete inventory)
 
 ## Module map
 
@@ -26,10 +21,9 @@ catalogs, prop tables, and decisions sit in [DETAILS.md](DETAILS.md); read it be
   `cmdr/dialog-needs-focus-trap`). Without it, Tab leaks focus into the suppressed-shortcut background: a full keyboard
   lockout. `ModalDialog` owns the directive, so `role`-prop callers don't repeat it. Opt out only via the documented
   `eslint-disable` (just `NetworkLoginForm` today). DETAILS § Focus trapping.
-- **Adding a dialog: add its id to `SOFT_DIALOG_REGISTRY`, pass it as `ModalDialog`'s `dialogId`, and add a
-  [gallery](../dialog-gallery/CLAUDE.md) row** (an unregistered `dialogId` is a TypeScript error; a missing gallery row
-  fails `dialog-gallery-coverage`). The registry feeds the Rust MCP backend, so skipping it silently drifts MCP's
-  "available dialogs". Soft sheets register too. DETAILS § Dialog registry.
+- **Adding a dialog: register its id in `SOFT_DIALOG_REGISTRY`, pass it as `ModalDialog`'s `dialogId`, and add a
+  gallery row** (enforced by a type error and `dialog-gallery-coverage`). The registry feeds MCP's "available dialogs",
+  so skipping it drifts them silently. Soft sheets register too. DETAILS § Dialog registry.
 - **The `ModalDialog` overlay starts at `inset: var(--titlebar-height) 0 0 0`, not `inset: 0`**, so the scrim never
   covers the macOS title bar, keeping the OS window-drag region live. Any new full-window backdrop must too.
 - **Don't restyle `.btn-*` colors from a scoped feature component** (`scripts/check-btn-restyle` flags it; one-offs need
@@ -37,11 +31,12 @@ catalogs, prop tables, and decisions sit in [DETAILS.md](DETAILS.md); read it be
   `cursor: default`); don't hand-roll a link button.
 - **`ShortcutChip` must NOT statically import `openShortcutCustomization`** (it pulls in
   `@tauri-apps/api/webviewWindow`, which must stay off the chip's module-eval surface so it loads in the
-  capability-restricted viewer window): use dynamic `import()` in the click handler. Set exactly one of `commandId` /
-  `key`; a `commandId` chip renders NOTHING with no binding, so conditionalize prose around it. DETAILS § ShortcutChip.
-- **Tooltip detached-trigger gotcha**: keep both guards, else a recycled virtual-scroll row (removed while hovered, no
-  `mouseleave`) fires the 400 ms timer on a detached node: the action's `destroy()` cancels its timer, and `showTooltip`
-  / `positionTooltip` bail on `!el.isConnected` (not a zero-rect heuristic). DETAILS § Tooltip.
+  capability-restricted viewer window): use dynamic `import()` in the click handler only. Set exactly one of `commandId`
+  / `key`; a `commandId` chip renders NOTHING with no binding, so conditionalize prose around it. DETAILS §
+  ShortcutChip.
+- **Tooltip detached-trigger gotcha**: two guards must both stay, else a recycled virtual-scroll row (removed while
+  hovered, no `mouseleave`) fires the 400 ms timer on a detached node: the action's `destroy()` cancels its timer, and
+  `showTooltip` / `positionTooltip` bail on `!el.isConnected` (not a zero-rect heuristic). DETAILS § Tooltip.
 - **Toasts (full guide in DETAILS § Toast system)**: pick a level by feedback kind, not wording. A full all-persistent
   stack silently drops new toasts. Pane-local transient toasts go through `addToastForPane(pane, …)`, not `addToast`, or
   that pane's navigation won't clear them.
@@ -56,8 +51,4 @@ catalogs, prop tables, and decisions sit in [DETAILS.md](DETAILS.md); read it be
   `value` / `items` (which blanks the field on an empty list or custom name). DETAILS § Combobox.
 - **Adding a primitive is an enforced contract**: the component + a tier-3 a11y test (`a11y-coverage`) + a Debug >
   Components section (`ui-primitive-coverage`) + a `design-system.md` § Component patterns entry. Prefer a primitive
-<<<<<<< HEAD
   over raw native controls (`cmdr/prefer-ui-primitive`). Router: `docs/guides/building-ui.md`.
-=======
-  over raw controls (`cmdr/prefer-ui-primitive`). Router: [`building-ui.md`](../../../../../docs/guides/building-ui.md).
->>>>>>> ec38917dc (Debug: open every soft dialog on demand, starting with a complete inventory)

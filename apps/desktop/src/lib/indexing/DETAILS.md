@@ -300,7 +300,7 @@ volume store and falls back to the raw id for a volume that isn't in it.
 
 The app never clears the one-shot. `resetFirstStaleDialogShown` exists for the dev-only dialog gallery, whose
 `drive-index-stale` row arranges all three gates and emits the real event so the row repeats (see the gallery's
-[DETAILS.md](../dialog-gallery/DETAILS.md)).
+`../dialog-gallery/DETAILS.md`).
 
 ## Tests
 

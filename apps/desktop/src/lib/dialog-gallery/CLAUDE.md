@@ -50,4 +50,4 @@ Driven from Debug > Soft dialogs (`routes/debug/DebugDialogsPanel.svelte`).
   `DeleteDialog` / `TransferDialog` take `onConfirm` as a prop and perform nothing, so a no-op is harmless; the
   intuitive version is backwards.
 
-Adding an entry, the open mechanisms, the gap rows, and the transport: [DETAILS.md](DETAILS.md).
+Adding an entry, the open mechanisms, the gap rows, and the transport: `DETAILS.md`.

@@ -29,10 +29,10 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       filesystem-index dot (gray/yellow/green). Core new backend: a per-directory `accounted` (done+failed) aggregate
       mirroring `coverage.rs`'s eligible-count map, with subtree rollups, plus `media_index_file_status` and
       `media_index_folder_coverage` commands. Removes `FolderIndexStatus`/`folder-index-state`.
-- [ ] 2026-07-22 `dialog-gallery-plan.md` - Add a dev-only "Soft dialogs" section to the Debug window that opens
-      each of the app's registered soft dialogs on demand, in its meaningful states, filled with fixture data, so they
-      can be design-reviewed without evoking them for real (a live transfer, a wired-up AI agent, a genuinely stale
-      drive index). Dialogs render in the MAIN window over the real two-pane backdrop, driven by one of three mechanisms
+- [ ] 2026-07-22 `dialog-gallery-plan.md` - Add a dev-only "Soft dialogs" section to the Debug window that opens each of
+      the app's registered soft dialogs on demand, in its meaningful states, filled with fixture data, so they can be
+      design-reviewed without evoking them for real (a live transfer, a wired-up AI agent, a genuinely stale drive
+      index). Dialogs render in the MAIN window over the real two-pane backdrop, driven by one of three mechanisms
       picked by how each dialog is already built (fixture props, seeding its `$state` store, or emitting the real
       backend event), so no dialog gains a preview-only code path. `search` and `transfer-progress` are listed with
       honest reasons rather than built.
