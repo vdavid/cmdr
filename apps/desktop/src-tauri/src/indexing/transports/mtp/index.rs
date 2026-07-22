@@ -1,6 +1,6 @@
 //! MTP-volume indexing entry point and the device-disconnect freshness hook.
 //!
-//! MTP indexing is the USB analogue of SMB indexing (`smb_index.rs`): a phone or
+//! MTP indexing is the USB analogue of SMB indexing (`transports/smb/index.rs`): a phone or
 //! camera storage is scanned over the same `Volume` trait into its own per-volume
 //! index DB, kept Fresh by the live PTP event loop while the device is connected,
 //! and dropped to Stale the moment the live feed breaks — a disconnect or a PTP
@@ -17,7 +17,7 @@
 //!   opaque handle and the object is already gone, so `GetObjectInfo` can't map it
 //!   to a path. The MTP scan stores each entry's object handle in the index's
 //!   `inode` column, so a removal resolves via `find_entry_by_inode` (see
-//!   `mtp_watch.rs`).
+//!   `transports/mtp/watch.rs`).
 
 use tauri::AppHandle;
 
@@ -30,7 +30,7 @@ use tauri::AppHandle;
 /// on an internal start failure or an unregistered volume — there's no typed
 /// gate reason because MTP has no connection-upgrade step to refuse.
 pub(crate) fn start_indexing_for_mtp(app: AppHandle, volume_id: String) -> Result<(), String> {
-    if super::state::is_active(&volume_id) {
+    if crate::indexing::state::is_active(&volume_id) {
         log::info!("start_indexing_for_mtp: '{volume_id}' already active, no-op");
         return Ok(());
     }
@@ -46,12 +46,12 @@ pub(crate) fn start_indexing_for_mtp(app: AppHandle, volume_id: String) -> Resul
         }
     };
 
-    super::state::start_indexing_for_mtp_inner(&app, &volume_id, volume_root)?;
+    crate::indexing::state::start_indexing_for_mtp_inner(&app, &volume_id, volume_root)?;
 
     // A new external index DB just came online: cap accumulation by evicting the
     // least-recently-used OFFLINE external DBs. Safe — never touches a registered
     // volume, and this one is now registered. See `retention`.
-    super::resources::retention::enforce_external_index_cap(&app);
+    crate::indexing::resources::retention::enforce_external_index_cap(&app);
     Ok(())
 }
 
@@ -76,11 +76,11 @@ pub(crate) fn on_mtp_watch_continuity_lost(device_id: &str) {
     // registry is keyed by volume id (`{device_id}:{storage_id}`), so we match by
     // the device-id prefix plus a numeric storage tail (robust to a `:` in a
     // serial device id via `mtp::identity`).
-    for volume_id in super::state::registered_mtp_volume_ids_for_device(device_id) {
+    for volume_id in crate::indexing::state::registered_mtp_volume_ids_for_device(device_id) {
         // Continuity broke for this storage: bump the epoch (persisted dirs read
         // stale per the honest-sizes model), then flip the badge Stale.
-        super::state::bump_current_epoch_for(&volume_id);
-        super::state::apply_freshness_event(&volume_id, super::freshness::FreshnessEvent::WatcherDied);
+        crate::indexing::state::bump_current_epoch_for(&volume_id);
+        crate::indexing::state::apply_freshness_event(&volume_id, crate::indexing::freshness::FreshnessEvent::WatcherDied);
     }
 }
 
@@ -96,7 +96,7 @@ mod tests {
     use crate::indexing::store::IndexStore;
 
     /// Reserve a volume's registry instance at a given freshness, run the body,
-    /// then remove it. Mirrors `smb_index`'s test harness.
+    /// then remove it. Mirrors `transports/smb/index`'s test harness.
     fn with_reserved_volume(vid: &str, initial: Freshness, body: impl FnOnce()) {
         let dir = tempfile::tempdir().expect("temp dir");
         let db_path = dir.path().join(format!("{vid}.db"));

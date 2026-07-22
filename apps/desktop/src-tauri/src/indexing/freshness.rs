@@ -33,7 +33,7 @@
 //! state. Some transitions are scan-driven (`ScanStarted`, `ScanCompleted`, and
 //! `ScanFailed` — fired by the scan completion handlers); the watcher-driven
 //! ones (`WatcherDied`, `OverflowUnrecoverable`) are fired from the
-//! watcher-lifetime layer (`smb_index` / `mtp_index`), which just calls
+//! watcher-lifetime layer (`transports/smb/index` / `transports/mtp/index`), which just calls
 //! `on(WatcherDied)` — the call sites live there, never in this state machine.
 //!
 //! ## Persistence
@@ -93,7 +93,7 @@ pub enum FreshnessEvent {
     /// The live watcher for this volume reported the watched session is gone
     /// (disconnect, SMB session drop, MTP device unplug). ⇒ `Stale`.
     ///
-    /// Fired from the watcher-lifetime layer (`smb_index` / `mtp_index`).
+    /// Fired from the watcher-lifetime layer (`transports/smb/index` / `transports/mtp/index`).
     WatcherDied,
     /// A `CHANGE_NOTIFY` overflow could not be repaired by a targeted subtree
     /// rescan, so the index may have drifted. ⇒ `Stale`.

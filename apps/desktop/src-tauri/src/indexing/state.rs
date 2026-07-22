@@ -411,7 +411,7 @@ pub(crate) fn try_reserve_initializing_phase(
 /// or no current freshness value yet.
 ///
 /// EXTERNAL callers that only have a volume id (the live-watch layer:
-/// `smb_index` / `mtp_index` firing `WatcherDied` / `OverflowUnrecoverable`)
+/// `transports/smb/index` / `transports/mtp/index` firing `WatcherDied` / `OverflowUnrecoverable`)
 /// use this entry point — it looks the instance's freshness `Arc` up UNDER the
 /// registry lock, then delegates to `apply_freshness_event_on` (which does the
 /// real transition + emit and never touches the registry).

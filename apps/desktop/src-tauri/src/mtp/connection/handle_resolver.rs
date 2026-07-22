@@ -226,7 +226,7 @@ impl MtpConnectionManager {
 
     /// Resolve a PTP `ObjectAdded` / `ObjectInfoChanged` handle into the data an
     /// index upsert needs: its storage-relative path plus size / is-directory /
-    /// modified time. Used by the MTP watch→index path (`indexing::mtp_watch`).
+    /// modified time. Used by the MTP watch→index path (`indexing::transports::mtp::watch`).
     ///
     /// Two USB-touching steps under the device lock: the handle→path walk
     /// ([`resolve_handle_to_path`](Self::resolve_handle_to_path), usually one

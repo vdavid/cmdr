@@ -32,25 +32,13 @@ pub mod store;
 pub(crate) mod resources;
 pub mod writer;
 
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-mod local_external_index;
 mod metadata;
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-mod mtp_index;
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-mod mtp_watch;
 pub(crate) mod scanner;
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-mod smb_index;
-mod smb_watch;
 pub(crate) mod network_scanner;
 pub(crate) mod reconcile;
 // Public API surface; real homes are reconcile/{reconciler,local_reconcile,verifier}.rs.
 pub(crate) use reconcile::{local_reconcile, reconciler, verifier};
-
-#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
-#[path = "smb_scan_integration_test.rs"]
-mod smb_scan_integration_test;
+pub(crate) mod transports;
 
 // Synthetic FAT32/exFAT disk-image fixtures for external-drive indexing tests.
 // macOS-only (hdiutil); see the module and DETAILS § "Testing external drives".
@@ -93,18 +81,20 @@ pub use store::IndexFailure;
 pub use resources::subsystem_stop::register_subsystem_stop_hook;
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub use smb_index::SmbIndexGateReason;
+pub use transports::smb::index::SmbIndexGateReason;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use smb_index::{on_smb_overflow, on_smb_watcher_died, resume_smb_index_if_enabled, start_indexing_for_smb};
+pub(crate) use transports::smb::index::{
+    on_smb_overflow, on_smb_watcher_died, resume_smb_index_if_enabled, start_indexing_for_smb,
+};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use smb_watch::{apply_smb_change, discard_buffered_changes, replay_buffered_changes};
+pub(crate) use transports::smb::watch::{apply_smb_change, discard_buffered_changes, replay_buffered_changes};
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use local_external_index::{LocalExternalEnable, start_indexing_for_local_external};
+pub(crate) use transports::local_external::index::{LocalExternalEnable, start_indexing_for_local_external};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use mtp_index::{on_mtp_watch_continuity_lost, start_indexing_for_mtp};
+pub(crate) use transports::mtp::index::{on_mtp_watch_continuity_lost, start_indexing_for_mtp};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use mtp_watch::{
+pub(crate) use transports::mtp::watch::{
     MtpUpsert, apply_mtp_added_or_changed, apply_mtp_removed, buffer_mtp_handle_if_scanning,
     discard_buffered_mtp_changes, replay_buffered_mtp_changes,
 };

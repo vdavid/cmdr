@@ -4,7 +4,7 @@
 //! into targeted pane refreshes. This module is the SECOND consumer: it keeps the
 //! volume's persisted index in sync so directory sizes stay correct while the
 //! device is Fresh, even with no pane open. It's the MTP analogue of
-//! `smb_watch.rs`; the same invariants hold (single-writer-per-DB, reads off the
+//! `transports/smb/watch.rs`; the same invariants hold (single-writer-per-DB, reads off the
 //! `ReadPool`, buffer-during-scan), with two MTP-specific twists.
 //!
 //! ## Pathful adds vs. pathless removals (the core MTP difference)
@@ -62,7 +62,7 @@ pub(crate) struct MtpUpsert {
 }
 
 /// Per-volume buffer of MTP changes that arrived DURING a full (re)scan. Same
-/// rationale and bound as the SMB buffer (`smb_watch`): a change to an
+/// rationale and bound as the SMB buffer (`transports/smb/watch`): a change to an
 /// already-walked dir can't be applied against the gutted, mid-rebuild index, so
 /// it's stashed and replayed after the scan's aggregation lands.
 static SCAN_CHANGE_BUFFER: LazyLock<Mutex<HashMap<String, BufferedVolume>>> =
@@ -100,7 +100,7 @@ enum BufferedChange {
     Remove(u32),
 }
 
-/// The single index-write a resolved MTP change maps to. Mirrors `smb_watch`'s
+/// The single index-write a resolved MTP change maps to. Mirrors `transports/smb/watch`'s
 /// `ResolvedWrite`, but the upsert carries the object handle (→ `inode`).
 enum ResolvedWrite {
     Upsert {
@@ -143,7 +143,7 @@ impl ResolvedWrite {
             ResolvedWrite::DeleteSubtree(id) => WriteMessage::DeleteSubtreeById(id),
         };
         if let Err(e) = writer.send(msg) {
-            log::debug!(target: "indexing::mtp_watch", "writer send failed (writer gone): {e}");
+            log::debug!(target: "indexing::transports::mtp::watch", "writer send failed (writer gone): {e}");
         }
     }
 }
@@ -321,7 +321,7 @@ fn buffer_change_during_scan(volume_id: &str, change: BufferedChange) {
     if entry.changes.len() >= MAX_BUFFERED_CHANGES {
         entry.overflowed = true;
         log::warn!(
-            target: "indexing::mtp_watch",
+            target: "indexing::transports::mtp::watch",
             "mid-scan MTP change buffer for '{volume_id}' hit {MAX_BUFFERED_CHANGES}; will mark Stale at replay",
         );
         return;
@@ -363,7 +363,7 @@ pub(crate) fn replay_buffered_mtp_changes(volume_id: &str) -> bool {
     }
     if count > 0 {
         log::info!(
-            target: "indexing::mtp_watch",
+            target: "indexing::transports::mtp::watch",
             "replaying {count} mid-scan MTP change(s) into the '{volume_id}' index ({} need a post-scan resolve)",
             handles_to_resolve.len(),
         );
@@ -404,7 +404,7 @@ fn resolve_and_apply_buffered_handles(volume_id: &str, handles: Vec<(u32, u32)>)
                     },
                 ),
                 Err(e) => log::debug!(
-                    target: "indexing::mtp_watch",
+                    target: "indexing::transports::mtp::watch",
                     "post-scan replay: handle {handle} on {device_id}:{storage_id} unresolved ({e:?}); skipping",
                 ),
             }

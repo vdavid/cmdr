@@ -14,7 +14,7 @@ use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOr
 /// Used by `notify_directory_changed` to apply targeted cache updates
 /// and emit `directory-diff` events to the frontend.
 ///
-/// `Clone` so the SMB watch→index translator (`indexing::smb_watch`) can stash a
+/// `Clone` so the SMB watch→index translator (`indexing::transports::smb::watch`) can stash a
 /// change in its mid-scan replay buffer without taking ownership away from the
 /// pane-update path.
 #[derive(Clone)]

@@ -148,7 +148,7 @@ async fn smb_integration_volume_scan_indexes_share() {
 }
 
 /// The live watch→index path: scan a fixture share, then MUTATE it and feed the
-/// change through the real translator (`smb_watch`), asserting the index reflects
+/// change through the real translator (`transports/smb/watch`), asserting the index reflects
 /// the mutation — the "scan a share, mutate it, assert the index reflects the
 /// change while Fresh" requirement. No pane/listing is involved, so it
 /// also pins the volume-index-scoped (not pane-scoped) behavior: the index
@@ -157,7 +157,7 @@ async fn smb_integration_volume_scan_indexes_share() {
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_watch_event_updates_index() {
     use crate::file_system::listing::caching::DirectoryChange;
-    use crate::indexing::smb_watch::resolve_and_send_for_test;
+    use super::watch::resolve_and_send_for_test;
 
     let vol = connect_public().await;
 
@@ -276,7 +276,7 @@ async fn smb_integration_watch_event_updates_index() {
 async fn smb_integration_enrich_listing_shows_sizes() {
     use crate::file_system::listing::FileEntry;
     use crate::indexing::enrichment::enrich_via_parent_id_on;
-    use crate::indexing::smb_watch::index_relative_path;
+    use super::watch::index_relative_path;
 
     let vol = connect_public().await;
 

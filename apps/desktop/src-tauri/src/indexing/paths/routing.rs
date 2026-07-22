@@ -15,7 +15,7 @@
 //!   scheme/storage strip for MTP.
 //!
 //! These are the read-side mirror of the write-side mount-relative transforms in
-//! `smb_watch` / `mtp_watch`. They're kept here, separate from the lifecycle /
+//! `transports/smb/watch` / `transports/mtp/watch`. They're kept here, separate from the lifecycle /
 //! registry core in `state.rs`, because they're pure path arithmetic the read
 //! query surface (`read/queries.rs`) and enrichment (`read/enrichment.rs`) both depend on.
 
@@ -48,7 +48,7 @@ use crate::indexing::store::{self, IndexStoreError};
 ///   that `root`'s index owns) → `root`.
 pub(crate) fn volume_id_for_local_path(path: &str) -> VolumeId {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
-    if let Some(smb_id) = crate::indexing::smb_index::smb_volume_id_for_path(path) {
+    if let Some(smb_id) = crate::indexing::transports::smb::index::smb_volume_id_for_path(path) {
         return smb_id;
     }
     if let Some(mtp_id) = mtp_volume_id_for_path(path) {
@@ -118,7 +118,7 @@ pub(crate) fn exclusion_scope_for_volume(volume_id: &str) -> ExclusionScope {
 /// under, so `store::resolve_path` (which walks component-by-component from
 /// `ROOT_ID`) hits.
 ///
-/// This is the READ-side mirror of `smb_watch`'s write-side mount-relative
+/// This is the READ-side mirror of `transports/smb/watch`'s write-side mount-relative
 /// transform, and it's load-bearing: an SMB index's `ROOT_ID` is the share's
 /// **mount root** (the scanner maps the scan root to `ROOT_ID`), but enrichment
 /// and `get_dir_stats` receive **mount-absolute** paths (`/Volumes/share/sub`).
@@ -148,7 +148,7 @@ fn index_read_path_pure(volume_id: &str, normalized_abs: &str, mount_root: Optio
         return mtp_index_relative_path(volume_id, normalized_abs);
     }
     let mount_root = mount_root?;
-    crate::indexing::smb_watch::index_relative_path(mount_root, normalized_abs)
+    crate::indexing::transports::smb::watch::index_relative_path(mount_root, normalized_abs)
 }
 
 /// Strip an `mtp://{device}/{storage}[/inner…]` path to the inner index-relative
@@ -213,7 +213,7 @@ pub(crate) fn index_read_path(volume_id: &str, abs_path: &str) -> Option<String>
 /// For the boot disk the two coincide after firmlink normalization, so this is a
 /// pass-through. For a `mount_rooted()` volume the index `ROOT_ID` is the mount
 /// (`/Volumes/X`), so the mount root is stripped to reach the index-relative path —
-/// via the SAME [`smb_watch::index_relative_path`](crate::indexing::smb_watch::index_relative_path)
+/// via the SAME [`smb_watch::index_relative_path`](crate::indexing::transports::smb::watch::index_relative_path)
 /// transform the SMB read/write sides funnel through, never a second copy.
 ///
 /// **Discipline (the trap):** keep every path SET (`affected_paths`,
@@ -353,7 +353,7 @@ impl IndexPathSpace {
     pub(crate) fn resolve_abs(&self, conn: &Connection, absolute: &str) -> Result<Option<i64>, IndexStoreError> {
         match self.mount_root() {
             None => store::resolve_path(conn, absolute),
-            Some(root) => match crate::indexing::smb_watch::index_relative_path(root, absolute) {
+            Some(root) => match crate::indexing::transports::smb::watch::index_relative_path(root, absolute) {
                 Some(rel) => store::resolve_path(conn, &rel),
                 None => Ok(None),
             },
@@ -458,7 +458,7 @@ mod tests {
     /// The `IndexPathSpace` seam: `root` is a pass-through (absolute == index-relative
     /// after firmlink normalization, `BootDisk` scope), while a mount-rooted space
     /// keeps the raw absolute path for FS/emit but resolves in the mount-relative
-    /// space (`MountRooted` scope). The mount strip itself is `smb_watch`'s and is
+    /// space (`MountRooted` scope). The mount strip itself is `transports/smb/watch`'s and is
     /// unit-tested there; here we pin the root-vs-mount decision the pipeline branches on.
     #[test]
     fn index_path_space_root_vs_mount() {

@@ -190,7 +190,7 @@ impl ResolvedWrite {
             ResolvedWrite::DeleteSubtree(id) => WriteMessage::DeleteSubtreeById(id),
         };
         if let Err(e) = writer.send(msg) {
-            log::debug!(target: "indexing::smb_watch", "writer send failed (writer gone): {e}");
+            log::debug!(target: "indexing::transports::smb::watch", "writer send failed (writer gone): {e}");
         }
     }
 }
@@ -245,7 +245,7 @@ fn buffer_change_during_scan(volume_id: &str, parent_path: &Path, change: &Direc
     if entry.changes.len() >= MAX_BUFFERED_CHANGES {
         entry.overflowed = true;
         log::warn!(
-            target: "indexing::smb_watch",
+            target: "indexing::transports::smb::watch",
             "mid-scan change buffer for '{volume_id}' hit {MAX_BUFFERED_CHANGES}; will mark Stale at replay",
         );
         return;
@@ -286,7 +286,7 @@ pub(crate) fn replay_buffered_changes(volume_id: &str) -> bool {
     }
     if count > 0 {
         log::info!(
-            target: "indexing::smb_watch",
+            target: "indexing::transports::smb::watch",
             "replayed {count} mid-scan change(s) into the '{volume_id}' index",
         );
     }
@@ -315,7 +315,7 @@ fn apply_one_change(volume_id: &str, writer: &IndexWriter, parent_path: &Path, c
         Some(p) => p,
         None => {
             log::debug!(
-                target: "indexing::smb_watch",
+                target: "indexing::transports::smb::watch",
                 "change parent {parent_abs} not under mount root {mount_root}, skipping",
             );
             return;
@@ -416,7 +416,7 @@ fn resolve_change(conn: &rusqlite::Connection, parent_rel: &str, change: &Direct
         DirectoryChange::FullRefresh => {
             // Overflow / bulk change. The index can't translate this to a targeted
             // write here; the watcher-lifetime layer handles overflow policy
-            // (targeted subtree rescan, see `smb_index`/`manager`). No-op here.
+            // (targeted subtree rescan, see `transports/smb/index`/`manager`). No-op here.
             None
         }
     }
