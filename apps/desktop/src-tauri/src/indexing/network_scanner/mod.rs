@@ -73,23 +73,13 @@ const LIST_TIMEOUT: Duration = Duration::from_secs(120);
 /// Batch size for `InsertEntriesV2` sends — matches the local guarded walker's default.
 const BATCH_SIZE: usize = 2000;
 
-/// How often a FRESH `scan_volume_via_trait` commits its open insert transaction.
-///
-/// The fresh walk wraps its `InsertEntriesV2` stream in ONE explicit transaction,
-/// committed on this interval, so the single SQLite writer fsyncs once per
-/// interval instead of once per 2000-entry batch (`insert_entries_v2_batch`
-/// already savepoints each batch, so in autocommit every batch is an fsync). This
-/// is the writer-side lever that keeps the writer from becoming the bottleneck
-/// once the SMB connection pool lifts listing throughput ~4x (see
-/// `docs/specs/smb-multi-connection-scan-plan.md` § M2 and `writer/DETAILS.md`
-/// § "Bounded-concurrency walk").
-///
-/// Short on purpose: mid-scan "growing sizes" (partial `dir_stats`, written inside
-/// the same transaction) stay visible within one interval, and a crash loses at
-/// most one interval of inserts — which heals to a rescan on relaunch exactly as
-/// an interrupted partial does today (no `scan_completed_at` is written). The
-/// marks + final aggregate always run AFTER the transaction commits, so a crash
-/// never leaves ancestors claiming exact sizes over an unstamped descendant.
+/// How often a FRESH `scan_volume_via_trait` commits its open insert transaction,
+/// so the single writer fsyncs once per interval instead of once per 2000-entry
+/// batch (the lever that keeps the writer up with the connection pool's ~4x
+/// listing throughput). Short on purpose: mid-scan "growing sizes" stay visible
+/// within one interval, and a crash loses at most one interval (heals to a
+/// rescan). Rationale + crash-safety: `DETAILS.md` § "Two levers past 64
+/// in-flight: connections, and the writer".
 const SCAN_COMMIT_INTERVAL: Duration = Duration::from_secs(2);
 
 /// Consecutive-failure backstop. A whole-volume disconnect that doesn't map to
