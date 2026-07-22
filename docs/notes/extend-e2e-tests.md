@@ -295,9 +295,10 @@ already-unit-tested files. Both tools worked; neither is wired into CI. Total: 5
 ### Tools status
 
 - **cargo-mutants v27.0.0**: works out of the box after `cargo install --locked cargo-mutants`. Gotcha: the default test
-  command runs the full crate's nextest suite, and four `indexing::reconcile::reconciler` tests fail when run from cargo-mutants's
-  reflinked tmp directory (they create tempdirs in CWD to avoid `/private/tmp/` matching `EXCLUDED_PREFIXES`, but
-  `/var/folders/...cargo-mutants-...tmp/` also matches). Workaround: scope tests to the slice via positional args, e.g.
+  command runs the full crate's nextest suite, and four `indexing::reconcile::reconciler` tests fail when run from
+  cargo-mutants's reflinked tmp directory (they create tempdirs in CWD to avoid `/private/tmp/` matching
+  `EXCLUDED_PREFIXES`, but `/var/folders/...cargo-mutants-...tmp/` also matches). Workaround: scope tests to the slice
+  via positional args, e.g.
   `cargo mutants --file '**/eta.rs' --timeout 60 --no-shuffle --test-tool nextest -- --lib file_system::write_operations::eta`.
 - **stryker-mutator v9.6.1** (`@stryker-mutator/core`, `@stryker-mutator/vitest-runner`): worked after three config
   tweaks. Required `plugins: ["@stryker-mutator/vitest-runner"]` to load the runner; `inPlace: true` to avoid `oxc`
