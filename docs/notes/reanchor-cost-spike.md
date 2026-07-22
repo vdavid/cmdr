@@ -1,11 +1,11 @@
 # Re-anchor cost (Spike A)
 
-Spike A of [`../specs/sealed-subtrees-plan.md`](../specs/sealed-subtrees-plan.md), the gate on M2–M4. Phase C makes a
-periodic full re-anchor the primary correctness mechanism for a sealed subtree, and a re-anchor is the same O(children)
-walk the design exists to avoid, now on a timer. This note measures that walk and answers whether a cadence exists that
-is both affordable and tight enough to keep drift tolerable.
+Spike A of `../specs/sealed-subtrees-plan.md`, the gate on M2–M4. Phase C makes a periodic full re-anchor the primary
+correctness mechanism for a sealed subtree, and a re-anchor is the same O(children) walk the design exists to avoid, now
+on a timer. This note measures that walk and answers whether a cadence exists that is both affordable and tight enough
+to keep drift tolerable.
 
-Measured 2026-07-20 with [`../../scripts/reanchor-cost`](../../scripts/reanchor-cost).
+Measured 2026-07-20 with `scripts/reanchor-cost`.
 
 ## Verdict: go, with conditions
 

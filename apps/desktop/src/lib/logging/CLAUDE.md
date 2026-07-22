@@ -11,8 +11,8 @@ regardless of `RUST_LOG` or the verbose toggle; terminal defaults to Info).
 - Rust side: `src-tauri/src/commands/logging.rs` (batch IPC receiver + runtime level control); the dispatch tree is in
   `src-tauri/src/logging/CLAUDE.md`.
 
-Full architecture and decisions: [DETAILS.md](DETAILS.md). Usage (adding logging, `RUST_LOG` recipes, the verbose
-toggle): [docs/tooling/logging.md](../../../../../docs/tooling/logging.md).
+Full architecture and decisions: `DETAILS.md`. Usage (adding logging, `RUST_LOG` recipes, the verbose toggle):
+`docs/tooling/logging.md`.
 
 ## Must-knows
 

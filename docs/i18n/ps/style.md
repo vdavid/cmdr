@@ -1,7 +1,6 @@
 # Pashto (ps) translation style guide
 
-Working notes for translating Cmdr into Pashto. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into Pashto. Read `../README.md` for how this fits the translation process.
 
 Low resourcing, and RTL. The pile has only GNOME Nautilus (`ps`) and Microsoft terminology (`ps-AF`); NO macOS Finder
 (Apple does not ship a Pashto macOS UI). So the highest-authority source (a real localized OS) is absent. Treat every
@@ -90,6 +89,6 @@ CLDR categories for `ps`: `one`, `other`. Only two plural forms needed.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/ps/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/ps/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

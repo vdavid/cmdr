@@ -2,12 +2,11 @@
 
 Status: plan ready, execution pending. 2026-07-12. Owner: David.
 
-Contract: [`ask-cmdr-spec.md`](ask-cmdr-spec.md) (behavior + settled decisions) and its parent
-[`later/agent-spec.md`](later/agent-spec.md) (principles, decision log D1–D60). The genai capability spike (spec §3 step
-0, milestone M0) is complete: [`ask-cmdr-genai-spike.md`](ask-cmdr-genai-spike.md). This plan owns construction: module
-layout, DDL, the `AgentLlm` trait shape, the IPC surface, milestones, and the resolutions to spec §7. It does not reopen
-the spec's decisions. Single-source rule: where the spec owns a behavior, this plan points at it rather than restating
-it.
+Contract: `ask-cmdr-spec.md` (behavior + settled decisions) and its parent `later/agent-spec.md` (principles, decision
+log D1–D60). The genai capability spike (spec §3 step 0, milestone M0) is complete: `ask-cmdr-genai-spike.md`. This plan
+owns construction: module layout, DDL, the `AgentLlm` trait shape, the IPC surface, milestones, and the resolutions to
+spec §7. It does not reopen the spec's decisions. Single-source rule: where the spec owns a behavior, this plan points
+at it rather than restating it.
 
 ## 1. Intent
 
@@ -45,7 +44,7 @@ The spec and agent-spec own these; this plan constructs to them. Pointers, not r
 
 ## 3. Milestone 0 outcome (the genai spike — done)
 
-Full report: [`ask-cmdr-genai-spike.md`](ask-cmdr-genai-spike.md). Load-bearing outcomes this plan encodes:
+Full report: `ask-cmdr-genai-spike.md`. Load-bearing outcomes this plan encodes:
 
 - The tool-loop plumbing is solid on all four adapters (multi-step loops, streaming-with-tools, stop-reason/usage
   normalization). OpenAI chat-completions is live-verified end-to-end against Cmdr's own local llama-server; the cloud
@@ -334,7 +333,7 @@ COW-cloned worktree `target/` false-greens — `touch` a source when verifying c
 
 ### M0 — genai capability spike (DONE)
 
-Outcome pointer: §3 above / [`ask-cmdr-genai-spike.md`](ask-cmdr-genai-spike.md).
+Outcome pointer: §3 above / `ask-cmdr-genai-spike.md`.
 
 ### M1 — `AgentLlm` trait + deterministic fake
 

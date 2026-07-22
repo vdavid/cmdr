@@ -58,7 +58,7 @@ bulleted lists). Human-facing markdown is exempt: `README.md`, `CONTRIBUTING.md`
 
 ## Design
 
-See [design-principles.md](design-principles.md) for product design values (UX, accessibility, cancellation, platform
-behavior). Read it when designing features or making UX decisions.
+See `design-principles.md` for product design values (UX, accessibility, cancellation, platform behavior). Read it when
+designing features or making UX decisions.
 
 Always read the [frontend guide](frontend-guide.md) too if you're working on front end stuff like TS/Svelte or Astro!

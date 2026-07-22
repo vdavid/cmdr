@@ -1,7 +1,7 @@
 # Crimean Tatar (crh) translation style guide
 
-Working notes for translating Cmdr into Crimean Tatar (Qırımtatar tili). Read [`README.md`](../README.md) for how this
-fits the translation process.
+Working notes for translating Cmdr into Crimean Tatar (Qırımtatar tili). Read `../README.md` for how this fits the
+translation process.
 
 `crh` is the language base, targeted in the Latin script (see Decision points). The reference pile has only GNOME
 nautilus for `crh` (Tier 3); no macOS, no Microsoft. This is a low-resource locale with a real but small localization
@@ -74,7 +74,7 @@ strings to read correctly with the language's own number-agreement rules.
 - **Length**: agglutinated suffix stacking can lengthen words; overflow-check against the pseudolocale (`en-XA`).
 - **ICU mechanics**: double every apostrophe in ICU values (Crimean Tatar Latin uses the apostrophe-like `'` in some
   orthographies, so this matters); keep every `{placeholder}` and `<tag>` verbatim. Full rules:
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  `docs/guides/i18n-translation.md`.
 
 ## Decisions to confirm with David
 
@@ -84,6 +84,6 @@ strings to read correctly with the language's own number-agreement rules.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/crh/`; recipes in
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/crh/`; recipes in
 `docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

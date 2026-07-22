@@ -12,27 +12,27 @@ The key UX win: showing directory sizes in listings. Design history is in git (f
 Background-indexes each volume into its own per-volume SQLite DB with recursive size aggregates. `mod.rs` is a thin
 public-API facade; the areas:
 
-- **[`lifecycle/`](lifecycle/DETAILS.md)** — the per-volume registry, `IndexPhase` machine, `IndexManager` coordinator
+- **`lifecycle/DETAILS.md`** — the per-volume registry, `IndexPhase` machine, `IndexManager` coordinator
   (+ its `network_scan` trait-scan dispatch), scan completion, the freshness state machine, the Failed state, the
   lifecycle bus, and `IndexVolumeKind`'s two-axis capability model.
-- **[`resources/`](resources/DETAILS.md)** — the global 16 GB memory watchdog, subsystem stop-hooks, retention cap.
-- **[`scanner/`](scanner/DETAILS.md)** — the LOCAL guarded parallel walker + scope-aware exclusions.
-  **[`network_scanner/`](network_scanner/DETAILS.md)** — the SMB/MTP `Volume`-trait BFS + scan pacing + NAS skips.
-- **[`watch/`](watch/DETAILS.md)** — the FS watcher + the event loop (live / replay / verification / storm) + churn.
-- **[`reconcile/`](reconcile/DETAILS.md)** — non-destructive rescan, the cost budget, the two verification teeth, the
+- **`resources/DETAILS.md`** — the global 16 GB memory watchdog, subsystem stop-hooks, retention cap.
+- **`scanner/DETAILS.md`** — the LOCAL guarded parallel walker + scope-aware exclusions.
+  **`network_scanner/DETAILS.md`** — the SMB/MTP `Volume`-trait BFS + scan pacing + NAS skips.
+- **`watch/DETAILS.md`** — the FS watcher + the event loop (live / replay / verification / storm) + churn.
+- **`reconcile/DETAILS.md`** — non-destructive rescan, the cost budget, the two verification teeth, the
   per-navigation verifier, the once-a-day shallow sweep, the per-subtree throttle, depth-split routing.
-- **[`writer/`](writer/DETAILS.md)** — the single writer thread. **Canonical home for honest sizes, the `dir_stats`
-  ledger, coverage epochs, the ID counter, and `WRITER_GENERATION`.** **[`aggregator/`](aggregator/DETAILS.md)** —
-  bottom-up dir-stats compute. **[`store/`](store/DETAILS.md)** — the `IndexStore` handle + the SQLite schema.
-- **[`read/`](read/DETAILS.md)** — enrichment, IPC queries, expected totals, the hourglass.
-  **[`paths/`](paths/DETAILS.md)** — **canonical home for `IndexPathSpace`, the three-path-spaces discipline, routing,
-  and firmlink normalization.** **[`events/`](events/DETAILS.md)** — FE payloads, `set_phase_for`, the progress loop.
-- **[`transports/`](transports/DETAILS.md)** — per-transport enable + live watch (`smb/`, `mtp/`, `local_external/`).
-- **[`tests/`](tests/DETAILS.md)** — whole-pipeline integration + stress tests + the disk-image fixture.
+- **`writer/DETAILS.md`** — the single writer thread. **Canonical home for honest sizes, the `dir_stats`
+  ledger, coverage epochs, the ID counter, and `WRITER_GENERATION`.** **`aggregator/DETAILS.md`** —
+  bottom-up dir-stats compute. **`store/DETAILS.md`** — the `IndexStore` handle + the SQLite schema.
+- **`read/DETAILS.md`** — enrichment, IPC queries, expected totals, the hourglass.
+  **`paths/DETAILS.md`** — **canonical home for `IndexPathSpace`, the three-path-spaces discipline, routing,
+  and firmlink normalization.** **`events/DETAILS.md`** — FE payloads, `set_phase_for`, the progress loop.
+- **`transports/DETAILS.md`** — per-transport enable + live watch (`smb/`, `mtp/`, `local_external/`).
+- **`tests/DETAILS.md`** — whole-pipeline integration + stress tests + the disk-image fixture.
 
 `metadata.rs` is a loose shared leaf (see below). IPC: `commands/indexing.rs`. FE: `src/lib/indexing/`. Search: the
 top-level `search/` module (local-disk-only by design; the coupling is the shared `WRITER_GENERATION`, documented in
-[`writer/DETAILS.md`](writer/DETAILS.md)).
+`writer/DETAILS.md`).
 
 ## The shared metadata leaf (`metadata.rs`)
 
@@ -71,11 +71,11 @@ Navigation verification (after enrichment):
   |-- trigger_verification(path) -> dedup/debounce -> ReadPool DB snapshot vs read_dir disk snapshot -> corrections
 ```
 
-Which area owns each stage: scan discovery → [`scanner/`](scanner/DETAILS.md) (local) and
-[`network_scanner/`](network_scanner/DETAILS.md) (SMB/MTP); live change ingestion → [`watch/`](watch/DETAILS.md);
-resync → [`reconcile/`](reconcile/DETAILS.md); persistence + size compute → [`writer/`](writer/DETAILS.md) +
-[`aggregator/`](aggregator/DETAILS.md); serving sizes → [`read/`](read/DETAILS.md); path mapping →
-[`paths/`](paths/DETAILS.md); lifecycle of it all → [`lifecycle/`](lifecycle/DETAILS.md).
+Which area owns each stage: scan discovery → `scanner/DETAILS.md` (local) and
+`network_scanner/DETAILS.md` (SMB/MTP); live change ingestion → `watch/DETAILS.md`;
+resync → `reconcile/DETAILS.md`; persistence + size compute → `writer/DETAILS.md` +
+`aggregator/DETAILS.md`; serving sizes → `read/DETAILS.md`; path mapping →
+`paths/DETAILS.md`; lifecycle of it all → `lifecycle/DETAILS.md`.
 
 ## Cross-cutting patterns
 
@@ -83,23 +83,23 @@ resync → [`reconcile/`](reconcile/DETAILS.md); persistence + size compute → 
   delete + rebuild; there are no online migrations and no user-facing errors for DB issues. A Stale, SMB, or MTP index
   NEVER drives a destructive op — copy/move/delete re-stat live; the index is consulted only for non-load-bearing size
   estimates, each with an explicit "unknown" fallback. What counts as corruption (never widen it) and the schema:
-  [`store/DETAILS.md`](store/DETAILS.md).
+  `store/DETAILS.md`.
 - **Per-volume everything.** Every invariant holds per `VolumeId`, keyed independently. The registry is the authority;
   reads route through the per-volume `ReadPool`, never under the lifecycle lock. See
-  [`lifecycle/DETAILS.md`](lifecycle/DETAILS.md).
+  `lifecycle/DETAILS.md`.
 - **Two records of the pipeline phase.** A global app-wide `DEBUG_STATS` ring (debug window) and a per-volume
   `index-phase-changed` event; `set_phase_for` does both so they can't drift. The phase EVENT lives in
-  [`events/DETAILS.md`](events/DETAILS.md); the phase MACHINE (`IndexPhase`) in [`lifecycle/DETAILS.md`](lifecycle/DETAILS.md).
+  `events/DETAILS.md`; the phase MACHINE (`IndexPhase`) in `lifecycle/DETAILS.md`.
 
 ## Canonical homes for the load-bearing mechanisms
 
 When a claim about one of these belongs in a doc, it belongs in THAT doc; point everywhere else:
 
 - Honest sizes, the `dir_stats` ledger (four hard rules), coverage epochs, single-writer discipline, the ID counter,
-  `WRITER_GENERATION` → [`writer/DETAILS.md`](writer/DETAILS.md).
+  `WRITER_GENERATION` → `writer/DETAILS.md`.
 - The per-volume registry, `IndexPhase`, lock-first start, drop-guard-before-drain, typed-kind rescan routing, the
-  freshness state machine, the Failed state, `IndexVolumeKind` axes → [`lifecycle/DETAILS.md`](lifecycle/DETAILS.md).
+  freshness state machine, the Failed state, `IndexVolumeKind` axes → `lifecycle/DETAILS.md`.
 - `IndexPathSpace`, the three-path-spaces discipline, mount-relative strip, routing, firmlink canonical form →
-  [`paths/DETAILS.md`](paths/DETAILS.md).
-- The SQLite schema, `name_folded` / collation, what counts as corruption → [`store/DETAILS.md`](store/DETAILS.md).
-- The reconcile cost budget, the two verification teeth, the once-a-day sweep → [`reconcile/DETAILS.md`](reconcile/DETAILS.md).
+  `paths/DETAILS.md`.
+- The SQLite schema, `name_folded` / collation, what counts as corruption → `store/DETAILS.md`.
+- The reconcile cost budget, the two verification teeth, the once-a-day sweep → `reconcile/DETAILS.md`.

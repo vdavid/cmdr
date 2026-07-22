@@ -11,16 +11,16 @@ that runs with the user's privileges. It's a client-side consent gate with no pu
 the tap can do to pre-bless itself. Landing the cask in `Homebrew/homebrew-cask` (the notability path below) is what
 removes both the tap and the trust step, since the official taps are trusted by default.
 
-The cask file in this repo, [`apps/desktop/packaging/homebrew/cmdr.rb`](../../apps/desktop/packaging/homebrew/cmdr.rb),
-is the source of truth for the cask's **shape**: the `url`, `livecheck`, `depends_on`, `app`, and `zap` blocks. The tap
-copy carries that exact shape; release CI rewrites only its `version` and `sha256` lines on each release. So edit
-structural changes here, and let CI propagate version bumps to the tap.
+The cask file in this repo, `apps/desktop/packaging/homebrew/cmdr.rb`, is the source of truth for the cask's **shape**:
+the `url`, `livecheck`, `depends_on`, `app`, and `zap` blocks. The tap copy carries that exact shape; release CI
+rewrites only its `version` and `sha256` lines on each release. So edit structural changes here, and let CI propagate
+version bumps to the tap.
 
 ## Release automation: the tap bump
 
-The `bump-tap` job in [`release.yml`](../../.github/workflows/release.yml) runs after the release is published. It
-downloads the universal DMG release asset, computes its sha256, clones the tap, rewrites only the `version` + `sha256`
-lines in `Casks/cmdr.rb`, and pushes a `cmdr <version>` commit. Releases need zero extra work for brew.
+The `bump-tap` job in `.github/workflows/release.yml` runs after the release is published. It downloads the universal
+DMG release asset, computes its sha256, clones the tap, rewrites only the `version` + `sha256` lines in `Casks/cmdr.rb`,
+and pushes a `cmdr <version>` commit. Releases need zero extra work for brew.
 
 ### `HOMEBREW_TAP_TOKEN` setup
 
@@ -48,8 +48,7 @@ This shape also satisfies a future `Homebrew/homebrew-cask` resubmission, so kee
   flow already publishes it.
 - **`auto_updates true`**: Cmdr ships its own updater, so `brew upgrade` skips it unless `--greedy`.
 - **`depends_on macos: :monterey`** means "Monterey or later" (current Homebrew semantics) and matches
-  `minimumSystemVersion` in `tauri.conf.json`. Floor rationale:
-  [`docs/notes/system-requirements-and-es2025.md`](../notes/system-requirements-and-es2025.md).
+  `minimumSystemVersion` in `tauri.conf.json`. Floor rationale: `../notes/system-requirements-and-es2025.md`.
 - **`zap` paths** were verified on a prod machine. `~/Library/HTTPStorages/` is deliberately absent (Cmdr doesn't create
   it).
 

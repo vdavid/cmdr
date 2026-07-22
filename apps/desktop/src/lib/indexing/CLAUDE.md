@@ -52,5 +52,5 @@ API barrel: `index.ts`. Per-file detail + the event tables: DETAILS.md or `codeg
   `FullList` / `SelectionInfo` / `measure-column-widths`. Rendering + sort: DETAILS.md.
 
 Full public API, the ten-event table, the step model, tooltip content per state, ETA blending, honest-size rendering,
-dependencies, and tests: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning,
-reorganizing, or advising.
+dependencies, and tests: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or
+advising.

@@ -3,7 +3,7 @@
 Reusable setting-row primitives consumed by `lib/settings/sections/*.svelte`. Each registry-driven primitive reads its
 metadata from the registry by `id`, subscribes to `onSpecificSettingChange(id, …)`, and writes through
 `setSetting(id, value)`. Logic that isn't pure presentation lives in the section or registry, not here. Full details:
-[DETAILS.md](DETAILS.md). Parent: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, sections, search).
+`DETAILS.md`. Parent: `../CLAUDE.md` (registry, store, sections, search).
 
 ## File map
 
@@ -62,4 +62,4 @@ functional `*.test.ts`.
 - **`SettingsSection` title styling is intentionally borderless** (System Settings-style: bottom margin, no hairline
   rule). Don't add a `border-bottom`.
 - **`SettingPasswordInput` controlled mode skips the store subscription** so secret-store updates aren't clobbered by
-  stale store reads. See [DETAILS.md](DETAILS.md) § Password-input modes.
+  stale store reads. See `DETAILS.md` § Password-input modes.

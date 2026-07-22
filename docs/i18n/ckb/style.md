@@ -1,7 +1,7 @@
 # Central Kurdish / Sorani (ckb) translation style guide
 
-Working notes for translating Cmdr into Central Kurdish (Sorani, کوردیی ناوەندی). Read [`README.md`](../README.md) for
-how this fits the translation process.
+Working notes for translating Cmdr into Central Kurdish (Sorani, کوردیی ناوەندی). Read `../README.md` for how this fits
+the translation process.
 
 `ckb` is the language base, written in the Sorani Perso-Arabic script and laid out right-to-left (RTL). The reference
 pile has GNOME nautilus and Microsoft terminology for `ckb`; no macOS (Apple does not ship a Sorani macOS UI).
@@ -81,7 +81,7 @@ strings to read correctly for one vs many; a native reviewer confirms number-nou
   reviewer handles this. Don't impose Latin punctuation.
 - **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim, and be
   careful that bidi reordering doesn't visually detach a placeholder from its sentence. Full rules:
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  `docs/guides/i18n-translation.md`.
 
 ## Decisions to confirm with David
 
@@ -92,6 +92,6 @@ strings to read correctly for one vs many; a native reviewer confirms number-nou
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/ckb/`; recipes in
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/ckb/`; recipes in
 `docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

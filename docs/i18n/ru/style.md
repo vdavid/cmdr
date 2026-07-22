@@ -1,7 +1,6 @@
 # Russian (ru) translation style guide
 
-Working notes for translating Cmdr into Russian. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into Russian. Read `../README.md` for how this fits the translation process.
 
 Russian is fully resourced in the pile: macOS Finder/AppKit, Microsoft terminology + full style guide, GNOME Nautilus +
 Xfce Thunar. Lean on macOS Finder first.
@@ -102,6 +101,6 @@ CLDR categories for `ru`: `one`, `few`, `many`, `other`. All four are required a
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/ru/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/ru/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

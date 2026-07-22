@@ -1,7 +1,7 @@
 # Menu system details
 
-Pull-tier docs for `src-tauri/src/menu/`: architecture, flows, and decision rationale. Must-know invariants and gotchas
-live in [CLAUDE.md](CLAUDE.md).
+Pull-tier docs for `src-tauri/src/menu/`: architecture, flows, and decision rationale. Must-know invariants and
+gotchas live in `CLAUDE.md`.
 
 Native menu bar for macOS and Linux. Builds platform-specific menus from scratch, handles menu
 events, syncs accelerator labels with user-customized shortcuts, and enables/disables items based on

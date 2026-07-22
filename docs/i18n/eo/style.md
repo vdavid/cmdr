@@ -1,7 +1,6 @@
 # Esperanto (eo) translation style guide
 
-Working notes for translating Cmdr into Esperanto. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into Esperanto. Read `../README.md` for how this fits the translation process.
 
 This is the language base (`eo`). Esperanto is a constructed auxiliary language with no regional or national variant (by
 design), so there is exactly one `eo`.
@@ -76,7 +75,7 @@ adjective ("unu dosiero" / "{count} dosieroj"); write both branches and keep the
 - **Numbers and dates come from the formatter layer.** Never hardcode separators.
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
 - **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  `docs/guides/i18n-translation.md`.
 
 ## Decisions to confirm with David
 
@@ -87,6 +86,6 @@ adjective ("unu dosiero" / "{count} dosieroj"); write both branches and keep the
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/eo/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/eo/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

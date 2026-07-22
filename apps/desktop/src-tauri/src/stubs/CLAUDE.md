@@ -13,7 +13,7 @@ Accessibility text-size signal is macOS-only.
 - **`text_size.rs`**: non-macOS `get_system_text_size_multiplier` returns `1.0`. The in-app `appearance.textSize`
   slider still works on every platform.
 
-Per-stub behavior is cataloged in [DETAILS.md](DETAILS.md).
+Per-stub behavior is cataloged in `DETAILS.md`.
 
 ## Invariants
 
@@ -28,4 +28,5 @@ Per-stub behavior is cataloged in [DETAILS.md](DETAILS.md).
 - **❌ Don't add logic here.** Stubs stay trivial; real functionality belongs in the platform-specific subsystem
   modules. `libc` (`volumes.rs` `statvfs`) and `dirs` (`volumes.rs` `home_dir`) are the only non-Tauri deps.
 
-Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

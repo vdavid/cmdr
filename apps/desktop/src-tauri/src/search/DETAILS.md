@@ -22,7 +22,7 @@ Depth for the search backend. `CLAUDE.md` holds the must-knows; this file holds 
 - **`types.rs` (data) separate from `query.rs` (operations)**: `types.rs` is imported by everything, so keeping it
   logic-free prevents circular dependencies and makes the data model easy to find.
 - **AI pipeline lives in `search::ai`, not `commands/`**: the parser, prompt, and query builder are search domain logic,
-  not IPC concerns; `commands/search.rs` stays a thin wrapper. AI-internal decisions live in [`ai/CLAUDE.md`](ai/CLAUDE.md).
+  not IPC concerns; `commands/search.rs` stays a thin wrapper. AI-internal decisions live in `ai/CLAUDE.md`.
 - **Add history only on "Open in pane"**: David's explicit call. The 1000-entry budget stays signal-rich when it tracks
   results worth acting on, not every keystroke-debounced filename search. The gate is a frontend convention, not
   Rust-enforced.
@@ -142,8 +142,8 @@ slice; `search/` itself takes no dependency on `media_index` today.
 ## Importance ranking (`ranking.rs`)
 
 Search ranks interesting files toward the top by blending a result's match quality with its parent folder's importance
-weight (the first consumer of the [`importance/`](../importance/DETAILS.md) subsystem). The ranker is a pure module;
-[`engine.rs`](engine.rs) stays pure by receiving importance as DATA (a prebuilt weight map), never querying a DB.
+weight (the first consumer of the `../importance/DETAILS.md` subsystem). The ranker is a pure module; `engine.rs` stays
+pure by receiving importance as DATA (a prebuilt weight map), never querying a DB.
 
 ### The blend: quality bands, importance within a band
 
@@ -196,7 +196,7 @@ tens of thousands of candidates):
   drops on idle and reloads next session, and its importance rarely recomputes mid-session. A volume with no
   `importance-{id}.db` degrades to match-quality + recency (empty map).
 - **Only non-zero weights enter the map.** Floored folders have NO row in `importance.db` (the store's compaction — see
-  [`importance/DETAILS.md`](../importance/DETAILS.md) storage model), and `all_nonzero_weights` also filters `score > 0`,
+  `../importance/DETAILS.md` storage model), and `all_nonzero_weights` also filters `score > 0`,
   so the ~312k folders under `node_modules` on a 646k-folder home never enter the map (their lookup defaults to `0.0`
   anyway). Footprint is a `HashMap<String, f64>` over the non-floored folders: absolute-path keys plus an `f64`, order
   tens of MB on a large home. If it ever grows heavy, switch to folder-id or hashed-path keys.
@@ -204,4 +204,4 @@ tens of thousands of candidates):
   (a read-only open would fail `CannotOpen`), so an unscored volume degrades cleanly.
 
 The blend coefficient and weight-map footprint are unvalidated starting points (the importance weights themselves are
-too — see [`importance/scorer/weights.rs`](../importance/scorer/weights.rs)).
+too — see `../importance/scorer/weights.rs`).

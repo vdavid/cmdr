@@ -1,8 +1,7 @@
 # Spanish (es) translation style guide
 
-Working notes for translating Cmdr into Spanish. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Spanish.
+Working notes for translating Cmdr into Spanish. Read `../README.md` for how this fits the translation process, and the
+app-wide `docs/style-guide.md` for the English voice these notes carry into Spanish.
 
 `es` is the base (European-Spanish-leaning, because macOS base Spanish is es-ES). A region variant (`es-419`, `es-MX`,
 …) would only carry overrides where Latin American usage diverges; the reference pile has `es-419`/`es-MX`/ `es-US`
@@ -116,7 +115,7 @@ strings are counted, so no plural branches are needed there.
 ## Notes and decisions
 
 - Roster: Cmdr ships one pan-regional Spanish (archivo not fichero, avoid ordenador, ustedes-safe); a Spain variant
-  (es-ES) is deferred. See [`language-selection-decisions.md`](../language-selection-decisions.md).
+  (es-ES) is deferred. See `../language-selection-decisions.md`.
 - **Quotation marks: macOS Spanish uses `“…”`** (curly), not `«…»`, in its UI strings (verified in `es/macOS/Finder/`,
   2026-06-19). Match macOS.
 - **Inverted opening marks.** Questions open with `¿` and exclamations with `¡`. (No question/exclamation strings in the
@@ -141,6 +140,6 @@ strings are counted, so no plural branches are needed there.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/es/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/es/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

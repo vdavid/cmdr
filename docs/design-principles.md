@@ -30,4 +30,4 @@
 - Always keep accessibility in mind. Features should be available to people with impaired vision, hearing, and cognitive
   disabilities.
 
-For concrete tokens and component patterns, see [design-system.md](design-system.md).
+For concrete tokens and component patterns, see `design-system.md`.

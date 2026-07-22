@@ -1,7 +1,6 @@
 # Santali (sat) translation style guide
 
-Working notes for translating Cmdr into Santali. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into Santali. Read `../README.md` for how this fits the translation process.
 
 LOW priority. Santali is an Austroasiatic (Munda) language, an official language of India (~7M speakers, mainly
 Jharkhand, West Bengal, Odisha). The pile has ONLY a Microsoft style guide for `sat-Olck` (Ol Chiki script); no macOS
@@ -72,6 +71,6 @@ lack `two`) and easy to miss.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/sat/`; recipes in
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/sat/`; recipes in
 `docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

@@ -1,7 +1,7 @@
 # File operations details
 
-The must-knows are in [CLAUDE.md](CLAUDE.md); per-dialog depth lives in each subdir's docs. This file holds only the
-umbrella-level detail.
+The must-knows are in `CLAUDE.md`; per-dialog depth lives in each subdir's docs. This file holds only the umbrella-level
+detail.
 
 ## Archive edits (`archive_edit`)
 

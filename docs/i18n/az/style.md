@@ -1,8 +1,7 @@
 # Azerbaijani (az) translation style guide
 
-Working notes for translating Cmdr into Azerbaijani. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Azerbaijani.
+Working notes for translating Cmdr into Azerbaijani. Read `../README.md` for how this fits the translation process, and
+the app-wide `docs/style-guide.md` for the English voice these notes carry into Azerbaijani.
 
 **Sparse pile, no macOS.** Apple ships no Azerbaijani macOS UI. The pile has GNOME Nautilus for `az`, plus an `az-Latn`
 folder with a Microsoft terminology glossary and a Microsoft style guide (`_ignored/i18n/az/` and `az-Latn/`). No Xfce,
@@ -15,8 +14,8 @@ The calls a translator can't make alone. The first is the headline.
 - **Script: RESOLVED to Latin (`az-Latn`).** Azerbaijani in Azerbaijan switched from Cyrillic to a Latin alphabet
   (officially completed 2001); modern Azerbaijan uses Latin exclusively. The pile's Microsoft sources are `az-Latn`.
   Perso-Arabic `az-Arab` (Iran) is RTL and out of scope under the no-RTL decision. Don't use Cyrillic (it reads as
-  dated/Soviet-era to a modern reader). See the script decision point below and
-  [`script-decisions.md`](../script-decisions.md). No longer open.
+  dated/Soviet-era to a modern reader). See the script decision point below and `../script-decisions.md`. No longer
+  open.
 - **Address form: polite plural "Siz" recommended, worth a sign-off (high).** Azerbaijani (Turkic, like Turkish) has a
   T-V split; software uses the polite plural. MS Azerbaijani uses the polite second person ("istəsəniz" = if you wish,
   verified 2026-06-20). Recommended default below.
@@ -43,7 +42,7 @@ Azerbaijani distinguishes informal singular "sən" from polite plural "Siz", lik
 
 ## Decision points
 
-- **Script: RESOLVED to Latin (`az-Latn`).** Recorded in [`script-decisions.md`](../script-decisions.md).
+- **Script: RESOLVED to Latin (`az-Latn`).** Recorded in `../script-decisions.md`.
 - **Regional variant: `az` / `az-Latn` (Azerbaijan).** The Republic of Azerbaijan standard, Latin script. The Iranian
   (South Azerbaijani, Perso-Arabic) variant is a separate, RTL workstream - out of scope by default. Confidence: high.
 - **Gender / inclusive language: a non-issue (high).** Azerbaijani (Turkic) has NO grammatical gender and a single
@@ -99,12 +98,12 @@ both categories.
 - **Length.** Agglutinative suffixing makes some strings longer; overflow-check against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) - relevant because
   Azerbaijani uses apostrophes on suffixed brand tokens - and keep every `{placeholder}` and `<tag>` verbatim. Full
-  rules: the agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  rules: the agent-handoff block in `docs/guides/i18n-translation.md` and
   `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/az/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/az/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

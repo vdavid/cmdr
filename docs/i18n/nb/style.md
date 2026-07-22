@@ -1,7 +1,7 @@
 # Norwegian Bokmål (nb) translation style guide
 
-Working notes for translating Cmdr into Norwegian Bokmål. Read [`README.md`](../README.md) for how this fits the
-translation process. `nb` targets **Bokmål only** (see Decision points); Nynorsk would be a separate `nn` locale.
+Working notes for translating Cmdr into Norwegian Bokmål. Read `../README.md` for how this fits the translation process.
+`nb` targets **Bokmål only** (see Decision points); Nynorsk would be a separate `nn` locale.
 
 ## Voice and tone
 
@@ -123,6 +123,6 @@ natural phrase rather than swapping only the numeral. The `desktop-i18n-plural` 
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/nb/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/nb/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

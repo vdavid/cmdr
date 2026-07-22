@@ -1,18 +1,18 @@
 # Network scanner (SMB/MTP) details
 
 Read this before any non-trivial work in `network_scanner/`: editing, planning, reorganizing, or advising. Must-know
-guardrails are in [CLAUDE.md](CLAUDE.md).
+guardrails are in `CLAUDE.md`.
 
 This area owns the `Volume`-trait BFS scan/reconcile walk, its round-trip disciplines, the terminal-disconnect
 partial-preserving finish, the consecutive-failure backstop, scan pacing, and the NAS system-dir skips. Points outward:
 the registry / phase machine / freshness / gating / manual-rescan routing in
-[`../lifecycle/DETAILS.md`](../lifecycle/DETAILS.md); the honest-sizes model + `dir_stats` ledger + the shared
-`Arc<AtomicI64>` id counter in [`../writer/DETAILS.md`](../writer/DETAILS.md); the reconcile mode predicate, the shared
+`../lifecycle/DETAILS.md`; the honest-sizes model + `dir_stats` ledger + the shared
+`Arc<AtomicI64>` id counter in `../writer/DETAILS.md`; the reconcile mode predicate, the shared
 per-dir diff (`diff_dir_against_db`), the `BulkReconcileGuard`, and the completion-handler empty-root policy in
-[`../reconcile/DETAILS.md`](../reconcile/DETAILS.md); mount-relative path spaces in
-[`../paths/DETAILS.md`](../paths/DETAILS.md); SMB/MTP transport enable + live watch in
-[`../transports/CLAUDE.md`](../transports/CLAUDE.md). The local guarded walker is a different scanner:
-[`../scanner/DETAILS.md`](../scanner/DETAILS.md).
+`../reconcile/DETAILS.md`; mount-relative path spaces in
+`../paths/DETAILS.md`; SMB/MTP transport enable + live watch in
+`../transports/CLAUDE.md`. The local guarded walker is a different scanner:
+`../scanner/DETAILS.md`.
 
 ## The `Volume`-trait scan path
 
@@ -102,7 +102,7 @@ per-connection serialization in the server's ksmbd, not the disks, and that spre
 over several TCP connections lifts cold throughput ~3.8×. That's a BACKEND concern, not a scanner one: the SMB backend
 opens a small pool of extra sessions per scan and `list_directory_for_scan` fans out across them, invisibly to this walk
 (the global budget still caps total concurrency). Canonical: `file_system/.../backends/DETAILS.md` § "SMB
-scan-connection pool"; evidence: `smb2/docs/benchmark-findings.md`.
+scan-connection pool"; evidence: `~/projects-git/vdavid/smb2/docs/benchmark-findings.md`.
 
 At ~4× listing throughput the single writer's per-second insert rate rises the same, so the FRESH scan
 (`scan_volume_via_trait`) now wraps its `InsertEntriesV2` stream in ONE explicit transaction committed on an interval
@@ -172,7 +172,7 @@ first-scan stalled near 50% grinding `@Recently-Snapshot`, which alone reported 
 both ruinous and wrong (the bytes are deduped, not real consumed space). The names are reserved vendor conventions
 (`@`/`#`/`$` prefixes) that don't collide with user folders, so a name match is safe. **Guardrail:** don't remove the
 exclusion to "fill in" the missing sizes — that re-triggers the stall. Scope is the network scanner only (the home of
-these dirs); the local walker has its own `should_exclude` ([`../scanner/DETAILS.md`](../scanner/DETAILS.md)).
+these dirs); the local walker has its own `should_exclude` (`../scanner/DETAILS.md`).
 `FileEntry` carries no DOS hidden/system attribute today; if one is plumbed through, "hidden + system" would generalize
 this without the hardcoded list.
 
@@ -184,7 +184,7 @@ and writes NO `scan_completed_at`. A false "complete" over a transiently-empty r
 (startup loads Stale and never rescans; a manual rescan re-"completes" the same empty root). The full completion-handler
 policy — empty (`EmptyRoot`) vs failed (`Volume`/`Io`) root, why both reconcile paths bail BEFORE diffing the root, and
 the accepted genuinely-empty-volume false-negative — is canonical in
-[`../reconcile/DETAILS.md`](../reconcile/DETAILS.md) § No completion marker on an empty root.
+`../reconcile/DETAILS.md` § No completion marker on an empty root.
 
 ## Reconcile
 
@@ -193,4 +193,4 @@ the accepted genuinely-empty-volume false-negative — is canonical in
 consecutive-failure backstop) but diffs each dir against the DB via the shared `diff_dir_against_db` instead of
 inserting fresh, so the last-good index stays visible-stale throughout. The mode predicate (reconcile vs truncate), the
 shared per-dir diff, the `BulkReconcileGuard` delta-propagation suppression, and the finish (`MarkDirsListed` → one
-`ComputeAllAggregates`) are all canonical in [`../reconcile/DETAILS.md`](../reconcile/DETAILS.md).
+`ComputeAllAggregates`) are all canonical in `../reconcile/DETAILS.md`.

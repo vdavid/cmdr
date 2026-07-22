@@ -11,7 +11,7 @@ tabs.
 - **`TabBar.svelte`**: Tab bar UI (always visible, Chrome-style shrinking tabs, pins, close buttons, context menu)
 - **`tab-label.ts`**: `deriveTabLabel(path)`, the tab title
 
-Architecture, decision rationale, persistence, and closed-tab-history detail: [DETAILS.md](DETAILS.md).
+Architecture, decision rationale, persistence, and closed-tab-history detail: `DETAILS.md`.
 
 ## Must-knows
 

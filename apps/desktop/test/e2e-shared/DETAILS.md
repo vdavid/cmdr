@@ -18,5 +18,4 @@ are covered deterministically.
 - **Port-file read NEVER falls back to legacy ports silently.** A silent fallback hides bugs (the test "works" but
   against the wrong instance). The strict precedence ladder (env → file → typed error) makes mis-configurations loud.
 
-See [`docs/tooling/instance-isolation.md`](../../../../docs/tooling/instance-isolation.md) § "Per-resource breakdown"
-for the full port-file design.
+See `docs/tooling/instance-isolation.md` § "Per-resource breakdown" for the full port-file design.

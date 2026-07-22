@@ -1,8 +1,7 @@
 # Ukrainian (uk) translation style guide
 
-Working notes for translating Cmdr into Ukrainian. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Ukrainian.
+Working notes for translating Cmdr into Ukrainian. Read `../README.md` for how this fits the translation process, and
+the app-wide `docs/style-guide.md` for the English voice these notes carry into Ukrainian.
 
 Evidence is triangulated against the reference pile (`_ignored/i18n/uk/`: macOS strongest, then Microsoft terminology
 and style guide, then GNOME Nautilus and Xfce Thunar) on 2026-06-20. Sources are read to decide a term, never copied
@@ -158,7 +157,7 @@ gender-avoidance rule above: if a counted-items message also references an actio
   об'єкт), it appears in ordinary words inside ICU values, where a lone `'` is an ICU escape that silently swallows
   following text. Double EVERY literal apostrophe (`'` → `''`) in ICU-formatted values. (Keys under `errors.*` are raw,
   not ICU: there use a single normal apostrophe. See `i18n.md` § Error pipeline and the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).)
+  `docs/guides/i18n-translation.md`.)
 - **Length.** Ukrainian runs somewhat longer than English (often 10-20% more), and case endings lengthen nouns.
   Overflow-check the layout against the pseudolocale (`en-XA`).
 - **Numbers/dates from the formatter layer**, never hardcoded in a string (see Decision points).
@@ -166,6 +165,6 @@ gender-avoidance rule above: if a counted-items message also references an actio
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/uk/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/uk/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

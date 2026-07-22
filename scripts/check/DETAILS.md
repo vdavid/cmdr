@@ -1,8 +1,8 @@
 # Check runner details
 
 Pull-tier docs for `scripts/check/`: architecture, flows, and decision rationale. Must-know invariants and gotchas live
-in [CLAUDE.md](CLAUDE.md). For check authoring (how to add a new check, `CheckDefinition` shape, naming/`CLIName()`
-rules, common helpers, the allowlist), see [`checks/CLAUDE.md`](checks/CLAUDE.md).
+in `CLAUDE.md`. For check authoring (how to add a new check, `CheckDefinition` shape, naming/`CLIName()` rules, common
+helpers, the allowlist), see `checks/CLAUDE.md`.
 
 ## Quick start
 

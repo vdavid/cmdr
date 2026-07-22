@@ -1,7 +1,6 @@
 # Portuguese (pt) translation style guide
 
-Working notes for translating Cmdr into Portuguese. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into Portuguese. Read `../README.md` for how this fits the translation process.
 
 The base `pt` tag is a decision in itself: Portuguese splits hard between Brazil (`pt-BR`) and Europe/Portugal
 (`pt-PT`). See the script/variant decision point below before treating `pt` as one language.
@@ -51,11 +50,10 @@ Concrete vocabulary splits that matter for a file manager:
 Spelling: the 1990 Orthographic Agreement narrowed but did not erase the gap (e.g. accentuation and some consonant
 clusters still differ in practice and in vendor style guides).
 
-**Settled: `pt` ships BRAZILIAN Portuguese (pt-BR).** Recorded in
-[`language-selection-decisions.md`](../language-selection-decisions.md) (pt = wave 1, ships as pt-BR; pt-PT = wave 2)
-and in the reference pile's own `_ignored/i18n/pt/_see-also.txt`. Never ship one blended "Portuguese", and never mine
-the bare `_ignored/i18n/pt/` folder: that one is EUROPEAN, and using it is the documented variant trap. Mine
-`_ignored/i18n/pt-BR/`.
+**Settled: `pt` ships BRAZILIAN Portuguese (pt-BR).** Recorded in `../language-selection-decisions.md` (pt = wave 1,
+ships as pt-BR; pt-PT = wave 2) and in the reference pile's own `_ignored/i18n/pt/_see-also.txt`. Never ship one blended
+"Portuguese", and never mine the bare `_ignored/i18n/pt/` folder: that one is EUROPEAN, and using it is the documented
+variant trap. Mine `_ignored/i18n/pt-BR/`.
 
 **pt-PT tells worth grepping for before you ship a batch** (each one is a real regression found in a shipped batch):
 
@@ -118,7 +116,7 @@ modern CLDR Portuguese (compact/large numbers), so plural messages must write a 
 ## Notes and decisions
 
 - Roster: Cmdr ships pt-BR for wave 1; pt-PT is a separate wave-2 variant (vocabulary, você/tu, spelling). See
-  [`language-selection-decisions.md`](../language-selection-decisions.md).
+  `../language-selection-decisions.md`.
 - Quotation marks: pt-BR commonly uses curly "" (like English); pt-PT traditionally uses guillemets «». Match the chosen
   variant.
 - Decimal/thousands: both use comma decimal, period (pt-PT) or period/space thousands. `Intl` handles this; don't
@@ -131,6 +129,6 @@ modern CLDR Portuguese (compact/large numbers), so plural messages must write a 
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/pt/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/pt/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

@@ -1,8 +1,7 @@
 # Chinese (zh) translation style guide
 
-Working notes for translating Cmdr into Chinese. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Chinese.
+Working notes for translating Cmdr into Chinese. Read `../README.md` for how this fits the translation process, and the
+app-wide `docs/style-guide.md` for the English voice these notes carry into Chinese.
 
 Chinese is a tier-1 well-localized language: Apple (Finder), Microsoft, Google, Spotify, and Netflix all ship both
 script variants, so triangulation evidence is strong. Sources mined for this guide: macOS Finder/AppKit strings in zh-CN
@@ -18,9 +17,9 @@ These are calls a translator can't make alone. The rest of this guide assumes th
 
 - **Which script variant(s) to ship: RESOLVED to Simplified `zh-Hans` only for now** (Traditional `zh-Hant`, Taiwan
   norm, is a fast-follow; never auto-convert, vocabulary differs). See the script decision point below and
-  [`script-decisions.md`](../script-decisions.md). No longer open.
+  `../script-decisions.md`. No longer open.
 - **Formal vs neutral "you" (`您` vs `你`): RESOLVED to `你`** (consumer-brand evidence; legal/billing copy uses formal
-  `您`; see Formality and [`formal-informal-decisions.md`](../formal-informal-decisions.md)). No longer open.
+  `您`; see Formality and `../formal-informal-decisions.md`). No longer open.
 
 ## Voice and tone
 
@@ -49,7 +48,7 @@ naturally and isn't cryptically clipped.
   friendly personal voice; macOS Finder/AppKit uses `你` exclusively (zero `您` across zh-CN and zh-TW; 411 and 398 `你`
   respectively, verified against the reference pile, 2026-06-20). Microsoft's house style leans `您`, but Cmdr picks
   `你`. Keep it consistent across the whole catalog; mixing reads as careless. Formality decision recorded in
-  [`formal-informal-decisions.md`](../formal-informal-decisions.md).
+  `../formal-informal-decisions.md`.
 - **Exception: legal and billing copy uses the formal `您`.** Where the copy is contractual (licensing, payment, terms),
   the formal `您` is the convention; reserve it for those strings and keep `你` everywhere else.
 - **Buttons and menu items: bare verb, no politener.** macOS labels actions as plain verbs: `拷贝`/`拷貝` (copy),
@@ -61,8 +60,7 @@ naturally and isn't cryptically clipped.
 ### Script: Simplified vs Traditional (the big one), and which region
 
 **RESOLVED: ship Simplified `zh-Hans` only for now** (Traditional `zh-Hant`, Taiwan norm, is a fast-follow; never
-auto-convert, the vocabulary differs). Recorded in [`script-decisions.md`](../script-decisions.md). The structure and
-evidence below stand.
+auto-convert, the vocabulary differs). Recorded in `../script-decisions.md`. The structure and evidence below stand.
 
 - **Two written standards, not mutually substitutable.** Simplified Chinese (`zh-Hans`) is the standard in Mainland
   China and Singapore; Traditional Chinese (`zh-Hant`) is standard in Taiwan, Hong Kong, and Macau. They differ in
@@ -173,11 +171,10 @@ inflection.
 - Double every apostrophe in a value (`'` becomes `''`); ICU treats a lone `'` as an escape and silently swallows text.
   Chinese rarely needs apostrophes, but any in a loanword or English fragment must be doubled.
 - Keep every `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
-  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  `docs/guides/i18n-translation.md` and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/zh/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/zh/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

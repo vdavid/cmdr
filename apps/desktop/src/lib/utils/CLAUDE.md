@@ -56,5 +56,4 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
   only when truncation actually trimmed the string. `VITE_CMDR_FORCE_OLD_WEBKIT=1 pnpm dev` forces the old-WebKit
   fallback path on modern WebKit (see DETAILS.md and `docs/guides/releasing.md` § old-macOS smoke test).
 
-Full details (full export catalogs, validator/decision rationale, the old-WebKit dev override mechanism):
-[DETAILS.md](DETAILS.md).
+Full details (full export catalogs, validator/decision rationale, the old-WebKit dev override mechanism): `DETAILS.md`.

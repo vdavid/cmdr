@@ -10,7 +10,7 @@ reasoning plus the recent-paths store; the IPC layer (`commands/go_to_path.rs`) 
 - **`history.rs`**: recent-paths store (`RecentPathEntry`, `RecentPathsStore`): in-memory `Mutex` + `OnceLock`, atomic
   temp+rename write, dedupe by resolved path, fixed cap, schema-version quarantine
 
-Decision rationale and v1 limitations: [DETAILS.md](DETAILS.md).
+Decision rationale and v1 limitations: `DETAILS.md`.
 
 ## Must-knows
 

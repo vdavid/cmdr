@@ -3,15 +3,15 @@
 Thin read-only settings loader used during Rust startup. The frontend owns all settings via `tauri-plugin-store`; this
 module reads what was persisted so the backend can configure itself at launch.
 
-Frontend counterpart: [`apps/desktop/src/lib/settings/CLAUDE.md`](../../../src/lib/settings/CLAUDE.md) owns the settings
+Frontend counterpart: `apps/desktop/src/lib/settings/CLAUDE.md` owns the settings
 store, the typed `getSetting` / `setSetting` wrapper, the Settings window UI, and the `settings-applier.ts` IPC pump that
 satisfies the live-apply rule below.
 
 ## Module map
 
 - `mod.rs`: re-exports `load_settings` from `loader`.
-- `loader.rs`: `Settings` struct + `load_settings` (reads `settings.json`, falls back to `Default`); the
-  `RestrictedWindowSettings` snapshot; the early-load helpers.
+- `loader.rs`: `Settings` struct + `load_settings` (reads `settings.json`, falls back to `Default`); the `RestrictedWindowSettings`
+  snapshot; the early-load helpers.
 
 ## Must-knows
 
@@ -50,5 +50,4 @@ Two helpers in `loader.rs` read `settings.json` before the Tauri `AppHandle` is 
 unset). Both resolve the production default via `dirs::data_dir()` + a hard-coded bundle-id constant kept in sync with
 `tauri.conf.json` → `identifier`.
 
-The full `Settings` struct field list (every key, its source dot-path, and per-field notes) is in
-[DETAILS.md](DETAILS.md).
+The full `Settings` struct field list (every key, its source dot-path, and per-field notes) is in `DETAILS.md`.

@@ -2,7 +2,7 @@
 
 The open-beta "Send feedback" dialog: free-text feedback sent to the api-server (`POST /feedback`), which stores it in
 D1 and pings Discord. No log bundle rides along (that's the error reporter's job). Entry points, mount location, and
-behavior detail: [DETAILS.md](DETAILS.md).
+behavior detail: `DETAILS.md`.
 
 ## Module map
 

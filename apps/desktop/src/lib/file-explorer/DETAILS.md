@@ -1,28 +1,26 @@
 # File explorer details
 
 Pull-tier docs for `apps/desktop/src/lib/file-explorer/`: architecture, flows, and decision rationale. Must-know
-invariants and gotchas live in [CLAUDE.md](CLAUDE.md).
+invariants and gotchas live in `CLAUDE.md`.
 
 The cross-cutting subsystem detail that belongs to a child directory (type-to-jump, live disk space, error display, the
-`navigate()` transaction, volume capabilities) lives in [`pane/CLAUDE.md`](pane/CLAUDE.md) and
-[`pane/DETAILS.md`](pane/DETAILS.md); this file owns selection, sorting, the command palette, operations, and the
-cross-cutting decisions.
+`navigate()` transaction, volume capabilities) lives in `pane/CLAUDE.md` and `pane/DETAILS.md`; this file owns
+selection, sorting, the command palette, operations, and the cross-cutting decisions.
 
 ## Selection (`selection/`)
 
 ### User interaction
 
 - **Space**: toggle selection at cursor (macOS only — must be unshifted; **Shift+Space** opens Quick Look instead, see
-  [`quick-look/`](quick-look/) and `src-tauri/src/quick_look/CLAUDE.md`). Each plain-Space press also fires an
-  educational toast for Finder converts (lives in [`quick-look/quick-look-hint.ts`](quick-look/quick-look-hint.ts)). The
-  toast keeps reappearing as a gentle reminder until the user clicks "Don't show again" (or flips
-  `fileExplorer.suppressQuickLookHint` in Settings > Advanced). While the toast is on screen, further Space presses just
-  toggle selection — the hint module no-ops if the toast is already visible. The X on the toast frame closes the current
-  instance without suppressing future ones. The toast's keys render as literal-mode `ShortcutChip`s: `Space` / `Enter`
-  are fixed interaction keys, and the Quick Look key is snapshotted at toast creation
-  (`getEffectiveShortcuts('file.quickLook')[0]`, default `⇧Space`) so a mid-display rebind doesn't rewrite the visible
-  toast. The toast also carries a "Settings > Keyboard shortcuts" `LinkButton` that deep-links to the `file.quickLook`
-  row, so the chips themselves stay non-clickable.
+  `quick-look/` and `src-tauri/src/quick_look/CLAUDE.md`). Each plain-Space press also fires an educational toast for
+  Finder converts (lives in `quick-look/quick-look-hint.ts`). The toast keeps reappearing as a gentle reminder until the
+  user clicks "Don't show again" (or flips `fileExplorer.suppressQuickLookHint` in Settings > Advanced). While the toast
+  is on screen, further Space presses just toggle selection — the hint module no-ops if the toast is already visible.
+  The X on the toast frame closes the current instance without suppressing future ones. The toast's keys render as
+  literal-mode `ShortcutChip`s: `Space` / `Enter` are fixed interaction keys, and the Quick Look key is snapshotted at
+  toast creation (`getEffectiveShortcuts('file.quickLook')[0]`, default `⇧Space`) so a mid-display rebind doesn't
+  rewrite the visible toast. The toast also carries a "Settings > Keyboard shortcuts" `LinkButton` that deep-links to
+  the `file.quickLook` row, so the chips themselves stay non-clickable.
 - **Insert**: toggle selection at cursor and move cursor down (Total Commander style). `..` isn't selectable, but the
   cursor still advances. At the last row the cursor stays put. No physical Insert key on Apple keyboards — users can
   remap via Karabiner-Elements, plug in a PC USB keyboard, or rebind in Settings → Shortcuts.
@@ -41,7 +39,7 @@ cross-cutting decisions.
 - **`+` / `-`**: open the Selection dialog ("Select files…" / "Deselect files…", Total Commander parity). Bare keys, no
   modifier required. On US QWERTY, `Shift+=` IS the `event.key === '+'` event so `Shift` is intentionally NOT filtered.
   See [`$lib/selection-dialog/CLAUDE.md`](../selection-dialog/CLAUDE.md) for the dialog itself; the pane-side classifier
-  lives in [`pane/selection-dialog-keys.ts`](pane/selection-dialog-keys.ts).
+  lives in `pane/selection-dialog-keys.ts`.
 - **".." entry can't be selected**: keyboard fills from `..` default to "select" (so Shift+End from `..` selects).
 - **Cleared on navigation**: selection is per-directory
 
@@ -124,8 +122,7 @@ fallback contract, and the snapshot-pane note.
 - **History entries are paths**: stored as strings. No FileEntry metadata cached in history.
 - **Volume switching**: changes volume context. History still tracks old volume's paths.
 
-Full history-stack contract and the volume-breadcrumb detail live in [`navigation/CLAUDE.md`](navigation/CLAUDE.md) and
-[`navigation/DETAILS.md`](navigation/DETAILS.md).
+Full history-stack contract and the volume-breadcrumb detail live in `navigation/CLAUDE.md` and `navigation/DETAILS.md`.
 
 ## Sorting
 
@@ -203,8 +200,8 @@ Second virtual-volume namespace alongside `network`. `volumeId === 'search-resul
 `VolumeCapabilities`: `FilePane`'s `paneViewKind` derived (`caps.kind === 'search-results'`) picks `SearchResultsView`
 in the `{#if/elseif}` chain, and the "is there a real directory" per-feature gates (git lookups, listing watcher,
 dir-exists poll, MCP file sync) read `!caps.hasBackendListing` — the same gate that skips a `network` pane. See
-[`pane/DETAILS.md`](pane/DETAILS.md) § "Volume capabilities" for the per-site breakdown (invariant A6 — capabilities,
-not a `volumeId === 'search-results'` string compare).
+`pane/DETAILS.md` § "Volume capabilities" for the per-site breakdown (invariant A6 — capabilities, not a
+`volumeId === 'search-results'` string compare).
 
 `SearchResultsView` reads the snapshot from `$lib/search/snapshot-store.svelte` and feeds its entries into `FullList`
 via `staticEntries`. No backend listing exists, no IPC traffic. Each adapted entry's `name` field is the friendly full
@@ -289,7 +286,7 @@ Context-menu wiring on the snapshot pane:
   transfer path. Drag-out uses the `'paths'` drag context (see `drag/CLAUDE.md`) which routes through
   `start_drag_paths`. Post-move snapshot cleanup is the cleanup hook in `dialog-state::handleTransferComplete`.
 
-For the dialog-side wiring see [`apps/desktop/src/lib/search/CLAUDE.md`](../search/CLAUDE.md).
+For the dialog-side wiring see `../search/CLAUDE.md`.
 
 ## Operations (`operations/`)
 
@@ -323,9 +320,8 @@ Inline rename with validation, conflict resolution, and an extension change conf
 ## Pane (`pane/`)
 
 `DualPaneExplorer` + `FilePane` + dialog manager + per-pane state (selection, type-to-jump, rename flow, volume tint).
-See [`pane/CLAUDE.md`](pane/CLAUDE.md) and [`pane/DETAILS.md`](pane/DETAILS.md) for the full file map, conventions, and
-gotchas. The cross-reference sections below (type-to-jump, live disk space, error display) point into the same
-subsystem.
+See `pane/CLAUDE.md` and `pane/DETAILS.md` for the full file map, conventions, and gotchas. The cross-reference sections
+below (type-to-jump, live disk space, error display) point into the same subsystem.
 
 ### Type-to-jump
 

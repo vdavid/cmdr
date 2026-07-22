@@ -7,8 +7,8 @@
 Cmdr's SMB share listing falls back, for older servers where the pure-Rust `smb2` crate's RPC fails, to shelling out to
 `smbutil view //user:password@host`. That leaks the password into the process argument list (`ps aux` /
 `/proc`-equivalent) for the ~sub-second the child runs. (See the `// SECURITY:` block in
-[`network/smb_smbutil.rs`](../../apps/desktop/src-tauri/src/network/smb_smbutil.rs) and the "Credential channel" section
-of [`network/CLAUDE.md`](../../apps/desktop/src-tauri/src/network/CLAUDE.md).)
+`apps/desktop/src-tauri/src/network/smb_smbutil.rs` and the "Credential channel" section of
+`apps/desktop/src-tauri/src/network/CLAUDE.md`.)
 
 Is there a native macOS framework API to **enumerate the shares** on an SMB server, passing credentials **in memory**
 (never via argv/CLI), callable from Rust FFI, to replace that shell-out?
@@ -81,13 +81,13 @@ list. `smb_netshareenum` / `NetShareEnum` / `EnumerateShares` are absent from th
 
 - **`NetFS.framework` is public, but exposes only mounting, not enumeration.** `NetFS.h` publicly declares
   `NetFSMountURLSync` / `NetFSMountURLAsync` / `NetFSMountURLProbe` (Cmdr already uses the sync one in
-  [`network/mount.rs`](../../apps/desktop/src-tauri/src/network/mount.rs)). The header _mentions_ "EnumerateShares
-  methods" and `GetServerInfo`, and defines the in-memory credential keys `kNetFSUserNameKey` (`"UserName"`) and
-  `kNetFSPasswordKey` (`"Password"`) — but the only place an `EnumerateShares` function is **declared** is
-  `NetFSPlugin.h`, inside the `NetFSMountInterface_V1` CFPlugInCOM vtable. **That vtable is a plugin-author SPI: it's
-  the interface a filesystem plugin _implements_ for NetFS to call, not a client API you call to enumerate.**
-  `SMBClient.framework`'s `_SMBNetFs*` exports are precisely Apple's SMB implementation of that vtable. There is no
-  public client-side `NetFSEnumerateShares(...)`.
+  `apps/desktop/src-tauri/src/network/mount.rs`). The header _mentions_ "EnumerateShares methods" and `GetServerInfo`,
+  and defines the in-memory credential keys `kNetFSUserNameKey` (`"UserName"`) and `kNetFSPasswordKey` (`"Password"`) —
+  but the only place an `EnumerateShares` function is **declared** is `NetFSPlugin.h`, inside the
+  `NetFSMountInterface_V1` CFPlugInCOM vtable. **That vtable is a plugin-author SPI: it's the interface a filesystem
+  plugin _implements_ for NetFS to call, not a client API you call to enumerate.** `SMBClient.framework`'s `_SMBNetFs*`
+  exports are precisely Apple's SMB implementation of that vtable. There is no public client-side
+  `NetFSEnumerateShares(...)`.
 
 So: the **public** NetFS surface can mount but can't enumerate; the **private** SMBClient surface can authenticate (in
 memory) but still doesn't hand you the share list — that part is smbutil's own code.

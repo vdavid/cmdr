@@ -1,7 +1,6 @@
 # K'iche' (qut) translation style guide
 
-Working notes for translating Cmdr into K'iche'. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into K'iche'. Read `../README.md` for how this fits the translation process.
 
 VERY LOW priority. K'iche' (also Quiché) is a Mayan language of highland Guatemala (~1M speakers). The pile has ONLY
 Microsoft terminology for `qut-GT`; no macOS (Apple ships no K'iche' UI), no GNOME/Xfce. There is essentially no
@@ -61,6 +60,6 @@ CLDR categories for `qut`: `one`, `other`. Two forms.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/qut/`; recipes in
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/qut/`; recipes in
 `docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

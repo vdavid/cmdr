@@ -1,8 +1,7 @@
 # Hindi (hi) translation style guide
 
-Working notes for translating Cmdr into Hindi. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Hindi.
+Working notes for translating Cmdr into Hindi. Read `../README.md` for how this fits the translation process, and the
+app-wide `docs/style-guide.md` for the English voice these notes carry into Hindi.
 
 Hindi is a tier-1 well-localized language: Apple (Finder), Microsoft, Google, Spotify, and Netflix all ship Hindi, so
 triangulation evidence is strong. Sources mined for this guide: macOS Finder/AppKit Hindi strings, the Microsoft Hindi
@@ -148,11 +147,10 @@ CLDR categories: **`one`, `other`** (verified with `new Intl.PluralRules('hi')`,
 - Double every apostrophe in a value (`'` becomes `''`); ICU treats a lone `'` as an escape and silently swallows text.
   Hindi rarely needs apostrophes, but any in a loanword or English fragment must be doubled.
 - Keep every `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
-  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  `docs/guides/i18n-translation.md` and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/hi/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/hi/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

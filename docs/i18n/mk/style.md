@@ -1,8 +1,7 @@
 # Macedonian (mk) translation style guide
 
-Working notes for translating Cmdr into Macedonian. Read [`README.md`](../README.md) for how this fits the translation
-process. Macedonian is written in **Macedonian Cyrillic only**; there is no Latin UI variant to target (see Decision
-points).
+Working notes for translating Cmdr into Macedonian. Read `../README.md` for how this fits the translation process.
+Macedonian is written in **Macedonian Cyrillic only**; there is no Latin UI variant to target (see Decision points).
 
 ## Voice and tone
 
@@ -149,6 +148,6 @@ gender agreement with the counted noun (датотека is feminine). The `desk
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/mk/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/mk/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

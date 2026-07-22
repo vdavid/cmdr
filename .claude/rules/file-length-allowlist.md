@@ -12,4 +12,4 @@ is always safe: surface it to David rather than silencing it. `docs-reachable` i
 than exempt it.
 
 Per-allowlist mechanics and the `exempt` section (generated files like `bindings.ts`):
-[`scripts/check/checks/DETAILS.md`](../../scripts/check/checks/DETAILS.md).
+`scripts/check/checks/DETAILS.md`.

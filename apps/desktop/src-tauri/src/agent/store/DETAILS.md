@@ -1,6 +1,6 @@
 # Agent store details
 
-Pull-tier docs for `agent/store/`. Must-knows live in [CLAUDE.md](CLAUDE.md). This store is the app's second durable DB,
+Pull-tier docs for `agent/store/`. Must-knows live in `CLAUDE.md`. This store is the app's second durable DB,
 built on the operation log's proven template (`operation_log/store/`); this file records only what's specific to
 `main.db`, and points at the template for the shared discipline.
 

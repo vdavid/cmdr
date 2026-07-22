@@ -8,12 +8,12 @@ The living term glossary for translating Cmdr into this language: one entry per 
   source(s) and a confidence (`confirmed` / `high` / `tentative`).
 - **This folder is this language home.** Capture new term decisions here, and other findings as sibling files.
 
-Format, the confidence scale, and the full process: [i18n-translation.md](../../guides/i18n-translation.md).
+Format, the confidence scale, and the full process: `docs/guides/i18n-translation.md`.
 
 ## Terms
 
-Core file/UI terms (Trash, copy, move, open, settings, etc.) live in [`style.md`](style.md) § Terminology and glossary;
-this file adds the terms settled while translating the catalogs. All `zh-Hans` (Simplified).
+Core file/UI terms (Trash, copy, move, open, settings, etc.) live in `style.md` § Terminology and glossary; this file
+adds the terms settled while translating the catalogs. All `zh-Hans` (Simplified).
 
 ### Settings catalog (first pass, 2026-06-21)
 

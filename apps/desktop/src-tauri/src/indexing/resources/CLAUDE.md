@@ -31,4 +31,4 @@ per-volume), these cap the WHOLE indexing pool.
   lifecycle's, not here.
 
 Thresholds, the memory-snapshot breakdown, the shared-ceiling rationale, and the LRU + safety logic:
-[DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+`DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

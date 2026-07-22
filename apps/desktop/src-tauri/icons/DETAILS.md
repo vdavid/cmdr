@@ -1,7 +1,7 @@
 # App icons details
 
 Source artwork, the bundle layout, and the regeneration steps. The must-knows that silently break things are in
-[CLAUDE.md](CLAUDE.md).
+`CLAUDE.md`.
 
 ## Source files
 

@@ -1,7 +1,7 @@
 # Western Frisian (fy) translation style guide
 
-Working notes for translating Cmdr into Western Frisian (Frysk). Read [`README.md`](../README.md) for how this fits the
-translation process.
+Working notes for translating Cmdr into Western Frisian (Frysk). Read `../README.md` for how this fits the translation
+process.
 
 This is the language base (`fy`), Western Frisian, the West Germanic language of Friesland (Fryslân) in the Netherlands.
 A single standard orthography (the 2015 spelling); no region variant needed for UI.
@@ -77,7 +77,7 @@ coverage. Confidence: confirmed.
   period thousands).
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
 - **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  `docs/guides/i18n-translation.md`.
 
 ## Decisions to confirm with David
 
@@ -86,6 +86,6 @@ coverage. Confidence: confirmed.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/fy/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/fy/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

@@ -1,9 +1,9 @@
 # Northern Sotho / Sepedi (nso) translation style guide
 
 Working notes for translating Cmdr into Northern Sotho (Sepedi), one of South Africa's official languages. Read
-[`README.md`](../README.md) for how this fits the translation process. Sepedi is written in the Latin script (with no
-special diacritic letters beyond `š`); there is no script decision. References: Microsoft terminology (`nso-ZA`, Tier 2)
-and GNOME Nautilus (`nso`, Tier 3).
+`../README.md` for how this fits the translation process. Sepedi is written in the Latin script (with no special
+diacritic letters beyond `š`); there is no script decision. References: Microsoft terminology (`nso-ZA`, Tier 2) and
+GNOME Nautilus (`nso`, Tier 3).
 
 ## Voice and tone
 
@@ -80,6 +80,6 @@ write each branch as a full natural phrase. The `desktop-i18n-plural` check requ
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/nso/`; recipes in
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/nso/`; recipes in
 `docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

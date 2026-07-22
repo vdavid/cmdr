@@ -1,11 +1,11 @@
 # Zip mutation — details
 
-Pull-tier docs for the zip write side. Must-know invariants live in [CLAUDE.md](CLAUDE.md). Read this before any
-non-trivial work here: editing, planning, reorganizing, or advising.
+Pull-tier docs for the zip write side. Must-know invariants live in `CLAUDE.md`. Read this before any non-trivial
+work here: editing, planning, reorganizing, or advising.
 
-The write side is `Volume`-free and manager-free like the [read core](../read/DETAILS.md). Full driver wiring (event
-sink, pause gate, cancel intent via the `MutationHooks` seam, and the remote pull→edit→upload→swap flow):
-[`../../../../write_operations/DETAILS.md`](../../../../write_operations/DETAILS.md) § "Archive edits".
+The write side is `Volume`-free and manager-free like the [read core](../read/DETAILS.md). Full driver wiring
+(event sink, pause gate, cancel intent via the `MutationHooks` seam, and the remote pull→edit→upload→swap flow):
+`apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "Archive edits".
 
 ## Temp+rename safe-overwrite (`mutator.rs`)
 

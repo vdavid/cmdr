@@ -3,7 +3,7 @@
 The chip strip below the mode-chip row inside the shared `QueryDialog`. It leads with a one-click
 `Both | Files | Folders` type toggle, then surfaces Pattern, Size, Modified, and Search in as chips that open popovers
 with the dense controls (all filters always visible, no "+ Add filter"). Owned by the shared query UI; consumed by both
-Search and Selection. See [`../CLAUDE.md`](../CLAUDE.md) for the orchestrator and cross-consumer state factory.
+Search and Selection. See `../CLAUDE.md` for the orchestrator and cross-consumer state factory.
 
 ## Module map
 
@@ -42,5 +42,5 @@ Search and Selection. See [`../CLAUDE.md`](../CLAUDE.md) for the orchestrator an
   `KeyM` / `KeyI` first and fall back to `event.key` for synthesized test events. `⌥I` (Search in) is Search-only;
   Selection passes `scopeChipVisible: false` and suppresses it.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

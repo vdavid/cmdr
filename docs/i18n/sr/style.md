@@ -1,8 +1,7 @@
 # Serbian (sr) translation style guide
 
-Working notes for translating Cmdr into Serbian. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Serbian.
+Working notes for translating Cmdr into Serbian. Read `../README.md` for how this fits the translation process, and the
+app-wide `docs/style-guide.md` for the English voice these notes carry into Serbian.
 
 Serbian is the hard one. It's digraphic: the same language is written in both Cyrillic and Latin, fully 1:1
 interchangeable, and tech UIs split on which to default to. That script call is the central decision below and it's
@@ -13,8 +12,7 @@ David's to make. Everything else (variant, formality, gender, plurals) resolves 
 These need David, not a translator:
 
 - **Script: RESOLVED to Latin `sr-Latn` first** (Cyrillic `sr-Cyrl` an optional fast-follow; the two are 1:1
-  transliterable). See the script decision point below and [`script-decisions.md`](../script-decisions.md). No longer
-  open.
+  transliterable). See the script decision point below and `../script-decisions.md`. No longer open.
 - **Catalog tag: don't ship bare `sr`.** Whatever script David picks, target an explicit script subtag for the catalog
   directory (`sr-Cyrl` or `sr-Latn`), mirroring the reference pile's split. Bare `sr` is script-ambiguous and leaves the
   rendering to the platform's guess. `tentative` only on which subtag, `high` that it should be explicit.
@@ -37,7 +35,7 @@ wasn't possible to rename the file) over a blunt "Грешка" (error) heading.
 
 **Verdict: informal `ti`, not the polite plural `Vi`.** Consumer brands (IKEA, Spotify, Netflix, and peers; IKEA-RS uses
 informal `ti`/`tvoj`) address Serbian users informally, which fits Cmdr's friendly personal voice. Formality decision
-recorded in [`formal-informal-decisions.md`](../formal-informal-decisions.md).
+recorded in `../formal-informal-decisions.md`.
 
 - **Direct address: informal singular `ti`** ("кликни", "изабери" / "klikni", "izaberi"), not the polite plural `Vi`
   ("кликните", "изаберите") that the OS sources lean on. Cmdr deliberately picks the warmer consumer-brand register.
@@ -54,7 +52,7 @@ recorded in [`formal-informal-decisions.md`](../formal-informal-decisions.md).
 ### Script: Cyrillic vs Latin (central)
 
 **RESOLVED: Latin `sr-Latn` first**, with Cyrillic `sr-Cyrl` an optional fast-follow (1:1 transliterable). Recorded in
-[`script-decisions.md`](../script-decisions.md). The evidence below stands.
+`../script-decisions.md`. The evidence below stands.
 
 - **The fact.** Serbian is written in both Cyrillic (ćirilica) and Latin (latinica), and the two map 1:1, character for
   character. The reference pile shows it directly: GNOME's Cyrillic catalog says "Премести у смеће", "Нова фасцикла",
@@ -109,7 +107,7 @@ recorded in [`formal-informal-decisions.md`](../formal-informal-decisions.md).
 
 - Covered in Formality above: use the informal singular **`ti`** register (consumer-brand decision; bare imperatives on
   buttons). `high`. (Listed here too so it's not relitigated as a "decision point".) See
-  [`formal-informal-decisions.md`](../formal-informal-decisions.md).
+  `../formal-informal-decisions.md`.
 
 ### Gender agreement (the gendered-grammar trap)
 
@@ -205,12 +203,11 @@ branches. There is **no `many`** category for Serbian, don't add one.
   Overflow-check the layout against the pseudolocale (`en-XA`). Cyrillic and Latin render at similar widths.
 - **ICU mechanics** (catalog-level, not Serbian-specific): double every apostrophe in a value (`'` becomes `''`), and
   keep every `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
-  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  `docs/guides/i18n-translation.md` and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/sr/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/sr/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

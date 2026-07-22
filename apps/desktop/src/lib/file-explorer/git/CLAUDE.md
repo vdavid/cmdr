@@ -5,9 +5,8 @@ Frontend git browser: the per-pane breadcrumb chip (`RepoChip.svelte`), the opti
 (`path-detection.ts`), and the `redirectToPath` plumbing so worktree / submodule entries open their working dir
 directly. Settings UI lives in `settings/sections/GitSection.svelte`.
 
-Backend counterpart:
-[`apps/desktop/src-tauri/src/file_system/git/CLAUDE.md`](../../../../src-tauri/src/file_system/git/CLAUDE.md) for repo
-discovery, the virtual `.git` portal, the per-repo watcher, and the FriendlyError content.
+Backend counterpart: `apps/desktop/src-tauri/src/file_system/git/CLAUDE.md` for repo discovery, the virtual `.git`
+portal, the per-repo watcher, and the FriendlyError content.
 
 ## File map
 
@@ -43,4 +42,4 @@ discovery, the virtual `.git` portal, the per-repo watcher, and the FriendlyErro
 Settings keys (all `fileExplorer.git.*`): `showRepoChip` (default `true`), `showStatusColumn` (default `false`),
 `showVirtualGitPortal` (default `true`).
 
-Full details (chip lifecycle, status-column lifecycle, decision rationale): [DETAILS.md](DETAILS.md).
+Full details (chip lifecycle, status-column lifecycle, decision rationale): `DETAILS.md`.

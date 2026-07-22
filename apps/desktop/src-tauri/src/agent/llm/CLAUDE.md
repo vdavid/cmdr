@@ -2,7 +2,7 @@
 
 The provider-agnostic `AgentLlm` boundary the whole chat runtime and UI test against. One method,
 `AgentLlm::respond`, makes one cold, self-contained streaming call. Depth (mapping table, reasoning-blob shapes,
-decision rationale): [DETAILS.md](DETAILS.md).
+decision rationale): `DETAILS.md`.
 
 ## Module map
 
@@ -17,7 +17,7 @@ decision rationale): [DETAILS.md](DETAILS.md).
 - **Never flatten a message to `content: String + reasoning: String`.** A turn is an ordered list of typed parts, and
   opaque reasoning state is **provider-tagged and rides on the part that owns it** (`ReasoningState` on the tool call,
   or a standalone `Reasoning` part). That lossy flat shape is exactly what breaks a multi-step tool loop on step 3
-  (spike Gaps A/B — [`docs/specs/ask-cmdr-genai-spike.md`](../../../../../../docs/specs/ask-cmdr-genai-spike.md)). The
+  (spike Gaps A/B — `docs/specs/ask-cmdr-genai-spike.md`). The
   `ReasoningState.blob` is opaque outside `genai_impl.rs`: persist and replay it untouched, never inspect or reshape it,
   and it NEVER crosses to the frontend.
 - **Reasoning is OFF on the Anthropic and OpenAI-Responses paths in v1.** genai drops their reasoning state on replay
@@ -33,4 +33,4 @@ decision rationale): [DETAILS.md](DETAILS.md).
   enforce, so an optional prop 400s. `tool_declaration_to_genai` leaves strict unset.
 
 Depth (the `AgentPart` ⇄ genai `ContentPart` mapping table, blob shapes, the thought-signature dedupe, live smokes):
-[DETAILS.md](DETAILS.md).
+`DETAILS.md`.

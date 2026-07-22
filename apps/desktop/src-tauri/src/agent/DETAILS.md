@@ -1,6 +1,6 @@
 # Agent subsystem details
 
-Pull-tier docs for `src-tauri/src/agent/`. Must-knows live in [CLAUDE.md](CLAUDE.md).
+Pull-tier docs for `src-tauri/src/agent/`. Must-knows live in `CLAUDE.md`.
 
 The agent is the app's AI agent (agent-spec: `docs/specs/later/agent-spec.md`). Its first shipped slice is **Ask Cmdr**:
 a read-only chat rail where the user talks to a BYO-key LLM that can see what Cmdr already knows (the drive index,
@@ -16,21 +16,21 @@ rather than forcing a rename. `name-internals-after-the-UI` still applies to the
 
 ## Module layout
 
-Construction plan: [`docs/specs/ask-cmdr-plan.md`](../../../../../docs/specs/ask-cmdr-plan.md). The backend modules:
+Construction plan: `docs/specs/ask-cmdr-plan.md`. The backend modules:
 
 - `llm/`: the `AgentLlm` trait, its genai-backed impl over `crate::ai::AiBackend`, the deterministic fake,
   and the typed message-part model. This is the seam the whole runtime and UI test against. Depth:
-  [`llm/DETAILS.md`](llm/DETAILS.md).
+  `llm/DETAILS.md`.
 - `store/`: the `main.db` durable store — a forward-migration ladder (mirroring `operation_log/store/`),
   FTS5 over message text, and a per-day cost meter. `agent::start(app)` (open the DB, register the `AgentDb` handle)
-  lands here, modeled on `operation_log::start`. Depth: [`store/DETAILS.md`](store/DETAILS.md).
+  lands here, modeled on `operation_log::start`. Depth: `store/DETAILS.md`.
 - `tools/`: the in-process toolset — the five read families authored as `consumers: [Agent]`
   entries in the consolidated registry (agent-spec D49, extend-don't-fork), their handlers/result shapes that reuse the
   shipped cores (drive index, importance, operation log, volumes, app state), and the gated dispatch that refuses any
-  non-view name before `execute_tool`. Depth: [`tools/DETAILS.md`](tools/DETAILS.md).
+  non-view name before `execute_tool`. Depth: `tools/DETAILS.md`.
 - `chat/`: the chat runtime (single-flight per thread, per-message budgets, cancellation, typed errors,
   crash-safe persistence, the `AgentChatEvent` seam) and the pure, TDD-heavy context-assembly core (stable prefix,
-  elide-only compaction, the fresh context envelope on the latest user turn only). Depth: [`chat/DETAILS.md`](chat/DETAILS.md).
+  elide-only compaction, the fresh context envelope on the latest user turn only). Depth: `chat/DETAILS.md`.
 
 ## The agent can propose; only the user can approve
 

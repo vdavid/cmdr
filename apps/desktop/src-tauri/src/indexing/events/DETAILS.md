@@ -1,7 +1,7 @@
 # Indexing events + progress surface details
 
 Read this before any non-trivial work in `indexing/events/`: editing, planning, reorganizing, or advising. Must-know
-invariants are in [CLAUDE.md](CLAUDE.md).
+invariants are in `CLAUDE.md`.
 
 This area owns the frontend-facing event payloads, the phase-transition emitter, and the scan-progress tick loop.
 
@@ -29,17 +29,17 @@ Each struct derives `tauri_specta::Event` with a pinned `#[tauri_specta(event_na
 - `IndexPhaseChangedEvent` (`index-phase-changed`, `{ volume_id, phase: ActivityPhase }`) — the per-volume
   pipeline-phase event driving the FE step checklist; see § "set_phase_for".
 - `index-freshness-changed` — the per-volume badge-color event (`VolumeIndexStatus.freshness`); emitted by the
-  freshness layer, whose state machine is owned by [`../lifecycle`](../lifecycle/DETAILS.md).
+  freshness layer, whose state machine is owned by `../lifecycle/DETAILS.md`.
 
 `RescanReason` (and `emit_rescan_notification`, `index-rescan-notification`) lives here too: `StaleIndex`, `JournalGap`,
 `ReplayOverflow`, `WatcherStartFailed`, `ReconcilerBufferOverflow`, `IncompletePreviousScan`, `WatcherChannelOverflow`,
 `IngestionBacklog`. Every code path that falls back to a full rescan emits one; the FE maps each to a toast. The
-triggers that CHOOSE each reason live in [`../watch`](../watch/DETAILS.md) and
-[`../reconcile`](../reconcile/DETAILS.md), not here — this area owns only the payload shape.
+triggers that CHOOSE each reason live in `../watch/DETAILS.md` and `../reconcile/DETAILS.md`, not here — this area
+owns only the payload shape.
 
 Two payloads that could look like they belong here but don't: `AggregationProgressEvent` (`index-aggregation-progress`)
-lives in [`../writer`](../writer/DETAILS.md), and `SearchIndexReadyEvent` (`search-index-ready`) lives in
-`commands/search.rs`. Also here: the IPC response types (`IndexStatusResponse`, `IndexDebugStatusResponse`).
+lives in `../writer/DETAILS.md`, and `SearchIndexReadyEvent` (`search-index-ready`) lives in `commands/search.rs`. Also
+here: the IPC response types (`IndexStatusResponse`, `IndexDebugStatusResponse`).
 
 ## `set_phase_for` — the two phase records (`mod.rs`)
 
@@ -86,7 +86,7 @@ completion → spawn live loop".
   `scan_done`. Partial passes are therefore structurally scoped to the full-scan window.
 - `partial_agg_source` is chosen by the caller per scan kind: `Maps` for a fresh scan (accumulator maps populated by
   `InsertEntriesV2`), `Sql` for a reconcile rescan (maps empty). See the `source: Maps|Sql` contract in
-  [`../writer`](../writer/DETAILS.md).
+  `../writer/DETAILS.md`.
 - Each `tick()` emits an `IndexScanProgressEvent`, then — via a tick counter gated behind
   `partial_agg::should_send_partial_agg` — snapshots the listing cache (`caching::snapshot_listings()`), runs
   `partial_agg::collect_hot_paths`, maps each firmlink-normalized absolute hot path into the volume's index-relative
@@ -110,8 +110,8 @@ Side-effect-free so the timer loop stays a dumb caller and both helpers are exha
 - Both constants live here with their rationale and the real-volume tuning numbers.
 
 Why this exists (the UX call): during a full scan, folder sizes otherwise don't exist until the single end-of-scan
-`ComputeAllAggregates` pass, so every listing shows placeholders for the whole scan (~2.5 min on a 5M-entry volume) and
-all sizes pop in at once — exactly when a new user is judging the headline feature. Partial passes refresh listings
+`ComputeAllAggregates` pass, so every listing shows placeholders for the whole scan (~2.5 min on a 5M-entry volume)
+and all sizes pop in at once — exactly when a new user is judging the headline feature. Partial passes refresh listings
 every few seconds with growing numbers next to the existing hourglass (a partial number beats a placeholder). The
 writer-side handler that consumes these messages (borrow-not-consume the maps, the depth-≤3 write cap, the empty-maps
-SQL-free no-op) is owned by [`../writer`](../writer/DETAILS.md).
+SQL-free no-op) is owned by `../writer/DETAILS.md`.

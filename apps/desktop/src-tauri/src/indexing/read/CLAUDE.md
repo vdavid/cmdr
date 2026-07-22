@@ -13,7 +13,7 @@ Serve recursive sizes and index status back to the app. Everything here reads vi
   root never indexes (`/Volumes/`, `/proc/`, system trees); without it, enrichment resolves against root's DB, misses,
   and logs "Parent path not found" on every ~2/s refresh.
 - **Map the read path into index-relative space via `routing::index_read_path` before `resolve_path`.** A mount-absolute
-  SMB/MTP path resolves to nothing otherwise (the bug that made sizes invisible). Owned by [`../paths`](../paths/CLAUDE.md).
+  SMB/MTP path resolves to nothing otherwise (the bug that made sizes invisible). Owned by `../paths/CLAUDE.md`.
 - **Derive `{complete, stale}` booleans from `min_subtree_epoch` vs `current_epoch`; never ship raw epochs.** Read the
   epoch ONCE per pass. `expected_totals` returns `None` for ANY incomplete (`min_subtree_epoch == 0`) or unindexed
   source: a lower bound would overshoot the write-op progress bar past 100%.
@@ -31,9 +31,9 @@ Serve recursive sizes and index status back to the app. Everything here reads vi
 - `expected_totals.rs` — index-derived copy/move/delete progress denominators.
 - `pending_sizes.rs` — the "size updating" hourglass `PendingSizes` marked-set + its held-roots tier.
 
-Owned elsewhere: the `dir_stats` ledger, honest sizes, and epochs live in [`../writer`](../writer/CLAUDE.md); the
-registry, `ReadPool`/`PendingSizes` bootstrap, phase, and freshness in [`../lifecycle`](../lifecycle/CLAUDE.md); path
-routing in [`../paths`](../paths/CLAUDE.md).
+Owned elsewhere: the `dir_stats` ledger, honest sizes, and epochs live in `../writer/CLAUDE.md`; the registry,
+`ReadPool`/`PendingSizes` bootstrap, phase, and freshness in `../lifecycle/CLAUDE.md`; path routing in
+`../paths/CLAUDE.md`.
 
-Enrichment, the IPC query surface, `expected_totals`, and the hourglass: [DETAILS.md](DETAILS.md). Read it before any
-non-trivial work here: editing, planning, reorganizing, or advising.
+Enrichment, the IPC query surface, `expected_totals`, and the hourglass: `DETAILS.md`. Read it before any non-trivial
+work here: editing, planning, reorganizing, or advising.

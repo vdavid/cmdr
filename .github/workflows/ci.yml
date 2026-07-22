@@ -619,6 +619,9 @@ jobs:
       - name: Check agent-doc table hygiene
         run: ./scripts/check/check --check docs-table-hygiene --ci
 
+      - name: Check no path-shaped link text in docs
+        run: ./scripts/check/check --check docs-link-text --ci
+
       - name: Check every CLAUDE.md has a sibling DETAILS.md
         run: ./scripts/check/check --check claude-md-details-sibling --ci
 

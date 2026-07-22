@@ -1,7 +1,7 @@
 # Malay (ms) translation style guide
 
-Working notes for translating Cmdr into Malay. Read [`README.md`](../README.md) for how this fits the translation
-process, and [`_template/style.md`](../_template/style.md) for the section contract.
+Working notes for translating Cmdr into Malay. Read `../README.md` for how this fits the translation process, and
+`../_template/style.md` for the section contract.
 
 The base tag is `ms`. Translate to standard Malaysian Malay (Bahasa Melayu Malaysia), which is the dominant software
 locale; see the variant decision below before assuming Brunei or Indonesian conventions.
@@ -109,6 +109,6 @@ cross-referencing the pile (Apple first, since Cmdr is macOS-native), never by i
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/ms/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/ms/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

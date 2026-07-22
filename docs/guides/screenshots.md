@@ -1,13 +1,11 @@
 # Updating screenshots everywhere
 
 How to reshoot Cmdr's product screenshots and refresh every place they appear. This is the general process; the website
-hero has extra compositing on top, documented in
-[`apps/website/public/hero/CLAUDE.md`](../../apps/website/public/hero/CLAUDE.md).
+hero has extra compositing on top, documented in `apps/website/public/hero/CLAUDE.md`.
 
 ## Canonical masters
 
-The pristine full-window screenshots live in [`brand/screenshots/`](../../brand/screenshots/) and are the single source
-of truth:
+The pristine full-window screenshots live in `brand/screenshots` and are the single source of truth:
 
 - `app-main-dark.png` / `app-main-light.png`: the two-pane main view, full macOS window with shadow, no background.
 
@@ -28,8 +26,8 @@ you next refresh AlternativeTo; hold Search until it's presentable.
 - The app running via `pnpm dev`.
 - The Tauri MCP bridge connected: the `manage_window` and `webview_execute_js` steps below need an active
   `driver_session` on the app's actual port (a bare `driver_session start` connects to the wrong port). See
-  [`docs/tooling/mcp.md`](../tooling/mcp.md) § "Tauri MCP pitfalls". `set_setting` needs the auth token, so run it via
-  `./scripts/mcp-call.sh` (§ "Authentication" there).
+  `../tooling/mcp.md` § "Tauri MCP pitfalls". `set_setting` needs the auth token, so run it via `./scripts/mcp-call.sh`
+  (§ "Authentication" there).
 
 ## 1. Size and clean up the window
 
@@ -107,6 +105,6 @@ Do it once per theme:
 - **README**: nothing to edit. It points at `brand/screenshots/app-main-{dark,light}.png`, so replacing the files is
   enough. Commit the new PNGs.
 - **Website hero**: regenerate the composited WebP layers from the new masters. Follow
-  [`apps/website/public/hero/CLAUDE.md`](../../apps/website/public/hero/CLAUDE.md) § "Regenerate the layers".
+  `apps/website/public/hero/CLAUDE.md` § "Regenerate the layers".
 - **AlternativeTo**: re-upload `app-main-{dark,light}.png` manually on the listing. (Add the settings/search shots here
   when you have them.)

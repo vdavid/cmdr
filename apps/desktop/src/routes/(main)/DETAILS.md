@@ -149,7 +149,7 @@ the dispatch path can't rely on the keydown bail.
   watcher-triggered `loadDirectory` reread may `renameCancel()` the auto-rename before it activates — that's fine; what
   must be impossible is latching the WRONG entry.) `edit.pasteAsMove` behaves identically here (move semantics are
   meaningless for clipboard bytes). Backend flavor precedence + the write:
-  [`clipboard/DETAILS.md`](../../../src-tauri/src/clipboard/DETAILS.md) § Paste clipboard content as a file.
+  `apps/desktop/src-tauri/src/clipboard/DETAILS.md` § Paste clipboard content as a file.
 - **`view.showHidden` is local-first.** Flips frontend state via `explorerRef.toggleHiddenFiles()` synchronously, then
   pushes the check state to the native menu fire-and-forget. Routing the toggle through Rust adds an IPC + event hop and
   flaked the hidden-file E2E under slow-lane load.

@@ -1,7 +1,7 @@
 # Playwright E2E test details
 
 Pull-tier docs for `apps/desktop/test/e2e-playwright/`: architecture, flows, run recipes, and decision rationale.
-Must-know invariants and gotchas live in [CLAUDE.md](CLAUDE.md).
+Must-know invariants and gotchas live in `CLAUDE.md`.
 
 ## Architecture
 
@@ -486,11 +486,10 @@ through the same IPC commands as production but the bytes live in a Rust `Mutex<
 pasteboard. So `pbpaste` in your shell will NOT see test contents (good: the test doesn't trash your real clipboard),
 and a test that wants to assert clipboard state can't read it via `pbpaste` either. Inspection of the mock from a spec
 needs to go through the existing clipboard IPC commands (paste-side IPCs read from the same mock). The admin helpers
-`snapshot_mock_clipboard` and `clear_mock_clipboard` exist in
-[`apps/desktop/src-tauri/src/clipboard/mod.rs`](../../src-tauri/src/clipboard/mod.rs) as Rust pub fns under the E2E
-feature, NOT as Tauri commands; if a future spec needs to read the mock state from TS, add a thin `#[tauri::command]`
-wrapper gated on the same `playwright-e2e` feature so the prod surface stays unchanged. See
-[`apps/desktop/src-tauri/src/clipboard/CLAUDE.md`](../../src-tauri/src/clipboard/CLAUDE.md).
+`snapshot_mock_clipboard` and `clear_mock_clipboard` exist in `apps/desktop/src-tauri/src/clipboard/mod.rs` as Rust pub
+fns under the E2E feature, NOT as Tauri commands; if a future spec needs to read the mock state from TS, add a thin
+`#[tauri::command]` wrapper gated on the same `playwright-e2e` feature so the prod surface stays unchanged. See
+`apps/desktop/src-tauri/src/clipboard/CLAUDE.md`.
 
 **Gotcha**: External opens are recorded, not launched. **Why**: same `playwright-e2e` feature swap. The two commands
 that hand a path to an external launcher, `open_path` (default-app open: Enter / double-click / `open_under_cursor`) and
@@ -502,7 +501,7 @@ round-trip test once left a TextEdit window per run). A spec asserts open intent
 Both commands funnel into one `open_mock` store, so `getOpenedPaths` sees every external open regardless of which
 command made it. A new user-visible "open externally" flow MUST route through a backend command gated the same way,
 never the frontend opener plugin (which really launches), or it re-introduces the leak. See
-[`apps/desktop/src-tauri/src/commands/file_actions.rs`](../../src-tauri/src/commands/file_actions.rs).
+`apps/desktop/src-tauri/src/commands/file_actions.rs`.
 
 ## `ensureAppReady` focus contract
 

@@ -36,11 +36,11 @@ Sub-subdirs do NOT get their own docs; they're covered here.
 - `mtp/` — `index.rs` (enable, no gate), `watch.rs` (PTP-event live watch, gate-before-resolve, handle→removal).
 - `local_external/` — `index.rs` (enable + `classify`; the LOCAL scanner drives a mount-rooted drive).
 
-Owned elsewhere: the `Volume`-trait BFS scanner, scan pacing, NAS system-dir skips, and no-completion-on-empty-root live
-in [`../network_scanner`](../network_scanner/CLAUDE.md) and [`../reconcile`](../reconcile/CLAUDE.md); the freshness
-state machine, phase, registry, and `force_rescan` typed-kind routing in [`../lifecycle`](../lifecycle/CLAUDE.md); the
-live-change apply INTO the index and the event loop in [`../watch`](../watch/CLAUDE.md); the mount-relative path
-transforms in [`../paths`](../paths/CLAUDE.md); retention/eviction in [`../resources`](../resources/CLAUDE.md).
+Owned elsewhere: the `Volume`-trait BFS scanner, scan pacing, NAS system-dir skips, and no-completion-on-empty-root
+live in `../network_scanner/CLAUDE.md` and `../reconcile/CLAUDE.md`; the freshness state machine, phase, registry,
+and `force_rescan` typed-kind routing in `../lifecycle/CLAUDE.md`; the live-change apply INTO the index and the event
+loop in `../watch/CLAUDE.md`; the mount-relative path transforms in `../paths/CLAUDE.md`; retention/eviction in
+`../resources/CLAUDE.md`.
 
-SMB, MTP, and local-external enable + live watch: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here:
-editing, planning, reorganizing, or advising.
+SMB, MTP, and local-external enable + live watch: `DETAILS.md`. Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.

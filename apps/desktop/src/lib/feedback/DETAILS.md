@@ -1,6 +1,6 @@
 # Feedback (frontend) details
 
-Entry points, mounting, and behavior. The must-knows are in [CLAUDE.md](CLAUDE.md).
+Entry points, mounting, and behavior. The must-knows are in `CLAUDE.md`.
 
 ## Entry points
 

@@ -57,6 +57,6 @@ Discovery is split across theme submodules, all re-exported from `mod.rs` so `cr
 from the `~/Library/CloudStorage/<provider>` dir name). Both IDs and the provider mapping are mirrored in
 `friendly_error.rs` (which `crate::volumes` can't reach, being macOS-only): it matches the `ICLOUD_VOLUME_ID` literal
 under a sync-point comment, and `parse_cloud_provider_name`'s provider list must stay in sync with
-`friendly_error::enrich_with_provider`'s separate one. The `LocationCategory` catalog: [DETAILS.md](DETAILS.md).
+`friendly_error::enrich_with_provider`'s separate one. The `LocationCategory` catalog: `DETAILS.md`.
 
-Full details (decisions, edge cases, the `Retained::cast_unchecked` contract): [DETAILS.md](DETAILS.md).
+Full details (decisions, edge cases, the `Retained::cast_unchecked` contract): `DETAILS.md`.

@@ -14,7 +14,7 @@ Depth and rationale. `CLAUDE.md` holds the must-knows; the decision detail lives
 
 `parse_cloud_provider_name` maps `~/Library/CloudStorage/` dir prefixes to display names (Dropbox, GoogleDrive→Google
 Drive, OneDrive/Business, Box, pCloud, else the first `-`-segment). The `ICLOUD_VOLUME_ID` / provider-list sync points
-with `friendly_error.rs` are called out in [CLAUDE.md](CLAUDE.md).
+with `friendly_error.rs` are called out in `CLAUDE.md`.
 
 ## `list_locations()`
 

@@ -3,7 +3,7 @@
 Authoritative reference data for choosing translation terms with confidence, feeding the per-language translation style
 guides at [`/docs/i18n/`](..) (`<tag>/style.md`). Goal: every term we pick can cite what a real localized OS or an
 official vendor glossary actually says, so choices match user expectations instead of an agent's guess. Full inventory,
-provenance, layout rules, and open items: [inventory.md](inventory.md). Process and confidence model:
+provenance, layout rules, and open items: `inventory.md`. Process and confidence model:
 [`/docs/guides/i18n-translation.md`](../../guides/i18n-translation.md).
 
 ## Must-knows
@@ -14,8 +14,8 @@ provenance, layout rules, and open items: [inventory.md](inventory.md). Process 
   present only where that source has the language. The first five cover most languages; the three file managers vary
   (`kde-dolphin/` 92 languages, `total-commander/` 48, `double-commander/` 30 — so e.g. `sv` has TC + Dolphin but no DC,
   `hu` and `fr` have all three). Check with `ls <tag>/`.
-- **Mining recipes per source** (tested greps, jq, `msggrep`, `pdftotext`): [how-to-mine.md](how-to-mine.md). Use them;
-  don't reinvent the search per term.
+- **Mining recipes per source** (tested greps, jq, `msggrep`, `pdftotext`): `how-to-mine.md`. Use them; don't reinvent
+  the search per term.
 - **Reference for picking terms, never strings to copy.** Apple's and Microsoft's strings are copyrighted; the
   GNOME/Xfce catalogs are GPL. We read them to decide what term matches user expectations, then write Cmdr's own catalog
   value. Don't paste any vendor or upstream string verbatim into `apps/desktop/src/lib/intl/messages/`.

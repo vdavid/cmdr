@@ -1,9 +1,8 @@
 # Check authoring
 
 Every check lives in this directory as a single Go file, registered in `registry.go`'s `AllChecks` slice. For the full
-authoring walkthrough (`CheckDefinition` field semantics, helpers, allowlist mechanics, decisions), see
-[DETAILS.md](DETAILS.md). For the runner architecture (parallel executor, dependency graph, CLI flags, freestyle.sh),
-see [`../CLAUDE.md`](../CLAUDE.md).
+authoring walkthrough (`CheckDefinition` field semantics, helpers, allowlist mechanics, decisions), see `DETAILS.md`.
+For the runner architecture (parallel executor, dependency graph, CLI flags, freestyle.sh), see `../CLAUDE.md`.
 
 ## Module map
 
@@ -18,8 +17,8 @@ see [`../CLAUDE.md`](../CLAUDE.md).
   tracking plumbing.
 - Warn-only scanners with their JSON allowlists: `file-length.go`, `claude-md-length.go`, `e2e-durations.go`,
   `website-bundle-size.go`. Error-level link checks: `docs-reachable.go` (+ shared `docs_graph.go`) fails when a
-  `CLAUDE.md` / `DETAILS.md` / `docs` file isn't reachable from the repo-root `CLAUDE.md`; `docs-dead-links.go` fails
-  when a doc's relative link points at a missing file.
+  `CLAUDE.md` / `DETAILS.md` / `docs` file isn't reachable from the repo-root `CLAUDE.md`; `docs-dead-links.go` fails on
+  a link or backtick doc-path with no target; `docs-link-text.go` fails on link text repeating its own target.
 
 ## Must-knows
 
@@ -53,5 +52,5 @@ see [`../CLAUDE.md`](../CLAUDE.md).
   and check counts" table in DETAILS.md. `--fast` membership is just the `IsFast` field in `registry.go` (editorially
   curated), so there's no separate list anywhere to keep in sync.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

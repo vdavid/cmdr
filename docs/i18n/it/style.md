@@ -1,8 +1,7 @@
 # Italian (it) translation style guide
 
-Working notes for translating Cmdr into Italian. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Italian.
+Working notes for translating Cmdr into Italian. Read `../README.md` for how this fits the translation process, and the
+app-wide `docs/style-guide.md` for the English voice these notes carry into Italian.
 
 ## Voice and tone
 
@@ -15,8 +14,7 @@ rinominare il file. Riprovare?"), it reads as calm and is not the forbidden "err
 
 **Verdict: informal `tu`, not `Lei`.** Consumer brands (IKEA, Spotify, Netflix, and peers) address Italian users
 informally, which fits Cmdr's friendly personal voice. macOS itself dodges the choice via the infinitive, but where Cmdr
-does address the user, the register is `tu`. Formality decision recorded in
-[`formal-informal-decisions.md`](../formal-informal-decisions.md).
+does address the user, the register is `tu`. Formality decision recorded in `../formal-informal-decisions.md`.
 
 - Buttons and menu items: imperative second-person-singular form, which in Italian looks like the verb stem ("Annulla",
   "Apri", "Elimina", "Sposta", "Copia", "Rinomina", "Cerca"). This matches macOS Finder exactly.
@@ -118,6 +116,6 @@ branches must agree in gender with the counted noun (use "elemento" to keep it m
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/it/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/it/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

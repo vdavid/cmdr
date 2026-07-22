@@ -1,9 +1,9 @@
 # Git browser details
 
 Pull-tier docs for `file_system/git/`: architecture, flows, and decision rationale. Must-know invariants and gotchas
-live in [CLAUDE.md](CLAUDE.md).
+live in `CLAUDE.md`.
 
-Frontend counterpart: [`apps/desktop/src/lib/file-explorer/git/CLAUDE.md`](../../../../src/lib/file-explorer/git/CLAUDE.md) for the breadcrumb chip, status column, and the live `RepoInfo` store.
+Frontend counterpart: `apps/desktop/src/lib/file-explorer/git/CLAUDE.md` for the breadcrumb chip, status column, and the live `RepoInfo` store.
 
 Backend module for the git browser. Provides:
 
@@ -333,7 +333,7 @@ once at open. Config-derived fields (the upstream, hence `ahead`/`behind`) keep 
 dropped (app restart) — a live `git branch --unset-upstream` won't change the chip. But `repo_info` resolves the
 upstream *ref* via `find_reference` on every call, so moving `refs/remotes/origin/main` (for example
 `git update-ref refs/remotes/origin/main main` to zero the ahead count) IS picked up on the next chip refresh. This is
-the lever the screenshot guide uses to force a clean `main` chip; see [`docs/guides/screenshots.md`](../../../../../../docs/guides/screenshots.md).
+the lever the screenshot guide uses to force a clean `main` chip; see `docs/guides/screenshots.md`.
 
 **Gotcha**: Listings on virtual portal paths must skip `start_watching`
 **Why**: `listing/streaming.rs` starts a `notify` watcher on the listing's

@@ -7,9 +7,8 @@ release. So make shape edits here; don't hand-bump `version` / `sha256` (CI does
 `vdavid/cmdr` clears Homebrew's notability bar, at which point a resubmission to `Homebrew/homebrew-cask` becomes the
 canonical home and the tap retires.
 
-Before touching `cmdr.rb`, read [`docs/guides/homebrew-cask.md`](../../../../docs/guides/homebrew-cask.md): it explains
-the non-obvious constraints (why the `url` must not be a `github.com` one, how the tap bump works, how to test in a
-throwaway tap) and the resubmission process.
+Before touching `cmdr.rb`, read `docs/guides/homebrew-cask.md`: it explains the non-obvious constraints (why the `url`
+must not be a `github.com` one, how the tap bump works, how to test in a throwaway tap) and the resubmission process.
 
-Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

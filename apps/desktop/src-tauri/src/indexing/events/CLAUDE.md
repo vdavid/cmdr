@@ -33,10 +33,10 @@ mid-scan partial aggregation) shared by every scan path.
 - `progress_reporter.rs` — `ScanProgressReporter`, the 500 ms tick loop shared by all scan paths.
 - `partial_agg.rs` — the pure send-decision (`should_send_partial_agg`) and hot-path collection (`collect_hot_paths`).
 
-Owned elsewhere: the freshness state machine and phase lifecycle live in [`../lifecycle`](../lifecycle/CLAUDE.md); the
-writer-side `ComputePartialAggregates` handler + aggregation events in [`../writer`](../writer/CLAUDE.md); the
-`index_read_path` mapping the reporter uses in [`../paths`](../paths/CLAUDE.md); the rescan triggers that pick each
-`RescanReason` in [`../watch`](../watch/CLAUDE.md) and [`../reconcile`](../reconcile/CLAUDE.md).
+Owned elsewhere: the freshness state machine and phase lifecycle live in `../lifecycle/CLAUDE.md`; the writer-side
+`ComputePartialAggregates` handler + aggregation events in `../writer/CLAUDE.md`; the `index_read_path` mapping the
+reporter uses in `../paths/CLAUDE.md`; the rescan triggers that pick each `RescanReason` in `../watch/CLAUDE.md` and
+`../reconcile/CLAUDE.md`.
 
-The payload catalog, `set_phase_for`, the progress reporter, and partial aggregation: [DETAILS.md](DETAILS.md). Read it
+The payload catalog, `set_phase_for`, the progress reporter, and partial aggregation: `DETAILS.md`. Read it
 before any non-trivial work here: editing, planning, reorganizing, or advising.

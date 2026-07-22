@@ -1,7 +1,7 @@
 # New file
 
 Shift+F4 dialog (`file.newFile` command) that creates a new empty file in the focused pane. Flow narrative and design
-rationale: [DETAILS.md](DETAILS.md).
+rationale: `DETAILS.md`.
 
 ## Module map
 
@@ -24,5 +24,4 @@ rationale: [DETAILS.md](DETAILS.md).
   the dialog with `report.pdf` selected. Directories and `..` pre-fill empty.
 
 Backend counterpart: `create_file` lives directly under
-[`src-tauri/src/file_system/write_operations/`](../../../../src-tauri/src/file_system/write_operations/CLAUDE.md) (no
-dedicated subdir).
+`apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md` (no dedicated subdir).

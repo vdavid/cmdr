@@ -1,9 +1,9 @@
 # Maltese (mt) translation style guide
 
-Working notes for translating Cmdr into Maltese. Read [`README.md`](../README.md) for how this fits the translation
-process. Maltese is a Semitic language written in **Latin script** with special letters (ċ, ġ, ħ, ż, and the digraphs għ
-and ie); it is an EU official language. Localization depth is THIN outside Microsoft and EU institutions: Microsoft is
-the primary reference (see Decision points).
+Working notes for translating Cmdr into Maltese. Read `../README.md` for how this fits the translation process. Maltese
+is a Semitic language written in **Latin script** with special letters (ċ, ġ, ħ, ż, and the digraphs għ and ie); it is
+an EU official language. Localization depth is THIN outside Microsoft and EU institutions: Microsoft is the primary
+reference (see Decision points).
 
 ## Voice and tone
 
@@ -176,6 +176,6 @@ this is the single largest correctness risk for Maltese.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/mt/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/mt/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

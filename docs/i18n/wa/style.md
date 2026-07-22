@@ -1,7 +1,6 @@
 # Walloon (wa) translation style guide
 
-Working notes for translating Cmdr into Walloon (walon). Read [`README.md`](../README.md) for how this fits the
-translation process.
+Working notes for translating Cmdr into Walloon (walon). Read `../README.md` for how this fits the translation process.
 
 This is the language base (`wa`), a Romance language of southern Belgium written in Latin script. The only reference in
 the pile is a GNOME catalog (`wa`, ~52% translated); no macOS, no Microsoft. It's a low-resource, regional-minority
@@ -16,9 +15,9 @@ nearest register reference.
 ## Formality
 
 Walloon, like French, distinguishes informal **ti/vos** address. Following the French convention (Cmdr's `fr` uses the
-polite "vous"; see [`fr/style.md`](../fr/style.md)), **use the polite "vos"** form throughout for an unknown adult user.
-For UI action labels, the GNOME catalog uses bare imperative/short verb forms (e.g. `Drovi` Open, `Rinoncî` Cancel);
-follow that, kept short. Confirm the register with David / a native reviewer.
+polite "vous"; see `../fr/style.md`), **use the polite "vos"** form throughout for an unknown adult user. For UI action
+labels, the GNOME catalog uses bare imperative/short verb forms (e.g. `Drovi` Open, `Rinoncî` Cancel); follow that, kept
+short. Confirm the register with David / a native reviewer.
 
 ## Decision points
 
@@ -97,6 +96,6 @@ small-number boundary per the category, and write both branches as full native f
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/wa/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/wa/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

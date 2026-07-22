@@ -1,14 +1,14 @@
 # Settings sections details
 
 Pull-tier docs for `apps/desktop/src/lib/settings/sections/`: architecture, flows, and decision rationale. Must-know
-invariants and gotchas live in [CLAUDE.md](CLAUDE.md).
+invariants and gotchas live in `CLAUDE.md`.
 
 One Svelte component per UI section in the settings window. The registry decides which setting exists and what UI hint
 it carries; these files decide where and how it renders. Section ↔ sidebar entry mapping is driven by
 `getSettingDefinition(id).section`, which `SettingsContent.svelte` routes to the right component here.
 
-Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
-[`../components/CLAUDE.md`](../components/CLAUDE.md) (the row primitives these sections compose).
+Parents: `../CLAUDE.md` (registry, store, applier, search) and `../components/CLAUDE.md` (the row primitives these
+sections compose).
 
 ## File map
 

@@ -1,7 +1,7 @@
 # Query UI details
 
 Pull-tier docs for `lib/query-ui/`: architecture, flows, and decision rationale. Must-know invariants and gotchas live
-in [CLAUDE.md](CLAUDE.md).
+in `CLAUDE.md`.
 
 ## i18n
 
@@ -19,14 +19,12 @@ Owns the unified query bar, mode chips, AI prompt strip, filter chips strip (siz
 virtualized results table with path pills and per-row menus, recent-items footer + popover, and the cross-consumer
 filter state factory.
 
-See [`lib/search/CLAUDE.md`](../search/CLAUDE.md) for Search-specific decisions (snapshot store, virtual volume, MCP
-open path, "Open in pane", index lifecycle, "Use current folder" smart fallback) and
-[`lib/selection-dialog/CLAUDE.md`](../selection-dialog/CLAUDE.md) for Selection-specific decisions (matcher in JS,
-cloud-only AI, commit-on-Enter, snapshot-pane banner).
+See `../search/CLAUDE.md` for Search-specific decisions (snapshot store, virtual volume, MCP open path, "Open in pane",
+index lifecycle, "Use current folder" smart fallback) and `../selection-dialog/CLAUDE.md` for Selection-specific
+decisions (matcher in JS, cloud-only AI, commit-on-Enter, snapshot-pane banner).
 
 Filter-chip internals (chip strip, single chips, popover anatomy, the chip-popover focus contract, grid-style Size /
-Modified popovers, shortcut openers, and chip-specific decisions) live in
-[`filter-chips/CLAUDE.md`](filter-chips/CLAUDE.md).
+Modified popovers, shortcut openers, and chip-specific decisions) live in `filter-chips/CLAUDE.md`.
 
 ## QueryDialog orchestrator
 
@@ -137,8 +135,7 @@ the Search wrapper.
 - **`query-filter-state.svelte.ts`**: Factory `createQueryFilterState()` producing the cross-consumer state instance
 - **`enter-action.ts`**: Pure: `deriveEnterAction({ lastEvent, resultsCount })` returning `'run-search' | 'go-to-file'`
 - **`recent-chips-layout.ts`**: Pure: `computeRecentChipsLayout` for the recent-items footer's greedy fit
-- **`filter-chips/`**: Filter chip strip + single chip + popover + pure helpers. See
-  [`filter-chips/CLAUDE.md`](filter-chips/CLAUDE.md)
+- **`filter-chips/`**: Filter chip strip + single chip + popover + pure helpers. See `filter-chips/CLAUDE.md`
 - **`recent-items/RecentItemsFooter.svelte`**: Generic `<E>` chip strip for recent entries plus trailing "All …"
   affordance. Consumer passes adapter + keyFn
 - **`recent-items/RecentItemsPopover.svelte`**: Generic `<E>` fuzzy-searchable popover over the full recent-entries
@@ -183,8 +180,8 @@ companion test catalog (mirrors the file table above):
 - **`recent-items-utils.test.ts`**: `modeBadge`, `modeName`, `formatAge`, `filterSummary`, `chipTooltip` rules
 
 Filter-chips tests (`FilterChips`, the `*FilterPopover` bodies, `filter-chip-state`, `filter-popover-helpers`) are
-catalogued in [`filter-chips/CLAUDE.md`](filter-chips/CLAUDE.md). The chip and popover primitives themselves are
-`$lib/ui/Chip` and `$lib/ui/Popover` (tested in `lib/ui/`).
+catalogued in `filter-chips/CLAUDE.md`. The chip and popover primitives themselves are `$lib/ui/Chip` and
+`$lib/ui/Popover` (tested in `lib/ui/`).
 
 ## State shape contract
 
@@ -205,13 +202,12 @@ Fields:
 - `lastDialogEvent` (drives ⏎ ownership via `deriveEnterAction`)
 - `runOnMount`, `lastRunQuery` (one-shot prefill + auto-apply gates)
 
-Search-only fields live next to the Search wrapper in
-[`lib/search/search-extras-state.svelte.ts`](../search/search-extras-state.svelte.ts): `scope`, `excludeSystemDirs`,
-`isIndexReady`, `indexEntryCount`, `isIndexAvailable`, `lastAiLabel`, `lastAiPattern`, `lastAiPatternKind`. The
-whole-drive index is Search-only (Selection matches against an in-memory pane listing), so the index flags live there
-even though they look like "session state". The Search wrapper instantiates both factories and composes them;
-Selection's wrapper uses only the core. This keeps Selection's runtime state free of fields it never reads, and keeps
-the shared factory honest about what's actually shared.
+Search-only fields live next to the Search wrapper in `../search/search-extras-state.svelte.ts`: `scope`,
+`excludeSystemDirs`, `isIndexReady`, `indexEntryCount`, `isIndexAvailable`, `lastAiLabel`, `lastAiPattern`,
+`lastAiPatternKind`. The whole-drive index is Search-only (Selection matches against an in-memory pane listing), so the
+index flags live there even though they look like "session state". The Search wrapper instantiates both factories and
+composes them; Selection's wrapper uses only the core. This keeps Selection's runtime state free of fields it never
+reads, and keeps the shared factory honest about what's actually shared.
 
 ### When to use the factory vs extras
 
@@ -277,8 +273,7 @@ Small contracts that apply to every consumer of the query UI:
   `⌥R`) and the footer action-button hints (`Go to file ⏎`, `Show all in main window ⏎`) deliberately stay un-boxed; see
   `lib/ui/CLAUDE.md` § ShortcutChip for the rationale.
 
-Chip-side behaviors live in [`filter-chips/CLAUDE.md`](filter-chips/CLAUDE.md); search-specific ones in
-`lib/search/CLAUDE.md`.
+Chip-side behaviors live in `filter-chips/CLAUDE.md`; search-specific ones in `lib/search/CLAUDE.md`.
 
 ## PathPills measurement
 
@@ -309,9 +304,8 @@ Both Search and Selection inherit these. ⏎ has dynamic ownership (see D8 below
 - **`Tab`**: Trapped within the dialog (shared `use:trapFocus` on the overlay); cycles through interactive elements
 - **`Escape`**: Close the dialog
 
-Filter-popover openers (`⌥S`, `⌥M`, `⌥I`) and the macOS Option-glyph remap live in
-[`filter-chips/CLAUDE.md`](filter-chips/CLAUDE.md). Scope-popover shortcuts (`⌥C`, `⌥V`) are Search-only — see
-`lib/search/CLAUDE.md` § "Scope shortcuts".
+Filter-popover openers (`⌥S`, `⌥M`, `⌥I`) and the macOS Option-glyph remap live in `filter-chips/CLAUDE.md`.
+Scope-popover shortcuts (`⌥C`, `⌥V`) are Search-only — see `lib/search/CLAUDE.md` § "Scope shortcuts".
 
 ### `⏎` ownership swap
 
@@ -459,7 +453,7 @@ and regex modes auto-apply behind the `search.autoApply` setting (default on, 1,
 `scheduleSearch()`'s early-return chain (mode, setting, IME composition).
 
 Filter-chip-specific decisions (popovers vs inline controls, the always-rendered Pattern chip) live in
-[`filter-chips/CLAUDE.md`](filter-chips/CLAUDE.md).
+`filter-chips/CLAUDE.md`.
 
 ## Shared gotchas
 

@@ -4,7 +4,7 @@ MTP (Media Transfer Protocol) for Android devices and PTP cameras over USB. macO
 (`#[cfg(any(target_os = "macos", target_os = "linux"))]`). On Linux, users may need udev rules for USB permissions
 (`resources/99-cmdr-mtp.rules`).
 
-Frontend counterpart: [`apps/desktop/src/lib/mtp/CLAUDE.md`](../../../src/lib/mtp/CLAUDE.md) (connection toast, storage
+Frontend counterpart: `apps/desktop/src/lib/mtp/CLAUDE.md` (connection toast, storage
 picker, reactive volume state). The frontend is a passive consumer: it subscribes to `volumes-changed` and
 `mtp-device-connected` / `mtp-device-disconnected`; it never orchestrates connections.
 
@@ -18,9 +18,9 @@ picker, reactive volume state). The frontend is a passive consumer: it subscribe
   gate.
 - `macos_workaround.rs` (macOS-only): ptpcamerad suppression (see below).
 - `connection/`: per-device session layer (`MtpConnectionManager` singleton, connect/disconnect, event loop, list / read
-  / write / mutate / bulk ops). See [`connection/CLAUDE.md`](connection/CLAUDE.md) for locks, caches, and gotchas.
+  / write / mutate / bulk ops). See `connection/CLAUDE.md` for locks, caches, and gotchas.
 - `virtual_device.rs`: virtual MTP device for E2E + dev, gated behind the `virtual-mtp` feature; dev opt-in
-  `CMDR_VIRTUAL_MTP=1 pnpm dev`. See [`docs/tooling/virtual-mtp.md`](../../../../../docs/tooling/virtual-mtp.md).
+  `CMDR_VIRTUAL_MTP=1 pnpm dev`. See `docs/tooling/virtual-mtp.md`.
 
 ## Must-knows
 
@@ -60,4 +60,4 @@ picker, reactive volume state). The frontend is a passive consumer: it subscribe
   `pnpm check mtp-dropping-timeout`). Don't switch list/delete to PTP `CancelTransaction` (rationale in DETAILS.md).
 
 Full details (data-flow diagram, virtual-device activation gating, cancel-propagation wiring, why-not-CancelTransaction,
-hardware caveats, dependencies): [DETAILS.md](DETAILS.md).
+hardware caveats, dependencies): `DETAILS.md`.

@@ -1,8 +1,8 @@
 # Low German (nds) translation style guide
 
-Working notes for translating Cmdr into Low German (Plattdüütsch / Low Saxon). Read [`README.md`](../README.md) for how
-this fits the translation process. `nds` is a separate West Germanic language, not a dialect of Standard German (`de`);
-its vocabulary, spelling, and grammar diverge from High German across the sentence.
+Working notes for translating Cmdr into Low German (Plattdüütsch / Low Saxon). Read `../README.md` for how this fits the
+translation process. `nds` is a separate West Germanic language, not a dialect of Standard German (`de`); its
+vocabulary, spelling, and grammar diverge from High German across the sentence.
 
 ## Voice and tone
 
@@ -77,6 +77,6 @@ message needs both branches. The `desktop-i18n-plural` check requires both.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/nds/`; recipes in
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/nds/`; recipes in
 `docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

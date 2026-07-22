@@ -2,15 +2,14 @@
 
 The standalone macOS window that lists every running and waiting copy, move, delete, and trash operation, with per-row
 pause/resume/cancel, multi-select + "Cancel selected", and global pause/resume. Backend counterpart: the operation
-manager in
-[`src-tauri/src/file_system/write_operations/`](../../../../src-tauri/src/file_system/write_operations/CLAUDE.md).
+manager in `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
 
 ## Module map
 
 - `queue-window.ts`: the opener (`openQueueWindow`), cloned from `lib/settings/settings-window.ts`. Runs on the MAIN
   window; the queue window's own perms live in `src-tauri/capabilities/queue.json`.
 - `operations-store.svelte.ts`: `createOperationsStore()` — the single reactive source the window renders from. Merges
-  two streams. Public API + the progress-dialog-facing seams in [DETAILS.md](DETAILS.md).
+  two streams. Public API + the progress-dialog-facing seams in `DETAILS.md`.
 - `QueueRow.svelte`: one operation row (type icon, source→dest, live bar + ETA, status, pause/resume + cancel, select
   checkbox). Route shell: `routes/queue/+page.svelte`.
 
@@ -43,5 +42,5 @@ manager in
 - **The opener is the shared reuse point.** The progress dialog's Queue button and the auto-queue surfacing (starting an
   op on a busy lane) both call `openQueueWindow` and read the same store; don't fork a second opener or a second store.
 
-Architecture, the store's full public API, the vibrancy/reduce-transparency model, and decision detail:
-[DETAILS.md](DETAILS.md). Read it before any non-trivial work here.
+Architecture, the store's full public API, the vibrancy/reduce-transparency model, and decision detail: `DETAILS.md`.
+Read it before any non-trivial work here.

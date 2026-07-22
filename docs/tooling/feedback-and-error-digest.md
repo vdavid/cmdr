@@ -2,8 +2,8 @@
 
 How an agent reads the **in-app "Send feedback" messages** and the **error-report bundles** straight from the app's own
 stores. This is the data behind the `#feedback` and `#error-reports` Discord channels, but read from the source, not
-Discord: those channels are private and denied to the community bot (see [discord.md](discord.md)), and the presigned
-bundle links Discord posts expire after 7 days while the bundles themselves live 90 days in R2.
+Discord: those channels are private and denied to the community bot (see `discord.md`), and the presigned bundle links
+Discord posts expire after 7 days while the bundles themselves live 90 days in R2.
 
 The `/feedback-and-error-digest-from-app` command (`.claude/commands/`) drives the whole flow; this doc is the access
 recipe it points to. Read-only: never write or delete here without explicit approval (`no-external-actions`).

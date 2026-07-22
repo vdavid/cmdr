@@ -2,7 +2,7 @@
 
 The deterministic, cheap folder-importance score that any expensive feature consumes (the in-app agent, the media-ML
 enrichment scheduler, future disk-cleanup / prefetch). Full design and milestone plan:
-[`docs/specs/importance-subsystem-plan.md`](../../../../../docs/specs/importance-subsystem-plan.md).
+`docs/specs/importance-subsystem-plan.md`.
 
 M1 shipped the pure heart: the [`scorer`](scorer/mod.rs) and its tunable [`Weights`](scorer/weights.rs). M2 added storage
 (`importance.db`), the scheduler that fills it on scan completion, and the navigation-visit signal. **M3 adds the
@@ -147,7 +147,7 @@ determinism tiebreak on the verbatim path. On case-sensitive volumes `normalize_
 registered on every connection for parity with the index store; no importance query relies on it now.
 
 Measurements (the index-served DELETE, plus why the full walk stays deferred rather than targeted):
-[`docs/notes/idle-cpu-indexing-streamlining-2026-07.md`](../../../../../docs/notes/idle-cpu-indexing-streamlining-2026-07.md).
+`docs/notes/idle-cpu-indexing-streamlining-2026-07.md`.
 
 ### Storage model: no floored rows, trimmed JSON (compaction)
 
@@ -209,8 +209,8 @@ up in the logs — the write phase dominates on a local root (compaction roughly
 
 Recomputes a volume's folder weights when its index finishes scanning. Two triggers, unified through one coalescing core:
 
-- **The lifecycle bus** ([`indexing/lifecycle/lifecycle_bus.rs`](../indexing/DETAILS.md) — the mechanism is documented there,
-  single-source): the scheduler subscribes per volume; a `ScanCompleted` publish ⇒ recompute.
+- **The lifecycle bus** (`indexing/lifecycle/lifecycle_bus.rs`, mechanism documented in `../indexing/DETAILS.md`, single-source): the scheduler
+  subscribes per volume; a `ScanCompleted` publish ⇒ recompute.
 - **The startup registry sweep** (`indexing::ready_volumes_with_kind`): a volume already Fresh at launch never re-fires
   `ScanCompleted` (its retained bus value stays `Pending`), so wiring its subscription alone never recomputes it — the
   common restart case. The sweep wires each ready volume WITH its typed kind (so MTP is excluded and SMB degrades
@@ -318,13 +318,13 @@ importance — the agent and media-ML plans point here rather than restating (si
 **First consumer: search ranking.** `search/` blends these weights into result ordering (a file takes its parent
 folder's weight), loading one `all_nonzero_weights` snapshot per recompute via `subscribe`. Match quality dominates;
 importance is a within-band boost. The blend design, weight-map lifecycle, and degradation contract live in
-[`search/DETAILS.md`](../search/DETAILS.md) § Importance ranking (single-source).
+`../search/DETAILS.md` § Importance ranking (single-source).
 
 **Second consumer: the MCP `cmdr://importance` resource.** It exposes `lookup` / `top_n` / `above_threshold` /
 `top_above_threshold` / `explain` / `scored_folder_count` to agents, enumerating scored volumes offline via
 `read::scored_volume_ids` (the `importance-{id}.db` files on disk) and opening each index with the kind's
 `signal_availability` mask so `explain` sums to the stored score. It's the offline-unmounted read made a user-facing
-feature. Builder + modes: [`mcp/DETAILS.md`](../mcp/DETAILS.md) § Resources (`cmdr://importance`).
+feature. Builder + modes: `../mcp/DETAILS.md` § Resources (`cmdr://importance`).
 
 **Staleness is first-class.** Every result carries `as_of_generation`; a consumer compares it to `recompute_generation()`
 to caveat "as of the May 28 scan" (agent-spec D7; M4's offline-unmounted read leans on this). The read API never hides a
@@ -344,9 +344,9 @@ rescore** of only the touched folders, so a single file edit doesn't re-walk-and
 **The event source (documented choice).** There is no clean in-process per-directory hook in `indexing/`: the reconciler
 reports directory changes only via `IndexDirUpdatedEvent` to the frontend, and the writer/aggregation `emit_dir_updated`
 sites aren't uniformly volume-aware. So — exactly as M2 added `publish_scan_completed` alongside the frontend `.emit` —
-M3 adds a per-volume `dir-changed` channel to [`indexing/lifecycle_bus`](../indexing/DETAILS.md)
-(`publish_dirs_changed`), published from the **live-change sites where `volume_id` is in scope**: the live event loop
-(FSEvents batches) and the per-navigation verifier. The scan-completion `/`-refresh emits are left on the full-recompute
+M3 adds a per-volume `dir-changed` channel to `indexing/lifecycle_bus` (`publish_dirs_changed`), published from the
+**live-change sites where `volume_id` is in scope**: the live event loop (FSEvents batches) and the per-navigation
+verifier. The scan-completion `/`-refresh emits are left on the full-recompute
 path (already covered by `ScanCompleted`), so incremental captures exactly the "listing changed while running" signal.
 The scheduler subscribes via `subscribe_dirs_changed` and coalesces bursts per volume (accumulating paths into a pending
 set, one pass plus at most one re-run — a distinct coordinator key from the full pass so the two don't block each other).
@@ -420,8 +420,7 @@ so a mis-ranked folder's cause is visible.
 The `importance-tune` bin above eyeballs a ranking; the `evals/` module MEASURES ranking quality, so a weight change
 becomes a number instead of a vibe. It's the measurement instrument for the plan's open-question 1 (unvalidated default
 weights). The full David-facing how-to (running, reading the score, adding a scenario, the snapshot/label/tune loop, the
-privacy contract) is [`docs/guides/importance-evals.md`](../../../../../docs/guides/importance-evals.md); the design in
-brief:
+privacy contract) is `docs/guides/importance-evals.md`; the design in brief:
 
 - **A `Scenario` is the shared unit**: folders + their derived `FolderSignals` + two tiers of ranking expectations
   (`scenario.rs`). NOT a synthetic tree — the pure scorer only needs signals, and this is exactly what a real-index dump

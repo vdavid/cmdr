@@ -1,7 +1,6 @@
 # Danish (da) translation style guide
 
-Working notes for translating Cmdr into Danish. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into Danish. Read `../README.md` for how this fits the translation process.
 
 This is the language base (`da`), the universal Danish set. Danish is effectively a single standard (Rigsdansk); no
 region variant is needed (see Decision points).
@@ -82,7 +81,7 @@ English's. Danish, like English, treats only 1 as singular.
 - **Ellipsis**: keep the source's three literal ASCII dots ("Sender...") to match the English catalog shape, per the
   catalog convention.
 - **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
-  the agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  the agent-handoff block in `docs/guides/i18n-translation.md`.
 
 ## Decisions to confirm with David
 
@@ -90,6 +89,6 @@ English's. Danish, like English, treats only 1 as singular.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/da/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/da/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

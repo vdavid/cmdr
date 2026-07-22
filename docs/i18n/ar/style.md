@@ -1,8 +1,7 @@
 # Arabic (ar) translation style guide
 
-Working notes for translating Cmdr into Arabic. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Arabic.
+Working notes for translating Cmdr into Arabic. Read `../README.md` for how this fits the translation process, and the
+app-wide `docs/style-guide.md` for the English voice these notes carry into Arabic.
 
 Arabic is the highest-effort target language in the set: it is the only RTL script here, it has full bidirectional
 (bidi) layout concerns, six CLDR plural categories, and a real formal-register and gender split. Read the Decision
@@ -161,8 +160,7 @@ is the widest plural set in the language pool. Every plural message MUST write a
   point; macOS uses the Eastern Arabic decimal separator "٫" and thousands handling via formatting).
 - **ICU mechanics** (catalog-level, easy to miss): double every apostrophe in a value (`'` becomes `''`; ICU treats a
   lone `'` as an escape and silently swallows text), and keep every `{placeholder}` and `<tag>` verbatim. Full rules:
-  the agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
-  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  the agent-handoff block in `docs/guides/i18n-translation.md` and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Decisions to confirm with David
 
@@ -174,6 +172,6 @@ is the widest plural set in the language pool. Every plural message MUST write a
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/ar/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/ar/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

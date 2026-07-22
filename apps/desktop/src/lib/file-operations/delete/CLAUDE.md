@@ -2,8 +2,7 @@
 
 Delete files permanently or move them to macOS Trash, with a confirmation dialog, scan preview, and progress tracking.
 Triggered by F8 (trash) or Shift+F8 (permanent). Always shows a confirmation dialog; reuses `TransferProgressDialog` for
-progress. Backend counterpart:
-[`src-tauri/src/file_system/write_operations/delete/CLAUDE.md`](../../../../src-tauri/src/file_system/write_operations/delete/CLAUDE.md).
+progress. Backend counterpart: `apps/desktop/src-tauri/src/file_system/write_operations/delete/CLAUDE.md`.
 
 ## Files
 
@@ -43,4 +42,4 @@ progress. Backend counterpart:
 (`delete_files_with_progress`). `WriteOperationType::Trash` is a distinct variant in event payloads. MCP `delete` tool
 opens this confirmation dialog (`delete-confirmation` dialog type).
 
-Full details (the full F8→completion flow, partial-failure and locked-file handling): [DETAILS.md](DETAILS.md).
+Full details (the full F8→completion flow, partial-failure and locked-file handling): `DETAILS.md`.

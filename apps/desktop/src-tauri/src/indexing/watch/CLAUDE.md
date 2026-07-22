@@ -31,7 +31,7 @@ plus the event loop that turns its stream into index writes.
   covered by construction; hooking only one measured nothing on the cold-start replay route. Guarded by
   `churn_monitor/tests.rs::every_live_loop_owns_a_real_churn_observer`.
 - **Background verification is post-replay and boot-disk only.** Its cost-bounding (the two teeth in `verify_guard.rs`)
-  is canonical in [`../reconcile/DETAILS.md`](../reconcile/DETAILS.md) — don't restate it here.
+  is canonical in `../reconcile/DETAILS.md` — don't restate it here.
 
 Architecture, the ingestion-pressure trend model, removal-storm rules, rename-by-inode, and the verification structure:
-[DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+`DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

@@ -1,8 +1,8 @@
 # Svelte frontend (`src/`)
 
 The Svelte 5 + TypeScript frontend (SvelteKit static adapter, custom CSS with design tokens). Feature must-knows live in
-each directory's colocated `CLAUDE.md`; the subsystem map is [`/docs/architecture.md`](../../../docs/architecture.md).
-These rules apply to all frontend code under here.
+each directory's colocated `CLAUDE.md`; the subsystem map is `docs/architecture.md`. These rules apply to all frontend
+code under here.
 
 ## Frontend rules
 
@@ -19,25 +19,25 @@ These rules apply to all frontend code under here.
   `prefers-reduced-motion` — except that one WKWebView does honor.)
 - ❌ No raw `invoke('…')` outside `lib/ipc/`. Call the typed `commands.*` wrappers (regenerate with
   `pnpm bindings:regen`); prefer named locals over inline primitives at call sites. Enforced by
-  `cmdr/no-raw-tauri-invoke`. See [`lib/ipc/CLAUDE.md`](lib/ipc/CLAUDE.md).
+  `cmdr/no-raw-tauri-invoke`. See `lib/ipc/CLAUDE.md`.
 - A new user-facing action needs its id in `COMMAND_IDS`, an entry in `command-registry.ts`, and a handler in
   `routes/(main)/command-handlers/` (a missing handler is a compile error). Enforced by `cmdr/no-raw-command-dispatch`.
-  See [`lib/commands/CLAUDE.md`](lib/commands/CLAUDE.md).
+  See `lib/commands/CLAUDE.md`.
 - ❌ Render inline glyphs via `<Icon name size>` (`$lib/ui/Icon.svelte`) and loading spinners via `<Spinner size>`
   (`$lib/ui/Spinner.svelte`). Don't import `~icons/lucide/*` in feature code or hand-roll a spinner ring. Add a new
   glyph to `lib/ui/icons/icon-map.ts` (the one place lucide is imported, enforced by `cmdr/no-raw-lucide-import`);
   custom non-Lucide glyphs live as components in `lib/ui/icons/` and register there too. `Icon` has no `color` prop (set
   `color` on the wrapping span). Every glyph and spinner appears in the Debug "Graphics" catalog
-  (`routes/dev/graphics/`). See [`/docs/guides/icons.md`](../../../docs/guides/icons.md).
+  (`routes/dev/graphics/`). See `docs/guides/icons.md`.
 - Stay aligned to Ark UI's naming. When wrapping an `@ark-ui/svelte` primitive in `lib/ui/`, name the wrapper after
   Ark's component (`Select`, `Combobox`, `Popover`, `Menu`, …) so it maps 1:1 to Ark. Flag any divergence (raise it,
   don't silently rename).
 - ❌ Before hand-rolling a control or dialog/window chrome, reach for the `lib/ui` primitive (`ModalDialog`, `Checkbox`,
   `RadioGroup`, `ToggleGroup`, `Select`, `Combobox`, `Chip`, …) and check Debug > Components; never a raw
   `<input type=checkbox|radio>` / `<select>` (`cmdr/prefer-ui-primitive`). A new primitive must be recorded and
-  documented (see [`/docs/guides/building-ui.md`](../../../docs/guides/building-ui.md)).
+  documented (see `docs/guides/building-ui.md`).
 - When adding code that loads remote content (`fetch`, `iframe`), ask whether to disable it in dev mode:
   `withGlobalTauri: true` is on in dev, which makes remote content a security risk.
 
-Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

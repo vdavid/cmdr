@@ -12,7 +12,7 @@ SMB network discovery UI: host list, per-host share list, login form, and a sing
 - **`ConnectToServerDialog.svelte`**: Modal for manually connecting by address/IP/`smb://` URL
 - **`smb-reconnect-manager.svelte.ts`**: Per-volume backoff cycle that re-establishes a Disconnected `SmbVolume`
 
-Full architecture, data flows, auth-flow detail, and decision rationale: [DETAILS.md](DETAILS.md).
+Full architecture, data flows, auth-flow detail, and decision rationale: `DETAILS.md`.
 
 ## Must-knows
 

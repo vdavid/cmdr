@@ -1,16 +1,16 @@
 # File operations
 
 Umbrella over the transfer (copy/move), delete/trash, new-file, and new-folder dialogs, triggered by Shift+F4 (new
-file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete). Depth: [DETAILS.md](DETAILS.md).
+file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete). Depth: `DETAILS.md`.
 
 ## Module map
 
-- [`transfer/`](transfer/CLAUDE.md): copy + move dialogs, plus `TransferProgressDialog` (reused by delete/trash,
-  parameterized by `operationType: 'copy' | 'move' | 'delete' | 'trash'`), error rendering, and shared utilities.
-- [`delete/`](delete/CLAUDE.md): F8 / Shift+F8 delete + trash confirmation dialog and pure utilities.
-- [`mkdir/`](mkdir/CLAUDE.md): F7 new-folder dialog with AI suggestions.
-- [`mkfile/`](mkfile/CLAUDE.md): Shift+F4 new-file dialog.
-- [`queue/`](queue/CLAUDE.md): the standalone transfer-queue window (lists every running/waiting operation with per-row
+- `transfer/CLAUDE.md`: copy + move dialogs, plus `TransferProgressDialog` (reused by delete/trash, parameterized by
+  `operationType: 'copy' | 'move' | 'delete' | 'trash'`), error rendering, and shared utilities.
+- `delete/CLAUDE.md`: F8 / Shift+F8 delete + trash confirmation dialog and pure utilities.
+- `mkdir/CLAUDE.md`: F7 new-folder dialog with AI suggestions.
+- `mkfile/CLAUDE.md`: Shift+F4 new-file dialog.
+- `queue/CLAUDE.md`: the standalone transfer-queue window (lists every running/waiting operation with per-row
   pause/resume/cancel, multi-select + Cancel selected, global pause/resume). Renders from the operations store that
   merges the thin `operations-changed` snapshot with the live `write-progress` stream.
 - `scan-throughput.ts`: rolling-window scan-rate estimator (see below).
@@ -35,7 +35,6 @@ file), F5 (copy), F6 (move), F7 (new folder), and F8 / Shift+F8 (trash / delete)
   returns nulls until two samples land, clamps negative deltas to zero, and must be `reset()` between scans. Pure, no
   Svelte / Tauri coupling.
 
-Backend counterpart for everything here:
-[`src-tauri/src/file_system/write_operations/`](../../../src-tauri/src/file_system/write_operations/CLAUDE.md) (plus its
-[`transfer/`](../../../src-tauri/src/file_system/write_operations/transfer/CLAUDE.md) and
-[`delete/`](../../../src-tauri/src/file_system/write_operations/delete/CLAUDE.md) subdirs).
+Backend counterpart for everything here: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md` (plus its
+`apps/desktop/src-tauri/src/file_system/write_operations/transfer/CLAUDE.md` and
+`apps/desktop/src-tauri/src/file_system/write_operations/delete/CLAUDE.md` subdirs).

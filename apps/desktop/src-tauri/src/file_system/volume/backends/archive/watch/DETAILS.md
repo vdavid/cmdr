@@ -1,6 +1,6 @@
 # Archive live content watch — details
 
-Pull-tier docs for the live content watch. Must-know invariants live in [CLAUDE.md](CLAUDE.md). Read this before any
+Pull-tier docs for the live content watch. Must-know invariants live in `CLAUDE.md`. Read this before any
 non-trivial work here: editing, planning, reorganizing, or advising.
 
 An external edit to the backing `.zip` (an editor rewriting it, a `cp` over it, this app's mutation's final rename)
@@ -20,7 +20,7 @@ listing watcher's own parent-directory-non-recursive shape.
 ## Notification identity: parent drive id + full path, never the archive id
 
 The listing cache keys archive listings on the PARENT DRIVE id plus the full `/…/foo.zip/inner` path (see
-[`../DETAILS.md`](../DETAILS.md) § "Routing and lifecycle"). On a matching event the callback drops the stale parsed
+`../DETAILS.md` § "Routing and lifecycle"). On a matching event the callback drops the stale parsed
 index (`cache.clear()`) and calls `caching::refresh_archive_listings(parent_drive_id, archive_path)`, which finds every
 open listing at or inside the archive path (`Path::starts_with`, component-wise — so `/a/foo.zip` matches the root and
 inner listings but not a `/a/foo.zipper` sibling or the containing `/a`) and re-reads each through
@@ -45,7 +45,7 @@ The debouncer callback runs on notify-rs's own thread, which has no Tokio runtim
 A writer mid-rewrite leaves a truncated central directory. On such a refresh, `list_directory` errors
 (`ArchiveError::Corrupt`/`NotAnArchive` → `VolumeError`), and `notify_full_refresh` returns early WITHOUT touching the
 cache — so the pane keeps its last-good entries rather than blanking, and the next event (when the write settles)
-retries. The damaged-archive banner is produced only at NAVIGATION time (the listing seam; see [`../DETAILS.md`](../DETAILS.md)
+retries. The damaged-archive banner is produced only at NAVIGATION time (the listing seam; see `../DETAILS.md`
 § "Decision: typed `ArchiveError → VolumeError` mapping"), never from this refresh path, so a transient mid-write never
 flashes an error. Pinned by `a_truncated_midwrite_archive_keeps_the_previous_listing`.
 
@@ -105,4 +105,4 @@ The two real-notify tests are **self-healing** under a saturated suite, not retr
 all inside one 15 s budget. This defeats both the just-registered-watch arming window (a mutation landing before macOS
 finishes arming FSEvents is dropped outright, not delayed) and a lone coalesced/dropped event when every core is busy —
 both unrecoverable by waiting. It mirrors `downloads::watcher::observe_mutation`; the shared `real-notify` nextest group
-(serialized, `retries = 0`) lives in [`.config/nextest.toml`](../../../../../../../../../.config/nextest.toml).
+(serialized, `retries = 0`) lives in `.config/nextest.toml`.

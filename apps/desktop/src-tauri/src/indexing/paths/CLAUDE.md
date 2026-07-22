@@ -22,7 +22,7 @@ is the canonical owner of `IndexPathSpace` and the read-side path transforms.
   mis-roots it at `ROOT_ID`.
 - **`trust_inode` nulls the inode on a FAT/exFAT drive** (`inodes_trustworthy == false`): a derived, unstable inode
   must never reach the index and drive the local rename pre-pass into a false `MoveEntryV2`. See
-  [`../transports`](../transports/CLAUDE.md) for where the flag is resolved.
+  `../transports/CLAUDE.md` for where the flag is resolved.
 - **Route by what's REGISTERED, never a path/id substring.** `volume_id_for_local_path` fast-rejects with
   `is_on_mounted_external_volume` so a cloud-drive folder in the home dir stays on `root` and keeps its sizes.
 
@@ -35,8 +35,8 @@ is the canonical owner of `IndexPathSpace` and the read-side path transforms.
 - `path_prefix.rs` — component-aware absolute-path prefix tests (`/a/bc` is never a child of `/a/b`).
 
 Owned elsewhere: the exclusion policy (`should_exclude`, `ExclusionScope`, pseudo-filesystem detection) lives in
-[`../scanner`](../scanner/CLAUDE.md); the SQLite `resolve_path` in [`../store`](../store/CLAUDE.md); the write-side
-mount transforms in [`../transports`](../transports/CLAUDE.md).
+`../scanner/CLAUDE.md`; the SQLite `resolve_path` in `../store/CLAUDE.md`; the write-side mount transforms in
+`../transports/CLAUDE.md`.
 
-`IndexPathSpace`, the routing tiers, and firmlink normalization: [DETAILS.md](DETAILS.md). Read it before any
-non-trivial work here: editing, planning, reorganizing, or advising.
+`IndexPathSpace`, the routing tiers, and firmlink normalization: `DETAILS.md`. Read it before any non-trivial work
+here: editing, planning, reorganizing, or advising.

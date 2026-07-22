@@ -35,7 +35,7 @@ user shortcuts, and enables/disables items by focus context.
   viewer menus (stored in `MenuState`); `active_menu_kind` skips redundant swaps. After every swap re-run
   `cleanup_macos_menus` (Edit items get re-injected); swapping back to main also re-applies `set_macos_menu_icons`
   (SF Symbols don't survive `app.set_menu()`). `window.set_menu()` is a macOS no-op, so `viewer_setup_menu` early-returns
-  there and `viewer_set_word_wrap` flips the stored `viewer_word_wrap` CheckMenuItem (O(1)). See [DETAILS.md](DETAILS.md).
+  there and `viewer_set_word_wrap` flips the stored `viewer_word_wrap` CheckMenuItem (O(1)). See `DETAILS.md`.
 - **Custom (not Predefined) MenuItems for Cut/Copy/Paste/Move here/Select all**: in non-main windows these forward the
   native `copy:`/`cut:`/`paste:`/`selectAll:` selector via `send_native_edit_action()`; without it ⌘A and clipboard are
   dead in settings/viewer text fields. ⌘A on the main window routes through `execute-command` (frontend checks
@@ -54,4 +54,5 @@ user shortcuts, and enables/disables items by focus context.
 - **⌘G / ⌘J double-dispatch on macOS**: the combo fires both the native menu and the JS keydown. Safe here without
   suppression (⌘G dialog-open is idempotency-guarded, ⌘J re-reveal is idempotent). Expect two log lines per ⌘J press.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

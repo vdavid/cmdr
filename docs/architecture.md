@@ -37,7 +37,7 @@ All under `apps/desktop/src/lib/`.
 - `file-operations/mkfile/`: Shift+F4 new-file dialog
 - `file-operations/queue/`: Standalone transfer-queue window (per-row pause/resume/cancel, multi-select, global
   pause/resume), rendered from an ops store merging `operations-changed` + `write-progress`; route at `routes/queue/`.
-  See [`apps/desktop/src/lib/file-operations/queue/CLAUDE.md`](../apps/desktop/src/lib/file-operations/queue/CLAUDE.md)
+  See `apps/desktop/src/lib/file-operations/queue/CLAUDE.md`
 - `file-viewer/`: Read-only file viewer (separate window, virtual scrolling)
 - `settings/`: Settings UI + registry-based architecture, reactive state
 - `intl/`: The single locale source (`getLocale`) + memoized locale-aware number/size formatters; counts, file sizes,
@@ -88,8 +88,8 @@ All under `apps/desktop/src/lib/`.
 - `font-metrics/`: Character width measurement for accurate Brief mode column sizing
 
 **Adding a new top-level window** (route + opener + capability file, plus the perms gotcha that window-creation is
-checked against the calling window): see [guides/adding-a-window.md](guides/adding-a-window.md). Existing windows are
-Settings, the File viewer, and Keyboard shortcuts.
+checked against the calling window): see `guides/adding-a-window.md`. Existing windows are Settings, the File viewer,
+and Keyboard shortcuts.
 
 **Frontend text measurement uses `@chenglou/pretext`.** Whenever you need to measure text on the frontend, reach for
 pretext (its full API reference is at `apps/desktop/node_modules/@chenglou/pretext/README.md`) rather than a Canvas
@@ -114,7 +114,7 @@ All under `apps/desktop/src-tauri/src/`.
 - `file_system/volume/backends/archive/`: `ArchiveVolume` (read-only zip: browse + extract) + its decoupled reading core
   (central-directory parse, synthetic tree, streaming decompress, Zip Slip) + `boundary.rs` (the shared `.zip`-boundary
   detector). Paths that cross a `.zip` route here via `VolumeManager::resolve` (on-demand registration, archive LRU).
-  See its [`CLAUDE.md`](../apps/desktop/src-tauri/src/file_system/volume/backends/archive/CLAUDE.md)
+  See its `apps/desktop/src-tauri/src/file_system/volume/backends/archive/CLAUDE.md`
 - `file_system/volume/friendly_error/`: typed, word-free error CLASSIFICATION (`ListingError` / `ListingErrorReason`,
   `ErrorCategory`, errno → reason mapping, provider detection over 18 providers). The user-facing WORDS live on the FE
   (`src/lib/errors/`)
@@ -143,8 +143,8 @@ All under `apps/desktop/src-tauri/src/`.
   `search/`, with its own per-volume `importance.db` store, a multi-volume kind-aware scheduler (Local + SMB scored, MTP
   excluded) that recomputes on scan completion (full) and on live listing changes (incremental) — both driven by a
   neutral lifecycle bus in `indexing/` — and the consumable `ImportanceIndex` read API consumers reach it through
-  (queryable even for an unmounted volume). See its [`CLAUDE.md`](../apps/desktop/src-tauri/src/importance/CLAUDE.md)
-  and [`docs/specs/importance-subsystem-plan.md`](specs/importance-subsystem-plan.md)
+  (queryable even for an unmounted volume). See its `apps/desktop/src-tauri/src/importance/CLAUDE.md` and
+  `specs/importance-subsystem-plan.md`
 - `media_index/`: Image-ML enrichment — makes a volume's images searchable by their content (OCR text, Vision scene/
   object tags, image-similarity "find similar" via feature-print embeddings, and natural-language semantic search via an
   on-demand on-device CLIP model — `clip/`, macOS Core ML, a SEPARATE vector space with independent two-part staleness).
@@ -156,19 +156,16 @@ All under `apps/desktop/src-tauri/src/`.
   gated on a completed scan, and the consumable `MediaIndex` read API (OCR/tag search + find-similar, offline after
   unmount). Enriches local volumes plus opt-in network (SMB) volumes conservatively (idle-gated, bandwidth-bounded
   byte-fetch off the OS mount; disconnect pauses without losing coverage; MTP never background-sweeps). Off by default.
-  See its [`CLAUDE.md`](../apps/desktop/src-tauri/src/media_index/CLAUDE.md) and
-  [`docs/specs/media-ml-index-plan.md`](specs/media-ml-index-plan.md)
+  See its `apps/desktop/src-tauri/src/media_index/CLAUDE.md` and `specs/media-ml-index-plan.md`
 - `operation_log/`: The durable, cross-volume journal of file mutations — the app's first durable DB
   (`operation-log.db`), the foundation for rollback, indexed name search, and a future undo. Single writer thread, a
   forward-migration ladder (not delete-and-recreate) and retention discipline, interned dir prefixes + per-item rows,
   app-side case folding with no collation (stays `sqlite3`-inspectable). See its
-  [`CLAUDE.md`](../apps/desktop/src-tauri/src/operation_log/CLAUDE.md) and
-  [`docs/specs/operation-log-plan.md`](specs/operation-log-plan.md)
+  `apps/desktop/src-tauri/src/operation_log/CLAUDE.md` and `specs/operation-log-plan.md`
 - `agent/`: The in-app AI agent, whose first user-facing slice is "Ask Cmdr" (a read-only chat rail; plan:
   `docs/specs/ask-cmdr-plan.md`). Its `agent/llm/` holds the provider-agnostic `AgentLlm` seam over the shipped `genai`
   client, its deterministic fake, and the typed message-part model that keeps opaque provider reasoning state lossless.
-  See its [`CLAUDE.md`](../apps/desktop/src-tauri/src/agent/CLAUDE.md) and
-  [`docs/specs/ask-cmdr-spec.md`](specs/ask-cmdr-spec.md)
+  See its `apps/desktop/src-tauri/src/agent/CLAUDE.md` and `specs/ask-cmdr-spec.md`
 - `downloads/`: `notify`-based `~/Downloads` watcher, FDA-gated, browser-rename-aware filter, Cmdr-own-write ignore set
 - `search/`: In-memory search index (lazy load, rayon parallel scan, glob/regex) + AI query translation (`search/ai/`)
 - `selection/`: Selection dialog backend: recent-selections store + cloud AI translation (`selection/ai/`); the matcher
@@ -189,7 +186,7 @@ All under `apps/desktop/src-tauri/src/`.
 - `fda_gate.rs`: Full Disk Access startup gate: blocks TCC reads + `NSWorkspace` icon calls until FDA is decided. See
   the `tauri-apis` rule in `.claude/rules/`
 - `instance_lock.rs`: Single-instance guard: one process per data dir, claimed at startup. See
-  [`docs/tooling/instance-isolation.md`](tooling/instance-isolation.md) § Instance lock
+  `tooling/instance-isolation.md` § Instance lock
 - `stubs/`: Linux compilation stubs for macOS-only modules (Docker E2E pipeline)
 - `menu/`: Native menu bar: construction, dispatch mapping, accelerator sync, context-aware enable/disable. The Help
   menu carries the "What's new" item (above "Send feedback…")
@@ -234,16 +231,14 @@ frontend-only virtual `search-results` volume (snapshot store, refcounted). Full
 ## Cross-cutting patterns
 
 For detailed architecture patterns (data flow, navigation lifecycle, listing lifecycle, concurrency guards,
-cancellation, volume mount/unmount, error recovery, persistence), see
-[architecture-patterns.md](architecture-patterns.md). Read the relevant section when working on navigation, file
-operations, or volumes.
+cancellation, volume mount/unmount, error recovery, persistence), see `architecture-patterns.md`. Read the relevant
+section when working on navigation, file operations, or volumes.
 
 ### Platform constraints
 
 The Rust backend's cross-cutting filesystem and IPC guardrails (synchronous commands block the IPC handler thread;
 network-mount syscalls block 30-120s; the two-layer timeout defense; no rayon for macOS-framework calls) are must-knows
-for backend work and live in [`apps/desktop/src-tauri/CLAUDE.md`](../apps/desktop/src-tauri/CLAUDE.md) § Platform
-constraints.
+for backend work and live in `apps/desktop/src-tauri/CLAUDE.md` § Platform constraints.
 
 ### macOS specifics
 
@@ -268,7 +263,7 @@ constraints.
 - License mock via `CMDR_MOCK_LICENSE=commercial`
 - MCP servers bind ephemeral ports on `127.0.0.1`; the actual port lives in `<CMDR_DATA_DIR>/mcp.port` and
   `<CMDR_DATA_DIR>/tauri-mcp.port`. `CMDR_MCP_PORT` still pins the Cmdr MCP server for clients that prefer that. See
-  [tooling/instance-isolation.md](tooling/instance-isolation.md) for the per-resource breakdown
+  `tooling/instance-isolation.md` for the per-resource breakdown
 - `withGlobalTauri: true` in dev mode (security risk if loading remote content)
 
 ### Checker script
@@ -279,7 +274,7 @@ Go-based unified runner (`scripts/check/`). Parallel execution with dependency g
 ## Diagnostics
 
 Two pipelines report what went wrong on a user's machine, both redacting payloads through the shared `redact/` module
-first (see [docs/security.md](security.md) for the privacy posture):
+first (see `security.md` for the privacy posture):
 
 - **Crash reporter** (`crash_reporter/`): captures panics + signals, persists a report to disk, and offers to send it on
   the next launch. Targets `POST /crash-report`. For unexpected aborts only.
@@ -313,24 +308,20 @@ Dev workflow docs and external service references. All in `docs/tooling/`.
 
 ### Dev workflow
 
-- [logging.md](tooling/logging.md): Unified logging, `RUST_LOG` recipes for every subsystem
-- [testing.md](tooling/testing.md): Testing tools inventory (Rust, Vitest, Playwright, Linux E2E, Docker SMB)
-- [mcp.md](tooling/mcp.md): MCP servers (`cmdr`, `tauri`) for agent-driven app testing
-- [instance-isolation.md](tooling/instance-isolation.md): `CMDR_INSTANCE_ID` primer: per-resource isolation for parallel
-  dev / E2E
-- [css-health-checks.md](tooling/css-health-checks.md): Stylelint + Go-based unused CSS checker
-- [index-query.md](tooling/index-query.md): `index_query`: query index DB with `platform_case` collation (`sqlite3`
-  can't)
+- `tooling/logging.md`: Unified logging, `RUST_LOG` recipes for every subsystem
+- `tooling/testing.md`: Testing tools inventory (Rust, Vitest, Playwright, Linux E2E, Docker SMB)
+- `tooling/mcp.md`: MCP servers (`cmdr`, `tauri`) for agent-driven app testing
+- `tooling/instance-isolation.md`: `CMDR_INSTANCE_ID` primer: per-resource isolation for parallel dev / E2E
+- `tooling/css-health-checks.md`: Stylelint + Go-based unused CSS checker
+- `tooling/index-query.md`: `index_query`: query index DB with `platform_case` collation (`sqlite3` can't)
 
 The check runner and E2E testing docs live colocated with their code:
 
-- Check runner: [`scripts/check/CLAUDE.md`](../scripts/check/CLAUDE.md)
-- Check authoring conventions (write a new check, registry, helpers):
-  [`scripts/check/checks/CLAUDE.md`](../scripts/check/checks/CLAUDE.md)
-- E2E overview (all suites, fixtures): [`apps/desktop/test/CLAUDE.md`](../apps/desktop/test/CLAUDE.md)
-- Playwright E2E (tauri-playwright, cross-platform):
-  [`apps/desktop/test/e2e-playwright/CLAUDE.md`](../apps/desktop/test/e2e-playwright/CLAUDE.md)
-- Linux E2E (Docker, VNC, legacy): [`apps/desktop/test/e2e-linux/CLAUDE.md`](../apps/desktop/test/e2e-linux/CLAUDE.md)
+- Check runner: `scripts/check/CLAUDE.md`
+- Check authoring conventions (write a new check, registry, helpers): `scripts/check/checks/CLAUDE.md`
+- E2E overview (all suites, fixtures): `apps/desktop/test/CLAUDE.md`
+- Playwright E2E (tauri-playwright, cross-platform): `apps/desktop/test/e2e-playwright/CLAUDE.md`
+- Linux E2E (Docker, VNC, legacy): `apps/desktop/test/e2e-linux/CLAUDE.md`
 
 ### Dependency management
 
@@ -342,21 +333,17 @@ get immediate auto-merging PRs regardless of schedule. For adding deps by hand, 
 
 ### External services
 
-- [hetzner-vps.md](tooling/hetzner-vps.md): Production VPS: SSH access, layout, deploy commands
-- [umami.md](tooling/umami.md): Website analytics: API access, DB queries, troubleshooting
-- [cloudflare.md](tooling/cloudflare.md): Cmdr zones, workers, Pages, D1 telemetry
-- [posthog.md](tooling/posthog.md): Cmdr project ID and settings
-- [monitoring.md](tooling/monitoring.md): UptimeRobot: uptime checks, alerts
-- [analytics-dashboard.md](tooling/analytics-dashboard.md): Private dashboard at `analdash.getcmdr.com` aggregating
-  metrics for the maintainer
-- [remark42.md](tooling/remark42.md): Self-hosted comments engine for the website (Docker on the Hetzner VPS)
-- [listmonk.md](tooling/listmonk.md): Mailing-list manager: the Cmdr beta-tester double-opt-in list and the
-  `/beta-signup` wiring
-- [discord.md](tooling/discord.md): Community Discord: read-only bot access (tested cURLs) for summarizing channel
-  activity
-- [feedback-and-error-digest.md](tooling/feedback-and-error-digest.md): Read in-app feedback (D1) and error-report
-  bundles (R2) straight from the source, behind the `/feedback-and-error-digest-from-app` command
-- Paddle (payments): [test-purchase-flow.md](guides/test-purchase-flow.md) walks the sandbox buy-and-activate test end
-  to end
+- `tooling/hetzner-vps.md`: Production VPS: SSH access, layout, deploy commands
+- `tooling/umami.md`: Website analytics: API access, DB queries, troubleshooting
+- `tooling/cloudflare.md`: Cmdr zones, workers, Pages, D1 telemetry
+- `tooling/posthog.md`: Cmdr project ID and settings
+- `tooling/monitoring.md`: UptimeRobot: uptime checks, alerts
+- `tooling/analytics-dashboard.md`: Private dashboard at `analdash.getcmdr.com` aggregating metrics for the maintainer
+- `tooling/remark42.md`: Self-hosted comments engine for the website (Docker on the Hetzner VPS)
+- `tooling/listmonk.md`: Mailing-list manager: the Cmdr beta-tester double-opt-in list and the `/beta-signup` wiring
+- `tooling/discord.md`: Community Discord: read-only bot access (tested cURLs) for summarizing channel activity
+- `tooling/feedback-and-error-digest.md`: Read in-app feedback (D1) and error-report bundles (R2) straight from the
+  source, behind the `/feedback-and-error-digest-from-app` command
+- Paddle (payments): `guides/test-purchase-flow.md` walks the sandbox buy-and-activate test end to end
 
 ONLY do read-only operations with these services unless specifically asked to make changes.

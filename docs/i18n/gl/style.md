@@ -1,7 +1,6 @@
 # Galician (gl) translation style guide
 
-Working notes for translating Cmdr into Galician. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into Galician. Read `../README.md` for how this fits the translation process.
 
 This is the language base (`gl`), the universal Galician set. Galician is co-official in Galicia (Spain) and has a
 single standard written norm (the Real Academia Galega / ILG norm); no region variant is needed.
@@ -76,7 +75,7 @@ Confidence: confirmed.
   separator and a period or space for thousands).
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
 - **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  `docs/guides/i18n-translation.md`.
 
 ## Decisions to confirm with David
 
@@ -85,6 +84,6 @@ Confidence: confirmed.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/gl/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/gl/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

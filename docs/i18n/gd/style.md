@@ -1,7 +1,7 @@
 # Scottish Gaelic (gd) translation style guide
 
-Working notes for translating Cmdr into Scottish Gaelic (Gàidhlig). Read [`README.md`](../README.md) for how this fits
-the translation process.
+Working notes for translating Cmdr into Scottish Gaelic (Gàidhlig). Read `../README.md` for how this fits the
+translation process.
 
 This is the language base (`gd`), the universal Scottish Gaelic set. There's a single written standard (GOC, Gnàthachas
 Litreachaidh na Gàidhlig); no region variant is needed. Scottish Gaelic has unusually strong open-source coverage thanks
@@ -79,7 +79,7 @@ confirmed.
 - **Numbers and dates come from the formatter layer.** Never hardcode separators.
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
 - **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  `docs/guides/i18n-translation.md`.
 
 ## Decisions to confirm with David
 
@@ -88,6 +88,6 @@ confirmed.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/gd/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/gd/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

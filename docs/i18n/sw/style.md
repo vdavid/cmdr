@@ -1,8 +1,7 @@
 # Swahili (sw) translation style guide
 
-Working notes for translating Cmdr into Swahili. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Swahili.
+Working notes for translating Cmdr into Swahili. Read `../README.md` for how this fits the translation process, and the
+app-wide `docs/style-guide.md` for the English voice these notes carry into Swahili.
 
 ## Decisions to confirm with David
 
@@ -149,6 +148,6 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sw')`, 202
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/sw/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/sw/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

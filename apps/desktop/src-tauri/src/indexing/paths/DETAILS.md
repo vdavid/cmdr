@@ -1,12 +1,12 @@
 # Indexing path arithmetic details
 
 Read this before any non-trivial work in `indexing/paths/`: editing, planning, reorganizing, or advising. Must-know
-invariants are in [CLAUDE.md](CLAUDE.md).
+invariants are in `CLAUDE.md`.
 
 This area is pure path arithmetic, deliberately separate from the lifecycle/registry core. It is the CANONICAL owner of
 `IndexPathSpace`, the read-side path transforms (`index_read_path`), path → volume routing, firmlink normalization, and
-the component-aware prefix test. The read query surface ([`../read`](../read/DETAILS.md)) and the progress reporter
-([`../events`](../events/DETAILS.md)) both depend on these.
+the component-aware prefix test. The read query surface (`../read/DETAILS.md`) and the progress reporter
+(`../events/DETAILS.md`) both depend on these.
 
 ## `IndexPathSpace` — the mount-relative local pipeline (`routing.rs`)
 
@@ -19,8 +19,8 @@ mount root. `firmlinks::normalize_path` on `event.path` is likewise boot-disk-on
 `IndexPathSpace` is the ONE seam that teaches the pipeline the mount-relative path space. It's built once per scan/loop
 from the volume's kind + root + inode-trust (`IndexPathSpace::for_volume`) and threaded through `scan_completion` → the
 reconciler + live loop, and through `manager::start_scan` → the scanner + local reconcile. It stores its space AS an
-`ExclusionScope` (owned by [`../scanner`](../scanner/DETAILS.md)) and reads the mount root back through it, so the path
-space and the exclusion gate can't disagree about where the volume begins. Operations:
+`ExclusionScope` (owned by `../scanner/DETAILS.md`) and reads the mount root back through it, so the path space and
+the exclusion gate can't disagree about where the volume begins. Operations:
 
 - **`absolute(raw)`** — the canonical ABSOLUTE path in this volume's world: `firmlinks::normalize_path` for the boot
   disk, identity for a mount-rooted drive (no firmlink normalization). This is what every path SET holds.
@@ -31,7 +31,7 @@ space and the exclusion gate can't disagree about where the volume begins. Opera
   `BootDisk` its own `/Volumes/X` subtree would be excluded and the scan would falsely complete empty). Either way the
   scope carries the volume ROOT, so the root-position pseudo-filesystem skip works on every volume.
 - **`is_boot_disk()`** — read back from the scope's mount root. The shallow-`MustScanSubDirs` sweep window branches on
-  this (the once-a-day window is boot-disk-only; policy owned by [`../reconcile`](../reconcile/DETAILS.md)).
+  this (the once-a-day window is boot-disk-only; policy owned by `../reconcile/DETAILS.md`).
 - **`volume_root_string()`** — `/Volumes/X` for a mount-rooted drive, `/` for the boot disk; stored as the
   `volume_path` meta.
 
@@ -53,7 +53,7 @@ the carried `parent_id`, so a mount-rooted fresh scan naturally stores `EntryRow
 name (mirroring SMB/MTP).
 
 **The inode-trust axis.** `IndexPathSpace` also carries `inodes_trustworthy`, resolved once per scan from the volume's
-`FilesystemKind` (via `transports::local_external::classify`; see [`../transports`](../transports/DETAILS.md)). Only a
+`FilesystemKind` (via `transports::local_external::classify`; see `../transports/DETAILS.md`). Only a
 FAT/exFAT local external drive is `false`. `trust_inode(raw)` is the single choke point every local write path funnels a
 snapshot's inode through before persisting it: the raw inode on a trustworthy filesystem, `None` on FAT/exFAT. With no
 stored inode the local rename pre-pass can never match, so an inode-reused delete+create can't become a false
@@ -115,11 +115,10 @@ the index's canonical paths.
 The invariant is **canonical form everywhere**: stored keys and lookup keys are both `/private/tmp`, never `/tmp`. The
 scanner does NOT follow symlinks (`follow_links(false)`), so the canonical contents come for free from walking the real
 `/private`. The scanner's related `is_canonicalization_alias` skip (so the three `/private` root symlinks don't collide
-on the real directory's `(parent_id, name_folded)` slot) lives with the exclusion policy in
-[`../scanner`](../scanner/DETAILS.md).
+on the real directory's `(parent_id, name_folded)` slot) lives with the exclusion policy in `../scanner/DETAILS.md`.
 
 ## Component-aware prefix tests (`path_prefix.rs`)
 
 Absolute-path prefix checks that respect path components, so `/a/bc` is never treated as a child of `/a/b`. Shared by
-the rescan ancestor-collapse and removal-storm coalescing (owned by [`../reconcile`](../reconcile/DETAILS.md) and
-[`../watch`](../watch/DETAILS.md)), and by `index_read_path`'s deepest-hot-path selection.
+the rescan ancestor-collapse and removal-storm coalescing (owned by `../reconcile/DETAILS.md` and
+`../watch/DETAILS.md`), and by `index_read_path`'s deepest-hot-path selection.

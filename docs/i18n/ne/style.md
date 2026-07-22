@@ -1,8 +1,8 @@
 # Nepali (ne) translation style guide
 
-Working notes for translating Cmdr into Nepali. Read [`README.md`](../README.md) for how this fits the translation
-process. Nepali is written in the Devanagari script; there is no script decision. References: Microsoft terminology and
-style guide (`ne-NP`, Tier 2) plus GNOME Nautilus (`ne`, Tier 3).
+Working notes for translating Cmdr into Nepali. Read `../README.md` for how this fits the translation process. Nepali is
+written in the Devanagari script; there is no script decision. References: Microsoft terminology and style guide
+(`ne-NP`, Tier 2) plus GNOME Nautilus (`ne`, Tier 3).
 
 ## Voice and tone
 
@@ -82,6 +82,6 @@ two-category shape as English; every plural message needs both branches. The `de
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/ne/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/ne/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

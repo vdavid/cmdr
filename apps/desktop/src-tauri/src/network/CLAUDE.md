@@ -3,7 +3,7 @@
 Discover, browse, and mount SMB shares on macOS + Linux: pure-Rust mDNS discovery, `smb2` share listing with an
 `smbutil`/`smbclient` CLI fallback, mounting via `NetFSMountURLSync` (macOS) / `gio mount` (Linux).
 
-Frontend: [`src/lib/file-explorer/network/CLAUDE.md`](../../../src/lib/file-explorer/network/CLAUDE.md). Auth-flow
+Frontend: `apps/desktop/src/lib/file-explorer/network/CLAUDE.md`. Auth-flow
 background: `docs/notes/smb-auth-flow-redesign.md`.
 
 ## Module map
@@ -37,10 +37,10 @@ background: `docs/notes/smb-auth-flow-redesign.md`.
 - **A refused/unreachable TCP connect is NOT a protocol error**: `classify_error` maps those io kinds to
   `HostUnreachable`, so an offline server skips the CLI fallback.
 
-Smaller gotchas, each covered in [DETAILS.md](DETAILS.md) § Gotchas: strip `.local` from the smb2 addr; pass the port as
+Smaller gotchas, each covered in `DETAILS.md` § Gotchas: strip `.local` from the smb2 addr; pass the port as
 a separate param (embedding doubles it); loopback IP + non-standard port fails (fall back to hostname); don't hold a
 mutex across DNS/network calls; mDNS service type needs the trailing dot `"_smb._tcp.local."`; `ShareListError` uses
 `#[serde(tag = "type")]` struct variants.
 
-Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing,
 planning, reorganizing, or advising.

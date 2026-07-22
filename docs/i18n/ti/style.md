@@ -1,8 +1,7 @@
 # Tigrinya (ti) translation style guide
 
-Working notes for translating Cmdr into Tigrinya. Read [`README.md`](../README.md) for how this fits the translation
-process, and [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) for the agent-handoff block and ICU
-rules.
+Working notes for translating Cmdr into Tigrinya. Read `../README.md` for how this fits the translation process, and
+`docs/guides/i18n-translation.md` for the agent-handoff block and ICU rules.
 
 ## Priority signal (read first)
 
@@ -190,11 +189,10 @@ expected and correct.
   Ge'ez script rarely uses the ASCII apostrophe, but loanword transliterations and English brand fragments can, so watch
   for it.
 - Keep every `{placeholder}` and `<tag>` verbatim; translate only the human-readable text between them. Full rules: the
-  agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
-  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  agent-handoff block in `docs/guides/i18n-translation.md` and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/ti/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/ti/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

@@ -52,5 +52,4 @@ only checks subscription expiry. Frontend counterpart: `src/lib/licensing/CLAUDE
 
 Key generation / test-key setup: see `apps/api-server/CLAUDE.md` and `README.md#first-time-setup`.
 
-Full details (activation flow diagram, BSL model rationale, all decisions and gotchas):
-[DETAILS.md](DETAILS.md).
+Full details (activation flow diagram, BSL model rationale, all decisions and gotchas): `DETAILS.md`.

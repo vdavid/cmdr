@@ -54,5 +54,5 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   persist the full order via `reorderFavorites(bareIds)` in the background (don't await the IPC first). Full flow + the
   reorder mechanism: DETAILS § Editable favorites.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

@@ -2,7 +2,7 @@
 
 Natural-language → `SearchQuery` translation: a classification prompt, a key-value line parser, deterministic
 enum-to-value mappings, and an assembler. The LLM only classifies intent; Rust computes every value. Parent:
-[`../CLAUDE.md`](../CLAUDE.md).
+`../CLAUDE.md`.
 
 ## File map
 
@@ -50,4 +50,4 @@ enum-to-value mappings, and an assembler. The LLM only classifies intent; Rust c
   caveat. The "no filename filter" fallback fires only when both `name_pattern` is `None` and the LLM omitted `note`.
 
 Full details (decision rationale: key-value vs JSON, classify-vs-compute, single-pass, the label field):
-[DETAILS.md](DETAILS.md).
+`DETAILS.md`.

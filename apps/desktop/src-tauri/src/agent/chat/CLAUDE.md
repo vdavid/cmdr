@@ -2,7 +2,7 @@
 
 The chat runtime and its pure context-assembly core: one user message in, an answer out,
 crash-safe and within budget. Depth (anatomy-of-one-call, the constants table, the crash
-cases, decision rationale): [DETAILS.md](DETAILS.md).
+cases, decision rationale): `DETAILS.md`.
 
 ## Module map
 
@@ -50,4 +50,4 @@ cases, decision rationale): [DETAILS.md](DETAILS.md).
   blob or provider state ever rides an event. `AssistantStarted` carries no id by design
   (no row exists until `End`); the persisted id arrives on `Done`.
 
-Depth: [DETAILS.md](DETAILS.md).
+Depth: `DETAILS.md`.

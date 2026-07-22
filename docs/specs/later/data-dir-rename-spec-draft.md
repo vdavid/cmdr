@@ -3,10 +3,10 @@
 Status: draft, deliberately rough. 2026-06-04.
 
 **Provenance, read this first.** This draft was written by an AI agent at the end of a design session that was mostly
-about a different feature (the in-app agent, see [agent-spec.md](agent-spec.md)). The author's knowledge of Cmdr comes
-from `AGENTS.md`, `docs/architecture.md`, `docs/architecture-patterns.md`, and that session; it did NOT freshly
-investigate the codebase for this draft. Every claim about the code below should be verified by the agent that picks
-this up. Holes are marked explicitly. Treat this as a starting point and an agenda, not a plan.
+about a different feature (the in-app agent, see `agent-spec.md`). The author's knowledge of Cmdr comes from
+`AGENTS.md`, `docs/architecture.md`, `docs/architecture-patterns.md`, and that session; it did NOT freshly investigate
+the codebase for this draft. Every claim about the code below should be verified by the agent that picks this up. Holes
+are marked explicitly. Treat this as a starting point and an agenda, not a plan.
 
 ## 1. Goal
 

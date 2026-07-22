@@ -2,7 +2,7 @@
 
 Whole-drive file search dialog: filename (glob/regex), size, date, and scope. Optional AI mode translates
 natural-language queries into structured filters. First consumer of the shared Query UI primitives in
-[`lib/query-ui/`](../query-ui/CLAUDE.md) (Selection is the second). Backend: `src-tauri/src/search/`.
+`../query-ui/CLAUDE.md` (Selection is the second). Backend: `src-tauri/src/search/`.
 
 ## Module map
 
@@ -52,5 +52,5 @@ natural-language queries into structured filters. First consumer of the shared Q
   With `mediaIndex.enabled` OFF the section renders nothing, fires no IPC; ON, it voices coverage and renders the
   `[`/`]` snippet via `parseOcrSnippet` + `<mark>`, never `{@html}`.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

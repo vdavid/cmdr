@@ -1,7 +1,7 @@
 # i18n terminology evidence pile — details
 
 Full inventory, provenance, layout rules, and open items for the reference pile. Must-knows and the top-level structure
-map: [README.md](README.md).
+map: `README.md`.
 
 ## Layout and locale keys
 
@@ -140,7 +140,7 @@ them after a pile rebuild:
   UTF-8 from TC's native codepage.
 - **Format**: INI-style `ID="value"` lines (numeric string IDs), prefixed by a header whose line 2 self-declares the
   codepage (`codepage=1250`). The IDs are not self-describing; grep the translated VALUES, or cross-reference an ID
-  against `TOTALCMD.INC` (the English menu reference). See [how-to-mine.md](how-to-mine.md).
+  against `TOTALCMD.INC` (the English menu reference). See `how-to-mine.md`.
 - **Coverage**: 48 languages, ~6 MB. 18 are bundled in the installer (incl. `de`, `hu`, `sv`, `fr`, `it`, `es`, `ru`,
   `ja`, …); the rest come from the per-language zips on the additional-languages page.
 - **License**: proprietary (Ghisler). Reference use only; never paste a TC string into Cmdr's catalog — same rule as the

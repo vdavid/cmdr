@@ -1,8 +1,8 @@
 # Dari (prs) translation style guide
 
-Working notes for translating Cmdr into Dari (Afghan Persian). Read [`README.md`](../README.md) for how this fits the
-translation process. Dari is written in the Perso-Arabic script and is **right-to-left (RTL)**, which is the dominant
-concern for this locale (see Decision points). Dari is the Afghan variety of Persian; it is close to Iranian Persian
+Working notes for translating Cmdr into Dari (Afghan Persian). Read `../README.md` for how this fits the translation
+process. Dari is written in the Perso-Arabic script and is **right-to-left (RTL)**, which is the dominant concern for
+this locale (see Decision points). Dari is the Afghan variety of Persian; it is close to Iranian Persian
 ([`fa`](../fa/style.md)) but has its own lexical preferences. References: Microsoft terminology (`prs-AF`, Tier 2); no
 GNOME/Xfce catalog and no macOS.
 
@@ -88,6 +88,6 @@ phrase rather than swapping only the numeral. The `desktop-i18n-plural` check re
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/prs/`; recipes in
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/prs/`; recipes in
 `docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

@@ -1,8 +1,7 @@
 # Hungarian (hu) translation style guide
 
-Working notes for translating Cmdr into Hungarian. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Hungarian.
+Working notes for translating Cmdr into Hungarian. Read `../README.md` for how this fits the translation process, and
+the app-wide `docs/style-guide.md` for the English voice these notes carry into Hungarian.
 
 macOS DOES ship a Hungarian UI localization (Finder, AppKit, System Settings), so it's the highest-authority source
 here, exactly as on other languages. Microsoft Windows Hungarian plus the Microsoft Hungarian style guide are Tier 2,
@@ -21,8 +20,7 @@ informal `te` address (see Formality). Error messages stay calm and actionable a
 
 **Verdict: informal `te` (tegezés) throughout. No önözés.** Consumer brands (IKEA, Spotify, Netflix, H&M, Coca-Cola) all
 address Hungarian users with `te`, which fits Cmdr's friendly personal voice. The OS sources lean önözés, but Cmdr
-deliberately picks the warmer consumer-brand register. Formality decision recorded in
-[`formal-informal-decisions.md`](../formal-informal-decisions.md).
+deliberately picks the warmer consumer-brand register. Formality decision recorded in `../formal-informal-decisions.md`.
 
 - **Labels (buttons, menus, headers): nominal / infinitive, no direct address.** "Másolás", "Áthelyezés", "Törlés",
   "Mégsem". The dominant Hungarian UI convention; macOS Finder, Microsoft, GNOME, and Xfce all do this, and it sits fine
@@ -153,20 +151,19 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
 ## Open terms (resolved by evidence, not by David)
 
 David does NOT break ties for Hungarian. He uses shipped Hungarian as his gauge for the whole language-agnostic
-pipeline, so hand-feeding it a native gut-check would contaminate that gauge (see
-[i18n-translation.md](../../guides/i18n-translation.md) § Treat every language the same). These resolve the same way
-they'd resolve for a language no one here speaks: triangulate the reference pile (including the file-manager sources and
-the four mining gotchas in § Researching terms), pick the best-evidenced fit, record residual confidence. No
-Hungarian-specific input.
+pipeline, so hand-feeding it a native gut-check would contaminate that gauge (see `docs/guides/i18n-translation.md` §
+Treat every language the same). These resolve the same way they'd resolve for a language no one here speaks: triangulate
+the reference pile (including the file-manager sources and the four mining gotchas in § Researching terms), pick the
+best-evidenced fit, record residual confidence. No Hungarian-specific input.
 
 - **Address style: `te` (informal), high** — consumer-brand evidence; see Formality and
-  [`formal-informal-decisions.md`](../formal-informal-decisions.md).
+  `../formal-informal-decisions.md`.
 - **pane, bookmark, viewer, listing — still tentative.** No Tier-1 source (Finder is single-pane and has no own viewer
   term), so these need the file-manager sources to settle. The next glossary pass mines them like any language; until
   then they stay open, not parked for David.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/hu/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/hu/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

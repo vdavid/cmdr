@@ -1,7 +1,7 @@
 # What's new popup (frontend) — details
 
-Read [CLAUDE.md](CLAUDE.md) first for the module map and must-knows. This file holds the depth: the show-once decision
-table, the manual entry, and the E2E seam.
+Read `CLAUDE.md` first for the module map and must-knows. This file holds the depth: the show-once decision table, the
+manual entry, and the E2E seam.
 
 ## Show-once decision table
 

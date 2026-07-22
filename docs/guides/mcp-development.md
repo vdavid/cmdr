@@ -1,10 +1,8 @@
 # MCP server developer guide
 
 This guide explains how to extend the Cmdr MCP server with new tools and test your changes. For the architecture, flows,
-and decision rationale, read
-[`apps/desktop/src-tauri/src/mcp/DETAILS.md`](../../apps/desktop/src-tauri/src/mcp/DETAILS.md); for the must-know
-invariants, its [`CLAUDE.md`](../../apps/desktop/src-tauri/src/mcp/CLAUDE.md) and the executor's
-[`CLAUDE.md`](../../apps/desktop/src-tauri/src/mcp/executor/CLAUDE.md).
+and decision rationale, read `apps/desktop/src-tauri/src/mcp/DETAILS.md`; for the must-know invariants, its
+`apps/desktop/src-tauri/src/mcp/CLAUDE.md` and the executor's `apps/desktop/src-tauri/src/mcp/executor/CLAUDE.md`.
 
 ## Architecture
 
@@ -172,8 +170,7 @@ fn test_my_action_schema() {
 pnpm check rust     # or, scoped tighter, from apps/desktop/src-tauri: cargo test mcp::
 ```
 
-Use `pnpm check` (cache-aware) rather than raw `cargo test`; see
-[`scripts/check/CLAUDE.md`](../../scripts/check/CLAUDE.md).
+Use `pnpm check` (cache-aware) rather than raw `cargo test`; see `scripts/check/CLAUDE.md`.
 
 ### Manual testing with curl
 
@@ -197,7 +194,7 @@ curl -X POST "http://127.0.0.1:${PORT}/mcp" \
 
 Gated calls (auto-confirm `delete`/`move`/`copy`, `dialog` confirm, `set_setting`) need the bearer token from
 `<data_dir>/mcp.token` (or `CMDR_MCP_TOKEN`) as an `Authorization: Bearer <token>` header. See
-[`mcp/DETAILS.md`](../../apps/desktop/src-tauri/src/mcp/DETAILS.md) § Authentication.
+`apps/desktop/src-tauri/src/mcp/DETAILS.md` § Authentication.
 
 ## Security guidelines
 
@@ -235,7 +232,7 @@ Ok(json!("OK"))
 ```
 
 `OK` means "the frontend accepted the dispatched action," not "the operation completed." See
-[`executor/CLAUDE.md`](../../apps/desktop/src-tauri/src/mcp/executor/CLAUDE.md) for the ack contract.
+`apps/desktop/src-tauri/src/mcp/executor/CLAUDE.md` for the ack contract.
 
 ## Troubleshooting development
 

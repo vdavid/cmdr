@@ -7,8 +7,7 @@ launch boundary, plus the llama-server fetch and the type-drift check.
 
 - **`tauri-wrapper.ts`**: what `pnpm dev` / `pnpm build` actually call. Resolves `CMDR_INSTANCE_ID`, reserves ephemeral
   ports (Vite + tauri-MCP bridge), writes the generated `tauri.instance.json` to `$TMPDIR`, exports env, spawns Tauri.
-  Dev-only: with `CMDR_VIRTUAL_MTP` set, appends `--features virtual-mtp` (see
-  [`docs/tooling/virtual-mtp.md`](../../../docs/tooling/virtual-mtp.md))
+  Dev-only: with `CMDR_VIRTUAL_MTP` set, appends `--features virtual-mtp` (see `docs/tooling/virtual-mtp.md`)
 - **`instance-id.ts`**: pure helpers (slug sanitization, instance resolution, per-OS data-dir, bundle-id + productName +
   config-payload composition, port reservation, port-file write)
 - **`instance-id.test.ts`**: Vitest suite (~45 cases) for `instance-id.ts`
@@ -18,8 +17,8 @@ launch boundary, plus the llama-server fetch and the type-drift check.
 - **`e2e-linux.sh`**: Linux Docker E2E launcher (`playwright-e2e,virtual-mtp` features, single shard, legacy shared
   fixture path)
 
-Wrapper architecture, decisions, and the full instance-isolation reference: [DETAILS.md](DETAILS.md) and
-[`docs/tooling/instance-isolation.md`](../../../docs/tooling/instance-isolation.md).
+Wrapper architecture, decisions, and the full instance-isolation reference: `DETAILS.md` and
+`docs/tooling/instance-isolation.md`.
 
 ## Must-knows
 

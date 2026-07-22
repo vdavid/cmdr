@@ -38,5 +38,5 @@ tests stay colocated in each module; these are the integration tier.
   30 s cap); `pnpm check rust` compiles them but the default suite skips them. Concurrent attach/detach churn on one
   FSKit service is the very surface the incident warns about.
 
-The test inventory, the state-machine testing bar, and the disk-image fixture mechanics: [DETAILS.md](DETAILS.md). Read
+The test inventory, the state-machine testing bar, and the disk-image fixture mechanics: `DETAILS.md`. Read
 it before any non-trivial work here: editing, planning, reorganizing, or advising.

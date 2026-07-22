@@ -1,12 +1,12 @@
 # Archive reading core — details
 
-Pull-tier docs for the read-only reading engine. Must-know invariants live in [CLAUDE.md](CLAUDE.md). Read this before
+Pull-tier docs for the read-only reading engine. Must-know invariants live in `CLAUDE.md`. Read this before
 any non-trivial work here: editing, planning, reorganizing, or advising.
 
 This module is decoupled from the `Volume` trait on purpose — it deals in archive-native types and the
 [volume layer](../volume.rs) maps them — so it's fully unit-testable without Tauri or volume machinery. The
 `ArchiveVolume` layer, routing, remote-backed byte source, and the `ArchiveError → VolumeError` mapping live in the
-parent [`../DETAILS.md`](../DETAILS.md).
+parent `../DETAILS.md`.
 
 ## What this module does
 
@@ -44,8 +44,8 @@ shared cursor, so parallel entry reads don't contend.
 - `TailCachedSource` (a decorator, `Volume`-free): caches the file's tail so the central-directory parse (rc-zip hunts
   the EOCD + directory near the end) is ONE ranged read of a slow backend, not many. Applied only to the remote source.
 - `BytesSource`: in-memory (tests + small resident archives).
-- The REMOTE byte source (`VolumeByteSource`) lives in the `Volume`-aware [`../volume.rs`](../volume.rs); it bridges the
-  blocking `read_at` to the parent volume's async `read_range`. See [`../DETAILS.md`](../DETAILS.md) § "Remote-backed
+- The REMOTE byte source (`VolumeByteSource`) lives in the `Volume`-aware `../volume.rs`; it bridges the
+  blocking `read_at` to the parent volume's async `read_range`. See `../DETAILS.md` § "Remote-backed
   archives (read path)". No change to the parser or reader.
 
 ## Central-directory parse → synthetic tree
@@ -109,7 +109,7 @@ Note `..` matches only a whole component — `..foo` and `foo..bar` are legitima
 
 ## Streaming reads, off the executor (`ArchiveEntryReader`)
 
-Mirrors the SMB backend's channel-backed read (see [`../../DETAILS.md`](../../DETAILS.md) § Pattern B):
+Mirrors the SMB backend's channel-backed read (see `apps/desktop/src-tauri/src/file_system/volume/backends/DETAILS.md` § Pattern B):
 
 - A `spawn_blocking` producer owns the `Arc<dyn ArchiveByteSource>` and the entry handle, seeks to the entry's local
   header offset, and drives `EntryFsm` (read compressed bytes → decompress) entirely off the executor.
@@ -164,7 +164,7 @@ the per-entry decrypt engine. (7z decryption is threaded through `sevenz-rust2` 
   mismatch: `io::ErrorKind::InvalidData`, which `pump_decrypt` maps to `WrongPassword` by the io KIND (not the message —
   `no-string-matching`); the same late path also catches an AES HMAC failure. No password on an encrypted entry ⇒
   `Encrypted` (the needs-password signal). The `ArchiveError → VolumeError` mapping (both to typed
-  `NeedsPassword { wrong_attempt }`) lives in [`../DETAILS.md`](../DETAILS.md).
+  `NeedsPassword { wrong_attempt }`) lives in `../DETAILS.md`.
 
 ## Filename encoding
 
@@ -243,7 +243,7 @@ make it correct and bounded:
   their tree sizes so they match `scan_for_copy` totals). Directories — synthetic ones with no archive entry, and empty
   explicit ones — carry no bytes, so the copy engine creates the destination folders from the tree and reserves the one
   decode pass for byte-carrying entries (see the copy planner in
-  [`write_operations/transfer/DETAILS.md`](../../../../write_operations/transfer/DETAILS.md) § "One-pass sequential
+  `apps/desktop/src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "One-pass sequential
   extract").
 - **Early stop.** `stream_subtree` removes each delivered path from `wanted` and returns the moment it empties, so a
   subtree near the front of a large archive doesn't decode the tail. A not-wanted entry is still skipped through the one

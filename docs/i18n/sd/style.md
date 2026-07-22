@@ -1,7 +1,6 @@
 # Sindhi (sd) translation style guide
 
-Working notes for translating Cmdr into Sindhi. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into Sindhi. Read `../README.md` for how this fits the translation process.
 
 Low resourcing AND a hard script split. The pile has Microsoft terminology for `sd` (Perso-Arabic) and Microsoft style
 guide for `sd-Deva` (Devanagari); NO macOS Finder. Apple does not ship a Sindhi macOS UI. The script choice below is the
@@ -93,6 +92,6 @@ CLDR categories for `sd`: `one`, `other`. Only two plural forms needed (same for
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/sd/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/sd/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

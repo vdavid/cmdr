@@ -2,7 +2,7 @@
 
 User-editable favorites. The volume switcher's "Favorites" section is fully user-owned: add, remove,
 rename, reorder. This module owns the ordered `favorites.json` store; the IPC layer
-(`commands/favorites.rs`) is a thin pass-through. Read [`CLAUDE.md`](CLAUDE.md) first for the
+(`commands/favorites.rs`) is a thin pass-through. Read `CLAUDE.md` first for the
 must-knows.
 
 ## What it replaces

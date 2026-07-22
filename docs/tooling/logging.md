@@ -188,7 +188,7 @@ per period, default `40`). Output is `1 + top_n` lines per period per volume.
 
 **It only records while a live event loop runs**, so it's silent during a scan or rescan. That's the instrument being
 honest, not broken. Line format, the offline analyser, and how to read a collection:
-[`/docs/notes/churn-observability-spike.md`](../notes/churn-observability-spike.md).
+`../notes/churn-observability-spike.md`.
 
 ## Verbose logging
 

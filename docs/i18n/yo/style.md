@@ -1,7 +1,6 @@
 # Yoruba (yo) translation style guide
 
-Working notes for translating Cmdr into Yoruba. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into Yoruba. Read `../README.md` for how this fits the translation process.
 
 This is the language base (`yo`), standard Yoruba in Latin script with full tone-marking. The MS terminology in the
 reference pile is tagged `yo-NG` (Nigeria); for Cmdr's purposes a single `yo` base covers it (see Region below).
@@ -100,6 +99,6 @@ counts. A plural message still needs a natural-reading single branch (often the 
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/yo/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/yo/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

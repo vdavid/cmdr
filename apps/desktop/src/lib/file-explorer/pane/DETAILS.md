@@ -1,7 +1,7 @@
 # Pane subsystem details
 
 Pull-tier docs for `apps/desktop/src/lib/file-explorer/pane/`: architecture, flows, and decision rationale. Must-know
-invariants and gotchas live in [CLAUDE.md](CLAUDE.md).
+invariants and gotchas live in `CLAUDE.md`.
 
 Per-pane orchestrator: cursor, scroll, focus, dual-pane coordination, tab state, selection state, type-to-jump, dialog
 lifecycle, drag handling, volume tinting, and navigation primitives.
@@ -404,7 +404,7 @@ like a local absolute path, so the resolver would mis-resolve it to local and th
 recorded identity carries the truth (source volume id + the paths the volume knows). External drops and search-results
 drags (virtual id, real absolute paths) fall through to `resolveSourceVolumeId`. `FilePane` threads its `volumeId` as a
 prop into `FullList` / `BriefList` so the drag-start sites can stamp the source volume onto the recorded identity. Full
-architecture in [`../drag/CLAUDE.md`](../drag/CLAUDE.md) § "Self-drag identity".
+architecture in `../drag/CLAUDE.md` § "Self-drag identity".
 
 **Dialog state lifecycle.** `dialog-state.svelte.ts` exposes one factory per `DualPaneExplorer`. Handlers like
 `handleTransferError(error)` accept the typed `WriteOperationError` from the backend `write-error` event; the dialog

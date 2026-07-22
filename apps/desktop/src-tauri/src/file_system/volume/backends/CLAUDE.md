@@ -1,7 +1,7 @@
 # Volume backends
 
 Per-backend `Volume` impls. Trait shape, capability matrix, streaming patterns, and the "Building a new volume"
-checklist live in the parent [`volume/CLAUDE.md`](../CLAUDE.md) + [`volume/DETAILS.md`](../DETAILS.md).
+checklist live in the parent `../CLAUDE.md` + `../DETAILS.md`.
 
 ## Module map
 
@@ -15,11 +15,11 @@ checklist live in the parent [`volume/CLAUDE.md`](../CLAUDE.md) + [`volume/DETAI
 - `smb_watcher.rs`: background SMB change watcher on a dedicated smb2 session.
 - `in_memory.rs`: `InMemoryVolume`, `RwLock<HashMap>` for tests.
 - `archive/`: `ArchiveVolume` (zip/tar/7z) + reading core, zip write side, live watch. See
-  [`archive/CLAUDE.md`](archive/CLAUDE.md).
+  `archive/CLAUDE.md`.
 
 ## Must-knows
 
-Depth: [DETAILS.md](DETAILS.md) (§§ Per-backend decisions, Gotchas, SMB auto-upgrade / reconnect).
+Depth: `DETAILS.md` (§§ Per-backend decisions, Gotchas, SMB auto-upgrade / reconnect).
 
 - **The SMB watcher runs on a dedicated smb2 session, not a clone of the main connection.** Stacking CHANGE_NOTIFY
   long-polls on the write session wedges Samba (pinned by `smb_integration_concurrent_streaming_writes_no_deadlock`).
@@ -48,11 +48,11 @@ Depth: [DETAILS.md](DETAILS.md) (§§ Per-backend decisions, Gotchas, SMB auto-u
 - **SMB auto-upgrade is gated on `network.directSmbConnection`** and no-ops with no SMB mounts (fires no macOS Local
   Network prompt).
 - **SMB drive INDEXING lives in `src/indexing/`, not here** (needs a `direct` smb2 session; an `os_mount` upgrades
-  first). See [`src/indexing/DETAILS.md`](../../../indexing/DETAILS.md) § "SMB indexing and the freshness model".
+  first). See `apps/desktop/src-tauri/src/indexing/DETAILS.md` § "SMB indexing and the freshness model".
 - **The SMB watcher feeds the per-volume index; don't shorten its lifetime.** `smb_watcher.rs` also drives
   `indexing::apply_smb_change` (death/overflow ⇒ index Stale), so it lives for the whole volume lifetime (canceled only
   by `on_unmount` / `do_attempt_reconnect`), never by a pane close. See
-  [`src/indexing/DETAILS.md`](../../../indexing/DETAILS.md) § "Live SMB watch → index".
+  `apps/desktop/src-tauri/src/indexing/DETAILS.md` § "Live SMB watch → index".
 
-Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

@@ -1,7 +1,6 @@
 # Afrikaans (af) translation style guide
 
-Working notes for translating Cmdr into this language. Read [`README.md`](../README.md) for how this fits the
-translation process.
+Working notes for translating Cmdr into this language. Read `../README.md` for how this fits the translation process.
 
 ## Voice and tone
 
@@ -54,6 +53,6 @@ branches per plural message.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/af/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/af/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

@@ -27,8 +27,8 @@ It's also **the test rig for drag-out file promises** (dragging a phone/NAS file
 drop leg can't be automated honestly (Finder owns the gesture), so the virtual device is how you exercise that feature
 by hand: drag `DCIM/photo-001.jpg` from the virtual pane onto the Desktop and watch it download under Finder's chosen
 name, with a completion toast. The full manual protocol (the 11 Finder-leg checks) and the architecture live in
-[`apps/desktop/src-tauri/src/native_drag/DETAILS.md`](../../apps/desktop/src-tauri/src/native_drag/DETAILS.md) § "Manual
-verification (the Finder leg)" and [`native_drag/CLAUDE.md`](../../apps/desktop/src-tauri/src/native_drag/CLAUDE.md).
+`apps/desktop/src-tauri/src/native_drag/DETAILS.md` § "Manual verification (the Finder leg)" and
+`apps/desktop/src-tauri/src/native_drag/CLAUDE.md`.
 
 ## Running it alongside your real dev session
 
@@ -39,8 +39,7 @@ verification (the Finder leg)" and [`native_drag/CLAUDE.md`](../../apps/desktop/
 CMDR_VIRTUAL_MTP=1 pnpm dev --worktree mtp
 ```
 
-See [instance-isolation.md](instance-isolation.md) for what `--worktree` separates (data dir, Vite / MCP ports, Dock
-label).
+See `instance-isolation.md` for what `--worktree` separates (data dir, Vite / MCP ports, Dock label).
 
 ## Custom backing dir
 
@@ -73,10 +72,9 @@ Two pieces, both already in the repo for E2E:
   `CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP` is set (the override non-MTP E2E shards use). A `virtual-mtp`-compiled binary
   launched with none of those vars behaves like a plain build, so the dev opt-in never changes what E2E sees.
 
-This is the same device the Playwright MTP specs drive (see
-[`apps/desktop/test/e2e-playwright/CLAUDE.md`](../../apps/desktop/test/e2e-playwright/CLAUDE.md) and
-[`apps/desktop/src-tauri/src/mtp/CLAUDE.md`](../../apps/desktop/src-tauri/src/mtp/CLAUDE.md) § "Virtual MTP device").
-The fixture tree matches `apps/desktop/test/e2e-shared/mtp-fixtures.ts`.
+This is the same device the Playwright MTP specs drive (see `apps/desktop/test/e2e-playwright/CLAUDE.md` and
+`apps/desktop/src-tauri/src/mtp/CLAUDE.md` § "Virtual MTP device"). The fixture tree matches
+`apps/desktop/test/e2e-shared/mtp-fixtures.ts`.
 
 ## Limitations
 

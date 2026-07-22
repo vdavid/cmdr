@@ -1,7 +1,7 @@
 # Indexing lifecycle details
 
 Read this before any non-trivial work in `indexing/lifecycle/`: editing, planning, reorganizing, or advising. Must-know
-guardrails are in [CLAUDE.md](CLAUDE.md).
+guardrails are in `CLAUDE.md`.
 
 This area was generalized from one hardwired volume to a registry keyed by `VolumeId`, so multiple volumes index
 concurrently without corrupting each other. Every invariant below holds independently per key.
@@ -60,15 +60,15 @@ lock, and the indexing tests install `READ_POOL`/`PENDING_SIZES` directly. Non-r
 instance; `get_read_pool_for(vid)` / `get_pending_sizes_for(vid)` route root→global, non-root→`state::get_instance_*`.
 
 The read-routing "skip if no index registered" gate (enrichment early-returns when `get_read_pool_for(vid)` is `None`)
-lives with enrichment in [`../read`](../read/CLAUDE.md); the path→volume resolution (`volume_id_for_local_path`) lives in
-[`../paths`](../paths/CLAUDE.md). Both consume the registry but aren't owned here.
+lives with enrichment in `../read/CLAUDE.md`; the path→volume resolution (`volume_id_for_local_path`) lives in
+`../paths/CLAUDE.md`. Both consume the registry but aren't owned here.
 
 ## The `IndexPhase` machine (and where the pipeline-phase EVENT lives)
 
 `IndexPhase` (state.rs) is the LIFECYCLE state: `Initializing { store }` → `Running` → `ShuttingDown` (transient) →
 absent, plus the terminal `Failed { reason, db_path }`. This is distinct from the pipeline-phase (`ActivityPhase`:
 Replaying/Scanning/Aggregating/Reconciling/Live/Idle) that drives the FE step checklist — that lives in
-[`../events`](../events/CLAUDE.md) as the `index-phase-changed` event. Fire every pipeline-phase transition through
+`../events/CLAUDE.md` as the `index-phase-changed` event. Fire every pipeline-phase transition through
 `events::set_phase_for(app, volume_id, phase, trigger)` (it does the global debug ring AND the per-volume emit in one
 call so they can't drift); the lifecycle-phase transitions here are the `IndexPhase` swaps under the registry lock.
 
@@ -179,7 +179,7 @@ Load-bearing rules:
     `state::reset_to_not_indexed` ⇒ gray, healing to a clean fresh scan on the next enable. (Timeout / writer-send /
     non-disconnect root-fatal also take this discard path.)
 - **The watcher-driven transitions** (`WatcherDied`, `OverflowUnrecoverable`) fire from the transport live-watch layer
-  ([`../transports`](../transports/CLAUDE.md)); this area owns only the transition table they feed.
+  (`../transports/CLAUDE.md`); this area owns only the transition table they feed.
 
 ## The Failed state (fatal storage failure) — stop loudly, don't retry forever
 
@@ -192,7 +192,7 @@ show an honest state.
 extracts `(rusqlite::ErrorCode, extended_code)`; `is_fatal_storage_error()` is `true` for the storage-death classes
 (`SQLITE_IOERR*`, `SQLITE_CORRUPT`, `SQLITE_CANTOPEN`, `SQLITE_FULL`, `SQLITE_READONLY`, `SQLITE_NOTADB`). Transient
 contention (`SQLITE_BUSY`/`SQLITE_LOCKED`) is deliberately NOT fatal (the busy handler backs those off). The detector
-lives in the writer ([`../writer`](../writer/CLAUDE.md)); this area owns the LIFECYCLE representation of the trip.
+lives in the writer (`../writer/CLAUDE.md`); this area owns the LIFECYCLE representation of the trip.
 
 **Detection lives in the writer, the signal is `failure.rs::IndexFailureSignal`.** A one-shot per-volume
 `Arc<IndexFailureSignal>` created in `IndexWriter::spawn_for`, cloned into the writer thread and exposed via
@@ -242,7 +242,7 @@ which legitimately completes). The completion handler fires `ScanFailed` ⇒ Sta
 stuck "scanning" row, mirroring the network path's disconnect arm. No `scan_completed_at` is written, so the index heals
 to a rescan on remount. `scan_failure_is_vanished_volume` is the pure distinguisher; an empty root or a walk panic does
 NOT abort. (The wedge-safe unmount/eject ORDERING that stops the index before the FS goes away lives in
-[`../transports`](../transports/CLAUDE.md).)
+`../transports/CLAUDE.md`.)
 
 ## The neutral lifecycle bus (`lifecycle_bus.rs`) — single source
 
@@ -279,13 +279,13 @@ policy.
 
 The per-drive freshness UX drives any drive through three thin `commands/indexing.rs` commands: `enable_drive_index`,
 `disable_drive_index`, `rescan_drive_index`. For root they map to `start_indexing`/`stop_indexing`/`force_scan`; SMB/MTP/
-local-external routing lives in [`../transports`](../transports/CLAUDE.md). `enable`/`rescan` return
+local-external routing lives in `../transports/CLAUDE.md`. `enable`/`rescan` return
 `EnableIndexingOutcome` (`{ status: "started" }` or, for SMB, `{ status: "refused", reason: SmbIndexGateReason }`). The
 per-volume status IPC (`get_volume_index_status(path)` for the active-drive badge, `get_volume_index_status_by_id` for
 the dropdown rows) builds `VolumeIndexStatus { volume_id, enabled, freshness, scan_completed_at, scan_duration_ms,
 coalesced_signals_since_sweep, next_sweep_due_at }`: freshness from the registry, the scan facts from the persisted
 `meta`. `enabled: false` + `freshness: None` is gray. The path→volume resolution feeding these lives in
-[`../paths`](../paths/CLAUDE.md).
+`../paths/CLAUDE.md`.
 
 ## FDA-deferred root auto-start
 
@@ -302,7 +302,7 @@ fetches in `volumes::list_locations` share the same `is_fda_pending` predicate s
 ## Testing
 
 The registry / phase / freshness state-machine tests and their serialize-on-a-dedicated-mutex discipline live in
-[`../tests`](../tests/CLAUDE.md) (`integration_tests.rs`, the stress suites) and colocated `state/tests.rs` +
+`../tests/CLAUDE.md` (`integration_tests.rs`, the stress suites) and colocated `state/tests.rs` +
 `freshness.rs`/`failure.rs`/`manager.rs` unit tests. Key regression anchors named above:
 `scan_start_freshness_firing_does_not_relock_the_registry`,
 `force_rescan_routes_smb_and_mtp_to_the_trait_scanner_not_the_local_walker`,

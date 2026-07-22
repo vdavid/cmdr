@@ -1,8 +1,8 @@
 # Venetian (vec) translation style guide
 
-Working notes for translating Cmdr into Venetian (Vèneto). Read [`README.md`](../README.md) for how this fits the
-translation process. `vec` is a Romance language of northeastern Italy, distinct from Standard Italian (`it`); don't
-route translation through Italian.
+Working notes for translating Cmdr into Venetian (Vèneto). Read `../README.md` for how this fits the translation
+process. `vec` is a Romance language of northeastern Italy, distinct from Standard Italian (`it`); don't route
+translation through Italian.
 
 ## Voice and tone
 
@@ -82,6 +82,6 @@ CLDR/`Intl` is authoritative, so write `one`/`many`/`other`. The `desktop-i18n-p
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/vec/`; recipes in
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/vec/`; recipes in
 `docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

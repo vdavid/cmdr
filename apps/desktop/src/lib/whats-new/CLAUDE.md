@@ -29,5 +29,5 @@ into a typed model; this frontend decides when to show it and renders it.
   the real path. Don't remove the gate.
 
 The full show-once decision table, the manual and menu entry points (Help > What's new, Cmdr > Changelog…), the dev
-override, the E2E seam, and the smoke checklist: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here:
-editing, planning, reorganizing, or advising.
+override, the E2E seam, and the smoke checklist: `DETAILS.md`. Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.

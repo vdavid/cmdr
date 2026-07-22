@@ -2,7 +2,7 @@
 
 Three mechanisms resync the index after the initial scan: the event-triggered `reconciler`, the full `local_reconcile`
 (rescan-in-place), and the per-navigation `verifier`. Rationale, evidence, and the full mechanics are in
-[DETAILS.md](DETAILS.md); the bullets below are only the guardrails.
+`DETAILS.md`; the bullets below are only the guardrails.
 
 ## Module map
 
@@ -38,4 +38,4 @@ Three mechanisms resync the index after the initial scan: the event-triggered `r
   counted; the badge stays GREEN by design; the window is wall-clock, persisted, seeded from
   `max(shallow_sweep_at, scan_completed_at)`.
 
-Full depth: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Full depth: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

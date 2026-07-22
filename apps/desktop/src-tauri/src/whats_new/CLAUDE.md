@@ -31,4 +31,4 @@ most the five newest in-range releases; older notes live on the website.
 - **No runtime I/O.** The changelog is embedded, so the commands can't hang and intentionally skip `blocking_with_timeout`.
 
 Full details (the exact parse contract: heading recognition, lead capture, the variable-length commit-link stripper,
-semver comparison, the no-`Development history`-cutoff reasoning): [DETAILS.md](DETAILS.md).
+semver comparison, the no-`Development history`-cutoff reasoning): `DETAILS.md`.

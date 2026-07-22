@@ -1,8 +1,8 @@
 # Importance subsystem
 
 Deterministic, cheap folder-importance scoring for expensive features (agent, media-ML, future cleanup/prefetch). A pure
-read-consumer of `indexing/`, sibling to `search/`. Design + depth for every must-know below:
-[DETAILS.md](DETAILS.md) and [`docs/specs/importance-subsystem-plan.md`](../../../../../docs/specs/importance-subsystem-plan.md).
+read-consumer of `indexing/`, sibling to `search/`. Design + depth for every must-know below: `DETAILS.md` and
+`docs/specs/importance-subsystem-plan.md`.
 
 ## Module map
 
@@ -55,4 +55,4 @@ Read API + incremental:
   (`collect_ancestor_paths`); `sanitize_incremental_batch` drops it — ❌ don't reintroduce a `/`→full-pass escalation (it
   pegged a core with continuous recomputes). Throttled to ≤1 walk per `INCREMENTAL_THROTTLE_WINDOW`.
 
-Adding a signal, the signal catalog, and every "why": [DETAILS.md](DETAILS.md).
+Adding a signal, the signal catalog, and every "why": `DETAILS.md`.

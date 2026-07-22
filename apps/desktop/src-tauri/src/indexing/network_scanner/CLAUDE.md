@@ -40,4 +40,4 @@ are discovered and stat'd differs from the local guarded walker.
   budget still caps total concurrency, so pacing survives for free.
 
 Architecture, the concurrency pump, the pacing decision, the NAS-dir rationale, and empty-root handling:
-[DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+`DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

@@ -1,7 +1,7 @@
 # Pane subsystem
 
 Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, drag, tinting, navigation. Up:
-[`../CLAUDE.md`](../CLAUDE.md). File table and conventions: [DETAILS.md](DETAILS.md).
+`../CLAUDE.md`. File table and conventions: `DETAILS.md`.
 
 ## Module map
 
@@ -48,11 +48,11 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   `{ selectVolume }` always switches. Resolve bare paths to a `Location` at the edge, never feed one in. Refusal
   `message` strings are byte-pinned. DETAILS § "The navigate() transaction".
 - **Self-drag drop builds from recorded app state, not the pasteboard** (`handleDrop` consumes
-  `consumableSelfDragIdentity`). See [`../drag/CLAUDE.md`](../drag/CLAUDE.md).
+  `consumableSelfDragIdentity`). See `../drag/CLAUDE.md`.
 - **`DualPaneExplorer.svelte` (~1450 lines) and `FilePane.svelte` (~2815) are `file-length`-flagged**: don't add to them
   or carve child components (DETAILS § "Why not child components"); cross-cutting state → a `*.svelte.ts` factory, pure
   logic → a `*.ts` helper.
 - **Volume tint has an old-WebKit (Safari < 16.2) sRGB fallback** gated by `hasColorMix`. Don't drop the reactive
   `mediaTick`, or dark-mode / contrast swaps won't repaint the tint.
 
-Read [DETAILS.md](DETAILS.md) before any non-trivial work here: editing, planning, reorganizing, or advising.
+Read `DETAILS.md` before any non-trivial work here: editing, planning, reorganizing, or advising.

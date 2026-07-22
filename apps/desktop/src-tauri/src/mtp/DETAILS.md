@@ -150,7 +150,7 @@ transfer to drain. For `list_objects` and `delete_object`, each PTP transaction 
 Mid-transaction cancel would be high-complexity (drain bulk endpoints, recover session state) for sub-roundtrip benefit.
 Checking the token between roundtrips instead: bails within ≈one roundtrip's latency (the actual wedge point), leaves
 bulk endpoints clean (no drain race), and leaves the session intact for the next op. Streaming downloads keep the SIC
-class-cancel path (see "Transfer cancellation" in `mtp-rs/AGENTS.md`).
+class-cancel path (see "Transfer cancellation" in `~/projects-git/vdavid/mtp-rs/AGENTS.md`).
 
 ### Hardware caveats
 

@@ -1,8 +1,7 @@
 # Hebrew (he) translation style guide
 
-Working notes for translating Cmdr into Hebrew. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Hebrew.
+Working notes for translating Cmdr into Hebrew. Read `../README.md` for how this fits the translation process, and the
+app-wide `docs/style-guide.md` for the English voice these notes carry into Hebrew.
 
 **RTL, and a real macOS reference exists.** Apple ships a Hebrew macOS UI, so the pile has macOS Finder/AppKit (highest
 authority) plus MS terminology, MS style guide, GNOME Nautilus, and Xfce Thunar (`_ignored/i18n/he/`). RTL is a layout
@@ -140,13 +139,12 @@ plural message to cover all three.
 - **Length.** Hebrew is usually compact (no case endings, no articles split out), so overflow is less of a risk than RTL
   mirroring, but still overflow-check against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
-  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in `docs/guides/i18n-translation.md` and
   `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/he/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/he/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

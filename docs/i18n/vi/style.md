@@ -1,8 +1,7 @@
 # Vietnamese (vi) translation style guide
 
-Working notes for translating Cmdr into Vietnamese. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Vietnamese.
+Working notes for translating Cmdr into Vietnamese. Read `../README.md` for how this fits the translation process, and
+the app-wide `docs/style-guide.md` for the English voice these notes carry into Vietnamese.
 
 Vietnamese is well-resourced: the pile (`_ignored/i18n/vi/`) has macOS Finder/AppKit/SystemSettings, MS terminology +
 style guide, GNOME Nautilus, Xfce Thunar, KDE Dolphin, and Total Commander, so both UI families are covered. Most terms
@@ -135,13 +134,12 @@ Vietnamese has no grammatical number, so one form covers all counts.
 - **Spacing: words are space-separated like English**, but a Vietnamese "word" is often two syllables ("thư mục"); don't
   break inside a compound when wrapping. The renderer handles this; just don't manually insert breaks.
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
-  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in `docs/guides/i18n-translation.md` and
   `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/vi/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/vi/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

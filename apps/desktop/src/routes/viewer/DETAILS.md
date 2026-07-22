@@ -1,12 +1,12 @@
 # Viewer details
 
 Pull-tier docs for the viewer route (`routes/viewer/`): architecture, flows, and decision rationale. Must-know
-invariants and gotchas live in [CLAUDE.md](CLAUDE.md).
+invariants and gotchas live in `CLAUDE.md`.
 
 The file viewer opens files in a separate Tauri window with virtual scrolling and text search. Backend counterpart:
-[`apps/desktop/src-tauri/src/file_viewer/CLAUDE.md`](../../../src-tauri/src/file_viewer/CLAUDE.md) for the three backend
-strategies (`FullLoad`, `ByteSeek`, `LineIndex`), session orchestration, and background search. Reusable FE primitives
-live at [`src/lib/file-viewer/CLAUDE.md`](../../lib/file-viewer/CLAUDE.md).
+`apps/desktop/src-tauri/src/file_viewer/CLAUDE.md` for the three backend strategies (`FullLoad`, `ByteSeek`,
+`LineIndex`), session orchestration, and background search. Reusable FE primitives live at
+`apps/desktop/src/lib/file-viewer/CLAUDE.md`.
 
 ## Module map
 
@@ -202,9 +202,9 @@ on screen flings the view to the line top on every Enter.
 ## User-facing copy (i18n)
 
 Every user-facing viewer string lives in the `viewer.*` message catalog
-([`messages/en/viewer.json`](../../lib/intl/messages/en/viewer.json)), resolved through `$lib/intl` (`t()` / `tString()`
-/ `getMessage()`, and `<Trans>` for the inline-component binary-warning banner). The base-en output is a
-parity-protected MOVE of the original copy; `viewer-i18n-parity.test.ts` asserts byte-identical en rendering.
+(`apps/desktop/src/lib/intl/messages/en/viewer.json`), resolved through `$lib/intl` (`t()` / `tString()` /
+`getMessage()`, and `<Trans>` for the inline-component binary-warning banner). The base-en output is a parity-protected
+MOVE of the original copy; `viewer-i18n-parity.test.ts` asserts byte-identical en rendering.
 `cmdr/no-raw-user-facing-string` is enforced for `lib/file-viewer/` and `routes/viewer/`, so a new hardcoded string in a
 known sink (text node, `title`/`label`/`placeholder`/`aria-label`, `addToast` first arg) fails lint: add a catalog key
 instead. Two literals are deliberately not copy and carry an eslint-disable: the `Aa` and `⌘C`/`⌘A` typographic/shortcut

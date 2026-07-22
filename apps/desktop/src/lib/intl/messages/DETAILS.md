@@ -1,8 +1,8 @@
 # Message catalog details
 
-Depth behind [`CLAUDE.md`](CLAUDE.md). How catalogs are authored, the `@key` metadata schema, and the parity contract.
-The runtime that consumes these files (resolution, fallback, ICU, the error-pipeline boundary, the formatting split):
-[`../DETAILS.md`](../DETAILS.md).
+Depth behind `CLAUDE.md`. How catalogs are authored, the `@key` metadata schema, and the parity contract. The runtime
+that consumes these files (resolution, fallback, ICU, the error-pipeline boundary, the formatting split):
+`../DETAILS.md`.
 
 ## Why per-area-central files
 
@@ -46,9 +46,8 @@ double.
 
 The entire `errors.*` family (`errors.listing.*`, `errors.git.*`, `errors.provider.*`, `errors.write.*`) does NOT render
 through ICU. It resolves via `getMessage()` (a raw catalog lookup), then `interpolate()` + `expandSystemStrings()` do
-plain `.replaceAll('{token}', value)` substitution (see [`../../errors/CLAUDE.md`](../../errors/CLAUDE.md) and the intl
-runtime [`../CLAUDE.md`](../CLAUDE.md)). The apostrophe-doubling rule above is the OPPOSITE here. So in any `errors.*`
-value:
+plain `.replaceAll('{token}', value)` substitution (see `apps/desktop/src/lib/errors/CLAUDE.md` and the intl runtime
+`../CLAUDE.md`). The apostrophe-doubling rule above is the OPPOSITE here. So in any `errors.*` value:
 
 - **Do NOT double apostrophes.** Write `doesn't`, not `doesn''t`: there's no ICU parser to un-double them, so `''` would
   render as a literal double apostrophe.
@@ -61,11 +60,10 @@ value:
   them).
 
 The unit on which this raw/ICU split is decided is the KEY PREFIX (`errors.`), single-sourced as `isRawKey()` in
-[`../../../../scripts/i18n-catalog-lib.ts`](../../../../scripts/i18n-catalog-lib.ts). The locale checks honor it: the
-ICU-validity check (`desktop-i18n-icu`) SKIPS `errors.*` (so valid raw copy isn't flagged as invalid ICU), and the
-parity check (`desktop-i18n-parity`) compares the raw `{token}` set instead of an ICU placeholder set for these keys.
-Translator-facing version of this note: [`/docs/guides/i18n.md`](../../../../../../docs/guides/i18n.md) § Error
-pipeline.
+`apps/desktop/src/lib/errors/CLAUDE.md`. The locale checks honor it: the ICU-validity check (`desktop-i18n-icu`) SKIPS
+`errors.*` (so valid raw copy isn't flagged as invalid ICU), and the parity check (`desktop-i18n-parity`) compares the
+raw `{token}` set instead of an ICU placeholder set for these keys. Translator-facing version of this note:
+`docs/guides/i18n.md` § Error pipeline.
 
 ## `@key` metadata schema
 
@@ -122,8 +120,7 @@ codegen ever sees it:
   build breaker), but at release time it escalates a stale finding to a build-failing ERROR. The release flow
   (`scripts/release.sh`) sets `CMDR_I18N_STALE_STRICT=1` before its `pnpm check i18n-stale`, so a release can NOT ship a
   stale translation: the fix lands first. English-only today, so it's a clean no-op until a real locale exists. The gate
-  fires locally in `scripts/release.sh`, not a GitHub workflow; see
-  [`/docs/guides/releasing.md`](../../../../../../docs/guides/releasing.md).
+  fires locally in `scripts/release.sh`, not a GitHub workflow; see `docs/guides/releasing.md`.
 - `reviewed` (non-`en` locales only): an OPTIONAL boolean human sign-off (principle 6: a human reviewed this translated
   copy). Reset to absent/`false` by a human when the stale check reports that `sourceHash` changed, because a
   re-translation needs a fresh review. NOT a gate: no check requires `reviewed: true` to pass. The stale check only
@@ -141,8 +138,7 @@ codegen ever sees it:
   like `reviewed`: the stale check flags a stale key that still carries it, because a justification vouched for the OLD
   English value must be re-confirmed once the source changes. Write it as the translator's reason, sourced where the
   term came from (e.g. "brand name; do not translate" or "macOS Swedish Finder uses 'Smart'"). Full translator workflow:
-  [`/docs/guides/i18n-translation.md`](../../../../../../docs/guides/i18n-translation.md) § Deliberately-identical
-  strings.
+  `docs/guides/i18n-translation.md` § Deliberately-identical strings.
 
 `sourceHash`, `reviewed`, and `sameAsSourceJustification` are ordinary `@`-metadata fields: the whole `@`-entry is
 stripped before the runtime and codegen see it (same as `description`/`screenshot`), so adding them needs NO codegen or
@@ -164,7 +160,7 @@ twin too (it strips the leading `@` and checks the underlying key), so a metadat
 command: it captures fresh screenshots, then rewrites every `@key.screenshot`. (Under the hood it's
 `i18n:capture --build` then `i18n:couple`; the orchestrator is `apps/desktop/scripts/i18n-capture.ts`, the coupler is
 `couple-screenshots.ts`, each carrying a full header comment. Conceptual overview + the prod-no-op define:
-[`/docs/guides/i18n.md`](../../../../../../docs/guides/i18n.md) § Screenshots.)
+`docs/guides/i18n.md` § Screenshots.)
 
 What's where, and what's tracked:
 

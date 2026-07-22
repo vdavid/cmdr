@@ -1,12 +1,12 @@
 # Selection dialog details
 
 Pull-tier docs for `lib/selection-dialog/`: architecture, flows, and decision rationale. Must-know invariants and
-gotchas live in [CLAUDE.md](CLAUDE.md).
+gotchas live in `CLAUDE.md`.
 
 The "Select files…" / "Deselect files…" dialog lets the user select files in the focused pane by a wildcard, regex, or
 natural-language prompt (AI mode, cloud only). It's the second consumer of the shared `QueryDialog` primitive in
-[`lib/query-ui/`](../query-ui/CLAUDE.md): Search is the first, and Selection mirrors its shape. Backend lives in
-[`src-tauri/src/selection/`](../../../src-tauri/src/selection/CLAUDE.md) (history store plus AI translation).
+`../query-ui/CLAUDE.md`: Search is the first, and Selection mirrors its shape. Backend lives in
+`apps/desktop/src-tauri/src/selection/CLAUDE.md` (history store plus AI translation).
 
 Dialog dimensions: `max-width: min(720px, 60vw)` (narrower than Search's `min(1080px, 80vw)` because Selection lists
 have no path column and shouldn't dominate the viewport), `max-height: 80vh`.
@@ -54,8 +54,8 @@ have no path column and shouldn't dominate the viewport), `max-height: 80vh`.
 
 The matcher runs against an `accessors.getNameFor(i)` callback. The wrapper passes `entry.name` for both regular panes
 and `search-results://` snapshot panes (on snapshot panes, `entry.name` IS the friendly full path, see
-[`lib/file-explorer/DETAILS.md`](../file-explorer/DETAILS.md) § "Search-results virtual volume"). The matcher itself
-doesn't care which kind it's running against.
+`../file-explorer/DETAILS.md` § "Search-results virtual volume"). The matcher itself doesn't care which kind it's
+running against.
 
 Glob translation matches the Rust side: `*` → `.*`, `?` → `.`, regex metacharacters escaped, anchored with `^…$`. The JS
 regex engine is what does the matching (Selection has no Rust IPC for the match itself, it's microseconds in JS against
@@ -112,9 +112,8 @@ The Selection dialog inherits the shared QueryDialog keyboard contract (⌘N res
 
 The bare `+` / `-` keys that open the dialog from a file pane are NOT a QueryDialog concern, they live on the focused
 pane via `FilePane.handleSelectionDialogKey`, which delegates to the pure classifier in
-[`pane/selection-dialog-keys.ts`](../file-explorer/pane/selection-dialog-keys.ts). The filter is
-`!metaKey && !altKey && !ctrlKey` (shiftKey is intentionally NOT filtered: on US QWERTY, Shift+= IS how the user
-produces `event.key === '+'`).
+`../file-explorer/pane/selection-dialog-keys.ts`. The filter is `!metaKey && !altKey && !ctrlKey` (shiftKey is
+intentionally NOT filtered: on US QWERTY, Shift+= IS how the user produces `event.key === '+'`).
 
 ## Snapshot panes
 

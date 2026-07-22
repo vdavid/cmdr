@@ -4,8 +4,7 @@ Go CLI that runs all code quality checks for the Cmdr monorepo (~42 checks acros
 ordering. Invoked via `pnpm check` at the repo root.
 
 For check authoring (how to add a check, `CheckDefinition` shape, naming rules, helpers, allowlists), see
-[`checks/CLAUDE.md`](checks/CLAUDE.md). For the full flow diagram, CLI options, freestyle.sh execution, and decisions,
-see [DETAILS.md](DETAILS.md).
+`checks/CLAUDE.md`. For the full flow diagram, CLI options, freestyle.sh execution, and decisions, see `DETAILS.md`.
 
 ## Module map
 
@@ -50,5 +49,5 @@ see [DETAILS.md](DETAILS.md).
   smb2's own `consumer` harness coexist instead of fighting over ports. `checks.ApplySmbPortEnv()` sets this before
   bring-up; don't revert to the default range.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

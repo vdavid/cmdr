@@ -1,7 +1,7 @@
 # Breton (br) translation style guide
 
-Working notes for translating Cmdr into Breton (Brezhoneg). Read [`README.md`](../README.md) for how this fits the
-translation process.
+Working notes for translating Cmdr into Breton (Brezhoneg). Read `../README.md` for how this fits the translation
+process.
 
 `br` is the language base, written in the Latin script. The reference pile has only GNOME nautilus for `br` (Tier 3); no
 macOS, no Microsoft. Breton is a minority Celtic language of Brittany (France) with an active but small free-software
@@ -85,7 +85,7 @@ distinct text vs which can repeat the same form.
   one.
 - **Numbers and dates come from the formatter layer.** Never hardcode separators.
 - **ICU mechanics**: keep every `{placeholder}` and `<tag>` verbatim, and double every apostrophe (see above). Full
-  rules: [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  rules: `docs/guides/i18n-translation.md`.
 
 ## Decisions to confirm with David
 
@@ -97,6 +97,6 @@ distinct text vs which can repeat the same form.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/br/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/br/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

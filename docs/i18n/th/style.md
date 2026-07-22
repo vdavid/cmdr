@@ -1,9 +1,9 @@
 # Thai (th) translation style guide
 
-Working notes for translating Cmdr into Thai. Read [`README.md`](../README.md) for how this fits the translation
-process. Thai is a tier-1 well-localized language: Apple (Finder), Microsoft, Google, Spotify, and Netflix all ship
-Thai, so triangulation evidence is strong. Sources mined for this guide: macOS Finder/AppKit Thai strings, Microsoft
-Thai terminology and style guide, GNOME Nautilus and Xfce Thunar Thai catalogs.
+Working notes for translating Cmdr into Thai. Read `../README.md` for how this fits the translation process. Thai is a
+tier-1 well-localized language: Apple (Finder), Microsoft, Google, Spotify, and Netflix all ship Thai, so triangulation
+evidence is strong. Sources mined for this guide: macOS Finder/AppKit Thai strings, Microsoft Thai terminology and style
+guide, GNOME Nautilus and Xfce Thunar Thai catalogs.
 
 This is a living doc, and capturing is your job. When you discover a convention, gotcha, or ruling that wasn't already
 written, add it here.
@@ -157,8 +157,7 @@ inflection.
 - Double every apostrophe in a value (`'` becomes `''`); ICU treats a lone `'` as an escape and silently swallows text.
   Thai rarely needs apostrophes, but any in a loanword or English fragment must be doubled.
 - Keep every `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
-  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  `docs/guides/i18n-translation.md` and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Decisions to confirm with David
 
@@ -171,6 +170,6 @@ inflection.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/th/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/th/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

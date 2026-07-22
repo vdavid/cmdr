@@ -3,8 +3,7 @@
 One Svelte component per settings sidebar entry. The registry says which setting exists and its UI hint; these files
 decide where and how it renders. `SettingsContent.svelte` routes each entry via `getSettingDefinition(id).section`.
 
-Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search),
-[`../components/CLAUDE.md`](../components/CLAUDE.md) (row primitives).
+Parents: `../CLAUDE.md` (registry, store, applier, search), `../components/CLAUDE.md` (row primitives).
 
 ## Module map
 
@@ -39,5 +38,5 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search),
 - **One group per `CommandScope` via the pure `groupCommandsByScope`.** Don't ad-hoc a title list; the group set must
   stay the scope union or commands vanish. `keyboard-shortcuts-grouping.test.ts` guards it.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

@@ -1,6 +1,6 @@
 # Transfer queue window — details
 
-Depth for [CLAUDE.md](CLAUDE.md). The window is the frontend of the transfer-queue + pause feature; the backend lives in
+Depth for `CLAUDE.md`. The window is the frontend of the transfer-queue + pause feature; the backend lives in
 `src-tauri/src/file_system/write_operations/` (DETAILS § "Operation manager").
 
 ## Why a hard window

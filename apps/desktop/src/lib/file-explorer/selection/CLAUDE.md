@@ -54,4 +54,4 @@ lives in `FilePane.svelte` as a `Set<number>`).
   `dir_stats`) and surfaced through enrichment.
 
 Full details (the full `selection-info-utils` export catalog, per-mode conditions, `recursiveSizePending` overlay flow,
-size-unit decision rationale, and component props): [DETAILS.md](DETAILS.md).
+size-unit decision rationale, and component props): `DETAILS.md`.

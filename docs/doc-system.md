@@ -46,8 +46,7 @@ catalogs, benchmarks) is depth.
 
 For a large pass (dozens of files), a subagent swarm works well: partition disjoint directories across agents (each owns
 one `CLAUDE.md` plus its sibling `DETAILS.md`), hand them this litmus and these principles, forbid `git` and the writing
-checks (they mutate shared allowlists mid-run), and review every diff yourself. See
-[guides/multi-agent-refactors.md](guides/multi-agent-refactors.md).
+checks (they mutate shared allowlists mid-run), and review every diff yourself. See `guides/multi-agent-refactors.md`.
 
 ## Principles (David's, for all docs)
 
@@ -61,23 +60,20 @@ checks (they mutate shared allowlists mid-run), and review every diff yourself. 
   when nothing more specific fits). The low bar ("any non-trivial work") plus the named activities are deliberate: the
   trigger calls out planning/reorganizing/advising, not just editing, because the old "before structural changes"
   wording let reorg and advice tasks skip the doc. `DETAILS.md` headers mirror it with "Read this before ...".
-- **Describe current state, not history** ([`.claude/rules/docs.md`](../.claude/rules/docs.md)): git holds the history.
-  Drop "we originally / used to / no longer applicable" narration; keep the non-obvious why and constraint-encoding
-  pain.
+- **Describe current state, not history** (`.claude/rules/docs.md`): git holds the history. Drop "we originally / used
+  to / no longer applicable" narration; keep the non-obvious why and constraint-encoding pain.
 - **Single-source**: a mechanism lives in ONE canonical doc; everywhere else points to it by path. `architecture.md` is
   a map (what + where + a pointer), never how.
 - **Evidence-anchor volatile claims**: OS, version, and empirical claims carry `(verified on <env>, <method>, <date>)`.
-- **Agent-facing style** ([`style-guide.md`](style-guide.md) § Agent-facing docs): no two-column tables and no column
-  wider than 100 chars (bullet lists instead), sentence case, en-dash not em-dash, Oxford comma. Docs are a token
-  stream, not a 2D layout.
-- **Never bump an allowlist without David's OK**
-  ([`.claude/rules/file-length-allowlist.md`](../.claude/rules/file-length-allowlist.md)): trim or split instead;
+- **Agent-facing style** (`style-guide.md` § Agent-facing docs): no two-column tables and no column wider than 100 chars
+  (bullet lists instead), sentence case, en-dash not em-dash, Oxford comma. Docs are a token stream, not a 2D layout.
+- **Never bump an allowlist without David's OK** (`.claude/rules/file-length-allowlist.md`): trim or split instead;
   leaving a warn is safe.
 
 ## Enforcement (the checks that keep it honest)
 
 Convention rots; checks don't. Each invariant is a check (sources in `scripts/check/checks/`, detail in its
-[`DETAILS.md`](../scripts/check/checks/DETAILS.md)):
+`scripts/check/checks/DETAILS.md`):
 
 - **`resident-doc-budget`** (warn): caps the always-resident bundle (root `CLAUDE.md` + its `@`-imports +
   `.claude/rules/`); the cap ratchets DOWN only. Guards against silent regrowth of the per-session cost.

@@ -167,7 +167,7 @@ and the `rename_file` command (local FS renames). `emit_synthetic_entry_diff` re
 `refresh_archive_listings(volume_id, archive_path)` is a sibling entry point for the archive content watch: it
 `FullRefresh`es every open listing at or inside a changed `.zip` (parent drive id + full path) WITHOUT the drive-index
 sync `notify_directory_changed` runs, since an archive-inner path isn't a real filesystem path. Rationale and the watch
-that drives it: [`../volume/backends/archive/watch/DETAILS.md`](../volume/backends/archive/watch/DETAILS.md).
+that drives it: `../volume/backends/archive/watch/DETAILS.md`.
 
 ## Diff event coalescing (diff_emitter.rs)
 
@@ -205,8 +205,8 @@ path yet.
 
 ## Finder tags
 
-`FileEntry.tags` holds macOS Finder tags (`com.apple.metadata:_kMDItemUserTags`), parsed in
-[`file_system/tags.rs`](../tags.rs). Each tag is `(name, color)` where color `0` = none (a colorless named tag),
+`FileEntry.tags` holds macOS Finder tags (`com.apple.metadata:_kMDItemUserTags`), parsed in `../tags.rs`. Each tag
+is `(name, color)` where color `0` = none (a colorless named tag),
 `1` grey, `2` green, `3` purple, `4` blue, `5` yellow, `6` red, `7` orange. The per-file xattr is the display source of
 truth — Finder rewrites every file's xattr on a recolor, so we never read the system tag registry.
 

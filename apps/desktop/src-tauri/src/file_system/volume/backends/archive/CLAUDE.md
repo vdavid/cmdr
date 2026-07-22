@@ -1,6 +1,6 @@
 # Archive backend (zip, tar, 7z)
 
-Presents an archive file as a browsable folder. Two layers: a **reading core** ([`read/`](read/CLAUDE.md), parse →
+Presents an archive file as a browsable folder. Two layers: a **reading core** (`read/CLAUDE.md`, parse →
 synthetic tree, streaming decompress, `Volume`-free) and **`ArchiveVolume`** (`volume.rs`), the `Volume` built on it.
 The core is decoupled from the `Volume` trait (archive-native `ArchiveIndex` / `ArchiveNode` / `ArchiveError`);
 `volume.rs` alone maps them onto `FileEntry` / `VolumeError`.
@@ -13,12 +13,12 @@ Formats: **zip** browses + extracts + **writes**; **tar / tar.gz / tar.xz / tar.
 - `volume.rs`: `ArchiveVolume` + `VolumeByteSource` — the only file that touches the `Volume` trait.
 - `boundary.rs`: SHARED boundary detector + per-format magic (used by `VolumeManager::resolve` and
   `commands/volumes.rs`; two copies would drift).
-- [`read/`](read/CLAUDE.md): the `Volume`-free reading engine (all formats). Zip Slip, DoS caps, sans-IO fsm, codecs.
-- [`mutation/`](mutation/CLAUDE.md): the zip-only temp+rename write side.
-- [`watch/`](watch/CLAUDE.md): the live content watch on the backing `.zip`.
+- `read/CLAUDE.md`: the `Volume`-free reading engine (all formats). Zip Slip, DoS caps, sans-IO fsm, codecs.
+- `mutation/CLAUDE.md`: the zip-only temp+rename write side.
+- `watch/CLAUDE.md`: the live content watch on the backing `.zip`.
 
-Depth, rationale, routing, and remote-backed archives: [DETAILS.md](DETAILS.md). Read it before any non-trivial work
-here: editing, planning, reorganizing, or advising.
+Depth, rationale, routing, and remote-backed archives: `DETAILS.md`. Read it before any non-trivial work here:
+editing, planning, reorganizing, or advising.
 
 ## Routing must-knows
 

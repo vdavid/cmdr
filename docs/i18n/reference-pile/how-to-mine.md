@@ -3,7 +3,7 @@
 Tested recipes for extracting a term or convention from each source in `<tag>/`. The point: don't read whole files or
 reinvent the search each time. Triangulate a term across every source the language has, then record your choice with
 sources and a confidence in the per-language style guide (`docs/i18n/<tag>/style.md`). Structure and provenance of the
-pile: [README.md](README.md) and [inventory.md](inventory.md).
+pile: `README.md` and `inventory.md`.
 
 First check which sources your language has: `ls <tag>/` (a source is absent if its subdir is missing). Run everything
 below from `_ignored/i18n/`.
@@ -19,7 +19,7 @@ for them before trusting a source.
      set is `pt-BR/`. Cmdr's `pt` ships Brazilian, so mining bare `pt/` is a variant trap — mine `pt-BR/`.
    - **zh**: there is no bare `zh/` from the sources; Simplified is split across `zh-Hans/` (Microsoft) + `zh-CN/`
      (macOS, file managers), Traditional across `zh-Hant/` + `zh-TW/`. A composed `zh/` base (symlinks to the Simplified
-     sources) exists for convenience — see [inventory.md](inventory.md) § Composed base folders.
+     sources) exists for convenience — see `inventory.md` § Composed base folders.
    - **bn**: bare `bn/` has Microsoft terminology + the file managers; the Microsoft style guide is under `bn-IN/`.
 2. **No macOS tier for every language.** Apple doesn't localize into some languages (e.g. Bengali: `bn/macOS/` doesn't
    exist). When `<tag>/macOS/` is absent, the Tier-1 "macOS wins" tiebreak is gone — Microsoft terminology becomes the
@@ -42,12 +42,11 @@ for them before trusting a source.
    the variant-correct folder, which each language's `style.md` names.
 
 For WHICH term to pick once you've mined the candidates (localize the Apple feature names Apple localizes; prefer the
-macOS Finder term over the Windows/Microsoft one; let brand names inflect), see
-[`/docs/guides/i18n-translation.md`](../../guides/i18n-translation.md) § Term-choice principles. Trap 5 above is the
-formality instance of the macOS-over-Windows rule.
+macOS Finder term over the Windows/Microsoft one; let brand names inflect), see `docs/guides/i18n-translation.md` §
+Term-choice principles. Trap 5 above is the formality instance of the macOS-over-Windows rule.
 
 (Trap 1's "Double Commander directory hotlist is a different feature, not a bookmark" lives in the four mining gotchas
-in [`/docs/guides/i18n-translation.md`](../../guides/i18n-translation.md) § Researching terms.)
+in `docs/guides/i18n-translation.md` § Researching terms.)
 
 ## macOS (Tier 1, strongest) — `<tag>/macOS/<bundle>/*.json`
 

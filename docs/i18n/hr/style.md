@@ -1,8 +1,7 @@
 # Croatian (hr) translation style guide
 
-Working notes for translating Cmdr into Croatian (hrvatski). Read [`README.md`](../README.md) for how this fits the
-translation process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes
-carry into Croatian.
+Working notes for translating Cmdr into Croatian (hrvatski). Read `../README.md` for how this fits the translation
+process, and the app-wide `docs/style-guide.md` for the English voice these notes carry into Croatian.
 
 Well-sourced: the pile has macOS Finder/AppKit (highest authority), MS terminology, MS style guide, GNOME Nautilus, and
 Xfce Thunar (`_ignored/i18n/hr/`). Evidence verified against the pile on 2026-06-20.
@@ -13,7 +12,7 @@ The calls a translator can't make alone. Only the first is a true open flag; the
 listed so they're never relitigated.
 
 - **Address form: RESOLVED to informal `ti`** (consumer-brand evidence; Apple-HR and most Croatian consumer/tech brands
-  use `ti`; see Formality and [`formal-informal-decisions.md`](../formal-informal-decisions.md)). No longer open.
+  use `ti`; see Formality and `../formal-informal-decisions.md`). No longer open.
 - **`volume` term (tentative).** No clean macOS "volume" string in the Croatian pile; candidates are `pogon` (drive, the
   MS-preferred everyday word) or a more literal partition term. See the glossary; worth a native check.
 
@@ -30,7 +29,7 @@ way English avoids "error"/"failed".
 **Verdict: informal `ti`, not the formal `vi`.** Consumer brands (IKEA, Spotify, Netflix, and peers; Apple-HR, A1,
 Telemach, Bolt, Glovo, and Netflix all use `ti` in Croatian) address users informally, which fits Cmdr's friendly
 personal voice. The OS sources lean `vi`, but Cmdr deliberately picks the warmer consumer-brand register. Formality
-decision recorded in [`formal-informal-decisions.md`](../formal-informal-decisions.md).
+decision recorded in `../formal-informal-decisions.md`.
 
 - **Informal `ti` for full sentences addressed to the user.** "Jesi li siguran/-na da želiš izbrisati ove datoteke?"
   (Are you sure you want to delete these files?). Prefer an impersonal recast where it avoids a gendered participle.
@@ -117,13 +116,12 @@ three. This is the Slavic one/few/other pattern (same as bs, sr).
 - **Length.** Croatian runs somewhat longer than English (case endings), so overflow-check the layout against the
   pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
-  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in `docs/guides/i18n-translation.md` and
   `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/hr/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/hr/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

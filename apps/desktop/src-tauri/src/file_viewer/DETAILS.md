@@ -1,11 +1,11 @@
 # File viewer details
 
 Pull-tier docs for `file_viewer/`: architecture, flows, and decision rationale. Must-know invariants and gotchas live
-in [CLAUDE.md](CLAUDE.md).
+in `CLAUDE.md`.
 
 Provides three backend strategies for serving file content line-by-line with instant open, virtual scrolling, and background search.
 
-Frontend counterpart: [`apps/desktop/src/routes/viewer/CLAUDE.md`](../../../src/routes/viewer/CLAUDE.md) for the viewer route shell (window lifecycle, scroll/search composables) and [`apps/desktop/src/lib/file-viewer/CLAUDE.md`](../../../src/lib/file-viewer/CLAUDE.md) for the reusable open-viewer helper and binary-warning classifier.
+Frontend counterpart: `apps/desktop/src/routes/viewer/CLAUDE.md` for the viewer route shell (window lifecycle, scroll/search composables) and `apps/desktop/src/lib/file-viewer/CLAUDE.md` for the reusable open-viewer helper and binary-warning classifier.
 
 ## Key files
 
@@ -114,7 +114,7 @@ the scheme + range support regardless, so one path (the token scheme for everyth
 viewer core is 100% `std::fs::File`-based (byte-seek, line-index, encoding, and the `cmdr-media://` handler all `File::open`
 a real path), so there's no `Volume` byte-source seam to thread through. Instead of that larger refactor, `open_session`
 extracts the addressed entry to a bounded temp and opens THAT — the deliberately simple bridge per
-[archive-browsing-m1b-derivation.md](../../../../../docs/specs/archive-browsing-m1b-derivation.md) lead decision 5.
+`docs/specs/archive-browsing-m1b-derivation.md` lead decision 5.
 
 Flow (in `open_session_inner`, before the media/text split):
 

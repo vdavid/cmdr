@@ -40,4 +40,4 @@ Cache: `METRICS_CACHE: LazyLock<RwLock<HashMap<String, FontMetrics>>>`. `FontMet
 External: `bincode2`. Internal: `crate::config::resolved_app_data_dir`.
 
 Full details (decisions: Canvas-measure over Rust fonts, binary-over-JSON format, `RwLock`, average fallback):
-[DETAILS.md](DETAILS.md).
+`DETAILS.md`.

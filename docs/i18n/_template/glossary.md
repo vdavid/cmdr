@@ -7,7 +7,7 @@ Build and extend it DURING translation, and read it before every pass.
   `docs/i18n/reference-pile/how-to-mine.md`; cite the source(s) and a confidence (`confirmed` / `high` / `tentative`).
 - **This folder is the language home.** Capture new term decisions here, other findings as sibling files.
 
-Format and process: [i18n-translation.md](../../guides/i18n-translation.md).
+Format and process: `docs/guides/i18n-translation.md`.
 
 ## Terms
 

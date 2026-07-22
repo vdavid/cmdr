@@ -1,7 +1,6 @@
 # Zulu (zu) translation style guide
 
-Working notes for translating Cmdr into Zulu (isiZulu). Read [`README.md`](../README.md) for how this fits the
-translation process.
+Working notes for translating Cmdr into Zulu (isiZulu). Read `../README.md` for how this fits the translation process.
 
 This is the language base (`zu`), isiZulu in Latin script. The pile has a GNOME catalog (`zu`, ~88% translated) and
 Microsoft terminology plus a Microsoft style guide (`zu-ZA`); for Cmdr a single `zu` base covers it (see Region).
@@ -100,6 +99,6 @@ branches as full native forms.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/zu/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/zu/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

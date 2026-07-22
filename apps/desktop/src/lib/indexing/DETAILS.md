@@ -185,8 +185,7 @@ aggregation-only or reconcile-only row never leaks scan zeros:
 
 **Per-step ETA, no overall ETA.** Only the active step's own ETA shows, where its denominator is trustworthy. A true
 overall "~Xm left" is deliberately deferred with its backend per-phase calibration (the step-of-N structure carries "how
-far" honestly without it): see
-[`docs/specs/later/drive-index-overall-eta.md`](../../../../../docs/specs/later/drive-index-overall-eta.md).
+far" honestly without it): see `docs/specs/later/drive-index-overall-eta.md`.
 
 **Reconcile visibility.** The catch-up step has no scan/aggregation entry — only the `phase` event marks it — so
 `isAnyVolumeIndexing` and the indicator/badge include `phase`-only volumes (`getActivePhaseVolumeIds`, a

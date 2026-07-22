@@ -3,7 +3,7 @@
 The `IndexStore` read/write handle and the per-volume SQLite schema for the drive indexer. Split by concern: `mod.rs`
 (schema + `platform_case` collation + `IndexStore` + data types), `connection.rs` (open/recreate + connection
 factories), `entries.rs` (entry-tree CRUD), `dir_stats.rs`, `meta.rs`; tests in `tests.rs`. Parent pipeline:
-[`../CLAUDE.md`](../CLAUDE.md).
+`../CLAUDE.md`.
 
 ## Must-knows
 
@@ -27,5 +27,5 @@ factories), `entries.rs` (entry-tree CRUD), `dir_stats.rs`, `meta.rs`; tests in 
   `SCHEMA_VERSION` (in `mod.rs`) for any schema change; there's no migration path by design.
 
 The schema columns and the honest-sizes epoch model that shares them (`listed_epoch`, `min_subtree_epoch`,
-`current_epoch`), plus the module structure: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here:
+`current_epoch`), plus the module structure: `DETAILS.md`. Read it before any non-trivial work here:
 editing, planning, reorganizing, or advising.

@@ -1,7 +1,7 @@
 # UI primitives details
 
 Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationale. Must-know invariants and gotchas
-(the rules that prevent silent breakage) live in [CLAUDE.md](CLAUDE.md).
+(the rules that prevent silent breakage) live in `CLAUDE.md`.
 
 ## Key files
 
@@ -39,9 +39,9 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 frosted backdrop, no drag / Escape / × button, body owns the close gesture. It's NOT a `ModalDialog` variant — sheets
 break almost every `ModalDialog` constraint (full-bleed sizing, no title bar, no Escape, no draggable). Adding sheet
 variants to `ModalDialog` would dilute its contract; sheets get their own shell and their own `--sheet-*` design tokens
-(see [`docs/design-system.md`](../../../../../docs/design-system.md) § "Soft sheets"), while focus trapping comes from
-the same shared `use:trapFocus` action (§ "Focus trapping"). They still plug into the same dialog registry
-(`'onboarding'`) so MCP tracking works through the same id-based surface.
+(see `docs/design-system.md` § "Soft sheets"), while focus trapping comes from the same shared `use:trapFocus` action (§
+"Focus trapping"). They still plug into the same dialog registry (`'onboarding'`) so MCP tracking works through the same
+id-based surface.
 
 Reach for a sheet when you have a multi-step flow the user must commit to. Reach for `ModalDialog` for everything else.
 

@@ -58,4 +58,4 @@ values via IPC.
 - Generate a test license key: see [API server CLAUDE.md](../../../../api-server/CLAUDE.md#generate-a-test-license-key).
 
 Full details (decision rationale, `licenseState`-not-`$state` choice, full activation-outcome and pending-verification
-flows): [DETAILS.md](DETAILS.md).
+flows): `DETAILS.md`.

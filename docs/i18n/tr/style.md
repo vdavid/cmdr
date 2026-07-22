@@ -1,9 +1,9 @@
 # Turkish (tr) translation style guide
 
-Working notes for translating Cmdr into Turkish. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Turkish. Turkish is a single-script (Latin), no-region-split, well-localized (Tier 1) language, so the sources are rich
-and mostly agree; the open calls are tonal, not lexical.
+Working notes for translating Cmdr into Turkish. Read `../README.md` for how this fits the translation process, and the
+app-wide `docs/style-guide.md` for the English voice these notes carry into Turkish. Turkish is a single-script (Latin),
+no-region-split, well-localized (Tier 1) language, so the sources are rich and mostly agree; the open calls are tonal,
+not lexical.
 
 ## Voice and tone
 
@@ -24,8 +24,7 @@ than translating word for word (verified in `tr/microsoft-style-guides/StyleGuid
 **Verdict: informal second person (`sen`, the singular verb endings `-ın` / `-in` / `-musun` / `-misin`).** Consumer
 brands (Trendyol, Spotify, Duolingo, and peers) address Turkish users informally with `sen`, which fits Cmdr's friendly
 personal voice. This bucks the OS-vendor norm: macOS and Microsoft both use formal `siz`, but Cmdr deliberately picks
-the warmer consumer-brand register. Formality decision recorded in
-[`formal-informal-decisions.md`](../formal-informal-decisions.md).
+the warmer consumer-brand register. Formality decision recorded in `../formal-informal-decisions.md`.
 
 - The OS sources lean formal: macOS Turkish formal `siz` markers outnumber informal `sen` 409 to 32 in the mined Finder
   strings, and AppKit is entirely formal; Microsoft Turkish is formal-plural too. Cmdr departs from this on purpose to
@@ -163,6 +162,6 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('tr')`, 202
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/tr/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/tr/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

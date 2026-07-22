@@ -19,7 +19,7 @@ file). FDA-gated.
 - **`global_shortcut.rs`**: typed wrapper over `tauri-plugin-global-shortcut`; `GlobalShortcutManager<R: Registrar>`
   state machine
 
-Full lifecycle, scope rationale, and v1 limits: [DETAILS.md](DETAILS.md).
+Full lifecycle, scope rationale, and v1 limits: `DETAILS.md`.
 
 ## Must-knows
 

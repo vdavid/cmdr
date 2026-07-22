@@ -1,13 +1,13 @@
 # Rust backend (`src-tauri/`)
 
 The Tauri 2 + Rust backend. Subsystem must-knows live in each module's colocated `CLAUDE.md`; the full map is
-[`/docs/architecture.md`](../../../docs/architecture.md). These rules apply to all Rust under here.
+`docs/architecture.md`. These rules apply to all Rust under here.
 
 ## Rust rules
 
 - ❌ No `eprintln!` / `println!` / `dbg!`: they bypass the fern logger (no level filter, file output, or error-report
   capture) and clippy denies them. Use `log::{debug,info,warn,error}!` with a scoped `target:`. See
-  [`src/logging/CLAUDE.md`](src/logging/CLAUDE.md).
+  `src/logging/CLAUDE.md`.
 - ❌ No bare `.lock()` / `.read()` / `.write().unwrap()` on a std `Mutex` / `RwLock`: a poisoned lock aborts the whole
   app. Use `*_ignore_poison()` (recover) or `.expect("…poison…<why aborting is correct>")` (abort). Enforced by
   `lock-poison`; see `src/ignore_poison.rs`.
@@ -16,7 +16,7 @@ The Tauri 2 + Rust backend. Subsystem must-knows live in each module's colocated
   `clippy::unwrap_used`; `#[test]` fns are exempt (`clippy.toml` `allow-unwrap-in-tests`), but test *helper* fns outside
   `#[test]` aren't, so they use `.expect("…")` too.
 - ❌ Never build with raw `cargo build` (white screen, no embedded frontend). Use `pnpm tauri build` or the
-  `tauri-wrapper.ts build` wrapper, which runs `beforeBuildCommand`. See [`../scripts/CLAUDE.md`](../scripts/CLAUDE.md).
+  `tauri-wrapper.ts build` wrapper, which runs `beforeBuildCommand`. See `../scripts/CLAUDE.md`.
 - ❌ Every `unsafe {}` block (and `unsafe impl`) needs a `// SAFETY:` comment on the immediately-preceding line, stating
   the concrete invariant that makes THAT site sound (receiver/pointer validity, selector ABI match, thread, Create-vs-Get
   ownership, success-gate) — specific, never boilerplate. Enforced by `clippy::undocumented_unsafe_blocks`. Rote FFI is
@@ -51,4 +51,5 @@ These cut across modules; all existing commands follow them, so apply them to ne
 - **Never use rayon for calls into macOS frameworks** (NSURL/FileProvider/NSWorkspace): the synchronous XPC round-trips
   can blow rayon's 2 MB worker stack. Use dedicated 8 MB-stack OS threads. See pattern [here](src/file_system/CLAUDE.md).
 
-Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

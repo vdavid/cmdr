@@ -1,8 +1,7 @@
 # Catalan (ca) translation style guide
 
-Working notes for translating Cmdr into Catalan. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Catalan.
+Working notes for translating Cmdr into Catalan. Read `../README.md` for how this fits the translation process, and the
+app-wide `docs/style-guide.md` for the English voice these notes carry into Catalan.
 
 `ca` is the base (Central Catalan, the standard the macOS Catalan UI uses). The Valencian variant (`ca-valencia`) is a
 real, separately-shippable form covered under Decision points; it carries overrides where Valencian usage diverges, with
@@ -102,7 +101,7 @@ grammatical gender; articles and adjectives agree with the counted noun in every
 - **Numbers and dates come from the formatter layer.** Never hardcode separators.
 - **Length: Catalan runs ~10–20% longer than English.** Overflow-check tight buttons against the pseudolocale (`en-XA`).
 - **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  `docs/guides/i18n-translation.md`.
 
 ## Decisions to confirm with David
 
@@ -111,6 +110,6 @@ grammatical gender; articles and adjectives agree with the counted noun in every
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/ca/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/ca/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

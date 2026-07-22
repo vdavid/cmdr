@@ -23,9 +23,8 @@ FinderInfo-safe (custom-icon regression test).
 - **Manual QA (David):** the colored dots' look, the menu circles, and a real Cmdr→Finder→Cmdr tag round-trip (incl.
   that a custom-icon folder keeps its icon after tagging).
 
-Read [`docs/design-principles.md`](../design-principles.md) and
-[`apps/desktop/src-tauri/src/file_system/listing/CLAUDE.md`](../../apps/desktop/src-tauri/src/file_system/listing/CLAUDE.md)
-(+ its `DETAILS.md`) before executing.
+Read `../design-principles.md` and `apps/desktop/src-tauri/src/file_system/listing/CLAUDE.md` (+ its `DETAILS.md`)
+before executing.
 
 ## Goal
 

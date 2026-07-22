@@ -3,8 +3,8 @@
 Inventory of testing tools available in Cmdr. One paragraph per tool: what it is, where it lives, how to invoke it, when
 to reach for it.
 
-Decision rules for which tool to use are in [docs/testing.md](../testing.md). This file answers "is there a tool for
-X?". To create large fixture trees, see [generating-test-files.md](../guides/generating-test-files.md).
+Decision rules for which tool to use are in `../testing.md`. This file answers "is there a tool for X?". To create large
+fixture trees, see `../guides/generating-test-files.md`.
 
 ## Rust unit + integration
 
@@ -88,8 +88,8 @@ watcher stays PAUSED for the test body so late FSEvents from the wipe+recreate c
 only the one test that verifies the live-watch pipeline resumes it. See `src-tauri/src/mtp/DETAILS.md` § "Virtual device
 watcher in E2E".
 
-The same device is available in a normal dev session via `CMDR_VIRTUAL_MTP=1 pnpm dev` — see
-[virtual-mtp.md](virtual-mtp.md) for the dev workflow.
+The same device is available in a normal dev session via `CMDR_VIRTUAL_MTP=1 pnpm dev` — see `virtual-mtp.md` for the
+dev workflow.
 
 ### Docker SMB containers
 
@@ -124,7 +124,7 @@ leave the dev server running after; stop it when done.
 
 In `apps/desktop/eslint-plugins/no-arbitrary-sleep-in-e2e.js`. Flags `await sleep(N)` in `*.spec.ts` files. Opt out with
 `// eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- <reason>` only when a genuine fixed wait is needed (e.g.,
-file-watcher debounce settling). Mirrors the `pollUntil`-first rule from [docs/testing.md](../testing.md).
+file-watcher debounce settling). Mirrors the `pollUntil`-first rule from `../testing.md`.
 
 ### `cmdr/no-raw-tauri-invoke` (ESLint)
 

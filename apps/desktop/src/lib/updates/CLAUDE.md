@@ -15,7 +15,7 @@ Frontend auto-update checker, restart toast, and manual "Check for updates" affo
 ## Must-knows
 
 - **Copy lives in the `updates.*` catalog**, resolved via `t()`/`tString()`; don't hardcode user-facing strings
-  (`cmdr/no-raw-user-facing-string` is enforced here). See [DETAILS.md](DETAILS.md) § i18n.
+  (`cmdr/no-raw-user-facing-string` is enforced here). See `DETAILS.md` § i18n.
 - **Cleanup is mandatory.** `startUpdateChecker()` returns a teardown fn that `+layout.svelte` must call in `onDestroy`,
   or the interval leaks.
 - **`.svelte.ts` extension is required** wherever `$state` lives (`updater.svelte.ts`, `update-state.svelte.ts`).
@@ -37,4 +37,4 @@ Frontend auto-update checker, restart toast, and manual "Check for updates" affo
 - Test-only hooks `_resetUpdaterStateForTest` / `_setUpdateStatusForTest` exist for `updater.test.ts`; production must
   not call them.
 
-Full details (state-machine diagram, menu wiring, decision rationale, dependencies): [DETAILS.md](DETAILS.md).
+Full details (state-machine diagram, menu wiring, decision rationale, dependencies): `DETAILS.md`.

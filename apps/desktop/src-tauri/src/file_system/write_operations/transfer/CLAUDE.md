@@ -3,9 +3,8 @@
 Copy and move, local-FS and volume-aware (Local ↔ MTP ↔ SMB). All flows go through the shared driver
 (`transfer_driver.rs`) and emit progress via `OperationEventSink`.
 
-Shared `WriteOperationState`, `OperationIntent`, cancel/rollback, ETA, and settle contract:
-[`../CLAUDE.md`](../CLAUDE.md). Delete: [`../delete/CLAUDE.md`](../delete/CLAUDE.md). Frontend:
-[`src/lib/file-operations/transfer/CLAUDE.md`](../../../../../src/lib/file-operations/transfer/CLAUDE.md).
+Shared `WriteOperationState`, `OperationIntent`, cancel/rollback, ETA, and settle contract: `../CLAUDE.md`. Delete:
+`../delete/CLAUDE.md`. Frontend: `apps/desktop/src/lib/file-operations/transfer/CLAUDE.md`.
 
 ## Module map
 
@@ -49,7 +48,7 @@ Shared `WriteOperationState`, `OperationIntent`, cancel/rollback, ETA, and settl
   unbounded backup — don't reintroduce that footgun).
 - **`stream_pipe_file` retries once on `VolumeError::StaleDestinationHandle`** (re-opens source, re-runs
   `write_from_stream`): the only layer that can retry an MTP stale-handle rejection (the backend stream is single-use),
-  so don't drop the loop. Why: [`mtp/connection/DETAILS.md`](../../../mtp/connection/DETAILS.md).
+  so don't drop the loop. Why: `apps/desktop/src-tauri/src/mtp/connection/DETAILS.md`.
 - **Cross-volume copy parks/yields between chunks** via `checkpoint_stream.rs`'s `CheckpointStream` (sync `on_progress`
   can't `.await`). Reads hold no session between windows, so pause and yield both mean **don't start the next window**
   (park in place, NO release/reopen). Triggers: **user pause** parks everyone; **auto-yield on `foreground_pending`**, op
@@ -59,4 +58,4 @@ Shared `WriteOperationState`, `OperationIntent`, cancel/rollback, ETA, and settl
   (`supports_foreground_yield_as_destination()`, SMB uploads) is **HARD-CAPPED**: it holds an open SMB write handle, so
   it must resume before the server reaps it. ❌ MTP never opts in here. DETAILS § "Foreground auto-yield".
 
-Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read before non-trivial work here.
+Architecture, flows, and decisions: `DETAILS.md`. Read before non-trivial work here.

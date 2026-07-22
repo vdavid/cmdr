@@ -57,4 +57,4 @@ types. DETAILS.md has the per-file contents and the "where to put a new command"
 - Types from `$lib/file-explorer/types`.
 
 Full details (per-file command inventory, the new-command routing map, and notable non-obvious placements):
-[DETAILS.md](DETAILS.md).
+`DETAILS.md`.

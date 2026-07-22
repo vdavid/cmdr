@@ -2,7 +2,7 @@
 
 Playwright E2E for Cmdr in Tauri mode: commands inject into the real Tauri webview over a Unix socket. The same specs
 run on macOS (native) and Linux (Docker); platform differences (Ctrl vs Meta) ride the `CTRL_OR_META` constant in
-`helpers.ts`. Architecture, per-spec table, run recipes, and decisions: [DETAILS.md](DETAILS.md).
+`helpers.ts`. Architecture, per-spec table, run recipes, and decisions: `DETAILS.md`.
 
 ## Module map
 
@@ -49,4 +49,4 @@ run on macOS (native) and Linux (Docker); platform differences (Ctrl vs Meta) ri
   `getStore()` resolves through `resolveStorePath(name)`, which a `CMDR_DATA_DIR` instance redirects to isolated data. A
   persisted-UI-state spec passing in CI but failing locally usually means a stale value in your real store.
 
-Read [DETAILS.md](DETAILS.md) before any non-trivial work here: editing, planning, reorganizing, or advising.
+Read `DETAILS.md` before any non-trivial work here: editing, planning, reorganizing, or advising.

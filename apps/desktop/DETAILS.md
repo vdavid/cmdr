@@ -1,8 +1,7 @@
 # Desktop app details
 
 Operational depth for the desktop app: running, debugging, testing, MCP control, and worktree setup. Must-knows are in
-[CLAUDE.md](CLAUDE.md); repo-wide knowledge is in [`/AGENTS.md`](../../AGENTS.md); the subsystem map is
-[`/docs/architecture.md`](../../docs/architecture.md).
+`CLAUDE.md`; repo-wide knowledge is in `AGENTS.md`; the subsystem map is `docs/architecture.md`.
 
 ## Running
 
@@ -21,7 +20,7 @@ ports, or the Dock label. The slug is sanitized to lowercase ASCII (max 32 chars
 `net.createServer().listen(0)`, exports `CMDR_VITE_PORT`, and rewrites `build.devUrl` in the generated
 `tauri.instance.json` so the webview points at the port Vite actually binds (raw `pnpm vite dev` outside the wrapper
 still defaults to 1420). Canonical reference (per-resource breakdown, precedence, debug recipes, acceptance smoke):
-[`/docs/tooling/instance-isolation.md`](../../docs/tooling/instance-isolation.md).
+`docs/tooling/instance-isolation.md`.
 
 **Run `pnpm dev --worktree <slug>` FROM the worktree dir** (`cd` into it first). Vite serves whatever source tree it's
 launched in, so running it from the main repo root serves **main's** frontend with only the worktree's data dir, ports,
@@ -33,10 +32,9 @@ instance, not the source.
 Two watchers run during `pnpm dev`, each with its own shield (don't delete either):
 
 - The **Tauri CLI** watches `src-tauri/` and the workspace crates and rebuilds + restarts the whole app on any change
-  there. [`src-tauri/.taurignore`](src-tauri/.taurignore) (gitignore syntax) excludes `*.md`, because 20+ colocated
-  `CLAUDE.md` files live under `src-tauri/src/` and every docs edit used to restart the app. Verified empirically:
-  without the file the watcher rebuilds on a `CLAUDE.md` change; with it, markdown edits are silent while `.rs` edits
-  still rebuild.
+  there. `src-tauri/.taurignore` (gitignore syntax) excludes `*.md`, because 20+ colocated `CLAUDE.md` files live under
+  `src-tauri/src/` and every docs edit used to restart the app. Verified empirically: without the file the watcher
+  rebuilds on a `CLAUDE.md` change; with it, markdown edits are silent while `.rs` edits still rebuild.
 - **Vite** watches the rest of `apps/desktop/`; `server.watch.ignored` in `vite.config.js` excludes `src-tauri/` so Rust
   builds don't churn the frontend watcher. Markdown elsewhere is harmless to Vite (`.md` isn't in the module graph;
   SvelteKit only full-reloads on route files, `app.html`, hooks, and `svelte.config.js`).
@@ -58,9 +56,9 @@ Data dirs are separate for prod, dev, and each worktree:
 reports, logs, file-backed secret store) agrees without round-tripping through Tauri's API.
 
 - **Logging**: frontend and backend logs land together in the terminal and the log dir (dev: `<CMDR_DATA_DIR>/logs/`,
-  prod: `~/Library/Logs/com.veszelovszki.cmdr/`). Read [`/docs/tooling/logging.md`](../../docs/tooling/logging.md)
-  before using `RUST_LOG`: it has per-subsystem recipes. Key gotcha: the Rust library target is `cmdr_lib`, not `cmdr`,
-  so use `RUST_LOG=cmdr_lib::module=debug`. `cmdr_lib` (lib) and `Cmdr` (bin) are both in the `cmdr` package, so
+  prod: `~/Library/Logs/com.veszelovszki.cmdr/`). Read `docs/tooling/logging.md` before using `RUST_LOG`: it has
+  per-subsystem recipes. Key gotcha: the Rust library target is `cmdr_lib`, not `cmdr`, so use
+  `RUST_LOG=cmdr_lib::module=debug`. `cmdr_lib` (lib) and `Cmdr` (bin) are both in the `cmdr` package, so
   `Compiling cmdr` in build output covers both targets.
 - **Dev live log path**: the running dev app's log is
   `~/Library/Application Support/com.veszelovszki.cmdr-dev/logs/cmdr.log` (the data-dir `logs/` subdir), NOT
@@ -68,53 +66,49 @@ reports, logs, file-backed secret store) agrees without round-tripping through T
 - **Hard freeze (logs stop)**: when the app wedges and the log goes silent, `sample <pid>` (macOS) the running Cmdr
   process to capture the blocked threads' stacks — that's how a deadlock gets pinpointed when the logger never flushed.
 - **Crash reports**: a crash writes `crash-report.json` to the data dir; the next launch detects it and offers to send.
-  See [`src-tauri/src/crash_reporter/CLAUDE.md`](src-tauri/src/crash_reporter/CLAUDE.md).
-- **Error reports**: to triage a bundle (zip + `manifest.json`), read
-  [`src-tauri/src/error_reporter/CLAUDE.md`](src-tauri/src/error_reporter/CLAUDE.md) for the layout and redaction
-  conventions.
+  See `src-tauri/src/crash_reporter/CLAUDE.md`.
+- **Error reports**: to triage a bundle (zip + `manifest.json`), read `src-tauri/src/error_reporter/CLAUDE.md` for the
+  layout and redaction conventions.
 - **Index DB queries**: the index SQLite DB uses a custom `platform_case` collation, so the `sqlite3` CLI can't query
-  it. Use `cargo run -p index-query -- <db_path> "<sql>"`; see
-  [`/docs/tooling/index-query.md`](../../docs/tooling/index-query.md).
+  it. Use `cargo run -p index-query -- <db_path> "<sql>"`; see `docs/tooling/index-query.md`.
 - **Dev mock flags** (read by the backend process, so set them in the `pnpm dev` shell): `CMDR_MOCK_LICENSE=commercial`
   mocks the license; `CMDR_SIMULATE_UPDATE_FROM=<version>` forces the "What's new" popup on every launch as if just
-  updated from that version (it never stamps `lastSeenVersion`). See
-  [`src/lib/whats-new/CLAUDE.md`](src/lib/whats-new/CLAUDE.md).
+  updated from that version (it never stamps `lastSeenVersion`). See `src/lib/whats-new/CLAUDE.md`.
 
 ## Testing the running app via MCP
 
 Two MCP server types are available when the app runs via `pnpm dev`:
 
 - **cmdr-dev** / **cmdr-prod**: high-level app control (navigation, file operations, search, dialogs, state). The
-  primary way to drive the running app. Read [`src-tauri/src/mcp/CLAUDE.md`](src-tauri/src/mcp/CLAUDE.md) first.
+  primary way to drive the running app. Read `src-tauri/src/mcp/CLAUDE.md` first.
 - **tauri** (Tauri MCP bridge): low-level access (screenshots, DOM, JS execution, IPC) for visual verification and what
   the Cmdr MCP can't do.
 
 Both bind `127.0.0.1` on ephemeral per-instance ports; clients read the port from `<CMDR_DATA_DIR>/mcp.port` /
-`<CMDR_DATA_DIR>/tauri-mcp.port` (`CMDR_MCP_PORT` pins it). See [`/docs/tooling/mcp.md`](../../docs/tooling/mcp.md) for
-patterns and pitfalls. If the `mcp__cmdr-dev__*` / `mcp__tauri__*` tools are absent in your session (spawned agents
-often start without them), use `./scripts/mcp-call.sh` (discovers port + token itself; `--help`, `--list-tools`).
+`<CMDR_DATA_DIR>/tauri-mcp.port` (`CMDR_MCP_PORT` pins it). See `docs/tooling/mcp.md` for patterns and pitfalls. If the
+`mcp__cmdr-dev__*` / `mcp__tauri__*` tools are absent in your session (spawned agents often start without them), use
+`./scripts/mcp-call.sh` (discovers port + token itself; `--help`, `--list-tools`).
 
 ## Testing
 
-Read [`/docs/testing.md`](../../docs/testing.md) (playbook) and
-[`/docs/tooling/testing.md`](../../docs/tooling/testing.md) (tools inventory) before adding or changing tests. When
+Read `docs/testing.md` (playbook) and `docs/tooling/testing.md` (tools inventory) before adding or changing tests. When
 iterating on one test, run only that test, not the suite (the full Playwright suite wastes ~6 min per cycle and cascades
 failures):
 
 - Rust: `cd apps/desktop/src-tauri && cargo nextest run <test_name>`
 - Svelte: `cd apps/desktop && pnpm vitest run -t "<test_name>"`
-- Playwright: see [`test/e2e-playwright/DETAILS.md`](test/e2e-playwright/DETAILS.md) § "Running a single spec".
+- Playwright: see `test/e2e-playwright/DETAILS.md` § "Running a single spec".
 
-Suites: Vitest unit tests (`test/`), Playwright E2E (`test/e2e-playwright/`, see its
-[CLAUDE.md](test/e2e-playwright/CLAUDE.md)), Linux Docker E2E (`test/e2e-linux/`, see its
-[CLAUDE.md](test/e2e-linux/CLAUDE.md) including the Ubuntu test VM). Docker SMB fixtures: 14 Samba containers (guest,
-auth, readonly, slow, flaky, unicode, deep nesting, etc.); start with `test/smb-servers/start.sh` and connect from Rust
-via `smb2::testing::guest_port()` and friends (see [`test/smb-servers/README.md`](test/smb-servers/README.md)).
+Suites: Vitest unit tests (`test/`), Playwright E2E (`test/e2e-playwright/`, see its `test/e2e-playwright/CLAUDE.md`),
+Linux Docker E2E (`test/e2e-linux/`, see its `test/e2e-linux/CLAUDE.md` including the Ubuntu test VM). Docker SMB
+fixtures: 14 Samba containers (guest, auth, readonly, slow, flaky, unicode, deep nesting, etc.); start with
+`test/smb-servers/start.sh` and connect from Rust via `smb2::testing::guest_port()` and friends (see
+`test/smb-servers/README.md`).
 
 ## Worktree setup (desktop specifics)
 
-The repo-wide worktree workflow is in [`/AGENTS.md`](../../AGENTS.md) § Workflow. Desktop-specific setup when creating a
-worktree under `.claude/worktrees/<slug>`:
+The repo-wide worktree workflow is in `AGENTS.md` § Workflow. Desktop-specific setup when creating a worktree under
+`.claude/worktrees/<slug>`:
 
 - `cp -c ~/projects-git/vdavid/cmdr/target <worktree>/target`: instant on APFS; deps are fingerprinted on version +
   features + rustc + profile, so only the workspace members rebuild.

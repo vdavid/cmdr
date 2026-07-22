@@ -1,8 +1,8 @@
 # Occitan (oc) translation style guide
 
-Working notes for translating Cmdr into Occitan. Read [`README.md`](../README.md) for how this fits the translation
-process. `oc` is a Romance language of southern France (and parts of Italy and Spain); it has a strong free-software
-tradition, so GNOME and Xfce are full and consistent references.
+Working notes for translating Cmdr into Occitan. Read `../README.md` for how this fits the translation process. `oc` is
+a Romance language of southern France (and parts of Italy and Spain); it has a strong free-software tradition, so GNOME
+and Xfce are full and consistent references.
 
 ## Voice and tone
 
@@ -87,6 +87,6 @@ natural phrase since noun gender interacts with the count. The `desktop-i18n-plu
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/oc/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/oc/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

@@ -1,8 +1,7 @@
 # Polish (pl) translation style guide
 
-Working notes for translating Cmdr into Polish. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Polish.
+Working notes for translating Cmdr into Polish. Read `../README.md` for how this fits the translation process, and the
+app-wide `docs/style-guide.md` for the English voice these notes carry into Polish.
 
 Polish is a major, well-resourced language: the pile has all five sources (`_ignored/i18n/pl/`: macOS Finder/AppKit, MS
 terminology + style guide, GNOME Nautilus, Xfce Thunar), so most terms reach `high`. Evidence verified against the pile
@@ -14,9 +13,8 @@ The calls a translator can't make alone. The rest of the guide assumes them; onl
 rest carry a confident default and are listed so they're never relitigated.
 
 - **Address form: RESOLVED to informal `Ty`** (consumer-brand evidence; see Formality and
-  [`formal-informal-decisions.md`](../formal-informal-decisions.md)). No longer open. Polish still prefers
-  depersonalized phrasing where natural (it also dodges the gendered-past-tense trap), but direct address is informal
-  `Ty`, never `Pan/Pani`.
+  `../formal-informal-decisions.md`). No longer open. Polish still prefers depersonalized phrasing where natural (it
+  also dodges the gendered-past-tense trap), but direct address is informal `Ty`, never `Pan/Pani`.
 - **`folder` = `folder` vs `katalog` (high, but worth a glance).** macOS Finder shows "Folder" verbatim (the English
   loanword, fully naturalized in Polish); GNOME uses "Katalog". For a macOS app, match Finder: **`folder`**. `katalog`
   reads more like the technical "directory". See glossary.
@@ -33,9 +31,9 @@ way English avoids "error"/"failed".
 
 **Verdict: informal `Ty`, not `Pan/Pani`.** Consumer brands (IKEA, Spotify, Netflix, and peers) address Polish users
 with informal `Ty`, which fits Cmdr's friendly personal voice. Formality decision recorded in
-[`formal-informal-decisions.md`](../formal-informal-decisions.md). Polish still leans heavily on depersonalized phrasing
-where it reads naturally (it also sidesteps the gendered-past-tense trap), but the register, wherever the user is
-addressed, is informal `Ty`, never the formal `Pan/Pani`.
+`../formal-informal-decisions.md`. Polish still leans heavily on depersonalized phrasing where it reads naturally (it
+also sidesteps the gendered-past-tense trap), but the register, wherever the user is addressed, is informal `Ty`, never
+the formal `Pan/Pani`.
 
 - **Action labels (buttons, menu items): use the imperative or, where it reads as a feature name, a verbal noun.** macOS
   Polish shows imperative forms: "Kopiuj" (Copy), "Wklej" (Paste), "Wytnij" (Cut), "Otwórz" (Open), "Usuń" (Delete),
@@ -142,13 +140,12 @@ collapses few+other differently, use the four CLDR categories, not GNOME's three
 - **Length.** Polish runs longer than English (case endings, compounds, ~20-30% expansion), so overflow-check the layout
   against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
-  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in `docs/guides/i18n-translation.md` and
   `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/pl/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/pl/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

@@ -1,7 +1,7 @@
 # API server details
 
 Pull-tier docs for `apps/api-server/`: architecture, flows, and decision rationale. Must-know invariants and gotchas
-live in [CLAUDE.md](CLAUDE.md).
+live in `CLAUDE.md`.
 
 ## Key files
 
@@ -602,12 +602,12 @@ perpetual license. These keys use synthetic transaction IDs (`manual-*`), so the
 `/validate` (offline crypto + UI testing only).
 
 For end-to-end testing including `/validate`, use the Paddle sandbox checkout flow (see
-[README.md](README.md#testing-paddle-checkout)).
+[testing Paddle checkout](README.md#testing-paddle-checkout)).
 
 ### Testing Paddle checkout (sandbox)
 
-See [README.md](README.md#testing-paddle-checkout). Requires setting up a Paddle client-side token and a default payment
-link in the sandbox dashboard. This is an interactive, human-driven flow.
+See [testing Paddle checkout](README.md#testing-paddle-checkout). Requires setting up a Paddle client-side token and a
+default payment link in the sandbox dashboard. This is an interactive, human-driven flow.
 
 ## Deployment
 

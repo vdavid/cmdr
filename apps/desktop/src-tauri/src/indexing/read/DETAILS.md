@@ -1,7 +1,7 @@
 # Indexing read side details
 
 Read this before any non-trivial work in `indexing/read/`: editing, planning, reorganizing, or advising. Must-know
-invariants are in [CLAUDE.md](CLAUDE.md).
+invariants are in `CLAUDE.md`.
 
 This area serves recursive sizes and index status back to the app. Four concerns: enrichment (the hot path), the IPC
 query surface, write-op expected totals, and the "size updating" hourglass. All read via the per-volume `ReadPool`;
@@ -14,7 +14,7 @@ signature (`fn with_conn<T>(&self, f: impl FnOnce(&Connection) -> T)`) ensures t
 closure, so async task migration can't break thread affinity — enforced by the type, not convention. The root pool
 lives in the `READ_POOL` module global; non-root pools live in their registry instance. `get_read_pool_for(vid)` routes
 root → `READ_POOL`, non-root → `state::get_instance_read_pool`. (The globals and instance storage are owned by
-[`../lifecycle`](../lifecycle/DETAILS.md); this area holds the `ReadPool` type and the readers.)
+`../lifecycle/DETAILS.md`; this area holds the `ReadPool` type and the readers.)
 
 `enrich_entries_with_index(entries)` is the root-defaulting wrapper; `enrich_entries_with_index_on_volume(volume_id,
 entries)` is the volume-routed form. Called when entries land in the listing cache (streaming, watcher update, re-sort),
@@ -36,13 +36,13 @@ queries instead of N `resolve_path` calls. Falls back to individual path resolut
 **Read-side path mapping.** Both `enrich_via_parent_id_on` (fast path) and `enrich_via_individual_paths_on` (fallback)
 map their mount-absolute paths into the volume's index path space via `routing::index_read_path` before
 `resolve_path` — a pass-through for `root`, a mount-relative strip for SMB, a scheme/storage strip for MTP. Without it
-an indexed SMB folder enriches to nothing. Owned by [`../paths`](../paths/DETAILS.md).
+an indexed SMB folder enriches to nothing. Owned by `../paths/DETAILS.md`.
 
 **Deriving the honest-size booleans.** `apply_dir_stats` sets `recursive_size_complete = min_subtree_epoch > 0` and
 `recursive_size_stale = complete && min_subtree_epoch < current_epoch`. `current_epoch` is read ONCE per
 `enrich_entries_with_index_on_volume` pass, on the same `ReadPool` conn that fetches the stats, and threaded into both
 enrichment forms. The frontend renders from `{recursive_size, complete, stale}` only; it never learns the epoch scheme.
-The epoch model itself is owned by [`../writer`](../writer/DETAILS.md).
+The epoch model itself is owned by `../writer/DETAILS.md`.
 
 **Log memo.** A per-pass line is ~14,000 lines an hour from two idle panes, and the varying counts and path defeat the
 log writer's coalescer. So the pass keeps ONE line, `enrich: 12/14 dirs got sizes under <parent>`, gated on
@@ -61,7 +61,7 @@ mutate registry state.
   coalesced_signals_since_sweep, next_sweep_due_at }`). The path form resolves the volume from a listing path (the
   always-visible active-drive badge); the id form is keyed by `volume.id` (the per-drive dropdown rows). Both return the
   same shape. `next_sweep_due_at` is computed here so the sweep-window length stays in the policy module (owned by
-  [`../reconcile`](../reconcile/DETAILS.md)), not duplicated in the frontend.
+  `../reconcile/DETAILS.md`), not duplicated in the frontend.
 - `get_dir_stats(path)` / `get_dir_stats_batch(paths)` — resolve the volume via `routing::volume_id_for_local_path`,
   delegate to `*_on_volume`, and read dir aggregates off the volume's `ReadPool` (mapping the path via
   `routing::index_read_path`). `dir_stats_from` derives the same `{complete, stale}` booleans as enrichment;
@@ -71,7 +71,7 @@ mutate registry state.
 
 The IPC boundary stays path-based; the volume is resolved internally. The path-based commands map an SMB-mounted path to
 its `smb_volume_id`, an `mtp://` path to its `{device}:{storage}` id, a registered local external mount to its own id,
-and the boot disk (plus cloud-drive folders) to `root` — routing owned by [`../paths`](../paths/DETAILS.md). The routed
+and the boot disk (plus cloud-drive folders) to `root` — routing owned by `../paths/DETAILS.md`. The routed
 reads skip cleanly (`get_read_pool_for` → `None`) when the resolved volume has no registered index, so an unindexed SMB
 share or a mounted-but-unindexed external drive costs zero DB work — which is also why such a drive reports `off` rather
 than inheriting `root`'s freshness. The MCP server consumes these read APIs too (`cmdr://indexing`, the `await
@@ -123,4 +123,4 @@ Holding roots (not expanded ancestors) with a query-time prefix test keeps relea
 (`/a/b` and `/a/c` share `/a`; expanding would strip it while one is still in flight). On completion the sequence is
 `release(root)` FIRST, then emit `index-dir-updated` for the root + ancestors via `WriteMessage::EmitDirUpdated`:
 release before emit, else the triggered refetch re-reads `pending = true`. The mark/clear mechanics that feed this from
-the writer side (the `dir_stats` ledger, the drain point) are owned by [`../writer`](../writer/DETAILS.md).
+the writer side (the `dir_stats` ledger, the drain point) are owned by `../writer/DETAILS.md`.

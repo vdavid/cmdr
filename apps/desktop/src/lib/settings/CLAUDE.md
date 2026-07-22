@@ -13,7 +13,7 @@ Registry-based user settings: defined once in `settings-registry.ts`, accessed u
 
 - **The registry stores i18n message KEYS, not English** (`labelKey` / `descriptionKey`, enum options too); copy lives
   in `messages/en/settings.json`. `section: string[]` stays English (routing/search identity; titles render via
-  `sectionTitle()`). `cmdr/no-raw-user-facing-string` is enforced here. [DETAILS.md](DETAILS.md) § i18n.
+  `sectionTitle()`). `cmdr/no-raw-user-facing-string` is enforced here. `DETAILS.md` § i18n.
 - **A registry entry alone does NOT render**: it also needs a `SettingRow` in its `sections/*Section.svelte` (only
   `AdvancedSection` auto-renders `section: ['Advanced']`). Miss that and the setting persists and is searchable but
   invisible. Checklist: [adding a new setting](../../../../../docs/guides/adding-a-new-setting.md).
@@ -34,12 +34,12 @@ Registry-based user settings: defined once in `settings-registry.ts`, accessed u
 - **Persistence is sparse: `settings.json` holds ONLY keys an actor explicitly set.** "Explicit" is structural (which
   mutator ran, tracked in `explicitlySet`), NEVER `value !== default`. Don't seed defaults into the store or gate saves
   on a value compare — either re-opens the leak that pinned `developer.mcpEnabled`. `resetSetting` deletes the key.
-  [DETAILS.md](DETAILS.md) § Sparse persistence.
+  `DETAILS.md` § Sparse persistence.
 - **Increment `SCHEMA_VERSION` and add a `migrateSettings()` case** when changing the settings format (adding a key is
   additive, no bump). Migrations must be idempotent: they re-run each launch until the first real save stamps the
   version.
 - **Card visibility is section-owned**, never re-derived from the registry `card` field (reintroduces the empty-card
-  bug); `cardKey` is search metadata only. [DETAILS.md](DETAILS.md) § Card groups.
+  bug); `cardKey` is search metadata only. `DETAILS.md` § Card groups.
 - **Reactive settings live in `reactive-settings.svelte.ts`** (`$state()` needs the `.svelte.ts` extension).
 - **Date/locale formatting has one source of truth**: `formatDateForDisplay()` (pure) → `formattedDate()` (reactive) →
   `<DateLabel>` (render); coloring only in `age-tier-utils.ts`. The `'system'` date mode and file-size decimals/grouping
@@ -54,5 +54,5 @@ Registry-based user settings: defined once in `settings-registry.ts`, accessed u
 - **A self-closing webview defers `close()` past the current tick** (`setTimeout(0)`, not `rAF`): synchronous `close()`
   stalls cross-webview IPC on webkit2gtk; `rAF` throttles in unfocused macOS windows. DETAILS § Gotchas.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

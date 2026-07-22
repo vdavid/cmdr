@@ -19,7 +19,7 @@ non-blocking I/O and progress events.
 - **fuzzy_jump.rs**: `find_first_match()` (pure) powers type-to-jump, wrapped by the `find_first_fuzzy_match` command.
 
 Full details (data flow, caching lifecycle, the orphan reaper, all decisions, cache-helper and notification API
-catalogs, diff coalescing, metadata tiers): [DETAILS.md](DETAILS.md).
+catalogs, diff coalescing, metadata tiers): `DETAILS.md`.
 
 ## Invariants and gotchas
 
@@ -40,7 +40,7 @@ catalogs, diff coalescing, metadata tiers): [DETAILS.md](DETAILS.md).
   `cancelled.store(true)` + `cancel_notify.notify_waiters()`: the `Notify` drives async cancellation via `select!`, the
   `AtomicBool` covers sync check points and is what actually stops the task early. ❌ The `select!` cancel arm must
   never `listing_task.abort()`: `cancelled` IS the backend's cancel token, so returning detaches a safely-unwinding
-  task, while aborting drops the listing mid-round-trip and wedges an MTP phone. [DETAILS.md](DETAILS.md) §
+  task, while aborting drops the listing mid-round-trip and wedges an MTP phone. `DETAILS.md` §
   "Cancelling a listing detaches, never aborts".
 - **Watcher callbacks run on OS threads, not the tokio runtime.** Async work from a callback must use
   `tauri::async_runtime::spawn`, never bare `tokio::spawn`, which panics with "there is no reactor running" and aborts

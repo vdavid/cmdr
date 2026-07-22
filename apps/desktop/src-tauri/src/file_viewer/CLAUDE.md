@@ -13,9 +13,9 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
   `byte_seek.rs` / `line_index.rs` (the three backends), `search_matcher.rs`, `watcher.rs` (shared tail-mode watcher).
 - Backend selection: `< 1MB` → `FullLoad`; else `ByteSeek` (instant open) + a background `LineIndex` upgrade.
 - Media (Image/PDF): `content_kind.rs`, `media.rs` (`cmdr-media://` token map), `media_protocol.rs` (scheme handler),
-  `media_backend.rs`, `media_session.rs`. See [DETAILS.md](DETAILS.md) § "Media rendering".
+  `media_backend.rs`, `media_session.rs`. See `DETAILS.md` § "Media rendering".
 - `archive_extract.rs`: preview-in-zip (streams an archive-inner entry to a bounded temp). See
-  [DETAILS.md](DETAILS.md) § "Preview inside an archive".
+  `DETAILS.md` § "Preview inside an archive".
 
 ## Must-knows
 
@@ -24,9 +24,9 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
   scroll/search. Don't revert to plain `fn` (the watcher manager thread is already off the IPC thread, so its direct
   `reload` / `apply_tail_extend` calls stay sync).
 - **The FSEvents subscribe runs on the manager thread, NOT inline in `open_session`.** It's blocking and
-  `fseventsd`-bound (seconds under load), so inlining risks the 2 s `viewer_open` timeout. The
-  open→subscribe append window is closed by `catch_up_after_subscribe`. Tests injecting synthetic watcher events must
-  call `wait_for_watcher_subscribed()` first. See [DETAILS.md](DETAILS.md) § "Gotchas (tail mode)".
+  `fseventsd`-bound (seconds under load), so inlining risks the 2 s `viewer_open` timeout. The open→subscribe append
+  window is closed by `catch_up_after_subscribe`. Tests injecting synthetic watcher events must call
+  `wait_for_watcher_subscribed()` first. See `DETAILS.md` § "Gotchas (tail mode)".
 - **Drain-and-swap-under-lock protocol** for both the ByteSeek→LineIndex upgrade and the encoding rebuild: a `Grew`
   event arriving mid-rebuild would be silently dropped, so it queues into `session.pending_grew` under one lock the
   watcher writers also hold. The tail-extend race re-checks the backend `Arc` with `Arc::ptr_eq` after the extend,
@@ -35,10 +35,10 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
   rebuilds replace the backend without blocking the `get_lines` read path. Each backend is immutable.
 - **`SESSIONS` is freed on BOTH close paths.** The titlebar-X path never fires `viewer_close`; it's covered by a
   `WindowEvent::Destroyed` branch in `lib.rs::on_window_event` for `viewer-*` labels (via `WINDOW_TO_SESSION`) — else
-  titlebar-closed viewers leak sessions. The `cmdr-media://` token is dropped at this same choke
-  point (`media::drop_token`); don't drop it elsewhere, or a closed viewer leaks a live token mapping a path. The scheme
-  handler serves `Content-Type` from stored magic bytes (never the extension), runs its OWN `spawn_blocking` + timeout,
-  and 404s an unknown token. See [DETAILS.md](DETAILS.md) § "Media rendering".
+  titlebar-closed viewers leak sessions. The `cmdr-media://` token is dropped at this same choke point
+  (`media::drop_token`); don't drop it elsewhere, or a closed viewer leaks a live token mapping a path. The scheme handler
+  serves `Content-Type` from stored magic bytes (never the extension), runs its OWN `spawn_blocking` + timeout, and 404s
+  an unknown token. See `DETAILS.md` § "Media rendering".
 - **`search_cancel` must not null `session.search`**: the cancel flag is where the search thread writes `Cancelled`;
   nulling first lands the write in a dropped state and `search_poll` returns `Idle`.
 - **`SearchMatch.column` / `.length` are UTF-16 code units** (match JS `String.substring()`), avoiding highlight
@@ -51,7 +51,8 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
   the per-line loop (not just between chunks), so concurrent reads don't race a shared flag.
 - **Never open an archive-inner path (`/…/foo.zip/inner`) via `std::fs` here.** The viewer core is `std::fs`-only, so
   `open_session` routes such a path through `archive_extract` (bounded temp-extract, deleted on close via
-  `ViewerSession.extract_cleanup`); the cap refuses BEFORE extraction (zip-bomb guard). See [DETAILS.md](DETAILS.md)
-  § "Preview inside an archive".
+  `ViewerSession.extract_cleanup`); the cap refuses BEFORE extraction (zip-bomb guard). See `DETAILS.md` § "Preview
+  inside an archive".
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

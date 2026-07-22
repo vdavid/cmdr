@@ -1,13 +1,16 @@
 # Network SMB support details
 
 Pull-tier docs for `src-tauri/src/network/`: architecture, flows, and decision rationale. Must-know invariants and
-gotchas live in [CLAUDE.md](CLAUDE.md).
+gotchas live in `CLAUDE.md`.
 
 Discover, browse, and mount SMB network shares. Works on macOS and Linux.
 
-Frontend counterpart: [`apps/desktop/src/lib/file-explorer/network/CLAUDE.md`](../../../src/lib/file-explorer/network/CLAUDE.md) for the network browser, share picker, login form, and reconnect-manager state.
+Frontend counterpart: `apps/desktop/src/lib/file-explorer/network/CLAUDE.md` for the network browser, share picker,
+login form, and reconnect-manager state.
 
-Reference: [`benchmarks/smb/CLAUDE.md`](../../../../../benchmarks/smb/CLAUDE.md) is a standalone throughput benchmark of the third-party `smb` (smb-rs) crate, the alternative we measured before standardizing on the in-house `smb2`. It has its own `Cargo.toml` and isn't part of the app build.
+Reference: `benchmarks/smb/CLAUDE.md` is a standalone throughput benchmark of the third-party `smb` (smb-rs) crate,
+the alternative we measured before standardizing on the in-house `smb2`. It has its own `Cargo.toml` and isn't part
+of the app build.
 
 ## Architecture
 
@@ -117,7 +120,7 @@ exists only as **private SPI** (`SMBClient.framework`'s `SMBOpenServerEx`, no pu
 all**: it lives inside the `/usr/bin/smbutil` binary, so we'd link a fragile private framework for auth and still
 reimplement enumeration ourselves. Since smb2 already owns that domain (in supported, cross-platform Rust), fixing the
 root cause there is the cleaner path. Full evidence (disassembly, SDK header grep, in-memory-auth probe against the
-Docker containers, effort estimate): [`docs/notes/spike-native-smb-share-enumeration.md`](../../../../../docs/notes/spike-native-smb-share-enumeration.md).
+Docker containers, effort estimate): `docs/notes/spike-native-smb-share-enumeration.md`.
 
 Landing the smb2 fix also let us **drop the leaky macOS authed-smbutil path** (the `//user:password@host` URL leaked the
 cleartext password into `ps`-readable argv). See the "smbutil / smbclient fallback" credential-channel note below.

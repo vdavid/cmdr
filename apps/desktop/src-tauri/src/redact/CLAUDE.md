@@ -59,4 +59,4 @@ within one bundle but not across bundles. The builder mints a fresh 16-byte rand
 `mod.rs` (public API + composed regex + rewriters), `tests.rs` (per-pattern, idempotency, golden corpus, histogram),
 `fixtures/log-corpus.txt` + `.redacted.txt` (golden snapshot).
 
-Full details (decision rationale, how to add a pattern, regex verbose-mode notes): [DETAILS.md](DETAILS.md).
+Full details (decision rationale, how to add a pattern, regex verbose-mode notes): `DETAILS.md`.

@@ -15,7 +15,7 @@ filtering**: the file target is locked at Debug, the terminal defaults to Info.
   100 ms into a lock-free atomic (DETAILS § "RAM gauge")
 - **`tests.rs`**: pruner / listing helper unit tests
 
-Dispatch-tree shape, why fern + file-rotate, timestamp formats, and decisions: [DETAILS.md](DETAILS.md).
+Dispatch-tree shape, why fern + file-rotate, timestamp formats, and decisions: `DETAILS.md`.
 
 ## Adding log calls
 

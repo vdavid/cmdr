@@ -58,12 +58,12 @@ and classification (`transfer-error-messages.ts`). There is no `friendly_error` 
   `raw_detail` technical string.
 - **FE gains** (`src/lib/errors/`): all titles / explanations / suggestions, the provider-suggestion table, provider
   display / app names, the reason / git / provider message factories, the markdown escaper (the XSS boundary), and the
-  `system_strings` pane-name interpolation. See [`src/lib/errors/CLAUDE.md`](../../../../../src/lib/errors/CLAUDE.md)
+  `system_strings` pane-name interpolation. See `apps/desktop/src/lib/errors/CLAUDE.md`
   and its `DETAILS.md`.
 
 ## Adding a new error message
 
-Rust side (the FE side is in [`src/lib/errors/DETAILS.md`](../../../../../src/lib/errors/DETAILS.md)):
+Rust side (the FE side is in `apps/desktop/src/lib/errors/DETAILS.md`):
 
 1. Add a `ListingErrorReason` variant in `mod.rs` with its typed params (model params as variant fields). Keep the
    variant name in lockstep with the TS `ListingErrorReason` union member.

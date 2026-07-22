@@ -1,7 +1,7 @@
 # Cross-cutting architecture patterns
 
 Deep reference for how Cmdr's subsystems interact. Read the relevant section when working on navigation, file
-operations, volumes, or cancellation. For the subsystem map, see [architecture.md](architecture.md).
+operations, volumes, or cancellation. For the subsystem map, see `architecture.md`.
 
 ## Data flow: frontend <> backend
 

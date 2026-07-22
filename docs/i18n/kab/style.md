@@ -1,8 +1,7 @@
 # Kabyle (kab) translation style guide
 
-Working notes for translating Cmdr into Kabyle (Taqbaylit). Read [`README.md`](../README.md) for how this fits the
-translation process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes
-carry into Kabyle.
+Working notes for translating Cmdr into Kabyle (Taqbaylit). Read `../README.md` for how this fits the translation
+process, and the app-wide `docs/style-guide.md` for the English voice these notes carry into Kabyle.
 
 `kab` is the language base. The reference pile has only GNOME Nautilus for Kabyle (about 700 translated strings, Tier
 3); no macOS, no Microsoft, no Xfce (`_ignored/i18n/kab/`). Kabyle is a Berber (Amazigh) language of Algeria with a
@@ -95,13 +94,12 @@ for the check; a native reviewer confirms which counts truly share a form. Write
   hardcode separators in a string.
 - **Length.** Kabyle runs roughly English-length; overflow-check against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
-  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in `docs/guides/i18n-translation.md` and
   `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/kab/`; recipes in
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/kab/`; recipes in
 `docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

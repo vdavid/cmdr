@@ -1,7 +1,7 @@
 # Indexing tests details
 
 Read this before any non-trivial work in `indexing/tests/`: editing, planning, reorganizing, or advising. Must-know
-guardrails are in [CLAUDE.md](CLAUDE.md).
+guardrails are in `CLAUDE.md`.
 
 ## How to test
 
@@ -57,7 +57,7 @@ during cancel) is the trickiest backend state machine to test cleanly. Four rule
    plus the hand-installed `Initializing` instance cover the race-decision logic; the rest stays under integration / E2E
    coverage.
 
-See [docs/testing.md](../../../../../../docs/testing.md) for the project-wide testing playbook.
+See `docs/testing.md` for the project-wide testing playbook.
 
 ## Testing external drives (synthetic disk images only)
 

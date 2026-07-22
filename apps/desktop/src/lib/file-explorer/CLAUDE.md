@@ -7,9 +7,8 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
 - `selection/`, `navigation/`, `rename/`, `operations/`, `views/`, `tabs/`, `git/`, `network/`, `quick-look/`: the
   feature subdirectories (each has its own colocated docs).
 - `pane/`: `DualPaneExplorer` + `FilePane` + dialog manager + per-pane state. Owns type-to-jump, live disk space, the
-  `navigate()` transaction, volume capabilities, and the error-display pipeline (see
-  [`pane/CLAUDE.md`](pane/CLAUDE.md)).
-- Sorting and the command palette have no own directory; their detail is in [DETAILS.md](DETAILS.md).
+  `navigate()` transaction, volume capabilities, and the error-display pipeline (see `pane/CLAUDE.md`).
+- Sorting and the command palette have no own directory; their detail is in `DETAILS.md`.
 
 ## Must-knows
 
@@ -35,12 +34,11 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
   `listing-start` and `listing-complete`: a landed listing whose path isn't on the pane's current volume is dropped. It
   lives in `pane/navigate.ts::commitPathFromListing`; if you add a virtual-volume namespace with a non-filesystem
   prefix, extend the explicit prefix branch there. (The per-pane token is a separate, narrower mechanism — the
-  same-token self-re-entry rule.) Full contract in [DETAILS.md](DETAILS.md) § Gotchas and
-  [`pane/CLAUDE.md`](pane/CLAUDE.md).
+  same-token self-re-entry rule.) Full contract in `DETAILS.md` § Gotchas and `pane/CLAUDE.md`.
 - **Error/provider WORDS live on the FE** (`$lib/errors/`), error CLASSIFICATION in Rust. Rust ships a typed, word-free
   `ListingError` (reason + params + category + provider); the FE factories render the copy. To change wording, edit
   `$lib/errors/` (and keep the parity test green); to add a reason/provider, change both sides. See
   [`$lib/errors/CLAUDE.md`](../errors/CLAUDE.md).
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

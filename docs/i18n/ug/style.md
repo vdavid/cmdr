@@ -1,8 +1,7 @@
 # Uyghur (ug) translation style guide
 
-Working notes for translating Cmdr into Uyghur. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Uyghur.
+Working notes for translating Cmdr into Uyghur. Read `../README.md` for how this fits the translation process, and the
+app-wide `docs/style-guide.md` for the English voice these notes carry into Uyghur.
 
 Uyghur (`ug`) is a Turkic, agglutinative language. The BCP-47 base tag `ug` resolves in CLDR to `ug-Arab-CN`: the
 Perso-Arabic Uyghur Ereb Yéziqi (UEY), written right to left. That is the script Cmdr should target (see Decision
@@ -165,11 +164,10 @@ string length. Overflow-check against the pseudolocale as usual.
 Catalog-level, not Uyghur-specific, but easy to miss: double every apostrophe in a value (`'` becomes `''`; ICU treats a
 lone `'` as an escape and silently swallows text), and keep every `{placeholder}` and `<tag>` verbatim. For Uyghur,
 remember that bidi isolation marks go AROUND a placeholder, not inside its braces. Full rules: the agent-handoff block
-in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
-`apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+in `docs/guides/i18n-translation.md` and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/ug/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/ug/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

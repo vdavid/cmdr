@@ -1,7 +1,7 @@
 # Bodo (brx) translation style guide
 
-Working notes for translating Cmdr into Bodo (बड़ो / बर'). Read [`README.md`](../README.md) for how this fits the
-translation process.
+Working notes for translating Cmdr into Bodo (बड़ो / बर'). Read `../README.md` for how this fits the translation
+process.
 
 `brx` is the language base, written in the Devanagari script. Bodo is a Sino-Tibetan language, one of India's scheduled
 languages, spoken mainly in Assam. The reference pile has only the Microsoft style guide for `brx` (Tier 2); no macOS,
@@ -71,7 +71,7 @@ shows up in the pronoun/verb; write both count branches with correct agreement. 
   digits; let the formatter decide, don't hardcode.
 - **No capitalization** (see Decision points): don't apply English casing rules.
 - **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  `docs/guides/i18n-translation.md`.
 
 ## Decisions to confirm with David
 
@@ -81,6 +81,6 @@ shows up in the pronoun/verb; write both count branches with correct agreement. 
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/brx/`; recipes in
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/brx/`; recipes in
 `docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

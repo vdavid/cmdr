@@ -1,11 +1,10 @@
 # File viewer module (frontend)
 
 Opens files in a read-only viewer with instant load for any file size, virtual scrolling, and background search. Full
-details (decisions, the full gotcha catalog): [DETAILS.md](DETAILS.md).
+details (decisions, the full gotcha catalog): `DETAILS.md`.
 
-Backend counterpart: [`src-tauri/src/file_viewer/CLAUDE.md`](../../../src-tauri/src/file_viewer/CLAUDE.md) for the three
-backend strategies, session lifecycle, and background search. The viewer route shell:
-[`src/routes/viewer/CLAUDE.md`](../../routes/viewer/CLAUDE.md).
+Backend counterpart: `apps/desktop/src-tauri/src/file_viewer/CLAUDE.md` for the three backend strategies, session
+lifecycle, and background search. The viewer route shell: `apps/desktop/src/routes/viewer/CLAUDE.md`.
 
 ## Key files
 
@@ -43,11 +42,11 @@ also silences the unrendered ones, which then show raw bytes with no nudge.
 - **Background search**: frontend calls `search_start`, polls `search_poll` until done or canceled.
 - **Multiple viewers**: each window has a unique label (`viewer-${timestamp}`). No limit.
 
-Rationale for each in [DETAILS.md](DETAILS.md) § Key decisions.
+Rationale for each in `DETAILS.md` § Key decisions.
 
 ## Gotchas (WebKit / load-bearing)
 
-These guard against macOS WebKit crashes and toggle loops. Keep them; the why is in [DETAILS.md](DETAILS.md).
+These guard against macOS WebKit crashes and toggle loops. Keep them; the why is in `DETAILS.md`.
 
 - **Double `requestAnimationFrame` before `window.close()`.** WebKit on macOS can crash if you destroy a `WebPageProxy`
   while it recalculates content insets; one rAF isn't enough (the current frame must complete AND the next start). Also
@@ -60,7 +59,7 @@ These guard against macOS WebKit crashes and toggle loops. Keep them; the why is
   toggle loop.
 
 Other behavior gotchas (window position not remembered across sessions, lossy-UTF-8 binary display, byte-offset → UTF-16
-search conversion, `needsFetch()` three-point sampling): [DETAILS.md](DETAILS.md) § Gotchas.
+search conversion, `needsFetch()` three-point sampling): `DETAILS.md` § Gotchas.
 
 ## Development
 

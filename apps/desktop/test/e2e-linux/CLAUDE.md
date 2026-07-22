@@ -3,7 +3,7 @@
 Docker setup for the Playwright E2E tests on Linux. The specs live in `../e2e-playwright/` (shared with macOS; see
 `e2e-playwright/CLAUDE.md`); this directory holds only the Docker infra. `e2e-linux.sh` builds the Tauri binary in
 Docker, starts the SMB containers, launches the E2E container, and runs `npx playwright test`. Architecture, build
-caching, and the investigations behind every gotcha below are in [DETAILS.md](DETAILS.md).
+caching, and the investigations behind every gotcha below are in `DETAILS.md`.
 
 ## Running
 
@@ -56,5 +56,5 @@ pnpm test:e2e:linux:vnc                # VNC mode with hot reload (pnpm dev)
 Base-image tar persistence and build-volume bind-mounts: DETAILS.md § Build caching. David's UTM Ubuntu VM for fast
 Linux-only iteration (setup, SSH loop, disk cleanup, the half-configured-D-Bus gotcha): DETAILS.md § Ubuntu test VM.
 
-Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

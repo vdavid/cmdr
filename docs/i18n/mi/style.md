@@ -1,8 +1,7 @@
 # Māori (mi) translation style guide
 
-Working notes for translating Cmdr into te reo Māori. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Māori.
+Working notes for translating Cmdr into te reo Māori. Read `../README.md` for how this fits the translation process, and
+the app-wide `docs/style-guide.md` for the English voice these notes carry into Māori.
 
 Unusually for a low-resource language, te reo Māori has strong real localization: Microsoft ships a Windows/Office
 Language Interface Pack plus a full style guide and a maintained terminology base, all built in accordance with Te Taura
@@ -94,11 +93,11 @@ the categories this language needs.
 ## ICU mechanics
 
 Catalog-level, language-agnostic: double every apostrophe in a value (`'` → `''`), and keep every `{placeholder}` and
-`<tag>` verbatim. Full rules: the agent-handoff block in
-[`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+`<tag>` verbatim. Full rules: the agent-handoff block in `docs/guides/i18n-translation.md` and
+`apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/mi/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/mi/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

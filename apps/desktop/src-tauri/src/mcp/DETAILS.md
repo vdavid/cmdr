@@ -1,7 +1,7 @@
 # MCP server details
 
 Pull-tier docs for `src-tauri/src/mcp/`: architecture, flows, and decision rationale. Must-know invariants and gotchas
-live in [CLAUDE.md](CLAUDE.md).
+live in `CLAUDE.md`.
 
 ## Purpose
 
@@ -67,8 +67,7 @@ agent-only table**). Two per-entry dimensions express the split:
   `list_dir`, `largest_dirs`, `important_folders`, `folder_importance`, `list_volumes`) plus `operations_list` /
   `operations_get`, shared into `[AiClient, Agent]` because their read schemas fit unchanged. Adding those didn't touch
   the ai-client wire snapshot (agent-only entries are filtered out of `get_all_tools()`; a shared entry stays byte-
-  identical there). Agent handlers/schemas live under [`agent/tools`](../agent/tools/CLAUDE.md), named by path from
-  the entry.
+  identical there). Agent handlers/schemas live under `../agent/tools/CLAUDE.md`, named by path from the entry.
 - **`access`** (`Read` / `Propose` / `Write`): whether the tool reads, asks, or mutates. `Write` covers any mutation of
   the filesystem OR app state — nav, cursor, selection, tabs, dialogs, settings, connect/eject, file ops,
   rollback-cancel; when in doubt, `Write`. Only genuine read surfaces (`search`, `ai_search`, `await`,
@@ -176,11 +175,11 @@ The tool handlers and the ack contract live in `executor/`. Dispatch itself (`ex
 `pub(crate)` (a sibling module reaching their `pub` handler fns). The category split (`app.rs`, `view.rs`, `nav.rs`,
 `file_ops.rs`, `dialogs.rs`, `async_tools.rs`, `search.rs`, `downloads.rs`), the `AckSignal` variants and budgets, and
 the `mcp_round_trip` pattern for tools that need an explicit FE response are all documented in
-[`executor/CLAUDE.md`](executor/CLAUDE.md). Read that before adding or modifying a tool handler.
+`executor/CLAUDE.md`. Read that before adding or modifying a tool handler.
 
 ### Configuration (`config.rs`)
 
-Constants and configuration for the MCP server (port, bind address, transport settings). The default port for users who pin (setting `developer.mcpPort` to non-zero) is build-mode-dependent: 19224 in prod, 19225 in dev. Different defaults so a dev session and an installed prod build don't collide when both pin. With the post-instance-isolation default of `developer.mcpPort = 0`, the server binds ephemeral and these constants only matter as the pinned-mode fallback. Mirrored in the FE registry; both are in 10000–29999 per AGENTS.md. See [`/docs/tooling/instance-isolation.md`](../../../../../docs/tooling/instance-isolation.md) for the cross-resource view.
+Constants and configuration for the MCP server (port, bind address, transport settings). The default port for users who pin (setting `developer.mcpPort` to non-zero) is build-mode-dependent: 19224 in prod, 19225 in dev. Different defaults so a dev session and an installed prod build don't collide when both pin. With the post-instance-isolation default of `developer.mcpPort = 0`, the server binds ephemeral and these constants only matter as the pinned-mode fallback. Mirrored in the FE registry; both are in 10000–29999 per AGENTS.md. See `docs/tooling/instance-isolation.md` for the cross-resource view.
 
 ### Dialog state (`dialog_state.rs`)
 

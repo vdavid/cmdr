@@ -10,7 +10,7 @@ module owns only the persistent history store and the AI translation pipeline. I
 - **`history.rs`**: `SelectionHistoryEntry`, atomic JSON read/write, canonical-key dedupe, cap eviction, schema-version
   quarantine. Re-exports `HistoryMode` and `HistoryFilters` from `crate::search::history` so both consumers share one
   mode/filter shape.
-- **`ai/`**: NL → glob/regex translation, cloud-only. See [`ai/CLAUDE.md`](ai/CLAUDE.md).
+- **`ai/`**: NL → glob/regex translation, cloud-only. See `ai/CLAUDE.md`.
 
 ## Must-knows
 
@@ -46,4 +46,4 @@ typed wrappers in `apps/desktop/src/lib/tauri-commands/selection.ts`. Dialog fro
 `apps/desktop/src/lib/selection-dialog/`.
 
 Full details (IPC signatures, AI pipeline steps, the why behind separate files and the re-export):
-[DETAILS.md](DETAILS.md).
+`DETAILS.md`.

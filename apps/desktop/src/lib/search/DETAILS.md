@@ -1,7 +1,7 @@
 # Search details
 
 Pull-tier docs for `lib/search/`: architecture, flows, and decision rationale. Must-know invariants and gotchas live in
-[CLAUDE.md](CLAUDE.md).
+`CLAUDE.md`.
 
 ## i18n
 
@@ -15,12 +15,12 @@ consumers (`command-dispatch.ts`, `transfer-entry.ts`) import it by name. Parity
 Backend: `src-tauri/src/search/` (index, engine, query, AI pipeline), `src-tauri/src/commands/search.rs` (thin IPC
 wrappers).
 
-This dialog is the first consumer of the shared Query UI primitives in [`lib/query-ui/`](../query-ui/CLAUDE.md): unified
-query bar, mode chips, AI prompt strip, filter chips strip, virtualized results table, recent-items footer + popover,
-the `createQueryFilterState()` factory that owns cross-consumer fields, and the in-dialog keyboard contract.
-Search-specific concerns (snapshot store, virtual volume, MCP open path, "Open in pane", index lifecycle, scope smart
-fallback) stay here. Selection (see `lib/selection-dialog/`) is the second consumer; both wrap `QueryDialog` and share
-the same primitives.
+This dialog is the first consumer of the shared Query UI primitives in `../query-ui/CLAUDE.md`: unified query bar, mode
+chips, AI prompt strip, filter chips strip, virtualized results table, recent-items footer + popover, the
+`createQueryFilterState()` factory that owns cross-consumer fields, and the in-dialog keyboard contract. Search-specific
+concerns (snapshot store, virtual volume, MCP open path, "Open in pane", index lifecycle, scope smart fallback) stay
+here. Selection (see `lib/selection-dialog/`) is the second consumer; both wrap `QueryDialog` and share the same
+primitives.
 
 Dialog dimensions: `max-width: min(1080px, 80vw)`, `max-height: 80vh`. The dialog grows up to 1080 px wide but shrinks
 to 80vw on smaller windows, and the results region absorbs whatever vertical room is left.
@@ -55,19 +55,17 @@ to 80vw on smaller windows, and the results region absorbs whatever vertical roo
   come from the per-kind table (`lib/file-explorer/pane/volume-capabilities.ts`); there's no Search-specific shim
 - **`capabilities.test.ts`**: Pins the toast string
 
-Shared components, helpers, and tests live in [`lib/query-ui/`](../query-ui/CLAUDE.md) — Search and Selection both
-import the unified components (`QueryBar`, `ModeChips`, `AiPromptStrip`, `FilterChips`, `PathPills`, `SearchRowMenu`,
-`QueryResults`, `EmptyState`, the `recent-items/` family, and the `filter-chip-state` / `filter-popover-helpers` /
-`path-pills-layout` helpers). The chip + popover primitives are the app-wide `$lib/ui/Chip` / `$lib/ui/Popover` /
-`$lib/ui/FilterPopover`.
+Shared components, helpers, and tests live in `../query-ui/CLAUDE.md` — Search and Selection both import the unified
+components (`QueryBar`, `ModeChips`, `AiPromptStrip`, `FilterChips`, `PathPills`, `SearchRowMenu`, `QueryResults`,
+`EmptyState`, the `recent-items/` family, and the `filter-chip-state` / `filter-popover-helpers` / `path-pills-layout`
+helpers). The chip + popover primitives are the app-wide `$lib/ui/Chip` / `$lib/ui/Popover` / `$lib/ui/FilterPopover`.
 
 ## Search wrapper
 
 `SearchDialog.svelte` no longer carries the dialog orchestration. The overlay, keyboard contract, IME guard, auto-apply
 gates, `lastDialogEvent` writes, the `⏎` ownership swap, the title bar, the chip strip, the AI prompt strip, the results
-table, the recent-items footer + popover, and the empty state all live in
-[`lib/query-ui/QueryDialog.svelte`](../query-ui/QueryDialog.svelte). The Search wrapper builds a
-[`QueryDialogConfig`](../query-ui/query-dialog-config.ts) for Search and mounts QueryDialog with it.
+table, the recent-items footer + popover, and the empty state all live in `../query-ui/QueryDialog.svelte`. The Search
+wrapper builds a [`QueryDialogConfig`](../query-ui/query-dialog-config.ts) for Search and mounts QueryDialog with it.
 
 What the wrapper still owns (Search-specific glue):
 
@@ -135,19 +133,19 @@ derive from `mode` (`regex => regex`, everything else => glob).
 
 The state is split into two factories so Search and Selection can each own an instance:
 
-- **Cross-consumer core**: [`lib/query-ui/query-filter-state.svelte.ts`](../query-ui/query-filter-state.svelte.ts) —
-  factory `createQueryFilterState()`. Owns `query`, `mode`, size + date filters, `caseSensitive`, `lastAiPrompt`,
-  `lastAiCaveat`, per-mode `handTyped` buffers, `results`, `totalCount`, `cursorIndex`, `isSearching`,
-  `lastDialogEvent`, `runOnMount`, `lastRunQuery`. See [`lib/query-ui/CLAUDE.md`](../query-ui/CLAUDE.md).
-- **Search-only extras**: [`search-extras-state.svelte.ts`](search-extras-state.svelte.ts) — factory
-  `createSearchExtrasState()`. Owns `scope`, `excludeSystemDirs`, `isIndexReady`, `indexEntryCount`, `isIndexAvailable`,
-  `lastAiLabel`, `lastAiPattern`, `lastAiPatternKind`. Selection doesn't carry these (no whole-drive index, no
-  Search-style scope row, no snapshot breadcrumb, no Pattern chip).
-- **`buildSearchQuery()`** lives in [`build-search-query.ts`](build-search-query.ts) and layers `excludeSystemDirs` onto
+- **Cross-consumer core**: `../query-ui/query-filter-state.svelte.ts` — factory `createQueryFilterState()`. Owns
+  `query`, `mode`, size + date filters, `caseSensitive`, `lastAiPrompt`, `lastAiCaveat`, per-mode `handTyped` buffers,
+  `results`, `totalCount`, `cursorIndex`, `isSearching`, `lastDialogEvent`, `runOnMount`, `lastRunQuery`. See
+  `../query-ui/CLAUDE.md`.
+- **Search-only extras**: `search-extras-state.svelte.ts` — factory `createSearchExtrasState()`. Owns `scope`,
+  `excludeSystemDirs`, `isIndexReady`, `indexEntryCount`, `isIndexAvailable`, `lastAiLabel`, `lastAiPattern`,
+  `lastAiPatternKind`. Selection doesn't carry these (no whole-drive index, no Search-style scope row, no snapshot
+  breadcrumb, no Pattern chip).
+- **`buildSearchQuery()`** lives in `build-search-query.ts` and layers `excludeSystemDirs` onto
   `core.buildBaseSearchQuery()`.
 - **`recordAiTranslation` is split**: the core writes ONLY to `handTyped[mode]`; the extras' `recordAiPatternAndLabel`
-  writes the Pattern chip + label slots. The Search façade calls both in sequence. See
-  [`lib/query-ui/DETAILS.md`](../query-ui/DETAILS.md) § "`recordAiTranslation` is split".
+  writes the Pattern chip + label slots. The Search façade calls both in sequence. See `../query-ui/DETAILS.md` §
+  "`recordAiTranslation` is split".
 
 `lib/search/search-state.svelte.ts` is a transparent façade re-exporting the legacy named functions that the Search
 dialog imports. It also exports `searchQueryState` (the core instance) so prop-driven components like `FilterChips` can
@@ -155,7 +153,7 @@ be wired to Search's instance without going through the per-setter façade.
 
 ## Search-specific UI behavior
 
-Search-only contracts (cross-consumer ones live in [`lib/query-ui/CLAUDE.md`](../query-ui/CLAUDE.md)):
+Search-only contracts (cross-consumer ones live in `../query-ui/CLAUDE.md`):
 
 - The Search façade's `recordAiTranslation` (composed call) overwrites the matching hand-typed buffer
   (`handTyped.filename` for a glob, `handTyped.regex` for a regex) so a fresh AI run clobbers the user's earlier
@@ -222,8 +220,7 @@ User presses ⌘F
 ```
 
 The shared parts of this flow (debounce / IME guard / cursor model / Press-Enter hint / `runOnMount` / `lastDialogEvent`
-/ `deriveEnterAction`) live in [`lib/query-ui/CLAUDE.md`](../query-ui/CLAUDE.md) — Search just sets up the lifecycle
-around them.
+/ `deriveEnterAction`) live in `../query-ui/CLAUDE.md` — Search just sets up the lifecycle around them.
 
 ## Search-specific patterns
 
@@ -437,8 +434,8 @@ state.
 
 - [AI search eval history](../../../../../docs/notes/ai-search-eval-history.md) -- Four rounds of prompt tuning for the
   AI natural language to structured query translation, with a 30-query test catalog and lessons learned.
-- [`lib/query-ui/CLAUDE.md`](../query-ui/CLAUDE.md) -- Cross-consumer query UI primitives (the bar, mode chips, filter
-  chips, results list, recent-items, the filter-state factory, the shared keyboard contract, gotchas, and decisions).
+- `../query-ui/CLAUDE.md` -- Cross-consumer query UI primitives (the bar, mode chips, filter chips, results list,
+  recent-items, the filter-state factory, the shared keyboard contract, gotchas, and decisions).
 
 ## Dependencies
 
@@ -449,5 +446,5 @@ state.
 - `$lib/indexing` -- `isVolumeScanning(ROOT_VOLUME_ID)`, `getEntriesScanned` (LOCAL index-build progress for the
   unavailable state; keyed to `root` so a network scan doesn't flip the label while root's count stays 0)
 - `$lib/settings` -- `getSetting('ai.provider')` (AI chip visibility, ⌘ shortcut numbering)
-- Shared primitives from [`lib/query-ui/`](../query-ui/CLAUDE.md)
+- Shared primitives from `../query-ui/CLAUDE.md`
 - CSS variables from `app.css`

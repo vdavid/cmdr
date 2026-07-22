@@ -24,8 +24,7 @@
   no cache. `CMDR_E2E_START_PATH` tells the app where to open; `recreateFixtures()` runs before tests for isolation.
 - **Virtual devices for hardware-free E2E**: MTP via the `virtual-mtp` feature (helpers in `e2e-shared/mcp-client.ts`,
   `mtp-fixtures.ts`); SMB via the `smb-e2e` feature pointing at Docker SMB containers (`e2e-shared/smb-fixtures.ts`).
-- ❌ **Don't drive the running Tauri app with a browser**: use the MCP servers (see
-  [`/docs/tooling/mcp.md`](../../../docs/tooling/mcp.md)).
+- ❌ **Don't drive the running Tauri app with a browser**: use the MCP servers (see `docs/tooling/mcp.md`).
 - **Coverage allowlist is a last resort**: extract pure functions and test those; only allowlist a genuinely untestable
   API, naming the specific one in the reason.
 
@@ -49,4 +48,4 @@ left/                         right/  (empty)
 - `e2e-playwright/CLAUDE.md`: Playwright suite (macOS + Linux).
 - `e2e-linux/CLAUDE.md`: Docker infrastructure for Linux E2E.
 
-Full details (the `sleep 3` flake case study): [DETAILS.md](DETAILS.md).
+Full details (the `sleep 3` flake case study): `DETAILS.md`.

@@ -1,7 +1,7 @@
 # Gujarati (gu) translation style guide
 
-Working notes for translating Cmdr into Gujarati (ગુજરાતી). Read [`README.md`](../README.md) for how this fits the
-translation process.
+Working notes for translating Cmdr into Gujarati (ગુજરાતી). Read `../README.md` for how this fits the translation
+process.
 
 This is the language base (`gu`), the universal Gujarati set. Gujarati is written in the Gujarati script (an abugida,
 Brahmic family) and is the language of Gujarat, India; a single standard, no region variant needed.
@@ -80,7 +80,7 @@ covers n=1 (and 0..1 ranges for some uses), so write the `other` branch to read 
 - **Dates come from the formatter layer.** Never hardcode.
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
 - **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  `docs/guides/i18n-translation.md`.
 
 ## Decisions to confirm with David
 
@@ -88,6 +88,6 @@ covers n=1 (and 0..1 ranges for some uses), so write the `other` branch to read 
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/gu/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/gu/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

@@ -2,9 +2,8 @@
 
 The file viewer opens files in a separate Tauri window with virtual scrolling and text search.
 
-Backend: [`file_viewer/CLAUDE.md`](../../../src-tauri/src/file_viewer/CLAUDE.md) (three strategies, session
-orchestration, background search). Reusable FE primitives:
-[`lib/file-viewer/CLAUDE.md`](../../lib/file-viewer/CLAUDE.md).
+Backend: `apps/desktop/src-tauri/src/file_viewer/CLAUDE.md` (three strategies, session orchestration, background
+search). Reusable FE primitives: `apps/desktop/src/lib/file-viewer/CLAUDE.md`.
 
 ## Module map
 
@@ -12,12 +11,12 @@ orchestration, background search). Reusable FE primitives:
 scroll, search, line-heights, text-width, tail, media, copy, and autoscroll, plus selection/caret/segment helpers and
 the `createViewerKeyboard` keydown router. Media renders inline via `MediaImageView` / `MediaPdfView`; presentational
 parts are `ViewerToolbar`, `ViewerStatusBar`, `ViewerContextMenu`, `ViewModePicker`, `EncodingPicker`,
-`ViewerCopyDialogs`, and `ViewerReloadToast`. Full per-file inventory and the media flow: [DETAILS.md](DETAILS.md) §
-"Module map". Locate symbols via `codegraph_search`, not this list.
+`ViewerCopyDialogs`, and `ViewerReloadToast`. Full per-file inventory and the media flow: `DETAILS.md` § "Module map".
+Locate symbols via `codegraph_search`, not this list.
 
 ## Must-knows
 
-Each line is a break-if-ignored invariant; the named [DETAILS.md](DETAILS.md) section carries the why.
+Each line is a break-if-ignored invariant; the named `DETAILS.md` section carries the why.
 
 - **Composables take callback-based deps (getters), never raw `$state`** (passing `$state` loses reactivity). Effects
   live on the page but delegate to `run*Effect()` methods. (§ Architecture)
@@ -56,4 +55,4 @@ Each line is a break-if-ignored invariant; the named [DETAILS.md](DETAILS.md) se
   else rough-scroll + a converge loop).** Don't collapse them into an unconditional rough-scroll: that flings an
   on-screen match to its line top on every Enter. (§ "Scroll-to-match")
 
-Read [DETAILS.md](DETAILS.md) before any non-trivial work here: editing, planning, reorganizing, or advising.
+Read `DETAILS.md` before any non-trivial work here: editing, planning, reorganizing, or advising.

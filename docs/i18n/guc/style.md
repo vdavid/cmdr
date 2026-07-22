@@ -1,7 +1,7 @@
 # Wayuu (guc) translation style guide
 
-Working notes for translating Cmdr into Wayuu (Wayuunaiki). Read [`README.md`](../README.md) for how this fits the
-translation process.
+Working notes for translating Cmdr into Wayuu (Wayuunaiki). Read `../README.md` for how this fits the translation
+process.
 
 This is the language base (`guc`), Wayuunaiki, the Arawakan language of the Wayuu people of the La Guajira peninsula
 (northern Colombia and northwestern Venezuela). It's an indigenous, low-resource language for software purposes.
@@ -69,8 +69,7 @@ Confidence: confirmed (categories); tentative (grammar).
 
 - **The apostrophe (saltillo) is a real letter** in Wayuunaiki orthography (glottal stop), e.g. "oo'ulawaa". This
   collides with ICU's apostrophe escaping: double EVERY apostrophe in ICU values (`'` becomes `''`), which matters a lot
-  here because the saltillo is frequent. Full rules:
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  here because the saltillo is frequent. Full rules: `docs/guides/i18n-translation.md`.
 - **Numbers and dates come from the formatter layer.** Never hardcode.
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
 
@@ -83,6 +82,6 @@ Confidence: confirmed (categories); tentative (grammar).
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/guc/`; recipes in
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/guc/`; recipes in
 `docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

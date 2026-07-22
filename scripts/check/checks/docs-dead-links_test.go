@@ -222,3 +222,77 @@ func TestLocalLinkTarget(t *testing.T) {
 		}
 	}
 }
+
+func TestIsRepoPathToken(t *testing.T) {
+	tests := []struct {
+		tok  string
+		want bool
+	}{
+		{"docs/architecture.md", true},
+		{"apps/desktop/src-tauri/src/indexing/DETAILS.md", true},
+		{".claude/rules/docs.md", true},
+		{"DETAILS.md", false},                           // single segment: too close to prose like `C.md`
+		{"C.md", false},                                 // an abbreviation, not a path
+		{"and/or", false},                               // prose pair, no extension
+		{"read/write", false},                           // prose pair
+		{"scripts/check", false},                        // no extension: not verified
+		{"src/lib/foo/", false},                         // directory: not verified
+		{"apps/desktop/src-tauri/src/lib.rs", false},    // only docs are verified
+		{"~/projects-git/vdavid/smb2/AGENTS.md", false}, // another repo on this machine
+		{"/tmp/report.md", false},                       // absolute: outside the repo
+		{"file_system/.../backends/DETAILS.md", false},  // elided path
+		{"node_modules/pkg/README.md", false},           // untracked dependency
+		{"apps/x/node_modules/p/README.md", false},
+		{"pnpm check --fast", false}, // command, not a path
+		{"", false},
+	}
+	for _, tt := range tests {
+		if got := isRepoPathToken(tt.tok); got != tt.want {
+			t.Errorf("isRepoPathToken(%q) = %v, want %v", tt.tok, got, tt.want)
+		}
+	}
+}
+
+func TestRunDocsDeadLinks_BareBacktickPathMissing(t *testing.T) {
+	tmp := t.TempDir()
+	writeDeadLinkFile(t, tmp, "CLAUDE.md", "Root. Depth in `docs/gone/DETAILS.md`.")
+
+	_, err := RunDocsDeadLinks(&CheckContext{RootDir: tmp})
+	if err == nil {
+		t.Fatal("expected an error for a backtick path with no target")
+	}
+	for _, want := range []string{"docs/gone/DETAILS.md", "backtick path"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("expected %q in the error, got: %v", want, err)
+		}
+	}
+}
+
+func TestRunDocsDeadLinks_BareBacktickPathResolves(t *testing.T) {
+	tmp := t.TempDir()
+	writeDeadLinkFile(t, tmp, "CLAUDE.md", "Root. Depth in `docs/here/DETAILS.md`, sibling in `DETAILS.md`.")
+	writeDeadLinkFile(t, tmp, "docs/here/DETAILS.md", "Depth.")
+	writeDeadLinkFile(t, tmp, "DETAILS.md", "Sibling.")
+
+	if _, err := RunDocsDeadLinks(&CheckContext{RootDir: tmp}); err != nil {
+		t.Fatalf("backtick paths resolve, expected success: %v", err)
+	}
+}
+
+func TestRunDocsDeadLinks_BareBacktickPathInFenceIgnored(t *testing.T) {
+	tmp := t.TempDir()
+	writeDeadLinkFile(t, tmp, "CLAUDE.md", "Root.\n\n```md\nSee `docs/example/DETAILS.md`.\n```\n")
+
+	if _, err := RunDocsDeadLinks(&CheckContext{RootDir: tmp}); err != nil {
+		t.Fatalf("a path inside a fence is an example, expected success: %v", err)
+	}
+}
+
+func TestRunDocsDeadLinks_BareBacktickProsePairsIgnored(t *testing.T) {
+	tmp := t.TempDir()
+	writeDeadLinkFile(t, tmp, "CLAUDE.md", "Root. Handles `read/write` and `and/or`, plus `~/elsewhere/AGENTS.md`.")
+
+	if _, err := RunDocsDeadLinks(&CheckContext{RootDir: tmp}); err != nil {
+		t.Fatalf("prose pairs and out-of-repo paths are not references: %v", err)
+	}
+}

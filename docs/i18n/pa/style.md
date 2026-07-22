@@ -1,10 +1,9 @@
 # Punjabi (pa) translation style guide
 
-Working notes for translating Cmdr into Punjabi. Read [`README.md`](../README.md) for how this fits the translation
-process. Punjabi has a real SCRIPT decision (see Decision points): Gurmukhi (India side) vs Shahmukhi/Perso-Arabic
-(Pakistan side). This `pa` base targets **Gurmukhi**; a Perso-Arabic build would be a separate `pa-Arab` locale.
-References: Microsoft terminology for both scripts (`pa-Guru`, `pa-Arab`), a Microsoft style guide, and GNOME Nautilus
-(`pa`, in Gurmukhi).
+Working notes for translating Cmdr into Punjabi. Read `../README.md` for how this fits the translation process. Punjabi
+has a real SCRIPT decision (see Decision points): Gurmukhi (India side) vs Shahmukhi/Perso-Arabic (Pakistan side). This
+`pa` base targets **Gurmukhi**; a Perso-Arabic build would be a separate `pa-Arab` locale. References: Microsoft
+terminology for both scripts (`pa-Guru`, `pa-Arab`), a Microsoft style guide, and GNOME Nautilus (`pa`, in Gurmukhi).
 
 ## Voice and tone
 
@@ -31,8 +30,7 @@ register matches Cmdr.
   They are mutually unreadable in print. Microsoft ships terminology for BOTH (`pa-IN` Gurmukhi and a Perso-Arabic
   variant); GNOME ships Gurmukhi. Gurmukhi has by far the larger digital footprint, standardized Unicode usage, and
   free-software coverage. Ship `pa` as Gurmukhi (LTR). Shahmukhi `pa-Arab` is Perso-Arabic RTL and out of scope under
-  the no-RTL decision (it would need full bidi handling like Arabic). Recorded in
-  [`script-decisions.md`](../script-decisions.md).
+  the no-RTL decision (it would need full bidi handling like Arabic). Recorded in `../script-decisions.md`.
 - **Formality: respectful `ਤੁਸੀਂ` + polite imperatives.** Covered above. Confidence: high.
 - **Register: modern, not over-Sanskritized/Persianized.** Keep everyday Punjabi; avoid heavy Sanskrit (Gurmukhi side)
   or heavy Persian/Urdu (Shahmukhi side) officialese. Microsoft modern voice and GNOME both favor everyday words.
@@ -76,7 +74,7 @@ two-category shape as English; every plural message needs both branches. The `de
 ## Notes and decisions
 
 - Script: RESOLVED to Gurmukhi (`pa`, LTR); Shahmukhi/Perso-Arabic `pa-Arab` (RTL) is out of scope under the no-RTL
-  decision. See [`script-decisions.md`](../script-decisions.md).
+  decision. See `../script-decisions.md`.
 - Register: modern everyday Punjabi, not officialese.
 - Numerals: rely on `Intl` (Western digits by default).
 - Address: `ਤੁਸੀਂ` + polite imperatives throughout.
@@ -85,6 +83,6 @@ two-category shape as English; every plural message needs both branches. The `de
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/pa/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/pa/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

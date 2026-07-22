@@ -1,7 +1,7 @@
 # Error reporter details
 
 Pull-tier docs for `src-tauri/src/error_reporter/`: architecture, flows, and decision rationale. Must-know invariants
-and gotchas live in [CLAUDE.md](CLAUDE.md).
+and gotchas live in `CLAUDE.md`.
 
 Builds a privacy-redacted zip bundle of recent log files plus a JSON manifest, then (in
 prod) ships it to `POST /error-report` on the api server. Used by both the user-initiated

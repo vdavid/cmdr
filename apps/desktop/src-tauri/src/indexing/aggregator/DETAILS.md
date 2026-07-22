@@ -1,14 +1,14 @@
 # Aggregator details
 
 Read this before any non-trivial work in `aggregator/`: editing, planning, reorganizing, or advising. Must-know
-guardrails are in [CLAUDE.md](CLAUDE.md).
+guardrails are in `CLAUDE.md`.
 
 This area owns the COMPUTE math that turns the `entries` table into `dir_stats` rows. It does not own the honest-sizes
 data model: what `listed_epoch`, `min_subtree_epoch`, and `current_epoch` MEAN, when marks are stamped, and the
 live-path discipline that keeps coverage honest between scans are canonical in
-[`../writer/DETAILS.md`](../writer/DETAILS.md) § "Honest sizes". The schema columns are defined in
-[`../store/DETAILS.md`](../store/DETAILS.md). The writer's ledger repair primitive (`repair_dir_stats_upward`) is the
-incremental counterpart to full aggregation and lives in [`../writer/DETAILS.md`](../writer/DETAILS.md) § "The dir_stats
+`../writer/DETAILS.md` § "Honest sizes". The schema columns are defined in
+`../store/DETAILS.md`. The writer's ledger repair primitive (`repair_dir_stats_upward`) is the
+incremental counterpart to full aggregation and lives in `../writer/DETAILS.md` § "The dir_stats
 ledger".
 
 ## The three modes
@@ -116,4 +116,4 @@ seconds away) fills it. A dir with no `dir_stats` row yet is freshly created and
 only against real network-volume timings, never on a hunch. When a pane's parent AND child are both hot, only the
 DEEPEST is scoped (the ancestor is dropped via a component-aware string prefix check). The reporter that drives sending,
 and `resolve_path_under`'s role in resolving mount-relative hot paths on network volumes, live in `../events/` and
-[`../paths/DETAILS.md`](../paths/DETAILS.md).
+`../paths/DETAILS.md`.

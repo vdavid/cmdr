@@ -1,7 +1,7 @@
 # Friulian (fur) translation style guide
 
-Working notes for translating Cmdr into Friulian (furlan). Read [`README.md`](../README.md) for how this fits the
-translation process.
+Working notes for translating Cmdr into Friulian (furlan). Read `../README.md` for how this fits the translation
+process.
 
 This is the language base (`fur`), the universal Friulian set. Friulian is a Rhaeto-Romance language of the Friuli
 region (northeastern Italy), with an official standard orthography (the OLF / ARLeF koiné). No region variant needed for
@@ -76,7 +76,7 @@ Confidence: confirmed.
   decimal).
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
 - **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  `docs/guides/i18n-translation.md`.
 
 ## Decisions to confirm with David
 
@@ -85,6 +85,6 @@ Confidence: confirmed.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/fur/`; recipes in
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/fur/`; recipes in
 `docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

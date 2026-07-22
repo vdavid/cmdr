@@ -1,8 +1,7 @@
 # Tatar (tt) translation style guide
 
-Working notes for translating Cmdr into Tatar. Read [`README.md`](../README.md) for how this fits the translation
-process, and the agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) for the ICU
-mechanics every translator must follow.
+Working notes for translating Cmdr into Tatar. Read `../README.md` for how this fits the translation process, and the
+agent-handoff block in `docs/guides/i18n-translation.md` for the ICU mechanics every translator must follow.
 
 **Priority signal: low.** Tatar localization is sparse. Apple does NOT ship Tatar (no macOS reference), and there is no
 GNOME/Xfce Tatar file-manager catalog in the reference pile. The only authoritative source is Microsoft (terminology TBX
@@ -117,8 +116,7 @@ the `{system_settings}`-style tokens. Enforced by `desktop-i18n-dont-translate`;
   is impossible here, so most terms carry `tentative` confidence until native review. When a term isn't in the Microsoft
   TBX, that's a flag to surface, not a gap to fill by guessing.
 - **ICU mechanics** (catalog-level, easy to miss): double every apostrophe in a value (`'` becomes `''`), and keep every
-  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in `docs/guides/i18n-translation.md` and
   `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Decisions to confirm with David
@@ -130,6 +128,6 @@ the `{system_settings}`-style tokens. Enforced by `desktop-i18n-dont-translate`;
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/tt/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/tt/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

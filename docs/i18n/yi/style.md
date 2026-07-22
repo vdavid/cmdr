@@ -1,7 +1,6 @@
 # Yiddish (yi) translation style guide
 
-Working notes for translating Cmdr into Yiddish. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into Yiddish. Read `../README.md` for how this fits the translation process.
 
 This is the language base (`yi`), Yiddish written in the Hebrew script and laid out right-to-left. It's a low-resource,
 RTL target: treat the layout work as part of the translation, not an afterthought.
@@ -106,6 +105,6 @@ confirm; matches the GNOME 2-form rule). Cover the categories a message needs.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/yi/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/yi/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

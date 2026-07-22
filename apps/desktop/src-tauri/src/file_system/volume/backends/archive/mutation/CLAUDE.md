@@ -4,7 +4,7 @@
 `Volume`-free and manager-free like the [read core](../read/CLAUDE.md): the write-ops `ArchiveEditOperation` driver
 wraps it with the real event sink, pause gate, and cancel intent.
 
-Depth, rationale, and the data-safety test list: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here:
+Depth, rationale, and the data-safety test list: `DETAILS.md`. Read it before any non-trivial work here:
 editing, planning, reorganizing, or advising.
 
 ## Must-knows
@@ -20,4 +20,4 @@ editing, planning, reorganizing, or advising.
 - **`Changeset::compression_level` applies to ADDED entries only, clamped 1..=9 in `add_entry_options`.** The `zip`
   crate HARD-ERRORS on an out-of-range Deflated level (it doesn't clamp), failing the whole edit at the first entry —
   so keep the clamp; don't set a raw level on `FileOptions` elsewhere. `None` = crate default (level 6). See
-  [DETAILS.md](DETAILS.md) § "Compression level applies to ADDED entries only".
+  `DETAILS.md` § "Compression level applies to ADDED entries only".

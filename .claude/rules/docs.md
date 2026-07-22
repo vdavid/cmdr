@@ -14,6 +14,10 @@ colocated `DETAILS.md` nearest the code); everywhere else points to it by path, 
 independently. `docs/architecture.md` is a map: what + where + a pointer, never how (no mechanism, flows, or triggers).
 This extends `use-codegraph` ("don't transcribe what codegraph owns") from symbol locations to behavioral facts.
 
+**Reference a doc by a bare backticked path** (`` `docs/architecture.md` ``), never a link repeating its own target
+(``[`docs/architecture.md`](docs/architecture.md)``): the graph follows both. Link only for descriptive text or an
+`#anchor`.
+
 **Current state, not history.** Docs describe the code as it is now; git holds the history. Drop narration of previous
 shapes; keep the non-obvious why, actionable guardrails, and historical pain that encodes a constraint the current code
 must defend. Full drop/keep lists and code-comment carve-outs: David's user-level `describe-current-not-history` rule.

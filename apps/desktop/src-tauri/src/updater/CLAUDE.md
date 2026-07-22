@@ -34,4 +34,4 @@ use the Tauri updater plugin and the frontend calls the plugin API directly.
   runtime from the compile-time version and arch.
 
 Full details (sync order, deletion pass, minisign rationale, privilege escalation, error-chain logging,
-dependencies): [DETAILS.md](DETAILS.md).
+dependencies): `DETAILS.md`.

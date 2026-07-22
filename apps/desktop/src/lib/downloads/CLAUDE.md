@@ -2,7 +2,7 @@
 
 Frontend half of the downloads-watcher feature. Wires the backend `download-detected` Tauri event to the right surface
 (in-app toast, macOS notification, both, or neither) and owns the go-to-latest navigation. Backend counterpart:
-[`src-tauri/src/downloads/CLAUDE.md`](../../../src-tauri/src/downloads/CLAUDE.md).
+`apps/desktop/src-tauri/src/downloads/CLAUDE.md`.
 
 ## Module map
 
@@ -58,4 +58,4 @@ no retries, and we DON'T flip the user's setting).
   "Stop showing these" would navigate before Settings opens).
 
 Full details (per-file rundown, collapsible-toast states, first-trigger warn toast, deep-link target, settings-registry
-note, and the smoke-test guide): [DETAILS.md](DETAILS.md).
+note, and the smoke-test guide): `DETAILS.md`.

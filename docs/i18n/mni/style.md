@@ -1,7 +1,6 @@
 # Manipuri / Meitei (mni) translation style guide
 
-Working notes for translating Cmdr into this language. Read [`README.md`](../README.md) for how this fits the
-translation process.
+Working notes for translating Cmdr into this language. Read `../README.md` for how this fits the translation process.
 
 Manipuri (Meiteilon, autonym Meitei) is a Tibeto-Burman language of Manipur, north-east India, plus Assam, Tripura, and
 Bangladesh. The BCP-47 base tag is `mni`; the script is carried by a `-Mtei` (Meitei Mayek) or `-Beng` (Bengali) suffix
@@ -94,6 +93,6 @@ These are the calls that actually matter for Manipuri; settle them before a tran
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/mni/`; recipes in
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/mni/`; recipes in
 `docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

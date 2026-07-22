@@ -1,10 +1,10 @@
 # Indexing resources details
 
 Read this before any non-trivial work in `indexing/resources/`: editing, planning, reorganizing, or advising. Must-know
-guardrails are in [CLAUDE.md](CLAUDE.md).
+guardrails are in `CLAUDE.md`.
 
-These are process-wide caps, a different concern from the per-volume lifecycle in [`../lifecycle`](../lifecycle/CLAUDE.md):
-they bound the WHOLE indexing pool, not one volume.
+These are process-wide caps, a different concern from the per-volume lifecycle in `../lifecycle/CLAUDE.md`: they bound
+the WHOLE indexing pool, not one volume.
 
 ## Resource coordination: ONE global memory budget (memory_watchdog.rs)
 
@@ -57,6 +57,6 @@ volume is offline, no writer to drain), mirroring `clear_index`'s file deletion,
 simple: not a byte budget, not an access-time LRU — `TODO(retention)` in `select_evictions` flags those if
 abandoned-drive accumulation ever proves to need more.
 
-The user-facing forget/disable/clear paths and the prune→Disabled model live in [`../lifecycle/DETAILS.md`](../lifecycle/DETAILS.md)
+The user-facing forget/disable/clear paths and the prune→Disabled model live in `../lifecycle/DETAILS.md`
 (`clear_index` / `forget_drive_index` / `disable_drive_index`); retention here is the automatic bounded-accumulation
 backstop.

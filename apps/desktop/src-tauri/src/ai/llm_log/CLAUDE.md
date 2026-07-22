@@ -2,7 +2,7 @@
 
 Local, on-disk log of every LLM request and response, so "what did we send, was it set up to succeed, and what came
 back?" is answerable for both Ask Cmdr and the legacy one-shot AI features. Depth (fidelity investigation, file layout,
-metadata schema, privacy, setting wiring): [DETAILS.md](DETAILS.md).
+metadata schema, privacy, setting wiring): `DETAILS.md`.
 
 ## Module map
 
@@ -12,7 +12,7 @@ metadata schema, privacy, setting wiring): [DETAILS.md](DETAILS.md).
 
 ## Must-knows
 
-- **The tap is at the `AiBackend`/genai boundary in [`../client.rs`](../client.rs), not here.** `client.rs` calls
+- **The tap is at the `AiBackend`/genai boundary in `../client.rs`, not here.** `client.rs` calls
   `log_request`/`log_response` around each `exec_chat*`. A backend logs only when a caller attached a context via
   `AiBackend::with_log_context` AND the `logLlmCalls` setting is on. Every production caller (the agent per
   conversation, folder-suggestions, the two translate commands) attaches one; adding a new LLM call means attaching a
@@ -34,4 +34,4 @@ metadata schema, privacy, setting wiring): [DETAILS.md](DETAILS.md).
   frontend `logLlmCalls` setting pushes the user's choice via `set_log_llm_calls`. `init(app_data_dir)` (called once at
   setup) records where. Logging no-ops until the dir is set.
 
-Depth: [DETAILS.md](DETAILS.md).
+Depth: `DETAILS.md`.

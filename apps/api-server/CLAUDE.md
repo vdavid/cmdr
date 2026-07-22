@@ -3,7 +3,7 @@
 Cloudflare Worker (Hono) backend for Cmdr: licensing (Paddle webhooks, Ed25519 keys, activation codes in KV), telemetry
 (crash reports, downloads, update checks, heartbeats in D1), admin endpoints, and cron notifications. Deployed at
 `api.getcmdr.com`; `license.getcmdr.com` is a permanent alias for existing app versions. Routes, bindings, data flows,
-runbooks, and decisions: [DETAILS.md](DETAILS.md).
+runbooks, and decisions: `DETAILS.md`.
 
 ## Module map
 
@@ -54,4 +54,4 @@ runbooks, and decisions: [DETAILS.md](DETAILS.md).
   `downloadsByRef` buckets a NULL ref under `(none)`; cohorts younger than 8 days report `null` D7 retention, not 0.
   (DETAILS § funnel.)
 
-Read [DETAILS.md](DETAILS.md) before any non-trivial work here: editing, planning, reorganizing, or advising.
+Read `DETAILS.md` before any non-trivial work here: editing, planning, reorganizing, or advising.

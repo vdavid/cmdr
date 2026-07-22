@@ -3,8 +3,8 @@
 Canonical reference for how Cmdr keeps prod, dev, per-worktree dev, and concurrent E2E shards from colliding on disk,
 ports, Keychain, clipboard, fixtures, or process names.
 
-One env var (`CMDR_INSTANCE_ID`) drives every per-instance suffix. Read [`AGENTS.md`](../../AGENTS.md) for repo-wide
-rules. This doc is the canonical reference — the design has fully landed in code.
+One env var (`CMDR_INSTANCE_ID`) drives every per-instance suffix. Read `AGENTS.md` for repo-wide rules. This doc is the
+canonical reference — the design has fully landed in code.
 
 ## The primitive
 
@@ -24,7 +24,7 @@ pure function of that string. Prod leaves it unset and ends up byte-identical to
 
 Slug rules for `--worktree`: lowercase ASCII `[a-z0-9-]+`, max 32 chars, runs of `-` collapsed, leading/trailing `-`
 trimmed. Rejection happens in Node before any Rust process spawns. Source of truth: `sanitizeWorktreeSlug` in
-[`apps/desktop/scripts/instance-id.ts`](../../apps/desktop/scripts/instance-id.ts).
+`apps/desktop/scripts/instance-id.ts`.
 
 ## Per-resource breakdown
 
@@ -67,15 +67,14 @@ Details worth knowing:
 - E2E is unaffected: each macOS Playwright shard gets its own `/tmp/cmdr-e2e-data-<instance>/`, Linux Docker runs one
   app per container, and Rust tests never spawn the binary.
 
-Authoritative file: [`instance_lock.rs`](../../apps/desktop/src-tauri/src/instance_lock.rs).
+Authoritative file: `apps/desktop/src-tauri/src/instance_lock.rs`.
 
 ### Data dir
 
 `CMDR_DATA_DIR` env wins; otherwise Tauri's `app_data_dir()` resolves from the identifier in the generated config.
 Wrapper sets both so they agree.
 
-Authoritative files: [`config.rs`](../../apps/desktop/src-tauri/src/config.rs),
-[`instance-id.ts`](../../apps/desktop/scripts/instance-id.ts).
+Authoritative files: `apps/desktop/src-tauri/src/config.rs`, `apps/desktop/scripts/instance-id.ts`.
 
 ### `tauri-plugin-store`
 
@@ -87,8 +86,7 @@ redirect `app_data_dir()`, so without this the stores read the real prod files. 
 frontend-supplied `store_name` (rejects path separators, `..`, absolute paths) so the resolved path can't escape the
 data dir.
 
-Authoritative files: [`settings.rs`](../../apps/desktop/src-tauri/src/commands/settings.rs),
-[`store-path.ts`](../../apps/desktop/src/lib/settings/store-path.ts).
+Authoritative files: `apps/desktop/src-tauri/src/commands/settings.rs`, `apps/desktop/src/lib/settings/store-path.ts`.
 
 ### `tauri-plugin-window-state`
 
@@ -98,46 +96,42 @@ Same identifier-driven redirect as `tauri-plugin-store`, in the same authoritati
 
 `SERVICE_NAME` becomes `Cmdr-<instance>` when the env is set; `Cmdr` otherwise. Cached once via `OnceLock`.
 
-Authoritative file: [`keychain_macos.rs`](../../apps/desktop/src-tauri/src/secrets/keychain_macos.rs).
+Authoritative file: `apps/desktop/src-tauri/src/secrets/keychain_macos.rs`.
 
 ### Secret store backend
 
 Wrapper exports `CMDR_SECRET_STORE=file` for any non-prod instance, so dev and per-worktree dev never trigger the
 Keychain password dialog. E2E forces the same path via `is_e2e_mode()`.
 
-Authoritative files: [`tauri-wrapper.ts`](../../apps/desktop/scripts/tauri-wrapper.ts),
-[`secrets/mod.rs`](../../apps/desktop/src-tauri/src/secrets/mod.rs).
+Authoritative files: `apps/desktop/scripts/tauri-wrapper.ts`, `apps/desktop/src-tauri/src/secrets/mod.rs`.
 
 ### Cmdr MCP HTTP port
 
 Ephemeral by default (`developer.mcpPort = 0`). Server binds `127.0.0.1:0`, writes the actual port to
 `<data_dir>/mcp.port` atomically. `CMDR_MCP_PORT` still pins.
 
-Authoritative files: [`mcp/server.rs`](../../apps/desktop/src-tauri/src/mcp/server.rs),
-[`mcp/port_file.rs`](../../apps/desktop/src-tauri/src/mcp/port_file.rs).
+Authoritative files: `apps/desktop/src-tauri/src/mcp/server.rs`, `apps/desktop/src-tauri/src/mcp/port_file.rs`.
 
 ### Tauri MCP bridge port
 
 Wrapper allocates via `net.createServer().listen(0)`, exports `CMDR_MCP_BRIDGE_PORT`, writes `<data_dir>/tauri-mcp.port`
 BEFORE Tauri launches. Plugin forced to `127.0.0.1` (was `0.0.0.0`, a LAN exposure: load-bearing security fix).
 
-Authoritative files: [`tauri-wrapper.ts`](../../apps/desktop/scripts/tauri-wrapper.ts),
-[`lib.rs`](../../apps/desktop/src-tauri/src/lib.rs).
+Authoritative files: `apps/desktop/scripts/tauri-wrapper.ts`, `apps/desktop/src-tauri/src/lib.rs`.
 
 ### Vite dev port
 
 Wrapper allocates ephemeral, exports `CMDR_VITE_PORT`, writes `build.devUrl` into the generated config so the Tauri
 webview points at the same number Vite binds.
 
-Authoritative files: [`tauri-wrapper.ts`](../../apps/desktop/scripts/tauri-wrapper.ts),
-[`vite.config.js`](../../apps/desktop/vite.config.js).
+Authoritative files: `apps/desktop/scripts/tauri-wrapper.ts`, `apps/desktop/vite.config.js`.
 
 ### Updater endpoint
 
 Non-prod gets `https://localhost.invalid/no-updater` in the generated config so dev or E2E never phones home
 accidentally.
 
-Authoritative file: [`instance-id.ts`](../../apps/desktop/scripts/instance-id.ts).
+Authoritative file: `apps/desktop/scripts/instance-id.ts`.
 
 ### Clipboard (NSPasteboard)
 
@@ -145,14 +139,14 @@ Compiled out for E2E via `#[cfg(feature = "playwright-e2e")]`: mock module repla
 never touches the user's pasteboard. `CMDR_CLIPBOARD_BACKEND=mock` env override delegates to the same store from
 prod-feature builds.
 
-Authoritative file: [`clipboard/mod.rs`](../../apps/desktop/src-tauri/src/clipboard/mod.rs).
+Authoritative file: `apps/desktop/src-tauri/src/clipboard/mod.rs`.
 
 ### Fixture root (macOS E2E)
 
 `/tmp/cmdr-e2e-fixtures-<instance>-<timestamp>/`. Bulk `.dat` files hardlinked from `/tmp/cmdr-e2e-fixtures-cache/`
 (built once via tmp-dir + content-hash verify + atomic rename). Text files are full copies because tests mutate them.
 
-Authoritative file: [`e2e-shared/fixtures.ts`](../../apps/desktop/test/e2e-shared/fixtures.ts).
+Authoritative file: `apps/desktop/test/e2e-shared/fixtures.ts`.
 
 ### Fixture root (Linux E2E)
 
@@ -164,7 +158,7 @@ fixture root.
 Per-shard at `/tmp/tauri-playwright-<instance>.sock` via `CMDR_PLAYWRIGHT_SOCKET`. Plugin falls back to
 `/tmp/tauri-playwright.sock` when unset (manual / Linux paths).
 
-Authoritative file: [`lib.rs`](../../apps/desktop/src-tauri/src/lib.rs).
+Authoritative file: `apps/desktop/src-tauri/src/lib.rs`.
 
 `tauri-plugin-store` handles `settings.json`, `shortcuts.json`, `app-status.json`, and `viewer-tail.json`.
 
@@ -352,14 +346,11 @@ of the per-resource derivation paths. Future regressions are caught by re-runnin
 
 ## Related docs
 
-- [`docs/tooling/mcp.md`](mcp.md): MCP server overview, port discovery for external clients, action-tool ack contract.
-- [`AGENTS.md`](../../AGENTS.md) § Debugging / § MCP / § Worktrees: repo-wide cross-references.
-- [`apps/desktop/CLAUDE.md`](../../apps/desktop/CLAUDE.md): desktop app overview, `--worktree` flag.
-- [`apps/desktop/src-tauri/src/mcp/CLAUDE.md`](../../apps/desktop/src-tauri/src/mcp/CLAUDE.md): server lifecycle and
-  port-file protocol.
-- [`apps/desktop/src-tauri/src/secrets/CLAUDE.md`](../../apps/desktop/src-tauri/src/secrets/CLAUDE.md): Keychain
-  service-name suffix.
-- [`apps/desktop/src-tauri/src/clipboard/CLAUDE.md`](../../apps/desktop/src-tauri/src/clipboard/CLAUDE.md): mock
-  backend.
-- [`apps/desktop/test/CLAUDE.md`](../../apps/desktop/test/CLAUDE.md): fixture cache, per-instance root.
-- [`scripts/check/DETAILS.md`](../../scripts/check/DETAILS.md) § Self-contained E2E checks: per-shard env composition.
+- `mcp.md`: MCP server overview, port discovery for external clients, action-tool ack contract.
+- `AGENTS.md` § Debugging / § MCP / § Worktrees: repo-wide cross-references.
+- `apps/desktop/CLAUDE.md`: desktop app overview, `--worktree` flag.
+- `apps/desktop/src-tauri/src/mcp/CLAUDE.md`: server lifecycle and port-file protocol.
+- `apps/desktop/src-tauri/src/secrets/CLAUDE.md`: Keychain service-name suffix.
+- `apps/desktop/src-tauri/src/clipboard/CLAUDE.md`: mock backend.
+- `apps/desktop/test/CLAUDE.md`: fixture cache, per-instance root.
+- `scripts/check/DETAILS.md` § Self-contained E2E checks: per-shard env composition.

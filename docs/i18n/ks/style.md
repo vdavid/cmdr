@@ -1,8 +1,7 @@
 # Kashmiri (ks) translation style guide
 
-Working notes for translating Cmdr into Kashmiri (कॉशुर / کٲشُر). Read [`README.md`](../README.md) for how this fits the
-translation process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes
-carry into Kashmiri.
+Working notes for translating Cmdr into Kashmiri (कॉशुर / کٲشُر). Read `../README.md` for how this fits the translation
+process, and the app-wide `docs/style-guide.md` for the English voice these notes carry into Kashmiri.
 
 Sourced: the pile has two MS style guides, one per script: Perso-Arabic (`_ignored/i18n/ks-Arab/`) and Devanagari
 (`_ignored/i18n/ks-Deva/`); no macOS, no GNOME, no MS terminology, no Xfce. MS style guides are the only authority.
@@ -103,13 +102,12 @@ return `one, other`, 2026-06-20). Write both.
 - **Length and height.** Nastaʿliq (Perso-Arabic) renders with steep diagonal baselines and needs vertical room and a
   Nastaʿliq-capable font; overflow-check both axes against the pseudolocale (`en-XA`) and a real Kashmiri font.
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
-  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in `docs/guides/i18n-translation.md` and
   `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/ks/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/ks/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

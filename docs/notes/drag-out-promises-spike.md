@@ -2,9 +2,8 @@
 
 Records the two load-bearing unknowns the drag-out file-promises spike resolved before any real code landed: the chosen
 pasteboard layout and the folder-promise verdict. The shipped architecture and its rationale live in
-[`apps/desktop/src-tauri/src/native_drag/CLAUDE.md`](../../apps/desktop/src-tauri/src/native_drag/CLAUDE.md) (+ its
-`DETAILS.md`); design history is in git. Linked from
-[`src/lib/file-explorer/drag/CLAUDE.md`](../../apps/desktop/src/lib/file-explorer/drag/CLAUDE.md).
+`apps/desktop/src-tauri/src/native_drag/CLAUDE.md` (+ its `DETAILS.md`); design history is in git. Linked from
+`apps/desktop/src/lib/file-explorer/drag/CLAUDE.md`.
 
 ## Verdicts
 

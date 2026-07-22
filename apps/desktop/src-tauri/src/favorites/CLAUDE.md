@@ -2,7 +2,7 @@
 
 User-editable favorites: the ordered `favorites.json` store that backs the volume switcher's
 "Favorites" section. The store is the single source of truth and replaces the previously hardcoded
-four favorites. Full depth in [`DETAILS.md`](DETAILS.md).
+four favorites. Full depth in `DETAILS.md`.
 
 ## Module map
 

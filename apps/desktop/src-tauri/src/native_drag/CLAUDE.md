@@ -3,7 +3,7 @@
 macOS-only native drag-and-drop OUT of Cmdr. Builds the `NSDraggingSession` that carries dragged files to other apps
 (Finder, terminals, editors). Driven by `start_selection_drag` / `start_drag_paths` in `commands/file_system/drag.rs`,
 which hop to the AppKit main thread and call `start_drag`. The whole module is `#[cfg(target_os = "macos")]`. Full
-details: [DETAILS.md](DETAILS.md).
+details: `DETAILS.md`.
 
 ## Files
 
@@ -24,7 +24,7 @@ details: [DETAILS.md](DETAILS.md).
 ## Load-bearing invariants
 
 Break any of these and a virtual drag-out silently produces no file, leaks objects, or leaves a partial. Mechanism for
-each in [DETAILS.md](DETAILS.md).
+each in `DETAILS.md`.
 
 - **Fulfillment cleanup contract**: on ANY `Err`, the destination this fulfillment created is removed before returning.
   `LocalPosixVolume::write_from_stream` self-cleans its partial ONLY on the cancel branch, NOT on a propagated
@@ -56,4 +56,4 @@ each in [DETAILS.md](DETAILS.md).
   `SessionStarted`/`SessionComplete` events (in `crate::system_events`, always-compiled) that
   `lib/file-explorer/drag/drag-out-event-bridge.ts` turns into ONE toast per drag session. Counts are top-level dragged
   items (one folder = one folder). A drag dropped back into Cmdr never fulfills, so it emits nothing. Detail in
-  [DETAILS.md](DETAILS.md).
+  `DETAILS.md`.

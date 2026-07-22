@@ -2,8 +2,7 @@
 
 The frontend of Ask Cmdr, the read-only chat rail: a toggleable right-side panel where the user chats with a BYO-key LLM
 about their files. Backend seam + IPC: `src-tauri/src/agent/` and `commands/agent.rs`. Plan:
-[`docs/specs/ask-cmdr-plan.md`](../../../../../docs/specs/ask-cmdr-plan.md). Depth (the streaming flow, the fake E2E
-path, layout, decisions): [DETAILS.md](DETAILS.md).
+`docs/specs/ask-cmdr-plan.md`. Depth (the streaming flow, the fake E2E path, layout, decisions): `DETAILS.md`.
 
 ## Module map
 
@@ -27,7 +26,7 @@ path, layout, decisions): [DETAILS.md](DETAILS.md).
   vector). Render it ONLY through `renderAssistantMarkdown` before `{@html}`; everything else — tool labels, paths, user
   text, error copy — renders as plain `{text}` (Svelte auto-escapes), NEVER `{@html}`. Don't swap its narrow
   `escapeForMarkdownLite` for `errors/markdown-escape.ts` (that escapes the formatting chars too, so nothing renders).
-  Pinned by `ask-cmdr-markdown.test.ts`; rationale in [DETAILS.md](DETAILS.md) § Decisions.
+  Pinned by `ask-cmdr-markdown.test.ts`; rationale in `DETAILS.md` § Decisions.
 - **The rail gates on consent; it sends NOTHING until the user opts in.** `openRail` refreshes `consentState`: `false`
   shows `AskCmdrConsent.svelte`, `true` shows the chat, `null` shows neither (no flash). Don't render the
   composer/thread outside the `consented` branch.
@@ -47,9 +46,9 @@ path, layout, decisions): [DETAILS.md](DETAILS.md).
 - **Opening the rail GROWS the main window so panes keep their size; closing shrinks it back** (`rail-window.ts`, skips
   fullscreen/maximized). ❌ Don't grow on hydration or a re-open — the window is already rail-inclusive, so
   `hydrateRail` passes `resizeWindow: false` and `openRail` grows only on `!wasOpen`. Doubling breaks. Depth:
-  [DETAILS.md](DETAILS.md) § Window growth.
+  `DETAILS.md` § Window growth.
 - **Attachments cross into the envelope as path + kind ONLY — never contents** (the read-only privacy line). Drag from a
   pane is a NATIVE webview drag (`onDragDropEvent`), not HTML5, so a DOM `ondrop` never fires. Message paging is
-  tail-first with load-older prepend (don't reintroduce a single big page). Both detailed in [DETAILS.md](DETAILS.md).
+  tail-first with load-older prepend (don't reintroduce a single big page). Both detailed in `DETAILS.md`.
 
-Depth: [DETAILS.md](DETAILS.md).
+Depth: `DETAILS.md`.

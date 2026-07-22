@@ -1,15 +1,14 @@
 # Writer details
 
 Read this before any non-trivial work in `writer/`: editing, planning, reorganizing, or advising. Must-know guardrails
-are in [CLAUDE.md](CLAUDE.md). This area is the canonical home for the mechanisms below; other indexing areas link here
-rather than restating them.
+are in `CLAUDE.md`. This area is the canonical home for the mechanisms below; other indexing areas link here rather
+than restating them.
 
-Points outward: the registry / phase machine / freshness / the Failed representation live in
-[`../lifecycle/DETAILS.md`](../lifecycle/DETAILS.md); the SQLite schema + `name_folded` + `platform_case` collation in
-[`../store/DETAILS.md`](../store/DETAILS.md); the bottom-up compute math in
-[`../aggregator/DETAILS.md`](../aggregator/DETAILS.md); who sends which aggregate (the reconcile finish, the bulk guard)
-in [`../reconcile/DETAILS.md`](../reconcile/DETAILS.md); the scanner's mark-accumulate in
-[`../scanner/DETAILS.md`](../scanner/DETAILS.md); path→volume routing in [`../paths/DETAILS.md`](../paths/DETAILS.md).
+Points outward: the registry / phase machine / freshness / the Failed representation live in `../lifecycle/DETAILS.md`;
+the SQLite schema + `name_folded` + `platform_case` collation in `../store/DETAILS.md`; the bottom-up compute math in
+`../aggregator/DETAILS.md`; who sends which aggregate (the reconcile finish, the bulk guard) in
+`../reconcile/DETAILS.md`; the scanner's mark-accumulate in `../scanner/DETAILS.md`; path→volume routing in
+`../paths/DETAILS.md`.
 
 ## Single-writer architecture
 
@@ -88,14 +87,13 @@ wakes the supervisor (later fatal errors are suppressed — that's what stops th
 `signal.is_tripped()` after each message and returns, so the dead-DB writer thread exits instead of spinning. Pinned by
 `tests::a_fatal_storage_error_stops_the_writer_and_trips_the_signal` (a `query_only` connection makes writes fail
 `SQLITE_READONLY`; the loop must terminate on its own with the sender still alive). The supervisor, `IndexPhase::Failed`,
-`Freshness::Failed`, and recovery-by-rebuild live in [`../lifecycle/DETAILS.md`](../lifecycle/DETAILS.md).
+`Freshness::Failed`, and recovery-by-rebuild live in `../lifecycle/DETAILS.md`.
 
 ## Honest sizes (coverage + freshness)
 
 The full design (the four write paths, the read-side derivation, the decisions) is captured here; the FE display table
 lives in `src/lib/indexing/DETAILS.md` § "Honest size rendering". The data model splits the overloaded "0 bytes" into
-two orthogonal facts, one stored integer each (columns defined in [`../store/DETAILS.md`](../store/DETAILS.md) §
-schema):
+two orthogonal facts, one stored integer each (columns defined in `../store/DETAILS.md` § schema):
 
 - **`entries.listed_epoch`** (per dir): the epoch at which this dir's direct contents were last successfully listed.
   `0` = never listed. This distinguishes a genuinely empty `0 bytes` folder (`listed_epoch > 0`, no children) from an
@@ -144,8 +142,8 @@ and match nothing. So both scanners ACCUMULATE the ids of every SUCCESSFULLY-lis
 the marks land before aggregation reads `listed_epoch` (a mark queued behind the aggregate would leave a dir at epoch 0
 → the whole subtree rolls to `min_subtree_epoch = 0` → a cleanly-scanned volume renders incomplete forever).
 `MarkDirsListed` does NOT bump the writer generation. The two scanners' accumulate rules are in
-[`../scanner/DETAILS.md`](../scanner/DETAILS.md) (local walker) and the network scanner docs; the aggregator's rollup
-math is in [`../aggregator/DETAILS.md`](../aggregator/DETAILS.md).
+`../scanner/DETAILS.md` (local walker) and the network scanner docs; the aggregator's rollup math is in
+`../aggregator/DETAILS.md`.
 
 **Live-path discipline (the path local lives on).** After a scan the local index spends ~all its life in live mode, so
 coverage must stay honest under every live mutation. Three rules, all in `writer/` + `../reconcile/`:
@@ -171,13 +169,13 @@ coverage must stay honest under every live mutation. Three rules, all in `writer
   `ComputeSubtreeAggregates` handler repairs the ancestor chain (`repair_dir_stats_upward`), whose per-level recompute
   lifts ancestor coverage — so neither the verifier nor `run_background_verification` sends `PropagateMinSubtreeEpoch`
   for scanned subtrees (the old off-writer send also double-counted sizes — Leak A). Full detail in
-  [`../reconcile/DETAILS.md`](../reconcile/DETAILS.md).
+  `../reconcile/DETAILS.md`.
 
 **Read side — derive booleans, never ship raw epochs.** The frontend renders from `{recursive_size, complete, stale}`
 only. The backend derives two booleans from `min_subtree_epoch` vs the volume's `current_epoch` (read ONCE per read
 pass via `read_current_epoch`, absent ⇒ 1) on both read surfaces — the `FileEntry` enrichment path and the path-keyed
-`DirStats` IPC struct. These live in [`../read/DETAILS.md`](../read/DETAILS.md); a write-op denominator rejects lower
-bounds (`expected_totals::per_source_contribution` returns `None` for `min_subtree_epoch == 0`).
+`DirStats` IPC struct. These live in `../read/DETAILS.md`; a write-op denominator rejects lower bounds
+(`expected_totals::per_source_contribution` returns `None` for `min_subtree_epoch == 0`).
 
 ## The dir_stats ledger
 
@@ -290,7 +288,7 @@ is fine, only `dir_stats` drifted.
 **Accepted drift window (not fixed here).** A CANCELLED full local reconcile exits with no marks and no final aggregate
 while its walk ran under `SetDeltaPropagation(false)`, so entries it already diffed have no ancestor propagation until
 the next COMPLETED rescan. The heal is the existing next-rescan flow. The `BulkReconcileGuard` mechanism (the
-`MarkLedgerUnpaid`/`PayLedgerIfUnpaid` debt recording) lives in [`../reconcile/DETAILS.md`](../reconcile/DETAILS.md).
+`MarkLedgerUnpaid`/`PayLedgerIfUnpaid` debt recording) lives in `../reconcile/DETAILS.md`.
 
 **The whole-effort invariant.** After the writer drains and rescans quiesce, `dir_stats` ≡ recompute-from-`entries`
 (carve-out: the cancelled-full-reconcile window). `stress_tests_concurrency.rs`'s mixed-storm oracle pins it using a
@@ -403,7 +401,7 @@ Free pages are reclaimed both inline after `TruncateData` and on a 30 s backgrou
 cap up to 20,000, a 20,000-page cap above — tiny steady-state lock holds while draining real backlog in tens of minutes.
 The WAL checkpoint handler runs `PRAGMA wal_checkpoint(TRUNCATE)`; the scanner fires an explicit `WalCheckpoint` after
 `ComputeAllAggregates` so the GB-scale post-scan WAL spike trims immediately. The schema/pragma side (WAL mode, page
-cache, `wal_autocheckpoint`, `journal_size_limit`) lives in [`../store/DETAILS.md`](../store/DETAILS.md).
+cache, `wal_autocheckpoint`, `journal_size_limit`) lives in `../store/DETAILS.md`.
 
 **Gotcha — row-yielding pragmas need per-row stepping, not `execute_batch`.** `PRAGMA incremental_vacuum(N)` compiles to
 a loop that frees ONE page per `sqlite3_step()`, yielding a row after each; `execute_batch` steps a statement exactly
@@ -439,4 +437,4 @@ it to, so `reconcile_subtree`'s own duration silently included it ("reconcile sl
 saturated for 19 of those seconds"). `IndexWriter::send` (via `send_blocking_with_depth`) and `flush_blocking` add every
 wait to a thread-local probe: `send` tries a non-blocking enqueue FIRST (only a genuinely parked send costs anything to
 measure) and the message comes back on `Full` so nothing is lost. The reconcile side arms the probe and reports the span
-(see [`../reconcile/DETAILS.md`](../reconcile/DETAILS.md)). Thread-local because each producer walks on its own thread.
+(see `../reconcile/DETAILS.md`). Thread-local because each producer walks on its own thread.

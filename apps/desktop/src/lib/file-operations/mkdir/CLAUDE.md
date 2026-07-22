@@ -2,8 +2,8 @@
 
 F7 dialog to create a folder in the focused pane: name validation, conflict detection, optional AI name suggestions.
 
-Backend: `create_directory` lives directly under
-[`write_operations/`](../../../../src-tauri/src/file_system/write_operations/CLAUDE.md) (no dedicated subdir).
+Backend: `create_directory` lives directly under `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md` (no
+dedicated subdir).
 
 ## Module map
 
@@ -22,5 +22,5 @@ Backend: `create_directory` lives directly under
   `file-operations.spec.ts › Create folder round-trip › cursor lands on the newly created folder`.
 - **`moveCursorToNewFolder` is shared with `mkfile`**: cursor positioning is entry-type-agnostic, so don't fork it.
 
-Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

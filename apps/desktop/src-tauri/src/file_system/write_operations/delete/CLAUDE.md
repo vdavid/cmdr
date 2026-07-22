@@ -3,10 +3,10 @@
 Delete and trash operations: a local-FS walker, a volume-aware walker (MTP, SMB), and OS-native trash. The local walker
 uses `walkdir` + `fs::remove_file`; the volume walker uses the `Volume` trait and is oracle-aware.
 
-See [`../CLAUDE.md`](../CLAUDE.md) for the shared `WriteOperationState`, `OperationIntent` state machine, cancel
-contract, ETA estimator, and settle contract. [`../transfer/CLAUDE.md`](../transfer/CLAUDE.md) is the parallel doc for
+See `../CLAUDE.md` for the shared `WriteOperationState`, `OperationIntent` state machine, cancel
+contract, ETA estimator, and settle contract. `../transfer/CLAUDE.md` is the parallel doc for
 copy + move. Frontend counterpart:
-[`src/lib/file-operations/delete/CLAUDE.md`](../../../../../src/lib/file-operations/delete/CLAUDE.md).
+`apps/desktop/src/lib/file-operations/delete/CLAUDE.md`.
 
 ## Files
 
@@ -49,4 +49,4 @@ copy + move. Frontend counterpart:
   of the proper cancel flow. Pinned by `delete_cancel_during_scan_emits_write_cancelled`.
 
 Full details (volume-delete scan-preview reuse and its three parts + data-safety contract, the no-`fsync` decision
-rationale): [DETAILS.md](DETAILS.md).
+rationale): `DETAILS.md`.

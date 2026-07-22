@@ -1,9 +1,8 @@
 # Mongolian (mn) translation style guide
 
-Working notes for translating Cmdr into Mongolian. Read [`README.md`](../README.md) for how this fits the translation
-process. `mn` here means **Mongolian in Cyrillic script** (the practical software default; see Decision points). The
-base tag is `mn`; a `mn-Cyrl` variant is unnecessary unless a `mn-Mong` (Traditional script) locale ever ships alongside
-it.
+Working notes for translating Cmdr into Mongolian. Read `../README.md` for how this fits the translation process. `mn`
+here means **Mongolian in Cyrillic script** (the practical software default; see Decision points). The base tag is `mn`;
+a `mn-Cyrl` variant is unnecessary unless a `mn-Mong` (Traditional script) locale ever ships alongside it.
 
 ## Voice and tone
 
@@ -46,9 +45,9 @@ This is the single biggest tone rule for Mongolian, and it inverts the English i
 The genuinely tricky calls, with how the majors handle each, a recommended default, and a confidence level.
 
 - **Script: RESOLVED to Cyrillic (`mn`), not Traditional Mongolian vertical script.** Recorded in
-  [`script-decisions.md`](../script-decisions.md). The evidence below stands. Mongolian is written in two scripts:
-  Cyrillic (dominant in independent Mongolia since the 1940s, the everyday script for ~3M people and every mainstream
-  device) and the Traditional Mongolian vertical script `mn-Mong` (used in Inner Mongolia, China, and the target of a
+  `../script-decisions.md`. The evidence below stands. Mongolian is written in two scripts: Cyrillic (dominant in
+  independent Mongolia since the 1940s, the everyday script for ~3M people and every mainstream device) and the
+  Traditional Mongolian vertical script `mn-Mong` (used in Inner Mongolia, China, and the target of a
   Mongolian-government revival that since Jan 2025 requires both scripts in official documents, though Cyrillic stays
   the predominant medium). For software the gap is decisive: a 2023 device survey found NO major OS had adequate
   Traditional-script localization (iOS has no Mongolian UI at all; Android had no Traditional display-language option;
@@ -140,7 +139,7 @@ even after a number, so write each branch as a full natural phrase rather than s
 ## Notes and decisions
 
 - Script: RESOLVED to Cyrillic (`mn`); Traditional vertical script (`mn-Mong`) is out of scope. See
-  [`script-decisions.md`](../script-decisions.md).
+  `../script-decisions.md`.
 - Pronouns: avoid `та` / `таны` / `танд`; use neutral or passive phrasing; polite `та` only when direction needs it;
   never `чи`.
 - Actions: polite imperative (`-на уу`) for instructions the user performs; bare verb for short buttons; subjectless
@@ -156,6 +155,6 @@ even after a number, so write each branch as a full natural phrase rather than s
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/mn/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/mn/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

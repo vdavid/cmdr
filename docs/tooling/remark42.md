@@ -56,6 +56,5 @@ docker compose up -d remark42
 
 ## Related files
 
-- [`apps/website/src/components/Remark42Comments.astro`](../../apps/website/src/components/Remark42Comments.astro):
-  Astro component that embeds the comment widget
-- [`docs/guides/deploying-remark42.md`](../guides/deploying-remark42.md): Step-by-step deployment guide
+- `apps/website/src/components/Remark42Comments.astro`: Astro component that embeds the comment widget
+- `../guides/deploying-remark42.md`: Step-by-step deployment guide

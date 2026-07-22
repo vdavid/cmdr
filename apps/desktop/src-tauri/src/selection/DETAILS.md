@@ -27,7 +27,7 @@ decision rationale.
 4. `ai::parse_selection_response` → `ParsedSelectionLlmResponse`.
 5. `ai::build_selection_translate_result` → the wire result.
 
-See [`ai/CLAUDE.md`](ai/CLAUDE.md) for prompt design, parser tolerances, caveat/kind defaulting, and the real-LLM eval.
+See `ai/CLAUDE.md` for prompt design, parser tolerances, caveat/kind defaulting, and the real-LLM eval.
 
 ## Decisions
 

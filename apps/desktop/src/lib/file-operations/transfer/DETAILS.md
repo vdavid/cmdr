@@ -1,7 +1,7 @@
 # Transfer details
 
 Pull-tier docs for `lib/file-operations/transfer/`: architecture, flows, and decision rationale. Must-know invariants
-and gotchas live in [CLAUDE.md](CLAUDE.md).
+and gotchas live in `CLAUDE.md`.
 
 ## File map
 
@@ -175,8 +175,7 @@ error dialog.
   polish spec item 2 for the dependency conflict deferring AES.
 
 Backend counterpart (decrypt path, the typed signal, per-archive password storage + LRU lifetime):
-[`volume/backends/archive/DETAILS.md`](../../../../src-tauri/src/file_system/volume/backends/archive/DETAILS.md) §
-"Password-protected archives".
+`apps/desktop/src-tauri/src/file_system/volume/backends/archive/DETAILS.md` § "Password-protected archives".
 
 ## Key decisions
 
@@ -232,9 +231,8 @@ Parameterizing by `operationType` avoids duplication and guarantees UX consisten
 
 Compress rides the SAME dialog/progress/state components as copy/move via a third `operationType: 'compress'`; its
 "Compress" identity is frontend-only (title, toggle, confirm label, the `file.compress` command). The backend reuses
-`WriteOperationType::ArchiveEdit` — see
-[`write_operations/DETAILS.md`](../../../../src-tauri/src/file_system/write_operations/DETAILS.md) § "Compress = seed an
-empty zip, then copy-into" for the seed mechanism. The user-visible differences from copy/move:
+`WriteOperationType::ArchiveEdit` — see `apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "Compress
+= seed an empty zip, then copy-into" for the seed mechanism. The user-visible differences from copy/move:
 
 - **The path field is a new FILE, not a destination folder.** It defaults to the other pane's folder plus a suggested
   `<name>.zip` (`initialEditedPath` + `suggestCompressArchiveName`) and stays editable. Suggested name: single source →
@@ -251,7 +249,7 @@ empty zip, then copy-into" for the seed mechanism. The user-visible differences 
   `handleConfirm(isAuto=true)` proceeds unattended ONLY when the target doesn't already exist; if it does, it clears
   `confirmed` and leaves the dialog open for the user to decide. The MCP tool's composed ack
   (`GenerationAdvancedOrSoftDialog`) honestly reflects both outcomes — see
-  [`src-tauri/src/mcp/executor/ack.rs`](../../../../src-tauri/src/mcp/executor/ack.rs). Don't refactor this gate away.
+  `apps/desktop/src-tauri/src/mcp/executor/ack.rs`. Don't refactor this gate away.
 - **Confirm routes to `compressFiles`**, not `copyBetweenVolumes`
   (`transfer-progress-state.svelte.ts::dispatchCompress`). One command handles local and (later) remote sources; the
   scan preview still runs for the Size bar.
@@ -262,16 +260,14 @@ empty zip, then copy-into" for the seed mechanism. The user-visible differences 
   `compressionLevel` in the op config for compress, copy, AND cross-volume move (one uniform level for every user-driven
   zip write; the backend ignores it for non-archive copies). The level's effect on the archive (added-entries-only,
   clamped 1..=9, `None` = crate default 6) is single-sourced in
-  [`write_operations/DETAILS.md`](../../../../src-tauri/src/file_system/write_operations/DETAILS.md) § "Archive edits" →
-  the mutation `DETAILS.md`.
+  `apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "Archive edits" → the mutation `DETAILS.md`.
 - **An explicitly-approximate estimated size shows in compress mode only** (`CompressEstimateLine.svelte`, beside the
   scan tallies). The backend samples it once during the deep scan (local sources only; suppressed for remote) and ships
   per-class level-6 subtotals on `scan-preview-complete`; `transfer-scan-state` exposes them as `estimatedBytes`. The
   line re-scales to the selected level via `compress-estimate-scaling.ts` with no re-scan (it subscribes to the same
   `behavior.archiveCompressionLevel` setting the slider writes), shows a loading affordance while a local scan runs, and
   renders nothing when the estimate is absent. The sampler, budgets, and level curve are single-sourced in
-  [`write_operations/DETAILS.md`](../../../../src-tauri/src/file_system/write_operations/DETAILS.md) § "Compressed-size
-  estimate".
+  `apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "Compressed-size estimate".
 
 ### Same-FS move optimization
 
@@ -420,9 +416,9 @@ rolling-back/settled, no conflict prompt up).
 - **Lifecycle status comes from `operations-changed`, not `write-progress`.** The dialog subscribes to the manager's
   thin `operations-changed` snapshot and tracks `opStatus` for its own `operationId`. A paused op still reports
   `is_running: true` from the write-op-state map, so the bar-is-moving truth is the snapshot status (`running` vs
-  `paused` vs `queued`), never `write-progress`. This mirrors the queue window's rule (see
-  [`../queue/CLAUDE.md`](../queue/CLAUDE.md)). The Pause↔Resume label/icon and the "Paused" title both follow
-  `opStatus`, so the UI flips only once the backend actually parked — never optimistically.
+  `paused` vs `queued`), never `write-progress`. This mirrors the queue window's rule (see `../queue/CLAUDE.md`). The
+  Pause↔Resume label/icon and the "Paused" title both follow `opStatus`, so the UI flips only once the backend actually
+  parked — never optimistically.
 - **Pause/Resume** calls `pauseOperation` / `resumeOperation` (no rollback semantics; the op keeps its lane slot while
   paused). `pauseInFlight` guards against a double-click racing the IPC.
 - **Queue (send to background)** is FRONTEND-ONLY state, no backend command. `handleQueue` sets the local `backgrounded`

@@ -4,7 +4,7 @@ AI features powered by local LLM (llama-server) or remote LLM providers. Used fo
 natural-language search. Three provider modes: Off, Cloud AI (BYOK, any OpenAI-compatible endpoint), and Local LLM
 (on-device llama-server, Apple Silicon only). `ai.provider` is the single source of truth for whether AI is on.
 
-Frontend counterpart: [`apps/desktop/src/lib/ai/CLAUDE.md`](../../../src/lib/ai/CLAUDE.md).
+Frontend counterpart: `apps/desktop/src/lib/ai/CLAUDE.md`.
 
 ## Module map
 
@@ -21,8 +21,7 @@ Local-AI lifecycle, split by concern around one shared singleton (depth in DETAI
 - `download.rs` / `extract.rs` / `process.rs`: stateless leaves (HTTP download, extraction, llama-server syscalls).
 - `suggestions.rs`: folder-name prompt + streaming sanitizer. `api_keys.rs`: per-provider key storage.
   `translate_error.rs`: typed error for the two translate commands.
-- `llm_log/`: on-disk log of every LLM request/response, tapped in `client.rs`. See
-  [`llm_log/CLAUDE.md`](llm_log/CLAUDE.md).
+- `llm_log/`: on-disk log of every LLM request/response, tapped in `client.rs`. See `llm_log/CLAUDE.md`.
 
 ## Must-knows
 
@@ -57,4 +56,5 @@ Local-AI lifecycle, split by concern around one shared singleton (depth in DETAI
 Add the GGUF to `AVAILABLE_MODELS` in `mod.rs` (with `kv_bytes_per_token` + `base_overhead_bytes`), and set
 `DEFAULT_MODEL_ID` if it should be the default.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.

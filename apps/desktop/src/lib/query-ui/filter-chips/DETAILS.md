@@ -2,14 +2,14 @@
 
 Pull-tier docs for `lib/query-ui/filter-chips/`: architecture, flows, the file/test catalogs, popover anatomy, the
 grid-style Size / Modified column contents, shortcut openers, chip-side behavior, and decision rationale. Must-know
-invariants and gotchas live in [CLAUDE.md](CLAUDE.md).
+invariants and gotchas live in `CLAUDE.md`.
 
 The chip strip lives below the mode-chip row inside the shared `QueryDialog`. It leads with a one-click
 `Both | Files | Folders` type toggle, then surfaces each remaining filter dimension (Pattern, Size, Modified, Search in)
 as a chip that opens a popover with the dense controls. All filters are always visible (there's no "+ Add filter"
 affordance). Owned by the shared query UI; consumed by both Search and Selection through the same `QueryDialog`
-orchestrator. See [`../CLAUDE.md`](../CLAUDE.md) and [`../DETAILS.md`](../DETAILS.md) for the orchestrator, the unified
-bar, the results table, and the cross-consumer state factory.
+orchestrator. See `../CLAUDE.md` and `../DETAILS.md` for the orchestrator, the unified bar, the results table, and the
+cross-consumer state factory.
 
 ## Files
 
@@ -64,7 +64,7 @@ configured) from the derived state. Keeping the rules pure (no `$state` reads in
 
 The popover is a frosted-glass surface anchored to the chip. `$lib/ui/Popover.svelte` (wrapped by `FilterPopover`) owns
 positioning, the focus trap, and the close-on-Escape contract. The same `Popover` backs `RecentItemsPopover.svelte` (see
-[`../recent-items/`](../recent-items/)) for the auto-flip + focus-trap + Esc-scoped close.
+`../recent-items/`) for the auto-flip + focus-trap + Esc-scoped close.
 
 **Anatomy** (top to bottom):
 

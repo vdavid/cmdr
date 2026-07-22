@@ -1,8 +1,7 @@
 # LLM call logging details
 
-Pull-tier docs for `ai/llm_log/`. Must-know invariants live in [CLAUDE.md](CLAUDE.md). This is the observability
-gateway specified in the Ask Cmdr plan ([`docs/specs/ask-cmdr-plan.md`](../../../../../../docs/specs/ask-cmdr-plan.md)
-§ M9).
+Pull-tier docs for `ai/llm_log/`. Must-know invariants live in `CLAUDE.md`. This is the observability
+gateway specified in the Ask Cmdr plan (`docs/specs/ask-cmdr-plan.md` § M9).
 
 ## The seam: one tap, all traffic
 

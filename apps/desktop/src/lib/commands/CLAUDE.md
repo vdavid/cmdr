@@ -22,7 +22,7 @@ Centralized command registry and fuzzy search engine for the command palette.
 - **Entries hold i18n message KEYS, not English** (`CommandSource.nameKey` / `descriptionKey`); copy lives in
   `messages/en/commands.json`, resolved via getter-backed `name` / `description`. Don't hardcode a label
   (`cmdr/no-raw-user-facing-string` is enforced here); IDS stay untouched. `updateLicenseCommandName` flips a flag, not
-  the text. The array stays a getter-backed mutable `Command[]`. Details: [DETAILS.md](DETAILS.md) § i18n.
+  the text. The array stays a getter-backed mutable `Command[]`. Details: `DETAILS.md` § i18n.
 - **Two set-equality guards keep tuple and registry in sync.** `Command.id: CommandId` enforces tuple ⊇ registry at
   compile time; `command-registry.test.ts` enforces registry ⊇ tuple. Adding to one without the other fails the build or
   the test.
@@ -58,10 +58,9 @@ Centralized command registry and fuzzy search engine for the command palette.
 
 ## Adding a command
 
-The full step list (ids, registry entry, arg overrides, handler, palette pin, native-menu wiring) is in
-[DETAILS.md](DETAILS.md) § "Adding a command". The compile-time and set-equality guards above catch most omissions; the
-four-places gotcha covers the menu-item case.
+The full step list (ids, registry entry, arg overrides, handler, palette pin, native-menu wiring) is in `DETAILS.md` §
+"Adding a command". The compile-time and set-equality guards above catch most omissions; the four-places gotcha covers
+the menu-item case.
 
 Full details (the `Command` / `CommandArgs` / `CommandDispatchArgs` type definitions, the uFuzzy config and ranking
-behavior, `searchAllCommands` rationale, the `view.showHidden` local-first path, and decision rationale):
-[DETAILS.md](DETAILS.md).
+behavior, `searchAllCommands` rationale, the `view.showHidden` local-first path, and decision rationale): `DETAILS.md`.

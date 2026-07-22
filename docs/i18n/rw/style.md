@@ -1,7 +1,6 @@
 # Kinyarwanda (rw) translation style guide
 
-Working notes for translating Cmdr into Kinyarwanda. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into Kinyarwanda. Read `../README.md` for how this fits the translation process.
 
 LOW priority. Kinyarwanda is the national language of Rwanda (~12M speakers, also widely understood in the region). The
 pile has GNOME Nautilus (`rw`) and Microsoft terminology (`rw-RW`); NO macOS (Apple ships no Kinyarwanda UI). So a real
@@ -68,6 +67,6 @@ CLDR categories for `rw`: `one`, `other`. Two CLDR forms, but note the noun-clas
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/rw/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/rw/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

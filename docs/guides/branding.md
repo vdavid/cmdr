@@ -4,8 +4,8 @@ Cmdr's visual identity across the website, the desktop app, and marketing materi
 
 We don't have a formal design system yet. This doc captures what we've settled on so far.
 
-The reusable exported artifacts (logos, product screenshots, marketing copy blobs) live in [`brand/`](../../brand/) at
-the repo root. This doc is the reference prose; `brand/` is the grab-here files.
+The reusable exported artifacts (logos, product screenshots, marketing copy blobs) live in `brand` at the repo root.
+This doc is the reference prose; `brand/` is the grab-here files.
 
 ## Logo
 
@@ -127,8 +127,7 @@ The tagline is **"The AI-native file manager"**. The legal entity is **Rymdskott
 
 ## Newsletter
 
-The Listmonk campaign template lives at [campaign-template.html](../../infra/listmonk/campaign-template.html). It uses
-the website's dark palette:
+The Listmonk campaign template lives at `infra/listmonk/campaign-template.html`. It uses the website's dark palette:
 
 - `#0a0a0b` outer background, `#18181b` content card, `#27272a` borders
 - `#ffc206` mustard accent bar at the top and for links/CTAs

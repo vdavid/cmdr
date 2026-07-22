@@ -2,7 +2,7 @@
 
 `main.db`: the agent's durable store, a peer to `operation-log.db` in the app data dir (agent-spec D1/D3). Conversations,
 messages (typed `content_blocks` JSON), an FTS5 search index over message text, and a per-day cost meter. Depth (DDL
-rationale, the FTS design, the search-JOIN gotcha, no-retention-in-v1): [DETAILS.md](DETAILS.md).
+rationale, the FTS design, the search-JOIN gotcha, no-retention-in-v1): `DETAILS.md`.
 
 ## Module map
 
@@ -44,4 +44,4 @@ rationale, the FTS design, the search-JOIN gotcha, no-retention-in-v1): [DETAILS
   and lists the distinct providers, so the per-thread footer can render the honest miss-path (local ⇒ free; unpriced ⇒
   unknown; never a silent $0). Pricing itself is `crate::agent::pricing`, not the store.
 
-Depth: [DETAILS.md](DETAILS.md).
+Depth: `DETAILS.md`.

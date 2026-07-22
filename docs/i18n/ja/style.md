@@ -1,8 +1,7 @@
 # Japanese (ja) translation style guide
 
-Working notes for translating Cmdr into Japanese. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Japanese.
+Working notes for translating Cmdr into Japanese. Read `../README.md` for how this fits the translation process, and the
+app-wide `docs/style-guide.md` for the English voice these notes carry into Japanese.
 
 Japanese has no second-person T/V split like European languages, but it has a politeness-register system (keigo) that is
 just as load-bearing for UI tone: getting the register wrong makes the app read as childish, cold, or oddly stiff. The
@@ -146,8 +145,7 @@ form does not change with count.
   UI (macOS does), so digits aren't a decision here.
 - **ICU mechanics** (catalog-level, easy to miss): double every apostrophe in a value (`'` becomes `''`; ICU treats a
   lone `'` as an escape and silently swallows text), and keep every `{placeholder}` and `<tag>` verbatim. Full rules:
-  the agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
-  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  the agent-handoff block in `docs/guides/i18n-translation.md` and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Decisions to confirm with David
 
@@ -158,6 +156,6 @@ form does not change with count.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/ja/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/ja/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

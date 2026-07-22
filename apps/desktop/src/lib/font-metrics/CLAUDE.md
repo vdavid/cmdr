@@ -30,5 +30,5 @@ consumer is a sibling subsystem at `src-tauri/src/font_metrics/mod.rs` (not nest
 - `$lib/logging/logger`: `getAppLogger`.
 - Rust counterpart: `apps/desktop/src-tauri/src/font_metrics/mod.rs`.
 
-Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

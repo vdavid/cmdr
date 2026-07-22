@@ -1,7 +1,7 @@
 # Drag and drop details
 
 Pull-tier docs for `apps/desktop/src/lib/file-explorer/drag/`: architecture, flows, and decision rationale. Must-know
-invariants and gotchas live in [CLAUDE.md](CLAUDE.md).
+invariants and gotchas live in `CLAUDE.md`.
 
 Handles native drag-and-drop for files: dragging out to other apps, receiving drops from external sources, and
 pane-to-pane drags.
@@ -130,9 +130,8 @@ bytes when you ask," and Finder asks by calling our delegate's `writePromiseToUR
 bytes off the device into the Finder-chosen destination. Multi-select works; folders download recursively. The drag
 image and count badge are unaffected (one `NSDraggingItem` per item; `setDraggingFrame:contents:` is writer-agnostic).
 The promise machinery, delegate, fulfillment service, and the completion toasts live in
-[`src-tauri/src/native_drag/CLAUDE.md`](../../../../src-tauri/src/native_drag/CLAUDE.md). The pasteboard-layout and
-folder-promise verdicts behind the design are recorded in
-[`docs/notes/drag-out-promises-spike.md`](../../../../../../docs/notes/drag-out-promises-spike.md).
+`apps/desktop/src-tauri/src/native_drag/CLAUDE.md`. The pasteboard-layout and folder-promise verdicts behind the design
+are recorded in `docs/notes/drag-out-promises-spike.md`.
 
 - **No more `.textClipping` junk file.** A virtual session advertises NO materializable representations besides the
   promise (no file-url, no text, no filenames), so an app that accepts neither promises nor our remaining types makes a

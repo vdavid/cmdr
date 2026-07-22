@@ -1,9 +1,8 @@
 # Query UI (shared filter-and-act-on primitives)
 
 Primitives shared between the Search dialog (`lib/search/`) and the Selection dialog (`lib/selection-dialog/`); the
-module map below lists the pieces. Filter-chip internals: [`filter-chips/CLAUDE.md`](filter-chips/CLAUDE.md).
-Consumer-specific decisions: [`lib/search/CLAUDE.md`](../search/CLAUDE.md),
-[`lib/selection-dialog/CLAUDE.md`](../selection-dialog/CLAUDE.md).
+module map below lists the pieces. Filter-chip internals: `filter-chips/CLAUDE.md`. Consumer-specific decisions:
+`../search/CLAUDE.md`, `../selection-dialog/CLAUDE.md`.
 
 ## Module map
 
@@ -55,5 +54,5 @@ Consumer-specific decisions: [`lib/search/CLAUDE.md`](../search/CLAUDE.md),
   on non-null `isDirectory`, so AI silence keeps the user's choice; callers must NOT pre-reset `typeFilter`. Contract in
   `apply-ai-filters.ts`.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

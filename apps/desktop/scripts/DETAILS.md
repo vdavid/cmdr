@@ -2,7 +2,7 @@
 
 Depth and rationale. `CLAUDE.md` holds the must-knows; the wrapper architecture and decisions live here. The canonical
 instance-isolation reference (per-resource derivation, race-window analysis, debug recipes, acceptance smoke) is
-[`docs/tooling/instance-isolation.md`](../../../docs/tooling/instance-isolation.md).
+`docs/tooling/instance-isolation.md`.
 
 ## The wrapper architecture
 

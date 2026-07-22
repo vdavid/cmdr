@@ -43,4 +43,4 @@ else macOS → Keychain; else Linux + Secret Service available → Keyring; else
   silently accept writes without persisting.
 
 Full details (Linux path-change history, migration notes, the `keyring` v4 ecosystem-split rationale):
-[DETAILS.md](DETAILS.md).
+`DETAILS.md`.

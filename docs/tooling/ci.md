@@ -1,8 +1,7 @@
 # CI
 
 How the GitHub workflows fit together, and the invariants that keep them honest. The workflows live in
-`.github/workflows/`; the checks they run live in `scripts/check/` (see
-[`scripts/check/CLAUDE.md`](../../scripts/check/CLAUDE.md)).
+`.github/workflows/`; the checks they run live in `scripts/check/` (see `scripts/check/CLAUDE.md`).
 
 ## Workflow inventory
 
@@ -56,15 +55,14 @@ server).
 
 1. Every `--check <name>` in any workflow resolves to a registry ID or nickname.
 2. Every registry check is referenced by some workflow, or carries a `NotInCI` reason on its `CheckDefinition` (see
-   [`scripts/check/checks/DETAILS.md`](../../scripts/check/checks/DETAILS.md) § Field semantics). A reason on a check
-   that IS referenced fails too, so excuses can't go stale.
+   `scripts/check/checks/DETAILS.md` § Field semantics). A reason on a check that IS referenced fails too, so excuses
+   can't go stale.
 3. Every concrete path in `ci.yml`'s filter block exists (glob entries are checked via their static directory prefix).
 4. Every static path prefix in a registry check's `Inputs` (and in `GlobalInputs`) exists. A dead `Inputs` glob would
    silently make the input-fingerprint cache skip a check whose real (renamed) sources changed. Same robust
    file-existence shape as rule 3; it deliberately does NOT reconcile `Inputs` against the filter sets (the filter ↔ app
    ↔ check mapping isn't 1:1, so a strict reconciliation would be flaky). The cache's real correctness backstop is that
-   `--ci` always runs fresh. See the input-fingerprint cache section in
-   [`scripts/check/CLAUDE.md`](../../scripts/check/CLAUDE.md).
+   `--ci` always runs fresh. See the input-fingerprint cache section in `scripts/check/CLAUDE.md`.
 
 Practical consequence: **when you add a check, CI fails until you either add a workflow step for it or set `NotInCI`
 with a reason.** When you rename one, CI fails until every workflow catches up. That's the point.

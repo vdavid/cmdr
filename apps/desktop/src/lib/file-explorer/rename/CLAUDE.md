@@ -14,7 +14,7 @@ only; selection is preserved and irrelevant.
 - **rename-activation.ts**: click-to-rename timer.
 
 Full details (the three-stage save flow, permission/validation tiers, post-rename cursor tracking, decisions):
-[DETAILS.md](DETAILS.md).
+`DETAILS.md`.
 
 ## Must-knows
 

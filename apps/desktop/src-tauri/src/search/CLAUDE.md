@@ -16,7 +16,7 @@ fans out across every volume with a persisted `index-{volumeId}.db` and merges. 
 - `types.rs`: pure data, no logic. `query.rs`: operations on the types (`parse_scope`, `resolve_include_scope`,
   formatters, `SYSTEM_DIR_EXCLUDES`).
 - `history.rs`: persistent recent-searches store (see below). `ai/`: NL → `SearchQuery` translation
-  ([`ai/CLAUDE.md`](ai/CLAUDE.md)).
+  (`ai/CLAUDE.md`).
 
 ## Must-knows
 
@@ -46,7 +46,7 @@ fans out across every volume with a persisted `index-{volumeId}.db` and merges. 
   guard before any `fs` call; no `.await` while holding a guard.
 - **Add only on "Open in pane"**, never on Enter / auto-apply (David's call). Not Rust-enforced; the FE's ONLY
   `addRecentSearch` call site is the Open-in-pane handler. Don't add a "convenience" one.
-- Persistence, dedupe-key, and cap: [DETAILS.md](DETAILS.md) § History store.
+- Persistence, dedupe-key, and cap: `DETAILS.md` § History store.
 
 ## Sharing + IPC
 
@@ -55,5 +55,5 @@ fans out across every volume with a persisted `index-{volumeId}.db` and merges. 
 - **`commands/search.rs`** holds thin wrappers; `translate_search_query` orchestrates the AI pipeline; `resolve_ai_backend`
   stays there (touches `crate::ai` + `crate::settings`). The MCP `ai_search` executor calls it with `current_type = None`.
 
-Full rationale (in-memory-Vec vs SQLite, path reconstruction, schema-migration policy): [DETAILS.md](DETAILS.md). Read it
-before any non-trivial work here: editing, planning, reorganizing, or advising.
+Full rationale (in-memory-Vec vs SQLite, path reconstruction, schema-migration policy): `DETAILS.md`. Read it before any
+non-trivial work here: editing, planning, reorganizing, or advising.

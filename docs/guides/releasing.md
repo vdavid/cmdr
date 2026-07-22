@@ -4,8 +4,7 @@ How to release a new version of Cmdr. An agent runs the whole flow via the `/rel
 monitors the build, verifies the public surface afterwards, and handles failure recovery. The human's role is to review
 the CHANGELOG draft, confirm the version, and click any macOS permission prompts.
 
-Related guides for the signing and distribution steps:
-[apple-signing-and-notarization.md](apple-signing-and-notarization.md) and [homebrew-cask.md](homebrew-cask.md).
+Related guides for the signing and distribution steps: `apple-signing-and-notarization.md` and `homebrew-cask.md`.
 
 ## Prerequisites
 
@@ -34,7 +33,7 @@ tagged. Beyond the version/CHANGELOG checks and `oxfmt --ci`, two are worth know
   release-prep copy (mainly `feature-status.json` → `/features`) made stale, on both macOS and (in a pinned Playwright
   container) Linux, and folds them into the release commit. Docker must be running; a stopped Docker aborts the release
   before tagging. Without this, the stale `-linux` baseline turns CI red right after the tag. Mechanism:
-  [`apps/website/DETAILS.md`](../../apps/website/DETAILS.md) § Visual baselines.
+  `apps/website/DETAILS.md` § Visual baselines.
 - **No stale translations may ship.** A non-`en` translation whose stored `@key.sourceHash` no longer matches the
   current English value is STALE (it renders text translated from a sentence that no longer exists). The
   `desktop-i18n-stale` check is warn-only in normal `pnpm check` (a maintenance signal, not a daily-dev build breaker),
@@ -42,8 +41,7 @@ tagged. Beyond the version/CHANGELOG checks and `oxfmt --ci`, two are worth know
   `CMDR_I18N_STALE_STRICT=1 pnpm check i18n-stale`. With `set -e`, a stale finding aborts the release before tagging, so
   the re-translation lands first. Fix: re-translate the changed keys and refresh `@key.sourceHash` (and re-review), then
   re-run the release. English-only today, so this is a clean no-op until a real locale exists. Mechanism and schema:
-  [`apps/desktop/src/lib/intl/messages/DETAILS.md`](../../apps/desktop/src/lib/intl/messages/DETAILS.md) § `@key`
-  metadata schema.
+  `apps/desktop/src/lib/intl/messages/DETAILS.md` § `@key` metadata schema.
 
 ## Pre-release smoke test on old macOS
 

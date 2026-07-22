@@ -1,7 +1,7 @@
 # Operation log — details
 
-Depth for the operation-log subsystem. Must-knows and the module map: [CLAUDE.md](CLAUDE.md). The full design, every
-decision (D1–D10), and the milestone breakdown: [`docs/specs/operation-log-plan.md`](../../../../../docs/specs/operation-log-plan.md)
+Depth for the operation-log subsystem. Must-knows and the module map: `CLAUDE.md`. The full design, every
+decision (D1–D10), and the milestone breakdown: `docs/specs/operation-log-plan.md`
 — this doc captures what shipped and the durable rationale a future agent needs on hand; the plan holds the rest.
 
 ## What this is
@@ -26,7 +26,7 @@ a future "exclude operation log from backups" toggle (an exclusion attribute on 
 identified reversible lever.
 
 It is itself sensitive: a map of the user's file activity. It stays local, never transmitted (noted in
-[`docs/security.md`](../../../../../docs/security.md)).
+`docs/security.md`).
 
 ## The migration ladder (D2) — the reusable template
 
@@ -202,7 +202,7 @@ read via the sanctioned `ReadPool` — never a raw rusqlite dep on the index DB)
 | capped`). The leaf read is bounded by `SEARCH_LEAF_CAP` (50,000) via `IndexStore::list_children_on_limited`'s `LIMIT
 cap + 1`, so a 1M-child folder pays a bounded (~59 ms) synchronous read before the sub-second rename, not a 1M-row one;
 over the cap ⇒ top-level row only + `capped` (rollback unaffected — the top-level row is the undo unit regardless).
-Numbers + the cap-tuning rationale: [`docs/notes/operation-log-capture-bench.md`](../../../../../docs/notes/operation-log-capture-bench.md).
+Numbers + the cap-tuning rationale: `docs/notes/operation-log-capture-bench.md`.
 
 ### The bypass boundary
 
@@ -446,7 +446,7 @@ the next tick with no restart or applier case. Defaults: **age = forever, size =
 `operationLog.maxAge` (duration ms; `0` = forever; absent ⇒ forever) and `operationLog.maxSize` (bytes; absent ⇒ 3 GB;
 `0` = unlimited). The user-facing controls are the "Operation log" settings section (`OperationLogSection.svelte` + the
 `operationLog.*` entries in `settings-registry.ts`), which persist exactly these keys — see
-[`adding-a-new-setting.md`](../../../../../docs/guides/adding-a-new-setting.md) for the registry pattern.
+`docs/guides/adding-a-new-setting.md` for the registry pattern.
 
 A prune (`handle_prune`) is: **age prune** (delete whole finished ops older than the cutoff) → **size prune** (delete the
 oldest whole ops until the DB fits the budget) → **dir GC** → **reclaim**.
@@ -473,7 +473,7 @@ oldest whole ops until the DB fits the budget) → **dir GC** → **reclaim**.
   physical file (in WAL mode `incremental_vacuum`'s page-count drop otherwise lands only in the WAL). Importance sets
   `auto_vacuum = INCREMENTAL` but never calls `incremental_vacuum`; this DB must, or it grows unboundedly. Both slices go
   through `crate::sqlite_util::run_incremental_vacuum` because `incremental_vacuum` frees one page per step — see the
-  canonical gotcha in [`../indexing/DETAILS.md`](../indexing/DETAILS.md) § row-yielding pragmas.
+  canonical gotcha in `../indexing/DETAILS.md` § row-yielding pragmas.
 
 ## The dev bin
 

@@ -1,7 +1,7 @@
 # Indexing transports details
 
 Read this before any non-trivial work in `indexing/transports/`: editing, planning, reorganizing, or advising.
-Must-know invariants are in [CLAUDE.md](CLAUDE.md).
+Must-know invariants are in `CLAUDE.md`.
 
 Each transport reuses the ENTIRE registry, writer, aggregator, `dir_stats`, and read-path machinery. Only how a volume
 is enabled and how live changes arrive differ. The scan itself (the `Volume`-trait BFS for SMB/MTP, the local guarded
@@ -89,13 +89,13 @@ lifetime, not just while a pane shows the share, so the index must update even w
   the change (per-volume `SCAN_CHANGE_BUFFER`, bounded `MAX_BUFFERED_CHANGES = 50_000`) instead of applying it. The
   scan-completion handler calls `replay_buffered_changes` AFTER aggregation lands, then transitions to Fresh; overflow
   fires `OverflowUnrecoverable` ⇒ Stale; an interrupted scan calls `discard_buffered_changes`. The completion handler
-  itself is owned by [`../lifecycle`](../lifecycle/DETAILS.md).
+  itself is owned by `../lifecycle/DETAILS.md`.
 - **Overflow policy.** On `STATUS_NOTIFY_ENUM_DIR` the watcher keeps watching (the session is fine) and emits a
   root-scoped `FullRefresh`; the index path fires `OverflowUnrecoverable` ⇒ Stale (the watcher only ever signals
   overflow for the share ROOT, so a full rescan is the only honest repair). Overflow is a DIFFERENT code path from a
   disconnect (`WatcherDied`) — never conflated. `on_smb_watcher_died` / `on_smb_overflow` (in `smb/index.rs`) fire the
   freshness events and bump `current_epoch`; the freshness state machine is owned by
-  [`../lifecycle`](../lifecycle/DETAILS.md).
+  `../lifecycle/DETAILS.md`.
 
 ## MTP (`mtp/`)
 
@@ -150,7 +150,7 @@ by the stored handle. PTP events are device-wide but storages are separate names
 - **Path space — no mount-strip.** The MTP resolver produces storage-relative paths (`/DCIM/Camera`) and the index
   `ROOT_ID` is the storage root, so `apply_mtp_*` resolves against the index directly. The read-side `index_read_path`
   strips the `mtp://{device}/{storage}` scheme prefix off listing/dir-stats paths (owned by
-  [`../paths`](../paths/DETAILS.md)).
+  `../paths/DETAILS.md`).
 - The rest matches SMB verbatim: enqueue on the volume's writer, index write before the `index-dir-updated` emit, reads
   off the `ReadPool`, buffer-during-scan (`SCAN_CHANGE_BUFFER`, 50,000, overflow ⇒ Stale) replayed after aggregation,
   discard-on-interrupt.
@@ -175,21 +175,21 @@ substring: resolve the volume in `VolumeManager`, read its mount root, and check
 fs-type from `detect_filesystem_for_path`). Either ⇒ fall through to the SMB gate (a network mount must never run the
 local guarded walker). Neither ⇒ `LocalExternal`, indexed via `start_indexing_for_local_external_inner` →
 `start_indexing_for(.., LocalExternal, inodes_trustworthy)`, then `enforce_external_index_cap` (retention, owned by
-[`../resources`](../resources/DETAILS.md)). The pure routing decision (`routes_to_local_external`) is split from the
+`../resources/DETAILS.md`). The pure routing decision (`routes_to_local_external`) is split from the
 wiring so it's unit-testable without a `VolumeManager` or `AppHandle`. Disk images are INCLUDED: a mounted DMG is a real
 local filesystem; the first-connect prompt stays `isDriveRow`-gated so a DMG is only ever indexed by an explicit enable.
 
 **The fs-type probe is timeout-guarded** (2 s, on the blocking pool): a hung network mount's `statfs` must never stall
 the IPC thread, and a timed-out/errored probe is treated as network → fall through (safe). The same probe also yields
 the drive's inode-trust fact (`FilesystemKind::has_stable_inodes()`, false for FAT/exFAT), threaded to the scan as
-`inodes_trustworthy` so its entries store `inode: None` (see [`../paths`](../paths/DETAILS.md) `trust_inode`, and the
+`inodes_trustworthy` so its entries store `inode: None` (see `../paths/DETAILS.md` `trust_inode`, and the
 FAT/exFAT rationale below).
 
 `LocalExternal` is the first volume that is BOTH local-scanned AND mount-rooted, non-journaled, and non-search-feeding.
 Journal replay is gated on `kind.has_event_journal()`, NOT `stored_event_id.is_some()`: the shared local event loop
 persists `last_event_id` for ANY local-scanner volume, so a completed `LocalExternal` index carries one despite having
 no `.fseventsd` journal to replay. Only the boot disk (`Local`) replays. This resume dispatch is owned by
-[`../lifecycle`](../lifecycle/DETAILS.md).
+`../lifecycle/DETAILS.md`.
 
 ### Why FAT/exFAT nulls the inode wholesale
 

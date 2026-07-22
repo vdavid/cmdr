@@ -1,216 +1,209 @@
 # Specs index
 
-Spec docs and task lists for Cmdr developments, indexed so each stays discoverable. See [README.md](README.md) for what
-this folder is and when it gets wiped. Shipped specs get wiped once their durable intent is captured in colocated
-`CLAUDE.md`/`DETAILS.md` (and git history); what remains here is deferred work under [`later/`](later/).
+Spec docs and task lists for Cmdr developments, indexed so each stays discoverable. See `README.md` for what this folder
+is and when it gets wiped. Shipped specs get wiped once their durable intent is captured in colocated
+`CLAUDE.md`/`DETAILS.md` (and git history); what remains here is deferred work under `later/`.
 
 ## In progress
 
-- [ ] 2026-07-22 [swap-scan-plan.md](swap-scan-plan.md) - Replace the ~15-minute serial in-place reconcile rescan of a
-      completed LOCAL index with a build-and-swap: run the fast parallel guarded walker into a separate
-      `index-{vid}.building.db`, then swap it in atomically (~8.4x faster, 107 s vs 897 s, honest AND complete). The spine
-      is data safety (Cmdr principle 4): a durable `.swap` marker + idempotent open-time recovery guarantees exactly one
-      complete index across any crash, cancel, or ENOSPC, never a torn state. Recommends the separate-DB-file variant
-      over in-file shadow tables (preserves single-writer-per-DB; no 82-site table-name threading, no index-name
-      collision, no giant DROP + vacuum tail). Neutralizes the feasibility note's traps (`scan_completed_at` clear, id
-      space, orphan tables) by construction. Reconcile stays as the free-space / flag-off fallback. Local-only (root
-      first, LocalExternal a follow-on; SMB/MTP out). Foundation: [`swap-scan-feasibility.md`](../notes/swap-scan-feasibility.md)
-      and [`indexing-benchmarks-2026-07-21.md`](../notes/indexing-benchmarks-2026-07-21.md).
-- [ ] 2026-07-22 [smb-multi-connection-scan-plan.md](smb-multi-connection-scan-plan.md) - Speed up the cold SMB index
-      scan by spreading its directory listings across a small pool of extra TCP connections inside `SmbVolume` (the NAS
-      bottleneck is per-connection ksmbd serialization, not the disks; 4 connections lift cold throughput ~3.8×),
-      invisible to the transport-agnostic scanner via a `begin_scan_session`/`end_scan_session` trait seam and a
-      round-robin pool with sibling-retry + single-flight member reconnect. M2 loosens the single SQLite writer
-      (periodic explicit transactions around the fresh-scan inserts) so it keeps up with ~4× ingest without losing
-      crash-safety.
-- [ ] 2026-07-22 [image-index-indicators.md](image-index-indicators.md) - Replace the `SelectionInfo` "Indexing images"
-      / "Images indexed" text strip with three quiet, glanceable indicators at their natural granularities: a per-image
-      icon overlay (backend-classified `indexed`/`stale`/`failed`/`pending`/`excluded`, top-right, toggleable), a
-      per-folder icon overlay (two states, subtree `accounted/eligible` fraction in the tooltip), and a per-drive dot
-      beside the filesystem-index dot (gray/yellow/green). Core new backend: a per-directory `accounted` (done+failed)
-      aggregate mirroring `coverage.rs`'s eligible-count map, with subtree rollups, plus `media_index_file_status` and
+- [ ] 2026-07-22 `swap-scan-plan.md` - Replace the ~15-minute serial in-place reconcile rescan of a completed LOCAL
+      index with a build-and-swap: run the fast parallel guarded walker into a separate `index-{vid}.building.db`, then
+      swap it in atomically (~8.4x faster, 107 s vs 897 s, honest AND complete). The spine is data safety (Cmdr
+      principle 4): a durable `.swap` marker + idempotent open-time recovery guarantees exactly one complete index
+      across any crash, cancel, or ENOSPC, never a torn state. Recommends the separate-DB-file variant over in-file
+      shadow tables (preserves single-writer-per-DB; no 82-site table-name threading, no index-name collision, no giant
+      DROP + vacuum tail). Neutralizes the feasibility note's traps (`scan_completed_at` clear, id space, orphan tables)
+      by construction. Reconcile stays as the free-space / flag-off fallback. Local-only (root first, LocalExternal a
+      follow-on; SMB/MTP out). Foundation: `../notes/swap-scan-feasibility.md` and
+      `../notes/indexing-benchmarks-2026-07-21.md`.
+- [ ] 2026-07-22 `smb-multi-connection-scan-plan.md` - Speed up the cold SMB index scan by spreading its directory
+      listings across a small pool of extra TCP connections inside `SmbVolume` (the NAS bottleneck is per-connection
+      ksmbd serialization, not the disks; 4 connections lift cold throughput ~3.8×), invisible to the transport-agnostic
+      scanner via a `begin_scan_session`/`end_scan_session` trait seam and a round-robin pool with sibling-retry +
+      single-flight member reconnect. M2 loosens the single SQLite writer (periodic explicit transactions around the
+      fresh-scan inserts) so it keeps up with ~4× ingest without losing crash-safety.
+- [ ] 2026-07-22 `image-index-indicators.md` - Replace the `SelectionInfo` "Indexing images" / "Images indexed" text
+      strip with three quiet, glanceable indicators at their natural granularities: a per-image icon overlay
+      (backend-classified `indexed`/`stale`/`failed`/`pending`/`excluded`, top-right, toggleable), a per-folder icon
+      overlay (two states, subtree `accounted/eligible` fraction in the tooltip), and a per-drive dot beside the
+      filesystem-index dot (gray/yellow/green). Core new backend: a per-directory `accounted` (done+failed) aggregate
+      mirroring `coverage.rs`'s eligible-count map, with subtree rollups, plus `media_index_file_status` and
       `media_index_folder_coverage` commands. Removes `FolderIndexStatus`/`folder-index-state`.
-- [ ] 2026-07-22 [indexing-reorg-plan.md](indexing-reorg-plan.md) - Reorganize the `indexing/` subsystem's ~45-file flat
-      tail into 13 stage-based area dirs (lifecycle, resources, scanner, network_scanner, watch, reconcile, writer,
-      aggregator, read, paths, events, transports, tests), each with colocated `CLAUDE.md` + `DETAILS.md` and a thin
-      top-level hub. Pure move (no behavior change): external importers stay unchanged via curated `mod.rs` facade
-      re-exports; single-source doc homes for the cross-cutting invariants (honest sizes/ledger → writer, registry →
-      lifecycle, `IndexPathSpace` → paths).
-- [ ] 2026-07-20 [natural-language-bulk-rename-plan.md](natural-language-bulk-rename-plan.md) - Let Ask Cmdr turn a
-      natural-language request into an image-index-informed, same-folder batch rename proposal: the first
-      `Access::Propose` tool stages at most 200 canonical rows, an accessible review dialog makes every per-row decision
-      user-owned, and one managed batch operation revalidates, handles rename cycles safely, updates listings, and
-      journals every row for later rollback. No agent tool can approve or write.
-- [ ] 2026-07-21
-      [natural-language-bulk-rename-hardening-handoff.md](natural-language-bulk-rename-hardening-handoff.md) -
-      Continuation state for the atomic no-overwrite, dependency-planning, live conflict/source, and review-warning
-      hardening pass, including completed work, unresolved tests, remaining findings, and safety invariants.
-- [ ] 2026-07-20 [sealed-subtrees-plan.md](sealed-subtrees-plan.md) - Bound the cost of pathological high-churn
-      directories without lying about folder sizes. Motivated by a measured 7-minute, 1 GB cold-start stall caused by
-      one directory (Google DriveFS `fetch_temp`, 1.14M empty files). M1 ships alone: a two-teeth child-count guard in
-      post-replay verification that declines oversized directories without touching `listed_epoch` (writing 0 there
-      would propagate incompleteness to `~` via the 0-absorbing epoch min). M2-M4 land together: seal a subtree to its
-      `dir_stats` aggregate plus a bounded head of large files, making sealed dirs opaque leaves for every recompute
-      path, choosing the seal root by rolling churn up the ancestor chain, and re-anchoring periodically because deletes
-      in a sealed subtree resolve against the index and inflate the aggregate monotonically. M5 adds a distinct
-      "approximate" size state. Non-goals: a user-facing settings table, SMB/MTP, replacing the existing throttles.
-- [ ] 2026-07-19 [indexing-churn-resilience.md](indexing-churn-resilience.md) - Routing + ingestion fixes for a
-      high-churn boot disk, following the per-subtree rescan throttle. Fix 1: depth-split `MustScanSubDirs` routing
-      (shallow/root-scale → the visible scanner path, deep/narrow → the throttled reconcile) + a root-rescan cooldown,
-      curing the stuck local-folder hourglass, the invisible ~20-min root reconcile, and the replay-routes-to-invisible
-      nuance our unification introduced. Fix 2: replace the bounded 20K watcher channel (whose backpressure cascades an
-      upstream FSEvents drop → forced full scan) with an unbounded, fast-drained buffer kept small by reading fast, with
-      our own high-watermark full-scan decision instead of the OS's. Non-goal: multi-core replay (single-writer
-      invariant + reconcile ordering). Includes a release-build gap-replay measurement to set the adaptive-replay
-      ceiling on data.
+- [ ] 2026-07-22 `indexing-reorg-plan.md` - Reorganize the `indexing/` subsystem's ~45-file flat tail into 13
+      stage-based area dirs (lifecycle, resources, scanner, network_scanner, watch, reconcile, writer, aggregator, read,
+      paths, events, transports, tests), each with colocated `CLAUDE.md` + `DETAILS.md` and a thin top-level hub. Pure
+      move (no behavior change): external importers stay unchanged via curated `mod.rs` facade re-exports; single-source
+      doc homes for the cross-cutting invariants (honest sizes/ledger → writer, registry → lifecycle, `IndexPathSpace` →
+      paths).
+- [ ] 2026-07-20 `natural-language-bulk-rename-plan.md` - Let Ask Cmdr turn a natural-language request into an
+      image-index-informed, same-folder batch rename proposal: the first `Access::Propose` tool stages at most 200
+      canonical rows, an accessible review dialog makes every per-row decision user-owned, and one managed batch
+      operation revalidates, handles rename cycles safely, updates listings, and journals every row for later rollback.
+      No agent tool can approve or write.
+- [ ] 2026-07-21 `natural-language-bulk-rename-hardening-handoff.md` - Continuation state for the atomic no-overwrite,
+      dependency-planning, live conflict/source, and review-warning hardening pass, including completed work, unresolved
+      tests, remaining findings, and safety invariants.
+- [ ] 2026-07-20 `sealed-subtrees-plan.md` - Bound the cost of pathological high-churn directories without lying about
+      folder sizes. Motivated by a measured 7-minute, 1 GB cold-start stall caused by one directory (Google DriveFS
+      `fetch_temp`, 1.14M empty files). M1 ships alone: a two-teeth child-count guard in post-replay verification that
+      declines oversized directories without touching `listed_epoch` (writing 0 there would propagate incompleteness to
+      `~` via the 0-absorbing epoch min). M2-M4 land together: seal a subtree to its `dir_stats` aggregate plus a
+      bounded head of large files, making sealed dirs opaque leaves for every recompute path, choosing the seal root by
+      rolling churn up the ancestor chain, and re-anchoring periodically because deletes in a sealed subtree resolve
+      against the index and inflate the aggregate monotonically. M5 adds a distinct "approximate" size state. Non-goals:
+      a user-facing settings table, SMB/MTP, replacing the existing throttles.
+- [ ] 2026-07-19 `indexing-churn-resilience.md` - Routing + ingestion fixes for a high-churn boot disk, following the
+      per-subtree rescan throttle. Fix 1: depth-split `MustScanSubDirs` routing (shallow/root-scale → the visible
+      scanner path, deep/narrow → the throttled reconcile) + a root-rescan cooldown, curing the stuck local-folder
+      hourglass, the invisible ~20-min root reconcile, and the replay-routes-to-invisible nuance our unification
+      introduced. Fix 2: replace the bounded 20K watcher channel (whose backpressure cascades an upstream FSEvents drop
+      → forced full scan) with an unbounded, fast-drained buffer kept small by reading fast, with our own high-watermark
+      full-scan decision instead of the OS's. Non-goal: multi-core replay (single-writer invariant + reconcile
+      ordering). Includes a release-build gap-replay measurement to set the adaptive-replay ceiling on data.
 
-- [ ] 2026-07-16 [resource-use-plan.md](resource-use-plan.md) - Make media indexing fast, small, and honest at NAS
-      scale: 10 items in impact order (fix the network-pass read path + error classification, parallel enrichment
-      workers + a Settings slider, f16 embeddings, integer-id media-DB keying, CLIP model palettization, ANN vector
-      search, coverage cold-walk index, importance-read caching, WAL hygiene, Vision-embedding gating).
+- [ ] 2026-07-16 `resource-use-plan.md` - Make media indexing fast, small, and honest at NAS scale: 10 items in impact
+      order (fix the network-pass read path + error classification, parallel enrichment workers + a Settings slider, f16
+      embeddings, integer-id media-DB keying, CLIP model palettization, ANN vector search, coverage cold-walk index,
+      importance-read caching, WAL hygiene, Vision-embedding gating).
 
-- [ ] 2026-07-16 [index-ledger-plan.md](index-ledger-plan.md) - Drive-index aggregate integrity (the `dir_stats`
-      ledger): a real incident (60 GB `rm -rf` → stale size, no hourglass, then a stuck "0 bytes" for a 1.21 GB folder)
-      traced to four credit leaks in the incrementally delta-adjusted aggregates (off-writer subtree-scan compensation
-      that double-counts/skips, dropped missing-parent events, backfill not crediting ancestors, accumulator-map
-      pollution corrupting the next full aggregate) plus the `.max(0)` clamp that turns over-debits into permanent lies.
-      Fix: keep deltas as the fast path, add a `repair_dir_stats_upward` recompute-from-children escalation primitive
-      (fires on negative-delta detection and after structural rewrites, on the writer), `source: Maps|Sql` on
-      `ComputeAllAggregates`, missing-parent escalation to subtree rescans with storm control, a held-roots pending tier
-      so coalesced rescans show the hourglass, and a one-shot per-DB heal via a writer-side latch. Reviewed 6×
-      (fresh-eyes agents). All milestones (M1–M5) executed on branch `david/index-ledger`; durable intent lives in
-      `indexing/CLAUDE.md` + `DETAILS.md` § "The dir_stats ledger". Ready for FF-merge and wipe once landed.
-- [ ] 2026-07-15 [local-drive-indexing-plan.md](local-drive-indexing-plan.md) - Index local external drives (USB sticks,
-      SD cards): the missing `enable_drive_index` branch. Core is splitting `IndexVolumeKind`'s conflated "which
-      scanner" vs "has a journal" axes and adding a `LocalExternal` variant — the first volume that is BOTH mount-rooted
-      AND uses the local jwalk + FSEvents pipeline, so the local scan/reconcile/live-event path must learn a
-      mount-relative path space (reuse `smb_watch::index_relative_path`). Plus: scan-root-relative exclusions (the
-      `/Volumes/` false-complete bug), inode-safety on FAT/exFAT (untrusted → `inode: None`, reuse `FilesystemKind`),
-      non-journaled freshness (loads Stale, live FSEvents keep Fresh — verified live delivery fires on FAT/exFAT despite
-      no `.fseventsd`), eject-stop before unmount (a real FAT-unmount kernel panic motivates it), and the `cmdr://state`
-      indexStatus routing fix. Synthetic disk-image test fixture (timeout-guarded, never a physical card). Reviewed 2×
-      (Opus) + FSEvents/inode facts empirically verified. M0–M8 landed; M9 done as a focused `#[ignore]` Rust
-      integration test (real-FAT mount-relative scan → dir_stats + null inodes) plus a live MCP validation on a
-      synthetic FAT32 image — NO CI Playwright E2E by decision (the panic-class `hdiutil`/FSKit op is deliberately kept
-      out of CI; see the plan's M9).
-- [ ] 2026-07-14 [idle-cpu-throttle-plan.md](idle-cpu-throttle-plan.md) - Cut idle CPU + disk-write thrash from live
-      indexing (#37). L1 (importance folded-key subtree clear) and M1 (per-file live-upsert throttle: 60 s leading +
-      trailing, 2%/512 KiB bypass, Downloads-exempt, self-write loop subsumed) shipped; M2 (search-index prealloc
-      right-size) and M3 (per-hot-directory coalescing) remain. Backend-only, no schema/marker (pane file sizes are live
-      `lstat`). See `indexing/DETAILS.md` § "Live per-file write throttle".
-- [ ] 2026-07-13 [media-ml-index-plan.md](media-ml-index-plan.md) - Searchable image index (OCR, tags, faces,
-      text→image) as an ML enrichment layer on the drive index: macOS-native (Vision + Core ML + Foundation Models),
-      vectors in SQLite not Postgres, on-device by default with faces/cloud as separate opt-ins. Plan reviewed + the
-      Core ML/Rust path spike-verified (`docs/notes/clip-coreml-rust-spike.md`), then re-grounded on the shipped
-      `importance/`, lifecycle-bus, and `agent/` subsystems (copy the plumbing, not build it); importance-prioritized
-      enrichment + a settings threshold slider added. **Partially shipped** (see the plan's `## Status (2026-07-16)`
-      section): M1/M1.5/M2 landed ~2026-07-14, M3 (natural-language CLIP semantic search) and M6 (photo-search agent/MCP
-      tool) landed 2026-07-16; M3's CLIP path is gated off until David uploads the model artifacts. Faces (M4a/M4b) and
-      LLM captions (M5) are deliberately PARKED (David wants to be closer in the loop for faces; captions optional).
-- [ ] 2026-07-12 [ask-cmdr-plan.md](ask-cmdr-plan.md) - Implementation plan for the "Ask Cmdr" chat slice: 9 milestones
-      (`AgentLlm` trait + fake → `main.db` store → registry read/write gating + split → in-process tool layer →
-      runtime + context assembly → rail UI + streaming → sessions/search/attachments → consent/settings/i18n/E2E → LLM
-      call logging), the `main.db` DDL (conversations/messages/FTS5/cost_meter, FTS5 net-new), the `AgentLlm` typed-part
-      trait sketch, the IPC surface, and resolutions to every spec §7 open question. Plan ready; execution pending
-      (`/execute` next).
-- [ ] 2026-07-12 [ask-cmdr-spec.md](ask-cmdr-spec.md) - "Ask Cmdr" chat slice of the agent: read-only LLM chat over the
-      drive index + importance + operation log via the in-process tool registry, `AgentLlm` trait over `genai` (gated on
-      the agent-spec §18.1 capability spike), `main.db` conversations/messages/FTS, right-sidebar rail UI with sessions
-      and search. Spec ready; see the plan above.
-- [ ] 2026-07-12 [ask-cmdr-genai-spike.md](ask-cmdr-genai-spike.md) - The completed genai capability spike (spec §3 step
-      0 / agent-spec §18.1): verdict that `genai =0.6.0-beta.19` drives multi-step tool loops, streaming-with-tools, and
-      stop-reason/usage normalization on all adapters, but reasoning-state round-trip is broken on the Anthropic and
-      OpenAI-Responses adapters (upstream #213) and correct on Gemini. Shapes the `AgentLlm` typed-part design and the
+- [ ] 2026-07-16 `index-ledger-plan.md` - Drive-index aggregate integrity (the `dir_stats` ledger): a real incident (60
+      GB `rm -rf` → stale size, no hourglass, then a stuck "0 bytes" for a 1.21 GB folder) traced to four credit leaks
+      in the incrementally delta-adjusted aggregates (off-writer subtree-scan compensation that double-counts/skips,
+      dropped missing-parent events, backfill not crediting ancestors, accumulator-map pollution corrupting the next
+      full aggregate) plus the `.max(0)` clamp that turns over-debits into permanent lies. Fix: keep deltas as the fast
+      path, add a `repair_dir_stats_upward` recompute-from-children escalation primitive (fires on negative-delta
+      detection and after structural rewrites, on the writer), `source: Maps|Sql` on `ComputeAllAggregates`,
+      missing-parent escalation to subtree rescans with storm control, a held-roots pending tier so coalesced rescans
+      show the hourglass, and a one-shot per-DB heal via a writer-side latch. Reviewed 6× (fresh-eyes agents). All
+      milestones (M1–M5) executed on branch `david/index-ledger`; durable intent lives in `indexing/CLAUDE.md` +
+      `DETAILS.md` § "The dir_stats ledger". Ready for FF-merge and wipe once landed.
+- [ ] 2026-07-15 `local-drive-indexing-plan.md` - Index local external drives (USB sticks, SD cards): the missing
+      `enable_drive_index` branch. Core is splitting `IndexVolumeKind`'s conflated "which scanner" vs "has a journal"
+      axes and adding a `LocalExternal` variant — the first volume that is BOTH mount-rooted AND uses the local jwalk +
+      FSEvents pipeline, so the local scan/reconcile/live-event path must learn a mount-relative path space (reuse
+      `smb_watch::index_relative_path`). Plus: scan-root-relative exclusions (the `/Volumes/` false-complete bug),
+      inode-safety on FAT/exFAT (untrusted → `inode: None`, reuse `FilesystemKind`), non-journaled freshness (loads
+      Stale, live FSEvents keep Fresh — verified live delivery fires on FAT/exFAT despite no `.fseventsd`), eject-stop
+      before unmount (a real FAT-unmount kernel panic motivates it), and the `cmdr://state` indexStatus routing fix.
+      Synthetic disk-image test fixture (timeout-guarded, never a physical card). Reviewed 2× (Opus) + FSEvents/inode
+      facts empirically verified. M0–M8 landed; M9 done as a focused `#[ignore]` Rust integration test (real-FAT
+      mount-relative scan → dir_stats + null inodes) plus a live MCP validation on a synthetic FAT32 image — NO CI
+      Playwright E2E by decision (the panic-class `hdiutil`/FSKit op is deliberately kept out of CI; see the plan's M9).
+- [ ] 2026-07-14 `idle-cpu-throttle-plan.md` - Cut idle CPU + disk-write thrash from live indexing (#37). L1 (importance
+      folded-key subtree clear) and M1 (per-file live-upsert throttle: 60 s leading + trailing, 2%/512 KiB bypass,
+      Downloads-exempt, self-write loop subsumed) shipped; M2 (search-index prealloc right-size) and M3
+      (per-hot-directory coalescing) remain. Backend-only, no schema/marker (pane file sizes are live `lstat`). See
+      `indexing/DETAILS.md` § "Live per-file write throttle".
+- [ ] 2026-07-13 `media-ml-index-plan.md` - Searchable image index (OCR, tags, faces, text→image) as an ML enrichment
+      layer on the drive index: macOS-native (Vision + Core ML + Foundation Models), vectors in SQLite not Postgres,
+      on-device by default with faces/cloud as separate opt-ins. Plan reviewed + the Core ML/Rust path spike-verified
+      (`docs/notes/clip-coreml-rust-spike.md`), then re-grounded on the shipped `importance/`, lifecycle-bus, and
+      `agent/` subsystems (copy the plumbing, not build it); importance-prioritized enrichment + a settings threshold
+      slider added. **Partially shipped** (see the plan's `## Status (2026-07-16)` section): M1/M1.5/M2 landed
+      ~2026-07-14, M3 (natural-language CLIP semantic search) and M6 (photo-search agent/MCP tool) landed 2026-07-16;
+      M3's CLIP path is gated off until David uploads the model artifacts. Faces (M4a/M4b) and LLM captions (M5) are
+      deliberately PARKED (David wants to be closer in the loop for faces; captions optional).
+- [ ] 2026-07-12 `ask-cmdr-plan.md` - Implementation plan for the "Ask Cmdr" chat slice: 9 milestones (`AgentLlm`
+      trait + fake → `main.db` store → registry read/write gating + split → in-process tool layer → runtime + context
+      assembly → rail UI + streaming → sessions/search/attachments → consent/settings/i18n/E2E → LLM call logging), the
+      `main.db` DDL (conversations/messages/FTS5/cost_meter, FTS5 net-new), the `AgentLlm` typed-part trait sketch, the
+      IPC surface, and resolutions to every spec §7 open question. Plan ready; execution pending (`/execute` next).
+- [ ] 2026-07-12 `ask-cmdr-spec.md` - "Ask Cmdr" chat slice of the agent: read-only LLM chat over the drive index +
+      importance + operation log via the in-process tool registry, `AgentLlm` trait over `genai` (gated on the
+      agent-spec §18.1 capability spike), `main.db` conversations/messages/FTS, right-sidebar rail UI with sessions and
+      search. Spec ready; see the plan above.
+- [ ] 2026-07-12 `ask-cmdr-genai-spike.md` - The completed genai capability spike (spec §3 step 0 / agent-spec §18.1):
+      verdict that `genai =0.6.0-beta.19` drives multi-step tool loops, streaming-with-tools, and stop-reason/usage
+      normalization on all adapters, but reasoning-state round-trip is broken on the Anthropic and OpenAI-Responses
+      adapters (upstream #213) and correct on Gemini. Shapes the `AgentLlm` typed-part design and the
       reasoning-off-in-v1 posture. Referenced by the plan.
-- [ ] 2026-07-09 [compress-level-plan.md](compress-level-plan.md) - Extend the shipped Compress feature: a
-      compression-level slider (deflate 1-9, default 6) in both the Compress dialog and Settings › Behavior › Archives,
-      one FE-owned setting threaded through `route_archive_copy_into` → the mutator's `FileOptions` (governs
-      copy/move-into-archive too); plus a spike-gated estimated-result-size line driven off the byte-scan by cheap
-      deflate sampling, shipping only if it clears an accuracy + resource bar.
-- [ ] 2026-07-09 [operation-log-plan.md](operation-log-plan.md) - Durable, cross-volume journal of file mutations with
-      rollback: a new `operation-log.db` (the app's first durable DB, with a forward-migration ladder + retention),
-      per-item capture at the operation-manager chokepoint, two-axis status (execution + rollback) plus initiator
-      provenance (user / ai_client / agent), rollback as inverse ops through the managed pipeline, indexed name search,
-      MCP query+rollback tools, retention settings, a Debug panel, and a thin alpha "Operation log" dialog.
-- [ ] 2026-07-04 [listing-loader-extraction-plan.md](listing-loader-extraction-plan.md) - Drain FilePane's last deferred
-      cluster (the listing loader: `loadDirectory`/`handleListingComplete`/reset + streaming listeners + pendingLoad +
-      the generation/listingId drop-foreign-listings token model) into a tested `listing-loader.svelte.ts` factory,
-      behavior-preserving, `FilePaneAPI` byte-identical.
+- [ ] 2026-07-09 `compress-level-plan.md` - Extend the shipped Compress feature: a compression-level slider (deflate
+      1-9, default 6) in both the Compress dialog and Settings › Behavior › Archives, one FE-owned setting threaded
+      through `route_archive_copy_into` → the mutator's `FileOptions` (governs copy/move-into-archive too); plus a
+      spike-gated estimated-result-size line driven off the byte-scan by cheap deflate sampling, shipping only if it
+      clears an accuracy + resource bar.
+- [ ] 2026-07-09 `operation-log-plan.md` - Durable, cross-volume journal of file mutations with rollback: a new
+      `operation-log.db` (the app's first durable DB, with a forward-migration ladder + retention), per-item capture at
+      the operation-manager chokepoint, two-axis status (execution + rollback) plus initiator provenance (user /
+      ai_client / agent), rollback as inverse ops through the managed pipeline, indexed name search, MCP query+rollback
+      tools, retention settings, a Debug panel, and a thin alpha "Operation log" dialog.
+- [ ] 2026-07-04 `listing-loader-extraction-plan.md` - Drain FilePane's last deferred cluster (the listing loader:
+      `loadDirectory`/`handleListingComplete`/reset + streaming listeners + pendingLoad + the generation/listingId
+      drop-foreign-listings token model) into a tested `listing-loader.svelte.ts` factory, behavior-preserving,
+      `FilePaneAPI` byte-identical.
 - [ ] 2026-06-28 local-reconcile-rescan-plan.md - Reclaim index DB disk: recreate-on-schema-mismatch + port the SMB/MTP
       reconcile-in-place rescan onto the local jwalk path (stale sizes stay visible, no freelist balloon)
-- [ ] 2026-06-28 [location-type-nav-plan.md](location-type-nav-plan.md) - Make `(volumeId, path)` a first-class
-      `Location` and kill bare-path navigation (fixes cross-volume search/⌘G navigating over the wrong volume)
+- [ ] 2026-06-28 `location-type-nav-plan.md` - Make `(volumeId, path)` a first-class `Location` and kill bare-path
+      navigation (fixes cross-volume search/⌘G navigating over the wrong volume)
 - [ ] 2026-06-28 colorful-tags-plan.md - macOS Finder tags: read + show colored dots (Phase 1), context-menu assign
       (Phase 2)
-- [ ] 2026-06-29 [drive-index-progress-plan.md](drive-index-progress-plan.md) - Clearer, unified drive-indexing
-      progress: name the drive, count-first honest progress, one shared status model, and a per-volume step checklist.
-- [ ] 2026-07-03 [write-ops-managed-plan.md](write-ops-managed-plan.md) - Route rename/mkdir/mkfile through the
-      operation manager as scan-free instant ops (busy/eject guard + queue visibility, still result-returning), lift the
-      event sink to the IPC edge, and sweep small write-ops debt.
-- [ ] 2026-07-03 [mcp-tool-registry-plan.md](mcp-tool-registry-plan.md) - Collapse the 4-way hand-synced MCP tool
-      bookkeeping (schema, dispatch, auth gate) into one authored `mcp_tools!` registry, so the bearer-token gate is
-      by-construction and a destructive tool can't ship ungated. Wire output stays byte-identical.
+- [ ] 2026-06-29 `drive-index-progress-plan.md` - Clearer, unified drive-indexing progress: name the drive, count-first
+      honest progress, one shared status model, and a per-volume step checklist.
+- [ ] 2026-07-03 `write-ops-managed-plan.md` - Route rename/mkdir/mkfile through the operation manager as scan-free
+      instant ops (busy/eject guard + queue visibility, still result-returning), lift the event sink to the IPC edge,
+      and sweep small write-ops debt.
+- [ ] 2026-07-03 `mcp-tool-registry-plan.md` - Collapse the 4-way hand-synced MCP tool bookkeeping (schema, dispatch,
+      auth gate) into one authored `mcp_tools!` registry, so the bearer-token gate is by-construction and a destructive
+      tool can't ship ungated. Wire output stays byte-identical.
 
 ## Shipped, awaiting wipe
 
 Done and merged; each entry stays until its durable intent is confirmed captured in the colocated C+D.md, then gets
 wiped.
 
-- [x] 2026-07-15 [media-index-polish-plan.md](media-index-polish-plan.md) - Finish + polish image search: fix the
-      dead-start bugs (toggle/startup/threshold now kick passes; defer-until-scored replaces the enrich-all race), the
-      importance "never scored" detection (recreate-bound full-recompute trigger + weights-probe fallback), preview
-      re-polling, the excluded-folder privacy retro-delete (live veto + double-tap delete), reclaim-space UX
-      (single-sourced arithmetic + VACUUM), image indexing joins the top-right progress indicator (throttled events,
-      honest per-volume ETA, terminal events on every exit), and settings move to AI > Image search. Plan reviewed in
-      five rounds. SHIPPED in full 2026-07-16; hardens everything the `media-ml-index-plan` shipped. Wipe once the
-      durable intent is confirmed captured in the `media_index/` C+D.md.
-- [x] 2026-07-09 [mcp-agent-surface-plan.md](mcp-agent-surface-plan.md) - Catch the MCP server up with ~2 months of
-      features and ready it as the future in-app agent's substrate: per-volume `cmdr://indexing` + `indexing` tool, the
-      `cmdr://importance` resource (offline-capable), operation-queue visibility (`operations:`) + `queue` tool +
-      terminal-ops ring, `rename`/named-create/trash-mode/`tag`/`eject`/`favorites`, race-free `await` conditions
-      (operation, indexing), generic soft-dialog close, uniform `volumes:`, and a tool-description pass (registry 33 →
-      39 tools; new `IfRollback` gate). SHIPPED 2026-07-10 after live dogfooding (which also fixed a focus-divergence
-      data-safety bug and a `/tmp` search-scope bug). Wipe once the durable intent is confirmed captured in the mcp/,
-      importance/, indexing/, and write_operations/ C+D.md.
+- [x] 2026-07-15 `media-index-polish-plan.md` - Finish + polish image search: fix the dead-start bugs
+      (toggle/startup/threshold now kick passes; defer-until-scored replaces the enrich-all race), the importance "never
+      scored" detection (recreate-bound full-recompute trigger + weights-probe fallback), preview re-polling, the
+      excluded-folder privacy retro-delete (live veto + double-tap delete), reclaim-space UX (single-sourced
+      arithmetic + VACUUM), image indexing joins the top-right progress indicator (throttled events, honest per-volume
+      ETA, terminal events on every exit), and settings move to AI > Image search. Plan reviewed in five rounds. SHIPPED
+      in full 2026-07-16; hardens everything the `media-ml-index-plan` shipped. Wipe once the durable intent is
+      confirmed captured in the `media_index/` C+D.md.
+- [x] 2026-07-09 `mcp-agent-surface-plan.md` - Catch the MCP server up with ~2 months of features and ready it as the
+      future in-app agent's substrate: per-volume `cmdr://indexing` + `indexing` tool, the `cmdr://importance` resource
+      (offline-capable), operation-queue visibility (`operations:`) + `queue` tool + terminal-ops ring,
+      `rename`/named-create/trash-mode/`tag`/`eject`/`favorites`, race-free `await` conditions (operation, indexing),
+      generic soft-dialog close, uniform `volumes:`, and a tool-description pass (registry 33 → 39 tools; new
+      `IfRollback` gate). SHIPPED 2026-07-10 after live dogfooding (which also fixed a focus-divergence data-safety bug
+      and a `/tmp` search-scope bug). Wipe once the durable intent is confirmed captured in the mcp/, importance/,
+      indexing/, and write_operations/ C+D.md.
 
-- [x] 2026-07-09 [compress-feature-plan.md](compress-feature-plan.md) - Add a Compress command (menu, palette, ⌥F5, MCP)
-      that opens the Transfer dialog as a third mode (Copy/Move/Compress) and packs the cursor item or selection into a
-      new zip at the other pane's path. Backend seeds a 22-byte valid empty zip at the target and routes through the
-      existing `route_archive_copy_into` machinery; zip-only, LOCAL and REMOTE (SMB/MTP) destinations (a remote parent
-      seeds through the parent volume). SHIPPED 2026-07-09 (all milestones, final review passed); wipe once the durable
-      intent is confirmed captured in the transfer/, archive_edit, and mcp C+D.md. Future work stays in the plan's
-      "Decided questions" (tar/7z creation, compression-level option).
-- [x] 2026-07-07 [pane-toasts-and-rename-identity-plan.md](pane-toasts-and-rename-identity-plan.md) - Pane-scoped
-      transient-toast dismissal (background navigation events stop wiping unrelated toasts app-wide) + the inline rename
-      editor keyed by path instead of index (kills a latent wrong-row data-safety bug; rename follows its row through
-      diffs). SHIPPED 2026-07-07; wipe once the durable intent is confirmed captured in the ui/ and rename/ C+D.md.
-- [x] 2026-07-07 [paste-clipboard-as-file-plan.md](paste-clipboard-as-file-plan.md) - Cmd+V with non-file clipboard
-      content (text/image/PDF) creates `pasted.*` in the pane, cursor lands on it, inline rename auto-starts
-      (setting-gated), info toast with Settings deep link (issue #35). Shipped in b0de3824f.
-- [x] 2026-07-08 [importance-subsystem-plan.md](importance-subsystem-plan.md) - A neutral, deterministic
-      folder-importance subsystem (pure Rust scorer over listing metadata) exposed as a general read API for any
-      feature: separate per-volume `importance.db`, a minimal neutral lifecycle bus in `indexing/`, an explain call, and
-      offline-unmounted reads. Known consumers (agent, media-ML enrichment) wire in via their own plans. SHIPPED
-      2026-07-08 (M1–M4); durable intent lives in `importance/` and `indexing/` C+D.md. Follow-ups (weight tuning, the
-      `kMDItemLastUsedDate` sampling cost) survive in the plan's open-questions. Wipe once the C+D.md capture is
-      confirmed.
-- [x] 2026-07-03 [archive-browsing-plan.md](archive-browsing-plan.md) - Browse + edit zip (and read-only tar/7z)
-      archives as folders: `ArchiveVolume` (rc-zip sans-IO read) + batch `ArchiveEditOperation` on the existing op
-      manager, transparent `/foo.zip/inner` paths, temp+rename mutation. SHIPPED 2026-07-06 (merged to `main`, fully
-      i18n-ized, remaining polish captured in `archive-browsing-polish.md`); wipe once the durable intent is confirmed
-      captured in the colocated archive/write-ops C+D.md. Supersedes the research in
-      `later/totalcmd-plugin-analysis.md`.
-- [x] 2026-07-07 [archive-browsing-polish.md](archive-browsing-polish.md) - Ranked follow-ups to the shipped
-      archive-browsing feature. SHIPPED 2026-07-08 (the executed batch): one-pass sequential extract (the O(n²) cliff),
-      ZipCrypto password-prompt extraction (dialog + retry + remember-per-archive, 10 locales), remote-source copy-into,
-      remote temp reaping, move-out per-entry convergence (+ a latent data-loss fix), the archive folder split, and the
-      dev-side warn debt. SHIPPED 2026-07-09: WinZip-AES + 7z AES decrypt end to end (the `smb2` `aes` pin was relaxed
-      to stable in `smb2 0.12.1`), including browse-time prompting for header-encrypted 7z; and SMB push-refresh for
-      remote archives (the share watcher forwards a changed `.zip` to open inner listings; MTP stays manual by
-      contract). Still deferred IN the spec, each with a settled design or trigger: fast tail-add zip edits
-      (clone+tail-rewrite design spike-validated 2026-07-09, see `notes/m-append-spike.md`; SMB path needs an smb2
-      copychunk client API), open-with-external for inner files (design spiked), and MTP in-place editing (stretch).
-      Wipe the shipped sections once the C+D.md capture is confirmed; the deferred items then move back under `later/`.
+- [x] 2026-07-09 `compress-feature-plan.md` - Add a Compress command (menu, palette, ⌥F5, MCP) that opens the Transfer
+      dialog as a third mode (Copy/Move/Compress) and packs the cursor item or selection into a new zip at the other
+      pane's path. Backend seeds a 22-byte valid empty zip at the target and routes through the existing
+      `route_archive_copy_into` machinery; zip-only, LOCAL and REMOTE (SMB/MTP) destinations (a remote parent seeds
+      through the parent volume). SHIPPED 2026-07-09 (all milestones, final review passed); wipe once the durable intent
+      is confirmed captured in the transfer/, archive_edit, and mcp C+D.md. Future work stays in the plan's "Decided
+      questions" (tar/7z creation, compression-level option).
+- [x] 2026-07-07 `pane-toasts-and-rename-identity-plan.md` - Pane-scoped transient-toast dismissal (background
+      navigation events stop wiping unrelated toasts app-wide) + the inline rename editor keyed by path instead of index
+      (kills a latent wrong-row data-safety bug; rename follows its row through diffs). SHIPPED 2026-07-07; wipe once
+      the durable intent is confirmed captured in the ui/ and rename/ C+D.md.
+- [x] 2026-07-07 `paste-clipboard-as-file-plan.md` - Cmd+V with non-file clipboard content (text/image/PDF) creates
+      `pasted.*` in the pane, cursor lands on it, inline rename auto-starts (setting-gated), info toast with Settings
+      deep link (issue #35). Shipped in b0de3824f.
+- [x] 2026-07-08 `importance-subsystem-plan.md` - A neutral, deterministic folder-importance subsystem (pure Rust scorer
+      over listing metadata) exposed as a general read API for any feature: separate per-volume `importance.db`, a
+      minimal neutral lifecycle bus in `indexing/`, an explain call, and offline-unmounted reads. Known consumers
+      (agent, media-ML enrichment) wire in via their own plans. SHIPPED 2026-07-08 (M1–M4); durable intent lives in
+      `importance/` and `indexing/` C+D.md. Follow-ups (weight tuning, the `kMDItemLastUsedDate` sampling cost) survive
+      in the plan's open-questions. Wipe once the C+D.md capture is confirmed.
+- [x] 2026-07-03 `archive-browsing-plan.md` - Browse + edit zip (and read-only tar/7z) archives as folders:
+      `ArchiveVolume` (rc-zip sans-IO read) + batch `ArchiveEditOperation` on the existing op manager, transparent
+      `/foo.zip/inner` paths, temp+rename mutation. SHIPPED 2026-07-06 (merged to `main`, fully i18n-ized, remaining
+      polish captured in `archive-browsing-polish.md`); wipe once the durable intent is confirmed captured in the
+      colocated archive/write-ops C+D.md. Supersedes the research in `later/totalcmd-plugin-analysis.md`.
+- [x] 2026-07-07 `archive-browsing-polish.md` - Ranked follow-ups to the shipped archive-browsing feature. SHIPPED
+      2026-07-08 (the executed batch): one-pass sequential extract (the O(n²) cliff), ZipCrypto password-prompt
+      extraction (dialog + retry + remember-per-archive, 10 locales), remote-source copy-into, remote temp reaping,
+      move-out per-entry convergence (+ a latent data-loss fix), the archive folder split, and the dev-side warn debt.
+      SHIPPED 2026-07-09: WinZip-AES + 7z AES decrypt end to end (the `smb2` `aes` pin was relaxed to stable in
+      `smb2 0.12.1`), including browse-time prompting for header-encrypted 7z; and SMB push-refresh for remote archives
+      (the share watcher forwards a changed `.zip` to open inner listings; MTP stays manual by contract). Still deferred
+      IN the spec, each with a settled design or trigger: fast tail-add zip edits (clone+tail-rewrite design
+      spike-validated 2026-07-09, see `notes/m-append-spike.md`; SMB path needs an smb2 copychunk client API),
+      open-with-external for inner files (design spiked), and MTP in-place editing (stretch). Wipe the shipped sections
+      once the C+D.md capture is confirmed; the deferred items then move back under `later/`.
 - [x] 2026-06-10 codegraph-tauri-resolver.md - Teach CodeGraph to trace Cmdr's Tauri IPC boundary
 
 ## Later
@@ -224,11 +217,11 @@ Deferred future work. Unchecked by default; the folder name is the status.
       future archive/plugin work
 - [ ] 2026-05-29 later/disk-cleanup-advice-process.md - Not a spec, but reference notes for a future disk-cleanup advice
       feature
-- [ ] 2026-07-18 [later/out-of-process-indexing.md](later/out-of-process-indexing.md) - Deferred escalation: move drive
-      and media indexing into a separate OS process for a hard "can't starve the UI" guarantee. Not needed now (thread
-      QoS + bounded logging closed the levers; the resilience fix stopped the source); captures the `INDEX_REGISTRY` /
-      `AppHandle`-emit / status-RPC / shared-`Arc` seams, the clean per-volume-WAL data-safety split, the
-      `ai/process.rs` sidecar prior art, and the effort/tradeoffs, with revisit triggers
+- [ ] 2026-07-18 `later/out-of-process-indexing.md` - Deferred escalation: move drive and media indexing into a separate
+      OS process for a hard "can't starve the UI" guarantee. Not needed now (thread QoS + bounded logging closed the
+      levers; the resilience fix stopped the source); captures the `INDEX_REGISTRY` / `AppHandle`-emit / status-RPC /
+      shared-`Arc` seams, the clean per-volume-WAL data-safety split, the `ai/process.rs` sidecar prior art, and the
+      effort/tradeoffs, with revisit triggers
 - [ ] 2026-06-04 later/agent-spec.md - Persistent in-app agent proposing file operations
 - [ ] 2026-06-04 later/data-dir-rename-spec-draft.md - Rename data directories from bundle-id to plain names
 - [ ] 2026-06-28 later/index-vacuum-reader-pinning.md - Reclaim residual index-DB freelist that long-lived root readers
@@ -239,7 +232,6 @@ Deferred future work. Unchecked by default; the folder name is the status.
       canonical home)
 - [ ] 2026-06-28 later/drive-index-overall-eta.md - Overall indexing ETA across remaining steps, with the backend
       per-phase calibration it needs to stay honest (the step checklist ships per-step ETA only)
-- [ ] 2026-07-14 [later/default-file-manager-spec.md](later/default-file-manager-spec.md) - Reveal-in-Cmdr
-      (`NSFileViewer` redirect) + `public.folder` default handler: two opt-in toggles (default OFF, onboarding step 4 +
-      Settings), `RunEvent::Opened` plumbing with cold-start buffering, sanctioned `NSWorkspace` registration, and a
-      spike checklist to run before building
+- [ ] 2026-07-14 `later/default-file-manager-spec.md` - Reveal-in-Cmdr (`NSFileViewer` redirect) + `public.folder`
+      default handler: two opt-in toggles (default OFF, onboarding step 4 + Settings), `RunEvent::Opened` plumbing with
+      cold-start buffering, sanctioned `NSWorkspace` registration, and a spike checklist to run before building

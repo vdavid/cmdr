@@ -1,8 +1,8 @@
 # Check authoring details
 
 Pull-tier docs for `scripts/check/checks/`: architecture, flows, and decision rationale. Must-know invariants and
-gotchas live in [CLAUDE.md](CLAUDE.md). For the runner architecture (parallel executor, dependency graph, CLI flags,
-freestyle.sh remote execution), see [`../CLAUDE.md`](../CLAUDE.md).
+gotchas live in `CLAUDE.md`. For the runner architecture (parallel executor, dependency graph, CLI flags, freestyle.sh
+remote execution), see `../CLAUDE.md`.
 
 ## Key files
 
@@ -390,8 +390,7 @@ deliberately does NOT pass it: that lane is already tight against the 8 s per-te
 virtual-device coverage doesn't differ by platform. Revisit if Linux-specific MTP behavior ever needs pinning.
 
 Prerequisites these tests rely on (per-test temp backing root, watcher off, `virtual_device_test_lock()`):
-[`apps/desktop/src-tauri/src/mtp/DETAILS.md`](../../../apps/desktop/src-tauri/src/mtp/DETAILS.md) § "Rust tests that
-drive the device".
+`apps/desktop/src-tauri/src/mtp/DETAILS.md` § "Rust tests that drive the device".
 
 ## Apps and check counts
 
@@ -422,10 +421,11 @@ Checks by app and tech:
 - **Other / Metrics**: file-length (warn-only), CLAUDE.md-reminder (warn-only), claude-md-length (warn-only),
   resident-doc-budget (warn-only; caps the always-resident root-CLAUDE.md + @-imports + rules bundle), docs-reachable
   (errors when a CLAUDE.md/DETAILS.md/docs file isn't reachable from the root CLAUDE.md), docs-dead-links (errors on a
-  doc link whose local target doesn't exist), claude-md-details-sibling (errors when a non-root CLAUDE.md lacks/doesn't
-  reference a sibling DETAILS.md), docs-table-hygiene (errors on any 2-column table or any table column wider than 100
-  chars in agent-facing docs), changelog-commit-links, workflows-rustup (forbids `rustup target/component add` in
-  workflows), ci-coverage (registry-to-workflows contract)
+  doc link, or a bare backtick path naming a doc, whose local target doesn't exist), docs-link-text (errors on a
+  Markdown link whose text is its own target path), claude-md-details-sibling (errors when a non-root CLAUDE.md
+  lacks/doesn't reference a sibling DETAILS.md), docs-table-hygiene (errors on any 2-column table or any table column
+  wider than 100 chars in agent-facing docs), changelog-commit-links, workflows-rustup (forbids
+  `rustup target/component add` in workflows), ci-coverage (registry-to-workflows contract)
 - **Other / Security**: workflows-hardening (SHA-pinning, no `pull_request_target`, job-scoped `id-token: write`)
 
 ## Key decisions
@@ -451,7 +451,7 @@ lacks it (reading `rustup toolchain list`, rather than classifying a cargo failu
 nightly toolchain" step asks the check tool for the version via `./scripts/check/check --print-nightly`, so the date
 exists in exactly one place. Renovate can't track it: dated Rust nightlies aren't a Renovate datasource (there's no
 registry of nightly dates to query, and the `rust`/`rust-version` datasources cover stable releases only), so the bump
-is a maintenance task instead, listed in [`docs/maintenance.md`](../../../docs/maintenance.md).
+is a maintenance task instead, listed in `docs/maintenance.md`.
 
 ### Bumping the pinned nightly
 
@@ -522,9 +522,8 @@ an outer deadline (whose clock starts earlier) can only preempt a clean failure 
 Go scanner over `apps/desktop/src-tauri/src/mtp/` (modeled on `lock-poison`, reusing its `#[cfg(test)]`-mod skip) that
 flags `tokio::time::timeout(` and `.abort()`. Opt out with `// allowed-dropping-timeout: <reason>` when the dropped
 future genuinely holds nothing on the wire; the two current exceptions are the device-lock wait and the event loop's
-interrupt-endpoint poll. Rationale in full:
-[`apps/desktop/src-tauri/src/mtp/connection/DETAILS.md`](../../../apps/desktop/src-tauri/src/mtp/connection/DETAILS.md)
-§ "No dropping timeouts".
+interrupt-endpoint poll. Rationale in full: `apps/desktop/src-tauri/src/mtp/connection/DETAILS.md` § "No dropping
+timeouts".
 
 **Decision**: `mtp-no-transport-reset` check, with NO opt-out directive. **Why**: The Still Image Class `DEVICE_RESET`
 control request looks like the missing "unwedge the pipe" step in session-reset recovery, and it will keep looking like
@@ -534,8 +533,7 @@ nothing until it's physically replugged (verified on a Pixel 9 Pro XL via `adb l
 fast-lane Go scanner over `apps/desktop/src-tauri/src/mtp/` flagging `reset_by_serial(` / `reset_by_location(` /
 `reset_first(` in any file, tests included. It has no directive on purpose: reintroducing a reset means deleting the
 check, and that deliberate act is the whole point. Rationale in full:
-[`apps/desktop/src-tauri/src/mtp/connection/DETAILS.md`](../../../apps/desktop/src-tauri/src/mtp/connection/DETAILS.md)
-§ "No transport reset in recovery".
+`apps/desktop/src-tauri/src/mtp/connection/DETAILS.md` § "No transport reset in recovery".
 
 **Decision**: Split `desktop-svelte-eslint` into fast (non-type-aware) and slow (full) checks. **Why**: Type-aware rules
 (`no-floating-promises`, `no-unsafe-*`, etc.) take ~45% of lint time due to TypeScript project service startup. The fast

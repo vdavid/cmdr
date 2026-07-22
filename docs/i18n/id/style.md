@@ -1,7 +1,7 @@
 # Indonesian (id) translation style guide
 
-Working notes for translating Cmdr into Indonesian (Bahasa Indonesia). Read [`README.md`](../README.md) for how this
-fits the translation process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice.
+Working notes for translating Cmdr into Indonesian (Bahasa Indonesia). Read `../README.md` for how this fits the
+translation process, and the app-wide `docs/style-guide.md` for the English voice.
 
 ## Voice and tone
 
@@ -116,6 +116,6 @@ noun in counted strings. The `desktop-i18n-plural` check requires just `other` f
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/id/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/id/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

@@ -1,8 +1,7 @@
 # Slovenian (sl) translation style guide
 
-Working notes for translating Cmdr into Slovenian. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Slovenian.
+Working notes for translating Cmdr into Slovenian. Read `../README.md` for how this fits the translation process, and
+the app-wide `docs/style-guide.md` for the English voice these notes carry into Slovenian.
 
 ## Decisions to confirm with David
 
@@ -10,9 +9,8 @@ These are the calls a translator can't make alone. The rest of this guide assume
 flag, the rest carry a confident default and are listed so they're never relitigated.
 
 - **Address form: RESOLVED to informal `ti`** (consumer-brand evidence; see Formality and
-  [`formal-informal-decisions.md`](../formal-informal-decisions.md)). No longer open. Slovenian still prefers
-  impersonal, agentless phrasing where natural (it stays gender-neutral too), but direct second-person address is
-  informal `ti`, never `vikanje`.
+  `../formal-informal-decisions.md`). No longer open. Slovenian still prefers impersonal, agentless phrasing where
+  natural (it stays gender-neutral too), but direct second-person address is informal `ti`, never `vikanje`.
 - **Quotation-mark house style: `»…«` vs `„…"` (high either way).** Both are standard Slovenian (see Notes); the choice
   is a house-style pick, not a correctness one. Recommended default: `»…«` (most traditional, most distinctively
   Slovenian); `„…"` is fully acceptable. Pick one and be consistent.
@@ -29,9 +27,9 @@ status label the way English avoids "error"/"failed".
 
 **Verdict: informal `ti` (tikanje), not `vikanje`.** Consumer brands (IKEA, Spotify, Netflix, and peers; IKEA-SI uses
 informal `ti`/`Vnesi`) address Slovenian users informally, which fits Cmdr's friendly personal voice. Formality decision
-recorded in [`formal-informal-decisions.md`](../formal-informal-decisions.md). Slovenian still leans on impersonal,
-agentless phrasing where it reads naturally (it also stays gender-neutral), but where the user is addressed in the
-second person, the register is informal `ti`, never `vikanje`.
+recorded in `../formal-informal-decisions.md`. Slovenian still leans on impersonal, agentless phrasing where it reads
+naturally (it also stays gender-neutral), but where the user is addressed in the second person, the register is informal
+`ti`, never `vikanje`.
 
 - **Direct address: informal `ti`.** "Ali si prepričan/-a?" (Are you sure?), "Ali želiš shraniti spremembe?" (Do you
   want to save changes?). Prefer an impersonal recast where it avoids a gendered participle ("Ali so spremembe
@@ -144,13 +142,12 @@ fraction digits, `i` = integer part):
 - **Length.** Slovenian runs somewhat longer than English (case endings, the dual), so overflow-check the layout against
   the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
-  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in `docs/guides/i18n-translation.md` and
   `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/sl/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/sl/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

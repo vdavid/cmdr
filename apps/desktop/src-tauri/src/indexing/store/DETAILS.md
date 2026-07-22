@@ -1,8 +1,8 @@
 # Index store (SQLite) details
 
 Depth for `src-tauri/src/indexing/store/`: the `IndexStore` handle and the concern-split CRUD. Must-know invariants
-live in [CLAUDE.md](CLAUDE.md). The SQLite schema itself and the honest-sizes epoch model that shares its columns are
-one coupled mechanism and live in the parent [`../DETAILS.md`](../DETAILS.md) § "SQLite schema" + § "Honest sizes"; the
+live in `CLAUDE.md`. The SQLite schema itself and the honest-sizes epoch model that shares its columns are
+one coupled mechanism and live in the parent `../DETAILS.md` § "SQLite schema" + § "Honest sizes"; the
 broader indexing pipeline is the rest of that file.
 
 ## Module structure
@@ -35,7 +35,7 @@ behaves identically to a `(parent_id, name)` index. A schema-version mismatch tr
 `is_fatal_storage_error()`, `as_index_failure()`, `is_primary_key_conflict()`, `is_transient_lock_error()`, and
 `indicates_corruption()`. `is_primary_key_conflict()` separates an `entries.id` collision (extended 1555, the writer
 heals it by resyncing its counter) from a `(parent_id, name_folded)` conflict (2067, which must never be retried under a
-fresh id); rationale and the writer side: parent [`DETAILS.md`](../DETAILS.md) § "Decision: a PRIMARY KEY conflict on an
+fresh id); rationale and the writer side: parent `../DETAILS.md` § "Decision: a PRIMARY KEY conflict on an
 upsert insert resyncs the counter and retries once".
 
 **`with_savepoint` releases on the error path too (load-bearing).** The failure arm runs

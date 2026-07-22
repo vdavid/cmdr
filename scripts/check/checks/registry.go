@@ -953,6 +953,17 @@ var AllChecks = []CheckDefinition{
 		Run:         RunDocsTableHygiene,
 	},
 	{
+		ID:          "docs-link-text",
+		Nickname:    "link-text",
+		DisplayName: "no path-shaped link text in docs",
+		App:         AppOther,
+		Tech:        "🔗 Links",
+		DependsOn:   nil,
+		IsFast:      true,
+		Inputs:      wholeRepoInputs, // scans every agent-facing markdown doc for Markdown links
+		Run:         RunDocsLinkText,
+	},
+	{
 		ID:          "claude-md-details-sibling",
 		Nickname:    "details-sibling",
 		DisplayName: "CLAUDE.md has a sibling DETAILS.md",

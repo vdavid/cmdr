@@ -10,7 +10,7 @@ One file per domain (`network.rs`, `mtp.rs`, `clipboard.rs`, etc.), plus `mod.rs
 `util.rs` (timeout helpers, see Must-knows), and `file_system/` (listing, path queries, create/copy/move/delete, scan
 preview, conflict resolution, drag, stat probe). AI and space-poller commands register DIRECTLY from their own modules
 (`ai::*`, `space_poller.rs`): there is intentionally no `commands/ai.rs` or `commands/space_poller.rs`. Per-file
-inventory and decision rationale: [DETAILS.md](DETAILS.md).
+inventory and decision rationale: `DETAILS.md`.
 
 ## Must-knows
 
@@ -23,7 +23,7 @@ inventory and decision rationale: [DETAILS.md](DETAILS.md).
     `tokio::time::timeout`, map `Elapsed` to `IpcError::timeout()`.
   - `timeout_detached` → **required when the future can reach a device backend** (rename, conflict/copy scans): it
     times out the JOIN HANDLE, never the work. ❌ A bare `tokio::time::timeout` drops the future and wedges an MTP
-    phone. [DETAILS.md](DETAILS.md) § "IPC deadlines detach, never drop".
+    phone. `DETAILS.md` § "IPC deadlines detach, never drop".
   - Matching TS types live in `$lib/tauri-commands/ipc-types.ts`. `path_exists` is SMB-aware: a disconnected SMB volume
     returns immediate `false`, so it re-checks `smb_connection_state()` and reports `timedOut: true` instead, so a
     transient blip won't evict the user from a network folder.

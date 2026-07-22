@@ -1,14 +1,14 @@
 # Archive backend — details
 
 Pull-tier docs for the archive backend: the `ArchiveVolume` `Volume` layer, routing/lifecycle, and remote-backed
-archives. Must-know invariants live in [CLAUDE.md](CLAUDE.md). Read this before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+archives. Must-know invariants live in `CLAUDE.md`. Read this before any non-trivial work here: editing, planning,
+reorganizing, or advising.
 
 The reading engine, the zip write side, and the live content watch each carry their own docs:
 
-- Reading core (parse → tree, Zip Slip, DoS caps, sans-IO fsm, codecs, multi-format): [`read/DETAILS.md`](read/DETAILS.md).
-- Zip mutation (temp+rename, encrypted-entry refusal, metadata preservation): [`mutation/DETAILS.md`](mutation/DETAILS.md).
-- Live content watch (parent-dir watch, notification identity, remote-no-watch): [`watch/DETAILS.md`](watch/DETAILS.md).
+- Reading core (parse → tree, Zip Slip, DoS caps, sans-IO fsm, codecs, multi-format): `read/DETAILS.md`.
+- Zip mutation (temp+rename, encrypted-entry refusal, metadata preservation): `mutation/DETAILS.md`.
+- Live content watch (parent-dir watch, notification identity, remote-no-watch): `watch/DETAILS.md`.
 
 ## The `ArchiveVolume` layer (`volume.rs`)
 
@@ -19,9 +19,9 @@ the display name, and an `Arc<ArchiveIndexCache>`.
 
 **The parent seam.** Two answers a read-only archive can't give itself come from the parent:
 
-- `lane_key()` returns `parent.lane_key()` — archive work must share the physical device's serialization lane (a zip on
-  an SMB share shares that share's lane), never key on the archive path. Consequence: two zips on the same mount
-  serialize; only zips on different mounts parallelize (the existing per-device write-serialization).
+- `lane_key()` returns `parent.lane_key()` — archive work must share the physical device's serialization lane (a zip on an
+  SMB share shares that share's lane), never key on the archive path. Consequence: two zips on the same mount serialize;
+  only zips on different mounts parallelize (the existing per-device write-serialization).
 - `get_space_info()` delegates to the parent (see the decision below).
 
 `ArchiveVolume` serves BOTH a local parent (`LocalFileSource` + `index_for_local`'s local stat+parse) and a remote one
@@ -51,18 +51,18 @@ A single file is one entry at its uncompressed size; a directory walks the subtr
 paths aren't reachable via `std::fs`, so no `copyfile` fast path and the legacy synthetic-diff path is skipped);
 `space_poll_interval = None` (a read-only archive's space never changes — the default `Some(2s)` would poll pointlessly);
 `max_concurrent_ops = 1`; `supports_export`/`supports_streaming = true`. `listing_is_watched` is `true` only while the
-live content watch is established ([`watch/DETAILS.md`](watch/DETAILS.md)), `false` otherwise. `supports_watching` stays
-`false`: that flag drives the generic per-listing FSEvents dir-watcher, which can't watch an archive-inner path — the
-archive self-watches its backing `.zip` instead.
+live content watch is established (`watch/DETAILS.md`), `false` otherwise. `supports_watching` stays `false`: that flag
+drives the generic per-listing FSEvents dir-watcher, which can't watch an archive-inner path — the archive self-watches
+its backing `.zip` instead.
 
 **Bulk extract is one-pass for sequential archives.** Extracting a whole subtree from a compressed tar / solid 7z would
 be O(n²) if the copy engine read it entry-by-entry (each `open_read_stream` re-decodes the prefix). It doesn't:
 `Volume::extraction_is_sequential` declares the class, and the copy planner routes a sequential directory source through
 a one-pass extractor (`Volume::open_sequential_extract` → `ArchiveIndex::open_subtree_extract`) that decodes the stream
-ONCE. The extractor mechanism lives in [`read/DETAILS.md`](read/DETAILS.md) § "One-pass subtree extract"; the copy-engine
-dispatch (create dirs from the tree, then a single decode pass for the files) lives in
-[`write_operations/transfer/DETAILS.md`](../../../write_operations/transfer/DETAILS.md) § "One-pass sequential extract".
-A plain `.tar` and zip are random-access and keep the per-entry path unchanged.
+ONCE. The extractor mechanism lives in `read/DETAILS.md` § "One-pass subtree extract"; the copy-engine dispatch (create
+dirs from the tree, then a single decode pass for the files) lives in
+`apps/desktop/src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "One-pass sequential extract". A plain
+`.tar` and zip are random-access and keep the per-entry path unchanged.
 
 ### Decision: `get_space_info` delegates to the parent volume
 
@@ -105,7 +105,7 @@ naming each new variant; the payoff is that no failure mode is ever classified b
 
 A zip on a direct SMB or MTP volume browses and extracts through the SAME `ArchiveVolume` as a local one — only the
 byte supply differs. The read side is landed for both SMB and MTP; the write (edit) side pulls the archive local, edits,
-and uploads (see [`mutation/DETAILS.md`](mutation/DETAILS.md) and `write_operations/DETAILS.md` § "Remote edit").
+and uploads (see `mutation/DETAILS.md` and `write_operations/DETAILS.md` § "Remote edit").
 
 **Local vs remote is the parent's capability, not the path.** `ArchiveVolume::parent_is_local()` returns
 `parent.supports_local_fs_access()`. A `LocalPosixVolume` parent (a plain drive OR an OS-mounted share) reports `true`
@@ -117,21 +117,21 @@ capability forces the read through the parent volume.
 
 **The bridge (`VolumeByteSource`, `volume.rs`).** The core's `ArchiveByteSource::read_at` is blocking (the parse and
 every decompress run on `spawn_blocking`), but `Volume::read_range` is async. `VolumeByteSource` captures the tokio
-runtime handle at construction (on the async executor, in `open_remote_source`) and `block_on`s the parent's
-`read_range` inside the blocking read. Sound because `read_at` only ever runs on a `spawn_blocking` thread (never a
-runtime worker), so `block_on` doesn't reenter the executor — the same bridge the viewer's archive extractor uses. It
-clamps requests to the known size so rc-zip's read-ahead past EOF doesn't ask the backend for absent bytes.
+runtime handle at construction (on the async executor, in `open_remote_source`) and `block_on`s the parent's `read_range`
+inside the blocking read. Sound because `read_at` only ever runs on a `spawn_blocking` thread (never a runtime worker), so
+`block_on` doesn't reenter the executor — the same bridge the viewer's archive extractor uses. It clamps requests to the
+known size so rc-zip's read-ahead past EOF doesn't ask the backend for absent bytes.
 
 **One tail read for the central directory (`TailCachedSource`, `read/source.rs`).** rc-zip's sans-IO fsm finds the EOCD
-by reading backward from the end, then reads the central directory that precedes it — all near the tail. Without
-caching, each of those `read_at`s would be a separate backend round-trip (slow on SMB/MTP). `TailCachedSource` wraps the
-remote source and, on the first read that lands in the tail window (`DEFAULT_TAIL_CACHE_LEN`, 256 KiB), fetches the whole
-tail once and serves every subsequent tail read from memory. A read before the window (an entry's bytes mid-file, or a
-central directory larger than 256 KiB) falls through to a real ranged read. So a normal remote browse issues ONE
-`read_range` for the CD parse (plus one `get_metadata` for size/mtime, which isn't a `read_range`); a giant directory
-adds a second. Pinned by `read/source.rs`'s fetch-count tests and `volume_test.rs`'s
-`remote_central_directory_parse_is_a_single_tail_read`. Entry extraction opens its own (uncached) source and streams the
-entry's compressed range through the parent's `read_range` in bounded chunks.
+by reading backward from the end, then reads the central directory that precedes it — all near the tail. Without caching,
+each of those `read_at`s would be a separate backend round-trip (slow on SMB/MTP). `TailCachedSource` wraps the remote
+source and, on the first read that lands in the tail window (`DEFAULT_TAIL_CACHE_LEN`, 256 KiB), fetches the whole tail
+once and serves every subsequent tail read from memory. A read before the window (an entry's bytes mid-file, or a central
+directory larger than 256 KiB) falls through to a real ranged read. So a normal remote browse issues ONE `read_range` for
+the CD parse (plus one `get_metadata` for size/mtime, which isn't a `read_range`); a giant directory adds a second.
+Pinned by `read/source.rs`'s fetch-count tests and `volume_test.rs`'s `remote_central_directory_parse_is_a_single_tail_read`.
+Entry extraction opens its own (uncached) source and streams the entry's compressed range through the parent's `read_range`
+in bounded chunks.
 
 **The positioned-read primitive (`Volume::read_range(path, offset, len)`).** Optional trait method, `NotSupported`
 default. `LocalPosixVolume` implements it as a `pread` (`FileExt::read_at` loop), `MtpVolume` as one bounded
@@ -155,7 +155,7 @@ second-granularity `modified_at` widened to nanos) — a remote `.zip` can't be 
 
 Browsing an encrypted archive USUALLY works (names live in the plaintext central directory / 7z header) and only
 EXTRACTING needs a password — decrypted per entry in the reading core: zip (ZipCrypto AND WinZip AES) and 7z (content-
-and header-encrypted) — see [`read/DETAILS.md`](read/DETAILS.md) § "Decryption". The exception is a HEADER-encrypted 7z
+and header-encrypted) — see `read/DETAILS.md` § "Decryption". The exception is a HEADER-encrypted 7z
 (`-mhe=on`), whose metadata is itself encrypted, so even BROWSING needs the password (below). The `ArchiveVolume` layer
 owns the password lifetime and the typed frontend signal.
 
@@ -170,18 +170,18 @@ empty, so the frontend re-prompts (pinned by `volume_test`'s LRU-semantic test).
 **Where the password threads in.** `password_snapshot()` flows into every parse and read seam that can hit encrypted
 bytes: `open_read` (per-entry extract, via `open_stream`), `open_sequential_extract` (compressed tar / solid 7z bulk
 extract — a content-encrypted solid 7z decrypts here), AND `index()`/`load()` parse (a header-encrypted 7z needs the
-password to read its metadata; zip and content-encrypted 7z ignore it at parse). Each seam takes `Option<&str>`; the
-`Volume` trait's read methods are NOT widened with a password param — the password stays internal to the backend.
+password to read its metadata; zip and content-encrypted 7z ignore it at parse). Each seam takes `Option<&str>`; the `Volume`
+trait's read methods are NOT widened with a password param — the password stays internal to the backend.
 
 **Typed signal to the frontend — two paths.** `Encrypted` / `WrongPassword` map to
 `VolumeError::NeedsPassword { wrong_attempt }` (above). This surfaces on:
 - The EXTRACT path (a copy whose source is inside the archive) for any encrypted archive — riding
   `WriteOperationError::ArchiveNeedsPassword { path, wrong_attempt }` (mapped in `transfer/volume_copy.rs::map_volume_error`),
   so the frontend dispatches its password dialog and, after `set_archive_password`, retries the copy.
-- The BROWSE/listing path for a HEADER-encrypted 7z (even listing fails) — `friendly_error/volume_error.rs` maps
-  `NeedsPassword` to `ListingErrorReason::ArchiveNeedsPassword { wrong_attempt }` (NOT the unreadable-archive reason),
-  and `listing/streaming.rs` surfaces it without provider enrichment. The frontend's listing-loader intercepts that
-  reason and raises the SAME `ArchivePasswordDialog` at browse time; on unlock it re-lists the directory.
+- The BROWSE/listing path for a HEADER-encrypted 7z (even listing fails) — `friendly_error/volume_error.rs` maps `NeedsPassword`
+  to `ListingErrorReason::ArchiveNeedsPassword { wrong_attempt }` (NOT the unreadable-archive reason), and
+  `listing/streaming.rs` surfaces it without provider enrichment. The frontend's listing-loader intercepts that reason and
+  raises the SAME `ArchivePasswordDialog` at browse time; on unlock it re-lists the directory.
 
 Both are machine-readable (`no-string-matching`).
 
@@ -220,7 +220,7 @@ An `ArchiveVolume` is never constructed here directly in production — it's min
   `VolumeManager::path_is_inside_archive` / `path_crosses_archive_boundary` (in `manager.rs`), the async siblings of the
   `std::fs`-only `boundary.rs` predicates. Same `supports_local_fs_access()` fork, same `confirm_remote_archive_boundary`
   for a remote parent. Without them a write inside a remote zip falls through to the parent volume and errors; see
-  `write_operations/DETAILS.md` § "Reaching the edit driver: parent-aware write-routing".
+  `write_operations/DETAILS.md` for the "Reaching the edit driver: parent-aware write-routing" section.
 
 **resolve returns the FULL path, unchanged.** The decision (over returning a stripped inner path): `ArchiveVolume`
 already maps a volume-namespace path to its inner key via `inner_path()`, `node_to_entry` builds full paths, and
@@ -236,16 +236,16 @@ downstream re-read sites (`notify_full_refresh`, `try_get_watched_listing`, `wat
 makes LRU eviction safe.
 
 **Archive LRU (cap 16).** `VolumeManager` tracks archive registration recency; resolving past the cap unregisters the
-least-recently-resolved archive (its `ArchiveIndexCache` drops with the volume). Eviction is harmless because every read
-site re-resolves: an evicted archive re-registers lazily on the next navigation (`ArchiveVolume::new` is cheap; the index
-re-parses on demand). No frontend refcount exists — the FE never holds an archive id, so there's nothing to refcount.
+least-recently-resolved archive (its `ArchiveIndexCache` drops with the volume). Eviction is harmless because every read site
+re-resolves: an evicted archive re-registers lazily on the next navigation (`ArchiveVolume::new` is cheap; the index re-parses
+on demand). No frontend refcount exists — the FE never holds an archive id, so there's nothing to refcount.
 
 **Read-only write guards.** Because routing is path-based, the write seams that bypass `VolumeManager` guard themselves
 against an archive target: the local `copy`/`move`/`delete`/`trash` fast-paths and the cross-volume dest reject with
 `WriteOperationError::ReadOnlyDevice`; the managed instant-op forks (`create_directory_core`, `create_file_core`,
-`rename_managed`) return a clean refusal. Move also rejects an archive SOURCE (a move deletes the source side). These
-seams are the archive-edit routing points when the target is a writable zip. The live watch turns the edit's final
-atomic rename into the post-edit refresh (see [`watch/DETAILS.md`](watch/DETAILS.md)).
+`rename_managed`) return a clean refusal. Move also rejects an archive SOURCE (a move deletes the source side). These seams
+are the archive-edit routing points when the target is a writable zip. The live watch turns the edit's final atomic rename
+into the post-edit refresh; see `watch/DETAILS.md`.
 
 ## Testing
 

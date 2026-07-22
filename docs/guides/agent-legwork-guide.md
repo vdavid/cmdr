@@ -5,7 +5,7 @@ When doing legwork: help your team deliver on the plan provided.
 - Use **feedback loops**! Never fly blind. You should use benchmarks for optimization tasks, run the app at checkpoints
   like at end of milestones, read the logs, drive app via MCP, or whatever that matches the task to get feedback.
   - Caveat: sessions often don't auto-connect the wired-up MCP even though it's configured. If that happens, use the CLI
-    fallback `./scripts/mcp-call.sh` (and the Tauri bridge). See [mcp.md](../tooling/mcp.md).
+    fallback `./scripts/mcp-call.sh` (and the Tauri bridge). See `../tooling/mcp.md`.
 - Also fix latent, **unrelated bugs** near your work (small, ~10-15 LoC changes) if you discover them. Same goes for
   improving stale docs and the such. We love correctness and bug-free code more than crystal-clean commits/worktrees.
 - Keep `C+D.md` files and other docs up to date continuously as you work, so we end in a good documented state.

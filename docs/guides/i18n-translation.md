@@ -1,8 +1,8 @@
 # Translating Cmdr (the translator process)
 
-The translator-facing companion to [`i18n.md`](i18n.md). `i18n.md` is the developer map: how the catalog, runtime, and
-checks work. THIS guide is the process you follow to add a language or translate new strings, plus the reusable
-agent-handoff block. Mechanism lives in `i18n.md` and the colocated docs; this guide points to it, never restates it.
+The translator-facing companion to `i18n.md`. `i18n.md` is the developer map: how the catalog, runtime, and checks work.
+THIS guide is the process you follow to add a language or translate new strings, plus the reusable agent-handoff block.
+Mechanism lives in `i18n.md` and the colocated docs; this guide points to it, never restates it.
 
 Translation is agent-driven. Human review is the documented ideal but **not** a ship gate (see the override below). No
 language-specific content lives in the repo docs; everything below talks about "the target language" and its
@@ -43,13 +43,13 @@ Set a translator (human or agent) up for excellence with three inputs, never mix
    `apps/desktop/src/lib/intl/messages/DETAILS.md` § `@key` metadata schema.
 2. **Per-language style guide**: tone, voice, formality (T/V distinction if the language has one), terminology and
    glossary, how brand words are handled in this language. NOT per-string; never repeat tone on every key. It lives at
-   `docs/i18n/<tag>/style.md` (start from [`/docs/i18n/_template/style.md`](../i18n/_template/style.md); see
-   [`/docs/i18n/README.md`](../i18n/README.md)). These are working notes, not catalog data: the app never loads them.
-   **Treat it as a living doc, and capturing is part of the job**: read it before translating AND extend it as you go,
-   recording each glossary choice with its sources and a confidence (see Researching terms below). This isn't only for
-   terms: whenever you hit a convention, gotcha, decision point, or rule that wasn't already written where you looked
-   for it, write it down so the next translator inherits it instead of rediscovering it. Per-language findings go in the
-   style guide; a missing cross-language rule (like an ICU mechanic) goes in this guide or the template.
+   `docs/i18n/<tag>/style.md` (start from `../i18n/_template/style.md`; see `../i18n/README.md`). These are working
+   notes, not catalog data: the app never loads them. **Treat it as a living doc, and capturing is part of the job**:
+   read it before translating AND extend it as you go, recording each glossary choice with its sources and a confidence
+   (see Researching terms below). This isn't only for terms: whenever you hit a convention, gotcha, decision point, or
+   rule that wasn't already written where you looked for it, write it down so the next translator inherits it instead of
+   rediscovering it. Per-language findings go in the style guide; a missing cross-language rule (like an ICU mechanic)
+   goes in this guide or the template.
 3. **One ICU instruction**: given once in the agent system prompt, not per string (see the block below).
 
 ## Term-choice principles
@@ -66,8 +66,8 @@ it can, but the judgment is yours.
 2. **Prefer the macOS Finder term when macOS and Windows/Microsoft differ.** Cmdr is a macOS app, so the native-OS term
    wins over the Windows convention. For example, pt-BR delete = "Apagar" (Finder), not "Excluir" (Windows); German move
    = "Bewegen" (Finder), not "Verschieben" (Microsoft). The Microsoft terminology entry is the Windows wording, not ours
-   — use it only as a tiebreak below macOS. (Same shape as the formality trap in
-   [`reference-pile/how-to-mine.md`](../i18n/reference-pile/how-to-mine.md) § Source-quality traps trap 5.)
+   — use it only as a tiebreak below macOS. (Same shape as the formality trap in `../i18n/reference-pile/how-to-mine.md`
+   § Source-quality traps trap 5.)
 3. **Brand/product names may inflect.** In agglutinative/inflecting languages, let the brand take its natural
    inflectional suffix rather than forcing an unnatural bare form: Hungarian "Cmdrben" (in Cmdr), Swedish genitive
    "Cmdrs". Keep the brand recognizable but grammatical. Pick the suffix by how the name is PRONOUNCED, not spelled:
@@ -81,9 +81,8 @@ it can, but the judgment is yours.
 Checking the reference pile is MANDATORY for every term: mine it for the term and for similar sentences, reuse and cite,
 never guess. The reference pile holds authoritative localizations keyed by language: the ~3 GB of macOS, Microsoft, and
 five file managers — the explorer family (GNOME Nautilus, Xfce Thunar, KDE Dolphin) plus the orthodox two-pane pair
-(Total Commander, Double Commander) — one folder per language. Read
-[`reference-pile/README.md`](../i18n/reference-pile/README.md) for what's there and the authority tiers, and
-[`reference-pile/how-to-mine.md`](../i18n/reference-pile/how-to-mine.md) for tested per-source recipes (greps, jq,
+(Total Commander, Double Commander) — one folder per language. Read `../i18n/reference-pile/README.md` for what's there
+and the authority tiers, and `../i18n/reference-pile/how-to-mine.md` for tested per-source recipes (greps, jq,
 `msggrep`, `pdftotext`, `.lng`).
 
 > [!IMPORTANT] **Where the pile is — and why a worktree can't see it.** The pile is gitignored (`_ignored/` is
@@ -181,15 +180,13 @@ Rules:
   "I couldn't be bothered" is not a justification. If a key actually needs translating, translate it — the field is for
   genuinely-identical strings only, and the goal is a clean coverage warn output WITHOUT lowering the quality bar.
 
-Mechanism + schema:
-[`/apps/desktop/src/lib/intl/messages/DETAILS.md`](../../apps/desktop/src/lib/intl/messages/DETAILS.md) § `@key`
-metadata schema.
+Mechanism + schema: `apps/desktop/src/lib/intl/messages/DETAILS.md` § `@key` metadata schema.
 
 ## Add a new language
 
 1. **Pick the BCP-47 tag.** A language base (`xx`) for the universal set, or a region variant (`xx-YY`) when a region
    needs overrides. The tag is a format identifier, not translatable. The base is the fallback for its variants; `en` is
-   the final fallback. Convention + resolution order: [`i18n.md`](i18n.md) § Locale-format convention.
+   the final fallback. Convention + resolution order: `i18n.md` § Locale-format convention.
 2. **Create the skeleton.** Run `node apps/desktop/scripts/gen-locale-skeleton.ts <tag>`: it mirrors `en/`'s files and
    keys under `messages/<tag>/` with the English values in place and each `@key.sourceHash` = the 7-char hash of the
    exact English value it was translated from (computed by `sourceHash()` in `apps/desktop/scripts/i18n-catalog-lib.ts`;
@@ -200,9 +197,9 @@ metadata schema.
 5. **Run the checks**:
    `pnpm check desktop-i18n-parity desktop-i18n-icu desktop-i18n-plural desktop-i18n-stale desktop-i18n-coverage desktop-i18n-dont-translate`.
    Parity (placeholder/tag/token sets), ICU validity, and plural coverage are ERROR class (a failure is a runtime
-   break); stale, coverage, and don't-translate are WARN class. What each catches: [`i18n.md`](i18n.md) § Enforcement.
+   break); stale, coverage, and don't-translate are WARN class. What each catches: `i18n.md` § Enforcement.
 6. **Overflow-check the layout.** Drive the app and look for clipping; the pseudolocale (`en-XA`) is the deliberately
-   long stand-in for this. See [`i18n.md`](i18n.md) § Pseudolocale.
+   long stand-in for this. See `i18n.md` § Pseudolocale.
 7. **Human review (optional, not a ship gate).** If a native reviewer is available, set `@key.reviewed: true` per key as
    they sign it off; the stale check clears it whenever the source changes, so review state stays honest. Skipping this
    is the normal case — see the override above.
@@ -210,7 +207,7 @@ metadata schema.
    (**Settings > Appearance > Language**) are built, so dropping a `messages/<tag>/` dir makes the locale load and
    appear in the picker, with the documented `<tag>` → base → `en` fallback per key. A locale ships once it's
    translated, passes the checks, and is overflow-checked — human review is opportunistic, not a gate (see the override
-   above). See [`i18n.md`](i18n.md) § Add a new locale for the runtime mechanism.
+   above). See `i18n.md` § Add a new locale for the runtime mechanism.
 
 ## New feature → add strings and translate to ALL languages
 

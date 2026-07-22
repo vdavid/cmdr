@@ -1,8 +1,7 @@
 # Agent LLM seam details
 
-Pull-tier docs for `agent/llm/`. Must-know invariants live in [CLAUDE.md](CLAUDE.md). Contract:
-[`docs/specs/ask-cmdr-plan.md`](../../../../../../docs/specs/ask-cmdr-plan.md) §6; capability spike:
-[`docs/specs/ask-cmdr-genai-spike.md`](../../../../../../docs/specs/ask-cmdr-genai-spike.md).
+Pull-tier docs for `agent/llm/`. Must-know invariants live in `CLAUDE.md`. Contract:
+`docs/specs/ask-cmdr-plan.md` §6; capability spike: `docs/specs/ask-cmdr-genai-spike.md`.
 
 ## The seam
 

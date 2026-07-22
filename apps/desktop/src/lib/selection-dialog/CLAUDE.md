@@ -2,8 +2,8 @@
 
 The "Select files…" / "Deselect files…" dialog. Lets the user select files in the focused pane by a wildcard, regex, or
 natural-language prompt (AI mode, cloud only). Second consumer of the shared `QueryDialog` primitive in
-[`lib/query-ui/`](../query-ui/CLAUDE.md): Search is the first; Selection mirrors its shape. Backend (history store + AI
-translation) lives in [`src-tauri/src/selection/`](../../../src-tauri/src/selection/CLAUDE.md).
+`../query-ui/CLAUDE.md`: Search is the first; Selection mirrors its shape. Backend (history store + AI translation)
+lives in `apps/desktop/src-tauri/src/selection/CLAUDE.md`.
 
 ## Module map
 
@@ -42,5 +42,5 @@ translation) lives in [`src-tauri/src/selection/`](../../../src-tauri/src/select
   `applyIndices(hasParent=true)` already skips index 0, the dialog's preview has to match). The wrapper's
   `dropParentIndex` helper handles this. Pinned by the "drops the synthetic `..` parent" test.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

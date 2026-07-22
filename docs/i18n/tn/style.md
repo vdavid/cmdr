@@ -1,8 +1,7 @@
 # Tswana (tn) translation style guide
 
-Working notes for translating Cmdr into Setswana (Tswana). Read [`README.md`](../README.md) for how this fits the
-translation process, and [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) for the translator workflow
-and the ICU mechanics.
+Working notes for translating Cmdr into Setswana (Tswana). Read `../README.md` for how this fits the translation
+process, and `docs/guides/i18n-translation.md` for the translator workflow and the ICU mechanics.
 
 ## Priority signal (read first)
 
@@ -158,14 +157,13 @@ Quick Look. The full curated list plus the system placeholder tokens is enforced
 
 - ICU mechanics (catalog-level, language-independent, easy to miss): double every apostrophe in a value (`'` -> `''`;
   ICU swallows a lone `'` as an escape), and keep every `{placeholder}` and `<tag>` verbatim. Full rules: the
-  agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
-  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  agent-handoff block in `docs/guides/i18n-translation.md` and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Sources for this guide: Microsoft `SETSWANA.tbx` (mined 2026-06-20); web research on Setswana noun classes/concord and
   on tn-BW vs tn-ZA orthography (2026-06-20). No string was copied verbatim from any copyrighted/GPL source; terms here
   are evidence of convention, to be re-expressed in Cmdr's own catalog and reviewed by a human.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/tn/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/tn/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

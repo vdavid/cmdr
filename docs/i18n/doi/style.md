@@ -1,7 +1,6 @@
 # Dogri (doi) translation style guide
 
-Working notes for translating Cmdr into Dogri. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into Dogri. Read `../README.md` for how this fits the translation process.
 
 This is the language base (`doi`). The reference pile keys it `doi-Deva` (Devanagari script); see the script decision
 point below for why the base `doi` tag is the right one for Cmdr.
@@ -74,7 +73,7 @@ Native review needed for the exact forms.
   convention; let the formatter decide, don't hardcode.
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
 - **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  `docs/guides/i18n-translation.md`.
 
 ## Decisions to confirm with David
 
@@ -85,6 +84,6 @@ Native review needed for the exact forms.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/doi/`; recipes in
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/doi/`; recipes in
 `docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

@@ -32,7 +32,7 @@ per language). Hard-won rules:
   agents silently finish partial. Keep ~3 in flight; queue the rest. Batch size per agent (3 vs 10 items) is separate
   and can stay large once concurrency is capped.
 - **Give ABSOLUTE write paths.** Subagents inherit the orchestrator's cwd (the main clone, not a worktree), so a
-  relative `docs/x.md` write scatters into the wrong tree. Pass the full worktree path.
+  relative write path scatters into the wrong tree. Pass the full worktree path.
 - **Terse returns, artifacts to files.** Tell agents to write their output to files and reply with one line per item
   (plus flags), not a full report. Verbose returns blow the orchestrator's context over many waves. Persist a
   progress/plan file so the loop survives a context compaction.

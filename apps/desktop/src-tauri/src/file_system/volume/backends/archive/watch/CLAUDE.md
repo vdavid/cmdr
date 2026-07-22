@@ -4,7 +4,7 @@ Refreshes any open listing inside an archive when the backing `.zip` changes on 
 over it, this app's own mutation's final rename). The watch handle lives on the [`ArchiveVolume`](../volume.rs); this
 module is the OS watch + event filter behind it.
 
-Depth, the remote-no-watch decision, and the test list: [DETAILS.md](DETAILS.md). Read it before any non-trivial work
+Depth, the remote-no-watch decision, and the test list: `DETAILS.md`. Read it before any non-trivial work
 here: editing, planning, reorganizing, or advising.
 
 ## Must-knows
@@ -18,4 +18,4 @@ here: editing, planning, reorganizing, or advising.
 - **Off the executor**: the debouncer callback runs on notify-rs's own thread (no Tokio runtime), so it uses
   `tauri::async_runtime::spawn`, never `tokio::spawn` (which would panic).
 - **Local only**: a REMOTE parent has no local path for `notify`, so `start_watch` returns `None` and
-  `listing_is_watched` stays `false` — freshness is "as of last read". See [DETAILS.md](DETAILS.md).
+  `listing_is_watched` stays `false` — freshness is "as of last read". See `DETAILS.md`.

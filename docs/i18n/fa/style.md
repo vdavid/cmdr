@@ -1,8 +1,7 @@
 # Persian / Farsi (fa) translation style guide
 
-Working notes for translating Cmdr into Persian. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Persian.
+Working notes for translating Cmdr into Persian. Read `../README.md` for how this fits the translation process, and the
+app-wide `docs/style-guide.md` for the English voice these notes carry into Persian.
 
 **RTL, and no macOS reference.** Apple does NOT ship a Persian macOS UI, so the pile has no macOS Finder
 (`_ignored/i18n/fa/` has GNOME Nautilus + MS terminology + MS style guide only; `fa-IR/` has Xfce Thunar; `prs-AF/` has
@@ -55,8 +54,7 @@ the polite شما register**, expressed through plural verb endings rather than 
 ### RTL: the dominant concern
 
 Persian is written right-to-left in the Perso-Arabic script. This is the single biggest issue and it's a LAYOUT concern
-as much as a text one (shared verbatim with [`ps/style.md`](../ps/style.md), sd-Arabic, and any future
-Arabic/Hebrew/Urdu):
+as much as a text one (shared verbatim with `../ps/style.md`, sd-Arabic, and any future Arabic/Hebrew/Urdu):
 
 - The whole UI must mirror: panes swap sides, cursor/selection logic, progress bars, chevrons, and "back/forward"
   navigation arrows all reverse. A right-pointing "forward" arrow is wrong in RTL.
@@ -182,13 +180,12 @@ forms.
 - **ZWNJ everywhere it belongs** (see decision point): plural/verb affixes and compounds. This is the most common silent
   quality bug in Persian UI.
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
-  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in `docs/guides/i18n-translation.md` and
   `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/fa/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/fa/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

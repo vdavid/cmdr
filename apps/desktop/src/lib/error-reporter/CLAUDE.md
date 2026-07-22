@@ -36,5 +36,4 @@ Entry points: Help menu → "Send error report…" (via `command-dispatch.ts`'s 
 error report…" link on plain-text error toasts (`ToastItem.svelte`) that pre-fills the note. Both call
 `openErrorReportDialog(initialNote?)`; the dialog mounts in `(main)/+layout.svelte`.
 
-Full details (Flow B toast contents and lifecycle, note-capture timing, `<script module>` `$state` notes):
-[DETAILS.md](DETAILS.md).
+Full details (Flow B toast contents and lifecycle, note-capture timing, `<script module>` `$state` notes): `DETAILS.md`.

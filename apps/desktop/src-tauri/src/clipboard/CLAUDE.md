@@ -27,12 +27,12 @@ Cmd+X sets a Cmdr-internal cut flag, and the move-vs-copy decision happens at pa
 - **Linux is stubbed**: `#[cfg(target_os = "macos")]` gates all NSPasteboard code. Linux needs `text/uri-list` (future).
 - **Paste-content-as-file uses a SEPARATE `ClipboardData` static from the file-URL `ClipboardEntry`.** Don't merge them
   — a content paste would clobber a pending file copy. Flavor precedence + the markdown sniff live in `payload.rs` (pure,
-  testable); the write is in `write_operations/paste_clipboard.rs`. See [DETAILS.md](DETAILS.md) § Paste clipboard
-  content as a file.
+  testable); the write is in `write_operations/paste_clipboard.rs`. See `DETAILS.md` § Paste clipboard content as a
+  file.
 - **Runtime `CMDR_CLIPBOARD_BACKEND=mock`** lives in `pasteboard.rs` (a prod-build debugging tool), sampled once via
   `LazyLock`. Both the compile-time mock and this runtime override share `store.rs`, so a test flipping the env in one
   process sees the same data the E2E mock module sees in another. See the "Mock-backend convention" in
-  [`docs/tooling/instance-isolation.md`](../../../../../docs/tooling/instance-isolation.md).
+  `docs/tooling/instance-isolation.md`.
 
 Full details (why `objc2` over a Tauri plugin, why the E2E mock is a `cfg` module swap rather than a `dyn` trait, the
-copy-at-source rationale): [DETAILS.md](DETAILS.md).
+copy-at-source rationale): `DETAILS.md`.

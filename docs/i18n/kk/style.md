@@ -1,8 +1,7 @@
 # Kazakh (kk) translation style guide
 
-Working notes for translating Cmdr into Kazakh (қазақ тілі). Read [`README.md`](../README.md) for how this fits the
-translation process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes
-carry into Kazakh.
+Working notes for translating Cmdr into Kazakh (қазақ тілі). Read `../README.md` for how this fits the translation
+process, and the app-wide `docs/style-guide.md` for the English voice these notes carry into Kazakh.
 
 Well-sourced for terms: the pile has MS terminology, MS style guide, GNOME Nautilus, and Xfce Thunar
 (`_ignored/i18n/kk/`); no macOS folder for Kazakh. Evidence verified against the pile on 2026-06-20.
@@ -11,7 +10,7 @@ Well-sourced for terms: the pile has MS terminology, MS style guide, GNOME Nauti
 
 - **Script: RESOLVED to Cyrillic (base tag `kk`).** `kk-Latn` is a later fast-follow as the ~2031 Latin transition
   lands; building the catalog in `kk` (Cyrillic) now keeps the seam clean for adding `kk-Latn` later. See the script
-  decision point below and [`script-decisions.md`](../script-decisions.md). No longer open.
+  decision point below and `../script-decisions.md`. No longer open.
 
 ## Voice and tone
 
@@ -37,7 +36,7 @@ and the next step, and avoid a bare "қате" (error) status label the way Engl
   alphabet; Kazakhstan has an official roadmap to switch to a Latin alphabet (the exact letterforms have been revised
   several times). Every authoritative source in the pile (MS, GNOME) is Cyrillic (verified 2026-06-20). Ship Cyrillic
   (`kk`) now; `kk-Latn` is a later fast-follow as the ~2031 transition lands, added as a sibling rather than reflowing
-  the base. Don't pre-emptively translate to Latin. Recorded in [`script-decisions.md`](../script-decisions.md).
+  the base. Don't pre-emptively translate to Latin. Recorded in `../script-decisions.md`.
 - **Regional variant: one, `kk` (`kk-KZ`).** Kazakh is standardized in Kazakhstan; no second national standard worth a
   variant matrix (the Kazakh diaspora in China/Mongolia uses other scripts but isn't a localization target here).
   Confidence: high.
@@ -100,13 +99,12 @@ CLDR categories for `kk`: `one`, `other` (verified with `new Intl.PluralRules('k
 - **Length.** Kazakh runs longer than English (agglutinative suffixes); overflow-check the layout against the
   pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
-  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in `docs/guides/i18n-translation.md` and
   `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/kk/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/kk/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

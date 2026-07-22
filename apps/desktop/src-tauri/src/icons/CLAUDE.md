@@ -20,7 +20,7 @@ data URL. The namespace, by tier:
 | n/a | `git:{branch,tag,commit,fork}` | git-portal virtual entries | rendered by the FE via Lucide, never here |
 
 Full details (tier narratives, the package vs custom-icon detection-timing decision, disk-cache mechanism, FE wiring):
-[DETAILS.md](DETAILS.md).
+`DETAILS.md`.
 
 ## Must-knows
 

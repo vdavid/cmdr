@@ -1,7 +1,7 @@
 # Onboarding details
 
 Pull-tier docs for `apps/desktop/src/lib/onboarding/`: architecture, flows, and decision rationale. Must-know invariants
-and gotchas live in [CLAUDE.md](CLAUDE.md).
+and gotchas live in `CLAUDE.md`.
 
 Owns first-launch consent: Full Disk Access (macOS only), AI provider, the open-beta analytics disclosure, and a small
 optional-settings step. Renders the `OnboardingWizard` (a soft-sheet that covers ~90% of the viewport over the running

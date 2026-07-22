@@ -1,8 +1,8 @@
 # Odia (or) translation style guide
 
-Working notes for translating Cmdr into Odia (Oriya). Read [`README.md`](../README.md) for how this fits the translation
-process. Odia is written in its own Odia (Oriya) script; there is no script decision. References: Microsoft terminology
-and style guide (`or-IN`, Tier 2) plus GNOME Nautilus (`or`, Tier 3).
+Working notes for translating Cmdr into Odia (Oriya). Read `../README.md` for how this fits the translation process.
+Odia is written in its own Odia (Oriya) script; there is no script decision. References: Microsoft terminology and style
+guide (`or-IN`, Tier 2) plus GNOME Nautilus (`or`, Tier 3).
 
 ## Voice and tone
 
@@ -72,6 +72,6 @@ two-category shape as English; every plural message needs both branches. The `de
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/or/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/or/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

@@ -42,7 +42,7 @@ curl -s "https://analdash.getcmdr.com/api/report?range=7d" \
   -H "CF-Access-Client-Secret: ${CF_SECRET}"
 ```
 
-The service token expires 2027-03-22. See [cloudflare.md](cloudflare.md) for token management.
+The service token expires 2027-03-22. See `cloudflare.md` for token management.
 
 ## Running locally
 

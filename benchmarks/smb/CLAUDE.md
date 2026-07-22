@@ -1,7 +1,7 @@
 # SMB benchmark
 
 Standalone throughput benchmark with its own `Cargo.toml`. It uses the old `smb` crate (smb-rs); the main app uses
-`smb2`, so this is not affected by that migration. Setup and usage: [README.md](README.md).
+`smb2`, so this is not affected by that migration. Setup and usage: `README.md`.
 
 ## Gotchas and version pins
 
@@ -14,4 +14,4 @@ Standalone throughput benchmark with its own `Cargo.toml`. It uses the old `smb`
 - **Unique per-cycle dir names** (`n-0`, `d-0`, …): without them, `list` after delete + recreate returns stale entries
   from SMB cache.
 
-Full details (`smb` crate API call flow, negotiation): [DETAILS.md](DETAILS.md).
+Full details (`smb` crate API call flow, negotiation): `DETAILS.md`.

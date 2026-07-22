@@ -1,8 +1,7 @@
 # Belarusian (be) translation style guide
 
-Working notes for translating Cmdr into Belarusian. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Belarusian.
+Working notes for translating Cmdr into Belarusian. Read `../README.md` for how this fits the translation process, and
+the app-wide `docs/style-guide.md` for the English voice these notes carry into Belarusian.
 
 **No macOS reference.** Apple does NOT ship a Belarusian macOS UI, so the pile has GNOME Nautilus + Xfce Thunar + MS
 terminology + MS style guide for `be` (Cyrillic), plus a separate `be-Latn` GNOME catalog for the Latin (Łacinka) script
@@ -14,8 +13,7 @@ pile on 2026-06-20.
 The calls a translator can't make alone.
 
 - **Script and orthography: RESOLVED to Cyrillic, official наркамаўка orthography** (not classical тарашкевіца;
-  `be-Latn` Łacinka out of scope). See the script decision points below and
-  [`script-decisions.md`](../script-decisions.md). No longer open.
+  `be-Latn` Łacinka out of scope). See the script decision points below and `../script-decisions.md`. No longer open.
 - **Address form: polite plural "Вы" recommended, worth a sign-off (high).** Like Russian/Bulgarian, software uses the
   polite plural. See Formality. Recommended default below.
 
@@ -40,9 +38,9 @@ English avoids "error"/"failed".
 ## Decision points
 
 - **Orthography (наркамаўка vs тарашкевіца): RESOLVED to official наркамаўка.** The single most consequential decision
-  for Belarusian, more than script. Recorded in [`script-decisions.md`](../script-decisions.md).
+  for Belarusian, more than script. Recorded in `../script-decisions.md`.
 - **Script: RESOLVED to Cyrillic (`be`)**, with the Łacinka sibling (`be-Latn`) out of scope. Recorded in
-  [`script-decisions.md`](../script-decisions.md).
+  `../script-decisions.md`.
 - **Regional variant: one, `be` (`be-BY`).** Belarusian is standardized in Belarus; no second national standard. The
   meaningful split is orthographic (above), not regional. Confidence: high.
 - **Gender / inclusive language (high on the problem, high on the fix via polite plural).** Belarusian past tense uses
@@ -110,13 +108,12 @@ The East-Slavic pattern (same shape as Russian/Ukrainian):
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Belarusian uses an apostrophe-like character (the separating sign, often typed
   as `'` U+0027 or `’`) inside words ("аб'ём") - that real apostrophe must be DOUBLED in ICU values too, a common
-  Belarusian-specific trap. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  Belarusian-specific trap. Full rules: the agent-handoff block in `docs/guides/i18n-translation.md` and
   `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/be/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/be/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

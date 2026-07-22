@@ -1,7 +1,6 @@
 # Greek (el) translation style guide
 
-Working notes for translating Cmdr into Greek. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into Greek. Read `../README.md` for how this fits the translation process.
 
 This is the language base (`el`), the universal Greek (Modern Greek, monotonic). Greek is effectively a single standard;
 no region variant is needed (see Decision points).
@@ -19,7 +18,7 @@ singular "εσύ" (2nd-person-singular verbs, `-εις`) vs the polite/formal pl
 `-ετε`). Consumer brands (IKEA, Spotify, Netflix, and peers) trend informal `εσύ` in Greek (the formal plural can read
 snobbish for a consumer product), which fits Cmdr's friendly personal voice. macOS Finder leans formal plural, but Cmdr
 deliberately picks the warmer consumer-brand register. Apply it consistently across the whole catalog. Formality
-decision recorded in [`formal-informal-decisions.md`](../formal-informal-decisions.md).
+decision recorded in `../formal-informal-decisions.md`.
 
 **Imperatives for UI actions** (buttons, menu items): macOS Greek uses the **nominalized noun form**, not an imperative
 verb: "Αντιγραφή" (copying), "Διαγραφή" (deletion), "Μετακίνηση" (moving), "Μετονομασία" (renaming), "Ακύρωση"
@@ -83,18 +82,17 @@ number; get the agreement right inside each branch.
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape; macOS Greek's own "Άμεση
   διαγραφή…" uses a single `…`, but follow Cmdr's catalog convention.
 - **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  `docs/guides/i18n-translation.md`.
 
 ## Decisions to confirm with David
 
 - **Formality: RESOLVED to informal singular `εσύ`** (consumer-brand evidence; see Formality and
-  [`formal-informal-decisions.md`](../formal-informal-decisions.md)). No longer open. Apply consistently across the
-  whole catalog.
+  `../formal-informal-decisions.md`). No longer open. Apply consistently across the whole catalog.
 - **crash report → "αναφορά σφάλματος"** (tentative): confirm the term reads non-alarmist enough, or pick a calmer
   phrasing.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/el/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/el/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

@@ -1,8 +1,7 @@
 # Somali (so) translation style guide
 
-Working notes for translating Cmdr into Somali. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Somali.
+Working notes for translating Cmdr into Somali. Read `../README.md` for how this fits the translation process, and the
+app-wide `docs/style-guide.md` for the English voice these notes carry into Somali.
 
 ## Priority and coverage reality (read first)
 
@@ -123,6 +122,6 @@ against the shipped ICU). Write both branches. Numbers and dates come from the f
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/so/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/so/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

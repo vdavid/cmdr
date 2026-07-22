@@ -1,7 +1,6 @@
 # Bosnian (bs) translation style guide
 
-Working notes for translating Cmdr into Bosnian. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into Bosnian. Read `../README.md` for how this fits the translation process.
 
 `bs` is the language base, written in the Latin script (see Decision points for why Latin, not Cyrillic). The reference
 pile has GNOME nautilus for `bs`, plus Microsoft terminology/style-guide material under the script-tagged siblings
@@ -16,8 +15,7 @@ factual, never using the bare labels "error"/"failed".
 
 **Verdict: informal `ti`, not the formal `Vi`.** Consumer brands (IKEA, Spotify, Netflix, and peers) address users
 informally, which fits Cmdr's friendly personal voice; South Slavic consumer brands lean informal for young/trendy
-products, and Cmdr is one. Formality decision recorded in
-[`formal-informal-decisions.md`](../formal-informal-decisions.md).
+products, and Cmdr is one. Formality decision recorded in `../formal-informal-decisions.md`.
 
 **Imperatives for UI actions**: bare imperatives for buttons and menu items ("Kopiraj") are action names, not address,
 so they sit fine under a `ti` register. Full-sentence prompts addressing the user take the informal `ti` verb forms.
@@ -26,10 +24,9 @@ so they sit fine under a `ti` register. Full-sentence prompts addressing the use
 
 The defining Bosnian decision is script.
 
-- **Script: RESOLVED to Latin (`bs` base).** Recorded in [`script-decisions.md`](../script-decisions.md). Bosnian is
-  officially biscriptal (Latin and Cyrillic are both constitutional), but Latin overwhelmingly dominates everyday life,
-  media, and software. The script-tagged siblings exist in the reference pile (`bs-Latn`, `bs-Cyrl`), confirming both
-  are localizable, but:
+- **Script: RESOLVED to Latin (`bs` base).** Recorded in `../script-decisions.md`. Bosnian is officially biscriptal
+  (Latin and Cyrillic are both constitutional), but Latin overwhelmingly dominates everyday life, media, and software.
+  The script-tagged siblings exist in the reference pile (`bs-Latn`, `bs-Cyrl`), confirming both are localizable, but:
   - Latin is the default and dominant script in modern Bosnian usage (verified via web research, 2026-06-20).
   - Microsoft ships Bosnian primarily in Latin (`bs-Latn` is the maintained MS locale; `bs-Cyrl` exists but is far less
     used).
@@ -82,16 +79,16 @@ correct case form, not just a swapped number.
 - **Quotation marks.** Bosnian print uses `„…"` (low-high) or `»…«`; UI catalogs often use plain curly. Match the
   surrounding source and stay consistent.
 - **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  `docs/guides/i18n-translation.md`.
 
 ## Decisions to confirm with David
 
 - **Formality: RESOLVED to informal `ti`** (consumer-brand evidence; see Formality and
-  [`formal-informal-decisions.md`](../formal-informal-decisions.md)). No longer open.
+  `../formal-informal-decisions.md`). No longer open.
 - **Trash and folder terms** have competing options ("Smeće"/"Korpa", "folder"/"direktorij") needing a native call.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/bs/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/bs/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

@@ -8,11 +8,11 @@ Status: planned 2026-07-09, not started. Worktree: `.claude/worktrees/mcp-agent-
 The MCP server was built alongside the app's early features and hasn't tracked the last ~2 months of shipping. Two
 consumers need it to be current and excellent:
 
-1. **The future in-app agent** ([`later/agent-spec.md`](later/agent-spec.md)) — an agentic loop triggered by FS events
-   and user interactions. It must find things (search, importance, indexing state), understand things (state, listings,
-   queue), and perform anything a user would reasonably expect (file ops, settings, indexing control) — all gated behind
-   user approval. The agent-spec (§11.1, D49) says the agent-first registry should _extend_ the consolidated MCP
-   registry, so every capability we add here is substrate the agent inherits.
+1. **The future in-app agent** (`later/agent-spec.md`) — an agentic loop triggered by FS events and user interactions.
+   It must find things (search, importance, indexing state), understand things (state, listings, queue), and perform
+   anything a user would reasonably expect (file ops, settings, indexing control) — all gated behind user approval. The
+   agent-spec (§11.1, D49) says the agent-first registry should _extend_ the consolidated MCP registry, so every
+   capability we add here is substrate the agent inherits.
 2. **David's debugging** (secondary) — driving and inspecting a live app instance from a coding agent.
 
 The security model is unchanged: **parity** (agents do only what users can do, no raw fs/shell), and **anything that

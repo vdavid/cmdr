@@ -1,8 +1,8 @@
 # Selection AI
 
 Natural-language → glob/regex translation for the Selection dialog. Cloud-only: small local models can't reliably fit
-the folder sample plus the structured prompt. Parent: [`../CLAUDE.md`](../CLAUDE.md). Sibling pattern:
-[`../../search/ai/CLAUDE.md`](../../search/ai/CLAUDE.md) (same key-value prompt shape, narrower field set, no scope or
+the folder sample plus the structured prompt. Parent: `../CLAUDE.md`. Sibling pattern:
+`apps/desktop/src-tauri/src/search/ai/CLAUDE.md` (same key-value prompt shape, narrower field set, no scope or
 system-dir exclusion).
 
 ## Module map
@@ -15,7 +15,7 @@ system-dir exclusion).
 - **`real_llm_eval_test.rs`**: six `#[ignore]`-gated integration tests against the live OpenAI API
 
 The IPC entry (`translate_selection_query`) lives in `crate::commands::selection`. Prompt design, parser tolerances, and
-the eval: [DETAILS.md](DETAILS.md).
+the eval: `DETAILS.md`.
 
 ## Must-knows
 

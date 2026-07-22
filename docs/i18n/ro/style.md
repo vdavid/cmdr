@@ -1,7 +1,6 @@
 # Romanian (ro) translation style guide
 
-Working notes for translating Cmdr into Romanian. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into Romanian. Read `../README.md` for how this fits the translation process.
 
 Romanian is well-resourced in the pile: macOS Finder/AppKit, full Microsoft terminology + style guide, and GNOME
 Nautilus + Xfce Thunar. Triangulation is easy; lean on macOS Finder first.
@@ -15,7 +14,7 @@ warm without slang. Error messages stay calm and actionable. macOS Finder is the
 
 **Verdict: informal `tu`, not `dumneavoastră`.** Consumer brands (IKEA, Spotify, Netflix, and peers; IKEA-RO leads with
 informal `tu`/`introdu`) address Romanian users informally, which fits Cmdr's friendly personal voice. Formality
-decision recorded in [`formal-informal-decisions.md`](../formal-informal-decisions.md).
+decision recorded in `../formal-informal-decisions.md`.
 
 - "Copiere", "Mutare", "Redenumire", "Ștergere" as button/menu noun-infinitive labels, OR the imperative "Copiază",
   "Mută" form. macOS Finder and Microsoft both lean on the infinitive/supine noun form ("Copiere", "Lipire") for menu
@@ -96,6 +95,6 @@ ICU can't insert "de" for you, so bake it into the `few`/`other` branch text cor
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/ro/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/ro/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

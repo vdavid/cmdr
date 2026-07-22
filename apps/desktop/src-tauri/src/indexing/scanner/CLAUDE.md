@@ -31,4 +31,4 @@ disconnected File Provider mount, plus the scope-aware exclusion policy every lo
   Provider domain-root probe is an OPTIMIZATION, never the cost backstop (that's `reconcile/`).
 
 Architecture, the two progress-timeout rules, the give-up budget, exclusion tiers, and the domain-root detection:
-[DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+`DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

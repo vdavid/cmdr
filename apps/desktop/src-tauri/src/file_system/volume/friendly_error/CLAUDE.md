@@ -1,11 +1,11 @@
 # Friendly error CLASSIFICATION
 
 Turns a raw OS error + path into a TYPED, word-free `ListingError` the frontend renders. The split: CLASSIFICATION in
-Rust (errno → reason, provider detection, category/retry/action), WORDS on the frontend
-([`src/lib/errors/`](../../../../../src/lib/errors/CLAUDE.md)). This module emits zero user-facing prose.
+Rust (errno → reason, provider detection, category/retry/action), WORDS on the frontend (`apps/desktop/src/lib/errors/CLAUDE.md`).
+This module emits zero user-facing prose.
 
-Parent: [`volume/CLAUDE.md`](../CLAUDE.md) (trait + manager + capability matrix). App-wide error conventions:
-[`docs/guides/error-handling.md`](../../../../../../../docs/guides/error-handling.md).
+Parent: `../CLAUDE.md` (trait + manager + capability matrix). App-wide error conventions:
+`docs/guides/error-handling.md`.
 
 ## Module map
 
@@ -36,9 +36,8 @@ Parent: [`volume/CLAUDE.md`](../CLAUDE.md) (trait + manager + capability matrix)
 
 ## Adding a new error message
 
-Recipe (Rust side; FE side is in [`src/lib/errors/CLAUDE.md`](../../../../../src/lib/errors/CLAUDE.md)): add the
-`ListingErrorReason` variant (with its typed params), add the map arm in `errno.rs` / `volume_error.rs` / `kinds.rs`
-choosing the `category`/`retry_hint`/`action_kind`, and add a typed-mapping test in `mod.rs`. Full recipe + the
-provider-detection strategy table: [DETAILS.md](DETAILS.md).
+Recipe (Rust side; FE side is in `apps/desktop/src/lib/errors/CLAUDE.md`): add the `ListingErrorReason` variant (with
+its typed params), add the map arm in `errno.rs` / `volume_error.rs` / `kinds.rs` choosing the `category`/`retry_hint`/`action_kind`,
+and add a typed-mapping test in `mod.rs`. Full recipe + the provider-detection strategy table: `DETAILS.md`.
 
-Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

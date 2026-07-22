@@ -8,14 +8,14 @@ The living term glossary for translating Cmdr into this language: one entry per 
   source(s) and a confidence (`confirmed` / `high` / `tentative`).
 - **This folder is this language home.** Capture new term decisions here, and other findings as sibling files.
 
-Format, the confidence scale, and the full process: [i18n-translation.md](../../guides/i18n-translation.md).
+Format, the confidence scale, and the full process: `docs/guides/i18n-translation.md`.
 
 ## Terms
 
 Core UI terms (pane, tab, volume, drive, folder, file, move, copy, rename, delete, trash, cancel = `Mégsem`, eject,
-disconnect, share, search, sort, settings, index, overwrite, server = `szerver`) are sourced and fixed in
-[`style.md`](style.md) § Terminology and glossary; use those verbatim. Below are the terms settled while translating
-`fileExplorer.json` (first pass, 2026-06-21).
+disconnect, share, search, sort, settings, index, overwrite, server = `szerver`) are sourced and fixed in `style.md` §
+Terminology and glossary; use those verbatim. Below are the terms settled while translating `fileExplorer.json` (first
+pass, 2026-06-21).
 
 - host: `gép` (column `Gépnév` = hostname) · mac (network-browser nib: "Szervercím", "Csatlakozás"), ms · high. A
   network host in the SMB browser. macOS calls the manual-connect entity `szerver`; an auto-discovered box is a `gép`.

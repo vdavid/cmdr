@@ -1,6 +1,6 @@
 # New file details
 
-Flow and design rationale. The must-knows are in [CLAUDE.md](CLAUDE.md).
+Flow and design rationale. The must-knows are in `CLAUDE.md`.
 
 ## How the new-file flow runs
 

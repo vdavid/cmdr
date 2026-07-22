@@ -1,7 +1,6 @@
 # Karbi (mjw)
 
-Working notes for translating Cmdr into this language. Read [`README.md`](../README.md) for how this fits the
-translation process.
+Working notes for translating Cmdr into this language. Read `../README.md` for how this fits the translation process.
 
 This is a very low-priority language: do NOT start a translation pass without a native Karbi speaker driving it. See
 Decision points first; that's the load-bearing part of this guide.
@@ -59,6 +58,6 @@ technical terms per the loan-word policy above.)
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/mjw/`; recipes in
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/mjw/`; recipes in
 `docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

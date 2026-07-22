@@ -34,9 +34,9 @@ go HERE or in the guide. When a learning becomes a hard rule, promote it into th
 
 ## Source-quality traps
 
-The full, durable list lives in [`reference-pile/how-to-mine.md`](reference-pile/how-to-mine.md) § Source-quality traps
-(sibling/variant splits, no-macOS languages, English-valued Siri-intent files in macOS bundles, Microsoft's wrong-sense
-first hit, per-language formality, catalog-tag ≠ pile-folder). Read that section before mining any language.
+The full, durable list lives in `reference-pile/how-to-mine.md` § Source-quality traps (sibling/variant splits, no-macOS
+languages, English-valued Siri-intent files in macOS bundles, Microsoft's wrong-sense first hit, per-language formality,
+catalog-tag ≠ pile-folder). Read that section before mining any language.
 
 ## Reviewing keys a feature added in passing
 
@@ -69,7 +69,7 @@ style guide and a human-shaped review are the only defense:
   variant decision: the decision doesn't reach an implementation agent's defaults. Applies to pt/pt-BR, es/es-419,
   zh-Hans/Hant, fr/fr-CA, nl/nl-BE.
 - **Formality regression.** A single `tu` string sat in an otherwise fully-`vous` fr catalog. Any T/V language needs
-  newly-added keys spot-checked against [`formal-informal-decisions.md`](formal-informal-decisions.md).
+  newly-added keys spot-checked against `formal-informal-decisions.md`.
 - **Typographic U+2019 leaking from the English source** into a locale whose catalog is otherwise ASCII. It isn't an ICU
   escape, so nothing flags it.
 - **Locale number typography**, above all the space before `%` (de, fr, sv all require it). Tell translators to grep

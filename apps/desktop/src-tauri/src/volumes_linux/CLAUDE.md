@@ -41,4 +41,4 @@ Location categories: `Favorite` (user-editable, from the `favorites/` store, exi
 `linux_mounts` (`/proc/mounts` parsing + fstype lookup), `dirs`, `libc` (`statvfs`), `notify` (inotify), and
 `crate::file_system::{get_volume_manager, volume::LocalPosixVolume}`.
 
-Full details (decision rationale): [DETAILS.md](DETAILS.md).
+Full details (decision rationale): `DETAILS.md`.

@@ -2,11 +2,11 @@
 
 The durable, cross-volume journal of every file mutation: the base for rollback, indexed name search, retention, and a
 future undo. **The app's first durable DB** (`operation-log.db` in the app data dir, Time Machine-backed) — every other
-on-disk store here is a disposable cache. Full design + rationale: [DETAILS.md](DETAILS.md). Plan:
-[`docs/specs/operation-log-plan.md`](../../../../../docs/specs/operation-log-plan.md).
+on-disk store here is a disposable cache. Full design + rationale: `DETAILS.md`. Plan:
+`docs/specs/operation-log-plan.md`.
 
 MCP tools live in `mcp/executor/operation_log.rs`; the UI is frontend-only over the read API (Debug panel in
-`routes/debug/DebugOperationLogPanel.svelte`, alpha dialog in `src/lib/operation-log/` — [DETAILS.md](DETAILS.md) §
+`routes/debug/DebugOperationLogPanel.svelte`, alpha dialog in `src/lib/operation-log/` — `DETAILS.md` §
 Alpha UI).
 
 ## Module map
@@ -40,14 +40,14 @@ Alpha UI).
   reasoning live in `capture.rs` — keep business logic out of `writer.rs`.
 - **Capture is a process-global journal reached by `op_id`, NOT threaded through the pipeline** (recorded deviation
   from D4; its hard rule — never extend `OperationEventSink` — still holds). Install via `set_journal`; the pipeline
-  calls the `journal_*` free functions by `op_id`. Rationale + record points: [DETAILS.md](DETAILS.md) § Capture.
+  calls the `journal_*` free functions by `op_id`. Rationale + record points: `DETAILS.md` § Capture.
 - **Rollback FAILS SAFE** (data-safety-critical): recheck each item against its snapshot AND its restore target; drift
   / unverifiable / occupied target ⇒ SKIP (→ `partially_rolled_back`), never operate; a restore-move never overwrites
   (pinned `Skip`, bar a case-only self-collision). `rolling_back` is the double-rollback + retention-race guard. Full
-  contract: [DETAILS.md](DETAILS.md) § Rollback.
+  contract: `DETAILS.md` § Rollback.
 - **Search spans every `row_role`; retention prunes whole ops only.** Name search matches `source_name_folded` across
   `rollback_unit` AND `search_only` rows (a leaf hits inside a trashed folder); a `top_level_only` op is a queryable
   known gap, not a false miss. Retention prunes whole ops by age + size, GCs dirs to the referenced-plus-ancestors
   closure, and NEVER prunes an op in `rolling_back` or its target.
 
-Depth (ladder template, schema, query/search, retention, rollback, dev bin): [DETAILS.md](DETAILS.md).
+Depth (ladder template, schema, query/search, retention, rollback, dev bin): `DETAILS.md`.

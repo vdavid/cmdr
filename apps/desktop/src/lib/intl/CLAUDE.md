@@ -13,7 +13,7 @@ text via ICU). Both read the locale from exactly one place here.
   `setLocale()`, `availableLocales()` (loaded tags, drives the Language picker), the per-locale catalog map + BCP-47
   fallback resolver, the locale-version rune, the compiled-`IntlMessageFormat` cache. `Trans.svelte`: inline-component
   sentences. `keys.gen.ts`: the generated `MessageKey` union (never hand-edit). `messages/`: the JSON catalogs (see its
-  [`CLAUDE.md`](messages/CLAUDE.md)).
+  `messages/CLAUDE.md`).
 
 ## Must-knows
 
@@ -25,7 +25,7 @@ text via ICU). Both read the locale from exactly one place here.
   base → `en` → key). A non-BCP-47 dir is NOT a locale and is filtered out: `screenshots/` sits alongside the locale
   dirs, so a glob/gate change must keep excluding it or it surfaces as a fake locale in the picker. The live picker is
   Settings > Appearance > Language (`appearance.language` → `setLocale` in `settings-applier.ts`): applies immediately,
-  no restart, frontend-only. Details: [DETAILS.md](DETAILS.md).
+  no restart, frontend-only. Details: `DETAILS.md`.
 - **Error copy uses `getMessage()` (raw lookup), NOT `t()`/ICU.** The error pipeline's `{system_settings}` tokens and
   `esc()` HTML entities collide with ICU's brace/apostrophe grammar. Only genuine multi-variable plural/select sentences
   go through `t()`. Don't route error strings through `format()`.
@@ -51,4 +51,4 @@ text via ICU). Both read the locale from exactly one place here.
   `10,000.00`). The parity net is `en-us-parity.test.ts`.
 
 Depth (the runtime design, the error-pipeline boundary, the ICU-vs-`$lib/intl` formatting split, the seam's scope, why
-uncached, the en-US triad change): [DETAILS.md](DETAILS.md).
+uncached, the en-US triad change): `DETAILS.md`.

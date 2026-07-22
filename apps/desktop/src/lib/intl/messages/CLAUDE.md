@@ -2,7 +2,7 @@
 
 JSON message catalogs, one file per feature area, under `en/`. The base locale is English-only; the runtime
 (`$lib/intl/messages.svelte.ts`) merges every `en/*.json` into one map at load. Runtime design and the error-pipeline
-boundary: [`../CLAUDE.md`](../CLAUDE.md).
+boundary: `../CLAUDE.md`.
 
 ## Layout
 
@@ -11,13 +11,12 @@ boundary: [`../CLAUDE.md`](../CLAUDE.md).
 - `screenshots/`: capture artifacts referenced by `@key.screenshot` (and `@key.screenshotNote` for representative
   stand-ins); one file serves many keys. PNGs are **gitignored** and regenerable; `capture-report.json` +
   `coverage-report.md` are tracked. Don't hand-edit `@key.screenshot`/`@key.screenshotNote` or commit PNGs; regenerate
-  with `pnpm i18n:shots`. See [DETAILS.md](DETAILS.md) § Screenshots.
+  with `pnpm i18n:shots`. See `DETAILS.md` § Screenshots.
 - `en-XA/`: the generated **pseudolocale** (accented, expanded, structure-preserving), the overflow-testing locale + the
   i18n-check fixture. **Gitignored + fully regenerable** from `en/` with `pnpm i18n:pseudo`; never hand-edit it (your
   edit is overwritten). Values the generator keeps verbatim (placeholder-only, pure brand tokens) get an auto-emitted
   `sameAsSourceJustification`, so a regenerated `en-XA` passes `i18n-coverage` — don't hand-justify them. The committed
-  check fixture is `test/fixtures/i18n-pseudolocale/`, not here. See
-  [`/docs/guides/i18n.md`](../../../../../../docs/guides/i18n.md) § Pseudolocale.
+  check fixture is `test/fixtures/i18n-pseudolocale/`, not here. See `docs/guides/i18n.md` § Pseudolocale.
 
 ## Must-knows
 
@@ -34,13 +33,13 @@ boundary: [`../CLAUDE.md`](../CLAUDE.md).
   `@key` twin in sync when you rename a key. **Write the `description` to set a translator up for excellence**
   (surface + trigger + constraints + do-not-translate tokens; plain-language placeholder meanings via `placeholders`; NO
   ICU plumbing, NO tone, since tone lives in the per-language style guide). Full guidance + the litmus test:
-  [DETAILS.md](DETAILS.md) § `@key` metadata schema. Every migrated key SHOULD carry a `description` (and `placeholders`
-  if it has any).
+  `DETAILS.md` § `@key` metadata schema. Every migrated key SHOULD carry a `description` (and `placeholders` if it has
+  any).
 - **Never hand-edit `../keys.gen.ts`.** It's generated from these files by `pnpm intl:keys`; run that after any key
   add/remove/rename. The `desktop-message-keys-fresh` check fails if it's stale.
 - **A new key needs a real call site, or it fails `desktop-message-keys-unused`.** A catalog key never referenced in
   `apps/desktop/src/` is an orphan (dead translation work) and is an ERROR, not just the codegen's dead-key warning.
   Keys built at runtime are carried by the closed dynamic-prefix allowlist in that check; don't add a key with no call
-  site expecting the allowlist to cover it. See [DETAILS.md](DETAILS.md) § Dead-key honesty + the orphan check.
+  site expecting the allowlist to cover it. See `DETAILS.md` § Dead-key honesty + the orphan check.
 
-Depth (the `@key` schema, screenshots-by-filename, the dead-key honesty caveat, parity rules): [DETAILS.md](DETAILS.md).
+Depth (the `@key` schema, screenshots-by-filename, the dead-key honesty caveat, parity rules): `DETAILS.md`.

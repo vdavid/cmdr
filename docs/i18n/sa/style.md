@@ -1,7 +1,6 @@
 # Sanskrit (sa) translation style guide
 
-Working notes for translating Cmdr into Sanskrit. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into Sanskrit. Read `../README.md` for how this fits the translation process.
 
 VERY LOW priority. Sanskrit is a classical/liturgical language of India with very few daily-use speakers; it's localized
 mostly for symbolic/heritage reasons, not market reach. The pile has ONLY a Microsoft style guide for `sa`; no macOS
@@ -74,6 +73,6 @@ collapses selection to one/other for `sa`.)
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/sa/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/sa/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

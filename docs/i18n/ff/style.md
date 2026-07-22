@@ -1,7 +1,7 @@
 # Fulah (ff) translation style guide
 
-Working notes for translating Cmdr into Fulah (Fulfulde / Pulaar, Fula). Read [`README.md`](../README.md) for how this
-fits the translation process.
+Working notes for translating Cmdr into Fulah (Fulfulde / Pulaar, Fula). Read `../README.md` for how this fits the
+translation process.
 
 `ff` is the language base (macrolanguage), targeted in the Latin script with the standard hooked letters (see Decision
 points). The reference pile has only Microsoft terminology for `ff` (Tier 2); no macOS, no GNOME. Fula is spread across
@@ -77,7 +77,7 @@ counted UI strings agree. Write both branches.
 - **Numbers and dates come from the formatter layer.** Western digits in modern Latin-script Fula; let the formatter
   decide.
 - **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  `docs/guides/i18n-translation.md`.
 
 ## Decisions to confirm with David
 
@@ -91,6 +91,6 @@ counted UI strings agree. Write both branches.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/ff/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/ff/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

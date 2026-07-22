@@ -3,8 +3,8 @@
 Frontend half of the "Go to path" action (⌘G, command palette): a small modal that jumps the focused pane to a typed,
 pasted, or recent path. Local filesystem only for v1.
 
-Backend counterpart: [`src-tauri/src/go_to_path/CLAUDE.md`](../../../src-tauri/src/go_to_path/CLAUDE.md). The backend's
-`resolve_go_to_path` owns all path reasoning; this frontend is a thin presenter (smart backend, thin frontend).
+Backend counterpart: `apps/desktop/src-tauri/src/go_to_path/CLAUDE.md`. The backend's `resolve_go_to_path` owns all path
+reasoning; this frontend is a thin presenter (smart backend, thin frontend).
 
 ## Module map
 
@@ -16,8 +16,7 @@ Backend counterpart: [`src-tauri/src/go_to_path/CLAUDE.md`](../../../src-tauri/s
 - `recent-paths-state.svelte.ts`: `$state` mirror of the backend recents store.
 - `go-to-path-ids.ts`: stable dedup id for the ancestor INFO toast.
 
-Navigation primitives are shared one level up in
-[`lib/file-explorer/navigation/navigate-and-select.ts`](../file-explorer/navigation/navigate-and-select.ts)
+Navigation primitives are shared one level up in `../file-explorer/navigation/navigate-and-select.ts`
 (`navigateToDirInPane`, `navigateToFileInPane`), reused by "Go to latest download".
 
 ## Must-knows
@@ -47,4 +46,4 @@ Navigation primitives are shared one level up in
 - **Case-insensitivity.** Dedupe is a raw path-string compare, so on case-insensitive APFS `/Users/x/Foo` and
   `/Users/x/foo` can show as two recents. Accepted for v1.
 
-Architecture, navigation semantics, decisions, and the manual smoke checklist: [DETAILS.md](DETAILS.md).
+Architecture, navigation semantics, decisions, and the manual smoke checklist: `DETAILS.md`.

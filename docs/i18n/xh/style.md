@@ -1,11 +1,10 @@
 # Xhosa (xh) translation style guide
 
-Working notes for translating Cmdr into Xhosa (isiXhosa). Read [`README.md`](../README.md) for how this fits the
-translation process.
+Working notes for translating Cmdr into Xhosa (isiXhosa). Read `../README.md` for how this fits the translation process.
 
 This is the language base (`xh`), isiXhosa in Latin script. The pile has a GNOME catalog (`xh`, ~86% translated) and
 Microsoft terminology (`xh-ZA`); for Cmdr a single `xh` base covers it (see Region). isiXhosa is a Nguni language, so it
-shares the noun-class concord challenge with isiZulu; see [`zu/style.md`](../zu/style.md) for the shared reasoning.
+shares the noun-class concord challenge with isiZulu; see `../zu/style.md` for the shared reasoning.
 
 ## Voice and tone
 
@@ -29,8 +28,8 @@ more honorific register is wanted.
 - Majors: intrinsic to all Nguni-language localization; vendors phrase around it with class-neutral framings.
 - Recommendation: write templates so no agreement morpheme depends on an inserted value; keep inserts in
   agreement-neutral slots (label + colon + value, or a fixed carrier noun owning the concord). This is the top
-  blind-translation risk for isiXhosa. Full reasoning in [`zu/style.md`](../zu/style.md) § noun-class. Flag to David:
-  some English source templates may need rewording to translate cleanly.
+  blind-translation risk for isiXhosa. Full reasoning in `../zu/style.md` § noun-class. Flag to David: some English
+  source templates may need rewording to translate cleanly.
 - Confidence: high.
 
 ### Click consonants and orthography
@@ -107,6 +106,6 @@ plural class), not just a suffix, so write both branches as full native forms.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/xh/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/xh/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

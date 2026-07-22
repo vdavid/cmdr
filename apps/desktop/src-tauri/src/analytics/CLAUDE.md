@@ -20,7 +20,7 @@ pulling in `analytics`.
   email → usage-history joinable on our servers. Don't merge, cross-attach, or cross the pipelines.
 - **Signal-safety: the crash signal handler must NOT call `diagnostics_id()`** (it allocates and locks; the handler is
   async-signal-safe). The panic-hook path reads the `install_id::init()` snapshot instead; the signal path attaches the
-  diag id at next-launch assembly. See [DETAILS.md](DETAILS.md).
+  diag id at next-launch assembly. See `DETAILS.md`.
 - **Ids are Rust-owned, AppHandle-free files** in `install-ids.json` (not `settings.json`). The frontend owns every
   `settings.json` write; minting an id there from Rust would race that ownership on first launch. Accessors are no-arg
   so the panic hook, next-launch assembly, and the loop can all call them.
@@ -47,4 +47,4 @@ pulling in `analytics`.
   props (`volume_kind`, `mode`). Events are an OPEN set: adding one is a one-liner.
 
 Full details (wiring, id storage, heartbeat payload, PostHog `/capture/` body and key mechanism, the starter event set
-and where each fires, how to add an event): [DETAILS.md](DETAILS.md).
+and where each fires, how to add an event): `DETAILS.md`.

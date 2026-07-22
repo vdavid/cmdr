@@ -4,8 +4,8 @@ Status: spec complete, plan pending. 2026-07-12. Owner: David.
 
 This spec defines the **"Ask Cmdr" vertical slice**: a read-only chat surface where the user talks to an LLM that can
 see what Cmdr knows (drive index, importance, operation log, live app state) and answer questions about their files. It
-is the first LLM-powered piece of the full agent ([`later/agent-spec.md`](later/agent-spec.md)) and deliberately ships
-ahead of the agent's proactive machinery.
+is the first LLM-powered piece of the full agent (`later/agent-spec.md`) and deliberately ships ahead of the agent's
+proactive machinery.
 
 It was distilled from the lead session that shipped the importance subsystem and the operation log; the design decisions
 here (surface choice, context anatomy, scope cuts) were made with David and are settled unless listed as open questions.

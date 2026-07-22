@@ -10,7 +10,7 @@ Which of the 139 researched languages Cmdr plans to localize, and in what order.
 - **exclude long-tail**: no major-product localization ecosystem. Decision 2026-06-20: skip the long tail.
 
 Order: source, waves 1 to 4, deferred variants, then exclusions. Formality and script choices per language:
-[formal-informal-decisions.md](formal-informal-decisions.md) and [script-decisions.md](script-decisions.md).
+`formal-informal-decisions.md` and `script-decisions.md`.
 
 | id      | language                  | decision          | comment                                                                           |
 | ------- | ------------------------- | ----------------- | --------------------------------------------------------------------------------- |

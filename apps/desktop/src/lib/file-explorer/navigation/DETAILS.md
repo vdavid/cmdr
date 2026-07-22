@@ -1,7 +1,7 @@
 # Navigation details
 
 Pull-tier docs for `apps/desktop/src/lib/file-explorer/navigation/`: architecture, flows, and decision rationale.
-Must-know invariants and gotchas live in [CLAUDE.md](CLAUDE.md).
+Must-know invariants and gotchas live in `CLAUDE.md`.
 
 Browser-style back/forward history, path resolution, paged keyboard shortcuts, and volume selector breadcrumb.
 

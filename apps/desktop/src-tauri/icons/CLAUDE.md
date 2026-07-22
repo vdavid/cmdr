@@ -1,7 +1,7 @@
 # App icons
 
-Bundled app icons for all platforms. Source artwork and the regeneration commands live in [DETAILS.md](DETAILS.md);
-read it before regenerating.
+Bundled app icons for all platforms. Source artwork and the regeneration commands live in `DETAILS.md`; read it before
+regenerating.
 
 ## Must-knows
 

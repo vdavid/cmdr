@@ -1,8 +1,8 @@
 # Archive browsing — routing-milestone derivation (M1b ground truth)
 
-Companion to [archive-browsing-plan.md](archive-browsing-plan.md) § M1b. Two exhaustive derivation passes (backend
-routing sites, frontend pane-volumeId readers) run against the post-drain code, plus the lead decisions they produced.
-Implementation agents: treat this as the authoritative site list; the plan holds intent and sequencing.
+Companion to `archive-browsing-plan.md` § M1b. Two exhaustive derivation passes (backend routing sites, frontend
+pane-volumeId readers) run against the post-drain code, plus the lead decisions they produced. Implementation agents:
+treat this as the authoritative site list; the plan holds intent and sequencing.
 
 ## Lead decisions (refining plan decision 1)
 

@@ -1,7 +1,7 @@
 # Keyboard shortcuts details
 
 Pull-tier docs for `apps/desktop/src/lib/shortcuts/`: architecture, flows, and decision rationale. Must-know invariants
-and gotchas live in [CLAUDE.md](CLAUDE.md).
+and gotchas live in `CLAUDE.md`.
 
 ## Purpose
 
@@ -120,7 +120,7 @@ Settings > Keyboard shortcuts via `openShortcutCustomization(commandId)`. That h
 `shortcut-<commandId>` lives as the paired `shortcutAnchorId` / `commandIdFromShortcutAnchor` functions in
 `settings-window.ts` so the writer (the helper) and the readers (the section's row id, the settings page's arrival
 handler) can't drift. The settings side scrolls the row into its nested list and flashes it — see
-[`../settings/sections/DETAILS.md`](../settings/sections/DETAILS.md) § "Deep-link arrival".
+`../settings/sections/DETAILS.md` § "Deep-link arrival".
 
 ### Scope hierarchy (`scope-hierarchy.ts`)
 

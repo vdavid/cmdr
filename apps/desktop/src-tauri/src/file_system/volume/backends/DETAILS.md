@@ -1,8 +1,8 @@
 # Volume backends details
 
 Pull-tier docs for `file_system/volume/backends/`: per-backend architecture, lifecycle flows, and decision rationale.
-Must-know invariants and gotchas live in [CLAUDE.md](CLAUDE.md). The trait shape, capability matrix, streaming
-patterns, and "Building a new volume" checklist live in the parent [`volume/DETAILS.md`](../DETAILS.md). When you're
+Must-know invariants and gotchas live in `CLAUDE.md`. The trait shape, capability matrix, streaming
+patterns, and "Building a new volume" checklist live in the parent `../DETAILS.md`. When you're
 modifying `SmbVolume`, `MtpVolume`, `LocalPosixVolume`, the SMB watcher, or `InMemoryVolume`, read here.
 
 ## Key files
@@ -113,7 +113,7 @@ A cold NAS index scan is metadata-read-bound, but the ceiling is **per-connectio
 not the disks: one SMB connection can't drive the server's read queue deep enough regardless of the SMB in-flight
 window. NAS-side measurement (2026-07-22) held total in-flight depth constant and varied only the TCP connection count;
 4 connections raised read IOPS ~1.75× at flat disk latency and lifted cold client throughput ~3.8×. Evidence:
-`smb2/docs/benchmark-findings.md` §§ "Directory-listing throughput probe" and "NAS-side ground truth" — link, don't
+`~/projects-git/vdavid/smb2/docs/benchmark-findings.md` §§ "Directory-listing throughput probe" and "NAS-side ground truth" — link, don't
 restate.
 
 So a background scan opens `SCAN_POOL_SIZE` (4) EXTRA smb2 sessions (separate TCP connections) for its duration and
@@ -198,7 +198,7 @@ Why this is the whole fix, cheaply:
 - **Same consumer, same key.** `refresh_archive_listings` scans `LISTING_CACHE` for keys at/inside the archive path and re-reads them; `volume_id` here is the parent DRIVE id, which is exactly what archive listings key on, so no rekeying. It's a no-op when the path isn't an archive or no inner listing is open, and the watcher already runs for the whole volume lifetime — so the only added cost is a re-parse when a `.zip` actually changes AND an inner pane is open.
 - **`entry_path` is already normalized.** It's the `to_nfd_display_path` result, so it went through the same backslash→slash + NFC→NFD normalization every other cache-facing path in `smb_watcher.rs` uses. Passing the raw event filename would miss the cache.
 - **Fires independent of the stat.** The refresh runs even when the pre-refresh `get_metadata` fails (a mid-write, truncated `.zip`): `refresh_archive_listings` keeps the previous inner listing on an unreadable parse rather than blanking the pane, and the next change event retries.
-- **NOT a freshness claim.** This is a visible-listing UX nicety, a SEPARATE consumer from the write-op fresh-listing oracle. `ArchiveVolume::listing_is_watched` stays `false` for a remote parent regardless (the SMB watcher is lossy under load, so the oracle must keep re-reading pre-flight scans honestly). The remote-archive freshness decision and the guardrail test are in [`archive/watch/DETAILS.md`](archive/watch/DETAILS.md) § "remote archives have NO live watch". MTP keeps manual refresh (F5) as its contract.
+- **NOT a freshness claim.** This is a visible-listing UX nicety, a SEPARATE consumer from the write-op fresh-listing oracle. `ArchiveVolume::listing_is_watched` stays `false` for a remote parent regardless (the SMB watcher is lossy under load, so the oracle must keep re-reading pre-flight scans honestly). The remote-archive freshness decision and the guardrail test are in `archive/watch/DETAILS.md` § "remote archives have NO live watch". MTP keeps manual refresh (F5) as its contract.
 
 Tests: `smb_watcher/archive_refresh_test.rs` (a Modified `.zip` event refreshes the inner listing; a non-archive change doesn't — the extension gate).
 

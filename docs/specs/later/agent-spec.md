@@ -117,12 +117,12 @@ platform-native way to say "purgeable, don't back up": macOS may purge it under 
 
 `main.db` is deliberately a catch-all, not specialized: future durable state lands here too. **Exception — the
 file-mutation journal is NOT a `main.db` table.** It ships as its own durable `operation-log.db` (the operation log,
-[`docs/specs/operation-log-plan.md`](../operation-log-plan.md), D1): a multi-GB append-heavy per-mutation journal would
-bloat `main.db`'s backups and defeat its small-inspectable-catch-all nature, and the two have different write cadences
-(per-mutation vs agent-episodic) and different retention. `main.db` stays the agent's durable catch-all; the mutation
-journal is a peer durable DB. The split serves D3's "generic catch-all" intent better (keeps `main.db` small) than a
-giant table would. The two DBs share the same discipline (no collation, forward migrations, retention), so
-`operation-log.db` is the built, working reference implementation of that discipline for `main.db` to follow.
+`../operation-log-plan.md`, D1): a multi-GB append-heavy per-mutation journal would bloat `main.db`'s backups and defeat
+its small-inspectable-catch-all nature, and the two have different write cadences (per-mutation vs agent-episodic) and
+different retention. `main.db` stays the agent's durable catch-all; the mutation journal is a peer durable DB. The split
+serves D3's "generic catch-all" intent better (keeps `main.db` small) than a giant table would. The two DBs share the
+same discipline (no collation, forward migrations, retention), so `operation-log.db` is the built, working reference
+implementation of that discipline for `main.db` to follow.
 
 Constraints:
 
@@ -155,11 +155,11 @@ Names are indicative; the implementing agent owns the final DDL.
   feeds the activity UI and is also context input (recent rejections, §9.2). Terminology mapping, since the spec uses
   several names: the user-facing **"activity log"** IS this table; the **"read log"** is its `kind = file_read` filtered
   view, not a separate table; `user_action_log` (below) is separate because its writer is the user, not the agent. **No
-  term collision with the operation log** ([`docs/specs/operation-log-plan.md`](../operation-log-plan.md), Naming): that
-  journal is the **"operation log"** (its rows are operations), this `agent_log` is the agent's **decision** log, and
-  **"action"** stays reserved for the `user_action_log` navigation/intent stream. Their future \_merged UI surface* may
-  be labelled **"Activity"** then (a UI-copy call, not an entity/table name) — so a future planner reads the three
-  surfaces correctly and doesn't re-collide the terms.
+  term collision with the operation log** (`../operation-log-plan.md`, Naming): that journal is the **"operation log"**
+  (its rows are operations), this `agent_log` is the agent's **decision** log, and **"action"** stays reserved for the
+  `user_action_log` navigation/intent stream. Their future \_merged UI surface* may be labelled **"Activity"** then (a
+  UI-copy call, not an entity/table name) — so a future planner reads the three surfaces correctly and doesn't
+  re-collide the terms.
 - `conversations` + `messages`: chat threads. A notification the user replies to becomes a thread carrying the
   originating wake's context.
 - `agent_inbox`: pending event bundles (persisted so a crash loses nothing): `bundle_id`, `volume_id`, `rel_path`,
@@ -172,9 +172,8 @@ Names are indicative; the implementing agent owns the final DDL.
   richer than this table's sketch (per-item rows, snapshots, rollback linkage). So this table is navigation/intent
   signals, NOT mutations. The three-way boundary, stated so no future effort builds a second operations recorder:
   **mutations → `operation-log.db`; navigation counts + recency → `importance.db`'s `record_visit` today (folding into
-  the agent's intent stream later); this `user_action_log` → navigation/intent events.** See
-  [`docs/specs/operation-log-plan.md`](../operation-log-plan.md) § Agent-spec reconciliation (D6: the operation log
-  records mutations only, never navigation).
+  the agent's intent stream later); this `user_action_log` → navigation/intent events.** See `../operation-log-plan.md`
+  § Agent-spec reconciliation (D6: the operation log records mutations only, never navigation).
 - `walk_state`: resumable summarization-walk bookkeeping.
 
 ### 4.3 Multi-volume identity
@@ -401,11 +400,10 @@ and whether it reports a per-op result the `proposal_ops` table can consume. Des
 `OperationManager`'s API, and file any batch-semantics gaps as small extensions to it.
 
 Because applied proposals execute through the managed pipeline, **the operation log journals every applied proposal
-batch for free** (the operation log hooks that pipeline —
-[`docs/specs/operation-log-plan.md`](../operation-log-plan.md), D33 reconciliation). A _rejected_ proposal never becomes
-an operation, so it never appears in that journal — the `proposals` / `proposal_ops` tables above hold the
-"agent-suggested / accepted / rejected" pre-operation states and reference `operations.op_id` for the ops that were
-accepted and executed. When the agent lands, its applied ops are tagged `initiator = agent` in the journal (the
+batch for free** (the operation log hooks that pipeline — `../operation-log-plan.md`, D33 reconciliation). A _rejected_
+proposal never becomes an operation, so it never appears in that journal — the `proposals` / `proposal_ops` tables above
+hold the "agent-suggested / accepted / rejected" pre-operation states and reference `operations.op_id` for the ops that
+were accepted and executed. When the agent lands, its applied ops are tagged `initiator = agent` in the journal (the
 operation log reserves that value now; v1 ships `user` + `ai_client` only). So the journal is the execution record; the
 proposal tables are the decision record — don't smear proposal states into the operations journal.
 

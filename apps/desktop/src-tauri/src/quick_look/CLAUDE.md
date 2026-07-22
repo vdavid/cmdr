@@ -15,7 +15,7 @@ here, to keep this module thin. Two events flow out: `quick-look-key` (keyboard 
 mirrors a DOM `KeyboardEvent`; the FE re-routes through the focused pane) and `quick-look-closed` (fires whenever the
 panel leaves the screen: our `orderOut:`, the ✕ button, or Esc; the FE flips `isOpen = false`).
 
-Full details (decisions, NSOpenPanel coexistence, the testing gap, multi-selection extension, deps): [DETAILS.md](DETAILS.md).
+Full details (decisions, NSOpenPanel coexistence, the testing gap, multi-selection extension, deps): `DETAILS.md`.
 
 ## Must-knows
 

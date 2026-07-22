@@ -1,8 +1,7 @@
 # Bengali (bn) translation style guide
 
-Working notes for translating Cmdr into Bengali. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Bengali.
+Working notes for translating Cmdr into Bengali. Read `../README.md` for how this fits the translation process, and the
+app-wide `docs/style-guide.md` for the English voice these notes carry into Bengali.
 
 Bengali coverage is mixed: there's NO macOS Bengali display language (no Tier-1 Apple evidence), so the top sources are
 Microsoft (terminology + style guide) and GNOME Nautilus. Sources mined for this guide: the Microsoft Bengali (BANGLA)
@@ -166,11 +165,10 @@ CLDR categories: **`one`, `other`** (verified with `new Intl.PluralRules('bn')`,
 - Double every apostrophe in a value (`'` becomes `''`); ICU treats a lone `'` as an escape and silently swallows text.
   Bengali rarely needs apostrophes, but any in a loanword or English fragment must be doubled.
 - Keep every `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
-  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  `docs/guides/i18n-translation.md` and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/bn/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/bn/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

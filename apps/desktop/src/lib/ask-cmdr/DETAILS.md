@@ -1,13 +1,11 @@
 # Ask Cmdr rail details
 
-Pull-tier docs for `lib/ask-cmdr/`. Must-knows live in [CLAUDE.md](CLAUDE.md). Plan:
-[`docs/specs/ask-cmdr-plan.md`](../../../../../docs/specs/ask-cmdr-plan.md). Backend:
-[`src-tauri/src/agent/CLAUDE.md`](../../../src-tauri/src/agent/CLAUDE.md) and
-[`commands/agent.rs`](../../../src-tauri/src/commands/agent.rs).
+Pull-tier docs for `lib/ask-cmdr/`. Must-knows live in `CLAUDE.md`. Plan: `docs/specs/ask-cmdr-plan.md`. Backend:
+`apps/desktop/src-tauri/src/agent/CLAUDE.md` and `apps/desktop/src-tauri/src/commands/agent.rs`.
 
 ## The IPC surface
 
-Wrappers in [`lib/tauri-commands/ask-cmdr.ts`](../tauri-commands/ask-cmdr.ts):
+Wrappers in `../tauri-commands/ask-cmdr.ts`:
 
 - `sendAskCmdrMessage(conversationId, text, onEvent)` — streaming, over a raw `invoke` + Tauri `Channel` (Channel isn't
   specta-friendly, so it's one of the sanctioned raw-invoke sites, with the eslint opt-out). `conversationId` is `null`

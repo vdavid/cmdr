@@ -19,8 +19,8 @@ No circular dependency: `ai-state.svelte.ts` never imports from the sync or cont
 ## Must-knows
 
 - **Copy lives in the `ai.*` catalog**, resolved via `t()`/`tString()`; don't hardcode user-facing strings
-  (`cmdr/no-raw-user-facing-string` is enforced on `lib/ai/` AND the cloud/local AI settings sections). See
-  [DETAILS.md](DETAILS.md) § i18n.
+  (`cmdr/no-raw-user-facing-string` is enforced on `lib/ai/` AND the cloud/local AI settings sections). See `DETAILS.md`
+  § i18n.
 - **Call `initAiToastSync()` synchronously in `onMount`**, before any `await`: it uses `$effect()`, which needs Svelte's
   reactive context. Calling it after an `await` throws `effect_orphan`. The initial `$effect` fires with `hidden` state
   (no-op), then re-fires when `initAiState()` updates the notification state.
@@ -53,4 +53,4 @@ No circular dependency: `ai-state.svelte.ts` never imports from the sync or cont
   section with no error.
 
 Full details (settings registry + legacy-key migration, wizard reuse of the cloud pipeline, model registry, download
-resumption, dev commands): [DETAILS.md](DETAILS.md).
+resumption, dev commands): `DETAILS.md`.

@@ -5,14 +5,14 @@ cross-cutting machinery both subdirs share.
 
 ## Module map
 
-- Subdirs: [`transfer/`](transfer/CLAUDE.md) (copy + move, conflict resolution, driver, copy backends),
-  [`delete/`](delete/CLAUDE.md) (delete walker, trash, oracle-aware fast path).
+- Subdirs: `transfer/CLAUDE.md` (copy + move, conflict resolution, driver, copy backends),
+  `delete/CLAUDE.md` (delete walker, trash, oracle-aware fast path).
 - Top level: `mod.rs` (public API + `start_write_operation` lifecycle), `manager.rs` (registry + lane admission),
   `state.rs` (status cache, `WriteOperationState`, `CopyTransaction`, busy-volumes, settle guard), `operation_intent.rs`
   (`OperationIntent`, `PauseGate`), `archive_edit/` (zip-edit driver), plus `scan_cache`,
   `types`, `event_sinks`, `validation`, `conflict`, `scan`, and others (full inventory in DETAILS). `operation_intent` +
   `scan_cache` re-export via `state`.
-- Frontend counterpart: [`src/lib/file-operations/CLAUDE.md`](../../../../src/lib/file-operations/CLAUDE.md).
+- Frontend counterpart: `apps/desktop/src/lib/file-operations/CLAUDE.md`.
 
 ## Must-knows
 
@@ -54,4 +54,4 @@ cross-cutting machinery both subdirs share.
   safety net.
 - **Volume-aware ops must not emit `write-error` on `Cancelled`** — the inner handler already emitted `write-cancelled`.
 
-Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here.
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here.

@@ -1,8 +1,7 @@
 # Czech (cs) translation style guide
 
-Working notes for translating Cmdr into Czech. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Czech.
+Working notes for translating Cmdr into Czech. Read `../README.md` for how this fits the translation process, and the
+app-wide `docs/style-guide.md` for the English voice these notes carry into Czech.
 
 Well-sourced: the pile has macOS Finder/AppKit (highest authority), MS terminology, MS style guide, GNOME Nautilus, and
 Xfce Thunar (`_ignored/i18n/cs/`). Evidence verified against the pile on 2026-06-20.
@@ -128,13 +127,12 @@ CLDR categories for `cs`: `one`, `few`, `many`, `other` (verified with `new Intl
 - **Length.** Czech runs somewhat longer than English (case endings, longer compounds), so overflow-check the layout
   against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
-  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in `docs/guides/i18n-translation.md` and
   `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/cs/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/cs/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

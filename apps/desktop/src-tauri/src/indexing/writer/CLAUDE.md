@@ -47,4 +47,4 @@ propagation, and the search-feeding generation bump. Other areas point here.
   "Test isolation".
 
 Single-writer architecture, honest sizes, the ledger, epochs, accumulation, partial aggregation, the heal, and
-maintenance: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+maintenance: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

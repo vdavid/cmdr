@@ -1,16 +1,15 @@
 # Local guarded scanner details
 
 Read this before any non-trivial work in `scanner/`: editing, planning, reorganizing, or advising. Must-know
-guardrails are in [CLAUDE.md](CLAUDE.md).
+guardrails are in `CLAUDE.md`.
 
 This area owns the LOCAL fresh-scan walker and the shared exclusion policy. Points outward: the honest-sizes model
 (`listed_epoch` / `min_subtree_epoch`), the `dir_stats` ledger, and the shared `Arc<AtomicI64>` id counter are canonical
-in [`../writer/DETAILS.md`](../writer/DETAILS.md); the serial LOCAL reconcile walk (which reuses the `GuardedReader` +
-`LOCAL_LIST_TIMEOUT` from here) and the cost budget in [`../reconcile/DETAILS.md`](../reconcile/DETAILS.md);
-`IndexPathSpace` + mount-relative resolution in [`../paths/DETAILS.md`](../paths/DETAILS.md); the registry, phase
-machine, and `IndexVolumeKind` capability axes in [`../lifecycle/DETAILS.md`](../lifecycle/DETAILS.md); the shared
-`extract_metadata` primitive at `../metadata.rs` (documented in the [hub](../DETAILS.md)). The network (SMB/MTP) walker
-is a different scanner entirely: [`../network_scanner/DETAILS.md`](../network_scanner/DETAILS.md).
+in `../writer/DETAILS.md`; the serial LOCAL reconcile walk (which reuses the `GuardedReader` + `LOCAL_LIST_TIMEOUT`
+from here) and the cost budget in `../reconcile/DETAILS.md`; `IndexPathSpace` + mount-relative resolution in
+`../paths/DETAILS.md`; the registry, phase machine, and `IndexVolumeKind` capability axes in
+`../lifecycle/DETAILS.md`; the shared `extract_metadata` primitive at `../metadata.rs` (documented in the
+[hub](../DETAILS.md)). The network (SMB/MTP) walker is a different scanner entirely: `../network_scanner/DETAILS.md`.
 
 ## Module structure
 
@@ -103,12 +102,11 @@ what it has delivered through a `ReadProgress` handle (`scanner/walker/mod.rs`),
 **Why it changed.** A total-duration cap of 15 s made the 2026-07-21 fresh scan report "complete" with 6,001,637
 entries; the reconcile that followed added **661,411 rows** it had silently dropped. All five abandoned directories
 were flat and merely large (200,000 / 179,523 / 102,929 / 100,000 / 74,024 entries), and the serial reconcile read
-every one of them in 10.8 s or less. They only exceeded 15 s in the parallel scan, which runs one read per core, so the
-constant was being asked a question its own doc comment never claimed to answer ("an online cloud dir lists in well
-under a second"). Measurements:
-[`docs/notes/indexing-benchmarks-2026-07-21.md`](../../../../../../docs/notes/indexing-benchmarks-2026-07-21.md). Same
-class of mistake, same week, as the reconcile cost budget's cumulative-time metric (see
-[`../reconcile/DETAILS.md`](../reconcile/DETAILS.md)), and the same fix shape: score the work done, not the clock.
+every one of them in 10.8 s or less. They only exceeded 15 s in the parallel scan, which runs one read per core, so
+the constant was being asked a question its own doc comment never claimed to answer ("an online cloud dir lists in
+well under a second"). Measurements: `docs/notes/indexing-benchmarks-2026-07-21.md`. Same class of mistake, same week,
+as the reconcile cost budget's cumulative-time metric (see `../reconcile/DETAILS.md`), and the same fix shape: score
+the work done, not the clock.
 
 **A reader that can't report progress is still bounded.** With `entries` stuck at 0, both rules collapse to the plain
 total-duration cap the walker always had — which is the honest verdict, since a read we can't observe is
@@ -185,14 +183,12 @@ there'd be nothing to find.
 Google Drive, MacDroid, and iCloud Drive — and iCloud's domain root is `~/Library/Mobile Documents`, which is NOT under
 `~/Library/CloudStorage`, which is exactly why a path-prefix heuristic was rejected. Full measurements, the
 authoritative-but-costly `NSFileProviderManager` alternative, and the dead ends:
-[`docs/notes/fileprovider-domain-detection.md`](../../../../../../docs/notes/fileprovider-domain-detection.md) (verified
-on macOS 26.5.2, build 25F84, 2026-07-20).
+`docs/notes/fileprovider-domain-detection.md` (verified on macOS 26.5.2, build 25F84, 2026-07-20).
 
-**The xattr is a private Apple detail, so this is an OPTIMIZATION, never a safety guarantee.** It's undocumented and not
-contractual; if Apple drops it, unrecognized domain roots simply go back to being walked. Nothing may depend on it for
-correctness or for bounding cost. The actual contract against pathological trees is the cost-budget backstop
-([`../reconcile/DETAILS.md`](../reconcile/DETAILS.md)) — the two are not redundant, and neither makes the other
-unnecessary.
+**The xattr is a private Apple detail, so this is an OPTIMIZATION, never a safety guarantee.** It's undocumented
+and not contractual; if Apple drops it, unrecognized domain roots simply go back to being walked. Nothing may depend on
+it for correctness or for bounding cost. The actual contract against pathological trees is the cost-budget backstop
+(`../reconcile/DETAILS.md`) — the two are not redundant, and neither makes the other unnecessary.
 
 **Injectability:** `ExclusionScope` carries both filesystem questions as `fn(&str) -> bool` pointers (`RootProbes`:
 `is_domain_root`, `is_unix_like_root`), so `with_probes` lets tests exercise the rule without a real provider domain or
@@ -212,13 +208,13 @@ mount-rooted scan is already bounded to its mount). Enrichment derives the scope
 a mount-rooted volume never excludes its own `/Volumes/X/...` paths, only junk it navigates into.
 
 `ExclusionScope` is a VALUE carrying the mount root (`None` = the `/`-rooted boot disk) plus the domain probe, not a
-bare enum: the root-position rule needs to know where the volume starts, and passing a scope is mandatory at every call
-site, so no path can be gated without saying which volume it's being gated for. `ExclusionTier` (the `BootDisk` /
+bare enum: the root-position rule needs to know where the volume starts, and passing a scope is mandatory at every
+call site, so no path can be gated without saying which volume it's being gated for. `ExclusionTier` (the `BootDisk` /
 `MountRooted` enum) is derived from it. `IndexPathSpace` STORES its space as an `ExclusionScope` and reads its mount
 root back through it, so the path space and the exclusion gate can't disagree about where the volume begins (see
-[`../paths/DETAILS.md`](../paths/DETAILS.md)). The scanner (`InsertVisitor` via `ScanConfig::scope`), the reconciler,
-and the local reconcile derive the scope from the volume's `IndexPathSpace`. The per-navigation verifier stays
-`BootDisk` and root-only by design (see [`../reconcile/DETAILS.md`](../reconcile/DETAILS.md)).
+`../paths/DETAILS.md`). The scanner (`InsertVisitor` via `ScanConfig::scope`), the reconciler, and the local reconcile
+derive the scope from the volume's `IndexPathSpace`. The per-navigation verifier stays `BootDisk` and root-only by
+design (see `../reconcile/DETAILS.md`).
 
 ## Canonicalization aliases
 
@@ -227,7 +223,7 @@ and the local reconcile derive the scope from the volume's `IndexPathSpace`. The
 canonicalize onto the same `(parent_id, name_folded)` key as the real directory under `/private`. Storing the alias
 collides on `INSERT OR IGNORE` (the source of "skipped due to UNIQUE conflict" log lines on a normal Mac) and risks an
 order-dependent race where the symlink row wins and the real directory's row, hence its recursive size, is dropped.
-Skipping the alias is correct because the real directory owns the canonical slot, and the resulting index is identical
-to the pre-skip outcome minus the race. **Don't "fix" this by storing the raw `/tmp` path instead**: that would make
-the entry invisible to the ~15 lookup sites that all normalize to canonical form. The firmlink/`normalize_path` model
-itself is canonical in [`../paths/DETAILS.md`](../paths/DETAILS.md).
+Skipping the alias is correct because the real directory owns the canonical slot, and the resulting index is
+identical to the pre-skip outcome minus the race. **Don't "fix" this by storing the raw `/tmp` path instead**: that
+would make the entry invisible to the ~15 lookup sites that all normalize to canonical form. The firmlink/`normalize_path`
+model itself is canonical in `../paths/DETAILS.md`.

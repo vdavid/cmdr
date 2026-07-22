@@ -1,7 +1,7 @@
 # Settings system details
 
 Pull-tier docs for `apps/desktop/src/lib/settings/`: architecture, flows, and decision rationale. Must-know invariants
-and gotchas live in [CLAUDE.md](CLAUDE.md).
+and gotchas live in `CLAUDE.md`.
 
 ## Live-apply rule
 
@@ -235,13 +235,13 @@ Top-level sidebar order (declared in `SettingsSidebar.svelte`'s `TOP_LEVEL_ORDER
     switch lives here in a "Logging" card)
 
 Per-section component files (one `*Section.svelte` per sidebar entry), the section ↔ component map, the
-mirror-in-multiple-sections pattern, and the AI hybrid-section split live in [`sections/CLAUDE.md`](sections/CLAUDE.md).
+mirror-in-multiple-sections pattern, and the AI hybrid-section split live in `sections/CLAUDE.md`.
 
 ### Components (`components/`)
 
 Reusable setting-row primitives (`SettingRow`, `SettingSwitch`, `SettingSelect`, `SettingSlider`, etc.) plus
-`SettingsSidebar` / `SettingsContent` / `SectionSummary`. See [`components/CLAUDE.md`](components/CLAUDE.md) for the
-file map, the 50-50 split-layout rule, and the `SettingPasswordInput` store-driven vs controlled modes.
+`SettingsSidebar` / `SettingsContent` / `SectionSummary`. See `components/CLAUDE.md` for the file map, the 50-50
+split-layout rule, and the `SettingPasswordInput` store-driven vs controlled modes.
 
 ### Other files
 
@@ -277,7 +277,7 @@ file map, the 50-50 split-layout rule, and the `SettingPasswordInput` store-driv
   `shortcutAnchorId(commandId)` / `commandIdFromShortcutAnchor(anchorId)` (the `shortcut-<commandId>` DOM-id convention,
   one definition so writer and readers can't drift) and `openShortcutCustomization(commandId)` (the in-app entry point
   clickable `ShortcutChip`s call to deep-link to a row). See § "Deep-link arrival into a shortcut row" below and
-  [`sections/CLAUDE.md`](sections/CLAUDE.md).
+  `sections/CLAUDE.md`.
 - **pending-shortcut-highlight.svelte.ts**: shared module-level `$state` seam for the deep-link arrival flash. The
   settings page writes the target command id (`setPendingShortcutHighlight`) after scrolling its row into view; the
   `KeyboardShortcutsSection` reads it (`getPendingShortcutHighlight`) to apply a `class:flash`, then clears it

@@ -19,7 +19,7 @@ the `Volume` trait, capability flags, and any write path.
   one-pass subtree extractor for sequential formats (compressed tar, 7z), decode-once bulk extract.
 - `name.rs`: `sanitize_entry_name` — the Zip Slip defense. `cache.rs`: `ArchiveIndexCache`. `error.rs`: `ArchiveError`.
 
-Depth, rationale, and the full test list: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
+Depth, rationale, and the full test list: `DETAILS.md`. Read it before any non-trivial work here: editing,
 planning, reorganizing, or advising.
 
 ## Must-knows
@@ -27,7 +27,7 @@ planning, reorganizing, or advising.
 - **Zip Slip: `sanitize_entry_name` is the single choke point every entry passes before entering the tree; don't
   bypass it.** No `Accepted` inner path escapes its root. Don't swap in rc-zip's coarser `Entry::sanitized_name`.
 - **Format is decided by NAME SUFFIX (`format_for_name`, the single source of truth), then confirmed by per-format
-  magic (in [`../boundary.rs`](../boundary.rs)).** Longest-suffix wins: `.tar.gz` is a gzip tar, a bare `.gz` is not an
+  magic (in `../boundary.rs`).** Longest-suffix wins: `.tar.gz` is a gzip tar, a bare `.gz` is not an
   archive.
 - **We drive rc-zip's sans-IO fsm directly, NOT `rc-zip-tokio`** (which borrows its handle and decompresses on the
   executor).

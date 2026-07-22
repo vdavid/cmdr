@@ -4,11 +4,9 @@ Frontend for copy (F5), move (F6), and compress (⌥F5): destination picker, dry
 dialog, error rendering. Parameterized by `operationType: 'copy' | 'move' | 'compress'` so one set serves all; the
 progress dialog is reused by delete/trash too (`'delete' | 'trash'`).
 
-Backend:
-[`src-tauri/src/file_system/write_operations/transfer/CLAUDE.md`](../../../../src-tauri/src/file_system/write_operations/transfer/CLAUDE.md)
-(copy/move semantics) and
-[`write_operations/CLAUDE.md`](../../../../src-tauri/src/file_system/write_operations/CLAUDE.md) (shared state machine,
-ETA/throughput, settle contract).
+Backend: `apps/desktop/src-tauri/src/file_system/write_operations/transfer/CLAUDE.md` (copy/move semantics) and
+`apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md` (shared state machine, ETA/throughput, settle
+contract).
 
 ## Module map
 
@@ -60,4 +58,4 @@ ETA/throughput, settle contract).
   `backgrounded`, open the queue window, unmount via `onQueue` without cancelling. `backgrounded` also makes `onDestroy`
   skip its safety-net cancel — don't break that gate.
 
-Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read before non-trivial work here.
+Architecture, flows, and decisions: `DETAILS.md`. Read before non-trivial work here.

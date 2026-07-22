@@ -1,7 +1,6 @@
 # Quechua (Cusco, quz) translation style guide
 
-Working notes for translating Cmdr into Cusco Quechua. Read [`README.md`](../README.md) for how this fits the
-translation process.
+Working notes for translating Cmdr into Cusco Quechua. Read `../README.md` for how this fits the translation process.
 
 LOW priority but better-precedented than most low-tier languages. `quz` is Cusco Quechua (Southern Quechua, Peru, ~1.5M
 speakers). The pile has Microsoft terminology AND a Microsoft style guide for `quz`; no macOS (Apple ships no Quechua
@@ -72,6 +71,6 @@ needs only one/other.)
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/quz/`; recipes in
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/quz/`; recipes in
 `docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

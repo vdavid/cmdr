@@ -47,7 +47,7 @@ The colored Finder-tag cluster shown at the right edge of the Name cell in both 
   duplicated in the CSS literally; the dots overlap via negative margin, leftmost on top via descending inline z-index.
 
 The dots are decorative (`aria-hidden`, `pointer-events: none`); the cluster carries the accessible label. Data flow and
-the enrich/sweep wiring live in [`../views/DETAILS.md`](../views/DETAILS.md) (the Finder-tags decision).
+the enrich/sweep wiring live in `../views/DETAILS.md` (the Finder-tags decision).
 
 ## `SelectionInfo.svelte` display modes
 
@@ -160,11 +160,10 @@ carries EITHER a static `tooltipKey` (files, one message per state) OR an alread
 which interpolate the `accounted/eligible` counts and so can't key a static message); `FileIcon` shows the `tooltip` if
 present, else `tString(tooltipKey)`.
 
-- **File state → badge**: the pure `getImageIndexBadge(state)` in
-  [`../views/file-list-utils.ts`](../views/file-list-utils.ts) (unit-tested, exhaustive over `FileIndexState`):
-  `indexed` → `circle-check`, `pending` → `circle-dashed`, `stale` → `rotate-cw`, `failed` → `circle-x`, `excluded` →
-  `circle-slash`. `notApplicable` (non-media, incl. folders) and an absent state → `null` (no badge). Returns
-  `{ icon, tooltipKey }`.
+- **File state → badge**: the pure `getImageIndexBadge(state)` in `../views/file-list-utils.ts` (unit-tested, exhaustive
+  over `FileIndexState`): `indexed` → `circle-check`, `pending` → `circle-dashed`, `stale` → `rotate-cw`, `failed` →
+  `circle-x`, `excluded` → `circle-slash`. `notApplicable` (non-media, incl. folders) and an absent state → `null` (no
+  badge). Returns `{ icon, tooltipKey }`.
 - **Folder coverage → badge**: the pure `getFolderCoverageBadge(coverage, t)` (also unit-tested): `null` when coverage
   is absent or `eligible === 0`; all-indexed (`accounted >= eligible`) → `circle-check`; some-pending
   (`accounted < eligible`) → `circle-dot` (a distinct hollow-with-center glyph, quieter than the file `pending` dashes).

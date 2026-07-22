@@ -3,7 +3,7 @@
 The Ask Cmdr agent's in-process tool layer: the five v1 read families, authored as
 `consumers: [Agent], access: Read` entries in the shared `mcp_tools!` registry (agent-spec D49, one authored source), with
 their handlers + typed result shapes colocated here. Depth (tool catalog, the top-N-by-size gap, the shim/visibility
-list): [DETAILS.md](DETAILS.md).
+list): `DETAILS.md`.
 
 ## Module map
 
@@ -34,7 +34,7 @@ list): [DETAILS.md](DETAILS.md).
 - **The agent can propose; only the user can approve.** Dispatch admits `Access::Read` and `Access::Propose`, never
   `Access::Write`. A `Propose` tool stages a proposal and opens a review surface: it mutates nothing, it can't
   self-approve (no tool approves a proposal, ever), and it must cap its payload the way `image_facts` caps at 200 paths.
-  Adding one also means adding its name to `EXPECTED_PROPOSE_TOOL_NAMES` by hand. Depth: [DETAILS.md](DETAILS.md).
+  Adding one also means adding its name to `EXPECTED_PROPOSE_TOOL_NAMES` by hand. Depth: `DETAILS.md`.
 - **Handlers read Rust-side stores, pane caches, + SQLite only — never a live `statfs`/`readdir` on a mount.** The
   existing pane listing, index, and importance DBs answer everything, so a dead NAS can't hang a tool.
 - **The registry couples `mcp` ↔ `agent`.** The `mcp_tools!` entries reference `crate::agent::tools::read::*` handler +
@@ -44,4 +44,4 @@ list): [DETAILS.md](DETAILS.md).
   its name in `EXPECTED_AGENT_TOOL_NAMES` and `ToolId::KNOWN` + a rail label in `ask-cmdr-labels.ts` (miss it and the
   tool line shows the generic "Working" fallback, costing transparency silently; a structural test pins it).
 
-Depth: [DETAILS.md](DETAILS.md).
+Depth: `DETAILS.md`.

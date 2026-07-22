@@ -97,7 +97,7 @@ tests **self-heal** rather than wait-and-hope:
 
 **Two serialization layers, one per test runner.** Concurrent live watches multiply each other's starvation, so only one
 runs at a time: under `cargo nextest` (process-per-test) the `real-notify` group in
-[`.config/nextest.toml`](../../../../../.config/nextest.toml) caps the group at one thread; under plain `cargo test` (the
+`.config/nextest.toml` caps the group at one thread; under plain `cargo test` (the
 whole `#[cfg(test)]` module shares one process) a `WATCH_SERIAL` mutex the five tests hold for their duration does the
 equivalent. The self-heal above is what actually defeats the residual single-watch arming/coalescing; serialization just
 removes the mutual interference. Verified 10×+ green on both `cargo test --lib downloads::watcher` and `cargo nextest`.

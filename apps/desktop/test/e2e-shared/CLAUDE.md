@@ -56,14 +56,11 @@ left/                         right/  (empty)
 
 ## Related docs
 
-- [`apps/desktop/test/CLAUDE.md`](../CLAUDE.md): E2E suite overview.
-- [`apps/desktop/test/e2e-playwright/CLAUDE.md`](../e2e-playwright/CLAUDE.md): Playwright conventions (incl. the
-  clipboard-mock gotcha).
-- [`apps/desktop/test/e2e-linux/CLAUDE.md`](../e2e-linux/CLAUDE.md): Linux Docker single-shard contract.
-- [`docs/tooling/instance-isolation.md`](../../../../docs/tooling/instance-isolation.md): canonical per-instance
-  reference.
-- [`apps/desktop/src-tauri/src/mcp/port_file.rs`](../../src-tauri/src/mcp/port_file.rs): the Rust side of the port-file
-  protocol.
+- `../CLAUDE.md`: E2E suite overview.
+- `../e2e-playwright/CLAUDE.md`: Playwright conventions (incl. the clipboard-mock gotcha).
+- `../e2e-linux/CLAUDE.md`: Linux Docker single-shard contract.
+- `docs/tooling/instance-isolation.md`: canonical per-instance reference.
+- `apps/desktop/src-tauri/src/mcp/port_file.rs`: the Rust side of the port-file protocol.
 
-Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

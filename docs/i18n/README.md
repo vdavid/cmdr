@@ -18,16 +18,14 @@ translation process and the agent prompt that consumes both live in
 
 ## Selection roster
 
-Which languages Cmdr plans to localize vs set aside for now:
-[language-selection-decisions.md](language-selection-decisions.md).
+Which languages Cmdr plans to localize vs set aside for now: `language-selection-decisions.md`.
 
-Formal vs informal address per language, with OS and retail evidence:
-[formal-informal-decisions.md](formal-informal-decisions.md).
+Formal vs informal address per language, with OS and retail evidence: `formal-informal-decisions.md`.
 
-Which script each digraphic language ships in: [script-decisions.md](script-decisions.md).
+Which script each digraphic language ships in: `script-decisions.md`.
 
 Cross-language process learnings discovered while translating (the pipeline, catalog mechanics, pile traps), shared
-across batches: [translation-learnings.md](translation-learnings.md).
+across batches: `translation-learnings.md`.
 
 ## Current language guides
 

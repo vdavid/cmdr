@@ -1,34 +1,30 @@
 # Reconcile details
 
 Read this before any non-trivial work in `reconcile/`: editing, planning, reorganizing, or advising. Must-know
-guardrails are in [CLAUDE.md](CLAUDE.md).
+guardrails are in `CLAUDE.md`.
 
 This area owns the mechanisms below. Points outward: the honest-sizes data model (`listed_epoch` /
 `min_subtree_epoch` / `current_epoch`), the `dir_stats` ledger, the `BulkReconcileGuard` debt-recording contract, and
-writer-wait attribution are canonical in [`../writer/DETAILS.md`](../writer/DETAILS.md); the guarded reader and the
-`should_exclude` policy in [`../scanner/DETAILS.md`](../scanner/DETAILS.md); the live event loop, removal-storm
-coalescing, and the `verify_affected_dirs` / `verify_guard.rs` code in [`../watch/DETAILS.md`](../watch/DETAILS.md);
-`resolve_path_under` + mount-relative paths in [`../paths/DETAILS.md`](../paths/DETAILS.md); the compute math in
-[`../aggregator/DETAILS.md`](../aggregator/DETAILS.md).
+writer-wait attribution are canonical in `../writer/DETAILS.md`; the guarded reader and the `should_exclude` policy in
+`../scanner/DETAILS.md`; the live event loop, removal-storm coalescing, and the `verify_affected_dirs` /
+`verify_guard.rs` code in `../watch/DETAILS.md`; `resolve_path_under` + mount-relative paths in
+`../paths/DETAILS.md`; the compute math in `../aggregator/DETAILS.md`.
 
 ## Non-destructive rescan (reconcile, not truncate)
 
 A FIRST scan (empty DB) truncates and bulk-builds — fastest on an empty table. A RESCAN of an already-populated index
 RECONCILES in place: it walks the tree and diffs each dir against the DB, writing only the differences, so the last-good
 index stays visible (stale) throughout and a mid-rescan disconnect leaves the prior data intact. Perf + correctness were
-gated before building this; the evidence is in
-[`docs/notes/m3-reconcile-rescan-gate.md`](../../../../../../docs/notes/m3-reconcile-rescan-gate.md).
+gated before building this; the evidence is in `docs/notes/m3-reconcile-rescan-gate.md`.
 
 **The LOCAL reconcile's cost is the open question.** Measured on the boot volume: the serial reconcile walk took
 1,309 s where the parallel fresh scan of the same tree took 68.1 s, and 92.3% of that time sat inside `read_dir` +
-`lstat` ([`docs/notes/reconcile-latency-spike.md`](../../../../../../docs/notes/reconcile-latency-spike.md)). Replacing the
-local rescan with a fast parallel build that swaps in atomically is under evaluation, including the traps that shape it
-(SQLite has no `ALTER INDEX ... RENAME`, `start_scan` clears `scan_completed_at` before the scan runs, and
-`MutationTracker::bump` can't tell which table changed):
-[`docs/notes/swap-scan-feasibility.md`](../../../../../../docs/notes/swap-scan-feasibility.md).
+`lstat` (`docs/notes/reconcile-latency-spike.md`). Replacing the local rescan with a fast parallel build that swaps in
+atomically is under evaluation, including the traps that shape it (SQLite has no `ALTER INDEX ... RENAME`, `start_scan`
+clears `scan_completed_at` before the scan runs, and `MutationTracker::bump` can't tell which table changed):
+`docs/notes/swap-scan-feasibility.md`.
 
-**Before trusting that speed comparison, read
-[`docs/notes/indexing-benchmarks-2026-07-21.md`](../../../../../../docs/notes/indexing-benchmarks-2026-07-21.md).**
+**Before trusting that speed comparison, read `docs/notes/indexing-benchmarks-2026-07-21.md`.**
 Measured on an idle machine, the fresh parallel scan takes 52.7 s and the reconcile 476.9 s — but the parallel scan
 ABANDONS directories at `LOCAL_LIST_TIMEOUT` under rayon contention and left the index ~10% short (6,001,637 rows,
 versus 6,663,048 after the reconcile filled in the five subtrees it had skipped). The parallel walk buys part of its
@@ -71,16 +67,16 @@ single bottom-up aggregate is faster than truncate. `finish_reconcile` sends `Co
 the aggregate recomputes coverage AND sizes for the whole tree from the committed rows in one O(dirs) bulk-SQL pass. A
 reconcile's own writes (`UpsertEntryV2`/`Delete*`, never `InsertEntriesV2`) leave the accumulator maps empty, but the
 finish does NOT rely on that: declaring `Sql` — not sniffing map-emptiness — is what keeps an interleaving verification
-subtree scan's map pollution from zeroing every out-of-subtree dir (see [`../writer/DETAILS.md`](../writer/DETAILS.md) §
+subtree scan's map pollution from zeroing every out-of-subtree dir (see `../writer/DETAILS.md` §
 the source contract). Per-dir `PropagateMinSubtreeEpoch` stays ONLY for the small-scope LIVE reconciles
 (`reconcile_subtree`: per-navigation verifier, `MustScanSubDirs`, SMB-overflow `FullRefresh`), where the chain is short.
 
 **Decision: the full reconcile suppresses per-entry ancestor propagation (`SetDeltaPropagation`).** The single-aggregate
 rule governs the FINISH; this governs the WALK. Each `UpsertEntryV2`/`DeleteEntryById`/`DeleteSubtreeById` the diff
-emits would otherwise auto-walk the ancestor `dir_stats` chain — O(entries × depth) across an entire pass. On a large
-delta (a 270k→6M partial-completion) that wedged the writer for hours: the channel stays full, so the walk thread parks
-on `send` and the app can't drain. It's also pure waste, because the FINISH's one `ComputeAllAggregates` recomputes
-every dir's `dir_stats` from the entries table anyway. So both full-reconcile walkers (`local_reconcile::run_local_reconcile`,
+emits would otherwise auto-walk the ancestor `dir_stats` chain — O(entries × depth) across an entire pass. On a large delta (a 270k→6M
+partial-completion) that wedged the writer for hours: the channel stays full, so the walk thread parks on `send` and the
+app can't drain. It's also pure waste, because the FINISH's one `ComputeAllAggregates` recomputes every dir's `dir_stats`
+from the entries table anyway. So both full-reconcile walkers (`local_reconcile::run_local_reconcile`,
 `volume_scanner::reconcile_volume_via_trait`) bracket their BFS with `reconciler::BulkReconcileGuard` — it sends
 `SetDeltaPropagation(false)` before the walk and restores `true` on EVERY exit (clean finish, cancel, empty-root,
 disconnect, error, panic) via `Drop`. The writer keeps everything else under suppression (entry insert/update/delete,
@@ -100,7 +96,7 @@ production index 2026-07-21: **249 directories lying, `~/Library` among them at 
 latch), and `Drop` sends `PayLedgerIfUnpaid` after restoring propagation. The two halves cover different deaths — `Drop`
 covers in-process interruption, the durable marker covers process death (no `Drop` runs). Ordering is load-bearing both
 ways: the marker must commit before the first suppressed write, and the payment must be the LAST thing the window does.
-The heal-latch mechanism is canonical in [`../writer/DETAILS.md`](../writer/DETAILS.md) § the one-shot heal. Regression
+The heal-latch mechanism is canonical in `../writer/DETAILS.md` § the one-shot heal. Regression
 tests: `local_reconcile::tests::a_reconcile_cancelled_after_discovering_a_dir_leaves_no_exact_size_lies`, and in
 `reconciler::tests` `an_interrupted_bulk_window_pays_the_coverage_debt_when_it_closes`,
 `a_bulk_window_that_dies_mid_walk_leaves_the_ledger_unpaid_for_the_next_launch` (`mem::forget`s the guard to simulate
@@ -155,15 +151,16 @@ parallelization would restructure the delete-critical per-dir diff for a perf ga
 Hang-tolerance, not parallelism, was the requirement, handled without touching the diff: each `read_fs_children` goes
 through a `GuardedReader` that caps the read at `LOCAL_LIST_TIMEOUT` (15 s) on a persistent 8 MB-stack helper thread; an
 overrun is abandoned and reported as unlistable (`None`), mapping onto the EXISTING skip handling (root won't list →
-failed rescan keeping the prior index; subdir won't list → skip and keep it stale). See
-[`../scanner/DETAILS.md`](../scanner/DETAILS.md). **Panic safety:** `start_local_reconcile` wraps `run_local_reconcile`
+failed rescan keeping the prior index; subdir won't list → skip and keep it stale). See `../scanner/DETAILS.md`.
+**Panic safety:** `start_local_reconcile` wraps `run_local_reconcile`
 in `std::panic::catch_unwind` and converts a panic into a typed `ScanError::Panicked(msg)`, so a walk panic resolves the
 `JoinHandle` to `Ok(Err(_))` (routed through the completion handler's failure arm), not the opaque raw-thread-panic arm.
 **Gotcha (hardlinks):** `build_live_children` dedups a multi-link inode's bytes ONLY in the summary byte totals (one
 global `seen_inodes` for the whole walk) and deliberately leaves the per-entry `LiveChild` snapshot RAW, deferring
 per-entry dedup to the writer's `UpsertEntryV2` (`has_sized_entry_for_inode`). Don't "fix" this by zeroing the snapshot
 the way `run_scan` zeroes its per-entry size: the reconcile's first-seen-keeps choice is independent of which occurrence
-the DB already sized, so zeroing makes the writer null BOTH occurrences and the inode's bytes drop to zero (under-count).
+the DB already sized, so zeroing makes the writer null BOTH occurrences and the inode's bytes drop to zero
+(under-count).
 
 ## No completion marker on an empty root
 
@@ -192,14 +189,13 @@ same empty root and re-"complete" again. The real-hardware symptom was an SMB in
 
 ## The reconcile cost budget (`local_reconcile/cost_budget.rs`)
 
-The serial rescan walk had no cost backstop: on the measured boot volume it spent 1,309 s, 92.3% of it inside
-`read_dir` + `lstat`, with 1.7% of directories accounting for 71% of the read time
-([`docs/notes/reconcile-latency-spike.md`](../../../../../../docs/notes/reconcile-latency-spike.md)). Cost, not failure,
-is the signal: that walk hit exactly ONE read timeout in 21 minutes while an Android phone's `/proc` tree cost ~454 s in
-reads that all SUCCEEDED. So the guarded walker's "give up after 32 consecutive FAILED reads" model would have fired
-zero times. (That specific tree is now excluded by name at volume roots; the budget is the general backstop for the
-trees nobody anticipated — `Library/Caches/go-build/*`, Slack's `Cache_Data`, `target/debug/incremental`, a MacDroid
-`.Trash`, Xcode SDK framework dirs.)
+The serial rescan walk had no cost backstop: on the measured boot volume it spent 1,309 s, 92.3% of it inside `read_dir`
++ `lstat`, with 1.7% of directories accounting for 71% of the read time (`docs/notes/reconcile-latency-spike.md`). Cost,
+not failure, is the signal: that walk hit exactly ONE read timeout in 21 minutes while an Android phone's `/proc` tree
+cost ~454 s in reads that all SUCCEEDED. So the guarded walker's "give up after 32 consecutive FAILED reads" model would
+have fired zero times. (That specific tree is now excluded by name at volume roots; the budget is the general backstop
+for the trees nobody anticipated — `Library/Caches/go-build/*`, Slack's `Cache_Data`, `target/debug/incremental`, a
+MacDroid `.Trash`, Xcode SDK framework dirs.)
 
 **The metric: read LATENCY, never cumulative read time.** Every read gets an allowance of `SLOW_READ_FIXED_ALLOWANCE`
 (20 ms) plus `SLOW_READ_PER_ENTRY_ALLOWANCE` (100 µs) per entry it returned. A read that costs more than its allowance
@@ -384,8 +380,7 @@ own duration silently included the wait ("reconcile slow for … (21s)" meant "t
 seconds"). `reconcile_subtree` arms the thread-local writer-wait probe at its start and reports the span as
 `ReconcileSummary.writer_wait`. `reconcile_report` is pure and returns `(log::Level, String)`: `info` under 10 s; past
 that the wait is named, and when it DOMINATES (over half the duration) the line drops to `debug` and says "reconcile
-waited" (writer saturation has its own signal in the writer heartbeat). The probe mechanism is in
-[`../writer/DETAILS.md`](../writer/DETAILS.md).
+waited" (writer saturation has its own signal in the writer heartbeat). The probe mechanism is in `../writer/DETAILS.md`.
 
 ## Depth-split `MustScanSubDirs` routing (`reconciler/rescan_route.rs`)
 

@@ -6,17 +6,16 @@ strategy, and the convergence plan.
 ## Where this sits
 
 This is one half of the friendly-error system. The other half is Rust classification
-([`friendly_error/`](../../../src-tauri/src/file_system/volume/friendly_error/DETAILS.md)): it decides WHAT happened (a
-typed `ListingError`), this decides the WORDS. The split realizes "smart backend, thin frontend" and seeds an i18n
-catalog (a single home for all error copy).
+(`apps/desktop/src-tauri/src/file_system/volume/friendly_error/DETAILS.md`): it decides WHAT happened (a typed
+`ListingError`), this decides the WORDS. The split realizes "smart backend, thin frontend" and seeds an i18n catalog (a
+single home for all error copy).
 
 The copy/move/delete WRITE-error prose is a sibling of this family but lives outside this directory: the
 `errors.write.*` keys are in `errors.json` alongside ours, yet they're composed by
-[`../file-operations/transfer/transfer-error-messages.ts`](../file-operations/transfer/transfer-error-messages.ts)
-(rendered in `TransferErrorDialog`/`FallbackErrorContent`), not the factories here. Same `getMessage()`-not-ICU rule
-(the values interpolate escaped paths/sizes and verb tokens, so they bypass ICU and use normal apostrophes). They're
-parity-pinned by `transfer/transfer-error-messages.parity.test.ts`, not by our golden fixture. The two paths share the
-`FriendlyErrorMessage` shape and may converge later.
+`../file-operations/transfer/transfer-error-messages.ts` (rendered in `TransferErrorDialog`/`FallbackErrorContent`), not
+the factories here. Same `getMessage()`-not-ICU rule (the values interpolate escaped paths/sizes and verb tokens, so
+they bypass ICU and use normal apostrophes). They're parity-pinned by `transfer/transfer-error-messages.parity.test.ts`,
+not by our golden fixture. The two paths share the `FriendlyErrorMessage` shape and may converge later.
 
 ## Data flow
 
@@ -30,8 +29,7 @@ parity-pinned by `transfer/transfer-error-messages.parity.test.ts`, not by our g
    `t()`; see the catalog boundary below), substitutes its escaped runtime params (`{path}` / `{osMessage}` tokens), and
    substitutes localized macOS pane labels via `expandSystemStrings(...)`.
 4. `ErrorPane` renders the result. The explanation / suggestion go through the single `renderErrorMarkdown` → snarkdown
-   → `{@html}` site ([`error-pane-utils.ts`](../file-explorer/pane/error-pane-utils.ts)); the title and `raw_detail` are
-   plain text.
+   → `{@html}` site (`../file-explorer/pane/error-pane-utils.ts`); the title and `raw_detail` are plain text.
 
 ## Markdown escaping (the XSS-load-bearing contract)
 
@@ -58,12 +56,12 @@ templates; `expandSystemStrings` substitutes the live localized labels from `lib
 
 ## Message-catalog boundary (`getMessage`, not ICU `t()`)
 
-The literal English lives in [`../intl/messages/en/errors.json`](../intl/messages/en/errors.json) under `errors.*`, and
-the factories resolve it via `getMessage(key)`, a raw catalog lookup with no ICU parsing. This is deliberate: error
-values carry markdown plus `{system_settings}`-style `expandSystemStrings` tokens and `esc()` HTML entities, all of
-which collide with ICU MessageFormat's brace/apostrophe grammar. Routing them through `t()`/`format()` would mangle
-them. So errors are the one area that bypasses ICU (see the i18n plan's Decision 2 and its errors note). A corollary:
-`errors.json` values do NOT double apostrophes, since the ICU `''` rule does not apply to non-ICU strings.
+The literal English lives in `../intl/messages/en/errors.json` under `errors.*`, and the factories resolve it via
+`getMessage(key)`, a raw catalog lookup with no ICU parsing. This is deliberate: error values carry markdown plus
+`{system_settings}`-style `expandSystemStrings` tokens and `esc()` HTML entities, all of which collide with ICU
+MessageFormat's brace/apostrophe grammar. Routing them through `t()`/`format()` would mangle them. So errors are the one
+area that bypasses ICU (see the i18n plan's Decision 2 and its errors note). A corollary: `errors.json` values do NOT
+double apostrophes, since the ICU `''` rule does not apply to non-ICU strings.
 
 Key shape: `errors.listing.<reason>.{title,explanation,suggestion}`, `errors.git.<kind>.{title,message,suggestion}`, and
 the provider keys. Param tokens (`{path}`, `{osMessage}`) are substituted by `interpolate(...)` in

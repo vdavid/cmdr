@@ -3,7 +3,7 @@
 Computes each directory's recursive `dir_stats` (size, counts, `recursive_has_symlinks`, `min_subtree_epoch`) from the
 `entries` table. Pure compute + SQL readers; the writer thread drives it. The honest-sizes DATA MODEL (what
 `listed_epoch` / `min_subtree_epoch` / `current_epoch` mean, and the live-path discipline) is canonical in
-[`../writer/DETAILS.md`](../writer/DETAILS.md) — this area owns the COMPUTE math only.
+`../writer/DETAILS.md` — this area owns the COMPUTE math only.
 
 ## Module map
 
@@ -33,4 +33,4 @@ Computes each directory's recursive `dir_stats` (size, counts, `recursive_has_sy
   after reconciler/cold-start replay via the `BackfillMissingDirStats` writer message.
 
 Bottom-up + topological sort, the scoped-CTE readers, the epoch rollup, backfill, and the two partial-aggregate
-variants: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+variants: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

@@ -1,7 +1,7 @@
 # File explorer views details
 
 Pull-tier docs for `apps/desktop/src/lib/file-explorer/views/`: architecture, flows, and decision rationale. Must-know
-invariants and gotchas live in [CLAUDE.md](CLAUDE.md).
+invariants and gotchas live in `CLAUDE.md`.
 
 ## Architecture
 
@@ -290,4 +290,4 @@ to 1+ GB under heavy re-render; the `translateY` scroll still composites on dema
 per-row `contain: layout paint` either (it backfires: one retained backing store per row). The full
 GPU/compositor-memory investigation — findings, the reclaimable-not-a-leak conclusion, the measurement methodology and
 its gotchas, and kick-off context for any future high-memory report — is in
-[`docs/notes/high-memory-gpu-compositor-investigation-2026-07.md`](../../../../../../docs/notes/high-memory-gpu-compositor-investigation-2026-07.md).
+`docs/notes/high-memory-gpu-compositor-investigation-2026-07.md`.

@@ -1,8 +1,7 @@
 # Basque (eu) translation style guide
 
-Working notes for translating Cmdr into Basque (Euskara). Read [`README.md`](../README.md) for how this fits the
-translation process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes
-carry into Basque.
+Working notes for translating Cmdr into Basque (Euskara). Read `../README.md` for how this fits the translation process,
+and the app-wide `docs/style-guide.md` for the English voice these notes carry into Basque.
 
 `eu` is the language base (Euskara Batua, the standardized literary Basque). The reference pile has four sources
 (Microsoft terminology, Microsoft style guide, GNOME nautilus, Xfce thunar) but no macOS (Apple does not ship a Basque
@@ -93,7 +92,7 @@ both branches so the counted noun's suffix is correct for one vs many.
 - **Quotation marks.** Basque commonly uses `«…»` (guillemets) in print, but UI catalogs vary; match the surrounding
   source convention and keep it consistent. No counted/quoted strings force a call in the crash set.
 - **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  `docs/guides/i18n-translation.md`.
 
 ## Decisions to confirm with David
 
@@ -102,6 +101,6 @@ both branches so the counted noun's suffix is correct for one vs many.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/eu/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/eu/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

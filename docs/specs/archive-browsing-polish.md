@@ -48,12 +48,11 @@ real plumbing (not just the flag): a per-archive password threads through `seven
 Every zip edit is an O(archive) temp+rename rewrite — safe and uniform, but adding one small file to a 2 GB zip rewrites
 2 GB (and for a NAS-hosted zip, round-trips the whole archive over the wire).
 
-**Spiked 2026-07-09; full evidence in [`../notes/m-append-spike.md`](../notes/m-append-spike.md).** The original
-append-past-EOF design (append entries + fresh CD + new EOCD, old CD left as dead bytes) is a **no-go**: `ditto -x -k`
-(the programmatic Archive Utility path) forward-scans local file headers, stops dead at the old central directory, and
-silently drops every appended entry (exit 0) — unfixable within the layout, since crash-safety requires that old CD to
-survive. CD-rewrite deletes also leave deleted bytes recoverable in the file (a data-remanence regression vs
-temp+rename).
+**Spiked 2026-07-09; full evidence in `../notes/m-append-spike.md`.** The original append-past-EOF design (append
+entries + fresh CD + new EOCD, old CD left as dead bytes) is a **no-go**: `ditto -x -k` (the programmatic Archive
+Utility path) forward-scans local file headers, stops dead at the old central directory, and silently drops every
+appended entry (exit 0) — unfixable within the layout, since crash-safety requires that old CD to survive. CD-rewrite
+deletes also leave deleted bytes recoverable in the file (a data-remanence regression vs temp+rename).
 
 **The design to ship instead — "clone + tail-rewrite", same speed, zero downsides:**
 

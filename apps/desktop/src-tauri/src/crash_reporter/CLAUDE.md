@@ -29,7 +29,7 @@ bytes to a pre-opened fd; symbolicated on next launch).
 - **`system_snapshot` is attached at next-launch assembly in `process_pending_crash`, NEVER in the panic hook or signal
   handler** (compromised context — no sysctl/sysinfo/shell-outs). It's the stable form (`live: None`): live values
   gathered after relaunch would describe the fresh process, not the crash. PII-free by construction; see
-  [`diagnostics_snapshot.rs`](../diagnostics_snapshot.rs).
+  `../diagnostics_snapshot.rs`.
 - **Attach the diagnostics id (`diag_`), NEVER the analytics id (`anal_`).** The two-id split (see `analytics/CLAUDE.md`
   § "Two ids that never meet") keeps a voluntarily-attached email unjoinable to usage history. Attached at
   report-assembly time, never in the signal handler: the panic path reads the `OnceLock` snapshot
@@ -56,4 +56,4 @@ bytes to a pre-opened fd; symbolicated on next launch).
 - **Signal-safety of `backtrace()`**: `execinfo.h`'s `backtrace()` is async-signal-safe on macOS; on Linux glibc's is
   safe in practice but not POSIX-guaranteed.
 
-The full crash-file lifecycle and the exact "what we send / never send" payload catalog are in [DETAILS.md](DETAILS.md).
+The full crash-file lifecycle and the exact "what we send / never send" payload catalog are in `DETAILS.md`.

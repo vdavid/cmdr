@@ -1,9 +1,9 @@
 # Uzbek (uz) translation style guide
 
-Working notes for translating Cmdr into Uzbek. Read [`README.md`](../README.md) for how this fits the translation
-process. Uzbek has a real SCRIPT decision: Latin vs Cyrillic (see Decision points). This `uz` base targets **Latin**; a
-Cyrillic build would be a separate `uz-Cyrl` locale. References: a Microsoft "Uzbek (Latin) Style Guide", Microsoft
-terminology for both scripts (`uz-Latn`, `uz-Cyrl`), and GNOME Nautilus (`uz`, in Latin).
+Working notes for translating Cmdr into Uzbek. Read `../README.md` for how this fits the translation process. Uzbek has
+a real SCRIPT decision: Latin vs Cyrillic (see Decision points). This `uz` base targets **Latin**; a Cyrillic build
+would be a separate `uz-Cyrl` locale. References: a Microsoft "Uzbek (Latin) Style Guide", Microsoft terminology for
+both scripts (`uz-Latn`, `uz-Cyrl`), and GNOME Nautilus (`uz`, in Latin).
 
 ## Voice and tone
 
@@ -30,7 +30,7 @@ Microsoft references are plain and direct, which suits Cmdr's register.
   the official, education, and younger-generation script and the modern software default; Cyrillic remains widespread
   among older users and in some media. Microsoft's primary style guide is the "Uzbek (Latin) Style Guide", and GNOME
   ships Latin ("Nusxalash", "Katalog", "Bekor qilish"). Both vendors keep a Cyrillic variant too. Ship `uz` as Latin;
-  add `uz-Cyrl` only on real demand. Recorded in [`script-decisions.md`](../script-decisions.md).
+  add `uz-Cyrl` only on real demand. Recorded in `../script-decisions.md`.
 - **Formality: respectful `siz` + imperatives.** Covered above. Confidence: high.
 - **Latin orthography detail.** Modern Uzbek Latin uses the letters `oʻ` (o with turned comma) and `gʻ` (g with turned
   comma), and the apostrophe-like `ʼ` (modifier letter), NOT plain ASCII apostrophe `'`. The GNOME catalog uses a
@@ -75,8 +75,7 @@ requires both.
 
 ## Notes and decisions
 
-- Script: RESOLVED to Latin (`uz`); Cyrillic would be a separate `uz-Cyrl` build. See
-  [`script-decisions.md`](../script-decisions.md).
+- Script: RESOLVED to Latin (`uz`); Cyrillic would be a separate `uz-Cyrl` build. See `../script-decisions.md`.
 - Latin letters: use Unicode `oʻ`/`gʻ` (U+02BB) and modifier `ʼ` (U+02BC), not ASCII `'`. These are letters, NOT ICU
   apostrophes, so do NOT double them; a genuine literal `'` still doubles to `''`.
 - Gender: Uzbek is genderless; copy is naturally neutral.
@@ -86,6 +85,6 @@ requires both.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/uz/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/uz/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

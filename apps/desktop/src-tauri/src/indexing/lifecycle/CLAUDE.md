@@ -22,7 +22,7 @@ All invariants below hold PER volume id.
 - **Root is special-cased to module globals.** Root's `ReadPool`/`PendingSizes` live in `READ_POOL`/`PENDING_SIZES`
   (the instance holds the SAME `Arc`s); non-root handles live only in the instance.
 - **The phase MACHINE (`IndexPhase`: Initializing/Running/ShuttingDown/Failed) is here; the phase EVENT is not.** Fire
-  the pipeline-phase transition through `events::set_phase_for` (owned by [`../events`](../events/CLAUDE.md)); never
+  the pipeline-phase transition through `events::set_phase_for` (owned by `../events/CLAUDE.md`); never
   `DEBUG_STATS.set_phase` directly.
 - **`start_indexing` is lock-first**: reserve the registry slot (`try_reserve_initializing_phase`) BEFORE building
   `IndexManager` (else two starts spawn two writer threads racing one DB). A second start for the same volume no-ops.
@@ -48,12 +48,12 @@ All invariants below hold PER volume id.
   pre-subscribe `ScanCompleted` isn't lost.
 
 Owned elsewhere, point don't restate: writer / `dir_stats` / epochs / `WRITER_GENERATION`
-([`../writer`](../writer/CLAUDE.md)); phase EVENT + scan progress ([`../events`](../events/CLAUDE.md)); `IndexPathSpace`
-+ firmlinks ([`../paths`](../paths/CLAUDE.md)); SQLite schema ([`../store`](../store/CLAUDE.md)); walker + exclusions
-([`../scanner`](../scanner/CLAUDE.md)); trait BFS ([`../network_scanner`](../network_scanner/CLAUDE.md)); per-transport
+(`../writer/CLAUDE.md`); phase EVENT + scan progress (`../events/CLAUDE.md`); `IndexPathSpace`
++ firmlinks (`../paths/CLAUDE.md`); SQLite schema (`../store/CLAUDE.md`); walker + exclusions
+(`../scanner/CLAUDE.md`); trait BFS (`../network_scanner/CLAUDE.md`); per-transport
 enable + live watch, the direct-smb2 gate, local-external classify, unmount/eject
-([`../transports`](../transports/CLAUDE.md)); event loop / watcher ([`../watch`](../watch/CLAUDE.md)); memory + retention
-caps ([`../resources`](../resources/CLAUDE.md)).
+(`../transports/CLAUDE.md`); event loop / watcher (`../watch/CLAUDE.md`); memory + retention
+caps (`../resources/CLAUDE.md`).
 
-The registry, phase and freshness machines, the Failed state, lock discipline, and the bus: [DETAILS.md](DETAILS.md).
+The registry, phase and freshness machines, the Failed state, lock discipline, and the bus: `DETAILS.md`.
 Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

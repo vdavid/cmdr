@@ -1,8 +1,7 @@
 # Asturian (ast) translation style guide
 
-Working notes for translating Cmdr into Asturian. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Asturian.
+Working notes for translating Cmdr into Asturian. Read `../README.md` for how this fits the translation process, and the
+app-wide `docs/style-guide.md` for the English voice these notes carry into Asturian.
 
 **Sparse pile, no macOS, no Microsoft.** Apple ships no Asturian macOS UI and Microsoft has no Asturian terminology or
 style guide. The pile has GNOME Nautilus + Xfce Thunar for `ast` (`_ignored/i18n/ast/`). Asturian is a Romance language
@@ -88,12 +87,11 @@ Romance singular/plural. The `desktop-i18n-plural` check requires both categorie
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
   `{placeholder}` and `<tag>` verbatim. Asturian elides the article before a vowel with an apostrophe ("l'usuariu",
   "d'esti") - those real apostrophes must be DOUBLED in ICU values, an Asturian-specific trap. Full rules: the
-  agent-handoff block in [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
-  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  agent-handoff block in `docs/guides/i18n-translation.md` and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/ast/`; recipes in
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/ast/`; recipes in
 `docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

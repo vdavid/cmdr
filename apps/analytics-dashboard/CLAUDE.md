@@ -52,4 +52,4 @@ Local dev reads env vars via SvelteKit's `$env/dynamic/private` when `platform?.
 `pnpm dev:dashboard` serves on `http://localhost:4830`.
 
 Full details (multi-page structure, data-loading split, link-codes CRUD, selection state, componentization, the data
-source list, decision rationale, env-var list, local QA against a local worker, deployment): [DETAILS.md](DETAILS.md).
+source list, decision rationale, env-var list, local QA against a local worker, deployment): `DETAILS.md`.

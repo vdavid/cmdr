@@ -1,7 +1,6 @@
 # Wolof (wo) translation style guide
 
-Working notes for translating Cmdr into Wolof. Read [`README.md`](../README.md) for how this fits the translation
-process.
+Working notes for translating Cmdr into Wolof. Read `../README.md` for how this fits the translation process.
 
 This is the language base (`wo`). The only reference in the pile is Microsoft terminology tagged `wo-SN` (Senegal);
 there's no GNOME or macOS Wolof, so this is a thin, low-resource target.
@@ -96,6 +95,6 @@ read naturally with the count placeholder.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/wo/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/wo/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

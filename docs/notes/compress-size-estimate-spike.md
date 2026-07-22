@@ -1,9 +1,9 @@
 # Compressed-size estimate — M6 spike findings
 
-Records the M6 kill-criterion measurement for Feature 2 of the compression-level plan
-([`docs/specs/compress-level-plan.md`](../specs/compress-level-plan.md) § M6): can a cheap deflate-sampling estimator
-predict the compressed output size of a Compress operation accurately and cheaply enough to show live in the Transfer
-dialog? The verdict decides whether M7 ships UI or Feature 2 ships as nothing.
+Records the M6 kill-criterion measurement for Feature 2 of the compression-level plan (`../specs/compress-level-plan.md`
+§ M6): can a cheap deflate-sampling estimator predict the compressed output size of a Compress operation accurately and
+cheaply enough to show live in the Transfer dialog? The verdict decides whether M7 ships UI or Feature 2 ships as
+nothing.
 
 **Verdict:** GO for the local-FS sampling estimator; SUPPRESS the estimate on remote (SMB/MTP) sources. Recommended M7
 parameters and the reason remote extension-only is suppressed are below. The throwaway measurement rig lived in scratch

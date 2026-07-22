@@ -1,7 +1,7 @@
 # Ido (io) translation style guide
 
-Working notes for translating Cmdr into Ido. Read [`README.md`](../README.md) for how this fits the translation process,
-and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice.
+Working notes for translating Cmdr into Ido. Read `../README.md` for how this fits the translation process, and the
+app-wide `docs/style-guide.md` for the English voice.
 
 ## Priority: low (constructed auxiliary language)
 
@@ -64,6 +64,6 @@ both branches.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/io/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/io/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

@@ -27,10 +27,116 @@ var (
 	inlineCodeRe = regexp.MustCompile("`[^`]*`")
 )
 
-// deadLink records a Markdown link whose local target doesn't exist on disk.
+// backtickPathRe matches an inline-code span (single or double backticks). Its
+// content is a path candidate, checked by isRepoPathToken below.
+var backtickPathRe = regexp.MustCompile("`{1,2}([^`\n]+)`{1,2}")
+
+// repoPathTokenRe matches a token made only of path characters: anything with a
+// space or prose punctuation isn't a path.
+var repoPathTokenRe = regexp.MustCompile(`^[@A-Za-z0-9._/()+-]+$`)
+
+// isRepoPathToken reports whether an inline-code span names an in-repo doc worth
+// verifying: a multi-segment path ending in .md or .mdx.
+//
+// The scope is deliberately narrow. A bare backtick path in prose is ambiguous in
+// a way a Markdown link never is: docs legitimately spell out paths that aren't
+// repo files at all, including Cmdr's virtual git filesystem (`.git/branches/`),
+// example user paths (`/Documents/notes.txt`), build output, and files in sibling
+// repos. Doc-to-doc references have none of that ambiguity, and they're the ones
+// that carry the doc graph, so they're where verification pays.
+//
+// Excluded on purpose: absolute and `~`-prefixed paths (another machine, another
+// repo, nothing here to check them against), node_modules (untracked), and elided
+// paths written with a `...` segment. docs/specs/ is excluded at the call site.
+func isRepoPathToken(tok string) bool {
+	if tok == "" || !repoPathTokenRe.MatchString(tok) {
+		return false
+	}
+	if !strings.HasSuffix(tok, ".md") && !strings.HasSuffix(tok, ".mdx") {
+		return false
+	}
+	if !strings.Contains(tok, "/") {
+		return false // single-segment `DETAILS.md`: too easy to confuse with prose like `C.md`
+	}
+	if strings.HasPrefix(tok, "~") || strings.HasPrefix(tok, "/") {
+		return false
+	}
+	if strings.Contains(tok, "/.../") || strings.HasPrefix(tok, ".../") {
+		return false
+	}
+	return !strings.HasPrefix(tok, "node_modules/") && !strings.Contains(tok, "/node_modules/")
+}
+
+// buildPathSuffixSet indexes every tracked file and every directory on the way to
+// it by all of its path suffixes, so a subtree-relative reference resolves without
+// the doc having to spell out the full path. Falls back to nil (which disables the
+// suffix tier, leaving strict resolution) outside a git work tree.
+func buildPathSuffixSet(rootDir string) map[string]bool {
+	out, err := runGit(rootDir, "ls-files")
+	if err != nil {
+		return nil
+	}
+	set := map[string]bool{}
+	add := func(p string, isDir bool) {
+		segs := strings.Split(p, "/")
+		for i := range segs {
+			suffix := strings.Join(segs[i:], "/")
+			if isDir {
+				suffix += "/"
+			}
+			set[suffix] = true
+		}
+	}
+	for f := range strings.SplitSeq(strings.TrimSpace(out), "\n") {
+		if f == "" {
+			continue
+		}
+		add(f, false)
+		for dir := path.Dir(f); dir != "." && dir != "/"; dir = path.Dir(dir) {
+			add(dir, true)
+			add(dir, false) // a directory named without its trailing slash
+		}
+	}
+	return set
+}
+
+// specsDir is the per-development plan area, periodically wiped once each plan's
+// durable intent lands in the colocated docs (AGENTS.md § File structure).
+const specsDir = "docs/specs/"
+
+// isSpecScratchPath reports whether a backtick path is one that's expected to
+// dangle. Two shapes qualify, both around docs/specs/:
+//
+//   - A reference TO a spec, which module docs use on purpose to name the wiped
+//     plan a decision came from ("Design history is in git (former …)").
+//   - A reference FROM a spec, since a plan names the files it intends to create.
+//
+// Markdown LINKS in and out of docs/specs/ are still verified: a link promises
+// something to click, so it has to resolve either way.
+func isSpecScratchPath(srcDoc, tok string) bool {
+	return strings.HasPrefix(tok, specsDir) || strings.HasPrefix(srcDoc, specsDir)
+}
+
+// barePathResolves reports whether a backtick path names something real. It tries
+// strict resolution first (relative to the doc, then repo-rooted), then falls back
+// to a repo-wide path-suffix match, because docs routinely reference a file by the
+// part of its path that's meaningful in context (`routes/+page.svelte` inside the
+// analytics dashboard's own docs). A Markdown link gets no such fallback: it has to
+// resolve as written, or clicking it breaks.
+func barePathResolves(rootDir, srcDoc, tok string, suffixes map[string]bool) bool {
+	if resolved, checkable := linkResolves(rootDir, srcDoc, tok); checkable && resolved {
+		return true
+	}
+	return suffixes[strings.TrimPrefix(tok, "/")]
+}
+
+// deadLink records a reference whose local target doesn't exist on disk. A
+// Markdown link and a bare backtick path are both references (the doc graph
+// treats them identically, see docs_graph.go), so both are verified here.
 type deadLink struct {
 	doc    string
 	target string
+	bare   bool // a backtick path rather than a Markdown link
 }
 
 // localLinkTarget strips a Markdown link target down to a bare local path, or
@@ -139,15 +245,57 @@ func linkResolves(rootDir, srcDoc, target string) (resolved, checkable bool) {
 	return false, checkable
 }
 
-// RunDocsDeadLinks scans every first-party Markdown doc for relative links whose
+// scanDocForDeadRefs returns one doc's references that don't resolve, in both
+// forms: Markdown link targets, then bare backtick paths. The two share a `seen`
+// set, so a doc that links AND mentions the same target is reported once.
+func scanDocForDeadRefs(rootDir, doc, content string, suffixes map[string]bool) []deadLink {
+	var dead []deadLink
+	unfenced := fencedCodeBlockRe.ReplaceAllString(content, "")
+	seen := map[string]bool{}
+
+	// Inline code is stripped here so a Markdown link written inside a code span
+	// reads as the example it is, not as a live link.
+	text := inlineCodeRe.ReplaceAllString(unfenced, "")
+	for _, m := range mdLinkTargetRe.FindAllStringSubmatch(text, -1) {
+		target := localLinkTarget(m[1])
+		if target == "" || seen[target] {
+			continue
+		}
+		seen[target] = true
+		if resolved, checkable := linkResolves(rootDir, doc, target); checkable && !resolved {
+			dead = append(dead, deadLink{doc: doc, target: target})
+		}
+	}
+
+	// Bare backtick paths are references too: house style prefers `a/b/CLAUDE.md`
+	// over a link whose text repeats its target (see docs-link-text.go), so without
+	// this pass most of the doc corpus would go unverified.
+	for _, m := range backtickPathRe.FindAllStringSubmatch(unfenced, -1) {
+		tok := strings.TrimSpace(m[1])
+		if !isRepoPathToken(tok) || seen[tok] || isSpecScratchPath(doc, tok) {
+			continue
+		}
+		seen[tok] = true
+		if !barePathResolves(rootDir, doc, tok, suffixes) {
+			dead = append(dead, deadLink{doc: doc, target: tok, bare: true})
+		}
+	}
+	return dead
+}
+
+// RunDocsDeadLinks scans every first-party Markdown doc for references whose
 // target file or directory doesn't exist, and fails (error-level) listing each
-// one. External URLs, in-page #anchors, and links inside code (fenced or inline)
-// are skipped. Reuses the doc set and link regex from the doc-graph machinery.
+// one. Both Markdown links and bare backtick paths count as references. External
+// URLs, in-page #anchors, and anything inside a fenced block are skipped, as is a
+// Markdown link written inside an inline-code span (a documented example, not a
+// live link). Reuses the doc set and link regex from the doc-graph machinery.
 func RunDocsDeadLinks(ctx *CheckContext) (CheckResult, error) {
 	docs, err := findMarkdownDocs(ctx.RootDir)
 	if err != nil {
 		return CheckResult{}, fmt.Errorf("failed to list docs: %w", err)
 	}
+
+	suffixes := buildPathSuffixSet(ctx.RootDir)
 
 	var dead []deadLink
 	for _, doc := range docs {
@@ -155,22 +303,11 @@ func RunDocsDeadLinks(ctx *CheckContext) (CheckResult, error) {
 		if readErr != nil {
 			continue
 		}
-		text := inlineCodeRe.ReplaceAllString(fencedCodeBlockRe.ReplaceAllString(string(data), ""), "")
-		seen := map[string]bool{}
-		for _, m := range mdLinkTargetRe.FindAllStringSubmatch(text, -1) {
-			target := localLinkTarget(m[1])
-			if target == "" || seen[target] {
-				continue
-			}
-			seen[target] = true
-			if resolved, checkable := linkResolves(ctx.RootDir, doc, target); checkable && !resolved {
-				dead = append(dead, deadLink{doc: doc, target: target})
-			}
-		}
+		dead = append(dead, scanDocForDeadRefs(ctx.RootDir, doc, string(data), suffixes)...)
 	}
 
 	if len(dead) == 0 {
-		return Success(fmt.Sprintf("All local links resolve (%d %s scanned)",
+		return Success(fmt.Sprintf("All local links and backtick paths resolve (%d %s scanned)",
 			len(docs), Pluralize(len(docs), "doc", "docs"))), nil
 	}
 
@@ -182,9 +319,13 @@ func RunDocsDeadLinks(ctx *CheckContext) (CheckResult, error) {
 	})
 	var sb strings.Builder
 	for _, d := range dead {
-		sb.WriteString(fmt.Sprintf("  - %s -> %s\n", d.doc, d.target))
+		kind := ""
+		if d.bare {
+			kind = " (backtick path)"
+		}
+		sb.WriteString(fmt.Sprintf("  - %s -> %s%s\n", d.doc, d.target, kind))
 	}
 	return CheckResult{}, fmt.Errorf(
-		"%d dead doc %s (the link target doesn't exist; fix the path or remove the link):\n%s",
-		len(dead), Pluralize(len(dead), "link", "links"), strings.TrimRight(sb.String(), "\n"))
+		"%d dead doc %s (the target doesn't exist; fix the path or drop the reference):\n%s",
+		len(dead), Pluralize(len(dead), "reference", "references"), strings.TrimRight(sb.String(), "\n"))
 }

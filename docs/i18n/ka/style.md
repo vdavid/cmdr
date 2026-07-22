@@ -1,8 +1,7 @@
 # Georgian (ka) translation style guide
 
-Working notes for translating Cmdr into Georgian (ქართული). Read [`README.md`](../README.md) for how this fits the
-translation process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes
-carry into Georgian.
+Working notes for translating Cmdr into Georgian (ქართული). Read `../README.md` for how this fits the translation
+process, and the app-wide `docs/style-guide.md` for the English voice these notes carry into Georgian.
 
 Well-sourced for terms: the pile has MS terminology, MS style guide, GNOME Nautilus, and Xfce Thunar
 (`_ignored/i18n/ka/`); no macOS folder for Georgian. Evidence verified against the pile on 2026-06-20.
@@ -26,7 +25,7 @@ the problem and the next step, and avoid a bare "შეცდომა" (error) 
 plural-form verb and `თქვენ` (you, plural/polite) vs the informal singular `შენ`. Consumer brands (TBC, Bank of Georgia
 and all the banks, plus Wolt, Bolt, and Glovo) address Georgian users with informal `შენ`, which fits Cmdr's friendly
 personal voice. There's no macOS Georgian to anchor a formal default, and the consumer-brand norm is unambiguous.
-Formality decision recorded in [`formal-informal-decisions.md`](../formal-informal-decisions.md).
+Formality decision recorded in `../formal-informal-decisions.md`.
 
 - **Direct address: informal singular `შენ`** (singular verb forms), not the polite plural `თქვენ`. Confidence: high.
 - **Action labels (buttons, menu items): use the established GNOME verbal-noun / imperative form.** macOS isn't
@@ -103,13 +102,12 @@ CLDR categories for `ka`: `one`, `other` (verified with `new Intl.PluralRules('k
 - **Length.** Georgian can run longer than English; overflow-check the layout against the pseudolocale (`en-XA`).
   Mkhedruli also renders taller than Latin in some fonts, so check vertical fit too.
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
-  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in `docs/guides/i18n-translation.md` and
   `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/ka/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/ka/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

@@ -49,11 +49,10 @@
 - `html { font-size: 16px; }` is set so `1rem = 16px`. Use `px` by default but can use `rem` if it's more descriptive.
 - Use variables for colors, spacing, and the such, in `app.css`.
 - Always think about accessibility when designing, and dark + light modes.
-- For the full design system (color tokens, typography scale, spacing, component patterns), see
-  [design-system.md](design-system.md).
+- For the full design system (color tokens, typography scale, spacing, component patterns), see `design-system.md`.
 
 ### Icons
 
 We use `unplugin-icons` + `@iconify-json/lucide` (Lucide set, rendered as inline SVG Svelte components). Before adding
-or styling an icon, read [guides/icons.md](guides/icons.md): finding icons, template usage, sizing, coloring, and the
-add-an-icon checklist.
+or styling an icon, read `guides/icons.md`: finding icons, template usage, sizing, coloring, and the add-an-icon
+checklist.

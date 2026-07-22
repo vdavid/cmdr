@@ -1,13 +1,15 @@
 # Transfer (copy + move) details
 
 Pull-tier docs for `src-tauri/src/file_system/write_operations/transfer/`: architecture, flows, and decision rationale.
-Must-know invariants and gotchas live in [CLAUDE.md](CLAUDE.md).
+Must-know invariants and gotchas live in `CLAUDE.md`.
 
 All transfer flows go through the shared driver in `transfer_driver/` and emit progress via `OperationEventSink`.
 
-See [`../CLAUDE.md`](../CLAUDE.md) for the shared `WriteOperationState`, `OperationIntent` state machine, cancel/rollback contract, ETA estimator, and settle contract. [`../delete/CLAUDE.md`](../delete/CLAUDE.md) is the parallel doc for delete + trash.
+See `../CLAUDE.md` for the shared `WriteOperationState`, `OperationIntent` state machine, cancel/rollback contract, ETA
+estimator, and settle contract. `../delete/CLAUDE.md` is the parallel doc for delete + trash.
 
-Frontend counterpart: [`apps/desktop/src/lib/file-operations/transfer/CLAUDE.md`](../../../../../src/lib/file-operations/transfer/CLAUDE.md) for the dialog flow, progress UI, conflict-policy radios, and the cancel/settle close contract.
+Frontend counterpart: `apps/desktop/src/lib/file-operations/transfer/CLAUDE.md` for the dialog flow, progress UI,
+conflict-policy radios, and the cancel/settle close contract.
 
 ## Files
 

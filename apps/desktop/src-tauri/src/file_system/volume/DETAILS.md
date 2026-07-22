@@ -1,11 +1,11 @@
 # Volume abstraction details
 
 Pull-tier docs for `file_system/volume/`: architecture, flows, and decision rationale. Must-know invariants and gotchas
-live in [CLAUDE.md](CLAUDE.md).
+live in `CLAUDE.md`.
 
 This module defines the `Volume` trait (the core abstraction for all storage backends in Cmdr) and the `VolumeManager`
-registry. Per-backend implementations live in [`backends/`](backends/CLAUDE.md). The friendly-error system (used by
-every backend to turn raw OS errors into warm user-facing copy) lives in [`friendly_error/`](friendly_error/CLAUDE.md).
+registry. Per-backend implementations live in `backends/CLAUDE.md`. The friendly-error system (used by
+every backend to turn raw OS errors into warm user-facing copy) lives in `friendly_error/CLAUDE.md`.
 
 ## Purpose
 
@@ -19,8 +19,8 @@ FTP). Callers never touch the filesystem directly; they call `Volume` methods wi
 - **`types.rs`**: the data types the trait exchanges (`VolumeError` + its `Display`/`Error`/`From<io::Error>` impls, `SpaceInfo`, `CopyScanResult`, `BatchScanResult`, `ScanConflict`, `SourceItemInfo`, `LaneKey`, `ListingProgress`, `MutationEvent`, `SmbConnectionState`)
 - **`ids.rs`**: the volume ID helpers (`path_to_id`, `smb_volume_id`)
 - **`manager.rs`**: `VolumeManager`: thread-safe `RwLock<HashMap>` registry; supports a default volume
-- **`backends/`**: Per-backend `Volume` impls (`LocalPosixVolume`, `MtpVolume`, `SmbVolume` + watcher, `InMemoryVolume`). See [`backends/CLAUDE.md`](backends/CLAUDE.md).
-- **`friendly_error/`**: User-facing error messages + provider detection. See [`friendly_error/CLAUDE.md`](friendly_error/CLAUDE.md).
+- **`backends/`**: Per-backend `Volume` impls (`LocalPosixVolume`, `MtpVolume`, `SmbVolume` + watcher, `InMemoryVolume`). See `backends/CLAUDE.md`.
+- **`friendly_error/`**: User-facing error messages + provider detection. See `friendly_error/CLAUDE.md`.
 
 ## Architecture
 
@@ -144,11 +144,11 @@ Everything below is optional per the trait (methods default to `Err(NotSupported
 - [ ] Implement `listing_is_watched(path)` if your backend can answer "is the cached listing for this path being kept in sync by a live watcher?" cheaply. Returning `true` from this gate opts the volume into the fresh-listing oracle: write-op pre-flight scans (copy/move scan preview) reuse cached entries from `LISTING_CACHE` for any path your volume reports as watched, skipping the redundant `list_directory` round-trip. Default `false` is the safe choice — without a real watcher, the cache may be arbitrarily stale. Path-level (LocalPosixVolume) is the most accurate signal; volume-level (MTP "device connected", SMB "Direct + watcher running") is fine when the underlying notification channel is volume-wide. Be honest about the per-backend debounce window in the doc comment; see `try_get_watched_listing` for the freshness contract.
 - [ ] If `std::fs` operations work on the volume's paths (you're a local FS with extra flavor), leave `supports_local_fs_access()` at the default `true`. Otherwise override to `false` so the legacy synthetic-diff path is skipped.
 - [ ] If `std::fs::copy` can target this volume's paths directly, return `Some(root)` from `local_path()`. The copy path will prefer `copyfile(3)` / `copy_file_range(2)` for same-device copies. Otherwise return `None` (the default).
-- [ ] Override `lane_key()` to a STABLE identifier for the shared physical resource a transfer contends on (MTP device serial, SMB server+share, local mount root). The operation manager serializes write ops that share a lane (budget 1) and parallelizes disjoint ones; the default returns the volume root, which is right for an independent mount but would over-serialize if multiple `Volume` instances actually share one device/pipe. See [`write_operations/DETAILS.md`](../write_operations/DETAILS.md) § "Operation manager".
+- [ ] Override `lane_key()` to a STABLE identifier for the shared physical resource a transfer contends on (MTP device serial, SMB server+share, local mount root). The operation manager serializes write ops that share a lane (budget 1) and parallelizes disjoint ones; the default returns the volume root, which is right for an independent mount but would over-serialize if multiple `Volume` instances actually share one device/pipe. See `../write_operations/DETAILS.md` § "Operation manager".
 - [ ] Override `space_poll_interval()` to whatever polling cadence your backend can afford (local 2 s, network 5 s, none = don't poll).
 - [ ] If the volume needs async teardown (session close, handle drop), implement `on_unmount`. The default is a no-op.
 - [ ] If the backend participates in drive indexing, implement `scanner()` and `watcher()`. Today only `LocalPosixVolume` does.
-- [ ] Add a branch to `detect_provider` / `provider_suggestion` in [`friendly_error/provider.rs`](friendly_error/CLAUDE.md) if there's a recognizable path shape or fs type worth calling out in friendly errors.
+- [ ] Add a branch to `detect_provider` / `provider_suggestion` in `friendly_error/provider.rs` (see `friendly_error/CLAUDE.md`) if there's a recognizable path shape or fs type worth calling out in friendly errors.
 - [ ] Add a capability-matrix row below and update the `docs/architecture.md` volume line if the shape changes meaningfully.
 
 ### Tier 4: E2E and friendly-error polish
@@ -184,7 +184,7 @@ At-a-glance view of which capabilities each current volume opts into. Use this w
 
 Legend: ✅ = implemented, ❌ = opted out (default or explicitly), ⚠️ = implemented but suboptimal (memory-heavy or otherwise worth revisiting).
 
-`ArchiveVolume` is the read-only zip backend ([`backends/archive/`](backends/archive/CLAUDE.md)); its `lane_key` and
+`ArchiveVolume` is the read-only zip backend (`backends/archive/CLAUDE.md`); its `lane_key` and
 `get_space_info` uniquely delegate to a **parent** volume (the volume storing the `.zip`), so archive work shares the
 device's lane and the space check sees the parent drive's real free space.
 
@@ -313,7 +313,7 @@ lifecycle for a LocalExternal index (the wedge-safe ordering)" for the full inci
 **Why**: The volume-aware transfer pipelines (`copy_volumes_with_progress` / `move_volumes_with_progress` / `move_within_same_volume_with_progress`) need to auto-create a missing destination folder on EVERY backend, matching the local-FS `ensure_destination_dir`. A default method built on the existing `exists()` + `create_directory()` primitives gives every backend (local, SMB, MTP, in-memory) the behavior for free, with no `smb2`/`mtp-rs` changes. The default walks `dest`'s ancestors leaf→root until one already `exists()`, then creates the missing ones shallowest-first. Probing existence per component before creating is what makes it safe on backends whose `create_directory` can't signal a collision (`MtpVolume`, `create_directory_errors_on_existing_dir() == false`, which would otherwise make a duplicate same-name sibling): the helper never calls `create_directory` on a level it already saw exist. An `AlreadyExists` from `create_directory` (a concurrent op won the race) is also treated as success, so re-creating an existing ancestor is a no-op. The leaf-first walk keeps the network/IPC round-trips minimal — when only the leaf is new, it's one `exists()` plus one `create_directory`. Backends override only if they gain a cheaper native recursive mkdir; SMB and MTP don't, so the per-component loop is correct there. Wired into the transfer gate AFTER the dest-inside-source guard (same order as local), so a copy can't create a folder inside its own source. Covered by `inmemory_test.rs` (the trait default, idempotency, partial-tree, typed-failure, and MTP-semantics no-duplicate cases), the cross/same-volume in-memory transfer tests, and the Docker SMB `smb_integration_copy_creates_missing_nested_dest`. MTP recursive-create rides the shared default + the `errors_on_existing` pre-check path; it lacks a device test (no mockable MTP harness).
 
 **Decision**: `Volume::scan_for_copy_batch` returns `BatchScanResult { aggregate, per_path }`
-**Why**: The copy engine needs per-source type+size hints (`is_directory`, `total_bytes`) for its `source_hints` map, which seeds conflict detection and feeds the SMB compound fast-path's size hint. Returning both at once (one trait call, one round-trip per backend) avoids the N separate `scan_for_copy` calls that an aggregate-only batch API would force. Scan-preview callers that only want the aggregate just read `.aggregate`. `LocalPosixVolume` and `InMemoryVolume` inherit the default (serial per-path loop, cheap); `MtpVolume` preserves its "group by parent dir" batch; `SmbVolume` overrides with the pipelined stat path. See [`backends/CLAUDE.md`](backends/CLAUDE.md) for the per-backend overrides.
+**Why**: The copy engine needs per-source type+size hints (`is_directory`, `total_bytes`) for its `source_hints` map, which seeds conflict detection and feeds the SMB compound fast-path's size hint. Returning both at once (one trait call, one round-trip per backend) avoids the N separate `scan_for_copy` calls that an aggregate-only batch API would force. Scan-preview callers that only want the aggregate just read `.aggregate`. `LocalPosixVolume` and `InMemoryVolume` inherit the default (serial per-path loop, cheap); `MtpVolume` preserves its "group by parent dir" batch; `SmbVolume` overrides with the pipelined stat path. See `backends/CLAUDE.md` for the per-backend overrides.
 
 **Decision**: All cross-volume copy flows through `open_read_stream` / `write_from_stream`
 **Why**: The three plausible copy paths (local↔local, local↔volume, volume↔volume) all reduce to "open a reader, pipe to a writer." The APFS clonefile fast path is the only one with a real capability difference. Routing the other two through a single streaming path means new backends (S3, WebDAV, FTP) implement two methods instead of four, concurrency lives in one place (`volume_copy.rs`), and features like resume / checksum / progress benefit every direction at once. Don't reintroduce `export_to_local` / `import_from_local`. See `docs/notes/phase4-volume-copy-unification.md`.
@@ -345,5 +345,5 @@ lifecycle for a LocalExternal index (the wedge-safe ordering)" for the full inci
 - `manager.rs` inline tests: concurrent registration/read/write-mix scenarios
 - `mtp_scan_oracle_tests.rs`, `smb_scan_oracle_tests.rs`: oracle-aware batch-scan integration tests for MTP and SMB
 
-Per-backend tests live colocated with their backend in `backends/`. See [`backends/DETAILS.md`](backends/DETAILS.md) §
+Per-backend tests live colocated with their backend in `backends/`. See `backends/DETAILS.md` §
 "Testing".

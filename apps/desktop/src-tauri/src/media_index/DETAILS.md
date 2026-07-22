@@ -1,8 +1,8 @@
 # Media index subsystem — details
 
 Image-ML enrichment: makes a volume's images searchable by their content. Full design and milestone plan:
-[`docs/specs/media-ml-index-plan.md`](../../../../../docs/specs/media-ml-index-plan.md). This doc covers what the OCR slice shipped,
-the port-from-`importance/` rationale, the GC safety argument, and the schema.
+`docs/specs/media-ml-index-plan.md`. This doc covers what the OCR slice shipped, the port-from-`importance/` rationale,
+the GC safety argument, and the schema.
 
 The OCR slice ships the plumbing + OCR-text search with **no model download and no vector math**: a per-volume
 disposable `media.db`, a lifecycle-bus-driven scheduler, an OCR pipeline behind a fakeable `VisionBackend` seam,
@@ -44,8 +44,8 @@ tick. The `kick_*`/`start` entry points re-export through `mod.rs` so their publ
 mirrors the ordering (subscribe to registrations → sweep `ready_volumes_with_kind()` → wire per-volume subscriptions).
 It can't piggyback `importance`'s subscription; because `app.manage` is keyed by type, an `Arc<MediaScheduler>` coexists
 fine alongside `importance`'s scheduler. The bus mechanism (watch vs broadcast, late-subscriber replay, the registration
-bus, why the sender outlives the registry) is documented once in [`indexing/DETAILS.md`](../indexing/DETAILS.md) — not
-re-documented here (single-source).
+bus, why the sender outlives the registry) is documented once in `../indexing/DETAILS.md` — not re-documented here
+(single-source).
 
 `wire_volume` routes by typed kind: LOCAL enriches by default (when the master toggle is on); an opted-in SMB volume
 runs the conservative network pass (§ "Network-volume enrichment"); MTP is NEVER background-swept. Both local and

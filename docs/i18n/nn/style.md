@@ -1,8 +1,8 @@
 # Norwegian Nynorsk (nn) translation style guide
 
-Working notes for translating Cmdr into Norwegian Nynorsk. Read [`README.md`](../README.md) for how this fits the
-translation process. `nn` is the Nynorsk written standard; Bokmål is the separate [`nb`](../nb/style.md) locale. They
-are two written standards of the same spoken language, not dialects, and must not be mixed within one build.
+Working notes for translating Cmdr into Norwegian Nynorsk. Read `../README.md` for how this fits the translation
+process. `nn` is the Nynorsk written standard; Bokmål is the separate [`nb`](../nb/style.md) locale. They are two
+written standards of the same spoken language, not dialects, and must not be mixed within one build.
 
 ## Voice and tone
 
@@ -94,6 +94,6 @@ any adjective, so write each branch as a full natural phrase. The `desktop-i18n-
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/nn/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/nn/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

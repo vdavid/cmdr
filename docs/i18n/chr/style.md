@@ -1,7 +1,7 @@
 # Cherokee (chr) translation style guide
 
-Working notes for translating Cmdr into Cherokee (ᏣᎳᎩ, Tsalagi). Read [`README.md`](../README.md) for how this fits the
-translation process.
+Working notes for translating Cmdr into Cherokee (ᏣᎳᎩ, Tsalagi). Read `../README.md` for how this fits the translation
+process.
 
 `chr` is the language base, written in the Cherokee syllabary (the script-tagged form in the reference pile is
 `chr-Cher`). The pile has Microsoft terminology and the Microsoft style guide for `chr-Cher`; no macOS UI strings,
@@ -78,7 +78,7 @@ morphology encodes number richly; a native reviewer confirms how counted strings
   decide.
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
 - **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  `docs/guides/i18n-translation.md`.
 
 ## Decisions to confirm with David
 
@@ -90,6 +90,6 @@ morphology encodes number richly; a native reviewer confirms how counted strings
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/chr/`; recipes in
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/chr/`; recipes in
 `docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

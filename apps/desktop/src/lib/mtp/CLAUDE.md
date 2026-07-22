@@ -14,7 +14,7 @@ auto-connects devices on USB hotplug and owns all connection orchestration.
 
 - **Copy lives in the `mtp.*` catalog**, resolved via `t()`/`tString()`/`<Trans>`; don't hardcode user-facing strings
   (`cmdr/no-raw-user-facing-string` is enforced here). `<Trans>` snippets for the dialogs go at markup top level, NOT
-  inside `<ModalDialog>` (Svelte would treat them as the dialog's named props). See [DETAILS.md](DETAILS.md) § i18n.
+  inside `<ModalDialog>` (Svelte would treat them as the dialog's named props). See `DETAILS.md` § i18n.
 
 - **Path format is `mtp://{deviceId}/{storageId}/{path}`, all slashes.** `deviceId` looks like `0-5`, `storageId` is a
   decimal number (for example `65537`). No colon separator, no hex, no vendor:product encoding. Each storage (Internal,
@@ -35,4 +35,4 @@ auto-connects devices on USB hotplug and owns all connection orchestration.
   through the `Volume` trait (F5/F6); the UI suggests those instead.
 
 Full details (storage-ID hex conversion at the IPC boundary, ptpcamerad auto-suppression flow, Linux udev rules at
-`src-tauri/resources/99-cmdr-mtp.rules`, coarse cache invalidation): [DETAILS.md](DETAILS.md).
+`src-tauri/resources/99-cmdr-mtp.rules`, coarse cache invalidation): `DETAILS.md`.

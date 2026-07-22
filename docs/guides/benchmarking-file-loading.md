@@ -21,7 +21,7 @@ and `RUST` events interleaved.
 
 ## Test data setup
 
-Use the test data generator (see `docs/workflows/generating-test-files.md`):
+Use the test data generator (see `docs/guides/generating-test-files.md`):
 
 ```bash
 # Creates folders with 1000, 5000, 20000, and 50000 files

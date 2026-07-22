@@ -1,8 +1,7 @@
 # Kannada (kn) translation style guide
 
-Working notes for translating Cmdr into Kannada (ಕನ್ನಡ). Read [`README.md`](../README.md) for how this fits the
-translation process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes
-carry into Kannada.
+Working notes for translating Cmdr into Kannada (ಕನ್ನಡ). Read `../README.md` for how this fits the translation process,
+and the app-wide `docs/style-guide.md` for the English voice these notes carry into Kannada.
 
 Sourced: the pile has MS terminology, MS style guide, and GNOME Nautilus (`_ignored/i18n/kn/`); no macOS folder for
 Kannada, no Xfce. Evidence verified against the pile on 2026-06-20.
@@ -95,13 +94,12 @@ CLDR categories for `kn`: `one`, `other` (verified with `new Intl.PluralRules('k
 - **Length and height.** Kannada renders with stacked vowel/consonant signs and can be taller; overflow-check both width
   and line-height against the pseudolocale (`en-XA`) and a Kannada font.
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
-  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in `docs/guides/i18n-translation.md` and
   `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/kn/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/kn/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

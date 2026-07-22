@@ -1,8 +1,7 @@
 # Main route
 
 The app orchestrator. Mounts the dual-pane explorer, owns top-level dialogs, and routes commands + MCP events into the
-explorer via a typed API. Up: [`../../../CLAUDE.md`](../../../CLAUDE.md), sibling:
-[`../viewer/CLAUDE.md`](../viewer/CLAUDE.md).
+explorer via a typed API. Up: `apps/desktop/CLAUDE.md`, sibling: `../viewer/CLAUDE.md`.
 
 ## Module map
 
@@ -13,7 +12,7 @@ explorer via a typed API. Up: [`../../../CLAUDE.md`](../../../CLAUDE.md), siblin
   crosses via a `ListenerSetupContext` of getters + setters. See DETAILS.md.
 - **`command-dispatch.ts`** + **`command-handlers/`**: the dispatch core (preamble, then a flat `commandHandlers`-record
   lookup) and the family-grouped handlers; context types in `command-dispatch-context.ts`. See
-  [`command-handlers/CLAUDE.md`](command-handlers/CLAUDE.md).
+  `command-handlers/CLAUDE.md`.
 - **`mcp-listeners.ts`**, **`explorer-api.ts`**, **`dispatch-dedup.ts`**: MCP transport adapter, `ExplorerAPI` contract,
   cross-source double-fire guard. Per-file detail in DETAILS.md.
 
@@ -60,5 +59,5 @@ explorer via a typed API. Up: [`../../../CLAUDE.md`](../../../CLAUDE.md), siblin
   - **`view.showHidden` is local-first**: ❌ don't route the `explorerRef.toggleHiddenFiles()` toggle through Rust; the
     extra hop flaked the E2E.
 
-Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

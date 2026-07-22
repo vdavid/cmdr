@@ -1,8 +1,8 @@
 # Malayalam (ml) translation style guide
 
-Working notes for translating Cmdr into Malayalam. Read [`README.md`](../README.md) for how this fits the translation
-process. `ml` is the base tag (the universal Malayalam set); `ml-IN` would only exist for region-specific overrides, and
-none are needed today (Kerala usage is the de-facto standard and what `ml` targets).
+Working notes for translating Cmdr into Malayalam. Read `../README.md` for how this fits the translation process. `ml`
+is the base tag (the universal Malayalam set); `ml-IN` would only exist for region-specific overrides, and none are
+needed today (Kerala usage is the de-facto standard and what `ml` targets).
 
 ## Voice and tone
 
@@ -150,6 +150,6 @@ Build this up as terms come up. Starting set (encode all chillus atomically):
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/ml/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/ml/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

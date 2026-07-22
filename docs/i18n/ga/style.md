@@ -1,7 +1,6 @@
 # Irish (ga) translation style guide
 
-Working notes for translating Cmdr into Irish (Gaeilge). Read [`README.md`](../README.md) for how this fits the
-translation process.
+Working notes for translating Cmdr into Irish (Gaeilge). Read `../README.md` for how this fits the translation process.
 
 This is the language base (`ga`), the universal Irish set. Modern written Irish uses the official standard (An Caighdeán
 Oifigiúil); the three dialects (Connacht, Munster, Ulster) differ in speech but the Caighdeán is the UI norm, so no
@@ -78,7 +77,7 @@ interact with mutation and number, so get the noun form right in each branch, no
 - **Numbers and dates come from the formatter layer.** Never hardcode separators.
 - **Ellipsis**: keep the source's three literal ASCII dots to match the English catalog shape.
 - **ICU mechanics**: double every apostrophe in ICU values; keep every `{placeholder}` and `<tag>` verbatim. Full rules:
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md).
+  `docs/guides/i18n-translation.md`.
 
 ## Decisions to confirm with David
 
@@ -87,6 +86,6 @@ interact with mutation and number, so get the noun form right in each branch, no
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/ga/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/ga/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

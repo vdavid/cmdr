@@ -1,8 +1,8 @@
 # UI primitives
 
 Reusable components used across the desktop app. Almost every frontend session touches here, so only silent-breakage
-rules live in this file; catalogs, prop tables, and decisions sit in [DETAILS.md](DETAILS.md). Read it before any
-non-trivial work here.
+rules live in this file; catalogs, prop tables, and decisions sit in `DETAILS.md`. Read it before any non-trivial work
+here.
 
 ## Module map
 
@@ -51,5 +51,4 @@ non-trivial work here.
   `value` / `items` (which blanks the field on an empty list or custom name). DETAILS § Combobox.
 - **Adding a primitive is an enforced contract**: the component + a tier-3 a11y test (`a11y-coverage`) + a Debug >
   Components section (`ui-primitive-coverage`) + a `design-system.md` § Component patterns entry. Prefer a primitive
-  over raw native controls (`cmdr/prefer-ui-primitive`). Router:
-  [`building-ui.md`](../../../../../docs/guides/building-ui.md).
+  over raw native controls (`cmdr/prefer-ui-primitive`). Router: `docs/guides/building-ui.md`.

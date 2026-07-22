@@ -1,9 +1,9 @@
 # Agent tools — details
 
 The toolset the Ask Cmdr chat agent dispatches in-process: read tools today, plus the `Propose` tier it may grow into.
-Must-knows: [CLAUDE.md](CLAUDE.md). Contract:
-[`docs/specs/ask-cmdr-plan.md`](../../../../../../docs/specs/ask-cmdr-plan.md) § M4 and
-[`ask-cmdr-spec.md`](../../../../../../docs/specs/ask-cmdr-spec.md) §2.4.
+Must-knows: `CLAUDE.md`. Contract:
+`docs/specs/ask-cmdr-plan.md` § M4 and
+`docs/specs/ask-cmdr-spec.md` §2.4.
 
 ## The two-view registry model
 

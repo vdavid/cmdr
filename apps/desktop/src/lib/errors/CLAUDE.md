@@ -1,14 +1,13 @@
 # Friendly error copy (the words)
 
 The factories that turn a typed error into the title / explanation / suggestion the user reads. Error CLASSIFICATION
-lives in Rust ([`friendly_error/CLAUDE.md`](../../../src-tauri/src/file_system/volume/friendly_error/CLAUDE.md)): it
-ships a typed, word-free `ListingError` (reason + params + category + detected provider + retry/action hints) over IPC.
+lives in Rust (`apps/desktop/src-tauri/src/file_system/volume/friendly_error/CLAUDE.md`): it ships a typed, word-free
+`ListingError` (reason + params + category + detected provider + retry/action hints) over IPC.
 
-The literal English lives in the `errors.*` catalog
-([`../intl/messages/en/errors.json`](../intl/messages/en/errors.json)); each factory pulls its strings via
-`getMessage('errors.<reason>.<part>')`. Editing copy means editing `errors.json` + `pnpm intl:keys`, not these `.ts`
-files. Writing rules: [`docs/style-guide.md`](../../../../../docs/style-guide.md) (active voice, friendly, never the
-words "error" / "failed", no "just/simple/easy").
+The literal English lives in the `errors.*` catalog (`../intl/messages/en/errors.json`); each factory pulls its strings
+via `getMessage('errors.<reason>.<part>')`. Editing copy means editing `errors.json` + `pnpm intl:keys`, not these `.ts`
+files. Writing rules: `docs/style-guide.md` (active voice, friendly, never the words "error" / "failed", no
+"just/simple/easy").
 
 ## Module map
 
@@ -32,12 +31,12 @@ words "error" / "failed", no "just/simple/easy").
   `interpolate` escaped `{path}`/`{osMessage}` → `expandSystemStrings` → snarkdown/`{@html}`) is unchanged.
 - **The codegen dead-key report lists EVERY `errors.*` key** (keys are built dynamically, so the usage scanner can't see
   them). It's a non-fatal warning; `pnpm check` stays green. To find a truly-dead error key, read the factory logic, not
-  this report. See [`../intl/messages/DETAILS.md`](../intl/messages/DETAILS.md) § Dead-key honesty.
+  this report. See `../intl/messages/DETAILS.md` § Dead-key honesty.
 - **`escapeMarkdown` is the XSS boundary.** The composed explanation / suggestion is `{@html}`-injected via
-  `renderErrorMarkdown` → snarkdown ([`error-pane-utils.ts`](../file-explorer/pane/error-pane-utils.ts)). EVERY
-  interpolated runtime value (path, OS message, device name, free-form provider text) MUST pass through `esc(...)`
-  before landing in a template. Template literals are the only trusted markdown; params are never trusted. The localized
-  system-string labels (`expandSystemStrings`) are trusted (OS loctable via our backend), so they are NOT escaped.
+  `renderErrorMarkdown` → snarkdown (`../file-explorer/pane/error-pane-utils.ts`). EVERY interpolated runtime value
+  (path, OS message, device name, free-form provider text) MUST pass through `esc(...)` before landing in a template.
+  Template literals are the only trusted markdown; params are never trusted. The localized system-string labels
+  (`expandSystemStrings`) are trusted (OS loctable via our backend), so they are NOT escaped.
 - **The reason / provider / git names are the IPC contract with Rust.** Each `ListingErrorReason` member, `Provider`
   variant, and `FriendlyGitErrorKind` must match its Rust counterpart member-for-member. Drift breaks the parity test
   (and silently mis-renders at runtime).
@@ -52,10 +51,10 @@ words "error" / "failed", no "just/simple/easy").
 ## Adding a new error message
 
 FE side: add the `errors.<reason>.{title,explanation,suggestion}` keys (plus `@key` descriptions) to
-[`errors.json`](../intl/messages/en/errors.json), run `pnpm intl:keys`, add the reason to the factory union (a runtime
-param goes in the variant and is escaped + named as a `{token}`), and add it to the parity + style test matrices. Rust
-side: [`friendly_error/CLAUDE.md`](../../../src-tauri/src/file_system/volume/friendly_error/CLAUDE.md). Full recipe +
-the convergence note: [DETAILS.md](DETAILS.md).
+`../intl/messages/en/errors.json`, run `pnpm intl:keys`, add the reason to the factory union (a runtime param goes in
+the variant and is escaped + named as a `{token}`), and add it to the parity + style test matrices. Rust side:
+`apps/desktop/src-tauri/src/file_system/volume/friendly_error/CLAUDE.md`. Full recipe + the convergence note:
+`DETAILS.md`.
 
-Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

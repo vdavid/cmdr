@@ -23,8 +23,8 @@ faster than the reconcile** (fresh scan 107.2 s vs reconcile 897.4 s, back to ba
 reconcile right after the honest scan found only `+1848` new entries (0.03%), not the old `+656,352` (10%). So the fresh
 scan is now honest AND complete AND ~8x faster; the completeness objection that motivated the re-measurement is closed.
 Even the load-contaminated fresh scan (138 s) against the reconcile is a 6.5x gap, so the 6.5–8.4x range is robust to
-how contended the scan runs. Full numbers and method:
-[`indexing-benchmarks-2026-07-21.md`](indexing-benchmarks-2026-07-21.md) § "Swap-scan re-measurement, 2026-07-22".
+how contended the scan runs. Full numbers and method: `indexing-benchmarks-2026-07-21.md` § "Swap-scan re-measurement,
+2026-07-22".
 
 The speed case therefore holds. The remaining decision is purely the implementation cost and the traps below (id space,
 index-name collision, `scan_completed_at`, ~2.3 GB disk peak or the separate-file variant), not the payoff: an ~8x

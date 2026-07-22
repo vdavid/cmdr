@@ -53,4 +53,4 @@ Add it to `$lib/commands/command-registry.ts` and handle the id in `routes/(main
 - `$lib/ui/ShortcutChip.svelte` and `$lib/ui/StatusBadge.svelte`.
 
 Full details (data flow, the stability-badge derivation, fuzzy-highlight rendering, and decision rationale):
-[DETAILS.md](DETAILS.md).
+`DETAILS.md`.

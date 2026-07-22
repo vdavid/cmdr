@@ -32,8 +32,7 @@ between configurations and removes the prod-only `objc2` link cost from E2E buil
 Lives inside `pasteboard.rs` (not `mod.rs`) because it's a debugging tool for prod-feature builds. Sampled once via
 `LazyLock` at first access, so the hot path is a single atomic load. Both the compile-time mock path and this runtime
 override share `store.rs`, so a test that flips the env in one process sees the same data the E2E mock module sees in
-another. See the "Mock-backend convention" in
-[`docs/tooling/instance-isolation.md`](../../../../../docs/tooling/instance-isolation.md).
+another. See the "Mock-backend convention" in `docs/tooling/instance-isolation.md`.
 
 ## Paste clipboard content as a file (issue #35)
 

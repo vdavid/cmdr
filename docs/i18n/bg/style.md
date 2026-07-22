@@ -1,8 +1,7 @@
 # Bulgarian (bg) translation style guide
 
-Working notes for translating Cmdr into Bulgarian. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-Bulgarian.
+Working notes for translating Cmdr into Bulgarian. Read `../README.md` for how this fits the translation process, and
+the app-wide `docs/style-guide.md` for the English voice these notes carry into Bulgarian.
 
 **No macOS reference.** Apple does NOT ship a Bulgarian macOS UI, so the pile has GNOME Nautilus + Xfce Thunar + MS
 terminology + MS style guide only (`_ignored/i18n/bg/`); no macOS Finder. The highest-authority source (a real localized
@@ -108,13 +107,12 @@ requires both categories.
   000,5); `formatNumber()`/`formatBytes()` produce these. Never hardcode separators in a string.
 - **Length.** Bulgarian runs somewhat longer than English; overflow-check against the pseudolocale (`en-XA`).
 - **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
-  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  [`../guides/i18n-translation.md`](../../guides/i18n-translation.md) and
+  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in `docs/guides/i18n-translation.md` and
   `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/bg/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/bg/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

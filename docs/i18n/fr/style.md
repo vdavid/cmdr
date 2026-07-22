@@ -1,8 +1,7 @@
 # French (fr) translation style guide
 
-Working notes for translating Cmdr into French. Read [`README.md`](../README.md) for how this fits the translation
-process, and the app-wide [`/docs/style-guide.md`](../../style-guide.md) for the English voice these notes carry into
-French.
+Working notes for translating Cmdr into French. Read `../README.md` for how this fits the translation process, and the
+app-wide `docs/style-guide.md` for the English voice these notes carry into French.
 
 This is the language base (`fr`), the universal French set and the fallback for any future region variants (`fr-CA`,
 `fr-CH`). Stick to standard metropolitan French here; push region-specific phrasing into a variant only when one is
@@ -46,10 +45,10 @@ Formality is settled above (`vous`). These are the remaining French-specific cal
 
 - **Regional variant: one base `fr` (France norm), no `fr-CA` / `fr-CH` split needed yet.** Apple and Microsoft both
   ship a single metropolitan French for most products; Canadian French (fr-CA) is a deferred variant (see
-  [`language-selection-decisions.md`](../language-selection-decisions.md)). The UI-visible divergences are narrow (fr-CA
-  tends to translate more anglicisms, e.g. "courriel" for email, and differs on some spacing conventions), and none
-  touch the core file-manager vocabulary below. Recommendation: ship one `fr` on the France norm; only add fr-CA if a
-  Canadian user reports specific friction. Confidence: high.
+  `../language-selection-decisions.md`). The UI-visible divergences are narrow (fr-CA tends to translate more
+  anglicisms, e.g. "courriel" for email, and differs on some spacing conventions), and none touch the core file-manager
+  vocabulary below. Recommendation: ship one `fr` on the France norm; only add fr-CA if a Canadian user reports specific
+  friction. Confidence: high.
 - **Gendered grammar: name the object or action, never the user, and no midpoint glyphs.** French agent and adjective
   forms are gendered ("connecté" / "connectée"). Per the global rule, achieve inclusivity by neutral RESTRUCTURING,
   never by the midpoint ("connecté·e", "utilisateur·rice·s"): those break screen readers (against Cmdr's AA+ a11y
@@ -216,6 +215,6 @@ The formality (`vous`), move, and item calls are settled from the sources above;
 
 ## Glossary
 
-The living term glossary for this language is in [glossary.md](glossary.md). Read it before translating and add to it as
-you settle terms, each sourced from the reference pile (`_ignored/i18n/fr/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
+terms, each sourced from the reference pile (`_ignored/i18n/fr/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
+Never guess a term.

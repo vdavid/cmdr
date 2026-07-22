@@ -2,7 +2,7 @@
 
 How we test Cmdr. Decision rules, anti-patterns, and a per-feature checklist. If you're adding tests, read this first.
 
-The companion file [docs/tooling/testing.md](tooling/testing.md) is the tools inventory (one paragraph per tool).
+The companion file `tooling/testing.md` is the tools inventory (one paragraph per tool).
 
 ## Test pyramid
 
@@ -294,7 +294,7 @@ E2E test hooks split along two axes:
 - **`CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP=1`**: Non-MTP shards opt out of wiping the shared MTP backing dir.
 - **`CMDR_E2E_SKIP_MTP_FIXTURES=1`**: Non-MTP shards skip `globalSetup`'s MTP fixture reset.
 - **`CMDR_VIRTUAL_MTP=1` (or `=<dir>`)**: Dev opt-in: `pnpm dev` registers the virtual MTP device. See
-  [virtual-mtp.md](tooling/virtual-mtp.md).
+  `tooling/virtual-mtp.md`.
 - **`CMDR_E2E_COPY_THROTTLE_MS`**: Per-file sleep inside the copy loop. Lets tests stage Cancel/Rollback.
 - **`CMDR_PLAYWRIGHT_SOCKET`**: Override the plugin's Unix socket path (one socket per shard).
 
@@ -314,10 +314,8 @@ E2E test hooks split along two axes:
 
 ## Quick links
 
-- Tools inventory: [docs/tooling/testing.md](tooling/testing.md)
-- E2E suite docs: [apps/desktop/test/e2e-playwright/CLAUDE.md](../apps/desktop/test/e2e-playwright/CLAUDE.md)
-- IPC test helpers: [apps/desktop/src/lib/ipc/CLAUDE.md](../apps/desktop/src/lib/ipc/CLAUDE.md)
-- Notes from the speedup + coverage push: [docs/notes/speed-up-e2e-tests.md](notes/speed-up-e2e-tests.md),
-  [docs/notes/extend-e2e-tests.md](notes/extend-e2e-tests.md)
-- Pre-release manual verification (native menus, drag-and-drop, real file system):
-  [docs/guides/testing/manual-checklist.md](guides/testing/manual-checklist.md)
+- Tools inventory: `tooling/testing.md`
+- E2E suite docs: `apps/desktop/test/e2e-playwright/CLAUDE.md`
+- IPC test helpers: `apps/desktop/src/lib/ipc/CLAUDE.md`
+- Notes from the speedup + coverage push: `notes/speed-up-e2e-tests.md`, `notes/extend-e2e-tests.md`
+- Pre-release manual verification (native menus, drag-and-drop, real file system): `guides/testing/manual-checklist.md`

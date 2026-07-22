@@ -1,15 +1,15 @@
 # Local FS watch details
 
 Read this before any non-trivial work in `watch/`: editing, planning, reorganizing, or advising. Must-know guardrails
-are in [CLAUDE.md](CLAUDE.md).
+are in `CLAUDE.md`.
 
 This area owns the drive watcher, the live/replay event loops, the unbounded ingestion buffer + pressure model,
 removal-storm coalescing, rename-detection-by-inode, and the churn-monitor spike. Points outward: the registry / phase
-machine / manager wiring in [`../lifecycle/DETAILS.md`](../lifecycle/DETAILS.md); the reconciler, the per-subtree rescan
+machine / manager wiring in `../lifecycle/DETAILS.md`; the reconciler, the per-subtree rescan
 throttle, and the post-replay verification COST-BOUNDING (the two teeth) in
-[`../reconcile/DETAILS.md`](../reconcile/DETAILS.md); the writer message protocol (`MoveEntryV2` / `DeleteSubtreeById` /
-delta propagation) and the honest-sizes model in [`../writer/DETAILS.md`](../writer/DETAILS.md); `IndexPathSpace`,
-firmlink normalization, and the FAT/exFAT inode-nulling rule in [`../paths/DETAILS.md`](../paths/DETAILS.md); the
+`../reconcile/DETAILS.md`; the writer message protocol (`MoveEntryV2` / `DeleteSubtreeById` /
+delta propagation) and the honest-sizes model in `../writer/DETAILS.md`; `IndexPathSpace`,
+firmlink normalization, and the FAT/exFAT inode-nulling rule in `../paths/DETAILS.md`; the
 `extract_metadata` primitive at `../metadata.rs` (documented in the [hub](../DETAILS.md)).
 
 ## Module structure
@@ -37,7 +37,7 @@ firmlink normalization, and the FAT/exFAT inode-nulling rule in [`../paths/DETAI
 - **event_loop/verification.rs** — `run_background_verification` + `verify_affected_dirs` (below).
 - **event_loop/verify_guard.rs** — the two pure cost-bounding decisions for verification (`VerifyVerdict`,
   `HUGE_DIR_CHILDREN`). Structural role below; the cost-bounding RATIONALE is canonical in
-  [`../reconcile/DETAILS.md`](../reconcile/DETAILS.md) § Bounding verification cost.
+  `../reconcile/DETAILS.md` § Bounding verification cost.
 - **event_loop/storm.rs** — removal-storm coalescing helpers (`REMOVAL_STORM_THRESHOLD`, `STORM_GROUP_PREFIX_DEPTH`).
 - **event_loop/tests/** — `ingestion` / `merge` / `rename` / `split_parent` clusters plus shared fixtures in `mod.rs`.
 - **churn_monitor.rs (+churn_monitor/)** — the off-by-default per-subtree churn observability spike (below).
@@ -106,7 +106,7 @@ Mac/Linux disk and most external drives.
 onto a freed inode, so the pre-pass would FALSE-MATCH it as a move and re-home the deleted entry's `dir_stats` onto an
 unrelated file. Every local write path stores `inode: None` on such a `LocalExternal` volume, making `find_entry_by_inode`
 inert and every change fall back to the safe delete+create. The volume-level trust decision (`trust_inode` /
-`inodes_trustworthy`) is canonical in [`../paths/DETAILS.md`](../paths/DETAILS.md).
+`inodes_trustworthy`) is canonical in `../paths/DETAILS.md`.
 
 ## Removal-storm coalescing (`event_loop/storm.rs`)
 
@@ -131,7 +131,7 @@ dir's `rmdir` processes before its children's unlinks and turns them into cheap 
 ≈ 15–30 s after the `rm` finishes instead of minutes, and ~20× less CPU/IO. Routing through the rescan queue (not a
 bespoke "big delete" path) inherits dedup, ancestor-collapse, 1-concurrency, the held-hourglass tier, and the
 completion emit for free. The rescan queue itself and its per-subtree throttle live in
-[`../reconcile/DETAILS.md`](../reconcile/DETAILS.md).
+`../reconcile/DETAILS.md`.
 
 ## Background verification (structure)
 
@@ -148,7 +148,7 @@ resolves against root's index, and publishes under `ROOT_VOLUME_ID` — post-rep
 disk and diffs, sending `UpsertEntryV2` / `DeleteEntryById` / `DeleteSubtreeById` / `PropagateDeltaById` corrections. It
 consults `verify_guard.rs`'s two pure decisions to cap the per-directory cost. **The cost-bounding rationale (the two
 teeth: the `LIMIT`-probe before the snapshot and the `read_dir` iteration cap, and why a declined dir must NOT be marked
-`listed_epoch = 0`) is canonical in [`../reconcile/DETAILS.md`](../reconcile/DETAILS.md) § Bounding verification cost.**
+`listed_epoch = 0`) is canonical in `../reconcile/DETAILS.md` § Bounding verification cost.**
 Don't restate it here.
 
 ## Churn-monitor spike (`churn_monitor.rs`)
@@ -160,4 +160,4 @@ replay route, and `churn_monitor/tests.rs::every_live_loop_owns_a_real_churn_obs
 path's churn up the ancestor chain and logs one `indexing::churn` rollup per period (top-N directories by rolled-up
 count, with a distinct-churny-children signal). Writes no index state and changes no behaviour. Pure and clock-injected,
 so it's promotable into real churn accounting rather than throwaway. Collection and analysis handover:
-[`docs/notes/churn-observability-spike.md`](../../../../../../docs/notes/churn-observability-spike.md).
+`docs/notes/churn-observability-spike.md`.

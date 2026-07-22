@@ -1,8 +1,8 @@
 # Executor
 
-The MCP tool handlers. Dispatch (`execute_tool`) is generated from the `mcp_tools!` table in
-[`../tool_registry/mod.rs`](../tool_registry/mod.rs), which calls these handlers by path; action-tool handlers wait on a
-typed ack before returning `OK`. Up: [`../CLAUDE.md`](../CLAUDE.md).
+The MCP tool handlers. Dispatch (`execute_tool`) is generated from the `mcp_tools!` table in `../tool_registry/mod.rs`,
+which calls these handlers by path; action-tool handlers wait on a typed ack before returning `OK`. Up:
+`../CLAUDE.md`.
 
 ## Files
 
@@ -45,9 +45,9 @@ typed ack before returning `OK`. Up: [`../CLAUDE.md`](../CLAUDE.md).
 ## Adding new tools
 
 Add the handler here (pick/create a category file, declare it `pub(crate) mod …` in `mod.rs`), then author the tool's
-one `mcp_tools!` entry in [`../tool_registry/mod.rs`](../tool_registry/mod.rs) (schema, `TokenGate`, `run:` shape tag +
-handler path). Follow the must-knows for path params, ack choice, and round-trips (a pane-state mutator prefers
-`AckSignal::GenerationAdvanced` via `PaneStateStore`). Full workflow:
-[`mcp-development.md`](../../../../../../docs/guides/mcp-development.md).
+one `mcp_tools!` entry in `../tool_registry/mod.rs` (schema, `TokenGate`, `run:` shape tag + handler path). Follow the
+must-knows for path params, ack choice, and round-trips (a pane-state mutator prefers `AckSignal::GenerationAdvanced`
+via `PaneStateStore`). Full workflow: `docs/guides/mcp-development.md`.
 
-Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

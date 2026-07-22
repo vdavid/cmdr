@@ -58,4 +58,4 @@ A PORT of `importance/`'s patterns (store, writer, scheduler, read API): read `i
 
 Still open: MTP, faces/captions.
 
-Depth for every § above, plus architecture and decisions: [DETAILS.md](DETAILS.md). Read it before non-trivial work.
+Depth for every § above, plus architecture and decisions: `DETAILS.md`. Read it before non-trivial work.
