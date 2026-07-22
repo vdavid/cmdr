@@ -297,21 +297,26 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>, vol
                 Ok(deleted) => decrement_accounted(&volume_id, &deleted),
                 Err(e) => log::warn!(target: "media_index", "gc failed ({} paths): {e}", paths.len()),
             },
+            // ❌ Decrement BEFORE signalling `done`, here and in `PrunePrefix`. These are
+            // the BLOCKING prunes, and a caller that blocked on a delete reads the
+            // aggregate next (reclaim, the coverage badges). Sending first races that
+            // read — a race macOS usually wins and Linux usually loses, so it surfaces as
+            // a flaky test rather than the stale folder count it is.
             WriteMessage::PrunePaths { paths, done } => {
                 let deleted = apply_prune_paths(&mut conn, &paths).unwrap_or_else(|e| {
                     log::warn!(target: "media_index", "prune ({} paths) failed: {e}", paths.len());
                     Vec::new()
                 });
-                let _ = done.send(deleted.len());
                 decrement_accounted(&volume_id, &deleted);
+                let _ = done.send(deleted.len());
             }
             WriteMessage::PrunePrefix { prefix, done } => {
                 let deleted = apply_prune_prefix(&mut conn, &prefix).unwrap_or_else(|e| {
                     log::warn!(target: "media_index", "prune under '{prefix}' failed: {e}");
                     Vec::new()
                 });
-                let _ = done.send(deleted.len());
                 decrement_accounted(&volume_id, &deleted);
+                let _ = done.send(deleted.len());
             }
             WriteMessage::Vacuum { done } => {
                 if let Err(e) = apply_vacuum(&conn) {

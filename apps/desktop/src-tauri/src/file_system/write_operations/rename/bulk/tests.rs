@@ -6,14 +6,19 @@ use uuid::Uuid;
 
 use super::super::super::operation_intent::OperationIntent;
 
+/// A fixture directory in `$TMPDIR`.
+///
+/// ❌ Never move these fixtures under the repo tree. `rust-tests-linux` runs the suite in
+/// Docker with the repo bind-mounted from the macOS host, so a fixture there sits on
+/// case-INSENSITIVE APFS *even inside Linux*, while `normalize_for_comparison` (which
+/// picks the case-only rename strategy) is compiled for Linux and treats the filesystem
+/// as case-sensitive. The two disagree, and `screenshot.png` → `Screenshot.png` reports
+/// `Skipped` because the destination "already exists" — while every content assertion
+/// still passes, since a case-insensitive lookup finds the file. That reads as a mystery
+/// failure reproducing only in the container. `$TMPDIR` is container-local, so the
+/// fixture's case sensitivity matches the OS the code was compiled for.
 fn create_test_dir(name: &str) -> PathBuf {
-    let repo_root = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .ancestors()
-        .nth(3)
-        .expect("src-tauri manifest has the repository root as its third ancestor");
-    let dir = repo_root
-        .join("_ignored")
-        .join(format!("cmdr_bulk_rename_test_{name}_{}", Uuid::new_v4()));
+    let dir = std::env::temp_dir().join(format!("cmdr_bulk_rename_test_{name}_{}", Uuid::new_v4()));
     fs::create_dir_all(&dir).expect("create test directory");
     dir
 }
