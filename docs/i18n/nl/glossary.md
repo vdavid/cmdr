@@ -863,16 +863,16 @@ mined `_ignored/i18n/nl/`, 2026-07-22):
   `statusmarkering` (plural `markeringen`/`statusmarkeringen`) · macOS Finder `Markeer` (Mark/Flag verb, key QK4) +
   in-catalog `gemarkeerd` (the sibling `settings.mediaIndex.alwaysIndex*.description` "die de gebruiker heeft
   gemarkeerd"). Chosen over the loanword `badge` (Microsoft NLD/BEL keeps "badge"→"badge", but only for the
-  gamification/reputation sense — ambiguous here), and over Thunar's Tier-3 `embleem`. `markering` is native, unambiguous
-  for a small visual status marker, and screen-reader-clean · high
+  gamification/reputation sense — ambiguous here), and over Thunar's Tier-3 `embleem`. `markering` is native,
+  unambiguous for a small visual status marker, and screen-reader-clean · high
 - image (in these file-list/status labels) → `afbeelding` / `afbeeldingen` · the technical/label register per the
   settled network-image split (image→afbeelding for labels, foto→foto''s for warm network-drive rows). "image
   file"→`afbeeldingsbestand` (compound) in the settings label · high
 - image search (the feature, referenced from tooltips + aria) → reuses the settled `het doorzoeken van afbeeldingen`
   (Settings card `settings.mediaIndex.card` = "Afbeeldingen doorzoeken"); "Indexed for image search"→"Geïndexeerd voor
   het doorzoeken van afbeeldingen", "Image search is off …"→"Het doorzoeken van afbeeldingen staat uit …" · high
-- indexed (status) → `geïndexeerd`; re-indexed → `opnieuw geïndexeerd`; "couldn''t be indexed" → `Kon niet worden
-  geïndexeerd` (macOS passive "kon niet worden …", gentle, avoids bare "mislukt" per Cmdr voice) · high
+- indexed (status) → `geïndexeerd`; re-indexed → `opnieuw geïndexeerd`; "couldn''t be indexed" →
+  `Kon niet worden geïndexeerd` (macOS passive "kon niet worden …", gentle, avoids bare "mislukt" per Cmdr voice) · high
 - waiting to be indexed → `Wacht op indexering` · index→indexeren, noun `indexering` (cf. "achtergrondindexering") ·
   high
 - still working (progress tail) → `nog bezig` · reuses the running-status `Bezig` family (queue.row.status) · high

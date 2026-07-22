@@ -724,11 +724,27 @@ sessions, attachments, consent screen, cost footer, settings section; macOS AppK
 
 ### Settled during the image-index indicator pass (`fileExplorer.imageIndex.*` file/folder/drive badge tooltips + `settings.mediaIndex.showFileStatusIcons.*`; the small badges on image files/folders/drives showing image-search indexing state; MS terminology + catalog-consistency, 2026-07-22)
 
-- **badge → insignia** · the es catalog already settles it: `settings.fileExplorer.git.showRepoChip.label` = "Mostrar la insignia del repositorio" and the alpha badges in `onboarding.stepBeta.openBeta` = "insignias". MS terminology offers "distintivo"/"insignia"/"notificación" for "badge"; the catalog's "insignia" wins on consistency. "status badges" → "insignias de estado" · high (consistency-settled)
-- **indexed (participle, agrees with the counted noun) → indexada/indexadas** · reuses index/indexing→índice/indexación (glossary) + the fem. gender of imagen/foto. Matches the sibling `settings.mediaIndex.progress.ofTotal` ("imagen indexada" / "imágenes indexadas") and `indexing.enrich.progress`, so the folder/drive count tooltips read parallel to the existing progress lines. A single image file's tooltip is fem. sing. ("Indexada para la búsqueda de imágenes") · high
-- **image search (in a sentence) → búsqueda de imágenes** · reaffirms the "Image search" card → "Búsqueda de imágenes" (network-drive pass); lowercased inside a sentence per sentence-case · high
-- **"Couldn''t be indexed" (no-bare-"failed"/"error" voice) → No se pudo indexar** · reuses the settled "No se pudo …" calm-failure pattern (errors pass); avoids "falló"/"error" · high
-- **"Waiting to be indexed" → Esperando a ser indexada** · reuses the settled waiting state (queue pass: queued/waiting → Esperando); fem. agreement for the image · high
-- **"still working" (drive still indexing) → aún en curso** · composed; calm progress phrasing, no personal subject, parallel with the settled `stageActive`/`titleActive` progress voice · tentative
-- **folder/drive count tooltips: fold the agreeing participle/verb INTO the plural arms** · English wraps only `{image}/{images}` in the plural and keeps "indexed" outside, but Spanish "indexada"/"indexadas" (and "está"/"están" in `drive.done`) must agree with number, so the whole "imagen indexada"/"imágenes indexadas" clause lives inside each CLDR arm (one/many/other), mirroring `settings.mediaIndex.progress.ofTotal`. `{totalText}`/`{doneText}` stay inside every arm; `{total}` is the selector; `{done}` is unused (English doesn't use it either). "All N …" → definite "Todas las {totalText} …" in the plural arms, collapsing to "{totalText} imagen indexada" in the one arm · high
+- **badge → insignia** · the es catalog already settles it: `settings.fileExplorer.git.showRepoChip.label` = "Mostrar la
+  insignia del repositorio" and the alpha badges in `onboarding.stepBeta.openBeta` = "insignias". MS terminology offers
+  "distintivo"/"insignia"/"notificación" for "badge"; the catalog's "insignia" wins on consistency. "status badges" →
+  "insignias de estado" · high (consistency-settled)
+- **indexed (participle, agrees with the counted noun) → indexada/indexadas** · reuses index/indexing→índice/indexación
+  (glossary) + the fem. gender of imagen/foto. Matches the sibling `settings.mediaIndex.progress.ofTotal` ("imagen
+  indexada" / "imágenes indexadas") and `indexing.enrich.progress`, so the folder/drive count tooltips read parallel to
+  the existing progress lines. A single image file's tooltip is fem. sing. ("Indexada para la búsqueda de imágenes") ·
+  high
+- **image search (in a sentence) → búsqueda de imágenes** · reaffirms the "Image search" card → "Búsqueda de imágenes"
+  (network-drive pass); lowercased inside a sentence per sentence-case · high
+- **"Couldn''t be indexed" (no-bare-"failed"/"error" voice) → No se pudo indexar** · reuses the settled "No se pudo …"
+  calm-failure pattern (errors pass); avoids "falló"/"error" · high
+- **"Waiting to be indexed" → Esperando a ser indexada** · reuses the settled waiting state (queue pass: queued/waiting
+  → Esperando); fem. agreement for the image · high
+- **"still working" (drive still indexing) → aún en curso** · composed; calm progress phrasing, no personal subject,
+  parallel with the settled `stageActive`/`titleActive` progress voice · tentative
+- **folder/drive count tooltips: fold the agreeing participle/verb INTO the plural arms** · English wraps only
+  `{image}/{images}` in the plural and keeps "indexed" outside, but Spanish "indexada"/"indexadas" (and "está"/"están"
+  in `drive.done`) must agree with number, so the whole "imagen indexada"/"imágenes indexadas" clause lives inside each
+  CLDR arm (one/many/other), mirroring `settings.mediaIndex.progress.ofTotal`. `{totalText}`/`{doneText}` stay inside
+  every arm; `{total}` is the selector; `{done}` is unused (English doesn't use it either). "All N …" → definite "Todas
+  las {totalText} …" in the plural arms, collapsing to "{totalText} imagen indexada" in the one arm · high
 - No `sameAsSourceJustification` needed: every value differs from English.

@@ -744,12 +744,12 @@ image-search indexing state. Reuses the settled indexing family; new/confirmed t
   modified, en-word, matches the `Ändrad` column). `high`.
 - **couldn''t be indexed (calm failure): `Gick inte att indexera`** · reuses the settled calm-failure form
   `Gick inte att slutföra` (`queue.json`); no bare "fel"/"misslyckades" per style.md. Tight badge tooltip. `high`.
-- **excluded from image search: `Ingår inte i bildsökningen`** · `ingå i` = to be included in; definite
-  `bildsökningen`. Distinct from the folder-exclusion verb `utesluta` (that's the user action; this is a passive state
-  on one image). `high`.
-- **status badge (the small overlay marker): `statussymbol` / `symbol`** · the catalog's own precedent for these
-  overlay indicators is `symbol` (`settings.listing.sizeMismatchWarning.description` "Visar en varningssymbol på
-  mappar"; `useAppIconsForDocuments` "appsymboler", "filtypssymboler"). "Show status badges on image files" → "Visa
+- **excluded from image search: `Ingår inte i bildsökningen`** · `ingå i` = to be included in; definite `bildsökningen`.
+  Distinct from the folder-exclusion verb `utesluta` (that's the user action; this is a passive state on one image).
+  `high`.
+- **status badge (the small overlay marker): `statussymbol` / `symbol`** · the catalog's own precedent for these overlay
+  indicators is `symbol` (`settings.listing.sizeMismatchWarning.description` "Visar en varningssymbol på mappar";
+  `useAppIconsForDocuments` "appsymboler", "filtypssymboler"). "Show status badges on image files" → "Visa
   statussymboler på bildfiler"; "a small badge" → "en liten symbol". `high` (catalog-internal precedent).
 - **image file: `bildfil`** · standard compound bild+fil. `high`.
 - **"is off" (a feature disabled for a drive): `är avstängd`** · en-word participle of `stänga av` (glossary

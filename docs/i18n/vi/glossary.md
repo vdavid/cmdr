@@ -765,11 +765,12 @@ lại, không thể, gỡ, mức độ quan trọng). New or newly-sourced below
 - No `sameAsSourceJustification` needed anywhere in these 54: every value differs from English.
 
 Added during the image-index-indicator pass (2026-07-22): the 13 new keys for the per-file / per-folder / per-drive
-image-search status badges (`fileExplorer.imageIndex.file.*`, `.folder.*`, `.drive.*` + `settings.mediaIndex.showFileStatusIcons.*`).
-Reuses prior terms (image, feature-level → `hình ảnh` per the 2026-07-21 decision on the whole `fileExplorer.imageIndex.*`
-family; image search → `tìm kiếm hình ảnh` = `settings.mediaIndex.card`; index/indexed/re-index → `lập chỉ mục`/
-`đã lập chỉ mục`/`lập chỉ mục lại`; drive → `ổ đĩa`; file list → `danh sách tệp`; scope → `phạm vi`; can't → `không thể`;
-"of" in a count → `trên`, matching `settings.mediaIndex.progress.ofTotal`; toggle off → `tắt`). New/confirmed below:
+image-search status badges (`fileExplorer.imageIndex.file.*`, `.folder.*`, `.drive.*` +
+`settings.mediaIndex.showFileStatusIcons.*`). Reuses prior terms (image, feature-level → `hình ảnh` per the 2026-07-21
+decision on the whole `fileExplorer.imageIndex.*` family; image search → `tìm kiếm hình ảnh` =
+`settings.mediaIndex.card`; index/indexed/re-index → `lập chỉ mục`/ `đã lập chỉ mục`/`lập chỉ mục lại`; drive → `ổ đĩa`;
+file list → `danh sách tệp`; scope → `phạm vi`; can't → `không thể`; "of" in a count → `trên`, matching
+`settings.mediaIndex.progress.ofTotal`; toggle off → `tắt`). New/confirmed below:
 
 - **status badge (the small per-file indicator): `huy hiệu`** · reuses the settled toast/chip/**badge** → `huy hiệu`
   rendering. "status badge" → `huy hiệu trạng thái`. `tentative` (descriptive; no single pile source).
@@ -783,5 +784,6 @@ family; image search → `tìm kiếm hình ảnh` = `settings.mediaIndex.card`;
   status. `tentative`.
 - **The four ICU-plural keys (`folder.allIndexed`/`someIndexed`, `drive.indexing`/`done`) collapse to a single `other`
   branch wrapping just the noun** (`{total, plural, other {hình ảnh}}`; vi has one CLDR category), keeping the full
-  placeholder set. `drive.indexing` fronts the drive ("Trên ổ đĩa này, …") to avoid a double `trên` (of / on this drive).
+  placeholder set. `drive.indexing` fronts the drive ("Trên ổ đĩa này, …") to avoid a double `trên` (of / on this
+  drive).
 - No `sameAsSourceJustification` needed: all 13 values differ from English.
