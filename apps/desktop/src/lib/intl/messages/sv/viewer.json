@@ -47,9 +47,9 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "Det här är råvyn av filen. Du vill nog hellre visa själva <kind>{kind}</kind>. Stäng då det här fönstret och tryck på <quickLookKey></quickLookKey> för att öppna snabbvyn, eller tryck på <openKey></openKey> (eller dubbelklicka på filen) för att öppna den i tillhörande app.",
+  "viewer.binaryWarning.body": "Det här är råvyn av filen. Du vill nog hellre visa själva <kindName>{kind}</kindName>. Stäng då det här fönstret och tryck på <quickLookKey></quickLookKey> för att öppna snabbvyn, eller tryck på <openKey></openKey> (eller dubbelklicka på filen) för att öppna den i tillhörande app.",
   "@viewer.binaryWarning.body": {
-    "sourceHash": "42eda71"
+    "sourceHash": "8c6fcd6"
   },
   "viewer.binaryWarning.kind.image": "bilden",
   "@viewer.binaryWarning.kind.image": {

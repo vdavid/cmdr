@@ -47,9 +47,9 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "Esta é a visualização bruta do arquivo. Talvez você prefira ver o arquivo como <kind>{kind}</kind> de verdade. Para isso, feche esta janela e pressione <quickLookKey></quickLookKey> para abrir a visualização rápida, ou pressione <openKey></openKey> (ou dê um duplo clique no arquivo) para abri-lo no app associado.",
+  "viewer.binaryWarning.body": "Esta é a visualização bruta do arquivo. Talvez você prefira ver o arquivo como <kindName>{kind}</kindName> de verdade. Para isso, feche esta janela e pressione <quickLookKey></quickLookKey> para abrir a visualização rápida, ou pressione <openKey></openKey> (ou dê um duplo clique no arquivo) para abri-lo no app associado.",
   "@viewer.binaryWarning.body": {
-    "sourceHash": "42eda71"
+    "sourceHash": "8c6fcd6"
   },
   "viewer.binaryWarning.kind.image": "imagem",
   "@viewer.binaryWarning.kind.image": {

@@ -47,9 +47,9 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "Ceci est l''affichage brut du fichier. Vous voudrez peut-être afficher plutôt le véritable <kind>{kind}</kind>. Pour cela, fermez cette fenêtre et appuyez sur <quickLookKey></quickLookKey> pour ouvrir l''aperçu rapide, ou appuyez sur <openKey></openKey> (ou double-cliquez sur le fichier) pour l''ouvrir dans l''application associée.",
+  "viewer.binaryWarning.body": "Ceci est l''affichage brut du fichier. Vous voudrez peut-être afficher plutôt le véritable <kindName>{kind}</kindName>. Pour cela, fermez cette fenêtre et appuyez sur <quickLookKey></quickLookKey> pour ouvrir l''aperçu rapide, ou appuyez sur <openKey></openKey> (ou double-cliquez sur le fichier) pour l''ouvrir dans l''application associée.",
   "@viewer.binaryWarning.body": {
-    "sourceHash": "42eda71"
+    "sourceHash": "8c6fcd6"
   },
   "viewer.binaryWarning.kind.image": "image",
   "@viewer.binaryWarning.kind.image": {

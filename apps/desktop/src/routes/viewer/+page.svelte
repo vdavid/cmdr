@@ -919,7 +919,7 @@
                 <Trans
                     key="viewer.binaryWarning.body"
                     params={{ kind: viewerWarningLabel(warning) }}
-                    snippets={{ kind: kindSnippet, quickLookKey, openKey }}
+                    snippets={{ kindName: kindSnippet, quickLookKey, openKey }}
                 />
             </p>
             <div class="binary-warning-actions">

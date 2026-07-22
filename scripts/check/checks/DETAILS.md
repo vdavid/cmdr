@@ -410,11 +410,12 @@ Checks by app and tech:
   `@key.screenshot` couplings; runs the coupler's `--check`, reads no PNGs), i18n-stale (warn-only; a non-`en`
   translation whose `@key.sourceHash` no longer matches the English value), i18n-parity (ERROR; each locale key's
   `{placeholder}`+`<tag>` set, or raw `{token}` set for `errors.*`, must equal English's, since a mismatch crashes at
-  runtime), i18n-icu (ERROR; every non-`errors.*` locale message must compile via `intl-messageformat`), i18n-plural
-  (ERROR; each plural covers its locale's required CLDR categories, gated on the English source's plural shape),
-  i18n-coverage (warn-only; keys missing from a locale, or byte-identical to English), i18n-dont-translate (warn-only; a
-  curated brand/system token English carries but the locale dropped), knip, type-drift, tests, e2e-linux-typecheck,
-  e2e-linux (slow), e2e-playwright (slow)
+  runtime), i18n-icu (ERROR; every non-`errors.*` locale message must compile via `intl-messageformat`),
+  i18n-tag-param-collision (ERROR; a message naming a `<tag>` and a `{param}` alike renders the param as a stringified
+  handler, because `Trans` lets the tag win the merged lookup), i18n-plural (ERROR; each plural covers its locale's
+  required CLDR categories, gated on the English source's plural shape), i18n-coverage (warn-only; keys missing from a
+  locale, or byte-identical to English), i18n-dont-translate (warn-only; a curated brand/system token English carries
+  but the locale dropped), knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
 - **Website / Astro**: prettier, eslint, typecheck, build, html-validate, bundle-size (warn-only), e2e
 - **Website / Docker**: docker-build
 - **API server / TS**: oxfmt, eslint, typecheck, tests

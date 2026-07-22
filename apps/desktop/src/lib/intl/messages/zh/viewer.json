@@ -47,9 +47,9 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "这是该文件的原始视图。你可能更想查看实际的<kind>{kind}</kind>。要这样做，请关闭此窗口，然后按 <quickLookKey></quickLookKey> 打开快速查看，或者按 <openKey></openKey>（或双击文件）用关联的 App 打开它。",
+  "viewer.binaryWarning.body": "这是该文件的原始视图。你可能更想查看实际的<kindName>{kind}</kindName>。要这样做，请关闭此窗口，然后按 <quickLookKey></quickLookKey> 打开快速查看，或者按 <openKey></openKey>（或双击文件）用关联的 App 打开它。",
   "@viewer.binaryWarning.body": {
-    "sourceHash": "42eda71"
+    "sourceHash": "8c6fcd6"
   },
   "viewer.binaryWarning.kind.image": "图像",
   "@viewer.binaryWarning.kind.image": {

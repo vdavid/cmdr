@@ -29,6 +29,8 @@ boundary: `../CLAUDE.md`.
 - **A `<tag>` name must never equal a param name in the same message.** `Trans.svelte` merges the tag snippets into the
   interpolation params, so a shared name resolves to the tag handler and the sentence renders a stringified function
   instead of the value. Name the tag for its role, the param for its content: `<processName>{process}</processName>`.
+  Enforced by `i18n-tag-param-collision` (ERROR) across every locale, since nothing else catches it: the message is
+  valid ICU, its placeholders match English, and the component renders without throwing.
 - **Embed counts as preformatted `*Text` STRING params, not ICU `{n, number}`.** Formatting is single-sourced in
   `$lib/intl`. Pass the raw integer alongside ONLY to drive `plural` selection (noun, was/were). See `transfer.json`.
 - **`@key` metadata is ARB-style sibling entries** (`@transfer.trash`), holding `description` + a `placeholders` map +

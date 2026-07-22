@@ -3,7 +3,6 @@
   "@viewer.window.fallbackTitle": {
     "description": "Fallback window title for the file viewer, used only in the rare case where the file path has no usable name. The noun for a read-only file viewer."
   },
-
   "viewer.window.titleSuffix": "{fileName} | Viewer",
   "@viewer.window.titleSuffix": {
     "description": "Title bar text of the file-viewer window: the file name, then a separator and the word for this window. Keep the pipe separator. Translate \"Viewer\" to the noun for a read-only file viewer.",
@@ -11,53 +10,43 @@
       "fileName": "name of the file being viewed (e.g. report.log)"
     }
   },
-
   "viewer.srHeading": "File viewer",
   "@viewer.srHeading": {
     "description": "Screen-reader-only heading (visually hidden) naming the whole viewer window. The name of this feature: a read-only viewer for a single file.",
     "screenshot": "viewer.png"
   },
-
   "viewer.loading": "Loading...",
   "@viewer.loading": {
     "description": "Placeholder shown in the content area while the file is being opened, before its text appears."
   },
-
   "viewer.error.noPath": "No file path specified",
   "@viewer.error.noPath": {
     "description": "Message shown when the viewer window opened without a file path to show. A rare internal condition; terse is fine."
   },
-
   "viewer.error.readFailed": "Failed to read file",
   "@viewer.error.readFailed": {
     "description": "Generic fallback message when opening the file failed and there's no more specific reason to show."
   },
-
   "viewer.error.timeout": "Couldn't load the file. The volume may be slow or unresponsive.",
   "@viewer.error.timeout": {
     "description": "Shown when opening the file timed out, typically on a slow or stalled drive or network share. \"volume\" means a disk or mounted drive. A Retry button sits below it."
   },
-
   "viewer.error.archiveTooLarge": "This file is too big to preview from inside the archive. Copy it out first, then open it.",
   "@viewer.error.archiveTooLarge": {
     "description": "Shown when previewing a file INSIDE an archive (zip) would need to extract more than the preview size cap. Previewing a file in an archive extracts it to a temporary location first, which is capped. Suggests copying the file out (extract it) and opening it from there."
   },
-
   "viewer.error.archiveUnreadable": "Couldn't open this file from the archive. It may be encrypted, damaged, or use a format Cmdr can''t read.",
   "@viewer.error.archiveUnreadable": {
     "description": "Shown when a file inside an archive (zip) can''t be previewed because the archive entry is encrypted, corrupt, or uses an unsupported compression method. \"archive\" means a zip file being browsed like a folder."
   },
-
   "viewer.error.retry": "Retry",
   "@viewer.error.retry": {
     "description": "Button that tries opening the file again after a load timeout. Keep it short (a button)."
   },
-
   "viewer.error.cancel": "Cancel",
   "@viewer.error.cancel": {
     "description": "Button next to Retry that closes the viewer window instead of retrying after a load timeout. Keep it short (a button)."
   },
-
   "viewer.content.ariaLabel": "File content: {fileName}",
   "@viewer.content.ariaLabel": {
     "description": "Accessibility label for the scrollable region that shows the file's text, announced by screen readers. Names which file's content this is.",
@@ -66,59 +55,49 @@
     },
     "screenshot": "viewer.png"
   },
-
-  "viewer.binaryWarning.body": "This is the raw view of the file. You might want to view the actual <kind>{kind}</kind> instead. To do that, close this window and press <quickLookKey></quickLookKey> to open the quick view, or press <openKey></openKey> (or double-click the file) to open it in the associated app.",
+  "viewer.binaryWarning.body": "This is the raw view of the file. You might want to view the actual <kindName>{kind}</kindName> instead. To do that, close this window and press <quickLookKey></quickLookKey> to open the quick view, or press <openKey></openKey> (or double-click the file) to open it in the associated app.",
   "@viewer.binaryWarning.body": {
-    "description": "Warning banner shown when the viewer is displaying the raw bytes of a non-text file (an image, PDF, archive, etc.), nudging the user to open it properly instead. <kind> wraps the file-type word ({kind}, e.g. \"image\", \"document\", \"ZIP\"). <quickLookKey> and <openKey> wrap keyboard-shortcut chips and have NO inner text: leave them empty, keeping both tags and their positions. \"quick view\" refers to the macOS Quick Look preview; \"the associated app\" is the default app for that file type.",
+    "description": "Warning banner shown when the viewer is displaying the raw bytes of a non-text file (an image, PDF, archive, etc.), nudging the user to open it properly instead. <kindName> wraps the file-type word ({kind}, e.g. \"image\", \"document\", \"ZIP\"). <quickLookKey> and <openKey> wrap keyboard-shortcut chips and have NO inner text: leave them empty, keeping both tags and their positions. \"quick view\" refers to the macOS Quick Look preview; \"the associated app\" is the default app for that file type.",
     "placeholders": {
       "kind": "the file-type word, e.g. \"image\", \"document\", or an uppercased extension like \"ZIP\""
     }
   },
-
   "viewer.binaryWarning.kind.image": "image",
   "@viewer.binaryWarning.kind.image": {
     "description": "The file-type word dropped into the raw-view warning sentence \"view the actual <word> instead\" when the file is an image. Lowercase to read naturally inside the sentence."
   },
-
   "viewer.binaryWarning.kind.document": "document",
   "@viewer.binaryWarning.kind.document": {
     "description": "The file-type word dropped into the raw-view warning sentence \"view the actual <word> instead\" when the file is a document (PDF, Office file, ebook, etc.). Lowercase to read naturally inside the sentence."
   },
-
   "viewer.binaryWarning.dismiss": "Close",
   "@viewer.binaryWarning.dismiss": {
     "description": "Link-style button in the raw-view warning banner that hides the banner for this window only. Keep it short."
   },
-
   "viewer.binaryWarning.suppressForever": "Never show this warning again",
   "@viewer.binaryWarning.suppressForever": {
     "description": "Link-style button in the raw-view warning banner that turns the warning off permanently (a persisted setting), not just for this window."
   },
-
   "viewer.search.placeholder": "Find in file...",
   "@viewer.search.placeholder": {
     "description": "Placeholder text in the viewer's search input box. \"Find\" as in search within the open file.",
     "screenshot": "viewer-search.png"
   },
-
   "viewer.search.ariaLabel": "Search text",
   "@viewer.search.ariaLabel": {
     "description": "Accessibility label for the viewer's search input box (the same box whose placeholder is \"Find in file...\").",
     "screenshot": "viewer-search.png"
   },
-
   "viewer.search.caseSensitive": "Case sensitive",
   "@viewer.search.caseSensitive": {
     "description": "Label for the search toggle that makes matching distinguish uppercase from lowercase. Used as both the button's accessibility label and its tooltip. The button's visible text is the fixed glyph \"Aa\", not this string.",
     "screenshot": "viewer-search.png"
   },
-
   "viewer.search.regex": "Regex",
   "@viewer.search.regex": {
     "description": "Label for the search toggle that treats the query as a regular expression. Used as both the button's accessibility label and its tooltip. \"Regex\" is the common short form of \"regular expression\"; keep it short. The button's visible text is the fixed glyph \".*\", not this string.",
     "screenshot": "viewer-search.png"
   },
-
   "viewer.search.matchPosition": "{current} of {total}{more, select, yes {+} other {}}",
   "@viewer.search.matchPosition": {
     "description": "Shows which search match is currently selected out of the total found, e.g. \"3 of 17\". A trailing \"+\" means the match limit was reached and there may be more. Keep the \"+\" literal.",
@@ -128,117 +107,96 @@
       "more": "\"yes\" when the match limit was hit (append \"+\"), otherwise \"other\""
     }
   },
-
   "viewer.search.searching": "Searching...",
   "@viewer.search.searching": {
     "description": "Search status while a search runs and no matches have been found yet. A percent-scanned figure is shown right after it (separate, not part of this string). Ends with three dots."
   },
-
   "viewer.search.partial": "(partial)",
   "@viewer.search.partial": {
     "description": "Marker shown next to search results when the search was stopped early, so the results are incomplete and the file wasn't fully scanned. Keep the parentheses."
   },
-
   "viewer.search.noMatches": "No matches",
   "@viewer.search.noMatches": {
     "description": "Shown when a finished (or stopped) search found nothing in the file. A \"(partial)\" marker may follow it separately when the search was stopped early."
   },
-
   "viewer.search.stop": "Stop searching",
   "@viewer.search.stop": {
     "description": "Accessibility label for the button that stops an in-progress search. The button's visible content is a square \"stop\" glyph."
   },
-
   "viewer.search.stopTooltip": "Stop scanning and keep results",
   "@viewer.search.stopTooltip": {
     "description": "Tooltip for the stop-search button, clarifying that stopping keeps the matches found so far rather than discarding them."
   },
-
   "viewer.search.previous": "Previous match",
   "@viewer.search.previous": {
     "description": "Accessibility label and tooltip for the button that jumps to the previous search match. The button's visible content is an up-arrow glyph.",
     "screenshot": "viewer-search.png"
   },
-
   "viewer.search.next": "Next match",
   "@viewer.search.next": {
     "description": "Accessibility label and tooltip for the button that jumps to the next search match. The button's visible content is a down-arrow glyph.",
     "screenshot": "viewer-search.png"
   },
-
   "viewer.search.close": "Close search",
   "@viewer.search.close": {
     "description": "Accessibility label for the button that closes the search bar. The button's visible content is an X glyph.",
     "screenshot": "viewer-search.png"
   },
-
   "viewer.search.closeTooltip": "Close",
   "@viewer.search.closeTooltip": {
     "description": "Tooltip for the close-search button. Short verb/label; the action closes the search bar.",
     "screenshot": "viewer-search.png"
   },
-
   "viewer.toolbar.viewMode.ariaLabel": "View mode",
   "@viewer.toolbar.viewMode.ariaLabel": {
     "description": "Accessibility label for the toolbar dropdown that switches how the file is shown (rendered image/PDF versus raw text).",
     "screenshot": "viewer.png"
   },
-
   "viewer.toolbar.viewMode.text": "Text",
   "@viewer.toolbar.viewMode.text": {
     "description": "Option in the view-mode dropdown for showing the file as plain text. Also the current-mode label when reading a media file as text.",
     "screenshot": "viewer.png"
   },
-
   "viewer.toolbar.viewMode.viewAsText": "View as text",
   "@viewer.toolbar.viewMode.viewAsText": {
     "description": "Option in the view-mode dropdown (shown for an image or PDF) that switches to reading the file's raw text instead of the rendered media.",
     "screenshot": "viewer-image.png"
   },
-
   "viewer.toolbar.viewMode.viewAsImage": "View as image",
   "@viewer.toolbar.viewMode.viewAsImage": {
     "description": "Option in the view-mode dropdown that switches an image file back to its rendered (picture) view from the raw-text view."
   },
-
   "viewer.toolbar.viewMode.viewAsPdf": "View as PDF",
   "@viewer.toolbar.viewMode.viewAsPdf": {
     "description": "Option in the view-mode dropdown that switches a PDF file back to its rendered view from the raw-text view. \"PDF\" is a format name; don't translate it."
   },
-
   "viewer.kind.image": "Image",
   "@viewer.kind.image": {
     "description": "Label for the image content kind, shown in the view-mode dropdown and the status bar.",
     "screenshot": "viewer-image.png"
   },
-
   "viewer.kind.pdf": "PDF",
   "@viewer.kind.pdf": {
     "description": "Label for the PDF content kind, shown in the view-mode dropdown and the status bar. \"PDF\" is a format name; don't translate it.",
     "screenshot": "viewer-pdf.png"
   },
-
   "viewer.kind.text": "Text",
   "@viewer.kind.text": {
     "description": "Label for the plain-text content kind, shown in the status bar and view-mode dropdown."
   },
-
   "viewer.toolbar.encoding.placeholder": "Encoding",
   "@viewer.toolbar.encoding.placeholder": {
     "description": "Placeholder and accessibility label for the toolbar dropdown that picks the file's text encoding (e.g. UTF-8). Shown when no encoding is selected yet. \"Encoding\" means character encoding.",
     "screenshot": "viewer.png"
   },
-
   "viewer.toolbar.encoding.group.unicode": "Unicode",
   "@viewer.toolbar.encoding.group.unicode": {
     "description": "Section heading in the encoding dropdown grouping the Unicode encodings (UTF-8, UTF-16, etc.). \"Unicode\" is a standard name; don't translate it."
   },
-
   "viewer.toolbar.encoding.group.western": "Western",
   "@viewer.toolbar.encoding.group.western": {
     "description": "Section heading in the encoding dropdown grouping the Western (Latin-script legacy) encodings, as opposed to the Unicode group."
   },
-
   "viewer.toolbar.encoding.detectedSuffix": "{label} (Detected)",
   "@viewer.toolbar.encoding.detectedSuffix": {
     "description": "An encoding's dropdown label with a marker noting it's the one auto-detected when the file opened, e.g. \"UTF-8 (Detected)\". Translate the \"Detected\" word; keep the encoding name as-is.",
@@ -247,36 +205,30 @@
     },
     "screenshot": "viewer.png"
   },
-
   "viewer.toolbar.tail.label": "Tail",
   "@viewer.toolbar.tail.label": {
     "description": "Visible text of the toolbar toggle that makes the viewer auto-follow a file as it grows (like the Unix `tail -f` command, useful for logs). Keep it short. Its tooltip and accessibility label are separate strings.",
     "screenshot": "viewer.png"
   },
-
   "viewer.toolbar.tail.ariaLabel": "Tail mode: follow file changes",
   "@viewer.toolbar.tail.ariaLabel": {
     "description": "Accessibility label for the Tail toggle, spelling out what it does: keep showing new content as the file changes on disk.",
     "screenshot": "viewer.png"
   },
-
   "viewer.toolbar.tail.tooltip": "Auto-follow file changes",
   "@viewer.toolbar.tail.tooltip": {
     "description": "Tooltip for the Tail toggle: automatically scroll to follow new content appended to the file.",
     "screenshot": "viewer.png"
   },
-
   "viewer.toolbar.reindexing": "Reindexing…",
   "@viewer.toolbar.reindexing": {
     "description": "Small toolbar status shown while the viewer rebuilds its line index in the background (for example after the encoding changed). Ends with an ellipsis character."
   },
-
   "viewer.statusBar.ariaLabel": "File information",
   "@viewer.statusBar.ariaLabel": {
     "description": "Accessibility label for the viewer's bottom status bar, which shows the file name, size, line count, and mode.",
     "screenshot": "viewer.png"
   },
-
   "viewer.statusBar.lineCount": "{count} {count, plural, one {line} other {lines}}",
   "@viewer.statusBar.lineCount": {
     "description": "Line count shown in the status bar, e.g. \"42 lines\" or \"1 line\".",
@@ -285,34 +237,28 @@
     },
     "screenshot": "viewer.png"
   },
-
   "viewer.statusBar.badge.inMemory": "in memory",
   "@viewer.statusBar.badge.inMemory": {
     "description": "Small status-bar badge meaning the whole file is loaded in RAM, so jumping to any line is instant. Lowercase, terse badge; its tooltip is a separate string.",
     "screenshot": "viewer.png"
   },
-
   "viewer.statusBar.badge.inMemoryTooltip": "You have the file entirely in memory. You can quickly scroll to any line.",
   "@viewer.statusBar.badge.inMemoryTooltip": {
     "description": "Tooltip for the \"in memory\" status badge, explaining that the entire file is in RAM so scrolling to any line is fast.",
     "screenshot": "viewer.png"
   },
-
   "viewer.statusBar.badge.indexed": "indexed",
   "@viewer.statusBar.badge.indexed": {
     "description": "Small status-bar badge meaning the viewer built a full line index, so line numbers are exact and jumping anywhere is fast. Lowercase, terse badge; its tooltip is a separate string."
   },
-
   "viewer.statusBar.badge.indexedTooltip": "You have the file indexed, so the line numbers are accurate, and you can quickly scroll to any point.",
   "@viewer.statusBar.badge.indexedTooltip": {
     "description": "Tooltip for the \"indexed\" status badge, explaining that the line index makes line numbers exact and scrolling fast."
   },
-
   "viewer.statusBar.badge.streamingIndexing": "streaming, indexing...",
   "@viewer.statusBar.badge.streamingIndexing": {
     "description": "Small status-bar badge for a large file shown in streaming mode while a background index is being built; until it finishes, line numbers are approximate. Lowercase, terse badge; its tooltip is a separate string."
   },
-
   "viewer.statusBar.badge.streamingIndexingTooltip": "This is a large file in streaming mode. We''re building an index in background (max {seconds} sec)... Line numbers are currently approximate.",
   "@viewer.statusBar.badge.streamingIndexingTooltip": {
     "description": "Tooltip for the \"streaming, indexing...\" badge, explaining that a background index is being built (with a time cap) and line numbers are approximate until it's done. \"sec\" abbreviates seconds.",
@@ -320,12 +266,10 @@
       "seconds": "the maximum number of seconds spent building the index (e.g. 5)"
     }
   },
-
   "viewer.statusBar.badge.streaming": "streaming",
   "@viewer.statusBar.badge.streaming": {
     "description": "Small status-bar badge for a large file shown in streaming mode with no index built, so line numbers are estimates. Lowercase, terse badge; its tooltip is a separate string."
   },
-
   "viewer.statusBar.badge.streamingTooltip": "This is a large file in streaming mode. Indexing would''ve taken longer than {seconds} sec, so we didn''t do it. The line numbers are estimates.",
   "@viewer.statusBar.badge.streamingTooltip": {
     "description": "Tooltip for the \"streaming\" badge, explaining that indexing was skipped because it would have exceeded the time cap, so line numbers are estimates. \"sec\" abbreviates seconds.",
@@ -333,29 +277,24 @@
       "seconds": "the indexing time cap in seconds that was exceeded (e.g. 5)"
     }
   },
-
   "viewer.statusBar.badge.wrap": "wrap",
   "@viewer.statusBar.badge.wrap": {
     "description": "Small status-bar badge shown when word wrap is on (long lines wrap at the window edge). Lowercase, terse badge; its tooltip is a separate string."
   },
-
   "viewer.statusBar.badge.wrapTooltip": "Lines wrap at the window edge",
   "@viewer.statusBar.badge.wrapTooltip": {
     "description": "Tooltip for the \"wrap\" badge, explaining that long lines wrap at the window's right edge instead of scrolling horizontally."
   },
-
   "viewer.statusBar.hint.image": "Click 100% / fit · Scroll zoom · Drag pan",
   "@viewer.statusBar.hint.image": {
     "description": "Status-bar hint listing the image interactions: clicking toggles between 100% and fit-to-window, scrolling zooms, dragging pans. Middle-dot separators between the three; keep \"100%\". \"fit\" = fit to window, \"pan\" = move the view around.",
     "screenshot": "viewer-image.png"
   },
-
   "viewer.statusBar.hint.text": "W wrap · F tail · ⌘F search",
   "@viewer.statusBar.hint.text": {
     "description": "Status-bar hint listing keyboard shortcuts for text mode: W toggles word wrap, F toggles tail (auto-follow), ⌘F opens search. Keep the key glyphs (W, F, ⌘F) literal; translate only the action words (wrap, tail, search). Middle-dot separators between the three.",
     "screenshot": "viewer.png"
   },
-
   "viewer.media.dimensions": "{width} × {height}",
   "@viewer.media.dimensions": {
     "description": "Pixel dimensions of an image in the status bar, e.g. \"1,920 × 1,080\". The values are preformatted with the locale's digit grouping. Keep the multiplication-sign \"×\".",
@@ -365,41 +304,34 @@
     },
     "screenshot": "viewer-image.png"
   },
-
   "viewer.image.loading": "Loading image",
   "@viewer.image.loading": {
     "description": "Screen-reader-only status announced while an image is loading in the viewer."
   },
-
   "viewer.image.error": "Sorry, we couldn''t show this image. The file may be damaged or in a format we can''t display.",
   "@viewer.image.error": {
     "description": "Inline message shown when an image fails to load in the viewer, suggesting the file is corrupt or in an unsupported format. Reassuring, conversational tone."
   },
-
   "viewer.pdf.loading": "Loading PDF",
   "@viewer.pdf.loading": {
     "description": "Screen-reader-only status announced while a PDF is loading in the viewer. \"PDF\" is a format name; don't translate it.",
     "screenshot": "viewer-pdf.png"
   },
-
   "viewer.contextMenu.ariaLabel": "Viewer actions",
   "@viewer.contextMenu.ariaLabel": {
     "description": "Accessibility label for the viewer's right-click context menu, which offers Copy and Select all.",
     "screenshot": "viewer-context-menu.png"
   },
-
   "viewer.contextMenu.copy": "Copy",
   "@viewer.contextMenu.copy": {
     "description": "Context-menu item that copies the selected text to the clipboard. Its keyboard shortcut (⌘C) is shown separately.",
     "screenshot": "viewer-context-menu.png"
   },
-
   "viewer.contextMenu.selectAll": "Select all",
   "@viewer.contextMenu.selectAll": {
     "description": "Context-menu item that selects the whole file's text. Its keyboard shortcut (⌘A) is shown separately.",
     "screenshot": "viewer-context-menu.png"
   },
-
   "viewer.copyDialog.confirmTitleKnown": "Copy {size} to the clipboard?",
   "@viewer.copyDialog.confirmTitleKnown": {
     "description": "Title of the dialog asking the user to confirm copying a large selection to the clipboard, naming the size, e.g. \"Copy 24 MB to the clipboard?\".",
@@ -407,57 +339,46 @@
       "size": "the selection size, already formatted (e.g. \"24 MB\")"
     }
   },
-
   "viewer.copyDialog.confirmTitleUnknown": "Copy this selection to the clipboard?",
   "@viewer.copyDialog.confirmTitleUnknown": {
     "description": "Title of the copy-confirm dialog when the selection's size isn't known yet (so no size is shown)."
   },
-
   "viewer.copyDialog.confirmBody": "Large pastes can slow down other apps. Try search (⌘F) to narrow it down.",
   "@viewer.copyDialog.confirmBody": {
     "description": "Body of the copy-confirm dialog, warning that pasting a large amount can slow other apps and suggesting search to narrow the selection. Keep the \"⌘F\" shortcut glyph literal."
   },
-
   "viewer.copyDialog.cancel": "Cancel",
   "@viewer.copyDialog.cancel": {
     "description": "Button that dismisses a copy dialog without copying. Keep it short (a button)."
   },
-
   "viewer.copyDialog.saveAsFile": "Save as file…",
   "@viewer.copyDialog.saveAsFile": {
     "description": "Button in the copy dialogs that saves the selection to a file instead of putting it on the clipboard. Ends with an ellipsis (it opens a save panel)."
   },
-
   "viewer.copyDialog.copy": "Copy",
   "@viewer.copyDialog.copy": {
     "description": "Button in the copy-confirm dialog that proceeds with copying the selection to the clipboard."
   },
-
   "viewer.copyDialog.refuseBody": "That''s larger than the 100 MB clipboard limit. Try search (⌘F) to find what you need, or save the selection as a file.",
   "@viewer.copyDialog.refuseBody": {
     "description": "Body of the dialog shown when a selection is too big to copy (over the 100 MB clipboard limit), offering search or save-to-file instead. Keep \"100 MB\" and the \"⌘F\" glyph literal."
   },
-
   "viewer.reloadToast.grew": "File changed on disk. Reload?",
   "@viewer.reloadToast.grew": {
     "description": "Toast shown when the open file changed on disk (grew), offering to reload it. A Reload button sits beside it."
   },
-
   "viewer.reloadToast.rotated": "File replaced on disk. Reload to see the new content.",
   "@viewer.reloadToast.rotated": {
     "description": "Toast shown when the open file was replaced on disk (e.g. log rotation), so the viewer must reload to show the new file. A Reload button sits beside it."
   },
-
   "viewer.reloadToast.reload": "Reload",
   "@viewer.reloadToast.reload": {
     "description": "Button on the file-changed toast that reloads the file to show its new content. Keep it short."
   },
-
   "viewer.reloadToast.dismissTooltip": "Dismiss without reloading",
   "@viewer.reloadToast.dismissTooltip": {
     "description": "Tooltip for the close (X) control on the file-changed toast: dismiss the toast and keep showing the current content rather than reloading."
   },
-
   "viewer.copy.onClipboard": "{size} on your clipboard",
   "@viewer.copy.onClipboard": {
     "description": "Toast confirming a selection was copied, naming the size, e.g. \"24 MB on your clipboard\".",
@@ -465,42 +386,34 @@
       "size": "the copied size, already formatted (e.g. \"24 MB\")"
     }
   },
-
   "viewer.copy.clipboardUnreachable": "Couldn''t reach the clipboard. Try again?",
   "@viewer.copy.clipboardUnreachable": {
     "description": "Warning toast when writing to the system clipboard failed. Conversational, suggests retrying."
   },
-
   "viewer.copy.readTooLong": "The read took too long. Try a smaller selection?",
   "@viewer.copy.readTooLong": {
     "description": "Warning toast when reading the selected text for a copy timed out, suggesting a smaller selection. \"read\" = reading the file content."
   },
-
   "viewer.copy.copyFailed": "Couldn''t copy the selection. Try again?",
   "@viewer.copy.copyFailed": {
     "description": "Warning toast when copying the selection failed for a non-timeout reason. Conversational, suggests retrying."
   },
-
   "viewer.copy.readFailed": "Couldn''t read the selection. Try again?",
   "@viewer.copy.readFailed": {
     "description": "Warning toast when reading the selection (after the user confirmed a large copy) failed. Conversational, suggests retrying."
   },
-
   "viewer.saveAs.title": "Save selection",
   "@viewer.saveAs.title": {
     "description": "Title of the native save panel opened when saving the viewer selection to a file."
   },
-
   "viewer.saveAs.defaultName": "selection",
   "@viewer.saveAs.defaultName": {
     "description": "Fallback base file name for the save panel when the open file has no usable name. Becomes e.g. \"selection.selection.txt\". Lowercase, no spaces, safe as a file name."
   },
-
   "viewer.saveAs.panelFailed": "Couldn''t open the save panel. Try again?",
   "@viewer.saveAs.panelFailed": {
     "description": "Warning toast when the system save panel couldn't be opened. Conversational, suggests retrying."
   },
-
   "viewer.saveAs.saved": "Selection saved to {name}",
   "@viewer.saveAs.saved": {
     "description": "Toast confirming the selection was saved, naming the destination file, e.g. \"Selection saved to notes.txt\".",
@@ -508,17 +421,14 @@
       "name": "the saved file's name (e.g. notes.txt)"
     }
   },
-
   "viewer.saveAs.tooLong": "Saving took too long. Try a smaller selection?",
   "@viewer.saveAs.tooLong": {
     "description": "Warning toast when saving the selection to a file timed out, suggesting a smaller selection."
   },
-
   "viewer.saveAs.saveFailed": "Couldn''t save the selection. Try again?",
   "@viewer.saveAs.saveFailed": {
     "description": "Warning toast when saving the selection to a file failed for a non-timeout reason. Conversational, suggests retrying."
   },
-
   "viewer.selection.toEndOfFile": "Selected from line {line} to the end of the file",
   "@viewer.selection.toEndOfFile": {
     "description": "Screen-reader announcement for a very large text selection that reaches the end of the file, naming the starting line number. \"line\" here is a line of text in the file.",
@@ -526,7 +436,6 @@
       "line": "the 1-based starting line number (e.g. 12)"
     }
   },
-
   "viewer.selection.singleLine": "Selected {chars} characters on line {line}",
   "@viewer.selection.singleLine": {
     "description": "Screen-reader announcement when text is selected within one line: how many characters, and which line. \"characters\" counts text characters; \"line\" is a line of text in the file.",
@@ -535,7 +444,6 @@
       "line": "the 1-based line number (e.g. 5)"
     }
   },
-
   "viewer.selection.multiLine": "Selected lines {startLine} to {endLine}, {chars} characters",
   "@viewer.selection.multiLine": {
     "description": "Screen-reader announcement when the selection spans multiple lines: the start and end line numbers and the total character count. \"lines\"/\"characters\" refer to text lines and text characters.",

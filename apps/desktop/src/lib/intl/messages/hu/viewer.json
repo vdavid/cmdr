@@ -47,9 +47,9 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "Ez a fájl nyers nézete. Lehet, hogy inkább a tényleges <kind>{kind}</kind> nézetét szeretnéd. Ehhez zárd be ezt az ablakot, és nyomd meg a <quickLookKey></quickLookKey> gombot a gyors nézethez, vagy az <openKey></openKey> gombot (vagy kattints duplán a fájlra), hogy a társított alkalmazásban nyisd meg.",
+  "viewer.binaryWarning.body": "Ez a fájl nyers nézete. Lehet, hogy inkább a tényleges <kindName>{kind}</kindName> nézetét szeretnéd. Ehhez zárd be ezt az ablakot, és nyomd meg a <quickLookKey></quickLookKey> gombot a gyors nézethez, vagy az <openKey></openKey> gombot (vagy kattints duplán a fájlra), hogy a társított alkalmazásban nyisd meg.",
   "@viewer.binaryWarning.body": {
-    "sourceHash": "42eda71"
+    "sourceHash": "8c6fcd6"
   },
   "viewer.binaryWarning.kind.image": "képet",
   "@viewer.binaryWarning.kind.image": {

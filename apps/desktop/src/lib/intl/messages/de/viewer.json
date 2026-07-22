@@ -47,9 +47,9 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "Das ist die Rohansicht der Datei. Vielleicht möchtest du stattdessen das eigentliche <kind>{kind}</kind> ansehen. Schließe dazu dieses Fenster und drücke <quickLookKey></quickLookKey> für die Übersicht, oder drücke <openKey></openKey> (oder klicke doppelt auf die Datei), um sie in der zugehörigen App zu öffnen.",
+  "viewer.binaryWarning.body": "Das ist die Rohansicht der Datei. Vielleicht möchtest du stattdessen das eigentliche <kindName>{kind}</kindName> ansehen. Schließe dazu dieses Fenster und drücke <quickLookKey></quickLookKey> für die Übersicht, oder drücke <openKey></openKey> (oder klicke doppelt auf die Datei), um sie in der zugehörigen App zu öffnen.",
   "@viewer.binaryWarning.body": {
-    "sourceHash": "42eda71"
+    "sourceHash": "8c6fcd6"
   },
   "viewer.binaryWarning.kind.image": "Bild",
   "@viewer.binaryWarning.kind.image": {

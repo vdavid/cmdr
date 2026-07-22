@@ -323,6 +323,21 @@ var AllChecks = []CheckDefinition{
 		Run:               RunDesktopI18nIcu,
 	},
 	{
+		ID:          "desktop-i18n-tag-param-collision",
+		Nickname:    "i18n-tag-param-collision",
+		DisplayName: "i18n-tag-param-collision",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		// ERROR class: `Trans` lets a tag shadow a same-named param, so the param
+		// renders as a stringified handler function in the UI. Nothing else catches
+		// it (valid ICU, matching placeholders, no throw). Real CI gate.
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Inputs:            inputs([]string{"apps/desktop/src/lib/intl/messages/**"}),
+		Run:               RunI18nTagParamCollision,
+	},
+	{
 		ID:          "desktop-i18n-plural",
 		Nickname:    "i18n-plural",
 		DisplayName: "i18n-plural",

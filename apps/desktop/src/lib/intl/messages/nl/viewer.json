@@ -47,9 +47,9 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "Dit is de ruwe weergave van het bestand. Je wilt waarschijnlijk liever de eigenlijke <kind>{kind}</kind> bekijken. Sluit hiervoor dit venster en druk op <quickLookKey></quickLookKey> om de snelle weergave te openen, of druk op <openKey></openKey> (of dubbelklik op het bestand) om het in de bijbehorende app te openen.",
+  "viewer.binaryWarning.body": "Dit is de ruwe weergave van het bestand. Je wilt waarschijnlijk liever de eigenlijke <kindName>{kind}</kindName> bekijken. Sluit hiervoor dit venster en druk op <quickLookKey></quickLookKey> om de snelle weergave te openen, of druk op <openKey></openKey> (of dubbelklik op het bestand) om het in de bijbehorende app te openen.",
   "@viewer.binaryWarning.body": {
-    "sourceHash": "42eda71"
+    "sourceHash": "8c6fcd6"
   },
   "viewer.binaryWarning.kind.image": "afbeelding",
   "@viewer.binaryWarning.kind.image": {
