@@ -1891,10 +1891,6 @@
   "@settings.advanced.card.historyAndLimits": {
     "sourceHash": "3e01a24"
   },
-  "settings.advanced.card.logging": "Journalisation",
-  "@settings.advanced.card.logging": {
-    "sourceHash": "d3ef01b"
-  },
   "settings.advanced.card.loggingAndDiagnostics": "Journalisation et diagnostics",
   "@settings.advanced.card.loggingAndDiagnostics": {
     "sourceHash": "5d74805"

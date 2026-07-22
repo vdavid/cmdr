@@ -1905,7 +1905,6 @@ export type MessageKey =
   | 'settings.advanced.card.hintsAndWarnings'
   | 'settings.advanced.card.historyAndLimits'
   | 'settings.advanced.card.input'
-  | 'settings.advanced.card.logging'
   | 'settings.advanced.card.loggingAndDiagnostics'
   | 'settings.advanced.card.networkAndMounts'
   | 'settings.advanced.card.performance'

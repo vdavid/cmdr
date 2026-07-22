@@ -2299,13 +2299,9 @@
   "@settings.advanced.card.historyAndLimits": {
     "description": "Heading of the history-and-limits card (closed-tab history size, recent searches to remember, recent selections to remember) in Settings > Advanced."
   },
-  "settings.advanced.card.logging": "Logging",
-  "@settings.advanced.card.logging": {
-    "description": "Heading of the Logging card (verbose console output switch, plus buttons to open the log folder and copy diagnostics) in Settings > Advanced."
-  },
   "settings.advanced.card.loggingAndDiagnostics": "Logging and diagnostics",
   "@settings.advanced.card.loggingAndDiagnostics": {
-    "description": "Heading of the logging-and-diagnostics card (max log storage, attach email to reports) in Settings > Advanced."
+    "description": "Heading of the logging-and-diagnostics card (verbose logging switch, max log storage, LLM-call logging, attach email to reports, plus buttons to open the log folder and copy diagnostics) in Settings > Advanced."
   },
   "settings.advanced.card.updates": "Updates",
   "@settings.advanced.card.updates": {

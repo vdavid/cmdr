@@ -114,7 +114,7 @@
     //
     // Some cards need trailing non-setting UI after their auto-rendered rows —
     // action buttons that aren't settings and so have no auto-render home. The
-    // Logging card is the first: its verbose-logging switch auto-renders (it's a
+    // "Logging and diagnostics" card is one: its verbose-logging switch auto-renders (it's a
     // real `section: ['Advanced']` setting), but the "open log folder" / "copy
     // diagnostics" buttons are actions. A card is matched by a stable MARKER
     // SETTING ID it contains, never by its translated title (no-string-matching).

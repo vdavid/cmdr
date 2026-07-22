@@ -7,15 +7,16 @@ import type { SettingDefinitionSource } from '../types'
 
 export const advancedSettings: SettingDefinitionSource[] = [
   {
-    // Verbose (debug-level) logging. Auto-renders as the switch in the "Logging"
-    // card; the card's two action buttons (open log folder, copy diagnostics) are
-    // NOT settings, so `AdvancedSection` appends them as the card's trailing
-    // "extra content" (see `advanced-card-extras.ts`). Live-applied via
-    // `settings-applier.ts` → `setVerboseLogging`. The `developer.*` id prefix is a
-    // stable persistence key; homing the setting under Advanced doesn't touch it.
+    // Verbose (debug-level) logging. Auto-renders as a switch in the "Logging and
+    // diagnostics" card; that card's two action buttons (open log folder, copy
+    // diagnostics) are NOT settings, so `AdvancedSection` appends them as the card's
+    // trailing "extra content" (the marker-id-keyed block in `AdvancedSection.svelte`,
+    // matched by this setting's id). Live-applied via `settings-applier.ts` →
+    // `setVerboseLogging`. The `developer.*` id prefix is a stable persistence key;
+    // homing the setting under Advanced doesn't touch it.
     id: 'developer.verboseLogging',
     section: ['Advanced'],
-    cardKey: 'settings.advanced.card.logging',
+    cardKey: 'settings.advanced.card.loggingAndDiagnostics',
     labelKey: 'settings.developer.verboseLogging.label',
     descriptionKey: 'settings.developer.verboseLogging.description',
     keywords: ['log', 'debug', 'verbose', 'troubleshoot', 'performance', 'console'],

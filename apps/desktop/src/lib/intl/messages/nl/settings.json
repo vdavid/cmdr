@@ -1888,10 +1888,6 @@
   "@settings.advanced.card.historyAndLimits": {
     "sourceHash": "3e01a24"
   },
-  "settings.advanced.card.logging": "Logboek",
-  "@settings.advanced.card.logging": {
-    "sourceHash": "d3ef01b"
-  },
   "settings.advanced.card.loggingAndDiagnostics": "Logboek en diagnostiek",
   "@settings.advanced.card.loggingAndDiagnostics": {
     "sourceHash": "5d74805"
