@@ -62,9 +62,10 @@ use std::collections::HashSet;
 use std::sync::{Arc, LazyLock, Mutex};
 
 use crate::ignore_poison::IgnorePoison;
+use crate::indexing::lifecycle::state;
+use crate::indexing::lifecycle::state::ROOT_VOLUME_ID;
 use crate::indexing::paths::firmlinks;
 use crate::indexing::paths::path_prefix;
-use crate::indexing::lifecycle::state::ROOT_VOLUME_ID;
 
 /// In-memory set of directory paths with unprocessed index writes in flight.
 ///
@@ -191,7 +192,7 @@ pub(crate) fn get_pending_sizes_for(volume_id: &str) -> Option<Arc<PendingSizes>
     if volume_id == ROOT_VOLUME_ID {
         get_pending_sizes()
     } else {
-        crate::indexing::lifecycle::state::get_instance_pending_sizes(volume_id)
+        state::get_instance_pending_sizes(volume_id)
     }
 }
 

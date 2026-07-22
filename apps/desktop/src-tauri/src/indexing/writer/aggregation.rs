@@ -19,6 +19,7 @@ use crate::pluralize::{pluralize, pluralize_with};
 use super::deferred_repair::DeferredRepairs;
 use super::repair::repair_dir_stats_upward;
 use super::{AccumulatorMaps, AggSource, AggregationProgressEvent, phase_to_str};
+use crate::indexing::reconcile::reconciler;
 
 /// Log severity for the count of rows a full scan skipped on a UNIQUE
 /// `(parent_id, name_folded)` conflict (the `INSERT OR IGNORE` path).
@@ -155,7 +156,7 @@ pub(super) fn handle_compute_partial_aggregates(
             // `writer_loop` wraps each message in `objc2::rc::autoreleasepool` on
             // macOS, so the ObjC-on-background-thread rule is satisfied.
             if let Some(app) = app_handle {
-                crate::indexing::reconcile::reconciler::emit_dir_updated(app, vec!["/".to_string()]);
+                reconciler::emit_dir_updated(app, vec!["/".to_string()]);
             }
         }
         Err(e) => {

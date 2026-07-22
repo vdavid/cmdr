@@ -18,6 +18,8 @@ use crate::indexing::writer::{AggSource, WriteMessage};
 use crate::pluralize::pluralize;
 
 use super::stress_test_helpers::{build_synthetic_tree, check_db_consistency, make_file_entry, setup_writer};
+use crate::indexing::lifecycle::state;
+use crate::indexing::watch::churn_monitor;
 
 // ── Test 1: concurrent scan + events + replay ───────────────────────
 
@@ -402,12 +404,7 @@ fn concurrent_scan_with_enrichment_reads() {
 
                     // Also exercise the individual-paths fallback
                     let fallback_result = pool.with_conn(|conn| {
-                        enrichment::enrich_via_individual_paths_on(
-                            crate::indexing::lifecycle::state::ROOT_VOLUME_ID,
-                            &mut entries,
-                            conn,
-                            1,
-                        );
+                        enrichment::enrich_via_individual_paths_on(state::ROOT_VOLUME_ID, &mut entries, conn, 1);
                     });
                     if let Err(e) = fallback_result {
                         panic!(
@@ -597,12 +594,7 @@ fn live_event_storm_with_concurrent_reads() {
                     }
 
                     let result = pool.with_conn(|conn| {
-                        enrichment::enrich_via_individual_paths_on(
-                            crate::indexing::lifecycle::state::ROOT_VOLUME_ID,
-                            &mut entries,
-                            conn,
-                            1,
-                        );
+                        enrichment::enrich_via_individual_paths_on(state::ROOT_VOLUME_ID, &mut entries, conn, 1);
                     });
                     if let Err(e) = result {
                         panic!(
@@ -877,7 +869,7 @@ fn mixed_storm_reaches_consistent_fixed_point() {
             &conn,
             &writer,
             &mut pending_paths,
-            &mut crate::indexing::watch::churn_monitor::ChurnObserver::disabled(),
+            &mut churn_monitor::ChurnObserver::disabled(),
         );
 
         // Fixed-point quiescence loop: drain the writer, then require BOTH no

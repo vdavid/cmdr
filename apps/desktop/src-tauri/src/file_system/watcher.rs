@@ -22,6 +22,7 @@ use crate::file_system::listing::{
     FileEntry, ModifyResult, get_listing_entries, get_listing_volume_id_and_path, get_single_entry, has_entry,
     insert_entry_sorted, list_directory_core, remove_entry_by_path, update_entry_sorted, update_listing_entries,
 };
+use crate::indexing::paths::firmlinks;
 
 /// Default debounce duration in milliseconds (used if not configured)
 const DEFAULT_DEBOUNCE_MS: u64 = 200;
@@ -197,9 +198,9 @@ pub(super) fn rebase_event_path(event_path: &Path, dir_path: &Path, canonical_di
     if parent == dir_path {
         return Some(event_path.to_path_buf());
     }
-    let parent_normalized = crate::indexing::paths::firmlinks::normalize_path(&parent.to_string_lossy());
-    let dir_normalized = crate::indexing::paths::firmlinks::normalize_path(&dir_path.to_string_lossy());
-    let canonical_normalized = crate::indexing::paths::firmlinks::normalize_path(&canonical_dir.to_string_lossy());
+    let parent_normalized = firmlinks::normalize_path(&parent.to_string_lossy());
+    let dir_normalized = firmlinks::normalize_path(&dir_path.to_string_lossy());
+    let canonical_normalized = firmlinks::normalize_path(&canonical_dir.to_string_lossy());
     if parent_normalized == dir_normalized || parent_normalized == canonical_normalized {
         event_path.file_name().map(|name| dir_path.join(name))
     } else {

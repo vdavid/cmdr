@@ -34,6 +34,7 @@ use notify_debouncer_full::{
 };
 
 use super::ArchiveIndexCache;
+use crate::indexing::paths::firmlinks;
 
 /// Debounce window for archive content events. Matches the listing watcher's
 /// default so a burst of writes during a rewrite collapses into one refresh.
@@ -133,8 +134,8 @@ fn event_path_targets_archive(event_path: &Path, archive_path: &Path) -> bool {
     if event_path == archive_path {
         return true;
     }
-    let event_normalized = crate::indexing::paths::firmlinks::normalize_path(&event_path.to_string_lossy());
-    let archive_normalized = crate::indexing::paths::firmlinks::normalize_path(&archive_path.to_string_lossy());
+    let event_normalized = firmlinks::normalize_path(&event_path.to_string_lossy());
+    let archive_normalized = firmlinks::normalize_path(&archive_path.to_string_lossy());
     event_normalized == archive_normalized
 }
 

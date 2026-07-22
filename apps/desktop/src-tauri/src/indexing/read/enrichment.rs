@@ -13,8 +13,10 @@ use rusqlite::Connection;
 
 use crate::file_system::listing::FileEntry;
 use crate::ignore_poison::IgnorePoison;
-use crate::indexing::paths::firmlinks;
+use crate::indexing::lifecycle::state;
 use crate::indexing::lifecycle::state::ROOT_VOLUME_ID;
+use crate::indexing::paths::firmlinks;
+use crate::indexing::paths::routing;
 use crate::indexing::store::{self, DirStatsById, IndexStore, IndexStoreError};
 use crate::pluralize::pluralize;
 
@@ -101,7 +103,7 @@ pub(crate) fn get_read_pool_for(volume_id: &str) -> Option<Arc<ReadPool>> {
     if volume_id == ROOT_VOLUME_ID {
         get_read_pool()
     } else {
-        crate::indexing::lifecycle::state::get_instance_read_pool(volume_id)
+        state::get_instance_read_pool(volume_id)
     }
 }
 
@@ -120,7 +122,7 @@ pub(crate) fn uninstall_read_pool(volume_id: &str) -> Option<Arc<ReadPool>> {
     if volume_id == ROOT_VOLUME_ID {
         READ_POOL.lock_ignore_poison().take()
     } else {
-        crate::indexing::lifecycle::state::get_instance_read_pool(volume_id)
+        state::get_instance_read_pool(volume_id)
     }
 }
 
@@ -283,7 +285,7 @@ pub fn enrich_entries_with_index_on_volume(volume_id: &str, entries: &mut [FileE
     // applies only the per-volume junk tier: it must NOT exclude its own
     // `/Volumes/X/...` paths (those ARE its index), only junk like a
     // `.Spotlight-V100` a user navigated into.
-    let scope = crate::indexing::paths::routing::exclusion_scope_for_volume(volume_id);
+    let scope = routing::exclusion_scope_for_volume(volume_id);
     if crate::indexing::scanner::should_exclude(&parent_path, &scope) {
         return;
     }
@@ -292,7 +294,7 @@ pub fn enrich_entries_with_index_on_volume(volume_id: &str, entries: &mut [FileE
     // for `root`, mount-relative for an SMB volume (its index `ROOT_ID` is the
     // mount root, so a mount-absolute parent would resolve to nothing). `None`
     // means the parent isn't under this volume's mount root — skip.
-    let index_parent_path = match crate::indexing::paths::routing::index_read_path(volume_id, &parent_path) {
+    let index_parent_path = match routing::index_read_path(volume_id, &parent_path) {
         Some(p) => p,
         None => {
             log::debug!("enrich: parent {parent_path} not under volume '{volume_id}' mount root, skipping");
@@ -449,7 +451,7 @@ pub(crate) fn enrich_via_individual_paths_on(
     let mut id_to_path: Vec<(i64, String)> = Vec::new();
     for entry in entries.iter().filter(|e| e.is_directory && !e.is_symlink) {
         let normalized = firmlinks::normalize_path(&entry.path);
-        let Some(index_path) = crate::indexing::paths::routing::index_read_path(volume_id, &normalized) else {
+        let Some(index_path) = routing::index_read_path(volume_id, &normalized) else {
             continue;
         };
         if let Ok(Some(id)) = store::resolve_path(conn, &index_path) {
@@ -482,7 +484,7 @@ pub(crate) fn enrich_via_individual_paths_on(
     // Apply to entries (key on the same index-rooted path the map was built with)
     for entry in entries.iter_mut().filter(|e| e.is_directory && !e.is_symlink) {
         let normalized = firmlinks::normalize_path(&entry.path);
-        let Some(index_path) = crate::indexing::paths::routing::index_read_path(volume_id, &normalized) else {
+        let Some(index_path) = routing::index_read_path(volume_id, &normalized) else {
             continue;
         };
         if let Some(stats) = stats_map.get(&index_path) {

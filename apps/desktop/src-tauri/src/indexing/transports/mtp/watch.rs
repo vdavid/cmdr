@@ -41,6 +41,7 @@ use std::path::PathBuf;
 use std::sync::{LazyLock, Mutex};
 
 use crate::ignore_poison::IgnorePoison;
+use crate::indexing::lifecycle::state;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 
@@ -159,7 +160,7 @@ impl ResolvedWrite {
 /// `false` for an unindexed/absent volume too (nothing to buffer; the live path
 /// will then no-op on the missing index).
 pub(crate) fn buffer_mtp_handle_if_scanning(volume_id: &str, storage_id: u32, handle: u32) -> bool {
-    let scanning = match crate::indexing::lifecycle::state::get_writer_and_scanning_for(volume_id) {
+    let scanning = match state::get_writer_and_scanning_for(volume_id) {
         Some((_, scanning)) => scanning,
         None => return false,
     };
@@ -182,7 +183,7 @@ pub(crate) fn buffer_mtp_handle_if_scanning(volume_id: &str, storage_id: u32, ha
 /// branch here is a defensive belt-and-braces (e.g. a scan that started between
 /// the gate check and this call).
 pub(crate) fn apply_mtp_added_or_changed(volume_id: &str, upsert: MtpUpsert) {
-    let (writer, scanning) = match crate::indexing::lifecycle::state::get_writer_and_scanning_for(volume_id) {
+    let (writer, scanning) = match state::get_writer_and_scanning_for(volume_id) {
         Some(pair) => pair,
         None => return,
     };
@@ -198,7 +199,7 @@ pub(crate) fn apply_mtp_added_or_changed(volume_id: &str, upsert: MtpUpsert) {
 /// is gone, so there's no path to resolve. BUFFERS during a scan. No-op if the
 /// handle was never indexed (a removal for an object we never saw).
 pub(crate) fn apply_mtp_removed(volume_id: &str, handle: u32) {
-    let (writer, scanning) = match crate::indexing::lifecycle::state::get_writer_and_scanning_for(volume_id) {
+    let (writer, scanning) = match state::get_writer_and_scanning_for(volume_id) {
         Some(pair) => pair,
         None => return,
     };
@@ -344,7 +345,7 @@ pub(crate) fn replay_buffered_mtp_changes(volume_id: &str) -> bool {
         crate::indexing::on_smb_overflow(volume_id); // shared OverflowUnrecoverable ⇒ Stale
         return false;
     }
-    let Some((writer, _)) = crate::indexing::lifecycle::state::get_writer_and_scanning_for(volume_id) else {
+    let Some((writer, _)) = state::get_writer_and_scanning_for(volume_id) else {
         return true;
     };
     let count = buffered.changes.len();

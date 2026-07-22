@@ -6,9 +6,10 @@ use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 
-use crate::indexing::watch::event_loop::live::detect_renames_by_inode;
 use crate::indexing::reconcile::reconciler::EventReconciler;
 use crate::indexing::store::{DirStatsById, ROOT_ID};
+use crate::indexing::watch::churn_monitor;
+use crate::indexing::watch::event_loop::live::detect_renames_by_inode;
 use crate::indexing::writer::IndexWriter;
 
 /// Create a temp dir under CARGO_MANIFEST_DIR (Linux's `should_exclude`
@@ -115,7 +116,7 @@ fn run_live_batch(
             &conn,
             writer,
             &mut pending_paths,
-            &mut crate::indexing::watch::churn_monitor::ChurnObserver::disabled(),
+            &mut churn_monitor::ChurnObserver::disabled(),
         );
     });
     writer.flush_blocking().unwrap();
@@ -711,7 +712,7 @@ fn process_live_batch_rename_preserves_dir_stats_and_old_path_no_ops() {
             &conn,
             &writer,
             &mut pending_paths,
-            &mut crate::indexing::watch::churn_monitor::ChurnObserver::disabled(),
+            &mut churn_monitor::ChurnObserver::disabled(),
         );
     });
     writer.flush_blocking().unwrap();

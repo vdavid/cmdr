@@ -32,6 +32,8 @@ mod maintenance;
 mod repair;
 pub(crate) mod wait_probe;
 
+use crate::indexing::read::pending_sizes;
+use crate::indexing::reconcile::reconciler;
 use aggregation::{
     handle_backfill_missing_dir_stats, handle_compute_all_aggregates, handle_compute_partial_aggregates,
     handle_compute_subtree_aggregates,
@@ -1099,7 +1101,7 @@ fn writer_loop(
         // `get_pending_sizes()` from a non-root writer would wipe root's hourglass
         // and never clear its own. See `indexing/read/pending_sizes.rs`.
         if queue_depth.load(Ordering::Relaxed) == 0
-            && let Some(tracker) = crate::indexing::read::pending_sizes::get_pending_sizes_for(&volume_id)
+            && let Some(tracker) = pending_sizes::get_pending_sizes_for(&volume_id)
         {
             tracker.clear();
         }
@@ -1434,7 +1436,7 @@ fn process_message(
             #[cfg(test)]
             mutation_tracker.record_emit(&paths);
             if let Some(app) = app_handle {
-                crate::indexing::reconcile::reconciler::emit_dir_updated(app, paths);
+                reconciler::emit_dir_updated(app, paths);
             }
         }
         WriteMessage::Shutdown => return true,

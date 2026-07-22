@@ -18,6 +18,7 @@ use crate::indexing::IndexVolumeKind;
 use crate::media_index::backend::fake::FakeVisionBackend;
 
 use super::*;
+use crate::indexing::lifecycle::lifecycle_bus;
 
 /// Whether a LOCAL image at index path `path` is COVERED this pass — the pure
 /// coverage gate (override + importance threshold), unit-testable without a DB or an
@@ -202,7 +203,7 @@ pub fn start(app: &AppHandle) {
     // Subscribe to registrations FIRST (before the sweep) so a volume registering in
     // the gap isn't dropped (late-registering volumes).
     let reg_scheduler = Arc::clone(&scheduler);
-    let mut reg_rx = crate::indexing::lifecycle::lifecycle_bus::subscribe_registrations();
+    let mut reg_rx = lifecycle_bus::subscribe_registrations();
     tauri::async_runtime::spawn(async move {
         loop {
             match reg_rx.recv().await {
@@ -344,23 +345,17 @@ pub(super) fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kin
 
     let sub_scheduler = Arc::clone(&scheduler);
     let sub_volume = volume_id.clone();
-    let mut rx = crate::indexing::lifecycle::lifecycle_bus::subscribe(&volume_id);
+    let mut rx = lifecycle_bus::subscribe(&volume_id);
     tauri::async_runtime::spawn(async move {
         // Observe the retained value EDGE-triggered: `borrow_and_update` marks it
         // seen, so a later `changed()` fires only on a NEW completion, never on a
         // re-read of the retained `Completed`. This is the data-safety property —
         // GC (inside the pass) never runs off a stale retained `Completed`.
-        if matches!(
-            *rx.borrow_and_update(),
-            crate::indexing::lifecycle::lifecycle_bus::ScanState::Completed { .. }
-        ) {
+        if matches!(*rx.borrow_and_update(), lifecycle_bus::ScanState::Completed { .. }) {
             spawn_pass(Arc::clone(&sub_scheduler), sub_volume.clone(), pass_kind);
         }
         while rx.changed().await.is_ok() {
-            if matches!(
-                *rx.borrow_and_update(),
-                crate::indexing::lifecycle::lifecycle_bus::ScanState::Completed { .. }
-            ) {
+            if matches!(*rx.borrow_and_update(), lifecycle_bus::ScanState::Completed { .. }) {
                 spawn_pass(Arc::clone(&sub_scheduler), sub_volume.clone(), pass_kind);
             }
         }

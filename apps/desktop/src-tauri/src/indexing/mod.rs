@@ -39,11 +39,6 @@ pub use read::enrichment::{enrich_entries_with_index, enrich_entries_with_index_
 pub(crate) use read::enrichment::{test_install_root_read_pool, test_read_pool_lock, test_uninstall_root_read_pool};
 
 pub(crate) use lifecycle::failure::IndexFailureSignal;
-pub use read::queries::{
-    get_debug_status, get_dir_stats, get_dir_stats_batch, get_status, get_volume_index_status,
-    get_volume_index_status_for_path, list_dir_children,
-};
-pub use resources::subsystem_stop::register_subsystem_stop_hook;
 pub(crate) use lifecycle::state::ROOT_VOLUME_ID;
 pub(crate) use lifecycle::state::get_freshness;
 #[cfg(test)]
@@ -54,6 +49,11 @@ pub use lifecycle::state::{
     should_auto_start_indexing, start_indexing, stop_indexing, stop_scan, trigger_verification,
 };
 pub(crate) use paths::routing::{IndexPathSpace, index_read_path, volume_id_for_local_path};
+pub use read::queries::{
+    get_debug_status, get_dir_stats, get_dir_stats_batch, get_status, get_volume_index_status,
+    get_volume_index_status_for_path, list_dir_children,
+};
+pub use resources::subsystem_stop::register_subsystem_stop_hook;
 pub use store::IndexFailure;
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]

@@ -26,8 +26,8 @@ use rusqlite::Connection;
 use tauri::AppHandle;
 
 use crate::ignore_poison::IgnorePoison;
-use crate::indexing::paths::firmlinks;
 use crate::indexing::metadata::extract_metadata;
+use crate::indexing::paths::firmlinks;
 use crate::indexing::scanner;
 use crate::indexing::store::{self, IndexStore, IndexStoreError};
 use crate::indexing::watch::watcher::FsChangeEvent;

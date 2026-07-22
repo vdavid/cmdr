@@ -63,6 +63,7 @@ use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 use scan_pace::ScanPacer;
 
 use super::scanner::{ScanProgress, ScanSummary};
+use crate::indexing::reconcile::reconciler;
 
 /// Per-directory listing timeout. Network/USB `list_directory` blocks 30–120 s
 /// on a hung mount; we cap a single round trip so a wedged share fails the walk
@@ -731,8 +732,7 @@ pub(crate) async fn reconcile_volume_via_trait(
 /// ordering invariant — lives once in `reconciler`, shared with the local
 /// reconcile walk, so the two paths can't drift.
 fn finish_reconcile(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -> Result<(), VolumeScanError> {
-    crate::indexing::reconcile::reconciler::finish_reconcile(listed_ids, epoch, writer)
-        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))
+    reconciler::finish_reconcile(listed_ids, epoch, writer).map_err(|e| VolumeScanError::WriterSend(e.to_string()))
 }
 
 /// List one directory over the `Volume` trait, giving up on it after
@@ -832,8 +832,7 @@ fn finish_partial_scan(
     // (b) Stamp every successfully-listed dir (ordering invariant: marks precede
     // the final aggregate; the single in-order writer guarantees it). Shared with
     // the reconcile finish so both paths stamp identically.
-    crate::indexing::reconcile::reconciler::send_marks(listed_ids, epoch, writer)
-        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
+    reconciler::send_marks(listed_ids, epoch, writer).map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
     // (c) Aggregate over what's present.
     writer
         .send(WriteMessage::ComputeAllAggregates {

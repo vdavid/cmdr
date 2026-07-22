@@ -54,6 +54,7 @@ use std::sync::{LazyLock, Mutex};
 use crate::file_system::listing::caching::DirectoryChange;
 use crate::file_system::listing::metadata::FileEntry;
 use crate::ignore_poison::IgnorePoison;
+use crate::indexing::lifecycle::state;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 
@@ -219,7 +220,7 @@ pub(crate) fn apply_smb_change(volume_id: &str, parent_path: &Path, change: &Dir
     // (initializing volumes are mid-scan; absent ones are disabled). Also read
     // whether a full scan is in progress — if so, BUFFER instead of applying, so
     // a change to an already-walked dir isn't lost against the rebuilding index.
-    let (writer, scanning) = match crate::indexing::lifecycle::state::get_writer_and_scanning_for(volume_id) {
+    let (writer, scanning) = match state::get_writer_and_scanning_for(volume_id) {
         Some(pair) => pair,
         None => return,
     };
@@ -277,7 +278,7 @@ pub(crate) fn replay_buffered_changes(volume_id: &str) -> bool {
 
     // The volume is `Running` and no longer scanning by the time we replay, so
     // re-fetch the writer and apply each change against the now-complete index.
-    let Some((writer, _)) = crate::indexing::lifecycle::state::get_writer_and_scanning_for(volume_id) else {
+    let Some((writer, _)) = state::get_writer_and_scanning_for(volume_id) else {
         return true;
     };
     let count = buffered.changes.len();

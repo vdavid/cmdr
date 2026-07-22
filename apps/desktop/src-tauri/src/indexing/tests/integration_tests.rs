@@ -11,12 +11,12 @@
 use crate::file_system::listing::FileEntry;
 use crate::indexing::*;
 use crate::settings::FullDiskAccessChoice;
-use read::enrichment::{READ_POOL_TEST_MUTEX, THREAD_CONN, enrich_via_individual_paths_on, enrich_via_parent_id_on};
-use rusqlite::Connection;
 use lifecycle::state::{
     INDEX_REGISTRY, IndexInstance, IndexPhase, IndexVolumeKind, ROOT_VOLUME_ID, is_initializing_phase,
     try_reserve_initializing_phase,
 };
+use read::enrichment::{READ_POOL_TEST_MUTEX, THREAD_CONN, enrich_via_individual_paths_on, enrich_via_parent_id_on};
+use rusqlite::Connection;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
@@ -727,7 +727,9 @@ fn dir_stats_carry_pending_flag() {
     assert!(!before.recursive_size_pending, "no pending work => flag false");
 
     // A descendant change marks /projects (and its ancestors) as pending.
-    read::pending_sizes::get_pending_sizes().unwrap().mark("/projects/file.txt");
+    read::pending_sizes::get_pending_sizes()
+        .unwrap()
+        .mark("/projects/file.txt");
     let during = get_dir_stats("/projects").expect("get_dir_stats").expect("dir indexed");
     assert!(during.recursive_size_pending, "pending work => flag true");
 

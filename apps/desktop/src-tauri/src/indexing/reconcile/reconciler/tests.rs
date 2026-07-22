@@ -1,4 +1,5 @@
 use super::*;
+use crate::indexing::read::pending_sizes;
 use crate::indexing::store::{IndexStore, ROOT_ID};
 use crate::indexing::stress_test_helpers::check_db_consistency;
 use crate::indexing::watch::watcher::FsEventFlags;
@@ -223,7 +224,7 @@ async fn root_scale_must_scan_routes_to_scanner_without_a_stuck_hold() {
         "a shallow (root-scale) anchor routes to the scanner"
     );
     // ...and took NO reconcile hourglass hold, and queued nothing on the drain.
-    let tracker = crate::indexing::read::pending_sizes::get_pending_sizes_for(ROOT_VOLUME_ID).expect("tracker");
+    let tracker = pending_sizes::get_pending_sizes_for(ROOT_VOLUME_ID).expect("tracker");
     assert!(
         !tracker.is_pending("/"),
         "the scanner path must NOT hold the per-dir hourglass (the stuck-hold bug)"
@@ -319,7 +320,7 @@ async fn deep_must_scan_keeps_the_reconcile_drain() {
         vec![PathBuf::from(deep)],
         "the deep anchor is queued on the reconcile drain"
     );
-    let tracker = crate::indexing::read::pending_sizes::get_pending_sizes_for(ROOT_VOLUME_ID).expect("tracker");
+    let tracker = pending_sizes::get_pending_sizes_for(ROOT_VOLUME_ID).expect("tracker");
     assert!(
         tracker.is_pending(deep),
         "the reconcile drain holds the per-dir hourglass for a deep anchor"

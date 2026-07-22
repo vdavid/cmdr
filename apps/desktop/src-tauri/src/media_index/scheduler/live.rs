@@ -50,6 +50,7 @@ use super::{
     BeginOutcome, EnrichProgressSink, EnrichTerminalGuard, FinishOutcome, MediaEnrichTerminalReason, MediaScheduler,
     NoopProgressSink, TauriEnrichEmitter, gate, load_statuses, local_should_enrich, network,
 };
+use crate::indexing::lifecycle::lifecycle_bus;
 
 /// Above this many enrichable images, a live tick joins the top-right indicator like a
 /// full pass; at or below it the tick stays fully silent (the indicator is for
@@ -231,7 +232,7 @@ impl MediaScheduler {
 /// (accumulating their touched dirs) so a burst of FSEvents collapses to one tick plus at
 /// most one re-run, never a tick per event — mirroring importance's `start_incremental`.
 pub(crate) fn start_live_follow(scheduler: Arc<MediaScheduler>, volume_id: String) {
-    let mut rx = crate::indexing::lifecycle::lifecycle_bus::subscribe_dirs_changed(&volume_id);
+    let mut rx = lifecycle_bus::subscribe_dirs_changed(&volume_id);
     tauri::async_runtime::spawn(async move {
         // The retained initial value is the empty batch; `borrow_and_update` marks it seen
         // so only a real later change triggers.
