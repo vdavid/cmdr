@@ -40,6 +40,11 @@ propagation, and the search-feeding generation bump. Other areas point here.
   partial pass must see empty maps and no-op), never bumps the generation, writes depth ≤ 3 + hot dirs.
 - **`WRITER_GENERATION` bumps only for the search-feeding (root) writer** (`MutationTracker`), so an SMB/MTP write never
   thrashes the root search reload. Meta-only messages (`MarkDirsListed`, `UpdateMeta`, `BumpCurrentEpoch`) never bump it.
+- **Tests here must never assert on process-global state (`WRITER_GENERATION`, `PENDING_SIZES`) across a before/after
+  window.** Every `IndexWriter::spawn()` in the binary is a ROOT writer that bumps the generation and clears the root
+  tracker, so under `cargo test` (threads in one process) a global read flakes and can poison a shared test mutex. Use a
+  per-writer probe (`global_generation_bumps`) or a per-volume `IndexInstance` (`TestInstanceGuard`). See DETAILS §
+  "Test isolation".
 
 Single-writer architecture, honest sizes, the ledger, epochs, accumulation, partial aggregation, the heal, and
 maintenance: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

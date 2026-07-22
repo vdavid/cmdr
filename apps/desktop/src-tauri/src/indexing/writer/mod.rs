@@ -114,6 +114,14 @@ pub(super) struct MutationTracker {
     /// Per-writer count of `DeleteSubtreeById` messages processed (see
     /// [`delete_entry_count`](Self::delete_entry_count)).
     delete_subtree_count: AtomicU64,
+    /// Per-writer count of times THIS writer bumped the global [`WRITER_GENERATION`]
+    /// (i.e. processed a search-feeding mutation). Test-only probe: the
+    /// search-isolation tests assert on this instead of a before/after read of the
+    /// process-global `WRITER_GENERATION`, which flakes under `cargo test` (every
+    /// other spawned ROOT writer bumps the shared generation). See DETAILS §
+    /// "Test isolation".
+    #[cfg(test)]
+    global_generation_bumps: AtomicU64,
     /// Test-only capture of every `EmitDirUpdated` message's paths, in send
     /// order. Lets the rescan completion-emit test assert the rescan-completion
     /// refresh rides the writer AFTER the reconcile's writes, carrying the root
@@ -132,6 +140,8 @@ impl MutationTracker {
             delete_entry_count: AtomicU64::new(0),
             delete_subtree_count: AtomicU64::new(0),
             #[cfg(test)]
+            global_generation_bumps: AtomicU64::new(0),
+            #[cfg(test)]
             emitted_paths: std::sync::Mutex::new(Vec::new()),
         }
     }
@@ -143,6 +153,8 @@ impl MutationTracker {
         self.counter.fetch_add(1, Ordering::Relaxed);
         if self.feeds_search {
             WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
+            #[cfg(test)]
+            self.global_generation_bumps.fetch_add(1, Ordering::Relaxed);
         }
     }
 
@@ -174,6 +186,13 @@ impl MutationTracker {
     #[cfg(test)]
     pub(super) fn count(&self) -> u64 {
         self.counter.load(Ordering::Relaxed)
+    }
+
+    /// How many times THIS writer bumped the global `WRITER_GENERATION` (see the
+    /// [`global_generation_bumps`](Self::global_generation_bumps) field; test-only).
+    #[cfg(test)]
+    pub(super) fn global_generation_bumps(&self) -> u64 {
+        self.global_generation_bumps.load(Ordering::Relaxed)
     }
 
     /// The per-writer `DeleteEntryById` / `DeleteSubtreeById` counts (test-only).
@@ -587,6 +606,14 @@ impl IndexWriter {
     #[cfg(test)]
     pub(crate) fn mutation_count(&self) -> u64 {
         self.mutation_tracker.count()
+    }
+
+    /// How many times THIS writer bumped the global `WRITER_GENERATION` (search-feeding
+    /// mutations). Per-writer, so it's immune to concurrent other-writer bumps — see
+    /// the `MutationTracker::global_generation_bumps` field.
+    #[cfg(test)]
+    pub(crate) fn global_generation_bumps(&self) -> u64 {
+        self.mutation_tracker.global_generation_bumps()
     }
 
     /// Per-writer `(DeleteEntryById, DeleteSubtreeById)` message counts. The

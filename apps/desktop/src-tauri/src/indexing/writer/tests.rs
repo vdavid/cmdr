@@ -4,6 +4,7 @@
 //! live here and are imported by each writer submodule's `tests`. Extracted verbatim
 //! from `writer/mod.rs`'s `tests` module; pure code movement.
 use super::*;
+use crate::indexing::read::pending_sizes::PendingSizes;
 use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
 
 // ── Search-generation gating (D7: search is single-volume / root-only) ──
@@ -11,16 +12,20 @@ use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
 /// A search-feeding (root) writer's mutation bumps BOTH its per-writer
 /// counter and the global `WRITER_GENERATION` the in-memory search index
 /// watches. This is the only writer that may invalidate the search index.
+///
+/// Asserts on the tracker's own `global_generation_bumps` probe, not the
+/// process-global `WRITER_GENERATION`: the per-writer count is immune to other
+/// concurrent writers in the same test binary (see that field's doc), so this
+/// passes under both `cargo test` (threads-in-one-process) and `nextest`.
 #[test]
 fn search_feeding_tracker_bumps_global_generation() {
     let tracker = MutationTracker::new(true);
-    let before = WRITER_GENERATION.load(Ordering::Relaxed);
     tracker.bump();
-    let after = WRITER_GENERATION.load(Ordering::Relaxed);
     assert_eq!(tracker.count(), 1, "the per-writer counter always ticks");
-    assert!(
-        after > before,
-        "a root (search-feeding) mutation must bump the global search generation"
+    assert_eq!(
+        tracker.global_generation_bumps(),
+        1,
+        "a root (search-feeding) mutation bumps the global search generation"
     );
 }
 
@@ -30,21 +35,19 @@ fn search_feeding_tracker_bumps_global_generation() {
 /// feed (else every NAS/phone change-notify event thrashes a full root
 /// search reload). This is the search-isolation guarantee.
 ///
-/// Read the global under a global lock so a concurrent feeding writer in
-/// another test (cargo runs tests as threads in one process) can't bump it
-/// between our two reads and flake the assertion.
+/// Asserts on the tracker's own `global_generation_bumps` probe, not the
+/// process-global `WRITER_GENERATION`: the per-writer count is immune to
+/// concurrent feeding writers in other tests (see that field's doc).
 #[test]
 fn non_search_feeding_tracker_does_not_bump_global_generation() {
-    let _guard = WRITER_GENERATION_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let tracker = MutationTracker::new(false);
-    let before = WRITER_GENERATION.load(Ordering::Relaxed);
     tracker.bump();
     tracker.bump();
     tracker.bump();
-    let after = WRITER_GENERATION.load(Ordering::Relaxed);
     assert_eq!(tracker.count(), 3, "the per-writer counter still ticks for SMB/MTP");
     assert_eq!(
-        before, after,
+        tracker.global_generation_bumps(),
+        0,
         "a non-root (SMB/MTP) mutation must NOT bump the root search generation"
     );
 }
@@ -55,11 +58,9 @@ fn non_search_feeding_tracker_does_not_bump_global_generation() {
 /// `MutationTracker::bump` wiring, not just the tracker in isolation).
 #[test]
 fn spawned_non_feeding_writer_does_not_bump_global_generation() {
-    let _guard = WRITER_GENERATION_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let (db_path, _dir) = setup_db();
     let writer = IndexWriter::spawn_for(&db_path, None, false, "root".to_string()).unwrap();
 
-    let before = WRITER_GENERATION.load(Ordering::Relaxed);
     writer
         .send(WriteMessage::InsertEntriesV2(vec![EntryRow {
             id: 10,
@@ -74,7 +75,6 @@ fn spawned_non_feeding_writer_does_not_bump_global_generation() {
         }]))
         .unwrap();
     writer.flush_blocking().unwrap();
-    let after = WRITER_GENERATION.load(Ordering::Relaxed);
 
     assert_eq!(
         writer.mutation_count(),
@@ -82,7 +82,8 @@ fn spawned_non_feeding_writer_does_not_bump_global_generation() {
         "the SMB/MTP writer did process the mutation (its own counter moved)"
     );
     assert_eq!(
-        before, after,
+        writer.global_generation_bumps(),
+        0,
         "the SMB/MTP writer's mutation must not bump the root search generation"
     );
     writer.shutdown();
@@ -94,7 +95,6 @@ fn spawned_non_feeding_writer_does_not_bump_global_generation() {
 /// It still does its work (the row's `listed_epoch` is stamped).
 #[test]
 fn mark_dirs_listed_does_not_bump_global_generation() {
-    let _guard = WRITER_GENERATION_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let (db_path, _dir) = setup_db();
     // A root (search-feeding) writer — the one that WOULD bump on a mutation.
     let writer = IndexWriter::spawn_for(&db_path, None, true, "root".to_string()).unwrap();
@@ -115,7 +115,9 @@ fn mark_dirs_listed_does_not_bump_global_generation() {
         .unwrap();
     writer.flush_blocking().unwrap();
 
-    let before = WRITER_GENERATION.load(Ordering::Relaxed);
+    // This writer's own bump count after the insert (per-writer, so unaffected by
+    // other concurrent tests). MarkDirsListed must not move it.
+    let before = writer.global_generation_bumps();
     writer
         .send(WriteMessage::MarkDirsListed {
             ids: vec![10],
@@ -123,7 +125,7 @@ fn mark_dirs_listed_does_not_bump_global_generation() {
         })
         .unwrap();
     writer.flush_blocking().unwrap();
-    let after = WRITER_GENERATION.load(Ordering::Relaxed);
+    let after = writer.global_generation_bumps();
 
     assert_eq!(
         before, after,
@@ -146,7 +148,6 @@ fn mark_dirs_listed_does_not_bump_global_generation() {
 /// makes it 2.
 #[test]
 fn bump_current_epoch_persists_and_does_not_bump_global_generation() {
-    let _guard = WRITER_GENERATION_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let (db_path, _dir) = setup_db();
     let writer = IndexWriter::spawn_for(&db_path, None, true, "root".to_string()).unwrap();
 
@@ -157,10 +158,12 @@ fn bump_current_epoch_persists_and_does_not_bump_global_generation() {
         "a fresh DB reads as epoch 1 (absent ⇒ 1)",
     );
 
-    let before = WRITER_GENERATION.load(Ordering::Relaxed);
+    // Per-writer bump count (immune to other concurrent writers): BumpCurrentEpoch,
+    // a meta-only write, must leave it unchanged.
+    let before = writer.global_generation_bumps();
     writer.send(WriteMessage::BumpCurrentEpoch).unwrap();
     writer.flush_blocking().unwrap();
-    let after = WRITER_GENERATION.load(Ordering::Relaxed);
+    let after = writer.global_generation_bumps();
 
     assert_eq!(
         before, after,
@@ -231,11 +234,6 @@ fn root_coverage_epoch_tracks_current_epoch_across_a_continuity_break() {
     writer.shutdown();
 }
 
-/// Serializes the few tests that read the global `WRITER_GENERATION` across
-/// a non-atomic before/after window, so a concurrent feeding-writer test
-/// can't interleave a bump and flake them.
-static WRITER_GENERATION_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
-
 /// Create a temp DB, open the store (to init schema), and return the path + temp dir guard.
 pub(super) fn setup_db() -> (PathBuf, tempfile::TempDir) {
     let dir = tempfile::tempdir().expect("failed to create temp dir");
@@ -262,84 +260,153 @@ fn spawn_and_shutdown() {
     let _ = result;
 }
 
-/// The writer clears the pending-size tracker once its queue drains to empty
-/// (the "size updating" hourglass turns off when the indexer catches up).
+/// Registers a non-root `IndexInstance` for `volume_id` owning a fresh
+/// `PendingSizes`, so the writer's end-of-drain clear hook resolves the tracker
+/// by volume id (`get_pending_sizes_for`) instead of the process-global root
+/// `PENDING_SIZES`. That global is the crux of the isolation bug: EVERY
+/// `IndexWriter::spawn()` in the binary drains a ROOT writer that clears the
+/// shared root tracker, so a test that installs and asserts on the global flakes
+/// under `cargo test` (threads-in-one-process) and, worse, poisons
+/// `PENDING_SIZES_TEST_MUTEX` on the way down, cascading into every other holder.
+/// A per-volume instance keyed by a UNIQUE id sidesteps all of it.
 ///
-/// Guarded by `PENDING_SIZES_TEST_MUTEX`: the tracker is a process-global,
-/// but it's `None` for every test that doesn't install it, so other writers
-/// no-op the clear. Only installers race, and they all hold this mutex.
+/// Removes the registry entry on drop — including on a failed assertion — so a
+/// panicking test never leaks a stray instance into another test's registry
+/// sweep. `freshness: None` keeps it out of the scheduler sweeps' `Fresh` filter
+/// while it's registered.
+struct TestInstanceGuard {
+    volume_id: &'static str,
+    tracker: Arc<PendingSizes>,
+}
+
+impl TestInstanceGuard {
+    fn register(volume_id: &'static str, db_path: &Path) -> Self {
+        use crate::indexing::lifecycle::state::{INDEX_REGISTRY, IndexInstance, IndexPhase, IndexVolumeKind};
+        use crate::indexing::read::enrichment::ReadPool;
+
+        let tracker = Arc::new(PendingSizes::new());
+        INDEX_REGISTRY.lock().unwrap_or_else(|e| e.into_inner()).insert(
+            volume_id.to_string(),
+            IndexInstance {
+                phase: IndexPhase::ShuttingDown,
+                kind: IndexVolumeKind::Smb,
+                read_pool: Arc::new(ReadPool::new(db_path.to_path_buf()).expect("open read pool")),
+                pending_sizes: Arc::clone(&tracker),
+                freshness: Arc::new(std::sync::Mutex::new(None)),
+            },
+        );
+        Self { volume_id, tracker }
+    }
+}
+
+impl Drop for TestInstanceGuard {
+    fn drop(&mut self) {
+        crate::indexing::lifecycle::state::INDEX_REGISTRY
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .remove(self.volume_id);
+    }
+}
+
+/// A NON-root writer draining its queue routes its pending-sizes clear to ITS OWN
+/// volume's tracker (`get_pending_sizes_for(volume_id)`), never the root-only
+/// `get_pending_sizes`. Pre-fix the drain called the root-only lookup from every
+/// volume's writer, so a non-root drain wiped root's hourglass early AND non-root
+/// trackers never cleared.
+///
+/// Register the writer's volume with its own instance (see [`TestInstanceGuard`]),
+/// mark a path, drain, and assert the writer CLEARED that tracker. A root-only
+/// lookup would never reach this non-root instance's tracker, so the mark would
+/// survive and the assertion would fail.
 #[test]
-fn clears_pending_sizes_when_queue_drains() {
-    use crate::indexing::read::pending_sizes::{
-        PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes, get_pending_sizes,
-    };
-    let _guard = PENDING_SIZES_TEST_MUTEX.lock().unwrap();
+fn non_root_writer_drain_clears_its_own_tracker_not_root() {
+    use crate::indexing::lifecycle::state::get_instance_pending_sizes;
 
+    let volume_id = "smb://writer-test-nonroot";
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+    let writer = IndexWriter::spawn_for(&db_path, None, false, volume_id.to_string()).unwrap();
+    let instance = TestInstanceGuard::register(volume_id, &db_path);
 
-    // Install a tracker and mark a path. The writer is idle (no message
-    // processed yet) so it hasn't cleared; the mark is observable.
-    *PENDING_SIZES.lock().unwrap() = Some(Arc::new(PendingSizes::new()));
-    let tracker = get_pending_sizes().expect("tracker installed");
-    tracker.mark("/aaa/bbb/ccc");
-    assert!(tracker.is_pending("/aaa/bbb"), "mark should register before any drain");
+    assert!(
+        Arc::ptr_eq(
+            &get_instance_pending_sizes(volume_id).expect("instance tracker registered"),
+            &instance.tracker
+        ),
+        "the writer's volume resolves to the tracker we registered"
+    );
 
-    // Send a message and let the writer drain. The end-of-iteration hook
-    // clears the tracker once `queue_depth` hits 0. The clear runs a hair
-    // after the flush reply is delivered, so poll for the result (it always
-    // happens within microseconds on an idle writer).
+    instance.tracker.mark("/aaa/bbb/ccc");
+    assert!(
+        instance.tracker.is_pending("/aaa/bbb/ccc"),
+        "mark registers before the drain"
+    );
+
+    // Drain the non-root writer. The end-of-iteration clear hook resolves the
+    // tracker by volume id and clears its transient marks once the queue empties.
     writer.flush_blocking().unwrap();
     let mut cleared = false;
     for _ in 0..200 {
-        if !tracker.is_pending("/aaa/bbb") {
+        if !instance.tracker.is_pending("/aaa/bbb/ccc") {
             cleared = true;
             break;
         }
         thread::sleep(Duration::from_millis(5));
     }
-    assert!(cleared, "tracker should clear once the writer queue drains");
+    assert!(
+        cleared,
+        "the non-root writer's drain cleared ITS OWN tracker (routed by volume id, not root-only)"
+    );
 
-    *PENDING_SIZES.lock().unwrap() = None;
     writer.shutdown();
 }
 
-/// A NON-root writer draining its queue must route its clear to its OWN tracker,
-/// never the root one. Pre-fix the drain called the root-only `get_pending_sizes`
-/// from every volume's writer, so a non-root drain wiped root's hourglass early
-/// (and non-root trackers never cleared). Here the non-root writer has no
-/// registered instance, so its clear resolves to `None` and root's marks + holds
-/// survive its drain.
+/// The writer clears the transient "size updating" marks once its queue drains to
+/// empty (the hourglass turns off when the indexer catches up), but a HELD rescan
+/// root outlives the wholesale clear — the held tier exists precisely so a
+/// seconds-long coalesced rescan's hourglass isn't dropped every time the writer
+/// oscillates empty mid-walk. Pins both halves against `PendingSizes::clear`.
+///
+/// Runs against a per-volume instance (see [`TestInstanceGuard`]) rather than the
+/// process-global root `PENDING_SIZES`, so it's immune to concurrent root writers
+/// clearing the shared tracker (and never poisons `PENDING_SIZES_TEST_MUTEX`).
 #[test]
-fn non_root_writer_drain_does_not_clear_root_tracker() {
-    use crate::indexing::read::pending_sizes::{
-        PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes, get_pending_sizes,
-    };
-    let _guard = PENDING_SIZES_TEST_MUTEX.lock().unwrap();
-
+fn writer_drain_clears_transient_marks_but_preserves_held_roots() {
+    let volume_id = "smb://writer-test-held-roots";
     let (db_path, _dir) = setup_db();
-    // A non-root writer (feeds_search=false, a non-root volume id with no registered
-    // `IndexInstance`, so `get_pending_sizes_for` resolves to `None`).
-    let writer = IndexWriter::spawn_for(&db_path, None, false, "smb://test-nonroot".to_string()).unwrap();
+    let writer = IndexWriter::spawn_for(&db_path, None, false, volume_id.to_string()).unwrap();
+    let instance = TestInstanceGuard::register(volume_id, &db_path);
 
-    // Install and populate the ROOT tracker.
-    *PENDING_SIZES.lock().unwrap() = Some(Arc::new(PendingSizes::new()));
-    let root_tracker = get_pending_sizes().expect("root tracker installed");
-    root_tracker.mark("/aaa/bbb/ccc");
-    root_tracker.hold("/aaa/rescan");
-
-    // Drain the non-root writer. Give the end-of-iteration clear hook time to run.
-    writer.flush_blocking().unwrap();
-    thread::sleep(Duration::from_millis(50));
-
-    // Root's transient mark AND held root are untouched by the non-root drain.
+    // A transient mark (dropped wholesale on drain) and a held rescan root (kept).
+    instance.tracker.mark("/aaa/bbb/ccc");
+    instance.tracker.hold("/aaa/rescan");
     assert!(
-        root_tracker.is_pending("/aaa/bbb/ccc"),
-        "root's transient mark survives"
+        instance.tracker.is_pending("/aaa/bbb/ccc"),
+        "the transient mark registers before the drain"
     );
-    assert!(root_tracker.is_pending("/aaa/rescan"), "root's held rescan survives");
+    assert!(
+        instance.tracker.is_pending("/aaa/rescan"),
+        "the held root registers before the drain"
+    );
 
-    *PENDING_SIZES.lock().unwrap() = None;
+    // Drain to empty: the end-of-iteration hook clears transient marks wholesale.
+    writer.flush_blocking().unwrap();
+    let mut cleared = false;
+    for _ in 0..200 {
+        if !instance.tracker.is_pending("/aaa/bbb/ccc") {
+            cleared = true;
+            break;
+        }
+        thread::sleep(Duration::from_millis(5));
+    }
+    assert!(
+        cleared,
+        "the drain cleared the transient mark once the writer queue emptied"
+    );
+    assert!(
+        instance.tracker.is_pending("/aaa/rescan"),
+        "the held rescan root survives the wholesale clear (the whole point of the held tier)"
+    );
+
     writer.shutdown();
 }
 

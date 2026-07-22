@@ -366,6 +366,28 @@ messages (`MarkDirsListed`, `UpdateMeta`/`DeleteMeta`, `BumpCurrentEpoch`) never
 `tests::{search_feeding_tracker_bumps_global_generation, non_search_feeding_tracker_does_not_bump_global_generation,
 spawned_non_feeding_writer_does_not_bump_global_generation}`.
 
+## Test isolation: never assert on process-global state across a before/after window
+
+`cargo test` runs a crate's tests as threads in ONE process (nextest, which `pnpm check` uses, is process-per-test), so
+any test that reads a process-global before an action and again after, then asserts they're equal/greater, is at the
+mercy of every OTHER test's writers. Two globals here bite:
+
+- **`WRITER_GENERATION`.** Every `IndexWriter::spawn()` in the binary is a ROOT (search-feeding) writer that bumps it, so
+  a `before`/`after` read around one meta-only op flakes (`WRITER_GENERATION` jumps under you). A local test lock can't
+  fix it: the colliding bumpers span the whole crate, not this module. The isolation-independent probe is the per-writer
+  `MutationTracker::global_generation_bumps` (`#[cfg(test)]`, ticked next to the real bump) — the search-generation tests
+  assert on THAT, never on `WRITER_GENERATION` directly.
+- **`PENDING_SIZES`** (root's global tracker). Every root writer's end-of-drain hook CLEARS it, so a test that installs
+  it and asserts a mark survives flakes AND poisons `PENDING_SIZES_TEST_MUTEX`, cascading `.lock().unwrap()` panics into
+  every other holder. The pending-sizes writer tests instead register a per-volume `IndexInstance` under a UNIQUE volume
+  id (`tests::TestInstanceGuard`, which removes the entry on drop, even on a failed assertion, so no stray instance leaks
+  into a registry sweep); the drain routes to that private tracker via `get_pending_sizes_for(volume_id)`, immune to any
+  concurrent root writer. Pinned by `tests::{non_root_writer_drain_clears_its_own_tracker_not_root,
+  writer_drain_clears_transient_marks_but_preserves_held_roots}`.
+
+New writer tests must follow the same rule: use a per-writer probe or a per-volume instance, never a global before/after
+window. (Verified: bare `cargo test --lib indexing::writer` failed ~4 tests/run before, 0/15 after; 2026-07-22.)
+
 ## Maintenance: vacuum and WAL checkpoint (`maintenance.rs`)
 
 Free pages are reclaimed both inline after `TruncateData` and on a 30 s background timer that sends `IncrementalVacuum`
