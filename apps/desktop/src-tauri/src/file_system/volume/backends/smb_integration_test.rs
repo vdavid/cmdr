@@ -614,12 +614,31 @@ async fn smb_integration_space_info() {
 /// The scan-connection pool opens against a live server, serves a scan listing,
 /// and closes cleanly. Asserts the internals the server-free `scan_pool::tests`
 /// can't reach: the pool is installed after `open_scan_pool`, a
-/// `list_directory_for_scan` through it returns the share's contents, and
-/// `close_scan_pool` tears it back down.
+/// `list_directory_for_scan` through it returns the directory's contents, and
+/// `close_scan_pool` tears it back down (falling back to the main session).
+///
+/// Lists a UNIQUE seeded subdirectory, never the shared `public` root, whose
+/// entry count races with the many other tests mutating it in parallel.
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_scan_pool_opens_lists_and_closes() {
     let vol = make_docker_volume().await;
+
+    // Seed a private directory with two known files, isolated from parallel tests.
+    let dir = format!("/{}", test_dir_name());
+    ensure_clean(&vol, &dir).await;
+    vol.create_directory(Path::new(&dir)).await.expect("create test dir");
+    vol.create_file(Path::new(&format!("{dir}/a.txt")), b"hello")
+        .await
+        .expect("create a.txt");
+    vol.create_file(Path::new(&format!("{dir}/b.txt")), b"hi")
+        .await
+        .expect("create b.txt");
+
+    let names = |mut entries: Vec<crate::file_system::listing::FileEntry>| -> Vec<String> {
+        entries.sort_by(|a, b| a.name.cmp(&b.name));
+        entries.into_iter().map(|e| e.name).collect::<Vec<_>>()
+    };
 
     assert!(vol.scan_pool.read().await.is_none(), "no pool before a scan");
     vol.open_scan_pool().await;
@@ -628,22 +647,19 @@ async fn smb_integration_scan_pool_opens_lists_and_closes() {
         "open_scan_pool installs a pool on a connected volume"
     );
 
-    // A scan listing of the share root goes through the pool and returns entries
-    // (the `public` share always has content). This drives the pool acquire +
+    // A scan listing of the seeded dir goes through the pool and returns exactly
+    // the two files, matching the main-session listing. Drives the pool acquire +
     // listing path end to end.
-    let root_via_pool = vol
-        .list_directory_for_scan_impl(Path::new("/"))
+    let via_pool = vol
+        .list_directory_for_scan_impl(Path::new(&dir))
         .await
-        .expect("listing the share root through the pool should succeed");
-    let root_via_main = vol
-        .list_directory_impl(Path::new("/"))
+        .expect("listing the seeded dir through the pool should succeed");
+    let via_main = vol
+        .list_directory_impl(Path::new(&dir))
         .await
-        .expect("listing the share root through the main session should succeed");
-    assert_eq!(
-        root_via_pool.len(),
-        root_via_main.len(),
-        "the pool listing matches the main-session listing"
-    );
+        .expect("listing the seeded dir through the main session should succeed");
+    assert_eq!(names(via_pool.clone()), vec!["a.txt", "b.txt"], "pool sees both files");
+    assert_eq!(names(via_pool), names(via_main), "pool listing matches the main session");
 
     vol.close_scan_pool().await;
     assert!(
@@ -652,8 +668,12 @@ async fn smb_integration_scan_pool_opens_lists_and_closes() {
     );
 
     // With the pool closed, a scan listing falls back to the main session and
-    // still works.
-    vol.list_directory_for_scan_impl(Path::new("/"))
+    // still returns the same contents.
+    let via_fallback = vol
+        .list_directory_for_scan_impl(Path::new(&dir))
         .await
         .expect("scan listing falls back to the main session once the pool is closed");
+    assert_eq!(names(via_fallback), vec!["a.txt", "b.txt"], "fallback still lists the files");
+
+    ensure_clean(&vol, &dir).await;
 }
