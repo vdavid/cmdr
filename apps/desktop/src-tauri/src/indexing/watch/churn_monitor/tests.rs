@@ -239,7 +239,7 @@ fn every_live_loop_owns_a_real_churn_observer() {
         }
     }
 
-    let event_loop = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/indexing/event_loop");
+    let event_loop = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/indexing/watch/event_loop");
     let mut sources: Vec<(String, std::path::PathBuf)> = Vec::new();
     collect(&event_loop, "", &mut sources);
 

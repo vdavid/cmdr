@@ -110,7 +110,7 @@ pub(super) enum ThrottleOutcome<P> {
 /// the live path instantiates `P = PendingUpsert` (`reconciler.rs`).
 ///
 /// Visible to the whole `indexing` module because it appears in the
-/// `pub(in crate::indexing)` `process_fs_event` signature (its `event_loop.rs`
+/// `pub(in crate::indexing)` `process_fs_event` signature (its `watch/event_loop.rs`
 /// callers pass `None`); the methods stay `pub(super)` (reconciler-only).
 pub(in crate::indexing) struct Throttle<P> {
     window: Duration,

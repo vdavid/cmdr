@@ -20,8 +20,8 @@ use std::time::{Duration, Instant};
 
 use rusqlite::Connection;
 
-use super::IndexPathSpace;
-use super::store::{self, IndexStore};
+use crate::indexing::IndexPathSpace;
+use crate::indexing::store::{self, IndexStore};
 use super::watcher;
 use crate::pluralize::{grouped, pluralize_grouped};
 
@@ -48,25 +48,25 @@ pub(in crate::indexing) use live::process_live_batch;
 /// windows reduce allocations during event storms (for example, multiple
 /// agents writing simultaneously) at the cost of slightly delayed UI
 /// updates.
-pub(super) const LIVE_FLUSH_INTERVAL_MS: u64 = 1000;
+pub(crate) const LIVE_FLUSH_INTERVAL_MS: u64 = 1000;
 
 /// How often the live loop sweeps the reconciler's per-file throttle for keys
 /// whose window elapsed, applying their last-seen size. Runs on the existing
 /// `tokio::select!` (no new thread). ~1 s keeps trailing flushes prompt relative
 /// to the 60 s window while staying negligible work when idle.
-pub(super) const THROTTLE_SWEEP_INTERVAL_MS: u64 = 1000;
+pub(crate) const THROTTLE_SWEEP_INTERVAL_MS: u64 = 1000;
 
 /// Threshold for detecting a journal gap. If the first event ID received is
 /// more than this many IDs ahead of the stored `since_event_id`, we consider
 /// the journal unavailable and fall back to a full scan.
-pub(super) const JOURNAL_GAP_THRESHOLD: u64 = 10_000_000;
+pub(crate) const JOURNAL_GAP_THRESHOLD: u64 = 10_000_000;
 
 /// Healthy watcher→loop queue depth. The channel is UNBOUNDED (Fix 2: a slow
 /// drain must never backpressure FSEvents/inotify into dropping events, which used
 /// to cascade into a forced full scan), so this is NOT a capacity — it's the
 /// "we're falling behind" watermark. Above it the loop LOGS (rate-limited); it
 /// never drops. Steady state sits well under it (each event is ~300 B).
-pub(super) const INGESTION_BACKLOG_WARN: usize = 20_000;
+pub(crate) const INGESTION_BACKLOG_WARN: usize = 20_000;
 
 /// RAM-guard hard cap on the unbounded watcher→loop queue. Past it the loop is
 /// hopelessly behind, so we DELIBERATELY fall back to a full scan — our decision,
@@ -74,18 +74,18 @@ pub(super) const INGESTION_BACKLOG_WARN: usize = 20_000;
 /// dropped events → forced scan" with "we're behind → chosen scan". At ~300 B/event
 /// this is ~1.5 GB: far above the healthy <20K, comfortably below the global 16 GB
 /// memory watchdog (`resources/memory_watchdog.rs`) that stops all indexing.
-pub(super) const INGESTION_HARD_CAP: usize = 5_000_000;
+pub(crate) const INGESTION_HARD_CAP: usize = 5_000_000;
 
 /// Minimum gap between backlog reports, so a sustained backlog logs at a steady
 /// cadence rather than every flush tick. Also the sampling interval [`BacklogTracker`]
 /// measures the drain trend over. Shared by both loops.
-pub(super) const INGESTION_WARN_INTERVAL: Duration = Duration::from_secs(5);
+pub(crate) const INGESTION_WARN_INTERVAL: Duration = Duration::from_secs(5);
 
 /// How much pressure the unbounded ingestion queue is under, derived from its
 /// depth. Pure so the thresholds — and the contract that the OLD 20K overflow no
 /// longer forces a scan — are unit-tested.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum IngestionPressure {
+pub(crate) enum IngestionPressure {
     /// Draining fine; do nothing.
     Healthy,
     /// Above the healthy watermark: report the backlog (rate-limited, and warn only
@@ -96,7 +96,7 @@ pub(super) enum IngestionPressure {
 }
 
 /// Classify the unbounded ingestion queue's depth into an [`IngestionPressure`].
-pub(super) fn classify_ingestion_pressure(queue_len: usize) -> IngestionPressure {
+pub(crate) fn classify_ingestion_pressure(queue_len: usize) -> IngestionPressure {
     if queue_len > INGESTION_HARD_CAP {
         IngestionPressure::Overflowing
     } else if queue_len > INGESTION_BACKLOG_WARN {
@@ -119,25 +119,25 @@ pub(super) fn classify_ingestion_pressure(queue_len: usize) -> IngestionPressure
 /// each is compared against the previous one. [`reset`](Self::reset) ends the
 /// episode when the queue drops back to healthy, so a later backlog is never
 /// compared against a depth from minutes ago.
-pub(super) struct BacklogTracker {
+pub(crate) struct BacklogTracker {
     /// When the last report went out, and the depth it saw.
     last: Option<(Instant, usize)>,
 }
 
 impl BacklogTracker {
-    pub(super) fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self { last: None }
     }
 
     /// Forget the current episode. Called when the queue is healthy again.
-    pub(super) fn reset(&mut self) {
+    pub(crate) fn reset(&mut self) {
         self.last = None;
     }
 
     /// Take a sample. Returns `(warn, message)` when it's time to report, `None`
     /// while the previous report is still inside the interval. Pure apart from its
     /// own bookkeeping, so both the policy and the wording are unit-tested.
-    pub(super) fn sample(&mut self, label: &str, queued: usize, now: Instant) -> Option<(bool, String)> {
+    pub(crate) fn sample(&mut self, label: &str, queued: usize, now: Instant) -> Option<(bool, String)> {
         let previous = match self.last {
             Some((at, _)) if now.duration_since(at) < INGESTION_WARN_INTERVAL => return None,
             other => other,
@@ -175,7 +175,7 @@ impl BacklogTracker {
 
 /// Sample the backlog and log the report if one is due. A draining backlog is
 /// progress, so it goes out at `info`; only a queue that isn't draining warns.
-pub(super) fn report_backlog(tracker: &mut BacklogTracker, label: &str, queued: usize) {
+pub(crate) fn report_backlog(tracker: &mut BacklogTracker, label: &str, queued: usize) {
     if let Some((warn, line)) = tracker.sample(label, queued, Instant::now()) {
         if warn {
             log::warn!("{line}");
@@ -200,21 +200,21 @@ fn eta_phrase(remaining: usize, drained: usize, elapsed_secs: f64) -> String {
 }
 
 /// Configuration for a replay event loop.
-pub(super) struct ReplayConfig {
-    pub(super) volume_id: String,
+pub(crate) struct ReplayConfig {
+    pub(crate) volume_id: String,
     /// The volume's path space. Journal replay only runs for a `has_event_journal()`
     /// volume (the boot disk today), so this is `root` in practice; it's threaded
     /// rather than hardcoded so the replay resolves in the same space as the live
     /// loop that follows it, and it's ready if a journaled mount-rooted kind appears.
-    pub(super) space: IndexPathSpace,
-    pub(super) since_event_id: u64,
-    pub(super) estimated_total: Option<u64>,
+    pub(crate) space: IndexPathSpace,
+    pub(crate) since_event_id: u64,
+    pub(crate) estimated_total: Option<u64>,
     /// Whether to run the one-shot ledger heal after replay's initial phase.
     /// Set by `resume_or_scan` when this DB has never healed. Replay itself runs
     /// no full aggregate (only backfill), so it enqueues the heal's own
     /// `ComputeAllAggregates { source: Sql }` after the entries table is fully
     /// replayed. See `indexing/DETAILS.md` § "The dir_stats ledger".
-    pub(super) heal_after_replay: bool,
+    pub(crate) heal_after_replay: bool,
 }
 
 // ── Shared helpers ───────────────────────────────────────────────────
@@ -223,7 +223,7 @@ pub(super) struct ReplayConfig {
 /// most significant flags. Priority: `must_scan_sub_dirs` always wins,
 /// then `item_removed`, then `item_created`, then `item_modified`.
 /// The higher `event_id` is always kept.
-pub(super) fn merge_fs_events(
+pub(crate) fn merge_fs_events(
     existing: &watcher::FsChangeEvent,
     incoming: &watcher::FsChangeEvent,
 ) -> watcher::FsChangeEvent {
@@ -283,7 +283,7 @@ pub(super) fn merge_fs_events(
 /// and replay event loops at startup. With `busy_timeout` already set in
 /// `apply_pragmas` the first attempt almost always succeeds; the retry is
 /// here so a one-off open error can't permanently disable live indexing.
-pub(super) async fn open_read_conn_with_retry(db_path: &Path) -> Result<Connection, store::IndexStoreError> {
+pub(crate) async fn open_read_conn_with_retry(db_path: &Path) -> Result<Connection, store::IndexStoreError> {
     match IndexStore::open_read_connection(db_path) {
         Ok(c) => Ok(c),
         Err(e) => {

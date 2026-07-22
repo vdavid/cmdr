@@ -19,7 +19,7 @@
 //! All mutation methods short-circuit virtual paths via `path::is_virtual`
 //! and return `VolumeError::NotSupported`. Git mutations happen out-of-band
 //! (the user runs `git` in a terminal) and are surfaced through the
-//! `.git`-watcher pipeline (`watcher.rs`).
+//! `.git`-watcher pipeline (`watch/watcher.rs`).
 //!
 //! ## Honest blob streaming
 //!

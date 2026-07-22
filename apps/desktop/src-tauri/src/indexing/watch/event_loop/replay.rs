@@ -15,17 +15,17 @@ use rusqlite::Connection;
 use tauri::AppHandle;
 use tauri_specta::Event;
 
-use super::super::ActivityPhase;
-use super::super::DEBUG_STATS;
-use super::super::IndexPathSpace;
+use crate::indexing::ActivityPhase;
+use crate::indexing::DEBUG_STATS;
+use crate::indexing::IndexPathSpace;
 use super::super::churn_monitor::ChurnObserver;
-use super::super::events::{
+use crate::indexing::events::{
     IndexReplayCompleteEvent, IndexReplayProgressEvent, RescanReason, emit_rescan_notification, set_phase_for,
 };
-use super::super::lifecycle_bus;
-use super::super::reconciler::{self, EventReconciler};
+use crate::indexing::lifecycle_bus;
+use crate::indexing::reconciler::{self, EventReconciler};
 use super::super::watcher;
-use super::super::writer::{IndexWriter, WriteMessage};
+use crate::indexing::writer::{IndexWriter, WriteMessage};
 use super::live::{mark_pending_and_drain, process_live_batch};
 use super::verification::run_background_verification;
 use super::{

@@ -877,7 +877,7 @@ fn mixed_storm_reaches_consistent_fixed_point() {
             &conn,
             &writer,
             &mut pending_paths,
-            &mut crate::indexing::churn_monitor::ChurnObserver::disabled(),
+            &mut crate::indexing::watch::churn_monitor::ChurnObserver::disabled(),
         );
 
         // Fixed-point quiescence loop: drain the writer, then require BOTH no

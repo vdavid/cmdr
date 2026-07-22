@@ -9,10 +9,11 @@
 //! `IndexManager` + `ReadPool` bootstrap) lives in [`state`].
 
 pub mod aggregator;
-mod churn_monitor;
-mod event_loop;
 mod events;
 mod failure;
+pub(crate) mod watch;
+// Public API surface; real homes are watch/watcher.rs and watch/event_loop.rs (churn_monitor is reached via watch::).
+pub(crate) use watch::{event_loop, watcher};
 pub(crate) mod read;
 // Public API surface; real homes are read/expected_totals.rs, read/enrichment.rs, read/pending_sizes.rs.
 pub use read::expected_totals;
@@ -46,7 +47,6 @@ mod smb_index;
 mod smb_watch;
 mod verifier;
 pub(crate) mod network_scanner;
-pub(crate) mod watcher;
 
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
 #[path = "smb_scan_integration_test.rs"]

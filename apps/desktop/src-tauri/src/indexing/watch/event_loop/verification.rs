@@ -11,16 +11,16 @@ use std::time::Instant;
 
 use tauri::AppHandle;
 
-use super::super::DEBUG_STATS;
-use super::super::ROOT_VOLUME_ID;
-use super::super::enrichment::get_read_pool;
-use super::super::firmlinks;
-use super::super::lifecycle_bus;
-use super::super::metadata;
-use super::super::reconciler;
-use super::super::scanner;
-use super::super::store::{self, IndexStore};
-use super::super::writer::{IndexWriter, WriteMessage};
+use crate::indexing::DEBUG_STATS;
+use crate::indexing::ROOT_VOLUME_ID;
+use crate::indexing::enrichment::get_read_pool;
+use crate::indexing::firmlinks;
+use crate::indexing::lifecycle_bus;
+use crate::indexing::metadata;
+use crate::indexing::reconciler;
+use crate::indexing::scanner;
+use crate::indexing::store::{self, IndexStore};
+use crate::indexing::writer::{IndexWriter, WriteMessage};
 use super::verify_guard::{self, VerifyVerdict};
 use crate::pluralize::{pluralize, pluralize_with};
 

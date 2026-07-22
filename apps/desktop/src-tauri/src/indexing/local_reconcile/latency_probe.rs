@@ -10,7 +10,7 @@
 //! returns `None` and the reader's `Option` stays `None`, so a normal run pays
 //! nothing.
 //!
-//! Shape follows `churn_monitor.rs`: pure aggregation with the clock injected per
+//! Shape follows `watch/churn_monitor.rs`: pure aggregation with the clock injected per
 //! call, so the whole engine is unit-testable without a filesystem or a running
 //! app.
 

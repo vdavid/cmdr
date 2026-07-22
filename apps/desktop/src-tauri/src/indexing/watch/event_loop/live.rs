@@ -15,16 +15,16 @@ use std::time::{Duration, Instant};
 use rusqlite::Connection;
 use tauri::AppHandle;
 
-use super::super::DEBUG_STATS;
-use super::super::IndexPathSpace;
+use crate::indexing::DEBUG_STATS;
+use crate::indexing::IndexPathSpace;
 use super::super::churn_monitor::ChurnObserver;
-use super::super::events::{RescanReason, emit_rescan_notification};
-use super::super::metadata;
+use crate::indexing::events::{RescanReason, emit_rescan_notification};
+use crate::indexing::metadata;
 use crate::indexing::paths::path_prefix;
-use super::super::reconciler::EventReconciler;
-use super::super::store::{self, IndexStore};
+use crate::indexing::reconciler::EventReconciler;
+use crate::indexing::store::{self, IndexStore};
 use super::super::watcher;
-use super::super::writer::{IndexWriter, WriteMessage};
+use crate::indexing::writer::{IndexWriter, WriteMessage};
 use super::{
     BacklogTracker, IngestionPressure, LIVE_FLUSH_INTERVAL_MS, THROTTLE_SWEEP_INTERVAL_MS, classify_ingestion_pressure,
     merge_fs_events, open_read_conn_with_retry, report_backlog, storm,
@@ -124,7 +124,7 @@ pub(in crate::indexing) async fn run_live_event_loop(
     // reads as progress and only a stuck queue warns.
     let mut backlog = BacklogTracker::new();
 
-    // Per-subtree churn observability (`indexing/churn_monitor.rs`): inert (and
+    // Per-subtree churn observability (`indexing/watch/churn_monitor.rs`): inert (and
     // free) unless `CMDR_CHURN_SPIKE` is set. `process_live_batch` does the
     // recording; this only owns the state and feeds it the raw-event counter the
     // loop already maintains.
