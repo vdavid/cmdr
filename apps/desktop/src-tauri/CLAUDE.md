@@ -31,27 +31,24 @@ The Tauri 2 + Rust backend. Subsystem must-knows live in each module's colocated
 
 - ❌ Tauri APIs fail silently without permission. When you call a new Tauri API from a window (`setMinSize`, `setTitle`,
   plugin commands, anything new), add the matching permission to that window's capability file in
-  `src-tauri/capabilities/{default,settings,viewer}.json`, and `await` the call in try/catch so failures surface. See
-  [`capabilities/CLAUDE.md`](capabilities/CLAUDE.md).
-- ❌ Don't read TCC-protected paths (`~/Downloads`, `~/Documents`, iCloud, etc.) or call `NSWorkspace` icon /
-  LaunchServices APIs at launch without the FDA gate: they stack macOS TCC popups during onboarding (we hit 5-10 once).
-  Use `crate::fda_gate::is_fda_pending_runtime()`. See `src/fda_gate.rs` and
-  [`lib/onboarding/CLAUDE.md`](../src/lib/onboarding/CLAUDE.md).
+  `src-tauri/capabilities/{default,settings,viewer}.json`, and `await` the call in try/catch so failures surface. More
+  [here](capabilities/CLAUDE.md).
+- Check the FDA gate before reading TCC-protected paths (`~/Downloads`, `~/Documents`, etc.) or calling `NSWorkspace` icon /
+  LaunchServices APIs at launch. Such access stack macOS TCC popups during onboarding, bad UX. [Details](../src/lib/onboarding/CLAUDE.md)
 
 ## Platform constraints (filesystem and IPC)
 
 These cut across modules; all existing commands follow them, so apply them to new code too.
 
-- **Synchronous `#[tauri::command]` functions block the IPC handler thread.** If one hangs (a syscall on a dead network
-  mount), every later IPC call queues behind it and the app looks frozen. So every filesystem-touching command is
-  `async` with `blocking_with_timeout` (2 s default). New filesystem commands MUST follow this; see `commands/`.
+- **Sync `#[tauri::command]` funcs block the IPC handler thread.** If one hangs, app looks frozen. → Every FS-touching
+  command must be `async` with `blocking_with_timeout` (2s default). New FS commands MUST follow this. See `commands/`.
 - **Network-mount syscalls block indefinitely.** `statfs`, `readdir`, `metadata()`, NSURL resource queries, and
-  `realpath` can wait 30-120 s on slow/hung mounts. Wrap every one in `blocking_with_timeout`; see
-  [`commands/CLAUDE.md`](src/commands/CLAUDE.md) for the timeout tiers.
-- **Two-layer timeout defense** on critical paths (volume switching, path resolution, space queries): the backend
-  `blocking_with_timeout` (2-15 s) plus a frontend `withTimeout` (500 ms-3 s) that races the IPC call and returns a
-  fallback. Apply both when adding IPC on a slow path.
+  `realpath` can wait 30-120 s on slow/hung mounts. Wrap every one in `blocking_with_timeout`; see timeout tiers
+  [here](src/commands/CLAUDE.md).
+- Use **two-layer timeout defense** on critical paths (volume switching, path resolution, space queries): BE:
+  `blocking_with_timeout` (2-15 s) + FE `withTimeout` (500 ms-3 s) that races the IPC call and returns a
+  fallback.
 - **Never use rayon for calls into macOS frameworks** (NSURL/FileProvider/NSWorkspace): the synchronous XPC round-trips
-  can blow rayon's 2 MB worker stack. Use dedicated 8 MB-stack OS threads. See `file_system/CLAUDE.md` for the pattern.
+  can blow rayon's 2 MB worker stack. Use dedicated 8 MB-stack OS threads. See pattern [here](src/file_system/CLAUDE.md).
 
 Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
