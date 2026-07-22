@@ -214,7 +214,7 @@ pub async fn start_indexing_for_smb(app: AppHandle, volume_id: String) -> Result
     // A new external index DB just came online (or resumed): cap accumulation by
     // evicting the least-recently-used OFFLINE external DBs. Safe — never touches
     // a registered/live volume, and this one is now registered. See `retention`.
-    super::retention::enforce_external_index_cap(&app);
+    super::resources::retention::enforce_external_index_cap(&app);
     Ok(())
 }
 

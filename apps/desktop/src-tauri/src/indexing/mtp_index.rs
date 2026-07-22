@@ -51,7 +51,7 @@ pub(crate) fn start_indexing_for_mtp(app: AppHandle, volume_id: String) -> Resul
     // A new external index DB just came online: cap accumulation by evicting the
     // least-recently-used OFFLINE external DBs. Safe — never touches a registered
     // volume, and this one is now registered. See `retention`.
-    super::retention::enforce_external_index_cap(&app);
+    super::resources::retention::enforce_external_index_cap(&app);
     Ok(())
 }
 

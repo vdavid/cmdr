@@ -28,12 +28,11 @@ mod routing;
 mod scan_completion;
 mod state;
 pub mod store;
-pub mod subsystem_stop;
+pub(crate) mod resources;
 pub mod writer;
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod local_external_index;
-mod memory_watchdog;
 mod metadata;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod mtp_index;
@@ -42,7 +41,6 @@ mod mtp_watch;
 mod path_prefix;
 mod pending_sizes;
 mod reconciler;
-mod retention;
 pub(crate) mod scanner;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod smb_index;
@@ -98,7 +96,7 @@ pub use state::{
     should_auto_start_indexing, start_indexing, stop_indexing, stop_scan, trigger_verification,
 };
 pub use store::IndexFailure;
-pub use subsystem_stop::register_subsystem_stop_hook;
+pub use resources::subsystem_stop::register_subsystem_stop_hook;
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use smb_index::SmbIndexGateReason;

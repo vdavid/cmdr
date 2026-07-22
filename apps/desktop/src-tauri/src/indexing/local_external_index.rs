@@ -167,7 +167,7 @@ pub(crate) async fn start_indexing_for_local_external(
             // accumulation by evicting the least-recently-used OFFLINE external
             // DBs. Safe — never touches a registered/live volume, and this one is
             // now registered. See `retention`.
-            super::retention::enforce_external_index_cap(&app);
+            super::resources::retention::enforce_external_index_cap(&app);
             Ok(LocalExternalEnable::Started)
         }
     }

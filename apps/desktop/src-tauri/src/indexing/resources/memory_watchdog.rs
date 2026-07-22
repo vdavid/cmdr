@@ -116,7 +116,7 @@ async fn run_watchdog(app: tauri::AppHandle) {
             // `root`. Scans run in parallel (the wire, not RAM, is the
             // bottleneck), so the safety net is one process-wide stop rather than
             // per-volume serialization (plan rabbit hole #8).
-            super::state::stop_all_indexing();
+            crate::indexing::state::stop_all_indexing();
             return;
         }
 
@@ -208,7 +208,7 @@ impl MemorySnapshot {
             heap_reserved: heap.reserved,
             zone_count: heap.zone_count,
             largest_zone: heap.largest_zone,
-            live_event_count: super::DEBUG_STATS.live_event_count.load(Ordering::Relaxed),
+            live_event_count: crate::indexing::DEBUG_STATS.live_event_count.load(Ordering::Relaxed),
         })
     }
 
@@ -256,8 +256,8 @@ impl MemorySnapshot {
         snapshot: Option<&MemorySnapshot>,
         phys_footprint: u64,
         action: &str,
-    ) -> super::IndexMemoryWarningEvent {
-        super::IndexMemoryWarningEvent {
+    ) -> crate::indexing::IndexMemoryWarningEvent {
+        crate::indexing::IndexMemoryWarningEvent {
             resident_gb: snapshot.map(|s| s.resident_size).unwrap_or(phys_footprint) / (1024 * 1024 * 1024),
             phys_footprint_gb: phys_footprint / (1024 * 1024 * 1024),
             heap_mb: snapshot.map(|s| s.heap_in_use).unwrap_or(0) / (1024 * 1024),

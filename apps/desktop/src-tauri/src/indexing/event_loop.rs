@@ -73,7 +73,7 @@ pub(super) const INGESTION_BACKLOG_WARN: usize = 20_000;
 /// at a far higher threshold than the old bounded-channel overflow, replacing "OS
 /// dropped events → forced scan" with "we're behind → chosen scan". At ~300 B/event
 /// this is ~1.5 GB: far above the healthy <20K, comfortably below the global 16 GB
-/// memory watchdog (`memory_watchdog.rs`) that stops all indexing.
+/// memory watchdog (`resources/memory_watchdog.rs`) that stops all indexing.
 pub(super) const INGESTION_HARD_CAP: usize = 5_000_000;
 
 /// Minimum gap between backlog reports, so a sustained backlog logs at a steady

@@ -34,7 +34,7 @@ use std::time::SystemTime;
 
 use tauri::AppHandle;
 
-use super::state::ROOT_VOLUME_ID;
+use crate::indexing::state::ROOT_VOLUME_ID;
 
 /// Maximum number of external (non-root) index DBs to retain. Beyond this, the
 /// least-recently-used offline ones are evicted. Sized generously: a heavy user
@@ -179,7 +179,7 @@ pub(crate) fn enforce_external_index_cap(app: &AppHandle) {
         }
     };
     let candidates = enumerate_external_index_dbs(&data_dir);
-    let registered = super::state::all_registered_volume_ids();
+    let registered = crate::indexing::state::all_registered_volume_ids();
     let evictions = select_evictions(&candidates, &registered, MAX_EXTERNAL_INDEX_DBS);
 
     if evictions.is_empty() {

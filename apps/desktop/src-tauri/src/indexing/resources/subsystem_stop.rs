@@ -1,7 +1,7 @@
 //! A tiny registry of subsystem stop hooks the global memory watchdog runs
 //! ALONGSIDE `stop_all_indexing`.
 //!
-//! The 16 GB resident-memory watchdog (`memory_watchdog.rs`) measures the WHOLE
+//! The 16 GB resident-memory watchdog (`resources/memory_watchdog.rs`) measures the WHOLE
 //! process but historically only stopped indexing — `stop_all_indexing` "does not
 //! know about other subsystems". A subsystem that shares the same resident pool
 //! (media_index enrichment, which decodes HEIC/RAW and can spike RAM) must yield to

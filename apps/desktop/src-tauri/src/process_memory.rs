@@ -9,7 +9,7 @@
 //! `IOAccelerator` region can be multiple GB) that are NOT real memory pressure.
 //! `phys_footprint` is the metric macOS itself keys memory pressure and jetsam
 //! on, and it's what Activity Monitor's "Memory" column shows. See
-//! [`crate::indexing::memory_watchdog`] for the incident that established this.
+//! [`crate::indexing::resources::memory_watchdog`] for the incident that established this.
 //!
 //! The per-read cost is one `task_info` syscall (single-digit microseconds, no
 //! allocation), so callers can read it per watchdog tick or per log line freely.

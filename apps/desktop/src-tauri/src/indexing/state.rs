@@ -636,7 +636,7 @@ fn start_indexing_for(
     inodes_trustworthy: bool,
 ) -> Result<(), String> {
     log::info!("start_indexing: begin for '{volume_id}' ({kind:?})");
-    super::memory_watchdog::start(app.clone());
+    super::resources::memory_watchdog::start(app.clone());
 
     // Lock-first reservation, per volume id. We open the init store and the
     // read-path handles, then atomically claim the `(absent) -> Initializing`
@@ -1158,7 +1158,7 @@ pub(crate) fn stop_all_indexing() {
     }
     // Tell shared-resident-pool subsystems (media_index enrichment) to yield to the
     // SAME 16 GB ceiling, rather than a second independent budget over one pool.
-    super::subsystem_stop::run_subsystem_stop_hooks();
+    super::resources::subsystem_stop::run_subsystem_stop_hooks();
 }
 
 /// The typed kind of a registered volume, or `None` if it has no index instance.
