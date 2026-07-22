@@ -62,7 +62,6 @@ function captureVolumeSpaceListener(): () => VolumeSpaceListener {
     return Promise.resolve(() => {})
   })
   return () => {
-     
     if (!captured) throw new Error('Component did not register a volume-space listener')
     return captured
   }
