@@ -129,6 +129,19 @@ export function onIndexFreshnessChanged(callback: (payload: IndexFreshnessChange
   })
 }
 
+/**
+ * Replays a freshness event the backend normally owns. DEV-ONLY: the dialog
+ * gallery's `drive-index-stale` row uses it to open that dialog through its real
+ * trigger path (`StaleDriveDialog` self-mounts off this event and takes no
+ * props), and nothing in the product emits index events from the frontend.
+ *
+ * It changes no backend state, so the freshness badge stays on the volume's
+ * REAL freshness: `drive-index-manager` reacts by refetching the true status.
+ */
+export function emitIndexFreshnessChanged(payload: IndexFreshnessChangedEvent): Promise<void> {
+  return events.indexFreshnessChanged.emit(payload)
+}
+
 // ============================================================================
 // Drive-indexing commands
 // ============================================================================

@@ -289,6 +289,19 @@ and stays in each `IndexingDriveRow` (so per-drive rates don't collide); it feed
 `computeWindowEta` / `blendEtas` / `formatEta`. Tier 1's prior-duration seed (`priorScanDurationMs − elapsed`,
 ms→seconds) covers the gap before the window has samples. Tier 2's ETA is prefixed "roughly".
 
+## The one-time stale dialog
+
+`StaleDriveDialog` mounts once app-wide (`routes/(main)/+page.svelte`) and self-opens off `index-freshness-changed`,
+behind three gates it checks in order: the payload is `freshness: 'stale'` for a volume that isn't `root` (the local
+disk is journaled and never goes stale), the `indexing.staleNotify` setting is on, and the persisted one-shot
+(`indexing.firstStaleDialogShown`, via `drive-index-prefs.ts`) is still clear. It stamps that flag before showing, so
+the explainer appears once per machine; the yellow badge keeps showing regardless. The body names the volume through the
+volume store and falls back to the raw id for a volume that isn't in it.
+
+The app never clears the one-shot. `resetFirstStaleDialogShown` exists for the dev-only dialog gallery, whose
+`drive-index-stale` row arranges all three gates and emits the real event so the row repeats (see the gallery's
+[DETAILS.md](../dialog-gallery/DETAILS.md)).
+
 ## Tests
 
 - **`eta.test.ts`**: the pure ETA helpers (thresholds incl. the hour-scale word formats, elapsed + window estimation,

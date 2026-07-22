@@ -16,9 +16,10 @@
  * numbers those dialogs display are the ones on disk.
  *
  * The store-seeded records (`./store-seeded`) hold PATCHES for a real app store
- * rather than props, and `onboarding` holds a wizard step: those dialogs aren't
- * rendered by the harness at all (see `gallery-registry.ts` § `openedBy`). They
- * live here anyway so the same test proves their state ids resolve.
+ * rather than props, `onboarding` holds a wizard step, and `drive-index-stale`
+ * (`./indexing`) holds the payload of the event that opens it: those dialogs
+ * aren't rendered by the harness at all (see `gallery-registry.ts` § `openedBy`).
+ * They live here anyway so the same test proves their state ids resolve.
  */
 
 import type { SoftDialogId } from '$lib/ui/dialog-registry'
@@ -28,6 +29,7 @@ import { archivePasswordFixtures } from './archive-password'
 import { crashReportFixtures } from './crash-report'
 import { deleteFixtures, goToPathFixtures, mkdirFixtures, newFileFixtures, transferFixtures } from './disk'
 import { ptpcameradFixtures } from './devices'
+import { staleDriveFixtures } from './indexing'
 import { expirationFixtures } from './licensing'
 import { onboardingFixtures } from './onboarding'
 import { extensionChangeFixtures, renameConflictFixtures } from './rename'
@@ -49,6 +51,7 @@ export const fixtureRecords = {
   'crash-report': crashReportFixtures,
   'delete-ai-model': deleteAiModelFixtures,
   'delete-confirmation': deleteFixtures,
+  'drive-index-stale': staleDriveFixtures,
   'error-report': errorReportFixtures,
   expiration: expirationFixtures,
   'extension-change': extensionChangeFixtures,

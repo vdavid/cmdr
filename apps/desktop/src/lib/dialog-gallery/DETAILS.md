@@ -81,7 +81,7 @@ name.
   store and the app's own mount site renders it: the most faithful of the three, since the real trigger path runs. See
   the section below.
 - **Event-seeded**: the component self-mounts off a backend event (`StaleDriveDialog`). The gallery arranges the
-  preconditions and emits the real event.
+  preconditions and emits the real event. See the section below.
 
 A row whose mechanism isn't "the harness renders it" says so in `openedBy`, which the Debug panel discloses and the
 harness's mount sweep reads (those rows render nothing of their own, so the sweep would otherwise fail on them).
@@ -132,6 +132,37 @@ The dispatch is **awaited end to end**: `CommandDispatchDialogs.openOnboarding` 
 step before that lands would be overwritten by `openWizard()`. The gallery holds no open-state for the wizard and has
 nothing to restore: it closes on its own terms, and it has no Escape affordance by design.
 
+## `drive-index-stale` is event-seeded
+
+`StaleDriveDialog` takes no props and owns its `open` flag. It shows only when an `index-freshness-changed` event lands
+with `freshness: 'stale'` for a non-`root` volume, AND `indexing.staleNotify` is on, AND the persisted one-shot flag is
+still clear. `stale-drive-preview.ts` arranges those three and emits the real event through the typed
+`emitIndexFreshnessChanged` wrapper; the dialog's own listener does the rest, so the shipping trigger path is what runs.
+`listener-setup.ts` routes the row before the harness sees it, the same way `onboarding` is routed.
+
+**The JS→JS round trip works.** A frontend `emit` goes through the Tauri backend and comes back to every webview's
+`listen`, so the dialog's listener hears an event the main window emitted (verified by hand in a dev build, 2026-07-22:
+Debug > Soft dialogs > Stale drive index opens the dialog, twice in a row). Nothing about it is main-window-specific;
+what IS main-window-specific is picking the volume.
+
+**The volume comes from the live store, filtered by the app's own `isDriveRow`.** `volumeName()` falls back to the raw
+id for a volume that isn't in the store, so a synthetic id renders as `vol-abc123` in the body copy: a preview that
+looks fine and is silently wrong, which is the failure this instrument exists to prevent. `isDriveRow`
+(`file-explorer/navigation/drive-index-manager.svelte.ts`) is the app's own chokepoint for "a real drive that can carry
+an index badge", so the preview can't name a favorite, the synthetic `network` / `search-results` rows, or a disk image.
+`root` is excluded because the dialog itself ignores it (the local disk is journaled and never goes stale). Store order
+decides the rest, which puts an attached drive ahead of a network share.
+
+**With no drive to name, it opens nothing and says so** in a toast. A disclosed refusal beats a preview with an id in
+the body: the row is honest either way, and the reviewer knows what to do about it.
+
+**Both writes are real and stay.** The preview turns `indexing.staleNotify` back on if it was off, and clears the
+one-shot before EVERY trigger (`resetFirstStaleDialogShown`, a dev-only export the product never calls) — the dialog
+stamps that flag the moment it shows, so without the reset the row would work once per machine. Nothing is restored
+afterwards: the dialog writes both itself ("Never show again" turns the setting off; showing stamps the one-shot), so a
+restore would fight the component. The row discloses them instead. The freshness badge doesn't move either — replaying
+the event changes no backend state, and `drive-index-manager` reacts by refetching the volume's real status.
+
 ## The disk-backed dialogs
 
 `delete-confirmation`, `transfer-confirmation`, `mkdir-confirmation`, `new-file-confirmation`, and `go-to-path` do real
@@ -181,11 +212,14 @@ the fixture directory actually protects.
 4. Add fixtures under `fixtures/`, keyed by the state ids, register the record in `fixtures/index.ts`, and add an entry
    to `DialogGallery.svelte`'s `planResolvers` table plus a branch in its template. A store-seeded dialog instead sets
    `openedBy: 'store-seeded'`, holds PATCHES in `fixtures/store-seeded.ts`, and adds its store binding to
-   `buildStoreSeed`; it needs no template branch, since the app renders it. A dialog that does real work on mount sets
-   `usesFixtureDir: true` on its row and holds BUILDERS in `fixtures/disk.ts` instead of literals (see "The disk-backed
-   dialogs"). Two tests cover the seams: `fixtures.test.ts` walks `fixtureRecords` against the registry (a state id with
-   no fixture, or a fixture with no row), and `DialogGallery.svelte.test.ts` mounts EVERY advertised state and asserts
-   the dialog reported its own id to the tracker. A dead button fails there rather than mid-review.
+   `buildStoreSeed`; it needs no template branch, since the app renders it. An event-seeded one sets
+   `openedBy: 'event-seeded'`, holds the event payload in its fixture record, and gets a preview module plus a branch in
+   `listener-setup.ts` (`stale-drive-preview.ts` is the worked example); it renders nothing here either. A dialog that
+   does real work on mount sets `usesFixtureDir: true` on its row and holds BUILDERS in `fixtures/disk.ts` instead of
+   literals (see "The disk-backed dialogs"). Two tests cover the seams: `fixtures.test.ts` walks `fixtureRecords`
+   against the registry (a state id with no fixture, or a fixture with no row), and `DialogGallery.svelte.test.ts`
+   mounts EVERY advertised state and asserts the dialog reported its own id to the tracker. A dead button fails there
+   rather than mid-review.
 5. **Fixture data is part of the design review.** Include the cases that break layouts: a very long filename, a
    deeply-nested path, a large file count with thousands separators, a multi-line error. A gallery of tidy 12-character
    names hides exactly the problems this exists to surface.
@@ -220,6 +254,29 @@ logs on mount and has a dev-only "Save bundle to disk" button that writes a zip,
 operation isn't in the log, and the detail command answers `None` for an unknown id, so every row expands to "no
 recorded items"). `onboarding` is the extreme case: every step's buttons do exactly what they do on first launch,
 including recording the FDA choice and signing up for the beta.
+
+## The gap rows
+
+Two registered dialogs have no button, and the reason each row prints is the point: a reader who doesn't know the
+internals has to be able to tell a real obstacle from a choice we made.
+
+- **`transfer-progress` is genuinely blocked.** Every phase it shows — the scan, the two bars, pause and queue, the
+  flush, and the conflict section it embeds — is driven by a live operation on the backend's `write-progress` /
+  `write-conflict` / `write-error` / `write-cancelled` / `write-settled` stream. Choosing a phase from the gallery needs
+  a script that replays that stream, which nobody has written. `TransferConflictDialog` is folded into this gap rather
+  than getting its own row: it renders a bare `.conflict-section` designed to sit inside `TransferProgressDialog`'s
+  body, so standalone it would need the gallery to fake its parent's chrome. The row also says what you CAN do — start a
+  real copy — because "not triggerable" must not read as "unreachable".
+- **`search` is deferred, not blocked, and the row says exactly that.** `SearchDialog` takes plain props, the drive
+  index is live in dev, and ⌘F (or the MCP `open_search_dialog` tool) opens it right now. ❌ Never dress this up as a
+  technical obstacle: publishing a false reason inside an instrument whose thesis is "must not lie" is the worst
+  available outcome, and it would be invisible to everyone who doesn't already know the dialog.
+
+The three `UNREGISTERED_OVERLAY_ENTRIES` rows exist so the inventory can't imply nothing else is modal-looking. Each
+says why it isn't a registered soft dialog and how to evoke it by hand: the command palette is its own overlay (⌘⇧P by
+default) and reports nothing to the dialog tracker; `NetworkLoginForm` isn't modal at all (it renders inside a pane,
+which is why it's the one sanctioned opt-out from the dialog focus trap); the pane volume chooser is a pane-owned
+dropdown (⌥F1 / ⌥F2). Keep the shortcuts honest: they're user-rebindable defaults.
 
 ## Rows that can't be fixtures
 

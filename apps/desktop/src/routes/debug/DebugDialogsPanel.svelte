@@ -82,6 +82,11 @@
                     <span class="dialog-host" class:foreign={entry.hostWindow !== 'main'}>
                         {hostWindowLabels[entry.hostWindow]}
                     </span>
+                    {#if entry.status !== 'ready'}
+                        <!-- A row with no buttons has to say so in the heading; otherwise it
+                             reads as a row whose buttons are simply further down. -->
+                        <span class="dialog-status">Not triggerable</span>
+                    {/if}
                 </div>
                 {#if entry.note}
                     <p class="dialog-note">{entry.note}</p>
@@ -96,6 +101,13 @@
                     <p class="dialog-note">
                         Takes no content props, so the gallery seeds its real state store and the app's own
                         mount site renders it. Closing the dialog puts the store back exactly as it was.
+                    </p>
+                {/if}
+                {#if entry.openedBy === 'event-seeded'}
+                    <p class="dialog-note">
+                        Self-mounts off a real backend event, so the gallery arranges its preconditions and
+                        emits that event instead of rendering anything: the shipping trigger path is what
+                        runs.
                     </p>
                 {/if}
                 {#if entry.openedBy === 'app-command'}
@@ -146,6 +158,7 @@
                     <span class="dialog-host" class:foreign={overlay.hostWindow !== 'main'}>
                         {hostWindowLabels[overlay.hostWindow]}
                     </span>
+                    <span class="dialog-status">Not registered</span>
                 </div>
                 <p class="dialog-reason">{overlay.reason}</p>
             </div>
@@ -219,6 +232,17 @@
         background: var(--color-bg-tertiary);
         color: var(--color-text-secondary);
         font-weight: 600;
+    }
+
+    /* The row has no buttons, so the heading carries the "why not" flag. */
+    .dialog-status {
+        padding: 1px var(--spacing-sm);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-xs);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
     }
 
     .dialog-states {

@@ -52,3 +52,16 @@ export function hasShownFirstStaleDialog(): boolean {
 export function markFirstStaleDialogShown(): void {
   setSetting('indexing.firstStaleDialogShown', true)
 }
+
+/**
+ * Clear the one-shot so the dialog can fire again.
+ *
+ * DEV-ONLY, and the app itself never calls it: nothing in the product clears
+ * this flag, because the explainer is once per machine by design. The dialog
+ * gallery's `drive-index-stale` row calls it before every trigger, since the
+ * dialog stamps the flag the moment it shows and would otherwise be a
+ * single-use preview.
+ */
+export function resetFirstStaleDialogShown(): void {
+  setSetting('indexing.firstStaleDialogShown', false)
+}

@@ -47,6 +47,7 @@ import type { SoftDialogId } from '$lib/ui/dialog-registry'
 import { openGalleryDialog } from '$lib/dialog-gallery/gallery-state.svelte'
 import { resolveDiskFixture, type FixtureDirPayload } from '$lib/dialog-gallery/disk-fixture'
 import { openOnboardingPreview } from '$lib/dialog-gallery/onboarding-preview'
+import { openStaleDrivePreview } from '$lib/dialog-gallery/stale-drive-preview'
 import { getAppMode } from '$lib/app-mode'
 import type { ExplorerAPI } from './explorer-api'
 import type { FriendlyError, TransferOperationType } from '$lib/file-explorer/types'
@@ -443,6 +444,15 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
         // the app's own re-entry command instead. See `dialog-gallery/onboarding-preview.ts`.
         if (dialogId === 'onboarding') {
           await openOnboardingPreview(stateId, ctx.dispatch)
+          await focusMainWindow()
+          return
+        }
+        // `drive-index-stale` self-mounts off a real backend event and takes no
+        // props, so its preview arranges the dialog's preconditions and emits
+        // that event. The volume it names has to come from THIS window's volume
+        // store. See `dialog-gallery/stale-drive-preview.ts`.
+        if (dialogId === 'drive-index-stale') {
+          await openStaleDrivePreview(stateId)
           await focusMainWindow()
           return
         }

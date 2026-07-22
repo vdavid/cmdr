@@ -19,6 +19,11 @@
      * dialog closing itself, since it closes through its own store rather than
      * through `closeGalleryDialog`.
      *
+     * Two more open without the harness at all: `onboarding` through the app's
+     * own command, and `drive-index-stale` through the real backend event it
+     * self-mounts off. `listener-setup.ts` routes those before this harness ever
+     * hears about them.
+     *
      * Five of them (delete, transfer, mkdir, mkfile, go-to-path) do real work on
      * mount, so their props are BUILT from the real fixture directory the request
      * carries (`disk-fixture.ts`) rather than written by hand: the scan tallies,

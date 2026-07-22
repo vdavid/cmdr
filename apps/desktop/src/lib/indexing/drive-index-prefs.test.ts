@@ -26,6 +26,7 @@ import {
   hasSilencedDrives,
   hasShownFirstStaleDialog,
   markFirstStaleDialogShown,
+  resetFirstStaleDialogShown,
 } from './drive-index-prefs'
 
 beforeEach(() => {
@@ -77,5 +78,16 @@ describe('first stale dialog flag', () => {
     expect(hasShownFirstStaleDialog()).toBe(false)
     markFirstStaleDialogShown()
     expect(hasShownFirstStaleDialog()).toBe(true)
+  })
+
+  it('clears the one-shot, so a dev-only re-trigger can fire the dialog again', () => {
+    markFirstStaleDialogShown()
+    resetFirstStaleDialogShown()
+    expect(hasShownFirstStaleDialog()).toBe(false)
+    // The dialog gallery resets before EVERY trigger, so this has to survive a
+    // second round rather than only undoing the first stamp.
+    markFirstStaleDialogShown()
+    resetFirstStaleDialogShown()
+    expect(hasShownFirstStaleDialog()).toBe(false)
   })
 })

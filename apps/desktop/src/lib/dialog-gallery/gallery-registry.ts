@@ -54,11 +54,13 @@ interface DialogGalleryEntryBase {
    * - `app-command`: the gallery dispatches the app's own command, because the
    *   open flag isn't in any store (`onboarding` lives in a local `$state` in
    *   `routes/(main)/+page.svelte`).
+   * - `event-seeded`: the gallery arranges the dialog's preconditions and emits
+   *   the real backend event it self-mounts off (`drive-index-stale`).
    *
    * The Debug panel discloses this per row, and the harness's mount sweep knows
    * these rows render nothing of their own.
    */
-  openedBy?: 'store-seeded' | 'app-command'
+  openedBy?: 'store-seeded' | 'app-command' | 'event-seeded'
   /**
    * The dialog does real work on mount (scans, conflict lookups, path
    * resolution), so it runs against a real throwaway directory. The Debug panel
@@ -85,9 +87,6 @@ export interface UnregisteredOverlayEntry {
   /** Why it isn't registered, and how to evoke it by hand. */
   reason: string
 }
-
-/** Shared wording for a dialog whose fixtures aren't written yet. */
-const NOT_WIRED_YET = 'No fixtures written yet, so the gallery can’t open it honestly.'
 
 export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
   // ── Alerts ────────────────────────────────────────────────────────────────
@@ -143,7 +142,7 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     hostWindow: 'main',
     status: 'not-triggerable',
     reason:
-      'Driven end to end by the backend’s write-progress / write-conflict / write-error / write-cancelled / write-settled stream, so reaching its phases needs a scripted emitter. Its scan phase and the embedded conflict section are part of the same gap.',
+      'Start a real copy (F5), move, or delete and you have it — that’s also the only way to see it. Every phase it shows is driven by a live operation on the backend’s write-progress / write-conflict / write-error / write-cancelled / write-settled stream: the scan phase, the two bars, pause and queue, the flush at the end, and the conflict section it embeds (TransferConflictDialog is a section of this dialog’s body, not its own chrome). Choosing a phase from the gallery would need a script that replays that stream, which nobody has written yet.',
     states: [],
   },
   {
@@ -254,7 +253,7 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     hostWindow: 'main',
     status: 'not-triggerable',
     reason:
-      'Nothing blocks it: press ⌘F, or call the MCP open_search_dialog tool, and you have it with a live index. It simply isn’t wired into the gallery.',
+      'Left out on purpose, with nothing blocking it. SearchDialog takes plain props, the drive index is live in dev, and ⌘F (or the MCP open_search_dialog tool) opens it right now, so it’s the easiest dialog in the app to reach by hand. Wiring it in with a canned result set is a follow-up nobody has done yet.',
     states: [],
   },
   {
@@ -345,9 +344,10 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     dialogId: 'drive-index-stale',
     label: 'Stale drive index',
     hostWindow: 'main',
-    status: 'not-triggerable',
-    reason: NOT_WIRED_YET,
-    states: [],
+    status: 'ready',
+    openedBy: 'event-seeded',
+    note: 'Needs an external drive, share, or phone mounted, and names a real one: the copy reads the name out of the volume store, so with nothing mounted the preview says so rather than printing an id. Two real writes: it turns indexing.staleNotify back on if you’d disabled it, and it clears the one-time flag before every trigger, which is what makes this row repeatable. The app shows this dialog once per machine, so a preview spends that one shot, and “Never show again” turns the setting off for real. The drive’s freshness badge won’t move: it reads the backend’s real freshness, and this replays the event without touching the index.',
+    states: [{ id: 'default', label: 'Open' }],
   },
 
   // ── Licensing and app lifecycle ───────────────────────────────────────────
@@ -508,20 +508,20 @@ export const UNREGISTERED_OVERLAY_ENTRIES: UnregisteredOverlayEntry[] = [
     overlayId: 'command-palette',
     label: 'Command palette',
     hostWindow: 'main',
-    reason: 'Not in SOFT_DIALOG_REGISTRY: it’s its own overlay, not a ModalDialog. Press ⌘⇧P in the main window.',
+    reason:
+      'Its own overlay, not a ModalDialog, so it reports nothing to the dialog tracker. Press ⌘⇧P in the main window (the default binding; Settings › Keyboard shortcuts can change it).',
   },
   {
     overlayId: 'network-login-form',
     label: 'Network login form',
     hostWindow: 'main',
     reason:
-      'Not in SOFT_DIALOG_REGISTRY, and the one sanctioned opt-out from the dialog focus trap. Open a password-protected SMB share from the network browser.',
+      'Not modal at all: it renders INSIDE a pane (role="dialog", but the rest of the app stays interactive, which is why it’s the one sanctioned opt-out from the dialog focus trap). To see it: point a pane at Network (⌥F1 / ⌥F2 › Network) and open a password-protected SMB share. A share whose saved password went stale shows the same form through the pane’s reauth view.',
   },
   {
     overlayId: 'pane-volume-chooser',
     label: 'Pane volume chooser',
     hostWindow: 'main',
-    reason:
-      'Not in SOFT_DIALOG_REGISTRY: a pane-owned dropdown, not a dialog. Click a pane’s volume breadcrumb, or press ⌥F1 (left) / ⌥F2 (right).',
+    reason: 'A pane-owned dropdown, not a dialog. Click a pane’s volume breadcrumb, or press ⌥F1 (left) / ⌥F2 (right).',
   },
 ]
