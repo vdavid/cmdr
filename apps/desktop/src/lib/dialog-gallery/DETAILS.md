@@ -1,7 +1,7 @@
 # Dialog gallery details
 
-Depth for `CLAUDE.md`. The gallery is a dev-only instrument: Debug > Soft dialogs lists every registered soft
-dialog and opens it, in each of its meaningful states, over the main window.
+Depth for `CLAUDE.md`. The gallery is a dev-only instrument: Debug > Soft dialogs lists every registered soft dialog and
+opens it, in each of its meaningful states, over the main window.
 
 ## Why it exists
 

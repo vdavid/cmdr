@@ -21,9 +21,9 @@ here.
   `cmdr/dialog-needs-focus-trap`). Without it, Tab leaks focus into the suppressed-shortcut background: a full keyboard
   lockout. `ModalDialog` owns the directive, so `role`-prop callers don't repeat it. Opt out only via the documented
   `eslint-disable` (just `NetworkLoginForm` today). DETAILS § Focus trapping.
-- **Adding a dialog: register its id in `SOFT_DIALOG_REGISTRY`, pass it as `ModalDialog`'s `dialogId`, and add a
-  gallery row** (enforced by a type error and `dialog-gallery-coverage`). The registry feeds MCP's "available dialogs",
-  so skipping it drifts them silently. Soft sheets register too. DETAILS § Dialog registry.
+- **Adding a dialog: register its id in `SOFT_DIALOG_REGISTRY`, pass it as `ModalDialog`'s `dialogId`, and add a gallery
+  row** (enforced by a type error and `dialog-gallery-coverage`). The registry feeds MCP's "available dialogs", so
+  skipping it drifts them silently. Soft sheets register too. DETAILS § Dialog registry.
 - **The `ModalDialog` overlay starts at `inset: var(--titlebar-height) 0 0 0`, not `inset: 0`**, so the scrim never
   covers the macOS title bar, keeping the OS window-drag region live. Any new full-window backdrop must too.
 - **Don't restyle `.btn-*` colors from a scoped feature component** (`scripts/check-btn-restyle` flags it; one-offs need
