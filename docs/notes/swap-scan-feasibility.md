@@ -13,6 +13,23 @@ Real index DB probed read-only (`~/Library/Application Support/com.veszelovszki.
 `entries` 7,385,259 rows, `dir_stats` 583,711 rows. `sqlite_master` holds exactly: `entries`, `idx_parent_name_folded`,
 `idx_inode`, `dir_stats`, `meta`. No views, no triggers. The prod DB is 1,136,955,392 bytes with a 49 MB `-wal`.
 
+## Is it still worth building? (re-measured 2026-07-22)
+
+**Yes, on speed and completeness grounds.** The original justification was "the fresh parallel scan is ~9x faster than
+the reconcile", and the open doubt was that the fresh scan bought that speed by abandoning ~10% of the index (five big
+directories at the old 15 s elapsed timeout), so the comparison was unfair. The progress-based walker watchdog removed
+that: a clean fresh scan now indexes everything to completion with **zero abandoned subtrees**, and it is **still 8.4x
+faster than the reconcile** (fresh scan 107.2 s vs reconcile 897.4 s, back to back on the same machine, 2026-07-22). The
+reconcile right after the honest scan found only `+1848` new entries (0.03%), not the old `+656,352` (10%). So the fresh
+scan is now honest AND complete AND ~8x faster; the completeness objection that motivated the re-measurement is closed.
+Even the load-contaminated fresh scan (138 s) against the reconcile is a 6.5x gap, so the 6.5–8.4x range is robust to
+how contended the scan runs. Full numbers and method:
+[`indexing-benchmarks-2026-07-21.md`](indexing-benchmarks-2026-07-21.md) § "Swap-scan re-measurement, 2026-07-22".
+
+The speed case therefore holds. The remaining decision is purely the implementation cost and the traps below (id space,
+index-name collision, `scan_completed_at`, ~2.3 GB disk peak or the separate-file variant), not the payoff: an ~8x
+faster rescan that no longer sacrifices completeness is a real win worth the build.
+
 ## Verdict up front
 
 The swap is feasible, but the plan as stated has one silent-corruption-adjacent trap (index names), one correctness bug

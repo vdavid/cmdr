@@ -6,6 +6,16 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 
 ## In progress
 
+- [ ] 2026-07-22 [swap-scan-plan.md](swap-scan-plan.md) - Replace the ~15-minute serial in-place reconcile rescan of a
+      completed LOCAL index with a build-and-swap: run the fast parallel guarded walker into a separate
+      `index-{vid}.building.db`, then swap it in atomically (~8.4x faster, 107 s vs 897 s, honest AND complete). The spine
+      is data safety (Cmdr principle 4): a durable `.swap` marker + idempotent open-time recovery guarantees exactly one
+      complete index across any crash, cancel, or ENOSPC, never a torn state. Recommends the separate-DB-file variant
+      over in-file shadow tables (preserves single-writer-per-DB; no 82-site table-name threading, no index-name
+      collision, no giant DROP + vacuum tail). Neutralizes the feasibility note's traps (`scan_completed_at` clear, id
+      space, orphan tables) by construction. Reconcile stays as the free-space / flag-off fallback. Local-only (root
+      first, LocalExternal a follow-on; SMB/MTP out). Foundation: [`swap-scan-feasibility.md`](../notes/swap-scan-feasibility.md)
+      and [`indexing-benchmarks-2026-07-21.md`](../notes/indexing-benchmarks-2026-07-21.md).
 - [ ] 2026-07-22 [smb-multi-connection-scan-plan.md](smb-multi-connection-scan-plan.md) - Speed up the cold SMB index
       scan by spreading its directory listings across a small pool of extra TCP connections inside `SmbVolume` (the NAS
       bottleneck is per-connection ksmbd serialization, not the disks; 4 connections lift cold throughput ~3.8×),
