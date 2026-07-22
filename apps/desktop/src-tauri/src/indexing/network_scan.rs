@@ -21,7 +21,7 @@ use super::events::{
     IndexScanCompleteEvent, IndexScanStartedEvent, set_phase_for,
 };
 use super::manager::{IndexManager, ScanCalibration};
-use super::progress_reporter::ScanProgressReporter;
+use crate::indexing::events::progress_reporter::ScanProgressReporter;
 use super::state::IndexVolumeKind;
 use super::store::IndexStore;
 use super::writer::{AggSource, WriteMessage};

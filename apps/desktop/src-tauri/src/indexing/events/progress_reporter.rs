@@ -23,11 +23,11 @@ use tauri::AppHandle;
 use tauri::async_runtime::JoinHandle;
 use tauri_specta::Event;
 
-use super::events::IndexScanProgressEvent;
+use super::IndexScanProgressEvent;
 use super::partial_agg;
-use super::routing;
-use super::scanner::ScanProgress;
-use super::writer::{AggSource, IndexWriter, WriteMessage};
+use crate::indexing::routing;
+use crate::indexing::scanner::ScanProgress;
+use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 use crate::file_system::listing::caching;
 
 /// Drives the periodic scan-progress events and mid-scan partial aggregation for
@@ -39,7 +39,7 @@ use crate::file_system::listing::caching;
 /// behind an emit closure: emitting `index-scan-progress` is the reporter's whole
 /// reason to exist, and the genuinely pure decision logic already lives — and is
 /// unit-tested — in `partial_agg`.
-pub(super) struct ScanProgressReporter {
+pub(crate) struct ScanProgressReporter {
     /// The scan's live progress counters, snapshotted each tick.
     progress: Arc<ScanProgress>,
     /// Writer handle: the queue-depth gate plus the `ComputePartialAggregates` sink.
@@ -63,7 +63,7 @@ impl ScanProgressReporter {
     /// cloned in by the caller so the spawned loop owns everything it needs.
     /// `partial_agg_source` picks the mid-scan partial-aggregation source by scan
     /// kind (`Maps` fresh / `Sql` reconcile).
-    pub(super) fn new(
+    pub(crate) fn new(
         progress: Arc<ScanProgress>,
         writer: IndexWriter,
         app: AppHandle,
@@ -135,7 +135,7 @@ impl ScanProgressReporter {
     /// scan-completion handler (or the task is aborted at shutdown). Uses
     /// `tauri::async_runtime::spawn` because a scan can start from the synchronous
     /// Tauri `setup()` hook where no Tokio runtime context exists.
-    pub(super) fn spawn(mut self, scan_done: Arc<AtomicBool>) -> JoinHandle<()> {
+    pub(crate) fn spawn(mut self, scan_done: Arc<AtomicBool>) -> JoinHandle<()> {
         tauri::async_runtime::spawn(async move {
             loop {
                 tokio::time::sleep(Duration::from_millis(500)).await;

@@ -1,4 +1,10 @@
-//! Tauri event payloads and response types for the indexing system.
+//! The frontend event + scan-progress surface for the indexing system.
+//!
+//! This module root holds the Tauri event payloads and response types; the two
+//! children drive scan progress off them:
+//! - [`progress_reporter`]: the 500 ms progress + mid-scan partial-aggregation
+//!   tick loop shared by every scan path.
+//! - [`partial_agg`]: the pure send-decision + hot-path collection the loop uses.
 
 use std::sync::LazyLock;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -8,6 +14,9 @@ use tauri::AppHandle;
 use tauri_specta::Event;
 
 use super::store::{IndexFailure, IndexStatus};
+
+pub(crate) mod partial_agg;
+pub(crate) mod progress_reporter;
 
 // ── Event payloads (Rust -> Frontend) ────────────────────────────────
 

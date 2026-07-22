@@ -26,8 +26,6 @@ pub(crate) mod lifecycle_bus;
 mod local_reconcile;
 mod manager;
 mod network_scan;
-mod partial_agg;
-mod progress_reporter;
 mod scan_completion;
 mod state;
 pub mod store;

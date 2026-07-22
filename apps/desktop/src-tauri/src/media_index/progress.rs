@@ -4,7 +4,7 @@
 //! Kept Tauri-free so the registry-free enrich cores (`scheduler/enrich.rs`,
 //! `network/enrich.rs`) can report progress without depending on an `AppHandle` — a
 //! test injects a recording sink, production injects the throttled Tauri emitter
-//! (`events.rs`). Progress rides the top-right indexing indicator as a second
+//! (`events/mod.rs`). Progress rides the top-right indexing indicator as a second
 //! publisher alongside the drive indexer; see
 //! [`media_index/DETAILS.md`](DETAILS.md) § Progress events.
 

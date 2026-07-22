@@ -1,6 +1,6 @@
 //! Send-decision logic and hot-path collection for mid-scan partial aggregation.
 //!
-//! The scan progress loop in `progress_reporter.rs` ticks every 500 ms. On each
+//! The scan progress loop in `events/progress_reporter.rs` ticks every 500 ms. On each
 //! tick it asks `should_send_partial_agg` whether to fire a
 //! `ComputePartialAggregates` message; when it does, `collect_hot_paths` turns
 //! the live listing snapshot into the message's `hot_paths`. Keeping both pure
@@ -18,7 +18,7 @@ use crate::indexing::firmlinks;
 /// on a real volume (Apple Silicon, 5.94M entries / 558K dirs, release build):
 /// 28 passes, each ≤ 397 ms, total scan ~2m25s, indistinguishable from the
 /// feature-off baseline. See the per-pass cost note on `PARTIAL_AGG_MAX_DEPTH`.
-pub(super) const PARTIAL_AGG_TICK_INTERVAL: u64 = 10;
+pub(crate) const PARTIAL_AGG_TICK_INTERVAL: u64 = 10;
 
 /// Skip a partial pass when the writer channel is backed up beyond this many
 /// queued messages.
@@ -29,7 +29,7 @@ pub(super) const PARTIAL_AGG_TICK_INTERVAL: u64 = 10;
 /// never approached this depth (insert batches drained between passes), so the
 /// cap acted purely as a safety valve — kept at 4 000 as headroom rather than
 /// re-tuned down.
-pub(super) const PARTIAL_AGG_MAX_QUEUE_DEPTH: usize = 4_000;
+pub(crate) const PARTIAL_AGG_MAX_QUEUE_DEPTH: usize = 4_000;
 
 /// Decide whether the scan progress loop should send a `ComputePartialAggregates`
 /// pass on this tick.
@@ -40,7 +40,7 @@ pub(super) const PARTIAL_AGG_MAX_QUEUE_DEPTH: usize = 4_000;
 /// `PARTIAL_AGG_MAX_QUEUE_DEPTH`. A queue depth of exactly the max still sends:
 /// the cap is "skip when *over* the threshold", so `== max` is the last sending
 /// depth.
-pub(super) fn should_send_partial_agg(tick: u64, queue_depth: usize) -> bool {
+pub(crate) fn should_send_partial_agg(tick: u64, queue_depth: usize) -> bool {
     if tick == 0 {
         return false;
     }
@@ -65,7 +65,7 @@ pub(super) fn should_send_partial_agg(tick: u64, queue_depth: usize) -> bool {
 /// Surviving paths are mapped through `firmlinks::normalize_path` so they match
 /// the index's canonical form (`/tmp` → `/private/tmp` etc.), then deduplicated
 /// (two panes on the same dir collapse to one) while preserving first-seen order.
-pub(super) fn collect_hot_paths(listings: &[ListingSummary], scanned_volume_id: &str) -> Vec<String> {
+pub(crate) fn collect_hot_paths(listings: &[ListingSummary], scanned_volume_id: &str) -> Vec<String> {
     let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
     let mut out: Vec<String> = Vec::new();
     for listing in listings {

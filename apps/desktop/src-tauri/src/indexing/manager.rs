@@ -14,7 +14,7 @@ use super::events::{
     RescanReason, emit_rescan_notification, set_phase_for,
 };
 use super::local_reconcile;
-use super::progress_reporter::ScanProgressReporter;
+use crate::indexing::events::progress_reporter::ScanProgressReporter;
 use super::scanner::{self, ScanConfig};
 use super::state::{INDEX_REGISTRY, IndexPhase, IndexVolumeKind};
 use super::store::IndexStore;
