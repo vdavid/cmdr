@@ -37,20 +37,10 @@ pub(crate) mod reconcile;
 pub(crate) use reconcile::{local_reconcile, reconciler, verifier};
 pub(crate) mod transports;
 
-// Synthetic FAT32/exFAT disk-image fixtures for external-drive indexing tests.
-// macOS-only (hdiutil); see the module and DETAILS § "Testing external drives".
-#[cfg(all(test, target_os = "macos"))]
-mod external_drive_fixture;
 #[cfg(test)]
-mod integration_tests;
+mod tests;
 #[cfg(test)]
-mod stress_test_helpers;
-#[cfg(test)]
-mod stress_tests_concurrency;
-#[cfg(test)]
-mod stress_tests_lifecycle;
-#[cfg(test)]
-mod stress_tests_partial_aggregation;
+pub(crate) use tests::stress_test_helpers;
 
 pub(crate) use read::enrichment::{ReadPool, get_read_pool, get_read_pool_for};
 pub use read::enrichment::{enrich_entries_with_index, enrich_entries_with_index_on_volume};

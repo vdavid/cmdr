@@ -8,7 +8,7 @@
 //! SQLite; those touching the per-volume `INDEX_REGISTRY` serialize on a
 //! dedicated mutex and clear it before returning.
 
-use super::*;
+use crate::indexing::*;
 use crate::file_system::listing::FileEntry;
 use crate::settings::FullDiskAccessChoice;
 use enrichment::{READ_POOL_TEST_MUTEX, THREAD_CONN, enrich_via_individual_paths_on, enrich_via_parent_id_on};

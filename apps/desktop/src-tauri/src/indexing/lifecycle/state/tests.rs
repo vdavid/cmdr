@@ -412,7 +412,7 @@ fn forget_stale_index_transitions_to_gray_and_deletes_db() {
 
 /// Disconnect-storm resilience: rapidly connect/scan/disconnect/forget
 /// two external volumes many times must never crash, wedge the registry, or
-/// leave a dangling instance/freshness. Mirrors `stress_tests_lifecycle.rs`'s
+/// leave a dangling instance/freshness. Mirrors `tests/stress_tests_lifecycle.rs`'s
 /// repeated-cycle philosophy at the registry-lifecycle level (the seam where
 /// SMB/MTP churn actually lives: reserve → ScanStarted → ScanCompleted →
 /// WatcherDied(disconnect) → forget/disable).
@@ -599,5 +599,5 @@ fn clear_registry_and_pools() {
 }
 
 /// Tests that mutate `INDEX_REGISTRY` serialize on this guard (mirrors
-/// `integration_tests.rs`'s `INDEXING_TEST_GUARD`).
+/// `tests/integration_tests.rs`'s `INDEXING_TEST_GUARD`).
 static INDEX_REGISTRY_TEST_GUARD: LazyLock<std::sync::Mutex<()>> = LazyLock::new(|| std::sync::Mutex::new(()));

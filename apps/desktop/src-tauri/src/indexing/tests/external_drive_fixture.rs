@@ -179,7 +179,7 @@ impl Drop for DiskImageFixture {
             Ok(out) if out.status.success() => return,
             Ok(out) => {
                 log::warn!(
-                    target: "indexing::external_drive_fixture",
+                    target: "indexing::tests::external_drive_fixture",
                     "hdiutil detach {} failed ({}); forcing",
                     self.device,
                     out.status
@@ -187,7 +187,7 @@ impl Drop for DiskImageFixture {
             }
             Err(e) => {
                 log::warn!(
-                    target: "indexing::external_drive_fixture",
+                    target: "indexing::tests::external_drive_fixture",
                     "hdiutil detach {} errored ({e}); forcing",
                     self.device
                 );
@@ -197,13 +197,13 @@ impl Drop for DiskImageFixture {
         match run_hdiutil_guarded(&["detach", "-force", &self.device]) {
             Ok(out) if out.status.success() => {}
             Ok(out) => log::warn!(
-                target: "indexing::external_drive_fixture",
+                target: "indexing::tests::external_drive_fixture",
                 "hdiutil detach -force {} failed ({}); device may still be attached",
                 self.device,
                 out.status
             ),
             Err(e) => log::warn!(
-                target: "indexing::external_drive_fixture",
+                target: "indexing::tests::external_drive_fixture",
                 "hdiutil detach -force {} errored ({e}); device may still be attached",
                 self.device
             ),
