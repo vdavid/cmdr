@@ -659,7 +659,11 @@ async fn smb_integration_scan_pool_opens_lists_and_closes() {
         .await
         .expect("listing the seeded dir through the main session should succeed");
     assert_eq!(names(via_pool.clone()), vec!["a.txt", "b.txt"], "pool sees both files");
-    assert_eq!(names(via_pool), names(via_main), "pool listing matches the main session");
+    assert_eq!(
+        names(via_pool),
+        names(via_main),
+        "pool listing matches the main session"
+    );
 
     vol.close_scan_pool().await;
     assert!(
@@ -673,7 +677,11 @@ async fn smb_integration_scan_pool_opens_lists_and_closes() {
         .list_directory_for_scan_impl(Path::new(&dir))
         .await
         .expect("scan listing falls back to the main session once the pool is closed");
-    assert_eq!(names(via_fallback), vec!["a.txt", "b.txt"], "fallback still lists the files");
+    assert_eq!(
+        names(via_fallback),
+        vec!["a.txt", "b.txt"],
+        "fallback still lists the files"
+    );
 
     ensure_clean(&vol, &dir).await;
 }
