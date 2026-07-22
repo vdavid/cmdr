@@ -101,16 +101,56 @@ Fresh scan: `phys_footprint` 29 MB → 903 MB peak, 678 MB at completion.
 accounting that reflects real memory pressure. `phys_footprint` is the honest number to quote, and it settles back down
 while RSS does not. Not a leak, but worth knowing that `ps`-style monitoring will report Cmdr as a 1.3 GB process.
 
-## NAS scan: not measured
+## NAS scan (2026-07-22): multi-connection scan pool, after measurement
 
-Blocked on credentials. `/Volumes/naspi` is mounted by Finder as GUEST (`acct = "No user account"` in the Keychain
-entry), and indexing an SMB volume requires a direct smb2 connection, which needs real credentials.
-`network::smb_upgrade` looked for `smb://naspolya/naspi`, `smb://naspolya`, `smb://192.168.1.111/naspi`, and
-`smb://192.168.1.111`, and found none.
+The full fresh SMB index scan of David's QNAP NAS (`/Volumes/naspi`, share `naspi` on `192.168.1.111`) with the
+multi-connection scan pool (`smb/scan_pool.rs`, `SCAN_POOL_SIZE = 4`) plus the M2 batched writer (periodic
+transactions, ~2 s commit window).
 
-Worth investigating separately: Cmdr's Keychain lookup does not find the entry Finder created for the same server,
-because Finder stores an internet-password item keyed by server + protocol rather than the `smb://…` account strings
-Cmdr searches for. Whether a guest direct connection is possible at all is a separate question.
+**Read this caveat before the numbers: warm ARC, not a cold-vs-cold comparison.** The cold baseline below had already
+walked all 2.64M entries earlier the same morning, which warmed the QNAP's ZFS ARC (~41-47 GB resident). This "after"
+run is therefore the **warm/mixed** regime on the NAS side, not cold. The 2.25x wall-time improvement conflates the
+pool's speedup with NAS-side ARC warmth; it is **not** an isolated measurement of the pool, and **not** cold-vs-cold. The
+isolated cold directory-listing ceiling (~3.8x over 4 connections at flat disk latency) lives in the smb2 probe:
+`~/projects-git/vdavid/smb2/docs/benchmark-findings.md` §§ dated 2026-07-22. A true cold-vs-cold full-scan comparison
+needs the ARC evicted first (reboot the NAS), which this run deliberately did not do (read-only, hands-off).
+
+| run                                   | conditions          | wall        | entries       | dirs       | dirs/s   | entries/s   |
+| ------------------------------------- | ------------------- | ----------- | ------------- | ---------- | -------- | ----------- |
+| baseline, before the pool             | cold ARC            | 1,816.9 s   | 2,642,879     | 71,231     | ~39      | ~1,454      |
+| **with the pool + M2 batched writer** | **warm/mixed ARC**  | **806.6 s** | **2,643,000** | **71,233** | **88.3** | **3,277**   |
+
+2.25x faster wall time in the warm regime (`1,816.9 / 806.6`); dirs/s and entries/s scale the same (2.26x, 2.25x).
+Totals match the baseline within live-NAS drift (entries +121, dirs +2). Indexed size `5,531,872,108,675` bytes
+(5.53 TB), identical to the baseline.
+
+**Pool engaged and ran clean.** Log confirmed `smb scan pool: opened 4/4 extra connections`, a `fresh scan (truncate)`
+(not a reconcile), and a clean `scan pool: closed` at the end. Across the whole 806.6 s scan there were **zero** pool
+health events: no dead members, no member reconnects, no `ConnectionLost` / `SessionExpired`, no per-listing timeouts,
+and no main-session fallback. So the pool's failure paths (sibling-retry, member reconnect) were never exercised by this
+run; they stay covered by the unit and Docker-SMB integration tests, not this measurement.
+
+**M2 writer kept up.** Periodic transactions committed 387 times over the scan (~one per 2.08 s, matching the ~2 s
+window). The writer's `queue_depth` stayed low for most of the run and peaked at **1,699** during listing bursts, well
+short of the pre-M2 backlog that spiked into the thousands in the June bench. It never became the hard bottleneck (the
+scan finished at 3,277 entries/s).
+
+**Memory.** Peak `phys_footprint` (the honest number, logged with `CMDR_LOG_RAM_USE=1`) was **1,023 MB** (~1.0 GB)
+during the NAS scan, versus the baseline's 1.14 GB peak. The external `ps` sampler (`scripts/cpu-rss-sampler`, watching
+the dev app PID) reported RSS peak 1,908.8 MB (`ps` over-counts vs `phys_footprint` by design, see "Memory" above) and
+CPU peak 284.7% of one core (~2.85 cores, the pool's parallel listing); its averages are diluted because the sampler
+window overran the scan into post-completion idle, so quote the peaks, not the averages.
+
+**Honesty bound held.** The root's `recursiveSizeComplete` is `false`, so the app shows the NAS total as a lower bound
+(`≥ 5.53 TB`): the intentionally-skipped NAS system dirs `@Recycle` and `@Recently-Snapshot` each report size 0 with
+`recursiveSizeComplete: false` (unknown, not claimed as exact), exactly as the `min_subtree_epoch` design requires.
+
+**How it was connected (for repeating this).** `/Volumes/naspi` is not OS-mounted by default, and a guest direct smb2
+connection fails on this share (`STATUS_LOGON_FAILURE`; the share requires real credentials). The working recipe:
+`mount_network_share` with `username = "david"` and the password (from the login-keychain internet-password item keyed
+by server `192.168.1.111` + protocol `smb`, which is where Finder stores it, not under an `smb://…` account string),
+which registers a direct smb2 `SmbVolume`, then `enable_drive_index` on volume id `smb-192-168-1-111-445-naspi`. A fresh
+dev data dir gives fresh-scan (truncate) behavior for free.
 
 # Run 2, same day, after the three fixes, on a BUSY machine
 
