@@ -7,8 +7,7 @@ operation goes through a `Volume`, with **paths relative to the volume root**.
 
 - `mod.rs`: the `Volume` trait (mostly async methods returning `Pin<Box<dyn Future>>`) and the `VolumeScanner` /
   `VolumeWatcher` / `VolumeReadStream` sub-traits. Re-exports `types::*` and `ids::*`.
-- `types.rs`: the data types the trait exchanges (`VolumeError`, `SpaceInfo`, `CopyScanResult`, `LaneKey`, and
-  friends).
+- `types.rs`: the data types the trait exchanges (`VolumeError`, `SpaceInfo`, `CopyScanResult`, `LaneKey`, …).
 - `ids.rs`: the volume ID helpers (`path_to_id`, `smb_volume_id`).
 - `manager.rs`: `VolumeManager`, a thread-safe `RwLock<HashMap>` registry with a default volume.
 - `backends/`: per-backend impls (`LocalPosixVolume`, `MtpVolume`, `SmbVolume` + watcher, `InMemoryVolume`). See
@@ -23,22 +22,20 @@ operation goes through a `Volume`, with **paths relative to the volume root**.
   `get_metadata` and opt into capabilities incrementally. New backend? See [DETAILS.md](DETAILS.md) § "Building a new
   volume".
 - **`lane_key()` is the operation manager's serialization key** (default = volume root): write ops sharing a lane run
-  one at a time, disjoint lanes run in parallel. Override it when multiple `Volume` instances share one physical
-  resource so they don't thrash.
+  one at a time, disjoint lanes in parallel. Override when multiple `Volume` instances share one physical resource.
 - **At a site that calls a `Volume` method with a path, use `VolumeManager::resolve(volume_id, path).await`, not
   `get(volume_id)`.** `resolve` routes a `.zip`-crossing path to a read-only `ArchiveVolume` (on-demand, LRU-capped),
-  returning the path UNCHANGED; otherwise it's a plain `get`. It's **async** because a REMOTE `.zip` needs a
-  network probe (`get_metadata` + a four-byte `read_range`), not `std::fs`. The sync-only `resolve_local_only` is for
-  the ONE caller that can't `.await` (the write-op fresh-listing oracle). See
+  returning the path UNCHANGED; otherwise it's a plain `get`. It's **async**: a REMOTE `.zip` needs a network probe,
+  not `std::fs`. The sync-only `resolve_local_only` is for the ONE caller that can't `.await` (the write-op
+  fresh-listing oracle). See
   [`backends/archive/DETAILS.md`](backends/archive/DETAILS.md) § "Routing and lifecycle".
 - **Register watcher-pre-registered volumes via `VolumeManager::register_if_absent`, not `register`.** Otherwise the
-  FSEvents watcher overwrites a pre-registered `SmbVolume` with a `LocalPosixVolume`; `register` (overwrite) is only for
-  explicit replacement (a reconnecting `SmbVolume`).
+  FSEvents watcher overwrites a pre-registered `SmbVolume` with a `LocalPosixVolume`; `register` overwrites, for
+  explicit replacement only (a reconnecting `SmbVolume`).
 - **All cross-volume copy flows through `open_read_stream` / `write_from_stream`.** Don't reintroduce
   `export_to_local` / `import_from_local`. New backends implement those two methods for cross-volume copy.
 - **Never buffer a whole file in a transfer path** — don't drain a `VolumeReadStream` or collect a remote file into a
-  `Vec<u8>` (an 8 GB copy would allocate 8 GB). Stream chunk-by-chunk. See [DETAILS.md](DETAILS.md) § "Streaming
-  patterns".
+  `Vec<u8>`. Stream chunk-by-chunk. See [DETAILS.md](DETAILS.md) § "Streaming patterns".
 - **`write_from_stream` is a mutation: call `notify_mutation` on success** on backends with unreliable notifications
   (SMB watcher / MTP USB events are lossy under load). `LocalPosixVolume` is the exception (FSEvents is reliable).
 - **On macOS, never use `statvfs` alone for disk space** (ignores purgeable space: APFS snapshots, iCloud caches). Use
@@ -49,8 +46,8 @@ operation goes through a `Volume`, with **paths relative to the volume root**.
 - **`listing_is_watched(path)` defaults `false`**: a backend without a real watcher must not claim freshness, or
   pre-flight scans reuse stale cache. `true` means "fresh as our latest observation"; honor the per-backend debounce
   window. See [DETAILS.md](DETAILS.md) § "Trait capability model".
-- **`begin_scan_session` / `end_scan_session` (default no-op) bracket a background scan** so a backend can open
-  scan-scoped resources (SMB parallelizes the cold walk across extra sessions; `backends/DETAILS.md`).
+- **`begin_scan_session` / `end_scan_session` (default no-op) bracket a background scan** for scan-scoped resources
+  (SMB's extra-session pool; `backends/DETAILS.md`).
 - **`LocalPosixVolume::resolve` has a three-way branch for absolute paths** (the frontend sends full absolute paths, not
   always root-relative). Getting it wrong silently serves the wrong directory. See [DETAILS.md](DETAILS.md) § "Path
   handling gotchas".
