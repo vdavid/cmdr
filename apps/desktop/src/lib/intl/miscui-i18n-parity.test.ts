@@ -150,10 +150,15 @@ describe('mtp area parity (en)', () => {
   })
 
   it('renders the ptpcamerad inline-component sentences (the <Trans> cases)', () => {
+    // The tag (`<processName>`) and the param (`{process}`) must stay distinctly
+    // named: `Trans` merges the tag handlers into the params, so a shared name
+    // makes the handler win and the process name never reaches the sentence.
     const inUse = t('mtp.ptpcameradDialog.inUseBy', {
-      process: () => ({ marker: true }),
+      processName: (chunks: unknown[]) => ({ marker: true, chunks }),
+      process: 'pid 45145, ptpcamerad',
     }) as unknown[]
     expect(inUse[0]).toBe('The device is in use by ')
+    expect(inUse[1]).toEqual({ marker: true, chunks: ['pid 45145, ptpcamerad'] })
     expect(inUse[inUse.length - 1]).toBe('.')
 
     const explanation = t('mtp.ptpcameradDialog.explanation', {

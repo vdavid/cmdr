@@ -26,6 +26,9 @@ boundary: `../CLAUDE.md`.
 - **Double every apostrophe (`''`).** ICU treats `'` as an escape char; a lone `'` before `{`/`<`/`#` opens a quoted
   section and swallows text. `''` always collapses to `'` and is always safe, so it's the rule everywhere, even where a
   lone `'` would happen to render fine.
+- **A `<tag>` name must never equal a param name in the same message.** `Trans.svelte` merges the tag snippets into the
+  interpolation params, so a shared name resolves to the tag handler and the sentence renders a stringified function
+  instead of the value. Name the tag for its role, the param for its content: `<processName>{process}</processName>`.
 - **Embed counts as preformatted `*Text` STRING params, not ICU `{n, number}`.** Formatting is single-sourced in
   `$lib/intl`. Pass the raw integer alongside ONLY to drive `plural` selection (noun, was/were). See `transfer.json`.
 - **`@key` metadata is ARB-style sibling entries** (`@transfer.trash`), holding `description` + a `placeholders` map +

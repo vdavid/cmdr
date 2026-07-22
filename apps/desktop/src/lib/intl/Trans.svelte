@@ -45,6 +45,8 @@
     }
 
     // Build tag handlers: each `<tag>` returns a marker the renderer matches to a snippet.
+    // Tag names win over same-named params, so a message must never name a tag and a
+    // param alike (the param would render as a stringified handler).
     const parts = $derived.by((): unknown[] => {
         const handlers: TranslationParams = { ...params }
         for (const tag of Object.keys(snippets)) {

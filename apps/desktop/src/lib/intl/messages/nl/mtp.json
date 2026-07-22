@@ -52,9 +52,9 @@
   "@mtp.ptpcameradDialog.title": {
     "sourceHash": "058de77"
   },
-  "mtp.ptpcameradDialog.inUseBy": "Het apparaat is in gebruik door <process>{process}</process>.",
+  "mtp.ptpcameradDialog.inUseBy": "Het apparaat is in gebruik door <processName>{process}</processName>.",
   "@mtp.ptpcameradDialog.inUseBy": {
-    "sourceHash": "6ec78a3"
+    "sourceHash": "5b97c25"
   },
   "mtp.ptpcameradDialog.inUseGeneric": "Een ander proces heeft exclusieve toegang tot het apparaat.",
   "@mtp.ptpcameradDialog.inUseGeneric": {

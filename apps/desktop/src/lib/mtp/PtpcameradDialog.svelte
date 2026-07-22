@@ -52,7 +52,7 @@
             {#if blockingProcess}
                 <Trans
                     key="mtp.ptpcameradDialog.inUseBy"
-                    snippets={{ process: processName }}
+                    snippets={{ processName }}
                     params={{ process: blockingProcess }}
                 />
             {:else}

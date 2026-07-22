@@ -77,9 +77,9 @@
     "screenshot": "mtp-browse.png",
     "screenshotNote": "MTP (phone/camera) device messaging: a connect/permission dialog or toast tied to an MTP device. This shows the MTP browse surface for context. Keep device/protocol names (MTP, PTP) as-is."
   },
-  "mtp.ptpcameradDialog.inUseBy": "The device is in use by <process>{process}</process>.",
+  "mtp.ptpcameradDialog.inUseBy": "The device is in use by <processName>{process}</processName>.",
   "@mtp.ptpcameradDialog.inUseBy": {
-    "description": "Sentence naming which process currently holds the device. <process> wraps the process name and renders it emphasized (bold).",
+    "description": "Sentence naming which process currently holds the device. <processName> wraps the process name and renders it emphasized (bold).",
     "placeholders": {
       "process": "the blocking process description (for example pid 45145, ptpcamerad)"
     },

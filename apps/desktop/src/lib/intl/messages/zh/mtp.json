@@ -51,9 +51,9 @@
   "@mtp.ptpcameradDialog.title": {
     "sourceHash": "058de77"
   },
-  "mtp.ptpcameradDialog.inUseBy": "该设备正被 <process>{process}</process> 使用。",
+  "mtp.ptpcameradDialog.inUseBy": "该设备正被 <processName>{process}</processName> 使用。",
   "@mtp.ptpcameradDialog.inUseBy": {
-    "sourceHash": "6ec78a3"
+    "sourceHash": "5b97c25"
   },
   "mtp.ptpcameradDialog.inUseGeneric": "另一个进程对该设备拥有独占访问权限。",
   "@mtp.ptpcameradDialog.inUseGeneric": {
