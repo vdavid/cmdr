@@ -20,7 +20,7 @@ use super::super::IndexPathSpace;
 use super::super::churn_monitor::ChurnObserver;
 use super::super::events::{RescanReason, emit_rescan_notification};
 use super::super::metadata;
-use super::super::path_prefix;
+use crate::indexing::paths::path_prefix;
 use super::super::reconciler::EventReconciler;
 use super::super::store::{self, IndexStore};
 use super::super::watcher;

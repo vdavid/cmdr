@@ -62,7 +62,8 @@ use std::collections::HashSet;
 use std::sync::{Arc, LazyLock, Mutex};
 
 use super::state::ROOT_VOLUME_ID;
-use super::{firmlinks, path_prefix};
+use super::firmlinks;
+use super::paths::path_prefix;
 use crate::ignore_poison::IgnorePoison;
 
 /// In-memory set of directory paths with unprocessed index writes in flight.

@@ -14,7 +14,7 @@
 //! read the reconciler's active-rescan scopes, drop + re-queue) lives in
 //! `event_loop::process_live_batch`.
 
-use crate::indexing::path_prefix;
+use crate::indexing::paths::path_prefix;
 use std::collections::HashMap;
 use std::path::PathBuf;
 

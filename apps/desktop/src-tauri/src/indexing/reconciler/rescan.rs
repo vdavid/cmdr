@@ -13,7 +13,7 @@
 use super::rescan_route::{self, RescanRoute};
 use super::rescan_throttle::RescanThrottle;
 use super::*;
-use crate::indexing::path_prefix;
+use crate::indexing::paths::path_prefix;
 
 impl EventReconciler {
     /// Route a `MustScanSubDirs` anchor by depth (see [`rescan_route`]). The single

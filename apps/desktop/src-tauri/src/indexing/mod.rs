@@ -15,7 +15,10 @@ mod event_loop;
 mod events;
 pub mod expected_totals;
 mod failure;
-pub mod firmlinks;
+pub(crate) mod paths;
+// Public API surface; real homes are paths/firmlinks.rs and paths/routing.rs.
+pub use paths::firmlinks;
+pub(crate) use paths::routing;
 pub mod freshness;
 pub(crate) mod lifecycle_bus;
 mod local_reconcile;
@@ -24,7 +27,6 @@ mod network_scan;
 mod partial_agg;
 mod progress_reporter;
 mod queries;
-mod routing;
 mod scan_completion;
 mod state;
 pub mod store;
@@ -38,7 +40,6 @@ mod metadata;
 mod mtp_index;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod mtp_watch;
-mod path_prefix;
 mod pending_sizes;
 mod reconciler;
 pub(crate) mod scanner;

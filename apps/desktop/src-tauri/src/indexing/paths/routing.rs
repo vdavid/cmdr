@@ -24,11 +24,11 @@ use std::path::Path;
 use rusqlite::Connection;
 
 use super::firmlinks;
-use super::scanner::ExclusionScope;
+use crate::indexing::scanner::ExclusionScope;
 #[cfg(test)]
-use super::scanner::ExclusionTier;
-use super::state::{IndexVolumeKind, ROOT_VOLUME_ID, VolumeId};
-use super::store::{self, IndexStoreError};
+use crate::indexing::scanner::ExclusionTier;
+use crate::indexing::state::{IndexVolumeKind, ROOT_VOLUME_ID, VolumeId};
+use crate::indexing::store::{self, IndexStoreError};
 
 /// Resolve a filesystem path to its index volume id.
 ///
@@ -48,7 +48,7 @@ use super::store::{self, IndexStoreError};
 ///   that `root`'s index owns) → `root`.
 pub(crate) fn volume_id_for_local_path(path: &str) -> VolumeId {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
-    if let Some(smb_id) = super::smb_index::smb_volume_id_for_path(path) {
+    if let Some(smb_id) = crate::indexing::smb_index::smb_volume_id_for_path(path) {
         return smb_id;
     }
     if let Some(mtp_id) = mtp_volume_id_for_path(path) {
@@ -76,7 +76,7 @@ pub(crate) fn volume_id_for_local_path(path: &str) -> VolumeId {
 /// is the longest ancestor of `path`. An external path with no registered mount
 /// (drive not in the manager) yields `None` → falls back to `root`.
 fn external_mount_volume_id_for_path(path: &str) -> Option<VolumeId> {
-    if !super::scanner::is_on_mounted_external_volume(path) {
+    if !crate::indexing::scanner::is_on_mounted_external_volume(path) {
         return None;
     }
     crate::file_system::get_volume_manager().mount_id_for_path(path)
@@ -148,7 +148,7 @@ fn index_read_path_pure(volume_id: &str, normalized_abs: &str, mount_root: Optio
         return mtp_index_relative_path(volume_id, normalized_abs);
     }
     let mount_root = mount_root?;
-    super::smb_watch::index_relative_path(mount_root, normalized_abs)
+    crate::indexing::smb_watch::index_relative_path(mount_root, normalized_abs)
 }
 
 /// Strip an `mtp://{device}/{storage}[/inner…]` path to the inner index-relative
@@ -213,7 +213,7 @@ pub(crate) fn index_read_path(volume_id: &str, abs_path: &str) -> Option<String>
 /// For the boot disk the two coincide after firmlink normalization, so this is a
 /// pass-through. For a `mount_rooted()` volume the index `ROOT_ID` is the mount
 /// (`/Volumes/X`), so the mount root is stripped to reach the index-relative path —
-/// via the SAME [`smb_watch::index_relative_path`](super::smb_watch::index_relative_path)
+/// via the SAME [`smb_watch::index_relative_path`](crate::indexing::smb_watch::index_relative_path)
 /// transform the SMB read/write sides funnel through, never a second copy.
 ///
 /// **Discipline (the trap):** keep every path SET (`affected_paths`,
@@ -353,7 +353,7 @@ impl IndexPathSpace {
     pub(crate) fn resolve_abs(&self, conn: &Connection, absolute: &str) -> Result<Option<i64>, IndexStoreError> {
         match self.mount_root() {
             None => store::resolve_path(conn, absolute),
-            Some(root) => match super::smb_watch::index_relative_path(root, absolute) {
+            Some(root) => match crate::indexing::smb_watch::index_relative_path(root, absolute) {
                 Some(rel) => store::resolve_path(conn, &rel),
                 None => Ok(None),
             },
