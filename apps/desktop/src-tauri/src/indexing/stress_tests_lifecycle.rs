@@ -567,7 +567,7 @@ fn shutdown_with_mixed_queued_work() {
 /// to hold under churn. Uses `spawn_for(.., false)` (non-search-feeding), the
 /// real SMB/MTP path, so the storm also can't thrash the root search generation.
 ///
-/// Complements the registry-level disconnect storm in `state.rs`
+/// Complements the registry-level disconnect storm in `lifecycle/state.rs`
 /// (`disconnect_storm_two_volumes_never_wedges_the_registry`): that one churns
 /// the freshness/registry lifecycle, this one churns the writer thread + DB.
 #[test]

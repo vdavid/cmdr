@@ -5,12 +5,11 @@
 //! Design history is in git (former `docs/specs/drive-indexing/`).
 //!
 //! `mod.rs` is a thin public-API facade. The state machine (the global
-//! `INDEXING` mutex, `IndexPhase` enum, phase transitions, and the
-//! `IndexManager` + `ReadPool` bootstrap) lives in [`state`].
+//! `INDEX_REGISTRY` mutex, `IndexPhase` enum, phase transitions, and the
+//! `IndexManager` + `ReadPool` bootstrap) lives in [`lifecycle::state`].
 
 pub mod aggregator;
 mod events;
-mod failure;
 pub(crate) mod watch;
 // Public API surface; real homes are watch/watcher.rs and watch/event_loop.rs (churn_monitor is reached via watch::).
 pub(crate) use watch::{event_loop, watcher};
@@ -22,12 +21,10 @@ pub(crate) mod paths;
 // Public API surface; real homes are paths/firmlinks.rs and paths/routing.rs.
 pub use paths::firmlinks;
 pub(crate) use paths::routing;
-pub mod freshness;
-pub(crate) mod lifecycle_bus;
-mod manager;
-mod network_scan;
-mod scan_completion;
-mod state;
+pub(crate) mod lifecycle;
+// Public API surface; real homes are lifecycle/{state,manager,network_scan,scan_completion,freshness,failure,lifecycle_bus}.rs.
+pub use lifecycle::freshness;
+pub(crate) use lifecycle::{failure, lifecycle_bus, manager, state};
 pub mod store;
 pub(crate) mod resources;
 pub mod writer;

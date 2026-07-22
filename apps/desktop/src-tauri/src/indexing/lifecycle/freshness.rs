@@ -12,7 +12,7 @@
 //!
 //! The UX surfaces five colors; four are `Freshness` variants — gray is the
 //! *absence* of a running index, mirroring the registry's "disabled = no key"
-//! model (see `state.rs`):
+//! model (see `lifecycle/state.rs`):
 //!
 //! - **Gray (disabled / not-indexed)**: no `IndexInstance` for the volume, OR a
 //!   scan was interrupted and its partial discarded (D-interrupted). Not a
@@ -24,8 +24,8 @@
 //! - **Red (indexing stopped)** → [`Freshness::Failed`]: the DB died with a fatal
 //!   storage error. Unlike Stale it is NOT browsable and does NOT self-heal on a
 //!   watcher event; the index is torn down and the only way out is a
-//!   rebuild-from-scratch rescan. See `state.rs`'s `IndexPhase::Failed` and
-//!   `failure.rs`.
+//!   rebuild-from-scratch rescan. See `lifecycle/state.rs`'s `IndexPhase::Failed` and
+//!   `lifecycle/failure.rs`.
 //!
 //! ## The transition table (this module is the single source of truth)
 //!
@@ -49,7 +49,7 @@ use serde::{Deserialize, Serialize};
 
 /// One volume's index freshness. Carried by a `Running` index instance; gray /
 /// not-indexed is the absence of an instance, not a variant here (see module
-/// docs and `state.rs`'s "disabled = no key" model).
+/// docs and `lifecycle/state.rs`'s "disabled = no key" model).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum Freshness {
@@ -68,7 +68,7 @@ pub enum Freshness {
     /// is still browsable and self-heals on rescan) and from gray/disabled (a
     /// deliberate off state). Red. Terminal in this table: only an explicit rescan
     /// (`ScanStarted`) leaves it, so a concurrent scan-completion handler can't
-    /// downgrade a dead index back to Stale/Fresh. See [`IndexFailure`](super::store::IndexFailure)
+    /// downgrade a dead index back to Stale/Fresh. See [`IndexFailure`](crate::indexing::store::IndexFailure)
     /// for the typed reason carried alongside on the `Failed` phase.
     Failed,
 }
@@ -88,7 +88,7 @@ pub enum FreshnessEvent {
     ///
     /// Only valid for an UNinterrupted scan: an interrupted/disconnected
     /// mid-scan discards the partial and the volume goes gray (no instance), so
-    /// it never reaches this event (D-interrupted, handled in `state.rs`).
+    /// it never reaches this event (D-interrupted, handled in `lifecycle/state.rs`).
     ScanCompleted,
     /// The live watcher for this volume reported the watched session is gone
     /// (disconnect, SMB session drop, MTP device unplug). ⇒ `Stale`.

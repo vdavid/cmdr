@@ -112,7 +112,7 @@ pub(crate) use rename::{
     check_rename_validity_impl, rename_managed, start_bulk_rename,
 };
 // External busy-volume seam for the drag-out fulfillment service (see
-// `state.rs` § "External busy-volume seam"). `pub(crate)` so only in-crate
+// `lifecycle/state.rs` § "External busy-volume seam"). `pub(crate)` so only in-crate
 // callers (`native_drag::fulfillment`) reach it. macOS-only: the sole consumer
 // (`native_drag`) is `#[cfg(target_os = "macos")]`, so on other targets these
 // would be dead code under `#![deny(unused)]`.

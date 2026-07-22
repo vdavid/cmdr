@@ -2,7 +2,7 @@
 //! results, the per-file `FileInfo` / `ScanResult` carriers, and the TTL
 //! safety-net for the result cache.
 //!
-//! These types are owned here but re-exported from `state.rs`, so existing
+//! These types are owned here but re-exported from `lifecycle/state.rs`, so existing
 //! `state::FileInfo` / `state::ScanResult` / `state::CachedScanResult` /
 //! `state::SCAN_PREVIEW_RESULTS` paths keep resolving.
 

@@ -34,7 +34,7 @@
 //! ([`finish_partial_scan`]: flush + `MarkDirsListed` + `ComputeAllAggregates`)
 //! so the kept partial is self-describing — scanned subtrees roll up to
 //! `min_subtree_epoch > 0` (exact, stale once the epoch is bumped), unscanned
-//! ones stay `0` (`—`/`≥`). The completion handler (`manager.rs`) then keeps the
+//! ones stay `0` (`—`/`≥`). The completion handler (`lifecycle/manager.rs`) then keeps the
 //! instance + DB and marks the volume Stale.
 //!
 //! A **user cancel** still discards: `cancelled` returns `was_cancelled` with no
@@ -43,7 +43,7 @@
 //! This scanner NEVER writes the `scan_completed_at` meta marker (on any path);
 //! the caller's completion handler does, only on a clean finish — the same
 //! `scan_completed_at`-absent ⇒ no-Fresh / heal-to-rescan mechanism the local
-//! scanner relies on (see `manager.rs`).
+//! scanner relies on (see `lifecycle/manager.rs`).
 
 use std::collections::VecDeque;
 use std::path::{Path, PathBuf};

@@ -58,7 +58,7 @@
 //! (a Queued op isn't touching the device yet) and the external drag-out seam
 //! (`register_external_volume_op`) populates directly. So the busy set stays
 //! `(running manager ops' volumes) ∪ (external registrations)` with no
-//! double-maintenance. See `state.rs` § "Busy-volumes set".
+//! double-maintenance. See `lifecycle/state.rs` § "Busy-volumes set".
 
 use std::collections::HashMap;
 use std::future::Future;

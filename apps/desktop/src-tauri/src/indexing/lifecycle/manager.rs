@@ -8,18 +8,18 @@ use std::time::Duration;
 use tauri::AppHandle;
 use tauri_specta::Event;
 
-use super::event_loop::{JOURNAL_GAP_THRESHOLD, ReplayConfig, run_replay_event_loop};
-use super::events::{
+use crate::indexing::event_loop::{JOURNAL_GAP_THRESHOLD, ReplayConfig, run_replay_event_loop};
+use crate::indexing::events::{
     ActivityPhase, DEBUG_STATS, IndexDebugStatusResponse, IndexScanStartedEvent, IndexStatusResponse, PhaseRecord,
     RescanReason, emit_rescan_notification, set_phase_for,
 };
-use super::local_reconcile;
+use crate::indexing::local_reconcile;
 use crate::indexing::events::progress_reporter::ScanProgressReporter;
-use super::scanner::{self, ScanConfig};
+use crate::indexing::scanner::{self, ScanConfig};
 use super::state::{INDEX_REGISTRY, IndexPhase, IndexVolumeKind};
-use super::store::IndexStore;
-use super::watcher::{self, DriveWatcher};
-use super::writer::{AggSource, IndexWriter, WriteMessage};
+use crate::indexing::store::IndexStore;
+use crate::indexing::watcher::{self, DriveWatcher};
+use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 use crate::ignore_poison::IgnorePoison;
 use crate::pluralize::pluralize;
 
@@ -81,7 +81,7 @@ pub(crate) struct IndexManager {
 #[derive(Debug, Clone, Copy)]
 pub(super) struct ScanCalibration {
     /// The prior completed scan's persisted totals (tier-1 denominator + ETA seed).
-    pub(super) prior: super::store::ScanCalibration,
+    pub(super) prior: crate::indexing::store::ScanCalibration,
     /// The scanned volume's used bytes at scan start (tier-2 denominator). `None`
     /// when the space-info fetch failed; never blocks or delays the scan.
     pub(super) volume_used_bytes: Option<u64>,
@@ -365,17 +365,17 @@ impl IndexManager {
         // `start_scan` deletes it before walking) and `shallow_sweep_at` (a sweep
         // was TRIGGERED, which survives a walk that never finished).
         let read_conn = self.store.read_conn();
-        let sweep_at = IndexStore::get_meta(read_conn, super::reconciler::SHALLOW_SWEEP_AT_KEY)
+        let sweep_at = IndexStore::get_meta(read_conn, crate::indexing::reconciler::SHALLOW_SWEEP_AT_KEY)
             .ok()
             .flatten()
             .and_then(|v| v.parse::<u64>().ok());
         let completed_at = status.scan_completed_at.as_deref().and_then(|s| s.parse::<u64>().ok());
-        let coalesced = IndexStore::get_meta(read_conn, super::reconciler::SHALLOW_COALESCED_KEY)
+        let coalesced = IndexStore::get_meta(read_conn, crate::indexing::reconciler::SHALLOW_COALESCED_KEY)
             .ok()
             .flatten()
             .and_then(|v| v.parse::<u32>().ok())
             .unwrap_or(0);
-        super::reconciler::seed_from_meta(&self.volume_id, sweep_at.max(completed_at), coalesced);
+        crate::indexing::reconciler::seed_from_meta(&self.volume_id, sweep_at.max(completed_at), coalesced);
 
         // One-shot ledger heal (see `indexing/DETAILS.md` § "The dir_stats ledger").
         // A DB that has never healed still carries pre-ledger drift; arm the
@@ -559,7 +559,7 @@ impl IndexManager {
                     // Journal replay only runs for a journaled volume (the boot disk),
                     // so this is `root` today; it's derived rather than hardcoded so
                     // replay resolves in the same space as the live loop that follows.
-                    space: super::IndexPathSpace::for_volume(kind, &volume_root, inodes_trustworthy),
+                    space: crate::indexing::IndexPathSpace::for_volume(kind, &volume_root, inodes_trustworthy),
                     since_event_id,
                     estimated_total,
                     heal_after_replay,
@@ -615,7 +615,7 @@ impl IndexManager {
         // snapshot the previous scan's numbers before the truncate touches anything.
         let prior = IndexStore::read_scan_calibration(self.store.read_conn()).unwrap_or_else(|e| {
             log::warn!("Failed to read prior scan calibration (tier-1 will degrade): {e}");
-            super::store::ScanCalibration::default()
+            crate::indexing::store::ScanCalibration::default()
         });
 
         // The completeness gate for reconcile-vs-truncate (see `local_rescan_reconciles`):
@@ -684,7 +684,7 @@ impl IndexManager {
         // scan OR a never-completed partial keeps the fast parallel guarded-walker bulk build
         // (see `local_rescan_reconciles` for the completeness gate). Read the entry
         // count from the live read connection BEFORE any truncate. (NOTE: the network
-        // predicate in `network_scan.rs` is intentionally left unchanged.)
+        // predicate in `lifecycle/network_scan.rs` is intentionally left unchanged.)
         let reconcile = IndexStore::get_entry_count(self.store.read_conn())
             .map(|n| local_rescan_reconciles(n, prior_scan_completed))
             .unwrap_or(false);
@@ -707,7 +707,7 @@ impl IndexManager {
         // The volume's path space: pass-through for the boot disk, mount-relative
         // strip for a mount-rooted external drive. Threaded to the scanner (exclusion
         // scope), the reconcile walk, and the completion handler's replay + live loop.
-        let space = super::IndexPathSpace::for_volume(self.kind, &self.volume_root, self.inodes_trustworthy);
+        let space = crate::indexing::IndexPathSpace::for_volume(self.kind, &self.volume_root, self.inodes_trustworthy);
 
         // Step 1: Start the FSEvents watcher BEFORE the scan so we don't miss events.
         // Unbounded so a slow buffered-event drain never backpressures the forward
@@ -950,7 +950,7 @@ impl IndexManager {
     }
 
     /// Read the current phase timeline from DebugStats.
-    pub(super) fn read_phase_timeline() -> (ActivityPhase, String, u64, Vec<PhaseRecord>) {
+    pub(crate) fn read_phase_timeline() -> (ActivityPhase, String, u64, Vec<PhaseRecord>) {
         let history = DEBUG_STATS.phase_history.lock().map(|h| h.clone()).unwrap_or_default();
 
         let (activity_phase, phase_started_at) = history
@@ -1040,7 +1040,7 @@ mod tests {
 
     fn calibration(used_bytes: Option<u64>) -> ScanCalibration {
         ScanCalibration {
-            prior: super::super::store::ScanCalibration::default(),
+            prior: crate::indexing::store::ScanCalibration::default(),
             volume_used_bytes: used_bytes,
         }
     }

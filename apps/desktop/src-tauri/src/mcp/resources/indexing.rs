@@ -8,7 +8,7 @@
 //! freshness + phase summary) and David debugging "why is this scan stuck?" (the
 //! `?volume=` timeline, trigger, and watcher stats). Both read the same indexing
 //! module APIs; freshness is never re-derived here (the one transition table
-//! lives in `indexing/freshness.rs`).
+//! lives in `indexing/lifecycle/freshness.rs`).
 //!
 //! The builders (`build_indexing_text`, `build_volume_debug_text`) are pure over
 //! an injected [`VolumeIndexingSnapshot`] (the `resources/transfers.rs`

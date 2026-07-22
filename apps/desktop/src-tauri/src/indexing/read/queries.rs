@@ -1,5 +1,5 @@
 //! The read-only index query surface the IPC commands call (status + dir-stats),
-//! distinct from the lifecycle / registry core in `state.rs`.
+//! distinct from the lifecycle / registry core in `lifecycle/state.rs`.
 //!
 //! These functions never mutate registry state: they read a volume's freshness +
 //! phase (`get_status` / `get_debug_status` / `get_volume_index_status`) or look

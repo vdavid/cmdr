@@ -79,7 +79,7 @@ pub(super) async fn wait_until(mut predicate: impl FnMut() -> bool) -> bool {
 /// `InMemoryVolume`'s default root-`/` lane) serializes otherwise-unrelated tests
 /// and couples their timing. Keep new local tests on this, NOT `"root"`. It is
 /// NOT the orphan-safety mechanism — that's the manager spawning admitted ops on
-/// the app runtime (`manager.rs` § the admission pass), which holds regardless of
+/// the app runtime (`lifecycle/manager.rs` § the admission pass), which holds regardless of
 /// lanes.
 pub(super) fn unique_lane_id() -> String {
     format!("test-lane-{}", Uuid::new_v4())

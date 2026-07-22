@@ -27,7 +27,7 @@ use tokio::sync::Notify;
 
 use crate::ignore_poison::IgnorePoison;
 
-use super::store::{IndexFailure, IndexStoreError};
+use crate::indexing::store::{IndexFailure, IndexStoreError};
 
 /// A one-shot, per-volume "the index DB has died" signal. See the module docs for
 /// who shares it and why.

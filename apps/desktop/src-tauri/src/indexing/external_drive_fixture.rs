@@ -547,7 +547,7 @@ mod tests {
     /// test covers on an actual `msdos` filesystem. Attaches a synthetic FAT32
     /// image, populates a known tree, then drives the production local scan pipeline
     /// (`scan_volume` with the `MountRooted` exclusion scope and FAT's
-    /// untrusted-inode flag, built from an `IndexPathSpace` exactly as `manager.rs`
+    /// untrusted-inode flag, built from an `IndexPathSpace` exactly as `lifecycle/manager.rs`
     /// does for a `LocalExternal` drive) into a store, and asserts the drive's own
     /// index reflects the tree.
     ///

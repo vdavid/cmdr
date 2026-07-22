@@ -1,4 +1,4 @@
-use super::super::enrichment::get_read_pool_for;
+use crate::indexing::enrichment::get_read_pool_for;
 use super::*;
 
 /// Every `IndexVolumeKind`, so a new variant can't be added without deciding

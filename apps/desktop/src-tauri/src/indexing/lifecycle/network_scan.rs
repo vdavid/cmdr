@@ -16,15 +16,15 @@ use std::sync::atomic::Ordering;
 
 use tauri_specta::Event;
 
-use super::events::{
+use crate::indexing::events::{
     ActivityPhase, DEBUG_STATS, IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexScanAbortedEvent,
     IndexScanCompleteEvent, IndexScanStartedEvent, set_phase_for,
 };
 use super::manager::{IndexManager, ScanCalibration};
 use crate::indexing::events::progress_reporter::ScanProgressReporter;
 use super::state::IndexVolumeKind;
-use super::store::IndexStore;
-use super::writer::{AggSource, WriteMessage};
+use crate::indexing::store::IndexStore;
+use crate::indexing::writer::{AggSource, WriteMessage};
 
 /// Replay the changes the live watcher buffered during a `Volume`-trait scan,
 /// dispatching to the right per-backend buffer (SMB `CHANGE_NOTIFY` vs. MTP PTP
@@ -34,8 +34,8 @@ use super::writer::{AggSource, WriteMessage};
 fn replay_buffered_changes_for_kind(kind: IndexVolumeKind, volume_id: &str) -> bool {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     match kind {
-        IndexVolumeKind::Smb => return super::replay_buffered_changes(volume_id),
-        IndexVolumeKind::Mtp => return super::replay_buffered_mtp_changes(volume_id),
+        IndexVolumeKind::Smb => return crate::indexing::replay_buffered_changes(volume_id),
+        IndexVolumeKind::Mtp => return crate::indexing::replay_buffered_mtp_changes(volume_id),
         // Local-scanner kinds take the guarded-walker path and never buffer network changes.
         IndexVolumeKind::Local | IndexVolumeKind::LocalExternal => {}
     }
@@ -49,8 +49,8 @@ fn replay_buffered_changes_for_kind(kind: IndexVolumeKind, volume_id: &str) -> b
 fn discard_buffered_changes_for_kind(kind: IndexVolumeKind, volume_id: &str) {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     match kind {
-        IndexVolumeKind::Smb => super::discard_buffered_changes(volume_id),
-        IndexVolumeKind::Mtp => super::discard_buffered_mtp_changes(volume_id),
+        IndexVolumeKind::Smb => crate::indexing::discard_buffered_changes(volume_id),
+        IndexVolumeKind::Mtp => crate::indexing::discard_buffered_mtp_changes(volume_id),
         // Local-scanner kinds take the guarded-walker path and never buffer network changes.
         IndexVolumeKind::Local | IndexVolumeKind::LocalExternal => {}
     }
@@ -146,7 +146,7 @@ impl IndexManager {
     /// on cancel/error the partial is discarded by RESETTING the volume to gray
     /// (removing the registry instance), per D-interrupted.
     pub(super) fn start_volume_scan(&mut self, scan_trigger: &str) -> Result<(), String> {
-        use super::scanner::{ScanHandle, ScanProgress};
+        use crate::indexing::scanner::{ScanHandle, ScanProgress};
         use std::sync::atomic::AtomicBool;
 
         if self.scanning.load(Ordering::Relaxed) {
@@ -295,10 +295,10 @@ impl IndexManager {
         // Pace the walk against foreground activity on THIS volume: while the user
         // browses the share, the walk drops to one listing in flight so a navigation
         // isn't queued behind the scan's backlog. See `indexing/network_scanner/scan_pace.rs`.
-        let pacer = super::network_scanner::scan_pace::ScanPacer::for_volume(self.volume_id.clone());
+        let pacer = crate::indexing::network_scanner::scan_pace::ScanPacer::for_volume(self.volume_id.clone());
         tauri::async_runtime::spawn(async move {
             let result = if reconcile {
-                super::network_scanner::reconcile_volume_via_trait(
+                crate::indexing::network_scanner::reconcile_volume_via_trait(
                     volume,
                     root,
                     writer.clone(),
@@ -308,7 +308,7 @@ impl IndexManager {
                 )
                 .await
             } else {
-                super::network_scanner::scan_volume_via_trait(volume, root, writer.clone(), progress, cancelled, pacer)
+                crate::indexing::network_scanner::scan_volume_via_trait(volume, root, writer.clone(), progress, cancelled, pacer)
                     .await
             };
 

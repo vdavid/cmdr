@@ -23,7 +23,7 @@
 //! `read/pending_sizes.rs` and the `DETAILS.md` registry section.
 //!
 //! `mod.rs` is a thin facade that re-exports the public functions defined
-//! here; module-internal callers (e.g. `manager.rs`) can use the items
+//! here; module-internal callers (e.g. `lifecycle/manager.rs`) can use the items
 //! directly via `super::state`.
 
 use std::collections::HashMap;
@@ -35,14 +35,14 @@ use std::time::Duration;
 
 use tauri::AppHandle;
 
-use super::enrichment::{ReadPool, install_read_pool, uninstall_read_pool};
+use crate::indexing::enrichment::{ReadPool, install_read_pool, uninstall_read_pool};
 use super::failure::IndexFailureSignal;
 use super::freshness::{Freshness, FreshnessEvent};
 use super::manager::IndexManager;
-use super::pending_sizes::{PendingSizes, install_pending_sizes, uninstall_pending_sizes};
-use super::store::{IndexFailure, IndexStore};
-use super::verifier;
-use super::writer::WriteMessage;
+use crate::indexing::pending_sizes::{PendingSizes, install_pending_sizes, uninstall_pending_sizes};
+use crate::indexing::store::{IndexFailure, IndexStore};
+use crate::indexing::verifier;
+use crate::indexing::writer::WriteMessage;
 
 use crate::settings::FullDiskAccessChoice;
 
@@ -111,7 +111,7 @@ pub(crate) struct IndexInstance {
     /// the live-watch layer can flip it without holding the registry
     /// lock. `None` means "not yet determined" (e.g. mid-initialization before
     /// the first scan transition); a `Running` volume always carries `Some`. The
-    /// freshness state machine itself lives in `freshness.rs`. See DETAILS §
+    /// freshness state machine itself lives in `lifecycle/freshness.rs`. See DETAILS §
     /// "The freshness model".
     pub(crate) freshness: Arc<std::sync::Mutex<Option<Freshness>>>,
 }
@@ -239,7 +239,7 @@ pub(crate) fn get_instance_pending_sizes(volume_id: &str) -> Option<Arc<PendingS
 ///
 /// `None` while the volume is `Initializing` (its scan owns the writer) or
 /// absent.
-pub(crate) fn get_writer_and_scanning_for(volume_id: &str) -> Option<(super::writer::IndexWriter, bool)> {
+pub(crate) fn get_writer_and_scanning_for(volume_id: &str) -> Option<(crate::indexing::writer::IndexWriter, bool)> {
     let reg = INDEX_REGISTRY.lock().ok()?;
     match reg.get(volume_id).map(|i| &i.phase) {
         Some(IndexPhase::Running(mgr)) => Some((mgr.writer.clone(), mgr.scanning.load(Ordering::Relaxed))),
@@ -468,7 +468,7 @@ pub(crate) fn apply_freshness_event_on(
         && let Some(app) = APP_HANDLE.get()
     {
         use tauri_specta::Event;
-        let _ = super::events::IndexFreshnessChangedEvent {
+        let _ = crate::indexing::events::IndexFreshnessChangedEvent {
             volume_id: volume_id.to_string(),
             freshness: next,
         }
@@ -636,7 +636,7 @@ fn start_indexing_for(
     inodes_trustworthy: bool,
 ) -> Result<(), String> {
     log::info!("start_indexing: begin for '{volume_id}' ({kind:?})");
-    super::resources::memory_watchdog::start(app.clone());
+    crate::indexing::resources::memory_watchdog::start(app.clone());
 
     // Lock-first reservation, per volume id. We open the init store and the
     // read-path handles, then atomically claim the `(absent) -> Initializing`
@@ -1158,7 +1158,7 @@ pub(crate) fn stop_all_indexing() {
     }
     // Tell shared-resident-pool subsystems (media_index enrichment) to yield to the
     // SAME 16 GB ceiling, rather than a second independent budget over one pool.
-    super::resources::subsystem_stop::run_subsystem_stop_hooks();
+    crate::indexing::resources::subsystem_stop::run_subsystem_stop_hooks();
 }
 
 /// The typed kind of a registered volume, or `None` if it has no index instance.
@@ -1337,10 +1337,10 @@ fn fail_index(app: &AppHandle, volume_id: &str, reason: IndexFailure) {
     // raw), so the debug timeline, the per-volume phase event, and the badge all
     // learn the volume stopped. Freshness `Failed` is terminal, so a late
     // scan-completion handler can't downgrade it.
-    super::events::set_phase_for(
+    crate::indexing::events::set_phase_for(
         app,
         volume_id,
-        super::events::ActivityPhase::Failed,
+        crate::indexing::events::ActivityPhase::Failed,
         &format!("fatal storage error (SQLite {}/{})", reason.code, reason.extended_code),
     );
     apply_freshness_event(volume_id, FreshnessEvent::StorageFailed);

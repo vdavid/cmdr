@@ -86,7 +86,7 @@ pub(super) fn phase_to_str(phase: AggregationPhase) -> &'static str {
 /// — an SMB/MTP writer mutating its own DB must not invalidate the root search
 /// index it doesn't feed (that would thrash a reload of the whole root index on
 /// every NAS/phone change-notify event). The gate lives in
-/// [`MutationTracker::bump`], the single point of policy; see `state.rs`'s
+/// [`MutationTracker::bump`], the single point of policy; see `lifecycle/state.rs`'s
 /// `feeds_search` plumbing and `indexing/DETAILS.md` § "Search stays single-volume".
 pub(crate) static WRITER_GENERATION: AtomicU64 = AtomicU64::new(1);
 

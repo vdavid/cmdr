@@ -125,7 +125,7 @@ pub(in crate::indexing) struct SweepRecord {
     /// When the last full walk was TRIGGERED or completed (unix secs).
     ///
     /// Trigger time counts, not only completion, and that is load-bearing:
-    /// `start_scan` DELETES `meta.scan_completed_at` before walking (`manager.rs`,
+    /// `start_scan` DELETES `meta.scan_completed_at` before walking (`lifecycle/manager.rs`,
     /// so a killed scan heals to a fresh one). If the window read only
     /// `scan_completed_at`, an interrupted sweep would leave it absent, the window
     /// would look permanently expired, and we would sweep on every launch — the

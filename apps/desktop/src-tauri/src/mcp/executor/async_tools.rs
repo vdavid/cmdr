@@ -157,7 +157,7 @@ pub async fn execute_await<R: Runtime>(app: &AppHandle<R>, params: &Value) -> To
 /// Whether a volume's current freshness satisfies an `index_status` await
 /// target. Reuses the resource's `freshness_token` so the resource text and the
 /// await condition agree by construction; never re-derives freshness (the one
-/// transition table lives in `indexing/freshness.rs`).
+/// transition table lives in `indexing/lifecycle/freshness.rs`).
 fn index_status_matches(freshness: Option<Freshness>, target: &str) -> bool {
     freshness_token(freshness) == target
 }

@@ -14,17 +14,17 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::AppHandle;
 use tauri_specta::Event;
 
-use super::IndexPathSpace;
-use super::event_loop::run_live_event_loop;
-use super::events::{
+use crate::indexing::IndexPathSpace;
+use crate::indexing::event_loop::run_live_event_loop;
+use crate::indexing::events::{
     ActivityPhase, DEBUG_STATS, IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexScanAbortedEvent,
     IndexScanCompleteEvent, RescanReason, emit_rescan_notification, set_phase_for,
 };
-use super::reconciler::{self, EventReconciler};
-use super::scanner::{ScanError, ScanSummary};
-use super::store::IndexStore;
-use super::watcher::FsChangeEvent;
-use super::writer::{IndexWriter, WriteMessage};
+use crate::indexing::reconciler::{self, EventReconciler};
+use crate::indexing::scanner::{ScanError, ScanSummary};
+use crate::indexing::store::IndexStore;
+use crate::indexing::watcher::FsChangeEvent;
+use crate::indexing::writer::{IndexWriter, WriteMessage};
 use crate::ignore_poison::IgnorePoison;
 use crate::pluralize::pluralize;
 
@@ -369,7 +369,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
             // If the failure is a VANISHED volume (its root went unlistable —
             // a yanked external drive), the scan will never complete on its own, so
             // clear the frontend's live activity and go Idle — mirroring the network
-            // disconnect arm (`network_scan.rs`). A legitimately empty root
+            // disconnect arm (`lifecycle/network_scan.rs`). A legitimately empty root
             // (`EmptyRoot`) or a panic is NOT a vanished volume, so it does not
             // abort. No `scan_completed_at` was written (the meta writes live in the
             // clean-completion arm only), so the index heals to a rescan on remount.

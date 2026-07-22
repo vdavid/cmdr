@@ -16,7 +16,7 @@
 //!
 //! These are the read-side mirror of the write-side mount-relative transforms in
 //! `transports/smb/watch` / `transports/mtp/watch`. They're kept here, separate from the lifecycle /
-//! registry core in `state.rs`, because they're pure path arithmetic the read
+//! registry core in `lifecycle/state.rs`, because they're pure path arithmetic the read
 //! query surface (`read/queries.rs`) and enrichment (`read/enrichment.rs`) both depend on.
 
 use std::path::Path;

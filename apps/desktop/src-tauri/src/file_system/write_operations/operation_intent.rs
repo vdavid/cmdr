@@ -2,7 +2,7 @@
 //!
 //! [`OperationIntent`] is the cancellation/rollback machine (`Running →
 //! RollingBack/Stopped`, `Stopped` terminal); [`PauseGate`] is the orthogonal
-//! pause/resume machine. Both are owned by `WriteOperationState` (in `state.rs`)
+//! pause/resume machine. Both are owned by `WriteOperationState` (in `lifecycle/state.rs`)
 //! and re-exported from there, so existing `state::OperationIntent` /
 //! `state::PauseGate` / `state::is_cancelled` / `state::load_intent` paths keep
 //! resolving.

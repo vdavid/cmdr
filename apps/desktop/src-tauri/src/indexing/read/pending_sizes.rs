@@ -39,7 +39,7 @@
 //!   expanding would either strip `/a` while one is in flight or leak it forever.
 //!   Holding only roots keeps release exact and needs no refcounting.
 //!
-//! **Read** (`DirStats` build in `state.rs`): a single `is_pending` test per
+//! **Read** (`DirStats` build in `lifecycle/state.rs`): a single `is_pending` test per
 //! directory, carried to the frontend on `DirStats.recursive_size_pending`.
 //!
 //! **Per-volume routing (both tiers).** Marks, holds, releases, and the
@@ -169,7 +169,7 @@ impl PendingSizes {
 }
 
 /// The root volume's pending-size tracker, installed/cleared in lockstep with
-/// `READ_POOL` (see `read/enrichment.rs` and the lifecycle sites in `state.rs`).
+/// `READ_POOL` (see `read/enrichment.rs` and the lifecycle sites in `lifecycle/state.rs`).
 /// `None` whenever root indexing isn't running, so reads return "not pending".
 /// The root `IndexInstance` shares this same `Arc`. Non-root volumes' trackers
 /// live in their `IndexInstance` (see `crate::indexing::state::get_instance_pending_sizes`).
