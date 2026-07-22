@@ -18,7 +18,7 @@ vi.mock('$lib/tauri-commands', () => ({
   getFilesAtIndices: (...args: unknown[]) => getFilesAtIndices(...(args as [])),
 }))
 
-const navigateToDirInPane = vi.fn(() => Promise.resolve())
+const navigateToDirInPane = vi.fn(() => Promise.resolve(true))
 const resolveLocationOrToast = vi.fn(() => Promise.resolve<{ volumeId: string; path: string } | null>(null))
 vi.mock('$lib/file-explorer/navigation/navigate-and-select', () => ({
   navigateToDirInPane: (...args: unknown[]) => navigateToDirInPane(...(args as [])),
@@ -54,6 +54,7 @@ function makeExplorer(listingId: string | null): ExplorerAPI {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  navigateToDirInPane.mockResolvedValue(true)
   resolveLocationOrToast.mockResolvedValue({ volumeId: 'root', path: '/fixtures' })
   getFilesAtIndices.mockResolvedValue([{ name: 'Photos', path: '/fixtures/Photos' }])
 })
@@ -78,6 +79,18 @@ describe('resolveDiskFixture', () => {
     expect(disk?.entries).toHaveLength(1)
     // Backend indices, so the synthetic `..` row can never reach a fixture.
     expect(getFilesAtIndices).toHaveBeenCalledWith('listing-7', [0, 1, 2, 3, 4, 5], true)
+  })
+
+  it('opens nothing when the pane refused to navigate', async () => {
+    // The refusal is the dangerous case: the pane keeps its PREVIOUS directory's
+    // still-valid listing id, so the `!listingId` guard below sails right past it
+    // and the dialog would open against the wrong directory with real-looking
+    // entries and tallies. Silently reviewing the wrong folder is exactly what
+    // this module exists to prevent.
+    navigateToDirInPane.mockResolvedValue(false)
+
+    expect(await resolveDiskFixture(makeExplorer('listing-of-the-previous-dir'), fixtures)).toBeNull()
+    expect(getFilesAtIndices).not.toHaveBeenCalled()
   })
 
   it('opens nothing when the pane has no listing yet', async () => {

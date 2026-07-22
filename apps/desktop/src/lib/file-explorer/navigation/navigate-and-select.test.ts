@@ -42,9 +42,16 @@ describe('navigateToDirInPane', () => {
     expect(moveCursor).not.toHaveBeenCalled()
   })
 
-  it('bails on a refusal without throwing', async () => {
+  it('reports success so a caller can trust the pane got there', async () => {
+    const { explorer } = makeExplorer(started())
+    await expect(navigateToDirInPane(explorer, 'left', loc('/tmp/here'))).resolves.toBe(true)
+  })
+
+  it('bails on a refusal without throwing, and reports it', async () => {
     const { explorer, moveCursor } = makeExplorer(refused('snapshot pane on a missing volume'))
-    await expect(navigateToDirInPane(explorer, 'right', loc('/tmp'))).resolves.toBeUndefined()
+    // `false`, not `undefined`: the pane still holds its previous directory's
+    // valid listing id, so a caller reading pane state can't detect the refusal.
+    await expect(navigateToDirInPane(explorer, 'right', loc('/tmp'))).resolves.toBe(false)
     expect(moveCursor).not.toHaveBeenCalled()
   })
 })

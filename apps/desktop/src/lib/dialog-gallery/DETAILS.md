@@ -218,6 +218,15 @@ navigates the focused pane to the fixture directory (`navigateToDirInPane`) and 
 id means the preview doesn't open at all. Navigating the focused pane is a real side effect; the Debug panel discloses
 it on every fixture-directory row.
 
+**Why `navigateToDirInPane` returns a boolean.** A REFUSED navigation is the dangerous case, and it can't be detected by
+inspecting pane state afterwards: the pane stays on its previous directory still holding a perfectly valid listing id,
+so the `!listingId` guard sails straight past it and the dialog opens against the wrong directory with real-looking
+entries and tallies. Nothing on screen would look wrong to a reviewer. So the helper reports whether the pane actually
+got there and `resolveDiskFixture` bails on `false`. Callers that only move the user (`go-to-path`) can ignore the
+result; the helper's own warning is enough for them. ❌ Don't "fix" this by comparing `getPaneLocation().path` to the
+fixture path instead — trailing slashes, case-insensitive HFS+, and symlinked paths all make that comparison wrong in
+ways that would silently disable working rows.
+
 The same pass fetches real entries via `getFilesAtIndices` (backend indices, so the synthetic `..` row can't reach a
 fixture), which is where delete's items and transfer's sources come from. That's why `fixtures/disk.ts` holds BUILDERS
 rather than data: names, sizes, and folder flags come off the disk, not out of a literal.

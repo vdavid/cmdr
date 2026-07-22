@@ -61,7 +61,14 @@ export async function resolveDiskFixture(
   if (!location) return null
 
   const paneSide = explorer.getFocusedPane()
-  await navigateToDirInPane(explorer, paneSide, location)
+  // A refused navigation leaves the pane on its previous directory holding a
+  // still-valid listing id, so the `!listingId` guard below would sail past it and
+  // the dialog would open against the WRONG directory with real-looking entries
+  // and tallies. Nothing about the result would look wrong to a reviewer.
+  if (!(await navigateToDirInPane(explorer, paneSide, location))) {
+    log.warn('Dialog gallery: the {pane} pane refused to navigate to {root}', { pane: paneSide, root: fixtures.root })
+    return null
+  }
 
   const listingId = explorer.getPaneListingId(paneSide)
   if (!listingId) {

@@ -83,8 +83,14 @@ function paneShowsLocalDir(explorer: ExplorerAPI, pane: Pane, dir: string): bool
  * own normal navigation lands the cursor on the 0th row (`..`). The caller has
  * already resolved the dir's volume (the edge resolver), so `navigate()` lands on
  * the right volume whether or not it matches the pane's current one.
+ *
+ * Returns whether the pane actually got there. A refusal leaves the pane on its
+ * PREVIOUS directory, still holding a perfectly valid listing id, so a caller
+ * that reads pane state afterwards can't tell the difference by inspecting it —
+ * it has to check this. Callers that only move the user (go-to-path) can ignore
+ * the result; the warning above is enough for them.
  */
-export async function navigateToDirInPane(explorer: ExplorerAPI, pane: Pane, location: Location): Promise<void> {
+export async function navigateToDirInPane(explorer: ExplorerAPI, pane: Pane, location: Location): Promise<boolean> {
   const result = explorer.navigate({ pane, to: { goTo: location }, source: 'user' })
   if (result.status === 'refused') {
     log.warn('navigateToDirInPane: navigate refused {pane} {dir}: {reason}', {
@@ -92,9 +98,10 @@ export async function navigateToDirInPane(explorer: ExplorerAPI, pane: Pane, loc
       dir: location.path,
       reason: result.reason.message,
     })
-    return
+    return false
   }
   await result.settled
+  return true
 }
 
 /**
