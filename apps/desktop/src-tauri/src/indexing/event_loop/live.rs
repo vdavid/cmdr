@@ -37,7 +37,7 @@ use crate::pluralize::pluralize;
 /// Marking rides the exact paths that drive the UI refresh, so the "size
 /// updating" hourglass shows on precisely the directories whose sizes are about
 /// to change. The flags clear wholesale once the writer drains (see
-/// `writer::writer_loop` and `indexing/pending_sizes.rs`). Live-path only — the
+/// `writer::writer_loop` and `indexing/read/pending_sizes.rs`). Live-path only — the
 /// shared `process_fs_event` is deliberately not instrumented, so replay doesn't
 /// flag everything during startup (the global indexing flag covers scans).
 ///

@@ -67,7 +67,7 @@ pub struct DirStats {
     /// directory or a descendant (a big delete/copy in flight). The frontend
     /// shows a "size updating" hourglass so the number isn't read as settled.
     /// Sourced from the in-memory `pending_sizes` tracker at build time, not the
-    /// DB. See `indexing/pending_sizes.rs`.
+    /// DB. See `indexing/read/pending_sizes.rs`.
     pub recursive_size_pending: bool,
     /// Whether `recursive_size` is an exact total (`true`) or a lower bound
     /// (`false`), derived backend-side from the subtree's `min_subtree_epoch`

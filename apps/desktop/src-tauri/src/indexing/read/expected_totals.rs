@@ -13,8 +13,8 @@ use std::path::{Path, PathBuf};
 use rusqlite::Connection;
 
 use super::enrichment::get_read_pool;
-use super::firmlinks;
-use super::store::{self, EntryRow, IndexStore};
+use crate::indexing::firmlinks;
+use crate::indexing::store::{self, EntryRow, IndexStore};
 
 /// Aggregate "what the scan is expected to find" totals, sourced from the
 /// index's pre-computed `dir_stats`.

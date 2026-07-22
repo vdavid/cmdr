@@ -11,9 +11,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use rusqlite::Connection;
 
-use super::firmlinks;
-use super::state::ROOT_VOLUME_ID;
-use super::store::{self, DirStatsById, IndexStore, IndexStoreError};
+use crate::indexing::firmlinks;
+use crate::indexing::state::ROOT_VOLUME_ID;
+use crate::indexing::store::{self, DirStatsById, IndexStore, IndexStoreError};
 use crate::file_system::listing::FileEntry;
 use crate::ignore_poison::IgnorePoison;
 use crate::pluralize::pluralize;
@@ -27,7 +27,7 @@ pub(crate) struct ReadPool {
 }
 
 thread_local! {
-    pub(super) static THREAD_CONN: RefCell<Option<(PathBuf, u64, Connection)>> = const { RefCell::new(None) };
+    pub(crate) static THREAD_CONN: RefCell<Option<(PathBuf, u64, Connection)>> = const { RefCell::new(None) };
 }
 
 impl ReadPool {
@@ -40,7 +40,7 @@ impl ReadPool {
     }
 
     /// Invalidate all thread-local connections. Next `with_conn` call reopens.
-    pub(super) fn invalidate(&self) {
+    pub(crate) fn invalidate(&self) {
         self.generation.fetch_add(1, Ordering::Release);
     }
 
@@ -79,13 +79,13 @@ impl ReadPool {
 /// Root is special-cased to this global (rather than read from the registry)
 /// for two reasons: search reads it on the hot path, and the indexing tests
 /// install it directly. Non-root volumes' pools live in their `IndexInstance`
-/// (see `super::state::get_instance_read_pool`).
-pub(super) static READ_POOL: LazyLock<std::sync::Mutex<Option<Arc<ReadPool>>>> =
+/// (see `crate::indexing::state::get_instance_read_pool`).
+pub(crate) static READ_POOL: LazyLock<std::sync::Mutex<Option<Arc<ReadPool>>>> =
     LazyLock::new(|| std::sync::Mutex::new(None));
 
 /// Tests that touch `READ_POOL` must hold this lock to avoid races with parallel test threads.
 #[cfg(test)]
-pub(super) static READ_POOL_TEST_MUTEX: LazyLock<std::sync::Mutex<()>> = LazyLock::new(|| std::sync::Mutex::new(()));
+pub(crate) static READ_POOL_TEST_MUTEX: LazyLock<std::sync::Mutex<()>> = LazyLock::new(|| std::sync::Mutex::new(()));
 
 /// Clone the root volume's pool Arc. Lock held for nanoseconds (just an Arc
 /// clone). Kept for the search module (local-disk-only by D7) and the root
@@ -101,13 +101,13 @@ pub(crate) fn get_read_pool_for(volume_id: &str) -> Option<Arc<ReadPool>> {
     if volume_id == ROOT_VOLUME_ID {
         get_read_pool()
     } else {
-        super::state::get_instance_read_pool(volume_id)
+        crate::indexing::state::get_instance_read_pool(volume_id)
     }
 }
 
 /// Install the root volume's read pool into the global fast handle. No-op for
 /// non-root volumes: their pool is owned by the `IndexInstance` directly.
-pub(super) fn install_read_pool(volume_id: &str, pool: Arc<ReadPool>) {
+pub(crate) fn install_read_pool(volume_id: &str, pool: Arc<ReadPool>) {
     if volume_id == ROOT_VOLUME_ID {
         *READ_POOL.lock_ignore_poison() = Some(pool);
     }
@@ -116,11 +116,11 @@ pub(super) fn install_read_pool(volume_id: &str, pool: Arc<ReadPool>) {
 /// Clear the root volume's global read pool and return it (for invalidation on
 /// stop/clear). Non-root volumes' pools are dropped with their `IndexInstance`;
 /// this returns the instance's pool so the caller can `invalidate()` it.
-pub(super) fn uninstall_read_pool(volume_id: &str) -> Option<Arc<ReadPool>> {
+pub(crate) fn uninstall_read_pool(volume_id: &str) -> Option<Arc<ReadPool>> {
     if volume_id == ROOT_VOLUME_ID {
         READ_POOL.lock_ignore_poison().take()
     } else {
-        super::state::get_instance_read_pool(volume_id)
+        crate::indexing::state::get_instance_read_pool(volume_id)
     }
 }
 
@@ -283,8 +283,8 @@ pub fn enrich_entries_with_index_on_volume(volume_id: &str, entries: &mut [FileE
     // applies only the per-volume junk tier: it must NOT exclude its own
     // `/Volumes/X/...` paths (those ARE its index), only junk like a
     // `.Spotlight-V100` a user navigated into.
-    let scope = super::routing::exclusion_scope_for_volume(volume_id);
-    if super::scanner::should_exclude(&parent_path, &scope) {
+    let scope = crate::indexing::routing::exclusion_scope_for_volume(volume_id);
+    if crate::indexing::scanner::should_exclude(&parent_path, &scope) {
         return;
     }
 
@@ -292,7 +292,7 @@ pub fn enrich_entries_with_index_on_volume(volume_id: &str, entries: &mut [FileE
     // for `root`, mount-relative for an SMB volume (its index `ROOT_ID` is the
     // mount root, so a mount-absolute parent would resolve to nothing). `None`
     // means the parent isn't under this volume's mount root — skip.
-    let index_parent_path = match super::routing::index_read_path(volume_id, &parent_path) {
+    let index_parent_path = match crate::indexing::routing::index_read_path(volume_id, &parent_path) {
         Some(p) => p,
         None => {
             log::debug!("enrich: parent {parent_path} not under volume '{volume_id}' mount root, skipping");
@@ -362,7 +362,7 @@ fn apply_dir_stats(entry: &mut FileEntry, stats: &DirStatsById, current_epoch: u
 }
 
 /// Fast path: resolve parent dir → id, get child dir IDs, batch-fetch stats.
-pub(super) fn enrich_via_parent_id_on(
+pub(crate) fn enrich_via_parent_id_on(
     entries: &mut [FileEntry],
     conn: &Connection,
     parent_path: &str,
@@ -437,7 +437,7 @@ pub(super) fn enrich_via_parent_id_on(
 ///
 /// Each entry's mount-absolute path is mapped into the volume's index path space
 /// (mount-relative for SMB) before `resolve_path`, mirroring the fast path.
-pub(super) fn enrich_via_individual_paths_on(
+pub(crate) fn enrich_via_individual_paths_on(
     volume_id: &str,
     entries: &mut [FileEntry],
     conn: &Connection,
@@ -449,7 +449,7 @@ pub(super) fn enrich_via_individual_paths_on(
     let mut id_to_path: Vec<(i64, String)> = Vec::new();
     for entry in entries.iter().filter(|e| e.is_directory && !e.is_symlink) {
         let normalized = firmlinks::normalize_path(&entry.path);
-        let Some(index_path) = super::routing::index_read_path(volume_id, &normalized) else {
+        let Some(index_path) = crate::indexing::routing::index_read_path(volume_id, &normalized) else {
             continue;
         };
         if let Ok(Some(id)) = store::resolve_path(conn, &index_path) {
@@ -482,7 +482,7 @@ pub(super) fn enrich_via_individual_paths_on(
     // Apply to entries (key on the same index-rooted path the map was built with)
     for entry in entries.iter_mut().filter(|e| e.is_directory && !e.is_symlink) {
         let normalized = firmlinks::normalize_path(&entry.path);
-        let Some(index_path) = super::routing::index_read_path(volume_id, &normalized) else {
+        let Some(index_path) = crate::indexing::routing::index_read_path(volume_id, &normalized) else {
             continue;
         };
         if let Some(stats) = stats_map.get(&index_path) {
@@ -614,14 +614,14 @@ mod tests {
     fn excluded_listing_parents_are_skipped() {
         let parent = listing_parent_path(&[dir("/proc/123/fd")]).expect("has a parent");
         assert!(
-            super::super::scanner::should_exclude(&parent, &super::super::scanner::ExclusionScope::boot_disk()),
+            crate::indexing::scanner::should_exclude(&parent, &crate::indexing::scanner::ExclusionScope::boot_disk()),
             "an excluded system path must be skipped by enrichment"
         );
         // A boot-volume listing is NOT excluded — enrichment must still run there.
         let home = listing_parent_path(&[dir("/Users/veszelovszki/project")]).expect("has a parent");
-        assert!(!super::super::scanner::should_exclude(
+        assert!(!crate::indexing::scanner::should_exclude(
             &home,
-            &super::super::scanner::ExclusionScope::boot_disk()
+            &crate::indexing::scanner::ExclusionScope::boot_disk()
         ));
     }
 }

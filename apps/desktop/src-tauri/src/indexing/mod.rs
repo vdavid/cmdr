@@ -10,11 +10,13 @@
 
 pub mod aggregator;
 mod churn_monitor;
-mod enrichment;
 mod event_loop;
 mod events;
-pub mod expected_totals;
 mod failure;
+pub(crate) mod read;
+// Public API surface; real homes are read/expected_totals.rs, read/enrichment.rs, read/pending_sizes.rs.
+pub use read::expected_totals;
+pub(crate) use read::{enrichment, pending_sizes};
 pub(crate) mod paths;
 // Public API surface; real homes are paths/firmlinks.rs and paths/routing.rs.
 pub use paths::firmlinks;
@@ -26,7 +28,6 @@ mod manager;
 mod network_scan;
 mod partial_agg;
 mod progress_reporter;
-mod queries;
 mod scan_completion;
 mod state;
 pub mod store;
@@ -40,7 +41,6 @@ mod metadata;
 mod mtp_index;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod mtp_watch;
-mod pending_sizes;
 mod reconciler;
 pub(crate) mod scanner;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -74,15 +74,15 @@ mod reconcile_bench;
 #[cfg(test)]
 mod reconcile_correctness;
 
-pub(crate) use enrichment::{ReadPool, get_read_pool, get_read_pool_for};
-pub use enrichment::{enrich_entries_with_index, enrich_entries_with_index_on_volume};
+pub(crate) use read::enrichment::{ReadPool, get_read_pool, get_read_pool_for};
+pub use read::enrichment::{enrich_entries_with_index, enrich_entries_with_index_on_volume};
 #[cfg(test)]
-pub(crate) use enrichment::{test_install_root_read_pool, test_read_pool_lock, test_uninstall_root_read_pool};
+pub(crate) use read::enrichment::{test_install_root_read_pool, test_read_pool_lock, test_uninstall_root_read_pool};
 pub(crate) use events::DEBUG_STATS;
 pub use events::*;
 
 pub(crate) use failure::IndexFailureSignal;
-pub use queries::{
+pub use read::queries::{
     get_debug_status, get_dir_stats, get_dir_stats_batch, get_status, get_volume_index_status,
     get_volume_index_status_for_path, list_dir_children,
 };

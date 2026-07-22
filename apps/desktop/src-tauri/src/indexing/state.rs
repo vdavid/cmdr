@@ -19,8 +19,8 @@
 //! the standalone `READ_POOL` / `PENDING_SIZES` module globals (the read-path
 //! fast handles used by enrichment, search, and IPC dir-stats). The root
 //! `IndexInstance` shares the very same `Arc`s, so there is exactly one
-//! allocation per volume and the two can't drift. See `enrichment.rs` /
-//! `pending_sizes.rs` and the `DETAILS.md` registry section.
+//! allocation per volume and the two can't drift. See `read/enrichment.rs` /
+//! `read/pending_sizes.rs` and the `DETAILS.md` registry section.
 //!
 //! `mod.rs` is a thin facade that re-exports the public functions defined
 //! here; module-internal callers (e.g. `manager.rs`) can use the items

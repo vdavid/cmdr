@@ -1097,7 +1097,7 @@ fn writer_loop(
         // delete/propagate runs, which would briefly show a settled flag against
         // a not-yet-updated size. Route to THIS volume's tracker: a root-only
         // `get_pending_sizes()` from a non-root writer would wipe root's hourglass
-        // and never clear its own. See `indexing/pending_sizes.rs`.
+        // and never clear its own. See `indexing/read/pending_sizes.rs`.
         if queue_depth.load(Ordering::Relaxed) == 0
             && let Some(tracker) = crate::indexing::pending_sizes::get_pending_sizes_for(&volume_id)
         {
