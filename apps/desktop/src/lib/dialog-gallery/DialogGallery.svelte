@@ -13,6 +13,11 @@
      * below branches inside a dialog. Store-seeded and event-seeded dialogs work
      * differently and don't belong in this table.
      *
+     * Five of them (delete, transfer, mkdir, mkfile, go-to-path) do real work on
+     * mount, so their props are BUILT from the real fixture directory the request
+     * carries (`disk-fixture.ts`) rather than written by hand: the scan tallies,
+     * conflict warnings, and space figures are then the real ones.
+     *
      * Every fixture callback closes the preview. The gallery deliberately performs
      * no action: `onResolve`, `onCommit`, `onSaveAs` and friends have nothing real
      * behind them here, and pretending otherwise would be the lie this instrument
@@ -35,14 +40,20 @@
     import ConnectToServerDialog from '$lib/file-explorer/network/ConnectToServerDialog.svelte'
     import CrashReportDialog from '$lib/crash-reporter/CrashReportDialog.svelte'
     import SelectionDialog from '$lib/selection-dialog/SelectionDialog.svelte'
+    import DeleteDialog from '$lib/file-operations/delete/DeleteDialog.svelte'
+    import TransferDialog from '$lib/file-operations/transfer/TransferDialog.svelte'
+    import NewFolderDialog from '$lib/file-operations/mkdir/NewFolderDialog.svelte'
+    import NewFileDialog from '$lib/file-operations/mkfile/NewFileDialog.svelte'
+    import GoToPathDialog from '$lib/go-to-path/GoToPathDialog.svelte'
     import { MtpPermissionDialog, PtpcameradDialog } from '$lib/mtp'
     // The viewer copy dialogs live in the viewer window's route. Same relative-import
     // shape `lib/search/ImageSearchResults.svelte` uses for `routes/viewer/media-view`.
     import ViewerCopyDialogs from '../../routes/viewer/ViewerCopyDialogs.svelte'
     import { getAppLogger } from '$lib/logging/logger'
-    import { closeGalleryDialog, getOpenGalleryDialog } from './gallery-state.svelte'
+    import { closeGalleryDialog, getOpenGalleryDialog, type GalleryDiskFixture } from './gallery-state.svelte'
     import { fixtureRecords } from './fixtures'
     import type { AlertFixture } from './fixtures/alert'
+    import type { DeleteFixture, GoToPathFixture, NewEntryFixture, TransferFixture } from './fixtures/disk'
     import type { ExpirationFixture } from './fixtures/licensing'
     import type { ExtensionChangeFixture, RenameConflictFixture } from './fixtures/rename'
     import type { ArchivePasswordFixture } from './fixtures/archive-password'
@@ -69,6 +80,11 @@
         | { kind: 'crash-report'; props: { report: CrashReport } }
         | { kind: 'viewer-copy'; props: { confirmBytes: number | null; refuseBytes: number | null } }
         | { kind: 'selection'; props: SelectionFixture & { mode: 'add' | 'remove' } }
+        | { kind: 'delete'; props: DeleteFixture }
+        | { kind: 'transfer'; props: TransferFixture }
+        | { kind: 'mkdir'; props: NewEntryFixture }
+        | { kind: 'mkfile'; props: NewEntryFixture }
+        | { kind: 'go-to-path'; props: GoToPathFixture }
         | null
 
     /**
@@ -82,6 +98,25 @@
     }
 
     /**
+     * Same, for the disk-backed dialogs: their fixture is a builder that needs the
+     * resolved fixture directory. No directory (the pane couldn't get there) means
+     * no dialog, for the same reason a missing fixture does.
+     */
+    function withDiskFixture<T>(
+        build: ((disk: GalleryDiskFixture) => T) | undefined,
+        disk: GalleryDiskFixture | undefined,
+        toPlan: (props: T) => RenderPlan,
+    ): RenderPlan {
+        return build === undefined || disk === undefined ? null : toPlan(build(disk))
+    }
+
+    /** The "Go to path" preview has no pane jump behind it, so closing IS the outcome. */
+    function closeGoToPathPreview(): Promise<undefined> {
+        closeGalleryDialog()
+        return Promise.resolve(undefined)
+    }
+
+    /**
      * How each dialog turns a request into a plan, one entry per dialog id. A table
      * rather than a `switch` because the switch grew past the complexity ceiling at
      * this many dialogs; each entry still owns its own typed fixture lookup, so
@@ -90,7 +125,9 @@
      * The last five take callbacks only: there's no fixture to miss, and the single
      * state each exposes is what its gallery row discloses.
      */
-    const planResolvers: Partial<Record<SoftDialogId, (stateId: string) => RenderPlan>> = {
+    const planResolvers: Partial<
+        Record<SoftDialogId, (stateId: string, disk: GalleryDiskFixture | undefined) => RenderPlan>
+    > = {
         alert: (id) => withFixture(fixtureRecords.alert[id], (f) => ({ kind: 'alert', props: f })),
         expiration: (id) => withFixture(fixtureRecords.expiration[id], (f) => ({ kind: 'expiration', props: f })),
         'extension-change': (id) =>
@@ -125,6 +162,20 @@
                 props: { ...f, mode: 'remove' },
             })),
 
+        'delete-confirmation': (id, disk) =>
+            withDiskFixture(fixtureRecords['delete-confirmation'][id], disk, (props) => ({ kind: 'delete', props })),
+        'transfer-confirmation': (id, disk) =>
+            withDiskFixture(fixtureRecords['transfer-confirmation'][id], disk, (props) => ({
+                kind: 'transfer',
+                props,
+            })),
+        'mkdir-confirmation': (id, disk) =>
+            withDiskFixture(fixtureRecords['mkdir-confirmation'][id], disk, (props) => ({ kind: 'mkdir', props })),
+        'new-file-confirmation': (id, disk) =>
+            withDiskFixture(fixtureRecords['new-file-confirmation'][id], disk, (props) => ({ kind: 'mkfile', props })),
+        'go-to-path': (id, disk) =>
+            withDiskFixture(fixtureRecords['go-to-path'][id], disk, (props) => ({ kind: 'go-to-path', props })),
+
         about: () => ({ kind: 'about' }),
         'commercial-reminder': () => ({ kind: 'commercial-reminder' }),
         license: () => ({ kind: 'license' }),
@@ -136,7 +187,7 @@
         const open = getOpenGalleryDialog()
         if (!open) return null
 
-        const resolved = planResolvers[open.dialogId]?.(open.stateId) ?? null
+        const resolved = planResolvers[open.dialogId]?.(open.stateId, open.disk) ?? null
         if (resolved) return resolved
 
         log.warn('Dialog gallery has no fixture for {dialogId} / {stateId}', {
@@ -147,40 +198,60 @@
     })
 </script>
 
-{#if plan?.kind === 'alert'}
-    <AlertDialog {...plan.props} onClose={closeGalleryDialog} />
-{:else if plan?.kind === 'about'}
-    <AboutWindow onClose={closeGalleryDialog} />
-{:else if plan?.kind === 'commercial-reminder'}
-    <CommercialReminderModal onClose={closeGalleryDialog} />
-{:else if plan?.kind === 'expiration'}
-    <ExpirationModal {...plan.props} onClose={closeGalleryDialog} />
-{:else if plan?.kind === 'license'}
-    <LicenseKeyDialog onClose={closeGalleryDialog} onSuccess={closeGalleryDialog} />
-{:else if plan?.kind === 'extension-change'}
-    <ExtensionChangeDialog {...plan.props} onKeepOld={closeGalleryDialog} onUseNew={closeGalleryDialog} />
-{:else if plan?.kind === 'rename-conflict'}
-    <RenameConflictDialog {...plan.props} onResolve={closeGalleryDialog} />
-{:else if plan?.kind === 'archive-password'}
-    <ArchivePasswordDialog {...plan.props} onSubmit={closeGalleryDialog} onCancel={closeGalleryDialog} />
-{:else if plan?.kind === 'transfer-error'}
-    <TransferErrorDialog {...plan.props} onClose={closeGalleryDialog} onRetry={closeGalleryDialog} />
-{:else if plan?.kind === 'connect-to-server'}
-    <ConnectToServerDialog onConnect={closeGalleryDialog} onClose={closeGalleryDialog} />
-{:else if plan?.kind === 'mtp-permission'}
-    <MtpPermissionDialog onClose={closeGalleryDialog} onRetry={closeGalleryDialog} />
-{:else if plan?.kind === 'ptpcamerad'}
-    <PtpcameradDialog {...plan.props} onClose={closeGalleryDialog} onRetry={closeGalleryDialog} />
-{:else if plan?.kind === 'crash-report'}
-    <CrashReportDialog {...plan.props} onClose={closeGalleryDialog} />
-{:else if plan?.kind === 'viewer-copy'}
-    <ViewerCopyDialogs
-        {...plan.props}
-        onCancelConfirm={closeGalleryDialog}
-        onProceedConfirm={closeGalleryDialog}
-        onDismissRefuse={closeGalleryDialog}
-        onSaveAs={closeGalleryDialog}
-    />
-{:else if plan?.kind === 'selection'}
-    <SelectionDialog {...plan.props} onCommit={closeGalleryDialog} onClose={closeGalleryDialog} />
-{/if}
+<!--
+  Keyed on the plan, so every trigger REMOUNTS rather than re-rendering with new
+  props. The disk-backed dialogs start their work in `onMount` (the delete and
+  transfer scans), so a reused component would keep the previous state's tally on
+  screen next to the new state's file list — a number that's real, but not of what
+  you're looking at. Production keys these two dialogs for the same reason
+  (`DialogManager.svelte`).
+-->
+{#key plan}
+    {#if plan?.kind === 'alert'}
+        <AlertDialog {...plan.props} onClose={closeGalleryDialog} />
+    {:else if plan?.kind === 'about'}
+        <AboutWindow onClose={closeGalleryDialog} />
+    {:else if plan?.kind === 'commercial-reminder'}
+        <CommercialReminderModal onClose={closeGalleryDialog} />
+    {:else if plan?.kind === 'expiration'}
+        <ExpirationModal {...plan.props} onClose={closeGalleryDialog} />
+    {:else if plan?.kind === 'license'}
+        <LicenseKeyDialog onClose={closeGalleryDialog} onSuccess={closeGalleryDialog} />
+    {:else if plan?.kind === 'extension-change'}
+        <ExtensionChangeDialog {...plan.props} onKeepOld={closeGalleryDialog} onUseNew={closeGalleryDialog} />
+    {:else if plan?.kind === 'rename-conflict'}
+        <RenameConflictDialog {...plan.props} onResolve={closeGalleryDialog} />
+    {:else if plan?.kind === 'archive-password'}
+        <ArchivePasswordDialog {...plan.props} onSubmit={closeGalleryDialog} onCancel={closeGalleryDialog} />
+    {:else if plan?.kind === 'transfer-error'}
+        <TransferErrorDialog {...plan.props} onClose={closeGalleryDialog} onRetry={closeGalleryDialog} />
+    {:else if plan?.kind === 'connect-to-server'}
+        <ConnectToServerDialog onConnect={closeGalleryDialog} onClose={closeGalleryDialog} />
+    {:else if plan?.kind === 'mtp-permission'}
+        <MtpPermissionDialog onClose={closeGalleryDialog} onRetry={closeGalleryDialog} />
+    {:else if plan?.kind === 'ptpcamerad'}
+        <PtpcameradDialog {...plan.props} onClose={closeGalleryDialog} onRetry={closeGalleryDialog} />
+    {:else if plan?.kind === 'crash-report'}
+        <CrashReportDialog {...plan.props} onClose={closeGalleryDialog} />
+    {:else if plan?.kind === 'viewer-copy'}
+        <ViewerCopyDialogs
+            {...plan.props}
+            onCancelConfirm={closeGalleryDialog}
+            onProceedConfirm={closeGalleryDialog}
+            onDismissRefuse={closeGalleryDialog}
+            onSaveAs={closeGalleryDialog}
+        />
+    {:else if plan?.kind === 'selection'}
+        <SelectionDialog {...plan.props} onCommit={closeGalleryDialog} onClose={closeGalleryDialog} />
+    {:else if plan?.kind === 'delete'}
+        <DeleteDialog {...plan.props} onConfirm={closeGalleryDialog} onCancel={closeGalleryDialog} />
+    {:else if plan?.kind === 'transfer'}
+        <TransferDialog {...plan.props} onConfirm={closeGalleryDialog} onCancel={closeGalleryDialog} />
+    {:else if plan?.kind === 'mkdir'}
+        <NewFolderDialog {...plan.props} onCreated={closeGalleryDialog} onCancel={closeGalleryDialog} />
+    {:else if plan?.kind === 'mkfile'}
+        <NewFileDialog {...plan.props} onCreated={closeGalleryDialog} onCancel={closeGalleryDialog} />
+    {:else if plan?.kind === 'go-to-path'}
+        <GoToPathDialog {...plan.props} onGo={closeGoToPathPreview} onCancel={closeGalleryDialog} />
+    {/if}
+{/key}

@@ -92,6 +92,14 @@ export interface ExplorerAPI {
    * network volume reporting a same-looking string). Background tabs are ignored.
    */
   getPaneLocation: (pane: 'left' | 'right') => { volumeId: string; volumePath: string; path: string }
+  /**
+   * The pane's live backend listing handle, or `null` before its first listing
+   * settles (and on a snapshot pane, which has no backend listing). It's
+   * pane-owned, not something a directory produces, so anything that needs one —
+   * conflict lookups, directory-diff filtering, `refreshListing` — has to take it
+   * from the pane showing that directory.
+   */
+  getPaneListingId: (pane: 'left' | 'right') => string | null
   selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<boolean>
   handleSelectionAction: (action: SelectionAction, startIndex?: number, endIndex?: number) => void
   handleMcpSelect: (pane: 'left' | 'right', start: number, count: number | 'all', mode: McpSelectMode) => Promise<void>

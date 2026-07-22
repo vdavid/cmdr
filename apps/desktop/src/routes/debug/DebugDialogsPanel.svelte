@@ -6,12 +6,19 @@
      * The dialogs themselves open in the MAIN window (see
      * `$lib/dialog-gallery/DETAILS.md`); this panel only emits the trigger. Same
      * `emitTo('main', …)` transport `DebugErrorPreviewPanel` uses.
+     *
+     * The fixture-directory IPC is called from HERE, not from the gallery:
+     * `/routes/debug/` is exempt from `cmdr/no-raw-bindings-import`, and calling it
+     * here also keeps a `debug_assertions`-only command out of the main-window
+     * bundle. Its landmarks ride along in the event payload.
      */
     import {
         DIALOG_GALLERY_ENTRIES,
         UNREGISTERED_OVERLAY_ENTRIES,
         type GalleryHostWindow,
     } from '$lib/dialog-gallery/gallery-registry'
+    import type { FixtureDirPayload } from '$lib/dialog-gallery/disk-fixture'
+    import { commands } from '$lib/ipc/bindings'
     import type { SoftDialogId } from '$lib/ui/dialog-registry'
 
     const hostWindowLabels: Record<GalleryHostWindow, string> = {
@@ -22,13 +29,36 @@
 
     const readyCount = $derived(DIALOG_GALLERY_ENTRIES.filter((e) => e.status === 'ready').length)
 
-    async function openDialog(dialogId: SoftDialogId, stateId: string) {
+    /** True while a trigger is in flight, so the first click (which creates the fixture files) can't stack. */
+    let preparing = $state(false)
+
+    /**
+     * Makes sure the throwaway fixture directory exists and returns its landmarks.
+     * The command is idempotent, so every trigger can call it: the first one
+     * creates a few dozen files, the rest only stat them.
+     */
+    async function prepareFixtureDir(): Promise<FixtureDirPayload | null> {
+        const result = await commands.createDialogGalleryFixtures()
+        if (result.status === 'error') {
+            // eslint-disable-next-line no-console -- Debug window is dev-only
+            console.error('Creating the dialog gallery fixture directory failed:', result.error.message)
+            return null
+        }
+        return result.data
+    }
+
+    async function openDialog(dialogId: SoftDialogId, stateId: string, usesFixtureDir: boolean) {
+        preparing = true
         try {
+            const fixtures = usesFixtureDir ? await prepareFixtureDir() : null
+            if (usesFixtureDir && !fixtures) return
             const { emitTo } = await import('@tauri-apps/api/event')
-            await emitTo('main', 'debug-open-gallery-dialog', { dialogId, stateId })
+            await emitTo('main', 'debug-open-gallery-dialog', { dialogId, stateId, fixtures })
         } catch (error) {
             // eslint-disable-next-line no-console -- Debug window is dev-only
             console.error('Opening the gallery dialog failed:', error)
+        } finally {
+            preparing = false
         }
     }
 </script>
@@ -56,13 +86,21 @@
                 {#if entry.note}
                     <p class="dialog-note">{entry.note}</p>
                 {/if}
+                {#if entry.usesFixtureDir}
+                    <p class="dialog-note">
+                        Works against a throwaway fixture directory in the app data dir, created on first
+                        use. Opening it navigates the focused pane there.
+                    </p>
+                {/if}
                 {#if entry.status === 'ready'}
                     <div class="dialog-states">
                         {#each entry.states as state (state.id)}
                             <div class="dialog-state">
                                 <button
                                     class="index-button"
-                                    onclick={() => void openDialog(entry.dialogId, state.id)}
+                                    disabled={preparing}
+                                    onclick={() =>
+                                        void openDialog(entry.dialogId, state.id, entry.usesFixtureDir === true)}
                                 >
                                     {state.label}
                                 </button>

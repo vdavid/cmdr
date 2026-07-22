@@ -43,6 +43,14 @@ interface DialogGalleryEntryBase {
   states: DialogGalleryState[]
   /** Optional caveat that applies to every state of this dialog. */
   note?: string
+  /**
+   * The dialog does real work on mount (scans, conflict lookups, path
+   * resolution), so it runs against a real throwaway directory. The Debug panel
+   * creates that directory through a dev-only IPC, ferries its landmarks in the
+   * trigger, and the main window navigates the focused pane there. The panel
+   * discloses all of that once per row, so the notes don't have to repeat it.
+   */
+  usesFixtureDir?: boolean
 }
 
 export type DialogGalleryEntry = DialogGalleryEntryBase &
@@ -85,17 +93,33 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     dialogId: 'delete-confirmation',
     label: 'Delete confirmation',
     hostWindow: 'main',
-    status: 'not-triggerable',
-    reason: NOT_WIRED_YET,
-    states: [],
+    status: 'ready',
+    usesFixtureDir: true,
+    note: 'The scan is real: the climbing file and folder tally, the total size, and the throughput line all come from scanning the fixture files. Confirming deletes NOTHING — the delete lives in the onConfirm prop, which the gallery leaves empty.',
+    states: [
+      { id: 'trash-single', label: 'One item, to Trash' },
+      { id: 'trash-many', label: 'Five items, to Trash' },
+      { id: 'permanent-single', label: 'One item, permanently' },
+      { id: 'permanent-many', label: 'Five items, permanently' },
+      {
+        id: 'no-trash-support',
+        label: 'Volume without Trash',
+        note: 'What MTP and most network shares look like: no toggle, permanent only.',
+      },
+    ],
   },
   {
     dialogId: 'transfer-confirmation',
     label: 'Copy / move confirmation',
     hostWindow: 'main',
-    status: 'not-triggerable',
-    reason: NOT_WIRED_YET,
-    states: [],
+    status: 'ready',
+    usesFixtureDir: true,
+    note: 'Everything the dialog computes runs for real: the source scan, the destination free-space query, and the conflict pre-check (the destination folder already holds entries named like some of the sources, so it finds actual conflicts). Confirming copies or moves NOTHING — the operation lives in the onConfirm prop, which the gallery leaves empty. Switching the toggle to Compress is a fourth state you can reach from any of these.',
+    states: [
+      { id: 'copy', label: 'Copy five items' },
+      { id: 'move', label: 'Move five items' },
+      { id: 'copy-single', label: 'Copy one item' },
+    ],
   },
   {
     dialogId: 'transfer-progress',
@@ -141,17 +165,29 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     dialogId: 'mkdir-confirmation',
     label: 'New folder',
     hostWindow: 'main',
-    status: 'not-triggerable',
-    reason: NOT_WIRED_YET,
-    states: [],
+    status: 'ready',
+    usesFixtureDir: true,
+    note: 'This one WRITES. The dialog calls createDirectory() itself, so Create really makes a folder — inside the fixture directory, which is why these rows point there. The conflict check runs against the pane’s live listing, and the AI name suggestions are the real ones (they need a local model to appear).',
+    states: [
+      { id: 'empty', label: 'Empty name' },
+      { id: 'prefilled', label: 'Pre-filled name' },
+      { id: 'conflict', label: 'Name that already exists', note: 'A folder really in there, so the warning is live.' },
+      { id: 'too-long', label: 'Name past the length limit' },
+    ],
   },
   {
     dialogId: 'new-file-confirmation',
     label: 'New file',
     hostWindow: 'main',
-    status: 'not-triggerable',
-    reason: NOT_WIRED_YET,
-    states: [],
+    status: 'ready',
+    usesFixtureDir: true,
+    note: 'This one WRITES too: the dialog calls createFile() itself, inside the fixture directory. No AI suggestions here (that strip is the folder dialog’s), and the conflict check runs against the pane’s live listing.',
+    states: [
+      { id: 'empty', label: 'Empty name' },
+      { id: 'prefilled', label: 'Pre-filled name' },
+      { id: 'conflict', label: 'Name that already exists', note: 'A file really in there, so the warning is live.' },
+      { id: 'too-long', label: 'Name past the length limit' },
+    ],
   },
   {
     dialogId: 'rename-conflict',
@@ -191,9 +227,10 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     dialogId: 'go-to-path',
     label: 'Go to path',
     hostWindow: 'main',
-    status: 'not-triggerable',
-    reason: NOT_WIRED_YET,
-    states: [],
+    status: 'ready',
+    usesFixtureDir: true,
+    note: 'Live against the fixture directory: type Photos/exported and the box resolves it for real, type Photos/exported/nope.txt and the nearest-ancestor hint appears. The recent-paths list is your real one, and removing a row removes it for real. “Go to path” closes the preview instead of jumping — the gallery has no navigation behind it — and the clipboard prefill is the real one, so it depends on what you last copied.',
+    states: [{ id: 'fixture-dir', label: 'Open' }],
   },
   {
     dialogId: 'search',

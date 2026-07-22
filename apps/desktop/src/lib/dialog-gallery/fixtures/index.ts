@@ -10,12 +10,17 @@
  *
  * Dialogs that take callbacks only (`about`, `license`, `commercial-reminder`,
  * `connect-to-server`, `mtp-permission`) have no fixture data and aren't here.
+ *
+ * The disk-backed records (`./disk`) hold BUILDERS rather than data: their props
+ * come from the real fixture directory the dev-only Rust command creates, so the
+ * numbers those dialogs display are the ones on disk.
  */
 
 import type { SoftDialogId } from '$lib/ui/dialog-registry'
 import { alertFixtures } from './alert'
 import { archivePasswordFixtures } from './archive-password'
 import { crashReportFixtures } from './crash-report'
+import { deleteFixtures, goToPathFixtures, mkdirFixtures, newFileFixtures, transferFixtures } from './disk'
 import { ptpcameradFixtures } from './devices'
 import { expirationFixtures } from './licensing'
 import { extensionChangeFixtures, renameConflictFixtures } from './rename'
@@ -27,12 +32,17 @@ export const fixtureRecords = {
   alert: alertFixtures,
   'archive-password': archivePasswordFixtures,
   'crash-report': crashReportFixtures,
+  'delete-confirmation': deleteFixtures,
   expiration: expirationFixtures,
   'extension-change': extensionChangeFixtures,
+  'go-to-path': goToPathFixtures,
+  'mkdir-confirmation': mkdirFixtures,
+  'new-file-confirmation': newFileFixtures,
   ptpcamerad: ptpcameradFixtures,
   'rename-conflict': renameConflictFixtures,
   'selection-add': selectionAddFixtures,
   'selection-remove': selectionRemoveFixtures,
+  'transfer-confirmation': transferFixtures,
   'transfer-error': transferErrorFixtures,
   'viewer-copy-confirm': viewerCopyConfirmFixtures,
   'viewer-copy-refuse': viewerCopyRefuseFixtures,

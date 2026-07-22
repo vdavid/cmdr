@@ -14,6 +14,32 @@ pub fn inject_listing_error(volume_id: String, error_code: i32) -> Result<(), St
     Ok(())
 }
 
+/// Debug-only: makes sure the dialog gallery's throwaway fixture directory
+/// exists under the app data dir, and returns its path plus the landmarks inside
+/// it the gallery addresses by name.
+///
+/// Idempotent, so the Debug window can call it on every trigger. The tree itself
+/// (and why the disk-backed dialogs need a real one) lives in `dev_fixtures`.
+#[cfg(debug_assertions)]
+#[tauri::command]
+#[specta::specta]
+pub async fn create_dialog_gallery_fixtures(
+    app: tauri::AppHandle,
+) -> Result<crate::dev_fixtures::DialogGalleryFixtures, crate::commands::util::IpcError> {
+    use crate::commands::util::{IpcError, blocking_result_with_timeout};
+    use tokio::time::Duration;
+
+    // Generous for a local write, because the FIRST call creates a few dozen
+    // files; every later one only stats them.
+    const FIXTURE_TIMEOUT: Duration = Duration::from_secs(30);
+
+    let data_dir = crate::config::resolved_app_data_dir(&app).map_err(IpcError::from_err)?;
+    blocking_result_with_timeout(FIXTURE_TIMEOUT, move || {
+        crate::dev_fixtures::ensure_dialog_gallery_fixtures(&data_dir.join(crate::dev_fixtures::FIXTURE_DIR_NAME))
+    })
+    .await
+}
+
 /// Debug-only command that generates a real typed `ListingError` for the debug
 /// error pane preview.
 ///

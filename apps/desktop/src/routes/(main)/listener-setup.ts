@@ -45,6 +45,7 @@ import { openFileViewer } from '$lib/file-viewer/open-viewer'
 import { closeDialogById } from '$lib/ui/dialog-close-registry'
 import type { SoftDialogId } from '$lib/ui/dialog-registry'
 import { openGalleryDialog } from '$lib/dialog-gallery/gallery-state.svelte'
+import { resolveDiskFixture, type FixtureDirPayload } from '$lib/dialog-gallery/disk-fixture'
 import { getAppMode } from '$lib/app-mode'
 import type { ExplorerAPI } from './explorer-api'
 import type { FriendlyError, TransferOperationType } from '$lib/file-explorer/types'
@@ -429,9 +430,21 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
     // silently. Without the focus, the previewed dialog would sit behind the Debug
     // window and Escape would go to the wrong window.
     await listenTauri('debug-open-gallery-dialog', (event) => {
-      const { dialogId, stateId } = event.payload as { dialogId: SoftDialogId; stateId: string }
-      openGalleryDialog(dialogId, stateId)
-      void focusMainWindow()
+      const { dialogId, stateId, fixtures } = event.payload as {
+        dialogId: SoftDialogId
+        stateId: string
+        /** Present for the disk-backed dialogs; the Debug window owns that IPC. */
+        fixtures: FixtureDirPayload | null
+      }
+      void (async () => {
+        // A disk-backed dialog needs the focused pane pointed at the fixture
+        // directory first: it's where its live listing id and its real entries
+        // come from. No context resolved means open nothing, not a half-real dialog.
+        const disk = fixtures ? await resolveDiskFixture(getExplorer(), fixtures) : null
+        if (fixtures && !disk) return
+        openGalleryDialog(dialogId, stateId, disk ?? undefined)
+        await focusMainWindow()
+      })()
     })
   }
 

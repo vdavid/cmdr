@@ -171,7 +171,9 @@ the dispatch path can't rely on the keydown bail.
   with fixture data, for design review from Debug > Soft dialogs. The handler seeds the gallery store and focuses the
   main window from this side (the Debug window's capability set is minimal and permission failures are silent). The
   harness itself mounts in `+layout.svelte`; `+page.svelte` only reads `isGalleryDialogOpen()` so global shortcuts don't
-  fire behind a previewed dialog. See `lib/dialog-gallery/DETAILS.md`.
+  fire behind a previewed dialog. A payload carrying `fixtures` (the disk-backed dialogs) first navigates the focused
+  pane to that fixture directory and reads back its live listing id, because those dialogs need a pane-owned listing,
+  not just a path. See `lib/dialog-gallery/DETAILS.md`.
 - **`focusMainWindow()` needs `core:window:allow-set-focus` in `capabilities/default.json`**, and logs (never swallows)
   a rejection. Without the permission the call fails silently and the dialog opens behind the window that asked for it,
   which looks like a dialog bug. Both callers depend on it: the gallery listener and `onFocusConfirmation`.

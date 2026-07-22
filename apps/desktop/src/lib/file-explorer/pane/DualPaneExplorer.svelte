@@ -1010,6 +1010,11 @@
         return { volumeId: getPaneVolumeId(pane), volumePath: getPaneVolumePath(pane), path: getPanePath(pane) }
     }
 
+    /** The pane's live backend listing handle, or `null` before its first listing settles. */
+    export function getPaneListingId(pane: 'left' | 'right'): string | null {
+        return getPaneRef(pane)?.getListingId() ?? null
+    }
+
     // noinspection JSUnusedGlobalSymbols -- consumed by quick-look-state
     export function routePanelKey(payload: {
         key: string

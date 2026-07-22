@@ -13,15 +13,36 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
 import { writable } from 'svelte/store'
 import DialogGallery from './DialogGallery.svelte'
-import { closeGalleryDialog, openGalleryDialog } from './gallery-state.svelte'
+import { closeGalleryDialog, openGalleryDialog, type GalleryDiskFixture } from './gallery-state.svelte'
 import { DIALOG_GALLERY_ENTRIES } from './gallery-registry'
 import { notifyDialogOpened } from '$lib/tauri-commands'
 
-// The gallery pulls in 16 shipping dialogs, so this mock covers every IPC any of
+// The gallery pulls in 21 shipping dialogs, so this mock covers every IPC any of
 // them touches on mount (or would touch from a button). Resolved values only
 // matter where a dialog renders them; the rest just have to not reject.
 vi.mock('$lib/tauri-commands', () => ({
+  DEFAULT_VOLUME_ID: 'root',
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
+  // The disk-backed dialogs: scan preview, space, conflict lookups, suggestions.
+  startScanPreview: vi.fn(() => Promise.resolve({ previewId: 'gallery-scan', cached: false })),
+  cancelScanPreview: vi.fn(() => Promise.resolve()),
+  checkScanPreviewStatus: vi.fn(() => Promise.resolve(null)),
+  onScanPreviewProgress: vi.fn(() => Promise.resolve(() => {})),
+  onScanPreviewComplete: vi.fn(() => Promise.resolve(() => {})),
+  onScanPreviewError: vi.fn(() => Promise.resolve(() => {})),
+  onScanPreviewCancelled: vi.fn(() => Promise.resolve(() => {})),
+  onDirectoryDiff: vi.fn(() => Promise.resolve(() => {})),
+  getVolumeSpace: vi.fn(() => Promise.resolve(null)),
+  findFileIndex: vi.fn(() => Promise.resolve(null)),
+  getFileAt: vi.fn(() => Promise.resolve(null)),
+  getAiStatus: vi.fn(() => Promise.resolve('unavailable')),
+  streamFolderSuggestions: vi.fn(() => ({ promise: Promise.resolve(), cancel: vi.fn() })),
+  createDirectory: vi.fn(() => Promise.resolve()),
+  createFile: vi.fn(() => Promise.resolve()),
+  refreshListing: vi.fn(() => Promise.resolve()),
+  isIpcError: vi.fn(() => false),
+  resolveGoToPath: vi.fn(() => Promise.resolve({ status: 'ok', data: { kind: 'directory' } })),
+  readClipboardText: vi.fn(() => Promise.resolve(null)),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
   formatBytes: vi.fn((n: number) => `${String(n)} B`),
   openExternalUrl: vi.fn(() => Promise.resolve()),
@@ -132,6 +153,21 @@ describe('DialogGallery', () => {
     expect(warn).toHaveBeenCalledTimes(1)
   })
 
+  it('remounts the dialog when swapping between two states of the SAME dialog', async () => {
+    // Re-rendering with new props would leave the delete dialog's scan state from
+    // the previous trigger on screen next to the new state's file list: a real
+    // number, but not of what you're looking at. A remount reports to the tracker
+    // again, so two calls is the proof. Production keys these dialogs too.
+    openGalleryDialog('delete-confirmation', 'trash-many', diskFixture)
+    mountGallery()
+    await tick()
+    openGalleryDialog('delete-confirmation', 'permanent-single', diskFixture)
+    await tick()
+
+    const opens = vi.mocked(notifyDialogOpened).mock.calls.filter(([id]) => id === 'delete-confirmation')
+    expect(opens).toHaveLength(2)
+  })
+
   it('closes back to rendering nothing', async () => {
     openGalleryDialog('alert', 'short')
     const target = mountGallery()
@@ -142,14 +178,46 @@ describe('DialogGallery', () => {
   })
 })
 
+/**
+ * Stand-in for the fixture directory the dev-only Rust command creates and
+ * `disk-fixture.ts` resolves from the focused pane. The real thing needs a
+ * running app; what this pins is that every disk-backed state builds props the
+ * dialog can mount from.
+ */
+const diskFixture: GalleryDiskFixture = {
+  root: '/tmp/dialog-gallery-fixtures',
+  destinationDir: '/tmp/dialog-gallery-fixtures/Backup destination',
+  existingFolderName: 'Photos',
+  existingFileName: 'Invoice 2026-07.pdf',
+  nestedPath: '/tmp/dialog-gallery-fixtures/Projects/cmdr/src-tauri/src/file_system',
+  paneSide: 'left',
+  listingId: 'gallery-listing',
+  volumeId: 'root',
+  showHiddenFiles: false,
+  sortColumn: 'name',
+  sortOrder: 'ascending',
+  entries: ['Photos', 'Projects', 'README.txt', 'Invoice 2026-07.pdf', 'Videos', 'Documents'].map((name, index) => ({
+    name,
+    path: `/tmp/dialog-gallery-fixtures/${name}`,
+    isDirectory: index !== 2 && index !== 3,
+    isSymlink: false,
+    size: 4_096 * (index + 1),
+    permissions: 0o644,
+    owner: 'demo',
+    group: 'staff',
+    iconId: 'file',
+    extendedMetadataLoaded: false,
+  })),
+}
+
 /** Every `[dialogId, stateId]` the Debug list offers a button for. */
 const readyStates = DIALOG_GALLERY_ENTRIES.filter((entry) => entry.status === 'ready').flatMap((entry) =>
-  entry.states.map((state) => [entry.dialogId, state.id] as const),
+  entry.states.map((state) => [entry.dialogId, state.id, entry.usesFixtureDir === true] as const),
 )
 
 describe('every advertised gallery state opens its dialog', () => {
-  it.each(readyStates)('%s / %s', async (dialogId, stateId) => {
-    openGalleryDialog(dialogId, stateId)
+  it.each(readyStates)('%s / %s', async (dialogId, stateId, usesFixtureDir) => {
+    openGalleryDialog(dialogId, stateId, usesFixtureDir ? diskFixture : undefined)
     const target = mountGallery()
     await tick()
     // Every soft dialog reports its own mount to the Rust tracker, so this

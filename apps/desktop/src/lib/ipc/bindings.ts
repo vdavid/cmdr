@@ -3088,6 +3088,16 @@ export const commands = {
    */
   previewFriendlyError: (errorCode: number | null, variant: string | null, providerPath: string | null) =>
     typedError<ListingError, string>(__TAURI_INVOKE('preview_friendly_error', { errorCode, variant, providerPath })),
+  /**
+   *  Debug-only: makes sure the dialog gallery's throwaway fixture directory
+   *  exists under the app data dir, and returns its path plus the landmarks inside
+   *  it the gallery addresses by name.
+   *
+   *  Idempotent, so the Debug window can call it on every trigger. The tree itself
+   *  (and why the disk-backed dialogs need a real one) lives in `dev_fixtures`.
+   */
+  createDialogGalleryFixtures: () =>
+    typedError<DialogGalleryFixtures, IpcError>(__TAURI_INVOKE('create_dialog_gallery_fixtures')),
 }
 
 /** Events */
@@ -3851,6 +3861,25 @@ export type DfsCacheEntryDto = {
   path_prefix: string
   target_count: number
   expires_in_ms: number | null
+}
+
+/**
+ *  Where the gallery's disk-backed dialogs point, and the landmarks inside it
+ *  they need by name. Returned rather than guessed on the frontend: the side
+ *  that CREATES the tree is the only side that can name its parts without
+ *  drifting from what's on disk.
+ */
+export type DialogGalleryFixtures = {
+  // Absolute path of the fixture directory itself.
+  root: string
+  // Absolute path of the folder the copy / move states use as their destination.
+  destinationDir: string
+  // Name (not path) of a folder directly inside `root`, for the mkdir conflict state.
+  existingFolderName: string
+  // Name (not path) of a file directly inside `root`, for the mkfile conflict state.
+  existingFileName: string
+  // A deep path inside `root`, for the "Go to path" preview.
+  nestedPath: string
 }
 
 // A single directory diff change

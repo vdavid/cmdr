@@ -9,6 +9,8 @@ staging the real conditions. Driven from Debug > Soft dialogs (`routes/debug/Deb
   `UNREGISTERED_OVERLAY_ENTRIES` (modal-looking overlays that aren't soft dialogs).
 - `gallery-state.svelte.ts`: the open-state store. `DialogGallery.svelte`: the main-window harness. `fixtures/`: fixture
   data per dialog, with `fixtures/index.ts` mapping dialog id → fixture record.
+- `disk-fixture.ts`: resolves the real fixture directory (created by the dev-only Rust `dev_fixtures`) plus the focused
+  pane's live listing, for the five dialogs that do real work on mount.
 
 ## Must-knows
 
@@ -34,5 +36,11 @@ staging the real conditions. Driven from Debug > Soft dialogs (`routes/debug/Deb
   Those rows carry a `note`. ❌ Don't silence one by adding a preview branch to the component.
 - `lib/dialog-gallery/` is NOT exempt from `cmdr/no-raw-tauri-invoke` / `no-raw-bindings-import`. IPC a fixture needs is
   called from `DebugDialogsPanel.svelte` (an exempt path) and ferried in the event payload.
+- **`mkdir-confirmation` / `new-file-confirmation` need a pane-owned `listingId`, not a path.** ❌ Never fabricate one:
+  the conflict check then misbehaves SILENTLY. The gallery navigates the focused pane to the fixture directory and
+  passes that pane's real id (`disk-fixture.ts`); no id means the preview doesn't open.
+- **Those two dialogs really WRITE** (they call `createDirectory` / `createFile` themselves), which is what the fixture
+  directory protects. `DeleteDialog` / `TransferDialog` take `onConfirm` as a prop and perform nothing, so a gallery
+  no-op is harmless wherever they point. The intuitive version of this is backwards.
 
 Adding an entry, the three open mechanisms, and the transport: [DETAILS.md](DETAILS.md).

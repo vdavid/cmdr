@@ -310,6 +310,7 @@ pub(super) fn collect_debug_types(types: &mut Types) -> Vec<Function> {
     collect_functions![
         crate::commands::error_reporter::save_error_report_to_disk,
         crate::commands::file_system::preview_friendly_error,
+        crate::commands::file_system::create_dialog_gallery_fixtures,
     ](types)
 }
 

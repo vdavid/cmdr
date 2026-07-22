@@ -13,7 +13,10 @@ import { alertFixtures } from './fixtures/alert'
 import { closeGalleryDialog, openGalleryDialog } from './gallery-state.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
+// Mounting the harness pulls in every dialog it can render, so the mock has to
+// carry what those modules read at import time too (`DEFAULT_VOLUME_ID`).
 vi.mock('$lib/tauri-commands', () => ({
+  DEFAULT_VOLUME_ID: 'root',
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
 }))

@@ -88,6 +88,9 @@ mod clipboard;
 mod commands;
 pub mod config;
 mod crash_reporter;
+/// The dialog gallery's fixture tree (Debug > Soft dialogs). Dev builds only.
+#[cfg(debug_assertions)]
+pub mod dev_fixtures;
 mod diagnostics_snapshot;
 mod downloads;
 #[cfg(target_os = "macos")]
