@@ -23,7 +23,13 @@ the main window's chrome. Three more reasons the Debug window is the wrong host:
 - `ModalDialog` reports every mount to the Rust `SoftDialogTracker` via `notifyDialogOpened`, which the MCP `dialog`
   tool and the E2E acks read. A gallery copy mounted in the Debug window would tell the backend a dialog is open in the
   main window when it isn't.
-- Rendering in the main window means MCP `dialog close <id>` works on gallery-opened dialogs for free.
+- Rendering in the main window means MCP `dialog close <id>` reaches gallery-opened dialogs for free — every one the
+  close registry routes. **Three exceptions**: `about`, `delete-confirmation`, and `transfer-confirmation`. MCP closes
+  those through dedicated events bound to the app's OWN state (`onCloseConfirmation` →
+  `explorer.closeConfirmationDialog()`, and the about flag in `+page.svelte`), which a gallery preview isn't, so the
+  tool times out with an honest not-acknowledged error rather than closing nothing silently. Escape, the dialog's own
+  buttons, and re-triggering any row all still close the preview. (Verified in a dev build, 2026-07-22: `alert` and
+  `feedback` close over MCP, `about` and `delete-confirmation` don't.)
 
 Three dialogs don't live in the main window at all (`delete-ai-model` is a settings-window dialog; `viewer-copy-confirm`
 / `viewer-copy-refuse` are viewer-window dialogs). The gallery still shows them over the main window (hosting three
@@ -57,9 +63,9 @@ always-mounted dialogs (`crash-report`, `error-report`, `feedback`, `mtp-permiss
 it's already over its `file-length` allowlist entry.
 
 `+page.svelte` still reads `isGalleryDialogOpen()` in `isModalDialogOpen()`. Without it, global shortcuts fire behind
-the previewed dialog, which looks like a dialog bug and would poison the review. That call is the ONLY thing production
-code imports from this directory, which is why `gallery-state.svelte.ts` pulls in nothing else (its type-only imports
-are erased, so the disk-fixture shape can live there without pulling anything in).
+the previewed dialog, which looks like a dialog bug and would poison the review. That call is the only thing the
+MAIN-WINDOW graph imports from this directory, which is why `gallery-state.svelte.ts` pulls in nothing else (its
+type-only imports are erased, so the disk-fixture shape can live there without pulling anything in).
 
 **Gotcha: don't wrap that call in a build-time `DEV` guard.** Guarding it with `import.meta.env.DEV &&` makes knip stop
 seeing `+page.svelte`'s dynamic `import('$lib/debug/debug-window')` and report `lib/debug/debug-window.ts` as an unused
@@ -67,6 +73,30 @@ file (reproduced on knip 6.27.0, 2026-07-22: adding and removing that one guard 
 everything else identical; a bare `import.meta.env` elsewhere in the file is fine, and the file already has two). The
 guard buys nothing anyway: nothing writes the store outside the DEV-gated listener, so the getter is already a constant
 `false` in production.
+
+## What actually reaches a production bundle
+
+Measured, not assumed (`pnpm build`, 2026-07-22, grep for marker literals in `apps/desktop/build/`):
+
+- **Absent**: `DialogGallery.svelte`, every `fixtures/` module, `disk-fixture.ts`, `store-seeding.ts`, and the two
+  preview modules — so are the dialog imports the harness would otherwise have added to the main-window graph. The
+  `{#if import.meta.env.DEV}` in `+layout.svelte` is what does it (Vite inlines the flag). Markers checked:
+  `Cmdr paused indexing because the drive is running on battery.` (`fixtures/alert.ts`) and
+  `Dialog gallery has no fixture for` (the harness's own warning). Neither appears anywhere under `build/`.
+- **Present**: `gallery-registry.ts`'s row copy and `DebugDialogsPanel.svelte`, inside the Debug route's own lazily
+  loaded node chunk (`build/_app/immutable/nodes/<n>.*.js`) — where `DebugErrorPreviewPanel`, the closed-tabs panel, and
+  the rest of that window already were. `routes/debug/` is a real SvelteKit route with no production exclusion, so it
+  builds like any other; only its opener is DEV-gated. The gallery adds ~11 kB of row copy to that chunk and nothing to
+  what the main window loads.
+- **Deliberately present**: `gallery-state.svelte.ts`, which `+page.svelte` imports unconditionally (above).
+
+The Rust side is absolute: `create_dialog_gallery_fixtures` and the `dev_fixtures` module are `#[cfg(debug_assertions)]`
+at the function, the `ipc.rs` registration, and the collector, and `strings` on the release binary finds neither the
+command name nor `dialog-gallery-fixtures` (while shipping command names like `notify_dialog_opened` are there).
+
+❌ So don't write "the whole gallery tree-shakes out". The claim that holds is the one that matters: nothing the harness
+renders, and no dialog it pulls in, reaches the main window's bundle. Excluding the Debug route from production builds
+would be a separate change, and it would take the rest of the Debug window with it.
 
 ## The three ways a dialog gets opened
 
@@ -170,8 +200,8 @@ work on mount: background scans, folder-suggestion streams, volume-space queries
 Faking that would fake the very numbers the design displays, so they run against a real throwaway directory instead.
 
 **The tree.** `src-tauri/src/dev_fixtures.rs` (a `#[cfg(debug_assertions)]` module) creates
-`<app data dir>/dialog-gallery-fixtures/`: ~35 files across nested folders, sizes from 0 bytes to 486 MB, including a
-213-character filename, non-ASCII folder and file names, and an empty folder. Everything above the first line of content
+`<app data dir>/dialog-gallery-fixtures/`: 34 files across nested folders, sizes from 412 bytes to 486 MB, including a
+195-character filename, non-ASCII folder and file names, and an empty folder. Everything above the first line of content
 is sparse (`set_len`), so the tree reports hundreds of megabytes to a scan while costing kilobytes of disk. It's
 idempotent by construction (a file is written only when missing or the wrong length) and never deletes, so a folder the
 reviewer created inside it survives the next trigger. Its Rust tests pin all three properties.

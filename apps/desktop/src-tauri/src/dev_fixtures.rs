@@ -52,7 +52,7 @@ const EXISTING_FILE: &str = "Invoice 2026-07.pdf";
 /// Deep-ish path (relative to the root) the go-to-path state offers.
 const NESTED_DIR: &str = "Projects/cmdr/src-tauri/src/file_system";
 
-/// A 213-character name. Every dialog that shows a filename gets to prove what it
+/// A 195-character name. Every dialog that shows a filename gets to prove what it
 /// does when one never fits: the delete list, the transfer source line, the
 /// conflict warnings.
 const VERY_LONG_NAME: &str = "A deliberately very long file name that exists only so the dialogs get to show what they do when a name never fits on one line, including where they truncate it and where they simply overflow.txt";

@@ -1,7 +1,7 @@
 # Dialog gallery (dev-only)
 
-Opens every registered soft dialog on demand with fixture data, so they can be design-reviewed without staging the real
-conditions. Driven from Debug > Soft dialogs (`routes/debug/DebugDialogsPanel.svelte`).
+Opens every registered soft dialog on demand with fixture data, for design review without staging the real conditions.
+Driven from Debug > Soft dialogs (`routes/debug/DebugDialogsPanel.svelte`).
 
 ## Module map
 
@@ -12,8 +12,7 @@ conditions. Driven from Debug > Soft dialogs (`routes/debug/DebugDialogsPanel.sv
 - `disk-fixture.ts`: the real fixture directory (dev-only Rust `dev_fixtures`) plus the focused pane's live listing, for
   the five that do real work on mount.
 - `store-seeding.ts` + `fixtures/store-seeded.ts`: patch a real app store and undo it, for the five the app itself
-  mounts. `onboarding-preview.ts` / `stale-drive-preview.ts`: the two rows an app command, or a real backend event,
-  opens.
+  mounts. `onboarding-preview.ts` / `stale-drive-preview.ts`: the two an app command or a real event opens.
 
 ## Must-knows
 
@@ -26,8 +25,9 @@ conditions. Driven from Debug > Soft dialogs (`routes/debug/DebugDialogsPanel.sv
   and lose the two-pane backdrop the overlay needs.
 - **Copy here stays raw and out of the i18n catalog**, which is why fixtures live under `lib/` rather than in
   i18n-enforced `routes/(main)/`.
-- **Everything is gated on `import.meta.env.DEV`** so prod tree-shakes it. `gallery-state.svelte.ts` is the only module
-  `+page.svelte` imports, so keep it dependency-free (no registry, no fixtures, no dialog imports).
+- **The harness, its fixtures, and the dialogs they pull in tree-shake out of prod**; `gallery-registry.ts` doesn't (it
+  rides the Debug route's chunk). Keep `gallery-state.svelte.ts`, the only module `+page.svelte` imports,
+  dependency-free: no registry, no fixtures, no dialog imports.
 - **Adding a soft dialog means adding a gallery row**, enforced by `dialog-gallery-coverage` (id presence only), and
   **its fixture record belongs in `fixtures/index.ts`**: harness and `fixtures.test.ts` both read `fixtureRecords`, so
   "state id ↔ fixture key" drift is a test failure, not a dead button.
@@ -43,11 +43,11 @@ conditions. Driven from Debug > Soft dialogs (`routes/debug/DebugDialogsPanel.sv
 - **Fixture callbacks close the preview and do nothing else** — but where the action lives INSIDE the component it still
   happens for real: flag and settings writes, license activation, mDNS, report sends, first-launch choices. Those rows
   carry a `note`. ❌ Never silence one with a preview branch.
-- `lib/dialog-gallery/` is NOT exempt from `cmdr/no-raw-tauri-invoke` / `no-raw-bindings-import`. IPC a fixture needs is
+- `lib/dialog-gallery/` is NOT exempt from `cmdr/no-raw-tauri-invoke` / `no-raw-bindings-import`. A fixture's IPC is
   called from `DebugDialogsPanel.svelte` (an exempt path) and ferried in the event payload.
 - **`mkdir-confirmation` / `new-file-confirmation` need a pane-owned `listingId`, not a path**, and they really WRITE,
   which is what the fixture directory protects. ❌ Never fabricate an id: the conflict check then fails SILENTLY.
-  `DeleteDialog` / `TransferDialog` take `onConfirm` as a prop and perform nothing, so a no-op is harmless — the
-  intuitive version of this is backwards.
+  `DeleteDialog` / `TransferDialog` take `onConfirm` as a prop and perform nothing, so a no-op is harmless; the
+  intuitive version is backwards.
 
 Adding an entry, the open mechanisms, the gap rows, and the transport: [DETAILS.md](DETAILS.md).
