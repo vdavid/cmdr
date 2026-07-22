@@ -123,49 +123,44 @@ pub fn has_ai_api_key(provider_id: String) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicU64, Ordering};
+    use tempfile::TempDir;
 
     /// Per-test isolation: each test runs in its own data dir so the PlainFileStore's JSON file
     /// doesn't race across nextest's per-test processes (which would share the prod app-support
     /// dir otherwise: secrets `save` succeeds but the subsequent `get` sees another test's write).
+    /// The name is random, so no two runs can ever collide on it.
     ///
-    /// The dir is cleared before use, not just created. It's named after the PID, and macOS
-    /// recycles PIDs, so a run can draw the same name as an earlier one and inherit its
-    /// `secrets.json` — a key the test never saved, which fails the "store starts empty"
-    /// assertions (`!has(...)`, `NotFound`) intermittently and only on a machine with leftovers.
+    /// **Bind the returned `TempDir` for the whole test** (`let _dir = isolate_secrets();`).
+    /// Dropping it deletes the directory, so `let _ = …` would pull the store out from under the
+    /// test. Holding it is also what keeps `$TMPDIR` clean: the dir goes away when the test ends,
+    /// instead of one surviving per test per run.
     ///
     /// Must be called BEFORE the first secret store access in the test: the secret store backend
     /// is a `LazyLock` and reads these env vars exactly once.
-    ///
-    /// SAFETY: `std::env::set_var` is racy across threads, but each nextest test runs in its own
-    /// process, so the only env-var writes happen here on the test's main thread before any code
-    /// that reads them.
-    fn isolate_secrets() {
-        static COUNTER: AtomicU64 = AtomicU64::new(0);
-        let id = COUNTER.fetch_add(1, Ordering::Relaxed);
-        let dir = std::env::temp_dir().join(format!("cmdr-api-keys-test-{}-{}", std::process::id(), id));
-        let _ = std::fs::remove_dir_all(&dir); // a recycled PID must not inherit an old run's store
-        std::fs::create_dir_all(&dir).expect("create test data dir");
+    #[must_use = "dropping the TempDir deletes the store's dir; bind it for the test's lifetime"]
+    fn isolate_secrets() -> TempDir {
+        let dir = TempDir::new().expect("create test data dir");
         // SAFETY: `std::env::set_var` is unsound only under concurrent env access. Each nextest test
         // runs in its own process, and `isolate_secrets` is called at the top of each test on that
         // process's single (main) thread before any code reads these vars (the secret store samples
         // them once via `LazyLock`), so no other thread can be touching the environment here.
         unsafe {
-            std::env::set_var("CMDR_DATA_DIR", &dir);
+            std::env::set_var("CMDR_DATA_DIR", dir.path());
             std::env::set_var("CMDR_SECRET_STORE", "file");
         }
+        dir
     }
 
     #[test]
     fn save_and_get_roundtrip() {
-        isolate_secrets();
+        let _dir = isolate_secrets();
         save("openai", "sk-test-abc123").unwrap();
         assert_eq!(get("openai").unwrap(), "sk-test-abc123");
     }
 
     #[test]
     fn get_missing_returns_not_found() {
-        isolate_secrets();
+        let _dir = isolate_secrets();
         match get("openai") {
             Err(AiApiKeyError::NotFound(_)) => {}
             other => panic!("expected NotFound, got {other:?}"),
@@ -174,7 +169,7 @@ mod tests {
 
     #[test]
     fn has_reflects_save_and_delete() {
-        isolate_secrets();
+        let _dir = isolate_secrets();
         assert!(!has("openai"));
         save("openai", "sk-test").unwrap();
         assert!(has("openai"));
@@ -184,14 +179,14 @@ mod tests {
 
     #[test]
     fn delete_missing_is_idempotent() {
-        isolate_secrets();
+        let _dir = isolate_secrets();
         delete("openai").unwrap();
         delete("openai").unwrap();
     }
 
     #[test]
     fn save_overwrites_existing() {
-        isolate_secrets();
+        let _dir = isolate_secrets();
         save("openai", "sk-first").unwrap();
         save("openai", "sk-second").unwrap();
         assert_eq!(get("openai").unwrap(), "sk-second");
