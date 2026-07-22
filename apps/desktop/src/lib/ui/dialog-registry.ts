@@ -31,6 +31,8 @@ export const SOFT_DIALOG_REGISTRY = [
   { id: 'delete-ai-model', description: 'Confirmation before deleting the local AI model' },
   { id: 'search', description: 'Whole-drive file search' },
   { id: 'go-to-path', description: 'Jump the focused pane to a typed or recent path' },
+  { id: 'selection-add', description: '"Select files…" (+): adds matching files to the pane selection' },
+  { id: 'selection-remove', description: '"Deselect files…" (-): removes matching files from the pane selection' },
   { id: 'bulk-rename-review', description: 'Reviews an Ask Cmdr rename proposal before any files change' },
   { id: 'connect-to-server', description: 'Manual SMB server address entry' },
   { id: 'viewer-copy-confirm', description: 'Confirms copying a 10 to 100 MB selection from the file viewer' },

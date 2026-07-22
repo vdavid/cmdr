@@ -166,3 +166,8 @@ the dispatch path can't rely on the keydown bail.
   (gated by `import.meta.env.DEV`) call `explorerRef.injectError` / `resetError` / `triggerTransferError` directly. They
   inject test state from the debug window's error-pane preview. Routing them through the bus would pollute the
   `CommandId` union with dev-only ids for zero gain. See `lib/file-explorer/DETAILS.md` § "Debug preview".
+- **Dialog gallery listener.** `debug-open-gallery-dialog` (same DEV block) opens a soft dialog over the main window
+  with fixture data, for design review from Debug > Soft dialogs. The handler seeds the gallery store and focuses the
+  main window from this side (the Debug window's capability set is minimal and permission failures are silent). The
+  harness itself mounts in `+layout.svelte`; `+page.svelte` only reads `isGalleryDialogOpen()` so global shortcuts don't
+  fire behind a previewed dialog. See `lib/dialog-gallery/DETAILS.md`.

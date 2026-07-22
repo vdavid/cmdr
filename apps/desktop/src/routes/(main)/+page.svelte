@@ -55,6 +55,7 @@
         setupWindowFocusListener,
     } from './listener-setup'
     import { SOFT_DIALOG_REGISTRY } from '$lib/ui/dialog-registry'
+    import { isGalleryDialogOpen } from '$lib/dialog-gallery/gallery-state.svelte'
     import { loadSettings, saveSettings } from '$lib/settings-store'
     import { getAppLogger } from '$lib/logging/logger'
     import { notifyOnboardingComplete, setOnboardingShowing } from '$lib/updates/updater.svelte'
@@ -197,6 +198,7 @@
             showCommercialReminder ||
             whatsNewState.open ||
             operationLogState.open ||
+            isGalleryDialogOpen() || // Dev-only in practice; ❌ don't add a build-time DEV guard (breaks knip, see dialog-gallery/DETAILS.md)
             isExplorerOverlayOpen()
         )
     }

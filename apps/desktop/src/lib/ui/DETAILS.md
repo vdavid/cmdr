@@ -119,6 +119,12 @@ To add a new dialog:
 
 1. Add an entry to `SOFT_DIALOG_REGISTRY` in `dialog-registry.ts`.
 2. Pass the new id as `dialogId` to `ModalDialog`. MCP tracking is then automatic.
+3. Add a row to the dev dialog gallery so it's design-reviewable (`dialog-gallery-coverage` fails until you do). How to
+   write the row: [`../dialog-gallery/DETAILS.md`](../dialog-gallery/DETAILS.md) § Adding an entry.
+
+`notifyDialogOpened` / `notifyDialogClosed` take a `SoftDialogId`, not a `string`. That's the seam a dialog can slip
+through untyped: `OnboardingWizard` calls them directly and never touches `ModalDialog`, so a loose type there would let
+an unregistered dialog exist that MCP knows nothing about.
 
 `bulk-rename-review` is an Ask Cmdr-owned modal mounted beside the rail, rather than a pane command dialog. Its review
 rows are display-only; the frontend returns opaque proposal and row ids to the backend for preflight or apply.
@@ -126,10 +132,10 @@ rows are display-only; the frontend returns opaque proposal and row ids to the b
 ### Generic close (`dialog-close-registry.ts`)
 
 The MCP `dialog` tool's generic `close` action closes any registered soft dialog by id. `dialog-close-registry.ts` holds
-a `Map<SoftDialogId, () => void>` that `ModalDialog` (when it has an `onclose`) and `QueryDialog` (search / go-to-path —
-not a `ModalDialog`, so it registers itself) populate on mount and clear on destroy. The backend emits
-`mcp-close-dialog { id }`; the main-window router (`listener-setup.ts`) calls `closeDialogById(id)`, which runs the
-dialog's own close, unmounting it (→ `notifyDialogClosed` → the backend `SoftDialogTracker` → the tool's
+a `Map<SoftDialogId, () => void>` that `ModalDialog` (when it has an `onclose`) and `QueryDialog` (search and the two
+selection dialogs — not a `ModalDialog`, so it registers itself) populate on mount and clear on destroy. The backend
+emits `mcp-close-dialog { id }`; the main-window router (`listener-setup.ts`) calls `closeDialogById(id)`, which runs
+the dialog's own close, unmounting it (→ `notifyDialogClosed` → the backend `SoftDialogTracker` → the tool's
 `SoftDialogDisappeared` ack). A dialog rendered without an `onclose` isn't in the map, so `closeDialogById` returns
 `false` and the tool reports an honest failure rather than silently closing nothing. `unregisterDialogClose` only clears
 an entry that's still its own registration, so a rapid remount can't have the outgoing instance evict the incoming one.

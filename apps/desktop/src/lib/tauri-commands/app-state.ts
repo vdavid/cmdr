@@ -2,6 +2,7 @@
 
 import { invoke } from '@tauri-apps/api/core'
 import { commands, type ChildWindowRect, type PaneFileEntry, type PaneState } from '$lib/ipc/bindings'
+import type { SoftDialogId } from '$lib/ui/dialog-registry'
 import { throwIpcError } from './ipc-types'
 
 export type { PaneFileEntry, PaneState }
@@ -62,13 +63,19 @@ export async function setReopenClosedTabEnabled(enabled: boolean): Promise<void>
 // Dialog tracking
 // ============================================================================
 
-/** Notify backend that a soft (overlay) dialog opened. */
-export async function notifyDialogOpened(dialogType: string): Promise<void> {
+/**
+ * Notify backend that a soft (overlay) dialog opened.
+ *
+ * `SoftDialogId`, not `string`: this is the seam a dialog can slip through
+ * untyped (`OnboardingWizard` calls it directly, never via `ModalDialog`), and an
+ * unregistered id would leave MCP's "available dialogs" resource blind to it.
+ */
+export async function notifyDialogOpened(dialogType: SoftDialogId): Promise<void> {
   await commands.notifyDialogOpened(dialogType)
 }
 
 /** Notify backend that a soft (overlay) dialog closed. */
-export async function notifyDialogClosed(dialogType: string): Promise<void> {
+export async function notifyDialogClosed(dialogType: SoftDialogId): Promise<void> {
   await commands.notifyDialogClosed(dialogType)
 }
 

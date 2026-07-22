@@ -8,6 +8,7 @@
     import { getAppLogger } from '$lib/logging/logger'
     import DebugAppearancePanel from './DebugAppearancePanel.svelte'
     import DebugClosedTabsPanel from './DebugClosedTabsPanel.svelte'
+    import DebugDialogsPanel from './DebugDialogsPanel.svelte'
     import DebugDriveIndexPanel from './DebugDriveIndexPanel.svelte'
     import DebugErrorPreviewPanel from './DebugErrorPreviewPanel.svelte'
     import DebugHistoryPanel from './DebugHistoryPanel.svelte'
@@ -27,6 +28,10 @@
         | 'navigation-history'
         | 'closed-tabs'
         | 'error-preview'
+        // "Soft dialogs", NOT "Dialogs": `components-dialogs` below is already
+        // labelled that (the ModalDialog primitive catalog), and two identical
+        // sidebar labels in an instrument about UI quality is a bug.
+        | 'soft-dialogs'
         | 'components'
         | 'components-buttons'
         | 'components-links'
@@ -74,6 +79,7 @@
         { id: 'navigation-history', label: 'Navigation history' },
         { id: 'closed-tabs', label: 'Closed tabs' },
         { id: 'error-preview', label: 'Error pane preview' },
+        { id: 'soft-dialogs', label: 'Soft dialogs' },
         {
             id: 'components',
             label: 'Components',
@@ -257,6 +263,8 @@
                 <DebugClosedTabsPanel />
             {:else if selected === 'error-preview'}
                 <DebugErrorPreviewPanel />
+            {:else if selected === 'soft-dialogs'}
+                <DebugDialogsPanel />
             {:else if isComponentsView}
                 <ComponentsCatalog targetAnchor={catalogAnchor} onSectionInView={handleSectionInView} />
             {:else if isGraphicsView}

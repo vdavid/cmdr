@@ -25,8 +25,8 @@ honest, and MCP `dialog close <id>` then works on gallery-opened dialogs for fre
 **2. Don't distort the dialogs to make them previewable.** A preview-only branch inside a dialog is a branch that can
 rot, and it means you're no longer reviewing the shipping component. So: no `preview?: boolean` props, no dev-only
 rendering paths inside dialog components. The gallery either passes real props, seeds the real state store, or emits the
-real backend event. The only sanctioned component-side changes are the three listed under "Sanctioned component
-changes" below, each justified on its own merits.
+real backend event. The only sanctioned component-side changes are the three listed under "Sanctioned component changes"
+below, each justified on its own merits.
 
 **Where the instrument must be honest about itself**: three dialogs don't live in the main window at all
 (`delete-ai-model` is a settings-window dialog; `viewer-copy-confirm` / `viewer-copy-refuse` are viewer-window dialogs).
@@ -41,7 +41,7 @@ instrument says that's what you're looking at.
   honest reason.
 - **3 unregistered overlays listed for completeness** (command palette, network login form, pane volume chooser), noted
   as not part of `SOFT_DIALOG_REGISTRY` with how to evoke them by hand. The gallery claims to be a complete inventory of
-  *registered soft dialogs*; these rows keep it from silently implying nothing else exists.
+  _registered soft dialogs_; these rows keep it from silently implying nothing else exists.
 
 Out of scope: building the mechanisms `search` and `transfer-progress` would need. See "Follow-ups".
 
@@ -75,7 +75,7 @@ inside an existing `if (import.meta.env.DEV)` block; the seam is a recorded deci
 
 So: follow it, don't reinvent it. The gallery's listener goes in **that same DEV block in `listener-setup.ts`**, and the
 harness mounts from **`(main)/+layout.svelte`** (which already hosts `crash-report`, `error-report`, `feedback`,
-`mtp-permission`, `ptpcamerad`), *not* `+page.svelte`. Reason: `+page.svelte` is 943 lines against a 854-line
+`mtp-permission`, `ptpcamerad`), _not_ `+page.svelte`. Reason: `+page.svelte` is 943 lines against a 854-line
 file-length allowlist entry, so it's **already warning today**; `+layout.svelte` is 356 and `listener-setup.ts` is 482.
 Don't add bulk to the file that's already over.
 
@@ -95,11 +95,11 @@ name:
 
 - **Prop-driven**: the gallery renders the component with fixture props. Works only when the component takes everything
   it needs as props.
-- **Store-seeded**: the component reads a module-level `$state` store and takes no content props (`BulkRenameReviewDialog`
-  has no props at all and derives from `askCmdrState.renameReview`; `FeedbackDialog` and `ErrorReportDialog` self-gate
-  on their flow stores and are mounted bare in `+layout.svelte`). Direct rendering isn't merely worse here, it renders
-  **empty**. The gallery seeds the store and the app's own mount site renders it: the most faithful of the three, since
-  the real trigger path runs.
+- **Store-seeded**: the component reads a module-level `$state` store and takes no content props
+  (`BulkRenameReviewDialog` has no props at all and derives from `askCmdrState.renameReview`; `FeedbackDialog` and
+  `ErrorReportDialog` self-gate on their flow stores and are mounted bare in `+layout.svelte`). Direct rendering isn't
+  merely worse here, it renders **empty**. The gallery seeds the store and the app's own mount site renders it: the most
+  faithful of the three, since the real trigger path runs.
 - **Event-seeded**: the component self-mounts off a backend event (`StaleDriveDialog`). The gallery arranges the
   preconditions and emits the real event.
 
@@ -144,21 +144,21 @@ the i18n catalog.**
 **`a11y-coverage` is error-level and scoped to `apps/desktop/src/lib`** (`desktop-svelte-a11y-coverage.go:30`): every
 tracked `.svelte` there needs a colocated `*.a11y.test.ts` importing `$lib/test-a11y`. That applies to
 `DialogGallery.svelte` (M1) and to the extracted `DeleteAiModelDialog.svelte` (M4) — note `AiLocalSection.svelte` is
-allowlisted but a new sibling inherits nothing. Write the tests; don't touch the allowlist. Template:
-`lib/ui/CLAUDE.md` § adding a tier-3 a11y test.
+allowlisted but a new sibling inherits nothing. Write the tests; don't touch the allowlist. Template: `lib/ui/CLAUDE.md`
+§ adding a tier-3 a11y test.
 
 ## Milestones
 
 Sequential. Each milestone ends with `pnpm check -q` green **and** its colocated docs updated. Don't defer docs to M6.
 
-**Pre-flight (before the first commit)**: add this plan to `docs/specs/index.md` under "In progress", or `docs-reachable`
-(error-level) fails on the commit that tracks it.
+**Pre-flight (before the first commit)**: add this plan to `docs/specs/index.md` under "In progress", or
+`docs-reachable` (error-level) fails on the commit that tracks it.
 
 ### M1: spine, skeleton, and the coverage check
 
 1. Registry drift: `QueryDialogConfig.dialogType: SoftDialogId`, drop both casts in `QueryDialog.svelte`, add
-   `selection-add` + `selection-remove` to `SOFT_DIALOG_REGISTRY` with descriptions, and narrow
-   `notifyDialogOpened` / `notifyDialogClosed` in `lib/tauri-commands/app-state.ts` to `SoftDialogId`.
+   `selection-add` + `selection-remove` to `SOFT_DIALOG_REGISTRY` with descriptions, and narrow `notifyDialogOpened` /
+   `notifyDialogClosed` in `lib/tauri-commands/app-state.ts` to `SoftDialogId`.
    - Update `src-tauri/src/mcp/DETAILS.md:129` (it enumerates the soft-dialog close surface) in this milestone.
 2. `gallery-registry.ts`: entry type + all 35 rows (32 registered + 3 unregistered overlays). Per entry: `id`, label,
    `hostWindow: 'main' | 'settings' | 'viewer'`, `status: 'ready' | 'not-triggerable' | 'unregistered'`, a `reason`
@@ -174,9 +174,10 @@ Sequential. Each milestone ends with `pnpm check -q` green **and** its colocated
    disabled with their reason visible.
 6. `dialog-gallery-coverage.go` + `_test.go`: every `SOFT_DIALOG_REGISTRY` id has a gallery entry and vice versa.
    **Asserts id presence only, never state completeness**, or M1's own check red-flags M1's stub entries. Model on
-   `desktop-svelte-ui-primitive-coverage.go`. Registration is four things, not one (`scripts/check/checks/CLAUDE.md:24,29,53`):
-   the runner registration, an `Inputs:` declaration (else `TestEveryCheckDeclaresInputs` fails), a `.github/workflows/ci.yml`
-   step (else `ci-coverage` fails), and the count table in `scripts/check/checks/DETAILS.md`.
+   `desktop-svelte-ui-primitive-coverage.go`. Registration is four things, not one
+   (`scripts/check/checks/CLAUDE.md:24,29,53`): the runner registration, an `Inputs:` declaration (else
+   `TestEveryCheckDeclaresInputs` fails), a `.github/workflows/ci.yml` step (else `ci-coverage` fails), and the count
+   table in `scripts/check/checks/DETAILS.md`.
 7. **Docs pointers land now, not in M5**: `docs/architecture.md` must mention `apps/desktop/src/lib/dialog-gallery/`, or
    `docs-reachable` fails the moment M2 creates that dir's `CLAUDE.md`. Add the `docs/guides/building-ui.md` line here
    too (an agent building a dialog should learn the gallery exists and that adding an entry is expected).
@@ -236,11 +237,11 @@ the very numbers the design displays, so point them at a **real throwaway direct
    (eslint-exempt path), path ferried in the event payload.
 2. Wire the five dialogs. `delete-confirmation`: trash vs permanent, single vs many. `transfer-confirmation`: copy and
    move.
-3. **`mkdir-confirmation` / `new-file-confirmation` need a live `listingId`, not just a path.** `NewFolderDialog.svelte:26`
-   uses it at `:90` (conflict lookup), `:132` (directory-diff filter), and `:205` (`refreshListing`) — it's a pane-owned
-   listing handle, not something a directory produces. So the gallery must navigate the focused pane to the fixture dir
-   and pass that pane's real `listingId`. Skipping this makes the conflict check misbehave silently: the exact
-   "renders broken, wastes the review" failure this plan is trying to avoid.
+3. **`mkdir-confirmation` / `new-file-confirmation` need a live `listingId`, not just a path.**
+   `NewFolderDialog.svelte:26` uses it at `:90` (conflict lookup), `:132` (directory-diff filter), and `:205`
+   (`refreshListing`) — it's a pane-owned listing handle, not something a directory produces. So the gallery must
+   navigate the focused pane to the fixture dir and pass that pane's real `listingId`. Skipping this makes the conflict
+   check misbehave silently: the exact "renders broken, wastes the review" failure this plan is trying to avoid.
 
 **Correct safety note for the docs** (the intuitive version is backwards): `DeleteDialog.svelte:56` and
 `TransferDialog.svelte:65` take `onConfirm` as a **prop** and don't perform the operation, so a gallery no-op is
@@ -289,9 +290,9 @@ data-writing path, so this one earns real coverage.
      `write-cancelled` / `write-settled` stream, so reaching its phases needs a scripted emitter. Mention that its scan
      phase and the conflict section are part of the same gap.
    - `search`: **deferred by decision, not blocked by an obstacle.** Don't invent a technical reason — `SearchDialog`
-     takes four fixturable props, the index is live in dev, and it's the easiest dialog in the app to evoke by hand
-     (⌘F, or the MCP `open_search_dialog` tool). The row should say it's reachable directly and simply isn't wired into
-     the gallery yet. Publishing a false reason inside an instrument whose thesis is "must not lie" would be the worst
+     takes four fixturable props, the index is live in dev, and it's the easiest dialog in the app to evoke by hand (⌘F,
+     or the MCP `open_search_dialog` tool). The row should say it's reachable directly and simply isn't wired into the
+     gallery yet. Publishing a false reason inside an instrument whose thesis is "must not lie" would be the worst
      possible detail to get wrong.
    - The three unregistered overlays (command palette, `NetworkLoginForm`, pane volume chooser): note they aren't in
      `SOFT_DIALOG_REGISTRY` and how to evoke them (⌘K for the palette).

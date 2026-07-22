@@ -42,6 +42,8 @@ import { saveSettings } from '$lib/settings-store'
 import { seedSettingForE2E } from '$lib/settings'
 import { openFileViewer } from '$lib/file-viewer/open-viewer'
 import { closeDialogById } from '$lib/ui/dialog-close-registry'
+import type { SoftDialogId } from '$lib/ui/dialog-registry'
+import { openGalleryDialog } from '$lib/dialog-gallery/gallery-state.svelte'
 import { getAppMode } from '$lib/app-mode'
 import type { ExplorerAPI } from './explorer-api'
 import type { FriendlyError, TransferOperationType } from '$lib/file-explorer/types'
@@ -415,6 +417,16 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
     await listenTauri('debug-trigger-transfer-error', (event) => {
       const { friendly } = event.payload as { friendly: FriendlyError }
       getExplorer()?.triggerTransferError(friendly)
+    })
+    // Debug > Soft dialogs: open a gallery dialog over the main window. The main
+    // window focuses ITSELF here rather than the Debug window pushing it, because
+    // `debug.json` is a deliberately minimal capability and Tauri permissions fail
+    // silently. Without the focus, the previewed dialog would sit behind the Debug
+    // window and Escape would go to the wrong window.
+    await listenTauri('debug-open-gallery-dialog', (event) => {
+      const { dialogId, stateId } = event.payload as { dialogId: SoftDialogId; stateId: string }
+      openGalleryDialog(dialogId, stateId)
+      void focusMainWindow()
     })
   }
 

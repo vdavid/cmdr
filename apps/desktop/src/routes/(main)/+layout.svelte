@@ -53,6 +53,10 @@
         cleanupAutoSendToastListener,
     } from '$lib/error-reporter/auto-send-toast.svelte'
     import { getAppLogger } from '$lib/logging/logger'
+    // Dev-only dialog gallery harness (Debug > Soft dialogs). Gated below on
+    // `import.meta.env.DEV`, which Vite inlines to a build-time boolean, so the
+    // harness and every dialog it imports drop out of production builds.
+    import DialogGallery from '$lib/dialog-gallery/DialogGallery.svelte'
     import type { Snippet } from 'svelte'
 
     const crashLog = getAppLogger('crashReporter')
@@ -333,6 +337,9 @@
 {/if}
 {#if showPermissionDialog}
     <MtpPermissionDialog onClose={closePermissionDialog} onRetry={retryPermissionConnection} />
+{/if}
+{#if import.meta.env.DEV}
+    <DialogGallery />
 {/if}
 <div class="page-wrapper">
     {#if settingsReady}

@@ -36,6 +36,7 @@
 
 import type { BadgeStatus } from '$lib/feature-status'
 import type { SearchResultEntry } from '$lib/tauri-commands'
+import type { SoftDialogId } from '$lib/ui/dialog-registry'
 import type { QueryFilterState, SearchMode } from './query-filter-state.svelte'
 import type { RecentItemAdapter, RecentItemKey } from './recent-items/recent-items-types'
 import type { RecentItemsStore } from './recent-items/recent-items-state.svelte'
@@ -178,8 +179,12 @@ export interface QueryDialogConfig<E = unknown> {
    * repo-root `feature-status.json` stays the single source of truth.
    */
   badge?: BadgeStatus
-  /** Dialog-type string passed to `notifyDialogOpened` / `notifyDialogClosed`. */
-  dialogType: string
+  /**
+   * Registered dialog id passed to `notifyDialogOpened` / `notifyDialogClosed` and
+   * to the close registry. Typed against `SOFT_DIALOG_REGISTRY` so a consumer can't
+   * ship a dialog MCP doesn't know about.
+   */
+  dialogType: SoftDialogId
   /** Dialog max-width, e.g. `'min(1080px, 80vw)'`. */
   maxWidth: string
 

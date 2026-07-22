@@ -82,7 +82,8 @@ function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
   const config: QueryDialogConfig<HistoryEntry> = {
     title: 'Test dialog',
     badge: opts.badge,
-    dialogType: 'test',
+    // A real registered id: `dialogType` is a `SoftDialogId`, so no placeholder here.
+    dialogType: 'search',
     maxWidth: 'min(800px, 80vw)',
     state,
     aiEnabled: true,

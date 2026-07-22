@@ -76,6 +76,9 @@ All under `apps/desktop/src/lib/`.
 - `ui/`: Shared UI primitives: ModalDialog, Button, AlertDialog, Notification, dialog registry, `SectionCard`
 - `routes/(main)/`: The main route: app orchestrator mounting the dual-pane explorer plus top-level dialogs
 - `routes/dev/components/`: Dev-only catalog of every `lib/ui/` primitive (Storybook replacement), in the Debug window
+- `dialog-gallery/`: Dev-only gallery that opens every registered soft dialog on demand with fixture data, for design
+  review (Debug > Soft dialogs, rendered over the main window). See
+  [`apps/desktop/src/lib/dialog-gallery/CLAUDE.md`](../apps/desktop/src/lib/dialog-gallery/CLAUDE.md)
 - `tooltip/`: Lightweight tooltip primitive
 - `stores/`: App-wide reactive Svelte stores: volume list, restricted-paths state
 - `updates/`: Auto-updater UI

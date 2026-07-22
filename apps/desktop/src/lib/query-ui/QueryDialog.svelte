@@ -32,7 +32,6 @@
     import { SvelteSet } from 'svelte/reactivity'
     import { notifyDialogOpened, notifyDialogClosed } from '$lib/tauri-commands'
     import { registerDialogClose, unregisterDialogClose } from '$lib/ui/dialog-close-registry'
-    import type { SoftDialogId } from '$lib/ui/dialog-registry'
     import type { SearchResultEntry } from '$lib/tauri-commands'
     import { iconCacheVersion } from '$lib/icon-cache'
     import QueryBar from './QueryBar.svelte'
@@ -278,9 +277,9 @@
         previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null
         notifyDialogOpened(config.dialogType).catch(() => {})
         // Register the close primitive so the MCP `dialog` tool's generic close can
-        // dismiss this dialog by id (search / go-to-path). QueryDialog isn't a
-        // `ModalDialog`, so it registers itself.
-        registerDialogClose(config.dialogType as SoftDialogId, config.onClose)
+        // dismiss this dialog by id (search, selection-add, selection-remove).
+        // QueryDialog isn't a `ModalDialog`, so it registers itself.
+        registerDialogClose(config.dialogType, config.onClose)
         window.addEventListener('keydown', handleEscapeCapture, true)
         // D8: mark the dialog as freshly opened so ⏎ owns "run-search" by default
         // until the user edits the query/filters or results arrive.
@@ -332,7 +331,7 @@
 
     onDestroy(() => {
         notifyDialogClosed(config.dialogType).catch(() => {})
-        unregisterDialogClose(config.dialogType as SoftDialogId, config.onClose)
+        unregisterDialogClose(config.dialogType, config.onClose)
         if (config.onDestroy) {
             try {
                 config.onDestroy()

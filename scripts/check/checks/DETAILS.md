@@ -132,7 +132,7 @@ CheckDefinition{
    or set a `NotInCI` reason on the definition. The `ci-coverage` check fails the suite until you do one or the other —
    there's no third option of "registered but runs nowhere".
 7. Run `pnpm check go-vet staticcheck` to verify (staticcheck is strict about idiomatic Go).
-8. Update the "Apps and check counts" table below and `AGENTS.md`'s fast-lane coverage list (if the check is `IsFast`).
+8. Update the "Apps and check counts" table below.
 
 ### Return values
 
@@ -401,10 +401,11 @@ Checks by app and tech:
   ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)
 - **Desktop / Svelte**: prettier, eslint, svelte-kit-sync, eslint-typecheck-svelte, eslint-typecheck-typescript,
   stylelint, css-unused, a11y-contrast, a11y-coverage (every primitive has a tier-3 a11y test), ui-primitive-coverage
-  (every top-level `lib/ui/*.svelte` primitive has a Debug > Components catalog section), btn-restyle, bare-poll,
-  svelte-check, import-cycles, message-keys-fresh (regenerate-and-diff `keys.gen.ts` from the message catalogs),
-  message-key-naming (the `area.feature.leaf` shape + known-area first segment), message-keys-unused (catalog keys never
-  referenced in `src/`; error-level, with a closed dynamic-prefix allowlist for runtime-built keys),
+  (every top-level `lib/ui/*.svelte` primitive has a Debug > Components catalog section), dialog-gallery-coverage (every
+  `SOFT_DIALOG_REGISTRY` id has a row in the Debug > Soft dialogs gallery, and every row names a registered id),
+  btn-restyle, bare-poll, svelte-check, import-cycles, message-keys-fresh (regenerate-and-diff `keys.gen.ts` from the
+  message catalogs), message-key-naming (the `area.feature.leaf` shape + known-area first segment), message-keys-unused
+  (catalog keys never referenced in `src/`; error-level, with a closed dynamic-prefix allowlist for runtime-built keys),
   message-screenshots-fresh (warn-only; drift between the committed i18n capture report and the catalogs'
   `@key.screenshot` couplings; runs the coupler's `--check`, reads no PNGs), i18n-stale (warn-only; a non-`en`
   translation whose `@key.sourceHash` no longer matches the English value), i18n-parity (ERROR; each locale key's
