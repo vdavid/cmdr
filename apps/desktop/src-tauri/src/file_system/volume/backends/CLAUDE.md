@@ -24,6 +24,9 @@ Depth for all of these is in [DETAILS.md](DETAILS.md) (§§ Per-backend decision
 
 - **The SMB watcher runs on a dedicated smb2 session, not a clone of the main connection.** Stacking CHANGE_NOTIFY
   long-polls on the write session wedges Samba (pinned by `smb_integration_concurrent_streaming_writes_no_deadlock`).
+- **A background index scan opens a pool of extra smb2 sessions (`smb/scan_pool.rs`)** the walk lists across (cold-NAS
+  scans are ksmbd per-connection-serialized; 4 connections ≈ 3.8×). Transparent to the scanner; a dead member retries on
+  a sibling, never touching the MAIN session. See DETAILS § "SMB scan-connection pool".
 - **The SMB watcher doesn't reconnect itself; on death it kicks the one reconnect path** (`spawn_watcher_death_reconnect`
   → `do_attempt_reconnect`, single source of truth, bounded backoff), which respawns the watcher AND resumes the index.
   Don't give it its OWN reconnect loop (a second state machine swallows real disconnects).

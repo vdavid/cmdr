@@ -105,6 +105,46 @@ hooks close that, both funneling through the ONE reconnect path (`do_attempt_rec
   disconnected); a rescan restores Fresh. Canonical detail lives in `indexing/DETAILS.md` § "SMB indexing and the
   freshness model"; this bullet is the volume-side trigger map.
 
+## SMB scan-connection pool
+
+Canonical home for the per-scan connection pool (`smb/scan_pool.rs`).
+
+A cold NAS index scan is metadata-read-bound, but the ceiling is **per-connection serialization in the server's ksmbd**,
+not the disks: one SMB connection can't drive the server's read queue deep enough regardless of the SMB in-flight
+window. NAS-side measurement (2026-07-22) held total in-flight depth constant and varied only the TCP connection count;
+4 connections raised read IOPS ~1.75× at flat disk latency and lifted cold client throughput ~3.8×. Evidence:
+`smb2/docs/benchmark-findings.md` §§ "Directory-listing throughput probe" and "NAS-side ground truth" — link, don't
+restate.
+
+So a background scan opens `SCAN_POOL_SIZE` (4) EXTRA smb2 sessions (separate TCP connections) for its duration and
+spreads its directory listings across them; the pane's own session keeps serving browsing.
+
+- **Lifecycle.** Opened LAZILY on `Volume::begin_scan_session` (`SmbVolume::open_scan_pool`), closed on
+  `end_scan_session` (`close_scan_pool`); `on_unmount` tears it down synchronously (`close_scan_pool_sync` flips the
+  pool's `closed` flag so reconnect loops bail — a member must not keep walking an unmounted volume). Steady-state
+  footprint between scans is unchanged (`scan_pool: RwLock<Option<Arc<ScanPool>>>` is `None`). The lifecycle brackets the
+  spawned walk task (`indexing/lifecycle/network_scan.rs`), so `end` runs on every outcome.
+- **Invisible to the scanner.** The `network_scanner` walk is unchanged and transport-agnostic; it keeps calling
+  `list_directory_for_scan`, which draws from the pool (round-robin) when one is active and falls back to the main
+  session otherwise. **Pacing stays in the scanner** (`network_scanner/scan_pace.rs`): the global in-flight budget caps
+  the pool's total concurrency, so "drop to 1 while the user browses" survives for free. The pool never owns pacing.
+- **A pool member is a full `SmbClient` + `Tree`** from the same `build_session` the main path uses; `Connection::clone`
+  only multiplexes over ONE session, so separate connections mean separate `SmbClient`s. Each member has its own async
+  `Mutex` (cloning the `Connection` needs `&mut`), so different members list truly in parallel; the lock is held only to
+  clone (microseconds), never across a `build_session`.
+- **Selection is a pure, unit-tested `PoolSlots`** (round-robin `next_alive`, `mark_dead`/`mark_alive`, single-flight
+  `try_begin_reconnect`), decoupled from the real sessions so the handout/replacement logic is testable server-free.
+- **Failure handling.** A listing failing with a typed `ConnectionLost`/`SessionExpired` is retried on a sibling member,
+  the dead member is dropped, and a single-flight background task reconnects it (`build_session`, bounded growing backoff
+  `POOL_MEMBER_RECONNECT_BACKOFF`; gives up on auth — the MAIN session owns the credential-refresh / `needs_auth` flow).
+  A dead member NEVER transitions the main volume's connection state. A per-directory error (permission, not-found) is
+  the same on any connection, so it's surfaced immediately, not retried. If every member is momentarily dead, the
+  listing falls back to the main session, which keeps the scan progressing and, if it too is dead, yields the
+  `DeviceDisconnected` the scanner's terminal-disconnect path expects. Members open STAGGERED at pool open; a rejected
+  Nth session (server session cap) just means the pool runs with fewer.
+- **Params are a snapshot.** If the main session refreshes credentials mid-scan (password change), members failing auth
+  give up and listings fall back to the main session (documented degradation, not a correctness issue).
+
 ## Per-backend decisions
 
 **Decision**: `SmbVolume` and `MtpVolume` store `volume_id: String` for listing cache lookups

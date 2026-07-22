@@ -56,6 +56,12 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `reconnect_with_credentials(username, password)`: reconnect with freshly-entered credentials, replacing whatever was cached. Default `Err(NotSupported)`; `SmbVolume` persists the new password (so the next reconnect is silent) then runs `attempt_reconnect`. Invoked by the Tauri command `reconnect_smb_volume_with_credentials` behind the "Sign in" prompt shown after an auth-failure reconnect give-up.
 - `on_unmount()`: lifecycle hook called before unregistration. `SmbVolume` uses it to disconnect its smb2 session. Default is no-op.
 - `scanner()` / `watcher()`: drive indexing hooks; `None` by default.
+- `begin_scan_session()` / `end_scan_session()`: default-no-op async hooks the indexing lifecycle
+  (`indexing/lifecycle/network_scan.rs`) calls right before and after a background `Volume`-trait scan/reconcile walk.
+  Let a backend open scan-scoped resources for the duration of a walk. `SmbVolume` overrides them to open/close a pool of
+  extra TCP sessions the cold walk lists across (canonical: `backends/DETAILS.md` § "SMB scan-connection pool"); the pool
+  is invisible to the scanner, which keeps calling `list_directory_for_scan`. MTP keeps the default (its single USB pipe
+  can't parallelize), and local volumes never reach this path.
 - `space_poll_interval()`: recommended interval for the live disk-space poller (`space_poller.rs`). Default 2 s (local volumes). `SmbVolume` and `MtpVolume` override to 5 s. `InMemoryVolume` returns `None` (no polling). The poller uses this to tick each volume at its own cadence.
 - `create_directory_errors_on_existing_dir()`: whether `create_directory` reliably returns `VolumeError::AlreadyExists` for an existing same-name dir. Default `true` (LocalPosix, SMB, InMemory all do). `MtpVolume` overrides to `false` — the MTP protocol allows same-name sibling objects and `create_folder` silently makes a duplicate, so the folder-merge walker (`write_operations/transfer/volume_strategy.rs`) pre-checks existence on MTP instead of trusting the create to error. A blindly-created duplicate would make a merge target the wrong directory.
 - `listing_is_watched(path)`: returns `true` when this volume's cached listing for `path` is being kept in sync by a live watcher. Three consumers today:

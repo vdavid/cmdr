@@ -51,8 +51,8 @@ local keep the default (MTP's single USB pipe can't parallelize; local doesn't r
   and a per-slot `reconnecting` single-flight flag. Owns `next_alive()`, `mark_dead(idx)`, `mark_alive(idx)`,
   `try_begin_reconnect(idx)`. The session `Option` is authoritative; `alive` only guides selection.
 - Constant `SCAN_POOL_SIZE = 4` (the benchmarked config; tunable). `begin_scan_session` opens up to 4 members
-  concurrently but STAGGERED (`POOL_LOGIN_STAGGER`) so 4 session-setups don't hit the server at once; a rejected member N
-  is logged and the pool runs with fewer. Only when Direct and not unmounted.
+  concurrently but STAGGERED (`POOL_LOGIN_STAGGER`) so 4 session-setups don't hit the server at once; a rejected member
+  N is logged and the pool runs with fewer. Only when Direct and not unmounted.
 
 ### `list_directory_for_scan` (SMB override)
 

@@ -462,6 +462,30 @@ fn on_unmount_marks_volume_dead() {
     assert_eq!(vol.connection_state(), ConnectionState::Disconnected);
 }
 
+/// Opening the scan pool no-ops when the volume is disconnected: it must not try
+/// to `build_session` (a real network round trip) against a dead volume. Cheap,
+/// server-free coverage of the guard; the live open/list/close path is the
+/// Docker integration test.
+#[tokio::test]
+async fn open_scan_pool_noops_when_disconnected() {
+    let vol = make_test_volume(); // Disconnected, no session
+    vol.open_scan_pool().await;
+    assert!(
+        vol.scan_pool.read().await.is_none(),
+        "a disconnected volume opens no scan pool"
+    );
+}
+
+/// Closing the scan pool with none open is a no-op (idempotent), so
+/// `end_scan_session` / `on_unmount` are always safe to call.
+#[tokio::test]
+async fn close_scan_pool_is_idempotent_noop() {
+    let vol = make_test_volume();
+    vol.close_scan_pool().await;
+    vol.close_scan_pool().await;
+    assert!(vol.scan_pool.read().await.is_none());
+}
+
 /// Creates a test SmbVolume in disconnected state (no real connection).
 fn make_test_volume() -> SmbVolume {
     let params = SmbConnectionParams {
@@ -483,6 +507,7 @@ fn make_test_volume() -> SmbVolume {
         watcher_cancel: std::sync::Mutex::new(None),
         reconnect_lock: Arc::new(tokio::sync::Mutex::new(())),
         unmounted: Arc::new(AtomicBool::new(false)),
+        scan_pool: tokio::sync::RwLock::new(None),
     }
 }
 

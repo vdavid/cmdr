@@ -610,3 +610,50 @@ async fn smb_integration_space_info() {
     assert!(space.available_bytes > 0);
     assert!(space.used_bytes <= space.total_bytes);
 }
+
+/// The scan-connection pool opens against a live server, serves a scan listing,
+/// and closes cleanly. Asserts the internals the server-free `scan_pool::tests`
+/// can't reach: the pool is installed after `open_scan_pool`, a
+/// `list_directory_for_scan` through it returns the share's contents, and
+/// `close_scan_pool` tears it back down.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_scan_pool_opens_lists_and_closes() {
+    let vol = make_docker_volume().await;
+
+    assert!(vol.scan_pool.read().await.is_none(), "no pool before a scan");
+    vol.open_scan_pool().await;
+    assert!(
+        vol.scan_pool.read().await.is_some(),
+        "open_scan_pool installs a pool on a connected volume"
+    );
+
+    // A scan listing of the share root goes through the pool and returns entries
+    // (the `public` share always has content). This drives the pool acquire +
+    // listing path end to end.
+    let root_via_pool = vol
+        .list_directory_for_scan_impl(Path::new("/"))
+        .await
+        .expect("listing the share root through the pool should succeed");
+    let root_via_main = vol
+        .list_directory_impl(Path::new("/"))
+        .await
+        .expect("listing the share root through the main session should succeed");
+    assert_eq!(
+        root_via_pool.len(),
+        root_via_main.len(),
+        "the pool listing matches the main-session listing"
+    );
+
+    vol.close_scan_pool().await;
+    assert!(
+        vol.scan_pool.read().await.is_none(),
+        "close_scan_pool tears the pool back down"
+    );
+
+    // With the pool closed, a scan listing falls back to the main session and
+    // still works.
+    vol.list_directory_for_scan_impl(Path::new("/"))
+        .await
+        .expect("scan listing falls back to the main session once the pool is closed");
+}

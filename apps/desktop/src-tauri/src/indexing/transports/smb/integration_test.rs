@@ -147,6 +147,74 @@ async fn smb_integration_volume_scan_indexes_share() {
     rm_rf(vol.as_ref(), &base).await;
 }
 
+/// The scan-connection pool is a TRANSPARENT accelerator: a scan bracketed by
+/// `begin_scan_session` / `end_scan_session` (which open and close the extra SMB
+/// sessions the walk lists across) produces the exact same index as the plain
+/// scan above. Proves the pool path (`list_directory_for_scan` drawing from the
+/// pool) yields correct results end to end against a real server. The
+/// handout/replacement arithmetic is unit-tested server-free in
+/// `smb::scan_pool::tests`.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_volume_scan_via_connection_pool() {
+    let vol = connect_public().await;
+
+    // Same seeded subtree shape as the plain-scan test.
+    let base = format!("/{}", unique_dir());
+    rm_rf(vol.as_ref(), &base).await;
+    vol.create_directory(Path::new(&base))
+        .await
+        .expect("create base dir on share");
+    let sub = format!("{base}/sub");
+    vol.create_directory(Path::new(&sub)).await.expect("create sub dir");
+    vol.create_file(Path::new(&format!("{sub}/leaf.txt")), b"hello world")
+        .await
+        .expect("create leaf.txt");
+    vol.create_file(Path::new(&format!("{base}/top.txt")), b"hello")
+        .await
+        .expect("create top.txt");
+
+    let dir = tempfile::tempdir().expect("temp db dir");
+    let db_path = dir.path().join("smb-scan-pool.db");
+    let _store = IndexStore::open(&db_path).expect("open store");
+    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+
+    // Bracket the walk exactly as the lifecycle does, so listings fan out across
+    // the pool instead of the single browsing session.
+    vol.begin_scan_session().await;
+    let cancelled = Arc::new(AtomicBool::new(false));
+    let summary = scan_volume_via_trait(
+        Arc::clone(&vol),
+        PathBuf::from(&base),
+        writer.clone(),
+        progress(),
+        cancelled,
+        crate::indexing::network_scanner::scan_pace::ScanPacer::unpaced(),
+    )
+    .await
+    .expect("pooled SMB volume scan should complete");
+    vol.end_scan_session().await;
+
+    assert!(!summary.was_cancelled);
+    assert_eq!(summary.total_entries, 3, "sub/ + leaf.txt + top.txt");
+    assert_eq!(summary.total_dirs, 1, "just sub/");
+
+    writer.flush().await.expect("flush");
+    writer.shutdown();
+
+    let store = IndexStore::open(&db_path).expect("reopen store");
+    let children = store.list_children(ROOT_ID).expect("list root");
+    assert_eq!(children.len(), 2, "scan root has sub/ and top.txt");
+    let sub_entry = children.iter().find(|e| e.name == "sub").expect("sub dir indexed");
+    let top = children.iter().find(|e| e.name == "top.txt").expect("top.txt indexed");
+    assert_eq!(top.logical_size, Some(5), "size comes from SMB stat");
+    let sub_children = store.list_children(sub_entry.id).expect("list sub");
+    assert_eq!(sub_children.len(), 1);
+    assert_eq!(sub_children[0].logical_size, Some(11));
+
+    rm_rf(vol.as_ref(), &base).await;
+}
+
 /// The live watch→index path: scan a fixture share, then MUTATE it and feed the
 /// change through the real translator (`transports/smb/watch`), asserting the index reflects
 /// the mutation — the "scan a share, mutate it, assert the index reflects the

@@ -236,6 +236,31 @@ pub trait Volume: Send + Sync {
         self.list_directory_with_cancel(path, None, cancel)
     }
 
+    /// Called by the index-scan lifecycle right before a background scan/reconcile
+    /// walk starts. Lets a backend spin up scan-scoped resources that only make
+    /// sense for the duration of a walk. SMB opens a small pool of extra TCP
+    /// sessions here so its latency-bound listing walk isn't serialized on the one
+    /// session the pane also browses through (the cold-scan bottleneck is
+    /// per-connection serialization in the server, not the disks — see
+    /// `smb/DETAILS.md` § "Scan-connection pool"). Paired with
+    /// [`end_scan_session`](Self::end_scan_session); the pool is invisible to the
+    /// scanner, which keeps calling `list_directory_for_scan`.
+    ///
+    /// Default no-op: most backends scan fine on their single session (MTP's one
+    /// USB pipe can't parallelize; local has no session at all).
+    fn begin_scan_session<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+        Box::pin(async {})
+    }
+
+    /// Called by the index-scan lifecycle right after a background scan/reconcile
+    /// walk ends (any outcome: clean, cancel, disconnect, error). Tears down
+    /// whatever [`begin_scan_session`](Self::begin_scan_session) opened, so the
+    /// steady-state footprint is unchanged between scans. Idempotent. Default
+    /// no-op.
+    fn end_scan_session<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+        Box::pin(async {})
+    }
+
     /// Gets metadata for a single path (relative to volume root).
     fn get_metadata<'a>(
         &'a self,

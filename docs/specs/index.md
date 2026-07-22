@@ -10,8 +10,9 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
       scan by spreading its directory listings across a small pool of extra TCP connections inside `SmbVolume` (the NAS
       bottleneck is per-connection ksmbd serialization, not the disks; 4 connections lift cold throughput ~3.8×),
       invisible to the transport-agnostic scanner via a `begin_scan_session`/`end_scan_session` trait seam and a
-      round-robin pool with sibling-retry + single-flight member reconnect. M2 loosens the single SQLite writer (periodic
-      explicit transactions around the fresh-scan inserts) so it keeps up with ~4× ingest without losing crash-safety.
+      round-robin pool with sibling-retry + single-flight member reconnect. M2 loosens the single SQLite writer
+      (periodic explicit transactions around the fresh-scan inserts) so it keeps up with ~4× ingest without losing
+      crash-safety.
 - [ ] 2026-07-22 [indexing-reorg-plan.md](indexing-reorg-plan.md) - Reorganize the `indexing/` subsystem's ~45-file flat
       tail into 13 stage-based area dirs (lifecycle, resources, scanner, network_scanner, watch, reconcile, writer,
       aggregator, read, paths, events, transports, tests), each with colocated `CLAUDE.md` + `DETAILS.md` and a thin

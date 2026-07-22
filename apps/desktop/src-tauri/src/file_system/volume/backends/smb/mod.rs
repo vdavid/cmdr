@@ -33,6 +33,7 @@ mod foreground_yield;
 mod mapping;
 mod reconnect;
 mod scan;
+mod scan_pool;
 mod session;
 mod state;
 mod streams;
@@ -135,6 +136,11 @@ pub struct SmbVolume {
     /// Once `true`, the volume is permanently dead; `attempt_reconnect` becomes
     /// a no-op error.
     unmounted: Arc<AtomicBool>,
+    /// The per-scan connection pool: extra smb2 sessions a background index scan
+    /// spreads its listings across, opened lazily on `begin_scan_session` and torn
+    /// down on `end_scan_session`. `None` between scans (steady-state footprint is
+    /// just the one browsing session). See `scan_pool.rs`.
+    scan_pool: tokio::sync::RwLock<Option<Arc<scan_pool::ScanPool>>>,
 }
 
 impl SmbVolume {
@@ -169,6 +175,7 @@ impl SmbVolume {
             watcher_cancel: std::sync::Mutex::new(None),
             reconnect_lock: Arc::new(tokio::sync::Mutex::new(())),
             unmounted: Arc::new(AtomicBool::new(false)),
+            scan_pool: tokio::sync::RwLock::new(None),
         }
     }
 

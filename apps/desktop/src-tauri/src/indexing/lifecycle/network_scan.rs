@@ -296,7 +296,14 @@ impl IndexManager {
         // browses the share, the walk drops to one listing in flight so a navigation
         // isn't queued behind the scan's backlog. See `indexing/network_scanner/scan_pace.rs`.
         let pacer = crate::indexing::network_scanner::scan_pace::ScanPacer::for_volume(self.volume_id.clone());
+        // Kept alive across the walk to open/close the backend's scan-scoped
+        // resources (SMB spreads the walk across a small pool of extra
+        // connections; see `file_system/.../smb/scan_pool.rs`). Invisible to the
+        // scanner, which keeps calling `list_directory_for_scan`. Default no-op on
+        // backends without such resources (MTP, local).
+        let scan_session_volume = Arc::clone(&volume);
         tauri::async_runtime::spawn(async move {
+            scan_session_volume.begin_scan_session().await;
             let result = if reconcile {
                 crate::indexing::network_scanner::reconcile_volume_via_trait(
                     volume,
@@ -318,6 +325,9 @@ impl IndexManager {
                 )
                 .await
             };
+            // Tear the pool down on EVERY outcome (clean, cancel, disconnect,
+            // error): this line runs before any completion-arm below.
+            scan_session_volume.end_scan_session().await;
 
             scan_done.store(true, Ordering::Relaxed);
             scanning.store(false, Ordering::Relaxed);

@@ -131,6 +131,27 @@ impl Volume for SmbVolume {
         })
     }
 
+    fn list_directory_for_scan<'a>(
+        &'a self,
+        path: &'a Path,
+        _cancel: Option<&'a Arc<AtomicBool>>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        // SMB ignores the cancel flag (there's no mid-listing SMB cancel today; the
+        // scanner's `LIST_TIMEOUT` on a detached task handles a wedged listing) —
+        // same as the default `list_directory_with_cancel` this used to fall through
+        // to. The override exists to draw from the per-scan connection pool when one
+        // is active; see `scan_pool.rs`.
+        Box::pin(async move { self.list_directory_for_scan_impl(path).await })
+    }
+
+    fn begin_scan_session<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+        Box::pin(async move { self.open_scan_pool().await })
+    }
+
+    fn end_scan_session<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+        Box::pin(async move { self.close_scan_pool().await })
+    }
+
     fn get_metadata<'a>(
         &'a self,
         path: &'a Path,
@@ -762,6 +783,12 @@ impl Volume for SmbVolume {
             let _ = cancel_tx.send(());
             debug!("SmbVolume cleanup for {}: watcher cancel sent", self.share_name);
         }
+
+        // Tear down any live scan pool: a member session must not keep walking an
+        // unmounted volume. Sync (no runtime here): flip its `closed` flag so
+        // reconnect loops bail and drop this reference; the member sessions close
+        // when the last `Arc` drops (within one backoff step). See `scan_pool.rs`.
+        self.close_scan_pool_sync();
 
         // Drop the smb2 session. Uses blocking_lock() / blocking_write() since
         // on_unmount is sync (called from FSEvents thread, no Tokio runtime).
