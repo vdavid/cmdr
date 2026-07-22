@@ -203,7 +203,7 @@ fn should_replay_journal(
 /// Shared by two triggers that both mean "roll forward from the visible scanner,
 /// not the invisible reconcile": the cold-start replay full-scan fallback
 /// (`start_replay`) and the shallow-`MustScanSubDirs` scanner routing
-/// (`reconciler/rescan.rs`). Single-flight: `start_scan` no-ops if a scan is
+/// (`reconcile/reconciler/rescan.rs`). Single-flight: `start_scan` no-ops if a scan is
 /// already running, so overlapping triggers coalesce.
 ///
 /// Runs the blocking `start_scan` prelude off the lock (holding it across
@@ -358,7 +358,7 @@ impl IndexManager {
         // from disk. Both live in a process-global ledger, so without this a
         // relaunch would hand the next shallow anchor a free full sweep and reset
         // the count to zero — and a once-a-day policy that resets on every launch
-        // is not a once-a-day policy. See `reconciler/rescan_route.rs`.
+        // is not a once-a-day policy. See `reconcile/reconciler/rescan_route.rs`.
         //
         // The window takes the LATER of two facts, which is what makes an
         // interrupted sweep safe: `scan_completed_at` (any full walk FINISHED, and

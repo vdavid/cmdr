@@ -274,7 +274,7 @@ impl IndexPathSpace {
     /// external drive). Read back from the scope, which owns the mount root.
     ///
     /// The shallow-`MustScanSubDirs` sweep window branches on this: the once-a-day
-    /// window is boot-disk-only (see `reconciler/rescan_route.rs`).
+    /// window is boot-disk-only (see `reconcile/reconciler/rescan_route.rs`).
     pub(crate) fn is_boot_disk(&self) -> bool {
         self.mount_root().is_none()
     }

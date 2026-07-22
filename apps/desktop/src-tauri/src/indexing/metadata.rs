@@ -5,7 +5,7 @@
 
 /// Snapshot of filesystem metadata fields relevant to indexing.
 #[derive(Debug, Clone)]
-pub(super) struct MetadataSnapshot {
+pub(crate) struct MetadataSnapshot {
     pub logical_size: Option<u64>,
     pub physical_size: Option<u64>,
     pub modified_at: Option<u64>,

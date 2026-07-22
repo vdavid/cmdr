@@ -241,7 +241,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
                 // skipped signals stood for has now been repaired). Not only a
                 // shallow-triggered sweep: the window means "a full walk happened
                 // recently", so the user's own "Rescan now" counts too. See
-                // `reconciler/rescan_route.rs`.
+                // `reconcile/reconciler/rescan_route.rs`.
                 let sweep = reconciler::record_sweep_completed(&volume_id, reconciler::now_unix());
                 if let Some(at) = sweep.last_sweep_unix {
                     let _ = writer.send(WriteMessage::UpdateMeta {

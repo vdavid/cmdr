@@ -10,13 +10,13 @@ use std::time::Instant;
 
 use tauri::AppHandle;
 
-use super::enrichment::get_read_pool;
-use super::firmlinks;
-use super::metadata::extract_metadata;
-use super::reconciler;
-use super::scanner;
-use super::store::{self, IndexStore};
-use super::writer::{IndexWriter, WriteMessage};
+use crate::indexing::enrichment::get_read_pool;
+use crate::indexing::firmlinks;
+use crate::indexing::metadata::extract_metadata;
+use crate::indexing::reconciler;
+use crate::indexing::scanner;
+use crate::indexing::store::{self, IndexStore};
+use crate::indexing::writer::{IndexWriter, WriteMessage};
 
 // ── Dedup/debounce state ─────────────────────────────────────────────
 
@@ -60,7 +60,7 @@ impl Drop for InFlightGuard {
 
 /// Attempt to verify a directory against the index. Checks dedup/debounce,
 /// spawns an async task if the directory qualifies.
-pub(super) fn maybe_verify(dir_path: String, writer: IndexWriter, app: AppHandle, scanning: bool) {
+pub(crate) fn maybe_verify(dir_path: String, writer: IndexWriter, app: AppHandle, scanning: bool) {
     if scanning {
         return;
     }
@@ -107,14 +107,14 @@ pub(super) fn maybe_verify(dir_path: String, writer: IndexWriter, app: AppHandle
             // The per-navigation verifier is root-scoped, so its live corrections
             // publish under the local root for the importance scheduler's
             // incremental rescore (plan Decision 5), alongside the FE emit.
-            super::lifecycle_bus::publish_dirs_changed(super::ROOT_VOLUME_ID, &affected_paths);
+            crate::indexing::lifecycle_bus::publish_dirs_changed(crate::indexing::ROOT_VOLUME_ID, &affected_paths);
             reconciler::emit_dir_updated(&app, affected_paths);
         }
     });
 }
 
 /// Clear all dedup/debounce state. Called on shutdown and clear_index.
-pub(super) fn invalidate() {
+pub(crate) fn invalidate() {
     if let Ok(mut state) = VERIFIER_STATE.lock() {
         state.in_flight.clear();
         state.recent.clear();

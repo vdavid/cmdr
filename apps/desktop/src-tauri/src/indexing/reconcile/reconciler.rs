@@ -78,14 +78,14 @@ pub(in crate::indexing) enum ScanTrigger {
 /// flush (see [`PendingUpsert`]). Only the live reconciler holds one; the replay
 /// path threads `None` so journal catch-up stays unthrottled. Visible to
 /// `indexing` because it rides `process_fs_event`'s signature.
-pub(super) type LiveThrottle = Throttle<PendingUpsert>;
+pub(crate) type LiveThrottle = Throttle<PendingUpsert>;
 
 /// The suppressed upsert a throttled file's trailing flush replays. Built from
 /// the already-stat'd suppressed event, so the sweep never re-stats (which would
 /// risk blocking the live loop on a dead mount, and add a phantom-apply-on-
 /// deleted-file case). Only regular files are throttled, so `is_directory` /
 /// `is_symlink` are always false at flush time.
-pub(super) struct PendingUpsert {
+pub(crate) struct PendingUpsert {
     parent_id: i64,
     name: String,
     logical_size: Option<u64>,
@@ -134,7 +134,7 @@ mod skip_aggregator {
 
     /// One skip category: its own rolling state plus the words for the summary line
     /// (`"skipped {unit}s {reason} in …"`).
-    pub(super) struct SkipAggregator {
+    pub(crate) struct SkipAggregator {
         state: Mutex<Option<State>>,
         /// Counted noun, e.g. `"removal"` → "skipped 3 removals".
         unit: &'static str,
@@ -153,7 +153,7 @@ mod skip_aggregator {
 
         /// Increment the counter and emit a summary if the flush interval has elapsed.
         /// Called on every skip (cheap: one mutex acquisition, one branch).
-        pub(super) fn record(&self, path: &str) {
+        pub(crate) fn record(&self, path: &str) {
             let mut guard = match self.state.lock() {
                 Ok(g) => g,
                 Err(p) => p.into_inner(),
@@ -197,10 +197,10 @@ mod skip_aggregator {
     }
 
     /// Removals for a path that isn't in the DB (mostly harmless build-output churn).
-    pub(super) static UNKNOWN_PATH_SKIPS: SkipAggregator = SkipAggregator::new("removal", "for unknown paths");
+    pub(crate) static UNKNOWN_PATH_SKIPS: SkipAggregator = SkipAggregator::new("removal", "for unknown paths");
     /// Create/modify events whose parent dir isn't in the DB: escalated to a subtree
     /// rescan of the highest missing dir (Leak B) rather than dropped.
-    pub(super) static ESCALATED_MISSING_PARENTS: SkipAggregator =
+    pub(crate) static ESCALATED_MISSING_PARENTS: SkipAggregator =
         SkipAggregator::new("event", "escalated for missing parents");
 }
 
@@ -212,7 +212,7 @@ pub struct EventReconciler {
     buffering: bool,
     /// Set when the buffer cap is hit. Forces a full rescan after the
     /// current scan completes instead of replaying individual events.
-    pub(super) buffer_overflow: bool,
+    pub(crate) buffer_overflow: bool,
     /// Paths pending MustScanSubDirs rescans, deduplicated. Shared with
     /// spawned rescan tasks so they can start the next rescan on completion.
     pending_rescans: Arc<Mutex<HashSet<PathBuf>>>,
@@ -267,7 +267,7 @@ impl EventReconciler {
     /// Create a reconciler bound to a volume's id + path space. A mount-rooted
     /// external drive passes its space so live/replay resolution strips the mount
     /// root, and its id so the rescan hourglass routes to its own tracker.
-    pub(super) fn new_for(volume_id: String, space: IndexPathSpace) -> Self {
+    pub(crate) fn new_for(volume_id: String, space: IndexPathSpace) -> Self {
         Self::with_space_and_throttle(volume_id, space, Throttle::new(resolve_downloads_prefix()))
     }
 
@@ -291,7 +291,7 @@ impl EventReconciler {
     /// Test constructor with an explicit throttle window, so the trailing flush is
     /// exercised without sleeping a real [`THROTTLE_WINDOW`].
     #[cfg(test)]
-    pub(super) fn new_with_throttle_window(window: Duration) -> Self {
+    pub(crate) fn new_with_throttle_window(window: Duration) -> Self {
         let mut reconciler = Self::with_space_and_throttle(
             ROOT_VOLUME_ID.to_string(),
             IndexPathSpace::root(),
@@ -459,7 +459,7 @@ impl EventReconciler {
     /// last-seen size (never re-statting). Called on the event loop's ~1 s
     /// throttle-sweep tick. Returns the ancestor paths whose `dir_stats` the
     /// flushes changed, for the caller's batched `index-dir-updated` emit.
-    pub(super) fn sweep_throttle(&mut self, writer: &IndexWriter, now: Instant) -> Vec<String> {
+    pub(crate) fn sweep_throttle(&mut self, writer: &IndexWriter, now: Instant) -> Vec<String> {
         let flushes = self.throttle.sweep(now);
         let mut affected: Vec<String> = Vec::new();
         for (path, upsert) in flushes {
@@ -480,7 +480,7 @@ impl EventReconciler {
     }
 
     /// Whether the reconciler's event buffer overflowed during the scan.
-    pub(super) fn did_buffer_overflow(&self) -> bool {
+    pub(crate) fn did_buffer_overflow(&self) -> bool {
         self.buffer_overflow
     }
 
@@ -500,7 +500,7 @@ impl EventReconciler {
 // ── Subtree reconciliation ───────────────────────────────────────────
 
 /// Summary of a subtree reconciliation.
-pub(super) struct ReconcileSummary {
+pub(crate) struct ReconcileSummary {
     pub added: u64,
     pub removed: u64,
     pub updated: u64,
@@ -530,7 +530,7 @@ fn writer_wait() -> Duration {
 /// `std::fs::Metadata`, the network path from a `Volume` listing's `FileEntry`.
 /// The diff is then source-agnostic — the same add/remove/modify/type-change
 /// logic for both.
-pub(super) struct LiveChild {
+pub(crate) struct LiveChild {
     pub name: String,
     pub is_directory: bool,
     pub is_symlink: bool,
@@ -538,7 +538,7 @@ pub(super) struct LiveChild {
 }
 
 /// Outcome of diffing ONE directory's live children against its DB rows.
-pub(super) struct DirDiff {
+pub(crate) struct DirDiff {
     pub added: u64,
     pub removed: u64,
     pub updated: u64,
@@ -574,7 +574,7 @@ pub(super) struct DirDiff {
 /// reconcile-stops-at-the-root prod bug: a share with only its top dirs indexed
 /// would match them, write nothing, recurse nowhere, and "complete" instantly
 /// over an unscanned tree.)
-pub(super) fn diff_dir_against_db(
+pub(crate) fn diff_dir_against_db(
     dir_id: i64,
     live_children: &[LiveChild],
     db_children: &[store::EntryRow],
@@ -701,7 +701,7 @@ const MARK_CHUNK: usize = 10_000;
 /// Emit `MarkDirsListed` for every successfully-listed dir id, chunked. A no-op
 /// when empty. The only failure is a writer send (the writer thread is gone); the
 /// caller maps that into its own error type.
-pub(super) fn send_marks(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -> Result<(), IndexStoreError> {
+pub(crate) fn send_marks(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -> Result<(), IndexStoreError> {
     for chunk in listed_ids.chunks(MARK_CHUNK) {
         writer.send(WriteMessage::MarkDirsListed {
             ids: chunk.to_vec(),
@@ -727,7 +727,7 @@ pub(super) fn send_marks(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -
 /// reconcile still runs the aggregate (cheap O(dirs) bulk SQL since no
 /// `InsertEntriesV2` ran) so coverage re-stamps to the new epoch; it writes no
 /// entry rows. The only failure is a writer send; the caller maps it.
-pub(super) fn finish_reconcile(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -> Result<(), IndexStoreError> {
+pub(crate) fn finish_reconcile(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -> Result<(), IndexStoreError> {
     send_marks(listed_ids, epoch, writer)?;
     // `Sql`, not `Maps`: a reconcile writes via `UpsertEntryV2` (maps empty in the
     // happy case), but a verification subtree scan's `InsertEntriesV2` can leave
@@ -764,7 +764,7 @@ pub(super) fn finish_reconcile(listed_ids: &[i64], epoch: u64, writer: &IndexWri
 ///
 /// All sends are best-effort: on a hard writer-gone error the send fails and is
 /// ignored, matching how the surrounding walk already treats writer sends.
-pub(super) struct BulkReconcileGuard {
+pub(crate) struct BulkReconcileGuard {
     writer: IndexWriter,
 }
 
@@ -773,7 +773,7 @@ impl BulkReconcileGuard {
     ///
     /// Order matters: the marker must be committed BEFORE the first suppressed
     /// write, or a death between the two would leave drift with a paid ledger.
-    pub(super) fn begin(writer: &IndexWriter) -> Self {
+    pub(crate) fn begin(writer: &IndexWriter) -> Self {
         let _ = writer.send(WriteMessage::MarkLedgerUnpaid);
         let _ = writer.send(WriteMessage::SetDeltaPropagation(false));
         Self { writer: writer.clone() }
@@ -802,7 +802,7 @@ impl Drop for BulkReconcileGuard {
 /// via `network_scanner::reconcile_volume_via_trait`, which reuses the shared
 /// [`diff_dir_against_db`] but stamps + runs ONE `ComputeAllAggregates` (the
 /// single-aggregate constraint the perf bench measured), never per-dir propagation.
-pub(super) fn reconcile_subtree(
+pub(crate) fn reconcile_subtree(
     root: &Path,
     space: &IndexPathSpace,
     conn: &Connection,
@@ -1064,7 +1064,7 @@ pub(super) fn reconcile_subtree(
 ///   (`scanner::run_scan`); a reconcile that DIDN'T would find them absent from the
 ///   DB and re-add them every pass, diverging from the fresh-scan tree.
 ///   Skipping here keeps fresh and reconcile in lock-step.
-pub(super) fn read_fs_children(
+pub(crate) fn read_fs_children(
     dir_path: &Path,
     space: &IndexPathSpace,
 ) -> Option<Vec<(String, std::fs::Metadata, bool)>> {
@@ -1125,7 +1125,7 @@ pub(super) fn read_fs_children(
 /// (`process_live_event` live, buffered replay) owns the reconciler state and
 /// queues or defers it. `None` means nothing to escalate. A typed `PathBuf`
 /// out-param, never a string signal — no string-matching classification.
-pub(super) fn process_fs_event(
+pub(crate) fn process_fs_event(
     event: &FsChangeEvent,
     space: &IndexPathSpace,
     conn: &Connection,
@@ -1438,7 +1438,7 @@ fn collect_ancestor_paths(path: &str) -> Vec<String> {
 }
 
 /// Emit an `index-dir-updated` event to the frontend.
-pub(super) fn emit_dir_updated(app: &AppHandle, paths: Vec<String>) {
+pub(crate) fn emit_dir_updated(app: &AppHandle, paths: Vec<String>) {
     use tauri_specta::Event;
     let _ = crate::indexing::IndexDirUpdatedEvent { paths }.emit(app);
 }

@@ -5,7 +5,7 @@
 //! `MustScanSubDirs` on ever-higher paths, up to `/`. A deep/narrow anchor (a
 //! single `target/`) is exactly what the throttled `reconcile_subtree` drain is
 //! good at. A shallow/root-scale anchor is NOT: reconciling `/` is a ~20-min walk
-//! that holds the per-dir hourglass the whole time (`reconciler/rescan.rs`), and
+//! that holds the per-dir hourglass the whole time (`reconcile/reconciler/rescan.rs`), and
 //! under continuous root churn the anchor never leaves `pending_rescans`, so the
 //! hold never clears. A channel overflow — the SAME "we lost events" signal —
 //! already takes the VISIBLE scanner path (single-flight, updates freshness,
@@ -62,7 +62,7 @@ pub(in crate::indexing) const SHALLOW_RESCAN_MIN_INTERVAL: Duration = Duration::
 /// Don't "simplify" this into one constant. Two independent reasons:
 /// 1. **No evidence.** The storm was measured on `/`; we have none for external
 ///    volumes, so widening their window buys no measured benefit.
-/// 2. **No safety net there.** The per-navigation verifier (`verifier.rs`) is
+/// 2. **No safety net there.** The per-navigation verifier (`reconcile/verifier.rs`) is
 ///    root-scoped: it reads the ROOT `ReadPool` and bails inert on a mount-rooted
 ///    volume. Meanwhile `/Volumes/<name>` is depth 2, so external anchors DO
 ///    classify as shallow. A 24-hour blind window there would be a pure
@@ -262,7 +262,7 @@ fn seed_from_meta_in(
     record.coalesced_since_sweep = record.coalesced_since_sweep.max(coalesced);
 }
 
-/// Test-only: clear the PROCESS-GLOBAL ledger. Only for the `reconciler/tests.rs`
+/// Test-only: clear the PROCESS-GLOBAL ledger. Only for the `reconcile/reconciler/tests.rs`
 /// cases that drive a real event through `process_live_event` and therefore can't
 /// inject a ledger; those already serialize on `PENDING_SIZES_TEST_MUTEX`. The
 /// policy's own tests use a local ledger via [`decide_shallow_anchor_in`] instead,

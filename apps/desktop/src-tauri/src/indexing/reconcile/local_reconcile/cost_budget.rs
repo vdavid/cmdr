@@ -3,7 +3,7 @@
 //! volume can't eat the whole walk.
 //!
 //! Pure and threshold-injected (the `event_loop/verify_guard.rs` /
-//! `reconciler/rescan_route.rs` shape), so the boundary is pinned in the ms-scale
+//! `reconcile/reconciler/rescan_route.rs` shape), so the boundary is pinned in the ms-scale
 //! unit tier and the walk test can drive it with a 150 ms budget instead of a
 //! 20-minute fixture.
 //!

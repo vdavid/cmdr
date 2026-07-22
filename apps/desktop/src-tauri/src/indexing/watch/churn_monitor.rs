@@ -10,7 +10,7 @@
 //! `None`, and the live loop's `Option` stays `None`, so a normal run pays
 //! nothing.
 //!
-//! Shape follows `reconciler/rescan_throttle.rs`: pure aggregation, clock
+//! Shape follows `reconcile/reconciler/rescan_throttle.rs`: pure aggregation, clock
 //! injected per call, no interior locking (the live loop owns it), so the whole
 //! engine is unit-testable without a filesystem or a running app. That's also
 //! what makes it promotable into the sealed-subtrees churn accounting rather

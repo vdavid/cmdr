@@ -212,7 +212,7 @@ pub const DEFAULT_GIVE_UP_AFTER: usize = 32;
 /// the `getattrlistbulk` reader delivers a boot-volume directory at ~2 µs per
 /// entry (verified on macOS 15, `bulk_vs_std_walk_bench`, 2026-07-21), and the
 /// serial reconcile's per-entry allowance for calling a read *pathological* is
-/// 100 µs (`local_reconcile/cost_budget.rs`). 1 ms is 500× the measured cost and
+/// 100 µs (`reconcile/local_reconcile/cost_budget.rs`). 1 ms is 500× the measured cost and
 /// 10× that threshold, so it only ever catches a read moving orders of magnitude
 /// slower than any filesystem we've measured, while still bounding one that
 /// trickles below the stall rule's radar forever.

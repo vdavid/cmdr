@@ -55,13 +55,13 @@ mod latency_probe;
 use cost_budget::{Anchorage, BudgetVerdict, CostBudget, ReadCost};
 use latency_probe::LatencyProbe;
 
-use super::DEBUG_STATS;
-use super::IndexPathSpace;
-use super::metadata::extract_metadata;
-use super::reconciler::{self, LiveChild};
-use super::scanner::{LOCAL_LIST_TIMEOUT, ScanError, ScanHandle, ScanProgress, ScanSummary};
-use super::store::IndexStore;
-use super::writer::{IndexWriter, WriteMessage};
+use crate::indexing::DEBUG_STATS;
+use crate::indexing::IndexPathSpace;
+use crate::indexing::metadata::extract_metadata;
+use crate::indexing::reconciler::{self, LiveChild};
+use crate::indexing::scanner::{LOCAL_LIST_TIMEOUT, ScanError, ScanHandle, ScanProgress, ScanSummary};
+use crate::indexing::store::IndexStore;
+use crate::indexing::writer::{IndexWriter, WriteMessage};
 
 /// One directory's normalized filesystem children (name, metadata, is_symlink), or
 /// `None` when the directory can't be listed.
@@ -218,7 +218,7 @@ struct WalkTools {
 /// Mirrors [`scanner::scan_volume`]'s return shape so `manager::start_scan`'s
 /// completion handler is reused unchanged: a [`ScanHandle`] for progress +
 /// cancellation, and a `JoinHandle` the handler joins for the [`ScanSummary`].
-pub(super) fn start_local_reconcile(
+pub(crate) fn start_local_reconcile(
     root: PathBuf,
     space: IndexPathSpace,
     writer: &IndexWriter,

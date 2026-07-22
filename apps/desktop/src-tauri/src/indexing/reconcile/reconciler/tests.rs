@@ -196,7 +196,7 @@ fn must_scan_dir_flags() -> FsEventFlags {
 /// A root-scale `MustScanSubDirs` must take the VISIBLE scanner path, not the
 /// invisible reconcile hold. Pre-fix, `process_live_event` queued `/` onto the
 /// reconcile drain, which holds the per-dir hourglass for the whole ~20-min walk
-/// (`reconciler/rescan.rs`) and — under continuous root churn — never releases it
+/// (`reconcile/reconciler/rescan.rs`) and — under continuous root churn — never releases it
 /// (the stuck-hourglass bug). Post-fix, a shallow anchor routes to the scanner: no
 /// hold, nothing queued on the drain.
 #[tokio::test]

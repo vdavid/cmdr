@@ -423,7 +423,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     }
 
     // Queue any MustScanSubDirs rescans that were deferred during replay. Route
-    // each by depth (see `reconciler/rescan_route.rs`): a shallow/root-scale anchor
+    // each by depth (see `reconcile/reconciler/rescan_route.rs`): a shallow/root-scale anchor
     // — the case our replay-unification can collapse to one invisible reconcile-of-`/`
     // with a stuck hourglass — takes the VISIBLE scanner path instead; a deep/narrow
     // anchor stays on the live drain, which dedups, ancestor-collapses, and

@@ -1,7 +1,7 @@
 //! The cost guard for post-replay verification: two pure decisions that bound
 //! what one pathological directory can cost a cold start.
 //!
-//! Both decisions are pure and threshold-injected (the `reconciler/rescan_route.rs`
+//! Both decisions are pure and threshold-injected (the `reconcile/reconciler/rescan_route.rs`
 //! shape), so the boundaries are pinned in the ms-scale unit tier and the
 //! integration test can drive `verify_affected_dirs` with a tiny threshold instead
 //! of a million-file fixture.

@@ -24,7 +24,6 @@ pub use paths::firmlinks;
 pub(crate) use paths::routing;
 pub mod freshness;
 pub(crate) mod lifecycle_bus;
-mod local_reconcile;
 mod manager;
 mod network_scan;
 mod scan_completion;
@@ -40,13 +39,14 @@ mod metadata;
 mod mtp_index;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod mtp_watch;
-mod reconciler;
 pub(crate) mod scanner;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod smb_index;
 mod smb_watch;
-mod verifier;
 pub(crate) mod network_scanner;
+pub(crate) mod reconcile;
+// Public API surface; real homes are reconcile/{reconciler,local_reconcile,verifier}.rs.
+pub(crate) use reconcile::{local_reconcile, reconciler, verifier};
 
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
 #[path = "smb_scan_integration_test.rs"]
@@ -66,11 +66,6 @@ mod stress_tests_concurrency;
 mod stress_tests_lifecycle;
 #[cfg(test)]
 mod stress_tests_partial_aggregation;
-// Reconcile rescan: perf guard (ignored bench) + correctness regression tests.
-#[cfg(test)]
-mod reconcile_bench;
-#[cfg(test)]
-mod reconcile_correctness;
 
 pub(crate) use read::enrichment::{ReadPool, get_read_pool, get_read_pool_for};
 pub use read::enrichment::{enrich_entries_with_index, enrich_entries_with_index_on_volume};

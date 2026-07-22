@@ -1,4 +1,4 @@
-//! Per-file throttle for LIVE index upserts (`reconciler.rs` live path only).
+//! Per-file throttle for LIVE index upserts (`reconcile/reconciler.rs` live path only).
 //!
 //! On any running Mac, background apps rewrite the same files constantly (WALs,
 //! logs, app-state SQLite DBs, plists), and Cmdr live-watches the whole boot
@@ -37,7 +37,7 @@
 //! The engine is pure and clock-injected (`now: Instant` passed in) so all of the
 //! above is deterministically unit-tested below; it makes no filesystem or DB
 //! calls. The Downloads exemption is a caller-supplied normalized prefix (resolved
-//! once in `reconciler.rs`), keeping this module free of OS lookups.
+//! once in `reconcile/reconciler.rs`), keeping this module free of OS lookups.
 
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
@@ -107,12 +107,12 @@ pub(super) enum ThrottleOutcome<P> {
 
 /// A per-key leading+trailing throttle over live index upserts. Generic over the
 /// payload `P` it carries so the engine stays pure (unit-tested with `P = ()`);
-/// the live path instantiates `P = PendingUpsert` (`reconciler.rs`).
+/// the live path instantiates `P = PendingUpsert` (`reconcile/reconciler.rs`).
 ///
 /// Visible to the whole `indexing` module because it appears in the
 /// `pub(in crate::indexing)` `process_fs_event` signature (its `watch/event_loop.rs`
 /// callers pass `None`); the methods stay `pub(super)` (reconciler-only).
-pub(in crate::indexing) struct Throttle<P> {
+pub(crate) struct Throttle<P> {
     window: Duration,
     /// Normalized paths under this prefix are never throttled (always applied).
     /// Resolved once by the caller; `None` if the OS reports no Downloads dir.
