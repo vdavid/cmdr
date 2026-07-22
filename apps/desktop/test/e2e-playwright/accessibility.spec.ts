@@ -314,7 +314,7 @@ for (const mode of ['light', 'dark'] as const) {
         // All settings sections with their sidebar paths and data-section-id selectors.
         // Mirror the tree declared in `SettingsSidebar.svelte::TOP_LEVEL_ORDER` and the
         // section bindings in `SettingsContent.svelte`. Top-level sections that own
-        // subsections (Appearance, Behavior, AI, File systems, Developer) show a summary card
+        // subsections (Appearance, Behavior, Indexing, AI, File systems) show a summary card
         // grid when clicked at the top level, so the audit targets each subsection directly.
         const sections: { name: string; path: string[]; sectionId: string }[] = [
           {
@@ -339,13 +339,23 @@ for (const mode of ['light', 'dark'] as const) {
             sectionId: 'behavior-navigation-and-file-ops',
           },
           {
-            name: 'Behavior > File system watching',
-            path: ['Behavior', 'File system watching'],
-            sectionId: 'behavior-file-system-watching',
+            name: 'Behavior > Notifications',
+            path: ['Behavior', 'Notifications'],
+            sectionId: 'behavior-notifications',
+          },
+          {
+            name: 'Indexing > Drive indexing',
+            path: ['Indexing', 'Drive indexing'],
+            sectionId: 'indexing-drive-indexing',
+          },
+          {
+            name: 'Indexing > Image indexing',
+            path: ['Indexing', 'Image indexing'],
+            sectionId: 'indexing-image-indexing',
           },
           { name: 'AI > Provider', path: ['AI', 'Provider'], sectionId: 'ai-provider' },
           { name: 'AI > Ask Cmdr', path: ['AI', 'Ask Cmdr'], sectionId: 'ai-ask-cmdr' },
-          { name: 'AI > Image search', path: ['AI', 'Image search'], sectionId: 'ai-image-search' },
+          { name: 'AI > MCP server', path: ['AI', 'MCP server'], sectionId: 'ai-mcp-server' },
           {
             name: 'File systems > SMB/Network shares',
             path: ['File systems', 'SMB/Network shares'],
@@ -359,12 +369,6 @@ for (const mode of ['light', 'dark'] as const) {
           { name: 'File systems > Git', path: ['File systems', 'Git'], sectionId: 'file-systems-git' },
           { name: 'Viewer', path: ['Viewer'], sectionId: 'viewer' },
           { name: 'Keyboard shortcuts', path: ['Keyboard shortcuts'], sectionId: 'keyboard-shortcuts' },
-          {
-            name: 'Developer > MCP server',
-            path: ['Developer', 'MCP server'],
-            sectionId: 'developer-mcp-server',
-          },
-          { name: 'Developer > Logging', path: ['Developer', 'Logging'], sectionId: 'developer-logging' },
           { name: 'Updates & privacy', path: ['Updates & privacy'], sectionId: 'updates' },
           { name: 'License', path: ['License'], sectionId: 'license' },
           { name: 'Advanced', path: ['Advanced'], sectionId: 'advanced' },
@@ -392,7 +396,7 @@ for (const mode of ['light', 'dark'] as const) {
             continue
           }
 
-          // Brief settle for sections with async data (for example, File system watching
+          // Brief settle for sections with async data (for example, Drive indexing
           // loads dbFileSize which controls the "Clear index" button's disabled state).
           // The pollUntil above already gated on section visibility: this just lets
           // any reactive child updates land before axe inspects the DOM. No specific

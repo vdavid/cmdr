@@ -1372,13 +1372,25 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
-  "settings.section.fileSystemWatching": "Bevakning av filsystem",
-  "@settings.section.fileSystemWatching": {
-    "sourceHash": "4fa805f"
+  "settings.section.notifications": "Aviseringar",
+  "@settings.section.notifications": {
+    "sourceHash": "7880118"
   },
   "settings.section.search": "Sök",
   "@settings.section.search": {
     "sourceHash": "49c266b"
+  },
+  "settings.section.indexing": "Indexering",
+  "@settings.section.indexing": {
+    "sourceHash": "cc24d96"
+  },
+  "settings.section.driveIndexing": "Indexering av enhet",
+  "@settings.section.driveIndexing": {
+    "sourceHash": "38d916b"
+  },
+  "settings.section.imageIndexing": "Bildindexering",
+  "@settings.section.imageIndexing": {
+    "sourceHash": "442068b"
   },
   "settings.section.ai": "AI",
   "@settings.section.ai": {
@@ -1393,10 +1405,6 @@
   "@settings.section.askCmdr": {
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name; kept verbatim in every locale (do-not-translate list)."
-  },
-  "settings.section.imageSearch": "Bildsökning",
-  "@settings.section.imageSearch": {
-    "sourceHash": "a4a68f1"
   },
   "settings.askCmdr.intro": "Chatta med en AI om dina filer, enheter och historik. Ask Cmdr är skrivskyddad: den läser namn, sökvägar och storlekar för att svara, och ändrar aldrig något.",
   "@settings.askCmdr.intro": {
@@ -1483,8 +1491,8 @@
   "@settings.section.viewer": {
     "sourceHash": "678bfa6"
   },
-  "settings.section.operationLog": "Åtgärdslogg",
-  "@settings.section.operationLog": {
+  "settings.navigationAndFileOps.card.operationLog": "Åtgärdslogg",
+  "@settings.navigationAndFileOps.card.operationLog": {
     "sourceHash": "2c97965"
   },
   "settings.operationLog.intro": "Cmdr loggar dina filåtgärder så att du kan gå igenom din historik och ångra åtgärder. Välj hur länge loggen sparas och hur mycket diskutrymme den får använda.",
@@ -1553,17 +1561,9 @@
     "sourceHash": "43644bc",
     "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
   },
-  "settings.section.developer": "Utvecklare",
-  "@settings.section.developer": {
-    "sourceHash": "3fb7b39"
-  },
   "settings.section.mcpServer": "MCP-server",
   "@settings.section.mcpServer": {
     "sourceHash": "d938c81"
-  },
-  "settings.section.logging": "Loggning",
-  "@settings.section.logging": {
-    "sourceHash": "d3ef01b"
   },
   "settings.section.updatesAndPrivacy": "Uppdateringar och integritet",
   "@settings.section.updatesAndPrivacy": {
@@ -1605,9 +1605,9 @@
   "@settings.summary.archives": {
     "sourceHash": "340a411"
   },
-  "settings.summary.fileSystemWatching": "Indexering av enhet, aviseringar om hämtningar och den globala genvägen för gå-till-senaste-hämtning. Kräver Fullständig åtkomst till skivan.",
-  "@settings.summary.fileSystemWatching": {
-    "sourceHash": "00181bd"
+  "settings.summary.notifications": "Aviseringar om hämtningar, det globala kortkommandot för att hoppa till den senaste hämtningen och varningar om lågt diskutrymme.",
+  "@settings.summary.notifications": {
+    "sourceHash": "e681776"
   },
   "settings.summary.search": "Direkttillämpade filnamns- och regex-sökningar samt gränsen för senaste sökningar.",
   "@settings.summary.search": {
@@ -1629,10 +1629,6 @@
   "@settings.summary.mcpServer": {
     "sourceHash": "4cde8a6"
   },
-  "settings.summary.logging": "Utförlig konsolutdata, åtkomst till loggfilen och diagnostikinformation.",
-  "@settings.summary.logging": {
-    "sourceHash": "6fce936"
-  },
   "settings.summary.aiProvider": "Stäng av AI, anslut en molnleverantör eller kör en modell lokalt.",
   "@settings.summary.aiProvider": {
     "sourceHash": "2fe940b"
@@ -1641,8 +1637,12 @@
   "@settings.summary.askCmdr": {
     "sourceHash": "67eef6a"
   },
-  "settings.summary.imageSearch": "Sök i texten i dina bilder. Körs på din Mac, och inget lämnar den.",
-  "@settings.summary.imageSearch": {
+  "settings.summary.driveIndexing": "Indexering av enhet i bakgrunden så att sökningen hittar dina filer snabbt.",
+  "@settings.summary.driveIndexing": {
+    "sourceHash": "ef8be32"
+  },
+  "settings.summary.imageIndexing": "Sök i texten i dina bilder. Körs på din Mac, och inget lämnar den.",
+  "@settings.summary.imageIndexing": {
     "sourceHash": "cbeb785"
   },
   "settings.summary.noSubsections": "Den här sektionen har inga underavsnitt.",
@@ -1885,6 +1885,10 @@
   "settings.advanced.card.historyAndLimits": "Historik och gränser",
   "@settings.advanced.card.historyAndLimits": {
     "sourceHash": "3e01a24"
+  },
+  "settings.advanced.card.logging": "Loggning",
+  "@settings.advanced.card.logging": {
+    "sourceHash": "d3ef01b"
   },
   "settings.advanced.card.loggingAndDiagnostics": "Loggning och diagnostik",
   "@settings.advanced.card.loggingAndDiagnostics": {

@@ -8,7 +8,7 @@ import { cloudProviderPresets } from '../cloud-providers'
 
 export const aiSettings: SettingDefinitionSource[] = [
   // ========================================================================
-  // AI
+  // AI › Provider
   // ========================================================================
   {
     id: 'ai.provider',
@@ -117,125 +117,39 @@ export const aiSettings: SettingDefinitionSource[] = [
   },
 
   // ========================================================================
-  // AI › Image search
+  // AI › MCP server
   //
-  // On-device image-content (OCR) search. Runs entirely on the user's Mac via
-  // Apple's Vision framework — no cloud, no AI provider, no API key — so it
-  // lives under AI but stands apart from the provider-backed features above.
-  // Rendered by `ImageSearchSection.svelte`; only `mediaIndex.enabled` is a
-  // visible row, the rest back the bespoke slider / network-volume components.
+  // The Model Context Protocol server that lets external AI clients drive Cmdr.
+  // Rendered by `McpServerSection.svelte`. (The `developer.mcp*` id prefix is a
+  // stable persistence key; homing the setting under AI doesn't touch it.)
   // ========================================================================
   {
-    // Master toggle for image-content (OCR) indexing. Off by default; live-applied to
-    // the `media_index` backend scheduler via `set_image_index_enabled`. Its own card
-    // in `ImageSearchSection.svelte`, titled by `cardKey`.
-    id: 'mediaIndex.enabled',
-    section: ['AI', 'Image search'],
-    labelKey: 'settings.mediaIndex.enabled.label',
-    descriptionKey: 'settings.mediaIndex.enabled.description',
-    cardKey: 'settings.mediaIndex.card',
-    keywords: ['image', 'photo', 'ocr', 'text', 'search', 'index', 'picture', 'screenshot', 'content'],
+    id: 'developer.mcpEnabled',
+    section: ['AI', 'MCP server'],
+    labelKey: 'settings.developer.mcpEnabled.label',
+    descriptionKey: 'settings.developer.mcpEnabled.description',
+    keywords: ['mcp', 'server', 'ai', 'assistant', 'protocol', 'model'],
     type: 'boolean',
     default: false,
     component: 'switch',
   },
   {
-    // Internal (FE-owned): JSON array of volume ids opted into background network (SMB)
-    // image enrichment (network enrichment). Off by default per volume; the per-network-volume rows in
-    // `ImageSearchSection`'s "Image search" card toggle it, persisting here AND
-    // calling `media_index_set_network_volume_enabled`. Read by the Rust loader as an array.
-    id: 'mediaIndex.networkVolumes',
-    section: ['AI', 'Image search'],
-    labelKey: 'settings.mediaIndex.networkVolumes.label',
-    descriptionKey: 'settings.mediaIndex.networkVolumes.description',
-    keywords: [],
-    type: 'string-array',
-    default: [],
-    hidden: true,
-  },
-  {
-    // Internal (FE-owned): JSON array of volume ids marked "always index" (enrich
-    // regardless of importance). Toggled by the per-network-volume rows; persisted here
-    // AND pushed via `media_index_set_always_index_volume`.
-    id: 'mediaIndex.alwaysIndexVolumes',
-    section: ['AI', 'Image search'],
-    labelKey: 'settings.mediaIndex.alwaysIndexVolumes.label',
-    descriptionKey: 'settings.mediaIndex.alwaysIndexVolumes.description',
-    keywords: [],
-    type: 'string-array',
-    default: [],
-    hidden: true,
-  },
-  {
-    // WHICH folders image indexing may cover. `chosen` (the default) indexes only the
-    // folders and drives the user named; `importance` adds every folder scoring at or
-    // above the threshold slider, which is shown only in that mode. Rendered as a radio
-    // group by the bespoke `MediaIndexScope.svelte` inside the "Image search" card (not
-    // an auto row), so `hidden`. An install that already had image indexing on migrates
-    // to `importance` (settings-store `migrateSettings`, schema 3) so its behavior
-    // doesn't change under it; the Rust `gate::scope_from_settings` applies the same rule
-    // on the launch before that migration writes the key.
-    // Live-applied via the `settings-applier.ts` passthrough → `media_index_set_scope`.
-    id: 'mediaIndex.scope',
-    section: ['AI', 'Image search'],
-    labelKey: 'settings.mediaIndex.scope.label',
-    descriptionKey: 'settings.mediaIndex.scope.description',
-    keywords: ['image', 'photo', 'index', 'folders', 'scope', 'coverage', 'which', 'choose'],
-    type: 'enum',
-    default: 'chosen',
-    component: 'radio',
-    hidden: true,
-    constraints: {
-      options: [
-        { value: 'chosen', labelKey: 'settings.mediaIndex.scope.opt.chosen' },
-        { value: 'importance', labelKey: 'settings.mediaIndex.scope.opt.importance' },
-      ],
-    },
-  },
-  {
-    // Internal (FE-owned): JSON array of absolute OS-mount folder paths marked "always
-    // index" — the chosen folders. In the `chosen` scope these ARE the coverage. Managed
-    // by `MediaIndexChosenFolders.svelte`; persisted here AND pushed via
-    // `media_index_set_always_index_folder` (which kicks a pass when a folder is added).
-    id: 'mediaIndex.alwaysIndexFolders',
-    section: ['AI', 'Image search'],
-    labelKey: 'settings.mediaIndex.alwaysIndexFolders.label',
-    descriptionKey: 'settings.mediaIndex.alwaysIndexFolders.description',
-    keywords: [],
-    type: 'string-array',
-    default: [],
-    hidden: true,
-  },
-  {
-    // Internal (FE-owned): JSON array of absolute OS folder paths EXCLUDED from image
-    // indexing (the privacy veto). Set by the folder context-menu "Don't index images
-    // in this folder" item; persisted here AND pushed via `media_index_set_excluded_folder`
-    // (which also retro-deletes the folder's existing rows). Read by the Rust loader as
-    // an array.
-    id: 'mediaIndex.excludedFolders',
-    section: ['AI', 'Image search'],
-    labelKey: 'settings.mediaIndex.excludedFolders.label',
-    descriptionKey: 'settings.mediaIndex.excludedFolders.description',
-    keywords: [],
-    type: 'string-array',
-    default: [],
-    hidden: true,
-  },
-  {
-    // The image-index importance threshold (`0.0..=1.0`): the lowest folder-importance
-    // level the scheduler enriches. Rendered as named buckets by the bespoke
-    // `MediaIndexImportanceSlider.svelte` inside the "Image search" card (not an auto
-    // row), so `hidden`. Default `0.0` matches the backend `DEFAULT_IMPORTANCE_THRESHOLD`
-    // (enrich every scored folder — non-regressive vs the OCR slice, junk is floored out anyway), so
-    // the UI and a sparse (unpersisted) store agree without eagerly writing a default.
-    // Live-applied via the `settings-applier.ts` passthrough → `media_index_set_importance_threshold`.
-    id: 'mediaIndex.importanceThreshold',
-    section: ['AI', 'Image search'],
-    labelKey: 'settings.mediaIndex.importanceThreshold.label',
-    descriptionKey: 'settings.mediaIndex.importanceThreshold.description',
-    keywords: ['image', 'photo', 'index', 'importance', 'folders', 'coverage', 'depth'],
+    id: 'developer.mcpPort',
+    section: ['AI', 'MCP server'],
+    labelKey: 'settings.developer.mcpPort.label',
+    descriptionKey: 'settings.developer.mcpPort.description',
+    keywords: ['port', 'mcp', 'network', 'ephemeral'],
     type: 'number',
+    // 0 = ephemeral. The backend binds 127.0.0.1:0 and writes the actual port to
+    // `<data_dir>/mcp.port` so external clients can discover it. Pinning a non-zero port
+    // is still supported for tooling that needs a fixed target. See
+    // `docs/tooling/instance-isolation.md` § "Per-resource breakdown" (Cmdr MCP HTTP port row).
     default: 0,
-    hidden: true,
+    component: 'number-input',
+    constraints: {
+      min: 0,
+      max: 65535,
+      step: 1,
+    },
   },
 ]

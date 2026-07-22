@@ -4,9 +4,9 @@
  * Pins the deep-link contract that the downloads-toast "Stop showing these"
  * button relies on:
  *   - `setDownloadsNotificationsMode('neither')` writes the registry key.
- *   - `openSettingsToDownloadsNotifications()` navigates to the File system
- *     watching section AND carries the sub-group anchor so the link lands on
- *     the right row.
+ *   - `openSettingsToDownloadsNotifications()` navigates to the Notifications
+ *     section AND carries the sub-group anchor so the link lands on the right
+ *     row.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -65,11 +65,11 @@ describe('setDownloadsNotificationsMode', () => {
 })
 
 describe('openSettingsToDownloadsNotifications', () => {
-  it('navigates to the renamed section path and the sub-group anchor', async () => {
+  it('navigates to the Notifications section path and the sub-group anchor', async () => {
     await openSettingsToDownloadsNotifications()
     expect(openSettingsWindowMock).toHaveBeenCalledTimes(1)
     const [section, anchor] = openSettingsWindowMock.mock.calls[0]
-    expect(section).toEqual(['Behavior', 'File system watching'])
+    expect(section).toEqual(['Behavior', 'Notifications'])
     expect(anchor).toBe('settings-downloads-notifications')
   })
 })

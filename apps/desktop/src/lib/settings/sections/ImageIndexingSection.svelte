@@ -1,9 +1,8 @@
 <!--
-  The `AI › Image search` subsection (third card under the AI card-menu parent). On-device
-  image-content (OCR) search: it reads the text inside your images so you can search it, running
-  entirely on the Mac via Apple's Vision framework. It lives under AI but is provider-independent
-  — no cloud, no API key — so it carries an explicit privacy note, since the rest of the AI
-  section otherwise implies the configured provider.
+  The `Indexing › Image indexing` subsection (second subsection of the Indexing section).
+  On-device image-content (OCR) search: it reads the text inside your images so you can search it,
+  running entirely on the Mac via Apple's Vision framework. It runs no cloud provider and needs no
+  API key, so it carries an explicit privacy note.
 
   Composes the self-contained media-index components: the master `mediaIndex.enabled` toggle (its
   own card, titled by `cardKey`), the scope control (`MediaIndexScope`, which hosts the
@@ -55,7 +54,7 @@
     })
 </script>
 
-<SettingsSection title={tString('settings.section.imageSearch')}>
+<SettingsSection title={tString('settings.section.imageIndexing')}>
     {#if shouldShow('mediaIndex.enabled')}
         <SectionCard label={tString('settings.mediaIndex.card')}>
             {#snippet badge()}

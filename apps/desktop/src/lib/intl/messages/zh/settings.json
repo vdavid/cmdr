@@ -1365,13 +1365,25 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
-  "settings.section.fileSystemWatching": "文件系统监视",
-  "@settings.section.fileSystemWatching": {
-    "sourceHash": "4fa805f"
+  "settings.section.notifications": "通知",
+  "@settings.section.notifications": {
+    "sourceHash": "7880118"
   },
   "settings.section.search": "搜索",
   "@settings.section.search": {
     "sourceHash": "49c266b"
+  },
+  "settings.section.indexing": "索引",
+  "@settings.section.indexing": {
+    "sourceHash": "cc24d96"
+  },
+  "settings.section.driveIndexing": "驱动器索引",
+  "@settings.section.driveIndexing": {
+    "sourceHash": "38d916b"
+  },
+  "settings.section.imageIndexing": "图像索引",
+  "@settings.section.imageIndexing": {
+    "sourceHash": "442068b"
   },
   "settings.section.ai": "AI",
   "@settings.section.ai": {
@@ -1386,10 +1398,6 @@
   "@settings.section.askCmdr": {
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name, kept verbatim across the whole zh catalog per the @key description (\"keep it as-is\")."
-  },
-  "settings.section.imageSearch": "图像搜索",
-  "@settings.section.imageSearch": {
-    "sourceHash": "a4a68f1"
   },
   "settings.askCmdr.intro": "和 AI 聊聊你的文件、驱动器和历史记录。Ask Cmdr 是只读的：它通过读取名称、路径和大小来回答问题，从不修改任何内容。",
   "@settings.askCmdr.intro": {
@@ -1476,8 +1484,8 @@
   "@settings.section.viewer": {
     "sourceHash": "678bfa6"
   },
-  "settings.section.operationLog": "操作日志",
-  "@settings.section.operationLog": {
+  "settings.navigationAndFileOps.card.operationLog": "操作日志",
+  "@settings.navigationAndFileOps.card.operationLog": {
     "sourceHash": "2c97965"
   },
   "settings.operationLog.intro": "Cmdr 会记录你的文件操作，方便你查看历史并撤销操作。请选择日志的保留时长以及可占用的磁盘空间。",
@@ -1546,17 +1554,9 @@
     "sourceHash": "43644bc",
     "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
   },
-  "settings.section.developer": "开发者",
-  "@settings.section.developer": {
-    "sourceHash": "3fb7b39"
-  },
   "settings.section.mcpServer": "MCP 服务器",
   "@settings.section.mcpServer": {
     "sourceHash": "d938c81"
-  },
-  "settings.section.logging": "日志",
-  "@settings.section.logging": {
-    "sourceHash": "d3ef01b"
   },
   "settings.section.updatesAndPrivacy": "更新与隐私",
   "@settings.section.updatesAndPrivacy": {
@@ -1598,9 +1598,9 @@
   "@settings.summary.archives": {
     "sourceHash": "340a411"
   },
-  "settings.summary.fileSystemWatching": "驱动器索引、“下载”通知，以及全局前往最新下载的快捷键。需要完全磁盘访问权限。",
-  "@settings.summary.fileSystemWatching": {
-    "sourceHash": "00181bd"
+  "settings.summary.notifications": "下载通知、跳转到最新下载的全局快捷键，以及磁盘空间不足警告。",
+  "@settings.summary.notifications": {
+    "sourceHash": "e681776"
   },
   "settings.summary.search": "实时应用的文件名和正则表达式搜索，以及最近搜索的上限。",
   "@settings.summary.search": {
@@ -1622,10 +1622,6 @@
   "@settings.summary.mcpServer": {
     "sourceHash": "4cde8a6"
   },
-  "settings.summary.logging": "详细的控制台输出、日志文件访问，以及诊断信息。",
-  "@settings.summary.logging": {
-    "sourceHash": "6fce936"
-  },
   "settings.summary.aiProvider": "关闭 AI、连接云提供方，或在本地运行模型。",
   "@settings.summary.aiProvider": {
     "sourceHash": "2fe940b"
@@ -1634,8 +1630,12 @@
   "@settings.summary.askCmdr": {
     "sourceHash": "67eef6a"
   },
-  "settings.summary.imageSearch": "搜索图像中的文字。在你的 Mac 上运行，绝不外传。",
-  "@settings.summary.imageSearch": {
+  "settings.summary.driveIndexing": "在后台建立驱动器索引，让搜索快速找到你的文件。",
+  "@settings.summary.driveIndexing": {
+    "sourceHash": "ef8be32"
+  },
+  "settings.summary.imageIndexing": "搜索图像中的文字。在你的 Mac 上运行，绝不外传。",
+  "@settings.summary.imageIndexing": {
     "sourceHash": "cbeb785"
   },
   "settings.summary.noSubsections": "此部分没有子部分。",
@@ -1878,6 +1878,10 @@
   "settings.advanced.card.historyAndLimits": "历史和上限",
   "@settings.advanced.card.historyAndLimits": {
     "sourceHash": "3e01a24"
+  },
+  "settings.advanced.card.logging": "日志",
+  "@settings.advanced.card.logging": {
+    "sourceHash": "d3ef01b"
   },
   "settings.advanced.card.loggingAndDiagnostics": "日志和诊断",
   "@settings.advanced.card.loggingAndDiagnostics": {

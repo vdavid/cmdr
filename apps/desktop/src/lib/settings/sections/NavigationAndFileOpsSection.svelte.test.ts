@@ -2,9 +2,10 @@
  * Tier-3 tests for `NavigationAndFileOpsSection.svelte`
  * (Behavior › Navigation & file ops).
  *
- * Two labeled cards: "Navigation" (the double-click-to-parent switch) and "File
- * operations" (the file-extension-change radio). The conflict/progress settings
- * live in Advanced (their single home), never mirrored here.
+ * Three labeled cards: "Navigation" (the double-click-to-parent switch), "File
+ * operations" (the file-extension-change radio), and "Operation log" (the
+ * retention limits). The conflict/progress settings live in Advanced (their
+ * single home), never mirrored here.
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -15,6 +16,8 @@ vi.mock('$lib/settings/settings-store', () => ({
   getSetting: vi.fn((key: string) => {
     if (key === 'fileOperations.allowFileExtensionChanges') return 'ask'
     if (key === 'behavior.doubleClickPaneNavigatesToParent') return true
+    if (key === 'operationLog.maxAge') return 0
+    if (key === 'operationLog.maxSize') return 3221225472
     return undefined
   }),
   setSetting: vi.fn(() => Promise.resolve()),
@@ -41,18 +44,20 @@ function labelFors(target: HTMLElement): (string | null)[] {
 }
 
 describe('NavigationAndFileOpsSection', () => {
-  it('renders a Navigation card and a File operations card in that order', async () => {
+  it('renders Navigation, File operations, and Operation log cards in that order', async () => {
     const target = await mountSection()
-    expect(target.querySelectorAll('.section-card')).toHaveLength(2)
-    expect(cardLabels(target)).toEqual(['Navigation', 'File operations'])
+    expect(target.querySelectorAll('.section-card')).toHaveLength(3)
+    expect(cardLabels(target)).toEqual(['Navigation', 'File operations', 'Operation log'])
     target.remove()
   })
 
-  it('puts the double-click switch in Navigation and the extension radio in File operations', async () => {
+  it('puts each setting in its card', async () => {
     const target = await mountSection()
     const fors = labelFors(target)
     expect(fors).toContain('behavior.doubleClickPaneNavigatesToParent')
     expect(fors).toContain('fileOperations.allowFileExtensionChanges')
+    expect(fors).toContain('operationLog.maxAge')
+    expect(fors).toContain('operationLog.maxSize')
     target.remove()
   })
 
@@ -64,7 +69,7 @@ describe('NavigationAndFileOpsSection', () => {
     target.remove()
   })
 
-  it('hides both cards when the search matches nothing on this page', async () => {
+  it('hides every card when the search matches nothing on this page', async () => {
     const target = await mountSection('zzznomatch')
     expect(target.querySelectorAll('.section-card')).toHaveLength(0)
     target.remove()
@@ -73,6 +78,12 @@ describe('NavigationAndFileOpsSection', () => {
   it('shows only the matching card under a scoped search', async () => {
     const target = await mountSection('double-click')
     expect(cardLabels(target)).toEqual(['Navigation'])
+    target.remove()
+  })
+
+  it('surfaces the Operation log card under a retention search', async () => {
+    const target = await mountSection('retention')
+    expect(cardLabels(target)).toEqual(['Operation log'])
     target.remove()
   })
 })

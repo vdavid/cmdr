@@ -4,7 +4,7 @@
      * the Keyboard shortcuts section. This is where users edit the combo —
      * it's a system-wide hotkey, so it lives alongside the other shortcuts but
      * is marked `(global)` to set expectations (it fires from any app, and its
-     * on/off switch lives under Behavior → File system watching).
+     * on/off switch lives under Behavior → Notifications).
      *
      * Renders only the row itself. The "Global" card heading is owned by the
      * `SectionCard` that wraps this component in `KeyboardShortcutsSection`, so

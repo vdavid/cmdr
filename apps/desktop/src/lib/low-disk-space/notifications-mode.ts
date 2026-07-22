@@ -23,7 +23,7 @@ export const LOW_DISK_SPACE_THRESHOLD_SETTING_KEY = 'behavior.fileSystemWatching
 
 /**
  * Anchor id of the **Low disk space** sub-group inside
- * `FileSystemWatchingSection.svelte`. Used by `openSettingsToLowDiskSpace` to
+ * `NotificationsSection.svelte`. Used by `openSettingsToLowDiskSpace` to
  * land the toast's "Disable these notifications" deep-link on the right row.
  */
 export const LOW_DISK_SPACE_ANCHOR_ID = 'settings-low-disk-space'
@@ -97,10 +97,10 @@ export async function pushLowDiskSpaceConfigToBackend(): Promise<void> {
 }
 
 /**
- * Deep-link to **Settings > Behavior > File system watching**, scrolled to the
+ * Deep-link to **Settings > Behavior > Notifications**, scrolled to the
  * Low disk space sub-group. The toast's "Disable these notifications" button
  * calls this after flipping the setting to `'off'`.
  */
 export async function openSettingsToLowDiskSpace(): Promise<void> {
-  await openSettingsWindow(['Behavior', 'File system watching'], LOW_DISK_SPACE_ANCHOR_ID)
+  await openSettingsWindow(['Behavior', 'Notifications'], LOW_DISK_SPACE_ANCHOR_ID)
 }

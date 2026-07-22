@@ -33,12 +33,11 @@
     const TOP_LEVEL_ORDER = [
         'Appearance',
         'Behavior',
+        'Indexing',
         'AI',
         'File systems',
         'Viewer',
-        'Operation log',
         'Keyboard shortcuts',
-        'Developer',
         'Updates & privacy',
         'License',
         'Advanced',

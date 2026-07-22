@@ -27,12 +27,13 @@ Single source of truth for all settings. `settings-registry.ts` holds the LOGIC 
 getter-backed definitions, validation, the section-tree builder, and the public API: `settingsRegistry`,
 `getSettingDefinition`, `getSettingsInSection`, `getAdvancedSettings`, `getDefaultValue`, `validateSettingValue`,
 `buildSectionTree`). The authored DATA lives in `definitions/*.ts`, one file per top-level section — `appearance.ts`,
-`behavior.ts`, `ai.ts`, `file-systems.ts`, `viewer.ts`, `operation-log.ts`, `developer.ts`, `updates-privacy.ts`,
-`advanced.ts` — each exporting a `<section>Settings: SettingDefinitionSource[]`. `settings-registry.ts` builds
-`settingsRegistrySource` by spreading those arrays in section order, and **that concatenation order IS the registry
-order** (`buildSectionTree` reads first-appearance order; search and Advanced grouping preserve it). Data-only helpers a
-section needs are colocated with it (the language-picker and volume-tint option builders live in `appearance.ts`, the
-only place they're used).
+`behavior.ts` (which also holds the Operation-log retention settings, rendered as a card under Navigation & file ops),
+`indexing.ts`, `ai.ts` (which also holds the MCP-server settings), `file-systems.ts`, `viewer.ts`, `updates-privacy.ts`,
+`advanced.ts` (which also holds `developer.verboseLogging`, rendered as a Logging card) — each exporting a
+`<section>Settings: SettingDefinitionSource[]`. `settings-registry.ts` builds `settingsRegistrySource` by spreading
+those arrays in section order, and **that concatenation order IS the registry order** (`buildSectionTree` reads
+first-appearance order; search and Advanced grouping preserve it). Data-only helpers a section needs are colocated with
+it (the language-picker and volume-tint option builders live in `appearance.ts`, the only place they're used).
 
 One deliberate wrinkle: `whatsNew.lastSeenVersion` has `section: ['Advanced']` but is authored in `updates-privacy.ts`
 (colocated with `whatsNew.showOnUpdate`), preserving its original mid-array position so the concatenated array stays
@@ -221,16 +222,17 @@ Top-level sidebar order (declared in `SettingsSidebar.svelte`'s `TOP_LEVEL_ORDER
 `settings.spec.ts`):
 
 1. **Appearance** — `Colors and formats`, `Zoom and density`, `File and folder sizes`, `Listing`
-2. **Behavior** — `File operations`, `File system watching`, `Search`
-3. **AI** — `Provider` (`AiSection`), `Ask Cmdr` (`AskCmdrSection`)
-4. **File systems** — `SMB/Network shares`, `MTP (Android/Kindle/cameras)`, `Git`
-5. **Viewer** (no subsections)
-6. **Keyboard shortcuts** (special, non-registry)
-7. **Developer** — `MCP server`, `Logging`
+2. **Behavior** — `Navigation & file ops` (holds the Operation log card), `Archives`, `Notifications`, `Search`
+3. **Indexing** — `Drive indexing` (`DriveIndexingSection`), `Image indexing` (`ImageIndexingSection`)
+4. **AI** — `Provider` (`AiSection`), `Ask Cmdr` (`AskCmdrSection`), `MCP server` (`McpServerSection`)
+5. **File systems** — `SMB/Network shares`, `MTP (Android/Kindle/cameras)`, `Git`
+6. **Viewer** (no subsections)
+7. **Keyboard shortcuts** (special, non-registry)
 8. **Updates & privacy** (no subsections): app-update checks, the crash/error report opt-ins, and the beta
    `analytics.enabled` opt-out + `analytics.email` contact field
 9. **License** (special, non-registry)
-10. **Advanced** (a normal registry section, auto-generated from `section: ['Advanced']` entries)
+10. **Advanced** (a normal registry section, auto-generated from `section: ['Advanced']` entries; the verbose-logging
+    switch lives here in a "Logging" card)
 
 Per-section component files (one `*Section.svelte` per sidebar entry), the section ↔ component map, the
 mirror-in-multiple-sections pattern, and the AI hybrid-section split live in [`sections/CLAUDE.md`](sections/CLAUDE.md).
@@ -302,8 +304,8 @@ file map, the 50-50 split-layout rule, and the `SettingPasswordInput` store-driv
 
 ## Card groups (in-page SectionCard grouping)
 
-A page (a level-2 nav leaf, e.g. `File system watching`) can group its rows into one or more `SectionCard`s — the macOS
-System Settings look. This is a third, **visual** axis, orthogonal to the two structural levels in `section` (group →
+A page (a level-2 nav leaf, e.g. `Notifications`) can group its rows into one or more `SectionCard`s — the macOS System
+Settings look. This is a third, **visual** axis, orthogonal to the two structural levels in `section` (group →
 subsection). The mechanism:
 
 - A setting names its card via **`cardKey?: MessageKey`** on `SettingDefinitionSource`, resolved to a lazy

@@ -9,8 +9,9 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search),
 ## Module map
 
 - One `*Section.svelte` per sidebar entry. AI is a card-menu parent: `AiSection` = `AI › Provider`, `AskCmdrSection` =
-  `AI › Ask Cmdr`, `ImageSearchSection` = `AI › Image search` (on-device OCR; composes the `MediaIndex*` components).
-  Pure helpers: `ai-secret-error.ts`, `license-section-utils.ts`, `ram-gauge-utils.ts`,
+  `AI › Ask Cmdr`, `McpServerSection` = `AI › MCP server`. Indexing is a card-menu parent too: `DriveIndexingSection` =
+  `Indexing › Drive indexing`, `ImageIndexingSection` = `Indexing › Image indexing` (on-device OCR; composes the
+  `MediaIndex*` components). Pure helpers: `ai-secret-error.ts`, `license-section-utils.ts`, `ram-gauge-utils.ts`,
   `keyboard-shortcuts-grouping.ts`, `keyboard-shortcuts-banner.ts`. Full file/responsibility table in DETAILS.md.
 
 ## Must-knows

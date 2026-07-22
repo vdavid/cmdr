@@ -1,7 +1,7 @@
 <script lang="ts">
     /**
      * The chosen-folders list: the folders the user picked for image indexing. Rendered
-     * inside the "Image search" card in `ImageSearchSection.svelte`, under the scope
+     * inside the "Image indexing" card in `ImageIndexingSection.svelte`, under the scope
      * control, once the master `mediaIndex.enabled` toggle is on.
      *
      * These folders are indexed whatever the importance slider says, so in the "only

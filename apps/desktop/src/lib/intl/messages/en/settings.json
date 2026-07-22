@@ -1723,15 +1723,28 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "description": "Internal, never shown in the UI. Pairs with the double-click-to-parent hint label."
   },
-  "settings.section.fileSystemWatching": "File system watching",
-  "@settings.section.fileSystemWatching": {
-    "description": "Settings subsection title under Behavior: File system watching (indexing, downloads, low-disk warnings). Sidebar and page heading.",
+  "settings.section.notifications": "Notifications",
+  "@settings.section.notifications": {
+    "description": "Settings subsection title under Behavior: Notifications (downloads notifications and low-disk-space warnings). Sidebar and page heading.",
     "screenshot": "settings-appearance.png"
   },
   "settings.section.search": "Search",
   "@settings.section.search": {
     "description": "Settings subsection title under Behavior: Search. Sidebar and page heading.",
     "screenshot": "settings-appearance.png"
+  },
+  "settings.section.indexing": "Indexing",
+  "@settings.section.indexing": {
+    "description": "Top-level Settings section title: Indexing (drive indexing and on-device image indexing). Sidebar and page heading. Keep short.",
+    "screenshot": "settings-appearance.png"
+  },
+  "settings.section.driveIndexing": "Drive indexing",
+  "@settings.section.driveIndexing": {
+    "description": "Settings subsection title under Indexing: Drive indexing (the background file-system indexer that scans drives so search finds files fast). Sidebar and page heading."
+  },
+  "settings.section.imageIndexing": "Image indexing",
+  "@settings.section.imageIndexing": {
+    "description": "Settings subsection title under Indexing: Image indexing (on-device search of the text inside images, via OCR). Sidebar and page heading. Keep short; match the card title \"settings.mediaIndex.card\"."
   },
   "settings.section.ai": "AI",
   "@settings.section.ai": {
@@ -1745,10 +1758,6 @@
   "settings.section.askCmdr": "Ask Cmdr",
   "@settings.section.askCmdr": {
     "description": "Top-level Settings section title: Ask Cmdr (the read-only chat rail). This is the product name; keep it as-is."
-  },
-  "settings.section.imageSearch": "Image search",
-  "@settings.section.imageSearch": {
-    "description": "Settings subsection title under AI: Image search (on-device search of the text inside images, via OCR). Sidebar and page heading. Keep short; match the card title \"settings.mediaIndex.card\"."
   },
   "settings.askCmdr.intro": "Chat with an AI about your files, drives, and history. Ask Cmdr is read-only: it reads names, paths, and sizes to answer, and never changes anything.",
   "@settings.askCmdr.intro": {
@@ -1845,13 +1854,13 @@
     "description": "Top-level Settings section title: Viewer (the built-in file viewer). Sidebar and page heading.",
     "screenshot": "settings-appearance.png"
   },
-  "settings.section.operationLog": "Operation log",
-  "@settings.section.operationLog": {
-    "description": "Title for the Operation log settings section, a durable log of file operations with history and undo. Sentence case."
+  "settings.navigationAndFileOps.card.operationLog": "Operation log",
+  "@settings.navigationAndFileOps.card.operationLog": {
+    "description": "Heading of the Operation log card (file-operation history and undo retention limits) in Settings > Behavior > Navigation & file ops."
   },
   "settings.operationLog.intro": "Cmdr logs your file operations so you can review your history and undo actions. Choose how long to keep the log and how much disk space it can use.",
   "@settings.operationLog.intro": {
-    "description": "Intro paragraph at the top of the Operation log settings section. Explains what the log is; the two settings below control retention. \"Cmdr\" is the product name; do not translate it."
+    "description": "Intro paragraph at the top of the Operation log card in Settings > Behavior > Navigation & file ops. Explains what the log is; the two settings below control retention. \"Cmdr\" is the product name; do not translate it."
   },
   "settings.operationLog.maxAge.label": "Keep history for",
   "@settings.operationLog.maxAge.label": {
@@ -1909,19 +1918,9 @@
   "@settings.operationLog.maxSize.opt.gb5": {
     "description": "Size-limit option: 5 GB. The numeral and unit (GB) are literal."
   },
-  "settings.section.developer": "Developer",
-  "@settings.section.developer": {
-    "description": "Top-level Settings section title: Developer. Sidebar and page heading.",
-    "screenshot": "settings-appearance.png"
-  },
   "settings.section.mcpServer": "MCP server",
   "@settings.section.mcpServer": {
-    "description": "Settings subsection title under Developer: MCP server. \"MCP\" = Model Context Protocol; keep the abbreviation. Sidebar and page heading.",
-    "screenshot": "settings-appearance.png"
-  },
-  "settings.section.logging": "Logging",
-  "@settings.section.logging": {
-    "description": "Settings subsection title under Developer: Logging. Sidebar and page heading.",
+    "description": "Settings subsection title under AI: MCP server. \"MCP\" = Model Context Protocol; keep the abbreviation. Sidebar and page heading.",
     "screenshot": "settings-appearance.png"
   },
   "settings.section.updatesAndPrivacy": "Updates & privacy",
@@ -1969,9 +1968,9 @@
   "@settings.summary.archives": {
     "description": "One-line summary shown under the \"Archives\" subsection heading. \"Enter\" is the Return/Enter key; \"app bundles\" are macOS .app/.bundle/.framework folders."
   },
-  "settings.summary.fileSystemWatching": "Drive indexing, Downloads notifications, and the global go-to-latest-download shortcut. Needs Full Disk Access.",
-  "@settings.summary.fileSystemWatching": {
-    "description": "One-line summary shown under the \"File system watching\" subsection heading. \"Downloads\" is the macOS folder name (use the OS's localized name); \"Full Disk Access\" is the macOS permission name (use the OS's localized name)."
+  "settings.summary.notifications": "Downloads notifications, the global go-to-latest-download shortcut, and low-disk-space warnings.",
+  "@settings.summary.notifications": {
+    "description": "One-line summary shown under the \"Notifications\" subsection heading. \"Downloads\" is the macOS folder name (use the OS''s localized name)."
   },
   "settings.summary.search": "Live-applied filename and regex searches, and the recent-searches cap.",
   "@settings.summary.search": {
@@ -1993,10 +1992,6 @@
   "@settings.summary.mcpServer": {
     "description": "One-line summary shown under the \"MCP server\" subsection heading. \"Model Context Protocol\" is a standard name; keep it. \"AI\" = artificial intelligence."
   },
-  "settings.summary.logging": "Verbose console output, log file access, and diagnostic info.",
-  "@settings.summary.logging": {
-    "description": "One-line summary shown under the \"Logging\" subsection heading. \"console\" = the developer log output; \"info\" = information."
-  },
   "settings.summary.aiProvider": "Turn AI off, connect a cloud provider, or run a model locally.",
   "@settings.summary.aiProvider": {
     "description": "One-line summary shown on the AI section's Provider card. \"AI\" = artificial intelligence."
@@ -2005,9 +2000,13 @@
   "@settings.summary.askCmdr": {
     "description": "One-line summary shown on the AI section's Ask Cmdr card. \"Ask Cmdr\" is the product name; keep it as-is."
   },
-  "settings.summary.imageSearch": "Search the text inside your images. Runs on your Mac, and nothing leaves it.",
-  "@settings.summary.imageSearch": {
-    "description": "One-line summary shown on the AI section's Image search card. The feature reads the text inside images (OCR) so it can be searched; it runs on-device. \"Mac\" is the Apple computer."
+  "settings.summary.driveIndexing": "Background drive indexing so search finds your files fast.",
+  "@settings.summary.driveIndexing": {
+    "description": "One-line summary shown on the Indexing section's Drive indexing card. Describes the background file-system indexer that scans drives so search is fast."
+  },
+  "settings.summary.imageIndexing": "Search the text inside your images. Runs on your Mac, and nothing leaves it.",
+  "@settings.summary.imageIndexing": {
+    "description": "One-line summary shown on the Indexing section's Image indexing card. The feature reads the text inside images (OCR) so it can be searched; it runs on-device. \"Mac\" is the Apple computer."
   },
   "settings.summary.noSubsections": "This section has no subsections.",
   "@settings.summary.noSubsections": {
@@ -2299,6 +2298,10 @@
   "settings.advanced.card.historyAndLimits": "History and limits",
   "@settings.advanced.card.historyAndLimits": {
     "description": "Heading of the history-and-limits card (closed-tab history size, recent searches to remember, recent selections to remember) in Settings > Advanced."
+  },
+  "settings.advanced.card.logging": "Logging",
+  "@settings.advanced.card.logging": {
+    "description": "Heading of the Logging card (verbose console output switch, plus buttons to open the log folder and copy diagnostics) in Settings > Advanced."
   },
   "settings.advanced.card.loggingAndDiagnostics": "Logging and diagnostics",
   "@settings.advanced.card.loggingAndDiagnostics": {

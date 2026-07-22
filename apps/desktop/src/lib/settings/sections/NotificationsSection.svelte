@@ -1,17 +1,13 @@
 <script lang="ts">
     /**
-     * `File system watching` is the umbrella section for both the file-system
-     * indexer and the downloads watcher. Both depend on the same FDA gate, so
-     * we group them and surface a single hint when the gate is closed.
+     * `Behavior > Notifications` covers the two notification-shaped watchers: the
+     * downloads watcher and the low-disk-space warning. The downloads watcher
+     * shares the Full Disk Access gate, so a single hint surfaces when the gate is
+     * closed.
      *
-     * The section renders three card groups inside `SectionCard`s:
+     * The section renders two card groups inside `SectionCard`s:
      *
-     *   1. **Drive indexing** — the existing `indexing.enabled` toggle plus
-     *      the clear-index action (the hidden `indexing.indexSize` search
-     *      anchor). Stays interactive even when the FDA gate is closed
-     *      (indexing operates on whatever paths it has access to; the gate is
-     *      for the downloads watcher).
-     *   2. **Downloads** — both Downloads-folder features in one card: the
+     *   1. **Downloads** — both Downloads-folder features in one card: the
      *      4-option `downloadsNotifications` ToggleGroup, and the on/off
      *      `Switch` for the global go-to-latest hotkey (whose description
      *      references the LIVE binding, so it updates the moment the user
@@ -19,12 +15,15 @@
      *      edited). Greyed out when the FDA gate is closed. Carries a stable
      *      anchor id so the downloads-toast "Stop showing these" button can
      *      deep-link here.
-     *   3. **Low disk space** — the 3-option ToggleGroup driving
+     *   2. **Low disk space** — the 3-option ToggleGroup driving
      *      `behavior.fileSystemWatching.lowDiskSpaceNotifications` plus the
      *      percent-threshold number input. NOT FDA-gated: the backend's space
      *      poller reads `statfs`, which needs no TCC permission. Carries a
      *      stable anchor id so the warn toast's "Disable these notifications"
      *      button can deep-link here.
+     *
+     * (The drive-file-system indexer lives in `DriveIndexingSection.svelte` under
+     * the top-level Indexing section.)
      *
      * Card visibility under search is section-owned, not registry-derived: each
      * `SectionCard` frame is wrapped in `{#if anyVisible(shouldShow, ...ids)}`
@@ -37,24 +36,17 @@
     import { Switch } from '@ark-ui/svelte/switch'
     import SettingsSection from '../components/SettingsSection.svelte'
     import SettingRow from '../components/SettingRow.svelte'
-    import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import SettingNumberInput from '../components/SettingNumberInput.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
-    import Button from '$lib/ui/Button.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import Trans from '$lib/intl/Trans.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { getSettingDefinition, onSpecificSettingChange } from '$lib/settings'
     import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
-    import { clearSilencedDrives, hasSilencedDrives } from '$lib/indexing/drive-index-prefs'
-    import { tooltip } from '$lib/tooltip/tooltip'
-    import Size from '$lib/ui/Size.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     import {
-        clearDriveIndex,
         downloadsWatcherStatus,
-        getIndexStatus,
         openPrivacySettings,
         recheckDownloadsWatcherGate,
         setGlobalGoToLatestShortcut,
@@ -88,19 +80,6 @@
 
     const shouldShow = $derived(createShouldShow(searchQuery))
 
-    const enabledDef = getSettingDefinition('indexing.enabled') ?? { label: '', description: '' }
-    const askForEachDriveDef = getSettingDefinition('indexing.askForEachDrive') ?? { label: '', description: '' }
-    const staleNotifyDef = getSettingDefinition('indexing.staleNotify') ?? { label: '', description: '' }
-
-    // The "Re-enable notifications for all drives" button is disabled until the
-    // user has silenced at least one drive's first-connect prompt. Tracked
-    // reactively so flipping a silence elsewhere (or here) updates the button.
-    let hasSilenced = $state(hasSilencedDrives())
-
-    function handleReEnableNotifications() {
-        clearSilencedDrives()
-        hasSilenced = false
-    }
     const notificationsDef = getSettingDefinition(DOWNLOADS_NOTIFICATIONS_SETTING_KEY) ?? {
         label: '',
         description: '',
@@ -130,7 +109,7 @@
     /** Watcher dormant. FDA-closed is the common cause; either way we surface the same hint. */
     let watcherRunning = $state(true)
 
-    /** Sub-groups 2 + 3 grey out when the FDA gate is closed or the watcher is dormant. */
+    /** Sub-groups grey out when the FDA gate is closed or the watcher is dormant. */
     const downloadsGated = $derived(fdaPending || !watcherRunning)
 
     /** Description references the live binding, so a rebind elsewhere updates the helper text. */
@@ -184,39 +163,7 @@
         }
     }
 
-    let dbFileSize = $state<number | null>(null)
-    let clearing = $state(false)
-    let clearError = $state<string | null>(null)
-    let refreshTimer: ReturnType<typeof setInterval> | undefined
-
-    async function refreshDbSize() {
-        const res = await getIndexStatus()
-        if (res.status === 'ok') {
-            dbFileSize = res.data.dbFileSize
-        } else {
-            dbFileSize = null
-        }
-    }
-
-    async function handleClearIndex() {
-        clearing = true
-        clearError = null
-        try {
-            const res = await clearDriveIndex()
-            if (res.status === 'error') throw new Error(res.error)
-            dbFileSize = null
-            log.info('Drive index cleared from settings')
-        } catch (error: unknown) {
-            const msg = error instanceof Error ? error.message : String(error)
-            clearError = msg
-            log.error('Failed to clear drive index: {error}', { error: msg })
-        } finally {
-            clearing = false
-        }
-    }
-
     onMount(() => {
-        void refreshDbSize()
         void (async () => {
             await refreshShortcutStatus()
             await applyShortcut()
@@ -233,20 +180,11 @@
         const unsubLowDiskSpace = onSpecificSettingChange(LOW_DISK_SPACE_NOTIFICATIONS_SETTING_KEY, () => {
             lowDiskSpaceMode = getLowDiskSpaceNotificationsMode()
         })
-        // Re-read whether any drive is silenced (a first-connect notification can
-        // silence one while this page is open, in the same window or another).
-        const unsubSilenced = onSpecificSettingChange('indexing.silencedDrives', () => {
-            hasSilenced = hasSilencedDrives()
-        })
-        // Refresh DB size every 2 seconds while visible
-        refreshTimer = setInterval(() => void refreshDbSize(), 2000)
 
         return () => {
-            clearInterval(refreshTimer)
             unsubBinding()
             unsubEnabled()
             unsubLowDiskSpace()
-            unsubSilenced()
         }
     })
 </script>
@@ -255,99 +193,7 @@
     <LinkButton onclick={handleOpenSystemSettings}>{@render children()}</LinkButton>
 {/snippet}
 
-<SettingsSection title={tString('settings.section.fileSystemWatching')}>
-    {#if anyVisible(shouldShow, 'indexing.enabled', 'indexing.indexSize', 'indexing.askForEachDrive', 'indexing.staleNotify')}
-        <SectionCard label={tString('settings.indexing.enabled.label')}>
-            {#if shouldShow('indexing.enabled')}
-                <SettingRow
-                    id="indexing.enabled"
-                    label={enabledDef.label}
-                    description={enabledDef.description}
-                    {searchQuery}
-                >
-                    <SettingSwitch id="indexing.enabled" />
-                </SettingRow>
-            {/if}
-
-            {#if shouldShow('indexing.indexSize')}
-                <div class="index-info">
-                    <div class="index-row">
-                        <span class="info-label">{tString('settings.fileSystemWatching.indexSize')}</span>
-                        <div class="index-controls">
-                            {#if dbFileSize != null || clearing}
-                                <Button variant="secondary" size="mini" onclick={handleClearIndex} disabled={clearing}>
-                                    {clearing
-                                        ? tString('settings.fileSystemWatching.clearing')
-                                        : tString('settings.fileSystemWatching.clearIndex')}
-                                </Button>
-                            {/if}
-                            <span class="info-value">
-                                {#if dbFileSize != null}
-                                    <Size bytes={dbFileSize} />
-                                {:else}
-                                    {tString('settings.fileSystemWatching.noIndex')}
-                                {/if}
-                            </span>
-                        </div>
-                    </div>
-
-                    <p class="clear-description">
-                        {tString('settings.fileSystemWatching.clearIndexDescription')}
-                    </p>
-
-                    {#if clearError}
-                        <div class="clear-error">{clearError}</div>
-                    {/if}
-                </div>
-            {/if}
-
-            {#if shouldShow('indexing.askForEachDrive')}
-                <SettingRow
-                    id="indexing.askForEachDrive"
-                    label={askForEachDriveDef.label}
-                    description={askForEachDriveDef.description}
-                    {searchQuery}
-                >
-                    <SettingSwitch id="indexing.askForEachDrive" />
-                </SettingRow>
-            {/if}
-
-            {#if shouldShow('indexing.askForEachDrive')}
-                <div class="reenable-row">
-                    <div class="reenable-header">
-                        <span class="info-label">{tString('settings.indexing.reEnableNotifications.label')}</span>
-                        <span
-                            use:tooltip={hasSilenced ? '' : tString('settings.indexing.reEnableNotifications.disabledTooltip')}
-                        >
-                            <Button
-                                variant="secondary"
-                                size="mini"
-                                disabled={!hasSilenced}
-                                onclick={handleReEnableNotifications}
-                            >
-                                {tString('settings.indexing.reEnableNotifications.button')}
-                            </Button>
-                        </span>
-                    </div>
-                    <p class="reenable-description">
-                        {tString('settings.indexing.reEnableNotifications.description')}
-                    </p>
-                </div>
-            {/if}
-
-            {#if shouldShow('indexing.staleNotify')}
-                <SettingRow
-                    id="indexing.staleNotify"
-                    label={staleNotifyDef.label}
-                    description={staleNotifyDef.description}
-                    {searchQuery}
-                >
-                    <SettingSwitch id="indexing.staleNotify" />
-                </SettingRow>
-            {/if}
-        </SectionCard>
-    {/if}
-
+<SettingsSection title={tString('settings.section.notifications')}>
     {#if downloadsGated && anyVisible(shouldShow, DOWNLOADS_NOTIFICATIONS_SETTING_KEY, GLOBAL_GO_TO_LATEST_ENABLED_KEY)}
         <p class="fda-hint">
             <Trans key="common.downloadsFdaHint" snippets={{ settingsLink }} />
@@ -428,70 +274,6 @@
 </SettingsSection>
 
 <style>
-    .index-info {
-        padding: var(--spacing-sm) 0;
-    }
-
-    .index-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        align-items: center;
-        gap: var(--spacing-md);
-    }
-
-    .info-label {
-        font-weight: 500;
-        color: var(--color-text-primary);
-    }
-
-    .index-controls {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--spacing-sm);
-    }
-
-    .info-value {
-        color: var(--color-text-secondary);
-        font-family: var(--font-mono);
-        font-size: var(--font-size-sm);
-    }
-
-    .clear-description {
-        margin: var(--spacing-xs) 0 0;
-        color: var(--color-text-secondary);
-        font-size: var(--font-size-sm);
-        line-height: 1.4;
-    }
-
-    .reenable-row {
-        padding: var(--spacing-sm) 0;
-        border-bottom: 1px solid var(--color-border-subtle);
-    }
-
-    .reenable-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--spacing-md);
-    }
-
-    .reenable-description {
-        margin: var(--spacing-xs) 0 0;
-        color: var(--color-text-secondary);
-        font-size: var(--font-size-sm);
-        line-height: 1.4;
-    }
-
-    .clear-error {
-        margin-top: var(--spacing-xs);
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border-radius: var(--radius-sm);
-        background: color-mix(in srgb, var(--color-error) 10%, transparent);
-        color: var(--color-error-text);
-        font-size: var(--font-size-sm);
-    }
-
     .fda-hint {
         margin: 0 0 var(--spacing-md);
         padding: var(--spacing-sm) var(--spacing-md);
@@ -506,10 +288,10 @@
         gap: var(--spacing-sm);
     }
 
-    /* The two gated cards dim via `SectionCard`'s `gated` prop (it owns the
+    /* The gated Downloads card dims via `SectionCard`'s `gated` prop (it owns the
        `[data-gated='true'] .section-card { opacity: .5 }` rule). Inner controls
-       own their own `disabled` state (toggle group, switch, number input all
-       pass `downloadsGated` through), so the card only owns the visual cue. */
+       own their own `disabled` state (toggle group + switch both pass
+       `downloadsGated` through), so the card only owns the visual cue. */
 
     .shortcut-hint {
         margin: var(--spacing-xs) 0 0;

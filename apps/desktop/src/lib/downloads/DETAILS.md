@@ -52,8 +52,8 @@ only to component-content toasts that opt in.
 
 ## Global go-to-latest hotkey
 
-Default `⌃⌥⌘J`. The on/off switch lives under Behavior > File system watching > Go to latest download (a plain `Switch`,
-its description references the live binding via `global-shortcut-description.ts`); the combo is edited under Keyboard
+Default `⌃⌥⌘J`. The on/off switch lives under Behavior > Notifications > Go to latest download (a plain `Switch`, its
+description references the live binding via `global-shortcut-description.ts`); the combo is edited under Keyboard
 shortcuts via `GlobalShortcutRow.svelte`. Both surfaces call `set_global_go_to_latest_shortcut(enabled, binding)` for
 live-apply.
 
@@ -65,9 +65,9 @@ queue duplicates. Buttons: "Keep it on" (dismiss) and "Turn it off" (`enabled = 
 ## Deep-link target
 
 `openSettingsToDownloadsNotifications` calls
-`openSettingsWindow(['Behavior', 'File system watching'], DOWNLOADS_NOTIFICATIONS_ANCHOR_ID)`. The settings page reads
-the optional anchor from the URL on cold-open and from the `navigate-to-section` event on already-open windows, then
-scrolls the matching DOM id into view. The anchor id is the source-of-truth `DOWNLOADS_NOTIFICATIONS_ANCHOR_ID` from
+`openSettingsWindow(['Behavior', 'Notifications'], DOWNLOADS_NOTIFICATIONS_ANCHOR_ID)`. The settings page reads the
+optional anchor from the URL on cold-open and from the `navigate-to-section` event on already-open windows, then scrolls
+the matching DOM id into view. The anchor id is the source-of-truth `DOWNLOADS_NOTIFICATIONS_ANCHOR_ID` from
 `notifications-mode.ts`; the section component imports the same constant for its `<div id={…}>`.
 
 ## Settings registry note
@@ -93,8 +93,8 @@ is independent; stop after the ones that cover your change.
    navigating the focused pane). The first trigger of the session shows the warn toast.
 7. Click "Keep it on" → `acknowledged` flips to `true`; later triggers don't show the toast.
 8. Copy five files via Cmdr into `~/Downloads` → expect NO toasts (Cmdr-own-write suppression).
-9. In Settings > Behavior > File system watching, pick "macOS notifications". Allow the permission prompt. Drop a file
-   in Terminal → expect a macOS notification (no in-app toast).
+9. In Settings > Behavior > Notifications, pick "macOS notifications". Allow the permission prompt. Drop a file in
+   Terminal → expect a macOS notification (no in-app toast).
 10. Pick "Both" → both surfaces. Pick "Neither" → neither.
 11. Click "Stop showing these" on a toast → the setting flips to "Neither" and Settings opens scrolled to the sub-group.
 12. Toggle "Go to latest download" off → press `⌃⌥⌘J` from Chrome, expect nothing. Toggle on → the jump works. The

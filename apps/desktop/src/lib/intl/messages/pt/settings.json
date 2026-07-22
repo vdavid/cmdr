@@ -1369,13 +1369,25 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
-  "settings.section.fileSystemWatching": "Monitoramento do sistema de arquivos",
-  "@settings.section.fileSystemWatching": {
-    "sourceHash": "4fa805f"
+  "settings.section.notifications": "Notificações",
+  "@settings.section.notifications": {
+    "sourceHash": "7880118"
   },
   "settings.section.search": "Busca",
   "@settings.section.search": {
     "sourceHash": "49c266b"
+  },
+  "settings.section.indexing": "Indexação",
+  "@settings.section.indexing": {
+    "sourceHash": "cc24d96"
+  },
+  "settings.section.driveIndexing": "Indexação de disco",
+  "@settings.section.driveIndexing": {
+    "sourceHash": "38d916b"
+  },
+  "settings.section.imageIndexing": "Indexação de imagens",
+  "@settings.section.imageIndexing": {
+    "sourceHash": "442068b"
   },
   "settings.section.ai": "IA",
   "@settings.section.ai": {
@@ -1389,10 +1401,6 @@
   "@settings.section.askCmdr": {
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (the Ask Cmdr chat rail); kept verbatim in every locale (do-not-translate list)."
-  },
-  "settings.section.imageSearch": "Busca de imagens",
-  "@settings.section.imageSearch": {
-    "sourceHash": "a4a68f1"
   },
   "settings.askCmdr.intro": "Converse com uma IA sobre seus arquivos, discos e histórico. O Ask Cmdr é somente leitura: ele lê nomes, caminhos e tamanhos para responder, e nunca muda nada.",
   "@settings.askCmdr.intro": {
@@ -1479,8 +1487,8 @@
   "@settings.section.viewer": {
     "sourceHash": "678bfa6"
   },
-  "settings.section.operationLog": "Registro de operações",
-  "@settings.section.operationLog": {
+  "settings.navigationAndFileOps.card.operationLog": "Registro de operações",
+  "@settings.navigationAndFileOps.card.operationLog": {
     "sourceHash": "2c97965"
   },
   "settings.operationLog.intro": "O Cmdr registra suas operações de arquivos para que você possa revisar seu histórico e desfazer ações. Escolha por quanto tempo o registro é mantido e quanto espaço em disco ele pode usar.",
@@ -1549,17 +1557,9 @@
     "sourceHash": "43644bc",
     "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
   },
-  "settings.section.developer": "Desenvolvedor",
-  "@settings.section.developer": {
-    "sourceHash": "3fb7b39"
-  },
   "settings.section.mcpServer": "Servidor MCP",
   "@settings.section.mcpServer": {
     "sourceHash": "d938c81"
-  },
-  "settings.section.logging": "Registros",
-  "@settings.section.logging": {
-    "sourceHash": "d3ef01b"
   },
   "settings.section.updatesAndPrivacy": "Atualizações e privacidade",
   "@settings.section.updatesAndPrivacy": {
@@ -1601,9 +1601,9 @@
   "@settings.summary.archives": {
     "sourceHash": "340a411"
   },
-  "settings.summary.fileSystemWatching": "Indexação de disco, notificações de Downloads e o atalho global de ir para o download mais recente. Precisa de Acesso Total ao Disco.",
-  "@settings.summary.fileSystemWatching": {
-    "sourceHash": "00181bd"
+  "settings.summary.notifications": "Notificações de downloads, o atalho global para ir ao download mais recente e avisos de pouco espaço em disco.",
+  "@settings.summary.notifications": {
+    "sourceHash": "e681776"
   },
   "settings.summary.search": "Buscas por nome de arquivo e regex aplicadas ao vivo, e o limite de buscas recentes.",
   "@settings.summary.search": {
@@ -1625,10 +1625,6 @@
   "@settings.summary.mcpServer": {
     "sourceHash": "4cde8a6"
   },
-  "settings.summary.logging": "Saída detalhada no console, acesso ao arquivo de registro e informações de diagnóstico.",
-  "@settings.summary.logging": {
-    "sourceHash": "6fce936"
-  },
   "settings.summary.aiProvider": "Desative a IA, conecte um provedor na nuvem ou execute um modelo localmente.",
   "@settings.summary.aiProvider": {
     "sourceHash": "2fe940b"
@@ -1637,8 +1633,12 @@
   "@settings.summary.askCmdr": {
     "sourceHash": "67eef6a"
   },
-  "settings.summary.imageSearch": "Busque o texto dentro das suas imagens. Roda no seu Mac e nada sai dele.",
-  "@settings.summary.imageSearch": {
+  "settings.summary.driveIndexing": "Indexação de disco em segundo plano para a busca encontrar seus arquivos rápido.",
+  "@settings.summary.driveIndexing": {
+    "sourceHash": "ef8be32"
+  },
+  "settings.summary.imageIndexing": "Busque o texto dentro das suas imagens. Roda no seu Mac e nada sai dele.",
+  "@settings.summary.imageIndexing": {
     "sourceHash": "cbeb785"
   },
   "settings.summary.noSubsections": "Esta seção não tem subseções.",
@@ -1882,6 +1882,10 @@
   "settings.advanced.card.historyAndLimits": "Histórico e limites",
   "@settings.advanced.card.historyAndLimits": {
     "sourceHash": "3e01a24"
+  },
+  "settings.advanced.card.logging": "Registros",
+  "@settings.advanced.card.logging": {
+    "sourceHash": "d3ef01b"
   },
   "settings.advanced.card.loggingAndDiagnostics": "Registros e diagnóstico",
   "@settings.advanced.card.loggingAndDiagnostics": {

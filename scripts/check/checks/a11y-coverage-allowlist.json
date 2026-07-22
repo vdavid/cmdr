@@ -13,7 +13,6 @@
     "apps/desktop/src/lib/settings/sections/LicenseSection.svelte": "composition of already-audited setting components",
     "apps/desktop/src/lib/settings/sections/UpdatesSection.svelte": "composition of already-audited setting components",
     "apps/desktop/src/lib/settings/sections/MtpSection.svelte": "composition of already-audited setting components",
-    "apps/desktop/src/lib/settings/sections/LoggingSection.svelte": "composition of already-audited setting components",
     "apps/desktop/src/lib/settings/sections/ViewerSection.svelte": "composition of already-audited setting components"
   }
 }

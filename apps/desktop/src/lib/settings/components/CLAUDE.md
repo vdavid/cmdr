@@ -12,7 +12,7 @@ Window chrome (not registry-driven; here, not a sibling dir, because the setting
 - `SettingsSidebar.svelte`: left-column nav (search, section list, match highlight). Declares `TOP_LEVEL_ORDER` (keep in
   sync with `settings.spec.ts`).
 - `SettingsContent.svelte`: right-pane router: maps `selectedSection` to a `sections/*.svelte`, or `SectionSummary` for
-  the four top-level sections with subsections.
+  the five top-level sections with subsections (Appearance, Behavior, Indexing, AI, File systems).
 - `SettingsSection.svelte`: shared section wrapper (h2 title + slot). `SectionSummary.svelte`: card grid deep-linking
   into subsections.
 

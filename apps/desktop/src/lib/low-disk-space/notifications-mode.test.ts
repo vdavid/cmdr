@@ -3,9 +3,9 @@
  *
  * Pins the contracts the warn toast and the settings-applier rely on:
  *   - `setLowDiskSpaceNotificationsMode('off')` writes the registry key.
- *   - `openSettingsToLowDiskSpace()` navigates to the File system watching
- *     section AND carries the sub-group anchor so the "Disable these
- *     notifications" link lands on the right row.
+ *   - `openSettingsToLowDiskSpace()` navigates to the Notifications section AND
+ *     carries the sub-group anchor so the "Disable these notifications" link
+ *     lands on the right row.
  *   - `pushLowDiskSpaceConfigToBackend()` re-reads both settings fresh and
  *     maps the mode to the backend's enabled flag.
  */
@@ -133,7 +133,7 @@ describe('openSettingsToLowDiskSpace', () => {
     await openSettingsToLowDiskSpace()
     expect(openSettingsWindowMock).toHaveBeenCalledTimes(1)
     const [section, anchor] = openSettingsWindowMock.mock.calls[0]
-    expect(section).toEqual(['Behavior', 'File system watching'])
+    expect(section).toEqual(['Behavior', 'Notifications'])
     expect(anchor).toBe('settings-low-disk-space')
   })
 })

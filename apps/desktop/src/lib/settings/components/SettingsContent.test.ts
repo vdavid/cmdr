@@ -26,7 +26,7 @@ vi.mock('$lib/tauri-commands', () => ({
   openPrivacySettings: vi.fn(() => Promise.resolve()),
   invoke: vi.fn(() => Promise.resolve(null)),
   listen: vi.fn(() => Promise.resolve(() => {})),
-  // FileSystemWatchingSection now reaches these IPCs through the wrapper layer.
+  // NotificationsSection / DriveIndexingSection reach these IPCs through the wrapper layer.
   downloadsWatcherStatus: vi.fn(() =>
     Promise.resolve({ status: 'ok', data: { running: true, downloadsDir: '/d', fdaPending: false } }),
   ),
@@ -38,7 +38,7 @@ vi.mock('$lib/tauri-commands', () => ({
   clearDriveIndex: vi.fn(() => Promise.resolve({ status: 'ok', data: null })),
 }))
 
-// `FileSystemWatchingSection` (rendered when an "index size" search keeps it
+// `DriveIndexingSection` (rendered when an "index size" search keeps it
 // visible) calls a handful of backend IPCs on mount. Stub them so the section
 // mounts without a Tauri runtime.
 vi.mock('$lib/ipc/bindings', () => ({
@@ -79,8 +79,8 @@ async function render(searchQuery: string): Promise<void> {
   await tick()
 }
 
-function fileSystemWatchingSection(): HTMLElement | null {
-  return target.querySelector('[data-section-id="behavior-file-system-watching"]')
+function driveIndexingSection(): HTMLElement | null {
+  return target.querySelector('[data-section-id="indexing-drive-indexing"]')
 }
 
 function keyboardShortcutsSection(): HTMLElement | null {
@@ -105,16 +105,17 @@ describe('SettingsContent search gating for Keyboard shortcuts', () => {
 })
 
 describe('SettingsContent search gating for the index-size row', () => {
-  it('keeps File system watching visible and shows the Drive-indexing card for "index size"', async () => {
+  it('keeps Drive indexing visible and shows its card for "index size"', async () => {
     // Pre-fix this showed a blank pane: "index size" is a hand-rendered action
     // row, not a registry setting, so `sectionHasMatchingSettings` matched
     // nothing and hid the whole section. The hidden `indexing.indexSize` anchor
     // makes the section match again.
     await render('index size')
-    const section = fileSystemWatchingSection()
-    if (!section) throw new Error('File system watching section not rendered')
-    // The Drive-indexing card renders (its label is the indexing toggle label).
-    const labels = Array.from(section.querySelectorAll('.section-card-label')).map((el) => el.textContent.trim())
-    expect(labels).toContain('Drive indexing')
+    const section = driveIndexingSection()
+    if (!section) throw new Error('Drive indexing section not rendered')
+    // The Drive-indexing card renders (its section title says "Drive indexing"),
+    // and the index-size action row is visible.
+    expect(section.querySelectorAll('.section-card')).toHaveLength(1)
+    expect(section.textContent).toContain('Index size')
   })
 })

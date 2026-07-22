@@ -1366,13 +1366,25 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
-  "settings.section.fileSystemWatching": "Fájlrendszer figyelése",
-  "@settings.section.fileSystemWatching": {
-    "sourceHash": "4fa805f"
+  "settings.section.notifications": "Értesítések",
+  "@settings.section.notifications": {
+    "sourceHash": "7880118"
   },
   "settings.section.search": "Keresés",
   "@settings.section.search": {
     "sourceHash": "49c266b"
+  },
+  "settings.section.indexing": "Indexelés",
+  "@settings.section.indexing": {
+    "sourceHash": "cc24d96"
+  },
+  "settings.section.driveIndexing": "Meghajtó indexelése",
+  "@settings.section.driveIndexing": {
+    "sourceHash": "38d916b"
+  },
+  "settings.section.imageIndexing": "Képindexelés",
+  "@settings.section.imageIndexing": {
+    "sourceHash": "442068b"
   },
   "settings.section.ai": "AI",
   "@settings.section.ai": {
@@ -1387,10 +1399,6 @@
   "@settings.section.askCmdr": {
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (the read-only AI chat rail); kept verbatim in every locale, per the en @key note."
-  },
-  "settings.section.imageSearch": "Képkeresés",
-  "@settings.section.imageSearch": {
-    "sourceHash": "a4a68f1"
   },
   "settings.askCmdr.intro": "Csevegj egy AI-val a fájljaidról, meghajtóidról és előzményeidről. Az Ask Cmdr csak olvasásra képes: a válaszadáshoz neveket, útvonalakat és méreteket olvas, és soha semmit nem változtat.",
   "@settings.askCmdr.intro": {
@@ -1477,8 +1485,8 @@
   "@settings.section.viewer": {
     "sourceHash": "678bfa6"
   },
-  "settings.section.operationLog": "Műveletnapló",
-  "@settings.section.operationLog": {
+  "settings.navigationAndFileOps.card.operationLog": "Műveletnapló",
+  "@settings.navigationAndFileOps.card.operationLog": {
     "sourceHash": "2c97965"
   },
   "settings.operationLog.intro": "A Cmdr naplózza a fájlműveleteidet, így átnézheted az előzményeidet, és visszavonhatod a műveleteket. Add meg, meddig őrizze meg a naplót, és mennyi lemezterületet használhat.",
@@ -1547,17 +1555,9 @@
     "sourceHash": "43644bc",
     "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
   },
-  "settings.section.developer": "Fejlesztői",
-  "@settings.section.developer": {
-    "sourceHash": "3fb7b39"
-  },
   "settings.section.mcpServer": "MCP-szerver",
   "@settings.section.mcpServer": {
     "sourceHash": "d938c81"
-  },
-  "settings.section.logging": "Naplózás",
-  "@settings.section.logging": {
-    "sourceHash": "d3ef01b"
   },
   "settings.section.updatesAndPrivacy": "Frissítések és adatvédelem",
   "@settings.section.updatesAndPrivacy": {
@@ -1599,9 +1599,9 @@
   "@settings.summary.archives": {
     "sourceHash": "340a411"
   },
-  "settings.summary.fileSystemWatching": "Meghajtó-indexelés, Letöltések értesítések és a globális „ugrás a legutóbbi letöltéshez” parancs. Teljes lemezhozzáférést igényel.",
-  "@settings.summary.fileSystemWatching": {
-    "sourceHash": "00181bd"
+  "settings.summary.notifications": "Letöltési értesítések, a globális gyorsbillentyű, amellyel a legutóbbi letöltéshez ugorhatsz, és figyelmeztetések, ha kevés a lemezterület.",
+  "@settings.summary.notifications": {
+    "sourceHash": "e681776"
   },
   "settings.summary.search": "Élőben alkalmazott fájlnév- és regex-keresések, valamint a legutóbbi keresések korlátja.",
   "@settings.summary.search": {
@@ -1623,10 +1623,6 @@
   "@settings.summary.mcpServer": {
     "sourceHash": "4cde8a6"
   },
-  "settings.summary.logging": "Részletes konzolkimenet, naplófájl-hozzáférés és diagnosztikai infó.",
-  "@settings.summary.logging": {
-    "sourceHash": "6fce936"
-  },
   "settings.summary.aiProvider": "Kapcsold ki az AI-t, csatlakoztass egy felhőszolgáltatót, vagy futtass egy modellt helyben.",
   "@settings.summary.aiProvider": {
     "sourceHash": "2fe940b"
@@ -1635,8 +1631,12 @@
   "@settings.summary.askCmdr": {
     "sourceHash": "67eef6a"
   },
-  "settings.summary.imageSearch": "Keress a képeidben lévő szövegben. A Macen fut, és semmi sem hagyja el.",
-  "@settings.summary.imageSearch": {
+  "settings.summary.driveIndexing": "Meghajtó indexelése a háttérben, hogy a keresés gyorsan megtalálja a fájljaidat.",
+  "@settings.summary.driveIndexing": {
+    "sourceHash": "ef8be32"
+  },
+  "settings.summary.imageIndexing": "Keress a képeidben lévő szövegben. A Macen fut, és semmi sem hagyja el.",
+  "@settings.summary.imageIndexing": {
     "sourceHash": "cbeb785"
   },
   "settings.summary.noSubsections": "Ennek a szakasznak nincsenek alszakaszai.",
@@ -1879,6 +1879,10 @@
   "settings.advanced.card.historyAndLimits": "Előzmények és korlátok",
   "@settings.advanced.card.historyAndLimits": {
     "sourceHash": "3e01a24"
+  },
+  "settings.advanced.card.logging": "Naplózás",
+  "@settings.advanced.card.logging": {
+    "sourceHash": "d3ef01b"
   },
   "settings.advanced.card.loggingAndDiagnostics": "Naplózás és diagnosztika",
   "@settings.advanced.card.loggingAndDiagnostics": {

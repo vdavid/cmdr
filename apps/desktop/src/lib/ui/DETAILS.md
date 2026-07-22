@@ -725,7 +725,7 @@ Props:
 
 `gated` emits `data-gated="true"` on the outer `<section>` and the card owns the dimming rule
 (`.section-card-wrap[data-gated='true'] .section-card { opacity: .5 }`), so consumers stop hand-rolling a wrapper div
-for it (`FileSystemWatchingSection`'s two FDA-gated cards). It owns only the visual cue — inner controls keep their own
+for it (`NotificationsSection`'s FDA-gated Downloads card). It owns only the visual cue — inner controls keep their own
 `disabled` state. Omitted when `false` (no attribute), so `[data-gated]` selectors and tests stay clean.
 
 Spacing between adjacent `SectionCard`s is built in (`var(--spacing-xl)` bottom margin); consumers don't have to manage

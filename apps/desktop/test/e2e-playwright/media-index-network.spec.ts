@@ -1,6 +1,6 @@
 /**
  * E2E for the network-enrichment per-network-volume image-indexing opt-in UI
- * (Settings > AI > Image search).
+ * (Settings > Indexing > Image indexing).
  *
  * Two things proven in the real app + real settings store:
  *  1. The per-volume SMB opt-in PERSISTS: setting `mediaIndex.networkVolumes`
@@ -71,7 +71,7 @@ test.describe('Media index — network volume opt-in', () => {
       const clicked = await settings.evaluate<boolean>(`(function() {
         var items = document.querySelectorAll('.section-item');
         for (var i = 0; i < items.length; i++) {
-          if ((items[i].textContent || '').trim() === 'Image search') {
+          if ((items[i].textContent || '').trim() === 'Image indexing') {
             items[i].click();
             return true;
           }

@@ -27,16 +27,16 @@
         Listing: 'settings.summary.listing',
         'Navigation & file ops': 'settings.summary.navigationAndFileOps',
         Archives: 'settings.summary.archives',
-        'File system watching': 'settings.summary.fileSystemWatching',
+        Notifications: 'settings.summary.notifications',
         Search: 'settings.summary.search',
+        'Drive indexing': 'settings.summary.driveIndexing',
+        'Image indexing': 'settings.summary.imageIndexing',
         Provider: 'settings.summary.aiProvider',
         'Ask Cmdr': 'settings.summary.askCmdr',
-        'Image search': 'settings.summary.imageSearch',
+        'MCP server': 'settings.summary.mcpServer',
         'SMB/Network shares': 'settings.summary.smbNetworkShares',
         'MTP (Android/Kindle/cameras)': 'settings.summary.mtp',
         Git: 'settings.summary.git',
-        'MCP server': 'settings.summary.mcpServer',
-        Logging: 'settings.summary.logging',
     }
 
     function getSubsectionDescription(subsection: SettingsSection): string {

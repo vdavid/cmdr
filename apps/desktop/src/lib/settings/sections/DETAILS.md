@@ -18,12 +18,13 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
 - **`AppearanceSizesSection.svelte`**: `Appearance > File and folder sizes`: size display, size unit (binary/SI drives
   `kB`↔`KB` label override), file size format, size mismatch warning
 - **`ListingSection.svelte`**: `Appearance > Listing`: document icons, directory sort, brief column width
-- **`NavigationAndFileOpsSection.svelte`**: `Behavior > Navigation & file ops`: two labeled `SectionCard`s — Navigation
-  (the `behavior.doubleClickPaneNavigatesToParent` switch) then File operations (the extension-change confirmation row
-  `allowFileExtensionChanges`). The conflict/progress settings live ONLY in Advanced (`maxConflictsToShow`,
-  `progressUpdateInterval` → `section: ['Advanced']`), never mirrored here. The hidden
-  `behavior.doubleClickOnPaneNotificationSeen` flag (one-time-hint tracker) is registered but renders no row. Each card
-  frame gated via `anyVisible(shouldShow, ...)` (same pattern as FSW above).
+- **`NavigationAndFileOpsSection.svelte`**: `Behavior > Navigation & file ops`: three labeled `SectionCard`s —
+  Navigation (the `behavior.doubleClickPaneNavigatesToParent` switch), File operations (the extension-change
+  confirmation row `allowFileExtensionChanges` + the paste-as-file radio), and Operation log (the retention limits
+  `operationLog.maxAge` / `operationLog.maxSize`, plus the `settings.operationLog.intro` blurb). The conflict/progress
+  settings live ONLY in Advanced (`maxConflictsToShow`, `progressUpdateInterval` → `section: ['Advanced']`), never
+  mirrored here. The hidden `behavior.doubleClickOnPaneNotificationSeen` flag (one-time-hint tracker) is registered but
+  renders no row. Each card frame gated via `anyVisible(shouldShow, ...)` (the card-group pattern).
 - **`ArchivesSection.svelte`**: `Behavior > Archives`: what pressing Enter does per format (Browse | Open | Ask). A
   CUSTOM section (not registry-driven rows): all formats live in ONE pinned-shape JSON setting
   (`behavior.archiveEnterBehavior`, `{ zip, bundle }`), so the format list extends without a registry entry per format.
@@ -35,23 +36,27 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   hand-rendered here like the rest. It's the SAME setting the Compress dialog's `CompressLevelControl.svelte` binds by
   id, and it governs every user-driven zip write; the effect on the archive is single-sourced in the backend mutation
   `DETAILS.md` (via `write_operations/DETAILS.md` § "Archive edits").
-- **`FileSystemWatchingSection.svelte`**: `Behavior > File system watching`: three `SectionCard` card groups — Drive
-  indexing (toggle + clear-index action, the hidden `indexing.indexSize` search anchor), Downloads (BOTH
+- **`DriveIndexingSection.svelte`**: `Indexing > Drive indexing`: one unlabeled `SectionCard` (the section title already
+  reads "Drive indexing") — the `indexing.enabled` toggle + clear-index action (the hidden `indexing.indexSize` search
+  anchor), the per-drive first-connect prompt toggle (`askForEachDrive`) with its "re-enable notifications" button, and
+  the stale-drive notification toggle (`staleNotify`). Stays interactive regardless of the FDA gate (indexing operates
+  on whatever paths it can read; the gate is for the downloads watcher). The card frame is gated via
+  `anyVisible(shouldShow, ...memberIds)` (the card-group pattern), and the hidden `indexing.indexSize` anchor (its
+  `section` equals this page's) makes "index size" a search hit, keeping the section visible (no blank pane) when
+  searched. See `lib/settings/components/CLAUDE.md` § card groups.
+- **`NotificationsSection.svelte`**: `Behavior > Notifications`: two `SectionCard` card groups — Downloads (BOTH
   Downloads-folder features in one card: the 4-option `downloadsNotifications` ToggleGroup, plus the on/off go-to-latest
   `Switch` whose description references the live global binding — the combo is edited under Keyboard shortcuts; anchor
   `settings-downloads-notifications`), Low disk space (3-option ToggleGroup + percent number input, anchor
   `settings-low-disk-space`, NOT FDA-gated — statfs needs no TCC permission). FDA-closed greys the Downloads card (via
   `SectionCard`'s `gated` prop) with one shared hint linking to System Settings (the shared `<Trans>`
-  `common.downloadsFdaHint`); Drive indexing stays interactive (it operates on whatever paths it can read; the gate is
-  for the downloads watcher). **Card-group pattern (the empty-card / blank-page fix):** each `SectionCard` frame is
+  `common.downloadsFdaHint`). **Card-group pattern (the empty-card / blank-page fix):** each `SectionCard` frame is
   wrapped in `{#if anyVisible(shouldShow, ...memberIds)}` over the card's member setting ids, reading the SAME
   `shouldShow` (`createShouldShow(searchQuery)`) the rows use, so a card whose rows all filter out under search hides
   its frame too (no empty cards). No wrapper component; card visibility is section-owned, never re-derived from the
-  registry `card` field. The anchor ids now sit on `SectionCard`'s own `<section id>`, so the `navigate-to-section`
-  deep-links still land. The hidden `indexing.indexSize` anchor (its `section` equals this page's) makes "index size" a
-  search hit, and the index-size action row is gated on `shouldShow('indexing.indexSize')`, so searching it keeps the
-  section visible (no blank pane) and shows the Drive-indexing card. See `lib/settings/components/CLAUDE.md` § card
-  groups.
+  registry `card` field. The anchor ids sit on `SectionCard`'s own `<section id>`, so the `navigate-to-section`
+  deep-links still land. (The `behavior.fileSystemWatching.*` id prefix on these settings is a stable persistence key;
+  the section rename to Notifications doesn't touch it.) See `lib/settings/components/CLAUDE.md` § card groups.
 - **`SearchSection.svelte`**: `Behavior > Search`: one unlabeled `SectionCard` wrapping only the auto-apply switch. The
   `recentSearches.maxCount` / `recentSelections.maxCount` caps live ONLY in Advanced now, never mirrored here. The card
   is gated via `anyVisible(shouldShow, ...)` so an all-filtered-out search leaves no empty frame.
@@ -73,14 +78,14 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
     `{#if modelInstalled && shouldShow('ai.localContextSize')}` guard, so no empty card renders before the model is
     installed. The `.status-card`, install/`.actions` buttons, and the body-level delete `ModalDialog` stay OUTSIDE any
     card on purpose (already visually distinct full-bleed blocks).
-- **`ImageSearchSection.svelte`**: `AI › Image search` subsection (third card under the AI card-menu parent): on-device
+- **`ImageIndexingSection.svelte`**: `Indexing › Image indexing` subsection (second subsection of Indexing): on-device
   image-content (OCR) search. One `SectionCard` (titled by `settings.mediaIndex.card`) holding the `mediaIndex.enabled`
-  master toggle, an explicit on-device privacy note (`settings.mediaIndex.privacyNote` — this feature touches no AI
-  provider or API key, unlike the rest of AI, so the note says so), and, once the toggle is on, the bespoke
-  `MediaIndexScope` (which itself hosts `MediaIndexImportanceSlider`, which hosts `MediaIndexReclaim`),
-  `MediaIndexChosenFolders`, and the `MediaIndexNetworkVolumes` opt-in list. Composes the self-contained media
-  components — it renders and gates them; the logic lives in each. The `mediaIndex.*` registry entries all live at
-  `section: ['AI', 'Image search']` (a setting's one home).
+  master toggle, an explicit on-device privacy note (`settings.mediaIndex.privacyNote` — the feature touches no AI
+  provider or API key, so the note says so), and, once the toggle is on, the bespoke `MediaIndexScope` (which itself
+  hosts `MediaIndexImportanceSlider`, which hosts `MediaIndexReclaim`), `MediaIndexChosenFolders`, and the
+  `MediaIndexNetworkVolumes` opt-in list. Composes the self-contained media components — it renders and gates them; the
+  logic lives in each. The `mediaIndex.*` registry entries all live at `section: ['Indexing', 'Image indexing']` (a
+  setting's one home).
 - **`MediaIndexScope.svelte`**: the `mediaIndex.scope` radio group — index only the folders the user chose (the default)
   or automatically by folder importance. It OWNS the importance slider's visibility: the slider renders only in the
   automatic scope, because in the narrow one the threshold has no effect at all and showing it would promise a control
@@ -95,9 +100,9 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   field. Deliberately shows NO per-folder progress: there's no cheap per-folder count backend-side (it would mean a
   `media.db` prefix scan per folder per poll), so progress stays a per-drive line rather than a faked per-row one.
 - **`MediaIndexImportanceSlider.svelte`** / **`MediaIndexReclaim.svelte`** / **`MediaIndexNetworkVolumes.svelte`**: the
-  three self-contained image-search controls `ImageSearchSection` composes — the importance-threshold slider with its
-  live coverage preview and honest wait lines (`waitingForDriveIndex` off `qualifyingCount === null` when the drive scan
-  is still running, `waitingForImportance` while ranking; each replaces the generic counting line so one wait never
+  three self-contained image-indexing controls `ImageIndexingSection` composes — the importance-threshold slider with
+  its live coverage preview and honest wait lines (`waitingForDriveIndex` off `qualifyingCount === null` when the drive
+  scan is still running, `waitingForImportance` while ranking; each replaces the generic counting line so one wait never
   shows two spinners) (the slider hosts the reclaim line), the reclaim-space line + prune confirm, and the
   per-network-volume opt-in list. Each owns its own state and IPC; the section only renders and gates them on the live
   `mediaIndex.enabled` toggle.
@@ -131,10 +136,11 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   `formatModifiers`/`handleKeyFilterKeyDown`/`handleKeyFilterKeyUp`). It imports the pure `keyboard-shortcuts-grouping`
   and `keyboard-shortcuts-banner` helpers rather than duplicating them. The `getSearchQuery` arg is an accessor (not a
   snapshot) so the name-search derivation stays reactive to the parent-driven global search prop
-- **`McpServerSection.svelte`**: `Developer > MCP server`: one unlabeled `SectionCard` wrapping the enable switch, port
-  row, and the live port-status block, gated via `anyVisible(shouldShow, 'developer.mcpEnabled', 'developer.mcpPort')`
-- **`LoggingSection.svelte`**: `Developer > Logging`: one unlabeled `SectionCard` wrapping the verbose-logging switch
-  and the open-log/copy-diagnostics action buttons, gated via `anyVisible(shouldShow, ...)`
+- **`McpServerSection.svelte`**: `AI > MCP server`: one unlabeled `SectionCard` wrapping the enable switch, port row,
+  and the live port-status block, gated via `anyVisible(shouldShow, 'developer.mcpEnabled', 'developer.mcpPort')`. (The
+  `developer.mcp*` id prefix is a stable persistence key; homing the setting under AI doesn't touch it.) Verbose logging
+  is no longer a section here: `developer.verboseLogging` moved to Advanced (a "Logging" card, see `AdvancedSection`
+  below), and its open-log/copy-diagnostics action buttons ride the Advanced per-card "extra content" mechanism.
 - **`UpdatesSection.svelte`**: `Updates & privacy`: two `SectionCard` card groups — Updates (the "Check for updates"
   action + status, `updates.autoCheck`, `whatsNew.showOnUpdate`) and Privacy and data sharing (the beta analytics
   opt-out `analytics.enabled` default-on, the `analytics.email` contact field with its "never sent with your usage data"
@@ -152,7 +158,12 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   (`groupAdvancedByCard`). No custom UI per row. Row visibility rides the SAME global `shouldShow`/`anyVisible` pipeline
   as every other section (Advanced settings are in the global search index), so an advanced term lights the Advanced
   sidebar entry and shows its row in its card. Advanced is a normal registry section now (in `buildSectionTree`), not a
-  hardcoded special section
+  hardcoded special section. **One bespoke exception — per-card "extra content":** after a card's auto-rendered rows,
+  the section can append non-setting UI, keyed by a stable MARKER SETTING ID the card contains (never the translated
+  title — `no-string-matching`). Today only the "Logging" card uses it: `developer.verboseLogging` auto-renders the
+  switch, and `hasLoggingExtras(group)` (marker `developer.verboseLogging`) appends the open-log-folder /
+  copy-diagnostics action buttons (they're actions, not settings, so they have no auto-render home). See the
+  Decision/Why below
 - **`advanced-grouping.ts`**: Pure card-grouping logic for `AdvancedSection` (group `section: ['Advanced']` settings by
   resolved `card` title, registry order; trailing untitled "Other" bucket for any with no `cardKey`). Tested by a
   set-equality regression guard (union of grouped === all Advanced settings)
@@ -169,14 +180,15 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   sets; system checked only when no in-app conflict. Unit-tested
 
 Each section ships with an `*.a11y.test.ts` (axe-core tier-3). `McpServerSection`, `UpdatesSection`, `SearchSection`,
-`FileSystemWatchingSection`, and `KeyboardShortcutsSection` also have functional `*.test.ts` / `*.svelte.test.ts` files;
-the pure-helper `.ts` files have unit tests next to them. `FileSystemWatchingSection.svelte.test.ts` combines tier-3 axe
-with the functional render contract since both share the same heavy IPC mock setup.
-`KeyboardShortcutsSection.svelte.test.ts` runs the real `$lib/shortcuts` store against an in-memory disk (mocks only the
-Tauri boundaries, like `shortcuts-store.test.ts`) and drives the add/edit/conflict flows through the DOM.
-`KeyboardShortcutsSection.controller.svelte.test.ts` instantiates the controller factory directly via `$effect.root`
-(store + registry mocked) to cover the units the DOM test doesn't reach: the key-filter field helpers (platform-aware
-combo splitting and subset matching) and the search/filter derivations.
+`DriveIndexingSection`, `NotificationsSection`, and `KeyboardShortcutsSection` also have functional `*.test.ts` /
+`*.svelte.test.ts` files; the pure-helper `.ts` files have unit tests next to them.
+`NotificationsSection.svelte.test.ts` and `DriveIndexingSection.svelte.test.ts` each pin their section's render contract
+under the same heavy IPC mock setup their a11y siblings use. `KeyboardShortcutsSection.svelte.test.ts` runs the real
+`$lib/shortcuts` store against an in-memory disk (mocks only the Tauri boundaries, like `shortcuts-store.test.ts`) and
+drives the add/edit/conflict flows through the DOM. `KeyboardShortcutsSection.controller.svelte.test.ts` instantiates
+the controller factory directly via `$effect.root` (store + registry mocked) to cover the units the DOM test doesn't
+reach: the key-filter field helpers (platform-aware combo splitting and subset matching) and the search/filter
+derivations.
 
 ## Conventions
 
@@ -399,12 +411,14 @@ files; the pieces are load-bearing in this order:
 
 ## Key decisions
 
-### Why "File system watching" is one umbrella section
+### Drive indexing and Notifications are separate sections
 
-`File system watching` under `Behavior` covers both the file-system indexer and the downloads watcher because both are
-file-system watchers and share the same FDA gate. One header, one shared FDA hint, three `SectionCard` card groups:
-Drive indexing, Downloads, Low disk space. The indexer's own toggle still carries the label "Drive indexing" — that's
-its per-toggle name, distinct from the umbrella section title.
+The file-system indexer lives in its own top-level section (`Indexing > Drive indexing`, `DriveIndexingSection`), while
+the notification-shaped watchers (the downloads watcher and the low-disk-space warning) live under
+`Behavior > Notifications` (`NotificationsSection`). The two notification cards share the same FDA gate, so
+`NotificationsSection` surfaces one shared FDA hint when the gate is closed; Drive indexing needs no such hint (it
+operates on whatever paths it can read). The indexer's own toggle carries the label "Drive indexing", the same string as
+the section title, so its single card renders unlabeled to avoid a duplicate heading.
 
 The Downloads card carries `id={DOWNLOADS_NOTIFICATIONS_ANCHOR_ID}` (on `SectionCard`'s own `<section>`, value
 `settings-downloads-notifications`) so the downloads-toast "Stop showing these" deep-link lands on the card instead of
@@ -423,6 +437,20 @@ can read it before any window loads, and a global Carbon hotkey has no in-app sc
 keydown dispatch, so the scope/conflict apparatus doesn't apply. The toggle's description references the live binding
 (via `global-shortcut-description.ts`) and updates when the user rebinds. Both surfaces call the
 `set_global_go_to_latest_shortcut` IPC on change for live-apply.
+
+### Advanced per-card "extra content" (the Logging card's action buttons)
+
+**Decision / why.** The Advanced page is otherwise fully generated: every row comes from a `section: ['Advanced']`
+registry entry. Verbose logging is a real such setting (`developer.verboseLogging`, a boolean switch), so it
+auto-renders. But its companions — "Open log folder" and "Copy diagnostics" — are ACTIONS, not settings, so they have no
+registry entry and no auto-render home. Rather than turn the whole Logging card back into a hand-written section (and
+lose the generated pipeline), `AdvancedSection` grew a minimal, well-bounded seam: after a card's auto-rendered rows, it
+may append a fixed snippet of non-setting UI. The card is matched by a stable MARKER SETTING ID it contains
+(`developer.verboseLogging`), via `hasLoggingExtras(group)`, **never by its translated title** (`no-string-matching`:
+titles are for users and would break on a copy edit or in another locale). This is the FIRST and only bespoke element in
+the generated Advanced section; keep it that way — a new card that needs extra content adds another marker-id check and
+an inline block, not a general plugin system. The two buttons reuse the same handlers and `settings.logging.*` catalog
+copy the old standalone `LoggingSection` carried.
 
 ## Ask Cmdr section (`AskCmdrSection.svelte`)
 

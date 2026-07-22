@@ -23,9 +23,13 @@
         getMatchIndicesForLabel,
         highlightMatches,
     } from '$lib/settings/settings-search'
-    import { groupAdvancedByCard } from './advanced-grouping'
+    import { groupAdvancedByCard, type AdvancedCardGroup } from './advanced-grouping'
     import { confirmDialog } from '$lib/utils/confirm-dialog'
     import { tString } from '$lib/intl/messages.svelte'
+    import { getAppLogger } from '$lib/logging/logger'
+    import { revealItemInDir } from '@tauri-apps/plugin-opener'
+    import { appLogDir } from '@tauri-apps/api/path'
+    import { getVersion } from '@tauri-apps/api/app'
 
     interface Props {
         searchQuery: string
@@ -102,6 +106,61 @@
         }
         const matchIndices = getMatchIndicesForLabel(searchQuery, settingId)
         return highlightMatches(label, matchIndices)
+    }
+
+    // ------------------------------------------------------------------------
+    // Per-card "extra content" (the one bespoke element in the otherwise
+    // fully-generated Advanced section).
+    //
+    // Some cards need trailing non-setting UI after their auto-rendered rows —
+    // action buttons that aren't settings and so have no auto-render home. The
+    // Logging card is the first: its verbose-logging switch auto-renders (it's a
+    // real `section: ['Advanced']` setting), but the "open log folder" / "copy
+    // diagnostics" buttons are actions. A card is matched by a stable MARKER
+    // SETTING ID it contains, never by its translated title (no-string-matching).
+    // ------------------------------------------------------------------------
+    const LOGGING_CARD_MARKER_ID = 'developer.verboseLogging'
+
+    function hasLoggingExtras(group: AdvancedCardGroup): boolean {
+        return group.settings.some((s) => s.id === LOGGING_CARD_MARKER_ID)
+    }
+
+    let copyFeedback = $state(false)
+
+    async function openLogFile() {
+        const log = getAppLogger('settings')
+        try {
+            const logDir = await appLogDir()
+            await revealItemInDir(logDir)
+        } catch (error) {
+            log.error('Failed to open log directory: {error}', { error: String(error) })
+        }
+    }
+
+    async function copyDiagnosticInfo() {
+        const log = getAppLogger('settings')
+        try {
+            const info = {
+                appVersion: await getVersion(),
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString(),
+            }
+
+            const text = `Cmdr Diagnostic Info
+====================
+Version: ${info.appVersion}
+User Agent: ${info.userAgent}
+Timestamp: ${info.timestamp}
+`
+
+            await navigator.clipboard.writeText(text)
+            copyFeedback = true
+            setTimeout(() => {
+                copyFeedback = false
+            }, 2000)
+        } catch (error) {
+            log.error('Failed to copy diagnostic info: {error}', { error: String(error) })
+        }
     }
 </script>
 
@@ -219,6 +278,18 @@
                             </div>
                         {/if}
                     {/each}
+                    {#if hasLoggingExtras(group)}
+                        <div class="card-extra-actions">
+                            <Button variant="secondary" size="mini" onclick={openLogFile}>
+                                {tString('settings.logging.openLogFile')}
+                            </Button>
+                            <Button variant="secondary" size="mini" onclick={copyDiagnosticInfo}>
+                                {copyFeedback
+                                    ? tString('settings.logging.copied')
+                                    : tString('settings.logging.copyDiagnostics')}
+                            </Button>
+                        </div>
+                    {/if}
                 </SectionCard>
             {/if}
         {/each}
@@ -254,6 +325,14 @@
     .advanced-settings {
         display: flex;
         flex-direction: column;
+    }
+
+    /* Trailing per-card "extra content" (e.g. the Logging card's action
+       buttons), rendered after the card's auto-generated setting rows. */
+    .card-extra-actions {
+        display: flex;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-lg);
     }
 
     /* Rows render inside a `SectionCard` (which owns the background, padding, and

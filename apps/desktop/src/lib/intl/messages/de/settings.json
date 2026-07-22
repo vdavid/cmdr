@@ -1373,13 +1373,25 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
-  "settings.section.fileSystemWatching": "Dateisystemüberwachung",
-  "@settings.section.fileSystemWatching": {
-    "sourceHash": "4fa805f"
+  "settings.section.notifications": "Benachrichtigungen",
+  "@settings.section.notifications": {
+    "sourceHash": "7880118"
   },
   "settings.section.search": "Suche",
   "@settings.section.search": {
     "sourceHash": "49c266b"
+  },
+  "settings.section.indexing": "Indizierung",
+  "@settings.section.indexing": {
+    "sourceHash": "cc24d96"
+  },
+  "settings.section.driveIndexing": "Laufwerksindizierung",
+  "@settings.section.driveIndexing": {
+    "sourceHash": "38d916b"
+  },
+  "settings.section.imageIndexing": "Bildindizierung",
+  "@settings.section.imageIndexing": {
+    "sourceHash": "442068b"
   },
   "settings.section.ai": "KI",
   "@settings.section.ai": {
@@ -1393,10 +1405,6 @@
   "@settings.section.askCmdr": {
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Brand/product name, kept verbatim in every locale (do-not-translate list)."
-  },
-  "settings.section.imageSearch": "Bildersuche",
-  "@settings.section.imageSearch": {
-    "sourceHash": "a4a68f1"
   },
   "settings.askCmdr.intro": "Chatte mit einer KI über deine Dateien, Laufwerke und deinen Verlauf. Ask Cmdr ist schreibgeschützt: Es liest Namen, Pfade und Größen, um zu antworten, und verändert nie etwas.",
   "@settings.askCmdr.intro": {
@@ -1483,8 +1491,8 @@
   "@settings.section.viewer": {
     "sourceHash": "678bfa6"
   },
-  "settings.section.operationLog": "Vorgangsprotokoll",
-  "@settings.section.operationLog": {
+  "settings.navigationAndFileOps.card.operationLog": "Vorgangsprotokoll",
+  "@settings.navigationAndFileOps.card.operationLog": {
     "sourceHash": "2c97965"
   },
   "settings.operationLog.intro": "Cmdr protokolliert deine Dateivorgänge, damit du deinen Verlauf ansehen und Aktionen rückgängig machen kannst. Lege fest, wie lange das Protokoll aufbewahrt wird und wie viel Speicherplatz es belegen darf.",
@@ -1553,17 +1561,9 @@
     "sourceHash": "43644bc",
     "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
   },
-  "settings.section.developer": "Entwickler",
-  "@settings.section.developer": {
-    "sourceHash": "3fb7b39"
-  },
   "settings.section.mcpServer": "MCP-Server",
   "@settings.section.mcpServer": {
     "sourceHash": "d938c81"
-  },
-  "settings.section.logging": "Protokollierung",
-  "@settings.section.logging": {
-    "sourceHash": "d3ef01b"
   },
   "settings.section.updatesAndPrivacy": "Updates & Datenschutz",
   "@settings.section.updatesAndPrivacy": {
@@ -1605,9 +1605,9 @@
   "@settings.summary.archives": {
     "sourceHash": "340a411"
   },
-  "settings.summary.fileSystemWatching": "Laufwerksindizierung, Download-Mitteilungen und der globale Kurzbefehl „Zum neuesten Download springen“. Erfordert „Voller Festplattenzugriff“.",
-  "@settings.summary.fileSystemWatching": {
-    "sourceHash": "00181bd"
+  "settings.summary.notifications": "Download-Benachrichtigungen, das globale Tastenkürzel, um zum neuesten Download zu springen, und Warnungen bei wenig Speicherplatz.",
+  "@settings.summary.notifications": {
+    "sourceHash": "e681776"
   },
   "settings.summary.search": "Live angewendete Dateinamen- und Regex-Suchen sowie die Obergrenze für letzte Suchen.",
   "@settings.summary.search": {
@@ -1629,10 +1629,6 @@
   "@settings.summary.mcpServer": {
     "sourceHash": "4cde8a6"
   },
-  "settings.summary.logging": "Ausführliche Konsolenausgabe, Zugriff auf die Protokolldatei und Diagnoseinfos.",
-  "@settings.summary.logging": {
-    "sourceHash": "6fce936"
-  },
   "settings.summary.aiProvider": "KI ausschalten, einen Cloud-Anbieter verbinden oder ein Modell lokal ausführen.",
   "@settings.summary.aiProvider": {
     "sourceHash": "2fe940b"
@@ -1641,8 +1637,12 @@
   "@settings.summary.askCmdr": {
     "sourceHash": "67eef6a"
   },
-  "settings.summary.imageSearch": "Durchsuche den Text in deinen Bildern. Läuft auf deinem Mac, und nichts verlässt ihn.",
-  "@settings.summary.imageSearch": {
+  "settings.summary.driveIndexing": "Laufwerksindizierung im Hintergrund, damit die Suche deine Dateien schnell findet.",
+  "@settings.summary.driveIndexing": {
+    "sourceHash": "ef8be32"
+  },
+  "settings.summary.imageIndexing": "Durchsuche den Text in deinen Bildern. Läuft auf deinem Mac, und nichts verlässt ihn.",
+  "@settings.summary.imageIndexing": {
     "sourceHash": "cbeb785"
   },
   "settings.summary.noSubsections": "Dieser Abschnitt hat keine Unterabschnitte.",
@@ -1886,6 +1886,10 @@
   "settings.advanced.card.historyAndLimits": "Verlauf und Grenzwerte",
   "@settings.advanced.card.historyAndLimits": {
     "sourceHash": "3e01a24"
+  },
+  "settings.advanced.card.logging": "Protokollierung",
+  "@settings.advanced.card.logging": {
+    "sourceHash": "d3ef01b"
   },
   "settings.advanced.card.loggingAndDiagnostics": "Protokollierung und Diagnose",
   "@settings.advanced.card.loggingAndDiagnostics": {

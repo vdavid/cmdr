@@ -31,7 +31,7 @@ condition that re-arms the detector emits the dismiss.
 
 ## The two settings
 
-Both live under **Behavior > File system watching > Low disk space** (`FileSystemWatchingSection.svelte`, anchor id
+Both live under **Behavior > Notifications > Low disk space** (`NotificationsSection.svelte`, anchor id
 `LOW_DISK_SPACE_ANCHOR_ID` so the toast's "Disable these notifications" deep-link lands on the sub-group):
 
 - `behavior.fileSystemWatching.lowDiskSpaceNotifications` (default `'in-app'`): the three-option ToggleGroup.

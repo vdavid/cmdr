@@ -252,8 +252,8 @@ describe('index-size hidden anchor search', () => {
     expect(ids).toContain('indexing.indexSize')
   })
 
-  it('adds the File system watching section to the sidebar match set for "index size"', () => {
+  it('adds the Drive indexing section to the sidebar match set for "index size"', () => {
     const sections = getMatchingSections('index size')
-    expect(sectionHasMatches(['Behavior', 'File system watching'], sections)).toBe(true)
+    expect(sectionHasMatches(['Indexing', 'Drive indexing'], sections)).toBe(true)
   })
 })

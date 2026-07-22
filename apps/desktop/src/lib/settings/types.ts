@@ -369,7 +369,9 @@ export interface SettingsValues {
    */
   'mediaIndex.scope': MediaIndexScope
 
-  // File system watching - downloads notifications + global go-to-latest shortcut.
+  // Behavior › Notifications - downloads notifications + global go-to-latest shortcut.
+  // (The `fileSystemWatching` id prefix is a stable persistence key, kept across the
+  // section rename from "File system watching" to "Notifications".)
   'behavior.fileSystemWatching.downloadsNotifications': DownloadsNotificationsMode
   /** Internal: remembers whether the user last collapsed the new-download toast, so a new toast opens the same way. */
   'behavior.fileSystemWatching.downloadsToastCollapsed': boolean

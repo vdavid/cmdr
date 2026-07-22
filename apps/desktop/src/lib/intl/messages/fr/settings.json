@@ -1376,13 +1376,26 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
-  "settings.section.fileSystemWatching": "Surveillance du système de fichiers",
-  "@settings.section.fileSystemWatching": {
-    "sourceHash": "4fa805f"
+  "settings.section.notifications": "Notifications",
+  "@settings.section.notifications": {
+    "sourceHash": "7880118",
+    "sameAsSourceJustification": "French uses the identical word; macOS System Settings labels this pane \"Notifications\". Kept verbatim."
   },
   "settings.section.search": "Recherche",
   "@settings.section.search": {
     "sourceHash": "49c266b"
+  },
+  "settings.section.indexing": "Indexation",
+  "@settings.section.indexing": {
+    "sourceHash": "cc24d96"
+  },
+  "settings.section.driveIndexing": "Indexation du disque",
+  "@settings.section.driveIndexing": {
+    "sourceHash": "38d916b"
+  },
+  "settings.section.imageIndexing": "Indexation des images",
+  "@settings.section.imageIndexing": {
+    "sourceHash": "442068b"
   },
   "settings.section.ai": "IA",
   "@settings.section.ai": {
@@ -1396,10 +1409,6 @@
   "@settings.section.askCmdr": {
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (\"Ask Cmdr\" is the feature's brand name); kept verbatim in every locale per the @key description."
-  },
-  "settings.section.imageSearch": "Recherche d''images",
-  "@settings.section.imageSearch": {
-    "sourceHash": "a4a68f1"
   },
   "settings.askCmdr.intro": "Discutez avec une IA à propos de vos fichiers, disques et historique. Ask Cmdr est en lecture seule : il lit les noms, chemins et tailles pour répondre, et ne change jamais rien.",
   "@settings.askCmdr.intro": {
@@ -1486,8 +1495,8 @@
   "@settings.section.viewer": {
     "sourceHash": "678bfa6"
   },
-  "settings.section.operationLog": "Journal des opérations",
-  "@settings.section.operationLog": {
+  "settings.navigationAndFileOps.card.operationLog": "Journal des opérations",
+  "@settings.navigationAndFileOps.card.operationLog": {
     "sourceHash": "2c97965"
   },
   "settings.operationLog.intro": "Cmdr enregistre vos opérations sur les fichiers pour que vous puissiez consulter votre historique et annuler des actions. Choisissez combien de temps le journal est conservé et l'espace disque qu'il peut utiliser.",
@@ -1556,17 +1565,9 @@
     "sourceHash": "43644bc",
     "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
   },
-  "settings.section.developer": "Développeur",
-  "@settings.section.developer": {
-    "sourceHash": "3fb7b39"
-  },
   "settings.section.mcpServer": "Serveur MCP",
   "@settings.section.mcpServer": {
     "sourceHash": "d938c81"
-  },
-  "settings.section.logging": "Journalisation",
-  "@settings.section.logging": {
-    "sourceHash": "d3ef01b"
   },
   "settings.section.updatesAndPrivacy": "Mises à jour et confidentialité",
   "@settings.section.updatesAndPrivacy": {
@@ -1608,9 +1609,9 @@
   "@settings.summary.archives": {
     "sourceHash": "340a411"
   },
-  "settings.summary.fileSystemWatching": "Indexation du disque, notifications de téléchargements, et raccourci global « aller au dernier téléchargement ». Nécessite l''Accès complet au disque.",
-  "@settings.summary.fileSystemWatching": {
-    "sourceHash": "00181bd"
+  "settings.summary.notifications": "Notifications de téléchargement, le raccourci global pour aller au dernier téléchargement et les avertissements d''espace disque faible.",
+  "@settings.summary.notifications": {
+    "sourceHash": "e681776"
   },
   "settings.summary.search": "Recherches par nom de fichier et par regex appliquées en direct, et limite des recherches récentes.",
   "@settings.summary.search": {
@@ -1632,10 +1633,6 @@
   "@settings.summary.mcpServer": {
     "sourceHash": "4cde8a6"
   },
-  "settings.summary.logging": "Sortie console détaillée, accès au fichier journal, et infos de diagnostic.",
-  "@settings.summary.logging": {
-    "sourceHash": "6fce936"
-  },
   "settings.summary.aiProvider": "Désactivez l''IA, connectez un fournisseur cloud ou exécutez un modèle en local.",
   "@settings.summary.aiProvider": {
     "sourceHash": "2fe940b"
@@ -1644,8 +1641,12 @@
   "@settings.summary.askCmdr": {
     "sourceHash": "67eef6a"
   },
-  "settings.summary.imageSearch": "Recherchez le texte à l''intérieur de vos images. Fonctionne sur votre Mac, et rien ne le quitte.",
-  "@settings.summary.imageSearch": {
+  "settings.summary.driveIndexing": "Indexation du disque en arrière-plan pour que la recherche trouve vos fichiers rapidement.",
+  "@settings.summary.driveIndexing": {
+    "sourceHash": "ef8be32"
+  },
+  "settings.summary.imageIndexing": "Recherchez le texte à l''intérieur de vos images. Fonctionne sur votre Mac, et rien ne le quitte.",
+  "@settings.summary.imageIndexing": {
     "sourceHash": "cbeb785"
   },
   "settings.summary.noSubsections": "Cette section n''a aucune sous-section.",
@@ -1889,6 +1890,10 @@
   "settings.advanced.card.historyAndLimits": "Historique et limites",
   "@settings.advanced.card.historyAndLimits": {
     "sourceHash": "3e01a24"
+  },
+  "settings.advanced.card.logging": "Journalisation",
+  "@settings.advanced.card.logging": {
+    "sourceHash": "d3ef01b"
   },
   "settings.advanced.card.loggingAndDiagnostics": "Journalisation et diagnostics",
   "@settings.advanced.card.loggingAndDiagnostics": {

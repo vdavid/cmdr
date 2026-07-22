@@ -27,11 +27,10 @@ import { SettingValidationError } from './types'
 import { tString } from '$lib/intl/messages.svelte'
 import { appearanceSettings } from './definitions/appearance'
 import { behaviorSettings } from './definitions/behavior'
+import { indexingSettings } from './definitions/indexing'
 import { aiSettings } from './definitions/ai'
 import { fileSystemsSettings } from './definitions/file-systems'
 import { viewerSettings } from './definitions/viewer'
-import { operationLogSettings } from './definitions/operation-log'
-import { developerSettings } from './definitions/developer'
 import { updatesPrivacySettings } from './definitions/updates-privacy'
 import { advancedSettings } from './definitions/advanced'
 
@@ -49,11 +48,10 @@ import { advancedSettings } from './definitions/advanced'
 const settingsRegistrySource: SettingDefinitionSource[] = [
   ...appearanceSettings,
   ...behaviorSettings,
+  ...indexingSettings,
   ...aiSettings,
   ...fileSystemsSettings,
   ...viewerSettings,
-  ...operationLogSettings,
-  ...developerSettings,
   ...updatesPrivacySettings,
   ...advancedSettings,
 ]

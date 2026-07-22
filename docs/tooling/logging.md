@@ -192,7 +192,7 @@ honest, not broken. Line format, the offline analyser, and how to read a collect
 
 ## Verbose logging
 
-Toggle in **Settings > Developer > Logging > "Verbose console output (developer)"**:
+Toggle in **Settings > Advanced > Logging > "Verbose console output (developer)"**:
 
 - Flips frontend (LogTape) debug gating for the browser devtools console.
 - Bumps the Rust **stdout chain** from Info to Debug (and back). The file chain stays at Debug regardless, so error

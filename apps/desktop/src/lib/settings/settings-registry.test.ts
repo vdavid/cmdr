@@ -402,23 +402,23 @@ describe('cardKey resolution (resolveDefinition)', () => {
 })
 
 describe('indexing.indexSize hidden search anchor', () => {
-  it('is a fully-modeled, hidden boolean under the File system watching page', () => {
+  it('is a fully-modeled, hidden boolean under the Drive indexing page', () => {
     const def = getSettingDefinition('indexing.indexSize')
     expect(def).toBeDefined()
     expect(def?.hidden).toBe(true)
     expect(def?.type).toBe('boolean')
     expect(getDefaultValue('indexing.indexSize')).toBe(false)
     // Guardrail: section MUST equal the hosting page`s, or the blank-page fix breaks.
-    expect(def?.section).toEqual(['Behavior', 'File system watching'])
+    expect(def?.section).toEqual(['Indexing', 'Drive indexing'])
     expect(def?.component).toBeUndefined()
   })
 
   it('is excluded from the nav section tree (it is hidden)', () => {
     const tree = buildSectionTree()
-    const behavior = tree.find((s) => s.name === 'Behavior')
-    const fsw = behavior?.subsections.find((s) => s.name === 'File system watching')
-    expect(fsw).toBeDefined()
-    expect(fsw?.settings.some((s) => s.id === 'indexing.indexSize')).toBe(false)
+    const indexing = tree.find((s) => s.name === 'Indexing')
+    const driveIndexing = indexing?.subsections.find((s) => s.name === 'Drive indexing')
+    expect(driveIndexing).toBeDefined()
+    expect(driveIndexing?.settings.some((s) => s.id === 'indexing.indexSize')).toBe(false)
   })
 
   it('is included in the search index (the whole registry is indexed; hidden is searchable)', () => {

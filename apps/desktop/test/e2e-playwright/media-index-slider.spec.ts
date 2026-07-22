@@ -23,7 +23,7 @@ import { closeScopedWindow, openSettingsWindowViaProd } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 const MASTER_LABEL = 'Index image contents'
-const SECTION_ID = 'ai-image-search'
+const SECTION_ID = 'indexing-image-indexing'
 const MASTER_KEY = 'mediaIndex.enabled'
 const THRESHOLD_KEY = 'mediaIndex.importanceThreshold'
 const AUTOMATIC_SCOPE = 'importance'
@@ -97,8 +97,8 @@ function pressArrowJs(key: 'ArrowLeft' | 'ArrowRight'): string {
 }
 
 async function openImageSearch(settings: TauriPage): Promise<void> {
-  const clicked = await settings.evaluate<boolean>(clickSectionByTextJs('Image search'))
-  expect(clicked, 'Image search sidebar item exists').toBe(true)
+  const clicked = await settings.evaluate<boolean>(clickSectionByTextJs('Image indexing'))
+  expect(clicked, 'Image indexing sidebar item exists').toBe(true)
   await settings.waitForSelector(`[data-section-id="${SECTION_ID}"]`, 3000)
   await settings.waitForSelector(`[aria-label="${MASTER_LABEL}"]`, 3000)
 }

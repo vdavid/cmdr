@@ -1,6 +1,6 @@
 /**
- * Tier 3 a11y + composition tests for `ImageSearchSection.svelte` (the `AI › Image search`
- * subsection). This file OWNS the section's own contract: the master toggle + the on-device
+ * Tier 3 a11y + composition tests for `ImageIndexingSection.svelte` (the `Indexing › Image
+ * indexing` subsection). This file OWNS the section's own contract: the master toggle + the on-device
  * privacy note always render, and the bespoke slider / network-volume controls reveal only
  * once `mediaIndex.enabled` is on. The composed children (`MediaIndexScope`,
  * `MediaIndexChosenFolders`, `MediaIndexImportanceSlider`, `MediaIndexNetworkVolumes`,
@@ -64,7 +64,7 @@ vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({ warn: vi.fn(), info: vi.fn(), debug: vi.fn(), error: vi.fn() }),
 }))
 
-const { default: ImageSearchSection } = await import('./ImageSearchSection.svelte')
+const { default: ImageIndexingSection } = await import('./ImageIndexingSection.svelte')
 
 function vstate(overrides: Partial<MediaIndexVolumeState> = {}): MediaIndexVolumeState {
   return {
@@ -85,7 +85,7 @@ function vstate(overrides: Partial<MediaIndexVolumeState> = {}): MediaIndexVolum
 async function mountAndSettle(): Promise<HTMLElement> {
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mount(ImageSearchSection, { target, props: { searchQuery: '' } })
+  mount(ImageIndexingSection, { target, props: { searchQuery: '' } })
   flushSync()
   // Let any child onMount IPC (covered-count + volume-state) resolve.
   await vi.advanceTimersByTimeAsync(300)
@@ -95,7 +95,7 @@ async function mountAndSettle(): Promise<HTMLElement> {
   return target
 }
 
-describe('ImageSearchSection', () => {
+describe('ImageIndexingSection', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     settingValues['mediaIndex.enabled'] = false

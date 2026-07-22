@@ -1,31 +1,22 @@
 /**
- * Tier-3 a11y tests for `FileSystemWatchingSection.svelte`.
+ * Tier-3 a11y tests for `NotificationsSection.svelte`.
  *
  * Covered states: default (FDA granted), FDA pending. Functional behavior
- * (sub-group structure, anchor id, ToggleGroup write-through, IPC fire) is
- * pinned in the companion `.svelte.test.ts` file.
+ * (card structure, anchor id, ToggleGroup write-through, IPC fire) is pinned in
+ * the companion `.svelte.test.ts` file.
  */
 
 import { describe, it, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
 
-const {
-  getSettingMock,
-  setSettingMock,
-  downloadsWatcherStatusMock,
-  recheckGateMock,
-  setGlobalGoToLatestShortcutMock,
-  getIndexStatusMock,
-  clearDriveIndexMock,
-} = vi.hoisted(() => ({
-  getSettingMock: vi.fn(),
-  setSettingMock: vi.fn(),
-  downloadsWatcherStatusMock: vi.fn(),
-  recheckGateMock: vi.fn(),
-  setGlobalGoToLatestShortcutMock: vi.fn(),
-  getIndexStatusMock: vi.fn(),
-  clearDriveIndexMock: vi.fn(),
-}))
+const { getSettingMock, setSettingMock, downloadsWatcherStatusMock, recheckGateMock, setGlobalGoToLatestShortcutMock } =
+  vi.hoisted(() => ({
+    getSettingMock: vi.fn(),
+    setSettingMock: vi.fn(),
+    downloadsWatcherStatusMock: vi.fn(),
+    recheckGateMock: vi.fn(),
+    setGlobalGoToLatestShortcutMock: vi.fn(),
+  }))
 
 vi.mock('$lib/settings/settings-store', () => ({
   getSetting: getSettingMock,
@@ -41,19 +32,15 @@ vi.mock('$lib/ipc/bindings', () => ({
     downloadsWatcherStatus: downloadsWatcherStatusMock,
     recheckDownloadsWatcherGate: recheckGateMock,
     setGlobalGoToLatestShortcut: setGlobalGoToLatestShortcutMock,
-    getIndexStatus: getIndexStatusMock,
-    clearDriveIndex: clearDriveIndexMock,
   },
 }))
 
-import FileSystemWatchingSection from './FileSystemWatchingSection.svelte'
+import NotificationsSection from './NotificationsSection.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 function setDefaultSettings(): void {
   getSettingMock.mockImplementation((key: string): unknown => {
     switch (key) {
-      case 'indexing.enabled':
-        return true
       case 'behavior.fileSystemWatching.downloadsNotifications':
         return 'in-app'
       case 'behavior.fileSystemWatching.globalGoToLatestShortcut.enabled':
@@ -84,8 +71,6 @@ beforeEach(() => {
     status: 'ok',
     data: { status: 'registered', binding: '\u{2303}\u{2325}\u{2318}J', enabled: true },
   })
-  getIndexStatusMock.mockReset().mockResolvedValue({ status: 'ok', data: { dbFileSize: 1024 } })
-  clearDriveIndexMock.mockReset().mockResolvedValue({ status: 'ok', data: null })
 
   setDefaultSettings()
   setStatus(false)
@@ -94,7 +79,7 @@ beforeEach(() => {
 async function mountSection(): Promise<HTMLDivElement> {
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mount(FileSystemWatchingSection, { target, props: { searchQuery: '' } })
+  mount(NotificationsSection, { target, props: { searchQuery: '' } })
   // Drain the onMount IPC chain; jsdom needs a few flushes.
   await tick()
   await Promise.resolve()
@@ -104,14 +89,14 @@ async function mountSection(): Promise<HTMLDivElement> {
   return target
 }
 
-describe('FileSystemWatchingSection a11y', () => {
+describe('NotificationsSection a11y', () => {
   it('default state (FDA granted) has no a11y violations', async () => {
     const target = await mountSection()
     await expectNoA11yViolations(target)
     target.remove()
   })
 
-  it('FDA-pending state (sub-groups greyed) has no a11y violations', async () => {
+  it('FDA-pending state (Downloads card greyed) has no a11y violations', async () => {
     setStatus(true)
     const target = await mountSection()
     await expectNoA11yViolations(target)

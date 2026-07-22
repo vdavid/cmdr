@@ -1363,13 +1363,25 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
-  "settings.section.fileSystemWatching": "Theo dõi hệ thống tệp",
-  "@settings.section.fileSystemWatching": {
-    "sourceHash": "4fa805f"
+  "settings.section.notifications": "Thông báo",
+  "@settings.section.notifications": {
+    "sourceHash": "7880118"
   },
   "settings.section.search": "Tìm kiếm",
   "@settings.section.search": {
     "sourceHash": "49c266b"
+  },
+  "settings.section.indexing": "Lập chỉ mục",
+  "@settings.section.indexing": {
+    "sourceHash": "cc24d96"
+  },
+  "settings.section.driveIndexing": "Lập chỉ mục ổ đĩa",
+  "@settings.section.driveIndexing": {
+    "sourceHash": "38d916b"
+  },
+  "settings.section.imageIndexing": "Lập chỉ mục hình ảnh",
+  "@settings.section.imageIndexing": {
+    "sourceHash": "442068b"
   },
   "settings.section.ai": "AI",
   "@settings.section.ai": {
@@ -1384,10 +1396,6 @@
   "@settings.section.askCmdr": {
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (Ask Cmdr); kept verbatim in every locale per the do-not-translate rule."
-  },
-  "settings.section.imageSearch": "Tìm kiếm hình ảnh",
-  "@settings.section.imageSearch": {
-    "sourceHash": "a4a68f1"
   },
   "settings.askCmdr.intro": "Trò chuyện với AI về tệp, ổ đĩa và lịch sử của bạn. Ask Cmdr chỉ đọc: đọc tên, đường dẫn và kích thước để trả lời, không bao giờ thay đổi bất cứ điều gì.",
   "@settings.askCmdr.intro": {
@@ -1474,8 +1482,8 @@
   "@settings.section.viewer": {
     "sourceHash": "678bfa6"
   },
-  "settings.section.operationLog": "Nhật ký thao tác",
-  "@settings.section.operationLog": {
+  "settings.navigationAndFileOps.card.operationLog": "Nhật ký thao tác",
+  "@settings.navigationAndFileOps.card.operationLog": {
     "sourceHash": "2c97965"
   },
   "settings.operationLog.intro": "Cmdr ghi lại các thao tác tệp của bạn để bạn có thể xem lại lịch sử và hoàn tác các thao tác. Chọn thời gian giữ nhật ký và dung lượng đĩa nó có thể dùng.",
@@ -1544,17 +1552,9 @@
     "sourceHash": "43644bc",
     "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
   },
-  "settings.section.developer": "Nhà phát triển",
-  "@settings.section.developer": {
-    "sourceHash": "3fb7b39"
-  },
   "settings.section.mcpServer": "Máy chủ MCP",
   "@settings.section.mcpServer": {
     "sourceHash": "d938c81"
-  },
-  "settings.section.logging": "Ghi nhật ký",
-  "@settings.section.logging": {
-    "sourceHash": "d3ef01b"
   },
   "settings.section.updatesAndPrivacy": "Cập nhật & quyền riêng tư",
   "@settings.section.updatesAndPrivacy": {
@@ -1596,9 +1596,9 @@
   "@settings.summary.archives": {
     "sourceHash": "340a411"
   },
-  "settings.summary.fileSystemWatching": "Lập chỉ mục ổ đĩa, thông báo Tải về, và phím tắt toàn cục đến-tệp-tải-về-mới-nhất. Cần Toàn quyền truy cập đĩa.",
-  "@settings.summary.fileSystemWatching": {
-    "sourceHash": "00181bd"
+  "settings.summary.notifications": "Thông báo tải xuống, phím tắt toàn cục để nhảy đến bản tải xuống mới nhất và cảnh báo dung lượng đĩa thấp.",
+  "@settings.summary.notifications": {
+    "sourceHash": "e681776"
   },
   "settings.summary.search": "Tìm kiếm theo tên tệp và biểu thức chính quy áp dụng trực tiếp, và giới hạn tìm kiếm gần đây.",
   "@settings.summary.search": {
@@ -1620,10 +1620,6 @@
   "@settings.summary.mcpServer": {
     "sourceHash": "4cde8a6"
   },
-  "settings.summary.logging": "Xuất chi tiết ra console, truy cập tệp nhật ký, và thông tin chẩn đoán.",
-  "@settings.summary.logging": {
-    "sourceHash": "6fce936"
-  },
   "settings.summary.aiProvider": "Tắt AI, kết nối nhà cung cấp đám mây, hoặc chạy mô hình cục bộ.",
   "@settings.summary.aiProvider": {
     "sourceHash": "2fe940b"
@@ -1632,8 +1628,12 @@
   "@settings.summary.askCmdr": {
     "sourceHash": "67eef6a"
   },
-  "settings.summary.imageSearch": "Tìm kiếm văn bản bên trong hình ảnh của bạn. Chạy trên máy Mac của bạn và không có gì rời khỏi đó.",
-  "@settings.summary.imageSearch": {
+  "settings.summary.driveIndexing": "Lập chỉ mục ổ đĩa chạy ngầm để tìm kiếm nhanh chóng tìm thấy tệp của bạn.",
+  "@settings.summary.driveIndexing": {
+    "sourceHash": "ef8be32"
+  },
+  "settings.summary.imageIndexing": "Tìm kiếm văn bản bên trong hình ảnh của bạn. Chạy trên máy Mac của bạn và không có gì rời khỏi đó.",
+  "@settings.summary.imageIndexing": {
     "sourceHash": "cbeb785"
   },
   "settings.summary.noSubsections": "Mục này không có tiểu mục.",
@@ -1876,6 +1876,10 @@
   "settings.advanced.card.historyAndLimits": "Lịch sử và giới hạn",
   "@settings.advanced.card.historyAndLimits": {
     "sourceHash": "3e01a24"
+  },
+  "settings.advanced.card.logging": "Ghi nhật ký",
+  "@settings.advanced.card.logging": {
+    "sourceHash": "d3ef01b"
   },
   "settings.advanced.card.loggingAndDiagnostics": "Ghi nhật ký và chẩn đoán",
   "@settings.advanced.card.loggingAndDiagnostics": {

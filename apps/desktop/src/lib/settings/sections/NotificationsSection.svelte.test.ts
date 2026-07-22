@@ -1,9 +1,9 @@
 /**
- * Tier-3 tests for `FileSystemWatchingSection.svelte`.
+ * Tier-3 tests for `NotificationsSection.svelte`.
  *
  * Pins the contract:
- *   - Three card groups render: Drive indexing, Downloads (notifications +
- *     go-to-latest hotkey), Low disk space.
+ *   - Two card groups render: Downloads (notifications + go-to-latest hotkey),
+ *     Low disk space.
  *   - When the FDA gate is closed (`fda_pending` is true), the Downloads card
  *     greys out and one shared hint appears. Low disk space stays interactive
  *     (statfs needs no TCC permission).
@@ -13,31 +13,24 @@
  *   - The Downloads and Low disk space cards carry stable anchor ids so
  *     deep-links can land on them.
  *
+ * (The drive-indexing card moved to `DriveIndexingSection.svelte`; its contract
+ * is pinned in `DriveIndexingSection.svelte.test.ts`.)
+ *
  * The section calls a few backend IPCs (status snapshot, recheck gate, apply
- * shortcut, index status). All mocked so the tests can run without a Tauri
- * runtime.
+ * shortcut). All mocked so the tests can run without a Tauri runtime.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
 
-const {
-  getSettingMock,
-  setSettingMock,
-  downloadsWatcherStatusMock,
-  recheckGateMock,
-  setGlobalGoToLatestShortcutMock,
-  getIndexStatusMock,
-  clearDriveIndexMock,
-} = vi.hoisted(() => ({
-  getSettingMock: vi.fn(),
-  setSettingMock: vi.fn(),
-  downloadsWatcherStatusMock: vi.fn(),
-  recheckGateMock: vi.fn(),
-  setGlobalGoToLatestShortcutMock: vi.fn(),
-  getIndexStatusMock: vi.fn(),
-  clearDriveIndexMock: vi.fn(),
-}))
+const { getSettingMock, setSettingMock, downloadsWatcherStatusMock, recheckGateMock, setGlobalGoToLatestShortcutMock } =
+  vi.hoisted(() => ({
+    getSettingMock: vi.fn(),
+    setSettingMock: vi.fn(),
+    downloadsWatcherStatusMock: vi.fn(),
+    recheckGateMock: vi.fn(),
+    setGlobalGoToLatestShortcutMock: vi.fn(),
+  }))
 
 vi.mock('$lib/settings/settings-store', () => ({
   getSetting: getSettingMock,
@@ -53,18 +46,14 @@ vi.mock('$lib/ipc/bindings', () => ({
     downloadsWatcherStatus: downloadsWatcherStatusMock,
     recheckDownloadsWatcherGate: recheckGateMock,
     setGlobalGoToLatestShortcut: setGlobalGoToLatestShortcutMock,
-    getIndexStatus: getIndexStatusMock,
-    clearDriveIndex: clearDriveIndexMock,
   },
 }))
 
-import FileSystemWatchingSection from './FileSystemWatchingSection.svelte'
+import NotificationsSection from './NotificationsSection.svelte'
 
 function setDefaultSettings(): void {
   getSettingMock.mockImplementation((key: string): unknown => {
     switch (key) {
-      case 'indexing.enabled':
-        return true
       case 'behavior.fileSystemWatching.downloadsNotifications':
         return 'in-app'
       case 'behavior.fileSystemWatching.globalGoToLatestShortcut.enabled':
@@ -99,8 +88,6 @@ beforeEach(() => {
     status: 'ok',
     data: { status: 'registered', binding: '\u{2303}\u{2325}\u{2318}J', enabled: true },
   })
-  getIndexStatusMock.mockReset().mockResolvedValue({ status: 'ok', data: { dbFileSize: 1024 } })
-  clearDriveIndexMock.mockReset().mockResolvedValue({ status: 'ok', data: null })
 
   setDefaultSettings()
   setStatus(false)
@@ -109,7 +96,7 @@ beforeEach(() => {
 async function mountSection(searchQuery = ''): Promise<HTMLDivElement> {
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mount(FileSystemWatchingSection, { target, props: { searchQuery } })
+  mount(NotificationsSection, { target, props: { searchQuery } })
   // The `onMount` chain awaits multiple promises (status, recheck, set shortcut).
   // Two `await tick()`s + a `Promise.resolve()` flush is enough on jsdom.
   await tick()
@@ -120,15 +107,15 @@ async function mountSection(searchQuery = ''): Promise<HTMLDivElement> {
   return target
 }
 
-describe('FileSystemWatchingSection', () => {
-  it('renders all three card groups when FDA is granted', async () => {
+describe('NotificationsSection', () => {
+  it('renders both card groups when FDA is granted', async () => {
     const target = await mountSection()
     const labels = Array.from(target.querySelectorAll('.section-card-label')).map((el) => el.textContent.trim())
     // Downloads notifications and go-to-latest share one "Downloads" card.
-    expect(labels).toEqual(expect.arrayContaining(['Drive indexing', 'Downloads', 'Low disk space']))
+    expect(labels).toEqual(expect.arrayContaining(['Downloads', 'Low disk space']))
     // Section title.
     const title = target.querySelector('.section-title')?.textContent.trim()
-    expect(title).toBe('File system watching')
+    expect(title).toBe('Notifications')
     target.remove()
   })
 
@@ -147,9 +134,7 @@ describe('FileSystemWatchingSection', () => {
     expect(hints).toHaveLength(1)
     expect(hints[0].textContent).toMatch(/Full Disk Access/)
     // The Downloads card carries `data-gated="true"` to make the visual state
-    // assertable without sniffing class names. Drive indexing stays interactive
-    // so the indexing toggle still works while FDA is pending; Low disk space
-    // isn't FDA-gated.
+    // assertable without sniffing class names. Low disk space isn't FDA-gated.
     const gated = target.querySelectorAll('[data-gated="true"]')
     expect(gated).toHaveLength(1)
     target.remove()
@@ -223,7 +208,6 @@ describe('FileSystemWatchingSection', () => {
     getSettingMock.mockImplementation((key: string): unknown => {
       if (key === 'behavior.fileSystemWatching.lowDiskSpaceNotifications') return 'off'
       if (key === 'behavior.fileSystemWatching.lowDiskSpaceThresholdPercent') return 5
-      if (key === 'indexing.enabled') return true
       if (key === 'behavior.fileSystemWatching.downloadsNotifications') return 'in-app'
       if (key === 'behavior.fileSystemWatching.globalGoToLatestShortcut.enabled') return true
       if (key === 'behavior.fileSystemWatching.globalGoToLatestShortcut.binding') return '\u{2303}\u{2325}\u{2318}J'
@@ -263,14 +247,13 @@ describe('FileSystemWatchingSection', () => {
 
   it('renders only the matching card when searching, leaving no empty cards', async () => {
     // Pre-fix this rendered empty cards: each `SectionCard` drew its frame
-    // unconditionally, so a search that matched only the Drive-indexing rows
-    // still painted Downloads / Low disk space as empty boxes. The fix gates
-    // each card frame on `anyVisible(shouldShow, ...memberIds)`, the SAME
-    // predicate the rows use, so an all-filtered-out card hides too.
-    const target = await mountSection('drive index')
+    // unconditionally, so a search that matched only the Downloads rows still
+    // painted Low disk space as an empty box. The fix gates each card frame on
+    // `anyVisible(shouldShow, ...memberIds)`, the SAME predicate the rows use,
+    // so an all-filtered-out card hides too.
+    const target = await mountSection('go to latest')
     const labels = Array.from(target.querySelectorAll('.section-card-label')).map((el) => el.textContent.trim())
-    expect(labels).toContain('Drive indexing')
-    expect(labels).not.toContain('Downloads')
+    expect(labels).toContain('Downloads')
     expect(labels).not.toContain('Low disk space')
     // Exactly one card frame is left standing.
     expect(target.querySelectorAll('.section-card')).toHaveLength(1)

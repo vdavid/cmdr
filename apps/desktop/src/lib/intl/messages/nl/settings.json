@@ -1373,13 +1373,25 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
-  "settings.section.fileSystemWatching": "Bestandssysteem volgen",
-  "@settings.section.fileSystemWatching": {
-    "sourceHash": "4fa805f"
+  "settings.section.notifications": "Meldingen",
+  "@settings.section.notifications": {
+    "sourceHash": "7880118"
   },
   "settings.section.search": "Zoeken",
   "@settings.section.search": {
     "sourceHash": "49c266b"
+  },
+  "settings.section.indexing": "Indexeren",
+  "@settings.section.indexing": {
+    "sourceHash": "cc24d96"
+  },
+  "settings.section.driveIndexing": "Schijf indexeren",
+  "@settings.section.driveIndexing": {
+    "sourceHash": "38d916b"
+  },
+  "settings.section.imageIndexing": "Afbeeldingen indexeren",
+  "@settings.section.imageIndexing": {
+    "sourceHash": "442068b"
   },
   "settings.section.ai": "AI",
   "@settings.section.ai": {
@@ -1394,10 +1406,6 @@
   "@settings.section.askCmdr": {
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (the Ask Cmdr Settings section); kept verbatim in every locale, matches askCmdr.title and commands.askCmdrToggle.label."
-  },
-  "settings.section.imageSearch": "Afbeeldingen doorzoeken",
-  "@settings.section.imageSearch": {
-    "sourceHash": "a4a68f1"
   },
   "settings.askCmdr.intro": "Chat met een AI over je bestanden, schijven en geschiedenis. Ask Cmdr is alleen-lezen: het leest namen, paden en groottes om te antwoorden, en verandert nooit iets.",
   "@settings.askCmdr.intro": {
@@ -1484,8 +1492,8 @@
   "@settings.section.viewer": {
     "sourceHash": "678bfa6"
   },
-  "settings.section.operationLog": "Bewerkingslogboek",
-  "@settings.section.operationLog": {
+  "settings.navigationAndFileOps.card.operationLog": "Bewerkingslogboek",
+  "@settings.navigationAndFileOps.card.operationLog": {
     "sourceHash": "2c97965"
   },
   "settings.operationLog.intro": "Cmdr houdt je bestandsbewerkingen bij, zodat je je geschiedenis kunt bekijken en acties ongedaan kunt maken. Kies hoe lang het logboek bewaard blijft en hoeveel schijfruimte het mag gebruiken.",
@@ -1554,17 +1562,9 @@
     "sourceHash": "43644bc",
     "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
   },
-  "settings.section.developer": "Ontwikkelaar",
-  "@settings.section.developer": {
-    "sourceHash": "3fb7b39"
-  },
   "settings.section.mcpServer": "MCP-server",
   "@settings.section.mcpServer": {
     "sourceHash": "d938c81"
-  },
-  "settings.section.logging": "Logboek",
-  "@settings.section.logging": {
-    "sourceHash": "d3ef01b"
   },
   "settings.section.updatesAndPrivacy": "Updates en privacy",
   "@settings.section.updatesAndPrivacy": {
@@ -1606,9 +1606,9 @@
   "@settings.summary.archives": {
     "sourceHash": "340a411"
   },
-  "settings.summary.fileSystemWatching": "Schijf indexeren, downloadmeldingen, en de globale sneltoets ga-naar-laatste-download. Vereist Volledige schijftoegang.",
-  "@settings.summary.fileSystemWatching": {
-    "sourceHash": "00181bd"
+  "settings.summary.notifications": "Downloadmeldingen, de globale sneltoets om naar de nieuwste download te gaan, en waarschuwingen bij weinig schijfruimte.",
+  "@settings.summary.notifications": {
+    "sourceHash": "e681776"
   },
   "settings.summary.search": "Live toegepaste bestandsnaam- en regex-zoekopdrachten, en de limiet voor recente zoekopdrachten.",
   "@settings.summary.search": {
@@ -1630,10 +1630,6 @@
   "@settings.summary.mcpServer": {
     "sourceHash": "4cde8a6"
   },
-  "settings.summary.logging": "Uitgebreide console-uitvoer, toegang tot het logbestand, en diagnostische info.",
-  "@settings.summary.logging": {
-    "sourceHash": "6fce936"
-  },
   "settings.summary.aiProvider": "Schakel AI uit, verbind een cloudaanbieder of draai een model lokaal.",
   "@settings.summary.aiProvider": {
     "sourceHash": "2fe940b"
@@ -1642,8 +1638,12 @@
   "@settings.summary.askCmdr": {
     "sourceHash": "67eef6a"
   },
-  "settings.summary.imageSearch": "Doorzoek de tekst in je afbeeldingen. Draait op je Mac en niets verlaat die.",
-  "@settings.summary.imageSearch": {
+  "settings.summary.driveIndexing": "Schijf indexeren op de achtergrond zodat de zoekfunctie je bestanden snel vindt.",
+  "@settings.summary.driveIndexing": {
+    "sourceHash": "ef8be32"
+  },
+  "settings.summary.imageIndexing": "Doorzoek de tekst in je afbeeldingen. Draait op je Mac en niets verlaat die.",
+  "@settings.summary.imageIndexing": {
     "sourceHash": "cbeb785"
   },
   "settings.summary.noSubsections": "Dit onderdeel heeft geen subonderdelen.",
@@ -1887,6 +1887,10 @@
   "settings.advanced.card.historyAndLimits": "Geschiedenis en limieten",
   "@settings.advanced.card.historyAndLimits": {
     "sourceHash": "3e01a24"
+  },
+  "settings.advanced.card.logging": "Logboek",
+  "@settings.advanced.card.logging": {
+    "sourceHash": "d3ef01b"
   },
   "settings.advanced.card.loggingAndDiagnostics": "Logboek en diagnostiek",
   "@settings.advanced.card.loggingAndDiagnostics": {

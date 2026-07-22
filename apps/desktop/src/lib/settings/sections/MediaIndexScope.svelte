@@ -1,7 +1,7 @@
 <script lang="ts">
     /**
      * The image-indexing SCOPE control: which folders indexing may cover. Rendered inside
-     * the "Image search" card in `ImageSearchSection.svelte` once the master
+     * the "Image indexing" card in `ImageIndexingSection.svelte` once the master
      * `mediaIndex.enabled` toggle is on, above the chosen-folders list.
      *
      * Two modes, and the default is the narrow one: index only the folders you name. The

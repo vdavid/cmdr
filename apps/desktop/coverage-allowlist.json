@@ -4,9 +4,6 @@
     "accent-color.ts": {
       "reason": "Depends on Tauri invoke and listen APIs"
     },
-    "reduce-transparency.ts": {
-      "reason": "Depends on Tauri invoke (getShouldReduceTransparency) and listen (reduceTransparencyChanged) APIs; just toggles the reduce-transparency html class"
-    },
     "app-status-store.ts": {
       "reason": "Depends on Tauri APIs"
     },
@@ -58,9 +55,6 @@
     "file-explorer/pane/DialogManager.svelte": {
       "reason": "Pure rendering component, dialog state tested via parent"
     },
-    "file-explorer/pane/debug-emitters.svelte.ts": {
-      "reason": "Dev-only debug-window Tauri emit inside $effect factories; both effects no-op outside import.meta.env.DEV and in test mode"
-    },
     "file-explorer/pane/DualPaneExplorer.svelte": {
       "reason": "Tested in integration.test.ts, complex component"
     },
@@ -78,6 +72,9 @@
     },
     "file-explorer/pane/PaneResizer.svelte": {
       "reason": "Mouse drag UI component, difficult to unit test"
+    },
+    "file-explorer/pane/debug-emitters.svelte.ts": {
+      "reason": "Dev-only debug-window Tauri emit inside $effect factories; both effects no-op outside import.meta.env.DEV and in test mode"
     },
     "file-explorer/pane/dialog-state.svelte.ts": {
       "reason": "Reactive Svelte state, depends on FilePane refs and Tauri commands"
@@ -169,6 +166,9 @@
     "query-ui/PathPills.svelte": {
       "reason": "Pure split semantics are covered by PathPills.svelte.test.ts; the overflow-collapse layout depends on `@chenglou/pretext` canvas measurement + ResizeObserver, neither of which runs in jsdom. The visible layout is exercised via the MCP-driven manual verification in the search-fixup pass."
     },
+    "reduce-transparency.ts": {
+      "reason": "Depends on Tauri invoke (getShouldReduceTransparency) and listen (reduceTransparencyChanged) APIs; just toggles the reduce-transparency html class"
+    },
     "settings-store.ts": {
       "reason": "Depends on Tauri store APIs"
     },
@@ -205,9 +205,6 @@
     "settings/sections/LicenseSection.svelte": {
       "reason": "UI section, pure logic extracted to license-section-utils.ts and tested"
     },
-    "settings/sections/LoggingSection.svelte": {
-      "reason": "UI section, simple rendering"
-    },
     "settings/sections/MtpSection.svelte": {
       "reason": "UI section, simple rendering"
     },
@@ -232,8 +229,14 @@
     "stores/volume-store.svelte.ts": {
       "reason": "Depends on Tauri listen/invoke APIs, integration point between backend events and frontend state"
     },
+    "tauri-commands/ai.ts": {
+      "reason": "Thin typed-event listener wrappers over events.ai*.listen; exercised via integration (ai-state.svelte.ts, AiLocalSection.svelte)"
+    },
     "tauri-commands/app-state.ts": {
       "reason": "Tauri command wrappers, tested via integration"
+    },
+    "tauri-commands/appearance.ts": {
+      "reason": "Thin typed-event listener wrappers over events.accentColorChanged / systemTextSizeChanged; exercised via integration (accent-color.ts, text-size.svelte.ts)"
     },
     "tauri-commands/ask-cmdr.ts": {
       "reason": "Streaming Channel<T> + raw-invoke IPC wrapper (sendAskCmdrMessage) plus thin commands.* pass-throughs; exercised via ask-cmdr-trigger.svelte.ts (which mocks the wrapper layer) and the ask-cmdr E2E spec"
@@ -241,20 +244,17 @@
     "tauri-commands/clipboard-files.ts": {
       "reason": "Tauri command wrappers, tested via integration"
     },
-    "tauri-commands/media-index.ts": {
-      "reason": "Thin IPC pass-through wrappers (mediaIndexSearchOcr, mediaIndexVolumeState, mediaIndexThumbnailToken, mediaIndexDropThumbnailTokens); exercised via ImageSearchResults.svelte (whose a11y test mocks the wrapper layer) and the media_index Rust tests"
+    "tauri-commands/crash-reporter.ts": {
+      "reason": "Tauri command wrappers, tested via integration"
     },
     "tauri-commands/debug.ts": {
       "reason": "Thin dev-only IPC pass-through wrapper (benchmarkLog); exercised via benchmark.ts"
     },
-    "tauri-commands/tags.ts": {
-      "reason": "Thin IPC pass-through wrappers (toggleTags, enrichTags); exercised via pane-commands.ts, tag-sweep.ts, file-list-utils.ts (which mock the wrapper layer)"
+    "tauri-commands/dialog-events.ts": {
+      "reason": "Thin typed window-management event wrappers (on*/emit) over events.executeCommand / open|focus|close dialog helpers; exercised via integration ((main)/+page.svelte, settings + viewer windows, restricted-settings-bridge.ts)"
     },
-    "tauri-commands/updates.ts": {
-      "reason": "Thin IPC wrappers (checkForUpdate, downloadUpdate, installUpdate); exercised via updater.svelte.ts (which mocks the wrapper layer)"
-    },
-    "tauri-commands/crash-reporter.ts": {
-      "reason": "Tauri command wrappers, tested via integration"
+    "tauri-commands/directory-watcher.ts": {
+      "reason": "Thin typed-event listener wrappers over events.directoryDiff / directoryDeleted; exercised via integration (listing-diff-sync.svelte.ts, new-folder/file dialogs)"
     },
     "tauri-commands/file-actions.ts": {
       "reason": "Tauri command wrappers, tested via integration"
@@ -265,27 +265,6 @@
     "tauri-commands/file-viewer.ts": {
       "reason": "Tauri command wrappers, tested via integration"
     },
-    "tauri-commands/ai.ts": {
-      "reason": "Thin typed-event listener wrappers over events.ai*.listen; exercised via integration (ai-state.svelte.ts, AiLocalSection.svelte)"
-    },
-    "tauri-commands/appearance.ts": {
-      "reason": "Thin typed-event listener wrappers over events.accentColorChanged / systemTextSizeChanged; exercised via integration (accent-color.ts, text-size.svelte.ts)"
-    },
-    "tauri-commands/directory-watcher.ts": {
-      "reason": "Thin typed-event listener wrappers over events.directoryDiff / directoryDeleted; exercised via integration (listing-diff-sync.svelte.ts, new-folder/file dialogs)"
-    },
-    "tauri-commands/dialog-events.ts": {
-      "reason": "Thin typed window-management event wrappers (on*/emit) over events.executeCommand / open|focus|close dialog helpers; exercised via integration ((main)/+page.svelte, settings + viewer windows, restricted-settings-bridge.ts)"
-    },
-    "tauri-commands/menu-events.ts": {
-      "reason": "Thin typed-event listener wrappers over events.viewModeChanged / menuSort; exercised via integration ((main)/+page.svelte)"
-    },
-    "tauri-commands/quick-look.ts": {
-      "reason": "Thin typed-event listener wrappers over events.quickLookKey / quickLookClosed; exercised via integration (quick-look-state.svelte.ts)"
-    },
-    "tauri-commands/restricted-paths.ts": {
-      "reason": "Thin typed-event listener wrapper over events.restrictedPathsChanged; exercised via integration (restricted-paths-store.svelte.ts)"
-    },
     "tauri-commands/icons.ts": {
       "reason": "Tauri command wrappers, tested via integration"
     },
@@ -295,14 +274,29 @@
     "tauri-commands/licensing.ts": {
       "reason": "Tauri command wrappers, tested via integration"
     },
+    "tauri-commands/media-index.ts": {
+      "reason": "Thin IPC pass-through wrappers (mediaIndexSearchOcr, mediaIndexVolumeState, mediaIndexThumbnailToken, mediaIndexDropThumbnailTokens); exercised via ImageSearchResults.svelte (whose a11y test mocks the wrapper layer) and the media_index Rust tests"
+    },
+    "tauri-commands/menu-events.ts": {
+      "reason": "Thin typed-event listener wrappers over events.viewModeChanged / menuSort; exercised via integration ((main)/+page.svelte)"
+    },
     "tauri-commands/mtp.ts": {
       "reason": "Tauri command wrappers, tested via integration"
     },
     "tauri-commands/networking.ts": {
       "reason": "Tauri command wrappers, tested via integration"
     },
+    "tauri-commands/operations.ts": {
+      "reason": "Tauri command wrappers, tested via integration"
+    },
+    "tauri-commands/quick-look.ts": {
+      "reason": "Thin typed-event listener wrappers over events.quickLookKey / quickLookClosed; exercised via integration (quick-look-state.svelte.ts)"
+    },
     "tauri-commands/rename.ts": {
       "reason": "Tauri command wrappers, tested via integration"
+    },
+    "tauri-commands/restricted-paths.ts": {
+      "reason": "Thin typed-event listener wrapper over events.restrictedPathsChanged; exercised via integration (restricted-paths-store.svelte.ts)"
     },
     "tauri-commands/search.ts": {
       "reason": "Tauri command wrappers, tested via integration"
@@ -316,11 +310,14 @@
     "tauri-commands/storage.ts": {
       "reason": "Tauri command wrappers, tested via integration"
     },
-    "tauri-commands/operations.ts": {
-      "reason": "Tauri command wrappers, tested via integration"
-    },
     "tauri-commands/tab.ts": {
       "reason": "Tauri command wrappers, tested via integration"
+    },
+    "tauri-commands/tags.ts": {
+      "reason": "Thin IPC pass-through wrappers (toggleTags, enrichTags); exercised via pane-commands.ts, tag-sweep.ts, file-list-utils.ts (which mock the wrapper layer)"
+    },
+    "tauri-commands/updates.ts": {
+      "reason": "Thin IPC wrappers (checkForUpdate, downloadUpdate, installUpdate); exercised via updater.svelte.ts (which mocks the wrapper layer)"
     },
     "tauri-commands/write-operations.ts": {
       "reason": "Tauri command wrappers, tested via integration"

@@ -5,19 +5,18 @@
     import ListingSection from '$lib/settings/sections/ListingSection.svelte'
     import NavigationAndFileOpsSection from '$lib/settings/sections/NavigationAndFileOpsSection.svelte'
     import ArchivesSection from '$lib/settings/sections/ArchivesSection.svelte'
-    import FileSystemWatchingSection from '$lib/settings/sections/FileSystemWatchingSection.svelte'
+    import NotificationsSection from '$lib/settings/sections/NotificationsSection.svelte'
     import SearchSection from '$lib/settings/sections/SearchSection.svelte'
+    import DriveIndexingSection from '$lib/settings/sections/DriveIndexingSection.svelte'
+    import ImageIndexingSection from '$lib/settings/sections/ImageIndexingSection.svelte'
     import AiSection from '$lib/settings/sections/AiSection.svelte'
     import AskCmdrSection from '$lib/settings/sections/AskCmdrSection.svelte'
-    import ImageSearchSection from '$lib/settings/sections/ImageSearchSection.svelte'
+    import McpServerSection from '$lib/settings/sections/McpServerSection.svelte'
     import NetworkSection from '$lib/settings/sections/NetworkSection.svelte'
     import MtpSection from '$lib/settings/sections/MtpSection.svelte'
     import GitSection from '$lib/settings/sections/GitSection.svelte'
     import ViewerSection from '$lib/settings/sections/ViewerSection.svelte'
-    import OperationLogSection from '$lib/settings/sections/OperationLogSection.svelte'
     import KeyboardShortcutsSection from '$lib/settings/sections/KeyboardShortcutsSection.svelte'
-    import McpServerSection from '$lib/settings/sections/McpServerSection.svelte'
-    import LoggingSection from '$lib/settings/sections/LoggingSection.svelte'
     import UpdatesSection from '$lib/settings/sections/UpdatesSection.svelte'
     import LicenseSection from '$lib/settings/sections/LicenseSection.svelte'
     import AdvancedSection from '$lib/settings/sections/AdvancedSection.svelte'
@@ -36,7 +35,7 @@
     // True when a top-level section that itself has navigable subsections is selected — those
     // render a summary card grid instead of their settings directly.
     const isTopLevelSection = $derived(!searchQuery.trim() && selectedSection.length === 1)
-    const sectionsWithSubsections = ['Appearance', 'Behavior', 'AI', 'File systems', 'Developer']
+    const sectionsWithSubsections = ['Appearance', 'Behavior', 'Indexing', 'AI', 'File systems']
     const showSummary = $derived(isTopLevelSection && sectionsWithSubsections.includes(selectedSection[0]))
 
     function handleNavigate(path: string[]) {
@@ -113,14 +112,26 @@
                 <ArchivesSection {searchQuery} />
             </section>
         {/if}
-        {#if shouldShowSection(['Behavior', 'File system watching'])}
-            <section data-section-id="behavior-file-system-watching">
-                <FileSystemWatchingSection {searchQuery} />
+        {#if shouldShowSection(['Behavior', 'Notifications'])}
+            <section data-section-id="behavior-notifications">
+                <NotificationsSection {searchQuery} />
             </section>
         {/if}
         {#if shouldShowSection(['Behavior', 'Search'])}
             <section data-section-id="behavior-search">
                 <SearchSection {searchQuery} />
+            </section>
+        {/if}
+
+        <!-- Indexing -->
+        {#if shouldShowSection(['Indexing', 'Drive indexing'])}
+            <section data-section-id="indexing-drive-indexing">
+                <DriveIndexingSection {searchQuery} />
+            </section>
+        {/if}
+        {#if shouldShowSection(['Indexing', 'Image indexing'])}
+            <section data-section-id="indexing-image-indexing">
+                <ImageIndexingSection {searchQuery} />
             </section>
         {/if}
 
@@ -135,9 +146,9 @@
                 <AskCmdrSection {searchQuery} />
             </section>
         {/if}
-        {#if shouldShowSection(['AI', 'Image search'])}
-            <section data-section-id="ai-image-search">
-                <ImageSearchSection {searchQuery} />
+        {#if shouldShowSection(['AI', 'MCP server'])}
+            <section data-section-id="ai-mcp-server">
+                <McpServerSection {searchQuery} />
             </section>
         {/if}
 
@@ -165,29 +176,10 @@
             </section>
         {/if}
 
-        <!-- Operation log (top-level, no subsections) -->
-        {#if shouldShowTopLevel(['Operation log'])}
-            <section data-section-id="operation-log">
-                <OperationLogSection {searchQuery} />
-            </section>
-        {/if}
-
         <!-- Keyboard shortcuts (special) -->
         {#if shouldShowTopLevel(['Keyboard shortcuts'])}
             <section data-section-id="keyboard-shortcuts">
                 <KeyboardShortcutsSection {searchQuery} />
-            </section>
-        {/if}
-
-        <!-- Developer -->
-        {#if shouldShowSection(['Developer', 'MCP server'])}
-            <section data-section-id="developer-mcp-server">
-                <McpServerSection {searchQuery} />
-            </section>
-        {/if}
-        {#if shouldShowSection(['Developer', 'Logging'])}
-            <section data-section-id="developer-logging">
-                <LoggingSection {searchQuery} />
             </section>
         {/if}
 
