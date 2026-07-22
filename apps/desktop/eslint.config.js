@@ -37,6 +37,7 @@ import noRawLucideImport from './eslint-plugins/no-raw-lucide-import.js'
 import noRawLocaleFormat from './eslint-plugins/no-raw-locale-format.js'
 import noRawUserFacingString from './eslint-plugins/no-raw-user-facing-string.js'
 import dialogNeedsFocusTrap from './eslint-plugins/dialog-needs-focus-trap.js'
+import preferUiPrimitive from './eslint-plugins/prefer-ui-primitive.js'
 import noArbitrarySleepInE2E from './eslint-plugins/no-arbitrary-sleep-in-e2e.js'
 
 /* global process */
@@ -267,6 +268,7 @@ export default tseslint.config(
           'no-raw-locale-format': noRawLocaleFormat,
           'no-raw-user-facing-string': noRawUserFacingString,
           'dialog-needs-focus-trap': dialogNeedsFocusTrap,
+          'prefer-ui-primitive': preferUiPrimitive,
         },
       },
     },
@@ -292,6 +294,11 @@ export default tseslint.config(
       // copy for fixtures/assertions).
       'cmdr/no-raw-user-facing-string': 'error',
       'cmdr/dialog-needs-focus-trap': 'error',
+      // Feature code uses the house UI primitives (`Checkbox`, `RadioGroup`,
+      // `Select`, `ModalDialog`, `ProgressBar`), never a raw native control:
+      // raw controls gray out on window blur, ignore theme tokens, and
+      // re-implement a11y the primitive already owns.
+      'cmdr/prefer-ui-primitive': 'error',
     },
   },
   {

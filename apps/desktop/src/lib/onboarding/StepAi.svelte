@@ -330,6 +330,7 @@
         <legend class="sr-only">{tString('onboarding.stepAi.choiceLegend')}</legend>
 
         <label class="choice" class:active={choice === 'cloud'}>
+            <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke radio-cards: each option is a rich card (label, "recommended" tag, help text, and an inline provider picker), which a plain RadioGroup option list can't express; already keyboard-accessible via the fieldset radiogroup. -->
             <input
                 type="radio"
                 name="onboarding-ai-choice"
@@ -369,6 +370,7 @@
             class:active={choice === 'local'}
             class:disabled={!localAiSupported}
         >
+            <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke radio-cards: each option is a rich card (label, help text, disabled/tooltip states), which a plain RadioGroup option list can't express; already keyboard-accessible via the fieldset radiogroup. -->
             <input
                 type="radio"
                 name="onboarding-ai-choice"
@@ -393,6 +395,7 @@
         {/if}
 
         <label class="choice" class:active={choice === 'off'}>
+            <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke radio-cards: each option is a rich card (label + help text), which a plain RadioGroup option list can't express; already keyboard-accessible via the fieldset radiogroup. -->
             <input
                 type="radio"
                 name="onboarding-ai-choice"

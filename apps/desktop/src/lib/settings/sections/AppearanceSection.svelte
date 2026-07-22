@@ -135,6 +135,7 @@
             {/snippet}
             <div class="app-color-options">
                 <label class="app-color-option">
+                    <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke color-swatch picker: each option is a visual swatch (with the system one a click-through to System Settings), which a plain RadioGroup option list can't express; already keyboard-accessible via the labelled radios. -->
                     <input
                         type="radio"
                         name="appColor"
@@ -166,6 +167,7 @@
                     <span class="app-color-label">{tString('settings.appearance.appColor.opt.system')}</span>
                 </label>
                 <label class="app-color-option">
+                    <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke color-swatch picker: each option is a visual swatch, which a plain RadioGroup option list can't express; already keyboard-accessible via the labelled radios. -->
                     <input
                         type="radio"
                         name="appColor"

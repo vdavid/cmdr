@@ -486,13 +486,13 @@ Scale is 1.02, not 1.05. 1.05 is noticeable enough to feel like a web gimmick; 1
 
 All dialogs use `ModalDialog.svelte`.
 
-| Property          | Value                                       | Why                                                           |
-| ----------------- | ------------------------------------------- | ------------------------------------------------------------- |
+| Property          | Value                                       | Why                                                                                          |
+| ----------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Body padding      | `0 24px` (horizontal)                       | Owned by `ModalDialog`; bottom comes from the footer or, when footerless, `24px` on the body |
-| Title             | 16px, weight 600, centered                  | Clear hierarchy, centered for symmetry in floating dialogs    |
-| Button row        | `flex, gap 12px, justify-content: flex-end` | Right-aligned matches macOS convention (primary action right) |
-| Border-radius     | 8px (`--radius-lg`)                         | Matches macOS window chrome radius                            |
-| Max content width | 480px                                       | Optimal line length (~60 chars at 14px body)                  |
+| Title             | 16px, weight 600, centered                  | Clear hierarchy, centered for symmetry in floating dialogs                                   |
+| Button row        | `flex, gap 12px, justify-content: flex-end` | Right-aligned matches macOS convention (primary action right)                                |
+| Border-radius     | 8px (`--radius-lg`)                         | Matches macOS window chrome radius                                                           |
+| Max content width | 480px                                       | Optimal line length (~60 chars at 14px body)                                                 |
 
 `ModalDialog` owns the standard body padding, so dialogs don't set their own. The horizontal `24px` (`--spacing-xl`)
 matches the title bar and footer. The title bar's bottom padding supplies the gap above the body; the footer supplies
@@ -554,6 +554,33 @@ transition: border-color var(--transition-base);
 
 Focus: `border-color: var(--color-accent); box-shadow: var(--shadow-focus);` Error:
 `border-color: var(--color-error); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error), transparent 85%);`
+
+### Checkbox and radio group (app)
+
+`Checkbox` and `RadioGroup` (`lib/ui/`) are thin wrappers over Ark UI's `Checkbox` and `RadioGroup`. Unlike raw
+`<input type="checkbox">` / `<input type="radio">`, they don't gray out when the window loses focus and they theme
+through the design tokens (the box and dot fill with `--color-accent` when active), so they stay legible and on-brand in
+a background window. Ark owns the keyboard and ARIA contract; the wrappers own the styling. Both are enforced as the
+house controls by `cmdr/prefer-ui-primitive` (no raw native checkbox / radio).
+
+**`Checkbox`** is a single on/off box. Props: `checked` (bindable, default `false`), `disabled`, `indeterminate` (mixed
+dash state, overrides `checked` visually), `id`, `ariaLabel` (accessible name when there's no visible label),
+`onCheckedChange`, and `children` (an inline label to the right of the box; omit for a bare box in list rows or dense
+grids that own their own label). Bind with `<Checkbox bind:checked={value} />`.
+
+**`RadioGroup`** is an items-driven single-select. Props: `value` (bindable, `''` means nothing selected), `items`
+(`RadioItem[]`, each `{ value, label, description?, disabled? }`; `description` renders as quieter text below the
+label), `onValueChange`, `disabled` (group-level), `orientation` (`'vertical'` stacks, `'horizontal'` wraps in a row),
+`ariaLabel`, and a `footer` snippet rendered after the items with the current `value` (for custom content when a
+specific option is selected).
+
+**When to use which:**
+
+- `Checkbox` for a single independent on/off toggle.
+- `RadioGroup` for one choice from several mutually exclusive options, especially when the options need per-option
+  descriptions or read better stacked vertically.
+- `ToggleGroup` for a segmented control: short options that benefit from sitting side by side, or tabs that drive a UI
+  mode. See § Component patterns and the Debug > Components catalog for its shape.
 
 ### Tooltips (app)
 

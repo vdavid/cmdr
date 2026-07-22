@@ -535,6 +535,16 @@ var AllChecks = []CheckDefinition{
 		Run:         RunA11yCoverage,
 	},
 	{
+		ID:          "desktop-svelte-ui-primitive-coverage",
+		Nickname:    "ui-primitive-coverage",
+		DisplayName: "ui-primitive-coverage",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		IsFast:      true,
+		Inputs:      svelteInputs,
+		Run:         RunUiPrimitiveCoverage,
+	},
+	{
 		ID:          "desktop-svelte-bare-poll",
 		Nickname:    "bare-poll",
 		DisplayName: "bare-poll",

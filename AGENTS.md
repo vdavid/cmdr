@@ -29,6 +29,8 @@ Shared tooling: the Go check runner ([`scripts/check/CLAUDE.md`](scripts/check/C
 - **Planning in an unfamiliar area**: [`docs/architecture.md`](docs/architecture.md), the subsystem map (what + where +
   a pointer to each area's docs).
 - **A procedure** (release, screenshots, deps, adding a window or icon): [`docs/guides/`](docs/guides) and the skills.
+  Building a dialog, settings screen, window, or form control:
+  [`docs/guides/building-ui.md`](docs/guides/building-ui.md) (the house primitives and where each deeper doc lives).
 - **Debugging a running app / reading logs**: [This](docs/tooling/logging.md) is the first stop, not `Console.app` or
   grepping code. It gives all (FE & BE) log-file paths, format, and `RUST_LOG` recipes. Watch RAM per line with
   `CMDR_LOG_RAM_USE=1`.

@@ -248,6 +248,9 @@ jobs:
       - name: Check a11y coverage
         run: ./scripts/check/check --check desktop-svelte-a11y-coverage --ci
 
+      - name: Check UI primitive coverage
+        run: ./scripts/check/check --check desktop-svelte-ui-primitive-coverage --ci
+
       - name: Check btn-restyle
         run: ./scripts/check/check --check desktop-svelte-btn-restyle --ci
 

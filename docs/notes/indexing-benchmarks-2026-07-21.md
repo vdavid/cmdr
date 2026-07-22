@@ -198,25 +198,25 @@ code paths Cmdr uses: `getattrlistbulk(2)` in a loop (mirroring `scanner/walker/
 
 **The 5 s cluster did not reproduce, but not for a reason that clears it.** From an agent shell without Full Disk
 Access, all eight paths fail with `EPERM` (`Operation not permitted`) in 3-8 ms through both readers, because the dirs
-are `0700`-owned by the user yet TCC-gated as sandbox app-data containers: the owner's own Unix permission is not enough,
-and without FDA the kernel refuses at the gate before any read can be slow. The Cmdr run had FDA (its log recorded the
-probe), so its opens were ALLOWED, and then stalled. The probe cannot reproduce the stall from an unprivileged shell, and
-`sudo` is not available non-interactively here. So "did not reproduce" here is "could not exercise the real path", not
-evidence the stall is gone.
+are `0700`-owned by the user yet TCC-gated as sandbox app-data containers: the owner's own Unix permission is not
+enough, and without FDA the kernel refuses at the gate before any read can be slow. The Cmdr run had FDA (its log
+recorded the probe), so its opens were ALLOWED, and then stalled. The probe cannot reproduce the stall from an
+unprivileged shell, and `sudo` is not available non-interactively here. So "did not reproduce" here is "could not
+exercise the real path", not evidence the stall is gone.
 
 **What the probe and path analysis DID establish:**
 
-- **All eight are TCC-protected sandbox containers** (`~/Library/Containers/*/Data`, `~/Library/Group Containers/*`), and
-  that is the ONLY property common to all eight. This is the discriminating fact the earlier refutations missed.
-- **File Provider is NOT the common thread.** `fileproviderctl dump` shows the registered File-Provider domains belong to
-  the actual cloud MOUNT points (the `CloudStorage` roots for Dropbox, Google Drive, iCloud, MacDroid), not to these
-  sandbox helper containers. Only two of the eight relate to a cloud app at all (`com.google.drivefs.finderhelper.findersync/Data`,
-  `…getdropbox.dropbox.sync/ssa_events`), and neither is a dataless file-provider root. So `fileproviderd` contention
-  does not explain the other six (`AMSUIPaymentViewService`, `Sound-Settings`, `Music`, `ShareSheetUI`, `Biome`, Siri),
-  which are plain Apple sandbox containers.
+- **All eight are TCC-protected sandbox containers** (`~/Library/Containers/*/Data`, `~/Library/Group Containers/*`),
+  and that is the ONLY property common to all eight. This is the discriminating fact the earlier refutations missed.
+- **File Provider is NOT the common thread.** `fileproviderctl dump` shows the registered File-Provider domains belong
+  to the actual cloud MOUNT points (the `CloudStorage` roots for Dropbox, Google Drive, iCloud, MacDroid), not to these
+  sandbox helper containers. Only two of the eight relate to a cloud app at all
+  (`com.google.drivefs.finderhelper.findersync/Data`, `…getdropbox.dropbox.sync/ssa_events`), and neither is a dataless
+  file-provider root. So `fileproviderd` contention does not explain the other six (`AMSUIPaymentViewService`,
+  `Sound-Settings`, `Music`, `ShareSheetUI`, `Biome`, Siri), which are plain Apple sandbox containers.
 - **Refutation #1 was too strong.** FDA does not remove TCC from the access; it makes TCC ALLOW instead of DENY. The
   allow decision for a sandbox container still round-trips the authorization/container machinery. Having FDA and seeing
-  few `EPERM` lines rules out a TCC *denial*, not a TCC *stall*.
+  few `EPERM` lines rules out a TCC _denial_, not a TCC _stall_.
 - **Refutation #3 re-verified.** No 5-second timeout exists in the walker or open path. The only `from_secs(5)` in
   `local_reconcile/` is `cost_budget.rs`'s `MIN_SLOW_TIME_WASTED` (accumulated waste before refusing a subtree), a
   different mechanism; the rest are heartbeats and SMB/MTP reconnect timers.
@@ -227,24 +227,24 @@ Under the recorded daemon storm (`spotlightknowledged.updater` 84%, `fileprovide
 XPC/authorization machinery), that mediation hit its ~5 s reply timeout, after which the kernel proceeded and the read
 completed fast (the dirs are tiny, hence the same paths reading in 74-190 ms warm and uncontended). Non-container
 directories never pay this because they are not TCC-mediated. What is PROVEN: the eight are exactly the TCC-mediated
-category, and the stall needs FDA to appear at all. What is SPECULATIVE: that the 5 s is specifically a TCC/`containermanagerd`
-reply timeout, and which daemon owns the constant. I could not manufacture the FDA-plus-contention combination to confirm
-it.
+category, and the stall needs FDA to appear at all. What is SPECULATIVE: that the 5 s is specifically a
+TCC/`containermanagerd` reply timeout, and which daemon owns the constant. I could not manufacture the
+FDA-plus-contention combination to confirm it.
 
 **Impact is bounded and self-healing, which drives the recommendation.** A 5 s open that then returns entries is NOT
 abandoned: the walker's stall watchdog fires at 15 s (`stall_timeout`), and the read delivers its (small) contents well
-inside that, so there is no data loss and no skipped subtree, only wall time. The whole cluster cost ~40 s, one-off, only
-on an FDA scan while a Spotlight/File-Provider storm runs.
+inside that, so there is no data loss and no skipped subtree, only wall time. The whole cluster cost ~40 s, one-off,
+only on an FDA scan while a Spotlight/File-Provider storm runs.
 
 **Recommendation: treat as environmental and close it; do not add a walker defense.** Reasons: (1) it needs FDA plus a
-specific daemon storm to appear, so it is rare and not a steady-state cost; (2) when it does fire the reads still succeed
-and return correct data, so nothing is lost; (3) any targeted fix (for example a shorter per-open timeout that abandons
-the read) would risk dropping legitimately-slow-but-correct reads for a stall that heals itself in 5 s, trading data
-completeness for ~40 s of one-off wall time; and (4) the existing 15 s progress watchdog and the fraction-based cost
-budget already bound the worst case. If it recurs on a future FDA scan, the way to confirm the theory is to run the probe
-WITH FDA (add the built binary to System Settings › Privacy › Full Disk Access, or run it from an FDA-granted Terminal)
-while `spotlightknowledged.updater` is hot; the prediction is ~100 ms per path when idle and a ~5 s cluster only under
-the storm. Absent that recurrence, there is nothing to fix.
+specific daemon storm to appear, so it is rare and not a steady-state cost; (2) when it does fire the reads still
+succeed and return correct data, so nothing is lost; (3) any targeted fix (for example a shorter per-open timeout that
+abandons the read) would risk dropping legitimately-slow-but-correct reads for a stall that heals itself in 5 s, trading
+data completeness for ~40 s of one-off wall time; and (4) the existing 15 s progress watchdog and the fraction-based
+cost budget already bound the worst case. If it recurs on a future FDA scan, the way to confirm the theory is to run the
+probe WITH FDA (add the built binary to System Settings › Privacy › Full Disk Access, or run it from an FDA-granted
+Terminal) while `spotlightknowledged.updater` is hot; the prediction is ~100 ms per path when idle and a ~5 s cluster
+only under the storm. Absent that recurrence, there is nothing to fix.
 
 ## Reconcile, run 2 (load 12-24, not comparable to the 476.9 s idle figure)
 

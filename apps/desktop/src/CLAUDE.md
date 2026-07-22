@@ -32,6 +32,10 @@ These rules apply to all frontend code under here.
 - Stay aligned to Ark UI's naming. When wrapping an `@ark-ui/svelte` primitive in `lib/ui/`, name the wrapper after
   Ark's component (`Select`, `Combobox`, `Popover`, `Menu`, …) so it maps 1:1 to Ark. Flag any divergence (raise it,
   don't silently rename).
+- ❌ Before hand-rolling a control or dialog/window chrome, reach for the `lib/ui` primitive (`ModalDialog`, `Checkbox`,
+  `RadioGroup`, `ToggleGroup`, `Select`, `Combobox`, `Chip`, …) and check Debug > Components; never a raw
+  `<input type=checkbox|radio>` / `<select>` (`cmdr/prefer-ui-primitive`). A new primitive must be recorded and
+  documented (see [`/docs/guides/building-ui.md`](../../../docs/guides/building-ui.md)).
 - When adding code that loads remote content (`fetch`, `iframe`), ask whether to disable it in dev mode:
   `withGlobalTauri: true` is on in dev, which makes remote content a security risk.
 

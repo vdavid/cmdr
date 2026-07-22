@@ -1,0 +1,7 @@
+{
+  "_comment": "Top-level lib/ui primitives that don't belong in the Debug > Components catalog. Each entry MUST have a reason. See scripts/check/checks/desktop-svelte-ui-primitive-coverage.go for the check; it fails on dead entries (primitive gone) and redundant ones (a components-catalog section imports it anyway). Prefer adding a Components-catalog section over allowlisting; allowlist only primitives that genuinely live elsewhere.",
+  "exempt": {
+    "apps/desktop/src/lib/ui/Icon.svelte": "pure glyph atom, not an interactive component; demoed in the Graphics catalog (routes/dev/graphics/sections/IconsSection.svelte), not the Components catalog",
+    "apps/desktop/src/lib/ui/Spinner.svelte": "pure-visual loading atom; demoed in the Graphics catalog (routes/dev/graphics/sections/SpinnersSection.svelte), not the Components catalog"
+  }
+}

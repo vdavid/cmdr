@@ -401,18 +401,20 @@ Checks by app and tech:
   log-error-macro, error-string-match, lock-poison, mtp-dropping-timeout, mtp-no-transport-reset, bindings-fresh,
   ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)
 - **Desktop / Svelte**: prettier, eslint, svelte-kit-sync, eslint-typecheck-svelte, eslint-typecheck-typescript,
-  stylelint, css-unused, a11y-contrast, btn-restyle, bare-poll, svelte-check, import-cycles, message-keys-fresh
-  (regenerate-and-diff `keys.gen.ts` from the message catalogs), message-key-naming (the `area.feature.leaf` shape +
-  known-area first segment), message-keys-unused (catalog keys never referenced in `src/`; error-level, with a closed
-  dynamic-prefix allowlist for runtime-built keys), message-screenshots-fresh (warn-only; drift between the committed
-  i18n capture report and the catalogs' `@key.screenshot` couplings; runs the coupler's `--check`, reads no PNGs),
-  i18n-stale (warn-only; a non-`en` translation whose `@key.sourceHash` no longer matches the English value),
-  i18n-parity (ERROR; each locale key's `{placeholder}`+`<tag>` set, or raw `{token}` set for `errors.*`, must equal
-  English's, since a mismatch crashes at runtime), i18n-icu (ERROR; every non-`errors.*` locale message must compile via
-  `intl-messageformat`), i18n-plural (ERROR; each plural covers its locale's required CLDR categories, gated on the
-  English source's plural shape), i18n-coverage (warn-only; keys missing from a locale, or byte-identical to English),
-  i18n-dont-translate (warn-only; a curated brand/system token English carries but the locale dropped), knip,
-  type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
+  stylelint, css-unused, a11y-contrast, a11y-coverage (every primitive has a tier-3 a11y test), ui-primitive-coverage
+  (every top-level `lib/ui/*.svelte` primitive has a Debug > Components catalog section), btn-restyle, bare-poll,
+  svelte-check, import-cycles, message-keys-fresh (regenerate-and-diff `keys.gen.ts` from the message catalogs),
+  message-key-naming (the `area.feature.leaf` shape + known-area first segment), message-keys-unused (catalog keys never
+  referenced in `src/`; error-level, with a closed dynamic-prefix allowlist for runtime-built keys),
+  message-screenshots-fresh (warn-only; drift between the committed i18n capture report and the catalogs'
+  `@key.screenshot` couplings; runs the coupler's `--check`, reads no PNGs), i18n-stale (warn-only; a non-`en`
+  translation whose `@key.sourceHash` no longer matches the English value), i18n-parity (ERROR; each locale key's
+  `{placeholder}`+`<tag>` set, or raw `{token}` set for `errors.*`, must equal English's, since a mismatch crashes at
+  runtime), i18n-icu (ERROR; every non-`errors.*` locale message must compile via `intl-messageformat`), i18n-plural
+  (ERROR; each plural covers its locale's required CLDR categories, gated on the English source's plural shape),
+  i18n-coverage (warn-only; keys missing from a locale, or byte-identical to English), i18n-dont-translate (warn-only; a
+  curated brand/system token English carries but the locale dropped), knip, type-drift, tests, e2e-linux-typecheck,
+  e2e-linux (slow), e2e-playwright (slow)
 - **Website / Astro**: prettier, eslint, typecheck, build, html-validate, bundle-size (warn-only), e2e
 - **Website / Docker**: docker-build
 - **API server / TS**: oxfmt, eslint, typecheck, tests
