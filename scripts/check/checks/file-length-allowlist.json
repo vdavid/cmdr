@@ -49,7 +49,7 @@
     "apps/desktop/src-tauri/src/indexing/tests/integration_tests.rs": 1111,
     "apps/desktop/src-tauri/src/indexing/tests/stress_tests_concurrency.rs": 1301,
     "apps/desktop/src-tauri/src/indexing/writer/entries/tests.rs": 2138,
-    "apps/desktop/src-tauri/src/indexing/writer/mod.rs": 1321,
+    "apps/desktop/src-tauri/src/indexing/writer/mod.rs": 1477,
     "apps/desktop/src-tauri/src/ipc.rs": 801,
     "apps/desktop/src-tauri/src/lib.rs": 953,
     "apps/desktop/src-tauri/src/mcp/server.rs": 1008,
