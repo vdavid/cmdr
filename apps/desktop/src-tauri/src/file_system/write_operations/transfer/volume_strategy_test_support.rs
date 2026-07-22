@@ -353,13 +353,14 @@ pub(super) fn rel_expected_bytes() -> Vec<u8> {
 // ========================================================================
 
 thread_local! {
-    /// Per-test override of `(debounce, min_progress_floor)`. `None` ⇒ production
-    /// constants. Set via [`AutoYieldTuningGuard`] and cleared on drop.
-    static AUTO_YIELD_TUNING: std::cell::Cell<Option<(Duration, u64)>> = const { std::cell::Cell::new(None) };
+    /// Per-test override of `(debounce, min_progress_floor, dest_yield_hard_cap)`.
+    /// `None` ⇒ production constants. Set via [`AutoYieldTuningGuard`] and cleared
+    /// on drop.
+    static AUTO_YIELD_TUNING: std::cell::Cell<Option<(Duration, u64, Duration)>> = const { std::cell::Cell::new(None) };
 }
 
 /// Read by `super::auto_yield_tuning()` in test builds; production returns `None`.
-pub(super) fn auto_yield_tuning_override() -> Option<(Duration, u64)> {
+pub(super) fn auto_yield_tuning_override() -> Option<(Duration, u64, Duration)> {
     AUTO_YIELD_TUNING.with(|c| c.get())
 }
 
@@ -367,13 +368,25 @@ pub(super) fn auto_yield_tuning_override() -> Option<(Duration, u64)> {
 /// and restores the previous value on drop. The copy runs on a tokio task; these
 /// tests use a CURRENT-THREAD runtime so the spawned copy shares this thread's
 /// thread-local (a multi-thread runtime would not see it).
+///
+/// The source-arm suites ([`AutoYieldTuningGuard::new`]) don't exercise the
+/// destination cap, so they get a generous default cap; the destination-arm suite
+/// sets a short cap via [`AutoYieldTuningGuard::with_dest_cap`].
 pub(super) struct AutoYieldTuningGuard {
-    prev: Option<(Duration, u64)>,
+    prev: Option<(Duration, u64, Duration)>,
 }
 
 impl AutoYieldTuningGuard {
     pub(super) fn new(debounce: Duration, floor: u64) -> Self {
-        let prev = AUTO_YIELD_TUNING.with(|c| c.replace(Some((debounce, floor))));
+        // A long default cap: the source-arm tests never park on the destination,
+        // so the cap is inert for them.
+        Self::with_dest_cap(debounce, floor, Duration::from_secs(3600))
+    }
+
+    /// Install a tuning override that also sets the destination-side hard cap, for
+    /// the destination-yield suite.
+    pub(super) fn with_dest_cap(debounce: Duration, floor: u64, dest_hard_cap: Duration) -> Self {
+        let prev = AUTO_YIELD_TUNING.with(|c| c.replace(Some((debounce, floor, dest_hard_cap))));
         Self { prev }
     }
 }
@@ -541,6 +554,170 @@ impl Volume for NeverPendingYieldSource {
                 released: false,
                 gate: None,
             }) as Box<dyn VolumeReadStream>)
+        })
+    }
+}
+
+// ========================================================================
+// SMB-shaped WRITE destination that opts into the bounded destination-side
+// foreground yield (the upload path). Its `write_from_stream` drains the source
+// stream chunk-by-chunk (exactly like `SmbVolume::write_from_stream_impl`'s
+// streaming loop), collecting the bytes so a test can assert byte-exactness
+// across a destination park, while `foreground` stands in for the per-share
+// `foreground_pending` signal.
+// ========================================================================
+
+/// A write destination that opts into `supports_foreground_yield_as_destination`
+/// and serves a controllable `foreground_pending`. The test-double of an
+/// `SmbVolume` upload target: its `write_from_stream` pulls chunks in a loop
+/// (driving the wrapping `CheckpointStream`'s per-chunk checkpoint, hence the
+/// destination arm) and appends them to `written`, so a test can check the
+/// assembled bytes equal a non-yielded upload exactly.
+pub(super) struct ForegroundBusyDest {
+    /// When `true`, `foreground_pending()` reports the user is browsing this share.
+    pub(super) foreground: Arc<AtomicBool>,
+    /// Everything `write_from_stream` has written, in order: the assembled file.
+    pub(super) written: Arc<StdMutex<Vec<u8>>>,
+}
+
+impl Volume for ForegroundBusyDest {
+    fn name(&self) -> &str {
+        "foreground-busy-dest"
+    }
+    fn root(&self) -> &Path {
+        Path::new("/")
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn list_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+        _on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Ok(Vec::new()) })
+    }
+    fn get_metadata<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Err(VolumeError::NotSupported) })
+    }
+    fn exists<'a>(&'a self, _path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async { false })
+    }
+    fn is_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Ok(false) })
+    }
+    fn supports_streaming(&self) -> bool {
+        true
+    }
+    fn supports_foreground_yield_as_destination(&self) -> bool {
+        true
+    }
+    fn foreground_pending<'a>(&'a self) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        let flag = Arc::clone(&self.foreground);
+        Box::pin(async move { flag.load(Ordering::SeqCst) })
+    }
+    fn write_from_stream<'a>(
+        &'a self,
+        _dest: &'a Path,
+        size: u64,
+        mut stream: Box<dyn VolumeReadStream>,
+        on_progress: &'a (dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        let written = Arc::clone(&self.written);
+        Box::pin(async move {
+            // Mirror the SMB streaming write loop: pull a chunk (this drives the
+            // wrapping `CheckpointStream`'s checkpoint, where the destination arm
+            // parks), append it, then fire progress and honor cancellation.
+            let mut bytes_written = 0u64;
+            while let Some(chunk) = stream.next_chunk().await {
+                let chunk = chunk?;
+                written.lock_ignore_poison().extend_from_slice(&chunk);
+                bytes_written += chunk.len() as u64;
+                if on_progress(bytes_written, size).is_break() {
+                    return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+                }
+            }
+            Ok(bytes_written)
+        })
+    }
+}
+
+/// A write destination that does NOT opt into the destination-side yield and
+/// whose `foreground_pending()` PANICS if ever called. The destination arm
+/// short-circuits on `supports_foreground_yield_as_destination()` BEFORE probing
+/// `foreground_pending`, so this hard-fails on a regression that lets a
+/// non-opting target (a local disk, in-memory, or an MTP upload) reach the park.
+pub(super) struct PanicIfProbedDest {
+    /// The assembled file, so the copy still verifies byte-exact.
+    pub(super) written: Arc<StdMutex<Vec<u8>>>,
+}
+
+impl Volume for PanicIfProbedDest {
+    fn name(&self) -> &str {
+        "panic-if-probed-dest"
+    }
+    fn root(&self) -> &Path {
+        Path::new("/")
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn list_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+        _on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Ok(Vec::new()) })
+    }
+    fn get_metadata<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Err(VolumeError::NotSupported) })
+    }
+    fn exists<'a>(&'a self, _path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async { false })
+    }
+    fn is_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Ok(false) })
+    }
+    fn supports_streaming(&self) -> bool {
+        true
+    }
+    // supports_foreground_yield_as_destination() stays at the trait default (false).
+    fn foreground_pending<'a>(&'a self) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async {
+            panic!("destination arm probed foreground_pending on a NON-opting destination: enable-switch regression");
+        })
+    }
+    fn write_from_stream<'a>(
+        &'a self,
+        _dest: &'a Path,
+        size: u64,
+        mut stream: Box<dyn VolumeReadStream>,
+        on_progress: &'a (dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        let written = Arc::clone(&self.written);
+        Box::pin(async move {
+            let mut bytes_written = 0u64;
+            while let Some(chunk) = stream.next_chunk().await {
+                let chunk = chunk?;
+                written.lock_ignore_poison().extend_from_slice(&chunk);
+                bytes_written += chunk.len() as u64;
+                if on_progress(bytes_written, size).is_break() {
+                    return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+                }
+            }
+            Ok(bytes_written)
         })
     }
 }

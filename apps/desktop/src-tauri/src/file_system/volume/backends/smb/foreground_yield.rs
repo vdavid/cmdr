@@ -24,6 +24,13 @@
 //! `CheckpointStream` won't honor a yield until the transfer has moved
 //! `min_progress_floor` bytes since its last resume, so continuous browsing slows a
 //! copy but can never stop it.
+//!
+//! [`foreground_pending`] serves BOTH directions: a DOWNLOAD off this share
+//! (source arm) and an UPLOAD to it (destination arm, gated by
+//! `SmbVolume::supports_foreground_yield_as_destination`). The upload arm reads
+//! `foreground_pending` but NOT [`wait_until_foreground_idle`]: it can't park
+//! unbounded, because it holds an open write handle across the pause, so it caps
+//! each park itself (`write_operations/transfer/checkpoint_stream.rs`).
 
 use std::time::Duration;
 

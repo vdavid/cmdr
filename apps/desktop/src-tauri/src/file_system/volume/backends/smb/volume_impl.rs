@@ -231,6 +231,18 @@ impl Volume for SmbVolume {
         true
     }
 
+    fn supports_foreground_yield_as_destination(&self) -> bool {
+        // An UPLOAD to this share (local → SMB) writes in discrete SMB2 WRITE
+        // chunks and holds only a file handle between them, with NO oplock or
+        // lease requested (`create_file_writer` → `OplockLevel::None`, no durable
+        // context; see `smb/streams.rs`). So a running upload can stand aside for
+        // the user browsing the same share between chunks. `CheckpointStream` caps
+        // each such park so the open write handle never sits idle long enough for
+        // the server to reap it. Contrast the read side (`supports_foreground_yield`):
+        // both share this volume's per-share `foreground_pending` probe.
+        true
+    }
+
     fn foreground_pending<'a>(&'a self) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
         Box::pin(async move { foreground_yield::foreground_pending(&self.volume_id) })
     }

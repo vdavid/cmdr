@@ -50,12 +50,13 @@ Shared `WriteOperationState`, `OperationIntent`, cancel/rollback, ETA, and settl
 - **`stream_pipe_file` retries once on `VolumeError::StaleDestinationHandle`** (re-opens source, re-runs
   `write_from_stream`): the only layer that can retry an MTP stale-handle rejection (the backend stream is single-use),
   so don't drop the loop. Why: [`mtp/connection/DETAILS.md`](../../../mtp/connection/DETAILS.md).
-- **Cross-volume copy parks/yields between windows** via `checkpoint_stream.rs`'s `CheckpointStream` (sync `on_progress`
+- **Cross-volume copy parks/yields between chunks** via `checkpoint_stream.rs`'s `CheckpointStream` (sync `on_progress`
   can't `.await`). Reads hold no session between windows, so pause and yield both mean **don't start the next window**
-  (park in place) — NO release/reopen. Triggers: **user pause** parks everyone; **auto-yield on `foreground_pending`**
-  (gated by `supports_foreground_yield()`, MTP + SMB), op stays **Running** (don't flip `OperationIntent`); a
-  cancel-aware debounce + min-progress floor prevent thrash and starvation. SMB's probe is per-share, ❌ never app-wide.
-  SOURCE only: ❌ don't reuse the flag for destinations (an MTP `SendObject` pins the session). DETAILS §§ "Pause …
-  chunks", "Foreground auto-yield".
+  (park in place, NO release/reopen). Triggers: **user pause** parks everyone; **auto-yield on `foreground_pending`**, op
+  stays **Running** (don't flip `OperationIntent`); a cancel-aware debounce + floor prevent thrash/starvation. SMB's
+  probe is per-share, ❌ never app-wide. TWO opt-ins, ❌ don't merge: SOURCE read-yield
+  (`supports_foreground_yield()`, MTP + SMB) parks UNBOUNDED; DESTINATION write-yield
+  (`supports_foreground_yield_as_destination()`, SMB uploads) is **HARD-CAPPED**: it holds an open SMB write handle, so
+  it must resume before the server reaps it. ❌ MTP never opts in here. DETAILS § "Foreground auto-yield".
 
 Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read before non-trivial work here.

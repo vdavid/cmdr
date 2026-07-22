@@ -911,6 +911,28 @@ pub trait Volume: Send + Sync {
         false
     }
 
+    /// Whether a running transfer WRITING to this volume should stand aside for
+    /// foreground work on it, in SHORT, HARD-CAPPED slices, between write chunks.
+    ///
+    /// Separate from [`supports_foreground_yield`](Self::supports_foreground_yield)
+    /// (the SOURCE/read opt-in) ON PURPOSE, and must NOT be collapsed into it. A
+    /// write holds an OPEN handle across the pause, so the destination yield MUST
+    /// be bounded (a hard cap in `CheckpointStream`), never the unbounded park the
+    /// read side uses. Only SMB opts in: its writes are discrete SMB2 WRITE chunks
+    /// with NO oplock or lease requested (`smb/streams.rs`), so a brief, capped
+    /// park between chunks is safe. ❌ MTP must NEVER opt in: an MTP upload streams
+    /// inside ONE `SendObject` PTP transaction, so pausing mid-write would PIN the
+    /// device session, the opposite of the read side.
+    ///
+    /// When `true`, the destination auto-yield arm probes
+    /// [`foreground_pending`](Self::foreground_pending) on THIS (destination)
+    /// volume, so a backend opting in must also implement that probe.
+    ///
+    /// `false` (default): the destination auto-yield arm is a no-op.
+    fn supports_foreground_yield_as_destination(&self) -> bool {
+        false
+    }
+
     /// Whether a foreground op is currently pending on this volume's device.
     ///
     /// Polled once per chunk by `CheckpointStream` (cheap — an atomic load behind

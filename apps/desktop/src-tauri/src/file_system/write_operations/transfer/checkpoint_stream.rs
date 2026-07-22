@@ -12,10 +12,16 @@
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use super::super::state::WriteOperationState;
 use crate::file_system::volume::{Volume, VolumeError, VolumeReadStream};
+
+/// How often the destination-side bounded park re-checks the share's foreground
+/// signal (and cancellation). Short so that when the user stops browsing, the
+/// upload resumes within roughly one slice of the share's idle threshold, not a
+/// full hard-cap window.
+const DEST_PARK_POLL_SLICE: Duration = Duration::from_millis(50);
 
 /// Wraps a source read stream so a between-chunk cooperative checkpoint runs once
 /// per chunk for the cross-volume streaming path, where the per-chunk progress
@@ -77,6 +83,13 @@ pub(super) struct CheckpointStream {
     /// `wait_until_foreground_idle`). Park-in-place backends (the default
     /// `supports_foreground_yield() == false`) make the arm a no-op.
     source_volume: Arc<dyn Volume>,
+    /// The DESTINATION volume, so the bounded destination-yield arm can probe its
+    /// per-share `foreground_pending`. This is the UPLOAD counterpart to the
+    /// source arm: for a local → SMB copy the source doesn't opt in, but the SMB
+    /// destination does (`supports_foreground_yield_as_destination`), so a running
+    /// upload stands aside for the user browsing the same share. Backends that
+    /// don't opt in (the default `false`) make the arm a no-op.
+    dest_volume: Arc<dyn Volume>,
     /// `bytes_yielded` at the last resume (initial open = 0, then after each
     /// foreground yield). The min-progress floor is measured from here: the
     /// auto-yield arm only fires once `bytes_yielded - last_resume_offset >=
@@ -91,6 +104,14 @@ pub(super) struct CheckpointStream {
     /// floor for determinism; defaults to `MIN_PROGRESS_FLOOR_BYTES` (see
     /// `volume_strategy`).
     min_progress_floor: u64,
+    /// Hard cap on a SINGLE destination-side park. Load-bearing data-safety bound:
+    /// the upload holds an open SMB write handle across the park, so it must
+    /// resume (and write, keeping the handle warm) at least this often even under
+    /// continuous browsing. Field (not a bare constant) so tests can set it small
+    /// for determinism; defaults to `DEST_FOREGROUND_YIELD_HARD_CAP` (see
+    /// `volume_strategy`). ❌ Don't turn this into an unbounded wait; see
+    /// `dest_park_continues` and `Volume::supports_foreground_yield_as_destination`.
+    dest_yield_hard_cap: Duration,
 }
 
 impl VolumeReadStream for CheckpointStream {
@@ -117,25 +138,30 @@ impl VolumeReadStream for CheckpointStream {
 }
 
 impl CheckpointStream {
-    /// Wrap `inner` with the between-window checkpoint. `foreground_debounce` and
-    /// `min_progress_floor` come from `volume_strategy::auto_yield_tuning()` (the
-    /// production constants, or a test override); `bytes_yielded` and
-    /// `last_resume_offset` start at 0 (a fresh open at offset 0).
+    /// Wrap `inner` with the between-window checkpoint. `foreground_debounce`,
+    /// `min_progress_floor`, and `dest_yield_hard_cap` come from
+    /// `volume_strategy::auto_yield_tuning()` (the production constants, or a test
+    /// override); `bytes_yielded` and `last_resume_offset` start at 0 (a fresh
+    /// open at offset 0).
     pub(super) fn new(
         inner: Box<dyn VolumeReadStream>,
         state: Arc<WriteOperationState>,
         source_volume: Arc<dyn Volume>,
+        dest_volume: Arc<dyn Volume>,
         foreground_debounce: Duration,
         min_progress_floor: u64,
+        dest_yield_hard_cap: Duration,
     ) -> Self {
         Self {
             inner,
             state,
             bytes_yielded: 0,
             source_volume,
+            dest_volume,
             last_resume_offset: 0,
             foreground_debounce,
             min_progress_floor,
+            dest_yield_hard_cap,
         }
     }
 
@@ -154,6 +180,13 @@ impl CheckpointStream {
         // cost; this arm just keeps the copy from immediately re-grabbing the lock
         // and starving foreground.
         self.auto_yield_to_foreground().await;
+
+        // Destination-side counterpart, for an UPLOAD to a share the user is
+        // browsing (local → SMB). The source arm above is a no-op there (the local
+        // source doesn't opt in); this arm stands aside for the destination share
+        // instead. It is BOUNDED because the write holds an open handle across the
+        // pause (see the method).
+        self.bounded_yield_to_dest_foreground().await;
 
         // Yield so foreground tasks get scheduled during a long copy.
         tokio::task::yield_now().await;
@@ -228,6 +261,70 @@ impl CheckpointStream {
         // auto-yield can only fire after another `min_progress_floor` bytes.
         self.last_resume_offset = self.bytes_yielded;
     }
+
+    /// The DESTINATION-side bounded foreground yield: the UPLOAD counterpart to
+    /// `auto_yield_to_foreground`. No-op unless the DESTINATION opts in
+    /// (`supports_foreground_yield_as_destination()`, SMB only) and a foreground
+    /// op is pending on the destination share. Stands aside for the user browsing
+    /// that share, in short slices, but HARD-CAPPED at `dest_yield_hard_cap`.
+    ///
+    /// The cap is the data-safety bound: an upload holds an OPEN SMB write handle
+    /// across the park (the source read wrapped here sits between two
+    /// `writer.write_chunk` calls in the destination's `write_from_stream`). An
+    /// unbounded park would let that handle sit idle long enough for the server to
+    /// reap it, breaking the transfer. Resuming at the cap writes the next chunk,
+    /// keeping the handle warm; the offset is untouched, so no desync. ❌ Don't
+    /// convert this to `wait_until_foreground_idle` (the unbounded source path).
+    async fn bounded_yield_to_dest_foreground(&mut self) {
+        // Enable-switch: the DESTINATION's own opt-in. Non-opting targets (local
+        // FS, in-memory, and MTP, whose one `SendObject` transaction can't pause
+        // mid-write) default to false and never park here.
+        if !self.dest_volume.supports_foreground_yield_as_destination() {
+            return;
+        }
+        if super::super::state::is_cancelled(&self.state.intent) {
+            return; // cancel owns teardown; never start a yield while cancelled
+        }
+        // At EOF there's nothing left to write; let the copy finalize (the
+        // safe-replace rename must not wait behind a park).
+        if self.bytes_yielded >= self.inner.total_size() {
+            return;
+        }
+        // Min-progress floor: after a resume, write at least `min_progress_floor`
+        // bytes before honoring the next yield, so continuous browsing can't
+        // starve the upload to zero throughput. Shared with the source arm; in
+        // practice only one arm is active per transfer (source XOR destination is
+        // the SMB side).
+        if self.bytes_yielded.saturating_sub(self.last_resume_offset) < self.min_progress_floor {
+            return;
+        }
+        // Cheap probe (a per-share timestamp read); skip the park when the share
+        // is quiet.
+        if !self.dest_volume.foreground_pending().await {
+            return;
+        }
+
+        // Bounded park: stand aside in short slices while the share stays busy,
+        // but never past the hard cap. Cancel-aware throughout, so a cancel while
+        // parked unblocks promptly and the next chunk flows to the backend's
+        // `on_progress` cleanup.
+        let park_start = Instant::now();
+        loop {
+            if super::super::state::is_cancelled(&self.state.intent) {
+                break;
+            }
+            let pending = self.dest_volume.foreground_pending().await;
+            if !dest_park_continues(pending, park_start.elapsed(), self.dest_yield_hard_cap) {
+                break;
+            }
+            if sleep_cancel_aware(&self.state.intent, DEST_PARK_POLL_SLICE).await {
+                break; // cancelled during the slice
+            }
+        }
+        // Resuming: restart the min-progress floor so the next yield can only fire
+        // after another `min_progress_floor` bytes.
+        self.last_resume_offset = self.bytes_yielded;
+    }
 }
 
 /// Sleep for `dur`, returning early if the operation is cancelled. Returns
@@ -268,5 +365,62 @@ async fn poll_until_cancelled(intent: &std::sync::atomic::AtomicU8) {
     const TICK: Duration = Duration::from_millis(20);
     while !super::super::state::is_cancelled(intent) {
         tokio::time::sleep(TICK).await;
+    }
+}
+
+/// The pure decision for the DESTINATION-side bounded park: whether to KEEP
+/// standing aside for foreground work on the write destination.
+///
+/// Unlike the source arm's `wait_until_foreground_idle` (which parks until the
+/// share is quiet, however long that takes), this park is HARD-CAPPED. An upload
+/// holds an OPEN SMB write handle across the pause, so it must resume (and write
+/// a chunk, keeping the handle warm) at least every `hard_cap`, even if the user
+/// keeps browsing. So: keep parking only while the share is STILL busy AND we're
+/// still UNDER the cap; once either fails, resume the next write. Pure over a
+/// `Duration` clock, like [`crate::media_index::foreground::is_idle`], so it's
+/// unit-testable against a fake clock without a real timer.
+fn dest_park_continues(foreground_pending: bool, parked_for: Duration, hard_cap: Duration) -> bool {
+    foreground_pending && parked_for < hard_cap
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// While the share is busy and we're under the cap, keep standing aside.
+    #[test]
+    fn keeps_parking_while_busy_and_under_cap() {
+        assert!(dest_park_continues(
+            true,
+            Duration::from_millis(200),
+            Duration::from_secs(1)
+        ));
+    }
+
+    /// The moment the share goes quiet, resume the write, cap or no cap.
+    #[test]
+    fn resumes_the_instant_the_share_goes_quiet() {
+        assert!(!dest_park_continues(
+            false,
+            Duration::from_millis(10),
+            Duration::from_secs(1)
+        ));
+    }
+
+    /// THE data-safety bound: even with the user still browsing, the park must
+    /// end at the hard cap so the open SMB write handle can't sit idle forever
+    /// (a long idle risks the server reaping the handle/session). At or past the
+    /// cap, resume regardless of foreground.
+    #[test]
+    fn stops_parking_at_the_hard_cap_even_if_still_busy() {
+        let cap = Duration::from_secs(1);
+        assert!(
+            !dest_park_continues(true, cap, cap),
+            "at the cap, resume even though foreground is still pending"
+        );
+        assert!(
+            !dest_park_continues(true, cap + Duration::from_millis(1), cap),
+            "past the cap, resume even though foreground is still pending"
+        );
     }
 }

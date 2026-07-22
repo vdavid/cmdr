@@ -315,6 +315,15 @@ fn supports_foreground_yield_is_on() {
     assert!(vol.supports_foreground_yield());
 }
 
+/// The UPLOAD counterpart: an SMB share also opts into the DESTINATION-side yield,
+/// so writing to it stands aside for navigation on the same share. SMB writes are
+/// discrete WRITE chunks with no lease, so a bounded park between them is safe.
+#[test]
+fn supports_foreground_yield_as_destination_is_on() {
+    let vol = make_test_volume();
+    assert!(vol.supports_foreground_yield_as_destination());
+}
+
 /// …and the probe behind it is scoped to THIS share: navigating the volume being
 /// copied from parks the copy, navigating anything else leaves it at full speed.
 #[tokio::test]

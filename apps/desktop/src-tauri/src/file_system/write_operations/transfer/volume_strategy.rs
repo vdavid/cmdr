@@ -54,21 +54,38 @@ const FOREGROUND_YIELD_DEBOUNCE: Duration = Duration::from_millis(400);
 /// real device.
 const MIN_PROGRESS_FLOOR_BYTES: u64 = 4 * 1024 * 1024;
 
-/// The (debounce, min-progress-floor) pair a freshly-built `CheckpointStream`
-/// uses. Production always returns the named constants. Tests override both
-/// (debounce ≈ 0, a tiny floor) via [`set_auto_yield_tuning_for_test`] so the
-/// auto-yield arm is deterministic without real device latency or megabytes of
-/// synthetic data. The stream construction lives behind `copy_single_path`, so a
-/// thread-local override is how a test reaches it without widening the public
-/// copy API.
-fn auto_yield_tuning() -> (Duration, u64) {
+/// Hard cap on a SINGLE destination-side foreground park (uploads to SMB). Unlike
+/// the SOURCE arm's `wait_until_foreground_idle` (unbounded, since a read holds
+/// nothing scarce between windows), the destination arm holds an OPEN SMB write
+/// handle across the pause, so it must resume and write at least this often even
+/// under continuous browsing, keeping the handle warm so the server can't reap it
+/// as idle. 1 s balances browsing responsiveness (the upload stands aside up to a
+/// second at a time) against handle safety (a WRITE lands at least once a second).
+/// The share's OWN session stays warm regardless (the user's navigation rides it),
+/// so this cap protects only the write handle. ❌ Don't raise it toward any
+/// server idle-timeout; keep it a small, safe fraction. Data-safety bound; see
+/// `checkpoint_stream.rs::dest_park_continues`.
+const DEST_FOREGROUND_YIELD_HARD_CAP: Duration = Duration::from_secs(1);
+
+/// The (debounce, min-progress-floor, dest-yield-hard-cap) tuple a freshly-built
+/// `CheckpointStream` uses. Production always returns the named constants. Tests
+/// override all three (debounce ≈ 0, a tiny floor, a short cap) via
+/// [`AutoYieldTuningGuard`] so both the source and destination auto-yield arms are
+/// deterministic without real device latency or megabytes of synthetic data. The
+/// stream construction lives behind `copy_single_path`, so a thread-local override
+/// is how a test reaches it without widening the public copy API.
+fn auto_yield_tuning() -> (Duration, u64, Duration) {
     #[cfg(test)]
     {
         if let Some(t) = test_support::auto_yield_tuning_override() {
             return t;
         }
     }
-    (FOREGROUND_YIELD_DEBOUNCE, MIN_PROGRESS_FLOOR_BYTES)
+    (
+        FOREGROUND_YIELD_DEBOUNCE,
+        MIN_PROGRESS_FLOOR_BYTES,
+        DEST_FOREGROUND_YIELD_HARD_CAP,
+    )
 }
 
 /// Context threaded into the recursive merge walk so each pre-existing level can
@@ -363,16 +380,19 @@ async fn stream_pipe_file(
         // Wrap so a paused op parks (and a long copy yields to foreground)
         // between bounded windows. `size` is read off the raw stream first — the
         // wrapper forwards `total_size()` unchanged, so the destination still sees
-        // the real size. The wrapper carries the source volume so its foreground
-        // auto-yield arm can probe the device gate (a no-op for backends that
-        // don't opt into `supports_foreground_yield()`).
-        let (foreground_debounce, min_progress_floor) = auto_yield_tuning();
+        // the real size. The wrapper carries BOTH volumes: the source drives the
+        // read-side auto-yield (downloads), the destination drives the bounded
+        // write-side yield (uploads to SMB). Each is a no-op unless its side opts
+        // in (`supports_foreground_yield()` / `supports_foreground_yield_as_destination()`).
+        let (foreground_debounce, min_progress_floor, dest_yield_hard_cap) = auto_yield_tuning();
         let stream: Box<dyn VolumeReadStream> = Box::new(CheckpointStream::new(
             stream,
             Arc::clone(state),
             Arc::clone(source_volume),
+            Arc::clone(dest_volume),
             foreground_debounce,
             min_progress_floor,
+            dest_yield_hard_cap,
         ));
         match dest_volume
             .write_from_stream(dest_path, size, stream, on_file_progress)
@@ -740,6 +760,9 @@ async fn resolve_merge_child(
 #[cfg(test)]
 #[path = "volume_strategy_copy_tests.rs"]
 mod copy_tests;
+#[cfg(test)]
+#[path = "volume_strategy_dest_yield_tests.rs"]
+mod dest_yield_tests;
 #[cfg(test)]
 #[path = "volume_strategy_pause_tests.rs"]
 mod pause_tests;
