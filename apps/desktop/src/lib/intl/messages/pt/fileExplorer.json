@@ -911,50 +911,6 @@
   "@fileExplorer.dateTooltip.lastModified": {
     "sourceHash": "0fe1058"
   },
-  "fileExplorer.imageIndex.indexed": "Imagens indexadas",
-  "@fileExplorer.imageIndex.indexed": {
-    "sourceHash": "f4b2ca5"
-  },
-  "fileExplorer.imageIndex.indexedTooltip": "Esta pasta está na sua lista de pastas para indexar. Qualquer novidade aqui entra na próxima rodada.",
-  "@fileExplorer.imageIndex.indexedTooltip": {
-    "sourceHash": "3c9dd0c"
-  },
-  "fileExplorer.imageIndex.indexing": "Indexando imagens",
-  "@fileExplorer.imageIndex.indexing": {
-    "sourceHash": "41f1298"
-  },
-  "fileExplorer.imageIndex.indexingTooltip": "O Cmdr está indexando imagens neste disco agora, já vai em {percent}%.",
-  "@fileExplorer.imageIndex.indexingTooltip": {
-    "sourceHash": "ee54884"
-  },
-  "fileExplorer.imageIndex.indexingTooltipNoProgress": "O Cmdr está indexando imagens neste disco agora.",
-  "@fileExplorer.imageIndex.indexingTooltipNoProgress": {
-    "sourceHash": "d7b5450"
-  },
-  "fileExplorer.imageIndex.notIndexed": "Imagens não indexadas",
-  "@fileExplorer.imageIndex.notIndexed": {
-    "sourceHash": "b089c28"
-  },
-  "fileExplorer.imageIndex.notIndexedTooltip": "A busca de imagens cobre apenas as pastas que você escolheu, e esta não é uma delas.",
-  "@fileExplorer.imageIndex.notIndexedTooltip": {
-    "sourceHash": "922fbec"
-  },
-  "fileExplorer.imageIndex.excluded": "Imagens excluídas",
-  "@fileExplorer.imageIndex.excluded": {
-    "sourceHash": "18a83cc"
-  },
-  "fileExplorer.imageIndex.excludedTooltip": "Você excluiu esta pasta da busca de imagens, então nada aqui é indexado.",
-  "@fileExplorer.imageIndex.excludedTooltip": {
-    "sourceHash": "1d0bb6d"
-  },
-  "fileExplorer.imageIndex.automatic": "Imagens indexadas automaticamente",
-  "@fileExplorer.imageIndex.automatic": {
-    "sourceHash": "645c593"
-  },
-  "fileExplorer.imageIndex.automaticTooltip": "O Cmdr escolhe as pastas para indexar pelo quanto você trabalha com elas, então esta pode ou não estar coberta.",
-  "@fileExplorer.imageIndex.automaticTooltip": {
-    "sourceHash": "8fd2bde"
-  },
   "fileExplorer.selectionInfo.nothingHere": "Nada por aqui.",
   "@fileExplorer.selectionInfo.nothingHere": {
     "sourceHash": "140a431"

@@ -83,7 +83,6 @@ describe('SelectionInfo symlink hint', () => {
           selectedPhysicalSize: null,
         },
         selectedCount: 0,
-        currentPath: '',
       },
     })
     await tick()
@@ -112,7 +111,6 @@ describe('SelectionInfo symlink hint', () => {
           selectedPhysicalSize: null,
         },
         selectedCount: 0,
-        currentPath: '',
       },
     })
     await tick()
@@ -140,7 +138,6 @@ describe('SelectionInfo symlink hint', () => {
           selectedPhysicalSize: null,
         },
         selectedCount: 0,
-        currentPath: '',
       },
     })
     await tick()

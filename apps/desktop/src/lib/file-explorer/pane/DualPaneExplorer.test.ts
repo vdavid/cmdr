@@ -83,6 +83,9 @@ vi.mock('$lib/tauri-commands', () => ({
   getDefaultVolumeId: vi.fn().mockResolvedValue('root'),
   getVolumeSpace: vi.fn().mockResolvedValue({ data: null, timedOut: false }),
   getSyncStatus: vi.fn().mockResolvedValue({ data: {}, timedOut: false }),
+  // FilePane's onMount registers these image-enrichment listeners.
+  onMediaEnrichProgress: vi.fn().mockResolvedValue(() => {}),
+  onMediaEnrichTerminal: vi.fn().mockResolvedValue(() => {}),
   refreshListing: vi.fn().mockResolvedValue({ data: null, timedOut: false }),
   DEFAULT_VOLUME_ID: 'root',
   getE2eStartPath: vi.fn().mockResolvedValue(null),

@@ -6,6 +6,7 @@
         enableDriveIndex,
         forgetDriveIndex,
         getIpcErrorMessage,
+        mediaIndexVolumeState,
         onVolumeContextAction,
         rescanDriveIndex,
         resolvePathVolume,
@@ -13,8 +14,11 @@
         upgradeToSmbVolume,
         systemHasSavedSmbPassword,
         upgradeToSmbVolumeUsingSavedPassword,
+        type MediaIndexVolumeState,
         type UpgradeResult,
     } from '$lib/tauri-commands'
+    import { getEnrichingVolumes } from '$lib/indexing/media-enrich-state.svelte'
+    import { SvelteMap } from 'svelte/reactivity'
     import type { UnlistenFn } from '@tauri-apps/api/event'
     import { ask } from '@tauri-apps/plugin-dialog'
     import { triggerNetworkDiscovery } from '../network/lazy-trigger'
@@ -66,6 +70,7 @@
     import { createVolumeSpaceManager } from './volume-space-manager.svelte'
     import { createDriveIndexManager, isDriveRow } from './drive-index-manager.svelte'
     import DriveIndexBadge from './DriveIndexBadge.svelte'
+    import ImageIndexDriveBadge from './ImageIndexDriveBadge.svelte'
     import { driveIndexRefusalMessageKey, type DriveIndexMenuAction } from './drive-index-status'
     import type { SmbIndexGateReason } from '$lib/ipc/bindings'
     import { maybePromptFirstConnect } from '$lib/indexing/first-connect-trigger'
@@ -129,6 +134,19 @@
     // Per-drive index freshness status, kept live via the indexing events.
     const driveIndex = createDriveIndexManager()
     const driveIndexStatusMap = driveIndex.statusMap
+
+    // Per-drive IMAGE-index state, feeding the second (image-search) dot next to each
+    // filesystem `DriveIndexBadge`. Fetched lazily (active drive always, dropdown rows on
+    // open) and refreshed on that volume's enrich events — bounded to the handful of shown
+    // drives, so no poll. The `ImageIndexDriveBadge` hides itself on drives with no images.
+    const imageIndexStateMap = new SvelteMap<string, MediaIndexVolumeState>()
+    async function fetchImageIndexState(vid: string) {
+        try {
+            imageIndexStateMap.set(vid, await mediaIndexVolumeState(vid))
+        } catch {
+            // Media index not ready / unavailable: leave the dot hidden until a later fetch.
+        }
+    }
 
     // Favorites interaction layer (rename, pointer-drag + keyboard reorder, remove, optimistic order).
     // Instantiated at top level so its reconciliation `$effect` registers during component init.
@@ -465,6 +483,36 @@
         }
     })
 
+    // The always-visible active-drive image-index dot: fetch when the active drive changes.
+    $effect(() => {
+        const active = currentVolume
+        if (active && isDriveRow(active)) {
+            void fetchImageIndexState(active.id)
+        }
+    })
+
+    // Dropdown image-index dots: fetch (once) for each shown drive row when the menu opens.
+    $effect(() => {
+        if (!isOpen) return
+        for (const volume of untrack(() => allVolumes)) {
+            if (isDriveRow(volume) && !imageIndexStateMap.has(volume.id)) {
+                void fetchImageIndexState(volume.id)
+            }
+        }
+    })
+
+    // Keep the tracked drives' image-index counts live: refetch whenever ANY volume's
+    // enrichment activity changes (a pass starting, ticking, or ending). Reads the GLOBAL
+    // `media-enrich-state` reactivity (app-wide, one publisher), so VolumeBreadcrumb needs
+    // no `media-enrich-*` listeners of its own. Bounded to the handful of shown drives. The
+    // map read is untracked so re-setting it here doesn't re-trigger this effect.
+    $effect(() => {
+        getEnrichingVolumes() // reactive dep: re-runs on any enrichment-activity change
+        for (const vid of untrack(() => [...imageIndexStateMap.keys()])) {
+            void fetchImageIndexState(vid)
+        }
+    })
+
     onMount(() => {
         void updateContainingVolume(currentPath)
 
@@ -780,6 +828,10 @@
                 onAction={onDriveIndexAction}
             />
         {/if}
+        {@const activeImageState = imageIndexStateMap.get(currentVolume.id)}
+        {#if activeImageState}
+            <ImageIndexDriveBadge volumeId={currentVolume.id} volumeState={activeImageState} breadcrumb />
+        {/if}
     {/if}
     {#if currentVolume && isVolumeEjectable(currentVolume)}
         <button
@@ -924,6 +976,10 @@
                                     driveName={volume.name}
                                     onAction={onDriveIndexAction}
                                 />
+                            {/if}
+                            {@const rowImageState = imageIndexStateMap.get(volume.id)}
+                            {#if rowImageState}
+                                <ImageIndexDriveBadge volumeId={volume.id} volumeState={rowImageState} />
                             {/if}
                         {/if}
                         {#if isVolumeEjectable(volume)}

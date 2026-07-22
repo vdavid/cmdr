@@ -12,6 +12,7 @@ import IconCircle from '~icons/lucide/circle'
 import IconCircleAlert from '~icons/lucide/circle-alert'
 import IconCircleCheck from '~icons/lucide/circle-check'
 import IconCircleDashed from '~icons/lucide/circle-dashed'
+import IconCircleDot from '~icons/lucide/circle-dot'
 import IconCircleSlash from '~icons/lucide/circle-slash'
 import IconCircleX from '~icons/lucide/circle-x'
 import IconClock from '~icons/lucide/clock'
@@ -83,6 +84,7 @@ export const ICON_COMPONENTS = {
   'circle-alert': IconCircleAlert,
   'circle-check': IconCircleCheck,
   'circle-dashed': IconCircleDashed,
+  'circle-dot': IconCircleDot,
   'circle-slash': IconCircleSlash,
   'circle-x': IconCircleX,
   clock: IconClock,

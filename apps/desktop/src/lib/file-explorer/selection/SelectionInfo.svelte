@@ -36,7 +36,6 @@
     import type { VolumeSpaceInfo } from '$lib/tauri-commands'
     import { formatDiskSpaceStatus } from '../disk-space-utils'
     import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
-    import FolderIndexStatus from '$lib/media-index/FolderIndexStatus.svelte'
 
     // Free-space text is intentionally uncolored: red GB would falsely signal "low space".
     function diskSpaceStatusText(space: VolumeSpaceInfo): string {
@@ -58,11 +57,6 @@
         stats: ListingStats | null
         /** Number of selected items */
         selectedCount: number
-        /**
-         * The pane's current folder as an absolute OS path, for the image-search
-         * readout. Empty (or a virtual pane's path) simply hides that readout.
-         */
-        currentPath: string
         /** Disk space info for current volume (null when unavailable) */
         volumeSpace?: VolumeSpaceInfo | null
         /**
@@ -73,7 +67,7 @@
         mtpSpaceHint?: string
     }
 
-    const { viewMode, volumeId, entry, currentDirModifiedAt, stats, selectedCount, currentPath, volumeSpace, mtpSpaceHint }: Props = $props()
+    const { viewMode, volumeId, entry, currentDirModifiedAt, stats, selectedCount, volumeSpace, mtpSpaceHint }: Props = $props()
 
     // ========================================================================
     // Display mode determination
@@ -364,10 +358,6 @@
             {/if}
         </span>
     {/if}
-    <!-- Image-search state of the current folder. Ordered (CSS `order`) between the
-         mode-specific content and the free-space readout, so it sits in the same place
-         whichever of the four display modes rendered above. -->
-    <FolderIndexStatus {volumeId} folderPath={currentPath} />
 </div>
 
 <style>

@@ -14,9 +14,12 @@ import {
   refetchIconsForEntries,
   updateIndexSizesInPlace,
   getImageIndexBadge,
+  getFolderCoverageBadge,
 } from './file-list-utils'
 import type { FileEntry } from '../types'
-import type { FileIndexState } from '$lib/tauri-commands'
+import type { FileIndexState, FolderCoverage } from '$lib/tauri-commands'
+import type { MessageKey } from '$lib/intl/keys.gen'
+import type { TranslationParams } from '$lib/intl/messages.svelte'
 
 // Mock dependencies
 vi.mock('$lib/tauri-commands', () => ({
@@ -616,5 +619,50 @@ describe('getImageIndexBadge', () => {
       const badge = getImageIndexBadge(state)
       expect(badge === null || typeof badge.icon === 'string').toBe(true)
     }
+  })
+})
+
+describe('getFolderCoverageBadge', () => {
+  // A deterministic stand-in for `tString`: echoes the key so we can assert which
+  // message was chosen without pulling in the i18n runtime.
+  const t = vi.fn((key: MessageKey, _params?: TranslationParams): string => `t:${key}`)
+  beforeEach(() => t.mockClear())
+
+  it('renders no badge when coverage is absent (not yet fetched)', () => {
+    expect(getFolderCoverageBadge(undefined, t)).toBeNull()
+  })
+
+  it('renders no badge when nothing here is eligible (eligible === 0)', () => {
+    const cov: FolderCoverage = { path: '/a', eligible: 0, accounted: 0 }
+    expect(getFolderCoverageBadge(cov, t)).toBeNull()
+  })
+
+  it('all-indexed (accounted === eligible) → circle-check with the allIndexed tooltip', () => {
+    const cov: FolderCoverage = { path: '/a', eligible: 50, accounted: 50 }
+    const badge = getFolderCoverageBadge(cov, t)
+    expect(badge?.icon).toBe('circle-check')
+    expect(badge?.tooltip).toBe('t:fileExplorer.imageIndex.folder.allIndexed')
+    expect(t).toHaveBeenCalledWith('fileExplorer.imageIndex.folder.allIndexed', expect.objectContaining({ total: 50 }))
+  })
+
+  it('some-pending (accounted < eligible) → circle-dot with the someIndexed tooltip', () => {
+    const cov: FolderCoverage = { path: '/a', eligible: 50, accounted: 12 }
+    const badge = getFolderCoverageBadge(cov, t)
+    expect(badge?.icon).toBe('circle-dot')
+    expect(badge?.tooltip).toBe('t:fileExplorer.imageIndex.folder.someIndexed')
+    expect(t).toHaveBeenCalledWith(
+      'fileExplorer.imageIndex.folder.someIndexed',
+      expect.objectContaining({ done: 12, total: 50 }),
+    )
+  })
+
+  it('zero accounted with some eligible is still some-pending (0/N)', () => {
+    const cov: FolderCoverage = { path: '/a', eligible: 50, accounted: 0 }
+    expect(getFolderCoverageBadge(cov, t)?.icon).toBe('circle-dot')
+  })
+
+  it('treats accounted >= eligible as all-indexed (a stray over-count never reads pending)', () => {
+    const cov: FolderCoverage = { path: '/a', eligible: 50, accounted: 60 }
+    expect(getFolderCoverageBadge(cov, t)?.icon).toBe('circle-check')
   })
 })

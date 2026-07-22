@@ -53,6 +53,9 @@ vi.mock('$lib/tauri-commands', () => ({
   findFileIndex: vi.fn().mockResolvedValue(0),
   getTotalCount: vi.fn().mockResolvedValue(10),
   getSyncStatus: vi.fn().mockResolvedValue({ data: {}, timedOut: false }),
+  // FilePane's onMount registers these image-enrichment listeners.
+  onMediaEnrichProgress: vi.fn().mockResolvedValue(() => {}),
+  onMediaEnrichTerminal: vi.fn().mockResolvedValue(() => {}),
   openFile: vi.fn().mockResolvedValue(undefined),
   listen: vi.fn().mockResolvedValue(() => {}),
   showFileContextMenu: vi.fn().mockResolvedValue(undefined),
@@ -144,6 +147,10 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getBriefColumnWidthMode: vi.fn().mockReturnValue('auto'),
   getBriefColumnWidthMaxPx: vi.fn().mockReturnValue(400),
   getIsCmdrGold: vi.fn().mockReturnValue(false),
+  // Image indexing off, so FilePane's image-index deriveds resolve to false rather than
+  // calling an undefined getter (a throw in a $derived corrupts sibling reactive effects).
+  getMediaIndexEnabled: vi.fn().mockReturnValue(false),
+  getMediaIndexShowFileStatusIcons: vi.fn().mockReturnValue(false),
 }))
 
 vi.mock('$lib/drag-drop', () => ({ startDragTracking: vi.fn() }))

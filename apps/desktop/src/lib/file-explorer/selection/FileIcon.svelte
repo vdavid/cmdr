@@ -91,7 +91,13 @@
         <img class="sync-badge" src={syncIcon} alt="" width="10" height="10" />
     {/if}
     {#if imageIndexBadge}
-        <span class="image-index-badge" use:tooltip={tString(imageIndexBadge.tooltipKey)}>
+        <!-- Folder badges carry an already-resolved `tooltip` (interpolated counts); file
+             badges carry a static `tooltipKey` resolved here. Exactly one is set. -->
+        <span
+            class="image-index-badge"
+            use:tooltip={imageIndexBadge.tooltip ??
+                (imageIndexBadge.tooltipKey ? tString(imageIndexBadge.tooltipKey) : '')}
+        >
             <Icon name={imageIndexBadge.icon} size={10} />
         </span>
     {/if}

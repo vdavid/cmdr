@@ -48,8 +48,6 @@ lives in `FilePane.svelte` as a `Set<number>`).
   `isVolumeScanning(volumeId)` and dirs are selected, and in `file-info` mode via shared `getDirSizeDisplayState(...)`
   (one decider with FullList, so Brief matches Full's size column). Both key on the pane's `volumeId`. Only directory
   sizes get the hint; file sizes are always accurate.
-- **Image-search readout** (`$lib/media-index/FolderIndexStatus.svelte`): what image search covers in this folder. LOCAL
-  panes only (the lists match OS paths); voices COVERAGE, never completion. [DETAILS.md](DETAILS.md).
 - **Symlink hint (info glyph)** appears next to a directory's size in `file-info` mode when
   `entry.recursiveHasSymlinks === true`. Explains why a folder of symlinks may show `0 bytes`: Cmdr deliberately matches
   `du`/Finder by not double-counting symlinked content. The flag is computed by indexing (`recursive_has_symlinks` on

@@ -3,12 +3,21 @@
  */
 
 import type { FileEntry, SyncStatus } from '../types'
-import { enrichTags, getFileRange, getDirStatsBatch, type DirStats, type FileIndexState } from '$lib/tauri-commands'
+import {
+  enrichTags,
+  getFileRange,
+  getDirStatsBatch,
+  type DirStats,
+  type FileIndexState,
+  type FolderCoverage,
+} from '$lib/tauri-commands'
 import { prefetchIcons, prefetchCustomFolderIcons } from '$lib/icon-cache'
 import { getUseAppIconsForDocuments } from '$lib/settings/reactive-settings.svelte'
 import { getSetting } from '$lib/settings/settings-store'
+import { formatInteger } from '$lib/intl/number-format'
 import type { IconName } from '$lib/ui/icons/icon-map'
 import type { MessageKey } from '$lib/intl/keys.gen'
+import type { TranslationParams } from '$lib/intl/messages.svelte'
 
 export type { DirStats } from '$lib/tauri-commands'
 
@@ -30,11 +39,15 @@ export function getSyncIconPath(status: SyncStatus | undefined): string | undefi
   return iconMap[status]
 }
 
-/** The resolved top-right image-index badge for a file row: a glyph plus the i18n
- *  key for its tooltip text. `null` means render no badge. */
+/** The resolved top-right image-index badge for a file OR folder row: a glyph plus
+ *  its tooltip. `null` means render no badge. The tooltip is EITHER a static i18n
+ *  `tooltipKey` (file badges, one per state) OR an already-resolved `tooltip` string
+ *  (folder badges, which interpolate the `accounted/eligible` counts and so can't be a
+ *  static key). Exactly one of the two is set; `FileIcon` renders whichever it finds. */
 export interface ImageIndexBadge {
   icon: IconName
-  tooltipKey: MessageKey
+  tooltipKey?: MessageKey
+  tooltip?: string
 }
 
 /**
@@ -58,6 +71,44 @@ export function getImageIndexBadge(state: FileIndexState | undefined): ImageInde
       return { icon: 'circle-slash', tooltipKey: 'fileExplorer.imageIndex.file.excluded' }
     case 'notApplicable':
       return null
+  }
+}
+
+/**
+ * Maps a folder's subtree image-index coverage to its top-right badge (glyph + a
+ * resolved `accounted/eligible` tooltip), or `null` for no badge. Two visible states:
+ * all-indexed (`accounted >= eligible`) → `circle-check`; some-pending
+ * (`accounted < eligible`) → `circle-dot` (a distinct hollow-with-center glyph, quieter
+ * than the file `pending` dashes). `eligible === 0` (nothing here is on the to-be-indexed
+ * list) and an absent coverage both render nothing.
+ *
+ * The tooltip carries the subtree fraction, so it can't be a static i18n key: `t` is
+ * passed in (kept pure/testable), and counts ride as preformatted `*Text` params with the
+ * raw integers alongside for plural selection (the `$lib/intl` count convention).
+ */
+export function getFolderCoverageBadge(
+  coverage: FolderCoverage | undefined,
+  t: (key: MessageKey, params?: TranslationParams) => string,
+): ImageIndexBadge | null {
+  if (!coverage || coverage.eligible === 0) return null
+  const { accounted, eligible } = coverage
+  if (accounted >= eligible) {
+    return {
+      icon: 'circle-check',
+      tooltip: t('fileExplorer.imageIndex.folder.allIndexed', {
+        total: eligible,
+        totalText: formatInteger(eligible),
+      }),
+    }
+  }
+  return {
+    icon: 'circle-dot',
+    tooltip: t('fileExplorer.imageIndex.folder.someIndexed', {
+      done: accounted,
+      doneText: formatInteger(accounted),
+      total: eligible,
+      totalText: formatInteger(eligible),
+    }),
   }
 }
 
@@ -127,6 +178,8 @@ export interface FetchRangeParams {
   cachedRange: { start: number; end: number }
   onSyncStatusRequest?: (paths: string[]) => void
   onIndexStatusRequest?: (paths: string[]) => void
+  /** Request folder-coverage badges for the visible DIRECTORY rows (folders only). */
+  onFolderCoverageRequest?: (folderPaths: string[]) => void
   /**
    * Bypass the "already cached" short-circuit. Set when the backing listing
    * changed (e.g. a `directory-diff` event added/removed entries within the
@@ -188,6 +241,7 @@ export async function fetchVisibleRange(params: FetchRangeParams): Promise<Fetch
     cachedRange,
     onSyncStatusRequest,
     onIndexStatusRequest,
+    onFolderCoverageRequest,
     force,
   } = params
 
@@ -216,6 +270,9 @@ export async function fetchVisibleRange(params: FetchRangeParams): Promise<Fetch
   const paths = entries.map((e) => e.path)
   onSyncStatusRequest?.(paths)
   onIndexStatusRequest?.(paths)
+  // Folder-coverage badges only apply to the visible DIRECTORY rows (reuse the same
+  // filtered list the folder-icon prefetch above uses).
+  onFolderCoverageRequest?.(visibleDirPaths)
 
   // Enrich Finder tags for the visible range, mirroring the custom-folder-icon
   // getxattr prefetch above. The backend defers the tag getxattr off the bulk

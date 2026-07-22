@@ -19,6 +19,7 @@
         'circle-alert': 'Serious-error marker in the error pane, the transfer error dialog, inline error rows, and the SMB share-list error state.',
         'circle-check': 'Done step marker in the drive-indexing checklist, and the "indexed" file-icon image-index overlay.',
         'circle-dashed': 'The "waiting to be indexed" (pending) file-icon image-index overlay.',
+        'circle-dot': 'The "some images still pending" folder-icon image-index coverage overlay.',
         'circle-slash': 'The "not included in image search" (excluded) file-icon image-index overlay.',
         'circle-x': 'Unreachable-host status marker in the network (SMB) browser, and the "could not be indexed" (failed) file-icon image-index overlay.',
         clock: 'Timed-out-host status marker in the network (SMB) browser.',

@@ -1,7 +1,7 @@
 <script lang="ts">
     import { untrack } from 'svelte'
     import type { FileEntry, SortColumn, SortOrder, SyncStatus } from '../types'
-    import type { FileIndexState } from '$lib/tauri-commands'
+    import type { FileIndexState, FolderCoverage } from '$lib/tauri-commands'
     import { calculateVirtualWindowVariable, getScrollToPositionVariable } from './virtual-scroll'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { startSelectionDragTracking, type DragFileInfo } from '../drag/drag-drop'
@@ -20,6 +20,7 @@
     import {
         getSyncIconPath,
         getImageIndexBadge,
+        getFolderCoverageBadge,
         createParentEntry,
         getEntryAt as getEntryAtUtil,
         fetchVisibleRange as fetchVisibleRangeUtil,
@@ -77,6 +78,8 @@
         isFocused?: boolean
         syncStatusMap?: Record<string, SyncStatus>
         indexStatusMap?: Record<string, FileIndexState>
+        /** Per-folder image-index coverage, keyed by folder path (folder-icon overlay). */
+        folderCoverageMap?: Record<string, FolderCoverage>
         selectedIndices?: Set<number>
         hasParent: boolean
         parentPath: string
@@ -91,6 +94,7 @@
         onContextMenu?: (entry: FileEntry) => void
         onSyncStatusRequest?: (paths: string[]) => void
         onIndexStatusRequest?: (paths: string[]) => void
+        onFolderCoverageRequest?: (folderPaths: string[]) => void
         onSortChange?: (column: SortColumn) => void
         onVisibleRangeChange?: (start: number, end: number) => void
         /** Called when rename input value changes */
@@ -118,6 +122,7 @@
         isFocused = true,
         syncStatusMap = {},
         indexStatusMap = {},
+        folderCoverageMap = {},
         selectedIndices = new Set<number>(),
         hasParent,
         parentPath,
@@ -130,6 +135,7 @@
         onContextMenu,
         onSyncStatusRequest,
         onIndexStatusRequest,
+        onFolderCoverageRequest,
         onSortChange,
         onVisibleRangeChange,
         onRenameInput,
@@ -271,6 +277,7 @@
                 cachedRange,
                 onSyncStatusRequest,
                 onIndexStatusRequest,
+                onFolderCoverageRequest,
                 force,
             })
             if (result) {
@@ -894,7 +901,9 @@
                     >
                         {#each column.files as { file, globalIndex } (file.path)}
                             {@const syncIcon = getSyncIconPath(syncStatusMap[file.path])}
-                            {@const imageIndexBadge = getImageIndexBadge(indexStatusMap[file.path])}
+                            {@const imageIndexBadge = file.isDirectory
+                                ? getFolderCoverageBadge(folderCoverageMap[file.path], tString)
+                                : getImageIndexBadge(indexStatusMap[file.path])}
                             {@const fileIsRestricted = isRestricted(file.path)}
                             <!-- svelte-ignore a11y_click_events_have_key_events,a11y_interactive_supports_focus -->
                             <div

@@ -910,50 +910,6 @@
   "@fileExplorer.dateTooltip.lastModified": {
     "sourceHash": "0fe1058"
   },
-  "fileExplorer.imageIndex.indexed": "Bilder indexerade",
-  "@fileExplorer.imageIndex.indexed": {
-    "sourceHash": "f4b2ca5"
-  },
-  "fileExplorer.imageIndex.indexedTooltip": "Den här mappen finns i din lista över mappar att indexera. Allt nytt här kommer med i nästa genomsökning.",
-  "@fileExplorer.imageIndex.indexedTooltip": {
-    "sourceHash": "3c9dd0c"
-  },
-  "fileExplorer.imageIndex.indexing": "Indexerar bilder",
-  "@fileExplorer.imageIndex.indexing": {
-    "sourceHash": "41f1298"
-  },
-  "fileExplorer.imageIndex.indexingTooltip": "Cmdr indexerar bilder på den här enheten just nu, {percent} % är klart.",
-  "@fileExplorer.imageIndex.indexingTooltip": {
-    "sourceHash": "ee54884"
-  },
-  "fileExplorer.imageIndex.indexingTooltipNoProgress": "Cmdr indexerar bilder på den här enheten just nu.",
-  "@fileExplorer.imageIndex.indexingTooltipNoProgress": {
-    "sourceHash": "d7b5450"
-  },
-  "fileExplorer.imageIndex.notIndexed": "Bilder inte indexerade",
-  "@fileExplorer.imageIndex.notIndexed": {
-    "sourceHash": "b089c28"
-  },
-  "fileExplorer.imageIndex.notIndexedTooltip": "Bildsökningen täcker bara de mappar du har valt, och den här är inte en av dem.",
-  "@fileExplorer.imageIndex.notIndexedTooltip": {
-    "sourceHash": "922fbec"
-  },
-  "fileExplorer.imageIndex.excluded": "Bilder uteslutna",
-  "@fileExplorer.imageIndex.excluded": {
-    "sourceHash": "18a83cc"
-  },
-  "fileExplorer.imageIndex.excludedTooltip": "Du har uteslutit den här mappen från bildsökningen, så inget här indexeras.",
-  "@fileExplorer.imageIndex.excludedTooltip": {
-    "sourceHash": "1d0bb6d"
-  },
-  "fileExplorer.imageIndex.automatic": "Bilder indexeras automatiskt",
-  "@fileExplorer.imageIndex.automatic": {
-    "sourceHash": "645c593"
-  },
-  "fileExplorer.imageIndex.automaticTooltip": "Cmdr väljer vilka mappar som indexeras utifrån hur mycket du arbetar med dem, så den här mappen kan vara med eller inte.",
-  "@fileExplorer.imageIndex.automaticTooltip": {
-    "sourceHash": "8fd2bde"
-  },
   "fileExplorer.selectionInfo.nothingHere": "Inget här.",
   "@fileExplorer.selectionInfo.nothingHere": {
     "sourceHash": "140a431"

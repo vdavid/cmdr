@@ -909,50 +909,6 @@
   "@fileExplorer.dateTooltip.lastModified": {
     "sourceHash": "0fe1058"
   },
-  "fileExplorer.imageIndex.indexed": "Đã lập chỉ mục hình ảnh",
-  "@fileExplorer.imageIndex.indexed": {
-    "sourceHash": "f4b2ca5"
-  },
-  "fileExplorer.imageIndex.indexedTooltip": "Thư mục này nằm trong danh sách thư mục cần lập chỉ mục của bạn. Mọi thứ mới ở đây sẽ được thêm vào ở lượt quét tiếp theo.",
-  "@fileExplorer.imageIndex.indexedTooltip": {
-    "sourceHash": "3c9dd0c"
-  },
-  "fileExplorer.imageIndex.indexing": "Đang lập chỉ mục hình ảnh",
-  "@fileExplorer.imageIndex.indexing": {
-    "sourceHash": "41f1298"
-  },
-  "fileExplorer.imageIndex.indexingTooltip": "Cmdr đang lập chỉ mục hình ảnh trên ổ đĩa này, đã xong {percent}%.",
-  "@fileExplorer.imageIndex.indexingTooltip": {
-    "sourceHash": "ee54884"
-  },
-  "fileExplorer.imageIndex.indexingTooltipNoProgress": "Cmdr đang lập chỉ mục hình ảnh trên ổ đĩa này.",
-  "@fileExplorer.imageIndex.indexingTooltipNoProgress": {
-    "sourceHash": "d7b5450"
-  },
-  "fileExplorer.imageIndex.notIndexed": "Chưa lập chỉ mục hình ảnh",
-  "@fileExplorer.imageIndex.notIndexed": {
-    "sourceHash": "b089c28"
-  },
-  "fileExplorer.imageIndex.notIndexedTooltip": "Tìm kiếm hình ảnh chỉ bao gồm những thư mục bạn đã chọn, và thư mục này không nằm trong đó.",
-  "@fileExplorer.imageIndex.notIndexedTooltip": {
-    "sourceHash": "922fbec"
-  },
-  "fileExplorer.imageIndex.excluded": "Đã loại trừ hình ảnh",
-  "@fileExplorer.imageIndex.excluded": {
-    "sourceHash": "18a83cc"
-  },
-  "fileExplorer.imageIndex.excludedTooltip": "Bạn đã loại trừ thư mục này khỏi tìm kiếm hình ảnh, nên ở đây không có gì được lập chỉ mục.",
-  "@fileExplorer.imageIndex.excludedTooltip": {
-    "sourceHash": "1d0bb6d"
-  },
-  "fileExplorer.imageIndex.automatic": "Tự động lập chỉ mục hình ảnh",
-  "@fileExplorer.imageIndex.automatic": {
-    "sourceHash": "645c593"
-  },
-  "fileExplorer.imageIndex.automaticTooltip": "Cmdr chọn thư mục để lập chỉ mục dựa trên mức độ bạn làm việc với chúng, nên thư mục này có thể được lập chỉ mục, cũng có thể không.",
-  "@fileExplorer.imageIndex.automaticTooltip": {
-    "sourceHash": "8fd2bde"
-  },
   "fileExplorer.selectionInfo.nothingHere": "Không có gì ở đây.",
   "@fileExplorer.selectionInfo.nothingHere": {
     "sourceHash": "140a431"

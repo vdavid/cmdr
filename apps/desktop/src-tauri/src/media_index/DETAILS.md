@@ -1014,14 +1014,12 @@ top-k over a single user's library is low-ms. Measure on a real corpus and recor
 
 ## What's left for later
 
-- **Per-folder COUNTS:** there's still no cheap per-folder count (it would mean a `media.db` prefix scan per folder per
-  poll), so nothing voices "N of M images indexed here". The pane's per-folder readout
-  (`$lib/media-index/FolderIndexStatus.svelte` + `folder-index-state.ts`, in each pane's status bar) works around it by
-  describing COVERAGE, not completion: it reads the toggle, the scope, and the two folder lists, plus the live
-  per-volume enrichment activity, and says `indexed` / `indexing` / `not indexed` / `excluded` / `automatic`. Two honest
-  gaps follow from having no query: in the `ByImportance` scope a folder's importance score is a backend fact the FE
-  can't get, so it says "indexed automatically" rather than yes or no; and the readout is LOCAL panes only, since only a
-  local pane's path is the absolute OS path the folder lists match on. A real per-folder counts query would close both.
+- **Per-folder COUNTS now exist** (`coverage.rs`'s incremental `accounted` aggregate + subtree rollups): the honest
+  `eligible` / `accounted` per folder feed `media_index_file_status` / `media_index_folder_coverage`, which the file- and
+  folder-icon overlays consume (`file-explorer/selection/DETAILS.md` § Image-index overlay) and the drive dot rolls up per
+  volume. Accepted staleness caveat: a `done` row whose file changed since indexing still counts as `accounted` until
+  re-enriched, so a folder/drive can briefly read complete while a changed file awaits re-work. Excluding stale rows would
+  need a per-row `(mtime, size)` compare against the live index; out of scope.
 - **CLIP model size:** the shipped towers are non-palettized (~392 MB) because 8-bit palettization NaN'd the text tower;
   a per-layer palettization exclusion would cut it toward ~138 MB.
 - **Later:** faces (detect/embed/cluster/name), the durable identity store, and LLM captions.

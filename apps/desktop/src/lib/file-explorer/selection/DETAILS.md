@@ -74,33 +74,6 @@ Other layout: filename truncation uses `useShortenMiddle` with `preferBreakAt: '
 `measureDateColumnWidth(formatDateTime)` to stay in sync with FullList; `formatDateTime` comes from
 `reactive-settings.svelte`.
 
-## Image-search readout (`FolderIndexStatus`)
-
-What image search covers in the pane's current folder, rendered by `SelectionInfo` in all four display modes. The
-component lives with its feature (`$lib/media-index/FolderIndexStatus.svelte`); the decision is the pure
-`folder-index-state.ts::deriveFolderIndexState`.
-
-- **Placement**: it's the last child of `.selection-info`, but CSS `order` puts it between the mode-specific content
-  (order 0) and the free-space text (order 2). That's what keeps one instance serving four modes whose markup differs;
-  rendering it inside each mode branch would be four copies to keep in step.
-- **States and where each comes from**: `excluded` (an `mediaIndex.excludedFolders` entry at or above the folder — the
-  hard veto, checked first because the backend gives it precedence too), `indexing` (covered AND this volume has live
-  non-paused `media-enrich-progress` activity), `indexed` (a `mediaIndex.alwaysIndexFolders` entry at or above the
-  folder), `automatic` (`ByImportance` scope, no explicit entry), `notIndexed` (`ChosenFolders` scope, no entry), and
-  `off` (master toggle off, or no OS path), which renders nothing.
-- **Decision: coverage, never completion.** There's no cheap per-folder count (`media_index/DETAILS.md` § What's left
-  for later), so nothing here claims images ARE indexed, only that the settings cover them; the tooltips carry the
-  caveat, and the progress percentage in the `indexing` tooltip is explicitly voiced as the whole drive's.
-- **Decision: `automatic` is a state, not a guess.** In the `ByImportance` scope a folder's importance score is a
-  backend fact with no FE query, so the readout says the choice is automatic rather than picking yes or no. Inventing a
-  per-folder importance IPC just to color this label wasn't worth a new query on the pane's hot path.
-- **Decision: local panes only.** `FilePane` passes an empty `currentPath` unless `caps.kind === 'local'`. The folder
-  lists match absolute OS paths, and an archive / MTP / virtual pane's path isn't one, so it would miss every list and
-  read as "not indexed". A mounted SMB share loses the readout too (the `smb` kind also covers direct-SMB volumes, whose
-  paths aren't OS paths) — an honest omission, and closable when the two are distinguishable.
-- **Informational, not actionable**: no button, matching the deliberate call not to make the bulk-rename bail
-  actionable. The add/remove and exclude actions live in the folder's right-click menu.
-
 ## Phone-storage hint (MTP)
 
 On a phone reached over USB (MTP), the disk-space readout reports the whole device userdata partition, but Cmdr can only
@@ -180,20 +153,33 @@ live-updates so a focus flip or rebind mid-hover is reflected immediately.
 
 ## Image-index overlay (`FileIcon.svelte`, top-right)
 
-The per-file image-search status badge: a subtle gray glyph over an image's icon, no background fill. Corner is
-top-right (bottom-right = sync, top-left = symlink-with-sync are already taken).
+A subtle gray glyph over an icon's top-right corner, no background fill (bottom-right = sync, top-left =
+symlink-with-sync are already taken). One badge shape, `ImageIndexBadge` (`{ icon, tooltipKey? , tooltip? }`), serves
+BOTH the per-FILE image status and the per-FOLDER coverage; `FileIcon` renders whichever the row resolves. The badge
+carries EITHER a static `tooltipKey` (files, one message per state) OR an already-resolved `tooltip` string (folders,
+which interpolate the `accounted/eligible` counts and so can't key a static message); `FileIcon` shows the `tooltip` if
+present, else `tString(tooltipKey)`.
 
-- **State → badge** is the pure `getImageIndexBadge(state)` in [`../views/file-list-utils.ts`](../views/file-list-utils.ts)
-  (unit-tested, exhaustive over `FileIndexState`): `indexed` → `circle-check`, `pending` → `circle-dashed`, `stale` →
-  `rotate-cw`, `failed` → `circle-x`, `excluded` → `circle-slash`. `notApplicable` (non-media) and an absent state →
-  `null` (no badge). Returns `{ icon, tooltipKey }`; `FileIcon` renders the glyph + a `use:tooltip` from the key.
-- **Data flow mirrors `syncStatusMap`**: `FilePane` owns `indexStatusMap` (path → `FileIndexState`), populated by
-  `mediaIndexFileStatus(volumeId, visiblePaths)` via the views' `onIndexStatusRequest` (same visible-range channel as
-  sync status), and threaded to `FullList` / `BriefList`, which resolve per row with `getImageIndexBadge` and pass
+- **File state → badge**: the pure `getImageIndexBadge(state)` in
+  [`../views/file-list-utils.ts`](../views/file-list-utils.ts) (unit-tested, exhaustive over `FileIndexState`):
+  `indexed` → `circle-check`, `pending` → `circle-dashed`, `stale` → `rotate-cw`, `failed` → `circle-x`, `excluded` →
+  `circle-slash`. `notApplicable` (non-media, incl. folders) and an absent state → `null` (no badge). Returns
+  `{ icon, tooltipKey }`.
+- **Folder coverage → badge**: the pure `getFolderCoverageBadge(coverage, t)` (also unit-tested): `null` when coverage
+  is absent or `eligible === 0`; all-indexed (`accounted >= eligible`) → `circle-check`; some-pending
+  (`accounted < eligible`) → `circle-dot` (a distinct hollow-with-center glyph, quieter than the file `pending` dashes).
+  It resolves the `accounted/eligible` tooltip via a passed-in `t` (`tString`), counts preformatted as `*Text` params.
+- **Data flow mirrors `syncStatusMap`**: `FilePane` owns `indexStatusMap` (path → `FileIndexState`) AND
+  `folderCoverageMap` (path → `FolderCoverage`), populated by `mediaIndexFileStatus` / `mediaIndexFolderCoverage` for the
+  visible paths via the views' `onIndexStatusRequest` / `onFolderCoverageRequest` (same visible-range channel as sync
+  status; folder coverage runs for the visible DIRECTORY rows only). Both maps thread to `FullList` / `BriefList`, which
+  resolve per row: `file.isDirectory ? getFolderCoverageBadge(...) : getImageIndexBadge(...)`, and pass one
   `imageIndexBadge` to `FileIcon`.
-- **Gating**: fetched + rendered only when `mediaIndex.enabled` AND `mediaIndex.showFileStatusIcons` are on AND the pane
-  is local (index paths == OS paths). Read reactively via `getMediaIndexEnabled` / `getMediaIndexShowFileStatusIcons`
-  (`reactive-settings.svelte.ts`). Turning the setting off clears the map at once; the listing loader clears it on
-  navigation (`clearIndexStatusMap`).
+- **Gating**: the FILE overlay is fetched + rendered only when `mediaIndex.enabled` AND `mediaIndex.showFileStatusIcons`
+  are on AND the pane is local; the FOLDER overlay (and the drive dot) drop the file-badge setting — they're inherently
+  sparse and always on when `mediaIndex.enabled` AND the pane is local (index paths == OS paths). Read reactively via
+  `getMediaIndexEnabled` / `getMediaIndexShowFileStatusIcons` (`reactive-settings.svelte.ts`). Turning a gate off clears
+  its map at once; the listing loader clears both on navigation (`clearIndexStatusMap` / `clearFolderCoverageMap`).
 - **Refresh triggers** (event-driven, no poll): the per-visible-range fetch on listing change, plus a debounced refetch
-  of the known paths on `media-enrich-progress` for this volume and a final refetch on `media-enrich-terminal`.
+  of the known file paths + folder paths on `media-enrich-progress` for this volume and a final refetch on
+  `media-enrich-terminal`.

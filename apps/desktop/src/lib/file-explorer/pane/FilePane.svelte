@@ -19,6 +19,7 @@
         getSyncStatus,
         getTotalCount,
         mediaIndexFileStatus,
+        mediaIndexFolderCoverage,
         onMediaEnrichProgress,
         onMediaEnrichTerminal,
         onMtpDeviceDisconnected,
@@ -27,6 +28,7 @@
         showFileContextMenu,
         showParentRowContextMenu,
         type FileIndexState,
+        type FolderCoverage,
         type Location,
         type UnlistenFn,
         updateMenuContext,
@@ -324,6 +326,9 @@
         clearIndexStatusMap: () => {
             indexStatusMap = {}
         },
+        clearFolderCoverageMap: () => {
+            folderCoverageMap = {}
+        },
         clearSyncRetryTimer: () => {
             clearTimeout(syncRetryTimer)
             syncRetryTimer = undefined
@@ -448,12 +453,6 @@
         }
     })
 
-    // The folder path the status bar's image-search readout judges: LOCAL panes only.
-    // Image indexing matches folders by absolute OS path, and only a local pane's path
-    // is one — an archive, MTP, or virtual pane's path would silently miss every list
-    // and read as "not indexed", so those panes say nothing instead.
-    const imageIndexFolderPath = $derived(caps.kind === 'local' ? (canonicalPath ?? '') : '')
-
     // The per-file image-index overlay is fetched + rendered only when image indexing is on,
     // the file-badge setting is on, AND this is a LOCAL pane (index paths == OS paths; an
     // archive/MTP/virtual pane's paths would never match the index). Both settings are
@@ -461,6 +460,12 @@
     const imageIndexFileStatusEnabled = $derived(
         caps.kind === 'local' && getMediaIndexEnabled() && getMediaIndexShowFileStatusIcons(),
     )
+
+    // The per-folder coverage overlay: fetched + rendered when image indexing is on AND this
+    // is a LOCAL pane. Deliberately NOT gated on the file-badge setting — folder overlays (and
+    // the drive dot) are inherently sparse and always on. Live-applied, so this re-derives
+    // without a restart.
+    const imageIndexFolderCoverageEnabled = $derived(caps.kind === 'local' && getMediaIndexEnabled())
 
     // ── Git browser ─────────────────────────────────────────────────────
     // The breadcrumb repo chip + file-list git-status column: their toggles,
@@ -1161,6 +1166,9 @@
     // Image-index status for visible files, keyed by OS path (the file-icon overlay).
     // Populated per visible range and refreshed on this volume's enrich activity.
     let indexStatusMap = $state<Record<string, FileIndexState>>({})
+    // Per-folder image-index coverage, keyed by folder path (the folder-icon overlay).
+    // Populated per visible range (directory rows only) and refreshed on enrich activity.
+    let folderCoverageMap = $state<Record<string, FolderCoverage>>({})
     const syncPollIntervalMs = 3000
     let syncPollInterval: ReturnType<typeof setInterval>
     // Pending retry timer for timed-out sync status fetches (max 1 retry)
@@ -1227,6 +1235,8 @@
     const debouncedRefreshIndexStatus = createDebounce(() => {
         const paths = Object.keys(indexStatusMap)
         if (paths.length > 0) void fetchIndexStatusForPaths(paths)
+        const folderPaths = Object.keys(folderCoverageMap)
+        if (folderPaths.length > 0) void fetchFolderCoverageForPaths(folderPaths)
     }, 400)
 
     /** Handle visible range change from list components */
@@ -1423,6 +1433,32 @@
     $effect(() => {
         if (!imageIndexFileStatusEnabled && Object.keys(indexStatusMap).length > 0) {
             indexStatusMap = {}
+        }
+    })
+
+    // Fetch folder-coverage badges for the visible DIRECTORY rows (called by the List
+    // components, and by the enrich-event handlers for the already-known folders). Gated on
+    // image indexing + a local pane (NOT the file-badge setting; folder overlays are always
+    // on). The backend returns one entry per folder in request order.
+    async function fetchFolderCoverageForPaths(folderPaths: string[]) {
+        if (!imageIndexFolderCoverageEnabled || folderPaths.length === 0) return
+        try {
+            const coverages = await mediaIndexFolderCoverage(volumeId, folderPaths)
+            const next: Record<string, FolderCoverage> = { ...folderCoverageMap }
+            for (const coverage of coverages) {
+                next[coverage.path] = coverage
+            }
+            folderCoverageMap = next
+        } catch {
+            // Silently ignore - the folder-coverage overlay is optional.
+        }
+    }
+
+    // Mirror `indexStatusMap`'s clear: drop the folder-coverage map the moment image indexing
+    // goes off (or the pane goes non-local), so stale badges don't linger.
+    $effect(() => {
+        if (!imageIndexFolderCoverageEnabled && Object.keys(folderCoverageMap).length > 0) {
+            folderCoverageMap = {}
         }
     })
 
@@ -2197,6 +2233,8 @@
             if (payload.volumeId !== volumeId) return
             const paths = Object.keys(indexStatusMap)
             if (paths.length > 0) void fetchIndexStatusForPaths(paths)
+            const folderPaths = Object.keys(folderCoverageMap)
+            if (folderPaths.length > 0) void fetchFolderCoverageForPaths(folderPaths)
         }).then((unlisten) => mediaEnrichUnlisten.push(unlisten))
 
         // Poll to detect externally deleted directories (macOS FSEvents doesn't notify)
@@ -2416,6 +2454,7 @@
                 {isFocused}
                 {syncStatusMap}
                 {indexStatusMap}
+                {folderCoverageMap}
                 selectedIndices={selection.selectedIndices}
                 {hasParent}
                 {sortBy}
@@ -2428,6 +2467,7 @@
                 onContextMenu={handleContextMenu}
                 onSyncStatusRequest={fetchSyncStatusForPaths}
                 onIndexStatusRequest={fetchIndexStatusForPaths}
+                onFolderCoverageRequest={fetchFolderCoverageForPaths}
                 onSortChange={onSortChange
                     ? (column: SortColumn) => {
                           onSortChange(column)
@@ -2454,6 +2494,7 @@
                 {isFocused}
                 {syncStatusMap}
                 {indexStatusMap}
+                {folderCoverageMap}
                 selectedIndices={selection.selectedIndices}
                 {hasParent}
                 {sortBy}
@@ -2468,6 +2509,7 @@
                 onContextMenu={handleContextMenu}
                 onSyncStatusRequest={fetchSyncStatusForPaths}
                 onIndexStatusRequest={fetchIndexStatusForPaths}
+                onFolderCoverageRequest={fetchFolderCoverageForPaths}
                 onRenameInput={handleRenameInput}
                 onRenameSubmit={handleRenameSubmit}
                 onRenameCancel={handleRenameCancel}
@@ -2492,7 +2534,6 @@
             currentDirModifiedAt={undefined}
             stats={listingStats}
             selectedCount={selection.selectedIndices.size}
-            currentPath={imageIndexFolderPath}
             volumeSpace={diskSpace.volumeSpace}
             {mtpSpaceHint}
         />

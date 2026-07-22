@@ -32,6 +32,9 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   ejectable OR the volume has any SMB connection state
 - **`DriveIndexBadge.svelte`**: Per-drive index freshness dot (gray/blue/green/yellow) + its click menu (see § Drive
   index freshness badge)
+- **`ImageIndexDriveBadge.svelte`** + **`image-index-drive-state.ts`**: the second per-drive dot, for IMAGE-search
+  indexing (gray/yellow/green), and its pure state/coverage mapping (`image-index-drive-state.test.ts`). See § Image-index
+  drive dot
 - **`drive-index-status.ts`**: Pure mapping for the badge: `VolumeIndexStatus` → state/color, menu items per state, the
   "N min, S s" duration formatter (`drive-index-status.test.ts`)
 - **`drive-index-manager.svelte.ts`**: Reactive `volumeId → VolumeIndexStatus` map; fetches on demand and subscribes to
@@ -376,6 +379,30 @@ formatter are the pure `drive-index-status.ts` (unit-tested). Blue pulses (gated
 - **The dropdown-row menu can be clipped by the dropdown's `overflow-y: auto`** (unlike the breadcrumb placement). The
   breadcrumb badge is the primary surface (D3) and isn't clipped; the row menu is a convenience. If this becomes a
   problem, switch the row menu to `position: fixed` from `getBoundingClientRect()` like the connection submenu.
+
+### Image-index drive dot
+
+A SECOND small dot (`ImageIndexDriveBadge.svelte`) sits immediately after the filesystem `DriveIndexBadge` at both
+placements (active-drive breadcrumb + each dropdown drive row), reporting IMAGE-search indexing per drive. Three states,
+mapped by the pure `image-index-drive-state.ts::imageIndexDriveState` (unit-tested): gray `off` (image search disabled,
+or the volume isn't image-indexed), pulsing yellow `indexing` (a pass is actively enriching OR the covered set isn't
+fully enriched), green `done` (idle and every covered image enriched). The dot reuses the freshness dot's 10px shape +
+pulse.
+
+- **State inputs**: `getMediaIndexEnabled()` (master toggle, reactive), the per-volume `mediaIndexVolumeState`
+  (`enabled` + the covered/enriched counts), and `getVolumeEnrichActivity(volumeId)` (live, reactive; a PAUSED pass
+  reads `indexing`, not `done`). The tooltip's `done / total` comes from `imageIndexDriveCoverage`: total is
+  `coveredQualifyingCount ?? qualifyingCount` (the in-scope denominator, so a narrow scope can still reach `done`), done
+  is `enrichedCount` clamped to total. It hides itself entirely when `qualifyingCount` is `0` or `null`, so drives with
+  no images (or not scored yet) stay clean.
+- **Data + refresh**: `VolumeBreadcrumb` owns a `SvelteMap<volumeId, MediaIndexVolumeState>` filled by
+  `mediaIndexVolumeState` — the active drive on change, dropdown rows once on open — and refetched on that volume's
+  `media-enrich-progress` / `media-enrich-terminal` (only for volumes already in the map, so off-screen drives aren't
+  tracked). Bounded to the shown drives, so no poll. Enrich listeners are registered in `onMount`, cleaned in
+  `onDestroy`.
+- **Non-interactive**: unlike the freshness badge (a `<button>` with a menu), this is a focusable `role="img"` span with
+  an `aria-label` + `use:tooltip` (the sanctioned status-glyph pattern, mirroring the corner indicator). There's no menu:
+  the image-search on/off + scope controls live in Settings.
 
 ### Dropdown and submenu UI patterns
 
