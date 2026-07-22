@@ -93,8 +93,29 @@ past ~64 there's little to gain because the bottleneck moves off the network and
 limit: the HDDs sat ~10–18% busy (ZFS ARC served most directory metadata from RAM, so the platters barely moved — a
 genuinely *cold* scan would lean harder on raidz1's ~150 random IOPS), CPU was ~idle, and SMB credits weren't observed
 saturating. So `FULL_LISTING_BUDGET` is set where the concurrency win is essentially captured without piling work onto
-the writer or a busy NAS. The next speedup lever is the writer (larger/looser transactions, fewer per-entry messages)
-or fewer round trips per huge directory (a larger `QueryDirectory` buffer in smb2), NOT more in-flight listings.
+the writer or a busy NAS.
+
+### Two levers past 64 in-flight: connections, and the writer
+
+`FULL_LISTING_BUDGET` stays 64 — but a later NAS-side probe (2026-07-22) showed the *cold* single-session plateau is
+per-connection serialization in the server's ksmbd, not the disks, and that spreading the SAME 64 in-flight listings
+over several TCP connections lifts cold throughput ~3.8×. That's a BACKEND concern, not a scanner one: the SMB backend
+opens a small pool of extra sessions per scan and `list_directory_for_scan` fans out across them, invisibly to this walk
+(the global budget still caps total concurrency). Canonical: `file_system/.../backends/DETAILS.md` § "SMB
+scan-connection pool"; evidence: `smb2/docs/benchmark-findings.md`.
+
+At ~4× listing throughput the single writer's per-second insert rate rises the same, so the FRESH scan
+(`scan_volume_via_trait`) now wraps its `InsertEntriesV2` stream in ONE explicit transaction committed on an interval
+(`SCAN_COMMIT_INTERVAL`, 2 s) via `begin_scan_tx` / `commit_scan_tx`. `insert_entries_v2_batch` already savepoints each
+batch, so in autocommit every batch was an fsync; the outer transaction amortizes fsync to once per interval.
+`commit_scan_tx` (idempotent) closes the transaction before EVERY exit — clean finish, cancel, root-fatal, empty-root,
+disconnect, consecutive-failure — so the connection never returns mid-transaction and `finish_partial_scan`'s marks +
+`ComputeAllAggregates` run in autocommit exactly as before (marks still precede the aggregate). **Crash-safety:** an
+uncommitted transaction rolls back on process death → the partial is lost → next launch heals to a rescan (identical to
+today's `scan_completed_at`-absent behavior); marks/aggregate are still sent AFTER the inserts commit, so a crash never
+leaves ancestors claiming exact sizes over an unstamped descendant. Reconcile is untouched — it already brackets its
+bulk writes via `BulkReconcileGuard`. The remaining lever is fewer round trips per huge directory (a larger
+`QueryDirectory` buffer in smb2), NOT more in-flight listings.
 
 ## Yielding to navigation (`scan_pace.rs`)
 
