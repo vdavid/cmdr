@@ -26,11 +26,11 @@ use rusqlite::Connection;
 use tauri::AppHandle;
 
 use crate::ignore_poison::IgnorePoison;
-use crate::indexing::firmlinks;
+use crate::indexing::paths::firmlinks;
 use crate::indexing::metadata::extract_metadata;
 use crate::indexing::scanner;
 use crate::indexing::store::{self, IndexStore, IndexStoreError};
-use crate::indexing::watcher::FsChangeEvent;
+use crate::indexing::watch::watcher::FsChangeEvent;
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 use crate::indexing::{DEBUG_STATS, IndexPathSpace};
 // Only the test-only `new()` / `new_with_throttle_window` and the rescan tests
@@ -62,7 +62,7 @@ use throttle::{Throttle, ThrottleOutcome};
 /// on every production reconciler, so the two live-loop construction sites
 /// (`scan_completion`, `event_loop::replay`) need no extra wiring.
 pub(in crate::indexing) enum ScanTrigger {
-    /// Production: spawn [`crate::indexing::manager::perform_registry_rescan`],
+    /// Production: spawn [`crate::indexing::lifecycle::manager::perform_registry_rescan`],
     /// which re-resolves this volume's manager in the registry and runs a fresh
     /// single-flight `start_scan`.
     Registry,
@@ -1050,7 +1050,7 @@ pub(crate) fn reconcile_subtree(
 /// Read and filter filesystem children of a directory.
 ///
 /// Shared by both local reconcile walks — the small-scope live `reconcile_subtree`
-/// and the full-tree [`local_reconcile`](crate::indexing::local_reconcile) rescan.
+/// and the full-tree [`local_reconcile`](crate::indexing::reconcile::local_reconcile) rescan.
 /// Returns `None` when the directory itself can't be listed (a permission wall or a
 /// vanished dir), distinct from `Some(vec![])` for an empty-but-readable dir.
 ///

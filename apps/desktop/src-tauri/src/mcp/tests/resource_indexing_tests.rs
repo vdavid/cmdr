@@ -2,7 +2,7 @@
 //! per-volume text builders over injected snapshots (no live index needed).
 
 use crate::indexing::ActivityPhase;
-use crate::indexing::freshness::Freshness;
+use crate::indexing::lifecycle::freshness::Freshness;
 use crate::mcp::resources::indexing::{
     VolumeIndexingDebug, VolumeIndexingSnapshot, build_indexing_text, build_volume_debug_text, format_duration_human,
     format_number, freshness_token,

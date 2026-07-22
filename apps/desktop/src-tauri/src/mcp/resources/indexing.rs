@@ -16,7 +16,7 @@
 //! live index. `snapshot_indexing` / `snapshot_volume_indexing` do the global
 //! reads.
 
-use crate::indexing::freshness::Freshness;
+use crate::indexing::lifecycle::freshness::Freshness;
 use crate::indexing::{ActivityPhase, PhaseRecord};
 use crate::search::format_size;
 

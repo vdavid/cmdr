@@ -219,7 +219,7 @@ pub(crate) fn apply_smb_change(volume_id: &str, parent_path: &Path, change: &Dir
     // (initializing volumes are mid-scan; absent ones are disabled). Also read
     // whether a full scan is in progress — if so, BUFFER instead of applying, so
     // a change to an already-walked dir isn't lost against the rebuilding index.
-    let (writer, scanning) = match crate::indexing::state::get_writer_and_scanning_for(volume_id) {
+    let (writer, scanning) = match crate::indexing::lifecycle::state::get_writer_and_scanning_for(volume_id) {
         Some(pair) => pair,
         None => return,
     };
@@ -277,7 +277,7 @@ pub(crate) fn replay_buffered_changes(volume_id: &str) -> bool {
 
     // The volume is `Running` and no longer scanning by the time we replay, so
     // re-fetch the writer and apply each change against the now-complete index.
-    let Some((writer, _)) = crate::indexing::state::get_writer_and_scanning_for(volume_id) else {
+    let Some((writer, _)) = crate::indexing::lifecycle::state::get_writer_and_scanning_for(volume_id) else {
         return true;
     };
     let count = buffered.changes.len();
@@ -299,7 +299,7 @@ pub(crate) fn replay_buffered_changes(volume_id: &str) -> bool {
 /// connection), then enqueues onto the single per-volume writer.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 fn apply_one_change(volume_id: &str, writer: &IndexWriter, parent_path: &Path, change: &DirectoryChange) {
-    use crate::indexing::enrichment::get_read_pool_for;
+    use crate::indexing::read::enrichment::get_read_pool_for;
 
     let pool = match get_read_pool_for(volume_id) {
         Some(p) => p,

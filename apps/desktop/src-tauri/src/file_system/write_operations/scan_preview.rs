@@ -163,7 +163,7 @@ fn run_scan_preview(
     // Index-derived expected totals: lets the UI render a real progress bar
     // from the first scan event instead of an indeterminate spinner. `None`
     // when any source isn't covered by the index.
-    let expected = crate::indexing::expected_totals::expected_totals_for_sources(&sources);
+    let expected = crate::indexing::read::expected_totals::expected_totals_for_sources(&sources);
 
     // Compress-size estimator: a budget-capped worker samples file heads OFF the walk
     // thread so the sampling CPU never lands on the scan's critical path. The

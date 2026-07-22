@@ -14,11 +14,11 @@ use tauri::AppHandle;
 use super::verify_guard::{self, VerifyVerdict};
 use crate::indexing::DEBUG_STATS;
 use crate::indexing::ROOT_VOLUME_ID;
-use crate::indexing::enrichment::get_read_pool;
-use crate::indexing::firmlinks;
-use crate::indexing::lifecycle_bus;
+use crate::indexing::read::enrichment::get_read_pool;
+use crate::indexing::paths::firmlinks;
+use crate::indexing::lifecycle::lifecycle_bus;
 use crate::indexing::metadata;
-use crate::indexing::reconciler;
+use crate::indexing::reconcile::reconciler;
 use crate::indexing::scanner;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
@@ -435,7 +435,7 @@ mod tests {
 
     use super::*;
     use crate::ignore_poison::IgnorePoison;
-    use crate::indexing::enrichment::{READ_POOL, READ_POOL_TEST_MUTEX, ReadPool};
+    use crate::indexing::read::enrichment::{READ_POOL, READ_POOL_TEST_MUTEX, ReadPool};
     use crate::indexing::store::{DirStatsById, EntryRow, ROOT_ID};
     use std::fs;
     use std::sync::Arc;

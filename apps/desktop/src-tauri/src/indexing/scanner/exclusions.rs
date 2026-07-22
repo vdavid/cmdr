@@ -42,7 +42,7 @@ pub(crate) enum ExclusionTier {
 /// string alone. Every caller has to supply one, so no path can be gated without
 /// saying which volume it's being gated for.
 ///
-/// Mirrors [`IndexPathSpace`](crate::indexing::routing::IndexPathSpace)'s
+/// Mirrors [`IndexPathSpace`](crate::indexing::paths::routing::IndexPathSpace)'s
 /// `mount_root`, which is where it's built from for the scan / reconcile / live
 /// pipeline; the boot-disk-only callers (the verifier, event-loop verification)
 /// use [`ExclusionScope::boot_disk`].

@@ -58,7 +58,7 @@ use latency_probe::LatencyProbe;
 use crate::indexing::DEBUG_STATS;
 use crate::indexing::IndexPathSpace;
 use crate::indexing::metadata::extract_metadata;
-use crate::indexing::reconciler::{self, LiveChild};
+use crate::indexing::reconcile::reconciler::{self, LiveChild};
 use crate::indexing::scanner::{LOCAL_LIST_TIMEOUT, ScanError, ScanHandle, ScanProgress, ScanSummary};
 use crate::indexing::store::IndexStore;
 use crate::indexing::writer::{IndexWriter, WriteMessage};

@@ -38,10 +38,10 @@ use tauri::AppHandle;
 use super::failure::IndexFailureSignal;
 use super::freshness::{Freshness, FreshnessEvent};
 use super::manager::IndexManager;
-use crate::indexing::enrichment::{ReadPool, install_read_pool, uninstall_read_pool};
-use crate::indexing::pending_sizes::{PendingSizes, install_pending_sizes, uninstall_pending_sizes};
+use crate::indexing::read::enrichment::{ReadPool, install_read_pool, uninstall_read_pool};
+use crate::indexing::read::pending_sizes::{PendingSizes, install_pending_sizes, uninstall_pending_sizes};
 use crate::indexing::store::{IndexFailure, IndexStore};
-use crate::indexing::verifier;
+use crate::indexing::reconcile::verifier;
 use crate::indexing::writer::WriteMessage;
 
 use crate::settings::FullDiskAccessChoice;

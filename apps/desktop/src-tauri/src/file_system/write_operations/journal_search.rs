@@ -29,7 +29,7 @@ use std::path::{Path, PathBuf};
 
 use rusqlite::Connection;
 
-use crate::indexing::freshness::Freshness;
+use crate::indexing::lifecycle::freshness::Freshness;
 use crate::indexing::store::{IndexStore, resolve_path};
 use crate::indexing::{get_freshness, get_read_pool_for, index_read_path, is_active};
 use crate::operation_log::types::{EntryType, SearchCoverage, SearchCoverageReason};

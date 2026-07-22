@@ -62,9 +62,9 @@ use std::collections::HashSet;
 use std::sync::{Arc, LazyLock, Mutex};
 
 use crate::ignore_poison::IgnorePoison;
-use crate::indexing::firmlinks;
+use crate::indexing::paths::firmlinks;
 use crate::indexing::paths::path_prefix;
-use crate::indexing::state::ROOT_VOLUME_ID;
+use crate::indexing::lifecycle::state::ROOT_VOLUME_ID;
 
 /// In-memory set of directory paths with unprocessed index writes in flight.
 ///
@@ -172,7 +172,7 @@ impl PendingSizes {
 /// `READ_POOL` (see `read/enrichment.rs` and the lifecycle sites in `lifecycle/state.rs`).
 /// `None` whenever root indexing isn't running, so reads return "not pending".
 /// The root `IndexInstance` shares this same `Arc`. Non-root volumes' trackers
-/// live in their `IndexInstance` (see `crate::indexing::state::get_instance_pending_sizes`).
+/// live in their `IndexInstance` (see `crate::indexing::lifecycle::state::get_instance_pending_sizes`).
 pub(crate) static PENDING_SIZES: LazyLock<Mutex<Option<Arc<PendingSizes>>>> = LazyLock::new(|| Mutex::new(None));
 
 /// Tests that touch `PENDING_SIZES` must hold this lock to avoid races with
@@ -191,7 +191,7 @@ pub(crate) fn get_pending_sizes_for(volume_id: &str) -> Option<Arc<PendingSizes>
     if volume_id == ROOT_VOLUME_ID {
         get_pending_sizes()
     } else {
-        crate::indexing::state::get_instance_pending_sizes(volume_id)
+        crate::indexing::lifecycle::state::get_instance_pending_sizes(volume_id)
     }
 }
 

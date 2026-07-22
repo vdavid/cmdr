@@ -10,16 +10,16 @@ use tauri_specta::Event;
 
 use super::state::{INDEX_REGISTRY, IndexPhase, IndexVolumeKind};
 use crate::ignore_poison::IgnorePoison;
-use crate::indexing::event_loop::{JOURNAL_GAP_THRESHOLD, ReplayConfig, run_replay_event_loop};
+use crate::indexing::watch::event_loop::{JOURNAL_GAP_THRESHOLD, ReplayConfig, run_replay_event_loop};
 use crate::indexing::events::progress_reporter::ScanProgressReporter;
 use crate::indexing::events::{
     ActivityPhase, DEBUG_STATS, IndexDebugStatusResponse, IndexScanStartedEvent, IndexStatusResponse, PhaseRecord,
     RescanReason, emit_rescan_notification, set_phase_for,
 };
-use crate::indexing::local_reconcile;
+use crate::indexing::reconcile::local_reconcile;
 use crate::indexing::scanner::{self, ScanConfig};
 use crate::indexing::store::IndexStore;
-use crate::indexing::watcher::{self, DriveWatcher};
+use crate::indexing::watch::watcher::{self, DriveWatcher};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 use crate::pluralize::pluralize;
 
@@ -365,17 +365,17 @@ impl IndexManager {
         // `start_scan` deletes it before walking) and `shallow_sweep_at` (a sweep
         // was TRIGGERED, which survives a walk that never finished).
         let read_conn = self.store.read_conn();
-        let sweep_at = IndexStore::get_meta(read_conn, crate::indexing::reconciler::SHALLOW_SWEEP_AT_KEY)
+        let sweep_at = IndexStore::get_meta(read_conn, crate::indexing::reconcile::reconciler::SHALLOW_SWEEP_AT_KEY)
             .ok()
             .flatten()
             .and_then(|v| v.parse::<u64>().ok());
         let completed_at = status.scan_completed_at.as_deref().and_then(|s| s.parse::<u64>().ok());
-        let coalesced = IndexStore::get_meta(read_conn, crate::indexing::reconciler::SHALLOW_COALESCED_KEY)
+        let coalesced = IndexStore::get_meta(read_conn, crate::indexing::reconcile::reconciler::SHALLOW_COALESCED_KEY)
             .ok()
             .flatten()
             .and_then(|v| v.parse::<u32>().ok())
             .unwrap_or(0);
-        crate::indexing::reconciler::seed_from_meta(&self.volume_id, sweep_at.max(completed_at), coalesced);
+        crate::indexing::reconcile::reconciler::seed_from_meta(&self.volume_id, sweep_at.max(completed_at), coalesced);
 
         // One-shot ledger heal (see `indexing/DETAILS.md` § "The dir_stats ledger").
         // A DB that has never healed still carries pre-ledger drift; arm the

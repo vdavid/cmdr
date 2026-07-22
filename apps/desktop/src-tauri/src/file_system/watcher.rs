@@ -197,9 +197,9 @@ pub(super) fn rebase_event_path(event_path: &Path, dir_path: &Path, canonical_di
     if parent == dir_path {
         return Some(event_path.to_path_buf());
     }
-    let parent_normalized = crate::indexing::firmlinks::normalize_path(&parent.to_string_lossy());
-    let dir_normalized = crate::indexing::firmlinks::normalize_path(&dir_path.to_string_lossy());
-    let canonical_normalized = crate::indexing::firmlinks::normalize_path(&canonical_dir.to_string_lossy());
+    let parent_normalized = crate::indexing::paths::firmlinks::normalize_path(&parent.to_string_lossy());
+    let dir_normalized = crate::indexing::paths::firmlinks::normalize_path(&dir_path.to_string_lossy());
+    let canonical_normalized = crate::indexing::paths::firmlinks::normalize_path(&canonical_dir.to_string_lossy());
     if parent_normalized == dir_normalized || parent_normalized == canonical_normalized {
         event_path.file_name().map(|name| dir_path.join(name))
     } else {

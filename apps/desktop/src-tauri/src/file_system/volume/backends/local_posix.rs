@@ -9,7 +9,7 @@ use crate::file_system::listing::{FileEntry, get_single_entry, list_directory_co
 #[cfg(feature = "playwright-e2e")]
 use crate::ignore_poison::IgnorePoison;
 use crate::indexing::scanner::{self, ScanConfig, ScanError, ScanHandle, ScanSummary};
-use crate::indexing::watcher::{DriveWatcher, FsChangeEvent, WatcherError};
+use crate::indexing::watch::watcher::{DriveWatcher, FsChangeEvent, WatcherError};
 use crate::indexing::writer::IndexWriter;
 use std::future::Future;
 use std::io;

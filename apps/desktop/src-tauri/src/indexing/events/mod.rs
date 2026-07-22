@@ -174,7 +174,7 @@ pub struct IndexMemoryWarningEvent {
 #[serde(rename_all = "camelCase")]
 pub struct IndexFreshnessChangedEvent {
     pub volume_id: String,
-    pub freshness: super::freshness::Freshness,
+    pub freshness: super::lifecycle::freshness::Freshness,
 }
 
 /// Emit an `index-rescan-notification` event and log the reason at INFO level.
@@ -312,7 +312,7 @@ pub struct VolumeIndexStatus {
     /// = `fresh`; yellow = `stale`; red = `failed`). Always `Some` when `enabled`,
     /// and `Some(Failed)` for a dead index even though `enabled` is `false` (the
     /// instance stays registered in the `Failed` phase so the badge is honest).
-    pub freshness: Option<super::freshness::Freshness>,
+    pub freshness: Option<super::lifecycle::freshness::Freshness>,
     /// The typed fatal-storage reason, present ONLY when `freshness == Failed`.
     /// Carries the SQLite result codes so logs and any future detailed tooltip can
     /// be specific; the badge itself branches on `freshness`, not this.

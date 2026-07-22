@@ -615,7 +615,7 @@ fn reconstruct_path(conn: &Connection, entry_id: i64) -> Result<String, IndexSto
 /// absolute (starting with `/`). For a `root` (local-disk) index `ROOT_ID` is `/`,
 /// so an absolute filesystem path resolves directly. For a network/MTP index
 /// `ROOT_ID` is the volume root, so a mount-absolute path must be mapped into the
-/// volume's index path space first (see [`crate::indexing::routing::index_read_path`]).
+/// volume's index path space first (see [`crate::indexing::paths::routing::index_read_path`]).
 pub fn resolve_path(conn: &Connection, path: &str) -> Result<Option<i64>, IndexStoreError> {
     resolve_path_under(conn, ROOT_ID, path)
 }

@@ -270,7 +270,7 @@ fn spawn_and_shutdown() {
 /// no-op the clear. Only installers race, and they all hold this mutex.
 #[test]
 fn clears_pending_sizes_when_queue_drains() {
-    use crate::indexing::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes, get_pending_sizes};
+    use crate::indexing::read::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes, get_pending_sizes};
     let _guard = PENDING_SIZES_TEST_MUTEX.lock().unwrap();
 
     let (db_path, _dir) = setup_db();
@@ -310,7 +310,7 @@ fn clears_pending_sizes_when_queue_drains() {
 /// survive its drain.
 #[test]
 fn non_root_writer_drain_does_not_clear_root_tracker() {
-    use crate::indexing::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes, get_pending_sizes};
+    use crate::indexing::read::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes, get_pending_sizes};
     let _guard = PENDING_SIZES_TEST_MUTEX.lock().unwrap();
 
     let (db_path, _dir) = setup_db();

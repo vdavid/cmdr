@@ -1,6 +1,6 @@
 //! Tests for the `split_parent_and_name` pure helper (lives in `event_loop::live`).
 
-use crate::indexing::event_loop::live::split_parent_and_name;
+use crate::indexing::watch::event_loop::live::split_parent_and_name;
 
 #[test]
 fn split_parent_and_name_handles_normal_paths() {

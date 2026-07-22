@@ -17,7 +17,7 @@ use serde_json::Value;
 use tauri::{AppHandle, Runtime};
 
 use super::{expand_tilde, join_child_path};
-use crate::indexing::freshness::Freshness;
+use crate::indexing::lifecycle::freshness::Freshness;
 use crate::indexing::store::DirStats;
 use crate::indexing::{get_dir_stats, get_dir_stats_batch, get_volume_index_status_for_path, list_dir_children};
 use crate::mcp::resources::indexing::status_token;

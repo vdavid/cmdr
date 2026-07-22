@@ -16,7 +16,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use crate::ignore_poison::IgnorePoison;
-use crate::indexing::firmlinks;
+use crate::indexing::paths::firmlinks;
 use crate::indexing::store::{EntryRow, IndexStore, resolve_scan_root};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 use crate::pluralize::{pluralize, pluralize_with};

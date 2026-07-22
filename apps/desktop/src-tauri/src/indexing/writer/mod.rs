@@ -20,7 +20,7 @@ use tokio::sync::oneshot;
 use crate::ignore_poison::IgnorePoison;
 use crate::indexing::IndexFailureSignal;
 use crate::indexing::aggregator::AggregationPhase;
-use crate::indexing::state::ROOT_VOLUME_ID;
+use crate::indexing::lifecycle::state::ROOT_VOLUME_ID;
 use crate::indexing::store::{EntryRow, IndexStore, IndexStoreError};
 use crate::pluralize::{pluralize, pluralize_with};
 
@@ -1099,7 +1099,7 @@ fn writer_loop(
         // `get_pending_sizes()` from a non-root writer would wipe root's hourglass
         // and never clear its own. See `indexing/read/pending_sizes.rs`.
         if queue_depth.load(Ordering::Relaxed) == 0
-            && let Some(tracker) = crate::indexing::pending_sizes::get_pending_sizes_for(&volume_id)
+            && let Some(tracker) = crate::indexing::read::pending_sizes::get_pending_sizes_for(&volume_id)
         {
             tracker.clear();
         }
@@ -1434,7 +1434,7 @@ fn process_message(
             #[cfg(test)]
             mutation_tracker.record_emit(&paths);
             if let Some(app) = app_handle {
-                crate::indexing::reconciler::emit_dir_updated(app, paths);
+                crate::indexing::reconcile::reconciler::emit_dir_updated(app, paths);
             }
         }
         WriteMessage::Shutdown => return true,

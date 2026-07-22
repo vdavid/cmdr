@@ -466,7 +466,7 @@ fn gc_fires_on_a_completed_edge_never_a_retained_poll() {
     // The wiring consumes a `Completed` TRANSITION (`borrow_and_update`), so the
     // `watch`'s retained `Completed` across a new scan's truncate window can't
     // re-trigger a pass (and its GC). Assert exactly ONE edge is observed.
-    use crate::indexing::lifecycle_bus::{ScanState, publish_scan_completed, subscribe};
+    use crate::indexing::lifecycle::lifecycle_bus::{ScanState, publish_scan_completed, subscribe};
     let vid = "media-edge-test";
     let mut rx = subscribe(vid);
     publish_scan_completed(vid);

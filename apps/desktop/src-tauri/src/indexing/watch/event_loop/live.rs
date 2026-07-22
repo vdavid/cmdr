@@ -26,7 +26,7 @@ use crate::indexing::IndexPathSpace;
 use crate::indexing::events::{RescanReason, emit_rescan_notification};
 use crate::indexing::metadata;
 use crate::indexing::paths::path_prefix;
-use crate::indexing::reconciler::EventReconciler;
+use crate::indexing::reconcile::reconciler::EventReconciler;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 use crate::pluralize::pluralize;
@@ -44,7 +44,7 @@ use crate::pluralize::pluralize;
 /// Marks on the VOLUME's tracker (`get_pending_sizes_for`), so an external drive's
 /// hourglass shows on its own rows, not root's.
 pub(super) fn mark_pending_and_drain(volume_id: &str, pending_paths: &mut HashSet<String>) -> Vec<String> {
-    if let Some(tracker) = crate::indexing::pending_sizes::get_pending_sizes_for(volume_id) {
+    if let Some(tracker) = crate::indexing::read::pending_sizes::get_pending_sizes_for(volume_id) {
         for path in pending_paths.iter() {
             tracker.mark(path);
         }
@@ -208,7 +208,7 @@ pub(in crate::indexing) async fn run_live_event_loop(
                         );
                         let vid = volume_id.clone();
                         tauri::async_runtime::spawn(async move {
-                            crate::indexing::manager::perform_registry_rescan(&vid, "ingestion backlog").await;
+                            crate::indexing::lifecycle::manager::perform_registry_rescan(&vid, "ingestion backlog").await;
                         });
                         // Drain and discard the backlog; the fresh scan supersedes it.
                         event_rx.close();

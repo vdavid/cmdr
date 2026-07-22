@@ -12,10 +12,10 @@ use std::sync::atomic::Ordering;
 use super::enrichment::get_read_pool_for;
 use super::pending_sizes::get_pending_sizes_for;
 use crate::indexing::events::{DEBUG_STATS, IndexDebugStatusResponse, IndexStatusResponse, VolumeIndexStatus};
-use crate::indexing::firmlinks;
-use crate::indexing::manager::IndexManager;
-use crate::indexing::routing::{index_read_path, volume_id_for_local_path};
-use crate::indexing::state::{
+use crate::indexing::paths::firmlinks;
+use crate::indexing::lifecycle::manager::IndexManager;
+use crate::indexing::paths::routing::{index_read_path, volume_id_for_local_path};
+use crate::indexing::lifecycle::state::{
     INDEX_REGISTRY, IndexPhase, IndexVolumeKind, ROOT_VOLUME_ID, get_freshness, index_failure, is_active, volume_kind,
 };
 use crate::indexing::store::{self, DirStats, IndexStore};
@@ -59,12 +59,12 @@ pub fn get_volume_index_status(volume_id: &str) -> VolumeIndexStatus {
     // promise, so we send `None` rather than a number that would read as the same
     // kind of statement. Without this the tooltip would tell a USB drive's owner
     // their next full check is a day away while its real window is 45 seconds.
-    let sweep = crate::indexing::reconciler::sweep_record(volume_id);
+    let sweep = crate::indexing::reconcile::reconciler::sweep_record(volume_id);
     let has_daily_sweep = volume_kind(volume_id).is_some_and(IndexVolumeKind::has_event_journal);
     let next_sweep_due_at = sweep
         .last_sweep_unix
         .filter(|_| has_daily_sweep)
-        .map(|at| at + crate::indexing::reconciler::SHALLOW_RESCAN_MIN_INTERVAL.as_secs());
+        .map(|at| at + crate::indexing::reconcile::reconciler::SHALLOW_RESCAN_MIN_INTERVAL.as_secs());
 
     VolumeIndexStatus {
         volume_id: volume_id.to_string(),

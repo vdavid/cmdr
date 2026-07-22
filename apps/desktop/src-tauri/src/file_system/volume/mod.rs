@@ -18,7 +18,7 @@
 
 use crate::file_system::listing::FileEntry;
 use crate::indexing::scanner::{ScanConfig, ScanError, ScanHandle, ScanSummary};
-use crate::indexing::watcher::{DriveWatcher, FsChangeEvent, WatcherError};
+use crate::indexing::watch::watcher::{DriveWatcher, FsChangeEvent, WatcherError};
 use crate::indexing::writer::IndexWriter;
 use std::future::Future;
 use std::path::{Path, PathBuf};

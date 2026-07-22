@@ -172,7 +172,7 @@ async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, SmbIndexGateReaso
 /// on refusal so the caller (and the per-drive UX) can show an honest, non-string-matched
 /// status. A no-op if the volume's index is already active.
 pub async fn start_indexing_for_smb(app: AppHandle, volume_id: String) -> Result<(), SmbIndexGateReason> {
-    if crate::indexing::state::is_active(&volume_id) {
+    if crate::indexing::lifecycle::state::is_active(&volume_id) {
         log::info!("start_indexing_for_smb: '{volume_id}' already active, no-op");
         return Ok(());
     }
@@ -186,7 +186,7 @@ pub async fn start_indexing_for_smb(app: AppHandle, volume_id: String) -> Result
     // existing DB — a first-ever enable has no marker to clear. Reached by both the
     // manual enable command and the auto-resume hook; on the latter the marker is
     // already absent (the resume gate required it), so this is a no-op there.
-    if let Ok(db_path) = crate::indexing::state::resolved_index_db_path(&app, &volume_id)
+    if let Ok(db_path) = crate::indexing::lifecycle::state::resolved_index_db_path(&app, &volume_id)
         && db_path.exists()
     {
         if let Err(e) = crate::indexing::store::IndexStore::set_user_disabled(&db_path, false) {
@@ -203,7 +203,7 @@ pub async fn start_indexing_for_smb(app: AppHandle, volume_id: String) -> Result
     // The direct gate passed: start the per-volume index over the Volume trait.
     // `start_indexing_for` handles the lock-first reservation, load-as-Stale
     // freshness seeding, and SMB scan-path selection.
-    if let Err(e) = crate::indexing::state::start_indexing_for_smb_inner(&app, &volume_id, mount_root) {
+    if let Err(e) = crate::indexing::lifecycle::state::start_indexing_for_smb_inner(&app, &volume_id, mount_root) {
         log::warn!("start_indexing_for_smb: start failed for '{volume_id}': {e}");
         // A start failure here isn't a gate reason — it's an internal error
         // (DB open, manager spawn). Treat as UpgradeFailed for the caller's
@@ -232,7 +232,7 @@ pub async fn start_indexing_for_smb(app: AppHandle, volume_id: String) -> Result
 /// (`start_indexing_for_smb`) clears the marker; `forget_drive_index` deletes the
 /// whole DB.
 pub(crate) fn smb_index_was_enabled(app: &AppHandle, volume_id: &str) -> bool {
-    match crate::indexing::state::resolved_index_db_path(app, volume_id) {
+    match crate::indexing::lifecycle::state::resolved_index_db_path(app, volume_id) {
         Ok(db_path) => {
             crate::indexing::store::IndexStore::persisted_scan_completed(&db_path)
                 && !crate::indexing::store::IndexStore::user_disabled(&db_path)
@@ -266,10 +266,10 @@ pub(crate) fn smb_index_was_enabled(app: &AppHandle, volume_id: &str) -> bool {
 /// setup or in unit tests). Keyed on the canonical volume id both install paths
 /// agree on.
 pub(crate) fn resume_smb_index_if_enabled(volume_id: String) {
-    let Some(app) = crate::indexing::state::app_handle() else {
+    let Some(app) = crate::indexing::lifecycle::state::app_handle() else {
         return;
     };
-    if crate::indexing::state::is_active(&volume_id) {
+    if crate::indexing::lifecycle::state::is_active(&volume_id) {
         return;
     }
     if !smb_index_was_enabled(&app, &volume_id) {
@@ -297,8 +297,8 @@ pub(crate) fn resume_smb_index_if_enabled(volume_id: String) {
 pub(crate) fn on_smb_watcher_died(volume_id: &str) {
     // Continuity broke: bump the epoch so the persisted dirs read stale (the
     // honest-sizes model), then flip the badge Stale.
-    crate::indexing::state::bump_current_epoch_for(volume_id);
-    crate::indexing::state::apply_freshness_event(volume_id, crate::indexing::freshness::FreshnessEvent::WatcherDied);
+    crate::indexing::lifecycle::state::bump_current_epoch_for(volume_id);
+    crate::indexing::lifecycle::state::apply_freshness_event(volume_id, crate::indexing::lifecycle::freshness::FreshnessEvent::WatcherDied);
 }
 
 /// Record a `CHANGE_NOTIFY` overflow (`STATUS_NOTIFY_ENUM_DIR`) on an SMB volume.
@@ -318,10 +318,10 @@ pub(crate) fn on_smb_watcher_died(volume_id: &str) {
 pub(crate) fn on_smb_overflow(volume_id: &str) {
     // Continuity broke (the index may have drifted): bump the epoch so persisted
     // dirs read stale, then flip the badge Stale.
-    crate::indexing::state::bump_current_epoch_for(volume_id);
-    crate::indexing::state::apply_freshness_event(
+    crate::indexing::lifecycle::state::bump_current_epoch_for(volume_id);
+    crate::indexing::lifecycle::state::apply_freshness_event(
         volume_id,
-        crate::indexing::freshness::FreshnessEvent::OverflowUnrecoverable,
+        crate::indexing::lifecycle::freshness::FreshnessEvent::OverflowUnrecoverable,
     );
 }
 
@@ -362,10 +362,10 @@ mod tests {
 
     use std::sync::Arc;
 
-    use crate::indexing::enrichment::{ReadPool, uninstall_read_pool};
-    use crate::indexing::freshness::Freshness;
-    use crate::indexing::pending_sizes::{PendingSizes, uninstall_pending_sizes};
-    use crate::indexing::state::{INDEX_REGISTRY, IndexVolumeKind, get_freshness, try_reserve_initializing_phase};
+    use crate::indexing::read::enrichment::{ReadPool, uninstall_read_pool};
+    use crate::indexing::lifecycle::freshness::Freshness;
+    use crate::indexing::read::pending_sizes::{PendingSizes, uninstall_pending_sizes};
+    use crate::indexing::lifecycle::state::{INDEX_REGISTRY, IndexVolumeKind, get_freshness, try_reserve_initializing_phase};
     use crate::indexing::store::IndexStore;
 
     /// Reserve a volume's registry instance at a given freshness, run the test

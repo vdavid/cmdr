@@ -8,34 +8,23 @@
 //! `INDEX_REGISTRY` mutex, `IndexPhase` enum, phase transitions, and the
 //! `IndexManager` + `ReadPool` bootstrap) lives in [`lifecycle::state`].
 
+// Area modules. Cross-area references use each module's real path
+// (`indexing::lifecycle::state::…`, `indexing::paths::routing::…`); `mod.rs` re-exports only
+// the curated public item surface below, never a module alias that would hide where code lives.
 pub mod aggregator;
 mod events;
-pub(crate) mod watch;
-// Public API surface; real homes are watch/watcher.rs and watch/event_loop.rs (churn_monitor is reached via watch::).
-pub(crate) use watch::{event_loop, watcher};
-pub(crate) mod read;
-// Public API surface; real homes are read/expected_totals.rs, read/enrichment.rs, read/pending_sizes.rs.
-pub use read::expected_totals;
-pub(crate) use read::{enrichment, pending_sizes};
-pub(crate) mod paths;
-// Public API surface; real homes are paths/firmlinks.rs and paths/routing.rs.
-pub use paths::firmlinks;
-pub(crate) use paths::routing;
 pub(crate) mod lifecycle;
-// Public API surface; real homes are lifecycle/{state,manager,network_scan,scan_completion,freshness,failure,lifecycle_bus}.rs.
-pub use lifecycle::freshness;
-pub(crate) use lifecycle::{failure, lifecycle_bus, manager, state};
-pub(crate) mod resources;
-pub mod store;
-pub mod writer;
-
 mod metadata;
 pub(crate) mod network_scanner;
+pub(crate) mod paths;
+pub(crate) mod read;
 pub(crate) mod reconcile;
+pub(crate) mod resources;
 pub(crate) mod scanner;
-// Public API surface; real homes are reconcile/{reconciler,local_reconcile,verifier}.rs.
-pub(crate) use reconcile::{local_reconcile, reconciler, verifier};
+pub mod store;
 pub(crate) mod transports;
+pub(crate) mod watch;
+pub mod writer;
 
 #[cfg(test)]
 mod tests;
@@ -49,22 +38,22 @@ pub use read::enrichment::{enrich_entries_with_index, enrich_entries_with_index_
 #[cfg(test)]
 pub(crate) use read::enrichment::{test_install_root_read_pool, test_read_pool_lock, test_uninstall_root_read_pool};
 
-pub(crate) use failure::IndexFailureSignal;
+pub(crate) use lifecycle::failure::IndexFailureSignal;
 pub use read::queries::{
     get_debug_status, get_dir_stats, get_dir_stats_batch, get_status, get_volume_index_status,
     get_volume_index_status_for_path, list_dir_children,
 };
 pub use resources::subsystem_stop::register_subsystem_stop_hook;
-pub(crate) use routing::{IndexPathSpace, index_read_path, volume_id_for_local_path};
-pub(crate) use state::ROOT_VOLUME_ID;
-pub(crate) use state::get_freshness;
+pub(crate) use lifecycle::state::ROOT_VOLUME_ID;
+pub(crate) use lifecycle::state::get_freshness;
 #[cfg(test)]
-pub(crate) use state::reserve_initializing_index_for_test;
-pub(crate) use state::{IndexVolumeKind, all_registered_volume_ids, ready_volumes_with_kind, volume_kind};
-pub use state::{
+pub(crate) use lifecycle::state::reserve_initializing_index_for_test;
+pub(crate) use lifecycle::state::{IndexVolumeKind, all_registered_volume_ids, ready_volumes_with_kind, volume_kind};
+pub use lifecycle::state::{
     clear_index, disable_drive_index_persist_intent, force_scan, init, is_active, is_failed, should_auto_start,
     should_auto_start_indexing, start_indexing, stop_indexing, stop_scan, trigger_verification,
 };
+pub(crate) use paths::routing::{IndexPathSpace, index_read_path, volume_id_for_local_path};
 pub use store::IndexFailure;
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -77,7 +66,7 @@ pub(crate) use transports::smb::index::{
 pub(crate) use transports::smb::watch::{apply_smb_change, discard_buffered_changes, replay_buffered_changes};
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use state::registered_mtp_volume_ids_for_device;
+pub(crate) use lifecycle::state::registered_mtp_volume_ids_for_device;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use transports::local_external::index::{LocalExternalEnable, start_indexing_for_local_external};
 #[cfg(any(target_os = "macos", target_os = "linux"))]

@@ -10,10 +10,10 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
 use crate::ignore_poison::IgnorePoison;
 use crate::indexing::IndexPathSpace;
-use crate::indexing::enrichment::{self, ReadPool};
-use crate::indexing::reconciler::{self, EventReconciler};
+use crate::indexing::read::enrichment::{self, ReadPool};
+use crate::indexing::reconcile::reconciler::{self, EventReconciler};
 use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
-use crate::indexing::watcher::{FsChangeEvent, FsEventFlags};
+use crate::indexing::watch::watcher::{FsChangeEvent, FsEventFlags};
 use crate::indexing::writer::{AggSource, WriteMessage};
 use crate::pluralize::pluralize;
 
@@ -403,7 +403,7 @@ fn concurrent_scan_with_enrichment_reads() {
                     // Also exercise the individual-paths fallback
                     let fallback_result = pool.with_conn(|conn| {
                         enrichment::enrich_via_individual_paths_on(
-                            crate::indexing::state::ROOT_VOLUME_ID,
+                            crate::indexing::lifecycle::state::ROOT_VOLUME_ID,
                             &mut entries,
                             conn,
                             1,
@@ -598,7 +598,7 @@ fn live_event_storm_with_concurrent_reads() {
 
                     let result = pool.with_conn(|conn| {
                         enrichment::enrich_via_individual_paths_on(
-                            crate::indexing::state::ROOT_VOLUME_ID,
+                            crate::indexing::lifecycle::state::ROOT_VOLUME_ID,
                             &mut entries,
                             conn,
                             1,
@@ -684,7 +684,7 @@ fn make_file_entry_row(id: i64, parent_id: i64, name: &str) -> EntryRow {
 /// out — not a single await (a rescan finishing after a drain enqueues more).
 #[test]
 fn mixed_storm_reaches_consistent_fixed_point() {
-    use crate::indexing::event_loop::process_live_batch;
+    use crate::indexing::watch::event_loop::process_live_batch;
     use std::collections::{HashMap, HashSet};
     use std::time::{Duration, Instant};
 

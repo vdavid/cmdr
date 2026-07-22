@@ -359,7 +359,7 @@ fn normalize_whole_disk(device: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::indexing::watcher::{DriveWatcher, FsChangeEvent};
+    use crate::indexing::watch::watcher::{DriveWatcher, FsChangeEvent};
     use std::collections::BTreeSet;
     use tokio::sync::mpsc;
 

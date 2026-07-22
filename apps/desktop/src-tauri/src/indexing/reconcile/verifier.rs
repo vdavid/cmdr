@@ -10,10 +10,10 @@ use std::time::Instant;
 
 use tauri::AppHandle;
 
-use crate::indexing::enrichment::get_read_pool;
-use crate::indexing::firmlinks;
+use crate::indexing::read::enrichment::get_read_pool;
+use crate::indexing::paths::firmlinks;
 use crate::indexing::metadata::extract_metadata;
-use crate::indexing::reconciler;
+use crate::indexing::reconcile::reconciler;
 use crate::indexing::scanner;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
@@ -107,7 +107,7 @@ pub(crate) fn maybe_verify(dir_path: String, writer: IndexWriter, app: AppHandle
             // The per-navigation verifier is root-scoped, so its live corrections
             // publish under the local root for the importance scheduler's
             // incremental rescore (plan Decision 5), alongside the FE emit.
-            crate::indexing::lifecycle_bus::publish_dirs_changed(crate::indexing::ROOT_VOLUME_ID, &affected_paths);
+            crate::indexing::lifecycle::lifecycle_bus::publish_dirs_changed(crate::indexing::ROOT_VOLUME_ID, &affected_paths);
             reconciler::emit_dir_updated(&app, affected_paths);
         }
     });
@@ -417,7 +417,7 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::indexing::enrichment::{READ_POOL, READ_POOL_TEST_MUTEX, ReadPool};
+    use crate::indexing::read::enrichment::{READ_POOL, READ_POOL_TEST_MUTEX, ReadPool};
     use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
     use crate::indexing::stress_test_helpers::check_db_consistency;
     use crate::indexing::writer::AggSource;

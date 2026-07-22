@@ -26,7 +26,7 @@ mod tests {
 
     use rusqlite::Connection;
 
-    use crate::indexing::reconciler::reconcile_subtree;
+    use crate::indexing::reconcile::reconciler::reconcile_subtree;
     use crate::indexing::store::{self, IndexStore, ROOT_ID};
     use crate::indexing::writer::{IndexWriter, WriteMessage};
 
@@ -93,7 +93,7 @@ mod tests {
     }
 
     fn norm(p: &Path) -> String {
-        crate::indexing::firmlinks::normalize_path(&p.to_string_lossy())
+        crate::indexing::paths::firmlinks::normalize_path(&p.to_string_lossy())
     }
 
     fn resolve(h: &Harness, p: &Path) -> Option<i64> {

@@ -30,7 +30,7 @@ use tauri::AppHandle;
 /// on an internal start failure or an unregistered volume — there's no typed
 /// gate reason because MTP has no connection-upgrade step to refuse.
 pub(crate) fn start_indexing_for_mtp(app: AppHandle, volume_id: String) -> Result<(), String> {
-    if crate::indexing::state::is_active(&volume_id) {
+    if crate::indexing::lifecycle::state::is_active(&volume_id) {
         log::info!("start_indexing_for_mtp: '{volume_id}' already active, no-op");
         return Ok(());
     }
@@ -46,7 +46,7 @@ pub(crate) fn start_indexing_for_mtp(app: AppHandle, volume_id: String) -> Resul
         }
     };
 
-    crate::indexing::state::start_indexing_for_mtp_inner(&app, &volume_id, volume_root)?;
+    crate::indexing::lifecycle::state::start_indexing_for_mtp_inner(&app, &volume_id, volume_root)?;
 
     // A new external index DB just came online: cap accumulation by evicting the
     // least-recently-used OFFLINE external DBs. Safe — never touches a registered
@@ -76,13 +76,13 @@ pub(crate) fn on_mtp_watch_continuity_lost(device_id: &str) {
     // registry is keyed by volume id (`{device_id}:{storage_id}`), so we match by
     // the device-id prefix plus a numeric storage tail (robust to a `:` in a
     // serial device id via `mtp::identity`).
-    for volume_id in crate::indexing::state::registered_mtp_volume_ids_for_device(device_id) {
+    for volume_id in crate::indexing::lifecycle::state::registered_mtp_volume_ids_for_device(device_id) {
         // Continuity broke for this storage: bump the epoch (persisted dirs read
         // stale per the honest-sizes model), then flip the badge Stale.
-        crate::indexing::state::bump_current_epoch_for(&volume_id);
-        crate::indexing::state::apply_freshness_event(
+        crate::indexing::lifecycle::state::bump_current_epoch_for(&volume_id);
+        crate::indexing::lifecycle::state::apply_freshness_event(
             &volume_id,
-            crate::indexing::freshness::FreshnessEvent::WatcherDied,
+            crate::indexing::lifecycle::freshness::FreshnessEvent::WatcherDied,
         );
     }
 }
@@ -92,10 +92,10 @@ mod tests {
     use std::sync::Arc;
 
     use super::*;
-    use crate::indexing::enrichment::{ReadPool, uninstall_read_pool};
-    use crate::indexing::freshness::Freshness;
-    use crate::indexing::pending_sizes::{PendingSizes, uninstall_pending_sizes};
-    use crate::indexing::state::{INDEX_REGISTRY, IndexVolumeKind, get_freshness, try_reserve_initializing_phase};
+    use crate::indexing::read::enrichment::{ReadPool, uninstall_read_pool};
+    use crate::indexing::lifecycle::freshness::Freshness;
+    use crate::indexing::read::pending_sizes::{PendingSizes, uninstall_pending_sizes};
+    use crate::indexing::lifecycle::state::{INDEX_REGISTRY, IndexVolumeKind, get_freshness, try_reserve_initializing_phase};
     use crate::indexing::store::IndexStore;
 
     /// Reserve a volume's registry instance at a given freshness, run the body,

@@ -5,7 +5,7 @@ use tauri::{AppHandle, Manager, Runtime};
 
 use super::{PaneStateStore, ToolError, ToolResult, mcp_round_trip};
 use crate::file_system::write_operations::{LifecycleStatus, WriteOperationType};
-use crate::indexing::freshness::Freshness;
+use crate::indexing::lifecycle::freshness::Freshness;
 use crate::mcp::resources::indexing::freshness_token;
 use crate::mcp::terminal_ops::{self, TerminalStatus};
 

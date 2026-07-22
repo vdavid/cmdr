@@ -276,7 +276,7 @@ async fn smb_integration_watch_event_updates_index() {
 async fn smb_integration_enrich_listing_shows_sizes() {
     use super::watch::index_relative_path;
     use crate::file_system::listing::FileEntry;
-    use crate::indexing::enrichment::enrich_via_parent_id_on;
+    use crate::indexing::read::enrichment::enrich_via_parent_id_on;
 
     let vol = connect_public().await;
 

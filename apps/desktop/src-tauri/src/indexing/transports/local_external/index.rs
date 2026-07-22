@@ -141,7 +141,7 @@ async fn classify(volume_id: &str) -> Classified {
 /// Classifies the volume (see [`classify`]); a non-local one returns
 /// [`LocalExternalEnable::NotLocalExternal`] so the caller falls through to the
 /// SMB gate. A local one starts the mount-rooted local scan/watch pipeline via
-/// [`start_indexing_for_local_external_inner`](crate::indexing::state::start_indexing_for_local_external_inner)
+/// [`start_indexing_for_local_external_inner`](crate::indexing::lifecycle::state::start_indexing_for_local_external_inner)
 /// and caps external-DB accumulation (retention). No connection gate and no typed
 /// refusal — a local mount is already readable. A no-op ([`Started`](LocalExternalEnable::Started))
 /// if the volume's index is already active. Errors (a plain string for the IPC
@@ -150,7 +150,7 @@ pub(crate) async fn start_indexing_for_local_external(
     app: AppHandle,
     volume_id: String,
 ) -> Result<LocalExternalEnable, String> {
-    if crate::indexing::state::is_active(&volume_id) {
+    if crate::indexing::lifecycle::state::is_active(&volume_id) {
         log::info!("start_indexing_for_local_external: '{volume_id}' already active, no-op");
         return Ok(LocalExternalEnable::Started);
     }
@@ -161,7 +161,7 @@ pub(crate) async fn start_indexing_for_local_external(
             mount_root,
             inodes_trustworthy,
         } => {
-            crate::indexing::state::start_indexing_for_local_external_inner(
+            crate::indexing::lifecycle::state::start_indexing_for_local_external_inner(
                 &app,
                 &volume_id,
                 mount_root,

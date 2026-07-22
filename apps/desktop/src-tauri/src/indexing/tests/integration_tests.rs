@@ -11,9 +11,9 @@
 use crate::file_system::listing::FileEntry;
 use crate::indexing::*;
 use crate::settings::FullDiskAccessChoice;
-use enrichment::{READ_POOL_TEST_MUTEX, THREAD_CONN, enrich_via_individual_paths_on, enrich_via_parent_id_on};
+use read::enrichment::{READ_POOL_TEST_MUTEX, THREAD_CONN, enrich_via_individual_paths_on, enrich_via_parent_id_on};
 use rusqlite::Connection;
-use state::{
+use lifecycle::state::{
     INDEX_REGISTRY, IndexInstance, IndexPhase, IndexVolumeKind, ROOT_VOLUME_ID, is_initializing_phase,
     try_reserve_initializing_phase,
 };
@@ -523,7 +523,7 @@ fn enrichment_under_contention() {
     // Install pool into READ_POOL so `enrich_entries_with_index` can find it.
     // For root, an installed pool IS the skip-vs-route gate signal, so no
     // registry entry is needed here.
-    *enrichment::READ_POOL.lock().unwrap() = Some(Arc::clone(&pool));
+    *read::enrichment::READ_POOL.lock().unwrap() = Some(Arc::clone(&pool));
 
     // Hold INDEX_REGISTRY.lock() on a background thread for 2 seconds
     let lock_handle = std::thread::spawn(|| {
@@ -549,7 +549,7 @@ fn enrichment_under_contention() {
     lock_handle.join().unwrap();
 
     // Clean up global state
-    *enrichment::READ_POOL.lock().unwrap() = None;
+    *read::enrichment::READ_POOL.lock().unwrap() = None;
 }
 
 /// Mid-scan, enrichment reads the partial `dir_stats` rows: a top-level dir's
@@ -572,7 +572,7 @@ fn partial_aggregation_is_visible_to_enrichment_mid_scan() {
     let _store = IndexStore::open(&db_path).expect("open store");
     let writer = writer::IndexWriter::spawn(&db_path, None).expect("spawn writer");
 
-    *enrichment::READ_POOL.lock().unwrap() = Some(Arc::new(ReadPool::new(db_path.clone()).expect("create pool")));
+    *read::enrichment::READ_POOL.lock().unwrap() = Some(Arc::new(ReadPool::new(db_path.clone()).expect("create pool")));
 
     // Top-level dir /big (id=10, depth 1 — within the partial pass's depth cap).
     let big = EntryRow {
@@ -652,7 +652,7 @@ fn partial_aggregation_is_visible_to_enrichment_mid_scan() {
     );
 
     writer.shutdown();
-    *enrichment::READ_POOL.lock().unwrap() = None;
+    *read::enrichment::READ_POOL.lock().unwrap() = None;
 }
 
 /// Teeth for `partial_aggregation_is_visible_to_enrichment_mid_scan`: with the
@@ -668,7 +668,7 @@ fn enrichment_sees_no_partial_size_without_a_partial_pass() {
     let _store = IndexStore::open(&db_path).expect("open store");
     let writer = writer::IndexWriter::spawn(&db_path, None).expect("spawn writer");
 
-    *enrichment::READ_POOL.lock().unwrap() = Some(Arc::new(ReadPool::new(db_path.clone()).expect("create pool")));
+    *read::enrichment::READ_POOL.lock().unwrap() = Some(Arc::new(ReadPool::new(db_path.clone()).expect("create pool")));
 
     let batch = vec![
         EntryRow {
@@ -706,7 +706,7 @@ fn enrichment_sees_no_partial_size_without_a_partial_pass() {
     );
 
     writer.shutdown();
-    *enrichment::READ_POOL.lock().unwrap() = None;
+    *read::enrichment::READ_POOL.lock().unwrap() = None;
 }
 
 /// `get_dir_stats` reflects the in-memory pending-size tracker: a directory
@@ -715,29 +715,29 @@ fn enrichment_sees_no_partial_size_without_a_partial_pass() {
 #[test]
 fn dir_stats_carry_pending_flag() {
     let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-    let _pending_guard = pending_sizes::PENDING_SIZES_TEST_MUTEX.lock().unwrap();
+    let _pending_guard = read::pending_sizes::PENDING_SIZES_TEST_MUTEX.lock().unwrap();
 
     let (db_path, _dir) = setup_db_for_pool();
     let pool = Arc::new(ReadPool::new(db_path).expect("create pool"));
-    *enrichment::READ_POOL.lock().unwrap() = Some(pool);
-    *pending_sizes::PENDING_SIZES.lock().unwrap() = Some(Arc::new(pending_sizes::PendingSizes::new()));
+    *read::enrichment::READ_POOL.lock().unwrap() = Some(pool);
+    *read::pending_sizes::PENDING_SIZES.lock().unwrap() = Some(Arc::new(read::pending_sizes::PendingSizes::new()));
 
     // Nothing marked yet: not pending.
     let before = get_dir_stats("/projects").expect("get_dir_stats").expect("dir indexed");
     assert!(!before.recursive_size_pending, "no pending work => flag false");
 
     // A descendant change marks /projects (and its ancestors) as pending.
-    pending_sizes::get_pending_sizes().unwrap().mark("/projects/file.txt");
+    read::pending_sizes::get_pending_sizes().unwrap().mark("/projects/file.txt");
     let during = get_dir_stats("/projects").expect("get_dir_stats").expect("dir indexed");
     assert!(during.recursive_size_pending, "pending work => flag true");
 
     // Draining clears the flag.
-    pending_sizes::get_pending_sizes().unwrap().clear();
+    read::pending_sizes::get_pending_sizes().unwrap().clear();
     let after = get_dir_stats("/projects").expect("get_dir_stats").expect("dir indexed");
     assert!(!after.recursive_size_pending, "after drain => flag false");
 
-    *enrichment::READ_POOL.lock().unwrap() = None;
-    *pending_sizes::PENDING_SIZES.lock().unwrap() = None;
+    *read::enrichment::READ_POOL.lock().unwrap() = None;
+    *read::pending_sizes::PENDING_SIZES.lock().unwrap() = None;
 }
 
 /// Thread-local connection reuse: calling `with_conn` twice from the same
@@ -916,8 +916,8 @@ fn reset_indexing_for_test() {
     INDEX_REGISTRY.lock().expect("registry poisoned").remove(ROOT_VOLUME_ID);
     // The stop/clear paths invalidate the root READ_POOL/PENDING_SIZES; mirror
     // that so we don't carry stale handles from a prior test.
-    *enrichment::READ_POOL.lock().unwrap() = None;
-    *pending_sizes::PENDING_SIZES.lock().unwrap() = None;
+    *read::enrichment::READ_POOL.lock().unwrap() = None;
+    *read::pending_sizes::PENDING_SIZES.lock().unwrap() = None;
 }
 
 /// Whether the `root` volume has a registered instance (the registry's
@@ -943,7 +943,7 @@ fn reserve_initializing_for(volume_id: &str) -> tempfile::TempDir {
     let db_path = dir.path().join("init-phase-test.db");
     let store = IndexStore::open(&db_path).expect("open init store");
     let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
-    let pending = Arc::new(pending_sizes::PendingSizes::new());
+    let pending = Arc::new(read::pending_sizes::PendingSizes::new());
     try_reserve_initializing_phase(
         volume_id,
         IndexVolumeKind::Local,
@@ -989,7 +989,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
     let db2 = dir2.path().join("from-init.db");
     let store2 = IndexStore::open(&db2).expect("open store");
     let pool2 = Arc::new(ReadPool::new(db2.clone()).expect("pool"));
-    let pending2 = Arc::new(pending_sizes::PendingSizes::new());
+    let pending2 = Arc::new(read::pending_sizes::PendingSizes::new());
     let res = try_reserve_initializing_phase(
         ROOT_VOLUME_ID,
         IndexVolumeKind::Local,
@@ -1016,7 +1016,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
         let db3 = dir3.path().join("from-shutdown.db");
         let store_sd = IndexStore::open(&db3).expect("open store");
         let pool_sd = Arc::new(ReadPool::new(db3.clone()).expect("pool"));
-        let pending_sd = Arc::new(pending_sizes::PendingSizes::new());
+        let pending_sd = Arc::new(read::pending_sizes::PendingSizes::new());
         INDEX_REGISTRY.lock().unwrap().insert(
             ROOT_VOLUME_ID.to_string(),
             IndexInstance {
@@ -1034,7 +1034,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
     let db4 = dir4.path().join("from-shutdown2.db");
     let store4 = IndexStore::open(&db4).expect("open store");
     let pool4 = Arc::new(ReadPool::new(db4.clone()).expect("pool"));
-    let pending4 = Arc::new(pending_sizes::PendingSizes::new());
+    let pending4 = Arc::new(read::pending_sizes::PendingSizes::new());
     let res = try_reserve_initializing_phase(
         ROOT_VOLUME_ID,
         IndexVolumeKind::Local,
@@ -1147,7 +1147,7 @@ fn shutdown_drain_does_not_hold_indexing_lock() {
         let store = IndexStore::open(&db).expect("open store");
         drop(store); // ShuttingDown carries no store
         let pool = Arc::new(ReadPool::new(db.clone()).expect("pool"));
-        let pending = Arc::new(pending_sizes::PendingSizes::new());
+        let pending = Arc::new(read::pending_sizes::PendingSizes::new());
         INDEX_REGISTRY.lock().expect("registry poisoned").insert(
             ROOT_VOLUME_ID.to_string(),
             IndexInstance {
@@ -1197,7 +1197,7 @@ fn shutdown_drain_does_not_hold_indexing_lock() {
 fn shutdown_enrichment_returns_early() {
     let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
     // Ensure READ_POOL is empty (simulate post-shutdown state)
-    *enrichment::READ_POOL.lock().unwrap() = None;
+    *read::enrichment::READ_POOL.lock().unwrap() = None;
 
     let mut entries = vec![make_file_entry("stuff", "/stuff", true)];
     enrich_entries_with_index(&mut entries);

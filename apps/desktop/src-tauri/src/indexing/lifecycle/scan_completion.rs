@@ -16,15 +16,15 @@ use tauri_specta::Event;
 
 use crate::ignore_poison::IgnorePoison;
 use crate::indexing::IndexPathSpace;
-use crate::indexing::event_loop::run_live_event_loop;
+use crate::indexing::watch::event_loop::run_live_event_loop;
 use crate::indexing::events::{
     ActivityPhase, DEBUG_STATS, IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexScanAbortedEvent,
     IndexScanCompleteEvent, RescanReason, emit_rescan_notification, set_phase_for,
 };
-use crate::indexing::reconciler::{self, EventReconciler};
+use crate::indexing::reconcile::reconciler::{self, EventReconciler};
 use crate::indexing::scanner::{ScanError, ScanSummary};
 use crate::indexing::store::IndexStore;
-use crate::indexing::watcher::FsChangeEvent;
+use crate::indexing::watch::watcher::FsChangeEvent;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 use crate::pluralize::pluralize;
 

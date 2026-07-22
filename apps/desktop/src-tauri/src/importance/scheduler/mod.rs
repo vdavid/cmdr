@@ -5,7 +5,7 @@
 //!
 //! Two triggers, unified through one coalescing coordinator:
 //!
-//! 1. **The lifecycle bus** ([`crate::indexing::lifecycle_bus`]): a
+//! 1. **The lifecycle bus** ([`crate::indexing::lifecycle::lifecycle_bus`]): a
 //!    `ScanCompleted` publish for a volume ⇒ recompute it. This catches every
 //!    scan that finishes while the app runs.
 //! 2. **The startup registry sweep** ([`crate::indexing::ready_volumes_with_kind`]):
@@ -20,7 +20,7 @@
 //!    every launch, while a fresh / schema-recreated / incremental-only store finally
 //!    gets its full pass. Each carries its typed kind (MTP excluded, SMB
 //!    degraded).
-//! 3. **The registration bus** ([`crate::indexing::lifecycle_bus::subscribe_registrations`]):
+//! 3. **The registration bus** ([`crate::indexing::lifecycle::lifecycle_bus::subscribe_registrations`]):
 //!    a volume that registers AFTER the sweep (a share mounted mid-session) is
 //!    wired then (plan M4 late-registering volumes).
 //!
@@ -463,7 +463,7 @@ pub fn start(app: &AppHandle) {
     // late-registering volumes). Each registration wires that volume's per-volume
     // subscriptions and scores it if it's already ready.
     let reg_scheduler = Arc::clone(&scheduler);
-    let mut reg_rx = crate::indexing::lifecycle_bus::subscribe_registrations();
+    let mut reg_rx = crate::indexing::lifecycle::lifecycle_bus::subscribe_registrations();
     tauri::async_runtime::spawn(async move {
         loop {
             match reg_rx.recv().await {
@@ -580,20 +580,20 @@ fn wire_volume(scheduler: Arc<ImportanceScheduler>, volume_id: String, kind: Ind
     // (late-subscriber replay). Recompute on each completion.
     let sub_scheduler = Arc::clone(&scheduler);
     let sub_volume = volume_id.clone();
-    let mut rx = crate::indexing::lifecycle_bus::subscribe(&volume_id);
+    let mut rx = crate::indexing::lifecycle::lifecycle_bus::subscribe(&volume_id);
     tauri::async_runtime::spawn(async move {
         // Observe the retained value first (covers a completion before subscribe,
         // and a sweep-ready volume that already loaded Completed).
         if matches!(
             *rx.borrow_and_update(),
-            crate::indexing::lifecycle_bus::ScanState::Completed { .. }
+            crate::indexing::lifecycle::lifecycle_bus::ScanState::Completed { .. }
         ) {
             spawn_recompute(Arc::clone(&sub_scheduler), sub_volume.clone(), available);
         }
         while rx.changed().await.is_ok() {
             if matches!(
                 *rx.borrow_and_update(),
-                crate::indexing::lifecycle_bus::ScanState::Completed { .. }
+                crate::indexing::lifecycle::lifecycle_bus::ScanState::Completed { .. }
             ) {
                 spawn_recompute(Arc::clone(&sub_scheduler), sub_volume.clone(), available);
             }
@@ -606,7 +606,7 @@ fn wire_volume(scheduler: Arc<ImportanceScheduler>, volume_id: String, kind: Ind
 /// batches per volume (accumulating their paths) so a burst of FSEvents collapses
 /// to one pass plus at most one re-run, never a pass per event.
 fn start_incremental(scheduler: Arc<ImportanceScheduler>, volume_id: String, available: SignalSet) {
-    let mut rx = crate::indexing::lifecycle_bus::subscribe_dirs_changed(&volume_id);
+    let mut rx = crate::indexing::lifecycle::lifecycle_bus::subscribe_dirs_changed(&volume_id);
     tauri::async_runtime::spawn(async move {
         // The retained initial value is the empty batch (nothing published yet);
         // `borrow_and_update` marks it seen so the first real change triggers.

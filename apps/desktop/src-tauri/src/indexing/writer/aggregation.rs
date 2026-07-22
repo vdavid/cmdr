@@ -155,7 +155,7 @@ pub(super) fn handle_compute_partial_aggregates(
             // `writer_loop` wraps each message in `objc2::rc::autoreleasepool` on
             // macOS, so the ObjC-on-background-thread rule is satisfied.
             if let Some(app) = app_handle {
-                crate::indexing::reconciler::emit_dir_updated(app, vec!["/".to_string()]);
+                crate::indexing::reconcile::reconciler::emit_dir_updated(app, vec!["/".to_string()]);
             }
         }
         Err(e) => {

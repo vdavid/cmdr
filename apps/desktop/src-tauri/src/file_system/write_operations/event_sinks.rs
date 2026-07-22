@@ -68,7 +68,7 @@ impl WriteProgressEvent {
         mut self,
         current_dir: Option<String>,
         dirs_done: usize,
-        expected: Option<crate::indexing::expected_totals::ExpectedTotals>,
+        expected: Option<crate::indexing::read::expected_totals::ExpectedTotals>,
     ) -> Self {
         self.current_dir = current_dir;
         self.dirs_done = dirs_done;

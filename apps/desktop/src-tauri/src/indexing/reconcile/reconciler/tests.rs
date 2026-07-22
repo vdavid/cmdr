@@ -1,7 +1,7 @@
 use super::*;
 use crate::indexing::store::{IndexStore, ROOT_ID};
 use crate::indexing::stress_test_helpers::check_db_consistency;
-use crate::indexing::watcher::FsEventFlags;
+use crate::indexing::watch::watcher::FsEventFlags;
 use std::time::Duration;
 
 fn make_event(path: &str, event_id: u64, flags: FsEventFlags) -> FsChangeEvent {
@@ -201,7 +201,7 @@ fn must_scan_dir_flags() -> FsEventFlags {
 /// hold, nothing queued on the drain.
 #[tokio::test]
 async fn root_scale_must_scan_routes_to_scanner_without_a_stuck_hold() {
-    use crate::indexing::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes};
+    use crate::indexing::read::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes};
     let _guard = PENDING_SIZES_TEST_MUTEX.lock().expect("test mutex");
     *PENDING_SIZES.lock().expect("install tracker") = Some(Arc::new(PendingSizes::new()));
     rescan_route::reset_cooldown_for_test();
@@ -223,7 +223,7 @@ async fn root_scale_must_scan_routes_to_scanner_without_a_stuck_hold() {
         "a shallow (root-scale) anchor routes to the scanner"
     );
     // ...and took NO reconcile hourglass hold, and queued nothing on the drain.
-    let tracker = crate::indexing::pending_sizes::get_pending_sizes_for(ROOT_VOLUME_ID).expect("tracker");
+    let tracker = crate::indexing::read::pending_sizes::get_pending_sizes_for(ROOT_VOLUME_ID).expect("tracker");
     assert!(
         !tracker.is_pending("/"),
         "the scanner path must NOT hold the per-dir hourglass (the stuck-hold bug)"
@@ -251,7 +251,7 @@ async fn root_scale_must_scan_routes_to_scanner_without_a_stuck_hold() {
 /// the live path.
 #[tokio::test]
 async fn a_second_root_scale_must_scan_does_not_reach_the_scanner() {
-    use crate::indexing::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes};
+    use crate::indexing::read::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes};
     let _guard = PENDING_SIZES_TEST_MUTEX.lock().expect("test mutex");
     *PENDING_SIZES.lock().expect("install tracker") = Some(Arc::new(PendingSizes::new()));
     rescan_route::reset_cooldown_for_test();
@@ -287,7 +287,7 @@ async fn a_second_root_scale_must_scan_does_not_reach_the_scanner() {
 /// depth, so the deep path must NOT reach the scanner.
 #[tokio::test]
 async fn deep_must_scan_keeps_the_reconcile_drain() {
-    use crate::indexing::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes};
+    use crate::indexing::read::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes};
     let _guard = PENDING_SIZES_TEST_MUTEX.lock().expect("test mutex");
     *PENDING_SIZES.lock().expect("install tracker") = Some(Arc::new(PendingSizes::new()));
     rescan_route::reset_cooldown_for_test();
@@ -319,7 +319,7 @@ async fn deep_must_scan_keeps_the_reconcile_drain() {
         vec![PathBuf::from(deep)],
         "the deep anchor is queued on the reconcile drain"
     );
-    let tracker = crate::indexing::pending_sizes::get_pending_sizes_for(ROOT_VOLUME_ID).expect("tracker");
+    let tracker = crate::indexing::read::pending_sizes::get_pending_sizes_for(ROOT_VOLUME_ID).expect("tracker");
     assert!(
         tracker.is_pending(deep),
         "the reconcile drain holds the per-dir hourglass for a deep anchor"

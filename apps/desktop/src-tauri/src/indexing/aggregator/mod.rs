@@ -551,7 +551,7 @@ pub fn compute_subtree_aggregates(conn: &Connection, root_id: i64) -> Result<u64
 /// `hot_paths` are index-relative (volume-root-stripped) paths: for a `root`
 /// (local-disk) index that's just the absolute path, for a network/MTP index
 /// they're the mount-relative form produced by
-/// [`crate::indexing::routing::index_read_path`]. Each resolves to a dir id via
+/// [`crate::indexing::paths::routing::index_read_path`]. Each resolves to a dir id via
 /// [`resolve_path_under`] from `ROOT_ID`.
 ///
 /// For each resolved hot dir it runs a SCOPED bottom-up aggregate over the hot

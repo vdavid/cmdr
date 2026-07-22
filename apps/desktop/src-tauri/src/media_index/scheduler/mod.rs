@@ -11,7 +11,7 @@
 //!
 //! Triggers, all folded through the [`PassCoordinator`] (full detail in `DETAILS.md`):
 //!
-//! - **The lifecycle bus** ([`crate::indexing::lifecycle_bus`]): a `ScanCompleted` ⇒
+//! - **The lifecycle bus** ([`crate::indexing::lifecycle::lifecycle_bus`]): a `ScanCompleted` ⇒
 //!   enrich. Consumed **edge-triggered** (`borrow_and_update`), NEVER a `borrow()` poll:
 //!   the `watch` retains the last `Completed` across a new scan's truncate window, so a
 //!   poll could GC live rows mid-truncate. The edge is the data-safety line (Decision 3).

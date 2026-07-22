@@ -6,8 +6,8 @@ use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 
-use crate::indexing::event_loop::live::detect_renames_by_inode;
-use crate::indexing::reconciler::EventReconciler;
+use crate::indexing::watch::event_loop::live::detect_renames_by_inode;
+use crate::indexing::reconcile::reconciler::EventReconciler;
 use crate::indexing::store::{DirStatsById, ROOT_ID};
 use crate::indexing::writer::IndexWriter;
 

@@ -133,8 +133,8 @@ fn event_path_targets_archive(event_path: &Path, archive_path: &Path) -> bool {
     if event_path == archive_path {
         return true;
     }
-    let event_normalized = crate::indexing::firmlinks::normalize_path(&event_path.to_string_lossy());
-    let archive_normalized = crate::indexing::firmlinks::normalize_path(&archive_path.to_string_lossy());
+    let event_normalized = crate::indexing::paths::firmlinks::normalize_path(&event_path.to_string_lossy());
+    let archive_normalized = crate::indexing::paths::firmlinks::normalize_path(&archive_path.to_string_lossy());
     event_normalized == archive_normalized
 }
 

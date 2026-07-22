@@ -26,7 +26,7 @@ use tauri_specta::Event;
 use super::IndexScanProgressEvent;
 use super::partial_agg;
 use crate::file_system::listing::caching;
-use crate::indexing::routing;
+use crate::indexing::paths::routing;
 use crate::indexing::scanner::ScanProgress;
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 

@@ -30,8 +30,8 @@ use crate::indexing::IndexPathSpace;
 use crate::indexing::events::{
     IndexReplayCompleteEvent, IndexReplayProgressEvent, RescanReason, emit_rescan_notification, set_phase_for,
 };
-use crate::indexing::lifecycle_bus;
-use crate::indexing::reconciler::{self, EventReconciler};
+use crate::indexing::lifecycle::lifecycle_bus;
+use crate::indexing::reconcile::reconciler::{self, EventReconciler};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 use crate::pluralize::pluralize;
 

@@ -8,7 +8,7 @@
 //! caller.
 
 use crate::file_system::listing::caching::ListingSummary;
-use crate::indexing::firmlinks;
+use crate::indexing::paths::firmlinks;
 
 /// How many 500 ms progress ticks between partial-aggregation passes.
 ///

@@ -4,7 +4,7 @@
 use super::*;
 use std::collections::HashMap;
 
-use crate::indexing::reconciler::EventReconciler;
+use crate::indexing::reconcile::reconciler::EventReconciler;
 
 /// Merging created+removed: `item_removed` wins (priority-based merge),
 /// dropping `item_created`. The reconciler's stat-before-delete in

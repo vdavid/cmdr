@@ -13,7 +13,7 @@ use std::path::{Path, PathBuf};
 use rusqlite::Connection;
 
 use super::enrichment::get_read_pool;
-use crate::indexing::firmlinks;
+use crate::indexing::paths::firmlinks;
 use crate::indexing::store::{self, EntryRow, IndexStore};
 
 /// Aggregate "what the scan is expected to find" totals, sourced from the

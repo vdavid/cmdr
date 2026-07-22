@@ -116,7 +116,7 @@ async fn run_watchdog(app: tauri::AppHandle) {
             // `root`. Scans run in parallel (the wire, not RAM, is the
             // bottleneck), so the safety net is one process-wide stop rather than
             // per-volume serialization (plan rabbit hole #8).
-            crate::indexing::state::stop_all_indexing();
+            crate::indexing::lifecycle::state::stop_all_indexing();
             return;
         }
 

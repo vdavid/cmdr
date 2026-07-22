@@ -19,7 +19,7 @@ use crate::commands::indexing::EnableIndexingOutcome;
 use crate::commands::indexing::{
     disable_drive_index, enable_drive_index_via_handle, forget_drive_index, rescan_drive_index_via_handle,
 };
-use crate::indexing::freshness::Freshness;
+use crate::indexing::lifecycle::freshness::Freshness;
 use crate::mcp::resources::indexing::freshness_token;
 
 /// How long to wait for the scan to start (the ordering contract) before

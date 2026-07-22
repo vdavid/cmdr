@@ -91,7 +91,7 @@ impl EventReconciler {
                 // in the registry and runs a fresh single-flight `start_scan`. Spawn
                 // (not inline) because we hold a read `Connection` on the live loop.
                 tauri::async_runtime::spawn(async move {
-                    crate::indexing::manager::perform_registry_rescan(&volume_id, &label).await;
+                    crate::indexing::lifecycle::manager::perform_registry_rescan(&volume_id, &label).await;
                 });
             }
             #[cfg(test)]
@@ -271,7 +271,7 @@ pub(super) fn pick_and_collapse_rescan(
 /// Hold a rescan root's hourglass on `volume_id`'s tracker. No-op if the volume
 /// has no tracker (indexing stopped).
 fn hold_rescan(volume_id: &str, root: &Path) {
-    if let Some(tracker) = crate::indexing::pending_sizes::get_pending_sizes_for(volume_id) {
+    if let Some(tracker) = crate::indexing::read::pending_sizes::get_pending_sizes_for(volume_id) {
         tracker.hold(&root.to_string_lossy());
     }
 }
@@ -284,7 +284,7 @@ fn release_rescan_hold(volume_id: &str, root: &Path, pending_rescans: &Mutex<Has
     if pending_rescans.lock_ignore_poison().contains(root) {
         return;
     }
-    if let Some(tracker) = crate::indexing::pending_sizes::get_pending_sizes_for(volume_id) {
+    if let Some(tracker) = crate::indexing::read::pending_sizes::get_pending_sizes_for(volume_id) {
         tracker.release(&root.to_string_lossy());
     }
 }
@@ -296,7 +296,7 @@ fn release_dropped_holds(volume_id: &str, dropped: &[PathBuf]) {
     if dropped.is_empty() {
         return;
     }
-    if let Some(tracker) = crate::indexing::pending_sizes::get_pending_sizes_for(volume_id) {
+    if let Some(tracker) = crate::indexing::read::pending_sizes::get_pending_sizes_for(volume_id) {
         for d in dropped {
             tracker.release(&d.to_string_lossy());
         }
@@ -677,7 +677,7 @@ mod tests {
         assert_eq!(picked, PathBuf::from("/a"));
     }
 
-    use crate::indexing::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes};
+    use crate::indexing::read::pending_sizes::{PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes};
 
     /// Spawn a real writer over a throwaway DB. The completion emit rides this
     /// writer's channel, and `None` app handle makes the emit an observable-only
@@ -697,7 +697,7 @@ mod tests {
     fn completion_releases_then_emits_root_and_ancestors() {
         let _guard = PENDING_SIZES_TEST_MUTEX.lock().expect("test mutex");
         *PENDING_SIZES.lock().expect("install tracker") = Some(Arc::new(PendingSizes::new()));
-        let tracker = crate::indexing::pending_sizes::get_pending_sizes_for(ROOT_VOLUME_ID).expect("tracker");
+        let tracker = crate::indexing::read::pending_sizes::get_pending_sizes_for(ROOT_VOLUME_ID).expect("tracker");
         tracker.hold("/aaa/bbb/ccc");
         assert!(tracker.is_pending("/aaa/bbb/ccc"), "held before completion");
 
@@ -731,7 +731,7 @@ mod tests {
     fn completion_skips_release_when_requeued() {
         let _guard = PENDING_SIZES_TEST_MUTEX.lock().expect("test mutex");
         *PENDING_SIZES.lock().expect("install tracker") = Some(Arc::new(PendingSizes::new()));
-        let tracker = crate::indexing::pending_sizes::get_pending_sizes_for(ROOT_VOLUME_ID).expect("tracker");
+        let tracker = crate::indexing::read::pending_sizes::get_pending_sizes_for(ROOT_VOLUME_ID).expect("tracker");
         tracker.hold("/aaa/bbb/ccc");
 
         let (writer, _dir) = spawn_probe_writer();

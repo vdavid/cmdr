@@ -459,7 +459,7 @@ pub(crate) async fn reconcile_volume_via_trait(
     cancelled: Arc<AtomicBool>,
     pacer: ScanPacer,
 ) -> Result<ScanSummary, VolumeScanError> {
-    use crate::indexing::reconciler::{self, LiveChild};
+    use crate::indexing::reconcile::reconciler::{self, LiveChild};
     use crate::indexing::store::ROOT_ID;
 
     let start = Instant::now();
@@ -731,7 +731,7 @@ pub(crate) async fn reconcile_volume_via_trait(
 /// ordering invariant — lives once in `reconciler`, shared with the local
 /// reconcile walk, so the two paths can't drift.
 fn finish_reconcile(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -> Result<(), VolumeScanError> {
-    crate::indexing::reconciler::finish_reconcile(listed_ids, epoch, writer)
+    crate::indexing::reconcile::reconciler::finish_reconcile(listed_ids, epoch, writer)
         .map_err(|e| VolumeScanError::WriterSend(e.to_string()))
 }
 
@@ -832,7 +832,7 @@ fn finish_partial_scan(
     // (b) Stamp every successfully-listed dir (ordering invariant: marks precede
     // the final aggregate; the single in-order writer guarantees it). Shared with
     // the reconcile finish so both paths stamp identically.
-    crate::indexing::reconciler::send_marks(listed_ids, epoch, writer)
+    crate::indexing::reconcile::reconciler::send_marks(listed_ids, epoch, writer)
         .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
     // (c) Aggregate over what's present.
     writer
