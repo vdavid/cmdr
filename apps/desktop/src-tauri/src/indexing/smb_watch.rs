@@ -10,7 +10,7 @@
 //! ## Path space (the load-bearing subtlety)
 //!
 //! The SMB index's `ROOT_ID` is the volume's **mount root** (the scanner maps
-//! the scan root to `ROOT_ID`; see `volume_scanner.rs`), and entries are stored
+//! the scan root to `ROOT_ID`; see `network_scanner/mod.rs`), and entries are stored
 //! by `name` under their parent. The watcher delivers a **mount-absolute**
 //! parent path (`/Volumes/share/sub`). So every resolution here first strips the
 //! mount root to a **mount-relative** path (`/sub`) before

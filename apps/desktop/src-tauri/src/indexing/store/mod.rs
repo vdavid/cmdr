@@ -125,7 +125,7 @@ pub struct EntryRow {
 /// DB, erroring if it isn't indexed yet (for example a subtree scan racing an
 /// ongoing full scan; the full scan will cover it).
 ///
-/// Shared by both scanners. The network (SMB/MTP) `volume_scanner` wraps it in a
+/// Shared by both scanners. The network (SMB/MTP) `network_scanner` wraps it in a
 /// [`ScanContext`] path→id map (its serial BFS resolves parents by path); the
 /// local scanner carries `parent_id` through its parallel walk and needs only the
 /// root id from here.
@@ -172,7 +172,7 @@ pub fn resolve_scan_root(conn: &Connection, root: &Path, is_volume_root: bool) -
 /// Mutable context held during a network (SMB/MTP) scan for assigning parent IDs.
 ///
 /// Maintains a `HashMap<PathBuf, i64>` mapping directory paths to their
-/// pre-assigned entry IDs. The `volume_scanner`'s serial BFS looks up each
+/// pre-assigned entry IDs. The `network_scanner`'s serial BFS looks up each
 /// entry's parent path in this map to get its `parent_id`, assigns a fresh `id`
 /// from `next_id`, and (if the entry is a directory) inserts its own mapping. The
 /// LOCAL scanner does NOT use this — it carries `parent_id` through its parallel

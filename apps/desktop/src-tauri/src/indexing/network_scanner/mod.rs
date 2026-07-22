@@ -54,10 +54,13 @@ use std::time::{Duration, Instant};
 use futures_util::StreamExt;
 use futures_util::stream::FuturesUnordered;
 
+pub(crate) mod scan_pace;
+mod system_dirs;
+
 use crate::file_system::volume::Volume;
-use crate::indexing::scan_pace::ScanPacer;
 use crate::indexing::store::{EntryRow, IndexStore, ScanContext};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
+use scan_pace::ScanPacer;
 
 use super::scanner::{ScanProgress, ScanSummary};
 
@@ -263,7 +266,7 @@ pub(crate) async fn scan_volume_via_trait(
             // handler.
             Err(VolumeScanError::Volume(e)) if is_typed_disconnect(&e) => {
                 log::warn!(
-                    "volume_scanner: device disconnected listing {}: {e}; \
+                    "network_scanner: device disconnected listing {}: {e}; \
                      keeping honest partial ({} listed, {} queued/in-flight unscanned)",
                     dir_path.display(),
                     crate::pluralize::pluralize(total_dirs, "dir"),
@@ -291,12 +294,12 @@ pub(crate) async fn scan_volume_via_trait(
                 // it still trips; an isolated bad dir is reset by its many healthy peers.
                 consecutive_failures += 1;
                 log::debug!(
-                    "volume_scanner: skipping unlistable dir {} (consecutive_failures={consecutive_failures}): {err}",
+                    "network_scanner: skipping unlistable dir {} (consecutive_failures={consecutive_failures}): {err}",
                     dir_path.display(),
                 );
                 if consecutive_failures >= CONSECUTIVE_FAILURE_ABORT {
                     log::warn!(
-                        "volume_scanner: {consecutive_failures} consecutive listing failures \
+                        "network_scanner: {consecutive_failures} consecutive listing failures \
                          (looks like a disconnect); aborting walk and keeping honest partial \
                          ({} listed, {} queued/in-flight unscanned)",
                         crate::pluralize::pluralize(total_dirs, "dir"),
@@ -317,7 +320,7 @@ pub(crate) async fn scan_volume_via_trait(
         let parent_id = match scan_ctx.lookup_parent(&dir_path) {
             Some(id) => id,
             None => {
-                log::debug!("volume_scanner: parent id missing for {}, skipping", dir_path.display());
+                log::debug!("network_scanner: parent id missing for {}, skipping", dir_path.display());
                 continue;
             }
         };
@@ -344,9 +347,9 @@ pub(crate) async fn scan_volume_via_trait(
                 // stalled a real first-scan. The row is still indexed (visible,
                 // navigable); we just don't walk its subtree, so its size stays
                 // honestly unknown rather than a misleading roll-up. See `system_dirs`.
-                if crate::indexing::system_dirs::is_recursion_excluded_dir(&entry.name) {
+                if system_dirs::is_recursion_excluded_dir(&entry.name) {
                     log::debug!(
-                        "volume_scanner: not descending into NAS system dir {}",
+                        "network_scanner: not descending into NAS system dir {}",
                         child_path.display()
                     );
                 } else {
@@ -399,7 +402,7 @@ pub(crate) async fn scan_volume_via_trait(
     // bail BEFORE `finish_partial_scan` so no marks/aggregate touch the empty DB.
     if total_entries == 0 {
         log::warn!(
-            "volume_scanner: root listed empty for {} ({}ms) — treating as a failed scan, not marking complete",
+            "network_scanner: root listed empty for {} ({}ms) — treating as a failed scan, not marking complete",
             root.display(),
             start.elapsed().as_millis()
         );
@@ -416,7 +419,7 @@ pub(crate) async fn scan_volume_via_trait(
         .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
 
     log::info!(
-        "volume_scanner: walk complete for {}: entries={total_entries}, dirs={total_dirs} in {}ms",
+        "network_scanner: walk complete for {}: entries={total_entries}, dirs={total_dirs} in {}ms",
         root.display(),
         start.elapsed().as_millis()
     );
@@ -544,11 +547,11 @@ pub(crate) async fn reconcile_volume_via_trait(
                 match IndexStore::resolve_component(&conn, parent_id, &child_name) {
                     Ok(Some(id)) => queue.push_back((child_path, id)),
                     Ok(None) => log::debug!(
-                        "volume_scanner: reconcile couldn't resolve new dir after flush: {}",
+                        "network_scanner: reconcile couldn't resolve new dir after flush: {}",
                         child_path.display()
                     ),
                     Err(e) => log::warn!(
-                        "volume_scanner: reconcile resolve_component failed for {}: {e}",
+                        "network_scanner: reconcile resolve_component failed for {}: {e}",
                         child_path.display()
                     ),
                 }
@@ -572,7 +575,7 @@ pub(crate) async fn reconcile_volume_via_trait(
             // flip fresh and the rest stays as it was (stale). Then surface the typed error.
             Err(VolumeScanError::Volume(e)) if is_typed_disconnect(&e) => {
                 log::warn!(
-                    "volume_scanner: device disconnected reconciling {}: {e}; \
+                    "network_scanner: device disconnected reconciling {}: {e}; \
                      keeping prior index ({} re-listed, {} queued/in-flight unreached)",
                     dir_path.display(),
                     crate::pluralize::pluralize(total_dirs, "dir"),
@@ -589,12 +592,12 @@ pub(crate) async fn reconcile_volume_via_trait(
             Err(err) => {
                 consecutive_failures += 1;
                 log::debug!(
-                    "volume_scanner: skipping unlistable dir {} during reconcile (consecutive_failures={consecutive_failures}): {err}",
+                    "network_scanner: skipping unlistable dir {} during reconcile (consecutive_failures={consecutive_failures}): {err}",
                     dir_path.display(),
                 );
                 if consecutive_failures >= CONSECUTIVE_FAILURE_ABORT {
                     log::warn!(
-                        "volume_scanner: {consecutive_failures} consecutive listing failures during reconcile \
+                        "network_scanner: {consecutive_failures} consecutive listing failures during reconcile \
                          (looks like a disconnect); aborting and keeping prior index \
                          ({} re-listed, {} queued/in-flight unreached)",
                         crate::pluralize::pluralize(total_dirs, "dir"),
@@ -619,7 +622,7 @@ pub(crate) async fn reconcile_volume_via_trait(
         // that lists empty is a genuine empty subdir and reconciles normally.)
         if dir_path == root && entries.is_empty() {
             log::warn!(
-                "volume_scanner: reconcile root listed empty for {} ({}ms) — treating as a failed rescan, keeping prior index",
+                "network_scanner: reconcile root listed empty for {} ({}ms) — treating as a failed rescan, keeping prior index",
                 root.display(),
                 start.elapsed().as_millis()
             );
@@ -682,9 +685,9 @@ pub(crate) async fn reconcile_volume_via_trait(
         // (it's diffed in like any child) but don't recurse into its subtree. Logged
         // (like the fresh-scan branch) so an error report visibly confirms the skip.
         for (child_id, child_name) in diff.matched_child_dirs {
-            if crate::indexing::system_dirs::is_recursion_excluded_dir(&child_name) {
+            if system_dirs::is_recursion_excluded_dir(&child_name) {
                 log::debug!(
-                    "volume_scanner: not descending into NAS system dir {}",
+                    "network_scanner: not descending into NAS system dir {}",
                     dir_path.join(&child_name).display()
                 );
                 continue;
@@ -692,9 +695,9 @@ pub(crate) async fn reconcile_volume_via_trait(
             queue.push_back((dir_path.join(child_name), child_id));
         }
         for child_name in diff.new_child_dir_names {
-            if crate::indexing::system_dirs::is_recursion_excluded_dir(&child_name) {
+            if system_dirs::is_recursion_excluded_dir(&child_name) {
                 log::debug!(
-                    "volume_scanner: not descending into NAS system dir {}",
+                    "network_scanner: not descending into NAS system dir {}",
                     dir_path.join(&child_name).display()
                 );
                 continue;
@@ -711,7 +714,7 @@ pub(crate) async fn reconcile_volume_via_trait(
 
     let dirs_listed = crate::pluralize::pluralize(total_dirs, "dir");
     log::info!(
-        "volume_scanner: reconcile complete for {}: +{added} -{removed} ~{updated} ({dirs_listed} re-listed) in {}ms",
+        "network_scanner: reconcile complete for {}: +{added} -{removed} ~{updated} ({dirs_listed} re-listed) in {}ms",
         root.display(),
         start.elapsed().as_millis()
     );
@@ -861,7 +864,7 @@ fn log_scan_progress(last_log: &mut Instant, phase: &str, dir_path: &Path, total
     }
     *last_log = Instant::now();
     log::debug!(
-        "volume_scanner: {phase}… {}, {}, current: {}",
+        "network_scanner: {phase}… {}, {}, current: {}",
         crate::pluralize::pluralize(total_dirs, "dir"),
         crate::pluralize::pluralize_with(total_entries, "entry", "entries"),
         dir_path.display()

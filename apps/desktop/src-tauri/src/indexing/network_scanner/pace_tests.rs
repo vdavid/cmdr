@@ -1,9 +1,9 @@
-//! How the `Volume`-trait walk yields to navigation (`indexing/scan_pace.rs`).
+//! How the `Volume`-trait walk yields to navigation (`indexing/network_scanner/scan_pace.rs`).
 //!
 //! Split out of `tests.rs` because it's a distinct concern with its own setup:
 //! these drive the process-global foreground-activity tracker rather than the
 //! walk's error/coverage contracts. The pure budget decision is unit-tested in
-//! `scan_pace.rs`; these prove the WALK actually honors it.
+//! `network_scanner/scan_pace.rs`; these prove the WALK actually honors it.
 //!
 //! Each test uses a `test://` volume id unique to itself, so the process-global
 //! tracker can't cross-talk between tests running in parallel.
@@ -16,7 +16,7 @@ use std::time::Duration;
 use super::tests::{ConcurrencyTrackingVolume, progress, wide_tree};
 use super::{ScanPacer, scan_volume_via_trait};
 use crate::file_system::volume::Volume;
-use crate::indexing::scan_pace::FULL_LISTING_BUDGET;
+use crate::indexing::network_scanner::scan_pace::FULL_LISTING_BUDGET;
 use crate::indexing::store::{IndexStore, ROOT_ID};
 
 /// THE navigation-responsiveness guard. While the user is browsing the share, the
@@ -42,7 +42,7 @@ async fn browsing_the_share_throttles_the_scan_to_one_listing_in_flight() {
 
     // The user just navigated this share. A long quiet window keeps it "busy" for
     // the whole (fast) test, so the assertion can't flake on timing.
-    let volume_id = "test://volume_scanner/browsed";
+    let volume_id = "test://network_scanner/browsed";
     crate::media_index::foreground::note_foreground_activity_on(volume_id);
     let pacer = ScanPacer::with_threshold(volume_id, Duration::from_secs(60));
 
@@ -83,7 +83,7 @@ async fn a_continuously_browsed_share_still_finishes_its_scan() {
     });
 
     // Someone arrow-keying through the share the entire time the scan runs.
-    let volume_id = "test://volume_scanner/never_quiet";
+    let volume_id = "test://network_scanner/never_quiet";
     let stop = Arc::new(AtomicBool::new(false));
     let browsing = tokio::spawn({
         let stop = Arc::clone(&stop);
@@ -149,7 +149,7 @@ async fn browsing_a_different_volume_does_not_throttle_the_scan() {
 
     // The user is busy in a local folder; the share being scanned is untouched.
     crate::media_index::foreground::note_foreground_activity_on("root");
-    let pacer = ScanPacer::with_threshold("test://volume_scanner/untouched", Duration::from_secs(60));
+    let pacer = ScanPacer::with_threshold("test://network_scanner/untouched", Duration::from_secs(60));
 
     let cancelled = Arc::new(AtomicBool::new(false));
     scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled, pacer)

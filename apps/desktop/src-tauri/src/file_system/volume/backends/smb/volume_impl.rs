@@ -53,7 +53,7 @@ impl SmbVolume {
 
         // TRACE, not DEBUG: this fires per listing for both the live pane and the index
         // scan, and was ~9% of normal file-log volume. The scan's own progress signal is
-        // the throttled `volume_scanner: scanning…` DEBUG heartbeat. Bump back with
+        // the throttled `network_scanner: scanning…` DEBUG heartbeat. Bump back with
         // `RUST_LOG=cmdr_lib::file_system::volume::backends::smb=trace` when chasing a listing bug.
         trace!(
             "SmbVolume::list_directory: share={}, input={:?}, smb_path={:?}",

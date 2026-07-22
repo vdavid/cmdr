@@ -2,7 +2,7 @@
 //!
 //! Network volumes (SMB shares, MTP storages) have no local filesystem to walk
 //! and no FSEvents journal, so they scan through the async `Volume` trait
-//! (`volume_scanner`) instead of the local guarded-walker path in [`super::manager`]. This
+//! (`network_scanner`) instead of the local guarded-walker path in [`super::manager`]. This
 //! module owns that family: the startup dispatch for a journal-less volume
 //! (`resume_or_scan_network`), the scan/rescan entry (`start_volume_scan`), and
 //! its bespoke completion handling — partial-aggregation-free progress loop,
@@ -135,7 +135,7 @@ impl IndexManager {
     /// Start a `Volume`-trait scan/rescan for a network volume (SMB or MTP).
     ///
     /// Mirrors `start_scan`'s shape (bump epoch → walk → aggregate → meta on clean
-    /// completion) but walks via `volume_scanner` instead of the guarded walker, and starts NO
+    /// completion) but walks via `network_scanner` instead of the guarded walker, and starts NO
     /// `DriveWatcher` (the live-watch layer owns that). Picks the WALK by whether
     /// the index already has data: an empty DB does a fresh `scan_volume_via_trait`
     /// (truncate + bulk build); a populated DB does a non-destructive
@@ -294,11 +294,11 @@ impl IndexManager {
         let kind = self.kind;
         // Pace the walk against foreground activity on THIS volume: while the user
         // browses the share, the walk drops to one listing in flight so a navigation
-        // isn't queued behind the scan's backlog. See `indexing/scan_pace.rs`.
-        let pacer = super::scan_pace::ScanPacer::for_volume(self.volume_id.clone());
+        // isn't queued behind the scan's backlog. See `indexing/network_scanner/scan_pace.rs`.
+        let pacer = super::network_scanner::scan_pace::ScanPacer::for_volume(self.volume_id.clone());
         tauri::async_runtime::spawn(async move {
             let result = if reconcile {
-                super::volume_scanner::reconcile_volume_via_trait(
+                super::network_scanner::reconcile_volume_via_trait(
                     volume,
                     root,
                     writer.clone(),
@@ -308,7 +308,7 @@ impl IndexManager {
                 )
                 .await
             } else {
-                super::volume_scanner::scan_volume_via_trait(volume, root, writer.clone(), progress, cancelled, pacer)
+                super::network_scanner::scan_volume_via_trait(volume, root, writer.clone(), progress, cancelled, pacer)
                     .await
             };
 

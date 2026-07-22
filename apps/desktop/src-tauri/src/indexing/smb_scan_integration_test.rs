@@ -12,7 +12,7 @@
 //!
 //! This is the live half of the `Volume`-trait scanner's coverage; the
 //! backend-agnostic half (writer/aggregator reuse, cancellation) is the
-//! in-memory `volume_scanner::tests`.
+//! in-memory `network_scanner::tests`.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -22,7 +22,7 @@ use crate::file_system::volume::smb::{SmbConnectionParams, connect_smb_volume};
 use crate::file_system::volume::{Volume, smb_volume_id};
 use crate::indexing::scanner::ScanProgress;
 use crate::indexing::store::{IndexStore, ROOT_ID};
-use crate::indexing::volume_scanner::scan_volume_via_trait;
+use crate::indexing::network_scanner::scan_volume_via_trait;
 use crate::indexing::writer::IndexWriter;
 
 fn guest_port() -> u16 {
@@ -117,7 +117,7 @@ async fn smb_integration_volume_scan_indexes_share() {
         writer.clone(),
         progress(),
         cancelled,
-        crate::indexing::scan_pace::ScanPacer::unpaced(),
+        crate::indexing::network_scanner::scan_pace::ScanPacer::unpaced(),
     )
     .await
     .expect("SMB volume scan should complete");
@@ -183,7 +183,7 @@ async fn smb_integration_watch_event_updates_index() {
         writer.clone(),
         progress(),
         cancelled,
-        crate::indexing::scan_pace::ScanPacer::unpaced(),
+        crate::indexing::network_scanner::scan_pace::ScanPacer::unpaced(),
     )
     .await
     .expect("scan should complete");
@@ -308,7 +308,7 @@ async fn smb_integration_enrich_listing_shows_sizes() {
         writer.clone(),
         progress(),
         cancelled,
-        crate::indexing::scan_pace::ScanPacer::unpaced(),
+        crate::indexing::network_scanner::scan_pace::ScanPacer::unpaced(),
     )
     .await
     .expect("SMB volume scan should complete");

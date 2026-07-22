@@ -26,7 +26,6 @@ mod progress_reporter;
 mod queries;
 mod routing;
 mod scan_completion;
-pub(crate) mod scan_pace;
 mod state;
 pub mod store;
 pub mod subsystem_stop;
@@ -48,9 +47,8 @@ pub(crate) mod scanner;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod smb_index;
 mod smb_watch;
-mod system_dirs;
 mod verifier;
-pub(crate) mod volume_scanner;
+pub(crate) mod network_scanner;
 pub(crate) mod watcher;
 
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]

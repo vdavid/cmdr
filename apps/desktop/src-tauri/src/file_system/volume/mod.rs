@@ -226,7 +226,7 @@ pub trait Volume: Send + Sync {
     /// foreground op, so a long scan of a huge folder can't starve interactive use.
     /// Backends with no such contention (local, SMB, in-memory) use the default,
     /// which is just `list_directory_with_cancel`. The scanner
-    /// (`indexing::volume_scanner`) calls THIS, not `list_directory`, for every
+    /// (`indexing::network_scanner`) calls THIS, not `list_directory`, for every
     /// directory it walks.
     fn list_directory_for_scan<'a>(
         &'a self,

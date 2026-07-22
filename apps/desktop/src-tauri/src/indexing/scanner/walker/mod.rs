@@ -200,7 +200,7 @@ pub trait DirVisitor: Send + Sync {
 }
 
 /// Default per-subtree consecutive-read-failure budget. Mirrors the network
-/// scanner's `CONSECUTIVE_FAILURE_ABORT` (`volume_scanner.rs`) so the two give-up
+/// scanner's `CONSECUTIVE_FAILURE_ABORT` (`network_scanner/mod.rs`) so the two give-up
 /// thresholds stay consistent; the count is stronger evidence here (every failure
 /// is under ONE parent, and any successful sibling resets it), so reusing the
 /// value is if anything conservative.

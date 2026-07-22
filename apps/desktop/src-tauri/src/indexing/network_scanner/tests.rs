@@ -6,7 +6,7 @@ use std::pin::Pin;
 use super::*;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{InMemoryVolume, ListingProgress, VolumeError};
-use crate::indexing::scan_pace::FULL_LISTING_BUDGET;
+use crate::indexing::network_scanner::scan_pace::FULL_LISTING_BUDGET;
 use crate::indexing::store::{ROOT_ID, resolve_path};
 
 pub(super) fn progress() -> Arc<ScanProgress> {

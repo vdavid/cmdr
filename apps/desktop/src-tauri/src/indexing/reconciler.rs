@@ -799,7 +799,7 @@ impl Drop for BulkReconcileGuard {
 /// This is the LIVE small-scope fill path (per-navigation verifier,
 /// `MustScanSubDirs`, SMB-overflow `FullRefresh`): it propagates coverage per
 /// listed dir. The full-rescan path does NOT use this — the network rescan walks
-/// via `volume_scanner::reconcile_volume_via_trait`, which reuses the shared
+/// via `network_scanner::reconcile_volume_via_trait`, which reuses the shared
 /// [`diff_dir_against_db`] but stamps + runs ONE `ComputeAllAggregates` (the
 /// single-aggregate constraint the perf bench measured), never per-dir propagation.
 pub(super) fn reconcile_subtree(
@@ -1020,7 +1020,7 @@ pub(super) fn reconcile_subtree(
     // values, which must already reflect this pass. `propagate_min_subtree_epoch`
     // short-circuits once a value stabilizes, so the repeated up-walks are cheap.
     // (This is the SMALL-SCOPE live path; a full rescan uses the single-aggregate
-    // path in `volume_scanner`, not per-dir propagation — see the fn doc.)
+    // path in `network_scanner`, not per-dir propagation — see the fn doc.)
     if !listed_dir_ids.is_empty() {
         // Chunk under SQLite's bound-parameter ceiling (+1 for the epoch param).
         const MARK_CHUNK: usize = 900;

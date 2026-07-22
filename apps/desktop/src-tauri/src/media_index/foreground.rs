@@ -10,7 +10,7 @@
 //!   (`media_index::scheduler`) uses it. Heavy on-device ML with no deadline, so
 //!   foreground work anywhere is reason enough to wait.
 //! - **Per volume** ([`ForegroundActivity::idle_for_volume`]): the network index
-//!   scan (`indexing::scan_pace`) and cross-volume transfers (`SmbVolume`'s
+//!   scan (`indexing::network_scanner::scan_pace`) and cross-volume transfers (`SmbVolume`'s
 //!   `Volume` foreground-yield methods) use it. Their contention is one share's SMB
 //!   session, so browsing a LOCAL folder is no reason to slow a NAS scan.
 //!

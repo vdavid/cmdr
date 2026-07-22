@@ -18,7 +18,7 @@
 //! watching a progress bar for, so it must only stand aside for navigation on the
 //! share it's actually competing with — browsing a local folder has no business
 //! slowing a NAS copy. (The index scan makes the same call for the same reason; see
-//! `indexing/scan_pace.rs`.)
+//! `indexing/network_scanner/scan_pace.rs`.)
 //!
 //! Starvation is handled one layer up and doesn't need a floor here:
 //! `CheckpointStream` won't honor a yield until the transfer has moved

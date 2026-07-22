@@ -49,7 +49,7 @@ const WATCHDOG_INTERVAL: Duration = Duration::from_secs(1);
 #[cfg(test)]
 mod tests;
 
-/// Number of dir ids per `MarkDirsListed` message (mirrors `volume_scanner`).
+/// Number of dir ids per `MarkDirsListed` message (mirrors `network_scanner`).
 const MARK_CHUNK: usize = 10_000;
 
 /// Emit `MarkDirsListed` for the accumulated dir ids, chunked. A no-op when empty.
@@ -150,7 +150,7 @@ pub struct ScanHandle {
 
 impl ScanHandle {
     /// Build a handle around an existing progress + cancel pair. Used by the
-    /// `Volume`-trait scanner (`volume_scanner`), which owns the walk itself and
+    /// `Volume`-trait scanner (`network_scanner`), which owns the walk itself and
     /// just needs the manager-facing progress/cancel surface.
     pub(crate) fn new(progress: Arc<ScanProgress>, cancelled: Arc<AtomicBool>) -> Self {
         Self { progress, cancelled }
