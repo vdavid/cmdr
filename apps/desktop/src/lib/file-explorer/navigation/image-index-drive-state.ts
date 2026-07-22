@@ -46,7 +46,11 @@ export function imageIndexDriveCoverage(volumeState: MediaIndexVolumeState): { d
  * A PAUSED pass reads as `indexing`, not `done`: `enrichActivity.paused` is non-null so the
  * "actively enriching" branch is false, but `done < total` keeps it yellow (work remains).
  */
-export function imageIndexDriveState({ enabled, volumeState, enrichActivity }: ImageIndexDriveStateInputs): ImageIndexDriveState {
+export function imageIndexDriveState({
+  enabled,
+  volumeState,
+  enrichActivity,
+}: ImageIndexDriveStateInputs): ImageIndexDriveState {
   if (!enabled || !volumeState.enabled) return 'off'
   const coverage = imageIndexDriveCoverage(volumeState)
   if (coverage === null) return 'off'

@@ -33,8 +33,8 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
 - **`DriveIndexBadge.svelte`**: Per-drive index freshness dot (gray/blue/green/yellow) + its click menu (see § Drive
   index freshness badge)
 - **`ImageIndexDriveBadge.svelte`** + **`image-index-drive-state.ts`**: the second per-drive dot, for IMAGE-search
-  indexing (gray/yellow/green), and its pure state/coverage mapping (`image-index-drive-state.test.ts`). See § Image-index
-  drive dot
+  indexing (gray/yellow/green), and its pure state/coverage mapping (`image-index-drive-state.test.ts`). See §
+  Image-index drive dot
 - **`drive-index-status.ts`**: Pure mapping for the badge: `VolumeIndexStatus` → state/color, menu items per state, the
   "N min, S s" duration formatter (`drive-index-status.test.ts`)
 - **`drive-index-manager.svelte.ts`**: Reactive `volumeId → VolumeIndexStatus` map; fetches on demand and subscribes to
@@ -401,8 +401,8 @@ pulse.
   tracked). Bounded to the shown drives, so no poll. Enrich listeners are registered in `onMount`, cleaned in
   `onDestroy`.
 - **Non-interactive**: unlike the freshness badge (a `<button>` with a menu), this is a focusable `role="img"` span with
-  an `aria-label` + `use:tooltip` (the sanctioned status-glyph pattern, mirroring the corner indicator). There's no menu:
-  the image-search on/off + scope controls live in Settings.
+  an `aria-label` + `use:tooltip` (the sanctioned status-glyph pattern, mirroring the corner indicator). There's no
+  menu: the image-search on/off + scope controls live in Settings.
 
 ### Dropdown and submenu UI patterns
 

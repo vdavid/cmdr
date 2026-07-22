@@ -170,10 +170,10 @@ present, else `tString(tooltipKey)`.
   (`accounted < eligible`) → `circle-dot` (a distinct hollow-with-center glyph, quieter than the file `pending` dashes).
   It resolves the `accounted/eligible` tooltip via a passed-in `t` (`tString`), counts preformatted as `*Text` params.
 - **Data flow mirrors `syncStatusMap`**: `FilePane` owns `indexStatusMap` (path → `FileIndexState`) AND
-  `folderCoverageMap` (path → `FolderCoverage`), populated by `mediaIndexFileStatus` / `mediaIndexFolderCoverage` for the
-  visible paths via the views' `onIndexStatusRequest` / `onFolderCoverageRequest` (same visible-range channel as sync
-  status; folder coverage runs for the visible DIRECTORY rows only). Both maps thread to `FullList` / `BriefList`, which
-  resolve per row: `file.isDirectory ? getFolderCoverageBadge(...) : getImageIndexBadge(...)`, and pass one
+  `folderCoverageMap` (path → `FolderCoverage`), populated by `mediaIndexFileStatus` / `mediaIndexFolderCoverage` for
+  the visible paths via the views' `onIndexStatusRequest` / `onFolderCoverageRequest` (same visible-range channel as
+  sync status; folder coverage runs for the visible DIRECTORY rows only). Both maps thread to `FullList` / `BriefList`,
+  which resolve per row: `file.isDirectory ? getFolderCoverageBadge(...) : getImageIndexBadge(...)`, and pass one
   `imageIndexBadge` to `FileIcon`.
 - **Gating**: the FILE overlay is fetched + rendered only when `mediaIndex.enabled` AND `mediaIndex.showFileStatusIcons`
   are on AND the pane is local; the FOLDER overlay (and the drive dot) drop the file-badge setting — they're inherently

@@ -65,6 +65,11 @@ var allowedUnusedClasses = map[string]bool{
 	"drive-index-badge-fresh":    true,
 	"drive-index-badge-stale":    true,
 	"drive-index-badge-failed":   true,
+	// ImageIndexDriveBadge.svelte - image-index state color classes applied dynamically via
+	// `image-index-drive-badge-{state}` template string, where `state` is the ImageIndexDriveState value.
+	"image-index-drive-badge-off":      true,
+	"image-index-drive-badge-indexing": true,
+	"image-index-drive-badge-done":     true,
 }
 
 // allowedUnusedVariables lists CSS custom properties that are defined but used dynamically,
