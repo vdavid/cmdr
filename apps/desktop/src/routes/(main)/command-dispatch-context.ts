@@ -29,8 +29,12 @@ export interface CommandDispatchDialogs {
    * Opens the onboarding wizard for re-entry from the `Cmdr > Onboarding…`
    * menu item or the `cmdr.openOnboarding` command palette command. No-op when
    * the wizard is already open.
+   *
+   * Resolves once the wizard is actually up: it loads settings and probes for
+   * Full Disk Access first, so a caller that acts on the open wizard (the dialog
+   * gallery's per-step preview) has to be able to wait for it.
    */
-  openOnboarding: () => void
+  openOnboarding: () => Promise<void>
 }
 
 export interface CommandDispatchContext {

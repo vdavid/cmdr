@@ -3,8 +3,7 @@
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSelect from '../components/SettingSelect.svelte'
     import Button from '$lib/ui/Button.svelte'
-    import ModalDialog from '$lib/ui/ModalDialog.svelte'
-    import Spinner from '$lib/ui/Spinner.svelte'
+    import DeleteAiModelDialog from './DeleteAiModelDialog.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
@@ -525,44 +524,12 @@
 
 <!-- Delete model confirmation dialog -->
 {#if showDeleteConfirm}
-    <ModalDialog
-        titleId="delete-ai-model-title"
-        dialogId="delete-ai-model"
-        role="alertdialog"
-        onclose={() => {
-            if (!isDeleting) showDeleteConfirm = false
-        }}
-        containerStyle="width: 400px"
-        onkeydown={(e: KeyboardEvent) => {
-            if (e.key === 'Enter' && !isDeleting) {
-                void handleDeleteModel()
-            }
-        }}
-    >
-        {#snippet title()}{isDeleting
-                ? tString('ai.local.deleteDialogTitleDeleting')
-                : tString('ai.local.deleteDialogTitle')}{/snippet}
-        <div class="confirm-body">
-            {#if isDeleting}
-                <div class="deleting-status">
-                    <Spinner size="sm" />
-                    <span>{tString('ai.local.deletingStatus')}</span>
-                </div>
-            {:else}
-                <p class="confirm-message">
-                    {t('ai.local.deleteConfirmMessage', { modelSize: status?.modelSizeFormatted ?? '2.0 GB' })}
-                </p>
-            {/if}
-        </div>
-        {#snippet footer()}
-            <Button variant="secondary" disabled={isDeleting} onclick={() => (showDeleteConfirm = false)}
-                >{tString('ai.local.cancel')}</Button
-            >
-            <Button variant="danger" disabled={isDeleting} onclick={() => void handleDeleteModel()}>
-                {isDeleting ? tString('ai.local.deleteButtonDeleting') : tString('ai.local.deleteButton')}
-            </Button>
-        {/snippet}
-    </ModalDialog>
+    <DeleteAiModelDialog
+        modelSizeFormatted={status?.modelSizeFormatted ?? null}
+        {isDeleting}
+        onConfirm={() => void handleDeleteModel()}
+        onCancel={() => (showDeleteConfirm = false)}
+    />
 {/if}
 
 <style>
@@ -750,27 +717,5 @@
         display: flex;
         gap: var(--spacing-md);
         margin-top: var(--spacing-sm);
-    }
-
-    /* Delete confirmation dialog */
-    .confirm-body {
-        padding: 0 var(--spacing-xl);
-    }
-
-    .confirm-message {
-        margin: 0;
-        font-size: var(--font-size-md);
-        color: var(--color-text-secondary);
-        line-height: 1.4;
-    }
-
-    .deleting-status {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: var(--spacing-sm);
-        margin: 0 0 var(--spacing-lg);
-        font-size: var(--font-size-md);
-        color: var(--color-text-secondary);
     }
 </style>

@@ -55,6 +55,11 @@ All three surfaces route through the same handler (`+page.svelte::openOnboarding
 wizard at the first reachable step (step 1 on macOS, step 2 on Linux) regardless of `isOnboarded`. The plan's round-3 #1
 codifies "menu re-entry always opens at step 1"; `openWizard()` enforces this by checking the `source` argument.
 
+`ctx.dialogs.openOnboarding` returns a `Promise` that resolves once the wizard is actually up (the handler loads
+settings and probes for Full Disk Access first), so a caller can act on the open wizard. The dev-only dialog gallery is
+the one that does: it dispatches `cmdr.openOnboarding` and then `setCurrentStep(...)` to preview a specific page, since
+step 1 won't advance without a real Allow / Deny (`lib/dialog-gallery/DETAILS.md`).
+
 **Why no Linux menu entry**: the wizard's design language is macOS-centric (frosted backdrop matches macOS sheets,
 "Restart Cmdr" copy assumes the Quit & Reopen flow, FDA-relevance). Adding a redundant menu entry next to the palette
 command would clutter Linux's GTK menu bar for marginal benefit. Palette discovery is good enough; the upgrade-nudge

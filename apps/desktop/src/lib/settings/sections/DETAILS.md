@@ -76,8 +76,14 @@ sections compose).
   "Apply" (server restart), RAM gauge, delete confirmation. Only the context-window registry-row cluster (`SettingRow`
   - the RAM gauge) is wrapped in an unlabeled `SectionCard`, and that wrapper sits INSIDE the
     `{#if modelInstalled && shouldShow('ai.localContextSize')}` guard, so no empty card renders before the model is
-    installed. The `.status-card`, install/`.actions` buttons, and the body-level delete `ModalDialog` stay OUTSIDE any
-    card on purpose (already visually distinct full-bleed blocks).
+    installed. The `.status-card`, install/`.actions` buttons, and the delete dialog stay OUTSIDE any card on purpose
+    (already visually distinct full-bleed blocks).
+- **`DeleteAiModelDialog.svelte`**: the "Delete the local AI model?" confirmation `AiLocalSection` opens
+  (`dialogId: 'delete-ai-model'`, `role="alertdialog"`). Props are `modelSizeFormatted` / `isDeleting` / `onConfirm` /
+  `onCancel`; the section owns the flags and the `uninstallAi()` call, so the dialog performs nothing itself. While
+  `isDeleting` the title, body, and both buttons change and Escape and Enter are inert, so an uninstall in flight can't
+  be cancelled or double-fired (pinned by `DeleteAiModelDialog.a11y.test.ts`). It's the only settings dialog the
+  dev-only dialog gallery can open; see `lib/dialog-gallery/DETAILS.md`.
 - **`ImageIndexingSection.svelte`**: `Indexing › Image indexing` subsection (second subsection of Indexing): on-device
   image-content (OCR) search. One `SectionCard` (titled by `settings.mediaIndex.card`) holding the `mediaIndex.enabled`
   master toggle, an explicit on-device privacy note (`settings.mediaIndex.privacyNote` — the feature touches no AI

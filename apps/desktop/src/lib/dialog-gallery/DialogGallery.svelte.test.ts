@@ -13,8 +13,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
 import { writable } from 'svelte/store'
 import DialogGallery from './DialogGallery.svelte'
-import { closeGalleryDialog, openGalleryDialog, type GalleryDiskFixture } from './gallery-state.svelte'
+import {
+  closeGalleryDialog,
+  isGalleryDialogOpen,
+  openGalleryDialog,
+  type GalleryDiskFixture,
+} from './gallery-state.svelte'
 import { DIALOG_GALLERY_ENTRIES } from './gallery-registry'
+import { buildStoreSeed, type StoreSeededDialogId } from './fixtures/store-seeded'
+import { closeWhatsNew, whatsNewState } from '$lib/whats-new/whats-new-trigger.svelte'
+import { operationLogState } from '$lib/operation-log/operation-log-trigger.svelte'
+import { feedbackFlow } from '$lib/feedback/feedback-flow.svelte'
 import { notifyDialogOpened } from '$lib/tauri-commands'
 
 // The gallery pulls in 21 shipping dialogs, so this mock covers every IPC any of
@@ -210,10 +219,14 @@ const diskFixture: GalleryDiskFixture = {
   })),
 }
 
-/** Every `[dialogId, stateId]` the Debug list offers a button for. */
-const readyStates = DIALOG_GALLERY_ENTRIES.filter((entry) => entry.status === 'ready').flatMap((entry) =>
-  entry.states.map((state) => [entry.dialogId, state.id, entry.usesFixtureDir === true] as const),
-)
+/**
+ * Every `[dialogId, stateId]` the Debug list offers a button for AND the harness
+ * renders itself. Rows with an `openedBy` don't render here by design (the app's
+ * own mount site does, or its own command opens it); they're covered below.
+ */
+const readyStates = DIALOG_GALLERY_ENTRIES.filter(
+  (entry) => entry.status === 'ready' && entry.openedBy === undefined,
+).flatMap((entry) => entry.states.map((state) => [entry.dialogId, state.id, entry.usesFixtureDir === true] as const))
 
 describe('every advertised gallery state opens its dialog', () => {
   it.each(readyStates)('%s / %s', async (dialogId, stateId, usesFixtureDir) => {
@@ -229,5 +242,69 @@ describe('every advertised gallery state opens its dialog', () => {
     // Other modules log their own warnings here (settings reads before init), so
     // this pins the harness's own "no fixture" warning specifically.
     expect(warn.mock.calls.map((call: unknown[]) => call[0])).not.toContain(NO_FIXTURE_WARNING)
+  })
+})
+
+/** Every `[dialogId, stateId]` whose preview patches a real app store. */
+const storeSeededStates = DIALOG_GALLERY_ENTRIES.filter((entry) => entry.openedBy === 'store-seeded').flatMap((entry) =>
+  entry.states.map((state) => [entry.dialogId as StoreSeededDialogId, state.id] as const),
+)
+
+/**
+ * The store-seeded contract, state by state: seeding opens the dialog for the
+ * app, and closing the preview leaves the store byte-identical to what it was.
+ * A preview that half-seeds the app is worse than one that doesn't open, so
+ * "restored exactly" is the assertion, not "closed".
+ */
+describe('every store-seeded state seeds and restores its store', () => {
+  it.each(storeSeededStates)('%s / %s', async (dialogId, stateId) => {
+    const seed = buildStoreSeed(dialogId, stateId)
+    expect(seed, `no seed for ${dialogId} / ${stateId}`).not.toBeNull()
+    if (!seed) return
+
+    const before = JSON.stringify(seed.store)
+    expect(seed.isOpen()).toBe(false)
+
+    openGalleryDialog(dialogId, stateId)
+    mountGallery()
+    await tick()
+    // The harness renders nothing itself; the app's own mount site would.
+    expect(seed.isOpen(), 'the seed never reached the store').toBe(true)
+
+    closeGalleryDialog()
+    await tick()
+    expect(seed.isOpen()).toBe(false)
+    expect(JSON.stringify(seed.store), 'the store came back changed').toBe(before)
+    expect(warn.mock.calls.map((call: unknown[]) => call[0])).not.toContain(NO_FIXTURE_WARNING)
+  })
+})
+
+describe('store-seeded previews clean up on their own', () => {
+  it('restores the store when the dialog closes ITSELF, and drops the gallery preview with it', async () => {
+    // The seeded dialogs close through their own store (Escape, Cancel), never
+    // through `closeGalleryDialog`. Without the harness noticing, `+page.svelte`
+    // would keep suppressing global shortcuts behind a dialog that's gone.
+    openGalleryDialog('whats-new', 'one-release')
+    mountGallery()
+    await tick()
+    expect(whatsNewState.open).toBe(true)
+
+    closeWhatsNew()
+    await tick()
+    expect(isGalleryDialogOpen(), 'the gallery still thinks a preview is up').toBe(false)
+    expect(whatsNewState.releases).toEqual([])
+  })
+
+  it('restores the previous state when swapping straight to another seeded dialog', async () => {
+    openGalleryDialog('operation-log', 'populated')
+    mountGallery()
+    await tick()
+    expect(operationLogState.entries.length).toBeGreaterThan(0)
+
+    openGalleryDialog('feedback', 'default')
+    await tick()
+    expect(operationLogState.open).toBe(false)
+    expect(operationLogState.entries).toEqual([])
+    expect(feedbackFlow.open).toBe(true)
   })
 })

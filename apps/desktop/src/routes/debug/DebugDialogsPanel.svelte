@@ -92,6 +92,18 @@
                         use. Opening it navigates the focused pane there.
                     </p>
                 {/if}
+                {#if entry.openedBy === 'store-seeded'}
+                    <p class="dialog-note">
+                        Takes no content props, so the gallery seeds its real state store and the app's own
+                        mount site renders it. Closing the dialog puts the store back exactly as it was.
+                    </p>
+                {/if}
+                {#if entry.openedBy === 'app-command'}
+                    <p class="dialog-note">
+                        Opened through the app's own command, not by the gallery: its open flag lives in the
+                        main page, not in a store.
+                    </p>
+                {/if}
                 {#if entry.status === 'ready'}
                     <div class="dialog-states">
                         {#each entry.states as state (state.id)}

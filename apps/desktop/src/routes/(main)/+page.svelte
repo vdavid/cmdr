@@ -728,9 +728,7 @@
             showSelectionDialog: (mode: 'add' | 'remove' | null) => {
                 void setSelectionDialog(mode)
             },
-            openOnboarding: () => {
-                void openOnboardingFromMenuOrPalette('menu')
-            },
+            openOnboarding: () => openOnboardingFromMenuOrPalette('menu'),
         },
     }
 

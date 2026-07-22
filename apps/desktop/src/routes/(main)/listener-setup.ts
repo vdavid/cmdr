@@ -46,6 +46,7 @@ import { closeDialogById } from '$lib/ui/dialog-close-registry'
 import type { SoftDialogId } from '$lib/ui/dialog-registry'
 import { openGalleryDialog } from '$lib/dialog-gallery/gallery-state.svelte'
 import { resolveDiskFixture, type FixtureDirPayload } from '$lib/dialog-gallery/disk-fixture'
+import { openOnboardingPreview } from '$lib/dialog-gallery/onboarding-preview'
 import { getAppMode } from '$lib/app-mode'
 import type { ExplorerAPI } from './explorer-api'
 import type { FriendlyError, TransferOperationType } from '$lib/file-explorer/types'
@@ -437,6 +438,14 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
         fixtures: FixtureDirPayload | null
       }
       void (async () => {
+        // `onboarding` has no store and nothing the harness can render (its open
+        // flag is a local `$state` in `+page.svelte`), so its preview dispatches
+        // the app's own re-entry command instead. See `dialog-gallery/onboarding-preview.ts`.
+        if (dialogId === 'onboarding') {
+          await openOnboardingPreview(stateId, ctx.dispatch)
+          await focusMainWindow()
+          return
+        }
         // A disk-backed dialog needs the focused pane pointed at the fixture
         // directory first: it's where its live listing id and its real entries
         // come from. No context resolved means open nothing, not a half-real dialog.

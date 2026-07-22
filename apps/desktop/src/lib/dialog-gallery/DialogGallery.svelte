@@ -8,10 +8,16 @@
      * (so a Debug-window copy would lie to MCP), and the Debug window's minimal
      * capability set would make window- and URL-opening buttons fail silently.
      *
-     * Every dialog here is PROP-DRIVEN: it takes everything it renders as props, so
-     * the harness passes a fixture and the shipping component does the rest. Nothing
-     * below branches inside a dialog. Store-seeded and event-seeded dialogs work
-     * differently and don't belong in this table.
+     * Most dialogs here are PROP-DRIVEN: they take everything they render as props,
+     * so the harness passes a fixture and the shipping component does the rest.
+     * Nothing below branches inside a dialog.
+     *
+     * The store-seeded ones are the exception, and they render NOTHING here: they
+     * take no content props, so the harness patches the real module store and the
+     * APP's own mount site renders them. The harness still owns the undo — the
+     * seed's restore closure is an `$effect` cleanup below — and watches for the
+     * dialog closing itself, since it closes through its own store rather than
+     * through `closeGalleryDialog`.
      *
      * Five of them (delete, transfer, mkdir, mkfile, go-to-path) do real work on
      * mount, so their props are BUILT from the real fixture directory the request
@@ -46,13 +52,18 @@
     import NewFileDialog from '$lib/file-operations/mkfile/NewFileDialog.svelte'
     import GoToPathDialog from '$lib/go-to-path/GoToPathDialog.svelte'
     import { MtpPermissionDialog, PtpcameradDialog } from '$lib/mtp'
+    import DeleteAiModelDialog from '$lib/settings/sections/DeleteAiModelDialog.svelte'
     // The viewer copy dialogs live in the viewer window's route. Same relative-import
     // shape `lib/search/ImageSearchResults.svelte` uses for `routes/viewer/media-view`.
     import ViewerCopyDialogs from '../../routes/viewer/ViewerCopyDialogs.svelte'
     import { getAppLogger } from '$lib/logging/logger'
+    import { untrack } from 'svelte'
     import { closeGalleryDialog, getOpenGalleryDialog, type GalleryDiskFixture } from './gallery-state.svelte'
     import { fixtureRecords } from './fixtures'
+    import { buildStoreSeed, type StoreSeededDialogId } from './fixtures/store-seeded'
+    import type { StoreSeed } from './store-seeding'
     import type { AlertFixture } from './fixtures/alert'
+    import type { DeleteAiModelFixture } from './fixtures/ai-model'
     import type { DeleteFixture, GoToPathFixture, NewEntryFixture, TransferFixture } from './fixtures/disk'
     import type { ExpirationFixture } from './fixtures/licensing'
     import type { ExtensionChangeFixture, RenameConflictFixture } from './fixtures/rename'
@@ -85,6 +96,9 @@
         | { kind: 'mkdir'; props: NewEntryFixture }
         | { kind: 'mkfile'; props: NewEntryFixture }
         | { kind: 'go-to-path'; props: GoToPathFixture }
+        | { kind: 'delete-ai-model'; props: DeleteAiModelFixture }
+        /** Renders nothing: the app's own mount site shows the seeded dialog. */
+        | { kind: 'store-seeded'; seed: StoreSeed }
         | null
 
     /**
@@ -108,6 +122,16 @@
         toPlan: (props: T) => RenderPlan,
     ): RenderPlan {
         return build === undefined || disk === undefined ? null : toPlan(build(disk))
+    }
+
+    /**
+     * Same, for the store-seeded dialogs: the fixture is a patch for a real app
+     * store, so the "plan" is the seed rather than a prop bag. A state id with no
+     * patch seeds nothing, for the same reason a missing fixture renders nothing.
+     */
+    function withStoreSeed(dialogId: StoreSeededDialogId, stateId: string): RenderPlan {
+        const seed = buildStoreSeed(dialogId, stateId)
+        return seed === null ? null : { kind: 'store-seeded', seed }
     }
 
     /** The "Go to path" preview has no pane jump behind it, so closing IS the outcome. */
@@ -161,6 +185,14 @@
                 kind: 'selection',
                 props: { ...f, mode: 'remove' },
             })),
+        'delete-ai-model': (id) =>
+            withFixture(fixtureRecords['delete-ai-model'][id], (f) => ({ kind: 'delete-ai-model', props: f })),
+
+        'bulk-rename-review': (id) => withStoreSeed('bulk-rename-review', id),
+        'error-report': (id) => withStoreSeed('error-report', id),
+        feedback: (id) => withStoreSeed('feedback', id),
+        'operation-log': (id) => withStoreSeed('operation-log', id),
+        'whats-new': (id) => withStoreSeed('whats-new', id),
 
         'delete-confirmation': (id, disk) =>
             withDiskFixture(fixtureRecords['delete-confirmation'][id], disk, (props) => ({ kind: 'delete', props })),
@@ -195,6 +227,42 @@
             stateId: open.stateId,
         })
         return null
+    })
+
+    /**
+     * Restoring a seeded store is STRUCTURAL: the undo is this effect's cleanup,
+     * so closing the dialog, swapping to another preview, and unmounting the
+     * harness all put the store back. No fixture has to remember, and no preview
+     * can leave the app half-seeded.
+     *
+     * `untrack` matters: `apply()` reads the fields it's about to overwrite, and
+     * a tracked read would make the effect depend on its own writes (restore,
+     * re-seed, forever).
+     */
+    $effect(() => {
+        if (plan?.kind !== 'store-seeded') return
+        const seed = plan.seed
+        return untrack(() => seed.apply())
+    })
+
+    /**
+     * A store-seeded dialog closes through ITS OWN store (Escape, its Cancel
+     * button), never through `closeGalleryDialog`, so the gallery would otherwise
+     * still believe a preview is up and `+page.svelte` would keep suppressing
+     * every global shortcut. `seeded` guards the first pass, where the store is
+     * still closed until the effect above runs.
+     */
+    let seeded = false
+    $effect(() => {
+        if (plan?.kind !== 'store-seeded') {
+            seeded = false
+            return
+        }
+        // Read first, unconditionally: this is the subscription that brings us
+        // back when the dialog closes itself.
+        const isOpen = plan.seed.isOpen()
+        if (isOpen) seeded = true
+        else if (seeded) closeGalleryDialog()
     })
 </script>
 
@@ -253,5 +321,7 @@
         <NewFileDialog {...plan.props} onCreated={closeGalleryDialog} onCancel={closeGalleryDialog} />
     {:else if plan?.kind === 'go-to-path'}
         <GoToPathDialog {...plan.props} onGo={closeGoToPathPreview} onCancel={closeGalleryDialog} />
+    {:else if plan?.kind === 'delete-ai-model'}
+        <DeleteAiModelDialog {...plan.props} onConfirm={closeGalleryDialog} onCancel={closeGalleryDialog} />
     {/if}
 {/key}

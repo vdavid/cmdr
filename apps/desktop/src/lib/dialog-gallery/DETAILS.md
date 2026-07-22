@@ -78,10 +78,59 @@ name.
 - **Store-seeded**: the component reads a module-level `$state` store and takes no content props
   (`BulkRenameReviewDialog` has no props at all; `FeedbackDialog` and `ErrorReportDialog` self-gate on their flow stores
   and are mounted bare in `+layout.svelte`). Rendering those directly renders them **empty**. The gallery seeds the
-  store and the app's own mount site renders it: the most faithful of the three, since the real trigger path runs. Such
-  an entry must restore the store on close, so a preview doesn't leave the app half-seeded.
+  store and the app's own mount site renders it: the most faithful of the three, since the real trigger path runs. See
+  the section below.
 - **Event-seeded**: the component self-mounts off a backend event (`StaleDriveDialog`). The gallery arranges the
   preconditions and emits the real event.
+
+A row whose mechanism isn't "the harness renders it" says so in `openedBy`, which the Debug panel discloses and the
+harness's mount sweep reads (those rows render nothing of their own, so the sweep would otherwise fail on them).
+
+## Store-seeded dialogs
+
+`bulk-rename-review`, `feedback`, `whats-new`, `error-report`, and `operation-log` are opened by patching a real app
+store: `fixtures/store-seeded.ts` holds a **patch per state** (not a prop bag), plus `buildStoreSeed`, the one place
+that knows, per dialog, which store the patch lands on and how the app itself decides the dialog is showing. Everything
+else — the `+page.svelte` / `+layout.svelte` mount site, the component, the close path — is production code running
+normally.
+
+**Restoring is structural, not per-fixture.** `store-seeding.ts`'s `seedStore(store, patch)` snapshots exactly the keys
+the patch names and returns the undo; `DialogGallery.svelte` runs that closure as an **`$effect` cleanup**. So closing
+the dialog, swapping to another preview, and unmounting the harness all put the store back, and a fixture can neither
+forget to clean up nor clean up something it never touched. Two gotchas the code guards:
+
+- The seeding call is wrapped in `untrack`. `apply()` reads the fields it's about to overwrite, and a tracked read would
+  make the effect depend on its own writes (restore, re-seed, forever).
+- A seeded dialog closes through its OWN store (Escape, its Cancel button), never through `closeGalleryDialog()`. A
+  second effect watches `seed.isOpen()` and drops the gallery's preview when it flips, or `+page.svelte` would go on
+  suppressing every global shortcut behind a dialog that's gone. It reads `isOpen()` unconditionally so the subscription
+  exists no matter which effect runs first.
+
+`DialogGallery.svelte.test.ts` walks every store-seeded state, and asserts the store comes back **byte-identical**
+(`JSON.stringify` before and after) rather than merely closed: a preview that half-seeds the app is worse than one that
+doesn't open.
+
+**`bulk-rename-review`'s Apply fails, by design.** `applyRenameReview` keys on a `proposalId` the backend staged, and a
+fixture proposal has no counterpart there, so the attempt logs a warning and the review stays up. Cancel and Escape are
+unaffected (`cancel_bulk_rename_proposal` is infallible: it consumes the id if it exists). The row says so.
+
+## `onboarding` isn't store-seeded
+
+`OnboardingWizard` is a hand-rolled `role="dialog"` overlay, not a `ModalDialog` (it reports itself to the tracker with
+a direct `notifyDialogOpened` call), and its open flag is a **local `let showOnboarding`** in
+`routes/(main)/+page.svelte` — `onboarding-state.svelte.ts` owns the step cursor, not an `open` field. So there's no
+store to seed and nothing the harness can render: `onboarding-preview.ts` dispatches the app's own re-entry command
+(`cmdr.openOnboarding`, the same one the menu and the palette use) and then moves the step cursor.
+
+The step jump is what makes the wizard reviewable at all: it always opens at step 1, and step 1 refuses to advance until
+the user commits to Allow (which wants an app restart) or Deny (which persists a real choice), so steps 2-4 are
+otherwise unreachable without changing this machine's FDA setting. Each step's own content stays real — variant and
+banner are computed from the live FDA probe when the wizard opens.
+
+The dispatch is **awaited end to end**: `CommandDispatchDialogs.openOnboarding` returns a `Promise` so the handler and
+`+page.svelte`'s opener (which loads settings and probes FDA before the wizard exists) can be waited on. Setting the
+step before that lands would be overwritten by `openWizard()`. The gallery holds no open-state for the wizard and has
+nothing to restore: it closes on its own terms, and it has no Escape affordance by design.
 
 ## The disk-backed dialogs
 
@@ -130,11 +179,13 @@ the fixture directory actually protects.
    technical blocker for a dialog that simply isn't wired yet: publishing a false reason inside an instrument whose
    thesis is "must not lie" is the worst available outcome.
 4. Add fixtures under `fixtures/`, keyed by the state ids, register the record in `fixtures/index.ts`, and add an entry
-   to `DialogGallery.svelte`'s `planResolvers` table plus a branch in its template. A dialog that does real work on
-   mount sets `usesFixtureDir: true` on its row and holds BUILDERS in `fixtures/disk.ts` instead of literals (see "The
-   disk-backed dialogs"). Two tests cover the seams: `fixtures.test.ts` walks `fixtureRecords` against the registry (a
-   state id with no fixture, or a fixture with no row), and `DialogGallery.svelte.test.ts` mounts EVERY advertised state
-   and asserts the dialog reported its own id to the tracker. A dead button fails there rather than mid-review.
+   to `DialogGallery.svelte`'s `planResolvers` table plus a branch in its template. A store-seeded dialog instead sets
+   `openedBy: 'store-seeded'`, holds PATCHES in `fixtures/store-seeded.ts`, and adds its store binding to
+   `buildStoreSeed`; it needs no template branch, since the app renders it. A dialog that does real work on mount sets
+   `usesFixtureDir: true` on its row and holds BUILDERS in `fixtures/disk.ts` instead of literals (see "The disk-backed
+   dialogs"). Two tests cover the seams: `fixtures.test.ts` walks `fixtureRecords` against the registry (a state id with
+   no fixture, or a fixture with no row), and `DialogGallery.svelte.test.ts` mounts EVERY advertised state and asserts
+   the dialog reported its own id to the tracker. A dead button fails there rather than mid-review.
 5. **Fixture data is part of the design review.** Include the cases that break layouts: a very long filename, a
    deeply-nested path, a large file count with thousands separators, a multi-line error. A gallery of tidy 12-character
    names hides exactly the problems this exists to surface.
@@ -161,6 +212,15 @@ real mDNS; `crash-report`'s Send skips the upload in dev but still writes settin
 row from `go-to-path`'s recents removes it for real. Each of those rows carries a `note` saying so. Don't silence one by
 adding a preview branch to the component.
 
+The store-seeded rows are where this bites hardest, because the whole point is that the real component runs: `feedback`
+and `error-report` really send (to `localhost:8787` in a dev build, so with no local api-server up you get the
+send-failed state instead of a message in Discord), `error-report` builds a real redacted bundle from this machine's
+logs on mount and has a dev-only "Save bundle to disk" button that writes a zip, `whats-new`'s opt-out writes the real
+`whatsNew.showOnUpdate` setting, and expanding an `operation-log` row fetches its items over the real IPC (a fixture
+operation isn't in the log, and the detail command answers `None` for an unknown id, so every row expands to "no
+recorded items"). `onboarding` is the extreme case: every step's buttons do exactly what they do on first launch,
+including recording the FDA choice and signing up for the beta.
+
 ## Rows that can't be fixtures
 
 `about` and `license` take only callbacks and read the licensing store's cached status plus an on-mount IPC, so a
@@ -180,6 +240,14 @@ into its `message`. That showed the io-error copy no matter which error you pick
 distortion this gallery exists to remove; the panel's pane-error injection (`debug-inject-error`, which genuinely uses
 `preview_friendly_error`) is untouched. The gallery renders the real component from a real typed `WriteOperationError`,
 one state per variant, so the copy, category tint, icon, and Retry visibility are all the production ones.
+
+## The one dialog we extracted
+
+`delete-ai-model` used to be an inline `<ModalDialog>` inside `AiLocalSection.svelte`, so nothing could open it but the
+settings section itself. It now lives in `settings/sections/DeleteAiModelDialog.svelte` with `modelSizeFormatted` /
+`isDeleting` / `onConfirm` / `onCancel` props, and `AiLocalSection` uses it. The extraction is behaviour-preserving on
+purpose (same `dialogId`, `role="alertdialog"`, Enter handling, and disabled-while-deleting logic, pinned by its own
+`a11y.test.ts`) — it's a plain refactor that happens to make the dialog reachable, not a preview affordance.
 
 ## The coverage check
 

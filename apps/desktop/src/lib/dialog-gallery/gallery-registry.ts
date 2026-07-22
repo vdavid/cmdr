@@ -44,6 +44,22 @@ interface DialogGalleryEntryBase {
   /** Optional caveat that applies to every state of this dialog. */
   note?: string
   /**
+   * How the preview opens, when the harness rendering the component with
+   * fixture props (the default) isn't how this dialog works:
+   *
+   * - `store-seeded`: the gallery patches the real module `$state` store and the
+   *   APP's own mount site renders the dialog, because it takes no content props
+   *   and would render EMPTY from the harness. The patch is undone when the
+   *   dialog closes, so a preview never leaves the app half-seeded.
+   * - `app-command`: the gallery dispatches the app's own command, because the
+   *   open flag isn't in any store (`onboarding` lives in a local `$state` in
+   *   `routes/(main)/+page.svelte`).
+   *
+   * The Debug panel discloses this per row, and the harness's mount sweep knows
+   * these rows render nothing of their own.
+   */
+  openedBy?: 'store-seeded' | 'app-command'
+  /**
    * The dialog does real work on mount (scans, conflict lookups, path
    * resolution), so it runs against a real throwaway directory. The Debug panel
    * creates that directory through a dev-only IPC, ferries its landmarks in the
@@ -267,17 +283,34 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     dialogId: 'bulk-rename-review',
     label: 'Bulk rename review',
     hostWindow: 'main',
-    status: 'not-triggerable',
-    reason: NOT_WIRED_YET,
-    states: [],
+    status: 'ready',
+    openedBy: 'store-seeded',
+    note: 'Apply WILL fail, and that’s expected: it keys on a proposal id the backend staged, which a fixture has no counterpart for, so the attempt logs a warning and the review stays up. Cancel and Escape work normally. Nothing here renames anything.',
+    states: [
+      { id: 'all-allowed', label: 'Six rows, all allowed' },
+      {
+        id: 'some-blocked',
+        label: 'Blocked rows and warnings',
+        note: 'Both blocked reasons plus both warning badges at once; a real proposal rarely shows them together.',
+      },
+      { id: 'long-names', label: 'Long and non-ASCII names' },
+      { id: 'expired', label: 'Proposal expired' },
+    ],
   },
   {
     dialogId: 'delete-ai-model',
     label: 'Delete local AI model',
     hostWindow: 'settings',
-    status: 'not-triggerable',
-    reason: NOT_WIRED_YET,
-    states: [],
+    status: 'ready',
+    note: 'Deleting nothing: the uninstall lives in the onConfirm prop, which the gallery leaves empty. In the app this sits in the Settings window over AI › Provider.',
+    states: [
+      { id: 'idle', label: 'Confirm' },
+      {
+        id: 'deleting',
+        label: 'Delete in flight',
+        note: 'Title, body, and both buttons all change; Escape and Enter are dead here.',
+      },
+    ],
   },
 
   // ── Devices, network, and indexing ────────────────────────────────────────
@@ -357,25 +390,59 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     dialogId: 'onboarding',
     label: 'Onboarding wizard',
     hostWindow: 'main',
-    status: 'not-triggerable',
-    reason: NOT_WIRED_YET,
-    states: [],
+    status: 'ready',
+    openedBy: 'app-command',
+    note: 'The real wizard, with real state: every page reads this machine’s Full Disk Access, AI, and beta settings, and each step’s buttons DO what they say (Deny records the real choice, Allow wants a restart, the beta email really signs up, the optional toggles really write). It always opens at step 1 and the preview jumps the cursor from there — otherwise steps 2-4 are unreachable without committing to an FDA choice first. There’s no Escape and no × by design: finishing it marks this machine onboarded.',
+    states: [
+      {
+        id: 'step-1-fda',
+        label: 'Step 1: Full disk access',
+        note: 'macOS-only in the app; Linux skips straight to step 2.',
+      },
+      { id: 'step-2-ai', label: 'Step 2: AI provider' },
+      { id: 'step-3-beta', label: 'Step 3: Open beta' },
+      { id: 'step-4-optional', label: 'Step 4: Optional setup' },
+    ],
   },
   {
     dialogId: 'whats-new',
     label: 'What’s new',
     hostWindow: 'main',
-    status: 'not-triggerable',
-    reason: NOT_WIRED_YET,
-    states: [],
+    status: 'ready',
+    openedBy: 'store-seeded',
+    note: 'Fixture changelog entries, rendered through the same markdown path the real ones take. “Don’t show this again” writes the real whatsNew.showOnUpdate setting (and toasts), and the changelog link opens getcmdr.com in a browser.',
+    states: [
+      { id: 'one-release', label: 'One release' },
+      {
+        id: 'several-releases',
+        label: 'Three releases, long entries',
+        note: 'The lead is a numbered list, which is why it renders in a div rather than a p.',
+      },
+      {
+        id: 'empty',
+        label: 'Nothing to show',
+        note: 'Manual-reopen only in the app: an auto-show with an empty slice silently stamps instead.',
+      },
+    ],
   },
   {
     dialogId: 'operation-log',
     label: 'Operation log',
     hostWindow: 'main',
-    status: 'not-triggerable',
-    reason: NOT_WIRED_YET,
-    states: [],
+    status: 'ready',
+    openedBy: 'store-seeded',
+    note: 'Fixture operations covering every kind, initiator, status, and rollback state. Expanding one fetches its items for REAL, and a fixture operation isn’t in the log, so every row expands to “no recorded items” — reviewing the item list itself needs a genuine operation.',
+    states: [
+      { id: 'loading', label: 'Loading', note: 'Stays spinning: nothing is being read behind it.' },
+      { id: 'populated', label: 'Seven operations' },
+      {
+        id: 'more-pages',
+        label: 'With “Load more”',
+        note: 'Load more appends this machine’s REAL log page, so the list becomes a mix.',
+      },
+      { id: 'empty', label: 'No operations yet' },
+      { id: 'load-error', label: 'Couldn’t read the log' },
+    ],
   },
 
   // ── Feedback and diagnostics ──────────────────────────────────────────────
@@ -383,17 +450,26 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     dialogId: 'feedback',
     label: 'Send feedback',
     hostWindow: 'main',
-    status: 'not-triggerable',
-    reason: NOT_WIRED_YET,
-    states: [],
+    status: 'ready',
+    openedBy: 'store-seeded',
+    note: 'ONE state: the dialog holds its text, its character count, and its sending / sent / failed states internally, so only the empty form is reachable from outside. Send really posts — in a dev build to localhost:8787, so with no local api-server running you get the send-failed state rather than a message in Discord. The attach-email row only appears when this machine has a beta contact email on file, and sending writes the shared updates.attachEmailToReports setting.',
+    states: [{ id: 'default', label: 'Open' }],
   },
   {
     dialogId: 'error-report',
     label: 'Error report',
     hostWindow: 'main',
-    status: 'not-triggerable',
-    reason: NOT_WIRED_YET,
-    states: [],
+    status: 'ready',
+    openedBy: 'store-seeded',
+    note: 'The preview is REAL: on mount it builds a redacted bundle from this machine’s actual logs and settings, so the size, the id, and the file list are all genuine. Send goes to localhost:8787 in a dev build (nothing listening means the send-failed state), and there’s a dev-only “Save bundle to disk” button that really writes a zip.',
+    states: [
+      { id: 'blank', label: 'Empty note' },
+      {
+        id: 'from-toast',
+        label: 'Note pre-filled from a toast',
+        note: 'A multi-line message with a long path, the way the toast link ferries it in.',
+      },
+    ],
   },
   {
     dialogId: 'crash-report',

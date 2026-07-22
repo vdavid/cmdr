@@ -78,8 +78,8 @@ export const appDialogHandlers = {
     void runMenuTriggeredCheck()
   },
 
-  'cmdr.openOnboarding': ({ ctx }) => {
-    ctx.dialogs.openOnboarding()
+  'cmdr.openOnboarding': async ({ ctx }) => {
+    await ctx.dialogs.openOnboarding()
   },
 
   'about.openWebsite': async () => {
