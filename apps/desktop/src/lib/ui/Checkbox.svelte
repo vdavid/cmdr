@@ -40,6 +40,7 @@
 </script>
 
 <Checkbox.Root
+    class="checkbox-root"
     checked={checkedState}
     onCheckedChange={(details) => {
         checked = details.checked === true
@@ -62,14 +63,26 @@
 </Checkbox.Root>
 
 <style>
+    /* Ark's `Root` is a `<label>`, `display: inline` by default, which baseline-aligns
+       the box against the label text and leaves the box sitting low. Flex + `center`
+       puts the box on the label's optical middle; the gap lives here too, since the
+       label span is the box's SIBLING, not its container. */
+    :global(.checkbox-root) {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        cursor: default;
+    }
+
     :global(.checkbox-control) {
+        flex-shrink: 0;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         width: 16px;
         height: 16px;
         background: var(--color-bg-tertiary);
-        border: 1px solid var(--color-border);
+        border: 1px solid var(--color-control-border);
         border-radius: var(--radius-xs);
         cursor: default;
         transition:
@@ -89,8 +102,11 @@
         border-color: var(--color-accent-hover);
     }
 
+    /* Hover must push the outline FURTHER from the surface, so it keys off a text
+       token: `--color-border-strong` is fainter than `--color-control-border` and
+       would make hovering look like a disabled state. */
     :global(.checkbox-control:hover) {
-        border-color: var(--color-border-strong);
+        border-color: var(--color-text-secondary);
     }
 
     :global(.checkbox-control[data-disabled]) {
@@ -111,6 +127,12 @@
         justify-content: center;
     }
 
+    /* Unchecked reads as an empty square. Ark keeps the indicator mounted in every
+       state, so hide the glyph ourselves instead of relying on it to unmount. */
+    :global(.checkbox-control[data-state='unchecked']) .checkbox-check {
+        display: none;
+    }
+
     /* Indeterminate: hide the check, show a horizontal bar. */
     .checkbox-dash {
         display: none;
@@ -129,9 +151,6 @@
     }
 
     :global(.checkbox-label) {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--spacing-sm);
         font-size: var(--font-size-md);
         cursor: default;
     }

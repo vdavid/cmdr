@@ -217,7 +217,7 @@ beforeEach(() => {
 
 /** Clicks the Copy/Move segmented toggle option by its label. */
 function clickToggle(target: HTMLElement, label: 'Copy' | 'Move'): void {
-  const buttons = Array.from(target.querySelectorAll<HTMLButtonElement>('.toggle-option'))
+  const buttons = Array.from(target.querySelectorAll<HTMLButtonElement>('.operation-toggle .tg-item'))
   const btn = buttons.find((b) => b.textContent.trim() === label)
   if (!btn) throw new Error(`toggle option "${label}" not found`)
   btn.click()

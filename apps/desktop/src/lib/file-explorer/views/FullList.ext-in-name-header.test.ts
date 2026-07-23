@@ -1,9 +1,10 @@
 /**
- * Fix A: when `listing.showExtensionInName` is ON, the Ext DATA column is gone
- * (the full filename lives in the Name column), but sort-by-extension must stay
- * reachable from the header. The single Name-column header splits into two
- * `SortableHeader` sort triggers inside a `.header-name-ext` row: "Name" (fills,
- * left) and "Ext" (right), each clickable and showing its caret when active.
+ * When `listing.showExtensionInName` is ON, the Ext DATA column is gone (the full
+ * filename lives in the Name column), but sort-by-extension must stay clickable.
+ * The single Name-column header splits into two `SortableHeader` triggers inside a
+ * `.header-name-ext` row: "Name" (fills, left) and "Ext" (right), each showing its
+ * caret when active. Both sit inside the `1fr` Name track, so the Ext trigger costs
+ * the pane no column width.
  *
  * This pins that the header renders both triggers AND that no Ext data cell is
  * emitted, so the renderer stays in lockstep with `measure-column-widths.ts`

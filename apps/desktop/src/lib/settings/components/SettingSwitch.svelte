@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Switch } from '@ark-ui/svelte/switch'
+    import Switch from '$lib/ui/Switch.svelte'
     import {
         getSetting,
         setSetting,
@@ -27,62 +27,10 @@
         })
     })
 
-    function handleChange(details: { checked: boolean }) {
-        checked = details.checked
-        setSetting(id, details.checked as SettingsValues[typeof id])
+    function handleChange(next: boolean) {
+        checked = next
+        setSetting(id, next as SettingsValues[typeof id])
     }
 </script>
 
-<Switch.Root {checked} onCheckedChange={handleChange} {disabled} aria-label={label}>
-    <Switch.Control class="switch-control">
-        <Switch.Thumb class="switch-thumb" />
-    </Switch.Control>
-    <Switch.HiddenInput />
-</Switch.Root>
-
-<style>
-    :global(.switch-control) {
-        display: inline-flex;
-        align-items: center;
-        width: 36px;
-        height: 20px;
-        background: var(--color-bg-tertiary);
-        border-radius: var(--radius-full);
-        padding: var(--spacing-xxs);
-        cursor: default;
-        transition: background-color var(--transition-base);
-    }
-
-    :global(.switch-control[data-state='checked']) {
-        background: var(--color-accent);
-    }
-
-    :global(.switch-control[data-disabled]) {
-        cursor: not-allowed;
-        opacity: 0.5;
-    }
-
-    :global(.switch-thumb) {
-        width: 16px;
-        height: 16px;
-        background: white;
-        border-radius: var(--radius-full);
-        transition: transform var(--transition-base);
-        box-shadow: var(--shadow-sm);
-    }
-
-    :global(.switch-control[data-state='checked'] .switch-thumb) {
-        transform: translateX(16px);
-    }
-
-    :global(.switch-control[data-state='checked']:hover) {
-        background: var(--color-accent-hover);
-    }
-
-    /* Ark UI uses data-focus attribute when the hidden input is focused */
-    :global(.switch-control[data-focus]) {
-        outline: 2px solid var(--color-accent);
-        outline-offset: 2px;
-        box-shadow: var(--shadow-focus);
-    }
-</style>
+<Switch {checked} onCheckedChange={handleChange} {disabled} ariaLabel={label} />

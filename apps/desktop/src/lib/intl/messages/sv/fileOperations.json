@@ -28,13 +28,9 @@
   "@fileOperations.delete.archiveWarningRest": {
     "sourceHash": "5fa93f5"
   },
-  "fileOperations.delete.toggleTrash": "Papperskorg",
-  "@fileOperations.delete.toggleTrash": {
-    "sourceHash": "c560122"
-  },
-  "fileOperations.delete.toggleDelete": "Radera",
-  "@fileOperations.delete.toggleDelete": {
-    "sourceHash": "e2d0a54"
+  "fileOperations.delete.trashSwitch": "Flytta till papperskorgen",
+  "@fileOperations.delete.trashSwitch": {
+    "sourceHash": "b250a45"
   },
   "fileOperations.delete.overflowMore": "... och {countText} {count, plural, one {objekt} other {objekt}} till",
   "@fileOperations.delete.overflowMore": {
@@ -52,9 +48,9 @@
   "@fileOperations.delete.throughputFiles": {
     "sourceHash": "c3b28a4"
   },
-  "fileOperations.delete.confirmDeletePermanently": "Radera permanent",
-  "@fileOperations.delete.confirmDeletePermanently": {
-    "sourceHash": "280b10c"
+  "fileOperations.delete.confirmDelete": "Radera",
+  "@fileOperations.delete.confirmDelete": {
+    "sourceHash": "e2d0a54"
   },
   "fileOperations.delete.confirmMoveToTrash": "Flytta till papperskorgen",
   "@fileOperations.delete.confirmMoveToTrash": {
@@ -161,17 +157,9 @@
   "@fileOperations.shared.andJoin": {
     "sourceHash": "04f767b"
   },
-  "fileOperations.shared.actionLabel": "Åtgärd:",
-  "@fileOperations.shared.actionLabel": {
-    "sourceHash": "7d9fda4"
-  },
   "fileOperations.shared.scanningTooltip": "Söker igenom…",
   "@fileOperations.shared.scanningTooltip": {
     "sourceHash": "38d96da"
-  },
-  "fileOperations.shared.scanCompleteTooltip": "Genomsökning klar",
-  "@fileOperations.shared.scanCompleteTooltip": {
-    "sourceHash": "bd35a52"
   },
   "fileOperations.transferDialog.toggleCopy": "Kopiera",
   "@fileOperations.transferDialog.toggleCopy": {
@@ -185,9 +173,17 @@
   "@fileOperations.transferDialog.toggleCompress": {
     "sourceHash": "033fc04"
   },
-  "fileOperations.transferDialog.routeLabel": "Rutt:",
-  "@fileOperations.transferDialog.routeLabel": {
-    "sourceHash": "8ccda30"
+  "fileOperations.transferDialog.sourceGroupTitle": "Från",
+  "@fileOperations.transferDialog.sourceGroupTitle": {
+    "sourceHash": "2181976"
+  },
+  "fileOperations.transferDialog.targetGroupTitle": "Till",
+  "@fileOperations.transferDialog.targetGroupTitle": {
+    "sourceHash": "f4b06ef"
+  },
+  "fileOperations.transferDialog.operationAria": "Åtgärd",
+  "@fileOperations.transferDialog.operationAria": {
+    "sourceHash": "64cff13"
   },
   "fileOperations.transferDialog.destVolumeAria": "Målvolym",
   "@fileOperations.transferDialog.destVolumeAria": {

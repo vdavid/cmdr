@@ -51,7 +51,7 @@ const INTERNAL_STORAGE = 'Virtual Pixel 9 - Internal Storage'
 
 /**
  * Upper bound on the time from F5-press to the transfer-confirmation dialog
- * showing `scanComplete` (the inline "✓" next to the scan stats). The MTP
+ * showing `scanComplete` (`data-scan-state="done"` on the scan stats). The MTP
  * cold-cache cost for a small folder is hundreds of ms; the cache-hit cost
  * should be ~5 ms plus dialog mount + one scan-preview round-trip. 1500 ms
  * is a ~3× safety margin and well clear of the cold-cache regime.
@@ -168,14 +168,14 @@ test.describe('MTP copy pre-flight reuses watcher-backed listing', () => {
     await dispatchMenuCommand(tauriPage, 'file.copy')
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
 
-    // Wait for the inline scan-preview to finish. `.scan-checkmark` renders
-    // when `scanComplete === true` in `TransferDialog.svelte`. With the
-    // fresh-listing oracle the scan is fed from the watcher-backed cache
-    // and should converge in low ms; without it, the MTP backend would
-    // re-list the parent dir.
+    // Wait for the inline scan-preview to finish. `.scan-stats` carries
+    // `data-scan-state="done"` once `scanComplete === true` in
+    // `TransferDialog.svelte`. With the fresh-listing oracle the scan is fed
+    // from the watcher-backed cache and should converge in low ms; without it,
+    // the MTP backend would re-list the parent dir.
     const completedQuickly = await pollUntil(
       tauriPage,
-      async () => tauriPage.evaluate<boolean>(`!!document.querySelector('${TRANSFER_DIALOG} .scan-checkmark')`),
+      async () => tauriPage.evaluate<boolean>(`!!document.querySelector('${TRANSFER_DIALOG} .scan-stats[data-scan-state="done"]')`),
       SCAN_COMPLETE_BOUND_MS,
       25,
     )

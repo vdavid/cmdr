@@ -168,6 +168,8 @@
     // Add space for: icon (16px) + gap (8px) + left padding (8px) + right padding (8px) + rounding buffer (2px)
     // The 2px buffer accounts for sub-pixel rendering differences between calculated and actual widths.
     const COLUMN_PADDING = 16 + 8 + 8 + 8 + 2
+    // Gutter on `.brief-list`. Keep in sync with its `padding` (--spacing-xs).
+    const GUTTER_PX = 4
 
     // ==== Container state ====
     let scrollContainer: HTMLDivElement | undefined = $state()
@@ -175,9 +177,21 @@
     let containerWidth = $state(0)
     let scrollLeft = $state(0)
 
+    /**
+     * Size actually available to columns. `bind:clientWidth` / `clientHeight` report the
+     * scroll surface's content box PLUS its own padding, and `.brief-list` carries the
+     * pane's gutter on all four sides — so the raw numbers overstate the usable area by
+     * two gutters per axis, and the rightmost column and the bottom row of each column
+     * end up clipped. Everything that reasons about how much FITS (the per-column cap,
+     * the virtual window, scroll-into-view, items-per-column) reads these, never the raw
+     * `containerWidth` / `containerHeight`.
+     */
+    const usableWidth = $derived(Math.max(0, containerWidth - 2 * GUTTER_PX))
+    const usableHeight = $derived(Math.max(0, containerHeight - 2 * GUTTER_PX))
+
     // ==== Column layout calculations ====
     // Number of items that fit in one column
-    const itemsPerColumn = $derived(Math.max(1, Math.floor(containerHeight / rowHeight)))
+    const itemsPerColumn = $derived(Math.max(1, Math.floor(usableHeight / rowHeight)))
 
     /** Per-column widths, chrome-inclusive and clamped, returned by the backend + FE chrome/clamp pass. */
     let columnWidths = $state<number[]>([])
@@ -196,12 +210,12 @@
      * - 'paneWidth' mode (default): columns can grow to fill the pane.
      * - 'limited' mode: columns also can't exceed the user-chosen pixel cap.
      *
-     * `containerWidth` is always the outer ceiling: a column wider than the pane has no value.
+     * `usableWidth` is always the outer ceiling: a column wider than the pane has no value.
      */
     const capPx = $derived.by(() => {
         const userCap = getBriefColumnWidthMode() === 'limited' ? getBriefColumnWidthMaxPx() : Number.POSITIVE_INFINITY
-        if (containerWidth <= 0) return Math.min(userCap, 1000)
-        return Math.min(containerWidth, userCap)
+        if (usableWidth <= 0) return Math.min(userCap, 1000)
+        return Math.min(usableWidth, userCap)
     })
 
     /**
@@ -222,7 +236,7 @@
 
     // ==== Virtual scrolling (horizontal) ====
     const virtualWindow = $derived(
-        calculateVirtualWindowVariable(prefixSums, bufferColumns, containerWidth, scrollLeft, totalColumns),
+        calculateVirtualWindowVariable(prefixSums, bufferColumns, usableWidth, scrollLeft, totalColumns),
     )
 
     // Get entry at global index (handling ".." entry)
@@ -577,7 +591,7 @@
         if (!scrollContainer) return
         const columnIndex = Math.floor(index / itemsPerColumn)
         if (columnIndex < 0 || columnIndex >= totalColumns) return
-        const position = getScrollToPositionVariable(prefixSums, columnIndex, scrollLeft, containerWidth)
+        const position = getScrollToPositionVariable(prefixSums, columnIndex, scrollLeft, usableWidth)
         if (position !== undefined) {
             scrollContainer.scrollLeft = position
             // Also update state directly to trigger reactive chain immediately
@@ -617,7 +631,7 @@
     function countVisibleColumns(): number {
         if (totalColumns === 0) return 1
         const left = scrollLeft
-        const right = scrollLeft + containerWidth
+        const right = scrollLeft + usableWidth
         let count = 0
         for (let c = 0; c < totalColumns; c++) {
             if (prefixSums[c] < right && prefixSums[c + 1] > left) {
@@ -834,6 +848,10 @@
 <div class="brief-list-container" class:is-focused={isFocused}>
     <!-- Header row with sort options -->
     <div class="header-row" role="toolbar" aria-label={tString('fileExplorer.list.sortColumnsAriaLabel')}>
+        <!-- Dead space standing in for the rows' icon cell, the same trick `FullList`'s
+             header uses, so "Name" starts exactly above the file names rather than
+             above their icons. -->
+        <span class="header-icon" aria-hidden="true"></span>
         <SortableHeader
             column="name"
             {isFocused}
@@ -980,23 +998,48 @@
         position: relative;
     }
 
+    /* Laid out to mirror a row: the same left inset (the scroll surface's gutter PLUS
+       `.file-entry`'s own padding), an icon-width spacer, and the same `--spacing-sm`
+       gap. That puts "Name" directly above the file names; the headings after it
+       spread across the row (see the `:global(.sortable-header)` rule below), each
+       left-aligned in its share. The background still runs edge to edge. */
     .header-row {
         display: flex;
-        height: calc(22px * var(--font-scale));
+        align-items: center;
+        gap: var(--spacing-sm);
+        /* Height grows with the bottom padding so the labels keep their position and
+           the gap lands between them and the columns below (see `FullList`). */
+        height: calc(22px * var(--font-scale) + var(--spacing-xs));
         background: var(--color-bg-secondary);
         flex-shrink: 0;
-        padding: 0 var(--spacing-xs);
+        padding: 0 var(--spacing-md) var(--spacing-xs);
     }
 
+    .header-icon {
+        flex-shrink: 0;
+        width: var(--spacing-icon-size);
+    }
+
+    /* Each heading takes an equal share of the row (`flex: 1`) but sits at the LEFT of
+       its share, so "Name" lands above the file names and the rest read as column
+       headings rather than floating captions. Overrides `SortableHeader`'s own
+       centring-agnostic defaults from outside, hence `:global`. */
     /*noinspection CssUnusedSymbol*/
     .header-row :global(.sortable-header) {
         flex: 1;
         min-width: 0;
-        justify-content: center;
-        text-align: center;
+        justify-content: flex-start;
+        text-align: left;
     }
 
+    /* Gutter on all four sides, keeping the cursor and selection fills off the pane
+       edges. Safe on the scroll surface here (unlike `FullList`, whose header is sticky
+       INSIDE its scroll container): this view's header row is a sibling above
+       `.brief-list`, so it still runs edge to edge. `clientWidth`/`clientHeight` INCLUDE
+       this padding, so the column math subtracts it — see `usableWidth` /
+       `usableHeight`. */
     .brief-list {
+        padding: var(--spacing-xs);
         overflow-x: auto;
         overflow-y: hidden;
         font-family: var(--font-system), sans-serif;

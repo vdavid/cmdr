@@ -75,8 +75,8 @@
     }
 
     /** Double-click on an empty area of the tab bar opens a new tab.
-     *  Empty area = the bar's padding strip, the trailing flex space inside `.tab-list`,
-     *  and the 3px top spacer. We bail when the click hits a tab, the close button,
+     *  Empty area = the bar's right padding strip and the trailing flex space inside
+     *  `.tab-list`. We bail when the click hits a tab, the close button,
      *  or the new-tab button so those still behave as expected. */
     function handleTabBarDblClick(event: MouseEvent) {
         if (event.button !== 0) return
@@ -163,7 +163,10 @@
         class:disabled={isAtMax}
         onclick={onNewTab}
     >
-        &#x2b;
+        <!-- An `Icon`, not a `+` text glyph: the character sits on the font's math
+             axis, so it rendered visibly high in the circle no matter how the button
+             centred its line box. An SVG centres on its own viewBox. -->
+        <Icon name="plus" size={14} aria-hidden="true" />
     </button>
 </div>
 
@@ -171,9 +174,9 @@
     .tab-bar {
         display: flex;
         align-items: end;
-        /* Tabs sit flush with the window title-bar — no top spacer. Tabs
-         * anchor to the bar's content-area bottom (align-items: end) and
-         * match the bar height exactly via `--spacing-tab-bar-height`. */
+        /* Tabs sit flush with the window title-bar — no top spacer. Tabs anchor to
+         * the bar's content-area bottom (`align-items: end`) and match the bar height
+         * exactly via `--spacing-tab-bar-height`. */
         height: var(--spacing-tab-bar-height);
         min-height: var(--spacing-tab-bar-height);
         max-height: var(--spacing-tab-bar-height);
@@ -185,7 +188,10 @@
            from the bar, so its effective opacity now matches the path bar
            and col header exactly. */
         background-color: var(--color-bg-tab-inactive);
-        padding: 0 var(--spacing-xxs);
+        /* Flush on the top and left: the first tab's left edge runs into the pane
+           edge, and the tabs meet the title-bar with no gap. The right side keeps a
+           small inset for the `+` button. */
+        padding: 0 var(--spacing-xxs) 0 0;
         /* Need `overflow: visible` so the active-tab shoulders can extend
            outside the tab into the surrounding gap + inactive-tab area. */
         overflow: visible;
@@ -221,7 +227,12 @@
         height: var(--spacing-tab-bar-height);
         padding: 0 var(--spacing-sm);
         border: none;
-        border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+        /* Square all round: the top edge meets the title-bar flat, the bottom runs into
+           the path bar. The only curve on a tab is the concave shoulder pair below. */
+        border-radius: 0;
+        /* Radius of those shoulders, shared by their box size, offset, and mask arc.
+           Named `--radius-*` to satisfy stylelint's `custom-property-pattern`. */
+        --radius-tab-shoulder: 8px;
         /* Inactive tabs get a distinct "recessed" bg: slightly darker than
            `--color-bg-secondary` in light mode, slightly lighter in dark
            mode. `.tab.active` below overrides this with `bg-secondary` so
@@ -297,16 +308,25 @@
         margin-right: 0;
     }
 
-    /* Accent top border on active tab */
+    /* Accent band along the active tab's TOP edge only. A full-tab-sized box that
+       inherits the tab's `border-radius` and paints just its first 2px through a
+       gradient: a background is clipped to the rounded border box for free, so if the
+       tab ever gets rounded corners again the band's ends sweep along them instead of
+       stopping square. (Corners are 0 today, so it renders as a plain band.) The
+       ACTIVE tab runs `overflow: visible` — its shoulders have to escape — so the band
+       can't lean on the parent's clip; hence the full-size box.
+
+       Don't shrink the box to the band's height and round it instead: browsers scale
+       corner radii down to fit a short box, which flattens the curve. And don't reach
+       for an inset `box-shadow` ring — that paints all four sides, running accent down
+       the tab's edges. */
     .tab.active::after {
         content: '';
         position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 2px;
-        background-color: var(--color-accent);
-        border-radius: 1px 1px 0 0;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(to bottom, var(--color-accent) 0 2px, transparent 2px);
+        pointer-events: none;
     }
 
     /* Chrome-style "shoulders": pseudo-elements that stick out past the
@@ -325,13 +345,13 @@
            these to the top accidentally. */
         top: auto;
         bottom: 0;
-        width: 8px;
-        height: 8px;
+        width: var(--radius-tab-shoulder);
+        height: var(--radius-tab-shoulder);
         background-color: var(--color-bg-secondary);
         pointer-events: none;
     }
 
-    /* Left shoulder: 8 × 8 box that sticks out 8 px to the left of the
+    /* Left shoulder: a square box that sticks out one radius to the left of the
        active tab's bottom-left corner. The mask keeps only the
        *bottom-right* curved triangle of the box visible (= the area
        closest to the tab); the rest is transparent. That visible chunk
@@ -339,19 +359,35 @@
        bottom-left corner outward into the adjacent inactive tab's
        surface. */
     .tab-shoulder-left {
-        left: -8px;
+        left: calc(-1 * var(--radius-tab-shoulder));
         /* `transparent` inside the top-left quarter-disc (away from tab),
            `black` outside (= near tab → opaque, visible). */
-        mask-image: radial-gradient(circle at top left, transparent 8px, black 8px);
-        -webkit-mask-image: radial-gradient(circle at top left, transparent 8px, black 8px);
+        mask-image: radial-gradient(
+            circle at top left,
+            transparent var(--radius-tab-shoulder),
+            black var(--radius-tab-shoulder)
+        );
+        -webkit-mask-image: radial-gradient(
+            circle at top left,
+            transparent var(--radius-tab-shoulder),
+            black var(--radius-tab-shoulder)
+        );
     }
 
     /* Right shoulder: mirror image of the left — visible bottom-left
        curved triangle near the tab's bottom-right corner. */
     .tab-shoulder-right {
-        right: -8px;
-        mask-image: radial-gradient(circle at top right, transparent 8px, black 8px);
-        -webkit-mask-image: radial-gradient(circle at top right, transparent 8px, black 8px);
+        right: calc(-1 * var(--radius-tab-shoulder));
+        mask-image: radial-gradient(
+            circle at top right,
+            transparent var(--radius-tab-shoulder),
+            black var(--radius-tab-shoulder)
+        );
+        -webkit-mask-image: radial-gradient(
+            circle at top right,
+            transparent var(--radius-tab-shoulder),
+            black var(--radius-tab-shoulder)
+        );
     }
 
     /* Hover on inactive tabs: a tiny shift toward the *opposite* end of
@@ -451,20 +487,24 @@
         }
     }
 
+    /* A circle centred in the bar. `.tab-bar` is `align-items: end` so the tabs can
+       meet the path bar; this button has nothing to meet, so it opts out with
+       `align-self: center` — bottom-aligning it just left a gap above. Sized off the
+       bar height (minus a hair of inset) so it fills the strip and tracks the
+       text-size setting, with equal width/height so `--radius-full` reads as a circle
+       rather than a pill. */
     .new-tab-btn {
         flex-shrink: 0;
+        align-self: center;
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 24px;
-        height: 20px;
-        margin-bottom: var(--spacing-xxs);
+        width: calc(var(--spacing-tab-bar-height) - var(--spacing-xs));
+        height: calc(var(--spacing-tab-bar-height) - var(--spacing-xs));
         border: none;
-        border-radius: var(--radius-sm);
+        border-radius: var(--radius-full);
         background: none;
         color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
-        font-weight: 400;
         cursor: default;
         transition:
             background-color var(--transition-fast),

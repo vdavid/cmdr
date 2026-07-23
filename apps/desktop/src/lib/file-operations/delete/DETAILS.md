@@ -9,7 +9,7 @@ Depth and rationale. `CLAUDE.md` holds the must-knows; the flow and edge-case ca
 3. **Selection**: `DualPaneExplorer.openDeleteDialog(permanent)` builds props from selection or cursor item (same
    pattern as copy/move). Looks up `supportsTrash` from the source volume's `VolumeInfo`.
 4. **Dialog**: `DeleteDialog` opens with the file list; scan preview starts in the background via `startScanPreview()`.
-5. **Confirm**: `DeleteDialog` passes back the active `isPermanent` (from the toggle);
+5. **Confirm**: `DeleteDialog` passes back the active `isPermanent` (from the switch);
    `dialog-state.svelte.ts::handleDeleteConfirm(previewId, isPermanent)` transitions to `TransferProgressDialog` with
    `operationType: 'trash'` or `'delete'`.
 6. **Backend**: `trash_files_start()` or `delete_files_start()` in `write_operations/mod.rs` runs the operation.

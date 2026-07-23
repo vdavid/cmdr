@@ -28,13 +28,9 @@
   "@fileOperations.delete.archiveWarningRest": {
     "sourceHash": "5fa93f5"
   },
-  "fileOperations.delete.toggleTrash": "Papierkorb",
-  "@fileOperations.delete.toggleTrash": {
-    "sourceHash": "c560122"
-  },
-  "fileOperations.delete.toggleDelete": "Löschen",
-  "@fileOperations.delete.toggleDelete": {
-    "sourceHash": "e2d0a54"
+  "fileOperations.delete.trashSwitch": "In den Papierkorb bewegen",
+  "@fileOperations.delete.trashSwitch": {
+    "sourceHash": "b250a45"
   },
   "fileOperations.delete.overflowMore": "… und {countText} {count, plural, one {weiteres Objekt} other {weitere Objekte}}",
   "@fileOperations.delete.overflowMore": {
@@ -52,9 +48,9 @@
   "@fileOperations.delete.throughputFiles": {
     "sourceHash": "c3b28a4"
   },
-  "fileOperations.delete.confirmDeletePermanently": "Dauerhaft löschen",
-  "@fileOperations.delete.confirmDeletePermanently": {
-    "sourceHash": "280b10c"
+  "fileOperations.delete.confirmDelete": "Löschen",
+  "@fileOperations.delete.confirmDelete": {
+    "sourceHash": "e2d0a54"
   },
   "fileOperations.delete.confirmMoveToTrash": "In den Papierkorb bewegen",
   "@fileOperations.delete.confirmMoveToTrash": {
@@ -161,17 +157,9 @@
   "@fileOperations.shared.andJoin": {
     "sourceHash": "04f767b"
   },
-  "fileOperations.shared.actionLabel": "Aktion:",
-  "@fileOperations.shared.actionLabel": {
-    "sourceHash": "7d9fda4"
-  },
   "fileOperations.shared.scanningTooltip": "Wird durchsucht …",
   "@fileOperations.shared.scanningTooltip": {
     "sourceHash": "38d96da"
-  },
-  "fileOperations.shared.scanCompleteTooltip": "Durchsuchen abgeschlossen",
-  "@fileOperations.shared.scanCompleteTooltip": {
-    "sourceHash": "bd35a52"
   },
   "fileOperations.transferDialog.toggleCopy": "Kopieren",
   "@fileOperations.transferDialog.toggleCopy": {
@@ -185,10 +173,17 @@
   "@fileOperations.transferDialog.toggleCompress": {
     "sourceHash": "033fc04"
   },
-  "fileOperations.transferDialog.routeLabel": "Route:",
-  "@fileOperations.transferDialog.routeLabel": {
-    "sourceHash": "8ccda30",
-    "sameAsSourceJustification": "'Route' is a genuine German noun ('die Route'), the path/route between two points — it fits the source → destination line with its arrow and preserves the compact, slightly evocative register of the English label. No reference source offers a fitting transfer-label term (Total/Double Commander phrase it in full as 'von X nach Y', not as a label), so the shared word is the best fit, like German keeping 'Server'."
+  "fileOperations.transferDialog.sourceGroupTitle": "Von",
+  "@fileOperations.transferDialog.sourceGroupTitle": {
+    "sourceHash": "2181976"
+  },
+  "fileOperations.transferDialog.targetGroupTitle": "Nach",
+  "@fileOperations.transferDialog.targetGroupTitle": {
+    "sourceHash": "f4b06ef"
+  },
+  "fileOperations.transferDialog.operationAria": "Aktion",
+  "@fileOperations.transferDialog.operationAria": {
+    "sourceHash": "64cff13"
   },
   "fileOperations.transferDialog.destVolumeAria": "Zielvolume",
   "@fileOperations.transferDialog.destVolumeAria": {

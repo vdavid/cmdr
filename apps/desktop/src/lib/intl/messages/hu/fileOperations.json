@@ -28,13 +28,9 @@
   "@fileOperations.delete.archiveWarningRest": {
     "sourceHash": "5fa93f5"
   },
-  "fileOperations.delete.toggleTrash": "Kuka",
-  "@fileOperations.delete.toggleTrash": {
-    "sourceHash": "c560122"
-  },
-  "fileOperations.delete.toggleDelete": "Törlés",
-  "@fileOperations.delete.toggleDelete": {
-    "sourceHash": "e2d0a54"
+  "fileOperations.delete.trashSwitch": "Áthelyezés a Kukába",
+  "@fileOperations.delete.trashSwitch": {
+    "sourceHash": "b250a45"
   },
   "fileOperations.delete.overflowMore": "… és még {countText} {count, plural, one {elem} other {elem}}",
   "@fileOperations.delete.overflowMore": {
@@ -52,9 +48,9 @@
   "@fileOperations.delete.throughputFiles": {
     "sourceHash": "c3b28a4"
   },
-  "fileOperations.delete.confirmDeletePermanently": "Végleges törlés",
-  "@fileOperations.delete.confirmDeletePermanently": {
-    "sourceHash": "280b10c"
+  "fileOperations.delete.confirmDelete": "Törlés",
+  "@fileOperations.delete.confirmDelete": {
+    "sourceHash": "e2d0a54"
   },
   "fileOperations.delete.confirmMoveToTrash": "Áthelyezés a Kukába",
   "@fileOperations.delete.confirmMoveToTrash": {
@@ -161,17 +157,9 @@
   "@fileOperations.shared.andJoin": {
     "sourceHash": "04f767b"
   },
-  "fileOperations.shared.actionLabel": "Művelet:",
-  "@fileOperations.shared.actionLabel": {
-    "sourceHash": "7d9fda4"
-  },
   "fileOperations.shared.scanningTooltip": "Átvizsgálás…",
   "@fileOperations.shared.scanningTooltip": {
     "sourceHash": "38d96da"
-  },
-  "fileOperations.shared.scanCompleteTooltip": "Átvizsgálás kész",
-  "@fileOperations.shared.scanCompleteTooltip": {
-    "sourceHash": "bd35a52"
   },
   "fileOperations.transferDialog.toggleCopy": "Másolás",
   "@fileOperations.transferDialog.toggleCopy": {
@@ -185,9 +173,17 @@
   "@fileOperations.transferDialog.toggleCompress": {
     "sourceHash": "033fc04"
   },
-  "fileOperations.transferDialog.routeLabel": "Útvonal:",
-  "@fileOperations.transferDialog.routeLabel": {
-    "sourceHash": "8ccda30"
+  "fileOperations.transferDialog.sourceGroupTitle": "Innen",
+  "@fileOperations.transferDialog.sourceGroupTitle": {
+    "sourceHash": "2181976"
+  },
+  "fileOperations.transferDialog.targetGroupTitle": "Ide",
+  "@fileOperations.transferDialog.targetGroupTitle": {
+    "sourceHash": "f4b06ef"
+  },
+  "fileOperations.transferDialog.operationAria": "Művelet",
+  "@fileOperations.transferDialog.operationAria": {
+    "sourceHash": "64cff13"
   },
   "fileOperations.transferDialog.destVolumeAria": "Célkötet",
   "@fileOperations.transferDialog.destVolumeAria": {

@@ -365,11 +365,16 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
-        padding: var(--spacing-xs) var(--spacing-sm);
+        /* Horizontal inset = the pane's list gutter (`.listbox-region` /`.brief-list`,
+           `--spacing-xs`) plus `.file-entry`'s own padding (`--spacing-sm`), so this
+           readout starts exactly above the file icons rather than 4px inside them. */
+        padding: var(--spacing-sm) var(--spacing-md);
         font-family: var(--font-system), sans-serif;
         font-size: calc(var(--font-size-sm) * 0.95);
         color: var(--color-text-secondary);
-        background-color: var(--color-bg-info-bar);
+        /* One surface for all three chrome bands: the volume strip above the list, this
+           readout, and the function-key bar below it. */
+        background-color: var(--color-bg-secondary);
         min-height: 1.5em;
     }
 

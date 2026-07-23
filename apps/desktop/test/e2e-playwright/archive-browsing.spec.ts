@@ -404,12 +404,12 @@ test.describe('Archive browsing', () => {
     const found = await moveCursorToFile(tauriPage, 'inner.txt')
     expect(found).toBe(true)
     // F8 preselects Trash, but an archive forces permanent: the dialog shows the
-    // archive warning and no Trash/Delete toggle.
+    // archive warning and no "Move to trash" switch.
     await tauriPage.keyboard.press('F8')
     await tauriPage.waitForSelector(DELETE_DIALOG, 5000)
     const bannerText = await tauriPage.textContent(`${DELETE_DIALOG} .warning-banner`)
     expect(bannerText).toContain('no trash inside an archive')
-    expect(await tauriPage.isVisible(`${DELETE_DIALOG} .operation-toggle`)).toBe(false)
+    expect(await tauriPage.isVisible(`${DELETE_DIALOG} .trash-choice`)).toBe(false)
 
     // Confirm the permanent delete (danger button) and wait for the rewrite.
     await expect.poll(async () => tauriPage.isEnabled(`${DELETE_DIALOG} .btn-danger`), { timeout: 5000 }).toBeTruthy()

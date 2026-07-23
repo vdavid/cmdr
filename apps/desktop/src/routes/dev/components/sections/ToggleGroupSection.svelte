@@ -6,6 +6,7 @@
     let togglesValue = $state('comfortable')
     let withFeaturesValue = $state('cloud')
     let disabledValue = $state('comfortable')
+    let fullWidthValue = $state('copy')
 
     const tabsOptions = [
         { value: 'ai', label: 'Ask anything', badge: 'AI', hint: '⌥A', ariaLabel: 'AI mode (Alt+A)' },
@@ -24,6 +25,13 @@
         { value: 'compact', label: 'Compact' },
         { value: 'comfortable', label: 'Comfortable' },
         { value: 'spacious', label: 'Spacious' },
+    ]
+
+    // Mirrors the transfer dialog's operation row, the one `fullWidth` consumer today.
+    const fullWidthOptions = [
+        { value: 'copy', label: 'Copy' },
+        { value: 'move', label: 'Move' },
+        { value: 'compress', label: 'Compress' },
     ]
 
     const withFeaturesOptions = [
@@ -71,6 +79,20 @@
                     withFeaturesValue = v
                 }}
                 ariaLabel="AI provider"
+            />
+        </div>
+
+        <div class="cell">
+            <p class="caption">Full width &mdash; spans the container, equal-width cells</p>
+            <ToggleGroup
+                semantics="tabs"
+                value={fullWidthValue}
+                options={fullWidthOptions}
+                onChange={(v: string) => {
+                    fullWidthValue = v
+                }}
+                ariaLabel="Action"
+                fullWidth
             />
         </div>
 

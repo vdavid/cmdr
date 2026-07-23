@@ -55,9 +55,16 @@
         onChange: (value: string) => void
         ariaLabel: string
         disabled?: boolean
+        /**
+         * Stretches the group to its container's full width, with every cell an equal
+         * share of it. Off by default: a segmented control normally sizes to its labels
+         * and sits inline next to other controls. Turn it on when the group is a
+         * standalone row that should line up with the fields under it.
+         */
+        fullWidth?: boolean
     }
 
-    const { semantics, value, options, onChange, ariaLabel, disabled = false }: Props = $props()
+    const { semantics, value, options, onChange, ariaLabel, disabled = false, fullWidth = false }: Props = $props()
 
     // Index of the option that should carry `tabindex=0` in tabs mode: the active one if it's
     // interactive, otherwise the first interactive option. Mirrors today's `SearchModeChips` logic
@@ -129,7 +136,7 @@
 </script>
 
 {#if semantics === 'tabs'}
-    <div class="tg-root" role="tablist" aria-label={ariaLabel}>
+    <div class="tg-root" class:is-full-width={fullWidth} role="tablist" aria-label={ariaLabel}>
         {#each options as option, index (option.value)}
             <button
                 bind:this={tabButtons[index]}
@@ -165,7 +172,7 @@
     </div>
 {:else}
     <ArkToggleGroup.Root
-        class="tg-root"
+        class={fullWidth ? 'tg-root is-full-width' : 'tg-root'}
         value={toggleValue}
         onValueChange={handleToggleValueChange}
         {disabled}
@@ -207,12 +214,31 @@
        `.tg-root.svelte-<hash> .tg-item` whiffed against the Ark-rendered DOM and every
        Settings toggle row rendered as unstyled run-on text. No other component uses these
        class names, so unscoping is safe. */
+    /* Fully-rounded ends: `overflow: hidden` clips the first and last cells to the
+       pill, so no per-cell corner rounding is needed. */
     :global(.tg-root) {
         display: inline-flex;
         align-items: center;
         border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
+        border-radius: var(--radius-full);
         overflow: hidden;
+    }
+
+    /* `fullWidth`: stretch to the container and split it evenly. `flex: 1 1 0` (not
+       `1 1 auto`) so every cell gets the SAME width regardless of label length, which
+       is what makes the row read as one control rather than three buttons. */
+    :global(.tg-root.is-full-width) {
+        display: flex;
+        width: 100%;
+    }
+
+    /* A full-width group is a standalone row rather than an inline control, so it
+       gets room to breathe: `em`-based so the cell height tracks the label's font
+       size instead of drifting when that changes. */
+    :global(.tg-root.is-full-width .tg-item) {
+        flex: 1 1 0;
+        justify-content: center;
+        padding-block: 0.5em;
     }
 
     /* Tabs and Ark toggles both render their items via `.tg-item`. Ark prints

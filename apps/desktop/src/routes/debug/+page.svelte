@@ -38,6 +38,7 @@
         | 'components-groups'
         | 'components-toggle-group'
         | 'components-checkbox'
+        | 'components-switch'
         | 'components-radio-group'
         | 'components-select'
         | 'components-combobox'
@@ -89,6 +90,7 @@
                 { id: 'components-groups', label: 'Groups' },
                 { id: 'components-toggle-group', label: 'Toggle group' },
                 { id: 'components-checkbox', label: 'Checkbox' },
+                { id: 'components-switch', label: 'Switch' },
                 { id: 'components-radio-group', label: 'Radio group' },
                 { id: 'components-select', label: 'Select' },
                 { id: 'components-combobox', label: 'Combobox' },

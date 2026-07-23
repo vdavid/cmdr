@@ -1,20 +1,21 @@
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte'
+    import { slide } from 'svelte/transition'
     import { homeDir } from '@tauri-apps/api/path'
     import { getVolumeSpace, DEFAULT_VOLUME_ID, type VolumeSpaceInfo } from '$lib/tauri-commands'
     import type { SortColumn, SortOrder, ConflictResolution, TransferOperationType } from '$lib/file-explorer/types'
     import { validateDirectoryPath } from '$lib/utils/filename-validation'
     import { createTransferDestExistsCheck } from './transfer-dest-exists.svelte'
-    import DirectionIndicator from './DirectionIndicator.svelte'
     import CompressLevelControl from './CompressLevelControl.svelte'
     import CompressEstimateLine from './CompressEstimateLine.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Select, { type SelectItem } from '$lib/ui/Select.svelte'
     import RadioGroup, { type RadioItem } from '$lib/ui/RadioGroup.svelte'
+    import ToggleGroup, { type ToggleGroupOption } from '$lib/ui/ToggleGroup.svelte'
+    import SectionCard from '$lib/ui/SectionCard.svelte'
     import {
         confirmLabelKey,
-        deriveTransferLabel,
         generateTitle,
         initialEditedPath,
         shouldShowHardlinkNote,
@@ -31,6 +32,7 @@
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import Trans from '$lib/intl/Trans.svelte'
     import { t, tString } from '$lib/intl/messages.svelte'
 
@@ -40,7 +42,6 @@
         operationType: TransferOperationType
         sourcePaths: string[]
         destinationPath: string
-        direction: 'left' | 'right'
         currentVolumeId: string
         fileCount: number
         folderCount: number
@@ -83,7 +84,6 @@
         operationType: initialOperationType,
         sourcePaths,
         destinationPath,
-        direction,
         currentVolumeId,
         fileCount,
         folderCount,
@@ -102,12 +102,25 @@
 
     let activeOperationType = $state<TransferOperationType>(initialOperationType)
 
-    // The segmented action toggle, `{#each}`-rendered; `as const` keeps the label keys literal.
-    const operationModes = [
-        { type: 'copy', labelKey: 'fileOperations.transferDialog.toggleCopy' },
-        { type: 'move', labelKey: 'fileOperations.transferDialog.toggleMove' },
-        { type: 'compress', labelKey: 'fileOperations.transferDialog.toggleCompress' },
-    ] as const
+    /**
+     * How long the compress-only block takes to slide open or shut. Zero when the
+     * OS asks for reduced motion, which is the JS twin of the
+     * `@media (prefers-reduced-motion: reduce)` rules elsewhere in the app; the
+     * `window` guard keeps the module safe under the static adapter's SSR pass.
+     */
+    const revealMs =
+        typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 180
+    /** False until the first paint, so the block doesn't slide in when the dialog opens in Compress mode. */
+    let isOpen = $state(false)
+
+    // The segmented action toggle. Labels resolve reactively so a locale switch
+    // re-renders them; the group drives the whole dialog's mode, hence `tabs`
+    // semantics rather than `toggles`.
+    const operationOptions = $derived<ToggleGroupOption[]>([
+        { value: 'copy', label: tString('fileOperations.transferDialog.toggleCopy') },
+        { value: 'move', label: tString('fileOperations.transferDialog.toggleMove') },
+        { value: 'compress', label: tString('fileOperations.transferDialog.toggleCompress') },
+    ])
 
     // The file-conflict policy radios, `{#each}`-rendered; `as const` keeps the values and label keys literal.
     const conflictPolicies = [
@@ -166,29 +179,6 @@
 
     // Get selected volume info
     const selectedVolume = $derived(actualVolumes.find((v) => v.id === selectedVolumeId))
-
-    // Source/destination labels for the direction header. At a volume root the
-    // path basename isn't a user-meaningful name — for an MTP storage root it's
-    // the raw storage id (like "65538"). `deriveTransferLabel` falls back to the
-    // volume's display name in that case (like "Virtual Pixel 9 - SD Card").
-    const sourceVolume = $derived(volumes.find((v) => v.id === sourceVolumeId))
-    const sourceLabel = $derived(
-        deriveTransferLabel(sourceFolderPath, sourceVolume?.path ?? '/', sourceVolume?.name ?? ''),
-    )
-    // Live destination path, reconstructed from the editable path box so the
-    // direction header's destination name + tooltip track what the user types
-    // (the static `destinationPath` prop is only the initial value). `editedPath`
-    // is volume-relative; rejoin it with the selected volume root for the label's
-    // at-root detection (a `://` or `/` root means it's already absolute-enough).
-    const liveDestinationPath = $derived.by(() => {
-        const volPath = selectedVolume?.path ?? '/'
-        if (volPath === '/' || volPath.includes('://')) return editedPath
-        const root = volPath.endsWith('/') ? volPath.slice(0, -1) : volPath
-        return root + editedPath
-    })
-    const destinationLabel = $derived(
-        deriveTransferLabel(liveDestinationPath, selectedVolume?.path ?? '/', selectedVolume?.name ?? ''),
-    )
 
     /** A same-volume move: the source and destination are the SAME NON-DEFAULT
      *  volume (one smb2 share / one MTP device) and the active operation is Move.
@@ -368,6 +358,10 @@
     let conflictCheckPromise: Promise<void> | null = $state(null)
 
     onMount(async () => {
+        // Opening straight into Compress shouldn't animate: the slide is feedback
+        // for a mode SWITCH, not a reveal the user is waiting through on open.
+        isOpen = true
+
         // Resolve the user's home dir, then show a destination that's exactly home
         // as its long absolute form (`/Users/me`) rather than a bare `~`, which
         // reads as a glitch. A `~/sub` path keeps its short form; the backend
@@ -510,83 +504,85 @@
     onclose={handleCancel}
     containerStyle="width: 500px"
     padded={false}
+    growDownward
 >
     {#snippet title()}{dialogTitle}{/snippet}
 
     <div class="dialog-body">
-        <!-- Action: Copy / Move -->
-        <div class="field">
-            <span class="field-label">{tString('fileOperations.shared.actionLabel')}</span>
-            <div class="operation-toggle">
-                {#each operationModes as mode (mode.type)}
-                    <button
-                        class="toggle-option"
-                        class:active={activeOperationType === mode.type}
-                        onclick={() => (activeOperationType = mode.type)}
-                        >{tString(mode.labelKey)}</button
-                    >
-                {/each}
-            </div>
-        </div>
-
-        <!-- Direction indicator (source → destination); destination tracks the path box -->
-        <DirectionIndicator
-            sourcePath={sourceFolderPath}
-            destinationPath={liveDestinationPath}
-            {direction}
-            {sourceLabel}
-            {destinationLabel}
-            label={tString('fileOperations.transferDialog.routeLabel')}
-        />
-
-        <!-- Volume selector -->
-        <div class="volume-selector">
-            <div class="volume-select">
-                <Select
-                    items={volumeItems}
-                    value={selectedVolumeId}
-                    ariaLabel={tString('fileOperations.transferDialog.destVolumeAria')}
-                    onChange={(id: string) => {
-                        selectedVolumeId = id
-                    }}
-                />
-            </div>
-            {#if volumeSpace}
-                <span class="space-info">{spaceInfoText}</span>
-            {/if}
-        </div>
-
-        {#if selectedVolume?.smbConnectionState === 'os_mount'}
-            <p class="smb-native-note">
-                {tString('fileOperations.transferDialog.smbNativeNote')}
-            </p>
-        {/if}
-
-        <!-- Path input -->
-        <div class="path-input-group">
-            <input
-                bind:this={pathInputRef}
-                bind:value={editedPath}
-                type="text"
-                class="path-input"
-                class:has-error={!!pathError}
-                class:has-warning={targetWarning}
-                aria-label={tString('fileOperations.transferDialog.destPathAria')}
-                aria-describedby={pathError
-                    ? 'transfer-path-error'
-                    : targetWarning
-                      ? 'transfer-path-warning'
-                      : undefined}
-                aria-invalid={!!pathError}
-                spellcheck="false"
-                autocomplete="off"
-                onkeydown={handleInputKeydown}
+        <!-- Copy / Move / Compress -->
+        <div class="operation-toggle">
+            <ToggleGroup
+                semantics="tabs"
+                value={activeOperationType}
+                options={operationOptions}
+                onChange={(next: string) => (activeOperationType = next as TransferOperationType)}
+                ariaLabel={tString('fileOperations.transferDialog.operationAria')}
+                fullWidth
             />
-            {#if pathError}
-                <p id="transfer-path-error" class="path-error" role="alert">{pathError}</p>
-            {:else if targetWarning}
-                <p id="transfer-path-warning" class="path-warning">{targetWarning}</p>
-            {/if}
+        </div>
+
+        <!-- Where the items come from: the full source path, middle-shortened when
+             it's too long for the row (the tail carries the meaning). -->
+        <div class="source-group">
+            <SectionCard label={tString('fileOperations.transferDialog.sourceGroupTitle')}>
+                <!-- The action writes the text and carries the full path as its `title`. -->
+                <div class="source-path" use:useShortenMiddle={{ text: sourceFolderPath, preferBreakAt: '/' }}></div>
+            </SectionCard>
+        </div>
+
+        <!-- Where the items go: volume, then the editable path on that volume. -->
+        <div class="target-group">
+            <SectionCard label={tString('fileOperations.transferDialog.targetGroupTitle')}>
+                <div class="target-card-body">
+                    <div class="volume-selector">
+                        <div class="volume-select">
+                            <Select
+                                items={volumeItems}
+                                value={selectedVolumeId}
+                                ariaLabel={tString('fileOperations.transferDialog.destVolumeAria')}
+                                onChange={(id: string) => {
+                                    selectedVolumeId = id
+                                }}
+                            />
+                        </div>
+                        {#if volumeSpace}
+                            <span class="space-info">{spaceInfoText}</span>
+                        {/if}
+                    </div>
+
+                    {#if selectedVolume?.smbConnectionState === 'os_mount'}
+                        <p class="smb-native-note">
+                            {tString('fileOperations.transferDialog.smbNativeNote')}
+                        </p>
+                    {/if}
+
+                    <div class="path-input-group">
+                        <input
+                            bind:this={pathInputRef}
+                            bind:value={editedPath}
+                            type="text"
+                            class="path-input"
+                            class:has-error={!!pathError}
+                            class:has-warning={targetWarning}
+                            aria-label={tString('fileOperations.transferDialog.destPathAria')}
+                            aria-describedby={pathError
+                                ? 'transfer-path-error'
+                                : targetWarning
+                                  ? 'transfer-path-warning'
+                                  : undefined}
+                            aria-invalid={!!pathError}
+                            spellcheck="false"
+                            autocomplete="off"
+                            onkeydown={handleInputKeydown}
+                        />
+                        {#if pathError}
+                            <p id="transfer-path-error" class="path-error" role="alert">{pathError}</p>
+                        {:else if targetWarning}
+                            <p id="transfer-path-warning" class="path-warning">{targetWarning}</p>
+                        {/if}
+                    </div>
+                </div>
+            </SectionCard>
         </div>
 
         <!-- Scan stats (live counting) -->
@@ -613,22 +609,17 @@
                 >
                     <Spinner size="sm" />
                 </span>
-            {:else if scanComplete}
-                <span
-                    class="scan-checkmark"
-                    role="img"
-                    aria-label={tString('fileOperations.shared.scanCompleteTooltip')}
-                    use:tooltip={{ text: tString('fileOperations.shared.scanCompleteTooltip') }}
-                >
-                    <Icon name="check" size={16} aria-hidden="true" />
-                </span>
             {/if}
         </div>
 
-        <!-- Compression level + live estimated size: Compress mode only. -->
+        <!-- Compression level + live estimated size: Compress mode only. The wrapper
+             owns the side inset for both children and gives the mode switch one
+             element to slide, so the dialog's height change reads as a reveal. -->
         {#if activeOperationType === 'compress'}
-            <CompressEstimateLine estimate={scan.estimatedBytes} {isScanning} sourceIsLocal={sourceVolumeId === DEFAULT_VOLUME_ID} />
-            <CompressLevelControl />
+            <div class="compress-extras" transition:slide={{ duration: isOpen ? revealMs : 0 }}>
+                <CompressEstimateLine estimate={scan.estimatedBytes} {isScanning} sourceIsLocal={sourceVolumeId === DEFAULT_VOLUME_ID} />
+                <CompressLevelControl />
+            </div>
         {/if}
 
         <!-- Hardlink note: copy writes every hardlink as a full file, so the bytes
@@ -712,32 +703,43 @@
 <style>
     /* Uniform vertical rhythm: every top-level section is a flex-column child, so a
        single `gap` sets equal spacing between all of them. Each section keeps its own
-       `--spacing-xl` side inset (matching the title bar and footer). */
+       `--dialog-padding` side inset (matching the title bar and footer). */
     .dialog-body {
         display: flex;
         flex-direction: column;
         gap: var(--spacing-lg);
     }
 
-    /* A labeled row: a muted field label followed by its control. */
-    .field {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-md);
-        padding: 0 var(--spacing-xl);
+    /* "Source" and "Target" are the dialog's two halves: where the items are now and
+       where they're going. Both are framed by the house `ui/SectionCard`; these
+       wrappers only supply the dialog's side inset, which the card doesn't carry. */
+    .source-group,
+    .target-group {
+        padding: 0 var(--dialog-padding);
     }
 
-    .field-label {
-        flex: 0 0 auto;
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
+    /* A block, not a flex child: `useShortenMiddle` measures `clientWidth`, so the
+       element has to be sized by the layout rather than by its (initially empty) text.
+       Same `--font-size-md` as the destination path box, so the two paths read as a
+       matched pair. */
+    .source-path {
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        font-size: var(--font-size-md);
+        color: var(--color-text-primary);
+    }
+
+    .target-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
     }
 
     .volume-selector {
         display: flex;
         align-items: center;
         gap: var(--spacing-md);
-        padding: 0 var(--spacing-xl);
     }
 
     /* Wrapper that bounds the `ui/Select` trigger (its trigger is width: 100%)
@@ -748,13 +750,17 @@
         min-width: 200px;
     }
 
+    /* Pushed to the far edge of the volume row, so the free-space readout lines up
+       with the right edge of the path box below it. */
     .space-info {
+        margin-left: auto;
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
     }
 
     .path-input-group {
-        padding: 0 var(--spacing-xl);
+        /* Side inset comes from `.target-group`. */
+        min-width: 0;
     }
 
     .path-input {
@@ -821,12 +827,14 @@
     }
 
     /* Scan stats */
+    /* Right-aligned so the tallies sit under the dialog's right edge and don't
+       compete with the left-aligned labels above them. */
     .scan-stats {
         display: flex;
         align-items: center;
-        justify-content: flex-start;
+        justify-content: flex-end;
         gap: var(--spacing-sm);
-        padding: 0 var(--spacing-xl);
+        padding: 0 var(--dialog-padding);
         font-size: var(--font-size-sm);
     }
 
@@ -862,20 +870,13 @@
         align-items: center;
     }
 
-    .scan-checkmark {
-        display: inline-flex;
-        align-items: center;
-        color: var(--color-allow);
-        margin-left: var(--spacing-xs);
-    }
-
     /* Conflicts checking */
     .conflicts-checking {
         display: flex;
         align-items: center;
         justify-content: flex-start;
         gap: var(--spacing-sm);
-        padding: 0 var(--spacing-xl);
+        padding: 0 var(--dialog-padding);
         font-size: var(--font-size-sm);
     }
 
@@ -885,7 +886,7 @@
 
     /* Conflicts section */
     .conflicts-section {
-        padding: 0 var(--spacing-xl) var(--spacing-md);
+        padding: 0 var(--dialog-padding) var(--spacing-md);
         border-top: 1px solid var(--color-border-strong);
         margin-top: var(--spacing-xs);
         padding-top: var(--spacing-md);
@@ -939,41 +940,20 @@
         flex-direction: column;
     }
 
-    /* Copy/Move segmented control. Side inset comes from the parent `.field`. */
-    .operation-toggle {
+    /* Compress-only block. Carries the `--dialog-padding` side inset its two children
+       don't (they're also used where the parent insets them), and stacks them with
+       the same rhythm as the dialog body. */
+    .compress-extras {
         display: flex;
-        justify-content: flex-start;
-        gap: 0;
+        flex-direction: column;
+        gap: var(--spacing-lg);
+        padding: 0 var(--dialog-padding);
     }
 
-    .toggle-option {
-        padding: var(--spacing-xs) var(--spacing-lg);
-        font-size: var(--font-size-sm);
-        font-weight: 500;
-        border: 1px solid var(--color-border-strong);
-        background: transparent;
-        color: var(--color-text-secondary);
-        transition: all var(--transition-base);
-        min-width: 60px;
-    }
-
-    .toggle-option:first-child {
-        border-radius: var(--radius-md) 0 0 var(--radius-md);
-        border-right: none;
-    }
-
-    .toggle-option:last-child {
-        border-radius: 0 var(--radius-md) var(--radius-md) 0;
-    }
-
-    .toggle-option.active {
-        background: var(--color-accent);
-        border-color: var(--color-accent);
-        color: var(--color-accent-fg);
-    }
-
-    .toggle-option:not(.active):hover {
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-primary);
+    /* Copy / Move / Compress segmented control. Only the side inset lives here; the
+       control itself is the `ui/ToggleGroup` primitive, full-width so it spans the
+       same column as the fields below it. */
+    .operation-toggle {
+        padding: 0 var(--dialog-padding);
     }
 </style>

@@ -28,13 +28,9 @@
   "@fileOperations.delete.archiveWarningRest": {
     "sourceHash": "5fa93f5"
   },
-  "fileOperations.delete.toggleTrash": "Lixo",
-  "@fileOperations.delete.toggleTrash": {
-    "sourceHash": "c560122"
-  },
-  "fileOperations.delete.toggleDelete": "Apagar",
-  "@fileOperations.delete.toggleDelete": {
-    "sourceHash": "e2d0a54"
+  "fileOperations.delete.trashSwitch": "Mover para o Lixo",
+  "@fileOperations.delete.trashSwitch": {
+    "sourceHash": "b250a45"
   },
   "fileOperations.delete.overflowMore": "... e mais {countText} {count, plural, one {item} many {itens} other {itens}}",
   "@fileOperations.delete.overflowMore": {
@@ -52,9 +48,9 @@
   "@fileOperations.delete.throughputFiles": {
     "sourceHash": "c3b28a4"
   },
-  "fileOperations.delete.confirmDeletePermanently": "Apagar permanentemente",
-  "@fileOperations.delete.confirmDeletePermanently": {
-    "sourceHash": "280b10c"
+  "fileOperations.delete.confirmDelete": "Apagar",
+  "@fileOperations.delete.confirmDelete": {
+    "sourceHash": "e2d0a54"
   },
   "fileOperations.delete.confirmMoveToTrash": "Mover para o Lixo",
   "@fileOperations.delete.confirmMoveToTrash": {
@@ -161,17 +157,9 @@
   "@fileOperations.shared.andJoin": {
     "sourceHash": "04f767b"
   },
-  "fileOperations.shared.actionLabel": "Ação:",
-  "@fileOperations.shared.actionLabel": {
-    "sourceHash": "7d9fda4"
-  },
   "fileOperations.shared.scanningTooltip": "Analisando…",
   "@fileOperations.shared.scanningTooltip": {
     "sourceHash": "38d96da"
-  },
-  "fileOperations.shared.scanCompleteTooltip": "Análise concluída",
-  "@fileOperations.shared.scanCompleteTooltip": {
-    "sourceHash": "bd35a52"
   },
   "fileOperations.transferDialog.toggleCopy": "Copiar",
   "@fileOperations.transferDialog.toggleCopy": {
@@ -185,9 +173,17 @@
   "@fileOperations.transferDialog.toggleCompress": {
     "sourceHash": "033fc04"
   },
-  "fileOperations.transferDialog.routeLabel": "Rota:",
-  "@fileOperations.transferDialog.routeLabel": {
-    "sourceHash": "8ccda30"
+  "fileOperations.transferDialog.sourceGroupTitle": "De",
+  "@fileOperations.transferDialog.sourceGroupTitle": {
+    "sourceHash": "2181976"
+  },
+  "fileOperations.transferDialog.targetGroupTitle": "Para",
+  "@fileOperations.transferDialog.targetGroupTitle": {
+    "sourceHash": "f4b06ef"
+  },
+  "fileOperations.transferDialog.operationAria": "Ação",
+  "@fileOperations.transferDialog.operationAria": {
+    "sourceHash": "64cff13"
   },
   "fileOperations.transferDialog.destVolumeAria": "Volume de destino",
   "@fileOperations.transferDialog.destVolumeAria": {

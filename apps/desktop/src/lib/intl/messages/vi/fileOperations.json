@@ -28,13 +28,9 @@
   "@fileOperations.delete.archiveWarningRest": {
     "sourceHash": "5fa93f5"
   },
-  "fileOperations.delete.toggleTrash": "Thùng rác",
-  "@fileOperations.delete.toggleTrash": {
-    "sourceHash": "c560122"
-  },
-  "fileOperations.delete.toggleDelete": "Xóa",
-  "@fileOperations.delete.toggleDelete": {
-    "sourceHash": "e2d0a54"
+  "fileOperations.delete.trashSwitch": "Chuyển vào thùng rác",
+  "@fileOperations.delete.trashSwitch": {
+    "sourceHash": "b250a45"
   },
   "fileOperations.delete.overflowMore": "... và thêm {countText} {count, plural, other {mục}}",
   "@fileOperations.delete.overflowMore": {
@@ -52,9 +48,9 @@
   "@fileOperations.delete.throughputFiles": {
     "sourceHash": "c3b28a4"
   },
-  "fileOperations.delete.confirmDeletePermanently": "Xóa vĩnh viễn",
-  "@fileOperations.delete.confirmDeletePermanently": {
-    "sourceHash": "280b10c"
+  "fileOperations.delete.confirmDelete": "Xóa",
+  "@fileOperations.delete.confirmDelete": {
+    "sourceHash": "e2d0a54"
   },
   "fileOperations.delete.confirmMoveToTrash": "Chuyển vào thùng rác",
   "@fileOperations.delete.confirmMoveToTrash": {
@@ -160,17 +156,9 @@
   "@fileOperations.shared.andJoin": {
     "sourceHash": "04f767b"
   },
-  "fileOperations.shared.actionLabel": "Thao tác:",
-  "@fileOperations.shared.actionLabel": {
-    "sourceHash": "7d9fda4"
-  },
   "fileOperations.shared.scanningTooltip": "Đang quét…",
   "@fileOperations.shared.scanningTooltip": {
     "sourceHash": "38d96da"
-  },
-  "fileOperations.shared.scanCompleteTooltip": "Đã quét xong",
-  "@fileOperations.shared.scanCompleteTooltip": {
-    "sourceHash": "bd35a52"
   },
   "fileOperations.transferDialog.toggleCopy": "Sao chép",
   "@fileOperations.transferDialog.toggleCopy": {
@@ -184,9 +172,17 @@
   "@fileOperations.transferDialog.toggleCompress": {
     "sourceHash": "033fc04"
   },
-  "fileOperations.transferDialog.routeLabel": "Lộ trình:",
-  "@fileOperations.transferDialog.routeLabel": {
-    "sourceHash": "8ccda30"
+  "fileOperations.transferDialog.sourceGroupTitle": "Từ",
+  "@fileOperations.transferDialog.sourceGroupTitle": {
+    "sourceHash": "2181976"
+  },
+  "fileOperations.transferDialog.targetGroupTitle": "Đến",
+  "@fileOperations.transferDialog.targetGroupTitle": {
+    "sourceHash": "f4b06ef"
+  },
+  "fileOperations.transferDialog.operationAria": "Thao tác",
+  "@fileOperations.transferDialog.operationAria": {
+    "sourceHash": "64cff13"
   },
   "fileOperations.transferDialog.destVolumeAria": "Ổ đĩa đích",
   "@fileOperations.transferDialog.destVolumeAria": {

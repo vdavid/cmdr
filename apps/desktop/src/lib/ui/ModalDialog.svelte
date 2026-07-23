@@ -18,6 +18,12 @@
          * (dialogs that own a custom button layout still place buttons in `children`).
          */
         footer?: Snippet
+        /**
+         * Content pinned to the LEFT of the footer row, on the same line as the
+         * action buttons (a modifier toggle, a "don't ask again" switch). Renders
+         * only alongside `footer`; the buttons stay right-aligned.
+         */
+        footerLeading?: Snippet
         /** MCP dialog tracking: sends notifyDialogOpened/Closed on mount/destroy */
         dialogId?: SoftDialogId
         role?: 'dialog' | 'alertdialog'
@@ -28,7 +34,7 @@
         /** Inline style string for the dialog container (sizing, colors) */
         containerStyle?: string
         /**
-         * Standard body padding (`0 24px`, horizontal). ModalDialog owns it so
+         * Standard body padding (`--dialog-padding`, horizontal). ModalDialog owns it so
          * dialogs don't hand-roll their own. Set `false` for full-bleed bodies
          * that manage their own padding (e.g. edge-to-edge lists).
          */
@@ -39,6 +45,13 @@
          * size via `containerStyle`. Off by default.
          */
         resizable?: boolean
+        /**
+         * Pins the dialog's TOP edge where centering first put it, so a body that
+         * grows (a mode switch revealing extra controls) extends downward instead
+         * of pushing the title up. The dialog still slides up if it would otherwise
+         * run past the bottom. For dialogs whose height changes while open.
+         */
+        growDownward?: boolean
         /** Renders × button and handles Escape key */
         onclose?: () => void
     }
@@ -49,6 +62,7 @@
         title,
         children,
         footer,
+        footerLeading,
         dialogId,
         role = 'dialog',
         draggable = true,
@@ -57,12 +71,16 @@
         containerStyle = '',
         padded = true,
         resizable = false,
+        growDownward = false,
         onclose,
     }: Props = $props()
 
     let overlayElement: HTMLDivElement | undefined = $state()
+    let dialogElement: HTMLDivElement | undefined = $state()
     let dialogPosition = $state({ x: 0, y: 0 })
     let isDragging = $state(false)
+    /** Distance from the overlay's top to the dialog's top, once `growDownward` pins it. */
+    let anchoredTop = $state<number | null>(null)
     /**
      * Element that had focus when the dialog opened. Restored on destroy so
      * keyboard input flows back to wherever it came from (typically a file
@@ -70,10 +88,40 @@
      * no-op until the user clicks back into a pane.
      */
     let previousActiveElement: HTMLElement | null = null
+    let heightObserver: ResizeObserver | null = null
 
     const dialogStyle = $derived(
-        `transform: translate(${String(dialogPosition.x)}px, ${String(dialogPosition.y)}px);${containerStyle ? ` ${containerStyle}` : ''}`,
+        `transform: translate(${String(dialogPosition.x)}px, ${String(dialogPosition.y)}px);` +
+            (anchoredTop === null ? '' : ` align-self: flex-start; margin-top: ${String(anchoredTop)}px;`) +
+            (containerStyle ? ` ${containerStyle}` : ''),
     )
+
+    /** Where flex centering puts the dialog's top right now. */
+    function centeredTop(): number {
+        if (!overlayElement || !dialogElement) return 0
+        return Math.max(0, (overlayElement.clientHeight - dialogElement.offsetHeight) / 2)
+    }
+
+    /**
+     * Re-centers on the CURRENT height. Used at mount (a no-op visually: it pins
+     * exactly where flex already put the dialog) and on window resize, where
+     * re-centering is what the user expects.
+     */
+    function anchorToCurrentCenter() {
+        if (!growDownward) return
+        anchoredTop = centeredTop()
+    }
+
+    /**
+     * Keeps a grown dialog on screen. The pin is a top edge, so a body that grows
+     * past the overlay's bottom would be clipped; pull it up by exactly the
+     * overflow, never past the top.
+     */
+    function clampAnchorIntoView() {
+        if (anchoredTop === null || !overlayElement || !dialogElement) return
+        const maxTop = Math.max(0, overlayElement.clientHeight - dialogElement.offsetHeight)
+        if (anchoredTop > maxTop) anchoredTop = maxTop
+    }
 
     function handleTitleMouseDown(event: MouseEvent) {
         if (!draggable) return
@@ -132,9 +180,20 @@
         }
         await tick()
         overlayElement?.focus()
+
+        if (!growDownward || !dialogElement) return
+        anchorToCurrentCenter()
+        // Height changes come from the body (a mode switch, an expanding section),
+        // not from anything this component drives, so observe rather than react.
+        heightObserver = new ResizeObserver(clampAnchorIntoView)
+        heightObserver.observe(dialogElement)
+        window.addEventListener('resize', anchorToCurrentCenter)
     })
 
     onDestroy(() => {
+        heightObserver?.disconnect()
+        heightObserver = null
+        if (growDownward) window.removeEventListener('resize', anchorToCurrentCenter)
         if (dialogId) {
             void notifyDialogClosed(dialogId)
             if (onclose) unregisterDialogClose(dialogId, onclose)
@@ -160,7 +219,13 @@
     onkeydown={handleOverlayKeydown}
     use:trapFocus={{ onEscape: onclose }}
 >
-    <div class="modal-dialog" class:dragging={isDragging} class:resizable style={dialogStyle}>
+    <div
+        bind:this={dialogElement}
+        class="modal-dialog"
+        class:dragging={isDragging}
+        class:resizable
+        style={dialogStyle}
+    >
         {#if onclose}
             <!--
                 tabindex=-1 keeps the × out of the tab cycle. The dialog's action buttons
@@ -181,6 +246,7 @@
         </div>
         {#if footer}
             <div class="modal-footer">
+                {#if footerLeading}<div class="modal-footer-leading">{@render footerLeading()}</div>{/if}
                 {@render footer()}
             </div>
         {/if}
@@ -213,11 +279,16 @@
         -webkit-backdrop-filter: none;
     }
 
+    /* macOS panel edge: the `border` is the darker OUTER hairline, the inset ring
+       the lighter INNER one. The inset ring rides the padding-box corner, so it
+       stays concentric with the border at any radius. */
     .modal-dialog {
         background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-lg);
+        border: 1px solid var(--color-dialog-border-outer);
+        border-radius: var(--dialog-radius);
+        box-shadow:
+            inset 0 0 0 1px var(--color-dialog-border-inner),
+            var(--shadow-dialog);
         position: relative;
     }
 
@@ -246,18 +317,26 @@
         overflow: auto;
     }
 
+    /* Fixed square + `--radius-full` so the hover fill is a circle around the glyph,
+       not a rounded rectangle. Sized rather than padded, because the `×` glyph's
+       own metrics aren't symmetric enough for padding alone to stay round. */
     .modal-close-button {
         position: absolute;
         top: var(--spacing-md);
         right: var(--spacing-md);
         z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        padding: 0;
         background: none;
         border: none;
         color: var(--color-text-secondary);
         font-size: var(--font-size-xl);
-        padding: var(--spacing-xs) var(--spacing-sm);
         line-height: 1;
-        border-radius: var(--radius-sm);
+        border-radius: var(--radius-full);
     }
 
     .modal-close-button:hover {
@@ -269,11 +348,11 @@
         cursor: move;
     }
 
-    /* Top padding matches the footer's bottom padding (`--spacing-xl`) so the dialog
-       is vertically balanced; `--spacing-md` below the title gives it ~half a line of
-       breathing room before the body. */
+    /* One inset all round: the gap below the title and above the footer match the
+       dialog's own `--dialog-padding`, so nothing crowds the title or the
+       action row. Bodies may add more, never less. */
     .dialog-title-bar {
-        padding: var(--spacing-xl) var(--spacing-xl) var(--spacing-md);
+        padding: var(--dialog-padding);
         user-select: none;
     }
 
@@ -290,15 +369,15 @@
     }
 
     /* Standard body padding, owned here so dialogs don't hand-roll it. The
-       horizontal 24px matches the title bar and footer; the title bar's bottom
+       horizontal inset matches the title bar and footer; the title bar's bottom
        padding supplies the top gap and the footer supplies the bottom. */
     .modal-body {
-        padding: 0 var(--spacing-xl);
+        padding: 0 var(--dialog-padding);
     }
 
     /* Footerless dialogs: the body owns the bottom padding the footer would give. */
     .modal-body.no-footer {
-        padding-bottom: var(--spacing-xl);
+        padding-bottom: var(--dialog-padding);
     }
 
     /* Full-bleed opt-out (`padded={false}`): the body manages its own padding. */
@@ -310,8 +389,16 @@
        Owns the dialog's bottom padding so callers don't repeat per-dialog button-row CSS. */
     .modal-footer {
         display: flex;
+        align-items: center;
         justify-content: flex-end;
         gap: var(--spacing-md);
-        padding: var(--spacing-md) var(--spacing-xl) var(--spacing-xl);
+        padding: var(--dialog-padding);
+    }
+
+    /* `margin-right: auto` eats the slack, so the buttons stay hard right no matter
+       how wide the leading content is. */
+    .modal-footer-leading {
+        margin-right: auto;
+        min-width: 0;
     }
 </style>

@@ -26,6 +26,7 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 - **`Size.svelte`**: Canonical inline byte-count renderer: human-friendly + rainbow tier color
 - **`SectionCard.svelte`**: macOS-style grouped card with optional label above; used for Debug/Settings groupings
 - **`ToggleGroup.svelte`**: Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape
+- **`Switch.svelte`**: Presentational Ark `Switch`: the track-and-thumb on/off control; `SettingSwitch` wraps it
 - **`DateLabel.svelte`**: Canonical inline modified-date renderer: format + per-component age-tier coloring
 - **`ShortcutChip.svelte`**: Canonical keyboard-shortcut renderer: live `commandId` mode (clickable) or literal `key`
   mode
@@ -55,21 +56,45 @@ Props:
 | `title`          | Snippet                       | Rendered as `<h2>` in the title bar (left-aligned)                    |
 | `children`       | Snippet                       | Dialog body                                                           |
 | `footer`         | Snippet?                      | Action buttons, rendered in a right-aligned `.modal-footer`           |
+| `footerLeading`  | Snippet?                      | Content pinned left on the footer row; buttons stay right-aligned    |
 | `dialogId`       | `SoftDialogId?`               | Auto-calls `notifyDialogOpened`/`notifyDialogClosed` on mount/destroy |
 | `onclose`        | `() => void`?                 | Renders × button; also called on Escape                               |
 | `draggable`      | `boolean`                     | Default `true`. Title bar drag moves the dialog.                      |
 | `blur`           | `boolean`                     | `true` → 0.6 opacity + `backdrop-filter: blur(4px)` overlay           |
 | `containerStyle` | `string`                      | Inline style appended to the dialog element (for sizing, colors)      |
 | `role`           | `'dialog'` \| `'alertdialog'` | Default `'dialog'`                                                    |
+| `growDownward`   | `boolean`                     | Default `false`. Pins the top edge so a growing body extends downward |
 
 **Layout convention (macOS-style).** Title and body text are LEFT-aligned; action buttons are RIGHT-aligned with the
 primary action last (rightmost). Pass buttons via the `footer` snippet — `ModalDialog` renders them in a `.modal-footer`
 that owns the right-alignment, gap, and the dialog's bottom padding, so callers don't hand-roll a button-row. The title
-bar's top padding matches the footer's bottom padding (`--spacing-xl`) for vertical balance; bodies use
-`0 var(--spacing-xl)` side padding so title, body, and buttons line up flush at the same left inset. A dialog with a
+bar's padding, the footer's, and the body's side inset all come from ONE token (`--dialog-padding`), so title, body,
+and buttons line up flush at the same inset and nothing crowds the title or the action row. A `padded={false}` body
+that insets its own sections must use that same token. A dialog with a
 custom button layout (multiple rows, a left-side helper, equal-width buttons) keeps its buttons in `children` and
 right-aligns them itself; genuinely centered content (spinners, progress bars, numeric readouts, hero panels like
 `AboutWindow`) stays centered.
+
+**`growDownward`** is for a dialog whose height changes while it's open (a mode switch revealing extra controls). The
+overlay centers with flex, so a taller body would push the title up and re-center everything under the user's eyes. With
+this on, `ModalDialog` measures where centering put the dialog at mount and pins that top edge with
+`align-self: flex-start` + `margin-top`; a `ResizeObserver` then only pulls the dialog UP when growth would run it past
+the overlay's bottom, and a window resize re-centers on the current height. Pair it with a transition on whatever
+expands (`TransferDialog` slides its compress-only block) so the growth reads as a reveal rather than a jump.
+
+**`footerLeading`** puts a control on the SAME line as the action buttons, pinned left (`margin-right: auto` on the
+wrapper, so the buttons stay hard right at any leading width). Use it for a modifier on the primary action, the way
+`DeleteDialog` rides its "Move to trash" switch beside the confirm button; it renders only when `footer` does.
+
+**Edge and corner.** The dialog's corner is `--dialog-radius` (27px, just under the window-level `--radius-xxl`), and
+its edge is TWO hairlines the way macOS draws a panel: a darker `border` outside plus a lighter `inset 0 0 0 1px` ring
+just inside it, both alpha so the pair works over any surface. The inset ring rides the padding-box corner, so it stays
+concentric with the border at any radius; keep it in the same `box-shadow` as the drop shadow rather than adding a
+second declaration.
+
+The drop shadow is `--shadow-dialog`, three stacked layers (wide soft cast, mid falloff, tight contact shadow), all
+offset down only. It's separate from `--shadow-lg`, which is tuned for popovers and menus, and it goes much deeper in
+dark mode where a light-mode-strength shadow would be invisible against the canvas.
 
 The overlay element receives `tabindex="-1"` and is focused on mount so Escape/keydown events are captured without a
 visible focus ring on the scrim. The overlay also carries `use:trapFocus={{ onEscape: onclose }}` (see § "Focus
@@ -220,6 +245,10 @@ suite. Covered by `tooltip.test.ts`.
 
 Variants: `primary` | `secondary` (default) | `danger`. Sizes: `regular` (default) | `mini`. Extends
 `HTMLButtonAttributes` so all native button attributes pass through.
+
+Every button is a capsule: `border-radius: var(--radius-full)` on `.btn`, both sizes, matching the shape macOS gives an
+alert's action buttons. `--radius-full` (9999px) rather than `50%`, which curves against the box and goes oval on a wide
+button.
 
 `.btn-primary` renders `color: var(--color-accent-fg)` on `background: var(--color-accent)`. Both are derived at runtime
 by `lib/accent-color.ts`:
@@ -767,8 +796,8 @@ When you add a new primitive to `lib/ui/`:
 
 ## ToggleGroup
 
-Generic segmented-control primitive used by Settings (`SettingToggleGroup`) and the search / selection mode chips. One
-visual contract, two ARIA shapes selected via the `semantics` prop.
+Generic segmented-control primitive used by Settings (`SettingToggleGroup`), the search / selection mode chips, and the
+transfer dialog's Copy / Move / Compress row. One visual contract, two ARIA shapes selected via the `semantics` prop.
 
 Pick the shape from the user's perspective, not the visual:
 
@@ -792,6 +821,17 @@ Props:
 | `onChange`  | `(value: string) => void` | Fires on activation; does not fire when clicking the already-active option |
 | `ariaLabel` | `string`                  | Accessible name for the tablist / toggle-group root                        |
 | `disabled`  | `boolean?`                | Default `false`. Short-circuits all clicks and disables every option       |
+| `fullWidth` | `boolean?`                | Default `false`. Spans the container with equal-width cells                |
+
+`fullWidth` adds `.is-full-width` to the root: `display: flex; width: 100%` plus `flex: 1 1 0` on every cell, so cells
+share the width evenly regardless of label length, and `padding-block: 0.5em` so a standalone row reads lighter than an
+inline control (`em`, so the cell height tracks the label's font size). Default off, because a segmented control
+normally sizes to its labels and sits inline beside other controls. Turn it on when the group is a standalone row that
+should line up with the fields below it, as `TransferDialog`'s Copy / Move / Compress row does (the only consumer
+today).
+
+The group's ends are fully rounded (`--radius-full` on `.tg-root` plus `overflow: hidden`, which clips the first and
+last cells to the pill, so no per-cell corner rounding is needed).
 
 `ToggleGroupOption` shape:
 
@@ -808,6 +848,28 @@ Props:
 When to add a wrapper (like `SettingToggleGroup`) versus using `ToggleGroup` directly: wrap when the options come from a
 single source of truth that the consumer already owns (the settings registry, a config object). Otherwise, use the
 primitive directly.
+
+## Switch
+
+The track-and-thumb on/off control, a presentational wrapper over Ark's `Switch`. Props mirror `Checkbox` minus
+`indeterminate`: `checked` (bindable, default `false`), `disabled`, `id`, `ariaLabel` (accessible name when there's no
+visible label), `onCheckedChange`, and `children` (an inline label right of the track).
+
+Ark renders the semantic control as a visually-hidden native `<input type="checkbox">` carrying `role="switch"`, inside
+a `<label>` root; the styled track (`.switch-control`) and thumb (`.switch-thumb`) are decorative. The thumb is a
+literal `white`, not a token, so it reads against the accent-filled track in both themes; the off track's outline uses
+`--color-control-border` for the WCAG 3:1 non-text minimum.
+
+`SettingSwitch` (`lib/settings/components/`) is the registry-wired wrapper: it resolves the label from the setting
+definition, subscribes to external resets, and writes through `setSetting`. Use it for anything registry-backed; use
+`Switch` directly in feature code that owns its own state (for example `DeleteDialog`'s "Delete permanently").
+
+Gotcha: three settings sections (`AdvancedSection`, `NotificationsSection`, `MediaIndexNetworkVolumes`) still hand-roll
+Ark's `Switch` with mirrored CSS, because they need `data-test` attributes on the hidden input that this primitive
+doesn't forward. Migrating them means adding that pass-through first; don't copy their pattern for new code.
+
+Switch vs `Checkbox`: a switch says "this is on/off right now", a checkbox says "this option is selected". See
+`docs/design-system.md` § "Checkbox and radio group".
 
 ## Ark UI
 

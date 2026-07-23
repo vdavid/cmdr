@@ -430,7 +430,7 @@ test.describe('MTP file operations', () => {
     await expectAndDismissToast(tauriPage, 'Moved 1 file.', { timeout: 30000 })
   })
 
-  test('deletes file on MTP with "Delete permanently" dialog', async ({ tauriPage }) => {
+  test('deletes file on MTP with the permanent-delete dialog', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
 
@@ -447,14 +447,14 @@ test.describe('MTP file operations', () => {
     await pressKey(tauriPage, 'F8')
     await tauriPage.waitForSelector('[data-dialog-id="delete-confirmation"]', 10000)
 
-    // Verify the dialog shows "Delete permanently" (not "Move to trash") for MTP
+    // Verify the dialog shows "Delete" (not "Move to trash") for MTP
     const confirmLabel = await tauriPage.evaluate<string>(`(function() {
             var dialog = document.querySelector('[data-dialog-id="delete-confirmation"]');
             if (!dialog) return '';
             var btn = dialog.querySelector('.btn-primary, .btn-danger');
             return btn ? btn.textContent.trim() : '';
         })()`)
-    expect(confirmLabel).toBe('Delete permanently')
+    expect(confirmLabel).toBe('Delete')
 
     // Verify the warning banner about trash not being supported
     const hasWarning = await tauriPage.evaluate<boolean>(`(function() {

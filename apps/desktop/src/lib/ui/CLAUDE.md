@@ -8,7 +8,7 @@ here.
 
 - Dialogs: `ModalDialog.svelte` (overlay + drag + Escape + focus + MCP tracking), `focus-trap.ts` (`use:trapFocus`),
   `dialog-registry.ts` (`SOFT_DIALOG_REGISTRY`), `AlertDialog.svelte`.
-- Primitives: `Icon`, `Spinner`, `Button`, `LinkButton`, `Checkbox`, `RadioGroup`, `ToggleGroup` (segmented toggle,
+- Primitives: `Icon`, `Spinner`, `Button`, `LinkButton`, `Checkbox`, `Switch`, `RadioGroup`, `ToggleGroup` (segmented toggle,
   distinct from `RadioGroup`), `Select`, `Combobox`, `ShortcutChip`, the `toast/` system, and more (full list: DETAILS §
   Key files). Tooltip is the sibling `../tooltip/tooltip.ts`. Ark UI (`@ark-ui/svelte`) backs complex interactive
   components; simple ones are thin in-house wrappers.

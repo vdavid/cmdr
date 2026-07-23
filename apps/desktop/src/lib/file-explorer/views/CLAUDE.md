@@ -44,8 +44,9 @@ Virtual-scrolling file list components for rendering 100k+ file directories with
   returns `ext: 0`. If you change one side (render the cell but keep reserving Ext width, or vice versa), the columns
   drift. The HEADER still offers sort-by-extension: when on, the single Name-column header splits into two
   `SortableHeader` triggers inside a `.header-name-ext` flex row (Name fills, Ext right-aligned, shrink-to-label), both
-  clickable, each showing its caret when active. The split lives inside the `1fr` Name track, so the measurer needs no
-  Ext width for it. Sort-by-extension also stays reachable via the `sort.byExtension` command/shortcut.
+  clickable, each showing its caret when active. The split lives inside the `1fr` Name track, so the Ext trigger costs
+  the pane no column width and the measurer reserves none for it. Don't "clean up" that trigger: without it, clicking is
+  gone and `sort.byExtension` (command/shortcut) is the only route left.
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

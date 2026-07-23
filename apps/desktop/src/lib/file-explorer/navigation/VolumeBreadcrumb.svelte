@@ -1120,6 +1120,14 @@
         align-items: center;
     }
 
+    /* Geometry mirrors a file row so this strip lines up with the list below it.
+       Reading left to right from the pane's edge: `.header`'s `--spacing-sm` inset,
+       this element's `--spacing-xs` padding, then the icon — 12px, exactly where a
+       row's icon starts (`.listbox-region`'s `--spacing-xs` gutter plus
+       `.file-entry`'s `--spacing-sm` padding). The `--spacing-sm` gap after the icon
+       column. The extra gap lives on the icon's margin, not on this `gap`, so the
+       trailing chevron and read-only badge keep their tighter spacing. Change any of
+       those four values and this drifts. */
     .volume-name {
         cursor: default;
         font-weight: 500;
@@ -1140,15 +1148,24 @@
         background-color: var(--color-bg-tertiary);
     }
 
-    .icon {
-        width: calc(14px * var(--font-scale));
-        height: calc(14px * var(--font-scale));
+    /* Same box as a file icon in the pane (`FileIcon` uses this token too), so the
+       volume icon and the icons in the list below read as one column. The trailing
+       margin tops the row's `--spacing-xs` gap up to the `--spacing-sm` that
+       `.file-entry` puts between its icon and name, landing the label on the Name
+       column without loosening the chevron and badges after it. */
+    .icon,
+    .icon-emoji {
+        flex-shrink: 0;
+        width: var(--spacing-icon-size);
+        height: var(--spacing-icon-size);
+        margin-inline-end: var(--spacing-xs);
         object-fit: contain;
     }
 
     .icon-emoji {
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         color: var(--color-text-secondary);
     }
 

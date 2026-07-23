@@ -102,7 +102,6 @@
             operationType={transferDialogProps.operationType}
             sourcePaths={transferDialogProps.sourcePaths}
             destinationPath={transferDialogProps.destinationPath}
-            direction={transferDialogProps.direction}
             currentVolumeId={transferDialogProps.currentVolumeId}
             fileCount={transferDialogProps.fileCount}
             folderCount={transferDialogProps.folderCount}

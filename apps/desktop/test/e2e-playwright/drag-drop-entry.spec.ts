@@ -91,7 +91,7 @@ test.describe('Programmatic drop entry (local)', () => {
     // Toggle to Move. A local→local move is NOT the same-volume rename fast path,
     // so the deep scan must keep running and the tallies must NOT zero out.
     await tauriPage.evaluate(`(function(){
-        var btns = document.querySelectorAll('${TRANSFER_DIALOG} .toggle-option');
+        var btns = document.querySelectorAll('${TRANSFER_DIALOG} .operation-toggle .tg-item');
         for (var i = 0; i < btns.length; i++) {
             if ((btns[i].textContent || '').trim() === 'Move') { btns[i].click(); return; }
         }

@@ -107,8 +107,14 @@
         font-weight: 500;
     }
 
+    /* Right-aligned (numeric) headers: `row-reverse` puts the first DOM child (the
+       label) at the RIGHT edge and the caret to its LEFT, so the caret never sits
+       between the label and the column's right edge where the numbers line up.
+       `flex-start` is the right-hand edge under `row-reverse`. */
     .sortable-header.align-right {
-        justify-content: flex-end;
+        flex-direction: row-reverse;
+        justify-content: flex-start;
+        text-align: right;
     }
 
     .label {

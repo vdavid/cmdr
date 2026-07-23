@@ -166,8 +166,8 @@ test.describe('MTP delete reuses scan preview (no double scan)', () => {
       // and trip the safety-net leak guard at end-of-test.
       await expectAndDismissToast(tauriPage, 'Space')
 
-      // Press F8 to open the delete confirmation dialog (MTP volumes show
-      // "Delete permanently" because they don't support trash).
+      // Press F8 to open the delete confirmation dialog (MTP volumes force
+      // a permanent delete because they don't support trash).
       await pressKey(tauriPage, 'F8')
       await tauriPage.waitForSelector('[data-dialog-id="delete-confirmation"]', 10000)
 

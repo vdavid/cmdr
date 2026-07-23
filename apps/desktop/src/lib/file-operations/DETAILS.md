@@ -19,7 +19,7 @@ temp+rename rewrite), surfaced through the same transfer/queue UI as any write:
   create dialogs' return value is discarded either way (they forward the typed name), so no signature change was needed.
 - **Permanent delete.** There's no Trash inside a zip (the backend rejects trashing an archive-inner path), so
   `openDeleteDialog` forces `isPermanent` + drops `supportsTrash` and passes `isArchive` for a source inside a zip;
-  `DeleteDialog` then shows the archive warning banner and hides the Trash/Delete toggle.
+  `DeleteDialog` then shows the archive warning banner and hides the "Move to trash" switch.
 - **Presentation.** `archive_edit` is a `WriteOperationType` with the `file-archive` queue glyph (`operation-icon.ts`)
   and the "Editing archive" `queue.row.label` arm. It has no scan phase, so `TransferProgressDialog`'s `scanTitleMap`
   excludes it (the `scanTitle` derivation short-circuits for `archive_edit`).

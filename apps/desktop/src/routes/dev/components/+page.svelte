@@ -6,6 +6,7 @@
     import Groups from './sections/Groups.svelte'
     import ToggleGroupSection from './sections/ToggleGroupSection.svelte'
     import CheckboxSection from './sections/CheckboxSection.svelte'
+    import SwitchSection from './sections/SwitchSection.svelte'
     import RadioGroupSection from './sections/RadioGroupSection.svelte'
     import SelectSection from './sections/SelectSection.svelte'
     import ComboboxSection from './sections/ComboboxSection.svelte'
@@ -166,6 +167,7 @@
         <Groups />
         <ToggleGroupSection />
         <CheckboxSection />
+        <SwitchSection />
         <RadioGroupSection />
         <SelectSection />
         <ComboboxSection />

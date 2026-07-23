@@ -13,6 +13,7 @@
     import { getSetting } from '$lib/settings'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Switch from '$lib/ui/Switch.svelte'
     import {
         generateDeleteTitle,
         abbreviatePath,
@@ -85,11 +86,14 @@
 
     const confirmLabel = $derived(
         isPermanent
-            ? tString('fileOperations.delete.confirmDeletePermanently')
+            ? tString('fileOperations.delete.confirmDelete')
             : tString('fileOperations.delete.confirmMoveToTrash'),
     )
     const confirmVariant = $derived<'primary' | 'danger'>(isPermanent ? 'danger' : 'primary')
     const dialogRole = $derived<'dialog' | 'alertdialog'>(isPermanent ? 'alertdialog' : 'dialog')
+    // `delete-warning-text` only exists while a banner renders, so point
+    // `aria-describedby` at the banner's condition, not at `isPermanent`.
+    const hasWarningBanner = $derived(isArchive || !supportsTrash)
 
     // Scan preview state
     let previewId = $state<string | null>(null)
@@ -239,18 +243,13 @@
     dialogId="delete-confirmation"
     role={dialogRole}
     onclose={handleCancel}
-    ariaDescribedby={isPermanent ? 'delete-warning-text' : undefined}
+    ariaDescribedby={hasWarningBanner ? 'delete-warning-text' : undefined}
     containerStyle="width: 500px"
     padded={false}
 >
     {#snippet title()}{dialogTitle}{/snippet}
 
     <div class="dialog-body">
-        <!-- Source path -->
-        <div class="source-path">
-            {tString('fileOperations.delete.fromPath', { path: abbreviatedPath })}
-        </div>
-
         <!-- Warning banner: archive deletes are permanent (no Trash inside a zip);
              other no-trash volumes get the generic banner. -->
         {#if isArchive}
@@ -275,22 +274,10 @@
             </div>
         {/if}
 
-        <!-- Action: Trash / Delete -->
-        {#if supportsTrash}
-            <div class="field">
-                <span class="field-label">{tString('fileOperations.shared.actionLabel')}</span>
-                <div class="operation-toggle">
-                    <button class="toggle-option" class:active={!isPermanent} onclick={() => (isPermanent = false)}
-                        >{tString('fileOperations.delete.toggleTrash')}</button
-                    >
-                    <button
-                        class="toggle-option toggle-option-danger"
-                        class:active={isPermanent}
-                        onclick={() => (isPermanent = true)}>{tString('fileOperations.delete.toggleDelete')}</button
-                    >
-                </div>
-            </div>
-        {/if}
+        <!-- Source path -->
+        <div class="source-path">
+            {tString('fileOperations.delete.fromPath', { path: abbreviatedPath })}
+        </div>
 
         <!-- Scrollable file list -->
         <div class="file-list-container">
@@ -330,8 +317,9 @@
             </div>
         {/if}
 
-        <!-- Scan stats (live counting) -->
-        <div class="scan-stats">
+        <!-- Scan stats (live counting). `data-scan-state` is the race-free
+             "counting done" marker for E2E; there's no visual completion badge. -->
+        <div class="scan-stats" data-scan-state={scanComplete ? 'done' : 'counting'}>
             <div class="scan-stat">
                 <span class="scan-value"><Size bytes={bytesFound} /></span>
             </div>
@@ -353,15 +341,6 @@
                     use:tooltip={{ text: tString('fileOperations.shared.scanningTooltip') }}
                 >
                     <Spinner size="sm" />
-                </span>
-            {:else if scanComplete}
-                <span
-                    class="scan-checkmark"
-                    role="img"
-                    aria-label={tString('fileOperations.shared.scanCompleteTooltip')}
-                    use:tooltip={{ text: tString('fileOperations.shared.scanCompleteTooltip') }}
-                >
-                    <Icon name="check" size={16} aria-hidden="true" />
                 </span>
             {/if}
         </div>
@@ -387,7 +366,18 @@
         {#if isScanning && currentDir}
             <div class="scan-current-dir" use:useShortenMiddle={{ text: currentDir, preferBreakAt: '/' }}></div>
         {/if}
+
     </div>
+
+    <!-- Trash (on, the safe default) vs. permanent delete (off). Rides the footer
+         row so it reads as a modifier on the confirm button beside it. -->
+    {#snippet footerLeading()}
+        {#if supportsTrash}
+            <Switch checked={!isPermanent} onCheckedChange={(toTrash) => (isPermanent = !toTrash)}
+                >{tString('fileOperations.delete.trashSwitch')}</Switch
+            >
+        {/if}
+    {/snippet}
 
     {#snippet footer()}
         <Button variant="secondary" onclick={handleCancel}>{tString('fileOperations.button.cancel')}</Button>
@@ -399,7 +389,7 @@
 
 <style>
     /* Uniform vertical rhythm: every section is a flex-column child, so a single
-       `gap` sets equal spacing between all of them. Each keeps its own `--spacing-xl`
+       `gap` sets equal spacing between all of them. Each keeps its own `--dialog-padding`
        side inset (matching the title bar and footer). */
     .dialog-body {
         display: flex;
@@ -407,22 +397,8 @@
         gap: var(--spacing-md);
     }
 
-    /* A labeled row: a muted field label followed by its control. */
-    .field {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-md);
-        padding: 0 var(--spacing-xl);
-    }
-
-    .field-label {
-        flex: 0 0 auto;
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
-    }
-
     .source-path {
-        padding: 0 var(--spacing-xl);
+        padding: 0 var(--dialog-padding);
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
     }
@@ -432,7 +408,7 @@
         display: flex;
         align-items: flex-start;
         gap: var(--spacing-sm);
-        margin: 0 var(--spacing-xl);
+        margin: 0 var(--dialog-padding);
         padding: var(--spacing-sm) var(--spacing-md);
         background: var(--color-warning-bg);
         border: 1px solid var(--color-warning);
@@ -454,7 +430,7 @@
 
     /* Scrollable file list */
     .file-list-container {
-        margin: 0 var(--spacing-xl);
+        margin: 0 var(--dialog-padding);
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-md);
         overflow: hidden;
@@ -514,7 +490,7 @@
         display: flex;
         align-items: flex-start;
         gap: var(--spacing-sm);
-        padding: 0 var(--spacing-xl);
+        padding: 0 var(--dialog-padding);
         font-size: var(--font-size-sm);
         color: var(--color-warning);
         line-height: 1.4;
@@ -525,13 +501,14 @@
         margin-top: 1px;
     }
 
-    /* Scan stats */
+    /* Scan stats. Right-aligned so the tallies sit under the dialog's right edge
+       and don't compete with the left-aligned labels above them. */
     .scan-stats {
         display: flex;
         align-items: center;
-        justify-content: flex-start;
+        justify-content: flex-end;
         gap: var(--spacing-sm);
-        padding: 0 var(--spacing-xl);
+        padding: 0 var(--dialog-padding);
         font-size: var(--font-size-sm);
     }
 
@@ -560,18 +537,11 @@
         align-items: center;
     }
 
-    .scan-checkmark {
-        display: inline-flex;
-        align-items: center;
-        color: var(--color-allow);
-        margin-left: var(--spacing-xs);
-    }
-
     .scan-throughput {
         display: flex;
-        justify-content: flex-start;
+        justify-content: flex-end;
         gap: var(--spacing-xs);
-        padding: 0 var(--spacing-xl);
+        padding: 0 var(--dialog-padding);
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
     }
@@ -586,7 +556,7 @@
 
     .scan-current-dir {
         padding: var(--spacing-xs) var(--spacing-md);
-        margin: 0 var(--spacing-xl);
+        margin: 0 var(--dialog-padding);
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
         overflow: hidden;
@@ -595,48 +565,4 @@
         border-radius: var(--radius-sm);
     }
 
-    /* Trash/Delete segmented control */
-    .operation-toggle {
-        display: flex;
-        justify-content: flex-start;
-        gap: 0;
-        padding: 0 var(--spacing-xl);
-    }
-
-    .toggle-option {
-        padding: var(--spacing-xs) var(--spacing-lg);
-        font-size: var(--font-size-sm);
-        font-weight: 500;
-        border: 1px solid var(--color-border-strong);
-        background: transparent;
-        color: var(--color-text-secondary);
-        transition: all var(--transition-base);
-        min-width: 60px;
-    }
-
-    .toggle-option:first-child {
-        border-radius: var(--radius-md) 0 0 var(--radius-md);
-        border-right: none;
-    }
-
-    .toggle-option:last-child {
-        border-radius: 0 var(--radius-md) var(--radius-md) 0;
-    }
-
-    .toggle-option.active {
-        background: var(--color-accent);
-        border-color: var(--color-accent);
-        color: var(--color-accent-fg);
-    }
-
-    .toggle-option-danger.active {
-        background: var(--color-error-bg);
-        border-color: var(--color-error);
-        color: var(--color-error-text);
-    }
-
-    .toggle-option:not(.active):hover {
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-primary);
-    }
 </style>

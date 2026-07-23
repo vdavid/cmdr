@@ -47,7 +47,8 @@ contract).
 - **Flushing phase** (`phase: 'flushing'`): title shows "Writing the last piece..." (exact copy) — the backend's closing
   `fdatasync`, a real multi-second pause on slow media. Don't let the bar sit frozen at 100%.
 - **`data-scan-state` marker** (`counting` | `done` | `skipped`) on `.scan-stats` is the race-free "counting done"
-  signal E2E polls. Don't remove it.
+  signal E2E polls, and the ONLY one: there's no completion checkmark (it read as a state change the user hadn't asked
+  for). Don't remove it. `DeleteDialog` carries the same marker (`counting` | `done`).
 - **Compress is the third mode** (`operationType: 'compress'`, packs sources into a NEW zip): swaps the conflict-policy
   UI for a dest-exists overwrite check, and its auto-confirm (MCP) path must NEVER silently overwrite an existing target
   — `handleConfirm` keeps the dialog open. DETAILS § "Compress mode".

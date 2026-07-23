@@ -52,10 +52,13 @@
 </button>
 
 <style>
+    /* Fully-rounded ends (capsule), the shape macOS gives an alert's action buttons.
+       `--radius-full` rather than a percentage: a percentage curves against the box
+       and would go oval on a wide button. */
     .btn {
         font-weight: 500;
         line-height: 1.5;
-        border-radius: var(--radius-md);
+        border-radius: var(--radius-full);
         transition: all var(--transition-base);
     }
 
@@ -82,7 +85,6 @@
         /* stylelint-disable-next-line declaration-property-value-disallowed-list -- Mini button height target: 22px */
         padding: 3px 12px;
         font-size: var(--font-size-sm);
-        border-radius: var(--radius-sm);
     }
 
     /* === Variant: primary === */

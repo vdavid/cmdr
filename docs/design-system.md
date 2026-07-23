@@ -276,11 +276,13 @@ Tailwind's spacing scale (base 4px). No custom tokens needed.
 | --------------- | ------ | ----------------------------------------------- |
 | `--radius-xs`   | 2px    | Progress bars, search highlights, tiny swatches |
 | `--radius-sm`   | 4px    | Chips, inline tags, compact inputs              |
-| `--radius-md`   | 6px    | Buttons, standard inputs                        |
-| `--radius-lg`   | 8px    | Dialogs, cards, larger containers               |
-| `--radius-full` | 9999px | Circles, pills                                  |
+| `--radius-md`   | 6px    | Standard inputs                                 |
+| `--radius-lg`   | 8px    | Cards, larger containers                        |
+| `--radius-full` | 9999px | Circles, pills, every `Button`, `ToggleGroup`   |
 
-The scale intentionally uses small values: large radii look web-native, not macOS-native.
+The scale intentionally uses small values: large radii look web-native, not macOS-native. Two deliberate exceptions
+follow macOS itself: buttons and segmented controls are capsules (`--radius-full`), and a modal's corner is its own
+`--dialog-radius` (27px), just under the window-level `--radius-xxl`.
 
 ### Website
 
@@ -433,7 +435,7 @@ font-size: var(--font-size-md); /* 14px */
 font-weight: 500;
 line-height: 1;
 border: none;
-border-radius: var(--radius-md); /* 6px */
+border-radius: var(--radius-full); /* capsule ends, like a macOS alert button */
 transition: background var(--transition-base);
 ```
 
@@ -488,15 +490,18 @@ All dialogs use `ModalDialog.svelte`.
 
 | Property          | Value                                       | Why                                                                                          |
 | ----------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Body padding      | `0 24px` (horizontal)                       | Owned by `ModalDialog`; bottom comes from the footer or, when footerless, `24px` on the body |
+| Body padding      | `0 var(--dialog-padding)` (20px)            | Owned by `ModalDialog`; bottom comes from the footer or, when footerless, the same inset on the body |
 | Title             | 16px, weight 600, centered                  | Clear hierarchy, centered for symmetry in floating dialogs                                   |
 | Button row        | `flex, gap 12px, justify-content: flex-end` | Right-aligned matches macOS convention (primary action right)                                |
-| Border-radius     | 8px (`--radius-lg`)                         | Matches macOS window chrome radius                                                           |
+| Border-radius     | 27px (`--dialog-radius`)                    | Matches the macOS alert-panel corner                                                         |
+| Edge              | 1px `--color-dialog-border-outer` + inset 1px `--color-dialog-border-inner` | macOS draws a panel edge as two hairlines: darker outside, lighter inside |
+| Drop shadow       | `--shadow-dialog` (three layers, down-only)  | Lifts the panel off the app the way a floating macOS panel casts       |
 | Max content width | 480px                                       | Optimal line length (~60 chars at 14px body)                                                 |
 
-`ModalDialog` owns the standard body padding, so dialogs don't set their own. The horizontal `24px` (`--spacing-xl`)
-matches the title bar and footer. The title bar's bottom padding supplies the gap above the body; the footer supplies
-the gap below, and a footerless dialog gets `24px` bottom padding on the body instead. Two opt-outs:
+`ModalDialog` owns the standard body padding, so dialogs don't set their own. The horizontal inset (`--dialog-padding`)
+matches the title bar and footer, and a `padded={false}` body that insets its own sections must use the SAME token or it
+won't line up. The title bar's bottom padding supplies the gap above the body; the footer supplies the gap below, and a
+footerless dialog gets the same inset as bottom padding on the body instead. Two opt-outs:
 
 - `padded={false}`: full-bleed body with no padding, for content that manages its own (edge-to-edge lists, for example).
 - `resizable`: lets the user drag the bottom-right corner to resize the dialog (default off). Turn it on for dialogs
@@ -574,13 +579,27 @@ label), `onValueChange`, `disabled` (group-level), `orientation` (`'vertical'` s
 `ariaLabel`, and a `footer` snippet rendered after the items with the current `value` (for custom content when a
 specific option is selected).
 
+**`Switch`** (`lib/ui/Switch.svelte`) is the track-and-thumb on/off control: a thin wrapper over Ark UI's `Switch`,
+with the same prop shape as `Checkbox` minus `indeterminate` (`checked` bindable, `disabled`, `id`, `ariaLabel`,
+`onCheckedChange`, `children`). The track fills with `--color-accent` when on; the thumb stays white in both themes.
+`SettingSwitch` wraps it with the settings-registry wiring, so settings rows and feature code share one implementation.
+
 **When to use which:**
 
-- `Checkbox` for a single independent on/off toggle.
+- `Checkbox` for a single independent on/off toggle: an option the user selects, then confirms with a button.
+- `Switch` when the control reads as "this is on or off right now", which is why settings rows use it.
 - `RadioGroup` for one choice from several mutually exclusive options, especially when the options need per-option
   descriptions or read better stacked vertically.
 - `ToggleGroup` for a segmented control: short options that benefit from sitting side by side, or tabs that drive a UI
   mode. See § Component patterns and the Debug > Components catalog for its shape.
+
+`Checkbox`'s root is a flex row (`align-items: center` + `--spacing-sm` gap), so an inline label sits on the box's
+optical middle. Ark's `Root` is a `<label>` that would otherwise baseline-align the two and leave the box sitting low;
+the gap belongs on the root because the label span is the box's SIBLING, not its container.
+
+An EMPTY control (unchecked box, off switch) outlines with `--color-control-border`, a dedicated token sized for the
+WCAG 3:1 non-text minimum on every app surface. The decorative `--color-border*` tokens sit at ~1.3–1.8:1 and are too
+faint to carry an affordance on their own.
 
 ### Tooltips (app)
 

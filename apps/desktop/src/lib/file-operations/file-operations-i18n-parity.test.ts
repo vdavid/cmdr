@@ -84,10 +84,9 @@ describe('delete dialog chrome (en)', () => {
     expect(tString('fileOperations.delete.noTrashWarningRest')).toBe('Files will be permanently deleted.')
   })
 
-  it('resolves the trash/delete toggle and confirm buttons', () => {
-    expect(tString('fileOperations.delete.toggleTrash')).toBe('Trash')
-    expect(tString('fileOperations.delete.toggleDelete')).toBe('Delete')
-    expect(tString('fileOperations.delete.confirmDeletePermanently')).toBe('Delete permanently')
+  it('resolves the trash switch and confirm buttons', () => {
+    expect(tString('fileOperations.delete.trashSwitch')).toBe('Move to trash')
+    expect(tString('fileOperations.delete.confirmDelete')).toBe('Delete')
     expect(tString('fileOperations.delete.confirmMoveToTrash')).toBe('Move to trash')
   })
 

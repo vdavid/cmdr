@@ -13,18 +13,15 @@
         sourceLabel?: string
         /** Override for the destination label. Same fallback as `sourceLabel`. */
         destinationLabel?: string
-        /** Optional leading field label (e.g. "Route:"). Omitted in the progress dialog. */
-        label?: string
     }
 
-    const { sourcePath, destinationPath, direction, sourceLabel, destinationLabel, label }: Props = $props()
+    const { sourcePath, destinationPath, direction, sourceLabel, destinationLabel }: Props = $props()
 
     const sourceName = $derived(sourceLabel ?? getFolderName(sourcePath))
     const destinationName = $derived(destinationLabel ?? getFolderName(destinationPath))
 </script>
 
 <div class="direction-indicator">
-    {#if label}<span class="field-label">{label}</span>{/if}
     {#if direction === 'right'}
         <span class="folder-name source" use:tooltip={{ text: sourcePath, overflowOnly: true }}>{sourceName}</span>
         <span class="arrow">&#x2192;</span>
@@ -49,13 +46,6 @@
         padding: 0 var(--spacing-xl);
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
-    }
-
-    /* Leading field label ("Route:"), shared style with the dialog's other field
-       labels so the labeled rows read as one set. */
-    .field-label {
-        flex: 0 0 auto;
-        color: var(--color-text-tertiary);
     }
 
     /* Content-width so the source → destination group reads left-aligned; each name

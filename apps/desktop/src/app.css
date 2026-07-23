@@ -22,10 +22,6 @@
   --color-bg-primary: #ffffff;
   --color-bg-secondary: #f5f5f5;
   --color-bg-tertiary: #e8e8e8;
-  /* Status-bar surface, slightly darker than `--color-bg-secondary` so the
-     `SelectionInfo` band reads as distinct from the function-key bar
-     below it. */
-  --color-bg-info-bar: #ececec;
   /* Inactive tab surface — slightly darker than `--color-bg-secondary` in
      light mode, slightly lighter in dark mode. The contrast against the
      active tab (which uses `bg-secondary`) is what conveys "this tab
@@ -66,11 +62,23 @@
      `html.reduce-transparency` block near the end of this file), and each glass rule drops its own blur. */
   --color-bg-glass: rgba(245, 245, 245, 0.72);
   --color-border-glass: rgba(0, 0, 0, 0.12);
+  /* Tooltips only: the shared glass fill nudged 10% toward black (light) / white
+     (dark), so a tooltip separates from whatever surface it floats over instead of
+     melting into it. Derived from `--color-bg-glass` rather than hardcoded, so it
+     follows the reduce-transparency flip to an opaque fill for free. Filter-chip
+     popovers and the volume dropdown keep the untinted glass. */
+  --color-bg-tooltip: color-mix(in srgb, var(--color-bg-glass), black 10%);
 
   /* === Borders === */
   --color-border-strong: #bbb;
   --color-border: #ddd;
   --color-border-subtle: #e8e8e8;
+  /* Outline of an EMPTY form control (unchecked checkbox, off switch). Those
+     carry no fill to read against, so their outline IS the affordance and needs
+     the WCAG 3:1 non-text minimum against every surface we place them on
+     (`--color-bg-primary` through `--color-bg-tertiary`). The decorative border
+     tokens above sit at ~1.3–1.8:1 and are too faint for that job. */
+  --color-control-border: #858585;
 
   /* === Text === */
   --color-text-primary: #1a1a1a;
@@ -392,7 +400,7 @@
      the scrim never covers the title bar — the OS window-drag region stays live
      while a dialog is open. Windows with a taller bar (the viewer's toolbar)
      override this on their own root so their backdrops stay precise. */
-  --titlebar-height: 27px;
+  --titlebar-height: 29px;
 
   /* === Z-index scale === */
   --z-base: 0;
@@ -403,6 +411,26 @@
   --z-notification: 400;
   /* Tooltips (above all other layers) */
   --z-tooltip: 500;
+
+  /* === Dialog chrome (every `ModalDialog`) ===
+     A modal's corner, inset, and edge read as one contract, so they're named
+     tokens instead of reaching into the generic scales. The radius sits just
+     under the window-level `--radius-xxl`; the inset is deliberately tighter
+     than `--spacing-xl`. macOS draws a panel's edge as TWO hairlines, a darker
+     one outside and a lighter one just inside, which `ModalDialog` renders as a
+     border plus an inset ring. Both are alpha, not solid colors, so the pair
+     works over whatever surface the dialog sits on. */
+  --dialog-radius: 27px;
+  --dialog-padding: 20px;
+  --color-dialog-border-outer: rgba(0, 0, 0, 0.28);
+  --color-dialog-border-inner: rgba(255, 255, 255, 0.9);
+  /* A floating panel's shadow, in three layers the way a real one falls: a wide
+     soft cast that lifts the whole dialog off the app, a mid layer that gives the
+     falloff some shape, and a tight contact shadow right under the edge so the
+     corner doesn't look pasted on. All offset DOWN only (light from above).
+     Separate from `--shadow-lg`, which is tuned for popovers and menus. */
+  --shadow-dialog:
+    0 32px 64px rgba(0, 0, 0, 0.24), 0 12px 24px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.12);
 
   /* === Sheet (onboarding wizard and other ~90% viewport overlays) ===
      The wizard uses a soft sheet over the running app: frosted backdrop,
@@ -573,9 +601,6 @@
     --color-bg-primary: #1e1e1e;
     --color-bg-secondary: #2a2a2a;
     --color-bg-tertiary: #333333;
-    /* Status band, slightly lighter than secondary (opposite of light
-       mode) so it lifts away from the function-key bar below. */
-    --color-bg-info-bar: #323232;
     /* Inactive tab surface: darker than secondary so unselected tabs read
        as recessed against the active tab. Tab-bar uses this too. */
     --color-bg-tab-inactive: #1e1e1e;
@@ -599,11 +624,24 @@
     /* Frosted-glass material (dark). Pair with the light-mode defaults above. */
     --color-bg-glass: rgba(42, 42, 42, 0.72);
     --color-border-glass: rgba(255, 255, 255, 0.1);
+    /* Tooltip tint lifts instead of deepens on a dark canvas (see the light twin). */
+    --color-bg-tooltip: color-mix(in srgb, var(--color-bg-glass), white 10%);
 
     /* === Borders === */
     --color-border-strong: #555555;
     --color-border: #444444;
     --color-border-subtle: #333333;
+    /* Empty-control outline (see the light-mode twin for why it's its own token). */
+    --color-control-border: #808080;
+
+    /* Dialog edge (see the light-mode twin). Dark mode needs a deeper outer
+       hairline and a much fainter inner highlight, or the ring reads as a glow. */
+    --color-dialog-border-outer: rgba(0, 0, 0, 0.7);
+    --color-dialog-border-inner: rgba(255, 255, 255, 0.14);
+    /* Same three layers, pushed harder: on a dark canvas a light-mode-strength
+       shadow is invisible, so the dialog would float with nothing under it. */
+    --shadow-dialog:
+      0 32px 64px rgba(0, 0, 0, 0.6), 0 12px 24px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.35);
 
     /* === Text === */
     --color-text-primary: #e8e8e8;
@@ -1059,9 +1097,10 @@ body {
   white-space: pre-line;
   overflow-wrap: anywhere;
 
-  /* Apple-style frosted glass. Shared tokens with filter-chip popovers so both
-     surfaces stay visually identical. See `--color-bg-glass` definition above. */
-  background: var(--color-bg-glass);
+  /* Apple-style frosted glass, sharing the blur and hairline with the filter-chip
+     popovers; the FILL is the tinted variant so a tooltip reads as a distinct surface.
+     See `--color-bg-tooltip` above. */
+  background: var(--color-bg-tooltip);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
   border: 0.5px solid var(--color-border-glass);

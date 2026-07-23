@@ -2527,16 +2527,6 @@
     </div>
     <!-- SelectionInfo shown in both modes (not in network view, MTP connecting state, or error states) -->
     {#if paneViewKind === 'normal' && !friendlyError && !error && !unreachable}
-        <SelectionInfo
-            {viewMode}
-            {volumeId}
-            entry={entryUnderCursor}
-            currentDirModifiedAt={undefined}
-            stats={listingStats}
-            selectedCount={selection.selectedIndices.size}
-            volumeSpace={diskSpace.volumeSpace}
-            {mtpSpaceHint}
-        />
         <!--suppress HtmlWrongAttributeValue -- We know this is not a valid ARIA role, it's fine -->
         {#if !isDiskImageVolume}
         <div
@@ -2563,6 +2553,16 @@
             </div>
         </div>
         {/if}
+        <SelectionInfo
+            {viewMode}
+            {volumeId}
+            entry={entryUnderCursor}
+            currentDirModifiedAt={undefined}
+            stats={listingStats}
+            selectedCount={selection.selectedIndices.size}
+            volumeSpace={diskSpace.volumeSpace}
+            {mtpSpaceHint}
+        />
     {/if}
 </div>
 
@@ -2628,7 +2628,10 @@
     }
 
     .header {
-        padding: var(--spacing-xxs) var(--spacing-sm);
+        /* Generous above, tighter below: the strip reads as its own band without
+           drifting away from the column header it sits on. Horizontal stays
+           `--spacing-sm`, matching the list gutter. */
+        padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-xs);
         background-color: var(--color-bg-secondary);
         font-size: var(--font-size-sm);
         white-space: nowrap;

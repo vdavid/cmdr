@@ -44,6 +44,7 @@ import IconPaperclip from '~icons/lucide/paperclip'
 import IconPause from '~icons/lucide/pause'
 import IconPencil from '~icons/lucide/pencil'
 import IconPlay from '~icons/lucide/play'
+import IconPlus from '~icons/lucide/plus'
 import IconRotateCcw from '~icons/lucide/rotate-ccw'
 import IconRotateCw from '~icons/lucide/rotate-cw'
 import IconSearch from '~icons/lucide/search'
@@ -117,6 +118,7 @@ export const ICON_COMPONENTS = {
   pause: IconPause,
   pencil: IconPencil,
   play: IconPlay,
+  plus: IconPlus,
   'rotate-ccw': IconRotateCcw,
   'rotate-cw': IconRotateCw,
   search: IconSearch,

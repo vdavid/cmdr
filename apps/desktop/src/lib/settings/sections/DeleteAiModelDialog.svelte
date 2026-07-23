@@ -40,18 +40,16 @@
     {#snippet title()}{isDeleting
             ? tString('ai.local.deleteDialogTitleDeleting')
             : tString('ai.local.deleteDialogTitle')}{/snippet}
-    <div class="confirm-body">
-        {#if isDeleting}
-            <div class="deleting-status">
-                <Spinner size="sm" />
-                <span>{tString('ai.local.deletingStatus')}</span>
-            </div>
-        {:else}
-            <p class="confirm-message">
-                {t('ai.local.deleteConfirmMessage', { modelSize: modelSizeFormatted ?? '2.0 GB' })}
-            </p>
-        {/if}
-    </div>
+    {#if isDeleting}
+        <div class="deleting-status">
+            <Spinner size="sm" />
+            <span>{tString('ai.local.deletingStatus')}</span>
+        </div>
+    {:else}
+        <p class="confirm-message">
+            {t('ai.local.deleteConfirmMessage', { modelSize: modelSizeFormatted ?? '2.0 GB' })}
+        </p>
+    {/if}
     {#snippet footer()}
         <Button variant="secondary" disabled={isDeleting} onclick={onCancel}>{tString('ai.local.cancel')}</Button>
         <Button variant="danger" disabled={isDeleting} onclick={onConfirm}>
@@ -61,10 +59,6 @@
 </ModalDialog>
 
 <style>
-    .confirm-body {
-        padding: 0 var(--spacing-xl);
-    }
-
     .confirm-message {
         margin: 0;
         font-size: var(--font-size-md);

@@ -5,7 +5,8 @@ and gotchas live in `CLAUDE.md`.
 
 ## File map
 
-- **`TransferDialog.svelte`**: Destination picker, segmented Copy/Move toggle, pre-flight dry-run scan, upfront
+- **`TransferDialog.svelte`**: segmented Copy / Move / Compress toggle over two `ui/SectionCard` groups, `From` (the
+  full source path) and `To` (destination volume + path box), plus the pre-flight dry-run scan and the upfront
   conflict-policy radios. Thin shell over the two `*.svelte.ts` factories below + `transfer-dialog-logic.ts`; owns the
   markup, the volume selector / path-input state, and the confirm/cancel wiring
 - **`transfer-scan-state.svelte.ts`**: `createTransferScanState(deps)`: deep scan-preview orchestration (Size bar +
@@ -44,10 +45,10 @@ and gotchas live in `CLAUDE.md`.
   `onSubmit(password)`, `onCancel`. See § "Archive-password prompt"
 - **`ScanPhaseBody.svelte`**: Scan-phase tallies (files/dirs/bytes), throughput readout, current directory, spinner.
   Shared by both scan-phase code paths
-- **`DirectionIndicator.svelte`**: Arrow graphic for source → destination (operation-agnostic, reused by
-  `DeleteDialog`). Optional `sourceLabel` / `destinationLabel` props override the path-basename label; the transfer
-  dialogs pass them so a volume root renders the volume display name, not a raw machine id (an MTP storage id like
-  `65538`)
+- **`DirectionIndicator.svelte`**: Arrow graphic for source → destination, used by `TransferProgressDialog` only (the
+  confirm dialog shows its `From` card instead). Optional `sourceLabel` / `destinationLabel` props override the
+  path-basename label, so a volume root renders the volume display name rather than a raw machine id (an MTP storage id
+  like `65538`)
 - **`transfer-dialog-utils.ts`**: `generateTitle()`, `deriveTransferLabel()` (volume-root-aware direction-header label),
   `toBackendIndices()` / `toBackendCursorIndex()` ".." offset helpers, `toVolumeRelativePath()`
 - **`transfer-error-messages.ts`**: Operation-specific error strings used by `FallbackErrorContent`
@@ -268,6 +269,14 @@ Compress rides the SAME dialog/progress/state components as copy/move via a thir
   `behavior.archiveCompressionLevel` setting the slider writes), shows a loading affordance while a local scan runs, and
   renders nothing when the estimate is absent. The sampler, budgets, and level curve are single-sourced in
   `apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "Compressed-size estimate".
+- **The Copy / Move / Compress row is the `ui/ToggleGroup` primitive** (`semantics: 'tabs'`, `fullWidth`), wrapped in a
+  `.operation-toggle` div that supplies only the side inset. E2E and unit tests select its cells as
+  `.operation-toggle .tg-item` / `.tg-item.is-active`.
+- **Both compress-only blocks live in one `.compress-extras` wrapper** that owns their `--spacing-xl` side inset (the
+  dialog runs `padded={false}`, so every body section insets itself) and gives the mode switch a single element to
+  `transition:slide`. The dialog passes `growDownward` to `ModalDialog` so the extra height extends downward instead of
+  re-centering the whole dialog mid-switch (`lib/ui/DETAILS.md` § ModalDialog). The slide duration is 0 under
+  `prefers-reduced-motion` and 0 before the first paint, so opening straight into Compress doesn't animate.
 
 ### Same-FS move optimization
 

@@ -213,7 +213,9 @@
         border: none;
         border-right: 1px solid var(--color-border-subtle);
         background: transparent;
-        padding: var(--spacing-xs) 0;
+        /* Vertical padding lives on the BUTTON, not the bar, so the hover fill still
+           spans the band's full height instead of floating inside an inset strip. */
+        padding: var(--spacing-sm) 0;
         font-family: var(--font-system) sans-serif;
         font-size: var(--font-size-sm);
         color: var(--color-text-primary);

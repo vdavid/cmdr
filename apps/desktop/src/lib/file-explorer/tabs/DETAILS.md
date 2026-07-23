@@ -14,11 +14,26 @@ here.
 
 ## Key decisions
 
-- **Tabs sit flush with the window title-bar, no top spacer.** Tab and bar both use `--spacing-tab-bar-height`. A fixed
-  pixel spacer created a visible gap above the active tab; the user wants the active tab's colored top edge to touch the
-  title-bar at every text scale. With matching heights and `align-items: end`, tabs land at the bar's bottom edge with
-  no offset. The active tab uses `bar-height + 1px` with `margin-bottom: -1px` so it hangs 1 px into the path bar below
-  (covers any 1 px seam).
+- **Tabs sit flush with the window title-bar and the pane's left edge, no spacer on either.** Tab and bar both use
+  `--spacing-tab-bar-height`; with matching heights and `align-items: end`, tabs land at the bar's bottom edge with no
+  offset, so the active tab's accent band touches the title-bar at every text scale. Left padding is zero so the first
+  tab's left edge runs into the pane edge. The right side keeps `--spacing-xxs` for the `+` button. The active
+  tab uses `bar-height + 1px` with `margin-bottom: -1px` so it hangs 1 px into the path bar below (covers any 1 px
+  seam).
+- **Tabs are square (`border-radius: 0`); the only curve is the concave shoulder pair at the bottom corners.** Its arc
+  is `--radius-tab-shoulder`, consumed by the shoulder box's size, its offset, and its mask radius — change the
+  variable, not the call sites. The name needs a `--radius-` prefix to satisfy stylelint's `custom-property-pattern`
+  (`^(color|spacing|font|radius|shadow|transition|z|sheet|titlebar)-`), which is easy to trip on a local geometry
+  variable. `.tab.active::after` uses `border-radius: inherit`, so the accent band tracks the tab's corners
+  automatically if they ever come back.
+- **The active tab's accent is a 2px band on the TOP EDGE ONLY, and it clips itself.** `.tab.active::after` is a
+  full-tab-sized box (`inset: 0`) repeating the tab's top radii, painting only its first 2px via a `linear-gradient`: a
+  background is clipped to the rounded border box for free, so each end sweeps along the curve instead of stopping
+  square. It has to clip ITSELF because `.tab.active` runs `overflow: visible` so its shoulder wedges can escape, which
+  means no clipping comes from `.tab`. Two things NOT to do: shrinking the box to the band's height and rounding it (browsers scale
+  corner radii down to fit a short box, flattening the curve), and using an inset `box-shadow` ring (paints all four
+  sides, so accent runs down the tab's edges). `pointer-events: none` keeps the overlay off the label and close
+  button.
 - **Cold load on tab switch (`{#key activeTabId}`), no warm cache.** Keeping inactive tabs alive means multiple
   FilePanes with active watchers, listing caches, and scroll state; for 20 tabs total that's untenable. Cold load with
   cursor-by-filename restoration is fast enough that the simplicity wins.
@@ -101,5 +116,5 @@ toasts "Tab limit reached" and leaves the stack untouched.
 ## Double-click empty tab bar to open a new tab
 
 `TabBar.svelte`'s `ondblclick` routes to `onNewTab` when the target isn't inside `.tab`, `.close-btn`, or
-`.new-tab-btn`, so the bar's padding strip, the trailing flex space of `.tab-list`, and the 3px top spacer all count as
-"new tab" surfaces.
+`.new-tab-btn`, so the bar's right padding strip and the trailing flex space of `.tab-list` both count as "new tab"
+surfaces.

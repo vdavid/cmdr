@@ -40,15 +40,9 @@
     "description": "Second half of the archive delete warning banner, following fileOperations.delete.archiveWarningStrong. Tells the user the delete is permanent because a zip has no trash."
   },
 
-  "fileOperations.delete.toggleTrash": "Trash",
-  "@fileOperations.delete.toggleTrash": {
-    "description": "Label of the segmented-control option that moves items to the system trash (recoverable). Short control label, sits next to the Delete option.",
-    "screenshot": "delete-confirm.png"
-  },
-
-  "fileOperations.delete.toggleDelete": "Delete",
-  "@fileOperations.delete.toggleDelete": {
-    "description": "Label of the segmented-control option that permanently deletes items. Short control label, sits next to the Trash option.",
+  "fileOperations.delete.trashSwitch": "Move to trash",
+  "@fileOperations.delete.trashSwitch": {
+    "description": "Switch in the delete dialog, on by default. On moves items to the system trash (recoverable); off deletes them for good. Control label.",
     "screenshot": "delete-confirm.png"
   },
 
@@ -87,9 +81,9 @@
     }
   },
 
-  "fileOperations.delete.confirmDeletePermanently": "Delete permanently",
-  "@fileOperations.delete.confirmDeletePermanently": {
-    "description": "Primary (destructive) confirm button in the delete dialog when permanent delete is selected. Control label.",
+  "fileOperations.delete.confirmDelete": "Delete",
+  "@fileOperations.delete.confirmDelete": {
+    "description": "Primary (destructive) confirm button in the delete dialog when the 'Move to trash' switch is off. Short control label.",
     "screenshot": "trash-confirm.png"
   },
 
@@ -259,11 +253,6 @@
     }
   },
 
-  "fileOperations.shared.actionLabel": "Action:",
-  "@fileOperations.shared.actionLabel": {
-    "description": "Field label shown before the Copy/Move (copy dialog) or Trash/Delete (delete dialog) segmented control. Keep the trailing colon.",
-    "screenshot": "delete-confirm.png"
-  },
 
   "fileOperations.shared.scanningTooltip": "Scanning…",
   "@fileOperations.shared.scanningTooltip": {
@@ -271,11 +260,6 @@
     "screenshot": "delete-confirm.png"
   },
 
-  "fileOperations.shared.scanCompleteTooltip": "Scan complete",
-  "@fileOperations.shared.scanCompleteTooltip": {
-    "description": "Tooltip and screen-reader label for the checkmark shown once the dialog has finished counting the selected items.",
-    "screenshot": "delete-confirm.png"
-  },
 
   "fileOperations.transferDialog.toggleCopy": "Copy",
   "@fileOperations.transferDialog.toggleCopy": {
@@ -294,10 +278,21 @@
     "description": "Label of the segmented-control option that sets the operation to compress (pack the selected files into a new zip). Short control label, sits next to Copy and Move."
   },
 
-  "fileOperations.transferDialog.routeLabel": "Route:",
-  "@fileOperations.transferDialog.routeLabel": {
-    "description": "Field label shown before the source-to-destination line (e.g. ''Downloads -> Home'') in the copy/move dialog. Keep the trailing colon.",
+  "fileOperations.transferDialog.sourceGroupTitle": "From",
+  "@fileOperations.transferDialog.sourceGroupTitle": {
+    "description": "Heading over the group showing where the items come from: the full path of their current folder. Pairs with fileOperations.transferDialog.targetGroupTitle (\"To\").",
     "screenshot": "conflict-dialog.png"
+  },
+
+  "fileOperations.transferDialog.targetGroupTitle": "To",
+  "@fileOperations.transferDialog.targetGroupTitle": {
+    "description": "Heading over the group that picks where the items go: the destination volume dropdown plus the destination path box. Pairs with fileOperations.transferDialog.sourceGroupTitle (\"From\").",
+    "screenshot": "conflict-dialog.png"
+  },
+
+  "fileOperations.transferDialog.operationAria": "Action",
+  "@fileOperations.transferDialog.operationAria": {
+    "description": "Accessibility label for the Copy / Move / Compress segmented control at the top of the transfer dialog (screen-reader only). Names what the group chooses, not any one option."
   },
 
   "fileOperations.transferDialog.destVolumeAria": "Destination volume",

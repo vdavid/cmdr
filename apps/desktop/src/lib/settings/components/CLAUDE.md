@@ -20,8 +20,8 @@ Registry-driven controls (pick by control shape):
 
 - `SettingRow.svelte`: label + description + control + reset-pip + restart-required badge. Carries `split` and
   `searchQuery`.
-- `SettingSwitch.svelte`: primary boolean. `SettingCheckbox.svelte`: secondary boolean (hangs off a switch / denser
-  layout).
+- `SettingSwitch.svelte`: primary boolean (wraps `lib/ui/Switch`). `SettingCheckbox.svelte`: secondary boolean (hangs
+  off a switch / denser layout).
 - `SettingSelect.svelte`: enum dropdown (wraps `lib/ui/Select`); owns the `allowCustom` inline-number flow and its
   `__custom__` sentinel (`ui/Select` never sees it).
 - `SettingToggleGroup.svelte`: segmented control for short enum lists. `SettingRadioGroup.svelte`: vertical radio for

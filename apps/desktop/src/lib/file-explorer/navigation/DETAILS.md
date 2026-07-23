@@ -169,6 +169,15 @@ and `volume-space-manager.svelte.ts` respectively.
 
 Props: `volumeId`, `currentPath`, `onVolumeChange?`.
 
+**The trigger's geometry is a copy of a file row's, and stays that way by hand.** The volume icon must sit on the same
+x as the file icons below it, and the volume label on the same x as the Name column. Left to right that's `.header`'s
+`--spacing-sm` inset + `.volume-name`'s `--spacing-xs` padding = 12px for the icon, matching `.listbox-region`'s
+`--spacing-xs` gutter + `.file-entry`'s `--spacing-sm` padding. The icon box is `--spacing-icon-size` (the same token
+`FileIcon` uses, so it can't drift from the list), and the icon's `--spacing-xs` trailing margin tops the flex `gap` up
+to the `--spacing-sm` that `.file-entry` puts between icon and name. The margin carries that extra rather than the
+`gap`, so the chevron, read-only badge, and connection indicators after the label keep their tighter spacing. Nothing
+enforces this: if the pane gutter, the row padding, or the header inset changes, re-derive it here.
+
 `containingVolumeId` is derived separately via `resolvePathVolume(currentPath)`: the active checkmark tracks the real
 containing volume, not the `volumeId` prop (which may be a favorite's virtual ID).
 

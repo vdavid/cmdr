@@ -106,7 +106,7 @@ test.describe('Compress (⌥F5)', () => {
       .poll(
         async () =>
           tauriPage.evaluate<string>(
-            `(document.querySelector('${TRANSFER_DIALOG} .operation-toggle .toggle-option.active')?.textContent || '').trim()`,
+            `(document.querySelector('${TRANSFER_DIALOG} .operation-toggle .tg-item.is-active')?.textContent || '').trim()`,
           ),
         { timeout: 3000 },
       )

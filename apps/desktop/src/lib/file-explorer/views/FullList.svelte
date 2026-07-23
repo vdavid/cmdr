@@ -301,15 +301,23 @@
     // The header is `position: sticky; top: 0` and always covers the first
     // `headerHeight` pixels of the viewport once any scroll has happened, so
     // the effective row area is shorter than the container by that much. The
-    // spacer is the header's next-sibling in natural flow, so `scrollTop`
-    // already IS the spacer's scroll offset — no `- headerHeight` shift.
+    // spacer is the header's next-sibling in natural flow, so `scrollTop` maps
+    // to the spacer's offset with NO `- headerHeight` shift (only the gutter
+    // correction below).
     // (The previous model shifted then clamped at 0, which collapsed
     // `scrollTop ∈ [0, headerHeight]` to a single spacer state and let the
     // "top of list" canonical scrollTop land at `headerHeight`, hiding row 0
     // under the sticky header.)
     let headerHeight = $state(0)
     const rowAreaHeight = $derived(Math.max(0, containerHeight - headerHeight))
-    const spacerScrollTop = $derived(scrollTop)
+    /**
+     * `.listbox-region`'s gutter sits ABOVE the spacer in the scroll content, so the
+     * container's `scrollTop` runs `GUTTER_PX` ahead of the spacer's own offset. Every
+     * conversion between the two goes through here and `scrollToIndex` below; keep the
+     * constant in sync with `.listbox-region`'s `padding-block`.
+     */
+    const GUTTER_PX = 4
+    const spacerScrollTop = $derived(Math.max(0, scrollTop - GUTTER_PX))
 
     // ==== Virtual scrolling derived calculations ====
     const virtualWindow = $derived(
@@ -604,11 +612,13 @@
     export function scrollToIndex(index: number) {
         if (!scrollContainer) return
         // `getScrollToPosition` returns the spacer's required scroll offset in
-        // row-area coords. Since `scrollTop === spacerScrollTop` (see the
-        // sticky-header model note above), it's also the container's scrollTop.
+        // row-area coords; the container's scrollTop is that plus the gutter (see
+        // the sticky-header model note above).
         const spacerPos = getScrollToPosition(index, rowHeight, spacerScrollTop, rowAreaHeight)
         if (spacerPos !== undefined) {
-            const newScrollTop = spacerPos
+            // Back to container coords. `0` stays `0` so scrolling to the first row shows
+            // the top gutter instead of scrolling past it.
+            const newScrollTop = spacerPos <= 0 ? 0 : spacerPos + GUTTER_PX
             scrollContainer.scrollTop = newScrollTop
             // Also update state directly to trigger reactive chain immediately
             // (scroll events may be batched or delayed by the browser)
@@ -828,12 +838,13 @@
         >
             <span class="header-icon"></span>
             {#if showExtensionInName}
-                <!-- Extension rides in the Name column, so there's no separate Ext
-                     header to click. Keep sort-by-extension reachable by splitting
-                     the single Name-column header into two sort triggers: "Name"
-                     fills the space on the left, "Ext" shrinks to its label on the
-                     right. The data cells below stay as the full filename in the
-                     Name column (no Ext data cell). -->
+                <!-- Extension rides in the Name column, so there's no Ext column and no
+                     Ext header of its own. Sort-by-extension stays clickable by splitting
+                     the single Name-column header into two triggers: "Name" fills the
+                     space on the left, "Ext" shrinks to its label on the right. Both live
+                     INSIDE the `1fr` Name track, so the Ext trigger costs the pane no
+                     width — the measurer still reserves nothing for it. The data cells
+                     below stay as the full filename in the Name column. -->
                 <span class="header-name-ext">
                     <SortableHeader
                         column="name"
@@ -880,6 +891,7 @@
                 column="size"
                 {isFocused}
                 label={tString('fileExplorer.columns.size')}
+                align="right"
                 currentSortColumn={sortBy}
                 currentSortOrder={sortOrder}
                 onClick={onSortChange ?? (() => {})}
@@ -888,6 +900,7 @@
                 column="modified"
                 {isFocused}
                 label={tString('fileExplorer.columns.modified')}
+                align="right"
                 currentSortColumn={sortBy}
                 currentSortOrder={sortOrder}
                 onClick={onSortChange ?? (() => {})}
@@ -1129,9 +1142,14 @@
         display: grid;
         /* grid-template-columns set via inline style for shrink-wrapped column widths */
         gap: var(--spacing-sm);
-        padding: var(--spacing-xxs) var(--spacing-sm);
+        /* Horizontal = the rows' own padding (`--spacing-sm`) PLUS `.listbox-region`'s
+           gutter (`--spacing-xs`), so the grid columns land in the same place as the
+           rows'. The bottom padding separates the labels from the first row; the height
+           grows by the same amount so they keep their position instead of shifting up
+           inside an unchanged band. */
+        padding: var(--spacing-xxs) var(--spacing-md) var(--spacing-xs);
         background: var(--color-bg-secondary);
-        height: calc(22px * var(--font-scale));
+        height: calc(22px * var(--font-scale) + var(--spacing-xs));
         flex-shrink: 0;
         /* Sticky inside the scroll container: the header always shares the row
            content width (auto-shrinking when a vertical scrollbar appears) so
@@ -1165,8 +1183,16 @@
        at every text scale, with no spurious scrollbar. */
     /* Semantic listbox wrapper — no background, no stacking context. The
        pane bg lives on `.file-pane > .content` (see FilePane.svelte). */
+    /* Gutter on all four sides, keeping the cursor and selection fills off the pane
+       edges. It sits on the ROWS region, not on `.full-list` or the pane: the header row
+       is a sticky child of the same scroll container, and padding further out would
+       inset its background too, leaving bare strips at both ends. `.header-row` doubles
+       its own horizontal padding instead, so its content still lines up with the rows
+       while its background runs edge to edge. The block padding shifts the spacer inside
+       the scroll content, which `spacerScrollTop` / `scrollToIndex` correct for. */
     .listbox-region {
         outline: none;
+        padding: var(--spacing-xs);
     }
 
     .empty-folder-message {
@@ -1365,7 +1391,9 @@
     /* Combined Name + Ext header for the `showExtensionInName` layout: occupies
        the single Name column (`1fr`) and lays its two sort triggers in a row,
        Name filling the space, Ext shrinking to its label on the right. The
-       inner `SortableHeader` buttons keep their own hover/active styling. */
+       inner `SortableHeader` buttons keep their own hover/active styling, so the
+       Ext trigger reads exactly like a real column header while costing the pane
+       no column width. */
     .header-name-ext {
         display: flex;
         align-items: center;
