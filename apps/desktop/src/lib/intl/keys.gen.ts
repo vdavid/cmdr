@@ -1994,8 +1994,6 @@ export type MessageKey =
   | 'settings.appearance.fileSizeFormat.label'
   | 'settings.appearance.fileSizeFormat.opt.binary'
   | 'settings.appearance.fileSizeFormat.opt.si'
-  | 'settings.appearance.fileSizeFormat.optDesc.binary'
-  | 'settings.appearance.fileSizeFormat.optDesc.si'
   | 'settings.appearance.formatHelpDay'
   | 'settings.appearance.formatHelpHour'
   | 'settings.appearance.formatHelpMinute'

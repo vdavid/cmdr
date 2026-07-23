@@ -308,9 +308,9 @@
     "description": "Label for the binary-vs-decimal size-base picker in Settings > Appearance > File and folder sizes.",
     "screenshot": "settings-appearance-sizes.png"
   },
-  "settings.appearance.fileSizeFormat.description": "How to display file sizes in the file list.",
+  "settings.appearance.fileSizeFormat.description": "How to show file sizes in the file list: binary (KiB, MiB, where 1 KiB = 1,024 bytes) or SI decimal (KB, MB, where 1 KB = 1,000 bytes).",
   "@settings.appearance.fileSizeFormat.description": {
-    "description": "Help text for the file-size-format setting (whether a kilobyte means 1024 or 1000 bytes).",
+    "description": "Help text for the file-size-format setting. Keep the unit symbols (KiB, MiB, KB, MB) and the equations \"1 KiB = 1,024 bytes\" and \"1 KB = 1,000 bytes\" exact; only the connective words are translatable.",
     "screenshot": "settings-appearance-sizes.png"
   },
   "settings.appearance.fileSizeFormat.opt.binary": "Binary (KiB, MiB, GiB)",
@@ -318,19 +318,9 @@
     "description": "File-size-format option: binary base (powers of 1024). The unit symbols \"KiB, MiB, GiB\" in parentheses are standards-defined; keep them as-is. \"Binary\" may be translated.",
     "screenshot": "settings-appearance-sizes.png"
   },
-  "settings.appearance.fileSizeFormat.optDesc.binary": "1 KiB = 1024 bytes",
-  "@settings.appearance.fileSizeFormat.optDesc.binary": {
-    "description": "Sub-text under the Binary option. \"KiB\" is a unit symbol and the numbers are literal; keep \"1 KiB = 1024\" exact. Only \"bytes\" is translatable.",
-    "screenshot": "settings-appearance-sizes.png"
-  },
   "settings.appearance.fileSizeFormat.opt.si": "SI decimal (KB, MB, GB)",
   "@settings.appearance.fileSizeFormat.opt.si": {
     "description": "File-size-format option: SI decimal base (powers of 1000). \"SI\" is the metric-standard abbreviation and \"KB, MB, GB\" are unit symbols; keep them as-is. \"decimal\" may be translated.",
-    "screenshot": "settings-appearance-sizes.png"
-  },
-  "settings.appearance.fileSizeFormat.optDesc.si": "1 KB = 1000 bytes",
-  "@settings.appearance.fileSizeFormat.optDesc.si": {
-    "description": "Sub-text under the SI decimal option. \"KB\" is a unit symbol and the numbers are literal; keep \"1 KB = 1000\" exact. Only \"bytes\" is translatable.",
     "screenshot": "settings-appearance-sizes.png"
   },
 
@@ -977,7 +967,7 @@
     "description": "Downloads-notification option: show notifications inside Cmdr only. Short toggle-button label.",
     "screenshot": "settings-behavior-file-system-watching.png"
   },
-  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "macOS notifications",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "macOS",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": {
     "description": "Downloads-notification option: use macOS system notifications. \"macOS\" is a brand name; keep it. Short toggle-button label.",
     "screenshot": "settings-behavior-file-system-watching.png"
@@ -1045,7 +1035,7 @@
     "description": "Low-disk-space option: warn inside Cmdr only. Short toggle-button label.",
     "screenshot": "settings-behavior-file-system-watching.png"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "macOS notification",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "macOS",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": {
     "description": "Low-disk-space option: use a macOS system notification. \"macOS\" is a brand name; keep it. Short toggle-button label.",
     "screenshot": "settings-behavior-file-system-watching.png"

@@ -330,19 +330,11 @@ export const appearanceSettings: SettingDefinitionSource[] = [
     keywords: ['size', 'bytes', 'binary', 'decimal', 'kb', 'mb', 'kib', 'mib'],
     type: 'enum',
     default: 'binary',
-    component: 'select',
+    component: 'toggle-group',
     constraints: {
       options: [
-        {
-          value: 'binary',
-          labelKey: 'settings.appearance.fileSizeFormat.opt.binary',
-          descriptionKey: 'settings.appearance.fileSizeFormat.optDesc.binary',
-        },
-        {
-          value: 'si',
-          labelKey: 'settings.appearance.fileSizeFormat.opt.si',
-          descriptionKey: 'settings.appearance.fileSizeFormat.optDesc.si',
-        },
+        { value: 'binary', labelKey: 'settings.appearance.fileSizeFormat.opt.binary' },
+        { value: 'si', labelKey: 'settings.appearance.fileSizeFormat.opt.si' },
       ],
     },
   },

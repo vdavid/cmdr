@@ -55,7 +55,7 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     keywords: ['extension', 'rename', 'file', 'change', 'ask', 'confirm'],
     type: 'enum',
     default: 'ask',
-    component: 'radio',
+    component: 'toggle-group',
     constraints: {
       options: [
         { value: 'yes', labelKey: 'settings.fileOperations.allowFileExtensionChanges.opt.yes' },
@@ -73,7 +73,7 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     keywords: ['paste', 'clipboard', 'image', 'text', 'pdf', 'screenshot', 'file', 'create'],
     type: 'enum',
     default: 'createFileAndRename',
-    component: 'radio',
+    component: 'toggle-group',
     constraints: {
       options: [
         { value: 'doNothing', labelKey: 'settings.fileOperations.pasteClipboardAsFile.opt.doNothing' },

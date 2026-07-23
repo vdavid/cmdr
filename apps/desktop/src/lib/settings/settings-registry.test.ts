@@ -468,13 +468,13 @@ describe('appearance.language (the UI language picker)', () => {
 })
 
 describe('fileOperations.pasteClipboardAsFile', () => {
-  it('registers a radio enum in Behavior > Navigation & file ops, defaulting to createFileAndRename', () => {
+  it('registers a toggle-group enum in Behavior > Navigation & file ops, defaulting to createFileAndRename', () => {
     const def = getSettingDefinition('fileOperations.pasteClipboardAsFile')
     expect(def).toBeDefined()
     expect(def?.type).toBe('enum')
     expect(def?.default).toBe('createFileAndRename')
     expect(def?.section).toEqual(['Behavior', 'Navigation & file ops'])
-    expect(def?.component).toBe('radio')
+    expect(def?.component).toBe('toggle-group')
   })
 
   it('offers exactly the three documented options in order', () => {

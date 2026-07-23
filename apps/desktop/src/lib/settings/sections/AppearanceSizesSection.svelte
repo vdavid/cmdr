@@ -2,7 +2,6 @@
     import SettingsSection from '../components/SettingsSection.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import SettingRow from '../components/SettingRow.svelte'
-    import SettingSelect from '../components/SettingSelect.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
@@ -78,10 +77,9 @@
                     id="appearance.fileSizeFormat"
                     label={fileSizeDef.label}
                     description={fileSizeDef.description}
-                    split
                     {searchQuery}
                 >
-                    <SettingSelect id="appearance.fileSizeFormat" />
+                    <SettingToggleGroup id="appearance.fileSizeFormat" />
                 </SettingRow>
             {/if}
 

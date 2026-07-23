@@ -20,7 +20,7 @@ sections compose).
 - **`ListingSection.svelte`**: `Appearance > Listing`: document icons, directory sort, brief column width
 - **`NavigationAndFileOpsSection.svelte`**: `Behavior > Navigation & file ops`: three labeled `SectionCard`s —
   Navigation (the `behavior.doubleClickPaneNavigatesToParent` switch), File operations (the extension-change
-  confirmation row `allowFileExtensionChanges` + the paste-as-file radio), and Operation log (the retention limits
+  confirmation row `allowFileExtensionChanges` + the `pasteClipboardAsFile` toggle group), and Operation log (the retention limits
   `operationLog.maxAge` / `operationLog.maxSize`, plus the `settings.operationLog.intro` blurb). The conflict/progress
   settings live ONLY in Advanced (`maxConflictsToShow`, `progressUpdateInterval` → `section: ['Advanced']`), never
   mirrored here. The hidden `behavior.doubleClickOnPaneNotificationSeen` flag (one-time-hint tracker) is registered but

@@ -20,7 +20,7 @@
     import { tString } from '$lib/intl/messages.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
-    import SettingRadioGroup from '../components/SettingRadioGroup.svelte'
+    import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import SettingSelect from '../components/SettingSelect.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import { getSettingDefinition } from '$lib/settings'
@@ -65,10 +65,9 @@
                     id="fileOperations.allowFileExtensionChanges"
                     label={extensionChangesDef.label}
                     description={extensionChangesDef.description}
-                    split
                     {searchQuery}
                 >
-                    <SettingRadioGroup id="fileOperations.allowFileExtensionChanges" />
+                    <SettingToggleGroup id="fileOperations.allowFileExtensionChanges" />
                 </SettingRow>
             {/if}
             {#if shouldShow('fileOperations.pasteClipboardAsFile')}
@@ -76,10 +75,9 @@
                     id="fileOperations.pasteClipboardAsFile"
                     label={pasteAsFileDef.label}
                     description={pasteAsFileDef.description}
-                    split
                     {searchQuery}
                 >
-                    <SettingRadioGroup id="fileOperations.pasteClipboardAsFile" />
+                    <SettingToggleGroup id="fileOperations.pasteClipboardAsFile" />
                 </SettingRow>
             {/if}
         </SectionCard>

@@ -64,9 +64,9 @@ describe('allowFileExtensionChanges setting', () => {
     }).toThrow()
   })
 
-  it('should use radio component', () => {
+  it('should use toggle-group component', () => {
     const def = getSettingDefinition('fileOperations.allowFileExtensionChanges')
-    expect(def?.component).toBe('radio')
+    expect(def?.component).toBe('toggle-group')
   })
 })
 
