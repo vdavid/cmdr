@@ -2,7 +2,7 @@
     import { onMount, onDestroy, tick } from 'svelte'
     import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window'
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-    import { onMcpSettingsClose, activateWindowMenu } from '$lib/tauri-commands'
+    import { onMcpSettingsClose, activateWindowMenu, isE2eMode } from '$lib/tauri-commands'
     import SettingsSidebar from '$lib/settings/components/SettingsSidebar.svelte'
     import SettingsContent from '$lib/settings/components/SettingsContent.svelte'
     import { initializeSettings, forceSave as forceSettingsSave, getSetting, onSpecificSettingChange } from '$lib/settings'
@@ -305,6 +305,8 @@
             await Promise.all([initializeSettings(), initializeShortcuts()])
             log.debug('Settings and shortcuts initialization complete')
 
+            await installE2eFlushHook()
+
             // Apply + live-sync the UI language for this window (own i18n runtime).
             initLanguageSync()
 
@@ -411,6 +413,25 @@
             log.error('Failed to initialize settings: {error}', { error })
         }
     })
+
+    /**
+     * E2E-only: lets a spec force the pending settings/shortcuts write to disk instead of
+     * waiting out the store's 500 ms save debounce. Same `forceSave` the window already
+     * runs on close, so tests exercise the production flush path rather than a test-only
+     * one; it just isn't reachable from an injected script otherwise. Fire-and-forget on
+     * purpose — the caller polls the file, which is the assertion that matters.
+     *
+     * Deliberately NOT a shorter debounce under test: `saveToStore()` has no re-entrancy
+     * guard and does one IPC round-trip per registry entry, so shrinking the window would
+     * make overlapping saves routine and would stop any test covering the real 500 ms
+     * window.
+     */
+    async function installE2eFlushHook(): Promise<void> {
+        if (!(await isE2eMode())) return
+        ;(window as unknown as { __cmdrFlushSettings?: () => void }).__cmdrFlushSettings = () => {
+            void Promise.all([forceSettingsSave(), flushShortcutsSave()])
+        }
+    }
 
     // Flush any pending saves when the Settings window is closing
     onDestroy(() => {

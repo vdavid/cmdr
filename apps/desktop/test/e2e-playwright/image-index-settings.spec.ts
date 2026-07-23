@@ -6,9 +6,11 @@
  * the isolated `CMDR_DATA_DIR`) and live-applies to the backend `media_index` scheduler
  * via `set_image_index_enabled`. Reopening the window must re-read the persisted `true`.
  *
- * Persistence is confirmed against the on-disk `settings.json` (the store debounces its
- * save ~500 ms, so polling the file is deterministic where closing-then-reopening would
- * race the flush), then the reopened window is checked to prove it re-reads that value.
+ * Persistence is confirmed against the on-disk `settings.json` (polling the file is
+ * deterministic where closing-then-reopening would race the flush), then the reopened
+ * window is checked to prove it re-reads that value. The store debounces its save
+ * ~500 ms, so each disk assertion is preceded by the E2E flush hook rather than waiting
+ * the window out.
  *
  * Follows the settings-window harness in `settings.spec.ts`: open via the production
  * `open-settings` trigger, scope a `TauriPage`, drive the real Ark Switch by its label.
@@ -74,6 +76,20 @@ function switchStateJs(): string {
   })()`
 }
 
+/**
+ * Forces the settings store's pending write to disk, so assertions on `settings.json`
+ * don't have to wait out the 500 ms save debounce. The hook is installed by the settings
+ * page under `CMDR_E2E_MODE` and runs the same `forceSave` the window uses on close.
+ */
+function flushSettingsJs(): string {
+  return `(function() {
+    var flush = window.__cmdrFlushSettings;
+    if (typeof flush !== 'function') return false;
+    flush();
+    return true;
+  })()`
+}
+
 /** Clicks the toggle; returns false if the switch isn't present. */
 function clickSwitchJs(): string {
   return `(function() {
@@ -111,6 +127,7 @@ test.describe('Image-content indexing toggle', () => {
     // Turn it on; the switch reflects it in-window, then the sparse store flushes `true`.
     expect(await settings.evaluate<boolean>(clickSwitchJs())).toBe(true)
     await expect.poll(async () => settings.evaluate<string>(switchStateJs()), { timeout: 3000 }).toBe('checked')
+    expect(await settings.evaluate<boolean>(flushSettingsJs()), 'E2E flush hook installed').toBe(true)
     await expect.poll(() => settingOnDisk(SETTING_KEY), { timeout: 3000 }).toBe(true)
 
     // Reopen: a fresh window must re-read the persisted `true`.
@@ -121,6 +138,7 @@ test.describe('Image-content indexing toggle', () => {
     // Reset to the default off so the persisted state doesn't leak into other specs.
     expect(await settings.evaluate<boolean>(clickSwitchJs())).toBe(true)
     await expect.poll(async () => settings.evaluate<string>(switchStateJs()), { timeout: 3000 }).toBe('unchecked')
+    await settings.evaluate<boolean>(flushSettingsJs())
     await expect.poll(() => settingOnDisk(SETTING_KEY), { timeout: 3000 }).toBe(false)
 
     await closeScopedWindow(main, settings, 'settings')
