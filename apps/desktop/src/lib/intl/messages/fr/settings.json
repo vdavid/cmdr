@@ -627,6 +627,14 @@
   "@settings.mediaIndex.importanceThreshold.description": {
     "sourceHash": "2dc9c8b"
   },
+  "settings.mediaIndex.parallelism.label": "Processus parallèles",
+  "@settings.mediaIndex.parallelism.label": {
+    "sourceHash": "ded85c9"
+  },
+  "settings.mediaIndex.parallelism.description": "Combien de processus l''indexation des images exécute en même temps. Un nombre plus élevé peut être plus rapide, mais sur Apple Silicon le gain plafonne au-delà de deux, et les réglages plus élevés se réduisent d''eux-mêmes quand votre Mac chauffe.",
+  "@settings.mediaIndex.parallelism.description": {
+    "sourceHash": "12ecc91"
+  },
   "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Uniquement mes dossiers les plus utilisés",
   "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
     "sourceHash": "1db4208"

@@ -16,14 +16,21 @@
         id: SettingId
         disabled?: boolean
         unit?: string
+        /**
+         * A RUNTIME maximum that wins over the registry `constraints.max`. For a control
+         * whose ceiling isn't known until launch (the enrichment-parallelism slider, capped
+         * at this machine's CPU count), the section fetches it and passes it here; the
+         * registry keeps a static fallback for search and off-runtime rendering.
+         */
+        maxOverride?: number
     }
 
-    const { id, disabled = false, unit = '' }: Props = $props()
+    const { id, disabled = false, unit = '', maxOverride }: Props = $props()
 
     const definition = getSettingDefinition(id)
     const label = definition?.label ?? id
     const min = definition?.constraints?.min ?? 0
-    const max = definition?.constraints?.max ?? 100
+    const max = $derived(maxOverride ?? definition?.constraints?.max ?? 100)
     const step = definition?.constraints?.step ?? 1
     const sliderStops = definition?.constraints?.sliderStops ?? []
     const defaultValue = getDefaultValue(id) as number

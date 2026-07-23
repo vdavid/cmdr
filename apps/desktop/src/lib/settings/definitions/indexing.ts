@@ -238,6 +238,25 @@ export const indexingSettings: SettingDefinitionSource[] = [
     hidden: true,
   },
   {
+    // How many parallel workers image indexing runs. Default 1 = today's single worker
+    // (the M2 spike measured a ~1.25x ceiling on current Apple Silicon: the ANE serializes
+    // inference, so more workers help modestly and only up to ~2). Rendered by `SettingSlider`
+    // inside the "Enable indexing" card with a RUNTIME max = this machine's CPU count
+    // (`media_index_max_parallelism`); the `constraints.max` here is only a static fallback
+    // for search. `hidden` because it's hand-rendered, not an auto row. Live-applied via the
+    // `settings-applier.ts` passthrough → `media_index_set_parallelism` (the backend clamps to
+    // `1..=CPU-count` and a running pass resizes its pool between images).
+    id: 'mediaIndex.parallelism',
+    section: ['Indexing', 'Image indexing'],
+    labelKey: 'settings.mediaIndex.parallelism.label',
+    descriptionKey: 'settings.mediaIndex.parallelism.description',
+    keywords: ['image', 'photo', 'index', 'parallel', 'workers', 'speed', 'performance', 'cpu', 'cores'],
+    type: 'number',
+    default: 1,
+    constraints: { min: 1, max: 16, step: 1 },
+    hidden: true,
+  },
+  {
     // Whether CLIP semantic search ("search photos by description") is on. Default `true`:
     // once the on-device model is installed, covered images become findable by description.
     // Rendered as a `SettingSwitch` inside the "Semantic search" card by `MediaIndexClipModel`

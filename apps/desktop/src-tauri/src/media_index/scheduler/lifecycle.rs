@@ -171,6 +171,13 @@ pub fn start(app: &AppHandle) {
             .media_index_importance_threshold
             .unwrap_or(gate::DEFAULT_IMPORTANCE_THRESHOLD),
     );
+    // Parallel enrichment workers (plan M2): absent means the default 1; `set_parallelism`
+    // clamps to `1..=CPU-count`, so a persisted or hand-edited value can't over-provision.
+    gate::set_parallelism(
+        settings
+            .media_index_parallelism
+            .map_or(gate::DEFAULT_PARALLELISM, usize::from),
+    );
     // Semantic search: ON unless explicitly turned off (absent means on — inert with no
     // model installed anyway). Gates both the CLIP write path and `search_semantic`.
     gate::set_semantic_search_enabled(settings.media_index_semantic_search_enabled.unwrap_or(true));

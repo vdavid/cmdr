@@ -641,6 +641,8 @@ export {
   mediaIndexSetScope,
   mediaIndexSetExcludedFolder,
   setImageImportanceThreshold,
+  setImageParallelism,
+  getMediaIndexMaxParallelism,
   mediaIndexCoveredCount,
   mediaIndexReclaimPreview,
   mediaIndexPruneBelowThreshold,

@@ -623,6 +623,14 @@
   "@settings.mediaIndex.importanceThreshold.description": {
     "sourceHash": "2dc9c8b"
   },
+  "settings.mediaIndex.parallelism.label": "Tiến trình song song",
+  "@settings.mediaIndex.parallelism.label": {
+    "sourceHash": "ded85c9"
+  },
+  "settings.mediaIndex.parallelism.description": "Số tiến trình mà việc lập chỉ mục hình ảnh chạy cùng lúc. Nhiều hơn có thể nhanh hơn, nhưng trên Apple silicon mức lợi ích chững lại sau hai, và các giá trị cao hơn tự giảm khi máy Mac của bạn nóng lên.",
+  "@settings.mediaIndex.parallelism.description": {
+    "sourceHash": "12ecc91"
+  },
   "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Chỉ các thư mục tôi dùng nhiều nhất",
   "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
     "sourceHash": "1db4208"

@@ -625,6 +625,14 @@
   "@settings.mediaIndex.importanceThreshold.description": {
     "sourceHash": "2dc9c8b"
   },
+  "settings.mediaIndex.parallelism.label": "Párhuzamos folyamatok",
+  "@settings.mediaIndex.parallelism.label": {
+    "sourceHash": "ded85c9"
+  },
+  "settings.mediaIndex.parallelism.description": "Hány folyamat végzi egyszerre a képek indexelését. A több gyorsabb lehet, de Apple siliconon kettő fölött már alig javít a sebességen, a magasabb értékek pedig maguktól mérséklődnek, ha a Mac felmelegszik.",
+  "@settings.mediaIndex.parallelism.description": {
+    "sourceHash": "12ecc91"
+  },
   "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Csak a legtöbbet használt mappáim",
   "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
     "sourceHash": "1db4208"

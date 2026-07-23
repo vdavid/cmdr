@@ -230,6 +230,8 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::media_index::commands::policy::media_index_set_scope,
         crate::media_index::commands::policy::media_index_set_excluded_folder,
         crate::media_index::commands::policy::media_index_set_importance_threshold,
+        crate::media_index::commands::policy::media_index_set_parallelism,
+        crate::media_index::commands::policy::media_index_max_parallelism,
         crate::media_index::commands::policy::media_index_set_semantic_search_enabled,
         crate::media_index::commands::media_index_covered_count,
         crate::media_index::commands::media_index_reclaim_preview,

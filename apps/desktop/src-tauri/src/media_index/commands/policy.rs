@@ -215,3 +215,24 @@ pub fn media_index_set_importance_threshold(app: AppHandle, threshold: f64) {
 pub(super) fn threshold_change_should_kick(previous: f64, next: f64, enabled: bool) -> bool {
     gate::threshold_decreased(previous, next) && enabled
 }
+
+/// Set how many parallel enrichment workers to run (the `mediaIndex.parallelism` slider).
+/// Clamped to `1..=CPU-count` by the gate. Live-applied: a RUNNING pass re-reads the count
+/// between images and resizes its worker pool within about one image, so no pass restart
+/// and no kick is needed (unlike a coverage change, this only changes HOW FAST the current
+/// work runs, never WHICH images are covered). The frontend persists `mediaIndex.parallelism`
+/// and calls this.
+#[tauri::command]
+#[specta::specta]
+pub fn media_index_set_parallelism(parallelism: u32) {
+    gate::set_parallelism(parallelism as usize);
+}
+
+/// The hardware ceiling for the parallelism slider: this machine's logical CPU count. The
+/// slider reads it for its max (the backend clamps to it independently, so an out-of-range
+/// value can't over-provision). A plain read, no side effects.
+#[tauri::command]
+#[specta::specta]
+pub fn media_index_max_parallelism() -> u32 {
+    gate::max_parallelism() as u32
+}

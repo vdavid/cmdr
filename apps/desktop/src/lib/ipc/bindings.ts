@@ -1946,6 +1946,22 @@ export const commands = {
   mediaIndexSetImportanceThreshold: (threshold: number) =>
     __TAURI_INVOKE<void>('media_index_set_importance_threshold', { threshold }),
   /**
+   *  Set how many parallel enrichment workers to run (the `mediaIndex.parallelism` slider).
+   *  Clamped to `1..=CPU-count` by the gate. Live-applied: a RUNNING pass re-reads the count
+   *  between images and resizes its worker pool within about one image, so no pass restart
+   *  and no kick is needed (unlike a coverage change, this only changes HOW FAST the current
+   *  work runs, never WHICH images are covered). The frontend persists `mediaIndex.parallelism`
+   *  and calls this.
+   */
+  mediaIndexSetParallelism: (parallelism: number) =>
+    __TAURI_INVOKE<void>('media_index_set_parallelism', { parallelism }),
+  /**
+   *  The hardware ceiling for the parallelism slider: this machine's logical CPU count. The
+   *  slider reads it for its max (the backend clamps to it independently, so an out-of-range
+   *  value can't over-provision). A plain read, no side effects.
+   */
+  mediaIndexMaxParallelism: () => __TAURI_INVOKE<number>('media_index_max_parallelism'),
+  /**
    *  Turn CLIP semantic search on or off (the "search photos by description" feature).
    *  Live-applied; the frontend persists `mediaIndex.semanticSearch.enabled` and calls this
    *  on change. The one atomic gates BOTH sides: `search_semantic` returns nothing when off,

@@ -746,6 +746,14 @@
   "@settings.mediaIndex.importanceThreshold.description": {
     "description": "Help text under the \"How much to index\" slider label. Explains that indexing is prioritized by how often you use a folder, and this slider sets the cut-off."
   },
+  "settings.mediaIndex.parallelism.label": "Parallel workers",
+  "@settings.mediaIndex.parallelism.label": {
+    "description": "Label for a slider that sets how many workers run image indexing at once. In the \"Enable indexing\" card, Settings > Indexing > Image indexing. Range is 1 to the Mac's CPU count."
+  },
+  "settings.mediaIndex.parallelism.description": "How many workers image indexing runs at once. More can be faster, but on Apple Silicon the gain flattens out past two, and higher settings back off on their own when your Mac heats up.",
+  "@settings.mediaIndex.parallelism.description": {
+    "description": "Help text under the \"Parallel workers\" slider. Sets expectations honestly: parallelism helps only modestly on Apple Silicon (the Neural Engine serializes the work), and the app reduces workers automatically under thermal pressure. Keep \"Apple Silicon\" and \"Mac\" as-is."
+  },
   "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Only my most-used folders",
   "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
     "description": "Slider position (most restrictive, far left): index only the folders the user opens most often."

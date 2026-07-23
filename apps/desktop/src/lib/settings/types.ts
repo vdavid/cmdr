@@ -364,6 +364,15 @@ export interface SettingsValues {
    */
   'mediaIndex.importanceThreshold': number
   /**
+   * How many parallel workers image indexing runs (the "Parallel workers" slider). `1`
+   * (the default) is today's single worker; the max is this machine's CPU count, and the
+   * backend clamps to `1..=CPU-count`. The M2 spike measured a ~1.25x ceiling on current
+   * Apple Silicon (the ANE serializes inference), so more workers help modestly and only up
+   * to ~2. Live-applied via `media_index_set_parallelism`; a running pass resizes its pool
+   * between images. Hand-rendered via `SettingSlider` with a runtime max, so it's `hidden`.
+   */
+  'mediaIndex.parallelism': number
+  /**
    * WHICH folders image indexing may cover. `'chosen'` (the default) indexes only the folders
    * and drives the user named — the `mediaIndex.alwaysIndexFolders` / `alwaysIndexVolumes`
    * overrides — and never consults folder importance, so `mediaIndex.importanceThreshold` has

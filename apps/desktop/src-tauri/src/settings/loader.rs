@@ -127,6 +127,12 @@ pub struct Settings {
     /// `set_media_index_importance_threshold`.
     #[serde(alias = "mediaIndex.importanceThreshold", default)]
     pub media_index_importance_threshold: Option<f64>,
+    /// How many parallel enrichment workers to run (the `mediaIndex.parallelism` slider).
+    /// Absent means the default (1, byte-for-byte today's single worker). Clamped to
+    /// `1..=CPU-count` by `media_index::gate`. Seeded into `gate` at startup; live changes
+    /// flow through `media_index_set_parallelism`.
+    #[serde(alias = "mediaIndex.parallelism", default)]
+    pub media_index_parallelism: Option<u16>,
     /// Absolute folder paths the user EXCLUDED from photo-search indexing (the privacy
     /// complement to the opt-in). Seeded + live-applied like the opt-in.
     #[serde(alias = "mediaIndex.excludedFolders", default)]
@@ -189,6 +195,7 @@ impl Default for Settings {
             media_index_always_index_volumes: Vec::new(),
             media_index_always_index_folders: Vec::new(),
             media_index_importance_threshold: None,
+            media_index_parallelism: None,
             media_index_excluded_folders: Vec::new(),
             media_index_scope: None,
             media_index_semantic_search_enabled: None,
@@ -268,6 +275,10 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     let media_index_always_index_volumes = parse_string_array(&json, "mediaIndex.alwaysIndexVolumes");
     let media_index_always_index_folders = parse_string_array(&json, "mediaIndex.alwaysIndexFolders");
     let media_index_importance_threshold = json.get("mediaIndex.importanceThreshold").and_then(|v| v.as_f64());
+    let media_index_parallelism = json
+        .get("mediaIndex.parallelism")
+        .and_then(|v| v.as_u64())
+        .and_then(|v| u16::try_from(v).ok());
     let media_index_excluded_folders = parse_string_array(&json, "mediaIndex.excludedFolders");
     let media_index_scope = json
         .get("mediaIndex.scope")
@@ -304,6 +315,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         media_index_always_index_volumes,
         media_index_always_index_folders,
         media_index_importance_threshold,
+        media_index_parallelism,
         media_index_excluded_folders,
         media_index_scope,
         media_index_semantic_search_enabled,

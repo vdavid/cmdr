@@ -206,6 +206,26 @@ export async function setImageImportanceThreshold(threshold: number): Promise<vo
 }
 
 /**
+ * Set how many parallel workers image indexing runs (the `mediaIndex.parallelism` slider).
+ * The backend clamps to `1..=CPU-count` and a RUNNING pass resizes its worker pool between
+ * images, so the change applies mid-pass with no restart. Live-applied via the
+ * `settings-applier.ts` passthrough after the FE persists `mediaIndex.parallelism`.
+ * Fire-and-forget: a failed push only leaves the scheduler one value behind until the next
+ * change or restart re-seeds it.
+ */
+export async function setImageParallelism(parallelism: number): Promise<void> {
+  await commands.mediaIndexSetParallelism(parallelism)
+}
+
+/**
+ * This machine's CPU count, the ceiling for the parallelism slider's max. Read once when the
+ * slider mounts (the backend clamps independently, so a stale value can't over-provision).
+ */
+export async function getMediaIndexMaxParallelism(): Promise<number> {
+  return commands.mediaIndexMaxParallelism()
+}
+
+/**
  * The live preview behind the importance slider: across the ENABLED volumes in `volumeIds` (master
  * on AND local-or-opted-in-SMB; the backend filters out non-opted-in SMB / MTP), how many
  * folders score at or above `threshold` and how many images they hold. `pending` is `true`

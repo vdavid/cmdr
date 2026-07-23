@@ -2260,6 +2260,8 @@ export type MessageKey =
   | 'settings.mediaIndex.networkVolumes.optInHelp'
   | 'settings.mediaIndex.networkVolumes.optInLabel'
   | 'settings.mediaIndex.networkVolumes.paused'
+  | 'settings.mediaIndex.parallelism.description'
+  | 'settings.mediaIndex.parallelism.label'
   | 'settings.mediaIndex.privacyNote'
   | 'settings.mediaIndex.progress.counting'
   | 'settings.mediaIndex.progress.coveredDone'

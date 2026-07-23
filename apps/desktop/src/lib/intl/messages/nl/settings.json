@@ -630,6 +630,14 @@
   "@settings.mediaIndex.importanceThreshold.description": {
     "sourceHash": "2dc9c8b"
   },
+  "settings.mediaIndex.parallelism.label": "Parallelle processen",
+  "@settings.mediaIndex.parallelism.label": {
+    "sourceHash": "ded85c9"
+  },
+  "settings.mediaIndex.parallelism.description": "Hoeveel processen het indexeren van afbeeldingen tegelijk uitvoert. Meer kan sneller zijn, maar op Apple silicon vlakt de winst boven twee af, en hogere waarden schroeven zichzelf terug wanneer je Mac warm wordt.",
+  "@settings.mediaIndex.parallelism.description": {
+    "sourceHash": "12ecc91"
+  },
   "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Alleen mijn meest gebruikte mappen",
   "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
     "sourceHash": "1db4208"

@@ -25,6 +25,7 @@
     import SettingsSection from '../components/SettingsSection.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
+    import SettingSlider from '../components/SettingSlider.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
     import { getBadgeStatus } from '$lib/feature-status'
@@ -36,6 +37,7 @@
     import { tString } from '$lib/intl/messages.svelte'
     import { getSetting, getSettingDefinition, onSpecificSettingChange } from '$lib/settings'
     import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
+    import { getMediaIndexMaxParallelism } from '$lib/tauri-commands'
 
     interface Props {
         searchQuery: string
@@ -50,16 +52,32 @@
         label: '',
         description: '',
     }
+    const parallelismDef = getSettingDefinition('mediaIndex.parallelism') ?? { label: '', description: '' }
     const imageSearchBadge = getBadgeStatus('image-search')
 
     // Live master-toggle state, so cards 2 and 3 appear/disappear the moment the user flips
     // "Index image contents" (no restart, matching the live-apply rule).
     let imageIndexEnabled = $state(getSetting('mediaIndex.enabled'))
 
-    onMount(() => onSpecificSettingChange('mediaIndex.enabled', (_id, value) => (imageIndexEnabled = value)))
+    // The parallelism slider's max is this machine's CPU count, known only at runtime. Seed
+    // from the registry's static fallback, then fetch the real ceiling on mount. The backend
+    // clamps independently, so a brief stale max can't over-provision.
+    let maxParallelism = $state(getSettingDefinition('mediaIndex.parallelism')?.constraints?.max ?? 16)
+
+    onMount(() => {
+        const unsub = onSpecificSettingChange('mediaIndex.enabled', (_id, value) => (imageIndexEnabled = value))
+        void getMediaIndexMaxParallelism()
+            .then((n) => (maxParallelism = n))
+            .catch(() => {
+                /* keep the fallback max; the backend clamps regardless */
+            })
+        return unsub
+    })
 
     // Card frames: each is the SAME `shouldShow` predicate that gates its rows.
-    const showEnableCard = $derived(anyVisible(shouldShow, 'mediaIndex.enabled', 'mediaIndex.showFileStatusIcons'))
+    const showEnableCard = $derived(
+        anyVisible(shouldShow, 'mediaIndex.enabled', 'mediaIndex.showFileStatusIcons', 'mediaIndex.parallelism'),
+    )
     const showFoldersCard = $derived(
         imageIndexEnabled && anyVisible(shouldShow, 'mediaIndex.enabled', 'mediaIndex.scope', 'mediaIndex.importanceThreshold'),
     )
@@ -106,6 +124,20 @@
                     {searchQuery}
                 >
                     <SettingSwitch id="mediaIndex.showFileStatusIcons" />
+                </SettingRow>
+            {/if}
+
+            <!-- How many parallel workers indexing runs. Only meaningful once indexing is on,
+                 so gate on the live master toggle. The slider's max is this machine's CPU
+                 count, fetched on mount; default 1 is today's single worker. -->
+            {#if imageIndexEnabled && shouldShow('mediaIndex.parallelism')}
+                <SettingRow
+                    id="mediaIndex.parallelism"
+                    label={parallelismDef.label}
+                    description={parallelismDef.description}
+                    {searchQuery}
+                >
+                    <SettingSlider id="mediaIndex.parallelism" maxOverride={maxParallelism} />
                 </SettingRow>
             {/if}
         </SectionCard>

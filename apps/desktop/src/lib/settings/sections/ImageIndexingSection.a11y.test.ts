@@ -38,6 +38,7 @@ vi.mock('$lib/tauri-commands', () => ({
     Promise.resolve({ supported: false, installed: false, configured: false, downloadBytes: 0 }),
   mediaIndexDownloadClipModel: () => Promise.resolve(),
   mediaIndexDeleteClipModel: () => Promise.resolve(),
+  getMediaIndexMaxParallelism: () => Promise.resolve(8),
 }))
 
 vi.mock('$lib/media-index/enabled-volumes', () => ({
