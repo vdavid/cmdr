@@ -223,14 +223,13 @@ impl EventReconciler {
         self.pending_rescans.lock_ignore_poison().insert(path);
     }
 
-    /// Test-only: replace the per-subtree rescan throttle with one using `window`.
-    /// A zero window disables throttling (every anchor is always eligible), which
-    /// the storm/stress fixed-point tests use so a re-queued anchor drains
+    /// Test-only: zero both throttle bounds, so every anchor is always eligible.
+    /// The storm/stress fixed-point tests use this so a re-queued anchor drains
     /// immediately instead of lingering in `pending_rescans` for the production
-    /// 60 s window. Cadence itself is covered by `rescan_throttle`'s unit tests.
+    /// window. Cadence itself is covered by `rescan_throttle`'s unit tests.
     #[cfg(test)]
-    pub(in crate::indexing) fn set_rescan_throttle_window_for_test(&self, window: Duration) {
-        *self.rescan_throttle.lock_ignore_poison() = RescanThrottle::with_window(window);
+    pub(in crate::indexing) fn disable_rescan_throttle_for_test(&self) {
+        *self.rescan_throttle.lock_ignore_poison() = RescanThrottle::with_bounds(Duration::ZERO, Duration::ZERO);
     }
 }
 
@@ -410,15 +409,17 @@ pub(super) fn start_next_rescan(
                 }
             };
 
-            let escalation = match reconcile_subtree(&path, &space_for_task, &conn, &writer, &cancelled) {
+            let (escalation, walk_cost) = match reconcile_subtree(&path, &space_for_task, &conn, &writer, &cancelled) {
                 Ok(summary) => {
                     let (level, message) = reconcile_report(&path, &summary);
                     log::log!(level, "{message}");
-                    summary.escalation
+                    let walk_cost = summary.walk_cost();
+                    (summary.escalation, walk_cost)
                 }
                 Err(e) => {
                     log::warn!("MustScanSubDirs: reconcile failed for {}: {e}", path.display());
-                    None
+                    // No measured walk, so the throttle falls back to its floor.
+                    (None, Duration::ZERO)
                 }
             };
 
@@ -434,12 +435,14 @@ pub(super) fn start_next_rescan(
             }
 
             // Record this subtree's reconcile so the per-subtree throttle holds the
-            // anchor back until the window elapses. A hard-churning subtree that
-            // re-queues immediately stays pending but won't re-walk until then; the
-            // sweep tick's re-kick fires it at the window boundary (the trailing edge).
+            // anchor back until the window elapses. The window scales with what THIS
+            // walk cost, so an expensive anchor backs off further. A hard-churning
+            // subtree that re-queues immediately stays pending but won't re-walk until
+            // then; the sweep tick's re-kick fires it at the window boundary (the
+            // trailing edge).
             throttle_for_task
                 .lock_ignore_poison()
-                .record_completion(&path, Instant::now());
+                .record_completion(&path, Instant::now(), walk_cost);
 
             // Release this root's hourglass (unless a storm re-queued it) and emit the
             // in-place refresh for the root + its ancestor chain. Release precedes the
@@ -532,6 +535,7 @@ fn reconcile_report(path: &Path, summary: &ReconcileSummary) -> (log::Level, Str
 
 #[cfg(test)]
 mod tests {
+    use super::super::rescan_throttle::RESCAN_THROTTLE_WINDOW;
     use super::*;
 
     fn summary(duration: Duration, writer_wait: Duration) -> ReconcileSummary {
@@ -594,6 +598,37 @@ mod tests {
         );
     }
 
+    /// The throttle charges an anchor for its WALK, not for the reconcile's wall
+    /// clock: time parked on a saturated writer queue is the writer's, not the
+    /// anchor's. Charging it would let one transient global saturation (an initial
+    /// scan, say) inflate every anchor's measured cost at once and back the whole
+    /// volume off for half an hour.
+    #[test]
+    fn walk_cost_charges_the_walk_not_the_writer_wait() {
+        let waited = summary(Duration::from_secs(20), Duration::from_secs(19));
+        assert_eq!(
+            waited.walk_cost(),
+            Duration::from_secs(1),
+            "a 20 s reconcile with 19 s on the writer queue is a 1 s walk"
+        );
+
+        let t0 = Instant::now();
+        let mut throttle = RescanThrottle::new();
+        throttle.record_completion(Path::new("/waited"), t0, waited.walk_cost());
+        assert!(
+            throttle.is_eligible(Path::new("/waited"), t0 + RESCAN_THROTTLE_WINDOW),
+            "a 1 s walk earns the floor window"
+        );
+
+        // What charging the full duration would have done, for contrast.
+        let mut naive = RescanThrottle::new();
+        naive.record_completion(Path::new("/waited"), t0, waited.duration);
+        assert!(
+            !naive.is_eligible(Path::new("/waited"), t0 + RESCAN_THROTTLE_WINDOW),
+            "20 s charged in full would throttle the anchor for 10 minutes"
+        );
+    }
+
     /// Picks the SHALLOWEST queued path and drops every queued strict descendant of
     /// it — the ancestor's reconcile re-lists the whole subtree, so a deeper queued
     /// path is redundant. Bounds an escalation/removal storm to one subtree walk.
@@ -641,9 +676,9 @@ mod tests {
     #[test]
     fn pick_skips_throttled_anchor_for_eligible_sibling() {
         let window = Duration::from_millis(100);
-        let mut throttle = RescanThrottle::with_window(window);
+        let mut throttle = RescanThrottle::with_bounds(window, window);
         let t0 = Instant::now();
-        throttle.record_completion(&PathBuf::from("/a"), t0); // /a just walked -> throttled
+        throttle.record_completion(&PathBuf::from("/a"), t0, Duration::ZERO); // /a just walked -> throttled
         let mut pending: HashSet<PathBuf> = [PathBuf::from("/a"), PathBuf::from("/x/y")].into_iter().collect();
         let (picked, _dropped) =
             pick_and_collapse_rescan(&mut pending, &throttle, t0).expect("an eligible anchor is picked");
@@ -665,9 +700,9 @@ mod tests {
     #[test]
     fn pick_none_when_all_throttled_then_eligible_after_window() {
         let window = Duration::from_millis(100);
-        let mut throttle = RescanThrottle::with_window(window);
+        let mut throttle = RescanThrottle::with_bounds(window, window);
         let t0 = Instant::now();
-        throttle.record_completion(&PathBuf::from("/a"), t0);
+        throttle.record_completion(&PathBuf::from("/a"), t0, Duration::ZERO);
         let mut pending: HashSet<PathBuf> = [PathBuf::from("/a")].into_iter().collect();
         assert!(
             pick_and_collapse_rescan(&mut pending, &throttle, t0).is_none(),

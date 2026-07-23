@@ -33,8 +33,10 @@ Three mechanisms resync the index after the initial scan: the event-triggered `r
   ❌ never diff it with an empty listing, ❌ never stamp its `listed_epoch` (`0` absorbs up to `~`/`/`).
 - **Verification's two teeth** (`verify_affected_dirs`, code in `../watch/`): a `count_children_capped` probe before the
   snapshot + a `read_dir` iteration cap. ❌ A declined dir keeps claiming exact (owned debt), never `listed_epoch = 0`.
-- **Per-subtree rescan throttle:** ≤ 1 reconcile per `RESCAN_THROTTLE_WINDOW` (60 s), leading + trailing, on a
-  `Utility`-QoS thread.
+- **Per-subtree rescan throttle is COST-PROPORTIONAL:** each anchor's window is `30 × walk_cost` clamped to 60 s–30 min;
+  leading + trailing, `Utility`-QoS thread. Cost is duration MINUS writer wait (else one saturated writer over-throttles
+  every anchor at once), and `gc` measures each record against its OWN window (a global one evicts a backed-off anchor
+  early and it re-walks on its leading edge).
 - **Depth-split `MustScanSubDirs`:** SHALLOW (`depth ≤ 2`) → visible scanner, NO hourglass hold, never `pending_rescans`;
   DEEP (`≥ 3`) → throttled drain.
 - **A shallow anchor sweeps at most ONCE A DAY, boot disk only** (24 h; mount-rooted keeps 45 s). Coalesced anchors are

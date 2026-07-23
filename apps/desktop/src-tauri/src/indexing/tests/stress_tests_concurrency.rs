@@ -851,7 +851,7 @@ fn mixed_storm_reaches_consistent_fixed_point() {
     // storm to a "pending_rescans empty" fixed point, but the production 60 s
     // window would hold re-queued anchors in the set well past the test's budget.
     // The throttle's cadence has its own unit tests; here we want the raw drain.
-    reconciler.set_rescan_throttle_window_for_test(Duration::ZERO);
+    reconciler.disable_rescan_throttle_for_test();
 
     // `process_live_batch` uses tokio (`block_in_place`), so run everything inside a
     // multi-thread runtime. The spawned rescans run on their own dedicated threads.

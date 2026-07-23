@@ -380,15 +380,38 @@ replay `affected_paths` rather than the verification-discovered paths). The FE h
 ## Per-subtree rescan throttle (`reconciler/rescan_throttle.rs`, `reconciler/rescan.rs`)
 
 A `MustScanSubDirs` signal means "re-walk this subtree", and a hard-churning subtree (build output, caches, Cmdr's own
-data dir) raises it continuously. The drain caps each anchor to ≤1 reconcile per `RESCAN_THROTTLE_WINDOW` (60 s), so a
-folder's size stays bounded-fresh (≤1 window stale) without re-walking continuously. Leading + trailing, not debounce
-(mirrors the per-file `throttle.rs`): a never-walked anchor reconciles immediately; a sustained one re-walks once per
-window forever (the ~1 s `throttle_sweep_interval` tick re-kicks via `EventReconciler::sweep_rescan_throttle`).
-`pick_and_collapse_rescan` picks the shallowest ELIGIBLE anchor; throttled anchors stay queued in `pending_rescans`
-until their window elapses. The drain runs on a dedicated `Utility`-QoS thread (not the tokio blocking pool, which
-`thread_qos` forbids lowering), so background subtree walks never outrank the webview for CPU. A single growing file is
-handled by the per-file live path (incremental `dir_stats` deltas), never a subtree re-walk, so the throttle needs no
-significant-change bypass. Tests inject a zero window via `set_rescan_throttle_window_for_test`.
+data dir) raises it continuously. The drain caps each anchor to ≤1 reconcile per window, so a folder's size stays
+bounded-fresh (≤1 window stale) without re-walking continuously. Leading + trailing, not debounce (mirrors the per-file
+`throttle.rs`): a never-walked anchor reconciles immediately; a sustained one re-walks once per window forever (the
+~1 s `throttle_sweep_interval` tick re-kicks via `EventReconciler::sweep_rescan_throttle`, and it re-asks
+`is_eligible` each tick, so a longer window is never bypassed). `pick_and_collapse_rescan` picks the shallowest
+ELIGIBLE anchor; throttled anchors stay queued in `pending_rescans` until their window elapses. The drain runs on a
+dedicated `Utility`-QoS thread (not the tokio blocking pool, which `thread_qos` forbids lowering), so background subtree
+walks never outrank the webview for CPU. A single growing file is handled by the per-file live path (incremental
+`dir_stats` deltas), never a subtree re-walk, so the throttle needs no significant-change bypass. Tests zero both bounds
+via `disable_rescan_throttle_for_test`.
+
+**Each anchor's window is proportional to what its walk COST**: `clamp(WALK_COST_MULTIPLIER × walk_cost,
+RESCAN_THROTTLE_WINDOW, RESCAN_THROTTLE_MAX_WINDOW)`, currently `30 ×`, clamped to 60 s–30 min. So an anchor spends at
+most ~1/30th of the time re-walking itself, and no single subtree can dominate the reconcile budget however expensive
+it is to list. A flat window can't hold that line: a 10 s walk that becomes eligible again 60 s later is a permanent
+~17% duty cycle on one anchor. Measured on David's machine (2026-07-23, a day of reconciler logs): one anchor (a WebKit
+cache directory with 144,647 children) averaged 10.5 s per walk, was re-walked 49 times, and burned 516 s, 49% of the
+day's entire reconcile budget, while 4,559 other anchors finished in under a second each. Under the cost-scaled window
+that anchor earns ~5 min and drops to roughly 10 walks a day; every sub-2 s anchor stays pinned at the 60 s floor,
+unchanged. The ceiling exists because past half an hour a stale subtree costs the user more than the CPU the back-off
+saves.
+
+**Cost is `ReconcileSummary::walk_cost()` (duration MINUS writer wait), never the raw duration.** Time parked on a
+saturated writer queue is the writer's, not the anchor's; charging it would let one transient global saturation (an
+initial scan, say) inflate every anchor's measured cost at the same moment and back a whole volume off for half an
+hour. This is the same attribution `reconcile_report` makes for its log level, from the same `writer_wait` probe.
+
+`gc` measures each record against its OWN window, not a global one. Against a global 60 s an expensive anchor's record
+would be evicted the moment the floor elapsed, and the anchor would then be eligible on its leading edge, defeating the
+back-off entirely. A consequence to know: a churning expensive anchor holds its rescan-root hourglass for the whole
+window between walks (the hold persists while the anchor is re-queued), so "size updating" can now sit on such a
+folder for minutes rather than up to a minute.
 
 **A reconcile's log line attributes its writer wait** (`reconciler/rescan.rs` `reconcile_report`,
 `../writer/wait_probe.rs`). The bounded writer channel means a producer parks once it's full, so `reconcile_subtree`'s

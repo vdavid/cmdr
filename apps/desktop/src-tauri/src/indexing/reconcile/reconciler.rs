@@ -518,6 +518,17 @@ pub(crate) struct ReconcileSummary {
     pub escalation: Option<PathBuf>,
 }
 
+impl ReconcileSummary {
+    /// What this anchor's own walk cost: the duration minus the time parked on the
+    /// writer queue. This is what the per-subtree rescan throttle scales its window
+    /// by, so charging the wait would let one saturated writer (an initial scan,
+    /// say) inflate every anchor's measured cost at once and back a whole volume
+    /// off for half an hour. Attribute only the walk.
+    pub(crate) fn walk_cost(&self) -> Duration {
+        self.duration.saturating_sub(self.writer_wait)
+    }
+}
+
 /// This walk's accumulated wait on the writer queue, and a rearm for the next one.
 /// `reconcile_subtree` arms the probe at its start, so every read covers exactly
 /// one walk. See `writer::wait_probe`.
