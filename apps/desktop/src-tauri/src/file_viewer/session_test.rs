@@ -35,6 +35,26 @@ fn write_test_file(dir: &Path, name: &str, content: &str) -> PathBuf {
     file
 }
 
+/// Append to a file the way a real tail-mode writer does, and return the new size.
+///
+/// Use this, never `fs::write` with the whole grown content, for any write to a
+/// file that an open session is watching. `fs::write` is `File::create`
+/// (`O_TRUNC`) + `write_all`, so it drops the file to 0 bytes mid-call. A
+/// background upgrade or rebuild scan that lands in that window indexes an
+/// empty file and swaps in a 0-byte backend, and the real watcher would see a
+/// spurious `Shrunk`. Appending only ever grows the file, so neither can happen
+/// whatever the scheduler does.
+fn append_test_file(file: &Path, extra: &str) -> u64 {
+    use std::io::Write;
+    let mut handle = fs::OpenOptions::new()
+        .append(true)
+        .open(file)
+        .expect("test file must exist to append to");
+    handle.write_all(extra.as_bytes()).expect("append must succeed");
+    handle.flush().expect("append flush must succeed");
+    fs::metadata(file).expect("appended file must stat").len()
+}
+
 /// Wait until a freshly-opened session's watcher subscribe has landed, so
 /// `test_only_emit` reliably reaches a subscriber. The subscribe runs on a
 /// background thread off `open_session`'s critical path (see
@@ -1147,7 +1167,7 @@ fn test_append_during_encoding_rebuild_not_dropped() {
     // Start with a > 1 MB Windows-1252 file.
     let line = "x".repeat(80) + "\n";
     let line_count = (FULL_LOAD_THRESHOLD as usize / line.len()) + 200;
-    let mut content: String = line.repeat(line_count);
+    let content: String = line.repeat(line_count);
     let file = dir.join("big.txt");
     fs::write(&file, &content).unwrap();
     let original_size = fs::metadata(&file).unwrap().len();
@@ -1170,9 +1190,7 @@ fn test_append_during_encoding_rebuild_not_dropped() {
     // what the backend knows about. The test queues this new EOF and verifies that
     // the rebuild's drain-and-swap protocol picks it up.
     let suffix = "y".repeat(10_000) + "\n";
-    content.push_str(&suffix);
-    fs::write(&file, &content).unwrap();
-    let new_size = fs::metadata(&file).unwrap().len();
+    let new_size = append_test_file(&file, &suffix);
     assert!(new_size > original_size);
 
     // Park the rebuild thread so we can queue the EOF before it drains.
@@ -1445,7 +1463,7 @@ fn test_append_during_upgrade_not_dropped() {
     // ~2 MB file -> ByteSeek + upgrade.
     let line = "x".repeat(80) + "\n";
     let line_count = (2 * FULL_LOAD_THRESHOLD as usize) / line.len();
-    let mut content = line.repeat(line_count);
+    let content = line.repeat(line_count);
     let file = write_test_file(&dir, "upgrade.log", &content);
     let original_size = fs::metadata(&file).unwrap().len();
 
@@ -1454,9 +1472,7 @@ fn test_append_during_upgrade_not_dropped() {
 
     // Append 500 KB while the upgrade thread is paused.
     let suffix: String = ("y".repeat(80) + "\n").repeat(6400);
-    content.push_str(&suffix);
-    fs::write(&file, &content).unwrap();
-    let new_size = fs::metadata(&file).unwrap().len();
+    let new_size = append_test_file(&file, &suffix);
     assert!(new_size > original_size);
 
     // Queue the EOF the way the real watcher would.
@@ -1499,7 +1515,7 @@ fn test_append_between_drain_and_swap_not_dropped() {
 
     let line = "z".repeat(80) + "\n";
     let line_count = (FULL_LOAD_THRESHOLD as usize / line.len()) + 1000;
-    let mut content = line.repeat(line_count);
+    let content = line.repeat(line_count);
     let file = write_test_file(&dir, "race.log", &content);
 
     let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
@@ -1507,14 +1523,10 @@ fn test_append_between_drain_and_swap_not_dropped() {
 
     // Two consecutive queued EOFs: simulates two watcher events the
     // production code must coalesce into the final one.
-    content.push_str("first-append\n");
-    fs::write(&file, &content).unwrap();
-    let mid_size = fs::metadata(&file).unwrap().len();
+    let mid_size = append_test_file(&file, "first-append\n");
     session::test_only_push_pending_grew(&sid, mid_size);
 
-    content.push_str("second-append-bigger\n");
-    fs::write(&file, &content).unwrap();
-    let final_size = fs::metadata(&file).unwrap().len();
+    let final_size = append_test_file(&file, "second-append-bigger\n");
     session::test_only_push_pending_grew(&sid, final_size);
 
     let start = std::time::Instant::now();
@@ -1557,10 +1569,7 @@ fn test_session_emits_file_changed_on_append() {
     wait_for_watcher_subscribed();
     session::set_tail_mode(&sid, true).unwrap();
 
-    let mut content = initial.clone();
-    content.push_str("extra-line-content\n");
-    fs::write(&file, &content).unwrap();
-    let new_size = fs::metadata(&file).unwrap().len();
+    let new_size = append_test_file(&file, "extra-line-content\n");
 
     let canonical = fs::canonicalize(&file).unwrap();
     let sent = super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::Grew(new_size));
@@ -1600,10 +1609,7 @@ fn test_session_tail_mode_off_does_not_extend_index() {
 
     let original_lines = session::get_session_status(&sid).unwrap().total_lines;
 
-    let mut content = initial.to_string();
-    content.push_str("d\ne\nf\n");
-    fs::write(&file, &content).unwrap();
-    let new_size = fs::metadata(&file).unwrap().len();
+    let new_size = append_test_file(&file, "d\ne\nf\n");
 
     let canonical = fs::canonicalize(&file).unwrap();
     super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::Grew(new_size));

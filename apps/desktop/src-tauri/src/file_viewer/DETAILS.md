@@ -271,6 +271,14 @@ snapshot via `ArcSwap::load_full()` BEFORE the extend; after the extend, re-load
 mismatch, discard the stale extend and re-queue the EOF into `pending_grew` so the rebuild's drain (or a follow-up FS
 event) still catches up. Pinned by `test_tail_extend_during_encoding_rebuild_discards_stale_extend`.
 
+**Tests must append with `append_test_file`, never `fs::write` of the whole grown content.** `fs::write` is
+`File::create` (`O_TRUNC`) + `write_all`, so it drops the file to 0 bytes mid-call. A background upgrade or rebuild scan
+that lands inside that window indexes an empty file and stores a 0-byte backend, and the live watcher sees a spurious
+`Shrunk` (→ `reload`). The wall-clock `test_only_set_upgrade_hold` / `test_only_set_rebuild_hold` parks don't prevent
+this: they're a scheduling hint, not a barrier, so on a loaded CI runner the scan can land anywhere. This is not a
+production concern (a real rewrite arrives as `Shrunk` / `Replaced` and reloads), purely an artifact of faking an append
+with a rewrite. `append_test_file` in `session_test.rs` only grows the file, so neither failure can happen.
+
 **`watcher.rs` canonicalises paths** so `/var/folders/...` (the tempfile path on macOS) and `/private/var/folders/...`
 (the equivalent without the symlink) collapse into the same registration. `test_only_emit` walks the same stored
 canonical paths.
