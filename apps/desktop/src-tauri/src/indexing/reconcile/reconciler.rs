@@ -564,7 +564,9 @@ pub(crate) struct DirDiff {
 /// relied on): a matched row is re-UPSERTed only when its size/mtime (file) or
 /// mtime (dir/symlink) actually differs, so a rescan over an unchanged tree
 /// issues zero entry-row writes and never touches the catastrophic
-/// `INSERT OR REPLACE`/`platform_case` path.
+/// `INSERT OR REPLACE`/`platform_case` path. That holds for hardlinks too: a
+/// row the writer deduped to NULL sizes compares on mtime alone, so the pass
+/// converges instead of re-sending it forever.
 ///
 /// The recursion set (`matched_child_dirs`) is DECOUPLED from that write
 /// decision: every matched child dir is returned for the caller to descend into,
@@ -606,7 +608,16 @@ pub(crate) fn diff_dir_against_db(
             let changed = if is_dir || is_symlink {
                 snap.modified_at != db_row.modified_at
             } else {
-                snap.logical_size != db_row.logical_size || snap.modified_at != db_row.modified_at
+                // A NULL DB size on a multi-link file is the writer's hardlink
+                // dedup, not a mismatch: the bytes live on another occurrence of
+                // the inode. Comparing sizes there re-upserts the row on every
+                // pass forever (the writer re-nulls it, the next diff re-sends
+                // it), so mtime is the only signal. `nlink == 1` still compares
+                // on size, which is what restores a real size once the other
+                // links are gone. `verifier.rs` makes the same call.
+                let is_deduped_hardlink = db_row.logical_size.is_none() && matches!(snap.nlink, Some(n) if n > 1);
+                (!is_deduped_hardlink && snap.logical_size != db_row.logical_size)
+                    || snap.modified_at != db_row.modified_at
             };
 
             if changed {

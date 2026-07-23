@@ -59,6 +59,22 @@ absent from the live listing, including a whole subtree under a re-listed parent
 self-heals. An epoch-based orphan sweep is prototyped (and tested) in `reconcile_correctness.rs` as optional insurance
 for the never-completes-a-rescan user, deferred as a follow-up.
 
+**The diff is hardlink-dedup-aware, or it never converges.** The writer nulls `logical_size` / `physical_size` on every
+occurrence of a multi-link inode past the first, so each inode's bytes count exactly once (`handle_upsert_entry_v2` →
+`IndexStore::has_sized_entry_for_inode`, in `../writer/entries.rs`). The
+live snapshot still carries the REAL size, so a naive `snap.logical_size != db_row.logical_size` reads that intentional
+NULL as a mismatch on EVERY pass: the diff emits `UpsertEntryV2`, the writer re-nulls the row, the next reconcile
+re-sends it, forever. `diff_dir_against_db` therefore skips the size half when `db_row.logical_size.is_none() &&
+snap.nlink > 1`, comparing mtime alone; `verifier.rs` makes the same call in its per-navigation diff. Two properties
+hold this together: `nlink > 1` (not the NULL alone) gates the skip, so a file that drops back to ONE link is detected
+as changed and its real size comes back; and a first-occurrence row with a real DB size keeps comparing on size, since
+the NULL is what marks the deduped occurrence. Measured cost of getting it wrong (production index, 2026-07-23):
+393,162 file rows at `logical_size IS NULL` index-wide (6.7% of 5.88M files), and one WebKit cache directory holding
+63,690 of them was re-walked 49 times in a day for 3,345,355 of that day's 3,968,781 row deltas. Pinned by
+`reconciler::tests::reconcile_deduped_hardlink_writes_nothing_on_a_repeat_pass` (plus the mtime, drop-to-one-link, and
+sized-occurrence cases beside it). The FSEvents replay verifier (`../watch/event_loop/verification.rs`) is unaffected:
+it only adds missing children and deletes vanished ones, never compares sizes.
+
 **The single-aggregate coverage constraint (load-bearing).** After the reconcile walk, the rescan path stamps every
 re-listed dir (`MarkDirsListed`) and runs ONE bottom-up `ComputeAllAggregates`. It must NOT fire
 `PropagateMinSubtreeEpoch` per dir: the gate measured per-dir propagation across ~37k dirs at ~2× SLOWER than a truncate

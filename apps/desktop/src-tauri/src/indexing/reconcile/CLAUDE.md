@@ -26,6 +26,9 @@ Three mechanisms resync the index after the initial scan: the event-triggered `r
   the LIVE path keeps propagating.
 - **`local_reconcile` stays SERIAL** (hang-tolerance via `GuardedReader`, 15 s cap). Hardlink dedup: dedup the summary
   total only, leave the per-entry snapshot RAW (the writer dedups).
+- **Every size diff skips a deduped hardlink** (`db.logical_size.is_none() && snap.nlink > 1` → compare mtime only, in
+  BOTH `diff_dir_against_db` and `verifier.rs`). The writer's NULL is the converged state; comparing it re-upserts the
+  row on every pass forever. ❌ Don't gate on the NULL alone: `nlink == 1` is what restores a real size.
 - **Cost budget scores read latency as a FRACTION of slow reads, never a total.** A skipped dir is one we NEVER listed:
   ❌ never diff it with an empty listing, ❌ never stamp its `listed_epoch` (`0` absorbs up to `~`/`/`).
 - **Verification's two teeth** (`verify_affected_dirs`, code in `../watch/`): a `count_children_capped` probe before the
