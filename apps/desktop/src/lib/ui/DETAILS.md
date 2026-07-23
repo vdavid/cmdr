@@ -855,11 +855,22 @@ The track-and-thumb on/off control, a presentational wrapper over Ark's `Switch`
 visible label), `onCheckedChange`, and `children` (an inline label right of the track).
 
 Ark renders the semantic control as a visually-hidden native `<input type="checkbox">` inside a `<label>` root; the
-styled track (`.switch-control`) and thumb (`.switch-thumb`) are decorative. **We add `role="switch"` to that input
-ourselves** — Ark ships it as a bare checkbox, so without the override a screen reader announces "checkbox" instead of
-"switch, on". The role is valid on a checkbox input and takes its state from the native `checked`; `Switch.test.ts` pins
-it. The thumb is a literal `white`, not a token, so it reads against the accent-filled track in both themes; the off
-track's outline uses `--color-control-border` for the WCAG 3:1 non-text minimum.
+styled track (`.switch-control`) and thumb (`.switch-thumb`) are decorative. The thumb is a literal `white`, not a
+token, so it reads against the accent-filled track in both themes; the off track's outline uses `--color-control-border`
+for the WCAG 3:1 non-text minimum.
+
+**Two ARIA attributes go on that INPUT, and both are ours to set** (`Switch.test.ts` pins them):
+
+- `role="switch"` — Ark ships a bare checkbox, so without it a screen reader announces "checkbox", not "switch, on". The
+  role is valid on a checkbox input and takes its state from the native `checked`.
+- `aria-label={ariaLabel}` — Ark points the input's `aria-labelledby` at `Switch.Label`, which doesn't exist when the
+  caller passes no `children`. A dangling `aria-labelledby` leaves the control with NO accessible name, and `aria-label`
+  on the wrapping `<label>` root names the label, not the control it labels. `aria-labelledby` still wins when a visible
+  label IS rendered, so setting both is safe. `Checkbox` has the identical trap and the identical fix.
+
+Neither is caught by the axe tier-3 audits (they check that a labelling mechanism is PRESENT, not that it resolves), so
+the pinning tests are the only guard. Any hand-rolled Ark `Switch` outside this primitive needs both attributes too —
+the three settings sections that still hand-roll one carry them explicitly.
 
 `SettingSwitch` (`lib/settings/components/`) is the registry-wired wrapper: it resolves the label from the setting
 definition, subscribes to external resets, and writes through `setSetting`. Use it for anything registry-backed; use

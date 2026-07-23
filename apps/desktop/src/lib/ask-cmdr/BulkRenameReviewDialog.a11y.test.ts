@@ -138,15 +138,13 @@ function requiredButton(target: ParentNode, selector: string): HTMLButtonElement
 }
 
 /**
- * The row checkboxes render through the `Checkbox` primitive (Ark UI), which puts the
- * accessible name on the wrapping label root, not the hidden `<input>`. Resolve the
- * input via its labeled root so tests still target one row's checkbox by name.
+ * The row checkboxes render through the `Checkbox` primitive (Ark UI). The accessible
+ * name sits on the hidden `<input>` itself — putting it on the wrapping label root
+ * instead leaves the control anonymous to assistive tech, see `lib/ui/DETAILS.md`.
  */
 function checkboxByLabel(target: ParentNode, label: string): HTMLInputElement {
-  const root = target.querySelector(`[aria-label="${label}"]`)
-  if (root === null) throw new Error(`Expected checkbox labeled "${label}"`)
-  const input = root.querySelector<HTMLInputElement>('input[type="checkbox"]')
-  if (input === null) throw new Error(`Expected input inside checkbox labeled "${label}"`)
+  const input = target.querySelector<HTMLInputElement>(`input[type="checkbox"][aria-label="${label}"]`)
+  if (input === null) throw new Error(`Expected checkbox labeled "${label}"`)
   return input
 }
 

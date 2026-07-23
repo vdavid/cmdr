@@ -54,6 +54,17 @@ describe('Checkbox a11y', () => {
     target.remove()
   })
 
+  it('gives the input a real accessible name from `ariaLabel` alone', async () => {
+    // Regression: `aria-label` used to sit on Ark's `<label>` root, which names the
+    // label rather than the control. The input's own `aria-labelledby` points at a
+    // `Checkbox.Label` that doesn't exist without `children`, so the name resolved to
+    // nothing and every bare checkbox was anonymous to AT.
+    const target = await mountCheckbox({ ariaLabel: 'Accept terms' })
+    const input = target.querySelector<HTMLInputElement>('input[type="checkbox"]')
+    expect(input?.getAttribute('aria-label')).toBe('Accept terms')
+    target.remove()
+  })
+
   it('exposes a native checkbox that toggles and fires onCheckedChange', async () => {
     const onCheckedChange = vi.fn()
     const target = await mountCheckbox({ ariaLabel: 'Accept terms', onCheckedChange })

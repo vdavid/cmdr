@@ -227,12 +227,16 @@
                         checked={shortcutEnabled}
                         onCheckedChange={(details) => void handleShortcutEnabledChange(details.checked)}
                         disabled={downloadsGated}
-                        aria-label={globalShortcutDef.label}
                     >
                         <Switch.Control class="go-to-latest-switch-control">
                             <Switch.Thumb class="go-to-latest-switch-thumb" />
                         </Switch.Control>
-                        <Switch.HiddenInput data-test="global-shortcut-enabled" />
+                        <!-- `role` + `aria-label` on the INPUT, not the root: see `lib/ui/Switch.svelte`. -->
+                        <Switch.HiddenInput
+                            role="switch"
+                            aria-label={globalShortcutDef.label}
+                            data-test="global-shortcut-enabled"
+                        />
                     </Switch.Root>
                 </SettingRow>
                 <p class="shortcut-hint">

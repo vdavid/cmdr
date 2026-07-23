@@ -219,12 +219,12 @@ Timestamp: ${info.timestamp}
                             onCheckedChange={(d) => {
                                 handleBooleanChange(id, d.checked)
                             }}
-                            aria-label={setting.label}
                         >
                             <Switch.Control class="switch-control">
                                 <Switch.Thumb class="switch-thumb" />
                             </Switch.Control>
-                            <Switch.HiddenInput />
+                            <!-- `role` + `aria-label` on the INPUT, not the root: see `lib/ui/Switch.svelte`. -->
+                            <Switch.HiddenInput role="switch" aria-label={setting.label} />
                         </Switch.Root>
                     {:else if setting.type === 'number' || setting.type === 'duration'}
                         {@const durationUnit =

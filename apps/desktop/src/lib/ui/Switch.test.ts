@@ -30,6 +30,22 @@ describe('Switch', () => {
     target.remove()
   })
 
+  it('gives the input a real accessible name from `ariaLabel` alone', async () => {
+    // Regression: `aria-label` used to sit on Ark's `<label>` root, which names the
+    // label rather than the control. The input's own `aria-labelledby` points at a
+    // `Switch.Label` that doesn't exist without `children`, so the name resolved to
+    // nothing and every label-less switch (all of Settings) was anonymous to AT.
+    const target = await mountSwitch({ ariaLabel: 'Search subfolders' })
+
+    const input = target.querySelector<HTMLInputElement>('input[type="checkbox"]')
+    expect(input?.getAttribute('aria-label')).toBe('Search subfolders')
+
+    const labelledBy = input?.getAttribute('aria-labelledby')
+    if (labelledBy) expect(document.getElementById(labelledBy)).toBeNull()
+
+    target.remove()
+  })
+
   it('reflects the checked prop on the styled track', async () => {
     const target = await mountSwitch({ ariaLabel: 'Search subfolders', checked: true })
 

@@ -180,14 +180,19 @@
                                     log.warn('opt-in toggle failed: {err}', { err: String(err) })
                                 })
                             }}
-                            aria-label={tString('settings.mediaIndex.networkVolumes.optInLabel', {
-                                name: volume.name,
-                            })}
                         >
                             <Switch.Control class="mi-switch-control">
                                 <Switch.Thumb class="mi-switch-thumb" />
                             </Switch.Control>
-                            <Switch.HiddenInput data-test="media-net-optin" data-volume-id={volume.id} />
+                            <!-- `role` + `aria-label` on the INPUT, not the root: see `lib/ui/Switch.svelte`. -->
+                            <Switch.HiddenInput
+                                role="switch"
+                                aria-label={tString('settings.mediaIndex.networkVolumes.optInLabel', {
+                                    name: volume.name,
+                                })}
+                                data-test="media-net-optin"
+                                data-volume-id={volume.id}
+                            />
                         </Switch.Root>
                     </div>
 
@@ -209,14 +214,19 @@
                                         log.warn('always-index toggle failed: {err}', { err: String(err) })
                                     })
                                 }}
-                                aria-label={tString('settings.mediaIndex.networkVolumes.alwaysAria', {
-                                    name: volume.name,
-                                })}
                             >
                                 <Switch.Control class="mi-switch-control">
                                     <Switch.Thumb class="mi-switch-thumb" />
                                 </Switch.Control>
-                                <Switch.HiddenInput data-test="media-net-always" data-volume-id={volume.id} />
+                                <!-- `role` + `aria-label` on the INPUT: see `lib/ui/Switch.svelte`. -->
+                                <Switch.HiddenInput
+                                    role="switch"
+                                    aria-label={tString('settings.mediaIndex.networkVolumes.alwaysAria', {
+                                        name: volume.name,
+                                    })}
+                                    data-test="media-net-always"
+                                    data-volume-id={volume.id}
+                                />
                             </Switch.Root>
                         </div>
                     {/if}

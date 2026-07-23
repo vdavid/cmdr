@@ -37,7 +37,6 @@
     }}
     {disabled}
     {id}
-    aria-label={ariaLabel}
 >
     <Switch.Control class="switch-control">
         <Switch.Thumb class="switch-thumb" />
@@ -45,10 +44,14 @@
     {#if children}
         <Switch.Label class="switch-label">{@render children()}</Switch.Label>
     {/if}
-    <!-- Ark's hidden input is a bare `input[type=checkbox]`, so without this a screen
-         reader announces "checkbox", not "switch, on". `role="switch"` is valid on a
-         checkbox input and takes its state from the native `checked`. -->
-    <Switch.HiddenInput role="switch" />
+    <!-- Both attributes belong on the INPUT, which is the thing assistive tech sees.
+         `role="switch"`: Ark ships a bare `input[type=checkbox]`, so without it a
+         screen reader says "checkbox", not "switch, on".
+         `aria-label`: Ark points the input's `aria-labelledby` at `Switch.Label`, which
+         doesn't exist when the caller passes no `children` — a dangling reference
+         leaves the control with NO accessible name. `aria-labelledby` still wins when
+         a visible label IS rendered, so passing both is safe. -->
+    <Switch.HiddenInput role="switch" aria-label={ariaLabel} />
 </Switch.Root>
 
 <style>

@@ -48,7 +48,6 @@
     }}
     {disabled}
     {id}
-    aria-label={ariaLabel}
 >
     <Checkbox.Control class="checkbox-control">
         <Checkbox.Indicator class="checkbox-indicator">
@@ -59,7 +58,12 @@
     {#if children}
         <Checkbox.Label class="checkbox-label">{@render children()}</Checkbox.Label>
     {/if}
-    <Checkbox.HiddenInput />
+    <!-- `aria-label` belongs on the INPUT: Ark points its `aria-labelledby` at
+         `Checkbox.Label`, which doesn't exist when the caller passes no `children`, and
+         a dangling reference leaves the control with NO accessible name. `aria-label`
+         on the wrapping `<label>` names the label, not the control. `aria-labelledby`
+         still wins when a visible label IS rendered, so passing both is safe. -->
+    <Checkbox.HiddenInput aria-label={ariaLabel} />
 </Checkbox.Root>
 
 <style>
