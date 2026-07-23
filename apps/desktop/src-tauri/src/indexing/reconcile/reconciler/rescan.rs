@@ -9,13 +9,19 @@
 //! `pending_rescans` at spawn); and the per-subtree [`RescanThrottle`], which caps
 //! a churning anchor to ≤1 walk per window by picking only ELIGIBLE anchors and
 //! leaving throttled ones queued for the sweep tick's re-kick.
+//!
+//! The "size updating" hourglass a rescan holds is decided in
+//! [`super::rescan_hold`], which tracks the same eligibility: a queued-but-resting
+//! anchor holds nothing.
 
+use super::rescan_hold::{
+    adopt_picked_holds, hold_if_eligible, reconcile_with_eligibility, release_and_emit_completion, release_rescan_hold,
+};
 use super::rescan_route::{self, RescanRoute};
 use super::rescan_throttle::RescanThrottle;
 use super::*;
 use crate::indexing::lifecycle::manager;
 use crate::indexing::paths::path_prefix;
-use crate::indexing::read::pending_sizes;
 
 impl EventReconciler {
     /// Route a `MustScanSubDirs` anchor by depth (see [`rescan_route`]). The single
@@ -124,11 +130,11 @@ impl EventReconciler {
     /// Insert an anchor into `pending_rescans` and start a rescan if none runs.
     fn enqueue_rescan(&mut self, path: PathBuf, writer: &IndexWriter) {
         self.pending_rescans.lock_ignore_poison().insert(path.clone());
-        // Hold the rescan-root hourglass on THIS volume's tracker for the whole
-        // detached reconcile (it survives the writer-drain clear). Set-insert, so
-        // a re-queue of the already-held active path is a no-op. Released at every
-        // rescan exit (completion, failure, conn-open failure, ancestor-collapse).
-        hold_rescan(&self.volume_id, &path);
+        // Hold the rescan-root hourglass on THIS volume's tracker (it survives the
+        // writer-drain clear) only while a walk is in flight or imminent — a
+        // throttled anchor stays quiet. Set-insert, so a re-queue of the already-held
+        // active path is a no-op. See `rescan_hold`'s invariant for the full lifecycle.
+        hold_if_eligible(&self.volume_id, &path, &self.rescan_throttle, Instant::now());
 
         if self.rescan_active.load(Ordering::Relaxed) {
             log::debug!(
@@ -174,13 +180,20 @@ impl EventReconciler {
     /// ~1 s sweep tick (the same tick as [`Self::sweep_throttle`]). Re-kicks the
     /// drain so an anchor that was held back because its window hadn't elapsed
     /// reconciles once it has: this is what guarantees a hard-churning subtree
-    /// re-walks every window and never starves. Also garbage-collects throttle
-    /// records for anchors no longer pending, so the map stays bounded by the
-    /// count of actively-churning subtrees.
+    /// re-walks every window and never starves. Also re-derives each queued
+    /// anchor's hourglass hold from its current eligibility (see `rescan_hold`), and
+    /// garbage-collects throttle records for anchors no longer pending, so the map
+    /// stays bounded by the count of actively-churning subtrees.
     pub(in crate::indexing) fn sweep_rescan_throttle(&mut self, writer: &IndexWriter) {
         {
             let pending = self.pending_rescans.lock_ignore_poison();
-            self.rescan_throttle.lock_ignore_poison().gc(&pending, Instant::now());
+            let mut throttle = self.rescan_throttle.lock_ignore_poison();
+            let now = Instant::now();
+            throttle.gc(&pending, now);
+            // The in-flight walk is out of `pending`, but a storm can re-queue it;
+            // pass it so its hold survives (`rescan_hold`'s no-unheld-write rule).
+            let active = self.active_rescan_path.lock_ignore_poison().clone();
+            reconcile_with_eligibility(&self.volume_id, &pending, active.as_ref(), &throttle, now);
         }
         self.kick_pending_rescans(writer);
     }
@@ -221,6 +234,23 @@ impl EventReconciler {
     #[cfg(test)]
     pub(in crate::indexing) fn insert_pending_rescan_for_test(&self, path: PathBuf) {
         self.pending_rescans.lock_ignore_poison().insert(path);
+    }
+
+    /// Test-only: record a rescan completion for `path`, putting it inside the
+    /// throttle window its `walk_cost` earns. The "queued but resting" state the
+    /// hourglass-hold tests need, without running a real walk.
+    #[cfg(test)]
+    pub(in crate::indexing) fn record_rescan_completion_for_test(&self, path: &Path, walk_cost: Duration) {
+        self.rescan_throttle
+            .lock_ignore_poison()
+            .record_completion(path, Instant::now(), walk_cost);
+    }
+
+    /// Test-only: name the in-flight rescan, so the sweep tick sees a walk it must
+    /// not disturb (production sets this at spawn).
+    #[cfg(test)]
+    pub(in crate::indexing) fn set_active_rescan_path_for_test(&self, path: Option<PathBuf>) {
+        *self.active_rescan_path.lock_ignore_poison() = path;
     }
 
     /// Test-only: zero both throttle bounds, so every anchor is always eligible.
@@ -269,58 +299,6 @@ pub(super) fn pick_and_collapse_rescan(
     Some((picked, dropped))
 }
 
-/// Hold a rescan root's hourglass on `volume_id`'s tracker. No-op if the volume
-/// has no tracker (indexing stopped).
-fn hold_rescan(volume_id: &str, root: &Path) {
-    if let Some(tracker) = pending_sizes::get_pending_sizes_for(volume_id) {
-        tracker.hold(&root.to_string_lossy());
-    }
-}
-
-/// Release a rescan root's held hourglass, UNLESS the same root is back in
-/// `pending_rescans` (a storm re-queue of the active path, or an escalation
-/// targeting it): the follow-up rescan needs the hold to persist, else it runs
-/// unheld. Membership is checked under the lock to close the re-queue race.
-fn release_rescan_hold(volume_id: &str, root: &Path, pending_rescans: &Mutex<HashSet<PathBuf>>) {
-    if pending_rescans.lock_ignore_poison().contains(root) {
-        return;
-    }
-    if let Some(tracker) = pending_sizes::get_pending_sizes_for(volume_id) {
-        tracker.release(&root.to_string_lossy());
-    }
-}
-
-/// Release the held hourglasses of descendants dropped by ancestor-collapse.
-/// Unconditional: a dropped descendant is out of `pending_rescans` and its
-/// pendingness now rides the picked ancestor's still-held hold.
-fn release_dropped_holds(volume_id: &str, dropped: &[PathBuf]) {
-    if dropped.is_empty() {
-        return;
-    }
-    if let Some(tracker) = pending_sizes::get_pending_sizes_for(volume_id) {
-        for d in dropped {
-            tracker.release(&d.to_string_lossy());
-        }
-    }
-}
-
-/// Release the rescan root's hourglass (skip if re-queued), then emit
-/// `index-dir-updated` for the root plus its ancestor chain via the writer
-/// channel so the refresh sequences AFTER the rescan's writes land. Release
-/// precedes the emit so the triggered refetch reads `pending == false`.
-fn release_and_emit_completion(
-    volume_id: &str,
-    root: &Path,
-    pending_rescans: &Mutex<HashSet<PathBuf>>,
-    writer: &IndexWriter,
-) {
-    release_rescan_hold(volume_id, root, pending_rescans);
-    let root_str = root.to_string_lossy().to_string();
-    let mut paths = vec![root_str.clone()];
-    paths.extend(collect_ancestor_paths(&root_str));
-    let _ = writer.send(WriteMessage::EmitDirUpdated(paths));
-}
-
 /// Start the next pending MustScanSubDirs rescan, if any.
 ///
 /// Standalone function (not a method) so the spawned task can call it after
@@ -337,13 +315,16 @@ pub(super) fn start_next_rescan(
     let path = {
         let mut pending = pending_rescans.lock_ignore_poison();
         let throttle = rescan_throttle.lock_ignore_poison();
-        // Lock order is always pending → throttle where both are held; the task
-        // records completions under the throttle lock alone, so there's no inverse.
+        // Lock order is always pending → throttle → active-path where more than one
+        // is held (here, and in `sweep_rescan_throttle`); every other site takes one
+        // alone or in that order, so there's no inverse.
         match pick_and_collapse_rescan(&mut pending, &throttle, Instant::now()) {
             Some((picked, dropped)) => {
-                // The collapsed descendants are now covered by `picked`'s hold;
-                // release their own so the held set doesn't leak them forever.
-                release_dropped_holds(&volume_id, &dropped);
+                // Take the hourglass for the walk that's about to start, and free the
+                // collapsed descendants (now covered by `picked`'s hold). Under the
+                // `pending` lock, and `picked` is already out of the set, so a
+                // concurrent sweep can't disagree about either.
+                adopt_picked_holds(&volume_id, &picked, &dropped);
                 picked
             }
             None => return,
@@ -391,8 +372,15 @@ pub(super) fn start_next_rescan(
                         path.display()
                     );
                     // Release this root's hourglass before recursing to the next
-                    // rescan (skip if it's been re-queued meanwhile).
-                    release_rescan_hold(&volume_id_for_task, &path, &pending_for_task);
+                    // rescan. No completion was recorded, so a re-queued anchor is
+                    // still eligible and keeps the hold for its imminent retry.
+                    release_rescan_hold(
+                        &volume_id_for_task,
+                        &path,
+                        &pending_for_task,
+                        &throttle_for_task,
+                        Instant::now(),
+                    );
                     active_for_task.store(false, Ordering::Relaxed);
                     *active_path_for_task.lock_ignore_poison() = None;
                     // Try the next pending rescan even if this one failed
@@ -425,12 +413,12 @@ pub(super) fn start_next_rescan(
 
             // The subtree's chain was still (partly) missing: re-queue the anchor the
             // skip branch resolved (strictly closer to the volume root, so this
-            // converges by depth). Hold its hourglass before inserting so the follow-up
-            // rescan is covered, and so the completion release below can't strand it.
-            // The anchor is a proper ancestor of `path` (never equal), so it doesn't
-            // affect `path`'s own release decision. The drain below picks it up.
+            // converges by depth). Hold its hourglass if it may walk now, so the
+            // follow-up rescan is covered from the moment it's queued. The anchor is a
+            // proper ancestor of `path` (never equal), so it doesn't affect `path`'s
+            // own release decision. The drain below picks it up.
             if let Some(anchor) = escalation {
-                hold_rescan(&volume_id_for_task, &anchor);
+                hold_if_eligible(&volume_id_for_task, &anchor, &throttle_for_task, Instant::now());
                 pending_for_task.lock_ignore_poison().insert(anchor);
             }
 
@@ -444,11 +432,21 @@ pub(super) fn start_next_rescan(
                 .lock_ignore_poison()
                 .record_completion(&path, Instant::now(), walk_cost);
 
-            // Release this root's hourglass (unless a storm re-queued it) and emit the
-            // in-place refresh for the root + its ancestor chain. Release precedes the
-            // emit so the triggered refetch reads `pending == false`; the emit rides
-            // the writer so it lands after the reconcile's writes.
-            release_and_emit_completion(&volume_id_for_task, &path, &pending_for_task, &writer);
+            // Release this root's hourglass and emit the in-place refresh for the root
+            // + its ancestor chain. The completion above is already recorded, so a
+            // churning re-queue reads THROTTLED here and releases: a resting anchor
+            // must not hold `~` and `/` in the hourglass for its whole back-off.
+            // Release precedes the emit so the triggered refetch reads
+            // `pending == false`; the emit rides the writer so it lands after the
+            // reconcile's writes.
+            release_and_emit_completion(
+                &volume_id_for_task,
+                &path,
+                &pending_for_task,
+                &throttle_for_task,
+                Instant::now(),
+                &writer,
+            );
 
             DEBUG_STATS.record_rescan_completed();
             active_for_task.store(false, Ordering::Relaxed);
@@ -476,7 +474,13 @@ pub(super) fn start_next_rescan(
         );
         rescan_active.store(false, Ordering::Relaxed);
         *active_rescan_path.lock_ignore_poison() = None;
-        release_rescan_hold(&volume_id, &path_for_spawn_failure, &pending_rescans);
+        release_rescan_hold(
+            &volume_id,
+            &path_for_spawn_failure,
+            &pending_rescans,
+            &rescan_throttle,
+            Instant::now(),
+        );
     }
 }
 
@@ -712,88 +716,5 @@ mod tests {
         let (picked, _dropped) =
             pick_and_collapse_rescan(&mut pending, &throttle, t0 + window).expect("eligible once the window elapses");
         assert_eq!(picked, PathBuf::from("/a"));
-    }
-
-    use crate::indexing::lifecycle::state::IndexVolumeKind;
-    use crate::indexing::stress_test_helpers::TestInstanceGuard;
-
-    /// Spawn a real NON-root writer over a throwaway DB and register a PRIVATE
-    /// per-volume instance for `volume_id`, so the completion's hold-release
-    /// routes to a private tracker (`get_pending_sizes_for(volume_id)`) immune to
-    /// foreign root writers clearing the process-global root `PENDING_SIZES`
-    /// mid-assertion (the isolation flake; its panic used to poison
-    /// `PENDING_SIZES_TEST_MUTEX` and cascade). The completion emit rides this
-    /// writer's channel, and `None` app handle makes the emit an observable-only
-    /// no-op captured by the writer's test probe.
-    fn spawn_probe_writer_for(volume_id: &str) -> (IndexWriter, tempfile::TempDir, TestInstanceGuard) {
-        let dir = tempfile::tempdir().expect("temp dir");
-        let db_path = dir.path().join("rescan-emit.db");
-        let _store = IndexStore::open(&db_path).expect("open store");
-        let writer = IndexWriter::spawn_for(&db_path, None, false, volume_id.to_string()).expect("spawn writer");
-        let instance = TestInstanceGuard::register(volume_id, &db_path, IndexVolumeKind::Smb);
-        (writer, dir, instance)
-    }
-
-    /// On completion, `release_and_emit_completion` drops the root's hold, then
-    /// emits the root + its full ancestor chain via the writer so the FE refetch
-    /// (which reads `is_pending`) lands after the release and after the writes.
-    #[test]
-    fn completion_releases_then_emits_root_and_ancestors() {
-        let volume_id = "smb://rescan-test-release-emit";
-        let (writer, _dir, instance) = spawn_probe_writer_for(volume_id);
-        instance.tracker.hold("/aaa/bbb/ccc");
-        assert!(instance.tracker.is_pending("/aaa/bbb/ccc"), "held before completion");
-
-        let pending: Mutex<HashSet<PathBuf>> = Mutex::new(HashSet::new());
-        release_and_emit_completion(volume_id, Path::new("/aaa/bbb/ccc"), &pending, &writer);
-
-        // Release happened (the FE refetch will read pending == false).
-        assert!(
-            !instance.tracker.is_pending("/aaa/bbb/ccc"),
-            "hold released on completion"
-        );
-        assert!(
-            !instance.tracker.is_pending("/aaa"),
-            "ancestor no longer pending via this root"
-        );
-
-        // The emit rode the writer with the root + its ancestor chain.
-        writer.flush_blocking().expect("flush");
-        assert_eq!(
-            writer.emitted_paths(),
-            vec![vec![
-                "/aaa/bbb/ccc".to_string(),
-                "/aaa/bbb".to_string(),
-                "/aaa".to_string(),
-                "/".to_string(),
-            ]],
-            "one EmitDirUpdated carrying root + ancestor chain"
-        );
-    }
-
-    /// A storm re-queue of the active path leaves it in `pending_rescans` when the
-    /// rescan completes: the release SKIPS (the follow-up rescan needs the hold),
-    /// but the completion still emits so the in-place refresh fires.
-    #[test]
-    fn completion_skips_release_when_requeued() {
-        let volume_id = "smb://rescan-test-skip-release";
-        let (writer, _dir, instance) = spawn_probe_writer_for(volume_id);
-        instance.tracker.hold("/aaa/bbb/ccc");
-
-        let mut set = HashSet::new();
-        set.insert(PathBuf::from("/aaa/bbb/ccc"));
-        let pending = Mutex::new(set);
-        release_and_emit_completion(volume_id, Path::new("/aaa/bbb/ccc"), &pending, &writer);
-
-        assert!(
-            instance.tracker.is_pending("/aaa/bbb/ccc"),
-            "hold persists while the root is re-queued for a follow-up rescan"
-        );
-        writer.flush_blocking().expect("flush");
-        assert_eq!(
-            writer.emitted_paths().len(),
-            1,
-            "the completion still emits the refresh"
-        );
     }
 }

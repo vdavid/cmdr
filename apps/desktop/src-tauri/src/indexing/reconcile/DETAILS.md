@@ -409,9 +409,59 @@ hour. This is the same attribution `reconcile_report` makes for its log level, f
 
 `gc` measures each record against its OWN window, not a global one. Against a global 60 s an expensive anchor's record
 would be evicted the moment the floor elapsed, and the anchor would then be eligible on its leading edge, defeating the
-back-off entirely. A consequence to know: a churning expensive anchor holds its rescan-root hourglass for the whole
-window between walks (the hold persists while the anchor is re-queued), so "size updating" can now sit on such a
-folder for minutes rather than up to a minute.
+back-off entirely.
+
+## The rescan hourglass hold (`reconciler/rescan_hold.rs`)
+
+A rescan root held in `PendingSizes` marks its whole chain pending in BOTH directions (`../read/pending_sizes.rs`), so
+an anchor at `~/Library/Caches/…/NetworkCache/…/Resource` holding drags `~/Library`, `~`, and `/` into the "size
+updating" hourglass with it. The reach is correct while the subtree is being rewritten and wrong the rest of the time,
+so the module keeps ONE invariant:
+
+**An anchor holds iff it is walking right now, or it is queued AND eligible to walk now.** The hold means "unprocessed
+index writes in flight or imminent" — nothing weaker.
+
+The load-bearing half is what it EXCLUDES. A queued-but-throttled anchor has no writes in flight: its last walk
+completed and its final aggregate is consistent; it is only resting out the window that walk earned. Holding through
+that rest is what put the hourglass on `~` and `/` for as long as the anchor kept churning — bounded at about a minute
+under a flat 60 s window, but up to 30 minutes once the window became cost-proportional, and worst exactly for the
+expensive churning anchors the back-off targets. The honest signal is kept for the queued-and-eligible case: an anchor
+waiting only on the single-flight active walk still holds, because its walk is imminent.
+
+Four sites maintain it, deliberately overlapping:
+
+- **Enqueue** (`hold_if_eligible`, from `enqueue_rescan` and the Leak-B escalation re-queue): an eligible anchor holds
+  as soon as it's queued, so the honest signal doesn't wait up to a second for the sweep tick.
+- **Pick** (`adopt_picked_holds`, inside `start_next_rescan`'s pick block): the anchor about to walk holds
+  unconditionally, and the descendants ancestor-collapse dropped release theirs (now covered by the picked ancestor's
+  hold). Taken UNDER the `pending_rescans` lock. This is what makes "walking ⇒ held" structural rather than inferred,
+  and it's why every release path may release freely: a follow-up walk takes its own hold rather than inheriting one.
+- **Sweep tick** (`reconcile_with_eligibility`, on the same ~1 s tick as the throttle re-kick): re-derives each QUEUED
+  anchor's hold from its current eligibility. This is what turns a throttled anchor quiet and re-arms it when its window
+  elapses, one tick before the re-kick walks it.
+- **Every rescan exit** (`release_rescan_hold`, `release_and_emit_completion`): releases unless the root is back in
+  `pending_rescans` AND eligible. The completion path records the throttle completion FIRST, so a churning re-queue
+  reads throttled there and releases; the exits that record nothing (conn-open failure, spawn failure) leave the anchor
+  eligible, so a re-queue keeps the hold unbroken for its imminent retry instead of flickering it off and back on.
+
+**Why sweep-time reconciliation rather than pick-time only.** Pick time alone would leave a queued-and-eligible anchor
+unheld while it waits behind the active walk, losing the honest signal in exactly the case where the walk IS imminent.
+Enqueue alone can't work either: eligibility changes with the clock, and only a tick re-evaluates it. The two ends plus
+the tick give each state its own writer, and the pick-time hold is the one that must never be skipped.
+
+**There is no window where a walk is writing while its anchor is unheld.** The active walk is popped out of
+`pending_rescans`, so the sweep never iterates it. A storm that re-queues the active path can only put it back while its
+throttle record still predates the walk, which reads ELIGIBLE and therefore holds. After the walk records its
+completion the anchor is ineligible, but `active_rescan_path` still names it, so the sweep skips it (it's passed in as
+`active`) until the task itself releases. The pick-time hold closes the last seam: even if a release and a re-queue
+interleave, the follow-up walk holds when it is picked.
+
+**What this does NOT do: a throttled subtree's size is not marked stale.** `recursive_size_stale` is
+`complete && min_subtree_epoch < current_epoch` (`../read/enrichment.rs`), and `current_epoch` bumps only on a
+continuity BREAK (reconnect/rescan, watcher death, overflow, disconnect, launch-loading-Stale) — never per throttle
+window. A reconcile STAMPS `listed_epoch` with the current epoch, so a subtree walked this session reads
+`stale = false` and renders `'size'`, a confidently-exact value, for the whole back-off. Dropping the hold therefore
+leaves it looking fresh rather than muted. Whether that's worth a distinct signal is open.
 
 **A reconcile's log line attributes its writer wait** (`reconciler/rescan.rs` `reconcile_report`,
 `../writer/wait_probe.rs`). The bounded writer channel means a producer parks once it's full, so `reconcile_subtree`'s
@@ -425,9 +475,9 @@ waited" (writer saturation has its own signal in the writer heartbeat). The prob
 
 The per-subtree throttle is the right tool for a DEEP/narrow anchor (a single `target/`), but NOT for a shallow/root-
 scale one. Under a high-churn boot disk, macOS drops fine-grained FSEvents and raises `MustScanSubDirs` on ever-higher
-paths, up to `/`. Reconciling `/` is a ~20-min walk that holds the per-dir hourglass the whole time, and under
-continuous root churn the anchor never leaves `pending_rescans`, so `release_rescan_hold` keeps skipping and the local
-hourglasses never clear — a 60 s throttle after a 20-min walk is noise. A channel overflow (the SAME "we lost events"
+paths, up to `/`. Reconciling `/` is a ~20-min walk, and the whole time it runs it legitimately holds the per-dir
+hourglass over everything below — an invisible reconcile that makes every local size look unsettled for twenty minutes,
+and a 60 s throttle after a 20-min walk is noise. A channel overflow (the SAME "we lost events"
 meaning) already takes the VISIBLE scanner path; this makes the two equivalent signals converge. `route_must_scan_sub_dirs`
 (the single entry point for the two feeders the fix targets — the live path `process_live_event` and the post-replay
 handoff `event_loop::replay`) classifies by anchor depth via `rescan_route::classify`:

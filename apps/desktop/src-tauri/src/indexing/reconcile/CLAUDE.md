@@ -7,7 +7,7 @@ Three mechanisms resync the index after the initial scan: the event-triggered `r
 ## Module map
 
 - **reconciler.rs** + **reconciler/**: the event path — `diff_dir_against_db`, `reconcile_subtree`, `BulkReconcileGuard`,
-  and `rescan*` / `throttle` / `escalation` (depth-split, sweep, per-file throttle).
+  and `rescan*` / `throttle` / `escalation` (depth-split, sweep, per-file throttle, hourglass hold).
 - **local_reconcile.rs** + **local_reconcile/**: serial full-tree rescan-in-place (`cost_budget`, `latency_probe`).
 - **verifier.rs**: per-navigation `read_dir` diff. **reconcile_bench** / **reconcile_correctness**: perf + regressions.
 
@@ -37,6 +37,10 @@ Three mechanisms resync the index after the initial scan: the event-triggered `r
   leading + trailing, `Utility`-QoS thread. Cost is duration MINUS writer wait (else one saturated writer over-throttles
   every anchor at once), and `gc` measures each record against its OWN window (a global one evicts a backed-off anchor
   early and it re-walks on its leading edge).
+- **A rescan anchor holds the hourglass ONLY while walking or queued-AND-eligible** (`rescan_hold.rs`). ❌ Don't restore
+  an unconditional hold at enqueue: a throttled anchor is resting with no writes in flight, and a held root flags its
+  whole chain, so it would put "size updating" on `~` and `/` for up to 30 min. ❌ Don't drop the pick-time hold either;
+  it's what leaves no unheld-write window.
 - **Depth-split `MustScanSubDirs`:** SHALLOW (`depth ≤ 2`) → visible scanner, NO hourglass hold, never `pending_rescans`;
   DEEP (`≥ 3`) → throttled drain.
 - **A shallow anchor sweeps at most ONCE A DAY, boot disk only** (24 h; mount-rooted keeps 45 s). Coalesced anchors are
