@@ -124,7 +124,7 @@ found, check that `~/.local/share/mise/shims` is on `$PATH`), and icons come fro
   parallel-subagent efforts, see `docs/guides/multi-agent-refactors.md`.
 - Before doing **legwork**, read the [guide](docs/guides/agent-legwork-guide.md).
 - **TDD where reasonable** (red → green); cover code with tests until confident, not beyond.
-- Step back per milestone: is it solid AND elegant?
+- Step back per milestone: is it solid AND elegant AND documented?
 - **The delivery pipeline is fully wired; don't re-audit it.** Releases are agent-automated end to end (tag → CI
   build/sign/notarize → publish `latest.json` → website deploy → FDA-preserving silent update), and feedback loops are
   live (crash → email cron, error → Discord, anonymous analytics → PostHog). See `docs/guides/releasing.md`.
