@@ -20,11 +20,12 @@ sections compose).
 - **`ListingSection.svelte`**: `Appearance > Listing`: document icons, directory sort, brief column width
 - **`NavigationAndFileOpsSection.svelte`**: `Behavior > Navigation & file ops`: three labeled `SectionCard`s —
   Navigation (the `behavior.doubleClickPaneNavigatesToParent` switch), File operations (the extension-change
-  confirmation row `allowFileExtensionChanges` + the `pasteClipboardAsFile` toggle group), and Operation log (the retention limits
-  `operationLog.maxAge` / `operationLog.maxSize`, plus the `settings.operationLog.intro` blurb). The conflict/progress
-  settings live ONLY in Advanced (`maxConflictsToShow`, `progressUpdateInterval` → `section: ['Advanced']`), never
-  mirrored here. The hidden `behavior.doubleClickOnPaneNotificationSeen` flag (one-time-hint tracker) is registered but
-  renders no row. Each card frame gated via `anyVisible(shouldShow, ...)` (the card-group pattern).
+  confirmation row `allowFileExtensionChanges` + the `pasteClipboardAsFile` toggle group), and Operation log (the
+  retention limits `operationLog.maxAge` / `operationLog.maxSize`, plus the `settings.operationLog.intro` blurb). The
+  conflict/progress settings live ONLY in Advanced (`maxConflictsToShow`, `progressUpdateInterval` →
+  `section: ['Advanced']`), never mirrored here. The hidden `behavior.doubleClickOnPaneNotificationSeen` flag
+  (one-time-hint tracker) is registered but renders no row. Each card frame gated via `anyVisible(shouldShow, ...)` (the
+  card-group pattern).
 - **`ArchivesSection.svelte`**: `Behavior > Archives`: what pressing Enter does per format (Browse | Open | Ask). A
   CUSTOM section (not registry-driven rows): all formats live in ONE pinned-shape JSON setting
   (`behavior.archiveEnterBehavior`, `{ zip, bundle }`), so the format list extends without a registry entry per format.

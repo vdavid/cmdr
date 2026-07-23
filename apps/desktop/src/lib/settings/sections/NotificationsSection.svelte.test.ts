@@ -143,9 +143,7 @@ describe('NotificationsSection', () => {
   it('writes through to the settings store when the user picks a different downloads-notifications mode', async () => {
     const target = await mountSection()
     // ToggleGroup renders one button per option with the visible label.
-    const macosButton = Array.from(target.querySelectorAll('button')).find(
-      (b) => b.textContent.trim() === 'macOS',
-    )
+    const macosButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'macOS')
     if (!macosButton) throw new Error('macOS toggle not found')
     macosButton.click()
     await tick()
