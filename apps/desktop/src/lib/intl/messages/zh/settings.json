@@ -245,7 +245,7 @@
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
   },
-  "settings.appearance.fileSizeFormat.description": "文件列表中文件大小的显示方式：二进制（KiB、MiB，其中 1 KiB = 1,024 bytes）或 SI 十进制（KB、MB，其中 1 KB = 1,000 bytes）。",
+  "settings.appearance.fileSizeFormat.description": "文件列表中文件大小的显示方式：二进制（KiB、MiB，其中 1 KiB = 1024 字节）或 SI 十进制（KB、MB，其中 1 KB = 1000 字节）。",
   "@settings.appearance.fileSizeFormat.description": {
     "sourceHash": "8219704"
   },

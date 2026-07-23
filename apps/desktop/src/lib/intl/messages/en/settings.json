@@ -310,7 +310,7 @@
   },
   "settings.appearance.fileSizeFormat.description": "How to show file sizes in the file list: binary (KiB, MiB, where 1 KiB = 1,024 bytes) or SI decimal (KB, MB, where 1 KB = 1,000 bytes).",
   "@settings.appearance.fileSizeFormat.description": {
-    "description": "Help text for the file-size-format setting. Keep the unit symbols (KiB, MiB, KB, MB) and the equations \"1 KiB = 1,024 bytes\" and \"1 KB = 1,000 bytes\" exact; only the connective words are translatable.",
+    "description": "Help text for the file-size-format setting. Keep the unit symbols exact (KiB, MiB, KB, MB are standards-defined). Localize everything else for your language: translate \"bytes\" to the local term, and write the numbers 1024 and 1000 with your language's own convention (thousands separator, or none) rather than the English \"1,024\"/\"1,000\".",
     "screenshot": "settings-appearance-sizes.png"
   },
   "settings.appearance.fileSizeFormat.opt.binary": "Binary (KiB, MiB, GiB)",

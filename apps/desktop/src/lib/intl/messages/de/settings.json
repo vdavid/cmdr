@@ -247,7 +247,7 @@
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
   },
-  "settings.appearance.fileSizeFormat.description": "Wie Dateigrößen in der Dateiliste angezeigt werden: binär (KiB, MiB, wobei 1 KiB = 1,024 bytes) oder SI-dezimal (KB, MB, wobei 1 KB = 1,000 bytes).",
+  "settings.appearance.fileSizeFormat.description": "Wie Dateigrößen in der Dateiliste angezeigt werden: binär (KiB, MiB, wobei 1 KiB = 1024 Bytes) oder SI-dezimal (KB, MB, wobei 1 KB = 1000 Bytes).",
   "@settings.appearance.fileSizeFormat.description": {
     "sourceHash": "8219704"
   },

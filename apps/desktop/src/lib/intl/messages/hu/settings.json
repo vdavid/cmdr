@@ -245,7 +245,7 @@
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
   },
-  "settings.appearance.fileSizeFormat.description": "Hogyan jelenjenek meg a fájlméretek a fájllistában: bináris (KiB, MiB, ahol 1 KiB = 1,024 bytes) vagy SI decimális (KB, MB, ahol 1 KB = 1,000 bytes).",
+  "settings.appearance.fileSizeFormat.description": "Hogyan jelenjenek meg a fájlméretek a fájllistában: bináris (KiB, MiB, ahol 1 KiB = 1024 bájt) vagy SI decimális (KB, MB, ahol 1 KB = 1000 bájt).",
   "@settings.appearance.fileSizeFormat.description": {
     "sourceHash": "8219704"
   },

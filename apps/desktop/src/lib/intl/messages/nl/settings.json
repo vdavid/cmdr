@@ -247,7 +247,7 @@
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
   },
-  "settings.appearance.fileSizeFormat.description": "Hoe bestandsgroottes in de bestandenlijst worden weergegeven: binair (KiB, MiB, waarbij 1 KiB = 1,024 bytes) of SI-decimaal (KB, MB, waarbij 1 KB = 1,000 bytes).",
+  "settings.appearance.fileSizeFormat.description": "Hoe bestandsgroottes in de bestandenlijst worden weergegeven: binair (KiB, MiB, waarbij 1 KiB = 1024 bytes) of SI-decimaal (KB, MB, waarbij 1 KB = 1000 bytes).",
   "@settings.appearance.fileSizeFormat.description": {
     "sourceHash": "8219704"
   },

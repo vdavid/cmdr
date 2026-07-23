@@ -243,7 +243,7 @@
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
   },
-  "settings.appearance.fileSizeFormat.description": "Cách hiển thị kích thước tệp trong danh sách tệp: nhị phân (KiB, MiB, trong đó 1 KiB = 1,024 bytes) hoặc thập phân SI (KB, MB, trong đó 1 KB = 1,000 bytes).",
+  "settings.appearance.fileSizeFormat.description": "Cách hiển thị kích thước tệp trong danh sách tệp: nhị phân (KiB, MiB, trong đó 1 KiB = 1024 byte) hoặc thập phân SI (KB, MB, trong đó 1 KB = 1000 byte).",
   "@settings.appearance.fileSizeFormat.description": {
     "sourceHash": "8219704"
   },

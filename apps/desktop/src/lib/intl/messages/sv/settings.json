@@ -247,7 +247,7 @@
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
   },
-  "settings.appearance.fileSizeFormat.description": "Hur filstorlekar visas i fillistan: binärt (KiB, MiB, där 1 KiB = 1,024 bytes) eller SI-decimal (KB, MB, där 1 KB = 1,000 bytes).",
+  "settings.appearance.fileSizeFormat.description": "Hur filstorlekar visas i fillistan: binärt (KiB, MiB, där 1 KiB = 1024 byte) eller SI-decimal (KB, MB, där 1 KB = 1000 byte).",
   "@settings.appearance.fileSizeFormat.description": {
     "sourceHash": "8219704"
   },
