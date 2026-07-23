@@ -44,6 +44,38 @@ people to avoid saving.
 
 Hot reload is reliable: max ~15 s for Rust, ~3 s for the frontend.
 
+### The dev server sends `Cache-Control: no-store`
+
+`server.headers` in `vite.config.js` forbids the webview from storing dev-server responses on disk. It applies to the
+dev server only, so production builds are untouched.
+
+WKWebView keys its network cache by URL, and a dev session serves the same modules under fresh URLs every time: the
+wrapper reserves a new ephemeral port per session, so `localhost:61280/src/…` and `localhost:60129/src/…` are unrelated
+cache keys, and HMR adds a `?t=<epoch-ms>` buster on every hot reload. Vite's default `no-cache` only forces
+revalidation, it still permits STORING, so every one of those landed on disk and none of it was ever reusable.
+
+Measured 2026-07-23 (dev sessions from a worktree, counting cache records by their own `localhost:<port>`, each session
+confirmed booted to a rendered file explorer):
+
+- Default `no-cache`: **1,188 records from a single session start**, plus 10 more from 15 hot reloads.
+- `no-store`: **2 records** from a session start, and **0** from the same 15 hot reloads.
+- What had accumulated: ~145,000 files / 871 MB in `~/Library/Caches/cmdr/WebKit` across ~161 dev sessions, on a shared
+  path (dev runs an unbundled binary, so WKWebView falls back to the executable name `cmdr` for every instance and
+  worktree). Prod is unaffected and sat at 763 files.
+
+Session STARTUP dominates, not HMR: the per-session port alone re-caches the whole module graph. The 2 residual records
+are the root HTML, which Vite serves without a `Cache-Control` header at all, so `server.headers` doesn't reach it and
+WKWebView caches it heuristically. Two records per session is not worth chasing.
+
+**Gotcha:** setting the header from plugin middleware does NOT work. Middleware registered in `configureServer` runs
+BEFORE Vite's internal transform middleware, which sets its own `Cache-Control: no-cache` when it sends the response and
+overwrites anything set earlier (verified by `curl -I` against a running dev server). `server.headers` is applied at the
+right point and wins.
+
+`localStorage` is deliberately untouched, so the persisted icon cache (`src/lib/icon-cache.ts`) still behaves in dev
+exactly as in prod. Going non-persistent instead (Tauri's `incognito(true)`, which the Tauri 2.11.5 docs confirm maps to
+a `nonPersistent` WKWebsiteDataStore on macOS) would have wiped it and made that divergence invisible in dev.
+
 ## Debugging
 
 Data dirs are separate for prod, dev, and each worktree:

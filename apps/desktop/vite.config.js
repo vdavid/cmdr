@@ -52,6 +52,9 @@ export default defineConfig(async () => ({
   server: {
     port,
     strictPort: true,
+    // Forbid the webview from STORING dev-server responses on disk. See
+    // `apps/desktop/DETAILS.md` for the measurements and why `no-cache` isn't enough.
+    headers: { 'Cache-Control': 'no-store' },
     host: host || false,
     hmr: host
       ? {
