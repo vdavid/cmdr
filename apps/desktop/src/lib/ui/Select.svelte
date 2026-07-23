@@ -206,6 +206,7 @@
 
 <div class="select-root" bind:this={rootEl}>
     <Select.Root
+        class="select-inner"
         {collection}
         value={value ? [value] : []}
         onValueChange={handleValueChange}
@@ -283,6 +284,16 @@
 <style>
     .select-root {
         display: contents;
+    }
+
+    /* Ark `Select.Root`'s box. `.select-root` above is `display: contents` (no box
+       of its own), so `Select.HiddenSelect` — hidden sr-only style with no
+       `top`/`left` — would otherwise resolve against the window shell and make it
+       secretly scrollable (see `Switch.svelte`'s `.switch-root` for the full why).
+       Positioning this box keeps the hidden `<select>` local so the real scroller
+       clips it. `relative` doesn't change the box's flow position. */
+    :global(.select-inner) {
+        position: relative;
     }
 
     /* macOS borderless pop-up button: value text + a round chevron stepper, hugging its content. */

@@ -290,7 +290,10 @@
         color: var(--color-text-primary);
         font-family: var(--font-system), sans-serif;
         font-size: var(--font-size-sm);
-        overflow: hidden;
+        /* `clip`, not `hidden`: keeps the shell from being a scroll container, so
+           no stray absolutely-positioned descendant can scroll the window under
+           the traffic lights. See the matching note in `routes/settings/+page.svelte`. */
+        overflow: clip;
         display: flex;
         flex-direction: column;
         position: relative;

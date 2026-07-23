@@ -513,7 +513,13 @@
         color: var(--color-text-primary);
         font-family: var(--font-system) sans-serif;
         font-size: var(--font-size-sm);
-        overflow: hidden;
+        /* `clip`, not `hidden`: `hidden` makes this a scroll CONTAINER, so a
+           stray absolutely-positioned descendant that overflows the fold (e.g.
+           an Ark hidden input, though those are now contained at the control)
+           can be programmatically scrolled into view, dragging the whole window
+           under the traffic lights. `clip` creates no scroll container, so the
+           shell can never scroll. Belt to the per-control fix in `lib/ui`. */
+        overflow: clip;
         display: flex;
         flex-direction: column;
         /* Anchor for the absolutely-positioned `.window-drag-region` strip. */

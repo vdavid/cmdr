@@ -80,6 +80,14 @@
         align-items: center;
         gap: var(--spacing-sm);
         cursor: default;
+        /* Contain Ark's `HiddenInput`. Ark hides it sr-only style (`position:
+           absolute` with `clip`, no `top`/`left`), so it resolves against the
+           nearest positioned ancestor. Without this, that's the window shell,
+           and the input's flow position (which can sit below the fold) makes
+           the shell secretly scrollable; focusing it on click scrolls the whole
+           window under the traffic lights. Keeping it local lets the real
+           scroller clip it. */
+        position: relative;
     }
 
     :global(.switch-control) {

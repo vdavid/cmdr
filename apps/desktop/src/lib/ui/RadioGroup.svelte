@@ -99,6 +99,10 @@
         gap: var(--spacing-sm);
         padding: var(--spacing-xs) 0;
         cursor: default;
+        /* Contain each item's Ark `ItemHiddenInput` so it resolves against its
+           own row, not the window shell. See `Switch.svelte`'s `.switch-root`
+           for the full why (the shell-scroll-under-traffic-lights bug). */
+        position: relative;
     }
 
     :global(.radio-item[data-disabled]) {

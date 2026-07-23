@@ -76,6 +76,10 @@
         align-items: center;
         gap: var(--spacing-sm);
         cursor: default;
+        /* Contain Ark's `HiddenInput` so it resolves against this control, not
+           the window shell. See `Switch.svelte`'s `.switch-root` for the full
+           why (the shell-scroll-under-traffic-lights bug). */
+        position: relative;
     }
 
     :global(.checkbox-control) {
