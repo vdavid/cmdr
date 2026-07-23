@@ -14,9 +14,11 @@
      * indexing pass the moment a folder lands. Removing stops future indexing but deletes
      * nothing: the folder's existing rows stay searchable until the user reclaims the space.
      *
-     * No per-folder progress line: the backend has no cheap per-folder count (it would mean
-     * a prefix scan of `media.db` per folder per poll), so progress is voiced once for the
-     * whole drive by the slider's own line rather than faked per row.
+     * Each folder shows a live "N of M indexed" coverage line via `mediaIndexFolderCoverage`
+     * (reusing the file list's `getFolderCoverageBadge`), polled lightly while open so it
+     * stays honest as a fresh folder indexes. Coverage is queried against the local root
+     * volume; a chosen folder on another local drive simply shows no line (its paths don't
+     * match root), which is honest rather than wrong.
      */
     import { onMount } from 'svelte'
     import { open as openFolderPicker } from '@tauri-apps/plugin-dialog'
@@ -24,19 +26,47 @@
     import { onSpecificSettingChange } from '$lib/settings'
     import { getChosenFolders, isFolderChosen, setFolderChosen } from '$lib/media-index/always-index-folders'
     import { getAppLogger } from '$lib/logging/logger'
+    import { ROOT_VOLUME_ID } from '$lib/indexing'
+    import { mediaIndexFolderCoverage, type FolderCoverage } from '$lib/tauri-commands'
+    import { getFolderCoverageBadge } from '$lib/file-explorer/views/file-list-utils'
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
 
     const log = getAppLogger('media-index')
 
     let folders = $state<string[]>(getChosenFolders())
+    // Per-folder subtree coverage (path → eligible/accounted), for the "N of M indexed" line.
+    let coverage = $state<Record<string, FolderCoverage>>({})
 
-    onMount(() =>
+    async function refreshCoverage(): Promise<void> {
+        if (folders.length === 0) {
+            coverage = {}
+            return
+        }
+        try {
+            const results = await mediaIndexFolderCoverage(ROOT_VOLUME_ID, folders)
+            const next: Record<string, FolderCoverage> = {}
+            for (const cov of results) next[cov.path] = cov
+            coverage = next
+        } catch (err) {
+            log.warn('folder-coverage query failed: {err}', { err: String(err) })
+        }
+    }
+
+    onMount(() => {
+        void refreshCoverage()
         // Keep the list in sync when a folder is added or removed in another window.
-        onSpecificSettingChange('mediaIndex.alwaysIndexFolders', () => {
+        const unsub = onSpecificSettingChange('mediaIndex.alwaysIndexFolders', () => {
             folders = getChosenFolders()
-        }),
-    )
+            void refreshCoverage()
+        })
+        // Light poll so a freshly-added folder's "N of M indexed" line advances while open.
+        const timer = setInterval(() => void refreshCoverage(), 3000)
+        return () => {
+            unsub()
+            clearInterval(timer)
+        }
+    })
 
     async function handleAdd(): Promise<void> {
         let picked: string | string[] | null
@@ -58,6 +88,7 @@
             // list shows what actually stuck.
         }
         folders = getChosenFolders()
+        void refreshCoverage()
     }
 
     async function handleRemove(folder: string): Promise<void> {
@@ -67,6 +98,7 @@
             // Rolled back and logged inside; re-read below.
         }
         folders = getChosenFolders()
+        void refreshCoverage()
     }
 
     /** The last path segment, as the readable name; the full path is the second line. */
@@ -85,11 +117,18 @@
     {:else}
         <ul class="mi-folders-list">
             {#each folders as folder (folder)}
+                {@const badge = getFolderCoverageBadge(coverage[folder], tString)}
                 <li class="mi-folders-row">
                     <span class="mi-folders-icon" aria-hidden="true"><Icon name="folder" size={16} /></span>
                     <span class="mi-folders-path">
                         <span class="mi-folders-name">{folderName(folder)}</span>
                         <span class="mi-folders-full">{folder}</span>
+                        {#if badge}
+                            <span class="mi-folders-coverage">
+                                <Icon name={badge.icon} size={12} aria-hidden="true" />
+                                <span>{badge.tooltip}</span>
+                            </span>
+                        {/if}
                     </span>
                     <Button
                         size="mini"
@@ -178,6 +217,15 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    .mi-folders-coverage {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xxs);
+        margin-top: var(--spacing-xxs);
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-sm);
     }
 
     .mi-folders-actions {

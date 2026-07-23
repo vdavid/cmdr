@@ -63,6 +63,8 @@ export function getImageIndexBadge(state: FileIndexState | undefined): ImageInde
       return { icon: 'circle-check', tooltipKey: 'fileExplorer.imageIndex.file.indexed' }
     case 'pending':
       return { icon: 'circle-dashed', tooltipKey: 'fileExplorer.imageIndex.file.pending' }
+    case 'indexing':
+      return { icon: 'hourglass', tooltipKey: 'fileExplorer.imageIndex.file.indexing' }
     case 'stale':
       return { icon: 'rotate-cw', tooltipKey: 'fileExplorer.imageIndex.file.stale' }
     case 'failed':

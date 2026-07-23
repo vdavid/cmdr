@@ -646,8 +646,10 @@ export {
   mediaIndexPruneBelowThreshold,
   mediaIndexFindSimilar,
   mediaIndexSearchSemantic,
+  mediaIndexSetSemanticSearchEnabled,
   mediaIndexClipModelStatus,
   mediaIndexDownloadClipModel,
+  mediaIndexDeleteClipModel,
   onMediaEnrichProgress,
   onMediaEnrichTerminal,
 } from './media-index'

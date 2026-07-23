@@ -374,6 +374,15 @@ export interface SettingsValues {
    * `hidden`.
    */
   'mediaIndex.scope': MediaIndexScope
+  /**
+   * Whether CLIP semantic search ("search photos by description") is on. Default `true`, so
+   * once the on-device model is installed a covered image becomes findable by describing it.
+   * One backend atomic gates both sides: `search_semantic` returns `[]` when off, and no
+   * enrichment pass embeds CLIP when off (so turning it off stops new CLIP work without
+   * deleting anything). Live-applied via `media_index_set_semantic_search_enabled`. Rendered
+   * as a `SettingSwitch` in the "Semantic search" card, not an auto row, so it's `hidden`.
+   */
+  'mediaIndex.semanticSearch.enabled': boolean
 
   // Behavior › Notifications - downloads notifications + global go-to-latest shortcut.
   // (The `fileSystemWatching` id prefix is a stable persistence key, kept across the

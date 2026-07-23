@@ -591,6 +591,56 @@
   "@settings.mediaIndex.clip.failed": {
     "description": "Shown when the semantic-search model download didn''t complete. Avoid the words ''error'' and ''failed'' per the app''s copy style."
   },
+  "settings.mediaIndex.clip.notSupported": "Search by description needs a Mac with Apple silicon.",
+  "@settings.mediaIndex.clip.notSupported": {
+    "description": "Shown when the semantic-search toggle is disabled because the Mac isn''t Apple silicon (the on-device model only runs on Apple''s own chips). \"Apple silicon\" is Apple''s term for its M-series chips; keep it."
+  },
+  "settings.mediaIndex.clip.offButInstalled": "The model is downloaded, but search by description is off.",
+  "@settings.mediaIndex.clip.offButInstalled": {
+    "description": "Shown in the Semantic search card when the on-device model is installed but the user turned the semantic-search toggle off. The delete button below still lets them reclaim the disk space."
+  },
+  "settings.mediaIndex.clip.deleteButton": "Delete model (reclaim {size})",
+  "@settings.mediaIndex.clip.deleteButton": {
+    "description": "Label for the button that removes the downloaded semantic-search model and frees its disk space. {size} is the reclaimable size, already formatted with its unit (for example \"392 MB\").",
+    "placeholders": {
+      "size": "the reclaimable disk size, preformatted with its unit, for example \"392 MB\""
+    }
+  },
+  "settings.mediaIndex.clip.deleting": "Deleting…",
+  "@settings.mediaIndex.clip.deleting": {
+    "description": "Shown on the delete-model button while the semantic-search model is being removed."
+  },
+  "settings.mediaIndex.clip.deleteConfirmTitle": "Delete the semantic search model?",
+  "@settings.mediaIndex.clip.deleteConfirmTitle": {
+    "description": "Title of the confirmation dialog shown before deleting the on-device semantic-search model."
+  },
+  "settings.mediaIndex.clip.deleteConfirmBody": "This frees {size} and turns off search by description. Keyword and tag search keep working, and you can download the model again anytime.",
+  "@settings.mediaIndex.clip.deleteConfirmBody": {
+    "description": "Body of the confirmation dialog for deleting the semantic-search model. Reassures that other image search keeps working and the model can be re-downloaded. {size} is the reclaimable disk size, already formatted with its unit.",
+    "placeholders": {
+      "size": "the reclaimable disk size, preformatted with its unit, for example \"392 MB\""
+    }
+  },
+  "settings.mediaIndex.clip.deleteFailed": "The model couldn''t be removed just now. Try again in a moment.",
+  "@settings.mediaIndex.clip.deleteFailed": {
+    "description": "Shown when deleting the semantic-search model didn''t complete. Avoid the words ''error'' and ''failed'' per the app''s copy style."
+  },
+  "settings.mediaIndex.cards.enable": "Enable indexing",
+  "@settings.mediaIndex.cards.enable": {
+    "description": "Title of the first Image indexing settings card, holding the master on/off toggle, the privacy note, and live progress. In Settings > Indexing > Image indexing."
+  },
+  "settings.mediaIndex.cards.folders": "Folders to index",
+  "@settings.mediaIndex.cards.folders": {
+    "description": "Title of the second Image indexing settings card, holding the controls for which folders and drives get indexed. In Settings > Indexing > Image indexing."
+  },
+  "settings.mediaIndex.semanticSearch.label": "Search photos by description",
+  "@settings.mediaIndex.semanticSearch.label": {
+    "description": "Label for the on/off toggle that enables semantic search: finding a photo by describing what''s in it. In the Semantic search card, Settings > Indexing > Image indexing."
+  },
+  "settings.mediaIndex.progressSummary.title": "Indexing now",
+  "@settings.mediaIndex.progressSummary.title": {
+    "description": "Heading above the live per-drive image-indexing progress shown in the Enable indexing card while a pass is running (each drive lists how many images are done, plus a rate and time estimate)."
+  },
   "@settings.mediaIndex.privacyNote": {
     "description": "Privacy reassurance shown in Settings > AI > Image search, under the master toggle. Clarifies that this AI feature is on-device only, unlike the provider-backed AI features. \"Mac\" is the Apple computer; \"Vision\" is Apple''s framework name (do not translate); \"API key\" is a credential for a cloud AI provider."
   },

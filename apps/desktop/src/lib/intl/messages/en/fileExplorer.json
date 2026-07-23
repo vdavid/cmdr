@@ -1351,6 +1351,10 @@
   "@fileExplorer.imageIndex.file.pending": {
     "description": "Hover tooltip on the badge over an image file''s icon. Means the image is queued for image-search indexing but hasn''t been processed yet."
   },
+  "fileExplorer.imageIndex.file.indexing": "Indexing now",
+  "@fileExplorer.imageIndex.file.indexing": {
+    "description": "Hover tooltip on the badge over an image file''s icon. Means an indexing pass is running right now and this image is being processed (as opposed to \"pending\", which is queued with no active pass). Shown for example on a just-moved image whose new location is being re-indexed."
+  },
   "fileExplorer.imageIndex.file.stale": "Changed since indexing; will be re-indexed",
   "@fileExplorer.imageIndex.file.stale": {
     "description": "Hover tooltip on the badge over an image file''s icon. Means the file changed after it was indexed, so it''s scheduled to be indexed again."

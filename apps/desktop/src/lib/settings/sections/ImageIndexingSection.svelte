@@ -1,15 +1,24 @@
 <!--
-  The `Indexing › Image indexing` subsection (second subsection of the Indexing section).
-  On-device image-content (OCR) search: it reads the text inside your images so you can search it,
-  running entirely on the Mac via Apple's Vision framework. It runs no cloud provider and needs no
-  API key, so it carries an explicit privacy note.
+  The `Indexing › Image indexing` subsection. On-device image-content (OCR) search reads the
+  text inside your images so you can search it, running entirely on the Mac via Apple's Vision
+  framework; semantic search adds "find a photo by describing it" via an on-device CLIP model.
+  No cloud provider, no API key.
 
-  Composes the self-contained media-index components: the master `mediaIndex.enabled` toggle (its
-  own card, titled by `cardKey`), the scope control (`MediaIndexScope`, which hosts the
-  importance-threshold slider — itself hosting `MediaIndexReclaim` — in the automatic scope only),
-  the chosen-folders list (`MediaIndexChosenFolders`), and the per-network-volume opt-in list
-  (`MediaIndexNetworkVolumes`). Everything below the toggle only means anything once indexing is
-  on, so it all gates on the live master toggle (no restart — matches live-apply).
+  Three cards (grouping is section-owned; the registry `section`/`cardKey` stay
+  `['Indexing','Image indexing']`, so there's no new sidebar route):
+
+    1. Enable indexing — the master `mediaIndex.enabled` toggle, the privacy note, the live
+       per-drive progress summary (shown while a pass runs), and the `showFileStatusIcons`
+       display toggle.
+    2. Folders to index — everything answering "what gets indexed": the scope control (with
+       its importance slider + reclaim), the chosen-folders list with per-folder coverage, and
+       the per-network-volume opt-in.
+    3. Semantic search — the CLIP model on/off toggle, download, and delete.
+
+  Everything below the master toggle only means anything once indexing is on, so cards 2 and 3
+  gate on the live master toggle (no restart, matching live-apply). Each card frame is wrapped
+  in `anyVisible(shouldShow, ...)` over the SAME predicate that gates its rows, so a search that
+  filters everything out leaves no empty card.
 -->
 <script lang="ts">
     import { onMount } from 'svelte'
@@ -23,9 +32,10 @@
     import MediaIndexChosenFolders from './MediaIndexChosenFolders.svelte'
     import MediaIndexNetworkVolumes from './MediaIndexNetworkVolumes.svelte'
     import MediaIndexClipModel from './MediaIndexClipModel.svelte'
+    import MediaIndexProgressSummary from './MediaIndexProgressSummary.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { getSetting, getSettingDefinition, onSpecificSettingChange } from '$lib/settings'
-    import { createShouldShow } from '$lib/settings/settings-search'
+    import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
 
     interface Props {
         searchQuery: string
@@ -42,47 +52,48 @@
     }
     const imageSearchBadge = getBadgeStatus('image-search')
 
-    // Live master-toggle state, so the slider and per-network-volume controls appear/disappear the
-    // moment the user flips "Index image contents" (no restart, matches the live-apply rule).
+    // Live master-toggle state, so cards 2 and 3 appear/disappear the moment the user flips
+    // "Index image contents" (no restart, matching the live-apply rule).
     let imageIndexEnabled = $state(getSetting('mediaIndex.enabled'))
 
-    onMount(() => {
-        // Track the master toggle so the refining controls reveal live (the toggle applies in
-        // this same window before this section re-reads it).
-        const unsubImageIndex = onSpecificSettingChange('mediaIndex.enabled', (_id, value) => {
-            imageIndexEnabled = value
-        })
-        return () => {
-            unsubImageIndex()
-        }
-    })
+    onMount(() => onSpecificSettingChange('mediaIndex.enabled', (_id, value) => (imageIndexEnabled = value)))
+
+    // Card frames: each is the SAME `shouldShow` predicate that gates its rows.
+    const showEnableCard = $derived(anyVisible(shouldShow, 'mediaIndex.enabled', 'mediaIndex.showFileStatusIcons'))
+    const showFoldersCard = $derived(
+        imageIndexEnabled && anyVisible(shouldShow, 'mediaIndex.enabled', 'mediaIndex.scope', 'mediaIndex.importanceThreshold'),
+    )
+    const showSemanticCard = $derived(
+        imageIndexEnabled && anyVisible(shouldShow, 'mediaIndex.enabled', 'mediaIndex.semanticSearch.enabled'),
+    )
 </script>
 
 <SettingsSection title={tString('settings.section.imageIndexing')}>
-    {#if shouldShow('mediaIndex.enabled')}
-        <SectionCard label={tString('settings.mediaIndex.card')}>
+    <!-- Card 1: Enable indexing -->
+    {#if showEnableCard}
+        <SectionCard label={tString('settings.mediaIndex.cards.enable')}>
             {#snippet badge()}
                 {#if imageSearchBadge}<StatusBadge status={imageSearchBadge} />{/if}
             {/snippet}
-            <SettingRow
-                id="mediaIndex.enabled"
-                label={imageIndexDef.label}
-                description={imageIndexDef.description}
-                {searchQuery}
-            >
-                <SettingSwitch id="mediaIndex.enabled" />
-            </SettingRow>
+            {#if shouldShow('mediaIndex.enabled')}
+                <SettingRow
+                    id="mediaIndex.enabled"
+                    label={imageIndexDef.label}
+                    description={imageIndexDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="mediaIndex.enabled" />
+                </SettingRow>
 
-            <!-- Privacy posture, spelled out because this feature sits under AI yet touches no
-                 provider: on-device via Apple's Vision framework, nothing leaves the machine. -->
-            <p class="privacy-note">{tString('settings.mediaIndex.privacyNote')}</p>
+                <!-- Privacy posture, spelled out because this feature touches no provider:
+                     on-device via Apple's Vision framework, nothing leaves the machine. -->
+                <p class="privacy-note">{tString('settings.mediaIndex.privacyNote')}</p>
 
-            <!-- The scope ("which folders?") + the chosen-folders list. The scope control
-                 hosts the importance slider, which only exists in the automatic scope. All
-                 of it refines the master toggle, so it shows only when indexing is on. -->
-            {#if imageIndexEnabled}
-                <MediaIndexScope />
-                <MediaIndexChosenFolders />
+                <!-- Live per-drive progress (reuses the top-right hourglass's row), shown
+                     only while a pass is running. -->
+                {#if imageIndexEnabled}
+                    <MediaIndexProgressSummary />
+                {/if}
             {/if}
 
             <!-- Whether the file list draws the small per-file image-index status badge.
@@ -97,18 +108,26 @@
                     <SettingSwitch id="mediaIndex.showFileStatusIcons" />
                 </SettingRow>
             {/if}
+        </SectionCard>
+    {/if}
 
-            <!-- The on-device CLIP model for natural-language semantic search (plan M3).
-                 Self-gates on Apple Silicon + shows its own download state. -->
-            {#if imageIndexEnabled}
-                <MediaIndexClipModel />
-            {/if}
+    <!-- Card 2: Folders to index — what gets indexed. -->
+    {#if showFoldersCard}
+        <SectionCard label={tString('settings.mediaIndex.cards.folders')}>
+            <!-- Scope ("which folders?") hosts the importance slider (automatic scope only)
+                 and the reclaim offer; the chosen-folders list shows per-folder coverage. -->
+            <MediaIndexScope />
+            <MediaIndexChosenFolders />
+            <!-- Per-network-volume opt-in: about which SOURCES get indexed, so it lives here
+                 (not under semantic search). -->
+            <MediaIndexNetworkVolumes />
+        </SectionCard>
+    {/if}
 
-            <!-- Per-network-volume opt-in + "always index" overrides (network enrichment). Only
-                 meaningful once image indexing is on, so gate on the live master toggle. -->
-            {#if imageIndexEnabled}
-                <MediaIndexNetworkVolumes />
-            {/if}
+    <!-- Card 3: Semantic search — the on-device CLIP model on/off, download, and delete. -->
+    {#if showSemanticCard}
+        <SectionCard label={tString('settings.mediaIndex.clip.title')}>
+            <MediaIndexClipModel {searchQuery} />
         </SectionCard>
     {/if}
 </SettingsSection>

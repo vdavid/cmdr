@@ -1,11 +1,11 @@
 /**
- * Tier 3 a11y + visibility tests for `MediaIndexClipModel.svelte` (the on-device CLIP
- * semantic-search model control inside the "Image search" settings card).
+ * Tier 3 a11y + visibility tests for `MediaIndexClipModel.svelte` (the Semantic search card
+ * body: the on/off toggle plus the on-device CLIP model download/delete controls).
  *
- * The control renders nothing on unsupported hardware, and otherwise shows one of a ready
- * line, a "coming soon" note, or a download button — each driven off a mocked status. The
- * download round-trip is backend work; here we pin that each visible state is accessible and
- * that unsupported hardware renders nothing.
+ * The toggle always renders (disabled on unsupported hardware, with an explanation). The
+ * model controls below reveal off the mocked status + the toggle: a download button when
+ * supported-and-not-installed, a ready line + delete button when installed. Each visible
+ * state must be accessible. The download/delete round-trips are backend work, mocked here.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -13,12 +13,25 @@ import { mount, flushSync, tick } from 'svelte'
 import type { ClipModelStatus } from '$lib/ipc/bindings'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
-const clipModelStatus = vi.fn<() => Promise<ClipModelStatus>>()
+const settingValues: Record<string, unknown> = {
+  'mediaIndex.semanticSearch.enabled': true,
+}
 
+vi.mock('$lib/settings', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getSetting: (id: string) => settingValues[id],
+  setSetting: vi.fn(),
+  onSpecificSettingChange: () => () => {},
+}))
+
+const clipModelStatus = vi.fn<() => Promise<ClipModelStatus>>()
 vi.mock('$lib/tauri-commands', () => ({
   mediaIndexClipModelStatus: () => clipModelStatus(),
   mediaIndexDownloadClipModel: vi.fn(),
+  mediaIndexDeleteClipModel: vi.fn(),
 }))
+
+vi.mock('$lib/settings/reactive-settings.svelte', () => ({ formatFileSize: (b: number) => `${String(b)}B` }))
 
 const { default: MediaIndexClipModel } = await import('./MediaIndexClipModel.svelte')
 
@@ -35,7 +48,7 @@ function status(overrides: Partial<ClipModelStatus> = {}): ClipModelStatus {
 async function mountClipModel(): Promise<HTMLElement> {
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mount(MediaIndexClipModel, { target })
+  mount(MediaIndexClipModel, { target, props: {} })
   flushSync()
   await vi.waitFor(() => {
     // Let the onMount status fetch resolve.
@@ -47,6 +60,7 @@ async function mountClipModel(): Promise<HTMLElement> {
 
 describe('MediaIndexClipModel', () => {
   beforeEach(() => {
+    settingValues['mediaIndex.semanticSearch.enabled'] = true
     clipModelStatus.mockResolvedValue(status())
   })
   afterEach(() => {
@@ -54,17 +68,18 @@ describe('MediaIndexClipModel', () => {
     vi.clearAllMocks()
   })
 
-  it('offers an accessible download button when supported but not installed', async () => {
+  it('offers an accessible download button when supported, on, but not installed', async () => {
     const target = await mountClipModel()
-    expect(target.querySelector('button.cm-download')).not.toBeNull()
+    expect(target.querySelector('.clip-model button')).not.toBeNull()
     await expectNoA11yViolations(target)
   })
 
-  it('shows an accessible ready line once the model is installed', async () => {
+  it('shows an accessible ready line and delete button once the model is installed', async () => {
     clipModelStatus.mockResolvedValue(status({ installed: true }))
     const target = await mountClipModel()
     expect(target.querySelector('.cm-ready')).not.toBeNull()
-    expect(target.querySelector('button.cm-download')).toBeNull()
+    // The one button in the state block is now Delete, not Download.
+    expect(target.querySelector('.clip-model button')).not.toBeNull()
     await expectNoA11yViolations(target)
   })
 
@@ -72,13 +87,16 @@ describe('MediaIndexClipModel', () => {
     clipModelStatus.mockResolvedValue(status({ configured: false }))
     const target = await mountClipModel()
     expect(target.querySelector('.cm-note')).not.toBeNull()
-    expect(target.querySelector('button.cm-download')).toBeNull()
+    expect(target.querySelector('.clip-model button')).toBeNull()
     await expectNoA11yViolations(target)
   })
 
-  it('renders nothing on unsupported hardware', async () => {
+  it('disables the toggle with an explanation on unsupported hardware', async () => {
     clipModelStatus.mockResolvedValue(status({ supported: false }))
     const target = await mountClipModel()
+    // No model-management block, but the not-supported note renders.
     expect(target.querySelector('.clip-model')).toBeNull()
+    expect(target.querySelector('.cm-note')).not.toBeNull()
+    await expectNoA11yViolations(target)
   })
 })

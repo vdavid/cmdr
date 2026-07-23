@@ -6,6 +6,13 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
+- [ ] 2026-07-23 `image-indexing-progress-ux.md` - Four image-indexing UX changes: (1) a new `indexing` file-badge state
+      so a re-enriching file reads "indexing now" instead of a false "waiting to be indexed"; (2) surface the existing
+      per-drive enrichment progress (counts + per-minute rate + ETA) inside Settings; (3) restructure
+      `Settings > Indexing > Image indexing` into three cards (Enable indexing + live progress, Folders to index with
+      per-folder "N of M indexed" + the moved SMB opt-in, Semantic search); (4) a real semantic-search on/off gate
+      (gating both search and CLIP embedding) plus a delete-model/reclaim-disk action. Backend (WP-A) landed; frontend
+      (WP-B) + translator pass follow.
 - [ ] 2026-07-22 `swap-scan-plan.md` - Replace the ~15-minute serial in-place reconcile rescan of a completed LOCAL
       index with a build-and-swap: run the fast parallel guarded walker into a separate `index-{vid}.building.db`, then
       swap it in atomically (~8.4x faster, 107 s vs 897 s, honest AND complete). The spine is data safety (Cmdr

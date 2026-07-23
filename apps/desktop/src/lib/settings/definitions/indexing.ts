@@ -237,4 +237,23 @@ export const indexingSettings: SettingDefinitionSource[] = [
     default: 0,
     hidden: true,
   },
+  {
+    // Whether CLIP semantic search ("search photos by description") is on. Default `true`:
+    // once the on-device model is installed, covered images become findable by description.
+    // Rendered as a `SettingSwitch` inside the "Semantic search" card by `MediaIndexClipModel`
+    // (not an auto row), so `hidden`. Live-applied via the `settings-applier.ts` passthrough →
+    // `media_index_set_semantic_search_enabled`, which gates both the read (search returns `[]`
+    // when off) and the CLIP embedding writes (no new CLIP work when off). The backend seeds it
+    // at startup, so a sparse (unpersisted) store and the UI agree on the `true` default.
+    id: 'mediaIndex.semanticSearch.enabled',
+    section: ['Indexing', 'Image indexing'],
+    labelKey: 'settings.mediaIndex.semanticSearch.label',
+    descriptionKey: 'settings.mediaIndex.clip.description',
+    cardKey: 'settings.mediaIndex.clip.title',
+    keywords: ['image', 'photo', 'semantic', 'clip', 'search', 'describe', 'description', 'natural language', 'ai'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+    hidden: true,
+  },
 ]

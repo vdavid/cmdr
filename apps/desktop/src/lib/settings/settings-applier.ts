@@ -20,6 +20,7 @@ import {
   setImageIndexEnabled,
   setImageImportanceThreshold,
   mediaIndexSetScope,
+  mediaIndexSetSemanticSearchEnabled,
   setMtpEnabled,
   setDiskSpaceThreshold,
   setDirectSmbConnection,
@@ -184,6 +185,7 @@ const passthroughBackendHandlers: Partial<Record<string, (value: unknown) => voi
   'mediaIndex.enabled': (v) => void setImageIndexEnabled(v as boolean),
   'mediaIndex.importanceThreshold': (v) => void setImageImportanceThreshold(v as number),
   'mediaIndex.scope': (v) => void mediaIndexSetScope(v as string),
+  'mediaIndex.semanticSearch.enabled': (v) => void mediaIndexSetSemanticSearchEnabled(v as boolean),
   'fileOperations.mtpEnabled': (v) => void setMtpEnabled(v as boolean),
   'advanced.diskSpaceChangeThreshold': (v) => void setDiskSpaceThreshold(v as number),
   // Low-disk-space pair: either change re-pushes the full config. The helper

@@ -33,6 +33,10 @@ const volumeState = vi.fn<(volumeId: string) => Promise<MediaIndexVolumeState>>(
 vi.mock('$lib/tauri-commands', () => ({
   mediaIndexCoveredCount: (t: number, ids: string[]) => coveredCount(t, ids),
   mediaIndexVolumeState: (v: string) => volumeState(v),
+  mediaIndexFolderCoverage: () => Promise.resolve([]),
+  mediaIndexClipModelStatus: () => Promise.resolve({ supported: false, installed: false, configured: false, downloadBytes: 0 }),
+  mediaIndexDownloadClipModel: () => Promise.resolve(),
+  mediaIndexDeleteClipModel: () => Promise.resolve(),
 }))
 
 vi.mock('$lib/media-index/enabled-volumes', () => ({
@@ -58,6 +62,7 @@ vi.mock('$lib/stores/volume-store.svelte', () => ({
 
 vi.mock('$lib/indexing', () => ({
   ROOT_VOLUME_ID: 'root',
+  getEnrichingVolumes: () => [],
 }))
 
 vi.mock('$lib/logging/logger', () => ({

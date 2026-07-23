@@ -590,6 +590,10 @@ describe('getImageIndexBadge', () => {
       icon: 'circle-dashed',
       tooltipKey: 'fileExplorer.imageIndex.file.pending',
     })
+    expect(getImageIndexBadge('indexing')).toEqual({
+      icon: 'hourglass',
+      tooltipKey: 'fileExplorer.imageIndex.file.indexing',
+    })
     expect(getImageIndexBadge('stale')).toEqual({
       icon: 'rotate-cw',
       tooltipKey: 'fileExplorer.imageIndex.file.stale',
@@ -613,7 +617,7 @@ describe('getImageIndexBadge', () => {
   })
 
   it('covers every FileIndexState (no unmapped case slips through)', () => {
-    const states: FileIndexState[] = ['indexed', 'stale', 'failed', 'pending', 'excluded', 'notApplicable']
+    const states: FileIndexState[] = ['indexed', 'stale', 'failed', 'pending', 'indexing', 'excluded', 'notApplicable']
     for (const state of states) {
       // Must not throw and must return either a badge or null explicitly.
       const badge = getImageIndexBadge(state)

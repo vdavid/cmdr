@@ -1,35 +1,44 @@
 /**
- * Tests for `MediaIndexClipModel.svelte`: the CLIP semantic-search model control in the
- * Image search settings card. It self-gates on Apple Silicon support, shows install state
- * (ready / coming soon / a "Download (~X MB)" button), and downloads + installs on click.
- * Tauri is mocked so the test runs with no runtime.
+ * Tests for `MediaIndexClipModel.svelte`: the Semantic search card body. It self-gates on
+ * Apple Silicon support, shows the on/off toggle, and (when on) the model state: a
+ * "Download (~X MB)" button when not installed, a ready line + "Delete model" button when
+ * installed. Downloads/deletes on click and refreshes. Tauri, confirm, and settings are
+ * mocked so the test runs with no runtime.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick } from 'svelte'
+import type { ClipModelStatus } from '$lib/ipc/bindings'
+// Static import so the `no-isolated-tests` lint sees the exercised source; `vi.mock`
+// below is hoisted above it, so the component still resolves the mocked dependencies.
+import MediaIndexClipModel from './MediaIndexClipModel.svelte'
 
-const { statusMock, downloadMock } = vi.hoisted(() => ({
+const settingValues: Record<string, unknown> = {
+  'mediaIndex.semanticSearch.enabled': true,
+}
+vi.mock('$lib/settings', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getSetting: (id: string) => settingValues[id],
+  setSetting: vi.fn(),
+  onSpecificSettingChange: () => () => {},
+}))
+
+const { statusMock, downloadMock, deleteMock, confirmMock } = vi.hoisted(() => ({
   statusMock: vi.fn(),
   downloadMock: vi.fn(),
+  deleteMock: vi.fn(),
+  confirmMock: vi.fn(),
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
   mediaIndexClipModelStatus: statusMock,
   mediaIndexDownloadClipModel: downloadMock,
+  mediaIndexDeleteClipModel: deleteMock,
 }))
-vi.mock('$lib/intl/messages.svelte', () => ({ tString: (key: string) => key }))
-vi.mock('$lib/intl/number-format', () => ({ formatInteger: (n: number) => String(n) }))
+vi.mock('$lib/utils/confirm-dialog', () => ({ confirmDialog: confirmMock }))
+vi.mock('$lib/settings/reactive-settings.svelte', () => ({ formatFileSize: (b: number) => `${String(b)}B` }))
 
-import MediaIndexClipModel from './MediaIndexClipModel.svelte'
-
-interface Status {
-  supported: boolean
-  installed: boolean
-  configured: boolean
-  downloadBytes: number
-}
-
-function status(overrides: Partial<Status> = {}): Status {
+function status(overrides: Partial<ClipModelStatus> = {}): ClipModelStatus {
   return { supported: true, installed: false, configured: true, downloadBytes: 392_000_000, ...overrides }
 }
 
@@ -49,47 +58,60 @@ async function mountModel(): Promise<HTMLDivElement> {
 }
 
 beforeEach(() => {
+  settingValues['mediaIndex.semanticSearch.enabled'] = true
   statusMock.mockReset()
   downloadMock.mockReset()
+  deleteMock.mockReset()
+  confirmMock.mockReset()
+})
+afterEach(() => {
+  document.body.innerHTML = ''
 })
 
 describe('MediaIndexClipModel', () => {
-  it('renders nothing on unsupported hardware', async () => {
+  it('renders no model-management block on unsupported hardware', async () => {
     statusMock.mockResolvedValue(status({ supported: false }))
     const target = await mountModel()
     expect(target.querySelector('.clip-model')).toBeNull()
+    // The not-supported explanation still renders.
+    expect(target.querySelector('.cm-note')).not.toBeNull()
   })
 
-  it('shows a download button with the honest size when configured but not installed', async () => {
+  it('shows a download button when supported, on, but not installed', async () => {
     statusMock.mockResolvedValue(status())
     const target = await mountModel()
-    // Configured + not installed ⇒ the download button is shown (the "~X MB" size is
-    // interpolated into the message, resolved by the real `tString` at runtime).
-    expect(target.querySelector('.cm-download')).not.toBeNull()
+    expect(target.querySelector('.clip-model button')).not.toBeNull()
     expect(target.querySelector('.cm-ready')).toBeNull()
+  })
+
+  it('hides the download button while the toggle is off', async () => {
+    settingValues['mediaIndex.semanticSearch.enabled'] = false
+    statusMock.mockResolvedValue(status())
+    const target = await mountModel()
+    // Off + not installed ⇒ no download button (nothing to manage yet).
+    expect(target.querySelector('.clip-model button')).toBeNull()
   })
 
   it('shows "coming soon" when no artifact is published yet', async () => {
     statusMock.mockResolvedValue(status({ configured: false }))
     const target = await mountModel()
-    expect(target.querySelector('.cm-download')).toBeNull()
+    expect(target.querySelector('.clip-model button')).toBeNull()
     expect(target.querySelector('.cm-note')).not.toBeNull()
   })
 
-  it('shows the ready line once installed', async () => {
+  it('shows the ready line and a delete button once installed', async () => {
     statusMock.mockResolvedValue(status({ installed: true }))
     const target = await mountModel()
     expect(target.querySelector('.cm-ready')).not.toBeNull()
-    expect(target.querySelector('.cm-download')).toBeNull()
+    expect(target.querySelector('.clip-model button')).not.toBeNull()
   })
 
   it('downloads on click and refreshes to the installed state', async () => {
-    // First status call: downloadable; after a successful download, installed.
     statusMock.mockResolvedValueOnce(status()).mockResolvedValueOnce(status({ installed: true }))
     downloadMock.mockResolvedValue(undefined)
     const target = await mountModel()
 
-    const btn = target.querySelector<HTMLButtonElement>('.cm-download')
+    const btn = target.querySelector<HTMLButtonElement>('.clip-model button')
     expect(btn).not.toBeNull()
     btn?.click()
     await flush()
@@ -103,9 +125,39 @@ describe('MediaIndexClipModel', () => {
     downloadMock.mockRejectedValue(new Error('network'))
     const target = await mountModel()
 
-    target.querySelector<HTMLButtonElement>('.cm-download')?.click()
+    target.querySelector<HTMLButtonElement>('.clip-model button')?.click()
     await flush()
 
-    expect(target.querySelector('.cm-failed')).not.toBeNull()
+    expect(target.querySelector('.cm-note')).not.toBeNull()
+  })
+
+  it('deletes the model after confirmation and refreshes to not-installed', async () => {
+    statusMock.mockResolvedValueOnce(status({ installed: true })).mockResolvedValueOnce(status({ installed: false }))
+    confirmMock.mockResolvedValue(true)
+    deleteMock.mockResolvedValue(undefined)
+    const target = await mountModel()
+
+    const btn = target.querySelector<HTMLButtonElement>('.clip-model button')
+    expect(btn).not.toBeNull()
+    btn?.click()
+    await flush()
+
+    expect(confirmMock).toHaveBeenCalledOnce()
+    expect(deleteMock).toHaveBeenCalledOnce()
+    // Back to not-installed ⇒ the ready line is gone and a download button shows.
+    expect(target.querySelector('.cm-ready')).toBeNull()
+    expect(target.querySelector('.clip-model button')).not.toBeNull()
+  })
+
+  it('does not delete when the confirmation is dismissed', async () => {
+    statusMock.mockResolvedValue(status({ installed: true }))
+    confirmMock.mockResolvedValue(false)
+    const target = await mountModel()
+
+    target.querySelector<HTMLButtonElement>('.clip-model button')?.click()
+    await flush()
+
+    expect(confirmMock).toHaveBeenCalledOnce()
+    expect(deleteMock).not.toHaveBeenCalled()
   })
 })
