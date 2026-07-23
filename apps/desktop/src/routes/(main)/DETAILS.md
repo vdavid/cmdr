@@ -37,6 +37,25 @@ Depth and rationale for the app orchestrator. `CLAUDE.md` holds the must-knows; 
 - **`explorer-api.ts`**: `ExplorerAPI`, the contract `DualPaneExplorer` exposes upward; shared by `+page.svelte`,
   `command-dispatch.ts`, and `mcp-listeners.ts` so none import the component directly.
 - **`mcp-listeners.ts`**: `setupMcpListeners(ctx)`, the transport adapter onto the command bus.
+- **`show-main-when-painted.ts`**: `showMainWhenPainted()`, called fire-and-forget from `+page.svelte`'s `onMount`. See
+  § Startup: paint-gated window show.
+
+## Startup: paint-gated window show
+
+The main window launches `visible: false`; the frontend calls `show()` when ready to avoid a white flash.
+`showMainWhenPainted()` gates that `show()` on a confirmed first paint (`waitForNextPaint`, a double
+`requestAnimationFrame`) instead of firing the instant `onMount` reaches the call.
+
+Decision / why: showing the moment JS execution reaches the call can still land `show()` (`makeKeyAndOrderFront`) before
+the compositor presents the first frame. If nothing invalidates the view afterward, the window sits blank until the next
+repaint, and only a resize or a full relaunch clears it (observed once on a cold prod launch during a heavy full-root
+reindex). Waiting for a presented frame first closes that race.
+
+The `waitForNextPaint` timeout is load-bearing: if the frontend main thread is frozen at startup (e.g. Vite's cold-start
+dep re-optimization in dev), rAF never fires and the wait would hang, so it falls back to showing anyway and logs a
+`warn` on the `FE:startup` category. `requestAnimationFrame` DOES tick while the window is hidden, so the common path
+resolves fast: first paint confirmed in ~25 ms on a warm launch (verified on macOS 15 / WKWebView, dev build, two clean
+`pnpm dev` cold starts, 2026-07-23); the 1 s fallback only triggered on the Vite-frozen first boot.
 
 ## Dispatch core
 

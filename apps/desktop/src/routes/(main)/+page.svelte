@@ -41,12 +41,12 @@
     import { navCommandForMouseButton } from './mouse-nav'
     import { formatKeyCombo, isMacOS, isTypingKeyCombo } from '$lib/shortcuts/key-capture'
     import {
-        showMainWindow,
         checkFullDiskAccess,
         type UnlistenFn,
         getWindowTitle,
         registerKnownDialogs,
     } from '$lib/tauri-commands'
+    import { showMainWhenPainted } from './show-main-when-painted'
     import {
         type ListenerSetupContext,
         makeListenTauri,
@@ -462,8 +462,8 @@
         // and re-attempts on `handleWizardComplete`.
         void maybeRunWhatsNew()
 
-        // Show window when ready
-        void showMainWindow()
+        // Show the window once the webview has actually painted (avoids a blank-window race); fire-and-forget.
+        void showMainWhenPainted()
 
         // Initialize centralized shortcut dispatch and global keyboard/context menu
         // handlers. These must be registered BEFORE setupTauriEventListeners() because

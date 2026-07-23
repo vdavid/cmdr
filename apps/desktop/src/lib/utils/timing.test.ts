@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { withTimeout, createDebounce, createThrottle } from './timing'
+import { withTimeout, createDebounce, createThrottle, waitForNextPaint } from './timing'
 
 beforeEach(() => {
   vi.useFakeTimers()
@@ -37,6 +37,42 @@ describe('withTimeout', () => {
     const result = await resultPromise
     expect(result).toBeNull()
     vi.useRealTimers()
+  })
+})
+
+describe('waitForNextPaint', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('resolves "painted" after two animation frames', async () => {
+    // Fire each rAF callback on the next microtask so the two nested frames
+    // resolve promptly, without depending on the fake timer's rAF emulation.
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      queueMicrotask(() => { cb(0); })
+      return 0
+    })
+    await expect(waitForNextPaint(1000)).resolves.toBe('painted')
+  })
+
+  it('resolves "timeout" when frames never arrive (rAF throttled while the window is hidden)', async () => {
+    vi.stubGlobal('requestAnimationFrame', () => 0) // registered, never fired
+    const result = waitForNextPaint(500)
+    await vi.advanceTimersByTimeAsync(500)
+    await expect(result).resolves.toBe('timeout')
+  })
+
+  it('ignores a frame that arrives after the timeout already fired', async () => {
+    let frameCb: FrameRequestCallback | undefined
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      frameCb = cb
+      return 0
+    })
+    const result = waitForNextPaint(200)
+    await vi.advanceTimersByTimeAsync(200) // timeout wins the race
+    frameCb?.(0) // late outer frame → schedules the inner frame
+    frameCb?.(0) // late inner frame → resolves the already-settled race (no-op)
+    await expect(result).resolves.toBe('timeout')
   })
 })
 

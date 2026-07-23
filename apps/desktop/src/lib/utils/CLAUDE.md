@@ -6,7 +6,7 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
 
 - **`filename-validation.ts`**: pure client-side filename validation for instant keystroke feedback.
 - **`confirm-dialog.ts`**: wrapper around Tauri's native dialog `ask()`.
-- **`timing.ts`**: `withTimeout`, `createDebounce`, `createThrottle`.
+- **`timing.ts`**: `withTimeout`, `createDebounce`, `createThrottle`, `waitForNextPaint`.
 - **`shorten-middle.ts`**: `shortenMiddle` mid-truncation + `createPretextMeasure` factory.
 - **`shorten-middle-action.ts`**: Svelte action wrapping `shortenMiddle` with ResizeObserver + async pretext.
 - **`pluralize.ts`**: count + noun formatting ("1 user" / "3 users").
