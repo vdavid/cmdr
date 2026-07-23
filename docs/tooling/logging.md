@@ -135,6 +135,8 @@ Copy-paste commands for common debugging scenarios. All include `info` as the ba
 - **Drive indexing**: `RUST_LOG=cmdr_lib::indexing=debug,info pnpm dev`
 - **Indexing scanner only**: `RUST_LOG=cmdr_lib::indexing::scanner=debug,info pnpm dev`
 - **Indexing FSEvents**: `RUST_LOG=cmdr_lib::indexing::watch::watcher=debug,info pnpm dev`
+- **Reconcile, per subtree walk** (the detail behind the churn line below):
+  `RUST_LOG=cmdr_lib::indexing::reconcile=debug,info pnpm dev`
 - **Per-subtree churn** (needs `CMDR_CHURN_SPIKE`, see below): `RUST_LOG=cmdr_lib::indexing::churn=debug,info pnpm dev`
 - **File operations (copy/move/delete)**: `RUST_LOG=cmdr_lib::file_system::write_operations=debug,info pnpm dev`
 - **Directory listing**: `RUST_LOG=cmdr_lib::file_system::listing=debug,info pnpm dev`
@@ -189,6 +191,28 @@ per period, default `40`). Output is `1 + top_n` lines per period per volume.
 **It only records while a live event loop runs**, so it's silent during a scan or rescan. That's the instrument being
 honest, not broken. Line format, the offline analyser, and how to read a collection:
 `../notes/churn-observability-spike.md`.
+
+## The reconcile churn line
+
+The index re-walks a subtree whenever macOS says "something under here changed" (`MustScanSubDirs`). That happens
+thousands of times a day, so the per-walk lines are Debug. What reaches Info is one aggregate, at most one line per 15
+minutes, and only when the window crossed a budget: more than 60 s of cumulative walk time, or more than 100,000
+cumulative row changes.
+
+```
+Reconciler: heavy churn in the last 15 min: 120 subtree reconciles, 169s of walking, 102,229 row changes, 64+ anchors, 37 signals held back. Top: /Users/me/Library/Caches/… (18 walks, 96s), …
+```
+
+Read it as "this machine is spending real CPU staying in sync, and here is where". The top anchors are ranked by
+accumulated walk cost, so the first one named is the folder to look at. `64+ anchors` means the per-window anchor list
+hit its cap, so the count is a floor. `signals held back` counts the change signals the per-subtree throttle and the
+new-subtree settle delay absorbed; a window that churns hard while that reads zero means one of those stopped working.
+
+**Silence is the expected state.** On a healthy machine the line never appears. Seeing it repeatedly is the signal
+itself, not a fault in the logging.
+
+For the per-walk detail behind it, turn the reconciler up: `RUST_LOG=cmdr_lib::indexing::reconcile=debug,info pnpm dev`.
+Mechanism, budgets, and the memory bound: `apps/desktop/src-tauri/src/indexing/reconcile/DETAILS.md`.
 
 ## Verbose logging
 

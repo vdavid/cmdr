@@ -6,8 +6,8 @@ bullets below are only the guardrails.
 
 ## Module map
 
-- **reconciler.rs** + **reconciler/**: the event path — `diff_dir_against_db`, `reconcile_subtree`, `BulkReconcileGuard`,
-  and `rescan*` / `throttle` / `escalation` (depth-split, sweep, per-file throttle, hourglass hold).
+- **reconciler.rs** + **reconciler/**: the event path. `diff_dir_against_db`, `reconcile_subtree`,
+  `BulkReconcileGuard`, plus `rescan*` (route, throttle, settle, hold, churn) / `throttle` / `escalation`.
 - **local_reconcile.rs** + **local_reconcile/**: serial full-tree rescan-in-place (`cost_budget`, `latency_probe`).
 - **verifier.rs**: per-navigation `read_dir` diff. **reconcile_bench** / **reconcile_correctness**: perf + regressions.
 

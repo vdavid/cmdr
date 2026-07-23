@@ -14,6 +14,7 @@
 //! [`super::rescan_hold`], which tracks the same eligibility: a queued-but-resting
 //! anchor holds nothing.
 
+use super::rescan_churn;
 use super::rescan_hold::{
     adopt_picked_holds, hold_if_eligible, reconcile_with_eligibility, release_and_emit_completion, release_rescan_hold,
 };
@@ -120,6 +121,17 @@ impl EventReconciler {
         // bundle), and walking it indexes rows for data that's usually deleted
         // before we finish. See `rescan_settle`.
         rescan_settle::note_settle_deadline(&self.rescan_throttle, &path, Instant::now());
+        // A signal for an anchor that may not walk yet is one walk the throttle or
+        // the settle delay just absorbed. Counted HERE, on the real signal path, and
+        // deliberately not in `requeue_rescan`: a removal storm re-queues thousands
+        // of times for one scope and would drown the number. See `rescan_churn`.
+        if !self
+            .rescan_throttle
+            .lock_ignore_poison()
+            .is_eligible(&path, Instant::now())
+        {
+            rescan_churn::record_held_back();
+        }
         self.enqueue_rescan(path, writer);
     }
 
@@ -204,6 +216,9 @@ impl EventReconciler {
             let active = self.active_rescan_path.lock_ignore_poison().clone();
             reconcile_with_eligibility(&self.volume_id, &pending, active.as_ref(), &throttle, now);
         }
+        // Close the churn window when it's due. Without a tick, a burst followed by
+        // silence would sit unreported until the next reconcile, hours later.
+        rescan_churn::poll_window();
         self.kick_pending_rescans(writer);
     }
 
@@ -363,7 +378,10 @@ pub(super) fn start_next_rescan(
     let space_for_task = space.clone();
     let volume_id_for_task = volume_id.clone();
 
-    log::info!("MustScanSubDirs: reconcile starting for {}", path.display());
+    // Debug, not info: this is one line per walk, thousands a day, and it's paired
+    // with a completion line that carries the duration. The info-level signal for
+    // the drain as a whole is [`rescan_churn`]'s 15-minute aggregate.
+    log::debug!("MustScanSubDirs: reconcile starting for {}", path.display());
 
     // Kept for the rare spawn-failure handler below (the closure moves `path`).
     let path_for_spawn_failure = path.clone();
@@ -422,6 +440,10 @@ pub(super) fn start_next_rescan(
                     let (level, message) = reconcile_report(&path, &summary);
                     log::log!(level, "{message}");
                     let walk_cost = summary.walk_cost();
+                    // Feed the 15-minute aggregate that replaces this line at info.
+                    // Only a walk that finished is counted: a failed one measured
+                    // nothing, so it would report as free churn.
+                    rescan_churn::record_reconcile(&path, walk_cost, summary.added + summary.removed + summary.updated);
                     (summary.escalation, walk_cost)
                 }
                 Err(e) => {
@@ -508,24 +530,29 @@ pub(super) fn start_next_rescan(
     }
 }
 
-/// How long a reconcile has to run before it's worth a line above `info`.
+/// How long a reconcile has to run before it's worth a line above `debug`.
 const RECONCILE_SLOW_SECS: u64 = 10;
 
 /// The line one finished subtree reconcile emits: `(level, message)`. Pure, so the
 /// wording and the level policy are unit-testable without a logger.
 ///
+/// An ordinary reconcile is DEBUG. There are thousands a day and most of them
+/// change nothing, so at info they buried the two lines that mattered. The
+/// info-level answer to "are we reconciling too much?" is [`rescan_churn`]'s
+/// 15-minute aggregate, which one line can actually carry.
+///
 /// A long reconcile is only newsworthy if the walk itself was slow. Time parked on
 /// the writer queue lands inside the same duration with nothing to attribute it to,
 /// which is how "reconcile slow … (+7 -0 ~0, 21s)" came to mean "the writer was
 /// saturated for 19 of those seconds". So the wait is named in the line, and when
-/// it DOMINATES the line drops to `debug`: writer saturation already has its own
+/// it DOMINATES the line stays at `debug`: writer saturation already has its own
 /// signal (the writer heartbeat), and repeating it under the reconciler's name is
 /// worse than not repeating it at all.
 fn reconcile_report(path: &Path, summary: &ReconcileSummary) -> (log::Level, String) {
     let changes = format!("+{} -{} ~{}", summary.added, summary.removed, summary.updated);
     if summary.duration.as_secs() <= RECONCILE_SLOW_SECS {
         return (
-            log::Level::Info,
+            log::Level::Debug,
             format!(
                 "MustScanSubDirs: reconcile complete for {} ({changes}, {}ms)",
                 path.display(),
@@ -613,14 +640,17 @@ mod tests {
         );
     }
 
-    /// The ordinary case is unchanged: an info line with millisecond precision.
+    /// The ordinary case is DEBUG: one line per walk, thousands a day, and most of
+    /// them `+0 -0 ~0`. The signal that a reader needs at info is the 15-minute
+    /// aggregate ([`super::rescan_churn`]), not the per-walk line. Content is
+    /// unchanged, so `RUST_LOG` still gives the full picture.
     #[test]
-    fn a_quick_reconcile_reports_at_info() {
+    fn a_quick_reconcile_stays_out_of_the_way() {
         let (level, message) = reconcile_report(
             Path::new("/tmp/quick"),
             &summary(Duration::from_millis(120), Duration::ZERO),
         );
-        assert_eq!(level, log::Level::Info);
+        assert_eq!(level, log::Level::Debug);
         assert_eq!(
             message,
             "MustScanSubDirs: reconcile complete for /tmp/quick (+7 -0 ~0, 120ms)"

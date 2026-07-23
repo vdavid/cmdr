@@ -41,6 +41,7 @@ use crate::pluralize::pluralize;
 
 mod escalation;
 mod rescan;
+mod rescan_churn;
 mod rescan_hold;
 mod rescan_route;
 mod rescan_settle;

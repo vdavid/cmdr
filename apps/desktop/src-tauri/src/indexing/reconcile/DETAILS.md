@@ -524,9 +524,68 @@ leaves it looking fresh rather than muted. Whether that's worth a distinct signa
 `../writer/wait_probe.rs`). The bounded writer channel means a producer parks once it's full, so `reconcile_subtree`'s
 own duration silently included the wait ("reconcile slow for … (21s)" meant "the writer was saturated for 19 of those
 seconds"). `reconcile_subtree` arms the thread-local writer-wait probe at its start and reports the span as
-`ReconcileSummary.writer_wait`. `reconcile_report` is pure and returns `(log::Level, String)`: `info` under 10 s; past
-that the wait is named, and when it DOMINATES (over half the duration) the line drops to `debug` and says "reconcile
-waited" (writer saturation has its own signal in the writer heartbeat). The probe mechanism is in `../writer/DETAILS.md`.
+`ReconcileSummary.writer_wait`. `reconcile_report` is pure and returns `(log::Level, String)`: `debug` under 10 s (see
+the churn signal below); past that the wait is named, and when it DOMINATES (over half the duration) the line stays at
+`debug` and says "reconcile waited" (writer saturation has its own signal in the writer heartbeat), else it warns
+"reconcile slow". The probe mechanism is in `../writer/DETAILS.md`.
+
+## The churn signal (`reconciler/rescan_churn.rs`)
+
+Both per-walk lines (`reconcile starting`, `reconcile complete`) are DEBUG, because a normal day produces thousands of
+them and most say `+0 -0 ~0`. Measured on David's machine (2026-07-23, a day of reconciler logs): 4,626 starts and
+4,596 completes, of which 2,486 changed nothing at all and cost 11.5 s between them. At `info` they buried the two
+lines that mattered.
+
+Demoting them alone would be a regression in disguise: the problems this area's fixes address stayed invisible for
+months precisely because nobody could see the aggregate. So one INFO line replaces the thousands. `RescanChurnWindow`
+rolls every completed reconcile into a 15-minute window (`CHURN_WINDOW`) and emits at most ONE line, only when the
+window crossed a budget: more than 60 s of cumulative walk time (`WALK_BUDGET`) or more than 100,000 cumulative row
+changes (`ROW_BUDGET`). Under both, the window resets silently, so a quiet machine never sees the line and a quiet
+stretch can't accumulate its way to one hours later.
+
+```
+Reconciler: heavy churn in the last 15 min: 1,621 subtree reconciles, 507s of walking, 120,190 row changes, 64+ anchors, 37 signals held back. Top: /Users/me/Library/Caches/… (18 walks, 96s), …
+```
+
+**The top anchors are the point.** "Which folder" is the entire diagnostic value, so the line ranks anchors by
+accumulated cost (walks alone would name a cheap chatterbox over the anchor actually burning the CPU) and names three.
+
+**`held_back` is what proves the throttle and the settle delay still work.** It counts `MustScanSubDirs` signals that
+arrived for an anchor which may not walk yet, at the `queue_must_scan_sub_dirs` call site only: `requeue_rescan` fires
+thousands of times per removal storm for one scope and would drown the number. A window that churns hard while this
+reads zero means an eligibility gate stopped engaging, which is the regression that would otherwise be silent. It's
+deliberately one number, not one per gate: telling settle from throttle needs a new eligibility-reason API on the pure
+throttle, and the top-anchor list already tells you which kind of churn you're looking at.
+
+**Bounded memory, explicitly.** The machine produces thousands of distinct anchors a day (5,876 across the sampled log,
+5,587 of them one-shot), so per-anchor tallies are capped at `MAX_TRACKED_ANCHORS` (64) and nothing survives a window.
+Past the cap, a new anchor gets in only by outspending the cheapest one tracked, which then gives way. Refusing every
+newcomer instead would be actively broken: one-shot anchors fill the map within minutes, and the expensive anchor that
+shows up later (the one the reader needs) would never be named. Totals stay exact whatever the cap drops, and a
+capped count prints as `64+ anchors` so it reads as the floor it is.
+
+**Where it lives, and why not the neighbours.** The engine is pure and clock-injected like `rescan_throttle.rs` beside
+it, so every accumulate/threshold/format rule is unit-tested with no logger, clock, or filesystem; the impure part is
+three thin fns owning one process-wide `Mutex`. Process-wide, not per-reconciler, because reconcile churn is a MACHINE
+question: two volumes each walking 40 s is 80 s of this machine's CPU, and a per-volume window would report neither.
+Two nearby mechanisms were considered and are deliberately separate:
+
+- `DEBUG_STATS` (`../events/mod.rs`) counts `MustScanSubDirs` signals and completed rescans app-wide since the last
+  reset, for the debug window. No window, no cost, no row deltas, and `reset()` on every scan start, so it cannot
+  answer "is this machine reconciling too much right now?". The churn window doesn't replace it; they feed different
+  surfaces.
+- The churn monitor (`../watch/churn_monitor.rs`, `docs/notes/churn-observability-spike.md`) measures FSEvents churn
+  per directory rolled up the ancestor chain, off unless `CMDR_CHURN_SPIKE` is set, at Debug, for offline analysis.
+  Different input (raw events, not completed reconciles), different sink (a script, not a person reading the log), and
+  it can't see walk cost or row deltas at all. This one borrows its discipline (measured window rather than assumed,
+  hard cap with the drop counted, pure engine) and nothing else.
+
+**What it should do.** Replayed over the sampled logs (`~/Library/Logs/com.veszelovszki.cmdr/cmdr.log`, 6,286 completed
+reconciles, 2026-07-19 to 2026-07-23), the budgets fire in 11 of the 49 windows that saw any reconciling, and every one
+of those 11 is a window this area's fixes target: 1,621 reconciles over 1,595 one-shot anchors (the settle delay),
+289,531 row changes across 13 walks of 8 anchors (the hardlink diff fix), and repeated ~10 s walks of one cache
+directory (the cost-proportional throttle). If it keeps firing on a normal day AFTER those fixes, they didn't finish
+the job, and that is exactly what the line is for.
 
 ## Depth-split `MustScanSubDirs` routing (`reconciler/rescan_route.rs`)
 
