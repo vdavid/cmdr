@@ -54,13 +54,24 @@ pub enum FetchGate {
 }
 
 /// The pure idle gate: proceed only when idle. (`is_idle` comes from
-/// [`super::super::foreground`], itself tested over a fake clock.)
+/// [`crate::priority::foreground`], itself tested over a fake clock.)
 pub fn gate_on_idle(is_idle: bool) -> FetchGate {
     if is_idle {
         FetchGate::Proceed
     } else {
         FetchGate::DeferNotIdle
     }
+}
+
+/// The pure proceed-gate for one network-enrichment step, composing the two
+/// higher-priority claims (`crate::priority`: interactive > transfers > indexing):
+/// proceed only while the app is foreground-idle (app-WIDE — heavy on-device ML
+/// with no deadline stands aside for any browsing) AND no user-initiated transfer
+/// is touching THIS volume (per-volume — a copy elsewhere is no reason to wait).
+/// A `false` pauses the pass exactly like a plain not-idle always has
+/// (`PauseReason::NotIdle` → retry when clear).
+pub fn volume_clear_for_enrichment(app_idle: bool, transfer_active_on_volume: bool) -> bool {
+    app_idle && !transfer_active_on_volume
 }
 
 /// The bandwidth throttle: how long `bytes` should take at `max_bytes_per_sec`, i.e.
@@ -94,6 +105,19 @@ mod tests {
     fn gate_defers_when_not_idle_proceeds_when_idle() {
         assert_eq!(gate_on_idle(false), FetchGate::DeferNotIdle);
         assert_eq!(gate_on_idle(true), FetchGate::Proceed);
+    }
+
+    /// Transfers trump indexing: an active transfer on the volume pauses enrichment
+    /// even when the app is otherwise idle, and neither claim masks the other.
+    #[test]
+    fn a_transfer_on_the_volume_pauses_enrichment_even_when_idle() {
+        assert!(!volume_clear_for_enrichment(true, true), "idle but transferring ⇒ wait");
+        assert!(!volume_clear_for_enrichment(false, false), "browsing ⇒ wait");
+        assert!(!volume_clear_for_enrichment(false, true));
+        assert!(
+            volume_clear_for_enrichment(true, false),
+            "idle and no transfer ⇒ proceed"
+        );
     }
 
     #[test]

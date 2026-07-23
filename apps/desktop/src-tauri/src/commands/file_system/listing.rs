@@ -180,7 +180,7 @@ pub async fn list_directory_start(
     // path, so attribute it to "root" — the same volume id the FE uses for local.
     // Background work yields to this: media enrichment (app-wide), and the local
     // volume's own index scan and transfers (per-volume).
-    crate::media_index::foreground::note_foreground_activity_on("root");
+    crate::priority::foreground::note_foreground_activity_on("root");
     let expanded_path = expand_tilde(&path);
     let path_buf = PathBuf::from(&expanded_path);
     let dir_sort_mode = directory_sort_mode.unwrap_or_default();
@@ -217,7 +217,7 @@ pub async fn list_directory_start_streaming(
     // Foreground activity: the user navigated THIS volume. Attributing it is what
     // lets the NAS index scan and SMB transfers back off for the share the user is
     // actually browsing, without a local navigation slowing an unrelated share.
-    crate::media_index::foreground::note_foreground_activity_on(&volume_id);
+    crate::priority::foreground::note_foreground_activity_on(&volume_id);
     // Only expand tilde for local volumes (not MTP)
     let expanded_path = if volume_id == "root" {
         expand_tilde(&path)

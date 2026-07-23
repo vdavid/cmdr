@@ -377,7 +377,7 @@ async fn poll_until_cancelled(intent: &std::sync::atomic::AtomicU8) {
 /// a chunk, keeping the handle warm) at least every `hard_cap`, even if the user
 /// keeps browsing. So: keep parking only while the share is STILL busy AND we're
 /// still UNDER the cap; once either fails, resume the next write. Pure over a
-/// `Duration` clock, like [`crate::media_index::foreground::is_idle`], so it's
+/// `Duration` clock, like [`crate::priority::foreground::is_idle`], so it's
 /// unit-testable against a fake clock without a real timer.
 fn dest_park_continues(foreground_pending: bool, parked_for: Duration, hard_cap: Duration) -> bool {
     foreground_pending && parked_for < hard_cap

@@ -12,7 +12,7 @@
 //! resource with an explicit holder. SMB has no such holder — frames just
 //! interleave — so the signal here is time-based instead: the share counts as busy
 //! for [`TRANSFER_FOREGROUND_IDLE_THRESHOLD`] after the last navigation on it
-//! (`media_index::foreground`'s per-volume timestamp).
+//! (`priority::foreground`'s per-volume timestamp).
 //!
 //! Scope is PER VOLUME on purpose. A transfer is work the user ASKED for and is
 //! watching a progress bar for, so it must only stand aside for navigation on the
@@ -34,7 +34,7 @@
 
 use std::time::Duration;
 
-use crate::media_index::foreground;
+use crate::priority::foreground;
 
 /// How long after a navigation the share still counts as in use by the user.
 ///

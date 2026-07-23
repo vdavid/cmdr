@@ -519,7 +519,17 @@ impl MediaScheduler {
         let policy = ConservativeFetchPolicy::default();
         let fetcher = FsByteFetcher;
         let idle_threshold = policy.idle_threshold;
-        let is_idle = move || super::foreground::global().idle_for(idle_threshold);
+        // The between-images proceed gate: the app is foreground-idle AND no
+        // user-initiated transfer touches this volume (`crate::priority`'s order —
+        // transfers trump indexing). Either claim pauses the pass as `NotIdle`; the
+        // caller resumes it once the volume is clear again.
+        let gate_volume = volume_id.to_string();
+        let is_idle = move || {
+            network::policy::volume_clear_for_enrichment(
+                crate::priority::foreground::global().idle_for(idle_threshold),
+                crate::priority::transfers::transfer_active(&gate_volume),
+            )
+        };
         // The conservative per-image gate (plan Decision 6 + importance): an excluded folder
         // never enriches (privacy veto); otherwise enrich when an "always index"
         // override covers it OR its folder importance meets the slider threshold.

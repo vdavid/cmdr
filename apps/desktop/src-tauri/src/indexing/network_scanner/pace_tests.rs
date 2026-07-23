@@ -43,7 +43,7 @@ async fn browsing_the_share_throttles_the_scan_to_one_listing_in_flight() {
     // The user just navigated this share. A long quiet window keeps it "busy" for
     // the whole (fast) test, so the assertion can't flake on timing.
     let volume_id = "test://network_scanner/browsed";
-    crate::media_index::foreground::note_foreground_activity_on(volume_id);
+    crate::priority::foreground::note_foreground_activity_on(volume_id);
     let pacer = ScanPacer::with_threshold(volume_id, Duration::from_secs(60));
 
     let cancelled = Arc::new(AtomicBool::new(false));
@@ -90,7 +90,7 @@ async fn a_continuously_browsed_share_still_finishes_its_scan() {
         let volume_id = volume_id.to_string();
         async move {
             while !stop.load(Ordering::Relaxed) {
-                crate::media_index::foreground::note_foreground_activity_on(&volume_id);
+                crate::priority::foreground::note_foreground_activity_on(&volume_id);
                 tokio::time::sleep(Duration::from_millis(2)).await;
             }
         }
@@ -148,7 +148,7 @@ async fn browsing_a_different_volume_does_not_throttle_the_scan() {
     });
 
     // The user is busy in a local folder; the share being scanned is untouched.
-    crate::media_index::foreground::note_foreground_activity_on("root");
+    crate::priority::foreground::note_foreground_activity_on("root");
     let pacer = ScanPacer::with_threshold("test://network_scanner/untouched", Duration::from_secs(60));
 
     let cancelled = Arc::new(AtomicBool::new(false));
@@ -162,5 +162,82 @@ async fn browsing_a_different_volume_does_not_throttle_the_scan() {
     assert!(
         max > 1,
         "browsing another volume must leave this scan at full speed (max in flight = {max})"
+    );
+}
+
+/// Transfers trump indexing (the priority order): while a user-initiated write
+/// operation touches this share, the walk drops to ONE listing in flight — the
+/// same yield shape as browsing, driven by the transfer gauge instead of the
+/// foreground timestamp. The copy the user is watching gets the wire.
+#[tokio::test]
+async fn a_transfer_on_the_share_throttles_the_scan_to_one_listing_in_flight() {
+    use crate::indexing::writer::IndexWriter;
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let db_path = dir.path().join("vol-scan-transfer-yield.db");
+    let _store = IndexStore::open(&db_path).expect("open store");
+    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+
+    let in_flight = Arc::new(AtomicU64::new(0));
+    let max_in_flight = Arc::new(AtomicU64::new(0));
+    let vol: Arc<dyn Volume> = Arc::new(ConcurrencyTrackingVolume {
+        inner: wide_tree(FULL_LISTING_BUDGET * 2),
+        in_flight: Arc::clone(&in_flight),
+        max_in_flight: Arc::clone(&max_in_flight),
+    });
+
+    // A copy off this share is running for the whole scan; nobody is browsing.
+    let volume_id = "test://network_scanner/transfer_busy";
+    crate::priority::transfers::note_transfer_started(&[volume_id.to_string()]);
+    let pacer = ScanPacer::with_threshold(volume_id, Duration::from_secs(60));
+
+    let cancelled = Arc::new(AtomicBool::new(false));
+    let result = scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled, pacer).await;
+    crate::priority::transfers::note_transfer_finished(&[volume_id.to_string()]);
+    result.expect("a transfer-throttled scan still completes");
+    writer.flush().await.expect("flush");
+    writer.shutdown();
+
+    let max = max_in_flight.load(Ordering::SeqCst) as usize;
+    assert_eq!(
+        max, 1,
+        "a share with a running transfer must be scanned one listing at a time (max in flight = {max})"
+    );
+}
+
+/// The transfer yield is per volume, like the foreground one: a copy on another
+/// share must not slow this scan down.
+#[tokio::test]
+async fn a_transfer_on_a_different_volume_does_not_throttle_the_scan() {
+    use crate::indexing::writer::IndexWriter;
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let db_path = dir.path().join("vol-scan-transfer-scope.db");
+    let _store = IndexStore::open(&db_path).expect("open store");
+    let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+
+    let in_flight = Arc::new(AtomicU64::new(0));
+    let max_in_flight = Arc::new(AtomicU64::new(0));
+    let vol: Arc<dyn Volume> = Arc::new(ConcurrencyTrackingVolume {
+        inner: wide_tree(FULL_LISTING_BUDGET * 2),
+        in_flight: Arc::clone(&in_flight),
+        max_in_flight: Arc::clone(&max_in_flight),
+    });
+
+    let other = "test://network_scanner/transfer_elsewhere".to_string();
+    crate::priority::transfers::note_transfer_started(std::slice::from_ref(&other));
+    let pacer = ScanPacer::with_threshold("test://network_scanner/transfer_untouched", Duration::from_secs(60));
+
+    let cancelled = Arc::new(AtomicBool::new(false));
+    let result = scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled, pacer).await;
+    crate::priority::transfers::note_transfer_finished(std::slice::from_ref(&other));
+    result.expect("scan completes");
+    writer.flush().await.expect("flush");
+    writer.shutdown();
+
+    let max = max_in_flight.load(Ordering::SeqCst) as usize;
+    assert!(
+        max > 1,
+        "a transfer on another volume must leave this scan at full speed (max in flight = {max})"
     );
 }

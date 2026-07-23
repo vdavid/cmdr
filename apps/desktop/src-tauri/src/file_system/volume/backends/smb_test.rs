@@ -331,13 +331,13 @@ async fn foreground_pending_tracks_navigation_on_this_share_only() {
     let vol = make_test_volume();
     assert!(!vol.foreground_pending().await, "nothing browsed yet");
 
-    crate::media_index::foreground::note_foreground_activity_on("some-other-volume");
+    crate::priority::foreground::note_foreground_activity_on("some-other-volume");
     assert!(
         !vol.foreground_pending().await,
         "browsing another volume must not park a copy off this share"
     );
 
-    crate::media_index::foreground::note_foreground_activity_on(vol.volume_id());
+    crate::priority::foreground::note_foreground_activity_on(vol.volume_id());
     assert!(vol.foreground_pending().await, "browsing this share parks the copy");
 }
 

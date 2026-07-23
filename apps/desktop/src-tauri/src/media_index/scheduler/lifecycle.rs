@@ -424,15 +424,20 @@ fn idle_wait_should_end(is_idle: bool, should_stop: bool) -> bool {
 /// promptly after the user stops browsing, large enough to cost nothing while waiting.
 const RESUME_POLL_INTERVAL: Duration = Duration::from_secs(2);
 
-/// Park until the app is idle enough to resume a network pass (or until enrichment is
-/// stopped), polling the foreground-activity signal every [`RESUME_POLL_INTERVAL`]. The
-/// idle threshold matches the pass's own gate ([`ConservativeFetchPolicy::idle_threshold`]),
-/// so "idle enough to resume" is exactly "idle enough to have kept going".
-async fn wait_until_idle_to_resume() {
+/// Park until the volume is clear enough to resume a network pass (or until enrichment
+/// is stopped), polling the priority signals every [`RESUME_POLL_INTERVAL`]. The
+/// condition matches the pass's own between-images gate — app foreground-idle at
+/// [`ConservativeFetchPolicy::idle_threshold`] AND no transfer on this volume
+/// ([`network::policy::volume_clear_for_enrichment`]) — so "clear enough to resume" is
+/// exactly "clear enough to have kept going".
+async fn wait_until_idle_to_resume(volume_id: &str) {
     let idle_threshold = ConservativeFetchPolicy::default().idle_threshold;
     loop {
-        let is_idle = crate::media_index::foreground::global().idle_for(idle_threshold);
-        if idle_wait_should_end(is_idle, gate::should_stop()) {
+        let clear = network::policy::volume_clear_for_enrichment(
+            crate::priority::foreground::global().idle_for(idle_threshold),
+            crate::priority::transfers::transfer_active(volume_id),
+        );
+        if idle_wait_should_end(clear, gate::should_stop()) {
             return;
         }
         tokio::time::sleep(RESUME_POLL_INTERVAL).await;
@@ -465,7 +470,7 @@ fn spawn_pass(scheduler: Arc<MediaScheduler>, volume_id: String, kind: PassKind)
                         target: "media_index",
                         "enrichment of '{volume_id}' paused for foreground activity; waiting for idle to resume"
                     );
-                    wait_until_idle_to_resume().await;
+                    wait_until_idle_to_resume(&volume_id).await;
                     continue;
                 }
                 Ok(Ok(PassOutcome::Done(count))) => log::debug!(

@@ -282,6 +282,12 @@ pub(super) fn register_operation_status(
         .map(|d| d.as_millis() as u64)
         .unwrap_or(0);
 
+    // Raise the priority transfer gauge alongside the eject busy set: these two
+    // register/unregister functions are the ONE write-op lifecycle choke point, so
+    // indexing's "a transfer trumps me" signal (`crate::priority::transfers`) and
+    // eject's guard can't drift apart. The finish fires from the same panic-safe
+    // cleanup paths that unregister.
+    crate::priority::transfers::note_transfer_started(&volume_ids);
     if let Ok(mut cache) = OPERATION_STATUS_CACHE.write() {
         cache.insert(
             operation_id.to_string(),
@@ -303,8 +309,16 @@ pub(super) fn register_operation_status(
 
 /// Removes an operation from the status cache.
 pub(super) fn unregister_operation_status(operation_id: &str) {
-    if let Ok(mut cache) = OPERATION_STATUS_CACHE.write() {
-        cache.remove(operation_id);
+    let removed_volume_ids = if let Ok(mut cache) = OPERATION_STATUS_CACHE.write() {
+        cache.remove(operation_id).map(|status| status.volume_ids)
+    } else {
+        None
+    };
+    // Lower the priority transfer gauge with the SAME ids the register raised it
+    // with (they ride the cache entry, so the pair can't drift). A double
+    // unregister removed nothing and lowers nothing.
+    if let Some(volume_ids) = removed_volume_ids {
+        crate::priority::transfers::note_transfer_finished(&volume_ids);
     }
     recompute_and_emit_busy_volumes();
 }

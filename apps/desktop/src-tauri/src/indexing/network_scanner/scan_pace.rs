@@ -7,8 +7,9 @@
 //! the scan finished (2026-07-19, `/Volumes/naspi`, ~2M entries).
 //!
 //! So the walk asks this module, at every top-up, how many listings it may keep in
-//! flight. Browsing the share drops the budget to
-//! [`YIELDING_LISTING_BUDGET`]; a quiet share gets [`FULL_LISTING_BUDGET`].
+//! flight. Browsing the share OR a running user-initiated transfer on it (both
+//! higher-priority claims on the connection — `crate::priority`) drops the budget
+//! to [`YIELDING_LISTING_BUDGET`]; a quiet share gets [`FULL_LISTING_BUDGET`].
 //!
 //! **Forward progress is structural, not a floor.** The yielding budget is 1, never
 //! 0, so there is no starvation case to defend against with a quota or a
@@ -17,13 +18,13 @@
 //! Nothing to reset, nothing to leak, nothing that can wedge. See
 //! `indexing/DETAILS.md` § "Yielding to navigation".
 //!
-//! Scope is PER VOLUME (`media_index::foreground`'s scoped signal): the contention
+//! Scope is PER VOLUME (`priority::foreground`'s scoped signal): the contention
 //! is one share's session, so browsing a local folder must not slow a NAS scan.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
-use crate::media_index::foreground;
+use crate::priority::foreground;
 
 /// Listings in flight while the share is quiet. Directory listing is latency-bound
 /// (each dir is open+query+close round trips over an otherwise-idle link), so
@@ -52,13 +53,23 @@ pub(crate) const YIELDING_LISTING_BUDGET: usize = 1;
 pub(crate) const SCAN_FOREGROUND_IDLE_THRESHOLD: Duration = Duration::from_secs(2);
 
 /// PURE: the in-flight listing budget for a share whose last foreground activity
-/// was at `last_foreground_millis`, as of `now_millis`.
+/// was at `last_foreground_millis`, as of `now_millis`, and on which a
+/// user-initiated transfer is (`transfer_active`) or isn't running.
+///
+/// Both higher-priority claims yield the same way (`crate::priority`'s order:
+/// interactive > transfers > indexing): the budget drops to one listing in
+/// flight, never zero, so the scan slows but structurally keeps finishing.
 ///
 /// Injected clock + threshold so the whole decision is unit-testable without
 /// sleeping. Delegates the elapsed-vs-threshold comparison to
 /// [`foreground::is_idle`] so there's one saturating-subtraction rule in the app.
-pub(crate) fn listing_budget(now_millis: u64, last_foreground_millis: u64, threshold: Duration) -> usize {
-    if foreground::is_idle(now_millis, last_foreground_millis, threshold) {
+pub(crate) fn listing_budget(
+    now_millis: u64,
+    last_foreground_millis: u64,
+    threshold: Duration,
+    transfer_active: bool,
+) -> usize {
+    if !transfer_active && foreground::is_idle(now_millis, last_foreground_millis, threshold) {
         FULL_LISTING_BUDGET
     } else {
         YIELDING_LISTING_BUDGET
@@ -111,16 +122,17 @@ impl ScanPacer {
     }
 
     /// How many listings the walk may have in flight right now. Cheap enough to
-    /// call at every top-up (an uncontended read lock over a tiny map).
+    /// call at every top-up (two uncontended read locks over tiny maps).
     pub(crate) fn listing_budget(&self) -> usize {
         let Some(volume_id) = self.volume_id.as_deref() else {
             return FULL_LISTING_BUDGET;
         };
-        // A volume nobody has browsed has no timestamp at all, which is the
-        // full-speed case; otherwise the pure decision below owns the call.
+        let transfer_active = crate::priority::transfers::transfer_active(volume_id);
+        // A volume nobody has browsed has no timestamp at all, which reads as
+        // foreground-idle; otherwise the pure decision below owns the call.
         let budget = match foreground::global().volume_activity_millis(volume_id) {
-            Some((now, last)) => listing_budget(now, last, self.idle_threshold),
-            None => FULL_LISTING_BUDGET,
+            Some((now, last)) => listing_budget(now, last, self.idle_threshold, transfer_active),
+            None => listing_budget(0, 0, Duration::ZERO, transfer_active),
         };
         self.log_transition(volume_id, budget);
         budget
@@ -136,7 +148,9 @@ impl ScanPacer {
         if budget == FULL_LISTING_BUDGET {
             log::debug!("scan_pace: '{volume_id}' is quiet again, scan back to {in_flight} in flight");
         } else {
-            log::debug!("scan_pace: user is browsing '{volume_id}', throttling the scan to {in_flight} in flight");
+            log::debug!(
+                "scan_pace: '{volume_id}' is in use (browsing or a transfer), throttling the scan to {in_flight} in flight"
+            );
         }
     }
 }
@@ -152,20 +166,37 @@ mod tests {
         let threshold = Duration::from_secs(2);
         let last = 10_000;
         assert_eq!(
-            listing_budget(10_000, last, threshold),
+            listing_budget(10_000, last, threshold, false),
             YIELDING_LISTING_BUDGET,
             "navigating right now throttles the scan"
         );
         assert_eq!(
-            listing_budget(11_999, last, threshold),
+            listing_budget(11_999, last, threshold, false),
             YIELDING_LISTING_BUDGET,
             "still inside the quiet window"
         );
         assert_eq!(
-            listing_budget(12_000, last, threshold),
+            listing_budget(12_000, last, threshold, false),
             FULL_LISTING_BUDGET,
             "the window elapsed ⇒ full speed"
         );
+    }
+
+    /// Transfers trump indexing: a running transfer yields the throttled budget
+    /// even on a foreground-quiet share, and the two claims don't mask each other.
+    #[test]
+    fn a_running_transfer_gets_the_yielding_budget_regardless_of_foreground() {
+        let threshold = Duration::from_secs(2);
+        // Foreground long quiet, transfer running ⇒ yield.
+        assert_eq!(
+            listing_budget(100_000, 0, threshold, true),
+            YIELDING_LISTING_BUDGET,
+            "a transfer alone must throttle the scan"
+        );
+        // Both busy ⇒ still the same single yielding budget.
+        assert_eq!(listing_budget(10_000, 10_000, threshold, true), YIELDING_LISTING_BUDGET);
+        // Transfer done, foreground quiet ⇒ full speed again.
+        assert_eq!(listing_budget(100_000, 0, threshold, false), FULL_LISTING_BUDGET);
     }
 
     /// A share nobody has browsed runs at full speed from the very first listing —
@@ -186,10 +217,12 @@ mod tests {
         let threshold = Duration::from_secs(2);
         for now in [0_u64, 1, 999, 1_000, 100_000, u64::MAX] {
             for last in [0_u64, 1, 999, 100_000, u64::MAX] {
-                assert!(
-                    listing_budget(now, last, threshold) >= 1,
-                    "budget must never reach 0 (now={now}, last={last})"
-                );
+                for transfer_active in [false, true] {
+                    assert!(
+                        listing_budget(now, last, threshold, transfer_active) >= 1,
+                        "budget must never reach 0 (now={now}, last={last}, transfer={transfer_active})"
+                    );
+                }
             }
         }
     }
