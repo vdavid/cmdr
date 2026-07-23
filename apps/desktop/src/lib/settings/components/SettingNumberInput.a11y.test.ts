@@ -16,6 +16,10 @@ vi.mock('$lib/settings', () => ({
     constraints: { min: 10, max: 1000, step: 10 },
   })),
   onSpecificSettingChange: vi.fn(() => () => {}),
+  // Plain-number setting under test, so the duration helpers are passthroughs (factor 1).
+  durationUnitFactor: vi.fn(() => 1),
+  msToDurationValue: vi.fn((ms: number) => ms),
+  durationValueToMs: vi.fn((value: number) => value),
 }))
 
 describe('SettingNumberInput a11y', () => {

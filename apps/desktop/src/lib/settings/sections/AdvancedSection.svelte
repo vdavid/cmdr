@@ -10,13 +10,12 @@
         type SettingsValues,
         formatDuration,
     } from '$lib/settings'
-    import type { DurationUnit } from '$lib/settings/types'
     import SettingsSection from '../components/SettingsSection.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import Switch from '$lib/ui/Switch.svelte'
-    import { NumberInput, type NumberInputValueChangeDetails } from '@ark-ui/svelte/number-input'
+    import SettingNumberInput from '../components/SettingNumberInput.svelte'
     import {
         createShouldShow,
         anyVisible,
@@ -73,26 +72,15 @@
         setSetting(id, checked as SettingsValues[typeof id])
     }
 
-    const DURATION_UNIT_MS: Record<DurationUnit, number> = {
-        ms: 1,
-        s: 1000,
-        min: 60_000,
-        h: 3_600_000,
-        d: 86_400_000,
-    }
-
-    function unitFactor(unit: DurationUnit | undefined): number {
-        return unit ? DURATION_UNIT_MS[unit] : 1
-    }
-
-    function handleNumberChange(
-        id: SettingId,
-        details: NumberInputValueChangeDetails,
-        durationUnit?: DurationUnit,
-    ) {
-        const raw = details.valueAsNumber
-        const value = durationUnit ? raw * unitFactor(durationUnit) : raw
-        setSetting(id, value as SettingsValues[typeof id])
+    // Unit label for a plain `number` setting. Duration settings label themselves through
+    // `SettingNumberInput` (from their `constraints.unit`); numbers carry no registry unit,
+    // so we infer one from the id. Keyed on the stable id, never a user-facing string.
+    function numberUnitLabel(id: SettingId): string {
+        if (id === 'advanced.dragThreshold') return 'px'
+        if (id.includes('Buffer')) return 'items'
+        if (id.endsWith('Mb') || id.includes('DiskSpace')) return 'MB'
+        if (id === 'fileExplorer.typeToJump.resetDelay') return 'ms'
+        return ''
     }
 
     function handleReset(id: SettingId) {
@@ -222,52 +210,10 @@ Timestamp: ${info.timestamp}
                             ariaLabel={setting.label}
                         />
                     {:else if setting.type === 'number' || setting.type === 'duration'}
-                        {@const durationUnit =
-                            setting.type === 'duration' ? setting.constraints?.unit : undefined}
-                        {@const factor = unitFactor(durationUnit)}
-                        {@const rawValue = Number(getSetting(id))}
-                        <NumberInput.Root
-                            value={String(durationUnit ? rawValue / factor : rawValue)}
-                            onValueChange={(d) => {
-                                handleNumberChange(id, d, durationUnit)
-                            }}
-                            min={setting.type === 'duration'
-                                ? (setting.constraints?.minMs ?? 0) / factor
-                                : setting.constraints?.min}
-                            max={setting.type === 'duration'
-                                ? (setting.constraints?.maxMs ?? Infinity) / factor
-                                : setting.constraints?.max}
-                            step={setting.constraints?.step ?? 1}
-                        >
-                            <NumberInput.Control class="number-control">
-                                <NumberInput.DecrementTrigger
-                                    class="number-btn"
-                                    aria-label={tString('settings.control.decrease', { label: setting.label })}
-                                    >−</NumberInput.DecrementTrigger
-                                >
-                                <NumberInput.Input class="number-input" aria-label={setting.label} />
-                                <NumberInput.IncrementTrigger
-                                    class="number-btn"
-                                    aria-label={tString('settings.control.increase', { label: setting.label })}
-                                    >+</NumberInput.IncrementTrigger
-                                >
-                            </NumberInput.Control>
-                        </NumberInput.Root>
-                        {#if setting.type === 'duration' && setting.constraints?.unit}
-                            <span class="unit">{setting.constraints.unit}</span>
-                        {:else if setting.type === 'number'}
-                            <span class="unit">
-                                {setting.id === 'advanced.dragThreshold'
-                                    ? 'px'
-                                    : setting.id.includes('Buffer')
-                                      ? 'items'
-                                      : setting.id.endsWith('Mb') || setting.id.includes('DiskSpace')
-                                        ? 'MB'
-                                        : setting.id === 'fileExplorer.typeToJump.resetDelay'
-                                          ? 'ms'
-                                          : ''}
-                            </span>
-                        {/if}
+                        <SettingNumberInput
+                            id={setting.id}
+                            unit={setting.type === 'number' ? numberUnitLabel(setting.id) : ''}
+                        />
                     {/if}
                                 </div>
                             </div>
@@ -412,53 +358,4 @@ Timestamp: ${info.timestamp}
         flex-shrink: 0;
     }
 
-    .unit {
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
-        min-width: 40px;
-    }
-
-    /* Ark UI component styles */
-    :global(.number-control) {
-        display: flex;
-        align-items: center;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        overflow: hidden;
-    }
-
-    :global(.number-btn) {
-        width: 24px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--color-bg-primary);
-        border: none;
-        color: var(--color-text-primary);
-        cursor: default;
-        font-size: var(--font-size-sm);
-    }
-
-    :global(.number-input) {
-        width: 60px;
-        padding: var(--spacing-xs);
-        border: none;
-        border-left: 1px solid var(--color-border);
-        border-right: 1px solid var(--color-border);
-        background: var(--color-bg-primary);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
-        text-align: center;
-    }
-
-    :global(.number-input:focus) {
-        outline: none;
-    }
-
-    :global(.number-control:focus-within) {
-        outline: 2px solid var(--color-accent);
-        outline-offset: -2px;
-        box-shadow: var(--shadow-focus);
-    }
 </style>

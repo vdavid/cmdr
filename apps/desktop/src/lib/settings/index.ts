@@ -31,7 +31,15 @@ export type {
   VolumeTintColor,
 } from './types'
 
-export { densityMappings, formatDuration, SettingValidationError, VOLUME_TINT_COLORS } from './types'
+export {
+  densityMappings,
+  durationUnitFactor,
+  durationValueToMs,
+  formatDuration,
+  msToDurationValue,
+  SettingValidationError,
+  VOLUME_TINT_COLORS,
+} from './types'
 
 // Registry
 export {

@@ -27,7 +27,9 @@ Registry-driven controls (pick by control shape):
 - `SettingToggleGroup.svelte`: segmented control for short enum lists. `SettingRadioGroup.svelte`: vertical radio for
   longer lists or when an option needs a `customContent` snippet.
 - `SettingSlider.svelte`: slider + paired number input. `SettingNumberInput.svelte`: standalone number input (clamps to
-  registry `min`/`max`).
+  registry `min`/`max`; for a `duration` setting it edits in the setting's `constraints.unit` while the store stays in
+  ms, converting via `durationValueToMs` / `msToDurationValue`). Route `duration` settings through it, never a raw Ark
+  `NumberInput`.
 - `SettingPasswordInput.svelte`: masked input with reveal toggle (two modes; see Gotchas).
 - `SettingColorSwatchPicker.svelte`: circle trigger + 4×4 swatch popover for pane tints; `swatch-keyboard.ts` is its
   pure key-index resolver (unit-testable without a DOM).

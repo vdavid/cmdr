@@ -5,6 +5,8 @@
         setSetting,
         getSettingDefinition,
         onSpecificSettingChange,
+        msToDurationValue,
+        durationValueToMs,
         type SettingId,
         type SettingsValues,
     } from '$lib/settings'
@@ -14,6 +16,9 @@
     interface Props {
         id: SettingId
         disabled?: boolean
+        /** Unit label shown after the input. For a `duration` setting it defaults to the
+            setting's own unit (`ms` / `s` / `min` / …); pass this to override or to label a
+            plain `number`. */
         unit?: string
     }
 
@@ -21,23 +26,38 @@
 
     const definition = getSettingDefinition(id)
     const label = definition?.label ?? id
-    const min = definition?.constraints?.min ?? 0
-    const max = definition?.constraints?.max ?? 999999
+
+    // A `duration` setting stores milliseconds but is edited in a coarser unit (its
+    // `constraints.unit`). We convert stored ms <-> the displayed value here so the store
+    // stays in ms and callers never see the scaling. A plain `number` has no unit, so the
+    // factor is 1 and every conversion is a passthrough.
+    const durationUnit = definition?.type === 'duration' ? definition.constraints?.unit : undefined
+    const displayUnit = unit || (durationUnit ?? '')
+
+    // Bounds and step are expressed in the DISPLAY unit. Duration bounds come from
+    // `minMs`/`maxMs` (scaled down); plain numbers use `min`/`max` directly.
+    const min = durationUnit
+        ? msToDurationValue(definition?.constraints?.minMs ?? 0, durationUnit)
+        : (definition?.constraints?.min ?? 0)
+    const max = durationUnit
+        ? msToDurationValue(definition?.constraints?.maxMs ?? Number.MAX_SAFE_INTEGER, durationUnit)
+        : (definition?.constraints?.max ?? 999999)
     const step = definition?.constraints?.step ?? 1
 
-    let value = $state(getSetting(id) as number)
+    // `value` is the DISPLAYED number (already in `displayUnit`).
+    let value = $state(msToDurationValue(getSetting(id) as number, durationUnit))
 
-    // Subscribe to setting changes (for external resets)
+    // Subscribe to setting changes (for external resets); the store speaks ms.
     onMount(() => {
         return onSpecificSettingChange(id, (_id, newValue) => {
-            value = newValue as number
+            value = msToDurationValue(newValue as number, durationUnit)
         })
     })
 
     function handleChange(details: NumberInputValueChangeDetails) {
-        const newValue = Math.min(max, Math.max(min, details.valueAsNumber))
-        value = newValue
-        setSetting(id, newValue as SettingsValues[typeof id])
+        const clampedDisplay = Math.min(max, Math.max(min, details.valueAsNumber))
+        value = clampedDisplay
+        setSetting(id, durationValueToMs(clampedDisplay, durationUnit) as SettingsValues[typeof id])
     }
 </script>
 
@@ -54,8 +74,8 @@
         </NumberInput.Control>
     </NumberInput.Root>
 
-    {#if unit}
-        <span class="unit">{unit}</span>
+    {#if displayUnit}
+        <span class="unit">{displayUnit}</span>
     {/if}
 </div>
 

@@ -497,6 +497,31 @@ export const densityMappings: Record<UiDensity, DensityValues> = {
 // Duration Conversion Helpers
 // ============================================================================
 
+/** Milliseconds per `DurationUnit`. The one source of truth for unit scaling; UI that
+    edits a `duration` setting in its display unit multiplies/divides through this. */
+export const DURATION_UNIT_MS: Record<DurationUnit, number> = {
+  ms: 1,
+  s: 1000,
+  min: 60_000,
+  h: 3_600_000,
+  d: 86_400_000,
+}
+
+/** ms-per-unit for `unit`, or 1 when `unit` is absent (a plain, unscaled number). */
+export function durationUnitFactor(unit: DurationUnit | undefined): number {
+  return unit ? DURATION_UNIT_MS[unit] : 1
+}
+
+/** Stored milliseconds → the value shown in the `unit` field (e.g. 20000 ms, `'s'` → 20). */
+export function msToDurationValue(ms: number, unit: DurationUnit | undefined): number {
+  return ms / durationUnitFactor(unit)
+}
+
+/** A `unit`-field value → stored milliseconds (e.g. 20, `'s'` → 20000 ms). */
+export function durationValueToMs(value: number, unit: DurationUnit | undefined): number {
+  return value * durationUnitFactor(unit)
+}
+
 export function formatDuration(ms: number): string {
   if (ms < 1000) return ms.toString() + 'ms'
   if (ms < 60000) return (ms / 1000).toString() + 's'
