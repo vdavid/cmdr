@@ -49,7 +49,9 @@ describe('waitForNextPaint', () => {
     // Fire each rAF callback on the next microtask so the two nested frames
     // resolve promptly, without depending on the fake timer's rAF emulation.
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-      queueMicrotask(() => { cb(0); })
+      queueMicrotask(() => {
+        cb(0)
+      })
       return 0
     })
     await expect(waitForNextPaint(1000)).resolves.toBe('painted')

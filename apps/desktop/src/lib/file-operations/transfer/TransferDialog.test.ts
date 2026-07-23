@@ -154,7 +154,6 @@ interface MountOpts {
   currentVolumeId?: string
   sourceFolderPath?: string
   destinationPath?: string
-  direction?: 'left' | 'right'
 }
 
 type ConfirmFn = (
@@ -176,7 +175,6 @@ function mountDialog(opts: MountOpts = {}): HTMLDivElement {
       operationType: opts.operationType ?? 'copy',
       sourcePaths: ['/Users/test/photos', '/Users/test/notes.txt'],
       destinationPath: opts.destinationPath ?? '/Users/test/dest',
-      direction: opts.direction ?? 'right',
       currentVolumeId: opts.currentVolumeId ?? 'root',
       fileCount: 1,
       folderCount: 1,
@@ -648,45 +646,6 @@ describe('TransferDialog data-scan-state marker', () => {
 
     // Flipping to a same-volume move cancels the deep preview → skipped.
     expect(scanState(target)).toBe('skipped')
-  })
-})
-
-/* ------------------------------------------------------------------------- */
-/* Direction header label uses the volume display name at a volume root         */
-/* ------------------------------------------------------------------------- */
-
-describe('TransferDialog direction-header label', () => {
-  it('renders the volume display name (not the storage id) for an MTP storage root source', async () => {
-    // Source pane is at the MTP "SD Card" storage root, whose basename is the
-    // raw storage id "65538" (0x10002). F5/F6 must show the volume name instead.
-    const target = mountDialog({
-      operationType: 'copy',
-      sourceVolumeId: 'mtp-336592896:65538',
-      sourceFolderPath: '/mtp-20-5/65538',
-      currentVolumeId: 'root',
-      destinationPath: '/Users/test/dest',
-      direction: 'left',
-    })
-    await flushMicrotasks()
-
-    const source = target.querySelector('.folder-name.source')?.textContent.trim() ?? ''
-    expect(source).toBe('Virtual Pixel 9 - SD Card')
-    expect(source).not.toContain('65538')
-  })
-
-  it('still renders the folder basename for a normal subfolder source', async () => {
-    const target = mountDialog({
-      operationType: 'copy',
-      sourceVolumeId: 'root',
-      sourceFolderPath: '/Users/test/photos',
-      currentVolumeId: 'root',
-      destinationPath: '/Users/test/dest',
-      direction: 'left',
-    })
-    await flushMicrotasks()
-
-    const source = target.querySelector('.folder-name.source')?.textContent.trim() ?? ''
-    expect(source).toBe('photos')
   })
 })
 

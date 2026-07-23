@@ -34,7 +34,7 @@
         /** Inline style string for the dialog container (sizing, colors) */
         containerStyle?: string
         /**
-         * Standard body padding (`--dialog-padding`, horizontal). ModalDialog owns it so
+         * Standard body padding (`--spacing-dialog`, horizontal). ModalDialog owns it so
          * dialogs don't hand-roll their own. Set `false` for full-bleed bodies
          * that manage their own padding (e.g. edge-to-edge lists).
          */
@@ -285,7 +285,7 @@
     .modal-dialog {
         background: var(--color-bg-secondary);
         border: 1px solid var(--color-dialog-border-outer);
-        border-radius: var(--dialog-radius);
+        border-radius: var(--radius-dialog);
         box-shadow:
             inset 0 0 0 1px var(--color-dialog-border-inner),
             var(--shadow-dialog);
@@ -349,10 +349,10 @@
     }
 
     /* One inset all round: the gap below the title and above the footer match the
-       dialog's own `--dialog-padding`, so nothing crowds the title or the
+       dialog's own `--spacing-dialog`, so nothing crowds the title or the
        action row. Bodies may add more, never less. */
     .dialog-title-bar {
-        padding: var(--dialog-padding);
+        padding: var(--spacing-dialog);
         user-select: none;
     }
 
@@ -372,12 +372,12 @@
        horizontal inset matches the title bar and footer; the title bar's bottom
        padding supplies the top gap and the footer supplies the bottom. */
     .modal-body {
-        padding: 0 var(--dialog-padding);
+        padding: 0 var(--spacing-dialog);
     }
 
     /* Footerless dialogs: the body owns the bottom padding the footer would give. */
     .modal-body.no-footer {
-        padding-bottom: var(--dialog-padding);
+        padding-bottom: var(--spacing-dialog);
     }
 
     /* Full-bleed opt-out (`padded={false}`): the body manages its own padding. */
@@ -392,7 +392,7 @@
         align-items: center;
         justify-content: flex-end;
         gap: var(--spacing-md);
-        padding: var(--dialog-padding);
+        padding: var(--spacing-dialog);
     }
 
     /* `margin-right: auto` eats the slack, so the buttons stay hard right no matter

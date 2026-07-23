@@ -128,7 +128,6 @@ function mountDialog(operationType: 'copy' | 'compress'): HTMLDivElement {
       operationType,
       sourcePaths: ['/Users/test/photos'],
       destinationPath: '/Users/test/dest',
-      direction: 'right',
       currentVolumeId: 'root',
       fileCount: 1,
       folderCount: 1,

@@ -56,7 +56,7 @@ Props:
 | `title`          | Snippet                       | Rendered as `<h2>` in the title bar (left-aligned)                    |
 | `children`       | Snippet                       | Dialog body                                                           |
 | `footer`         | Snippet?                      | Action buttons, rendered in a right-aligned `.modal-footer`           |
-| `footerLeading`  | Snippet?                      | Content pinned left on the footer row; buttons stay right-aligned    |
+| `footerLeading`  | Snippet?                      | Content pinned left on the footer row; buttons stay right-aligned     |
 | `dialogId`       | `SoftDialogId?`               | Auto-calls `notifyDialogOpened`/`notifyDialogClosed` on mount/destroy |
 | `onclose`        | `() => void`?                 | Renders × button; also called on Escape                               |
 | `draggable`      | `boolean`                     | Default `true`. Title bar drag moves the dialog.                      |
@@ -68,12 +68,11 @@ Props:
 **Layout convention (macOS-style).** Title and body text are LEFT-aligned; action buttons are RIGHT-aligned with the
 primary action last (rightmost). Pass buttons via the `footer` snippet — `ModalDialog` renders them in a `.modal-footer`
 that owns the right-alignment, gap, and the dialog's bottom padding, so callers don't hand-roll a button-row. The title
-bar's padding, the footer's, and the body's side inset all come from ONE token (`--dialog-padding`), so title, body,
-and buttons line up flush at the same inset and nothing crowds the title or the action row. A `padded={false}` body
-that insets its own sections must use that same token. A dialog with a
-custom button layout (multiple rows, a left-side helper, equal-width buttons) keeps its buttons in `children` and
-right-aligns them itself; genuinely centered content (spinners, progress bars, numeric readouts, hero panels like
-`AboutWindow`) stays centered.
+bar's padding, the footer's, and the body's side inset all come from ONE token (`--spacing-dialog`), so title, body, and
+buttons line up flush at the same inset and nothing crowds the title or the action row. A `padded={false}` body that
+insets its own sections must use that same token. A dialog with a custom button layout (multiple rows, a left-side
+helper, equal-width buttons) keeps its buttons in `children` and right-aligns them itself; genuinely centered content
+(spinners, progress bars, numeric readouts, hero panels like `AboutWindow`) stays centered.
 
 **`growDownward`** is for a dialog whose height changes while it's open (a mode switch revealing extra controls). The
 overlay centers with flex, so a taller body would push the title up and re-center everything under the user's eyes. With
@@ -86,7 +85,7 @@ expands (`TransferDialog` slides its compress-only block) so the growth reads as
 wrapper, so the buttons stay hard right at any leading width). Use it for a modifier on the primary action, the way
 `DeleteDialog` rides its "Move to trash" switch beside the confirm button; it renders only when `footer` does.
 
-**Edge and corner.** The dialog's corner is `--dialog-radius` (27px, just under the window-level `--radius-xxl`), and
+**Edge and corner.** The dialog's corner is `--radius-dialog` (27px, just under the window-level `--radius-xxl`), and
 its edge is TWO hairlines the way macOS draws a panel: a darker `border` outside plus a lighter `inset 0 0 0 1px` ring
 just inside it, both alpha so the pair works over any surface. The inset ring rides the padding-box corner, so it stays
 concentric with the border at any radius; keep it in the same `box-shadow` as the drop shadow rather than adding a
@@ -855,10 +854,12 @@ The track-and-thumb on/off control, a presentational wrapper over Ark's `Switch`
 `indeterminate`: `checked` (bindable, default `false`), `disabled`, `id`, `ariaLabel` (accessible name when there's no
 visible label), `onCheckedChange`, and `children` (an inline label right of the track).
 
-Ark renders the semantic control as a visually-hidden native `<input type="checkbox">` carrying `role="switch"`, inside
-a `<label>` root; the styled track (`.switch-control`) and thumb (`.switch-thumb`) are decorative. The thumb is a
-literal `white`, not a token, so it reads against the accent-filled track in both themes; the off track's outline uses
-`--color-control-border` for the WCAG 3:1 non-text minimum.
+Ark renders the semantic control as a visually-hidden native `<input type="checkbox">` inside a `<label>` root; the
+styled track (`.switch-control`) and thumb (`.switch-thumb`) are decorative. **We add `role="switch"` to that input
+ourselves** — Ark ships it as a bare checkbox, so without the override a screen reader announces "checkbox" instead of
+"switch, on". The role is valid on a checkbox input and takes its state from the native `checked`; `Switch.test.ts` pins
+it. The thumb is a literal `white`, not a token, so it reads against the accent-filled track in both themes; the off
+track's outline uses `--color-control-border` for the WCAG 3:1 non-text minimum.
 
 `SettingSwitch` (`lib/settings/components/`) is the registry-wired wrapper: it resolves the label from the setting
 definition, subscribes to external resets, and writes through `setSetting`. Use it for anything registry-backed; use

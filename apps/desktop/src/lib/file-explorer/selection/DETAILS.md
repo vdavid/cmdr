@@ -130,12 +130,11 @@ current keyboard shortcut as a `<kbd>` chip: the command id derives from `column
 rebind updates live. The shortcut shows only when `isFocused` is true (truthfulness rule), and the tooltip action
 live-updates so a focus flip or rebind mid-hover is reflected immediately.
 
-`align: 'right'` (numeric columns: the Size header, and the Ext trigger inside `FullList`'s combined
-Name+Ext header) does more than push the button's content right: it flips the
-row to `flex-direction: row-reverse`, so the caret lands on the label's LEFT and never sits between the label and the
-column's right edge, where the digits below line up. Under `row-reverse` the packing keyword inverts too, hence
-`justify-content: flex-start`. Width is unaffected — same flex gap, same caret — so `measure-column-widths.ts`'s
-`HEADER_CHROME_*` constants still hold.
+`align: 'right'` (numeric columns: the Size header, and the Ext trigger inside `FullList`'s combined Name+Ext header)
+does more than push the button's content right: it flips the row to `flex-direction: row-reverse`, so the caret lands on
+the label's LEFT and never sits between the label and the column's right edge, where the digits below line up. Under
+`row-reverse` the packing keyword inverts too, hence `justify-content: flex-start`. Width is unaffected — same flex gap,
+same caret — so `measure-column-widths.ts`'s `HEADER_CHROME_*` constants still hold.
 
 ## Decisions
 

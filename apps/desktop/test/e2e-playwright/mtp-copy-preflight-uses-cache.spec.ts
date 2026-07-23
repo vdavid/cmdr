@@ -175,7 +175,10 @@ test.describe('MTP copy pre-flight reuses watcher-backed listing', () => {
     // the MTP backend would re-list the parent dir.
     const completedQuickly = await pollUntil(
       tauriPage,
-      async () => tauriPage.evaluate<boolean>(`!!document.querySelector('${TRANSFER_DIALOG} .scan-stats[data-scan-state="done"]')`),
+      async () =>
+        tauriPage.evaluate<boolean>(
+          `!!document.querySelector('${TRANSFER_DIALOG} .scan-stats[data-scan-state="done"]')`,
+        ),
       SCAN_COMPLETE_BOUND_MS,
       25,
     )

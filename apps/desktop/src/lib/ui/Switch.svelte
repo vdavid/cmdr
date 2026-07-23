@@ -45,7 +45,10 @@
     {#if children}
         <Switch.Label class="switch-label">{@render children()}</Switch.Label>
     {/if}
-    <Switch.HiddenInput />
+    <!-- Ark's hidden input is a bare `input[type=checkbox]`, so without this a screen
+         reader announces "checkbox", not "switch, on". `role="switch"` is valid on a
+         checkbox input and takes its state from the native `checked`. -->
+    <Switch.HiddenInput role="switch" />
 </Switch.Root>
 
 <style>

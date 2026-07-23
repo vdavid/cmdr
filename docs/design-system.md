@@ -282,7 +282,7 @@ Tailwind's spacing scale (base 4px). No custom tokens needed.
 
 The scale intentionally uses small values: large radii look web-native, not macOS-native. Two deliberate exceptions
 follow macOS itself: buttons and segmented controls are capsules (`--radius-full`), and a modal's corner is its own
-`--dialog-radius` (27px), just under the window-level `--radius-xxl`.
+`--radius-dialog` (27px), just under the window-level `--radius-xxl`.
 
 ### Website
 
@@ -488,17 +488,17 @@ Scale is 1.02, not 1.05. 1.05 is noticeable enough to feel like a web gimmick; 1
 
 All dialogs use `ModalDialog.svelte`.
 
-| Property          | Value                                       | Why                                                                                          |
-| ----------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Body padding      | `0 var(--dialog-padding)` (20px)            | Owned by `ModalDialog`; bottom comes from the footer or, when footerless, the same inset on the body |
-| Title             | 16px, weight 600, centered                  | Clear hierarchy, centered for symmetry in floating dialogs                                   |
-| Button row        | `flex, gap 12px, justify-content: flex-end` | Right-aligned matches macOS convention (primary action right)                                |
-| Border-radius     | 27px (`--dialog-radius`)                    | Matches the macOS alert-panel corner                                                         |
-| Edge              | 1px `--color-dialog-border-outer` + inset 1px `--color-dialog-border-inner` | macOS draws a panel edge as two hairlines: darker outside, lighter inside |
-| Drop shadow       | `--shadow-dialog` (three layers, down-only)  | Lifts the panel off the app the way a floating macOS panel casts       |
-| Max content width | 480px                                       | Optimal line length (~60 chars at 14px body)                                                 |
+| Property          | Value                                                                       | Why                                                                                                  |
+| ----------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Body padding      | `0 var(--spacing-dialog)` (20px)                                            | Owned by `ModalDialog`; bottom comes from the footer or, when footerless, the same inset on the body |
+| Title             | 16px, weight 600, centered                                                  | Clear hierarchy, centered for symmetry in floating dialogs                                           |
+| Button row        | `flex, gap 12px, justify-content: flex-end`                                 | Right-aligned matches macOS convention (primary action right)                                        |
+| Border-radius     | 27px (`--radius-dialog`)                                                    | Matches the macOS alert-panel corner                                                                 |
+| Edge              | 1px `--color-dialog-border-outer` + inset 1px `--color-dialog-border-inner` | macOS draws a panel edge as two hairlines: darker outside, lighter inside                            |
+| Drop shadow       | `--shadow-dialog` (three layers, down-only)                                 | Lifts the panel off the app the way a floating macOS panel casts                                     |
+| Max content width | 480px                                                                       | Optimal line length (~60 chars at 14px body)                                                         |
 
-`ModalDialog` owns the standard body padding, so dialogs don't set their own. The horizontal inset (`--dialog-padding`)
+`ModalDialog` owns the standard body padding, so dialogs don't set their own. The horizontal inset (`--spacing-dialog`)
 matches the title bar and footer, and a `padded={false}` body that insets its own sections must use the SAME token or it
 won't line up. The title bar's bottom padding supplies the gap above the body; the footer supplies the gap below, and a
 footerless dialog gets the same inset as bottom padding on the body instead. Two opt-outs:
@@ -579,8 +579,8 @@ label), `onValueChange`, `disabled` (group-level), `orientation` (`'vertical'` s
 `ariaLabel`, and a `footer` snippet rendered after the items with the current `value` (for custom content when a
 specific option is selected).
 
-**`Switch`** (`lib/ui/Switch.svelte`) is the track-and-thumb on/off control: a thin wrapper over Ark UI's `Switch`,
-with the same prop shape as `Checkbox` minus `indeterminate` (`checked` bindable, `disabled`, `id`, `ariaLabel`,
+**`Switch`** (`lib/ui/Switch.svelte`) is the track-and-thumb on/off control: a thin wrapper over Ark UI's `Switch`, with
+the same prop shape as `Checkbox` minus `indeterminate` (`checked` bindable, `disabled`, `id`, `ariaLabel`,
 `onCheckedChange`, `children`). The track fills with `--color-accent` when on; the thumb stays white in both themes.
 `SettingSwitch` wraps it with the settings-registry wiring, so settings rows and feature code share one implementation.
 
@@ -606,13 +606,13 @@ faint to carry an affordance on their own.
 Custom frosted-glass tooltips via Svelte action (`use:tooltip`). A singleton `<div>` is appended to `<body>` and
 repositioned per hover; only one tooltip exists at a time.
 
-**Glass material:** the blur and hairline are the shared glass tokens (`--color-bg-glass` /
-`--color-border-glass`, also used by filter-chip popovers and the volume dropdown), but the FILL is tooltip-specific.
+**Glass material:** the blur and hairline are the shared glass tokens (`--color-bg-glass` / `--color-border-glass`, also
+used by filter-chip popovers and the volume dropdown), but the FILL is tooltip-specific.
 
 - Fill: `--color-bg-tooltip` — the shared glass nudged 10% toward black (light) / white (dark), so a tooltip separates
   from whatever surface it floats over. Derived from `--color-bg-glass`, so it follows the reduce-transparency flip to
-  an opaque fill for free. Verified ≥4.5:1 for `--color-text-primary` on every app backdrop and on the translucent
-  worst case.
+  an opaque fill for free. Verified ≥4.5:1 for `--color-text-primary` on every app backdrop and on the translucent worst
+  case.
 - Blur: `backdrop-filter: saturate(180%) blur(20px)`, dropped under `html.reduce-transparency`
 - Hairline border: `0.5px solid rgba(0, 0, 0, 0.12)` (light) / `rgba(255, 255, 255, 0.1)` (dark)
 - Shadow: `--shadow-sm`

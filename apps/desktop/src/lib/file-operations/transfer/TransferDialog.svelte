@@ -703,7 +703,7 @@
 <style>
     /* Uniform vertical rhythm: every top-level section is a flex-column child, so a
        single `gap` sets equal spacing between all of them. Each section keeps its own
-       `--dialog-padding` side inset (matching the title bar and footer). */
+       `--spacing-dialog` side inset (matching the title bar and footer). */
     .dialog-body {
         display: flex;
         flex-direction: column;
@@ -715,7 +715,7 @@
        wrappers only supply the dialog's side inset, which the card doesn't carry. */
     .source-group,
     .target-group {
-        padding: 0 var(--dialog-padding);
+        padding: 0 var(--spacing-dialog);
     }
 
     /* A block, not a flex child: `useShortenMiddle` measures `clientWidth`, so the
@@ -834,7 +834,7 @@
         align-items: center;
         justify-content: flex-end;
         gap: var(--spacing-sm);
-        padding: 0 var(--dialog-padding);
+        padding: 0 var(--spacing-dialog);
         font-size: var(--font-size-sm);
     }
 
@@ -876,7 +876,7 @@
         align-items: center;
         justify-content: flex-start;
         gap: var(--spacing-sm);
-        padding: 0 var(--dialog-padding);
+        padding: 0 var(--spacing-dialog);
         font-size: var(--font-size-sm);
     }
 
@@ -886,7 +886,7 @@
 
     /* Conflicts section */
     .conflicts-section {
-        padding: 0 var(--dialog-padding) var(--spacing-md);
+        padding: 0 var(--spacing-dialog) var(--spacing-md);
         border-top: 1px solid var(--color-border-strong);
         margin-top: var(--spacing-xs);
         padding-top: var(--spacing-md);
@@ -940,20 +940,20 @@
         flex-direction: column;
     }
 
-    /* Compress-only block. Carries the `--dialog-padding` side inset its two children
+    /* Compress-only block. Carries the `--spacing-dialog` side inset its two children
        don't (they're also used where the parent insets them), and stacks them with
        the same rhythm as the dialog body. */
     .compress-extras {
         display: flex;
         flex-direction: column;
         gap: var(--spacing-lg);
-        padding: 0 var(--dialog-padding);
+        padding: 0 var(--spacing-dialog);
     }
 
     /* Copy / Move / Compress segmented control. Only the side inset lives here; the
        control itself is the `ui/ToggleGroup` primitive, full-width so it spans the
        same column as the fields below it. */
     .operation-toggle {
-        padding: 0 var(--dialog-padding);
+        padding: 0 var(--spacing-dialog);
     }
 </style>

@@ -420,8 +420,8 @@
      one outside and a lighter one just inside, which `ModalDialog` renders as a
      border plus an inset ring. Both are alpha, not solid colors, so the pair
      works over whatever surface the dialog sits on. */
-  --dialog-radius: 27px;
-  --dialog-padding: 20px;
+  --radius-dialog: 27px;
+  --spacing-dialog: 20px;
   --color-dialog-border-outer: rgba(0, 0, 0, 0.28);
   --color-dialog-border-inner: rgba(255, 255, 255, 0.9);
   /* A floating panel's shadow, in three layers the way a real one falls: a wide
@@ -429,8 +429,7 @@
      falloff some shape, and a tight contact shadow right under the edge so the
      corner doesn't look pasted on. All offset DOWN only (light from above).
      Separate from `--shadow-lg`, which is tuned for popovers and menus. */
-  --shadow-dialog:
-    0 32px 64px rgba(0, 0, 0, 0.24), 0 12px 24px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.12);
+  --shadow-dialog: 0 32px 64px rgba(0, 0, 0, 0.24), 0 12px 24px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.12);
 
   /* === Sheet (onboarding wizard and other ~90% viewport overlays) ===
      The wizard uses a soft sheet over the running app: frosted backdrop,
@@ -640,8 +639,7 @@
     --color-dialog-border-inner: rgba(255, 255, 255, 0.14);
     /* Same three layers, pushed harder: on a dark canvas a light-mode-strength
        shadow is invisible, so the dialog would float with nothing under it. */
-    --shadow-dialog:
-      0 32px 64px rgba(0, 0, 0, 0.6), 0 12px 24px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.35);
+    --shadow-dialog: 0 32px 64px rgba(0, 0, 0, 0.6), 0 12px 24px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.35);
 
     /* === Text === */
     --color-text-primary: #e8e8e8;

@@ -629,7 +629,10 @@ mod tests {
         let mut covered = state(false, 4, Some(229_945));
         covered.covered_qualifying_count = Some(4);
         let coverage = derive_coverage("root", &covered);
-        assert!(!coverage.incomplete, "4 of 4 covered images is complete, not incomplete");
+        assert!(
+            !coverage.incomplete,
+            "4 of 4 covered images is complete, not incomplete"
+        );
         assert_eq!(coverage.qualifying_count, Some(4), "reports the covered denominator");
 
         // Still short within the covered set ⇒ genuinely incomplete.

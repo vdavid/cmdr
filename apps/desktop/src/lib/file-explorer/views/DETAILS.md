@@ -233,8 +233,8 @@ background and leaves bare strips at both ends.
 **Gotcha**: BOTH views measure their scroll surface with `bind:clientWidth` / `clientHeight`, which report the content
 box PLUS the element's own padding — so any layout math that asks "how much fits" must subtract the gutter, or the
 rightmost column and the last row of each column render clipped. Brief view derives `usableWidth` / `usableHeight` and
-feeds those to the per-column cap, the virtual window, scroll-into-view, and items-per-column; the raw
-`containerWidth` / `containerHeight` survive only as `> 0` liveness checks.
+feeds those to the per-column cap, the virtual window, scroll-into-view, and items-per-column; the raw `containerWidth`
+/ `containerHeight` survive only as `> 0` liveness checks.
 
 **Gotcha**: Full view's vertical gutter shifts the virtual spacer inside the scroll content, so container `scrollTop`
 and spacer offset differ by `GUTTER_PX`. **Why**: `.listbox-region`'s block padding sits ABOVE the spacer. Both
@@ -243,12 +243,12 @@ conversions are corrected — `spacerScrollTop` subtracts the gutter, and `scrol
 either drifts the cursor-into-view by a gutter at the list's ends. Each view keeps its own `GUTTER_PX`, which must stay
 in sync with its element's `padding`.
 
-**Gotcha**: Both views' header rows open with a dead `.header-icon` spacer, and their left inset is the scroll
-surface's gutter PLUS `.file-entry`'s own padding. **Why**: without it the first heading sits above the file ICONS
-instead of the file NAMES. Full view gets the alignment from sharing `gridTemplate` with the rows; Brief view's header
-is a plain flex row, so it reproduces the row's geometry by hand (inset, icon-width spacer, `--spacing-sm` gap).
-`SortableHeader`'s negative horizontal margin is what makes the LABEL, not the button box, land on the alignment point,
-so don't remove it while "fixing" a 4px offset.
+**Gotcha**: Both views' header rows open with a dead `.header-icon` spacer, and their left inset is the scroll surface's
+gutter PLUS `.file-entry`'s own padding. **Why**: without it the first heading sits above the file ICONS instead of the
+file NAMES. Full view gets the alignment from sharing `gridTemplate` with the rows; Brief view's header is a plain flex
+row, so it reproduces the row's geometry by hand (inset, icon-width spacer, `--spacing-sm` gap). `SortableHeader`'s
+negative horizontal margin is what makes the LABEL, not the button box, land on the alignment point, so don't remove it
+while "fixing" a 4px offset.
 
 **Gotcha**: Both scroll containers carry a `data-file-list-surface` attribute (`.brief-list` and `.full-list`) — don't
 drop it. **Why**: the pane's double-click-to-parent gesture (`pane/pane-background-dblclick.ts`, gated by

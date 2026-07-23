@@ -17,11 +17,10 @@ list).
 ### Components
 
 - **`DualPaneExplorer.svelte`**: Root: two panes + resizer + dialog manager + key/command dispatch + MCP wiring
-- **`FilePane.svelte`**: One pane: listing, cursor, selection, view mode, breadcrumb, alt-view switching. Its
-  `.content` div is the single wrapper every view kind mounts inside (Full, Brief, Network, search results, error and
-  SMB panes) and owns the pane's single background layer (`--color-pane-bg`). NOT the side gutter, though: each list
-  view owns that, because the column header has to keep spanning edge to edge while the rows inset — see
-  `views/DETAILS.md`
+- **`FilePane.svelte`**: One pane: listing, cursor, selection, view mode, breadcrumb, alt-view switching. Its `.content`
+  div is the single wrapper every view kind mounts inside (Full, Brief, Network, search results, error and SMB panes)
+  and owns the pane's single background layer (`--color-pane-bg`). NOT the side gutter, though: each list view owns
+  that, because the column header has to keep spanning edge to edge while the rows inset — see `views/DETAILS.md`
 - **`DialogManager.svelte`**: Renders every modal dialog (transfer, delete, rename, new-folder, alert, error)
 - **`FunctionKeyBar.svelte`**: F1–F10 bar at the bottom of the window
 - **`PaneResizer.svelte`**: Drag handle between the two panes

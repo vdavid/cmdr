@@ -8,10 +8,10 @@ here.
 
 - Dialogs: `ModalDialog.svelte` (overlay + drag + Escape + focus + MCP tracking), `focus-trap.ts` (`use:trapFocus`),
   `dialog-registry.ts` (`SOFT_DIALOG_REGISTRY`), `AlertDialog.svelte`.
-- Primitives: `Icon`, `Spinner`, `Button`, `LinkButton`, `Checkbox`, `Switch`, `RadioGroup`, `ToggleGroup` (segmented toggle,
-  distinct from `RadioGroup`), `Select`, `Combobox`, `ShortcutChip`, the `toast/` system, and more (full list: DETAILS §
-  Key files). Tooltip is the sibling `../tooltip/tooltip.ts`. Ark UI (`@ark-ui/svelte`) backs complex interactive
-  components; simple ones are thin in-house wrappers.
+- Primitives: `Icon`, `Spinner`, `Button`, `LinkButton`, `Checkbox`, `Switch`, `RadioGroup`, `ToggleGroup` (segmented
+  toggle, distinct from `RadioGroup`), `Select`, `Combobox`, `ShortcutChip`, the `toast/` system, and more (full list:
+  DETAILS § Key files). Tooltip is the sibling `../tooltip/tooltip.ts`. Ark UI (`@ark-ui/svelte`) backs complex
+  interactive components; simple ones are thin in-house wrappers.
 
 ## Must-knows
 
@@ -31,9 +31,8 @@ here.
   `cursor: default`); don't hand-roll a link button.
 - **`ShortcutChip` must NOT statically import `openShortcutCustomization`** (it pulls in
   `@tauri-apps/api/webviewWindow`, which must stay off the chip's module-eval surface so it loads in the
-  capability-restricted viewer window): use dynamic `import()` in the click handler only. Set exactly one of `commandId`
-  / `key`; a `commandId` chip renders NOTHING with no binding, so conditionalize prose around it. DETAILS §
-  ShortcutChip.
+  capability-restricted viewer): use dynamic `import()` in the click handler only. Set exactly one of `commandId` /
+  `key`; a `commandId` chip renders NOTHING with no binding. DETAILS § ShortcutChip.
 - **Tooltip detached-trigger gotcha**: two guards must both stay, else a recycled virtual-scroll row (removed while
   hovered, no `mouseleave`) fires the 400 ms timer on a detached node: the action's `destroy()` cancels its timer, and
   `showTooltip` / `positionTooltip` bail on `!el.isConnected` (not a zero-rect heuristic). DETAILS § Tooltip.

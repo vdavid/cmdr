@@ -57,8 +57,8 @@ functional `*.test.ts`.
   finishes its close animation on a microtask, and a same-tick focus call gets eaten by the trigger's returning focus.
   If you change this, verify with the a11y test and a manual keyboard run.
 - **`SettingColorSwatchPicker` keyboard nav lives in `swatch-keyboard.ts`.** The component owns popover open/close,
-  focus, and outside-click; Tab containment comes from the shared `use:trapFocus` (see `lib/ui/DETAILS.md` § Focus
-  trapping). Keep new keys in the pure helper so the traversal table stays DOM-free testable.
+  focus, and outside-click; Tab containment comes from the shared `use:trapFocus`. Keep new keys in the pure helper so
+  the traversal table stays DOM-free testable.
 - **`SettingsSection` title styling is intentionally borderless** (System Settings-style: bottom margin, no hairline
   rule). Don't add a `border-bottom`.
 - **`SettingPasswordInput` controlled mode skips the store subscription** so secret-store updates aren't clobbered by

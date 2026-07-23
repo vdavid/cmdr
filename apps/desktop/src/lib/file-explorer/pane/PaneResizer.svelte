@@ -90,9 +90,7 @@
         position: absolute;
         top: 0;
         bottom: 0;
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- half-pixel overhang, no matching token */
         left: -1.5px;
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- half-pixel overhang, no matching token */
         right: -1.5px;
         cursor: col-resize;
     }

@@ -169,8 +169,8 @@ and `volume-space-manager.svelte.ts` respectively.
 
 Props: `volumeId`, `currentPath`, `onVolumeChange?`.
 
-**The trigger's geometry is a copy of a file row's, and stays that way by hand.** The volume icon must sit on the same
-x as the file icons below it, and the volume label on the same x as the Name column. Left to right that's `.header`'s
+**The trigger's geometry is a copy of a file row's, and stays that way by hand.** The volume icon must sit on the same x
+as the file icons below it, and the volume label on the same x as the Name column. Left to right that's `.header`'s
 `--spacing-sm` inset + `.volume-name`'s `--spacing-xs` padding = 12px for the icon, matching `.listbox-region`'s
 `--spacing-xs` gutter + `.file-entry`'s `--spacing-sm` padding. The icon box is `--spacing-icon-size` (the same token
 `FileIcon` uses, so it can't drift from the list), and the icon's `--spacing-xs` trailing margin tops the flex `gap` up
