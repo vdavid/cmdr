@@ -432,6 +432,14 @@ independent-staleness backfill pattern (the same one CLIP used after its install
 **Deliberately last**: it trades against features; David decides the default after seeing M2+M3's numbers — it may be
 unnecessary.
 
+### Status: dropped (David's decision, 2026-07-24)
+
+- The network-drive coupling was a proxy for corpus size, and it doesn't hold: a large local library has the same cost
+  profile, and the feature-print adds no network traffic, only inference time plus ~1.5 KB/image on disk.
+- Near-duplicate detection is a likely headline feature for photo-studio users, so the Vision feature-print stays on by
+  default everywhere.
+- Follow-up: batched Vision requests are the future speed lever to evaluate after M1/M6.
+
 ---
 
 ## Order and parallelization summary
@@ -443,7 +451,7 @@ unnecessary.
 - **Parallel-safe cluster after the spine**: M7, M8+M9 (different DBs/modules; keep M7 and M9's checkpoint touch-points
   coordinated if simultaneous; M8 starts with its where-does-1.4s-go measurement).
 - **M6** after M1–M5, standalone (biggest; spike done, see its status addendum, then decide ship-now vs behind-a-flag).
-- **M10** last, only if still wanted (two-feature tradeoff: similar-images AND dedup).
+- **M10** dropped (see its status).
 
 Every milestone: colocated `CLAUDE.md`/`DETAILS.md` updates ride along (per the docs rule — decision + why in DETAILS,
 must-knows only in CLAUDE), `pnpm check -q` green before hand-back, allowlist warns surfaced never silenced, no pushes.
