@@ -1,5 +1,9 @@
 <script lang="ts">
-    import { NumberInput, type NumberInputValueChangeDetails } from '@ark-ui/svelte/number-input'
+    /**
+     * Registry-driven number row: reads bounds from the registry and writes through
+     * `setSetting`. The control itself is `$lib/ui/NumberInput`.
+     */
+    import NumberInput from '$lib/ui/NumberInput.svelte'
     import {
         getSetting,
         setSetting,
@@ -11,7 +15,6 @@
         type SettingsValues,
     } from '$lib/settings'
     import { onMount } from 'svelte'
-    import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
         id: SettingId
@@ -54,101 +57,19 @@
         })
     })
 
-    function handleChange(details: NumberInputValueChangeDetails) {
-        const clampedDisplay = Math.min(max, Math.max(min, details.valueAsNumber))
-        value = clampedDisplay
-        setSetting(id, durationValueToMs(clampedDisplay, durationUnit) as SettingsValues[typeof id])
+    function handleChange(next: number): void {
+        value = next
+        setSetting(id, durationValueToMs(next, durationUnit) as SettingsValues[typeof id])
     }
 </script>
 
-<div class="number-input-wrapper">
-    <NumberInput.Root value={String(value)} onValueChange={handleChange} {min} {max} {step} {disabled}>
-        <NumberInput.Control class="number-control">
-            <NumberInput.DecrementTrigger class="number-btn" aria-label={tString('settings.control.decrease', { label })}
-                >−</NumberInput.DecrementTrigger
-            >
-            <NumberInput.Input class="number-input" aria-label={label} />
-            <NumberInput.IncrementTrigger class="number-btn" aria-label={tString('settings.control.increase', { label })}
-                >+</NumberInput.IncrementTrigger
-            >
-        </NumberInput.Control>
-    </NumberInput.Root>
-
-    {#if displayUnit}
-        <span class="unit">{displayUnit}</span>
-    {/if}
-</div>
-
-<style>
-    .number-input-wrapper {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-xs);
-    }
-
-    :global(.number-control) {
-        display: flex;
-        align-items: center;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        overflow: hidden;
-    }
-
-    :global(.number-btn) {
-        width: 28px;
-        height: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--color-bg-secondary);
-        border: none;
-        color: var(--color-text-primary);
-        cursor: default;
-        font-size: var(--font-size-md);
-        font-weight: 500;
-    }
-
-    :global(.number-btn[data-disabled]) {
-        cursor: not-allowed;
-        opacity: 0.5;
-    }
-
-    :global(.number-input) {
-        width: 70px;
-        padding: var(--spacing-xs);
-        border: none;
-        border-left: 1px solid var(--color-border);
-        border-right: 1px solid var(--color-border);
-        background: var(--color-bg-primary);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
-        text-align: center;
-    }
-
-    :global(.number-input:focus) {
-        outline: none;
-    }
-
-    :global(.number-control:focus-within) {
-        outline: 2px solid var(--color-accent);
-        outline-offset: -2px;
-        box-shadow: var(--shadow-focus);
-    }
-
-    :global(.number-btn:focus-visible) {
-        outline: 2px solid var(--color-accent);
-        outline-offset: -2px;
-        box-shadow: var(--shadow-focus);
-        z-index: 1;
-    }
-
-    :global(.number-input[data-disabled]) {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .unit {
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
-    }
-</style>
+<NumberInput
+    {value}
+    onChange={handleChange}
+    {min}
+    {max}
+    {step}
+    {disabled}
+    ariaLabel={label}
+    unit={displayUnit}
+/>

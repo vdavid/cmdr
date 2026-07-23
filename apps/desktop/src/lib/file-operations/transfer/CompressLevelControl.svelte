@@ -18,11 +18,13 @@
 
 <div class="compress-level">
     <span class="level-title">{tString('settings.archives.compressionLevel.label')}</span>
-    <div class="level-frame">
-        <span class="level-end-label">{tString('settings.archives.compressionLevel.faster')}</span>
-        <SettingSlider id={SETTING_ID} />
-        <span class="level-end-label">{tString('settings.archives.compressionLevel.smaller')}</span>
-    </div>
+    <SettingSlider
+        id={SETTING_ID}
+        endLabels={[
+            tString('settings.archives.compressionLevel.faster'),
+            tString('settings.archives.compressionLevel.smaller'),
+        ]}
+    />
     <p class="level-caption">{tString('fileOperations.transferDialog.compressLevelCaption')}</p>
 </div>
 
@@ -36,19 +38,6 @@
     .level-title {
         font-weight: 500;
         color: var(--color-text-primary);
-    }
-
-    .level-frame {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        width: 100%;
-    }
-
-    .level-end-label {
-        flex-shrink: 0;
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
     }
 
     .level-caption {

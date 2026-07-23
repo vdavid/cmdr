@@ -15,9 +15,11 @@
         id: SettingId
         disabled?: boolean
         customContent?: Snippet<[string]>
+        /** Control rendered on the same line as one option; see `lib/ui/RadioGroup`. */
+        itemTrailing?: Snippet<[string]>
     }
 
-    const { id, disabled = false, customContent }: Props = $props()
+    const { id, disabled = false, customContent, itemTrailing }: Props = $props()
 
     const definition = getSettingDefinition(id)
     const label = definition?.label ?? id
@@ -43,7 +45,7 @@
     }
 </script>
 
-<RadioGroup {items} bind:value {disabled} ariaLabel={label} onValueChange={handleValueChange}>
+<RadioGroup {items} bind:value {disabled} ariaLabel={label} onValueChange={handleValueChange} {itemTrailing}>
     {#snippet footer(currentValue: string)}
         {#if customContent}
             <!-- Custom content rendered at end, visible only when 'custom' is selected -->

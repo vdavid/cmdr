@@ -122,7 +122,7 @@ describe('ImageIndexingSection', () => {
     // The privacy note is the section's own copy: on-device, no provider, no API key.
     expect(target.textContent).toContain('Vision framework')
     // Off ⇒ the refining controls are hidden.
-    expect(target.querySelector('.mi-slider-thumb')).toBeNull()
+    expect(target.querySelector('[data-test="media-importance-threshold"]')).toBeNull()
     await expectNoA11yViolations(target)
   })
 
@@ -130,7 +130,7 @@ describe('ImageIndexingSection', () => {
     settingValues['mediaIndex.enabled'] = true
     const target = await mountAndSettle()
     // The composed slider + per-network-volume list mount under the live master toggle.
-    expect(target.querySelector('.mi-slider-thumb')).not.toBeNull()
+    expect(target.querySelector('[data-test="media-importance-threshold"]')).not.toBeNull()
     expect(target.querySelector('.net-vols')).not.toBeNull()
     await expectNoA11yViolations(target)
   })

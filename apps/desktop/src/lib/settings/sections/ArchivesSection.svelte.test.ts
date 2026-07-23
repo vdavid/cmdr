@@ -65,7 +65,7 @@ describe('ArchivesSection compression level', () => {
     expect(slider).not.toBeNull()
     expect(slider?.getAttribute('aria-valuenow')).toBe('9')
 
-    const endLabels = Array.from(target.querySelectorAll('.level-end-label')).map((el) => el.textContent.trim())
+    const endLabels = Array.from(target.querySelectorAll('.sl-ends span')).map((el) => el.textContent.trim())
     expect(endLabels).toEqual(['Faster', 'Smaller'])
 
     target.remove()
@@ -76,7 +76,7 @@ describe('ArchivesSection compression level', () => {
     setDefaultSettings(3)
     const target = await mountSection()
 
-    const thumb = target.querySelector('.slider-thumb')
+    const thumb = target.querySelector('.sl-thumb')
     if (!thumb) throw new Error('Slider thumb not found')
     thumb.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     await tick()

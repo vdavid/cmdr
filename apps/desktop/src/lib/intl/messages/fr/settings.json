@@ -1715,14 +1715,6 @@
   "@settings.control.restartRequired": {
     "sourceHash": "b468711"
   },
-  "settings.control.decrease": "Diminuer {label}",
-  "@settings.control.decrease": {
-    "sourceHash": "995a5d6"
-  },
-  "settings.control.increase": "Augmenter {label}",
-  "@settings.control.increase": {
-    "sourceHash": "bbf5fc9"
-  },
   "settings.control.customValuePlaceholder": "Saisir une valeur personnalisée",
   "@settings.control.customValuePlaceholder": {
     "sourceHash": "999a63f"

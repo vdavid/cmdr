@@ -19,18 +19,9 @@ ruleTester.run('no-raw-ark-import', rule, {
       code: `import { Switch } from '@ark-ui/svelte/switch'`,
       filename: 'src/lib/ui/Switch.svelte',
     },
-    // The three sanctioned settings-local wrappers are exempt by explicit path.
     {
       code: `import { Slider } from '@ark-ui/svelte/slider'`,
-      filename: 'src/lib/settings/components/SettingSlider.svelte',
-    },
-    {
-      code: `import { NumberInput } from '@ark-ui/svelte/number-input'`,
-      filename: 'src/lib/settings/components/SettingNumberInput.svelte',
-    },
-    {
-      code: `import { Slider } from '@ark-ui/svelte/slider'`,
-      filename: 'src/lib/settings/sections/MediaIndexImportanceSlider.svelte',
+      filename: 'src/lib/ui/Slider.svelte',
     },
     // Importing a house wrapper is the intended path in feature code.
     {
@@ -54,6 +45,12 @@ ruleTester.run('no-raw-ark-import', rule, {
     {
       code: `import { Slider } from '@ark-ui/svelte'`,
       filename: 'src/lib/file-explorer/FilePane.svelte',
+      errors: [{ messageId: 'rawArk' }],
+    },
+    // A settings wrapper is feature code too: it composes the `lib/ui` primitive.
+    {
+      code: `import { Slider } from '@ark-ui/svelte/slider'`,
+      filename: 'src/lib/settings/components/SettingSlider.svelte',
       errors: [{ messageId: 'rawArk' }],
     },
   ],

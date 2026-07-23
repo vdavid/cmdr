@@ -23,7 +23,7 @@
      * 12,000 images"), which folds into the baseline once the value settles.
      */
     import { onMount } from 'svelte'
-    import { Slider, type SliderValueChangeDetails } from '@ark-ui/svelte/slider'
+    import Slider from '$lib/ui/Slider.svelte'
     import { getSetting, setSetting, onSpecificSettingChange } from '$lib/settings'
     import { tString } from '$lib/intl/messages.svelte'
     import { formatInteger } from '$lib/intl/number-format'
@@ -125,8 +125,8 @@
         }, SETTLE_MS)
     }
 
-    function handleChange(details: SliderValueChangeDetails): void {
-        const next = Math.min(MAX_BUCKET, Math.max(0, details.value[0]))
+    function handleChange(value: number): void {
+        const next = Math.min(MAX_BUCKET, Math.max(0, value))
         if (next === bucket) return
         bucket = next
         // Commit + live-apply the typed threshold (persist is sparse; the applier pushes it to
@@ -258,46 +258,32 @@
     })
 
     /** Screen-reader value text: announce the bucket name, not the raw index. */
-    function ariaValueText(): string {
-        return currentLabel
+    function ariaValueText(index: number): string {
+        return tString(BUCKETS[Math.min(MAX_BUCKET, Math.max(0, index))].labelKey)
     }
+
+    // One tick per bucket, drawn at its index.
+    const TICKS = BUCKETS.map((_, i) => i)
 </script>
 
 <div class="mi-slider">
-    <div class="mi-slider-head">
-        <span class="mi-slider-value" aria-hidden="true">{currentLabel}</span>
-    </div>
-
-    <Slider.Root
-        value={[bucket]}
-        onValueChange={handleChange}
+    <Slider
+        value={bucket}
+        onChange={handleChange}
         min={0}
         max={MAX_BUCKET}
         step={1}
-        getAriaValueText={ariaValueText}
-        aria-label={[tString('settings.mediaIndex.importanceThreshold.label')]}
-        class="mi-slider-root"
-    >
-        <Slider.Control class="mi-slider-control">
-            <Slider.Track class="mi-slider-track">
-                <Slider.Range class="mi-slider-range" />
-            </Slider.Track>
-            <!-- No `Slider.HiddenInput`: nesting a focusable input inside the thumb trips axe's
-                 nested-interactive + unlabeled-input rules. The E2E drives the thumb by its
-                 `.mi-slider-thumb` class, so the data-test hook rides the thumb itself. -->
-            <Slider.Thumb index={0} class="mi-slider-thumb" data-test="media-importance-threshold" />
-            <div class="mi-slider-ticks" aria-hidden="true">
-                {#each BUCKETS as b, i (b.threshold)}
-                    <span class="mi-slider-tick" class:active={i <= bucket} style="left: {(i / MAX_BUCKET) * 100}%"
-                    ></span>
-                {/each}
-            </div>
-        </Slider.Control>
-        <div class="mi-slider-ends" aria-hidden="true">
-            <span>{tString('settings.mediaIndex.importanceThreshold.bucket.mostUsed')}</span>
-            <span>{tString('settings.mediaIndex.importanceThreshold.bucket.everywhere')}</span>
-        </div>
-    </Slider.Root>
+        ariaLabel={tString('settings.mediaIndex.importanceThreshold.label')}
+        {ariaValueText}
+        ticks={TICKS}
+        endLabels={[
+            tString('settings.mediaIndex.importanceThreshold.bucket.mostUsed'),
+            tString('settings.mediaIndex.importanceThreshold.bucket.everywhere'),
+        ]}
+        valueLabel={currentLabel}
+        valueLabelPlacement="above"
+        thumbProps={{ 'data-test': 'media-importance-threshold' }}
+    />
 
     <p class="mi-preview" aria-live="polite">
         {#if waitingForDriveIndex}
@@ -373,97 +359,6 @@
         padding: var(--spacing-sm) 0 var(--spacing-xs);
     }
 
-    .mi-slider-head {
-        margin-bottom: var(--spacing-xs);
-    }
-
-    .mi-slider-value {
-        font-weight: 600;
-        color: var(--color-text-primary);
-    }
-
-    :global(.mi-slider-root) {
-        display: block;
-        width: 100%;
-    }
-
-    :global(.mi-slider-control) {
-        position: relative;
-        display: flex;
-        align-items: center;
-        height: 20px;
-        width: 100%;
-    }
-
-    :global(.mi-slider-track) {
-        flex: 1;
-        height: 4px;
-        background: var(--color-bg-tertiary);
-        border-radius: var(--radius-xs);
-        position: relative;
-    }
-
-    :global(.mi-slider-range) {
-        height: 100%;
-        background: var(--color-accent);
-        border-radius: var(--radius-xs);
-        transition: width var(--transition-base);
-    }
-
-    :global(.mi-slider-thumb) {
-        width: 16px;
-        height: 16px;
-        background: white;
-        border: 2px solid var(--color-accent);
-        border-radius: var(--radius-full);
-        cursor: default;
-        box-shadow: var(--shadow-sm);
-        z-index: 2;
-        position: relative;
-    }
-
-    :global(.mi-slider-thumb:hover) {
-        border-color: var(--color-accent-hover);
-    }
-
-    :global(.mi-slider-thumb:focus-visible) {
-        outline: 2px solid var(--color-accent);
-        outline-offset: 2px;
-        box-shadow: var(--shadow-focus);
-    }
-
-    .mi-slider-ticks {
-        position: absolute;
-        left: 0;
-        right: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        height: 4px;
-        pointer-events: none;
-        z-index: 0;
-    }
-
-    .mi-slider-tick {
-        position: absolute;
-        width: 2px;
-        height: 8px;
-        background: var(--color-border);
-        transform: translate(-50%, -50%);
-        top: 50%;
-    }
-
-    .mi-slider-tick.active {
-        background: var(--color-accent);
-    }
-
-    .mi-slider-ends {
-        display: flex;
-        justify-content: space-between;
-        margin-top: var(--spacing-xs);
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
-    }
-
     .mi-preview {
         margin: var(--spacing-sm) 0 0;
         color: var(--color-text-secondary);
@@ -519,11 +414,4 @@
         line-height: 1.4;
     }
 
-    /* Honor reduced-motion: drop the range-fill transition (WKWebView reflects this media
-       query for prefers-reduced-motion, unlike prefers-reduced-transparency). */
-    @media (prefers-reduced-motion: reduce) {
-        :global(.mi-slider-range) {
-            transition: none;
-        }
-    }
 </style>

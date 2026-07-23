@@ -19,19 +19,11 @@
  *   // eslint-disable-next-line cmdr/no-raw-ark-import -- <reason>
  */
 
-// Path fragments that opt a file out entirely. Any file under `lib/ui/` is a
-// house primitive and may wrap Ark. The three explicit entries are
-// settings-local wrappers that legitimately encapsulate an Ark primitive:
-//   - `SettingSlider` / `SettingNumberInput`: settings-form wrappers around
-//     Ark's Slider / NumberInput.
-//   - `MediaIndexImportanceSlider`: a bespoke feature slider that uses Ark's
-//     Slider directly (a one-off outside `lib/ui/`, sanctioned deliberately).
-const allowedPathFragments = [
-  '/lib/ui/',
-  '/lib/settings/components/SettingSlider.svelte',
-  '/lib/settings/components/SettingNumberInput.svelte',
-  '/lib/settings/sections/MediaIndexImportanceSlider.svelte',
-]
+// Path fragments that opt a file out entirely: any file under `lib/ui/` is a
+// house primitive and may wrap Ark. Nothing else is exempt. Keep it that way —
+// a named exception outside `lib/ui/` means a primitive is missing, so add the
+// wrapper instead of widening this list.
+const allowedPathFragments = ['/lib/ui/']
 
 /** @type {import('eslint').Rule.RuleModule} */
 export default {

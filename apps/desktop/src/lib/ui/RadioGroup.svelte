@@ -38,6 +38,13 @@
          * a specific option is selected" feature; the caller decides visibility.
          */
         footer?: Snippet<[string]>
+        /**
+         * Rendered on the same line as each option, receiving that option's `value`; the caller
+         * returns content for the one option it belongs to and nothing for the rest. It renders
+         * BESIDE the option, never inside it: a focusable control nested in a `role="radio"`
+         * element trips axe's nested-interactive rule.
+         */
+        itemTrailing?: Snippet<[string]>
     }
 
     /* eslint-disable prefer-const -- $bindable() requires `let` destructuring */
@@ -49,6 +56,7 @@
         orientation = 'vertical',
         ariaLabel,
         footer,
+        itemTrailing,
     }: Props = $props()
     /* eslint-enable prefer-const */
 
@@ -63,16 +71,21 @@
 <RadioGroup.Root {value} onValueChange={handleValueChange} {disabled} aria-label={ariaLabel}>
     <div class="radio-group" class:horizontal={orientation === 'horizontal'}>
         {#each items as item (item.value)}
-            <RadioGroup.Item value={item.value} class="radio-item" disabled={disabled || item.disabled}>
-                <RadioGroup.ItemControl class="radio-control" />
-                <RadioGroup.ItemText class="radio-text">
-                    <span class="radio-label">{item.label}</span>
-                    {#if item.description}
-                        <span class="radio-description">{item.description}</span>
-                    {/if}
-                </RadioGroup.ItemText>
-                <RadioGroup.ItemHiddenInput />
-            </RadioGroup.Item>
+            <div class="radio-row">
+                <RadioGroup.Item value={item.value} class="radio-item" disabled={disabled || item.disabled}>
+                    <RadioGroup.ItemControl class="radio-control" />
+                    <RadioGroup.ItemText class="radio-text">
+                        <span class="radio-label">{item.label}</span>
+                        {#if item.description}
+                            <span class="radio-description">{item.description}</span>
+                        {/if}
+                    </RadioGroup.ItemText>
+                    <RadioGroup.ItemHiddenInput />
+                </RadioGroup.Item>
+                {#if itemTrailing}
+                    {@render itemTrailing(item.value)}
+                {/if}
+            </div>
         {/each}
         {#if footer}
             {@render footer(value)}
@@ -85,6 +98,19 @@
         display: flex;
         flex-direction: column;
         gap: var(--spacing-xs);
+    }
+
+    /* Holds an option and its optional `itemTrailing` control on one line. With no trailing
+       control the option is the row's only element child, so it stretches the way it did
+       before the wrapper existed and the whole row width stays clickable. */
+    .radio-row {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+
+    .radio-row > :global(.radio-item:only-child) {
+        flex: 1 1 auto;
     }
 
     .radio-group.horizontal {

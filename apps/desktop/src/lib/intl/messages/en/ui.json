@@ -103,5 +103,21 @@
       "key": "position of the inline Esc key pill (a styled chip the app fills in); keep the empty wrapper tag"
     },
     "screenshot": "conflict-dialog.png"
+  },
+  "ui.numberInput.decrease": "Decrease {label}",
+  "@ui.numberInput.decrease": {
+    "description": "aria-label (screen-reader only) for the decrement (minus) button of a number input. Reads as an action plus the field's name.",
+    "placeholders": {
+      "label": "the name of the field this button adjusts, e.g. \"Custom timeout\""
+    },
+    "screenshot": "settings-behavior-file-system-watching.png"
+  },
+  "ui.numberInput.increase": "Increase {label}",
+  "@ui.numberInput.increase": {
+    "description": "aria-label (screen-reader only) for the increment (plus) button of a number input. Reads as an action plus the field's name.",
+    "placeholders": {
+      "label": "the name of the field this button adjusts, e.g. \"Custom timeout\""
+    },
+    "screenshot": "settings-behavior-file-system-watching.png"
   }
 }

@@ -576,8 +576,10 @@ grids that own their own label). Bind with `<Checkbox bind:checked={value} />`.
 **`RadioGroup`** is an items-driven single-select. Props: `value` (bindable, `''` means nothing selected), `items`
 (`RadioItem[]`, each `{ value, label, description?, disabled? }`; `description` renders as quieter text below the
 label), `onValueChange`, `disabled` (group-level), `orientation` (`'vertical'` stacks, `'horizontal'` wraps in a row),
-`ariaLabel`, and a `footer` snippet rendered after the items with the current `value` (for custom content when a
-specific option is selected).
+`ariaLabel`, a `footer` snippet rendered after the items with the current `value` (for custom content when a specific
+option is selected), and an `itemTrailing` snippet rendered on one option's own line (Brief mode's "Limit to" carries
+its width field that way). `itemTrailing` renders BESIDE the option, never inside it: a focusable control nested in a
+`role="radio"` element trips axe's nested-interactive rule.
 
 **`Switch`** (`lib/ui/Switch.svelte`) is the track-and-thumb on/off control: a thin wrapper over Ark UI's `Switch`, with
 the same prop shape as `Checkbox` minus `indeterminate` (`checked` bindable, `disabled`, `id`, `ariaLabel`,
@@ -607,6 +609,27 @@ their own.
 The OFF `Switch` track has no such outline: it's a bare `--color-bg-tertiary` fill, which lands at 1.1–1.3:1 against the
 surfaces it sits on (computed from the tokens in `app.css`, 2026-07-23), so it doesn't clear 3:1 on its own the way the
 checkbox does. Giving it one is a deliberate visual change to make with David, not a drive-by fix.
+
+### Slider and number input (app)
+
+`Slider` and `NumberInput` (`lib/ui/`) wrap Ark UI's `Slider` and `NumberInput`, and each is the only one of its kind in
+the app. The slider is a 4 px track with a 16 px white thumb ringed in `--color-accent`; the range fill uses the accent
+and animates on `--transition-base` (dropped under `prefers-reduced-motion`). The number input is a framed box with −/+
+steppers around a centered field and an optional quiet unit label after it.
+
+**`Slider`** takes plain numbers (`value` / `onChange`, not Ark's arrays) plus four optional decorations: `ticks` (marks
+lit on an exact match), `snapTargets` (magnetic snapping within two steps), `endLabels` (quiet captions under the two
+ends), and `valueLabel` + `valueLabelPlacement` (`'trailing'` or `'above'`). `ariaValueText` names the value when the
+raw number wouldn't mean anything ("Sometimes used" rather than "2"). It never renders a hidden input, and every
+decoration is `aria-hidden`, since the slider announces its own value.
+
+**`NumberInput`** takes `value` / `onChange` as numbers, clamps into `[min, max]` itself, and never commits an emptied
+field. The steppers' accessible names interpolate the field's `ariaLabel`.
+
+**When to use which:** a slider for a coarse choice where the exact number doesn't matter (zoom, compression level,
+coverage) — it has no paired number field, so the readout is a label and the value is drag-only. A number input when the
+user wants to type an exact value (Brief mode's column-width limit). Registry-backed settings go through `SettingSlider`
+/ `SettingNumberInput`, which add the settings wiring.
 
 ### Tooltips (app)
 

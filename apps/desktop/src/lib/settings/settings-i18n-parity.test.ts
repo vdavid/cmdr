@@ -108,8 +108,6 @@ describe('settings catalog string parity (en)', () => {
   })
 
   it('resolves the interpolated control aria-labels', () => {
-    expect(t('settings.control.decrease', { label: 'Warning threshold' })).toBe('Decrease Warning threshold')
-    expect(t('settings.control.increase', { label: 'Warning threshold' })).toBe('Increase Warning threshold')
     expect(t('settings.appearance.tintSwatchAria', { label: 'Tint local-volume panes' })).toBe(
       'Choose a tint color for Tint local-volume panes',
     )

@@ -17,7 +17,10 @@ sections compose).
 - **`AppearanceZoomSection.svelte`**: `Appearance > Zoom and density`: text size slider and UI density
 - **`AppearanceSizesSection.svelte`**: `Appearance > File and folder sizes`: size display, size unit (binary/SI drives
   `kB`↔`KB` label override), file size format, size mismatch warning
-- **`ListingSection.svelte`**: `Appearance > Listing`: document icons, directory sort, brief column width
+- **`ListingSection.svelte`**: `Appearance > Listing`: document icons, directory sort, brief column width. The width row
+  is one control, not two: the `listing.briefColumnWidthMode` radio group carries the `briefColumnWidthMaxPx` number
+  field on its "Limit to" option's own line (`SettingRadioGroup`'s `itemTrailing`), greyed out while the other option is
+  picked, so the row reads as the sentence the option label was written for ("Limit to [400 px]")
 - **`NavigationAndFileOpsSection.svelte`**: `Behavior > Navigation & file ops`: three labeled `SectionCard`s —
   Navigation (the `behavior.doubleClickPaneNavigatesToParent` switch), File operations (the extension-change
   confirmation row `allowFileExtensionChanges` + the `pasteClipboardAsFile` toggle group), and Operation log (the
@@ -33,7 +36,7 @@ sections compose).
   (`semantics="toggles"`) bound to the parsed override, writing the merged JSON back. Defaults + the pure classification
   live in `file-explorer/pane/archive-enter-policy.ts`; this file only renders and persists. Both cards gated via
   `anyVisible(shouldShow, 'behavior.archiveEnterBehavior')`. The Archives card ALSO holds a "Compression level" row: a
-  registry-backed `behavior.archiveCompressionLevel` slider (1–9, default 6) framed with "Faster"/"Smaller" end labels,
+  registry-backed `behavior.archiveCompressionLevel` slider (1–9, default 6) with "Faster"/"Smaller" `endLabels`,
   hand-rendered here like the rest. It's the SAME setting the Compress dialog's `CompressLevelControl.svelte` binds by
   id, and it governs every user-driven zip write; the effect on the archive is single-sourced in the backend mutation
   `DETAILS.md` (via `write_operations/DETAILS.md` § "Archive edits").

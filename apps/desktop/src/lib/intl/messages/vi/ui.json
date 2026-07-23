@@ -75,5 +75,13 @@
   "ui.loadingIcon.cancelHint": "Nhấn <key></key> để hủy và quay lại",
   "@ui.loadingIcon.cancelHint": {
     "sourceHash": "400dd28"
+  },
+  "ui.numberInput.decrease": "Giảm {label}",
+  "@ui.numberInput.decrease": {
+    "sourceHash": "995a5d6"
+  },
+  "ui.numberInput.increase": "Tăng {label}",
+  "@ui.numberInput.increase": {
+    "sourceHash": "bbf5fc9"
   }
 }

@@ -27,6 +27,10 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 - **`SectionCard.svelte`**: macOS-style grouped card with optional label above; used for Debug/Settings groupings
 - **`ToggleGroup.svelte`**: Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape
 - **`Switch.svelte`**: Presentational Ark `Switch`: the track-and-thumb on/off control; `SettingSwitch` wraps it
+- **`Slider.svelte`**: Presentational Ark `Slider`: single-thumb track with ticks, snapping, a readout, and end labels;
+  `SettingSlider` wraps it
+- **`NumberInput.svelte`**: Presentational Ark `NumberInput`: framed field with −/+ steppers and a unit;
+  `SettingNumberInput` wraps it
 - **`DateLabel.svelte`**: Canonical inline modified-date renderer: format + per-component age-tier coloring
 - **`ShortcutChip.svelte`**: Canonical keyboard-shortcut renderer: live `commandId` mode (clickable) or literal `key`
   mode
@@ -897,6 +901,50 @@ such a copy (missing `flex-shrink`, `[data-focus]`, and `[data-disabled]`) and n
 
 Switch vs `Checkbox`: a switch says "this is on/off right now", a checkbox says "this option is selected". See
 `docs/design-system.md` § "Checkbox and radio group".
+
+## Slider
+
+Single-thumb slider over Ark's `Slider`, and the only slider in the app: track, range, thumb, and focus ring live in one
+place. Props: `value` / `onChange` (plain numbers, not Ark's array), `min` / `max` / `step` / `disabled`, `ariaLabel`,
+plus the four decorations every caller wanted separately:
+
+- `ticks: number[]` — marks at those positions, lit on an EXACT value match. There's no cumulative "fill up to here"
+  mode: under an accent-filled range it's invisible anyway, and one tick rule beats two.
+- `snapTargets: number[]` — magnetic snapping while dragging: within two steps of a target, the thumb lands on it
+  exactly. `SettingSlider` feeds it the registry's `sliderStops`, the same array it passes as `ticks`.
+- `endLabels: [string, string]` — quiet captions UNDER the two ends ("Faster" / "Smaller"). Under, not flanking: a
+  flanking pair eats horizontal room the track needs in a settings row and in the transfer dialog.
+- `valueLabel` + `valueLabelPlacement` — the live readout, `trailing` (right of the track, `min-width: 4ch` so the track
+  doesn't twitch as the number's width changes) or `above` (over the track's left end, for a named step like "Sometimes
+  used").
+
+`ariaValueText` names the value when the raw number means nothing (bucket index → bucket name). `onThumbDoubleClick`
+resets to a default. `thumbProps` spreads onto the thumb, which is where `data-test` hooks ride.
+
+❌ Never render `Slider.HiddenInput`: nothing here posts a form, and a focusable input inside the thumb trips axe's
+nested-interactive and unlabeled-input rules. The readout, ticks, and end labels are all `aria-hidden` too, since the
+slider already announces its own value and bounds. `Slider.a11y.test.ts` pins both.
+
+The range fill animates on `--transition-base`, dropped under `prefers-reduced-motion` (WKWebView honors that one).
+
+There is no paired number field. A slider is a coarse choice, so the readout is a label and the value can only be
+dragged; a setting that wants an exact typed number uses `NumberInput` instead (Brief mode's column-width limit does).
+
+## NumberInput
+
+Framed numeric field over Ark's `NumberInput`: −/+ steppers around a centered input, with an optional quiet `unit` label
+after it. One shape, no variants. Props: `value` / `onChange` (numbers, not Ark's strings), `min` / `max` / `step` /
+`disabled`, `ariaLabel`, `unit`.
+
+The component owns two behaviors so no caller has to: it clamps every emitted value into `[min, max]`, and it SWALLOWS
+an emptied field (`NaN`) instead of committing it, leaving Ark's `clampValueOnBlur` to restore a real value when focus
+leaves. Committing that `NaN` would write a broken number straight into `settings.json`.
+
+The steppers' accessible names come from `ui.numberInput.decrease` / `.increase` ("Decrease {label}"), interpolated with
+`ariaLabel`, so a primitive can never ship unlabeled stepper buttons.
+
+`SettingNumberInput` (`lib/settings/components/`) is the registry-wired wrapper and owns the `duration` conversion: the
+store stays in milliseconds while the field edits in the setting's `constraints.unit`.
 
 ## Ark UI
 

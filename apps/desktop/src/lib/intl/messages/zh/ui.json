@@ -74,5 +74,13 @@
   "ui.loadingIcon.cancelHint": "按 <key></key> 取消并返回",
   "@ui.loadingIcon.cancelHint": {
     "sourceHash": "400dd28"
+  },
+  "ui.numberInput.decrease": "减小{label}",
+  "@ui.numberInput.decrease": {
+    "sourceHash": "995a5d6"
+  },
+  "ui.numberInput.increase": "增大{label}",
+  "@ui.numberInput.increase": {
+    "sourceHash": "bbf5fc9"
   }
 }

@@ -43,6 +43,8 @@
         | 'components-radio-group'
         | 'components-select'
         | 'components-combobox'
+        | 'components-slider'
+        | 'components-number-input'
         | 'components-popover'
         | 'components-filter-popover'
         | 'components-chip'
@@ -95,6 +97,8 @@
                 { id: 'components-radio-group', label: 'Radio group' },
                 { id: 'components-select', label: 'Select' },
                 { id: 'components-combobox', label: 'Combobox' },
+                { id: 'components-slider', label: 'Slider' },
+                { id: 'components-number-input', label: 'Number input' },
                 { id: 'components-popover', label: 'Popover' },
                 { id: 'components-filter-popover', label: 'Filter popover' },
                 { id: 'components-chip', label: 'Chip' },

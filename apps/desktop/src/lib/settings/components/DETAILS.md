@@ -2,6 +2,24 @@
 
 Depth and rationale for the setting-row primitives. `CLAUDE.md` holds the must-knows that prevent silent breakage.
 
+## Slider vs number input
+
+A registry `component: 'slider'` row is a COARSE choice: `SettingSlider` renders `lib/ui/Slider` with a readout label
+and no paired number field, so the value can only be dragged. A row where the user wants to type an exact number uses
+`component: 'number-input'` and `SettingNumberInput` instead. ❌ Don't glue a number field back onto the slider: two
+controls fighting over one value read as a bug, and the pair costs every slider row more width than it needs.
+
+Practical fallout worth knowing:
+
+- The registry's `sliderStops` feed the slider's ticks AND its magnetic snap targets, so a stop is both visible and
+  sticky. A `number-input` row ignores `sliderStops`; it clamps to `min`/`max` and steps by `step`.
+- Double-clicking the thumb resets to the registry default. There's no equivalent gesture on the number input; the row's
+  reset pip (`SettingRow`) covers it.
+- `maxOverride` exists for a ceiling that isn't known until runtime (image-index parallelism, capped at this machine's
+  CPU count). The registry keeps a static fallback so search and off-runtime rendering still work.
+- A slider's readout joins the value and `unit` with NO space (`125%`), and `ariaValueText` carries the same string so
+  screen readers hear the unit too.
+
 ## Password-input modes
 
 `SettingPasswordInput` runs in one of two modes based on whether `onchange` is passed:

@@ -84,7 +84,7 @@ function clickAutomaticScopeJs(): string {
 /** The slider's current primary bucket label text ('' if the slider isn't shown). */
 function bucketLabelJs(): string {
   return `(function() {
-    var el = document.querySelector('.mi-slider-value');
+    var el = document.querySelector('.mi-slider .sl-value-above');
     return el ? (el.textContent || '').trim() : '';
   })()`
 }
@@ -92,7 +92,7 @@ function bucketLabelJs(): string {
 /** Focuses the slider thumb and dispatches an arrow key Ark UI's slider listens for. */
 function pressArrowJs(key: 'ArrowLeft' | 'ArrowRight'): string {
   return `(function() {
-    var thumb = document.querySelector('.mi-slider-thumb');
+    var thumb = document.querySelector('[data-test="media-importance-threshold"]');
     if (!thumb) return false;
     thumb.focus();
     thumb.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(key)}, bubbles: true, cancelable: true }));
@@ -132,7 +132,7 @@ test.describe('Image-index importance slider', () => {
     // The slider appearing IS the scope taking effect, so wait on that rather than on the
     // debounced settings write — this spec's subject is the threshold's persistence, and
     // `mediaIndex.scope`'s has its own coverage in `MediaIndexScope.a11y.test.ts`.
-    await settings.waitForSelector('.mi-slider-thumb', 3000)
+    await settings.waitForSelector('[data-test="media-importance-threshold"]', 3000)
 
     // Default position is the broadest bucket ("everywhere"), threshold 0.0 (sparse ⇒ unset).
     const initialLabel = await settings.evaluate<string>(bucketLabelJs())

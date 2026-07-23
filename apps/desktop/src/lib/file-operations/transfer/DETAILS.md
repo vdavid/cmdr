@@ -255,7 +255,7 @@ Compress rides the SAME dialog/progress/state components as copy/move via a thir
   (`transfer-progress-state.svelte.ts::dispatchCompress`). One command handles local and (later) remote sources; the
   scan preview still runs for the Size bar.
 - **A compression-level slider shows in compress mode only** (`CompressLevelControl.svelte`, below the scan tallies). It
-  frames the shared `SettingSlider` with "Faster"/"Smaller" end labels and binds to `behavior.archiveCompressionLevel`
+  renders the shared `SettingSlider` with "Faster"/"Smaller" `endLabels` and binds to `behavior.archiveCompressionLevel`
   by id, so the dialog and the Settings › Behavior › Archives row are ONE persisted value with no dialog-local state —
   moving either reflects in the other live. `createTransferProgressState` reads the setting once at dispatch and passes
   `compressionLevel` in the op config for compress, copy, AND cross-volume move (one uniform level for every user-driven

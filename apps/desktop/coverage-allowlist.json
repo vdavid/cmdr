@@ -178,9 +178,6 @@
     "settings/components/SettingSelect.svelte": {
       "reason": "UI component, logic is simple"
     },
-    "settings/components/SettingSlider.svelte": {
-      "reason": "UI component, logic is simple"
-    },
     "settings/components/SettingsContent.svelte": {
       "reason": "UI layout component"
     },

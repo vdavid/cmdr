@@ -75,5 +75,13 @@
   "ui.loadingIcon.cancelHint": "Tryck på <key></key> för att avbryta och gå tillbaka",
   "@ui.loadingIcon.cancelHint": {
     "sourceHash": "400dd28"
+  },
+  "ui.numberInput.decrease": "Minska {label}",
+  "@ui.numberInput.decrease": {
+    "sourceHash": "995a5d6"
+  },
+  "ui.numberInput.increase": "Öka {label}",
+  "@ui.numberInput.increase": {
+    "sourceHash": "bbf5fc9"
   }
 }

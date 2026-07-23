@@ -75,5 +75,13 @@
   "ui.loadingIcon.cancelHint": "Drücke <key></key> zum Abbrechen und Zurückgehen",
   "@ui.loadingIcon.cancelHint": {
     "sourceHash": "400dd28"
+  },
+  "ui.numberInput.decrease": "{label} verringern",
+  "@ui.numberInput.decrease": {
+    "sourceHash": "995a5d6"
+  },
+  "ui.numberInput.increase": "{label} erhöhen",
+  "@ui.numberInput.increase": {
+    "sourceHash": "bbf5fc9"
   }
 }

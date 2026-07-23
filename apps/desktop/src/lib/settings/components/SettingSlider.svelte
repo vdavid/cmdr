@@ -1,6 +1,13 @@
 <script lang="ts">
-    import { Slider, type SliderValueChangeDetails } from '@ark-ui/svelte/slider'
-    import { NumberInput, type NumberInputValueChangeDetails } from '@ark-ui/svelte/number-input'
+    /**
+     * Registry-driven slider row: reads bounds, stops, and the default from the registry, and
+     * writes through `setSetting`. The control itself is `$lib/ui/Slider`.
+     *
+     * There's no paired number field. The live readout is a label, so the value can only be set
+     * by dragging, which keeps the row honest about being a coarse choice. `sliderStops` do
+     * double duty as the tick marks and the magnetic snap targets.
+     */
+    import Slider from '$lib/ui/Slider.svelte'
     import {
         getSetting,
         setSetting,
@@ -10,11 +17,13 @@
         type SettingId,
         type SettingsValues,
     } from '$lib/settings'
+    import { formatInteger } from '$lib/intl/number-format'
     import { onMount } from 'svelte'
 
     interface Props {
         id: SettingId
         disabled?: boolean
+        /** Suffix for the readout ("%"), joined without a space. */
         unit?: string
         /**
          * A RUNTIME maximum that wins over the registry `constraints.max`. For a control
@@ -23,9 +32,11 @@
          * registry keeps a static fallback for search and off-runtime rendering.
          */
         maxOverride?: number
+        /** Quiet captions under the track's two ends ("Faster" / "Smaller"). */
+        endLabels?: [string, string]
     }
 
-    const { id, disabled = false, unit = '', maxOverride }: Props = $props()
+    const { id, disabled = false, unit = '', maxOverride, endLabels }: Props = $props()
 
     const definition = getSettingDefinition(id)
     const label = definition?.label ?? id
@@ -37,217 +48,37 @@
 
     let value = $state(getSetting(id) as number)
 
-    // Subscribe to setting changes (for external resets)
+    // Subscribe to setting changes (for external resets).
     onMount(() => {
         return onSpecificSettingChange(id, (_id, newValue) => {
             value = newValue as number
         })
     })
 
-    function handleSliderChange(details: SliderValueChangeDetails) {
-        const newValue = details.value[0]
-        // Snap to nearest slider stop if close
-        let snappedValue = newValue
-        if (sliderStops.length > 0) {
-            const closest = sliderStops.reduce((prev, curr) =>
-                Math.abs(curr - newValue) < Math.abs(prev - newValue) ? curr : prev,
-            )
-            if (Math.abs(closest - newValue) < step * 2) {
-                snappedValue = closest
-            }
-        }
-        value = snappedValue
-        setSetting(id, snappedValue as SettingsValues[typeof id])
+    function readout(n: number): string {
+        return `${formatInteger(n)}${unit}`
     }
 
-    // Double-click on slider thumb resets to default
-    function handleThumbDblClick() {
-        value = defaultValue
-        setSetting(id, defaultValue as SettingsValues[typeof id])
-    }
-
-    function handleInputChange(details: NumberInputValueChangeDetails) {
-        // Handle NaN (empty input) - treat as minimum value
-        if (isNaN(details.valueAsNumber)) {
-            return // Don't update until blur
-        }
-        const newValue = Math.min(max, Math.max(min, details.valueAsNumber))
-        value = newValue
-        setSetting(id, newValue as SettingsValues[typeof id])
-    }
-
-    // On blur, if value is NaN or out of range, reset to min
-    function handleInputBlur() {
-        if (isNaN(value) || value < min) {
-            value = min
-            setSetting(id, min as SettingsValues[typeof id])
-        }
+    function commit(next: number): void {
+        value = next
+        setSetting(id, next as SettingsValues[typeof id])
     }
 </script>
 
-<div class="slider-wrapper">
-    <Slider.Root
-        value={[value]}
-        onValueChange={handleSliderChange}
-        {min}
-        {max}
-        {step}
-        {disabled}
-        class="slider-root"
-        aria-label={[label]}
-    >
-        <Slider.Control class="slider-control">
-            <Slider.Track class="slider-track">
-                <Slider.Range class="slider-range" />
-            </Slider.Track>
-            <Slider.Thumb index={0} class="slider-thumb" ondblclick={handleThumbDblClick} />
-            <!-- Show tick marks for slider stops - inside Control for proper positioning -->
-            {#if sliderStops.length > 0}
-                <div class="slider-ticks">
-                    {#each sliderStops as stop (stop)}
-                        <span
-                            class="slider-tick"
-                            class:active={value === stop}
-                            style="left: {((stop - min) / (max - min)) * 100}%"
-                        ></span>
-                    {/each}
-                </div>
-            {/if}
-        </Slider.Control>
-    </Slider.Root>
-
-    <NumberInput.Root value={String(value)} onValueChange={handleInputChange} {min} {max} {step} {disabled}>
-        <NumberInput.Control class="number-control">
-            <NumberInput.Input class="number-input" aria-label={label} onblur={handleInputBlur} />
-        </NumberInput.Control>
-    </NumberInput.Root>
-
-    {#if unit}
-        <span class="unit">{unit}</span>
-    {/if}
-</div>
-
-<style>
-    .slider-wrapper {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        min-width: 0;
-        width: 100%;
-    }
-
-    /* The root needs explicit sizing for Ark UI slider to work.
-     * `min-width: 60px` lets the track shrink in narrow rows so the unit
-     * label after the number input still fits. The thumb stays interactive
-     * down to that floor; below it Ark UI handles the cramped layout. */
-    :global(.slider-root) {
-        flex: 1;
-        min-width: 60px;
-    }
-
-    :global(.slider-control) {
-        position: relative;
-        display: flex;
-        align-items: center;
-        height: 20px;
-        width: 100%;
-    }
-
-    :global(.slider-track) {
-        flex: 1;
-        height: 4px;
-        background: var(--color-bg-tertiary);
-        border-radius: var(--radius-xs);
-        position: relative;
-    }
-
-    :global(.slider-range) {
-        height: 100%;
-        background: var(--color-accent);
-        border-radius: var(--radius-xs);
-    }
-
-    :global(.slider-thumb) {
-        width: 16px;
-        height: 16px;
-        background: white;
-        border: 2px solid var(--color-accent);
-        border-radius: var(--radius-full);
-        cursor: default;
-        box-shadow: var(--shadow-sm);
-        /* Ensure thumb is above tick marks */
-        z-index: 2;
-        position: relative;
-    }
-
-    :global(.slider-thumb:hover) {
-        border-color: var(--color-accent-hover);
-    }
-
-    :global(.slider-thumb[data-disabled]) {
-        cursor: not-allowed;
-    }
-
-    :global(.slider-thumb:focus-visible) {
-        outline: 2px solid var(--color-accent);
-        outline-offset: 2px;
-        box-shadow: var(--shadow-focus);
-    }
-
-    .slider-ticks {
-        position: absolute;
-        left: 0;
-        right: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        height: 4px;
-        pointer-events: none;
-        /* Below the thumb (Ark UI sets z-index: 1 on thumb) */
-        z-index: 0;
-    }
-
-    .slider-tick {
-        position: absolute;
-        width: 2px;
-        height: 8px;
-        background: var(--color-border);
-        transform: translate(-50%, -50%);
-        top: 50%;
-    }
-
-    .slider-tick.active {
-        background: var(--color-accent);
-    }
-
-    :global(.number-control) {
-        /* Remove any wrapper styling - let the input handle it */
-        display: contents;
-    }
-
-    :global(.number-input) {
-        width: 70px;
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-primary);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
-        text-align: right;
-    }
-
-    :global(.number-input:focus) {
-        outline: none;
-        border-color: var(--color-accent);
-        box-shadow: var(--shadow-focus);
-    }
-
-    :global(.number-input[data-disabled]) {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .unit {
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
-    }
-</style>
+<Slider
+    {value}
+    onChange={commit}
+    {min}
+    {max}
+    {step}
+    {disabled}
+    ariaLabel={label}
+    ariaValueText={unit ? readout : undefined}
+    ticks={sliderStops}
+    snapTargets={sliderStops}
+    {endLabels}
+    valueLabel={readout(value)}
+    onThumbDoubleClick={() => {
+        commit(defaultValue)
+    }}
+/>

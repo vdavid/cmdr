@@ -10,6 +10,8 @@
     import RadioGroupSection from './sections/RadioGroupSection.svelte'
     import SelectSection from './sections/SelectSection.svelte'
     import ComboboxSection from './sections/ComboboxSection.svelte'
+    import SliderSection from './sections/SliderSection.svelte'
+    import NumberInputSection from './sections/NumberInputSection.svelte'
     import PopoverSection from './sections/PopoverSection.svelte'
     import MenuSection from './sections/MenuSection.svelte'
     import FilterPopoverSection from './sections/FilterPopoverSection.svelte'
@@ -49,6 +51,8 @@
         'radio-group',
         'select',
         'combobox',
+        'slider',
+        'number-input',
         'popover',
         'menu',
         'filter-popover',
@@ -171,6 +175,8 @@
         <RadioGroupSection />
         <SelectSection />
         <ComboboxSection />
+        <SliderSection />
+        <NumberInputSection />
         <PopoverSection />
         <MenuSection />
         <FilterPopoverSection />

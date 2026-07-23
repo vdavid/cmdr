@@ -5,7 +5,7 @@
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingRadioGroup from '../components/SettingRadioGroup.svelte'
-    import SettingSlider from '../components/SettingSlider.svelte'
+    import SettingNumberInput from '../components/SettingNumberInput.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import { getSetting, getSettingDefinition, onSpecificSettingChange, type BriefColumnWidthMode } from '$lib/settings'
     import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
@@ -35,7 +35,7 @@
             briefWidthMode = value
         }),
     )
-    const sliderDisabled = $derived(briefWidthMode !== 'limited')
+    const widthFieldDisabled = $derived(briefWidthMode !== 'limited')
 </script>
 
 <SettingsSection title={tString('settings.section.listing')}>
@@ -104,10 +104,19 @@
                     {searchQuery}
                 >
                     <div class="brief-width-control">
-                        <SettingRadioGroup id="listing.briefColumnWidthMode" />
-                        <div class="slider-row" class:is-disabled={sliderDisabled}>
-                            <SettingSlider id="listing.briefColumnWidthMaxPx" unit="px" disabled={sliderDisabled} />
-                        </div>
+                        <SettingRadioGroup id="listing.briefColumnWidthMode">
+                            {#snippet itemTrailing(optionValue: string)}
+                                <!-- The width field belongs to the "Limit to" option, so it sits on
+                                     that option's line and greys out while the other one is picked. -->
+                                {#if optionValue === 'limited'}
+                                    <SettingNumberInput
+                                        id="listing.briefColumnWidthMaxPx"
+                                        unit="px"
+                                        disabled={widthFieldDisabled}
+                                    />
+                                {/if}
+                            {/snippet}
+                        </SettingRadioGroup>
                     </div>
                 </SettingRow>
             {/if}
@@ -121,14 +130,5 @@
         flex-direction: column;
         gap: var(--spacing-sm);
         width: 100%;
-    }
-
-    .slider-row {
-        /* Visually nests the slider under the radio choices. */
-        padding-left: var(--spacing-xl);
-    }
-
-    .slider-row.is-disabled {
-        opacity: 0.5;
     }
 </style>

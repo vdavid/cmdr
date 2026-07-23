@@ -90,7 +90,7 @@ describe('CompressLevelControl', () => {
     expect(slider).not.toBeNull()
     expect(slider?.getAttribute('aria-valuenow')).toBe('9')
 
-    const endLabels = Array.from(target.querySelectorAll('.level-end-label')).map((el) => el.textContent.trim())
+    const endLabels = Array.from(target.querySelectorAll('.sl-ends span')).map((el) => el.textContent.trim())
     expect(endLabels).toEqual(['Faster', 'Smaller'])
     expect(target.querySelector('.level-caption')?.textContent).toMatch(/smaller zip/)
 
@@ -102,7 +102,7 @@ describe('CompressLevelControl', () => {
     const target = mountControl()
     await tick()
 
-    const thumb = target.querySelector('.slider-thumb')
+    const thumb = target.querySelector('.sl-thumb')
     if (!thumb) throw new Error('Slider thumb not found')
     thumb.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     await tick()

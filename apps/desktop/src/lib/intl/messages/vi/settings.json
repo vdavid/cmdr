@@ -1702,14 +1702,6 @@
   "@settings.control.restartRequired": {
     "sourceHash": "b468711"
   },
-  "settings.control.decrease": "Giảm {label}",
-  "@settings.control.decrease": {
-    "sourceHash": "995a5d6"
-  },
-  "settings.control.increase": "Tăng {label}",
-  "@settings.control.increase": {
-    "sourceHash": "bbf5fc9"
-  },
   "settings.control.customValuePlaceholder": "Nhập giá trị tùy chỉnh",
   "@settings.control.customValuePlaceholder": {
     "sourceHash": "999a63f"

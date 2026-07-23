@@ -435,15 +435,14 @@ export const appearanceSettings: SettingDefinitionSource[] = [
     section: ['Appearance', 'Listing'],
     labelKey: 'settings.listing.briefColumnWidthMaxPx.label',
     cardKey: 'settings.appearance.card.briefMode',
-    keywords: ['brief', 'column', 'width', 'max', 'maximum', 'limit', 'pixel', 'slider'],
+    keywords: ['brief', 'column', 'width', 'max', 'maximum', 'limit', 'pixel'],
     type: 'number',
     default: 400,
-    component: 'slider',
+    component: 'number-input',
     constraints: {
       min: 250,
       max: 1000,
       step: 25,
-      sliderStops: [250, 400, 600, 800, 1000],
     },
   },
 ]

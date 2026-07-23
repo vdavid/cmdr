@@ -1710,14 +1710,6 @@
   "@settings.control.restartRequired": {
     "sourceHash": "b468711"
   },
-  "settings.control.decrease": "{label} verlagen",
-  "@settings.control.decrease": {
-    "sourceHash": "995a5d6"
-  },
-  "settings.control.increase": "{label} verhogen",
-  "@settings.control.increase": {
-    "sourceHash": "bbf5fc9"
-  },
   "settings.control.customValuePlaceholder": "Voer een aangepaste waarde in",
   "@settings.control.customValuePlaceholder": {
     "sourceHash": "999a63f"

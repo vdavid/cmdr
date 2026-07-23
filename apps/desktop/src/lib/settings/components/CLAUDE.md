@@ -25,11 +25,12 @@ Registry-driven controls (pick by control shape):
 - `SettingSelect.svelte`: enum dropdown (wraps `lib/ui/Select`); owns the `allowCustom` inline-number flow and its
   `__custom__` sentinel (`ui/Select` never sees it).
 - `SettingToggleGroup.svelte`: segmented control for short enum lists. `SettingRadioGroup.svelte`: vertical radio for
-  longer lists or when an option needs a `customContent` snippet.
-- `SettingSlider.svelte`: slider + paired number input. `SettingNumberInput.svelte`: standalone number input (clamps to
-  registry `min`/`max`; for a `duration` setting it edits in the setting's `constraints.unit` while the store stays in
-  ms, converting via `durationValueToMs` / `msToDurationValue`). Route `duration` settings through it, never a raw Ark
-  `NumberInput`.
+  longer lists, an option needing a `customContent` snippet, or an option carrying a control on its own line
+  (`itemTrailing`, as Brief mode's "Limit to" does).
+- `SettingSlider.svelte`: slider (`lib/ui/Slider`), readout label only, no paired number field, so the value is
+  drag-only; `sliderStops` become both ticks and snap targets. `SettingNumberInput.svelte`: number input
+  (`lib/ui/NumberInput`) for a typed exact value; a `duration` setting edits in `constraints.unit` while the store stays
+  in ms (`durationValueToMs` / `msToDurationValue`). DETAILS § Slider vs number input.
 - `SettingPasswordInput.svelte`: masked input with reveal toggle (two modes; see Gotchas).
 - `SettingColorSwatchPicker.svelte`: circle trigger + 4×4 swatch popover for pane tints; `swatch-keyboard.ts` is its
   pure key-index resolver (unit-testable without a DOM).
@@ -39,10 +40,10 @@ functional `*.test.ts`.
 
 ## Conventions
 
-- **Registry-driven by default.** Every primitive except the four window-chrome files takes `id: SettingId` as its first
-  prop and pulls everything (label, description, default, constraints) from the registry (per the read/subscribe/write
-  pattern above). If you're passing label / options / min / max as props from the section, register the setting instead.
-  (The mirror-in-multiple-sections pattern in the parent CLAUDE.md covers one entry in two UI locations.)
+- **Registry-driven by default.** Every primitive except the four window-chrome files takes `id: SettingId` first and
+  pulls label, description, default, and constraints from the registry (the read/subscribe/write pattern above). Passing
+  label / options / min / max as props from a section means the setting isn't registered yet. (One entry in two UI
+  locations: the parent CLAUDE.md's mirror pattern.)
 - **`SettingRow.split`** enforces a 50-50 grid (label left, control right) so control left-edges align across rows. Use
   it for select / text / password / slider / number / radio / combobox rows; not for switches, toggle groups, or
   full-width custom layouts. Description text spans full width regardless.
@@ -53,14 +54,14 @@ functional `*.test.ts`.
 
 ## Gotchas
 
-- **Don't classify state by label / option string.** The `id` is the contract; the label is documentation. Branch on the
-  value (`getSetting(id) === 'compact'`), not the label. (`AGENTS.md` § no-string-matching applies.)
-- **`SettingSelect`'s custom-value mode focuses the inline input via `setTimeout(0)`, not `tick()`.** Ark UI's `Select`
-  finishes its close animation on a microtask, and a same-tick focus call gets eaten by the trigger's returning focus.
-  If you change this, verify with the a11y test and a manual keyboard run.
+- **Don't classify state by label / option string.** The `id` is the contract, the label is documentation: branch on the
+  value (`getSetting(id) === 'compact'`). (`AGENTS.md` § no-string-matching.)
+- **`SettingSelect`'s custom-value mode focuses the inline input via `setTimeout(0)`, not `tick()`.** Ark's `Select`
+  closes on a microtask, so a same-tick focus call gets eaten by the trigger's returning focus. Changing this needs the
+  a11y test plus a manual keyboard run.
 - **`SettingColorSwatchPicker` keyboard nav lives in `swatch-keyboard.ts`.** The component owns popover open/close,
-  focus, and outside-click; Tab containment comes from the shared `use:trapFocus`. Keep new keys in the pure helper so
-  the traversal table stays DOM-free testable.
+  focus, and outside-click; Tab containment comes from `use:trapFocus`. Keep new keys in the pure helper, so the
+  traversal table stays DOM-free testable.
 - **`SettingsSection` title styling is intentionally borderless** (System Settings-style: bottom margin, no hairline
   rule). Don't add a `border-bottom`.
 - **`SettingPasswordInput` controlled mode skips the store subscription** so secret-store updates aren't clobbered by

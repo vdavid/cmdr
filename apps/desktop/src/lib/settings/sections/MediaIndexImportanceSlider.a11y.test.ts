@@ -97,7 +97,7 @@ describe('MediaIndexImportanceSlider', () => {
   it('defaults to the broadest bucket and shows the live covered-count preview', async () => {
     const target = await mountAndSettle()
     // The primary label reflects the default (threshold 0.0 = the rightmost "everywhere" bucket).
-    expect(target.querySelector('.mi-slider-value')?.textContent ?? '').toContain('Everywhere')
+    expect(target.querySelector('.mi-slider .sl-value-above')?.textContent ?? '').toContain('Everywhere')
     // The honest preview reads the mocked counts (thousands-separated).
     const preview = target.querySelector('.mi-preview')?.textContent ?? ''
     expect(preview).toContain('3,900')
@@ -171,7 +171,7 @@ describe('MediaIndexImportanceSlider', () => {
 
   it('moving the slider commits the new threshold and re-queries the preview', async () => {
     const target = await mountAndSettle()
-    const thumb = target.querySelector('.mi-slider-thumb') as HTMLElement
+    const thumb = target.querySelector('[data-test="media-importance-threshold"]') as HTMLElement
     thumb.focus()
     // ArrowLeft moves one bucket toward "most-used only" (from threshold 0.0 → 0.2).
     thumb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }))

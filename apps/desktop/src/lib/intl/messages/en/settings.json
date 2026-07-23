@@ -423,7 +423,7 @@
 
   "settings.listing.briefColumnWidthMaxPx.label": "Brief column width limit",
   "@settings.listing.briefColumnWidthMaxPx.label": {
-    "description": "Label for the slider setting the maximum Brief-mode column width in pixels. Shown when the Brief column-width mode is set to \"Limit to\". \"Brief\" is a view-mode name."
+    "description": "Label for the number field setting the maximum Brief-mode column width in pixels. It sits on the same line as the \"Limit to\" option and is only active while that option is picked. \"Brief\" is a view-mode name."
   },
 
   "settings.fileOperations.allowFileExtensionChanges.label": "Allow file extension changes",
@@ -2077,22 +2077,6 @@
   "settings.control.restartRequired": "Restart required",
   "@settings.control.restartRequired": {
     "description": "A small badge next to a setting that only takes effect after restarting the app. Tight space; keep it short."
-  },
-  "settings.control.decrease": "Decrease {label}",
-  "@settings.control.decrease": {
-    "description": "aria-label (screen-reader only) for a number input's decrement (minus) button. Reads as an action plus the setting's name.",
-    "placeholders": {
-      "label": "the name of the setting this button adjusts, e.g. \"Custom timeout\""
-    },
-    "screenshot": "settings-behavior-file-system-watching.png"
-  },
-  "settings.control.increase": "Increase {label}",
-  "@settings.control.increase": {
-    "description": "aria-label (screen-reader only) for a number input's increment (plus) button. Reads as an action plus the setting's name.",
-    "placeholders": {
-      "label": "the name of the setting this button adjusts, e.g. \"Custom timeout\""
-    },
-    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.control.customValuePlaceholder": "Enter custom value",
   "@settings.control.customValuePlaceholder": {

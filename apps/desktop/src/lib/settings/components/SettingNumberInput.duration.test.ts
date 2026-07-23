@@ -47,6 +47,6 @@ describe('SettingNumberInput duration conversion', () => {
     expect(input?.value).toBe('20')
 
     // Unit label is auto-derived from the setting's `constraints.unit`.
-    expect(target.querySelector('.unit')?.textContent).toBe('s')
+    expect(target.querySelector('.ni-unit')?.textContent).toBe('s')
   })
 })

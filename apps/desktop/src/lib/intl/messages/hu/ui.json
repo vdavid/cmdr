@@ -75,5 +75,13 @@
   "ui.loadingIcon.cancelHint": "Nyomd meg a(z) <key></key> billentyűt a megszakításhoz és visszalépéshez",
   "@ui.loadingIcon.cancelHint": {
     "sourceHash": "400dd28"
+  },
+  "ui.numberInput.decrease": "{label} csökkentése",
+  "@ui.numberInput.decrease": {
+    "sourceHash": "995a5d6"
+  },
+  "ui.numberInput.increase": "{label} növelése",
+  "@ui.numberInput.increase": {
+    "sourceHash": "bbf5fc9"
   }
 }

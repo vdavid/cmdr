@@ -40,6 +40,11 @@ describe('ui area parity (en)', () => {
     expect(t('ui.shortcutChip.customizeAria', { commandName: 'Copy' })).toBe('Customize the Copy shortcut')
   })
 
+  it('resolves the interpolated number-input stepper aria-labels', () => {
+    expect(t('ui.numberInput.decrease', { label: 'Warning threshold' })).toBe('Decrease Warning threshold')
+    expect(t('ui.numberInput.increase', { label: 'Warning threshold' })).toBe('Increase Warning threshold')
+  })
+
   it('resolves the loading-icon plurals (one/other) byte-identically', () => {
     expect(t('ui.loadingIcon.finalizing', { countText: '1', count: 1 })).toBe(
       'All 1 file loaded. Sorting your files, preparing view...',

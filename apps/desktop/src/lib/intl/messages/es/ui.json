@@ -74,5 +74,13 @@
   "ui.loadingIcon.cancelHint": "Pulsa <key></key> para cancelar y volver",
   "@ui.loadingIcon.cancelHint": {
     "sourceHash": "400dd28"
+  },
+  "ui.numberInput.decrease": "Reducir {label}",
+  "@ui.numberInput.decrease": {
+    "sourceHash": "995a5d6"
+  },
+  "ui.numberInput.increase": "Aumentar {label}",
+  "@ui.numberInput.increase": {
+    "sourceHash": "bbf5fc9"
   }
 }

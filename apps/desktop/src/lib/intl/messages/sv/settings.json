@@ -1711,14 +1711,6 @@
   "@settings.control.restartRequired": {
     "sourceHash": "b468711"
   },
-  "settings.control.decrease": "Minska {label}",
-  "@settings.control.decrease": {
-    "sourceHash": "995a5d6"
-  },
-  "settings.control.increase": "Öka {label}",
-  "@settings.control.increase": {
-    "sourceHash": "bbf5fc9"
-  },
   "settings.control.customValuePlaceholder": "Ange anpassat värde",
   "@settings.control.customValuePlaceholder": {
     "sourceHash": "999a63f"
