@@ -606,10 +606,14 @@ faint to carry an affordance on their own.
 Custom frosted-glass tooltips via Svelte action (`use:tooltip`). A singleton `<div>` is appended to `<body>` and
 repositioned per hover; only one tooltip exists at a time.
 
-**Glass material:**
+**Glass material:** the blur and hairline are the shared glass tokens (`--color-bg-glass` /
+`--color-border-glass`, also used by filter-chip popovers and the volume dropdown), but the FILL is tooltip-specific.
 
-- Light: `rgba(245, 245, 245, 0.72)` + `backdrop-filter: saturate(180%) blur(20px)`
-- Dark: `rgba(42, 42, 42, 0.72)` + same filter
+- Fill: `--color-bg-tooltip` — the shared glass nudged 10% toward black (light) / white (dark), so a tooltip separates
+  from whatever surface it floats over. Derived from `--color-bg-glass`, so it follows the reduce-transparency flip to
+  an opaque fill for free. Verified ≥4.5:1 for `--color-text-primary` on every app backdrop and on the translucent
+  worst case.
+- Blur: `backdrop-filter: saturate(180%) blur(20px)`, dropped under `html.reduce-transparency`
 - Hairline border: `0.5px solid rgba(0, 0, 0, 0.12)` (light) / `rgba(255, 255, 255, 0.1)` (dark)
 - Shadow: `--shadow-sm`
 - Radius: `--radius-sm` (4px)

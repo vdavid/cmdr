@@ -253,13 +253,11 @@
     }
   },
 
-
   "fileOperations.shared.scanningTooltip": "Scanning…",
   "@fileOperations.shared.scanningTooltip": {
     "description": "Tooltip and screen-reader label for the spinner shown while the dialog counts the selected items (files, folders, total size).",
     "screenshot": "delete-confirm.png"
   },
-
 
   "fileOperations.transferDialog.toggleCopy": "Copy",
   "@fileOperations.transferDialog.toggleCopy": {
