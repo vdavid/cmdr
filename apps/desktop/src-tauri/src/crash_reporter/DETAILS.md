@@ -59,8 +59,20 @@ their own they can't be compared between two launches, let alone two users. `ima
 - **PII-free by construction**: a randomized virtual address, no user data. Deliberately only the numeric base and
   **never a loaded-image path list** — macOS's own `.ips` includes those, and they embed `/Users/<name>`.
 - `None` on non-macOS Unix (no `_dyld_*`), and for reports written before the field existed.
-- Symbolication still needs the matching build's symbols. The release pipeline doesn't archive dSYMs today, so in
-  practice this buys cross-install **grouping** now, and full symbolication once dSYMs are retained per release.
+- Symbolication needs the matching build's symbols, but that most likely does NOT mean archiving dSYMs. There's no
+  `[profile.release]` override, so cargo's defaults apply (`debug = false`, no `strip`): the shipped binary should still
+  carry its symbol table, and every released binary is kept by definition since it's published. So
+  `atos -o <released binary> -l <imageBase> <frame…>` should already resolve function names (no file/line). **Verify
+  this on the next release** with an `nm`/`atos` smoke test against a known address; if Tauri's bundler turns out to
+  strip the binary, archive the UNSTRIPPED BINARY per release, which is far smaller than dSYMs and needs no profile
+  change. Turning on `debug = true` for real dSYMs costs longer builds, hundreds of MB per release to retain for as long
+  as old versions run, a symbolication step to build, and a change to the signed/notarized release pipeline, all to add
+  line numbers.
+- **Scope check before investing in any of that.** The panic path already carries real function names (the hook captures
+  `std::backtrace`), so symbols only matter for the SIGSEGV/SIGBUS/SIGABRT path, and only for frames in our own compiled
+  code. Native crashes commonly land almost entirely in system frameworks, where our symbols wouldn't help either way:
+  the WebKit teardown crash in `docs/notes/child-window-close-webkit-crash.md` had ~23 WebKit/AppKit frames and only
+  event-loop boilerplate of ours. For those, macOS's own `.ips` is the better tool.
 
 ## What we never send
 

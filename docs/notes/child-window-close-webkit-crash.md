@@ -81,9 +81,11 @@ The race needs many closes to surface, so drive it. The recipe that worked:
 4. Randomise the dwell between open and close (0.2 to 1.5 s) so some closes land mid-commit, and poll
    `pgrep -f 'target/debug/Cmdr'` after each cycle to detect the crash.
 
-macOS writes a fully symbolicated report to `~/Library/Logs/DiagnosticReports/Cmdr-*.ips`. That is far more useful than
-our own crash report, whose raw addresses cannot be symbolicated (see
-`apps/desktop/src-tauri/src/crash_reporter/CLAUDE.md` on the missing binary image base).
+macOS writes a fully symbolicated report to `~/Library/Logs/DiagnosticReports/Cmdr-*.ips`. Reach for it first for this
+class of crash: it names the **system** frames (WebKit, AppKit) where the fault actually is, which no amount of our own
+symbols would give. Our crash reports now carry an `imageBase` alongside the raw addresses, so their frames can be
+resolved too (`apps/desktop/src-tauri/src/crash_reporter/DETAILS.md` § Image base), but that only covers frames in our
+own binary.
 
 ## Measurements
 
