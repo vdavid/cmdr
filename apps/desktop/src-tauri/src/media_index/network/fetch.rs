@@ -41,6 +41,14 @@ pub enum FetchError {
     NotFound,
     /// The file is larger than [`MAX_FETCH_BYTES`]; skipped without reading.
     TooLarge,
+    /// The file exists but its BYTES couldn't be read (permission denied, a corrupt
+    /// region, an exotic per-file refusal) — a per-file fault, NOT a transport one.
+    /// The caller skips it, counts it, and logs the total at pass end; it never
+    /// pauses the pass (that's reserved for a typed disconnect) and never marks the
+    /// row `Failed` (which is for a good read with a bad decode). The M1 hazard this
+    /// variant closes: a TCC `EPERM` on the OS mount classifying as "disconnected"
+    /// paused the whole NAS pass after zero images.
+    Unreadable(String),
 }
 
 /// Reads one image's compressed bytes for enrichment. Behind a trait so the enrich
@@ -83,13 +91,12 @@ impl ByteFetcher for FsByteFetcher {
 }
 
 /// Read a file, capping at [`MAX_FETCH_BYTES`] and classifying failures by I/O error
-/// KIND (a typed errno, not a message match).
+/// KIND (a typed errno, not a message match — see [`classify_io_error`]).
 fn read_bounded(path: &str) -> Result<Vec<u8>, FetchError> {
     use std::io::Read;
     let file = match std::fs::File::open(path) {
         Ok(f) => f,
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Err(FetchError::NotFound),
-        Err(e) => return Err(FetchError::Disconnected(format!("open '{path}': {e}"))),
+        Err(e) => return Err(classify_io_error(&e, path, "open")),
     };
     // Read at most MAX_FETCH_BYTES + 1 so we can tell "exactly at the cap" from "over".
     let mut buf = Vec::new();
@@ -102,8 +109,40 @@ fn read_bounded(path: &str) -> Result<Vec<u8>, FetchError> {
                 Ok(buf)
             }
         }
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Err(FetchError::NotFound),
-        Err(e) => Err(FetchError::Disconnected(format!("read '{path}': {e}"))),
+        Err(e) => Err(classify_io_error(&e, path, "read")),
+    }
+}
+
+/// Classify an OS-mount I/O failure by its typed errno (never a message match):
+/// `NotFound` for a vanished source, [`FetchError::Disconnected`] ONLY for
+/// transport-loss errnos (the mount is gone), and everything else — permission
+/// denied, `EIO` on a corrupt region, `EISDIR` — as a per-file
+/// [`FetchError::Unreadable`]. The bias is deliberate: misreading a dead mount as
+/// per-file skips burns through the list and completes honestly (re-enriched on the
+/// next scan), while misreading a per-file fault as "disconnected" pauses the whole
+/// pass against a condition that never clears — the M1 TCC-EPERM stall.
+fn classify_io_error(e: &std::io::Error, path: &str, op: &str) -> FetchError {
+    if e.kind() == std::io::ErrorKind::NotFound {
+        return FetchError::NotFound;
+    }
+    let transport_loss = matches!(
+        e.raw_os_error(),
+        Some(
+            libc::ETIMEDOUT
+                | libc::ENOTCONN
+                | libc::ENETDOWN
+                | libc::ENETUNREACH
+                | libc::EHOSTDOWN
+                | libc::EHOSTUNREACH
+                | libc::ENODEV
+                | libc::ENXIO
+                | libc::ESTALE
+        )
+    );
+    if transport_loss {
+        FetchError::Disconnected(format!("{op} '{path}': {e}"))
+    } else {
+        FetchError::Unreadable(format!("{op} '{path}': {e}"))
     }
 }
 
@@ -147,6 +186,7 @@ pub fn os_folder_to_index_prefix(folder: &str, mount_root: &str) -> Option<Strin
 pub struct FakeByteFetcher {
     bytes: std::collections::HashMap<String, Vec<u8>>,
     disconnected: std::collections::HashSet<String>,
+    unreadable: std::collections::HashSet<String>,
 }
 
 #[cfg(test)]
@@ -162,6 +202,7 @@ impl FakeByteFetcher {
         Self {
             bytes: std::collections::HashMap::new(),
             disconnected: std::collections::HashSet::new(),
+            unreadable: std::collections::HashSet::new(),
         }
     }
 
@@ -176,6 +217,12 @@ impl FakeByteFetcher {
         self.disconnected.insert(os_path.into());
         self
     }
+
+    /// Script a per-file read failure (permission denied and friends) for an OS path.
+    pub fn unreadable_on(mut self, os_path: impl Into<String>) -> Self {
+        self.unreadable.insert(os_path.into());
+        self
+    }
 }
 
 #[cfg(test)]
@@ -183,6 +230,9 @@ impl ByteFetcher for FakeByteFetcher {
     fn fetch(&self, os_path: &str, _timeout: Duration) -> Result<Vec<u8>, FetchError> {
         if self.disconnected.contains(os_path) {
             return Err(FetchError::Disconnected("scripted unmount".to_string()));
+        }
+        if self.unreadable.contains(os_path) {
+            return Err(FetchError::Unreadable("scripted per-file read failure".to_string()));
         }
         match self.bytes.get(os_path) {
             Some(b) => Ok(b.clone()),
@@ -244,5 +294,64 @@ mod tests {
             .fetch("/nonexistent/cmdr/media/x.jpg", Duration::from_secs(5))
             .expect_err("missing file errors");
         assert!(matches!(err, FetchError::NotFound));
+    }
+
+    /// THE M1 classification fix: a permission-denied file is a PER-FILE fault
+    /// (skip-and-count), never a "disconnected" (which pauses the whole pass —
+    /// the TCC-EPERM-stalls-the-NAS bug this distinction exists for).
+    #[test]
+    #[cfg(unix)]
+    fn fs_fetch_permission_denied_is_unreadable_not_disconnected() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().expect("temp");
+        let path = dir.path().join("locked.jpg");
+        std::fs::write(&path, b"jpeg bytes").expect("write");
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o000)).expect("chmod");
+
+        let err = FsByteFetcher
+            .fetch(&path.to_string_lossy(), Duration::from_secs(5))
+            .expect_err("an unreadable file errors");
+        // Restore permissions so the tempdir cleanup can delete it.
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644)).expect("chmod back");
+        assert!(
+            matches!(err, FetchError::Unreadable(_)),
+            "EACCES must classify as a per-file Unreadable, got {err:?}"
+        );
+    }
+
+    /// The errno line between "this FILE is bad" and "the MOUNT is gone": network-
+    /// transport errnos pause (disconnect), anything else skips (unreadable).
+    #[test]
+    fn io_errors_classify_by_errno_kind() {
+        use std::io::{Error, ErrorKind};
+        // Typed transport-loss errnos ⇒ Disconnected (pause, resume on reconnect).
+        for errno in [
+            libc::ETIMEDOUT,
+            libc::ENOTCONN,
+            libc::ENETDOWN,
+            libc::ENETUNREACH,
+            libc::EHOSTDOWN,
+            libc::EHOSTUNREACH,
+            libc::ENODEV,
+            libc::ENXIO,
+            libc::ESTALE,
+        ] {
+            let classified = classify_io_error(&Error::from_raw_os_error(errno), "/m/x.jpg", "read");
+            assert!(
+                matches!(classified, FetchError::Disconnected(_)),
+                "errno {errno} is transport loss, got {classified:?}"
+            );
+        }
+        // Per-file errnos ⇒ Unreadable (skip-and-count, never a pause).
+        for errno in [libc::EACCES, libc::EPERM, libc::EISDIR, libc::EIO] {
+            let classified = classify_io_error(&Error::from_raw_os_error(errno), "/m/x.jpg", "read");
+            assert!(
+                matches!(classified, FetchError::Unreadable(_)),
+                "errno {errno} is a per-file fault, got {classified:?}"
+            );
+        }
+        // NotFound stays its own variant (vanished source; GC collects it).
+        let nf = classify_io_error(&Error::from(ErrorKind::NotFound), "/m/x.jpg", "open");
+        assert!(matches!(nf, FetchError::NotFound));
     }
 }

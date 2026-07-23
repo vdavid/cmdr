@@ -201,6 +201,9 @@ pub(crate) fn run_enrich_pool(
         enriched: state.enriched.load(Ordering::Acquire),
         gc_count,
         cancelled,
+        // Local passes never byte-fetch (the backend reads the file itself), so
+        // there's nothing to skip as unreadable here.
+        skipped_unreadable: 0,
     })
 }
 

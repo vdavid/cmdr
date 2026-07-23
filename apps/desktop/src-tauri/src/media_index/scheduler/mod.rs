@@ -615,10 +615,11 @@ impl MediaScheduler {
                 });
                 log::info!(
                     target: "media_index",
-                    "network enrichment of '{volume_id}': {} of {} images enriched, {} rows GC'd",
+                    "network enrichment of '{volume_id}': {} of {} images enriched, {} rows GC'd{}",
                     summary.enriched,
                     images.len(),
                     summary.gc_count,
+                    skipped_suffix(summary.skipped_unreadable),
                 );
                 PassOutcome::Done(summary.enriched)
             }
@@ -637,8 +638,9 @@ impl MediaScheduler {
                 });
                 log::info!(
                     target: "media_index",
-                    "network enrichment of '{volume_id}' paused ({reason:?}) after {} enriched",
+                    "network enrichment of '{volume_id}' paused ({reason:?}) after {} enriched{}",
                     summary.enriched,
+                    skipped_suffix(summary.skipped_unreadable),
                 );
                 // A NotIdle yield is transient: ask the caller to resume once the app is
                 // idle again. A disconnect/cancel is terminal for this pass (it resumes via
@@ -651,6 +653,20 @@ impl MediaScheduler {
             }
         };
         Ok(outcome)
+    }
+}
+
+/// The honest ", N skipped: unreadable" suffix for a pass-end log line, or nothing
+/// when no file was skipped (the plan-M1 "log the total honestly" contract: a TCC-
+/// denied mount shows up as a big skip count, never a silent all-skip "success").
+fn skipped_suffix(skipped_unreadable: usize) -> String {
+    if skipped_unreadable == 0 {
+        String::new()
+    } else {
+        format!(
+            ", {} skipped: unreadable",
+            crate::pluralize::pluralize(skipped_unreadable as u64, "file")
+        )
     }
 }
 

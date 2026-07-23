@@ -191,6 +191,13 @@ fn run_sequential(ctx: &NetworkEnrichCtx) -> Result<NetworkPassOutcome, String> 
                 Err(FetchError::TooLarge) => {
                     log::debug!(target: "media_index", "network enrichment skips oversized '{}'", image.path);
                 }
+                // A per-file read failure (permission denied and friends) skips and
+                // counts, NEVER pauses (that's reserved for a typed disconnect) and
+                // never writes a row (`Failed` is for a good read with a bad decode).
+                Err(FetchError::Unreadable(msg)) => {
+                    summary.skipped_unreadable += 1;
+                    log::debug!(target: "media_index", "network enrichment skips unreadable '{}': {msg}", image.path);
+                }
             }
         }
         ctx.progress.report(EnrichProgress {
@@ -267,6 +274,9 @@ fn run_parallel(ctx: &NetworkEnrichCtx) -> Result<NetworkPassOutcome, String> {
     let (tx, rx) = std::sync::mpsc::sync_channel::<FetchedJob>(n * 2);
     let rx = Mutex::new(rx);
     let enriched = AtomicUsize::new(0);
+    // Only the fetcher thread observes fetch errors, but the count outlives the
+    // thread scope, so it rides an atomic like `enriched`.
+    let skipped_unreadable = AtomicUsize::new(0);
     // The first per-image writer error; fails the whole pass (as the sequential `?` does).
     let first_error: Mutex<Option<String>> = Mutex::new(None);
     // Workers set this on a writer error so the fetcher stops promptly.
@@ -393,6 +403,14 @@ fn run_parallel(ctx: &NetworkEnrichCtx) -> Result<NetworkPassOutcome, String> {
                         ctx.budget.release(image.size.unwrap_or(0));
                         log::debug!(target: "media_index", "network enrichment skips oversized '{}'", image.path);
                     }
+                    // Per-file read failure: skip-and-count, never a pause (see the
+                    // sequential arm). Only the fetcher observes fetch errors, so a
+                    // plain local counter is race-free.
+                    Err(FetchError::Unreadable(msg)) => {
+                        ctx.budget.release(image.size.unwrap_or(0));
+                        skipped_unreadable.fetch_add(1, Ordering::Relaxed);
+                        log::debug!(target: "media_index", "network enrichment skips unreadable '{}': {msg}", image.path);
+                    }
                 }
             }
             ctx.progress.report(EnrichProgress {
@@ -415,6 +433,7 @@ fn run_parallel(ctx: &NetworkEnrichCtx) -> Result<NetworkPassOutcome, String> {
         enriched: enriched.load(Ordering::Acquire),
         gc_count: 0,
         cancelled: false,
+        skipped_unreadable: skipped_unreadable.load(Ordering::Relaxed),
     };
     let reason = *pause_reason.lock_ignore_poison();
     if let Some(reason) = reason {

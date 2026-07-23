@@ -701,3 +701,120 @@ fn parallel_network_disconnect_drains_workers_and_skips_gc() {
     // the in-memory `statuses` (never persisted), so a DB-survival check would be vacuous.
     writer.shutdown();
 }
+
+// ── Per-file unreadable errors: skip-and-count, never a pause (plan M1) ──────
+
+/// The M1 classification contract at the pass level: file k of n being unreadable
+/// (permission denied and friends) skips THAT file — the pass still completes,
+/// enriches the other n−1, counts the skip honestly, and writes NO row for the
+/// unreadable file (`Failed` is reserved for a good read with a bad decode; a
+/// pause is reserved for a typed disconnect).
+#[test]
+fn an_unreadable_file_skips_and_counts_and_never_pauses_the_pass() {
+    let dir = tempfile::tempdir().expect("temp");
+    let writer = media_writer(dir.path(), "smb-vol");
+    let images = [
+        image("/DCIM/a.jpg", 1, 10),
+        image("/DCIM/locked.jpg", 1, 10),
+        image("/DCIM/c.jpg", 1, 10),
+    ];
+    let fetcher = FakeByteFetcher::new()
+        .with_bytes(os("/DCIM/a.jpg"), b"jpeg".to_vec())
+        .unreadable_on(os("/DCIM/locked.jpg"))
+        .with_bytes(os("/DCIM/c.jpg"), b"jpeg".to_vec());
+    let backend = FakeVisionBackend::new();
+    let policy = ConservativeFetchPolicy::default();
+
+    let idle = || true;
+    let cancel = || false;
+    let ctx = NetworkEnrichCtx {
+        volume_id: "smb-vol",
+        mount_root: MOUNT,
+        images: &images,
+        statuses: &HashMap::new(),
+        backend: &backend,
+        make: &never_make,
+        workers: &one_worker,
+        budget: &TEST_BUDGET,
+        fetcher: &fetcher,
+        writer: &writer,
+        policy: &policy,
+        is_idle: &idle,
+        should_enrich: &always_enrich,
+        is_excluded: &never_excluded,
+        cancel: &cancel,
+        sleep: &no_sleep,
+        progress: &NoopProgressSink,
+        clip_stamp: None,
+    };
+    let outcome = enrich_network_and_gc(&ctx).expect("pass");
+    let NetworkPassOutcome::Completed(summary) = outcome else {
+        panic!("a per-file unreadable must not pause the pass, got {outcome:?}");
+    };
+    assert_eq!(summary.enriched, 2, "the readable neighbors still enrich");
+    assert_eq!(summary.skipped_unreadable, 1, "the skip is counted, not hidden");
+
+    // No row at all for the unreadable file: not `Failed` (bad decode), not `Done`.
+    let store = MediaStore::open(&media_db_path(dir.path(), "smb-vol")).expect("reopen");
+    assert!(
+        store.status_for("/DCIM/locked.jpg").expect("read").is_none(),
+        "an unreadable file must leave no row behind"
+    );
+    assert!(store.status_for("/DCIM/a.jpg").expect("read").is_some());
+    assert!(store.status_for("/DCIM/c.jpg").expect("read").is_some());
+    writer.shutdown();
+}
+
+/// The same contract on the parallel path: the fetcher-side skip must count and
+/// continue (releasing the file's byte-budget reservation), never stop production.
+#[test]
+fn parallel_unreadable_files_skip_and_count_without_pausing() {
+    let dir = tempfile::tempdir().expect("temp");
+    let writer = media_writer(dir.path(), "smb-vol");
+    let images: Vec<ImageEntry> = (0..12).map(|i| image(&format!("/DCIM/img{i:03}.jpg"), 1, 10)).collect();
+    let mut fetcher = FakeByteFetcher::new();
+    for (i, img) in images.iter().enumerate() {
+        // Every third file is unreadable; the rest fetch fine.
+        if i % 3 == 1 {
+            fetcher = fetcher.unreadable_on(os(&img.path));
+        } else {
+            fetcher = fetcher.with_bytes(os(&img.path), vec![0u8; 10]);
+        }
+    }
+    let backend = ParallelProbe::new(Duration::from_micros(200));
+    let make_backend = backend.clone();
+    let make = move || make_backend.clone() as std::sync::Arc<dyn crate::media_index::backend::VisionBackend>;
+    let four = || 4usize;
+    // A small budget, so a leaked reservation for a skipped file would deadlock the
+    // pass (the regression this test also guards).
+    let budget = ByteBudget::new(25);
+    let idle = || true;
+    let cancel = || false;
+    let ctx = NetworkEnrichCtx {
+        volume_id: "smb-vol",
+        mount_root: MOUNT,
+        images: &images,
+        statuses: &HashMap::new(),
+        backend: backend.as_ref(),
+        make: &make,
+        workers: &four,
+        budget: &budget,
+        fetcher: &fetcher,
+        writer: &writer,
+        policy: &ConservativeFetchPolicy::default(),
+        is_idle: &idle,
+        should_enrich: &always_enrich,
+        is_excluded: &never_excluded,
+        cancel: &cancel,
+        sleep: &no_sleep,
+        progress: &NoopProgressSink,
+        clip_stamp: None,
+    };
+    let outcome = enrich_network_and_gc(&ctx).expect("pass");
+    let NetworkPassOutcome::Completed(summary) = outcome else {
+        panic!("per-file unreadable files must not pause the parallel pass, got {outcome:?}");
+    };
+    assert_eq!(summary.enriched, 8);
+    assert_eq!(summary.skipped_unreadable, 4);
+    writer.shutdown();
+}

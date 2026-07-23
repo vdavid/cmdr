@@ -33,6 +33,11 @@ pub(crate) struct PassSummary {
     pub(crate) enriched: usize,
     pub(crate) gc_count: usize,
     pub(crate) cancelled: bool,
+    /// Files whose BYTES couldn't be read (`FetchError::Unreadable`: permission
+    /// denied and friends) — skipped without a row write, counted so the pass can
+    /// log the total honestly. Always 0 on a local pass (the backend reads the
+    /// file itself; a local read failure surfaces as a decode failure → `Failed`).
+    pub(crate) skipped_unreadable: usize,
 }
 
 /// The pass's side-channels to the outside world: cooperative cancellation and progress
