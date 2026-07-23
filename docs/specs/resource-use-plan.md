@@ -173,9 +173,10 @@ under the new schema vs expected values; rename handling (one-row UPDATE reflect
   `media_tags`, `media_embedding`, `media_clip_embedding` all key on `file_id`. Decided against merging `media_status`
   into `media_file` (they're 1:1) to keep identity separate from enrichment-state and match the plan's shape.
 - **Read-path audit (every raw `path =` query became a `media_file` join):** store (`read_status`, `read_all_status`,
-  `read_status_paths`, `sum_bytes_for_paths`, `read_all_embeddings_from`, `read_embedding_for`, `read_tag_matches`); read
-  API (`search_ocr`, `facts_for_paths`, `images_with_tag`); coverage (`scan_accounted`); writer (upsert / upsert_clip /
-  GC / prune / prune-prefix / purge). The Rust layer above the store stays path-addressed (reads join back to a path).
+  `read_status_paths`, `sum_bytes_for_paths`, `read_all_embeddings_from`, `read_embedding_for`, `read_tag_matches`);
+  read API (`search_ocr`, `facts_for_paths`, `images_with_tag`); coverage (`scan_accounted`); writer (upsert /
+  upsert_clip / GC / prune / prune-prefix / purge). The Rust layer above the store stays path-addressed (reads join back
+  to a path).
 - Rename is `MediaWriter::rename_path`: a one-row `UPDATE media_file.path`, children follow via `file_id`; maintains the
   accounted aggregate across a parent-dir change. It's the seam a future rename-following hook calls (renames still
   manifest as GC+re-enrich until one is wired).
@@ -219,13 +220,23 @@ agent landing M5's pins ahead of the schema bump causes a second full re-embed.
   (now **`.mlpackage` OR `.mlmodelc` per tower**) flips to `false` and `media_index_download_clip_model` refetches the
   pinned zip. Tradeoff (≈550 MB/user saved vs a rare ~200 MB re-download) documented in `install.rs` + `DETAILS.md`. The
   filesystem logic is unit-tested; the Core ML FFI around it isn't (needs a real model).
-- **M5b (palettization) — not shipped.** The 2026-07-23 experiment (image-8bit/text-fp16, image-6bit/text-fp16,
-  image-8bit/text-8bit variants with per-tower fidelity gates) died before producing numbers; the earlier finding
-  stands (8-bit palettization NaN'd on the text tower — noted in `install.rs`). Still worth a timeboxed retry. Note:
-  the M3/M4 schema bump has shipped, so a later palettized model costs one extra re-enrich — acceptable while corpora
-  stay small (~9k rows/volume), decreasingly so as they grow. ⚠️ Upload stays David-gated (the no-external-actions
-  rule): an agent stages artifacts + the exact pin diff; the lead uploads additively (new versioned filenames) before
-  any pin bump.
+- **M5b (palettization) — done** (2026-07-23). The image tower is 8-bit palettized and pinned live in `install.rs`
+  (uploaded to Hugging Face as `clip-image-p8.mlpackage.zip`, checksum-verified); `CLIP_MODEL_ID` is `-img8p`, so the
+  corpus re-embeds on the next pass (the known, accepted second re-enrich). Per-tower 8/6-bit k-means palettization
+  measured against the torch fp32 reference over a 50-image NAS fixture (6 reference prompts + 5 top-10 queries).
+  Results:
+  - **(a) image-8bit + text-fp — WINNER.** Image cosine min **0.9988** / mean **0.9995** (≥ 0.99 gate passes); text
+    tower unchanged (cosine 1.0). Top-10 set overlap **9.6/10** mean (near-identical result sets, minor intra-set
+    reordering). Download **~267 MB** (image 207.9 → **83.4 MB**, −60%; text stays 183.7 MB, now the dominant cost).
+  - **(b) image-6bit + text-fp — rejected.** Image cosine min **0.9568** / mean **0.9838** — below the 0.99 gate. Top-10
+    overlap 8.4/10. 6-bit is too lossy for the vision tower.
+  - **(c) image-8bit + text-8bit — rejected, confirms the prior finding.** The 8-bit text tower's Core ML inference is
+    **all-NaN** (build succeeds; predict NaNs), so top-10 is N/A. Text stays fp; only the image tower palettizes. Winner
+    is image-only 8-bit — exactly the "image-only palettization is a legitimate win even if text stays fp" case. Pinned
+    image tower: `clip-image-p8.mlpackage.zip`, sha `61ff585e…`, 83,447,408 B. Reproduce with `convert.py` at its
+    defaults (`CLIP_IMAGE_NBITS=8`, `CLIP_TEXT_NBITS=0`); it parallelizes k-means via `num_kmeans_workers` and
+    palettizes only the image tower, because coremltools closes its worker pool after the first `palettize_weights`
+    call, so two palettize calls in one process raise "Pool not running".
 
 ---
 

@@ -31,10 +31,17 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(HERE, "dist")
 CONTEXT_LENGTH = 77
 EMBED_DIM = 512
-# 8-bit k-means palettization shrinks the towers to ~138 MB but produced NaN inference on
-# the text tower (verified 2026-07-16), so it's OFF by default (correct fp16, ~larger). Set
-# CLIP_PALETTIZE_NBITS=8 (or 4) to re-enable once a per-layer exclusion is worked out.
-PALETTIZE_NBITS = int(os.environ.get("CLIP_PALETTIZE_NBITS", "0"))
+# Per-tower weight palettization (M5b, verified 2026-07-23):
+#   - IMAGE tower @ 8-bit k-means: cosine 0.9995 vs fp32, 208 → ~83 MB. The win — enrichment
+#     embeds every photo through it, and it's the bigger tower. (6-bit fails: cosine min 0.957.)
+#   - TEXT tower @ 8-bit: Core ML inference is all-NaN, so it stays fp (0 = no palettization).
+# num_kmeans_workers parallelizes the per-tensor k-means (identical LUTs, just faster). ONE
+# palettize call per process: coremltools closes its worker pool after the first call, so
+# palettizing BOTH towers here (both nbits > 0) would raise "Pool not running" on the second —
+# run one tower per process if you ever need that.
+IMAGE_NBITS = int(os.environ.get("CLIP_IMAGE_NBITS", "8"))
+TEXT_NBITS = int(os.environ.get("CLIP_TEXT_NBITS", "0"))
+KMEANS_WORKERS = int(os.environ.get("CLIP_KMEANS_WORKERS", "8"))
 
 # CLIP image normalization (the processor's image_mean / image_std).
 CLIP_MEAN = [0.48145466, 0.4578275, 0.40821073]
@@ -75,7 +82,7 @@ class TextTower(nn.Module):
         return self.clip.get_text_features(input_ids=input_ids)
 
 
-def convert_tower(traced, inputs, out_path):
+def convert_tower(traced, inputs, out_path, nbits):
     mlmodel = ct.convert(
         traced,
         inputs=inputs,
@@ -87,9 +94,11 @@ def convert_tower(traced, inputs, out_path):
         compute_precision=ct.precision.FLOAT32,
         convert_to="mlprogram",
     )
-    if PALETTIZE_NBITS:
+    if nbits:
         cfg = cto.OptimizationConfig(
-            global_config=cto.OpPalettizerConfig(nbits=PALETTIZE_NBITS, mode="kmeans")
+            global_config=cto.OpPalettizerConfig(
+                nbits=nbits, mode="kmeans", num_kmeans_workers=KMEANS_WORKERS
+            )
         )
         mlmodel = cto.palettize_weights(mlmodel, cfg)
     if os.path.exists(out_path):
@@ -152,6 +161,7 @@ def main():
         traced_img,
         [ct.TensorType(name="image", shape=(1, 3, 224, 224), dtype=np.float32)],
         img_path,
+        IMAGE_NBITS,
     )
 
     # ── Text tower ────────────────────────────────────────────────────────────
@@ -166,11 +176,12 @@ def main():
         traced_txt,
         [ct.TensorType(name="input_ids", shape=(1, CONTEXT_LENGTH), dtype=np.int32)],
         txt_path,
+        TEXT_NBITS,
     )
 
     # ── Fidelity + reference vectors (text tower; ANE via Core ML predict) ─────
     print("Measuring text-tower fidelity …")
-    ref = {"model": MODEL_ID, "palettize_nbits": PALETTIZE_NBITS, "text_cases": []}
+    ref = {"model": MODEL_ID, "image_nbits": IMAGE_NBITS, "text_nbits": TEXT_NBITS, "text_cases": []}
     cosines = []
     with torch.no_grad():
         for p in PROMPTS:

@@ -44,11 +44,20 @@ uv pip install --python .venv -r requirements.txt
 .venv/bin/python convert.py             # writes dist/*.mlpackage(.zip) + reference-vectors.json
 ```
 
+Remove `.venv/` before running `pnpm check`. `apps/desktop/scripts` is a Go directory, and the `misspell` check
+recursively scans it, so a `.venv` full of third-party Python source fails the check with thousands of spelling hits.
+`.venv/` is gitignored (never committed); it's the checker, not git, that trips on it. (`dist/` is fine — misspell skips
+its binary contents.)
+
 `convert.py` bakes CLIP's per-channel `(x-mean)/std` normalization INTO the image model, so the Rust side only resizes +
 center-crops to 224×224, divides RGB by 255, and packs a CHW float `[1,3,224,224]` tensor. Both towers take an
 `MLMultiArray` (the path the Rust spike proved), avoiding the Core ML `ImageType` / CVPixelBuffer FFI surface. Weights
-are fp16 then 8-bit palettized (`PALETTIZE_NBITS`; drop to 4 to shrink further, at some quality cost — measure the
-fidelity cosine). Embeddings are the **raw** projected 512-d features; the Rust cosine normalizes.
+are 8-bit k-means palettized on the **image tower only** (`CLIP_IMAGE_NBITS`, default 8; `CLIP_TEXT_NBITS` default 0).
+M5b (2026-07-23) measured this: image-8bit holds cosine 0.9995 vs fp32 and cuts the tower 208 → ~83 MB, while the text
+tower's 8-bit Core ML inference is all-NaN so it stays fp, and 6-bit on the image tower falls below the 0.99 gate.
+`num_kmeans_workers` (`CLIP_KMEANS_WORKERS`, default 8) parallelizes the k-means; palettizing both towers in one process
+hits coremltools' "Pool not running" (its pool closes after the first call), so this script palettizes only the image
+tower. Embeddings are the **raw** projected 512-d features; the Rust cosine normalizes.
 
 The app ships the `.mlpackage` and compiles it to `.mlmodelc` on-device at first run (`.mlmodelc` is OS-version-specific
 — never bundle a prebuilt one).

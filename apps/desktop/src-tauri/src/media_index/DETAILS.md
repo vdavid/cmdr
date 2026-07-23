@@ -980,10 +980,11 @@ space, so a typed query is encoded to a vector and cosine-matched against stored
 - **OpenAI CLIP ViT-B/32**, HF `openai/clip-vit-base-patch32`, **MIT-licensed** weights (a commercial product can ship
   them; Apple's MobileCLIP is research-only and can't — `docs/notes/clip-coreml-rust-spike.md`). Embedding dim 512, image
   224×224, text context 77.
-- **Two Core ML `.mlpackage` towers**, fp16, NON-palettized. Sizes + SHA-256 are pinned in `clip/install.rs`
-  (`CLIP_TOWERS`): image ~208 MB, text ~184 MB, combined ~392 MB. **Conversion fidelity cosine 1.0000** vs the torch
-  reference (verified 2026-07-16). 8-bit k-means palettization would shrink this to ~138 MB but computed NaN on the text
-  tower, so it's off; a per-layer palettization exclusion is a future size optimization.
+- **Two Core ML `.mlpackage` towers** pinned in `clip/install.rs` (`CLIP_TOWERS`): the **image tower is 8-bit k-means
+  palettized** (M5b, 2026-07-23), the **text tower stays fp**. Image ~83 MB (cosine min 0.9988 / mean 0.9995 vs torch
+  fp32 over a 50-image fixture), text ~184 MB (cosine 1.0000), combined ~267 MB (down from ~392 MB non-palettized). The
+  text tower stays fp because its 8-bit Core ML inference is all-NaN; 6-bit on the image tower falls below the 0.99 gate
+  (min 0.957), so 8-bit is the floor. Per-variant numbers: the plan's M5b status (`docs/specs/resource-use-plan.md`).
 - **Conversion is an out-of-tree dev script** (`apps/desktop/scripts/convert-clip-model/`), NEVER run by CI/pnpm: a
   throwaway `uv` venv (Python 3.11–3.12; coremltools/torch have no cp314 wheels), pinned `requirements.txt`. It bakes
   CLIP's per-channel `(x-mean)/std` normalization INTO the image model and prints each zip's SHA-256 + size + the
@@ -1124,8 +1125,9 @@ top-k over a single user's library is low-ms. Measure on a real corpus and recor
   volume. Accepted staleness caveat: a `done` row whose file changed since indexing still counts as `accounted` until
   re-enriched, so a folder/drive can briefly read complete while a changed file awaits re-work. Excluding stale rows would
   need a per-row `(mtime, size)` compare against the live index; out of scope.
-- **CLIP model size:** the shipped towers are non-palettized (~392 MB) because 8-bit palettization NaN'd the text tower;
-  a per-layer palettization exclusion would cut it toward ~138 MB.
+- **CLIP model size:** ~267 MB combined — the image tower is 8-bit palettized (M5b, 2026-07-23; cosine 0.9995, ~83 MB),
+  the text tower stays fp (~184 MB; its 8-bit inference NaNs). Down from ~392 MB non-palettized. Numbers: the plan's M5b
+  status (`docs/specs/resource-use-plan.md`) + `clip/install.rs`.
 - **Later:** faces (detect/embed/cluster/name), the durable identity store, and LLM captions.
 
 ## Testing

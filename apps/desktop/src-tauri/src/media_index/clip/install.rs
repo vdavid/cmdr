@@ -20,7 +20,7 @@ use sha2::{Digest, Sha256};
 
 /// The CLIP model identifier baked into the provenance stamp. A change here (a new model)
 /// bumps every row's `clip_stamp` and re-embeds (the two-part staleness contract).
-pub const CLIP_MODEL_ID: &str = "openai-clip-vit-b32";
+pub const CLIP_MODEL_ID: &str = "openai-clip-vit-b32-img8p";
 
 /// One downloadable tower: the artifact name, its pinned download URL, the byte size, and
 /// the SHA-256 of the zip the [conversion script](../../../../scripts/convert-clip-model)
@@ -49,25 +49,29 @@ pub struct ClipTowerSpec {
 pub const PLACEHOLDER_SHA: &str = "0000000000000000000000000000000000000000000000000000000000000000";
 
 /// The two towers the semantic-search feature needs: the image tower (enrichment embeds
-/// every photo) and the text tower (query encoding). Hash + size are the conversion
-/// script's printed output (OpenAI CLIP ViT-B/32, fp16, non-palettized; conversion
-/// fidelity cosine 1.0000 vs the torch reference — verified 2026-07-16). Combined ~392 MB.
+/// every photo) and the text tower (query encoding). Hash + size are the conversion script's
+/// printed output; install verifies the download against them.
 ///
-/// Bigger than a palettized model would be (8-bit palettization computed NaN on the text
-/// tower — see the conversion script), so it's the honest correct-but-larger download;
-/// shrinking it via a per-layer palettization exclusion is a future optimization.
+/// **The image tower is 8-bit k-means palettized (M5b, verified 2026-07-23); the text tower
+/// stays fp.** OpenAI CLIP ViT-B/32. Image tower: 8-bit weights, cosine min 0.9988 / mean
+/// 0.9995 vs torch fp32 over a 50-image fixture, ~83 MB. Text tower: non-palettized fp (its
+/// 8-bit Core ML inference is all-NaN — confirmed), cosine 1.0000, ~184 MB. Combined ~267 MB
+/// (down from ~392 MB non-palettized; 6-bit on the image tower fell below the 0.99 gate at
+/// min 0.957, so 8-bit is the floor). `CLIP_MODEL_ID` carries the `-img8p` suffix so this
+/// model differs from the earlier non-palettized one and re-embeds. See the plan's M5b status
+/// and `scripts/convert-clip-model/`.
 ///
 /// Hosted on Hugging Face (`veszelovszki/cmdr-clip-vit-b32-coreml`, public); `resolve` URLs
 /// 302-redirect to the CDN (reqwest follows) and honor Range requests (the resumable
-/// download's 206 resume — both verified 2026-07-16, byte-exact against the pinned hashes,
-/// unauthenticated). The hash guarantees whatever downloads is exactly the converted,
-/// verified model.
+/// download's 206 resume — byte-exact against the pinned hashes, unauthenticated; the text
+/// tower verified 2026-07-16, the palettized image tower 2026-07-23). The hash guarantees
+/// whatever downloads is exactly the converted, verified model.
 pub const CLIP_TOWERS: &[ClipTowerSpec] = &[
     ClipTowerSpec {
         artifact: "clip-image.mlpackage.zip",
-        url: "https://huggingface.co/veszelovszki/cmdr-clip-vit-b32-coreml/resolve/main/clip-image.mlpackage.zip",
-        sha256: "b3e3a3fe9a2268a05ea0d9e97f60e3a905d07f83a51678a467b03a629f77b237",
-        size_bytes: 207_920_562,
+        url: "https://huggingface.co/veszelovszki/cmdr-clip-vit-b32-coreml/resolve/main/clip-image-p8.mlpackage.zip",
+        sha256: "61ff585ef207495b435e57b4f73e353d11a1820358f8c6fc3155257fb2b7d396",
+        size_bytes: 83_447_408,
         package_dir: "clip-image.mlpackage",
     },
     ClipTowerSpec {
