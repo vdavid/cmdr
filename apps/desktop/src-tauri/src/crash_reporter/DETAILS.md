@@ -38,6 +38,29 @@ lifecycle and the exact payload catalog.
   per-database list). Attached at next-launch assembly in `process_pending_crash`, never in the panic hook or signal
   handler; `live` is always `None` for crashes (see the `CLAUDE.md` invariant). PII-free: no hostname, paths, or volume
   names.
+- `imageBase` (optional): the main executable's load address at crash time, as `"0x…"`. See § Image base.
+
+## Image base
+
+Signal-crash `backtraceFrames` are absolute virtual addresses, and ASLR re-slides the binary on every launch, so on
+their own they can't be compared between two launches, let alone two users. `imageBase` is the missing half:
+`frame - imageBase` is a stable per-build offset, which makes identical crash sites group across installs and lets
+`atos -o <binary> -l <imageBase> <frame…>` resolve them wherever that build's symbols are available.
+
+- **Resolved at `install()` time**, via `_dyld_get_image_header(0)` (index 0 is the main executable), and stored in an
+  `AtomicU64`. The handler only does an atomic load, which is async-signal-safe; the dyld call is not, so it must never
+  move into the handler.
+- **The signal path reports the base recorded in the raw crash file, never the current process's.** The report is
+  assembled after relaunch, and that process has a different slide, so using it would make every offset wrong. The panic
+  path is the opposite case: it runs in the crashing process, so it reads the live value.
+- **Raw crash file format is v2**: header (magic, version, signal, frame count) then the 8-byte base, then frames, then
+  the padded app version. A v1 file fails the version check and is discarded, which is fine (raw files never outlive the
+  next launch).
+- **PII-free by construction**: a randomized virtual address, no user data. Deliberately only the numeric base and
+  **never a loaded-image path list** — macOS's own `.ips` includes those, and they embed `/Users/<name>`.
+- `None` on non-macOS Unix (no `_dyld_*`), and for reports written before the field existed.
+- Symbolication still needs the matching build's symbols. The release pipeline doesn't archive dSYMs today, so in
+  practice this buys cross-install **grouping** now, and full symbolication once dSYMs are retained per release.
 
 ## What we never send
 

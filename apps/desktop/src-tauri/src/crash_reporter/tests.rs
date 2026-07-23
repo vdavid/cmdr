@@ -32,6 +32,7 @@ fn crash_report_roundtrip() {
         diag_id: "diag_12345678-1234-1234-1234-1234567890ab".to_string(),
         email: Some("tester@example.com".to_string()),
         system_snapshot: Some(crate::diagnostics_snapshot::SystemSnapshot::collect_stable(dir.path())),
+        image_base: Some("0x104f2c000".to_string()),
     };
 
     write_crash_report(&path, &report).unwrap();
@@ -42,6 +43,9 @@ fn crash_report_roundtrip() {
         .expect("snapshot roundtrips inside the crash report");
     assert!(snapshot.live.is_none(), "crash-report snapshots are stable-only");
 
+    // Without the base, the absolute frame addresses can't be compared across
+    // installs or resolved with atos (ASLR re-slides every launch).
+    assert_eq!(loaded.image_base.as_deref(), Some("0x104f2c000"));
     assert_eq!(loaded.version, CRASH_FILE_VERSION);
     assert_eq!(loaded.timestamp, "2026-03-22T10:00:00+00:00");
     assert_eq!(loaded.signal.as_deref(), Some("panic"));
@@ -266,10 +270,11 @@ mod signal_tests {
         // Manually write a raw crash file in the expected format
         let mut f = std::fs::File::create(&path).unwrap();
         f.write_all(b"CMCR").unwrap(); // magic
-        f.write_all(&1u32.to_le_bytes()).unwrap(); // version
+        f.write_all(&2u32.to_le_bytes()).unwrap(); // version
         f.write_all(&11i32.to_le_bytes()).unwrap(); // signal (SIGSEGV)
         let addresses: Vec<u64> = vec![0x1000, 0x2000, 0x3000];
         f.write_all(&(addresses.len() as u32).to_le_bytes()).unwrap(); // frame count
+        f.write_all(&0x1_0000_0000u64.to_le_bytes()).unwrap(); // main-image load address
         for addr in &addresses {
             f.write_all(&addr.to_le_bytes()).unwrap();
         }
@@ -280,9 +285,11 @@ mod signal_tests {
         f.write_all(&version_buf).unwrap();
         drop(f);
 
-        let (signal, addrs, ver) = signal_handler::read_raw_crash(&path).unwrap();
+        let (signal, addrs, image_base, ver) = signal_handler::read_raw_crash(&path).unwrap();
         assert_eq!(signal, 11);
         assert_eq!(addrs, vec![0x1000, 0x2000, 0x3000]);
+        // Without this the absolute addresses are meaningless off-machine (ASLR).
+        assert_eq!(image_base, 0x1_0000_0000);
         assert_eq!(ver, "0.8.2");
     }
 
@@ -293,7 +300,7 @@ mod signal_tests {
 
         let mut f = std::fs::File::create(&path).unwrap();
         f.write_all(b"BAAD").unwrap();
-        f.write_all(&[0u8; 44]).unwrap(); // fill to minimum size
+        f.write_all(&[0u8; 52]).unwrap(); // fill to minimum size
         drop(f);
 
         assert!(signal_handler::read_raw_crash(&path).is_none());
@@ -317,9 +324,10 @@ mod signal_tests {
 
         let mut f = std::fs::File::create(&path).unwrap();
         f.write_all(b"CMCR").unwrap();
-        f.write_all(&1u32.to_le_bytes()).unwrap();
+        f.write_all(&2u32.to_le_bytes()).unwrap();
         f.write_all(&11i32.to_le_bytes()).unwrap();
         f.write_all(&100u32.to_le_bytes()).unwrap(); // claims 100 frames
+        f.write_all(&0u64.to_le_bytes()).unwrap(); // image base
         f.write_all(&[0u8; 32]).unwrap(); // but only has version field, no frame data
         drop(f);
 
@@ -363,6 +371,7 @@ fn make_test_report() -> CrashReport {
         diag_id: "diag_00000000-0000-4000-8000-000000000000".to_string(),
         email: None,
         system_snapshot: None,
+        image_base: Some("0x104f2c000".to_string()),
     }
 }
 

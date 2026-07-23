@@ -1311,6 +1311,21 @@ export const commands = {
        *  before this field existed, or when the data dir can't be resolved.
        */
       systemSnapshot?: SystemSnapshot | null
+      /**
+       *  Load address of the main executable at crash time, as `"0x…"`.
+       *
+       *  `backtrace_frames` are absolute virtual addresses, and ASLR randomizes the base
+       *  on every launch, so on their own they can't be compared across launches or users.
+       *  With this, `frame - image_base` is a stable per-build offset: identical crash sites
+       *  group across installs, and `atos -o <binary> -l <image_base>` resolves them when the
+       *  matching build's symbols are available.
+       *
+       *  PII-free by construction: a randomized virtual address, no user data. Deliberately
+       *  only the numeric base, NEVER a loaded-image path list (those embed `/Users/<name>`).
+       *  `None` for reports from builds before this field existed, and on platforms where we
+       *  can't resolve it (non-macOS Unix).
+       */
+      imageBase?: string | null
     } | null>('check_pending_crash_report'),
   // Deletes the crash report file without sending it.
   dismissCrashReport: () => __TAURI_INVOKE<void>('dismiss_crash_report'),
@@ -3882,6 +3897,21 @@ export type CrashReport = {
    *  before this field existed, or when the data dir can't be resolved.
    */
   systemSnapshot?: SystemSnapshot | null
+  /**
+   *  Load address of the main executable at crash time, as `"0x…"`.
+   *
+   *  `backtrace_frames` are absolute virtual addresses, and ASLR randomizes the base
+   *  on every launch, so on their own they can't be compared across launches or users.
+   *  With this, `frame - image_base` is a stable per-build offset: identical crash sites
+   *  group across installs, and `atos -o <binary> -l <image_base>` resolves them when the
+   *  matching build's symbols are available.
+   *
+   *  PII-free by construction: a randomized virtual address, no user data. Deliberately
+   *  only the numeric base, NEVER a loaded-image path list (those embed `/Users/<name>`).
+   *  `None` for reports from builds before this field existed, and on platforms where we
+   *  can't resolve it (non-macOS Unix).
+   */
+  imageBase?: string | null
 }
 
 export type CreditInfoDto = {

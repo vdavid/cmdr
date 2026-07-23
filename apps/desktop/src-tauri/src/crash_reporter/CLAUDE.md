@@ -49,10 +49,9 @@ bytes to a pre-opened fd; symbolicated on next launch).
   patterns (`/Users/...`, `C:\...`, home prefixes) before writing.
 - **The signal handler's pre-opened fd goes stale if the data dir is deleted while running.** Acceptable: it requires
   deliberate user action and loses at most one report.
-- **Signal-handler raw addresses are absolute virtual addresses randomized by ASLR per launch**, and only useful for
-  symbolication if the app version hasn't changed between crash and relaunch. When versions differ, raw addresses are
-  still sent (formatted as hex) for grouping. True symbolication would need the binary image base in the crash file,
-  which isn't stored yet.
+- **ASLR-randomized addresses mean nothing without the `image_base` shipped with them.** Resolve the base at
+  `install()` and stash it in an atomic; **never** call dyld from the handler (not async-signal-safe, an atomic load
+  is). The signal path reports the base from the RAW FILE, never the relaunched process's. DETAILS § Image base.
 - **Signal-safety of `backtrace()`**: `execinfo.h`'s `backtrace()` is async-signal-safe on macOS; on Linux glibc's is
   safe in practice but not POSIX-guaranteed.
 

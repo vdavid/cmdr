@@ -103,6 +103,20 @@ pub struct CrashReport {
     /// before this field existed, or when the data dir can't be resolved.
     #[serde(default)]
     pub system_snapshot: Option<crate::diagnostics_snapshot::SystemSnapshot>,
+    /// Load address of the main executable at crash time, as `"0x…"`.
+    ///
+    /// `backtrace_frames` are absolute virtual addresses, and ASLR randomizes the base
+    /// on every launch, so on their own they can't be compared across launches or users.
+    /// With this, `frame - image_base` is a stable per-build offset: identical crash sites
+    /// group across installs, and `atos -o <binary> -l <image_base>` resolves them when the
+    /// matching build's symbols are available.
+    ///
+    /// PII-free by construction: a randomized virtual address, no user data. Deliberately
+    /// only the numeric base, NEVER a loaded-image path list (those embed `/Users/<name>`).
+    /// `None` for reports from builds before this field existed, and on platforms where we
+    /// can't resolve it (non-macOS Unix).
+    #[serde(default)]
+    pub image_base: Option<String>,
 }
 
 /// Initializes the crash reporter: panic hook, signal handlers, and settings cache.
@@ -161,6 +175,22 @@ fn install_panic_hook(crash_path: PathBuf) {
     }));
 }
 
+/// Hex-formatted load address of the main image for THIS process, or `None` when we
+/// can't resolve it. Only valid for reports built in-process (the panic hook); the
+/// signal path must use the base recorded in the raw file, since a relaunched process
+/// has a different ASLR slide.
+fn current_image_base_hex() -> Option<String> {
+    #[cfg(unix)]
+    {
+        let base = signal_handler::current_image_base();
+        (base != 0).then(|| format!("0x{base:x}"))
+    }
+    #[cfg(not(unix))]
+    {
+        None
+    }
+}
+
 fn build_panic_report(info: &std::panic::PanicHookInfo<'_>) -> CrashReport {
     let backtrace = std::backtrace::Backtrace::force_capture();
     let backtrace_frames = parse_backtrace_frames(&backtrace.to_string());
@@ -195,6 +225,9 @@ fn build_panic_report(info: &std::panic::PanicHookInfo<'_>) -> CrashReport {
         // Filled at next-launch assembly in `process_pending_crash`: the panic hook must stay light
         // (no sysctl/sysinfo/shell-outs in a compromised context).
         system_snapshot: None,
+        // Safe here (unlike the signal handler): the panic hook runs in normal Rust, and this
+        // process IS the crashing one, so its slide is the right one to record.
+        image_base: current_image_base_hex(),
     }
 }
 
@@ -268,7 +301,7 @@ fn parse_backtrace_frames(backtrace_str: &str) -> Vec<String> {
 mod signal_handler {
     use std::os::unix::io::RawFd;
     use std::path::Path;
-    use std::sync::atomic::{AtomicI32, Ordering};
+    use std::sync::atomic::{AtomicI32, AtomicU64, Ordering};
 
     /// Max stack frames to capture in the signal handler.
     const MAX_FRAMES: usize = 256;
@@ -281,15 +314,52 @@ mod signal_handler {
     //   - 4 bytes: version (u32 LE)
     //   - 4 bytes: signal number (i32 LE)
     //   - 4 bytes: frame count (u32 LE)
+    //   - 8 bytes: main-image load address (u64 LE; 0 when unknown)
     //   - N * 8 bytes: instruction pointer addresses (u64 LE)
     //   - 32 bytes: app version (zero-padded ASCII)
     const MAGIC: &[u8; 4] = b"CMCR";
-    const VERSION: u32 = 1;
+    const VERSION: u32 = 2;
     const APP_VERSION_FIELD_LEN: usize = 32;
+    /// Byte offset where frame addresses start: header (16) + image base (8).
+    const FRAMES_START: usize = 24;
+
+    /// Load address of the main executable, captured at init.
+    ///
+    /// Resolved in [`install`] (normal context) rather than in the handler, so the
+    /// handler only has to do an atomic load, which IS async-signal-safe. The dyld
+    /// lookup itself isn't, so it must never move into the handler.
+    static IMAGE_BASE: AtomicU64 = AtomicU64::new(0);
 
     unsafe extern "C" {
         /// macOS/glibc `backtrace()` from execinfo.h: async-signal-safe on macOS.
         fn backtrace(buffer: *mut *mut libc::c_void, size: libc::c_int) -> libc::c_int;
+    }
+
+    #[cfg(target_os = "macos")]
+    unsafe extern "C" {
+        /// Mach header of the image at `image_index`. Index 0 is the main executable.
+        fn _dyld_get_image_header(image_index: u32) -> *const libc::c_void;
+    }
+
+    /// The main executable's load address, or 0 if we can't determine it.
+    ///
+    /// ASLR randomizes this per launch, so without it the captured instruction
+    /// pointers are meaningless off-machine. With it, `addr - base` is a stable
+    /// per-build offset: comparable across users (crash grouping) and resolvable
+    /// with `atos -o <binary> -l <base>`.
+    #[cfg(target_os = "macos")]
+    pub fn current_image_base() -> u64 {
+        // SAFETY: `_dyld_get_image_header` takes an image index and returns a borrowed
+        // pointer (or null) without transferring ownership. Index 0 is the main
+        // executable and is always loaded. We only cast the pointer to an integer
+        // address and never dereference it, so a null or stale value is harmless.
+        unsafe { _dyld_get_image_header(0) as u64 }
+    }
+
+    /// Non-macOS Unix (the Linux E2E container) has no `_dyld_*`; report "unknown".
+    #[cfg(not(target_os = "macos"))]
+    pub fn current_image_base() -> u64 {
+        0
     }
 
     pub fn install(raw_crash_path: &Path) {
@@ -318,6 +388,10 @@ mod signal_handler {
             return;
         }
         RAW_FD.store(fd, Ordering::SeqCst);
+
+        // Resolve the ASLR base now, while we're still in normal context. The handler
+        // can then just load the atomic (signal-safe); the dyld call itself is not.
+        IMAGE_BASE.store(current_image_base(), Ordering::SeqCst);
 
         // Register signal handlers for SIGSEGV, SIGBUS, SIGABRT
         for sig in [libc::SIGSEGV, libc::SIGBUS, libc::SIGABRT] {
@@ -361,11 +435,13 @@ mod signal_handler {
         let frame_count = unsafe { backtrace(frames.as_mut_ptr(), MAX_FRAMES as libc::c_int) };
         let frame_count = if frame_count < 0 { 0 } else { frame_count as u32 };
 
-        // Write header: magic + version + signal + frame_count
+        // Write header: magic + version + signal + frame_count + image base
         write_bytes(fd, MAGIC);
         write_bytes(fd, &VERSION.to_le_bytes());
         write_bytes(fd, &sig.to_le_bytes());
         write_bytes(fd, &frame_count.to_le_bytes());
+        // Plain atomic load: async-signal-safe (the dyld lookup happened at install).
+        write_bytes(fd, &IMAGE_BASE.load(Ordering::Relaxed).to_le_bytes());
 
         // Write frame addresses as u64 LE
         for frame in frames.iter().take(frame_count as usize) {
@@ -404,13 +480,14 @@ mod signal_handler {
         }
     }
 
-    /// Reads the raw crash file and returns (signal, frame_addresses, app_version).
+    /// Reads the raw crash file and returns (signal, frame_addresses, image_base, app_version).
+    /// `image_base` is 0 when the crashing build couldn't determine it.
     /// Returns None if the file doesn't exist or is corrupt.
-    pub fn read_raw_crash(path: &Path) -> Option<(i32, Vec<u64>, String)> {
+    pub fn read_raw_crash(path: &Path) -> Option<(i32, Vec<u64>, u64, String)> {
         let data = std::fs::read(path).ok()?;
 
-        // Minimum size: magic(4) + version(4) + signal(4) + frame_count(4) + version_field(32)
-        if data.len() < 48 {
+        // Minimum size: header(16) + image_base(8) + version_field(32)
+        if data.len() < FRAMES_START + APP_VERSION_FIELD_LEN {
             log::info!("Crash reporter: raw crash file too small, discarding");
             let _ = std::fs::remove_file(path);
             return None;
@@ -431,8 +508,9 @@ mod signal_handler {
 
         let signal = i32::from_le_bytes(data[8..12].try_into().ok()?);
         let frame_count = u32::from_le_bytes(data[12..16].try_into().ok()?) as usize;
+        let image_base = u64::from_le_bytes(data[16..FRAMES_START].try_into().ok()?);
 
-        let frames_end = 16 + frame_count * 8;
+        let frames_end = FRAMES_START + frame_count * 8;
         let expected_len = frames_end + APP_VERSION_FIELD_LEN;
         if data.len() < expected_len {
             log::info!("Crash reporter: raw crash file truncated, discarding");
@@ -442,7 +520,7 @@ mod signal_handler {
 
         let mut addresses = Vec::with_capacity(frame_count);
         for i in 0..frame_count {
-            let offset = 16 + i * 8;
+            let offset = FRAMES_START + i * 8;
             let addr = u64::from_le_bytes(data[offset..offset + 8].try_into().ok()?);
             addresses.push(addr);
         }
@@ -453,7 +531,7 @@ mod signal_handler {
             .trim_end_matches('\0')
             .to_string();
 
-        Some((signal, addresses, app_version))
+        Some((signal, addresses, image_base, app_version))
     }
 }
 
@@ -518,7 +596,8 @@ fn process_pending_crash(crash_json_path: &Path, raw_crash_path: &Path) {
     // Check for a raw signal crash file
     #[cfg(unix)]
     if raw_crash_path.exists() {
-        if let Some((signal, addresses, crash_app_version)) = signal_handler::read_raw_crash(raw_crash_path) {
+        if let Some((signal, addresses, image_base, crash_app_version)) = signal_handler::read_raw_crash(raw_crash_path)
+        {
             let current_version = env!("CARGO_PKG_VERSION");
             let versions_match = crash_app_version == current_version;
 
@@ -560,6 +639,10 @@ fn process_pending_crash(crash_json_path: &Path, raw_crash_path: &Path) {
                 system_snapshot: crash_json_path
                     .parent()
                     .map(crate::diagnostics_snapshot::SystemSnapshot::collect_stable),
+                // The base recorded BY THE CRASHED PROCESS, never this one's: ASLR gives the
+                // relaunched process a different slide, which would make every offset wrong.
+                // `0` means that build couldn't resolve it (non-macOS Unix).
+                image_base: (image_base != 0).then(|| format!("0x{image_base:x}")),
             };
 
             if let Err(e) = write_crash_report(crash_json_path, &report) {

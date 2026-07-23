@@ -1,22 +1,21 @@
-//! Next-launch symbolication of raw instruction pointer addresses from signal crashes.
-//!
-//! Uses `std::backtrace` to resolve addresses to function names. Only valid when the
-//! crash and current binary are the same version (same ASLR slide doesn't apply, but
-//! function offsets within the binary are stable for the same build).
+//! Next-launch rendering of raw instruction pointer addresses from signal crashes.
 
-/// Symbolicate raw addresses against the current binary.
-/// Falls back to hex addresses for frames that can't be resolved.
+/// Format raw crash addresses for the report.
+///
+/// These are absolute virtual addresses from the crashed process. ASLR randomizes the base
+/// on every launch, so they can't be resolved against the current process's address space,
+/// and the relaunched process's own slide is useless for the job.
+///
+/// What makes them usable is the `imageBase` field on the report, recorded by the crashing
+/// process itself (see [`super::CrashReport::image_base`]): `frame - image_base` is a stable
+/// per-build offset, so identical crash sites group across installs, and
+/// `atos -o <binary> -l <image_base> <frame…>` resolves them wherever the matching build's
+/// symbols are available.
+///
+/// We deliberately don't annotate per-frame offsets here. Most frames land in system
+/// libraries (WebKit, AppKit) rather than the main image, and without each image's load
+/// address and size we can't tell which is which; guessing would label system frames as
+/// ours. Plain addresses plus the one authoritative base keeps the data honest.
 pub fn symbolicate_addresses(addresses: &[u64]) -> Vec<String> {
-    // The addresses from the signal handler are absolute virtual addresses from the
-    // crashed process. Since ASLR randomizes the base address on each launch, we can't
-    // directly symbolicate them against the current process's address space.
-    //
-    // However, we can compute the offset within the binary: if we know the image base
-    // from the crash (we don't store it), we're stuck. Instead, we format the addresses
-    // and rely on the raw addresses being useful for grouping identical crash sites.
-    //
-    // For full symbolication, we'd need to store the image base address in the raw crash
-    // file and use it to compute offsets, then resolve those against the binary on disk.
-    // That's a future improvement; for now, raw addresses still group crashes by site.
     addresses.iter().map(|addr| format!("0x{addr:016x}")).collect()
 }
