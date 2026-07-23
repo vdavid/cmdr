@@ -249,6 +249,10 @@ impl SmbConnectionParams {
 #[cfg(test)]
 #[path = "../smb_archive_integration_test.rs"]
 mod smb_archive_integration_test;
+
+#[cfg(test)]
+#[path = "../smb_media_fetch_integration_test.rs"]
+mod smb_media_fetch_integration_test;
 #[cfg(test)]
 #[path = "../smb_integration_test.rs"]
 mod smb_integration_test;

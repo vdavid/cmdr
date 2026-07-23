@@ -171,7 +171,7 @@ fn run_sequential(ctx: &NetworkEnrichCtx) -> Result<NetworkPassOutcome, String> 
         let want_vision = needs_enrichment(stored, image.mtime, image.size, &stamp);
         let want_clip = needs_clip(stored, ctx.clip_stamp);
         if want_vision || want_clip {
-            match ctx.fetcher.fetch(&os_path, ctx.policy.read_timeout) {
+            match ctx.fetcher.fetch(&os_path, image.size, ctx.policy.read_timeout) {
                 Ok(bytes) => {
                     let fetched = bytes.len() as u64;
                     if compute_and_write(&cctx, ctx.backend, image, bytes, want_vision, want_clip, &stamp)? {
@@ -366,7 +366,7 @@ fn run_parallel(ctx: &NetworkEnrichCtx) -> Result<NetworkPassOutcome, String> {
                     reason = Some(PauseReason::Cancelled);
                     break;
                 }
-                match ctx.fetcher.fetch(&os_path, ctx.policy.read_timeout) {
+                match ctx.fetcher.fetch(&os_path, image.size, ctx.policy.read_timeout) {
                     Ok(bytes) => {
                         let fetched = bytes.len() as u64;
                         // Reconcile the reservation (`image.size`) with the ACTUAL bytes read,

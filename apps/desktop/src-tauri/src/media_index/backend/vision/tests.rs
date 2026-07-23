@@ -173,7 +173,7 @@ fn real_smb_byte_fetch_over_naspi_then_ocr_when_mounted() {
     // 1) Read the compressed bytes off the OS mount, timeout-bounded (the real
     //    byte-fetch path the network pass uses).
     let bytes = FsByteFetcher
-        .fetch(&image_path.to_string_lossy(), Duration::from_secs(30))
+        .fetch(&image_path.to_string_lossy(), None, Duration::from_secs(30))
         .unwrap_or_else(|e| panic!("SMB byte-fetch failed for {}: {e:?}", image_path.display()));
     assert!(!bytes.is_empty(), "fetched image bytes should be non-empty");
 

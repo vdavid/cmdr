@@ -494,16 +494,14 @@ impl MediaScheduler {
             log::debug!(target: "media_index", "network enrichment skips '{volume_id}': not opted in");
             return Ok(PassOutcome::Done(0));
         }
-        // The OS mount root we read image bytes from (`/Volumes/<share>`), via the
-        // VolumeManager — the same source `indexing::routing` uses for the read-side
-        // mount strip. An unregistered volume (unmounted) is a no-op.
-        let Some(mount_root) = crate::file_system::get_volume_manager()
-            .get(volume_id)
-            .map(|v| v.root().to_string_lossy().into_owned())
-        else {
+        // The registered volume: source of the mount root (`/Volumes/<share>`, the
+        // same source `indexing::routing` uses for the read-side mount strip) AND
+        // of the byte-read transport. An unregistered volume (unmounted) is a no-op.
+        let Some(volume) = crate::file_system::get_volume_manager().get(volume_id) else {
             log::debug!(target: "media_index", "network enrichment skips '{volume_id}': volume not registered");
             return Ok(PassOutcome::Done(0));
         };
+        let mount_root = volume.root().to_string_lossy().into_owned();
         let Some(pool) = crate::indexing::get_read_pool_for(volume_id) else {
             return Ok(PassOutcome::Done(0));
         };
@@ -517,7 +515,18 @@ impl MediaScheduler {
             .map_err(|e| e.to_string())?;
 
         let policy = ConservativeFetchPolicy::default();
-        let fetcher = FsByteFetcher;
+        // The byte-read transport (plan M1): a volume the app holds its own session
+        // to (a Direct-smb2 `SmbVolume` reports `supports_local_fs_access() == false`)
+        // reads through that session — no macOS TCC on the OS mount, typed disconnect
+        // errors. Mount-only volumes keep the OS-mount fetcher. The runtime handle is
+        // captured here (this runs on `spawn_blocking`, inside the runtime context);
+        // outside a runtime (direct-call unit tests) the OS-mount fallback applies.
+        let fetcher: Box<dyn network::fetch::ByteFetcher> = match tokio::runtime::Handle::try_current() {
+            Ok(handle) if !volume.supports_local_fs_access() => {
+                Box::new(network::fetch::VolumeByteFetcher::new(volume.clone(), handle))
+            }
+            _ => Box::new(FsByteFetcher),
+        };
         let idle_threshold = policy.idle_threshold;
         // The between-images proceed gate: the app is foreground-idle AND no
         // user-initiated transfer touches this volume (`crate::priority`'s order —
@@ -585,7 +594,7 @@ impl MediaScheduler {
             make: &make,
             workers: &workers,
             budget: &budget,
-            fetcher: &fetcher,
+            fetcher: fetcher.as_ref(),
             writer: &writer,
             policy: &policy,
             is_idle: &is_idle,

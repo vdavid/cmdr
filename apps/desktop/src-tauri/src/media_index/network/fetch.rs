@@ -1,24 +1,31 @@
 //! The byte-fetch seam for network enrichment: read one image's compressed bytes off
-//! an opted-in network volume, bounded against an indefinitely-blocking mount.
+//! an opted-in network volume, bounded against an indefinitely-blocking transport.
 //!
-//! ## Byte-fetch decision (plan Decision 6, network enrichment)
+//! ## Byte-fetch decision (plan M1): the app's own session first, OS mount as fallback
 //!
 //! Media enrichment MUST read image bytes off the wire — unlike `importance/`, which
-//! never does. There is no sibling to copy, so this reuses the ONE byte-read path
-//! Cmdr already has for images over SMB: the file viewer's `cmdr-media://` handler
-//! reads SMB image bytes via the **OS mount path** (`/Volumes/<share>/…`) with plain
-//! `std::fs` + a timeout (`file_viewer/media_protocol.rs`). We do the same: map the
-//! index-relative path to its OS-mount-absolute form and `std::fs::read` it. We do NOT
-//! stand up a parallel direct-`smb2` client (`Volume::open_read_stream`) — that's the
-//! chunked large-transfer/copy path; an OCR fetch wants the whole (bounded) compressed
-//! file, and matching the viewer keeps one transport for image bytes.
+//! never does. Two fetchers behind one [`ByteFetcher`] seam, picked per pass by
+//! `Volume::supports_local_fs_access()` (the same predicate the archive backend uses
+//! for its local-vs-remote byte source):
 //!
-//! **Non-blocking discipline.** A network `std::fs::read` can block indefinitely on a
-//! dead/hung mount. So the read runs on a throwaway thread and the caller waits with a
-//! timeout ([`FsByteFetcher`]); a timeout returns [`FetchError::Disconnected`] rather
-//! than wedging the pass. Critically, the fetch happens in the enrich layer — NOT on
-//! the serialized Vision OCR worker thread — so a hung mount can never stall OCR of
-//! other (local) volumes.
+//! - [`VolumeByteFetcher`] for a volume the app holds its OWN transport session to
+//!   (a Direct-smb2 `SmbVolume`): reads via `Volume::open_read_stream_with_hint`.
+//!   The OS mount is deliberately avoided there: macOS TCC ("network volumes")
+//!   denies `std::fs` on `/Volumes/…` for unsigned dev binaries and can regress
+//!   per-binary on rebuilds, while the direct session is the connection Cmdr
+//!   already owns, health-checks, and auto-reconnects — and it yields TYPED errors
+//!   (`VolumeError::DeviceDisconnected`), so pause-vs-skip classification doesn't
+//!   ride errno guesswork.
+//! - [`FsByteFetcher`] for mount-only volumes (no Direct session): `std::fs` on the
+//!   OS mount path, failures classified by typed errno ([`classify_io_error`]).
+//!
+//! **Non-blocking discipline.** A network read can block indefinitely on a dead/hung
+//! transport. [`FsByteFetcher`] runs the read on a throwaway thread and waits with a
+//! timeout; [`VolumeByteFetcher`] wraps the async read in `tokio::time::timeout`. A
+//! timeout returns [`FetchError::Disconnected`] rather than wedging the pass.
+//! Critically, the fetch happens in the enrich layer — NOT on the serialized Vision
+//! OCR worker thread — so a hung transport can never stall OCR of other (local)
+//! volumes.
 
 use std::sync::mpsc;
 use std::thread;
@@ -54,8 +61,12 @@ pub enum FetchError {
 /// Reads one image's compressed bytes for enrichment. Behind a trait so the enrich
 /// core is testable with a scripted fake (no real mount, no I/O).
 pub trait ByteFetcher: Send + Sync {
-    /// Read the bytes at `os_path`, giving up after `timeout`.
-    fn fetch(&self, os_path: &str, timeout: Duration) -> Result<Vec<u8>, FetchError>;
+    /// Read the bytes at `os_path`, giving up after `timeout`. `size_hint` is the
+    /// index's last-known file size: the direct fetcher forwards it to
+    /// `Volume::open_read_stream_with_hint` (SMB's one-round-trip compound read for
+    /// small files) and short-circuits an over-cap file without reading; a stale
+    /// hint is harmless (the read self-corrects).
+    fn fetch(&self, os_path: &str, size_hint: Option<u64>, timeout: Duration) -> Result<Vec<u8>, FetchError>;
 }
 
 /// The production fetcher: `std::fs::read` on the OS mount path, on a throwaway thread
@@ -63,7 +74,7 @@ pub trait ByteFetcher: Send + Sync {
 pub struct FsByteFetcher;
 
 impl ByteFetcher for FsByteFetcher {
-    fn fetch(&self, os_path: &str, timeout: Duration) -> Result<Vec<u8>, FetchError> {
+    fn fetch(&self, os_path: &str, _size_hint: Option<u64>, timeout: Duration) -> Result<Vec<u8>, FetchError> {
         let (tx, rx) = mpsc::channel();
         let path = os_path.to_string();
         // A detached reader thread: if the mount hangs, we abandon it on timeout rather
@@ -143,6 +154,99 @@ fn classify_io_error(e: &std::io::Error, path: &str, op: &str) -> FetchError {
         FetchError::Disconnected(format!("{op} '{path}': {e}"))
     } else {
         FetchError::Unreadable(format!("{op} '{path}': {e}"))
+    }
+}
+
+/// The direct-session fetcher: read through the `Volume` trait (the app's OWN smb2
+/// session — no TCC, no foreign-mount surprises), bridging the async read onto the
+/// caller's (blocking) thread. Constructed per pass for volumes with
+/// `supports_local_fs_access() == false`; the enrichment fetch runs on a
+/// `spawn_blocking` / plain worker thread, never a runtime worker, so `block_on`
+/// can't reenter the executor (the same bridge as the archive backend's
+/// `VolumeByteSource`).
+pub struct VolumeByteFetcher {
+    volume: std::sync::Arc<dyn crate::file_system::volume::Volume>,
+    /// The tokio runtime the async volume read runs under; captured at
+    /// construction (inside the runtime context) because the fetch itself runs on
+    /// plain threads with no ambient runtime.
+    handle: tokio::runtime::Handle,
+}
+
+impl VolumeByteFetcher {
+    /// A fetcher reading through `volume` on the runtime behind `handle`.
+    pub fn new(volume: std::sync::Arc<dyn crate::file_system::volume::Volume>, handle: tokio::runtime::Handle) -> Self {
+        Self { volume, handle }
+    }
+}
+
+impl ByteFetcher for VolumeByteFetcher {
+    fn fetch(&self, os_path: &str, size_hint: Option<u64>, timeout: Duration) -> Result<Vec<u8>, FetchError> {
+        // A known-oversized file is skipped without touching the wire at all.
+        if size_hint.is_some_and(|s| s > MAX_FETCH_BYTES) {
+            return Err(FetchError::TooLarge);
+        }
+        let volume = std::sync::Arc::clone(&self.volume);
+        let path = std::path::PathBuf::from(os_path);
+        // `Volume` impls accept mount-absolute display paths (SmbVolume strips its
+        // mount prefix; LocalPosix resolves absolutes), so the enrich layer's
+        // os-joined path passes through unchanged.
+        self.handle.block_on(async move {
+            match tokio::time::timeout(timeout, read_via_volume(volume.as_ref(), &path, size_hint)).await {
+                Ok(result) => result,
+                // The outer timeout is the hung-transport backstop: classify as a
+                // disconnect (pause), never a per-file fault. Dropping the timed-out
+                // future cancels the in-flight SMB read (safe on smb2; enrichment
+                // never runs on MTP, where a dropped round trip wedges the device).
+                Err(_) => Err(FetchError::Disconnected(format!(
+                    "volume read timed out after {timeout:?}"
+                ))),
+            }
+        })
+    }
+}
+
+/// Drain one file through `Volume::open_read_stream_with_hint`, capping at
+/// [`MAX_FETCH_BYTES`] (stop draining and skip, rather than buffering a pathological
+/// file), classifying failures by TYPED `VolumeError` variant.
+async fn read_via_volume(
+    volume: &dyn crate::file_system::volume::Volume,
+    path: &std::path::Path,
+    size_hint: Option<u64>,
+) -> Result<Vec<u8>, FetchError> {
+    let mut stream = volume
+        .open_read_stream_with_hint(path, size_hint)
+        .await
+        .map_err(classify_volume_error)?;
+    // Pre-size from the hint (capped), so a typical photo lands in one allocation.
+    let mut buf = Vec::with_capacity(size_hint.unwrap_or(0).min(MAX_FETCH_BYTES) as usize);
+    while let Some(chunk) = stream.next_chunk().await {
+        let chunk = chunk.map_err(classify_volume_error)?;
+        buf.extend_from_slice(&chunk);
+        if buf.len() as u64 > MAX_FETCH_BYTES {
+            // Dropping the stream cancels the producer (SmbReadStream sends its
+            // cancel signal on drop).
+            return Err(FetchError::TooLarge);
+        }
+    }
+    Ok(buf)
+}
+
+/// Classify a `VolumeError` from the direct read path — TYPED variants only, the
+/// whole point of reading through the session Cmdr owns:
+///
+/// - `NotFound` ⇒ a vanished source (skip; GC collects it after a completed scan).
+/// - `DeviceDisconnected` / `ConnectionTimeout` ⇒ the transport is gone (pause the
+///   pass; the registration bus resumes it on reconnect).
+/// - Everything else (`PermissionDenied`, `IsADirectory`, `IoError`, and MTP's
+///   `DeviceSessionReset`, which its docs forbid mapping to a disconnect) ⇒ a
+///   per-file [`FetchError::Unreadable`]: skip-and-count, never a pause.
+fn classify_volume_error(e: crate::file_system::volume::VolumeError) -> FetchError {
+    use crate::file_system::volume::VolumeError;
+    match e {
+        VolumeError::NotFound(_) => FetchError::NotFound,
+        VolumeError::DeviceDisconnected(msg) => FetchError::Disconnected(msg),
+        VolumeError::ConnectionTimeout(msg) => FetchError::Disconnected(format!("connection timeout: {msg}")),
+        other => FetchError::Unreadable(other.to_string()),
     }
 }
 
@@ -227,7 +331,7 @@ impl FakeByteFetcher {
 
 #[cfg(test)]
 impl ByteFetcher for FakeByteFetcher {
-    fn fetch(&self, os_path: &str, _timeout: Duration) -> Result<Vec<u8>, FetchError> {
+    fn fetch(&self, os_path: &str, _size_hint: Option<u64>, _timeout: Duration) -> Result<Vec<u8>, FetchError> {
         if self.disconnected.contains(os_path) {
             return Err(FetchError::Disconnected("scripted unmount".to_string()));
         }
@@ -283,7 +387,7 @@ mod tests {
         let path = dir.path().join("x.bin");
         std::fs::write(&path, b"hello bytes").expect("write");
         let bytes = FsByteFetcher
-            .fetch(&path.to_string_lossy(), Duration::from_secs(5))
+            .fetch(&path.to_string_lossy(), None, Duration::from_secs(5))
             .expect("fetch");
         assert_eq!(bytes, b"hello bytes");
     }
@@ -291,7 +395,7 @@ mod tests {
     #[test]
     fn fs_fetch_missing_file_is_not_found() {
         let err = FsByteFetcher
-            .fetch("/nonexistent/cmdr/media/x.jpg", Duration::from_secs(5))
+            .fetch("/nonexistent/cmdr/media/x.jpg", None, Duration::from_secs(5))
             .expect_err("missing file errors");
         assert!(matches!(err, FetchError::NotFound));
     }
@@ -309,7 +413,7 @@ mod tests {
         std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o000)).expect("chmod");
 
         let err = FsByteFetcher
-            .fetch(&path.to_string_lossy(), Duration::from_secs(5))
+            .fetch(&path.to_string_lossy(), None, Duration::from_secs(5))
             .expect_err("an unreadable file errors");
         // Restore permissions so the tempdir cleanup can delete it.
         std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644)).expect("chmod back");
@@ -317,6 +421,182 @@ mod tests {
             matches!(err, FetchError::Unreadable(_)),
             "EACCES must classify as a per-file Unreadable, got {err:?}"
         );
+    }
+
+    /// The direct-session fetcher reads whole files through the `Volume` trait
+    /// (the M1 read-path fix), from a plain thread with no ambient runtime — the
+    /// exact shape of the enrichment pass's `spawn_blocking` / fetcher threads.
+    #[test]
+    fn volume_fetch_reads_bytes_through_the_volume_trait() {
+        use crate::file_system::volume::Volume;
+        use crate::file_system::volume::backends::InMemoryVolume;
+        let rt = tokio::runtime::Runtime::new().expect("runtime");
+        let volume = std::sync::Arc::new(InMemoryVolume::new("test"));
+        rt.block_on(volume.create_file(std::path::Path::new("/DCIM/a.jpg"), b"direct bytes"))
+            .expect("seed");
+        let fetcher = VolumeByteFetcher::new(volume, rt.handle().clone());
+
+        let bytes = std::thread::scope(|s| {
+            s.spawn(|| fetcher.fetch("/DCIM/a.jpg", Some(12), Duration::from_secs(5)))
+                .join()
+                .expect("thread")
+        })
+        .expect("fetch");
+        assert_eq!(bytes, b"direct bytes");
+    }
+
+    /// Typed classification end to end on the direct path: a vanished file is
+    /// `NotFound` (skip; GC collects it), and a known-oversized file is `TooLarge`
+    /// WITHOUT touching the wire.
+    #[test]
+    fn volume_fetch_classifies_not_found_and_oversize_hint() {
+        use crate::file_system::volume::backends::InMemoryVolume;
+        let rt = tokio::runtime::Runtime::new().expect("runtime");
+        let volume = std::sync::Arc::new(InMemoryVolume::new("test"));
+        let fetcher = VolumeByteFetcher::new(volume, rt.handle().clone());
+
+        let err = fetcher
+            .fetch("/gone.jpg", Some(10), Duration::from_secs(5))
+            .expect_err("missing file");
+        assert!(matches!(err, FetchError::NotFound), "got {err:?}");
+
+        let err = fetcher
+            .fetch("/whatever.jpg", Some(MAX_FETCH_BYTES + 1), Duration::from_secs(5))
+            .expect_err("over-cap hint");
+        assert!(matches!(err, FetchError::TooLarge), "got {err:?}");
+    }
+
+    /// The `VolumeError` line between pause and skip: only a typed
+    /// `DeviceDisconnected` / `ConnectionTimeout` pauses; every other volume error
+    /// (permission, I/O, MTP's session reset) is a per-file skip.
+    #[test]
+    fn volume_errors_classify_disconnect_vs_unreadable_by_typed_variant() {
+        use crate::file_system::volume::VolumeError;
+        assert!(matches!(
+            classify_volume_error(VolumeError::DeviceDisconnected("gone".into())),
+            FetchError::Disconnected(_)
+        ));
+        assert!(matches!(
+            classify_volume_error(VolumeError::ConnectionTimeout("slow".into())),
+            FetchError::Disconnected(_)
+        ));
+        assert!(matches!(
+            classify_volume_error(VolumeError::NotFound("x".into())),
+            FetchError::NotFound
+        ));
+        for per_file in [
+            VolumeError::PermissionDenied("locked".into()),
+            VolumeError::IsADirectory("dir".into()),
+            VolumeError::IoError {
+                message: "bad sector".into(),
+                raw_os_error: Some(5),
+            },
+            // MTP-only today, and its docs forbid mapping it to a disconnect.
+            VolumeError::DeviceSessionReset("reset".into()),
+        ] {
+            let classified = classify_volume_error(per_file);
+            assert!(
+                matches!(classified, FetchError::Unreadable(_)),
+                "expected Unreadable, got {classified:?}"
+            );
+        }
+    }
+
+    /// A mid-stream typed disconnect (the cable-yank case) surfaces as
+    /// `Disconnected` even after good chunks arrived — a partial read must never
+    /// pass itself off as the file's bytes or as a per-file fault.
+    #[test]
+    fn volume_fetch_maps_a_mid_stream_disconnect_to_disconnected() {
+        use crate::file_system::volume::{Volume, VolumeError, VolumeReadStream};
+        use std::pin::Pin;
+
+        struct YankedStream {
+            sent: bool,
+        }
+        impl VolumeReadStream for YankedStream {
+            fn next_chunk(
+                &mut self,
+            ) -> Pin<Box<dyn std::future::Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>>
+            {
+                Box::pin(async move {
+                    if self.sent {
+                        Some(Err(VolumeError::DeviceDisconnected("cable yanked".into())))
+                    } else {
+                        self.sent = true;
+                        Some(Ok(vec![0u8; 1024]))
+                    }
+                })
+            }
+            fn total_size(&self) -> u64 {
+                4096
+            }
+            fn bytes_read(&self) -> u64 {
+                if self.sent { 1024 } else { 0 }
+            }
+        }
+
+        struct YankedVolume;
+        impl Volume for YankedVolume {
+            fn as_any(&self) -> &dyn std::any::Any {
+                self
+            }
+            fn name(&self) -> &str {
+                "yanked"
+            }
+            fn root(&self) -> &std::path::Path {
+                std::path::Path::new("/")
+            }
+            fn list_directory<'a>(
+                &'a self,
+                _path: &'a std::path::Path,
+                _on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
+            ) -> Pin<
+                Box<
+                    dyn std::future::Future<Output = Result<Vec<crate::file_system::FileEntry>, VolumeError>>
+                        + Send
+                        + 'a,
+                >,
+            > {
+                Box::pin(async { Ok(Vec::new()) })
+            }
+            fn get_metadata<'a>(
+                &'a self,
+                _path: &'a std::path::Path,
+            ) -> Pin<
+                Box<dyn std::future::Future<Output = Result<crate::file_system::FileEntry, VolumeError>> + Send + 'a>,
+            > {
+                Box::pin(async { Err(VolumeError::NotSupported) })
+            }
+            fn exists<'a>(
+                &'a self,
+                _path: &'a std::path::Path,
+            ) -> Pin<Box<dyn std::future::Future<Output = bool> + Send + 'a>> {
+                Box::pin(async { true })
+            }
+            fn is_directory<'a>(
+                &'a self,
+                _path: &'a std::path::Path,
+            ) -> Pin<Box<dyn std::future::Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+                Box::pin(async { Ok(false) })
+            }
+            fn open_read_stream<'a>(
+                &'a self,
+                _path: &'a std::path::Path,
+            ) -> Pin<
+                Box<
+                    dyn std::future::Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a,
+                >,
+            > {
+                Box::pin(async { Ok(Box::new(YankedStream { sent: false }) as Box<dyn VolumeReadStream>) })
+            }
+        }
+
+        let rt = tokio::runtime::Runtime::new().expect("runtime");
+        let fetcher = VolumeByteFetcher::new(std::sync::Arc::new(YankedVolume), rt.handle().clone());
+        let err = fetcher
+            .fetch("/DCIM/a.jpg", Some(4096), Duration::from_secs(5))
+            .expect_err("yank errors");
+        assert!(matches!(err, FetchError::Disconnected(_)), "got {err:?}");
     }
 
     /// The errno line between "this FILE is bad" and "the MOUNT is gone": network-
