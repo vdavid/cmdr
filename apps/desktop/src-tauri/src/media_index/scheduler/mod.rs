@@ -48,7 +48,9 @@ use super::network::policy::ConservativeFetchPolicy;
 use crate::ignore_poison::IgnorePoison;
 
 pub(crate) mod enrich;
-use enrich::{EnrichGates, GcScope, PassHooks, enrich_and_gc_scoped, load_statuses, walk_image_entries};
+use enrich::{EnrichGates, GcScope, load_statuses, walk_image_entries};
+
+pub(crate) mod pool;
 
 mod live;
 
@@ -87,11 +89,19 @@ mod reclaim_tests;
 /// dir, the long-lived per-volume writer registry, and the inference backend behind
 /// the [`VisionBackend`] seam. Cloneable-by-`Arc` for the bus-listener tasks and as
 /// Tauri managed state.
+/// Builds one INDEPENDENT backend for an extra parallel worker (workers 1..N of a pass).
+/// Production makes a fresh real `VisionOcrBackend` (its own Vision thread) each call; a
+/// fake-backed scheduler clones its one shared fake. Worker 0 always reuses
+/// [`MediaScheduler::backend`], so a steady N=1 pass never calls this.
+pub(crate) type BackendFactory = Arc<dyn Fn() -> Arc<dyn VisionBackend> + Send + Sync>;
+
 pub struct MediaScheduler {
     coordinator: PassCoordinator,
     data_dir: PathBuf,
     writers: super::writer_registry::WriterRegistry,
     backend: Arc<dyn VisionBackend>,
+    /// Factory for extra parallel workers' backends (plan M2). See [`BackendFactory`].
+    backend_factory: BackendFactory,
     /// The app handle used to emit `media-enrich-progress` / `media-enrich-terminal`
     /// events. `None` in unit tests (constructed via [`MediaScheduler::new`],
     /// no app), so a pass emits nothing; production wires it in [`start`].
@@ -113,26 +123,48 @@ pub struct MediaScheduler {
 
 impl MediaScheduler {
     /// Construct a scheduler over `data_dir` with the given inference backend, NOT wired
-    /// to an app (so it emits no progress events — the unit-test constructor).
+    /// to an app (so it emits no progress events — the unit-test constructor). The extra-
+    /// worker factory clones the ONE given backend, so a scheduler-level test at N>1 shares
+    /// the fake (and worker 0 reuses it anyway); production overrides the factory via
+    /// [`new_with_factory`](MediaScheduler::new_with_factory) to make independent real
+    /// backends.
     pub fn new(data_dir: PathBuf, backend: Arc<dyn VisionBackend>) -> Self {
+        let shared = backend.clone();
+        let factory: BackendFactory = Arc::new(move || shared.clone());
+        Self::new_with_factory(data_dir, backend, factory, None)
+    }
+
+    /// The full constructor: the representative backend, the extra-worker `factory`, and an
+    /// optional app handle (progress + terminal events). `new` and `start` funnel here.
+    fn new_with_factory(
+        data_dir: PathBuf,
+        backend: Arc<dyn VisionBackend>,
+        backend_factory: BackendFactory,
+        app: Option<AppHandle>,
+    ) -> Self {
         Self {
             coordinator: PassCoordinator::new(),
             data_dir,
             writers: super::writer_registry::WriterRegistry::new(),
             backend,
-            app: None,
+            backend_factory,
+            app,
             deferred_for_importance: Mutex::new(HashSet::new()),
             pending_touched_dirs: Mutex::new(HashMap::new()),
         }
     }
 
-    /// Construct a scheduler wired to `app`, so its passes emit the progress +
-    /// terminal events onto the top-right indicator. Used by [`start`].
-    fn new_with_app(data_dir: PathBuf, backend: Arc<dyn VisionBackend>, app: AppHandle) -> Self {
-        Self {
-            app: Some(app),
-            ..Self::new(data_dir, backend)
-        }
+    /// Construct a scheduler wired to `app` (progress + terminal events) with an explicit
+    /// extra-worker `factory` — production's constructor, so parallel workers get
+    /// INDEPENDENT real backends (each its own Vision thread), not clones of one. Used by
+    /// [`start`].
+    fn new_with_app(
+        data_dir: PathBuf,
+        backend: Arc<dyn VisionBackend>,
+        backend_factory: BackendFactory,
+        app: AppHandle,
+    ) -> Self {
+        Self::new_with_factory(data_dir, backend, backend_factory, Some(app))
     }
 
     /// Build the throttled progress sink + terminal guard for a pass. When the
@@ -240,25 +272,28 @@ impl MediaScheduler {
         let ordered = enrich::prioritized(&images, &folder_score);
 
         // Progress + terminal emitters. The guard emits `Failed` on drop if the
-        // pass bubbles an error before we set a clean reason below (the `?` on
-        // `enrich_and_gc`), so EVERY exit path reports a terminal.
+        // pass bubbles an error before we set a clean reason below (the `?` on the pool),
+        // so EVERY exit path reports a terminal.
         let (progress, mut terminal) = self.pass_emitters(volume_id);
-        let hooks = PassHooks {
-            // Stop between images on the memory-watchdog emergency stop OR a master-toggle
-            // OFF, so disabling image indexing halts an in-flight pass promptly (§ gate).
-            cancel: &gate::should_stop,
-            progress: progress.as_ref(),
-        };
         // A full pass walks the whole index, so a stored row absent from the walk genuinely
         // vanished: `GcScope::WholeStore` GCs the whole store. The scoped live tick uses
         // `GcScope::TouchedDirs` instead. The installed CLIP stamp drives the CLIP half of
-        // two-part staleness (`None` = no model ⇒ Vision-only); `enrich_and_gc` (the
-        // Vision-only wrapper) can't carry it, so the full pass reaches the core directly.
+        // two-part staleness (`None` = no model ⇒ Vision-only).
         let clip_stamp = crate::media_index::clip::current_stamp(&self.data_dir);
-        let summary = enrich_and_gc_scoped(
+        // Parallel workers (plan M2): worker 0 rides `self.backend`; extra workers 1..N are
+        // built by the factory (each its own Vision thread). The effective count is the
+        // user's `mediaIndex.parallelism` capped by LIVE thermal pressure, re-read between
+        // images so a slider move or a thermal event applies mid-pass. Default 1 ⇒ a single
+        // worker on `self.backend`, byte-for-byte the pre-pool pass.
+        let factory = self.backend_factory.clone();
+        let make = move || factory();
+        let workers = || crate::media_index::thermal::current_pressure().cap(gate::parallelism());
+        let summary = pool::run_enrich_pool(
             &ordered,
             &statuses,
             self.backend.as_ref(),
+            &make,
+            &workers,
             &writer,
             &EnrichGates {
                 should_enrich: &should_enrich,
@@ -266,7 +301,10 @@ impl MediaScheduler {
                 gc_scope: GcScope::WholeStore,
                 clip_stamp: clip_stamp.as_deref(),
             },
-            &hooks,
+            // Stop between images on the memory-watchdog emergency stop OR a master-toggle
+            // OFF, so disabling image indexing halts an in-flight pass promptly (§ gate).
+            &gate::should_stop,
+            progress.as_ref(),
         )?;
         terminal.set(if summary.cancelled {
             MediaEnrichTerminalReason::Cancelled

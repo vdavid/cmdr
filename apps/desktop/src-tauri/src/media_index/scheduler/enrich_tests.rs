@@ -345,18 +345,17 @@ fn exclusion_landing_during_analyze_writes_no_row() {
     // then the exclusion lands DURING the slow `analyze`, so the pre-upsert re-check
     // (the SECOND `is_excluded` call) must return true and skip the upsert. Modeled by
     // a stateful veto that flips false → true across its two calls for the image.
-    use std::cell::Cell;
     let dir = tempfile::tempdir().expect("temp");
     let writer = media_writer(dir.path(), "root");
     let backend = FakeVisionBackend::new();
 
     let images = [image("/mid/a.jpg")];
-    let calls = Cell::new(0u32);
+    // `AtomicU32` (not `Cell`) since `is_excluded` is now `+ Sync`; this test runs serial.
+    let calls = std::sync::atomic::AtomicU32::new(0);
     // 1st call (filter): not excluded ⇒ proceed into analyze. 2nd call (pre-upsert
     // recheck): the exclude landed ⇒ veto, so the just-analyzed row is dropped.
     let excluded = |_: &str| {
-        let n = calls.get();
-        calls.set(n + 1);
+        let n = calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         n >= 1
     };
     let summary = enrich_and_gc(
@@ -374,7 +373,7 @@ fn exclusion_landing_during_analyze_writes_no_row() {
     .expect("pass");
     assert_eq!(summary.enriched, 0, "an exclude landing mid-analyze drops the row");
     assert!(
-        calls.get() >= 2,
+        calls.load(std::sync::atomic::Ordering::SeqCst) >= 2,
         "the veto is re-checked before the upsert, not only up front"
     );
 
@@ -598,12 +597,15 @@ fn disabling_the_master_toggle_stops_a_running_pass_and_keeps_rows() {
 
     // The cancel hook is wired to the production predicate `gate::should_stop`. Between the
     // first and second image, simulate the user turning "Index image contents" OFF.
-    let calls = std::cell::Cell::new(0u32);
+    // An `AtomicU32` (not `Cell`), because `PassHooks.cancel` is now `+ Sync` (a parallel
+    // pass checks it from N worker threads); this serial test runs at width 1 regardless.
+    let calls = std::sync::atomic::AtomicU32::new(0);
     let cancel = || {
-        if calls.get() == 1 {
+        use std::sync::atomic::Ordering;
+        if calls.load(Ordering::SeqCst) == 1 {
             gate::set_enabled(false);
         }
-        calls.set(calls.get() + 1);
+        calls.fetch_add(1, Ordering::SeqCst);
         gate::should_stop()
     };
     let summary = enrich_and_gc(

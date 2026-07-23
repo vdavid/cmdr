@@ -195,12 +195,22 @@ pub fn start(app: &AppHandle) {
     // Vision doesn't exist) fall back to the deterministic fake so the crate still
     // builds and the scheduler still runs. Tests inject their own fake directly via
     // `MediaScheduler::new`, never through `start`.
+    // The representative backend (worker 0) AND a factory that builds INDEPENDENT extra
+    // backends for parallel workers 1..N (plan M2): each real `VisionOcrBackend` owns its
+    // own 8 MB-stack Vision thread, so N workers actually run N concurrent inference
+    // streams. Off macOS both are the fake.
     #[cfg(target_os = "macos")]
-    let backend: Arc<dyn VisionBackend> = Arc::new(crate::media_index::backend::vision::VisionOcrBackend::new());
+    let (backend, factory): (Arc<dyn VisionBackend>, BackendFactory) = (
+        Arc::new(crate::media_index::backend::vision::VisionOcrBackend::new()),
+        Arc::new(|| Arc::new(crate::media_index::backend::vision::VisionOcrBackend::new()) as Arc<dyn VisionBackend>),
+    );
     #[cfg(not(target_os = "macos"))]
-    let backend: Arc<dyn VisionBackend> = Arc::new(FakeVisionBackend::new());
+    let (backend, factory): (Arc<dyn VisionBackend>, BackendFactory) = (
+        Arc::new(FakeVisionBackend::new()),
+        Arc::new(|| Arc::new(FakeVisionBackend::new()) as Arc<dyn VisionBackend>),
+    );
     log::info!(target: "media_index", "media enrichment scheduler starting");
-    let scheduler = Arc::new(MediaScheduler::new_with_app(data_dir, backend, app.clone()));
+    let scheduler = Arc::new(MediaScheduler::new_with_app(data_dir, backend, factory, app.clone()));
     app.manage(Arc::clone(&scheduler));
 
     // Subscribe to registrations FIRST (before the sweep) so a volume registering in

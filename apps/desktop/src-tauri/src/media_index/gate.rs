@@ -21,7 +21,8 @@
 //! stays unit-testable without touching these globals; only the live scheduler
 //! reads them.
 
-use std::sync::atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering};
+use std::sync::OnceLock;
+use std::sync::atomic::{AtomicBool, AtomicU8, AtomicU64, AtomicUsize, Ordering};
 
 static ENABLED: AtomicBool = AtomicBool::new(false);
 static CANCELLED: AtomicBool = AtomicBool::new(false);
@@ -229,6 +230,42 @@ pub fn importance_threshold() -> f64 {
 /// the comparison can't be fooled by an out-of-range incoming request.
 pub fn threshold_decreased(previous: f64, next: f64) -> bool {
     next < previous
+}
+
+/// How many enrichment workers the user wants (the `mediaIndex.parallelism` slider).
+/// Read lock-free by every pass to size its worker pool. Default
+/// [`DEFAULT_PARALLELISM`] = 1, which is exactly today's single-worker behavior; the
+/// slider is explicit user consent to spend more machine (design principle 5).
+static PARALLELISM: AtomicUsize = AtomicUsize::new(DEFAULT_PARALLELISM);
+
+/// The default enrichment parallelism: ONE worker, byte-for-byte today's behavior.
+/// Raising the slider is the only way to run more (never a default) — and the M2 spike
+/// measured that throughput tops out near N=2 on current Apple Silicon anyway (the ANE
+/// serializes inference), so 1 is both the safe default and close to optimal.
+pub const DEFAULT_PARALLELISM: usize = 1;
+
+/// The hardware ceiling on parallelism: the logical CPU count, read once at first use.
+/// The slider's max and the clamp in [`set_parallelism`] both use it, so a persisted or
+/// hand-edited value can never over-provision the pool beyond the machine.
+pub fn max_parallelism() -> usize {
+    static MAX: OnceLock<usize> = OnceLock::new();
+    *MAX.get_or_init(|| std::thread::available_parallelism().map_or(1, |n| n.get()))
+}
+
+/// Set the enrichment parallelism (clamped to `1..=`[`max_parallelism`]). Seeded from
+/// `mediaIndex.parallelism` at startup and live-applied by the slider's settings
+/// command; a running pass picks up the change between images (it reads
+/// [`parallelism`] each time it re-sizes its pool). Clamping here means the pool never
+/// trusts an out-of-range incoming value.
+pub fn set_parallelism(n: usize) {
+    PARALLELISM.store(n.clamp(1, max_parallelism()), Ordering::SeqCst);
+}
+
+/// The current enrichment parallelism (`1..=`[`max_parallelism`]). The scheduler reads
+/// this to size its worker pool, then caps it further by live thermal pressure
+/// ([`super::thermal`]).
+pub fn parallelism() -> usize {
+    PARALLELISM.load(Ordering::SeqCst).clamp(1, max_parallelism())
 }
 
 #[cfg(test)]

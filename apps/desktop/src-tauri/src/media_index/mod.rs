@@ -24,6 +24,7 @@ pub(crate) mod progress;
 pub mod read;
 pub mod scheduler;
 pub mod store;
+pub mod thermal;
 pub mod vector;
 pub mod writer;
 pub mod writer_registry;

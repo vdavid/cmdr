@@ -30,7 +30,11 @@ pub(crate) struct EnrichProgress {
 /// image (cheap — the implementation throttles the actual emission), so it stays out of
 /// the per-image hot path except a counter + time check. Tests inject a
 /// recorder; production injects the throttled Tauri emitter.
-pub(crate) trait EnrichProgressSink {
+///
+/// `Send + Sync` because a parallel pass (`mediaIndex.parallelism` > 1) reports from N
+/// worker threads through one shared sink; all impls already synchronize internally (a
+/// `Mutex`, or nothing).
+pub(crate) trait EnrichProgressSink: Send + Sync {
     /// Report cumulative progress. The sink decides whether to actually emit.
     fn report(&self, progress: EnrichProgress);
 }
