@@ -18,6 +18,11 @@ fn literal_mode() -> SearchMode {
     }
 }
 
+/// How long a test waits for a background worker to park at its gate. Generous
+/// on purpose: it's a stuck-thread backstop, not a timing assumption, so a
+/// loaded CI runner never trips it. Blowing it means the worker never spawned.
+const GATE_TIMEOUT: Duration = Duration::from_secs(30);
+
 fn create_test_dir(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("cmdr_viewer_session_{}", name));
     let _ = fs::remove_dir_all(&dir);
@@ -1186,20 +1191,21 @@ fn test_append_during_encoding_rebuild_not_dropped() {
         thread::sleep(Duration::from_millis(20));
     }
 
-    // Append 10 KB BEFORE the rebuild starts; the on-disk file is now bigger than
-    // what the backend knows about. The test queues this new EOF and verifies that
-    // the rebuild's drain-and-swap protocol picks it up.
-    let suffix = "y".repeat(10_000) + "\n";
+    // Park the rebuild with its scan already done, so the 10 KB we append next
+    // is invisible to the rebuilt index and can only arrive via the drain.
+    session::test_gate::REBUILD_PRE_DRAIN.arm();
+    // Force a non-instant encoding swap (UTF-8 -> UTF-16 LE) so the rebuild runs.
+    session::set_encoding(&result.session_id, FileEncoding::Utf16Le).unwrap();
+    session::test_gate::REBUILD_PRE_DRAIN.wait_until_reached(GATE_TIMEOUT);
+
+    // Even byte count, so the appended block stays whole UTF-16 code units.
+    let suffix = "y".repeat(9_999) + "\n";
     let new_size = append_test_file(&file, &suffix);
     assert!(new_size > original_size);
 
-    // Park the rebuild thread so we can queue the EOF before it drains.
-    session::test_only_set_rebuild_hold(400);
-    // Force a non-instant encoding swap (UTF-8 -> UTF-16 LE) so the rebuild runs.
-    session::set_encoding(&result.session_id, FileEncoding::Utf16Le).unwrap();
     // Queue the new EOF; the rebuild's drain-and-swap protocol must observe it.
-    // The hold above ensures the rebuild hasn't drained yet.
     session::test_only_push_pending_grew(&result.session_id, new_size);
+    session::test_gate::REBUILD_PRE_DRAIN.release();
 
     // Wait for rebuild to finish.
     let start = std::time::Instant::now();
@@ -1454,11 +1460,12 @@ fn test_append_during_upgrade_not_dropped() {
     // LineIndex to the queued EOF. So the final backend covers the full file,
     // not just the pre-upgrade EOF.
     //
-    // We script timing with `test_only_set_upgrade_hold`: the upgrade thread
-    // sleeps before scanning so we can append to disk and queue the EOF before
-    // the swap runs.
+    // We script timing with the `UPGRADE_PRE_DRAIN` gate: the upgrade thread
+    // parks with its scan already finished, so the append we make while it's
+    // held is invisible to the fresh LineIndex. The only way it can reach the
+    // final backend is the drain picking our queued EOF up and extending.
     let dir = create_test_dir("append_during_upgrade");
-    session::test_only_set_upgrade_hold(800);
+    session::test_gate::UPGRADE_PRE_DRAIN.arm();
 
     // ~2 MB file -> ByteSeek + upgrade.
     let line = "x".repeat(80) + "\n";
@@ -1470,15 +1477,19 @@ fn test_append_during_upgrade_not_dropped() {
     let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
 
-    // Append 500 KB while the upgrade thread is paused.
+    // Block until the upgrade thread is parked with its scan complete.
+    session::test_gate::UPGRADE_PRE_DRAIN.wait_until_reached(GATE_TIMEOUT);
+
+    // Append 500 KB. The scanned backend can't know about these bytes.
     let suffix: String = ("y".repeat(80) + "\n").repeat(6400);
     let new_size = append_test_file(&file, &suffix);
     assert!(new_size > original_size);
 
-    // Queue the EOF the way the real watcher would.
+    // Queue the EOF the way the real watcher would, then let the swap run.
     session::test_only_push_pending_grew(&sid, new_size);
+    session::test_gate::UPGRADE_PRE_DRAIN.release();
 
-    // Wait for the upgrade thread to release and drain.
+    // Wait for the upgrade thread to drain and swap.
     let start = std::time::Instant::now();
     while start.elapsed() < Duration::from_secs(15) {
         let status = session::get_session_status(&sid).unwrap();
@@ -1505,13 +1516,12 @@ fn test_append_during_upgrade_not_dropped() {
 
 #[test]
 fn test_append_between_drain_and_swap_not_dropped() {
-    // Variant where multiple appends queue during the upgrade. Because the
-    // watcher writes also take the `pending_grew` lock (and the drain holds
-    // it across the whole drain + store), watcher writes physically block
-    // until the upgrade releases the lock. The coalesced EOF is observed by
-    // the upgrade's drain.
+    // Variant where multiple appends queue during the upgrade. Two watcher
+    // events must coalesce to the later EOF, and the drain must land on that
+    // one. Same `UPGRADE_PRE_DRAIN` gate: both appends happen after the scan,
+    // so only the drain can carry them onto the final backend.
     let dir = create_test_dir("append_between_drain_swap");
-    session::test_only_set_upgrade_hold(400);
+    session::test_gate::UPGRADE_PRE_DRAIN.arm();
 
     let line = "z".repeat(80) + "\n";
     let line_count = (FULL_LOAD_THRESHOLD as usize / line.len()) + 1000;
@@ -1521,6 +1531,10 @@ fn test_append_between_drain_and_swap_not_dropped() {
     let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
 
+    // Hold the upgrade at the gate so both EOFs are provably queued after the
+    // scan and before the swap.
+    session::test_gate::UPGRADE_PRE_DRAIN.wait_until_reached(GATE_TIMEOUT);
+
     // Two consecutive queued EOFs: simulates two watcher events the
     // production code must coalesce into the final one.
     let mid_size = append_test_file(&file, "first-append\n");
@@ -1528,6 +1542,15 @@ fn test_append_between_drain_and_swap_not_dropped() {
 
     let final_size = append_test_file(&file, "second-append-bigger\n");
     session::test_only_push_pending_grew(&sid, final_size);
+
+    // The queue must still be intact and coalesced to the later EOF: nothing
+    // may have drained it while we were setting up.
+    assert_eq!(
+        session::test_only_pending_grew(&sid),
+        Some(final_size),
+        "both EOFs must still be queued, coalesced, when the swap is released"
+    );
+    session::test_gate::UPGRADE_PRE_DRAIN.release();
 
     let start = std::time::Instant::now();
     while start.elapsed() < Duration::from_secs(15) {
@@ -1735,25 +1758,45 @@ fn test_set_encoding_during_rebuild_serialization() {
         thread::sleep(Duration::from_millis(50));
     }
 
-    // Park the next rebuild so the first set_encoding can be superseded by
-    // the second BEFORE its scan starts.
-    session::test_only_set_rebuild_hold(800);
+    // Park the next rebuild so the first set_encoding is provably superseded
+    // by the second BEFORE its scan starts.
+    session::test_gate::REBUILD_PRE_SCAN.arm();
+    let stores_before = session::test_gate::rebuild_store_count();
+    let exits_before = session::test_gate::rebuild_exit_count();
 
-    // First call: triggers a rebuild that will sleep for 800 ms.
+    // First call: its rebuild thread parks at the gate.
     session::set_encoding(&sid, FileEncoding::Utf16Le).unwrap();
-    // Second call lands immediately; it cancels the in-flight rebuild and
-    // installs its own.
+    session::test_gate::REBUILD_PRE_SCAN.wait_until_reached(GATE_TIMEOUT);
+    // Second call lands while the first is held; it cancels the in-flight
+    // rebuild and installs its own. The gate is one-shot, so this rebuild
+    // runs straight through.
     session::set_encoding(&sid, FileEncoding::Utf16Be).unwrap();
+    // Release the superseded thread; it must notice it's no longer the owner
+    // and bail instead of storing its stale backend.
+    session::test_gate::REBUILD_PRE_SCAN.release();
 
-    // Wait for the rebuild storm to settle.
+    // Wait for BOTH rebuild threads to exit, not just for `rebuilding` to
+    // clear. The winner clears that flag while the superseded thread is still
+    // running, so asserting earlier would race right past a late stale store.
     let start = std::time::Instant::now();
     while start.elapsed() < Duration::from_secs(15) {
-        if !session::test_only_rebuilding_active(&sid) {
+        if session::test_gate::rebuild_exit_count() >= exits_before + 2 {
             break;
         }
-        thread::sleep(Duration::from_millis(50));
+        thread::sleep(Duration::from_millis(10));
     }
+    assert_eq!(
+        session::test_gate::rebuild_exit_count(),
+        exits_before + 2,
+        "both rebuild threads must finish"
+    );
     assert!(!session::test_only_rebuilding_active(&sid), "rebuild must settle");
+
+    assert_eq!(
+        session::test_gate::rebuild_store_count(),
+        stores_before + 1,
+        "exactly one rebuild may store: the superseded one must discard its backend"
+    );
 
     let opts = session::get_encoding_options(&sid).unwrap();
     assert_eq!(

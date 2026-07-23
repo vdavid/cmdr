@@ -274,10 +274,33 @@ event) still catches up. Pinned by `test_tail_extend_during_encoding_rebuild_dis
 **Tests must append with `append_test_file`, never `fs::write` of the whole grown content.** `fs::write` is
 `File::create` (`O_TRUNC`) + `write_all`, so it drops the file to 0 bytes mid-call. A background upgrade or rebuild scan
 that lands inside that window indexes an empty file and stores a 0-byte backend, and the live watcher sees a spurious
-`Shrunk` (→ `reload`). The wall-clock `test_only_set_upgrade_hold` / `test_only_set_rebuild_hold` parks don't prevent
-this: they're a scheduling hint, not a barrier, so on a loaded CI runner the scan can land anywhere. This is not a
-production concern (a real rewrite arrives as `Shrunk` / `Replaced` and reloads), purely an artifact of faking an append
-with a rewrite. `append_test_file` in `session_test.rs` only grows the file, so neither failure can happen.
+`Shrunk` (→ `reload`). This is not a production concern (a real rewrite arrives as `Shrunk` / `Replaced` and reloads),
+purely an artifact of faking an append with a rewrite. `append_test_file` only grows the file, so neither can happen.
+
+**Tests script the background threads with `session::test_gate`, never a timed sleep.** A sleep is a scheduling hint,
+so under load the worker runs past the intended window and the test either flakes or silently proves nothing. Each gate
+is a condvar handshake: the worker signals arrival, the test blocks until it lands, sets up, then releases. The worker
+holds no lock while parked, so the test can freely take `SESSIONS` and `pending_grew`.
+
+**Which gate a drain test parks at decides whether it tests anything.** `UPGRADE_PRE_DRAIN` / `REBUILD_PRE_DRAIN` park
+with the scan already finished, so an append made while parked is invisible to the fresh backend and can reach it only
+through `pending_grew`. Parking at `REBUILD_PRE_SCAN` instead lets the scan pick the append up off disk by itself, and
+the test then passes whether the drain works or not. Mutation-checked both ways: with the tests parked pre-scan,
+dropping the drained EOF outright left all 61 green; parked pre-drain, the same mutation fails
+`test_append_during_upgrade_not_dropped`, `test_append_between_drain_and_swap_not_dropped`, and
+`test_append_during_encoding_rebuild_not_dropped`. Keep new drain coverage on the pre-drain gates.
+
+**A superseded rebuild is stopped by three independent layers**, so no single-guard mutation shows up in the suite:
+`open_with_encoding` honours the cancel flag mid-scan, then the thread re-checks that flag, then it re-checks ownership
+via `Arc::ptr_eq` on `rebuilding`. Only removing all three lets a stale backend land, which
+`test_set_encoding_during_rebuild_serialization` then catches via `test_gate::rebuild_store_count`. Don't "simplify" one
+away on the grounds that tests stay green: they stay green because the other two cover it.
+
+**Every `pending_grew` write goes through `coalesce_pending_grew`, including the test hook.** The rule (keep the LARGER
+EOF, never shrink the queue) lived in five copies, one of them inside `test_only_push_pending_grew`, so the drain tests
+exercised a duplicate and a bug in the real rule sailed past them (mutation-confirmed: flipping production's `max` to
+`min` left everything green). One definition now, and that mutation fails
+`test_append_between_drain_and_swap_not_dropped`.
 
 **`watcher.rs` canonicalises paths** so `/var/folders/...` (the tempfile path on macOS) and `/private/var/folders/...`
 (the equivalent without the symlink) collapse into the same registration. `test_only_emit` walks the same stored

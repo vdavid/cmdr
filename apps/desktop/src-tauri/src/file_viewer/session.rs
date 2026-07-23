@@ -517,19 +517,13 @@ fn open_session_inner(path: &str, volume_id: &str, force_text: bool) -> Result<V
         // window is queued in `pending_grew` and consumed by the swap.
         let encoding_for_upgrade = detected_encoding;
         thread::spawn(move || {
-            // Test-only sleep hook: lets tests pin the upgrade thread mid-scan
-            // so they can race appends or other operations against the drain.
-            #[cfg(test)]
-            {
-                // `swap` self-clears so the next upgrade in this test process
-                // doesn't accidentally inherit the hold.
-                let hold = UPGRADE_SLEEP_HOOK.swap(0, Ordering::SeqCst);
-                if hold > 0 {
-                    thread::sleep(Duration::from_millis(hold));
-                }
-            }
             match LineIndexBackend::open_with_encoding(&path_clone, encoding_for_upgrade, &cancel_for_indexer) {
                 Ok(new_backend) => {
+                    // Test-only gate: park with the scan finished but the swap
+                    // not yet done, the exact window a watcher `Grew` has to
+                    // survive. Holds no lock. No-op unless a test armed it.
+                    #[cfg(test)]
+                    test_gate::UPGRADE_PRE_DRAIN.wait_if_armed();
                     if !cancel_for_indexer.load(Ordering::Relaxed) {
                         let sessions = SESSIONS.lock_ignore_poison();
                         if let Some(session) = sessions.get(&session_id_clone) {
@@ -569,31 +563,6 @@ fn open_session_inner(path: &str, volume_id: &str, force_text: bool) -> Result<V
     }
 
     Ok(result)
-}
-
-/// Test-only millisecond sleep injected at the start of the upgrade thread so
-/// tests can race appends or other operations against the drain-and-swap
-/// critical section deterministically. `0` disables the hold.
-#[cfg(test)]
-static UPGRADE_SLEEP_HOOK: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-
-/// Test-only: park the next upgrade thread for `ms` milliseconds before it
-/// starts scanning. Resets back to `0` after the spawn observes it.
-#[cfg(test)]
-#[allow(dead_code, reason = "consumed by session_test race-coverage tests")]
-pub fn test_only_set_upgrade_hold(ms: u64) {
-    UPGRADE_SLEEP_HOOK.store(ms, Ordering::SeqCst);
-}
-
-/// Test-only: park the next encoding-rebuild thread for `ms` milliseconds.
-/// Self-clears after the spawn observes it.
-#[cfg(test)]
-static REBUILD_SLEEP_HOOK: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-
-#[cfg(test)]
-#[allow(dead_code, reason = "consumed by session_test rebuild-serialization test")]
-pub fn test_only_set_rebuild_hold(ms: u64) {
-    REBUILD_SLEEP_HOOK.store(ms, Ordering::SeqCst);
 }
 
 /// Gets the current status of a session (backend type, indexing state).
@@ -1069,14 +1038,15 @@ pub fn set_encoding(session_id: &str, new_encoding: FileEncoding) -> Result<(), 
     let cancel_for_thread = cancel.clone();
     thread::spawn(move || {
         #[cfg(test)]
-        {
-            let hold = REBUILD_SLEEP_HOOK.swap(0, Ordering::SeqCst);
-            if hold > 0 {
-                thread::sleep(Duration::from_millis(hold));
-            }
-        }
+        let _exit_guard = RebuildExitGuard;
+        #[cfg(test)]
+        test_gate::REBUILD_PRE_SCAN.wait_if_armed();
         match LineIndexBackend::open_with_encoding(&path_clone, new_encoding, &cancel_for_thread) {
             Ok(new_backend) => {
+                // See the upgrade thread: parks with the scan done, before the
+                // drain-and-swap. Holds no lock.
+                #[cfg(test)]
+                test_gate::REBUILD_PRE_DRAIN.wait_if_armed();
                 if cancel_for_thread.load(Ordering::Relaxed) {
                     return;
                 }
@@ -1105,6 +1075,8 @@ pub fn set_encoding(session_id: &str, new_encoding: FileEncoding) -> Result<(), 
                         _ => Box::new(new_backend),
                     };
                     session.backend.store(Arc::new(final_backend));
+                    #[cfg(test)]
+                    test_gate::note_rebuild_store();
                     *session.backend_type.lock_ignore_poison() = BackendType::LineIndex;
                     *session.rebuilding.lock_ignore_poison() = None;
                     drop(pending_lock);
@@ -1128,54 +1100,6 @@ pub fn set_encoding(session_id: &str, new_encoding: FileEncoding) -> Result<(), 
     });
 
     Ok(())
-}
-
-/// Test-only hook: simulates a watcher `Grew(eof)` event by writing into the session's
-/// `pending_grew` queue. Drives `test_append_during_encoding_rebuild_not_dropped`
-/// without standing up the (milestone-3) FS watcher.
-#[cfg(test)]
-pub fn test_only_push_pending_grew(session_id: &str, eof: u64) {
-    let sessions = SESSIONS.lock_ignore_poison();
-    if let Some(session) = sessions.get(session_id) {
-        let mut q = session.pending_grew.lock_ignore_poison();
-        let next = match *q {
-            Some(prev) => prev.max(eof),
-            None => eof,
-        };
-        *q = Some(next);
-    }
-}
-
-/// Test-only hook: reads the current `pending_grew` queue value.
-#[cfg(test)]
-#[allow(dead_code, reason = "consumed by session_test race-coverage tests")]
-pub fn test_only_pending_grew(session_id: &str) -> Option<u64> {
-    let sessions = SESSIONS.lock_ignore_poison();
-    sessions
-        .get(session_id)
-        .and_then(|s| *s.pending_grew.lock_ignore_poison())
-}
-
-/// Test-only hook: reads the rebuilding flag's strong-count parity (Some/None) to
-/// help tests block-poll for completion without sleeping.
-#[cfg(test)]
-pub fn test_only_rebuilding_active(session_id: &str) -> bool {
-    let sessions = SESSIONS.lock_ignore_poison();
-    sessions
-        .get(session_id)
-        .map(|s| s.rebuilding.lock_ignore_poison().is_some())
-        .unwrap_or(false)
-}
-
-/// Returns the count of currently-active reads. Test-only helper for asserting that
-/// a cancelled or completed read cleaned up its `active_reads` entry.
-#[cfg(test)]
-pub fn active_read_count(session_id: &str) -> usize {
-    let sessions = SESSIONS.lock_ignore_poison();
-    let Some(session) = sessions.get(session_id) else {
-        return 0;
-    };
-    session.active_reads.lock_ignore_poison().len()
 }
 
 /// Closes a viewer session and frees resources.
@@ -1454,12 +1378,7 @@ fn apply_tail_extend(session_id: &str, new_size: u64) {
         // Re-check: an upgrade or rebuild may have started between the watcher
         // thread's read and this lock acquisition. Queue and bail in that case.
         if session.upgrading.lock_ignore_poison().is_some() || session.rebuilding.lock_ignore_poison().is_some() {
-            let mut q = session.pending_grew.lock_ignore_poison();
-            let next = match *q {
-                Some(prev) => prev.max(new_size),
-                None => new_size,
-            };
-            *q = Some(next);
+            coalesce_pending_grew(session, new_size);
             return;
         }
         let backend = session.backend.load_full();
@@ -1499,81 +1418,37 @@ fn apply_tail_extend(session_id: &str, new_size: u64) {
             "apply_tail_extend: backend changed during extend; discarding stale extend for session {}",
             session_id
         );
-        let mut q = session.pending_grew.lock_ignore_poison();
-        let next = match *q {
-            Some(prev) => prev.max(new_size),
-            None => new_size,
-        };
-        *q = Some(next);
+        coalesce_pending_grew(session, new_size);
     }
+}
+
+/// Queue an EOF for the next drain, coalescing with whatever is already there.
+///
+/// Always keeps the LARGER EOF: the queue means "the file is at least this
+/// big", so a later, smaller event must never shrink it. Every queue write
+/// goes through here, including the test hook, so the rule has one home.
+///
+/// Takes the session ref rather than the id because most callers already hold
+/// the `SESSIONS` lock; `push_pending_grew` is the id-taking wrapper.
+fn coalesce_pending_grew(session: &ViewerSession, new_size: u64) {
+    let mut q = session.pending_grew.lock_ignore_poison();
+    let next = match *q {
+        Some(prev) => prev.max(new_size),
+        None => new_size,
+    };
+    *q = Some(next);
 }
 
 fn push_pending_grew(session_id: &str, new_size: u64) {
     let sessions = SESSIONS.lock_ignore_poison();
     if let Some(session) = sessions.get(session_id) {
-        let mut q = session.pending_grew.lock_ignore_poison();
-        let next = match *q {
-            Some(prev) => prev.max(new_size),
-            None => new_size,
-        };
-        *q = Some(next);
+        coalesce_pending_grew(session, new_size);
     }
 }
 
-/// Test-only helper: drives the race in `apply_tail_extend` deterministically.
-///
-/// Simulates the timing the round-3 audit caught:
-/// 1. The watcher thread takes a backend snapshot.
-/// 2. Before its long `extend_to_boxed` returns, a separate concurrent
-///    activity (encoding rebuild, upgrade) installs a brand-new backend.
-/// 3. The watcher's eventual `store` must NOT clobber the new backend.
-///
-/// We script this by snapshotting the backend, calling `swap_callback` (which
-/// the test uses to install a fresh backend via, e.g., `reload` or
-/// `set_encoding`), then calling `extend_to_boxed` on the snapshot, then
-/// running the same ptr-eq check the production code uses to decide
-/// store-vs-discard. Returns `true` if the store was applied (snapshot still
-/// current), `false` if the extend was discarded.
 #[cfg(test)]
-#[allow(dead_code, reason = "consumed by session_test tail-extend clobber-race test")]
-pub fn test_only_run_tail_extend_with_swap(session_id: &str, new_size: u64, swap_callback: impl FnOnce()) -> bool {
-    let dummy_cancel = AtomicBool::new(false);
-    let backend_snapshot = {
-        let sessions = SESSIONS.lock_ignore_poison();
-        let session = sessions.get(session_id).expect("session must exist");
-        session.backend.load_full()
-    };
-    // Trigger the racing swap (the test installs a new backend here).
-    swap_callback();
-
-    let extended = backend_snapshot
-        .extend_to_boxed(new_size, &dummy_cancel)
-        .expect("extend should succeed");
-
-    let sessions = SESSIONS.lock_ignore_poison();
-    let session = sessions.get(session_id).expect("session must exist");
-    let current = session.backend.load_full();
-    if Arc::ptr_eq(&current, &backend_snapshot) {
-        session.backend.store(Arc::new(extended));
-        true
-    } else {
-        let mut q = session.pending_grew.lock_ignore_poison();
-        let next = match *q {
-            Some(prev) => prev.max(new_size),
-            None => new_size,
-        };
-        *q = Some(next);
-        false
-    }
-}
-
-/// Test-only helper: returns the current tail-mode flag.
+pub mod test_hooks;
+/// Re-exported so the gate points above and every test keep referring to
+/// `session::test_gate` / `session::test_only_*` unqualified.
 #[cfg(test)]
-#[allow(dead_code, reason = "consumed by session_test::tail_mode_can_be_toggled")]
-pub fn test_only_tail_mode(session_id: &str) -> bool {
-    let sessions = SESSIONS.lock_ignore_poison();
-    sessions
-        .get(session_id)
-        .map(|s| s.tail_mode.load(Ordering::Relaxed))
-        .unwrap_or(false)
-}
+pub use test_hooks::*;
