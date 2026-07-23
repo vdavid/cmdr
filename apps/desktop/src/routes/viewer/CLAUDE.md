@@ -35,8 +35,9 @@ Each line is a break-if-ignored invariant; the named `DETAILS.md` section carrie
 - **Selection / IPC offsets are UTF-16 code units, not bytes or graphemes.** Caret math (`viewer-pointer.ts`) and
   anything crossing `viewer_read_range` must preserve this; the backend converts to UTF-8 and clamps lone surrogates. (§
   "Selection model")
-- **`closeWindow()` and `windowReady` both defer via `setTimeout(0)`, never rAF.** A sync `close()` in a webview handler
-  stalls other webviews' IPC on the GTK tick; rAF starves in unfocused E2E windows and times out the suite. (§ Gotchas;
+- **`closeWindow()` defers via `deferWindowClose()` (100 ms, NOT 0), `windowReady` via `setTimeout(0)`; never rAF.** A
+  sync `close()` stalls other webviews' IPC on the GTK tick, a `0`-delay close lets macOS WebKit segfault the whole app
+  mid-teardown, and rAF starves in unfocused E2E windows. Don't lower it. (§ Gotchas; `$lib/window-close-defer`;
   `docs/testing.md` § "rAF in unfocused windows")
 - **Escape handling depends on listener order: the page's window keydown runs BEFORE `ViewerContextMenu`'s.** The page
   gates on `contextMenuPos !== null` before falling through to `closeWindow()`, else an open menu's Escape shuts the

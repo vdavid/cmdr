@@ -467,23 +467,36 @@ Only warn when the same key combo is used in overlapping scopes (for example, `M
 Both settings and shortcuts save immediately (after debounce). There's no undo stack. Users must use "Reset to default"
 to recover from mistakes.
 
-### Escape closing the settings window must defer `close()` past the current event-loop iteration
+### Escape closing the settings window must defer `close()` via `deferWindowClose()`
 
-`routes/settings/+page.svelte`'s `handleKeydown` wraps `getCurrentWindow().close()` in `setTimeout(() => …, 0)`
-(mirroring `routes/viewer/+page.svelte`'s `closeWindow()`). Calling `close()` synchronously from inside the keydown
-handler runs the destruction on the same GTK main-loop tick that handled the keydown. On Linux/webkit2gtk this stalls
-**any IPC call queued behind the destruction from other webviews** (e.g. the main window) for an undefined time
-(observed 60-65 % of test runs landing in the fast path, others timing out past 30 s). macOS uses WKWebView with
-per-webview processes and doesn't exhibit the GTK-stall issue.
+`routes/settings/+page.svelte`'s `handleKeydown` wraps `getCurrentWindow().close()` in `deferWindowClose()` from
+`$lib/window-close-defer` (mirroring `routes/viewer/+page.svelte`'s `closeWindow()`). Two separate problems force the
+defer, and the constant (`$lib/window-close-defer`) is set by the stricter one:
 
-**`setTimeout(0)` instead of two `requestAnimationFrame`s** — the earlier rAF-based version flaked on macOS E2E because
+- **Linux / webkit2gtk IPC stall.** Calling `close()` synchronously from inside the keydown handler runs the destruction
+  on the same GTK main-loop tick that handled the keydown, which stalls **any IPC call queued behind the destruction
+  from other webviews** (e.g. the main window) for an undefined time (observed 60-65 % of test runs landing in the fast
+  path, others timing out past 30 s). A next-tick defer (`0`) is enough for this one.
+- **macOS WebKit teardown crash.** Destroying this webview while a layer-tree commit from its web content process is
+  still in flight makes WebKit's UI-side `RemoteLayerTreeDrawingAreaProxy::commitLayerTree` dereference freed state and
+  kill the whole app with a `SIGSEGV`. A next-tick defer does NOT cover this, because the commit arrives on WebKit's own
+  IPC run loop rather than ours: at `0` ms a repro harness crashed the app on the 36th close, at `100` ms it survived 80
+  closes clean. **Don't lower the constant back to `0`.** Full investigation, crash signature, and the repro harness:
+  `docs/notes/child-window-close-webkit-crash.md`.
+
+The macOS crash is an upstream WebKit bug (verified on macOS 26.5.2 / 25F84); the defer mitigates our trigger rather
+than removing the race. Notably it is NOT caused by the settings window's transparency or vibrancy: the opaque file
+viewer churns renderers the same way.
+
+**`setTimeout` instead of two `requestAnimationFrame`s** — the earlier rAF-based version flaked on macOS E2E because
 WKWebView throttles `requestAnimationFrame` on windows that opened without focus (in E2E, `openSettingsWindow` passes
 `focus: false` so the host machine stays usable while tests run). Throttled rAFs could push the deferred close past the
-test's 3 s close-confirmation budget. `setTimeout(0)` isn't subject to the same throttling and still defers to the next
-event-loop tick, which is all the Linux fix needs.
+test's 3 s close-confirmation budget. `setTimeout` isn't subject to the same throttling, and a fixed delay is also what
+the macOS teardown crash needs.
 
-When adding a new self-closing webview (escape, close button, etc.), defer the `close()` call the same way. See commit
-`46481b29` for the original bug-fix and the subsequent settings-escape-flake hunt for the macOS-throttle follow-up.
+When adding a new self-closing webview (escape, close button, etc.), defer the `close()` call the same way, reusing
+`deferWindowClose()` rather than hand-rolling a `setTimeout` with a fresh number. See commit `46481b29` for the original
+bug-fix and the subsequent settings-escape-flake hunt for the macOS-throttle follow-up.
 
 The rAF-throttling half of this gotcha is a repo-wide rule with its own recurrence history (three sightings: settings
 close, viewer close, viewer readiness marker): `docs/testing.md` § "rAF in unfocused windows". Check there before gating

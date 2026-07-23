@@ -14,6 +14,7 @@
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { getLicenseTypeLabel, getStatusText } from './license-section-utils'
+    import { deferWindowClose } from '$lib/window-close-defer'
 
     let licenseInfo = $state<LicenseInfo | null>(null)
     let licenseStatus = $state<LicenseStatus | null>(null)
@@ -40,7 +41,13 @@
         // `COMMAND_IDS` entry (it's narrowed by `isCommandId` in `+page.svelte` before
         // dispatch). The `rust-command-id-drift.test.ts` test pins it to the registry.
         await emitExecuteCommand('app.licenseKey')
-        await getCurrentWindow().close()
+        // Defer like every other settings-window self-close: destroying the webview
+        // straight from a handler risks the macOS WebKit teardown crash (and stalls
+        // cross-webview IPC on webkit2gtk). See `$lib/window-close-defer`.
+        const win = getCurrentWindow()
+        deferWindowClose(() => {
+            void win.close()
+        })
     }
 
     async function handleBuyLicense() {

@@ -26,6 +26,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getAppLogger } from '$lib/logging/logger'
     import { pluralize } from '$lib/utils/pluralize'
+    import { deferWindowClose } from '$lib/window-close-defer'
     import { createViewerSearch } from './viewer-search.svelte'
     import { createViewerScroll } from './viewer-scroll.svelte'
     import { createTextWidthTracker } from './viewer-text-width.svelte'
@@ -431,17 +432,22 @@
         // Defer the close() past the current event-loop iteration so the keydown
         // handler (or whichever caller invoked us) can settle before webkit2gtk
         // begins destroying this webview — the Linux GTK-main-loop-stall fix.
-        // setTimeout(0) instead of nested rAFs: macOS WKWebView throttles rAF on
+        // setTimeout instead of nested rAFs: macOS WKWebView throttles rAF on
         // unfocused windows (e.g. the E2E case where a viewer opens without
         // grabbing focus), which can push close past the test's confirmation budget.
-        setTimeout(() => {
+        //
+        // The delay is a real one, not `0`: a next-tick defer covers the Linux
+        // stall but NOT the macOS WebKit teardown crash (destroying this webview
+        // while a layer-tree commit is still in flight segfaults the whole app).
+        // See `$lib/window-close-defer`.
+        deferWindowClose(() => {
             log.debug('closeWindow: calling close() after {elapsed}ms', {
                 elapsed: Math.round(performance.now() - start),
             })
             currentWindow.close().catch((e: unknown) => {
                 log.error('closeWindow: close failed: {error}', { error: String(e) })
             })
-        }, 0)
+        })
     }
 
     function toggleWordWrap(fromMenu = false) {

@@ -275,12 +275,18 @@ glyphs (the a11y labels and tooltips carry the real copy). The runtime works in 
   the run wraps to fit; without it, it overflows on one row. The probe must reproduce whatever `.line-text` does, or it
   over/under-counts and drifts the scroll. Keep the probe's flex row + `min-width:0` in lockstep with
   `.word-wrap .line-text` in `+page.svelte`. Pinned by the no-space-run line in `viewer-wordwrap-scroll.spec.ts` (E2E).
-- `closeWindow()`'s `setTimeout(() => …, 0)` before `currentWindow.close()` is load-bearing — not decoration. Calling
-  `close()` synchronously from inside a webview event handler runs webkit2gtk's destruction on the same GTK main-loop
-  tick, stalling other webviews' IPC for an undefined duration. The settings page (`routes/settings/+page.svelte`'s
-  Escape handler) mirrors this exact pattern for the same reason; see the Gotcha note in `lib/settings/CLAUDE.md` and
-  commit `46481b29` for the original post-mortem. `setTimeout(0)` achieves a "next event-loop tick" guarantee without
-  the rAF throttling that WKWebView applies to unfocused windows. **The same trap applies to `windowReady`** (the
-  `data-window-ready` attribute every viewer E2E spec waits on): it's set via `setTimeout(0)` after session open, NOT
-  rAF — an rAF there starved in unfocused E2E windows and timed out the whole viewer suite whenever a human was using
-  the machine. Canonical rule + recurrence history: `docs/testing.md` § "rAF in unfocused windows". </content> </invoke>
+- `closeWindow()`'s `deferWindowClose()` wrapper around `currentWindow.close()` is load-bearing — not decoration, and
+  the delay is a real `100` ms rather than `0`. It defends two different failures. (a) Calling `close()` synchronously
+  from inside a webview event handler runs webkit2gtk's destruction on the same GTK main-loop tick, stalling other
+  webviews' IPC for an undefined duration; a next-tick defer covers this. (b) On macOS, destroying a content-heavy
+  webview while a layer-tree commit from its web content process is in flight makes WebKit's
+  `RemoteLayerTreeDrawingAreaProxy::commitLayerTree` fault on freed state and kill the whole app with a `SIGSEGV`; a
+  next-tick defer does NOT cover this, because that commit arrives on WebKit's own IPC run loop. Measured: `0` ms
+  crashed on the 36th close, `100` ms survived 80 closes. Don't lower it, and keep both windows on the shared
+  `$lib/window-close-defer` constant. The settings page (`routes/settings/+page.svelte`'s Escape handler) mirrors this
+  exact pattern; see `lib/settings/DETAILS.md`, `docs/notes/child-window-close-webkit-crash.md`, and commit `46481b29`
+  for the original post-mortem. `setTimeout` also avoids the rAF throttling that WKWebView applies to unfocused windows.
+  **The same trap applies to `windowReady`** (the `data-window-ready` attribute every viewer E2E spec waits on): it's
+  set via `setTimeout(0)` after session open, NOT rAF — an rAF there starved in unfocused E2E windows and timed out the
+  whole viewer suite whenever a human was using the machine. Canonical rule + recurrence history: `docs/testing.md` §
+  "rAF in unfocused windows". </content> </invoke>

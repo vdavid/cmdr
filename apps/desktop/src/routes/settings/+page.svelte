@@ -26,6 +26,7 @@
     import { loadLastSettingsSection, saveLastSettingsSection } from '$lib/app-status-store'
     import { getAppLogger } from '$lib/logging/logger'
     import { trackOwnRect } from '$lib/window-positioning'
+    import { deferWindowClose } from '$lib/window-close-defer'
 
     const log = getAppLogger('settings')
 
@@ -254,17 +255,20 @@
             // the root cause of the Linux E2E flake on this binding. Mirrors
             // the pattern in `routes/viewer/+page.svelte`'s `closeWindow()`.
             //
-            // Uses `setTimeout(0)` instead of nested `requestAnimationFrame`s
+            // Uses `setTimeout` instead of nested `requestAnimationFrame`s
             // because macOS WKWebView throttles rAF for windows that opened
             // without focus (E2E case: `openSettingsWindow` passes `focus: false`
             // under `CMDR_E2E_MODE`). Throttled rAF can push the deferred
-            // close past the test's 3 s close-confirmation budget. setTimeout
-            // isn't subject to the same throttling and still defers to the
-            // next event-loop tick, which is all the Linux fix needs.
+            // close past the test's 3 s close-confirmation budget.
+            //
+            // The delay is a real one, not `0`: a next-tick defer covers the
+            // Linux stall but NOT the macOS WebKit teardown crash (destroying
+            // this webview while a layer-tree commit is still in flight
+            // segfaults the whole app). See `$lib/window-close-defer`.
             const win = getCurrentWindow()
-            setTimeout(() => {
+            deferWindowClose(() => {
                 void win.close()
-            }, 0)
+            })
         }
         // Prevent Space from triggering Quick Look (bound to Space in main window menu)
         // Space should only activate focused buttons/controls, not bubble up
@@ -381,16 +385,16 @@
             )
 
             // MCP can request that this window close (used by `dialog close settings`).
-            // Mirror the Escape-key handler: defer past the current event-loop iteration
-            // so the in-flight IPC ack can settle before webkit2gtk begins destroying
-            // the webview. See `handleKeydown` for why `setTimeout(0)` is used instead
-            // of nested rAFs.
+            // Mirror the Escape-key handler: defer the close so the in-flight IPC ack can
+            // settle before webkit2gtk begins destroying the webview, and so an in-flight
+            // layer-tree commit can drain before macOS WebKit tears the view down. See
+            // `handleKeydown` and `$lib/window-close-defer`.
             unlistenMcpClose = await onMcpSettingsClose(() => {
                 log.debug('Received mcp-settings-close, closing window')
                 const win = getCurrentWindow()
-                setTimeout(() => {
+                deferWindowClose(() => {
                     void win.close()
-                }, 0)
+                })
             })
 
             // On macOS the app-level menu bar is shared, so this window swaps in the

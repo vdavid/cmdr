@@ -51,8 +51,8 @@ Registry-based user settings: defined once in `settings-registry.ts`, accessed u
   `lib/ask-cmdr/DETAILS.md` § Model-change events.
 - **Cloud AI API keys live in the OS secret store, never `settings.json`** (`saveAiApiKey` / `getAiApiKey`);
   `ai.cloudProviderConfigs` holds only non-secret `model` / `baseUrl`.
-- **A self-closing webview defers `close()` past the current tick** (`setTimeout(0)`, not `rAF`): synchronous `close()`
-  stalls cross-webview IPC on webkit2gtk; `rAF` throttles in unfocused macOS windows. DETAILS § Gotchas.
+- **A self-closing webview defers `close()` via `deferWindowClose()`** (100 ms, never `0`/`rAF`): a sync `close()`
+  stalls cross-webview IPC on webkit2gtk, `0` lets macOS WebKit segfault the app mid-teardown. DETAILS § Gotchas.
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.
