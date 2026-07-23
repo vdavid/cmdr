@@ -18,7 +18,9 @@ vi.mock('$lib/settings', async () => {
   const types = await import('../types')
   return {
     getSetting: vi.fn(() => 20_000),
-    setSetting: (...args: unknown[]) => setSetting(...args),
+    setSetting: (...args: unknown[]) => {
+      setSetting(...args)
+    },
     getSettingDefinition: vi.fn(() => ({
       label: 'Mount timeout',
       description: '',
