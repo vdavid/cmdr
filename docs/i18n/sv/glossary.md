@@ -787,8 +787,8 @@ Reuses the settled indexing family (`indexera`/`indexering`, passive `indexeras`
   present-tense `Laddar ner…`. "reclaim {size}" → "frigör {size}" (verb of `reclaim.freed` "Frigjorde"). Confirm title
   reuses `Semantisk sökning`. `high`.
 - **keyword / tag search (in the delete-confirm body): `nyckelordssökning` / `taggsökning`; combined
-  `Nyckelords- och taggsökning`** · `nyckelord` (MS keyword) + `sökning`; `tagg` (catalog `Visa taggar`,
-  "macOS Finder-taggar") + `sökning`. "keep working" → "fortsätter fungera". `high`.
+  `Nyckelords- och taggsökning`** · `nyckelord` (MS keyword) + `sökning`; `tagg` (catalog `Visa taggar`, "macOS
+  Finder-taggar") + `sökning`. "keep working" → "fortsätter fungera". `high`.
 - **Indexing now (badge tooltip + progress heading, same EN source/sourceHash 44501db): `Indexeras nu`** · passive
   present of `indexera` (implied subject `bilden`/the drive), meaning actively being processed now, distinct from the
   queued `Väntar på att indexeras` (`file.pending`). Serves both `fileExplorer.imageIndex.file.indexing` and

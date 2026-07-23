@@ -661,8 +661,8 @@ delete flow, and the "Indexing now" file badge).
 - "search by description" (the friendly name for semantic search, kept distinct from the card title "Semantic search" →
   `Semantische Suche`) → `Suche per Beschreibung` · already shipped in `clip.ready` ("suche deine Fotos per
   Beschreibung"), reused verbatim across `semanticSearch.label` ("Fotos per Beschreibung suchen"), `clip.notSupported`,
-  `clip.offButInstalled`, and `clip.deleteConfirmBody` for one consistent term · high. ❌ Don't coin a `Beschreibungssuche`
-  compound; `per Beschreibung` is the shipped choice.
+  `clip.offButInstalled`, and `clip.deleteConfirmBody` for one consistent term · high. ❌ Don't coin a
+  `Beschreibungssuche` compound; `per Beschreibung` is the shipped choice.
 - "Enable indexing" (card title) → `Indizierung aktivieren`; "Folders to index" (card title) → `Zu indizierende Ordner`
   (parallels the shipped internal labels `Immer zu indizierende Ordner`/`… Laufwerke`) · enable → aktivieren, index →
   indizieren · high.
@@ -673,17 +673,17 @@ delete flow, and the "Indexing now" file badge).
 - reclaim / free (disk space, model-delete flow) → `freigeben` · macOS/pile ("Speicherplatz freigeben",
   "Festplattenplatz freigeben") · high. `deleteButton` "reclaim {size}" → `{size} freigeben`; `deleteConfirmBody` "This
   frees {size}" → `Das gibt {size} frei` (separable verb).
-- "the model is downloaded" (state) → `Das Modell ist heruntergeladen` · download → herunterladen (shipped `clip.download`
-  "Modell herunterladen") · high. "download the model again" → `das Modell … wieder herunterladen`.
+- "the model is downloaded" (state) → `Das Modell ist heruntergeladen` · download → herunterladen (shipped
+  `clip.download` "Modell herunterladen") · high. "download the model again" → `das Modell … wieder herunterladen`.
 - keyword search → `Suche nach Stichwörtern`; tag search → `Suche nach Tags` · keyword → Stichwort (KDE/GNOME pile
   "Stichwort"), tag → Tag (shipped "Finder-Tag") · high. `deleteConfirmBody`: "Die Suche nach Stichwörtern und Tags
   funktioniert weiter".
 - "couldn''t be removed just now" (model-delete failure, kept gentle) → `ließ sich gerade nicht entfernen` · glossary
   "Couldn''t X" → "X ließ sich nicht …" + the shipped `gerade nicht` calm idiom ("kann {name} gerade nicht indizieren",
-  "konnte dich gerade nicht anmelden"); remove → entfernen · high. "Try again in a moment" → `Versuche es gleich noch
-  einmal` (retry → erneut/noch einmal versuchen).
-- `clip.deleting` "Deleting…" → `Wird gelöscht…` · matched the sibling transient-button label `clip.downloading`
-  ("Wird heruntergeladen…", no space before the ellipsis) for a consistent download/delete button pair, rather than the
+  "konnte dich gerade nicht anmelden"); remove → entfernen · high. "Try again in a moment" →
+  `Versuche es gleich noch einmal` (retry → erneut/noch einmal versuchen).
+- `clip.deleting` "Deleting…" → `Wird gelöscht…` · matched the sibling transient-button label `clip.downloading` ("Wird
+  heruntergeladen…", no space before the ellipsis) for a consistent download/delete button pair, rather than the
   status-line space-before-ellipsis form · high.
 - "Apple silicon" kept verbatim (lowercase `silicon`, per the en @key "keep it"); no de-macOS rendering exists in the
   pile.
