@@ -558,12 +558,23 @@ impl MediaScheduler {
         // error bubble on the `?` below, so every exit path reports a terminal.
         let (progress, mut terminal) = self.pass_emitters(volume_id);
         let clip_stamp = crate::media_index::clip::current_stamp(&self.data_dir);
+        // Parallel workers (plan M2): the user's `mediaIndex.parallelism` capped by LIVE
+        // thermal pressure; at 1 (the default) the network pass runs its sequential loop
+        // unchanged. Extra workers get INDEPENDENT backends via the factory; the byte budget
+        // bounds the prefetch buffer so it can't blow the memory ceiling on a RAW-heavy NAS.
+        let factory = self.backend_factory.clone();
+        let make = move || factory();
+        let workers = || crate::media_index::thermal::current_pressure().cap(gate::parallelism());
+        let budget = network::budget::ByteBudget::new(network::budget::DEFAULT_PREFETCH_BUDGET_BYTES);
         let ctx = NetworkEnrichCtx {
             volume_id,
             mount_root: &mount_root,
             images: &images,
             statuses: &statuses,
             backend: self.backend.as_ref(),
+            make: &make,
+            workers: &workers,
+            budget: &budget,
             fetcher: &fetcher,
             writer: &writer,
             policy: &policy,

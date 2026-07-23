@@ -16,11 +16,24 @@ use crate::media_index::scheduler::enrich::ImageEntry;
 use crate::media_index::store::{EnrichmentState, MediaStatusRow, MediaStore, media_db_path};
 use crate::media_index::writer::MediaWriter;
 
+use super::budget::ByteBudget;
 use super::enrich::{NetworkEnrichCtx, NetworkPassOutcome, PauseReason, enrich_network_and_gc};
 use super::fetch::FakeByteFetcher;
 use super::policy::ConservativeFetchPolicy;
 
 const MOUNT: &str = "/Volumes/naspi";
+
+/// These tests drive the ONE-worker (sequential) network path, so the extra-worker seams
+/// are never exercised: `never_make` panics if reached, `one_worker` pins the count to 1,
+/// and `TEST_BUDGET` is an unused (but valid) prefetch budget. The parallel path has its own
+/// coverage in `budget.rs`, `pool/tests.rs`, and the parallel-specific cases below.
+fn never_make() -> std::sync::Arc<dyn crate::media_index::backend::VisionBackend> {
+    unreachable!("the one-worker network path never builds an extra backend")
+}
+fn one_worker() -> usize {
+    1
+}
+static TEST_BUDGET: std::sync::LazyLock<ByteBudget> = std::sync::LazyLock::new(|| ByteBudget::new(64 * 1024 * 1024));
 
 /// Open a fresh media store + writer for a scratch volume.
 fn media_writer(dir: &std::path::Path, volume_id: &str) -> MediaWriter {
@@ -75,6 +88,9 @@ fn defers_when_not_idle_enriches_nothing() {
         images: &images,
         statuses: &HashMap::new(),
         backend: &backend,
+        make: &never_make,
+        workers: &one_worker,
+        budget: &TEST_BUDGET,
         fetcher: &fetcher,
         writer: &writer,
         policy: &policy,
@@ -122,6 +138,9 @@ fn proceeds_when_idle_and_enriches_over_the_fetched_bytes() {
         images: &images,
         statuses: &HashMap::new(),
         backend: &backend,
+        make: &never_make,
+        workers: &one_worker,
+        budget: &TEST_BUDGET,
         fetcher: &fetcher,
         writer: &writer,
         policy: &policy,
@@ -169,6 +188,9 @@ fn bandwidth_throttle_is_invoked_per_fetched_image() {
         images: &images,
         statuses: &HashMap::new(),
         backend: &backend,
+        make: &never_make,
+        workers: &one_worker,
+        budget: &TEST_BUDGET,
         fetcher: &fetcher,
         writer: &writer,
         policy: &policy,
@@ -209,6 +231,9 @@ fn disconnect_mid_pass_keeps_completed_rows_and_writes_no_failure() {
         images: &images,
         statuses: &HashMap::new(),
         backend: &backend,
+        make: &never_make,
+        workers: &one_worker,
+        budget: &TEST_BUDGET,
         fetcher: &fetcher,
         writer: &writer,
         policy: &policy,
@@ -286,6 +311,9 @@ fn gc_does_not_fire_on_a_disconnect() {
         images: &images,
         statuses: &statuses,
         backend: &backend,
+        make: &never_make,
+        workers: &one_worker,
+        budget: &TEST_BUDGET,
         fetcher: &fetcher,
         writer: &writer,
         policy: &policy,
@@ -349,6 +377,9 @@ fn override_enriches_a_low_importance_folder_while_the_rest_defers() {
         images: &images,
         statuses: &HashMap::new(),
         backend: &backend,
+        make: &never_make,
+        workers: &one_worker,
+        budget: &TEST_BUDGET,
         fetcher: &fetcher,
         writer: &writer,
         policy: &policy,
@@ -393,6 +424,9 @@ fn search_answers_offline_after_the_volume_unmounts() {
         images: &images,
         statuses: &HashMap::new(),
         backend: &backend,
+        make: &never_make,
+        workers: &one_worker,
+        budget: &TEST_BUDGET,
         fetcher: &fetcher,
         writer: &writer,
         policy: &policy,
@@ -425,7 +459,6 @@ fn exclusion_landing_during_network_analyze_writes_no_row() {
     // filter veto (false), the exclude lands DURING analyze, and the pre-upsert
     // re-check (the second `is_excluded` call) drops the row. Modeled by a stateful
     // veto that flips false → true across its two calls.
-    use std::cell::Cell;
     let dir = tempfile::tempdir().expect("temp");
     let writer = media_writer(dir.path(), "smb-vol");
     let images = [image("/DCIM/a.jpg", 1, 10)];
@@ -435,18 +468,19 @@ fn exclusion_landing_during_network_analyze_writes_no_row() {
 
     let idle = || true;
     let cancel = || false;
-    let calls = Cell::new(0u32);
-    let excluded = |_: &str| {
-        let n = calls.get();
-        calls.set(n + 1);
-        n >= 1
-    };
+    // `AtomicU32` (not `Cell`) because `is_excluded` is now `+ Sync`; this test runs the
+    // one-worker sequential path, so the veto still flips false → true across its two calls.
+    let calls = std::sync::atomic::AtomicU32::new(0);
+    let excluded = |_: &str| calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst) >= 1;
     let ctx = NetworkEnrichCtx {
         volume_id: "smb-vol",
         mount_root: MOUNT,
         images: &images,
         statuses: &HashMap::new(),
         backend: &backend,
+        make: &never_make,
+        workers: &one_worker,
+        budget: &TEST_BUDGET,
         fetcher: &fetcher,
         writer: &writer,
         policy: &policy,
@@ -460,11 +494,199 @@ fn exclusion_landing_during_network_analyze_writes_no_row() {
     };
     let outcome = enrich_network_and_gc(&ctx).expect("pass");
     assert!(matches!(outcome, NetworkPassOutcome::Completed(s) if s.enriched == 0));
-    assert!(calls.get() >= 2, "the veto is re-checked before the upsert");
+    assert!(calls.load(std::sync::atomic::Ordering::SeqCst) >= 2, "the veto is re-checked before the upsert");
     let store = MediaStore::open(&media_db_path(dir.path(), "smb-vol")).expect("reopen");
     assert!(
         store.status_for("/DCIM/a.jpg").expect("read").is_none(),
         "nothing persisted for the mid-analyze network exclusion"
     );
+    writer.shutdown();
+}
+
+// ── The parallel (N-worker) network path (plan M2) ──────────────────────────
+
+/// An instrumented backend shared by every parallel worker: records per-path call counts
+/// and the peak simultaneous `analyze_media`, and sleeps a little so overlap is real.
+/// Delegates results to an inner [`FakeVisionBackend`].
+struct ParallelProbe {
+    inner: FakeVisionBackend,
+    in_flight: std::sync::atomic::AtomicUsize,
+    peak: std::sync::atomic::AtomicUsize,
+    calls: std::sync::Mutex<HashMap<String, usize>>,
+    delay: Duration,
+}
+
+impl ParallelProbe {
+    fn new(delay: Duration) -> std::sync::Arc<Self> {
+        std::sync::Arc::new(Self {
+            inner: FakeVisionBackend::new(),
+            in_flight: std::sync::atomic::AtomicUsize::new(0),
+            peak: std::sync::atomic::AtomicUsize::new(0),
+            calls: std::sync::Mutex::new(HashMap::new()),
+            delay,
+        })
+    }
+    fn peak(&self) -> usize {
+        self.peak.load(std::sync::atomic::Ordering::SeqCst)
+    }
+    fn max_calls_for_any_path(&self) -> usize {
+        use crate::ignore_poison::IgnorePoison;
+        self.calls.lock_ignore_poison().values().copied().max().unwrap_or(0)
+    }
+}
+
+impl crate::media_index::backend::VisionBackend for ParallelProbe {
+    fn engine_version(&self) -> String {
+        self.inner.engine_version()
+    }
+    fn taxonomy_version(&self) -> String {
+        self.inner.taxonomy_version()
+    }
+    fn ocr(
+        &self,
+        input: &crate::media_index::backend::ImageInput,
+    ) -> Result<crate::media_index::backend::OcrResult, crate::media_index::backend::VisionError> {
+        self.inner.ocr(input)
+    }
+    fn analyze(
+        &self,
+        input: &crate::media_index::backend::ImageInput,
+    ) -> Result<crate::media_index::backend::Analysis, crate::media_index::backend::VisionError> {
+        self.inner.analyze(input)
+    }
+    fn analyze_media(
+        &self,
+        input: &crate::media_index::backend::ImageInput,
+        want_vision: bool,
+        want_clip: bool,
+    ) -> Result<crate::media_index::backend::MediaAnalysis, crate::media_index::backend::VisionError> {
+        use crate::ignore_poison::IgnorePoison;
+        use std::sync::atomic::Ordering;
+        let cur = self.in_flight.fetch_add(1, Ordering::SeqCst) + 1;
+        self.peak.fetch_max(cur, Ordering::SeqCst);
+        *self.calls.lock_ignore_poison().entry(input.path.clone()).or_insert(0) += 1;
+        std::thread::sleep(self.delay);
+        let r = self.inner.analyze_media(input, want_vision, want_clip);
+        self.in_flight.fetch_sub(1, Ordering::SeqCst);
+        r
+    }
+}
+
+#[test]
+fn parallel_network_enriches_each_path_once_and_the_byte_budget_bounds_concurrency() {
+    let dir = tempfile::tempdir().expect("temp");
+    let writer = media_writer(dir.path(), "smb-vol");
+    // 40 images, each 10 bytes on the wire; the pass reserves `image.size` (10) per file.
+    let images: Vec<ImageEntry> = (0..40).map(|i| image(&format!("/DCIM/img{i:03}.jpg"), 1, 10)).collect();
+    let mut fetcher = FakeByteFetcher::new();
+    for img in &images {
+        fetcher = fetcher.with_bytes(os(&img.path), vec![0u8; 10]);
+    }
+    let backend = ParallelProbe::new(Duration::from_micros(300));
+    let make_backend = backend.clone();
+    let make = move || make_backend.clone() as std::sync::Arc<dyn crate::media_index::backend::VisionBackend>;
+    let four = || 4usize;
+    // A budget of 25 bytes admits at most TWO 10-byte reservations at once, so the pass
+    // never has more than two images fetched-and-computing — the byte budget, not the four
+    // workers, is the bound. Proves byte-bounded prefetch end to end (no deadlock, no
+    // over-buffering).
+    let budget = ByteBudget::new(25);
+    let idle = || true;
+    let cancel = || false;
+    let ctx = NetworkEnrichCtx {
+        volume_id: "smb-vol",
+        mount_root: MOUNT,
+        images: &images,
+        statuses: &HashMap::new(),
+        backend: backend.as_ref(),
+        make: &make,
+        workers: &four,
+        budget: &budget,
+        fetcher: &fetcher,
+        writer: &writer,
+        policy: &ConservativeFetchPolicy::default(),
+        is_idle: &idle,
+        should_enrich: &always_enrich,
+        is_excluded: &never_excluded,
+        cancel: &cancel,
+        sleep: &no_sleep,
+        progress: &NoopProgressSink,
+        clip_stamp: None,
+    };
+    let outcome = enrich_network_and_gc(&ctx).expect("pass");
+    assert!(matches!(outcome, NetworkPassOutcome::Completed(s) if s.enriched == 40));
+    assert_eq!(backend.max_calls_for_any_path(), 1, "no double-enrichment across workers");
+    assert!(backend.peak() <= 2, "byte budget should bound concurrency to 2, saw {}", backend.peak());
+    // Every row landed through the single writer.
+    let statuses = crate::media_index::scheduler::enrich::load_statuses(dir.path(), "smb-vol");
+    assert_eq!(statuses.len(), 40);
+    writer.shutdown();
+}
+
+#[test]
+fn parallel_network_disconnect_drains_workers_and_skips_gc() {
+    let dir = tempfile::tempdir().expect("temp");
+    let writer = media_writer(dir.path(), "smb-vol");
+    // Seed a stored row NOT in this walk: a clean completion would GC it; a disconnect must not.
+    let mut statuses = HashMap::new();
+    statuses.insert(
+        "/DCIM/gone.jpg".to_string(),
+        MediaStatusRow {
+            path: "/DCIM/gone.jpg".into(),
+            mtime: Some(1),
+            size: Some(1),
+            media_kind: MediaKind::Image,
+            state: EnrichmentState::Done,
+            engine_version: "old".into(),
+            clip_stamp: String::new(),
+        },
+    );
+    let images: Vec<ImageEntry> = (0..20).map(|i| image(&format!("/DCIM/img{i:03}.jpg"), 1, 10)).collect();
+    let mut fetcher = FakeByteFetcher::new();
+    for img in &images {
+        fetcher = fetcher.with_bytes(os(&img.path), vec![0u8; 10]);
+    }
+    // The 11th image disconnects (unmount mid-pass).
+    fetcher = fetcher.disconnect_on(os("/DCIM/img010.jpg"));
+    let backend = ParallelProbe::new(Duration::from_micros(200));
+    let make_backend = backend.clone();
+    let make = move || make_backend.clone() as std::sync::Arc<dyn crate::media_index::backend::VisionBackend>;
+    let four = || 4usize;
+    let budget = ByteBudget::new(100);
+    let idle = || true;
+    let cancel = || false;
+    let ctx = NetworkEnrichCtx {
+        volume_id: "smb-vol",
+        mount_root: MOUNT,
+        images: &images,
+        statuses: &statuses,
+        backend: backend.as_ref(),
+        make: &make,
+        workers: &four,
+        budget: &budget,
+        fetcher: &fetcher,
+        writer: &writer,
+        policy: &ConservativeFetchPolicy::default(),
+        is_idle: &idle,
+        should_enrich: &always_enrich,
+        is_excluded: &never_excluded,
+        cancel: &cancel,
+        sleep: &no_sleep,
+        progress: &NoopProgressSink,
+        clip_stamp: None,
+    };
+    let outcome = enrich_network_and_gc(&ctx).expect("pass");
+    let NetworkPassOutcome::Paused { summary, reason } = outcome else {
+        panic!("a mid-pass disconnect must pause, not complete");
+    };
+    assert_eq!(reason, PauseReason::Disconnected);
+    assert_eq!(summary.gc_count, 0, "a paused pass never GCs");
+    // The pre-disconnect images that were fetched were still computed (drained), and none
+    // was double-enriched.
+    assert!(summary.enriched >= 1, "workers drained fetched jobs before pausing");
+    assert_eq!(backend.max_calls_for_any_path(), 1);
+    // `gc_count == 0` (asserted above) is the data-safety guarantee: a paused pass runs no
+    // deletions at all, so a mount blip can't wipe coverage. The seeded stale row is only in
+    // the in-memory `statuses` (never persisted), so a DB-survival check would be vacuous.
     writer.shutdown();
 }

@@ -15,6 +15,7 @@
 //! [`super::scheduler`]; the read API answers OFFLINE from `media.db` after unmount
 //! (plan Decision 8), so a network volume's photos stay searchable with the NAS gone.
 
+pub(crate) mod budget;
 pub mod config;
 pub mod enrich;
 pub mod fetch;
