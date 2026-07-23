@@ -269,9 +269,11 @@ Compress rides the SAME dialog/progress/state components as copy/move via a thir
   `behavior.archiveCompressionLevel` setting the slider writes), shows a loading affordance while a local scan runs, and
   renders nothing when the estimate is absent. The sampler, budgets, and level curve are single-sourced in
   `apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "Compressed-size estimate".
-- **The Copy / Move / Compress row is the `ui/ToggleGroup` primitive** (`semantics: 'tabs'`, `fullWidth`), wrapped in a
-  `.operation-toggle` div that supplies only the side inset. E2E and unit tests select its cells as
-  `.operation-toggle .tg-item` / `.tg-item.is-active`.
+- **The Copy / Move / Compress row is the `ui/ToggleGroup` primitive** (`semantics: 'toggles'`, `fullWidth`), wrapped in
+  a `.operation-toggle` div that supplies only the side inset. `toggles`, not `tabs`: the row picks a stored value and
+  has no tab panels, so AT should hear "toggle button, Compress, pressed" rather than a promised "tab 1 of 3". E2E and
+  unit tests select its cells as `.operation-toggle .tg-item`, and the active one as `.tg-item[data-state='on']` (the
+  `tabs` branch marks it with `.is-active` instead).
 - **Both compress-only blocks live in one `.compress-extras` wrapper** that owns their `--spacing-xl` side inset (the
   dialog runs `padded={false}`, so every body section insets itself) and gives the mode switch a single element to
   `transition:slide`. The dialog passes `growDownward` to `ModalDialog` so the extra height extends downward instead of

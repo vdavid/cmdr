@@ -114,8 +114,9 @@
     let isOpen = $state(false)
 
     // The segmented action toggle. Labels resolve reactively so a locale switch
-    // re-renders them; the group drives the whole dialog's mode, hence `tabs`
-    // semantics rather than `toggles`.
+    // re-renders them. `toggles` semantics, not `tabs`: there are no tab panels here,
+    // so "toggle button, Compress, pressed" is the honest announcement — `tabs` would
+    // promise a "tab 1 of 3" structure that doesn't exist.
     const operationOptions = $derived<ToggleGroupOption[]>([
         { value: 'copy', label: tString('fileOperations.transferDialog.toggleCopy') },
         { value: 'move', label: tString('fileOperations.transferDialog.toggleMove') },
@@ -512,7 +513,7 @@
         <!-- Copy / Move / Compress -->
         <div class="operation-toggle">
             <ToggleGroup
-                semantics="tabs"
+                semantics="toggles"
                 value={activeOperationType}
                 options={operationOptions}
                 onChange={(next: string) => (activeOperationType = next as TransferOperationType)}

@@ -2527,7 +2527,6 @@
     </div>
     <!-- SelectionInfo shown in both modes (not in network view, MTP connecting state, or error states) -->
     {#if paneViewKind === 'normal' && !friendlyError && !error && !unreachable}
-        <!--suppress HtmlWrongAttributeValue -- We know this is not a valid ARIA role, it's fine -->
         {#if !isDiskImageVolume}
         <div
             class="disk-usage-bar-wrapper"
