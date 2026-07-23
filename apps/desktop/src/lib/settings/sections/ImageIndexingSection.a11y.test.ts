@@ -34,7 +34,8 @@ vi.mock('$lib/tauri-commands', () => ({
   mediaIndexCoveredCount: (t: number, ids: string[]) => coveredCount(t, ids),
   mediaIndexVolumeState: (v: string) => volumeState(v),
   mediaIndexFolderCoverage: () => Promise.resolve([]),
-  mediaIndexClipModelStatus: () => Promise.resolve({ supported: false, installed: false, configured: false, downloadBytes: 0 }),
+  mediaIndexClipModelStatus: () =>
+    Promise.resolve({ supported: false, installed: false, configured: false, downloadBytes: 0 }),
   mediaIndexDownloadClipModel: () => Promise.resolve(),
   mediaIndexDeleteClipModel: () => Promise.resolve(),
 }))

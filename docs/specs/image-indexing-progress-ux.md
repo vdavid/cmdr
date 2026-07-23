@@ -1,7 +1,8 @@
 # Image-indexing progress + settings UX
 
-Four changes in the image-indexing area, per David. Decisions are LOCKED (see each section). Smart-backend/thin-frontend,
-house UI primitives, every user-facing string i18n'd (translator pass follows for all 10 locales), `pnpm check`.
+Four changes in the image-indexing area, per David. Decisions are LOCKED (see each section).
+Smart-backend/thin-frontend, house UI primitives, every user-facing string i18n'd (translator pass follows for all 10
+locales), `pnpm check`.
 
 ## 1. Honesty fix: a distinct "indexing" state (no false "pending" flash)
 
@@ -36,8 +37,8 @@ The top-right hourglass (`IndexingStatusIndicator.svelte`) ALREADY shows image i
 - LOCKED: keep **per-volume** rows and **per-minute** rate (David prefers both). Do NOT switch to per-second or an
   aggregate.
 - Only gap: this summary isn't shown inside Settings. Extract a reusable summary component from `IndexingEnrichRow` (or
-  render `IndexingEnrichRow`s directly) and embed it in the "Enable indexing" card (§3), showing the same per-drive
-  "N of M images", rate, and ETA whenever a pass is running. No new backend, no new ETA math.
+  render `IndexingEnrichRow`s directly) and embed it in the "Enable indexing" card (§3), showing the same per-drive "N
+  of M images", rate, and ETA whenever a pass is running. No new backend, no new ETA math.
 
 ## 3. Restructure `Settings > Indexing > Image indexing` into three cards
 
@@ -55,28 +56,30 @@ Today `ImageIndexingSection.svelte` is ONE `SectionCard`. Split into three (card
    sources get indexed, unrelated to semantic search), and excluded folders.
 3. **Semantic search** — `MediaIndexClipModel` only, with a real on/off (see §4) and clarified copy; NO network text.
 
-Update `ImageIndexingSection.a11y.test.ts` and the section's svelte test. New i18n keys for the three card titles +
-any summary strings.
+Update `ImageIndexingSection.a11y.test.ts` and the section's svelte test. New i18n keys for the three card titles + any
+summary strings.
 
 ## 4. Semantic search: a real on/off toggle + delete-model action (LOCKED: option b)
 
 Today CLIP semantic search has NO on/off and NO uninstall — downloading the model is the de-facto opt-in
-(`media_index_clip_model_status` / `media_index_download_clip_model`, `ClipModelStatus` `supported|configured|installed`,
-`commands.rs:660-701`). David wants a genuine toggle.
+(`media_index_clip_model_status` / `media_index_download_clip_model`, `ClipModelStatus`
+`supported|configured|installed`, `commands.rs:660-701`). David wants a genuine toggle.
 
 Backend (new work — keep it minimal and correct):
+
 - Add a `mediaIndex.semanticSearch.enabled` setting (registry `definitions/indexing.ts`, `types.ts`, live-applied via
   `settings-applier.ts` → a new `media_index_set_semantic_search_enabled` command + gate atomic, mirroring the existing
   scope/threshold gate atomics in `gate.rs`).
 - Gate BOTH the read (`search_semantic` returns `[]` when off) AND the CLIP embedding writes (skip `want_clip` in the
   analyze/enrich path when off) so turning it off stops new CLIP work. Confirm the exact seams:
   `analyze_media(want_vision, want_clip)` and `search_semantic` (`read/` + `scheduler/`).
-- Add a `media_index_delete_clip_model` command that removes the downloaded model artifacts + the
-  `media_clip_embedding` rows (reclaim disk) and returns to `configured`/`supported` status. Reuse the existing model
-  path resolution and the writer's clip-embedding delete primitives. TDD the gate + delete where practical.
+- Add a `media_index_delete_clip_model` command that removes the downloaded model artifacts + the `media_clip_embedding`
+  rows (reclaim disk) and returns to `configured`/`supported` status. Reuse the existing model path resolution and the
+  writer's clip-embedding delete primitives. TDD the gate + delete where practical.
 - Regenerate specta bindings; wrap the new commands in `tauri-commands/media-index.ts`.
 
 Frontend (in the Semantic search card):
+
 - A toggle bound to `mediaIndex.semanticSearch.enabled`. When on and no model installed, show the Download button
   (existing `MediaIndexClipModel` flow); when installed, show "Enabled" + a "Delete model (reclaim N)" button →
   `media_index_delete_clip_model`. Honest copy: what it does ("search photos by description"), on-device, the model
