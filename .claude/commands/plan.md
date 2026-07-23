@@ -1,9 +1,8 @@
 Plan the feature implementation we discussed.
 
 1. **Work on a worktree.** Create a worktree branched off local `main` and write the plan there, so execution can run on
-   the same worktree with your context preserved (see `solo-dev-workflow.md` and `worktree-base-local-main.md`; set up
-   per-worktree CodeGraph per `codegraph-worktree.md`). For a tiny plan you don't intend to execute as a separate
-   effort, ask first whether a worktree is warranted.
+   the same worktree with your context preserved (set up per-worktree CodeGraph per `codegraph-worktree.md`). For a tiny
+   plan you don't intend to execute as a separate effort, ask first whether a worktree is warranted.
 2. Collect context from related `CLAUDE.md` files (and, for an area you're about to change structurally, its colocated
    `DETAILS.md` for the full architecture and decisions) or `docs/`, as needed. Plan with our core product design values
    and design principles front of mind.
