@@ -11,7 +11,12 @@
 //!
 //! The `.mlpackage` towers are compiled to `.mlmodelc` on-device at first load (via
 //! `compileModelAtURL:error:`) and the compiled bundle is cached beside the model so later
-//! launches skip the 1–2 s compile.
+//! launches skip the 1–2 s compile. After a verified compile (both towers load AND encode a
+//! sane embedding) the ~550 MB combined `.mlpackage` sources are deleted (plan M5a — the
+//! compiled model is all the worker needs); if a compiled model later fails to load (an OS
+//! upgrade can invalidate it) with no source to recompile from, [`load_tower`] drops the
+//! stale `.mlmodelc` so the feature reads as not-installed and the standard download flow
+//! refetches the pinned zip.
 
 use std::path::{Path, PathBuf};
 use std::sync::mpsc;
@@ -27,7 +32,9 @@ use objc2_core_ml::{
 use objc2_foundation::{NSArray, NSDictionary, NSNumber, NSString, NSURL};
 
 use super::ClipError;
-use super::install::{CLIP_TOWERS, clip_model_dir};
+use super::install::{
+    CLIP_TOWERS, ClipTowerSpec, clip_model_dir, compiled_path, drop_compiled, package_path, reclaim_source_package,
+};
 use super::tokenizer::CONTEXT_LENGTH;
 
 /// The CLIP embedding dimensionality (OpenAI CLIP ViT-B/32). Both towers output this.
@@ -90,6 +97,23 @@ impl ClipWorker {
 /// fails to load, every job returns the load error (the feature stays gated off).
 fn worker_loop(model_dir: &Path, receiver: &mpsc::Receiver<ClipJob>) {
     let models = load_towers(model_dir);
+    // M5a: once both towers load AND a zero-input encode is sane (512-d, finite — not the
+    // NaN a bad palettization would emit), the ~550 MB combined `.mlpackage` sources are dead
+    // weight (the compiled `.mlmodelc` is all the worker needs), so reclaim them. A failed
+    // sanity check keeps the sources so a recompile stays possible.
+    if let Ok(m) = &models
+        && verify_sane(m)
+    {
+        for tower in CLIP_TOWERS {
+            match reclaim_source_package(model_dir, tower) {
+                Ok(true) => {
+                    log::info!(target: "media_index", "reclaimed CLIP source package '{}' after verified compile", tower.artifact)
+                }
+                Ok(false) => {}
+                Err(e) => log::warn!(target: "media_index", "reclaim of CLIP source '{}' failed: {e}", tower.artifact),
+            }
+        }
+    }
     while let Ok(job) = receiver.recv() {
         match job {
             ClipJob::EncodeText { ids, reply } => {
@@ -116,46 +140,69 @@ struct ClipModels {
     text: Retained<MLModel>,
 }
 
-/// Load (compiling + caching `.mlmodelc` as needed) both towers from the install dir.
+/// Load both towers from the install dir, each with the M5a recovery path.
 fn load_towers(model_dir: &Path) -> Result<ClipModels, ClipError> {
-    let image_pkg = model_dir.join(CLIP_TOWERS[0].package_dir);
-    let text_pkg = model_dir.join(CLIP_TOWERS[1].package_dir);
-    if !image_pkg.is_dir() || !text_pkg.is_dir() {
-        return Err(ClipError::NotAvailable);
-    }
     Ok(ClipModels {
-        image: load_one(&image_pkg)?,
-        text: load_one(&text_pkg)?,
+        image: load_tower(model_dir, &CLIP_TOWERS[0])?,
+        text: load_tower(model_dir, &CLIP_TOWERS[1])?,
     })
 }
 
-/// Compile (or reuse a cached `.mlmodelc`) and load one tower with `MLComputeUnits::All`.
-fn load_one(pkg_path: &Path) -> Result<Retained<MLModel>, ClipError> {
+/// Load one tower, recovering across the M5a package-reclaim (plan M5a):
+///
+/// 1. Prefer the cached `.mlmodelc`. If it loads, done — this is the steady state once the
+///    `.mlpackage` source has been reclaimed.
+/// 2. If the cached `.mlmodelc` fails to load (an OS upgrade can invalidate a compiled
+///    model), drop it and fall through.
+/// 3. If the `.mlpackage` source is present, compile it, cache the `.mlmodelc`, and load.
+/// 4. If neither a loadable compiled model nor a source package remains, return
+///    [`ClipError::NotAvailable`]. Step 2 already deleted any stale `.mlmodelc`, so
+///    [`is_installed`](super::install::is_installed) now reads `false` and the standard
+///    download flow refetches the pinned zip — a graceful re-download, never a dead feature.
+fn load_tower(model_dir: &Path, tower: &ClipTowerSpec) -> Result<Retained<MLModel>, ClipError> {
+    let compiled = compiled_path(model_dir, tower);
+    let package = package_path(model_dir, tower);
+
+    if compiled.is_dir() {
+        match load_model_at(&file_url(&compiled)) {
+            Ok(model) => return Ok(model),
+            Err(e) => {
+                log::warn!(target: "media_index", "compiled CLIP tower '{}' won't load ({e}); dropping the stale `.mlmodelc`", tower.artifact);
+                let _ = drop_compiled(model_dir, tower);
+            }
+        }
+    }
+
+    if package.is_dir() {
+        let compiled_url = compile_and_cache(&package, &compiled)?;
+        return load_model_at(&compiled_url);
+    }
+
+    Err(ClipError::NotAvailable)
+}
+
+/// Load a compiled `.mlmodelc` at `url` with `MLComputeUnits::All`.
+fn load_model_at(url: &NSURL) -> Result<Retained<MLModel>, ClipError> {
     autoreleasepool(|_| {
-        let compiled = compiled_url_for(pkg_path)?;
         // SAFETY: `new()` constructs a valid, fresh `MLModelConfiguration` (no arguments,
         // no preconditions); the returned handle is retained and owned here.
         let config = unsafe { MLModelConfiguration::new() };
         // SAFETY: `config` is a freshly created, valid configuration; `All` is a valid
         // enum value. Sets the compute units before load so Core ML picks the ANE.
         unsafe { config.setComputeUnits(MLComputeUnits::All) };
-        // SAFETY: `compiled` is a valid file URL to a compiled `.mlmodelc`; `config` is a
-        // valid configuration. The `_error` variant returns `Err(NSError)` on failure
-        // rather than throwing, so a bad model is a typed error, not a panic.
-        let model = unsafe { MLModel::modelWithContentsOfURL_configuration_error(&compiled, &config) }
+        // SAFETY: `url` is a valid file URL to a compiled `.mlmodelc`; `config` is a valid
+        // configuration. The `_error` variant returns `Err(NSError)` on failure rather than
+        // throwing, so a bad model is a typed error, not a panic.
+        let model = unsafe { MLModel::modelWithContentsOfURL_configuration_error(url, &config) }
             .map_err(|e| ClipError::Load(e.to_string()))?;
         Ok(model)
     })
 }
 
-/// The URL of a compiled `.mlmodelc` for `pkg_path`: a cached sibling if present, else
-/// compile the `.mlpackage` on-device and cache the result (compilation is OS-version
-/// specific, so it's never bundled).
-fn compiled_url_for(pkg_path: &Path) -> Result<Retained<NSURL>, ClipError> {
-    let cache = pkg_path.with_extension("mlmodelc");
-    if cache.is_dir() {
-        return Ok(file_url(&cache));
-    }
+/// Compile a `.mlpackage` on-device and cache the resulting `.mlmodelc` at `cache`, returning
+/// the URL to load from (the cached copy, or the temp URL if the cache copy failed).
+/// Compilation is OS-version specific, so it's never bundled.
+fn compile_and_cache(pkg_path: &Path, cache: &Path) -> Result<Retained<NSURL>, ClipError> {
     let pkg_url = file_url(pkg_path);
     // The synchronous compile is deprecated in favor of the async completion-handler
     // variant, but we WANT to block here (the worker thread serializes load anyway), so a
@@ -172,11 +219,25 @@ fn compiled_url_for(pkg_path: &Path) -> Result<Retained<NSURL>, ClipError> {
     let temp_path = url_to_path(&temp).ok_or_else(|| ClipError::Load("compiled model URL had no path".into()))?;
     // Cache the compiled bundle beside the package so later launches skip compilation.
     // Best-effort: if the copy fails, load straight from the temp URL for this session.
-    if copy_dir_recursive(&temp_path, &cache).is_ok() {
-        Ok(file_url(&cache))
+    if copy_dir_recursive(&temp_path, cache).is_ok() {
+        Ok(file_url(cache))
     } else {
         Ok(temp)
     }
+}
+
+/// Whether both towers produce a sane embedding from a zero input — the M5a delete-guard
+/// (512-d and all-finite, so a NaN-emitting model keeps its source rather than reclaiming
+/// it). Runs one throwaway encode per tower on the worker thread at first load.
+fn verify_sane(models: &ClipModels) -> bool {
+    let image_ok = is_sane_embedding(&models.encode_image(&vec![0.0f32; IMAGE_PIXELS]));
+    let text_ok = is_sane_embedding(&models.encode_text(&vec![0i32; CONTEXT_LENGTH]));
+    image_ok && text_ok
+}
+
+/// A produced embedding is sane when it's the expected width and holds no NaN/inf.
+fn is_sane_embedding(result: &Result<Vec<f32>, ClipError>) -> bool {
+    matches!(result, Ok(v) if v.len() == EMBED_DIM && v.iter().all(|x| x.is_finite()))
 }
 
 impl ClipModels {

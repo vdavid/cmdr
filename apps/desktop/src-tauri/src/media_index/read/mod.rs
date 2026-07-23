@@ -101,13 +101,14 @@ impl MediaIndex {
             return Ok(Vec::new());
         }
         let conn = open_read_connection(&self.db_path)?;
-        // `snippet(media_ocr, 2, ...)`: column 2 is `text` (0 is the UNINDEXED `path`,
+        // `snippet(media_ocr, 2, ...)`: column 2 is `text` (0 is the UNINDEXED `file_id`,
         // 1 the UNINDEXED `source`). `[`/`]` mark the matched terms; `…` is the
-        // ellipsis; 12 is the max snippet token count. A path can have two rows (OCR +
-        // folded tags); over-fetch then dedup by path in Rust, keeping the best-ranked.
+        // ellipsis; 12 is the max snippet token count. A file can have two rows (OCR +
+        // folded tags); over-fetch then dedup by path in Rust, keeping the best-ranked. The
+        // join maps the matched `file_id` back to its path (plan M4).
         let mut stmt = conn.prepare(
-            "SELECT path, snippet(media_ocr, 2, '[', ']', '…', 12) AS snip
-             FROM media_ocr
+            "SELECT f.path, snippet(media_ocr, 2, '[', ']', '…', 12) AS snip
+             FROM media_ocr JOIN media_file f ON f.id = media_ocr.file_id
              WHERE media_ocr MATCH ?1
              ORDER BY rank
              LIMIT ?2",
@@ -221,8 +222,12 @@ impl MediaIndex {
             let params = rusqlite::params_from_iter(chunk.iter());
 
             // Enrichment presence: a `media_status` row is what makes "indexed, no text
-            // found" distinguishable from "never enriched".
-            let mut stmt = conn.prepare(&format!("SELECT path FROM media_status WHERE path IN ({placeholders})"))?;
+            // found" distinguishable from "never enriched". Joined to `media_file` for the
+            // path (plan M4).
+            let mut stmt = conn.prepare(&format!(
+                "SELECT f.path FROM media_status s JOIN media_file f ON f.id = s.file_id
+                 WHERE f.path IN ({placeholders})"
+            ))?;
             let rows = stmt.query_map(params, |row| row.get::<_, String>(0))?;
             for row in rows {
                 if let Some(&i) = by_path.get(row?.as_str()) {
@@ -234,7 +239,8 @@ impl MediaIndex {
             // row per path (the space-joined tag labels folded in for keyword search), so
             // an unfiltered read would hand the caller tag labels dressed up as OCR text.
             let mut stmt = conn.prepare(&format!(
-                "SELECT path, text FROM media_ocr WHERE source = 'ocr' AND path IN ({placeholders})"
+                "SELECT f.path, o.text FROM media_ocr o JOIN media_file f ON f.id = o.file_id
+                 WHERE o.source = 'ocr' AND f.path IN ({placeholders})"
             ))?;
             let rows = stmt.query_map(rusqlite::params_from_iter(chunk.iter()), |row| {
                 Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
@@ -251,7 +257,8 @@ impl MediaIndex {
             // Tags come from the STRUCTURED `media_tags` table, so each keeps its own
             // label and confidence instead of the folded, score-less FTS row.
             let mut stmt = conn.prepare(&format!(
-                "SELECT path, label, score FROM media_tags WHERE path IN ({placeholders}) ORDER BY score DESC, label ASC"
+                "SELECT f.path, t.label, t.score FROM media_tags t JOIN media_file f ON f.id = t.file_id
+                 WHERE f.path IN ({placeholders}) ORDER BY t.score DESC, t.label ASC"
             ))?;
             let rows = stmt.query_map(rusqlite::params_from_iter(chunk.iter()), |row| {
                 Ok((

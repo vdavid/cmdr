@@ -26,6 +26,8 @@ pub mod cache;
 #[cfg(test)]
 mod tests;
 
+use half::f16;
+
 /// One image-similarity hit: the matched image's path and its cosine similarity to
 /// the query in `[-1.0, 1.0]` (`1.0` = identical direction). Crosses the IPC boundary
 /// (find-similar is surfaced by a command), so it derives `Serialize` + `specta::Type`.
@@ -47,9 +49,10 @@ pub struct DedupCluster {
     pub paths: Vec<String>,
 }
 
-/// Cosine similarity between two equal-length vectors, in `[-1.0, 1.0]`. Returns `0.0`
-/// when the lengths differ or either vector has zero magnitude (no meaningful angle),
-/// rather than a `NaN` — a degenerate vector simply never ranks.
+/// Cosine similarity between two equal-length `f32` vectors, in `[-1.0, 1.0]`. Returns
+/// `0.0` when the lengths differ or either vector has zero magnitude (no meaningful angle),
+/// rather than a `NaN` — a degenerate vector simply never ranks. Used for the query↔query
+/// case; the resident store scores an `f32` query against `f16` entries via [`cosine_f16`].
 pub fn cosine(a: &[f32], b: &[f32]) -> f32 {
     if a.len() != b.len() || a.is_empty() {
         return 0.0;
@@ -58,6 +61,30 @@ pub fn cosine(a: &[f32], b: &[f32]) -> f32 {
     let mut na = 0f32;
     let mut nb = 0f32;
     for (x, y) in a.iter().zip(b.iter()) {
+        dot += x * y;
+        na += x * x;
+        nb += y * y;
+    }
+    if na == 0.0 || nb == 0.0 {
+        return 0.0;
+    }
+    dot / (na.sqrt() * nb.sqrt())
+}
+
+/// Cosine similarity between an `f32` query and an `f16` stored vector (plan M3), widening
+/// each stored element to `f32` inline — no temporary `Vec`, so scoring a whole resident
+/// cache allocates nothing. Same degenerate-input guards as [`cosine`]. The scan is
+/// memory-bandwidth-bound, and `f16` entries are half the bytes, so this keeps (or improves)
+/// query latency while halving the resident cache's RAM.
+fn cosine_f16(query: &[f32], stored: &[f16]) -> f32 {
+    if query.len() != stored.len() || query.is_empty() {
+        return 0.0;
+    }
+    let mut dot = 0f32;
+    let mut na = 0f32;
+    let mut nb = 0f32;
+    for (x, y) in query.iter().zip(stored.iter()) {
+        let y = y.to_f32();
         dot += x * y;
         na += x * x;
         nb += y * y;
@@ -82,17 +109,18 @@ pub trait VectorStore {
     fn dedup_clusters(&self, threshold: f32) -> Vec<DedupCluster>;
 }
 
-/// A brute-force cosine vector store over a snapshot of a volume's embeddings. Vectors
+/// A brute-force cosine vector store over a snapshot of a volume's embeddings, held as
+/// `f16` (plan M3 — half the RAM of an `f32` cache; scoring widens per element). Vectors
 /// are stored as-loaded; cosine normalizes per comparison, so no pre-normalization
 /// step is needed (the store is small and loaded once).
 #[derive(Debug, Clone, Default)]
 pub struct BruteForceVectorStore {
-    entries: Vec<(String, Vec<f32>)>,
+    entries: Vec<(String, Vec<f16>)>,
 }
 
 impl BruteForceVectorStore {
-    /// Build a store from `(path, vector)` pairs (the resident cache's load result).
-    pub fn new(entries: Vec<(String, Vec<f32>)>) -> Self {
+    /// Build a store from `(path, f16 vector)` pairs (the resident cache's load result).
+    pub fn new(entries: Vec<(String, Vec<f16>)>) -> Self {
         Self { entries }
     }
 
@@ -106,9 +134,9 @@ impl BruteForceVectorStore {
         self.entries.is_empty()
     }
 
-    /// The stored vector for `path`, if present (the source vector of a find-similar
+    /// The stored `f16` vector for `path`, if present (the source vector of a find-similar
     /// query, so a caller needn't re-read the DB).
-    pub fn vector_for(&self, path: &str) -> Option<&[f32]> {
+    pub fn vector_for(&self, path: &str) -> Option<&[f16]> {
         self.entries.iter().find(|(p, _)| p == path).map(|(_, v)| v.as_slice())
     }
 }
@@ -124,7 +152,7 @@ impl VectorStore for BruteForceVectorStore {
             .filter(|(path, _)| exclude != Some(path.as_str()))
             .map(|(path, vector)| SimilarImage {
                 path: path.clone(),
-                score: cosine(query, vector),
+                score: cosine_f16(query, vector),
             })
             .collect();
         // Highest similarity first; ties by path for determinism.
@@ -150,8 +178,11 @@ impl VectorStore for BruteForceVectorStore {
             x
         }
         for i in 0..n {
+            // Widen entry `i` to `f32` ONCE (not per pair), then score against each `j`'s
+            // `f16` via `cosine_f16` — O(n) widenings, not O(n²).
+            let wi: Vec<f32> = self.entries[i].1.iter().map(|v| v.to_f32()).collect();
             for j in (i + 1)..n {
-                if cosine(&self.entries[i].1, &self.entries[j].1) >= threshold {
+                if cosine_f16(&wi, &self.entries[j].1) >= threshold {
                     let (ri, rj) = (find(&mut parent, i), find(&mut parent, j));
                     if ri != rj {
                         parent[ri] = rj;

@@ -211,11 +211,57 @@ pub fn unzip_into(zip_path: &Path, dest_dir: &Path) -> Result<(), InstallError> 
     Ok(())
 }
 
-/// Whether both towers are unpacked on disk (a `.mlpackage` dir each). Cheap existence
-/// check the gate seeds from at startup.
+/// A tower's downloaded `.mlpackage` source directory inside the model dir.
+pub fn package_path(model_dir: &Path, tower: &ClipTowerSpec) -> PathBuf {
+    model_dir.join(tower.package_dir)
+}
+
+/// A tower's compiled `.mlmodelc` directory (sibling of the `.mlpackage`). This is what the
+/// worker actually loads; it's kept after the `.mlpackage` source is reclaimed (plan M5a).
+pub fn compiled_path(model_dir: &Path, tower: &ClipTowerSpec) -> PathBuf {
+    model_dir.join(tower.package_dir).with_extension("mlmodelc")
+}
+
+/// Whether both towers are present on disk — either as the downloaded `.mlpackage` source OR
+/// as the compiled `.mlmodelc` (plan M5a). Cheap existence check the gate seeds from at
+/// startup.
+///
+/// The either/or is the M5a reclaim: after a verified compile the ~550 MB combined
+/// `.mlpackage` sources are deleted, leaving only the compiled models, and the feature must
+/// still read as installed. If a compiled model later fails to load (an OS upgrade can
+/// invalidate it) and no `.mlpackage` remains to recompile from, the load path deletes the
+/// stale `.mlmodelc` (see [`drop_compiled`]), flipping this back to `false` so the standard
+/// download flow refetches the pinned zip.
 pub fn is_installed(data_dir: &Path) -> bool {
     let dir = clip_model_dir(data_dir);
-    CLIP_TOWERS.iter().all(|t| dir.join(t.package_dir).is_dir())
+    CLIP_TOWERS
+        .iter()
+        .all(|t| package_path(&dir, t).is_dir() || compiled_path(&dir, t).is_dir())
+}
+
+/// Delete a tower's downloaded `.mlpackage` source once its compiled `.mlmodelc` exists (plan
+/// M5a): the compiled model is all the worker needs, so the source is dead weight. Returns
+/// `Ok(true)` when it removed the source, `Ok(false)` when there was nothing to remove or no
+/// compiled model yet (the source is NEVER removed before a verified compile). Best-effort —
+/// an error is surfaced for logging, never fatal (keeping the package only costs disk).
+pub fn reclaim_source_package(model_dir: &Path, tower: &ClipTowerSpec) -> std::io::Result<bool> {
+    let package = package_path(model_dir, tower);
+    if !compiled_path(model_dir, tower).is_dir() || !package.is_dir() {
+        return Ok(false);
+    }
+    std::fs::remove_dir_all(&package)?;
+    Ok(true)
+}
+
+/// Delete a tower's compiled `.mlmodelc` (plan M5a fallback): called when it failed to load
+/// and no `.mlpackage` remains to recompile from, so [`is_installed`] flips back to `false`
+/// and the standard download flow refetches the pinned zip. Best-effort.
+pub fn drop_compiled(model_dir: &Path, tower: &ClipTowerSpec) -> std::io::Result<()> {
+    let compiled = compiled_path(model_dir, tower);
+    if compiled.is_dir() {
+        std::fs::remove_dir_all(&compiled)?;
+    }
+    Ok(())
 }
 
 /// The CLIP provenance stamp for staleness (`media_status.clip_stamp`): the model id +
@@ -339,5 +385,69 @@ mod tests {
         let s = clip_stamp_for("15.1.0");
         assert!(s.contains(CLIP_MODEL_ID));
         assert!(s.contains("os=15.1.0"));
+    }
+
+    // ── M5a: is_installed is package-OR-compiled, and the reclaim/fallback fs helpers ──
+
+    /// Make a fake tower directory (`.mlpackage` or `.mlmodelc`) with one file inside.
+    fn make_dir(path: &Path) {
+        std::fs::create_dir_all(path).unwrap();
+        std::fs::write(path.join("weights.bin"), b"x").unwrap();
+    }
+
+    #[test]
+    fn is_installed_accepts_either_the_package_or_the_compiled_model() {
+        let dir = tempfile::tempdir().unwrap();
+        let data_dir = dir.path();
+        let model_dir = clip_model_dir(data_dir);
+        assert!(!is_installed(data_dir), "nothing on disk ⇒ not installed");
+
+        // Only the compiled `.mlmodelc` for BOTH towers (the post-reclaim steady state).
+        for t in CLIP_TOWERS {
+            make_dir(&compiled_path(&model_dir, t));
+        }
+        assert!(
+            is_installed(data_dir),
+            "compiled-only reads as installed (package reclaimed)"
+        );
+
+        // Dropping one compiled model (the OS-upgrade-invalidated fallback) flips it off.
+        drop_compiled(&model_dir, &CLIP_TOWERS[0]).unwrap();
+        assert!(!is_installed(data_dir), "a missing tower ⇒ not installed ⇒ re-download");
+
+        // The freshly-downloaded `.mlpackage` (before any compile) also reads as installed.
+        make_dir(&package_path(&model_dir, &CLIP_TOWERS[0]));
+        assert!(is_installed(data_dir), "package-only also reads as installed");
+    }
+
+    #[test]
+    fn reclaim_removes_the_package_only_after_a_compile_exists() {
+        let dir = tempfile::tempdir().unwrap();
+        let model_dir = clip_model_dir(dir.path());
+        let tower = &CLIP_TOWERS[0];
+
+        // Package present, no compiled model yet ⇒ reclaim is a no-op (never delete the
+        // source before a verified compile).
+        make_dir(&package_path(&model_dir, tower));
+        assert!(
+            !reclaim_source_package(&model_dir, tower).unwrap(),
+            "no compile ⇒ keep source"
+        );
+        assert!(package_path(&model_dir, tower).is_dir(), "package still there");
+
+        // Once the compiled model exists, reclaim deletes the source and keeps the compiled.
+        make_dir(&compiled_path(&model_dir, tower));
+        assert!(
+            reclaim_source_package(&model_dir, tower).unwrap(),
+            "compiled ⇒ source reclaimed"
+        );
+        assert!(!package_path(&model_dir, tower).is_dir(), "source `.mlpackage` gone");
+        assert!(compiled_path(&model_dir, tower).is_dir(), "compiled `.mlmodelc` kept");
+
+        // Idempotent: with the source already gone, a second reclaim is a no-op.
+        assert!(
+            !reclaim_source_package(&model_dir, tower).unwrap(),
+            "nothing left to reclaim"
+        );
     }
 }

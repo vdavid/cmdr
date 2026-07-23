@@ -7,8 +7,13 @@
 //!   `indexing::store`; not persisted, so re-registered per connection).
 //! - **Delete-and-recreate on a [`SCHEMA_VERSION`] mismatch** — no migrations,
 //!   exactly like the index. Enrichment is regenerable derived data.
-//! - **Path-keyed rows** (`media_status.path`), because the index has no stable
-//!   cross-rebuild entry id (plan Decision 3). A rebuild re-joins by path.
+//! - **Integer-id-keyed rows** (plan M4): one [`media_file`](CREATE_TABLES) `(id, path)`
+//!   identity table holds each path ONCE; every other table keys on the integer `file_id`.
+//!   A path averaging ~80 B is stored once, not once per table, and a rename is a one-row
+//!   `UPDATE media_file.path` instead of a rewrite across five tables. The Rust layer stays
+//!   path-addressed: the reads join `media_file` back to a `path`, so callers never see an
+//!   id (the index still has no stable cross-rebuild entry id — the `media_file` id is
+//!   internal to `media.db` and dies with a rebuild).
 //! - **One writer thread per DB** ([`MediaWriter`](super::writer)); reads go
 //!   through short-lived read connections / the [`MediaIndex`](super::read) read API.
 //!
@@ -25,20 +30,24 @@
 //!
 //! ## Tables
 //!
-//! - `media_status` — path identity + `(mtime, size)` staleness + a typed
-//!   enrichment state + the combined analyze provenance stamp (`engine_version`
-//!   column: OCR engine + tag taxonomy + feature-print revision; see
-//!   [`VisionBackend::analysis_stamp`](super::backend::VisionBackend::analysis_stamp)).
-//! - `media_ocr` — a standalone FTS5 table over searchable image text, keyed by path
+//! - `media_file` — the identity table: `(id INTEGER PRIMARY KEY, path TEXT UNIQUE)`. Each
+//!   path is stored ONCE here; every other table references the integer `file_id` (plan
+//!   M4). A rename is a one-row `UPDATE media_file.path`.
+//! - `media_status` — `(mtime, size)` staleness + a typed enrichment state + the combined
+//!   analyze provenance stamp (`engine_version` column: OCR engine + tag taxonomy +
+//!   feature-print revision; see
+//!   [`VisionBackend::analysis_stamp`](super::backend::VisionBackend::analysis_stamp)),
+//!   keyed by `file_id`.
+//! - `media_ocr` — a standalone FTS5 table over searchable image text, keyed by `file_id`
 //!   (see [`CREATE_TABLES`] for why standalone rather than external-content). Holds
 //!   BOTH the recognized OCR text AND the scene/object tag labels (one folded row
 //!   per source), so a keyword search matches tags alongside OCR.
-//! - `media_tags` — the structured tags (`path, label, score`) for tag-score
+//! - `media_tags` — the structured tags (`file_id, label, score`) for tag-score
 //!   filtering; the folded FTS rows above are its keyword-search index.
-//! - `media_embedding` — the image feature-print embedding (`path, dims, vector`
+//! - `media_embedding` — the image feature-print embedding (`file_id, dims, vector` `f16`
 //!   BLOB) for image↔image similarity + dedup (plan Decision 2).
-//! - `media_clip_embedding` — the CLIP image embedding (`path, dims, vector` BLOB) for
-//!   natural-language text→image search (plan M3). A SEPARATE table from
+//! - `media_clip_embedding` — the CLIP image embedding (`file_id, dims, vector` `f16` BLOB)
+//!   for natural-language text→image search. A SEPARATE table from
 //!   `media_embedding`: CLIP and the Vision feature print are DIFFERENT vector spaces,
 //!   so mixing them would let a similarity query silently compare across spaces. Its
 //!   staleness is the independent `clip_stamp` on `media_status` (below), NOT the
@@ -52,6 +61,7 @@ mod tests;
 
 use std::path::{Path, PathBuf};
 
+use half::f16;
 use rusqlite::Connection;
 
 pub use connection::open_read_connection;
@@ -64,26 +74,38 @@ use super::predicate::MediaKind;
 /// change to the tables below OR to what rows/text the store persists.
 ///
 /// `3` added the `media_clip_embedding` table + the `media_status.clip_stamp` column
-/// (CLIP semantic search, plan M3). Because it's a disposable cache with no migrations,
-/// the bump delete-and-recreates every `media.db` on first launch after the upgrade, so
-/// beta users re-enrich from scratch (Vision recompute only, no re-download) — an
-/// accepted cost of the disposable-cache design.
-const SCHEMA_VERSION: &str = "3";
+/// (CLIP semantic search).
+///
+/// `4` is the "make it small at NAS scale" bump (plan M3 + M4), landed as ONE bump so a
+/// user's corpus re-enriches exactly once: (a) embeddings are stored as `f16` blobs, not
+/// `f32` (half the vector bytes on disk and in the resident cache, precision loss far below
+/// ranking noise), and (b) the path moved into one `media_file(id, path)` identity table and
+/// every other table keys on the integer `file_id` (paths averaging ~80 B stored once, not
+/// once per table). Because it's a disposable cache with no migrations, the bump
+/// delete-and-recreates every `media.db` on first launch after the upgrade, so beta users
+/// re-enrich from scratch (Vision recompute only, no re-download) — an accepted cost of the
+/// disposable-cache design.
+const SCHEMA_VERSION: &str = "4";
 
 /// The FTS5 `media_ocr` table is STANDALONE (its own copy of the text), not
-/// external-content. `agent/store`'s `messages_fts` is external-content because it
-/// points at `messages.id` (an integer rowid). Our `media_status` is path-keyed and
-/// `WITHOUT ROWID`, so there is no integer rowid to hang an external-content index
-/// off; a standalone table keyed by an UNINDEXED `path` column keeps enrichment and
-/// GC a simple `WHERE path = ?` delete, with no trigger machinery to desync.
+/// external-content. External-content would point the FTS index at another table's integer
+/// rowid and sync via triggers; a standalone table keyed by an UNINDEXED `file_id` column
+/// keeps enrichment and GC a simple `WHERE file_id = ?` delete, with no trigger machinery to
+/// desync. (`media_file` carries the integer key now — plan M4 — but the standalone shape
+/// stays the simpler one here.)
 ///
 /// `media_ocr` folds tags in by carrying a `source` (`'ocr'` / `'tag'`) column and up
-/// to two rows per path: the recognized OCR text, and the space-joined tag labels. A
+/// to two rows per file: the recognized OCR text, and the space-joined tag labels. A
 /// keyword search matches either, so tags are searchable alongside OCR; the
-/// `WHERE path = ?` delete still clears every row for a path in one statement.
+/// `WHERE file_id = ?` delete still clears every row for a file in one statement.
 const CREATE_TABLES_SQL: &str = "
+    CREATE TABLE IF NOT EXISTS media_file (
+        id    INTEGER PRIMARY KEY,
+        path  TEXT NOT NULL UNIQUE COLLATE platform_case
+    );
+
     CREATE TABLE IF NOT EXISTS media_status (
-        path            TEXT    PRIMARY KEY COLLATE platform_case,
+        file_id         INTEGER PRIMARY KEY,
         mtime           INTEGER,
         size            INTEGER,
         media_kind      TEXT    NOT NULL,
@@ -93,30 +115,30 @@ const CREATE_TABLES_SQL: &str = "
     ) WITHOUT ROWID;
 
     CREATE VIRTUAL TABLE IF NOT EXISTS media_ocr USING fts5(
-        path UNINDEXED,
+        file_id UNINDEXED,
         source UNINDEXED,
         text,
         tokenize = 'unicode61 remove_diacritics 2'
     );
 
     CREATE TABLE IF NOT EXISTS media_tags (
-        path   TEXT NOT NULL COLLATE platform_case,
-        label  TEXT NOT NULL,
-        score  REAL NOT NULL
+        file_id  INTEGER NOT NULL,
+        label    TEXT NOT NULL,
+        score    REAL NOT NULL
     );
-    CREATE INDEX IF NOT EXISTS idx_media_tags_path  ON media_tags(path);
+    CREATE INDEX IF NOT EXISTS idx_media_tags_file  ON media_tags(file_id);
     CREATE INDEX IF NOT EXISTS idx_media_tags_label ON media_tags(label);
 
     CREATE TABLE IF NOT EXISTS media_embedding (
-        path    TEXT PRIMARY KEY COLLATE platform_case,
-        dims    INTEGER NOT NULL,
-        vector  BLOB    NOT NULL
+        file_id  INTEGER PRIMARY KEY,
+        dims     INTEGER NOT NULL,
+        vector   BLOB    NOT NULL
     ) WITHOUT ROWID;
 
     CREATE TABLE IF NOT EXISTS media_clip_embedding (
-        path    TEXT PRIMARY KEY COLLATE platform_case,
-        dims    INTEGER NOT NULL,
-        vector  BLOB    NOT NULL
+        file_id  INTEGER PRIMARY KEY,
+        dims     INTEGER NOT NULL,
+        vector   BLOB    NOT NULL
     ) WITHOUT ROWID;
 
     CREATE TABLE IF NOT EXISTS meta (
@@ -362,10 +384,12 @@ fn read_meta_value(conn: &Connection, key: &str) -> Result<Option<String>, Media
     }
 }
 
-/// Read one `media_status` row.
+/// Read one `media_status` row, joined to its path in `media_file`.
 pub(super) fn read_status(conn: &Connection, path: &str) -> Result<Option<MediaStatusRow>, MediaStoreError> {
     let mut stmt = conn.prepare_cached(
-        "SELECT path, mtime, size, media_kind, state, engine_version, clip_stamp FROM media_status WHERE path = ?1",
+        "SELECT f.path, s.mtime, s.size, s.media_kind, s.state, s.engine_version, s.clip_stamp
+         FROM media_status s JOIN media_file f ON f.id = s.file_id
+         WHERE f.path = ?1",
     )?;
     let mut rows = stmt.query_map(rusqlite::params![path], row_to_status)?;
     match rows.next() {
@@ -375,19 +399,22 @@ pub(super) fn read_status(conn: &Connection, path: &str) -> Result<Option<MediaS
     }
 }
 
-/// Load every `media_status` row into a `path → row` map. The scheduler loads one
-/// snapshot per pass to decide staleness and to derive the stored-path set for GC.
+/// Load every `media_status` row into a `path → row` map (joining `media_file` for the
+/// path). The scheduler loads one snapshot per pass to decide staleness and to derive the
+/// stored-path set for GC.
 pub(crate) fn read_all_status(conn: &Connection) -> Result<Vec<MediaStatusRow>, MediaStoreError> {
-    let mut stmt = conn
-        .prepare_cached("SELECT path, mtime, size, media_kind, state, engine_version, clip_stamp FROM media_status")?;
+    let mut stmt = conn.prepare_cached(
+        "SELECT f.path, s.mtime, s.size, s.media_kind, s.state, s.engine_version, s.clip_stamp
+         FROM media_status s JOIN media_file f ON f.id = s.file_id",
+    )?;
     let rows = stmt.query_map([], row_to_status)?;
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
 }
 
-/// Every stored `media_status` path (the reclaim partition's stored-row set).
-/// A cheap `path`-only scan; the partition then classifies each in Rust.
+/// Every stored path (the reclaim partition's stored-row set). A cheap scan of
+/// `media_file`; the partition then classifies each in Rust.
 pub(crate) fn read_status_paths(conn: &Connection) -> Result<Vec<String>, MediaStoreError> {
-    let mut stmt = conn.prepare_cached("SELECT path FROM media_status")?;
+    let mut stmt = conn.prepare_cached("SELECT path FROM media_file")?;
     let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
 }
@@ -408,10 +435,10 @@ pub(crate) fn sum_bytes_for_paths(
     }
     let mut total: u64 = 0;
     for sql in [
-        "SELECT path, length(text) FROM media_ocr",
-        "SELECT path, length(label) FROM media_tags",
-        "SELECT path, length(vector) FROM media_embedding",
-        "SELECT path, length(vector) FROM media_clip_embedding",
+        "SELECT f.path, length(o.text) FROM media_ocr o JOIN media_file f ON f.id = o.file_id",
+        "SELECT f.path, length(t.label) FROM media_tags t JOIN media_file f ON f.id = t.file_id",
+        "SELECT f.path, length(e.vector) FROM media_embedding e JOIN media_file f ON f.id = e.file_id",
+        "SELECT f.path, length(c.vector) FROM media_clip_embedding c JOIN media_file f ON f.id = c.file_id",
     ] {
         let mut stmt = conn.prepare(sql)?;
         let rows = stmt.query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?)))?;
@@ -437,51 +464,67 @@ fn row_to_status(row: &rusqlite::Row<'_>) -> rusqlite::Result<MediaStatusRow> {
     })
 }
 
-// ── Embedding codec (feature-print BLOBs) ──────────────────────────────────
+// ── Embedding codec (feature-print BLOBs, f16) ─────────────────────────────
 
-/// Serialize a feature-print embedding to a little-endian `f32` BLOB. The `dims`
-/// column stores the element count so a decode can validate the byte length.
+/// Serialize an embedding to a little-endian `f16` BLOB (2 bytes/element, half the `f32`
+/// footprint — plan M3). The `dims` column stores the element count so a decode can
+/// validate the byte length. The precision loss is far below ranking noise (cosine delta
+/// ~1e-3), and the resident vector cache scores against the stored `f16` directly, so the
+/// halving lands on disk AND in RAM.
 pub(crate) fn encode_embedding(vector: &[f32]) -> Vec<u8> {
-    let mut bytes = Vec::with_capacity(vector.len() * 4);
+    let mut bytes = Vec::with_capacity(vector.len() * 2);
     for f in vector {
-        bytes.extend_from_slice(&f.to_le_bytes());
+        bytes.extend_from_slice(&f16::from_f32(*f).to_le_bytes());
     }
     bytes
 }
 
-/// Decode a little-endian `f32` BLOB back to a vector. Returns `None` when the byte
-/// length isn't a whole number of `f32`s (a corrupt row degrades to "no embedding"
-/// rather than failing the whole read — the cache just skips it).
+/// Decode a little-endian `f16` BLOB, WIDENING each element to `f32` — the query direction
+/// (a find-similar source vector, a round-trip check). Returns `None` when the byte length
+/// isn't a whole number of `f16`s (a corrupt row degrades to "no embedding" rather than
+/// failing the whole read — the cache just skips it).
 pub(crate) fn decode_embedding(bytes: &[u8]) -> Option<Vec<f32>> {
-    if !bytes.len().is_multiple_of(4) {
+    Some(decode_embedding_f16(bytes)?.into_iter().map(f16::to_f32).collect())
+}
+
+/// Decode a little-endian `f16` BLOB to `f16` elements (NO widening) — the resident-cache
+/// load direction, where keeping `f16` is what halves the cache's RAM. Returns `None` on a
+/// non-`f16`-multiple length (a corrupt row degrades to "no embedding").
+pub(crate) fn decode_embedding_f16(bytes: &[u8]) -> Option<Vec<f16>> {
+    if !bytes.len().is_multiple_of(2) {
         return None;
     }
     Some(
         bytes
-            .chunks_exact(4)
-            .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
+            .chunks_exact(2)
+            .map(|c| f16::from_le_bytes([c[0], c[1]]))
             .collect(),
     )
 }
 
-/// One stored embedding: the image path and its feature-print vector. The vector
-/// store loads a `Vec` of these per volume into its resident cache.
+/// One stored embedding: the image path and its feature-print vector, kept as `f16` (the
+/// on-disk representation — plan M3). The vector store loads a `Vec` of these per volume
+/// into its resident cache and scores against the `f16` directly, so the cache stays half
+/// the size of an `f32` one.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct EmbeddingRow {
     pub(crate) path: String,
-    pub(crate) vector: Vec<f32>,
+    pub(crate) vector: Vec<f16>,
 }
 
-/// Load every stored embedding for a volume (the resident vector cache's load-once
-/// source). A row whose BLOB can't be decoded is skipped, not fatal. `table` is the
-/// embedding table (`media_embedding` for the Vision feature print, or
-/// `media_clip_embedding` for CLIP) — the two live in DIFFERENT vector spaces and each
-/// backs its own resident cache, so the caller names which one it wants.
+/// Load every stored embedding for a volume as `f16` (the resident vector cache's load-once
+/// source; kept `f16` to halve the cache's RAM). A row whose BLOB can't be decoded is
+/// skipped, not fatal. `table` is the embedding table (`media_embedding` for the Vision
+/// feature print, or `media_clip_embedding` for CLIP) — the two live in DIFFERENT vector
+/// spaces and each backs its own resident cache, so the caller names which one it wants.
 pub(crate) fn read_all_embeddings_from(
     conn: &Connection,
     table: EmbeddingTable,
 ) -> Result<Vec<EmbeddingRow>, MediaStoreError> {
-    let mut stmt = conn.prepare_cached(&format!("SELECT path, vector FROM {}", table.name()))?;
+    let mut stmt = conn.prepare_cached(&format!(
+        "SELECT f.path, e.vector FROM {} e JOIN media_file f ON f.id = e.file_id",
+        table.name()
+    ))?;
     let rows = stmt.query_map([], |row| {
         let path: String = row.get(0)?;
         let blob: Vec<u8> = row.get(1)?;
@@ -490,7 +533,7 @@ pub(crate) fn read_all_embeddings_from(
     let mut out = Vec::new();
     for row in rows {
         let (path, blob) = row?;
-        if let Some(vector) = decode_embedding(&blob) {
+        if let Some(vector) = decode_embedding_f16(&blob) {
             out.push(EmbeddingRow { path, vector });
         }
     }
@@ -518,7 +561,9 @@ impl EmbeddingTable {
 /// Read one image's stored embedding, or `None` if it has none (the source vector for
 /// a "find similar images" query).
 pub(crate) fn read_embedding_for(conn: &Connection, path: &str) -> Result<Option<Vec<f32>>, MediaStoreError> {
-    let mut stmt = conn.prepare_cached("SELECT vector FROM media_embedding WHERE path = ?1")?;
+    let mut stmt = conn.prepare_cached(
+        "SELECT e.vector FROM media_embedding e JOIN media_file f ON f.id = e.file_id WHERE f.path = ?1",
+    )?;
     let mut rows = stmt.query_map(rusqlite::params![path], |row| row.get::<_, Vec<u8>>(0))?;
     match rows.next() {
         Some(Ok(blob)) => Ok(decode_embedding(&blob)),
@@ -535,7 +580,8 @@ pub(crate) fn read_tag_matches(
     min_score: f32,
 ) -> Result<Vec<(String, f32)>, MediaStoreError> {
     let mut stmt = conn.prepare_cached(
-        "SELECT path, score FROM media_tags WHERE label = ?1 AND score >= ?2 ORDER BY score DESC, path ASC",
+        "SELECT f.path, t.score FROM media_tags t JOIN media_file f ON f.id = t.file_id
+         WHERE t.label = ?1 AND t.score >= ?2 ORDER BY t.score DESC, f.path ASC",
     )?;
     let rows = stmt.query_map(rusqlite::params![label, min_score], |row| {
         Ok((row.get::<_, String>(0)?, row.get::<_, f64>(1)? as f32))

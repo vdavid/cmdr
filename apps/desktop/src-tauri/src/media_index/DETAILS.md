@@ -231,35 +231,74 @@ label/enabled decision lives in `menu/media_index_items.rs` (§ Image-search gro
 
 ## Schema (`store/`)
 
-`SCHEMA_VERSION` is a disposable-cache version: a mismatch delete-and-recreates `media-{volume_id}.db`. It's now `3`
+`SCHEMA_VERSION` is a disposable-cache version: a mismatch delete-and-recreates `media-{volume_id}.db`. It's now `4`
 (v2 added the tag + embedding tables and the FTS `source` column; v3 added the `media_clip_embedding` table + the
-`media_status.clip_stamp` column for CLIP semantic search — § CLIP semantic search). A bump re-enriches every beta user's
+`media_status.clip_stamp` column for CLIP semantic search — § CLIP semantic search; v4 is the "small at NAS scale" bump —
+f16 embeddings + integer-id keying, § The f16-embedding + integer-id decisions). A bump re-enriches every beta user's
 cache on next launch (Vision recompute only, no re-download — an accepted disposable-cache cost). Objects:
 
-- `media_status` — `WITHOUT ROWID`, `path TEXT PRIMARY KEY COLLATE platform_case`; `mtime`, `size` (the `(path, mtime,
+- `media_file` — `(id INTEGER PRIMARY KEY, path TEXT UNIQUE COLLATE platform_case)`: the identity table (plan M4). Each
+  path is stored ONCE here; every other table keys on the integer `file_id`, and the reads join back to a path so the
+  Rust layer stays path-addressed. A rename is a one-row `UPDATE media_file.path` (`MediaWriter::rename_path`).
+- `media_status` — `WITHOUT ROWID`, `file_id INTEGER PRIMARY KEY`; `mtime`, `size` (with the path, the `(path, mtime,
   size)` staleness key); `media_kind` + `state` (typed TEXT tokens, `sqlite3`-inspectable, parsed back to typed enums —
   `no-string-matching`); `engine_version` (the combined **analyze provenance stamp** (§ The analyze provenance stamp) so an OS upgrade to the OCR
   engine, tag taxonomy, or feature-print model re-runs analysis even on an unchanged file — data-COVERAGE, not
   data-safety, since the derived data is disposable).
-- `media_ocr` — a **standalone** FTS5 table (`path UNINDEXED, source UNINDEXED, text`). Not external-content:
-  `agent/store`'s `messages_fts` points at an integer `messages.id`, but `media_status` is path-keyed and `WITHOUT
-  ROWID`, so there's no integer rowid to hang external content off. Standalone keeps enrichment and GC a simple `WHERE
-  path = ?` delete with no trigger machinery to desync. It holds up to two rows per path: the OCR text (`source='ocr'`)
-  and the space-joined tag labels (`source='tag'`), so a keyword search matches **tags alongside OCR**. Created via
-  `CREATE VIRTUAL TABLE … USING fts5`, which doubles as the FTS5 availability guard (a `bundled` build without FTS5 fails
-  there — Decision 2's build-flag worry is closed, `agent/store` proves it).
-- `media_tags` — `(path COLLATE platform_case, label, score)` with an index on `path` and on `label`: the STRUCTURED
-  tags for tag-score filtering (`images_with_tag(label, min_score)`), distinct from the folded FTS keyword index above.
-- `media_embedding` — `WITHOUT ROWID`, `(path PRIMARY KEY COLLATE platform_case, dims, vector BLOB)`: the image
-  feature-print embedding as a little-endian `f32` BLOB (`encode_embedding`/`decode_embedding`; `dims` = element count).
-  The vector store's load source (§ The vector store + resident cache).
+- `media_ocr` — a **standalone** FTS5 table (`file_id UNINDEXED, source UNINDEXED, text`). Not external-content:
+  external content would sync via triggers off another table's integer rowid; a standalone table keyed by an UNINDEXED
+  `file_id` keeps enrichment and GC a simple `WHERE file_id = ?` delete with no trigger machinery to desync. It holds up
+  to two rows per file: the OCR text (`source='ocr'`) and the space-joined tag labels (`source='tag'`), so a keyword
+  search matches **tags alongside OCR**. Created via `CREATE VIRTUAL TABLE … USING fts5`, which doubles as the FTS5
+  availability guard (a `bundled` build without FTS5 fails there — Decision 2's build-flag worry is closed, `agent/store`
+  proves it).
+- `media_tags` — `(file_id, label, score)` with an index on `file_id` and on `label`: the STRUCTURED tags for tag-score
+  filtering (`images_with_tag(label, min_score)`), distinct from the folded FTS keyword index above.
+- `media_embedding` — `WITHOUT ROWID`, `(file_id PRIMARY KEY, dims, vector BLOB)`: the image feature-print embedding as a
+  little-endian **`f16`** BLOB (`encode_embedding`/`decode_embedding`; `dims` = element count). The vector store's load
+  source (§ The vector store + resident cache).
+- `media_clip_embedding` — same shape (`file_id`, `dims`, `f16` `vector`), the CLIP image embedding in its SEPARATE vector
+  space (§ CLIP semantic search).
 - `meta` — `schema_version` only.
 
 The `needs_enrichment` staleness predicate is `(path, mtime, size)` + the analyze stamp: stale when there's no row, or
 when `(mtime, size)` changed, or when the stamp changed. State is deliberately excluded from the key so a failed file
-isn't re-hammered every completed scan; a real file change re-tries it. A successful `upsert` writes `media_status` +
-the OCR/tag FTS rows + `media_tags` + `media_embedding` in ONE transaction (clearing each prior row first, so a
-re-enrichment leaves nothing stale); a failure clears them all and records only the `Failed` status.
+isn't re-hammered every completed scan; a real file change re-tries it. A successful `upsert` resolves the path to its
+`media_file` id (creating it if new), then writes `media_status` + the OCR/tag FTS rows + `media_tags` + `media_embedding`
+in ONE transaction (clearing each prior row first, so a re-enrichment leaves nothing stale); a failure clears them all and
+records only the `Failed` status. GC/prune delete every `file_id`-keyed child plus the `media_file` row.
+
+### The f16-embedding + integer-id decisions (plan M3 + M4)
+
+Both land in the ONE `SCHEMA_VERSION = 4` bump so a corpus re-enriches exactly once (the coordination invariant from the
+plan). At NAS scale (~2M images) the two together roughly halve the per-image disk and the resident search RAM.
+
+**Decision (M3): embeddings are `f16`, not `f32`, on disk AND in the resident cache.** The CLIP (512-d) and Vision
+feature-print (768-d) vectors are the biggest per-image storage item (5 KB of f32 → 2.5 KB of f16). `encode_embedding`
+writes f16 le bytes; `decode_embedding` widens to f32 (the query direction — a find-similar source vector), while
+`decode_embedding_f16` loads f16 as-is for the resident `BruteForceVectorStore`, so the cache is half the RAM too.
+**Why score against f16 directly (widen per element), not widen-on-load:** widening on load would keep the cache f32 and
+forfeit the RAM halving; the brute-force scan is memory-bandwidth-bound, so f16 entries (half the bytes) keep or improve
+query latency while halving RAM — the plan's "measure, pick the simpler one that keeps latency" resolved in f16's favor
+by that bandwidth argument. `cosine_f16(query_f32, stored_f16)` widens each stored element inline (no temp `Vec`); dedup
+widens each vector to f32 ONCE (O(n), not O(n²) per pair). Precision: f16 shifts a realistic embedding's direction by
+cosine < 1e-3 (tested), far below ranking noise, and top-k order is preserved vs the f32 reference (tested on a
+100-vector fixture with 0.008 score gaps).
+
+**Decision (M4): one `media_file(id, path)` identity table; every other table keys on `file_id`.** NAS paths average ~80
+B and previously repeated in every table (`media_status`, `media_ocr`, `media_tags`, both embedding tables) — gigabytes
+of pure duplication at 2M, plus string-compare joins. Now the path lives once in `media_file`; children carry the 8-byte
+integer. **The Rust layer stays path-addressed** (the scheduler's `statuses` map, the read API's `ImageFacts`, the vector
+store's `SimilarImage` all key on `String` paths): the store's reads join `media_file` back to a path, so nothing above
+the store learned about ids. **Why not merge `media_status` into `media_file`:** they're 1:1, but keeping identity
+(`media_file`) separate from enrichment-state (`media_status`) makes a rename a tiny one-row update and matches the plan's
+explicit shape. **Rename** (`rename_path`) is the payoff the keying buys — a single `UPDATE media_file.path` and every
+child follows via the unchanged `file_id`; it's the seam a future rename-following hook calls (until one is wired, a
+rename still manifests as GC(old) + enrich(new), which this replaces with an O(1) update). The full read-path audit
+(every raw `path =` query against a media table became a `media_file` join): `read_status`, `read_all_status`,
+`read_status_paths`, `sum_bytes_for_paths`, `read_all_embeddings_from`, `read_embedding_for`, `read_tag_matches` (store);
+`search_ocr`, `facts_for_paths`, `images_with_tag` (read API); `scan_accounted` (coverage); the writer's upsert / GC /
+prune / prune-prefix / purge.
 
 ## The image-qualification predicate (`predicate.rs`)
 
@@ -480,10 +519,13 @@ taxonomy-version component bumps → the row goes stale → analyze re-runs → 
 ### The vector store + resident cache (`vector/`, plan Decision 2)
 
 Brute-force cosine in Rust, NO `sqlite-vec` (a loadable extension our `rusqlite` isn't built for; a real build+signing
-project adopted only if a library outgrows brute force, behind this same `VectorStore` trait). `cosine` guards
-degenerate inputs (zero magnitude / length mismatch → `0.0`, never `NaN`). `BruteForceVectorStore::top_k` linearly
-ranks by cosine (source excluded, ties by path); `dedup_clusters` groups near-duplicates by single-linkage union-find
-over pairs at/above a cosine threshold (default 0.9), returning clusters of two or more.
+project adopted only if a library outgrows brute force, behind this same `VectorStore` trait). The store holds vectors as
+**`f16`** (plan M3 — half the RAM of an f32 cache; § The f16-embedding + integer-id decisions). `cosine` (f32↔f32, the
+query↔query case) and `cosine_f16` (an f32 query vs an f16 stored vector, widened per element) both guard degenerate
+inputs (zero magnitude / length mismatch → `0.0`, never `NaN`). `BruteForceVectorStore::top_k` linearly ranks by
+`cosine_f16` (source excluded, ties by path); `dedup_clusters` groups near-duplicates by single-linkage union-find over
+pairs at/above a cosine threshold (default 0.9), widening each vector to f32 once (O(n), not per pair) then comparing via
+`cosine_f16`, returning clusters of two or more.
 
 `vector::cache` keeps a load-once `BruteForceVectorStore` per volume (keyed by `media.db` path), mirroring `search/`'s
 warm `SEARCH_INDEX` arena, so a find-similar/dedup query doesn't reload the BLOBs each call (all query-time work runs OFF
@@ -1020,8 +1062,9 @@ that can overrun a small stack, so ONE dedicated 8 MB-stack `clip-worker` thread
 every predict (Apple's pooled-inference recommendation). `encode_text` (query-time) and `encode_image` (from the Vision
 worker) both send a job to it and block for the reply, so no `!Send` object crosses a boundary — only the input ids /
 pixel `Vec` in and the embedding `Vec<f32>` out. `.mlpackage` is compiled to `.mlmodelc` on-device at first load
-(`compileModelAtURL:error:`) and the compiled bundle is cached beside the model so later launches skip the 1–2 s compile.
-Every `unsafe` block carries a per-site `// SAFETY:` (the objc2-core-ml `MLMultiArray` fills/reads via `dataPointer`, the
+(`compileModelAtURL:error:`) and the compiled bundle is cached beside the model so later launches skip the 1–2 s compile;
+after a verified compile the `.mlpackage` source is reclaimed (§ Model install — the M5a package reclaim). Every `unsafe`
+block carries a per-site `// SAFETY:` (the objc2-core-ml `MLMultiArray` fills/reads via `dataPointer`, the
 `MLDictionaryFeatureProvider` build, the CoreGraphics `CGBitmapContextCreate` render). The tokenizer (`clip/tokenizer.rs`,
 `instant-clip-tokenizer`) produces the fixed `[1,77]` int32 sequence (`[BOS] content [EOS]`, EOS-padded), pinned bit-exact
 to the HuggingFace reference.
@@ -1031,8 +1074,21 @@ to the HuggingFace reference.
 New code reusing only `ai::download::download_file` (the resumable HTTP GET). Distinct from the GGUF two-flag gate: Core ML
 models are `.mlpackage` DIRECTORY bundles (zipped), so this adds a zip extractor (with a zip-slip guard) and — unlike
 `ai/`'s size-only check — a **SHA-256 verify BEFORE unpacking**. A truncated/tampered download never reaches the extractor,
-so a half-model can never load and mis-embed (data safety, `verify_checksum` red→green tests). `is_installed` (both
-`.mlpackage` dirs present) seeds the gate; `installed_stamp` builds the `clip_stamp`.
+so a half-model can never load and mis-embed (data safety, `verify_checksum` red→green tests). `installed_stamp` builds
+the `clip_stamp`.
+
+**The M5a package reclaim (plan M5a).** The model dir was 1.1 GB because it kept BOTH the ~550 MB combined downloaded
+`.mlpackage` sources and the compiled `.mlmodelc`. Now, on the `clip-worker` thread's first load, once both towers load
+AND a zero-input encode is sane (512-d, all-finite — `verify_sane`, guarding against a NaN-emitting model), each
+`.mlpackage` source is deleted (`reclaim_source_package`), keeping only the compiled model (~350 MB dir, faster first
+load). **Tradeoff:** the `.mlmodelc` is OS-version-specific, so an OS upgrade can invalidate it, and with the source gone
+we can't recompile locally. `load_tower` handles this: it prefers the cached `.mlmodelc`; if it won't load it drops the
+stale compiled and, if a `.mlpackage` is still present, recompiles from it; if NEITHER a loadable compiled model nor a
+source remains, it returns `NotAvailable` having deleted the stale compiled — so `is_installed` (now **`.mlpackage` OR
+`.mlmodelc` present per tower**) flips to `false` and the standard `media_index_download_clip_model` flow refetches the
+pinned zip (same sha contract). A rare ~200 MB re-download vs ~550 MB saved on every launch, and never a crash or a
+silently-dead feature. The filesystem decisions (`is_installed`, `reclaim_source_package`, `drop_compiled`) are unit
+tested; the FFI compile/load around them isn't (needs Core ML + the real model).
 
 ### The query path
 

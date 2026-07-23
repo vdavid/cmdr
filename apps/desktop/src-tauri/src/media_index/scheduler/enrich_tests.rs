@@ -970,14 +970,14 @@ fn clip_state(db_path: &std::path::Path, path: &str) -> (i64, String) {
     let conn = crate::media_index::store::open_read_connection(db_path).expect("open read");
     let count: i64 = conn
         .query_row(
-            "SELECT COUNT(*) FROM media_clip_embedding WHERE path = ?1",
+            "SELECT COUNT(*) FROM media_clip_embedding c JOIN media_file f ON f.id = c.file_id WHERE f.path = ?1",
             rusqlite::params![path],
             |r| r.get(0),
         )
         .expect("count clip");
     let stamp: String = conn
         .query_row(
-            "SELECT clip_stamp FROM media_status WHERE path = ?1",
+            "SELECT s.clip_stamp FROM media_status s JOIN media_file f ON f.id = s.file_id WHERE f.path = ?1",
             rusqlite::params![path],
             |r| r.get(0),
         )

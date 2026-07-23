@@ -18,9 +18,11 @@ A PORT of `importance/`'s patterns (store, writer, scheduler, read API): read `i
 
 ## Must-knows
 
-- **Disposable, path-keyed cache.** A schema bump/corruption delete-and-recreates `media.db` (no migrations).
-  Staleness = `(path, mtime, size)` + the analyze stamp. `analyze` (NOT `ocr`) is the entry: one decode → OCR + tags +
-  feature print (`engine_version` drives staleness).
+- **Disposable, integer-id-keyed cache.** A schema bump/corruption delete-and-recreates `media.db` (no migrations).
+  `media_file(id, path)` holds each path ONCE; every other table keys on `file_id`, and reads join `media_file` back to a
+  path (a raw `path =` query against a media table is the bug; a rename is `rename_path`, one row). Embeddings are `f16`
+  (disk + resident cache). Staleness = `(path, mtime, size)` + the analyze stamp. `analyze` (NOT `ocr`) is the entry: one
+  decode → OCR + tags + feature print (`engine_version` drives staleness).
 - **GC is deletion-driven + edge-triggered (data-safety).** ONLY on a `Completed` bus edge (`borrow_and_update`, never
   a `borrow()` poll) or the Fresh sweep; never on volume-absence. Uncovered rows stay; only vanished files collect.
   ❌ Never persist the lifecycle-bus `generation`. Three deletions bypass the edge: privacy retro-delete, reclaim
@@ -53,7 +55,9 @@ A PORT of `importance/`'s patterns (store, writer, scheduler, read API): read `i
   (`gate::semantic_search_enabled`, ON by default) gates both: `search_semantic` returns `[]` (also off with no model),
   and `clip::current_stamp` returns `None` so no pass embeds CLIP (the single CLIP-write seam; ❌ don't re-gate
   `want_clip`). `media_index_delete_clip_model` deletes the model + every volume's clip embeddings (`prune_all_clip`
-  resets `clip_stamp`); Vision kept, off ≠ delete.
+  resets `clip_stamp`); Vision kept, off ≠ delete. After a verified compile the `.mlpackage` source is deleted (M5a), so
+  `is_installed` is `.mlpackage` OR `.mlmodelc` per tower (❌ don't revert to package-only); an unloadable compiled + no
+  source drops the stale `.mlmodelc` to re-trigger download.
 
 - **Per-folder `accounted` aggregate** (`coverage.rs`; feeds `media_index_file_status`/`_folder_coverage`): ❌ INCREMENTAL
   (writer `+1`/`-1`, seeded at spawn), never rebuilt from a walk (wipes it); SEPARATE `ACCOUNTED` cache, not `COUNTS`.

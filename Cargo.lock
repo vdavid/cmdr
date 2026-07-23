@@ -1299,6 +1299,7 @@ dependencies = [
  "futures-util",
  "genai",
  "gix",
+ "half",
  "icns",
  "image",
  "instant-clip-tokenizer",

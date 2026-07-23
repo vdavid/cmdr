@@ -73,9 +73,13 @@ fn a_schema_mismatch_recreates_the_db_fresh() {
         let store = MediaStore::open(&db_path).expect("open");
         store
             .read_conn()
+            .execute("INSERT INTO media_file (id, path) VALUES (1, '/x.jpg')", [])
+            .expect("insert file");
+        store
+            .read_conn()
             .execute(
-                "INSERT INTO media_status (path, mtime, size, media_kind, state, engine_version)
-                 VALUES ('/x.jpg', 1, 2, 'image', 'done', 'e1')",
+                "INSERT INTO media_status (file_id, mtime, size, media_kind, state, engine_version)
+                 VALUES (1, 1, 2, 'image', 'done', 'e1')",
                 [],
             )
             .expect("insert");
@@ -121,13 +125,30 @@ fn status_round_trips_through_the_writer() {
 // ── Embedding codec + tags/embedding round-trip ────────────────────────
 
 #[test]
-fn embedding_codec_round_trips() {
+fn embedding_codec_is_f16_and_round_trips_exactly_representable_values() {
+    // Plan M3: embeddings persist as f16 (2 bytes/element, not 4). These values are all
+    // exactly representable in f16, so the round-trip is exact.
     let v = vec![1.5f32, -2.0, 0.0, 3.25];
     let bytes = encode_embedding(&v);
-    assert_eq!(bytes.len(), v.len() * 4);
+    assert_eq!(bytes.len(), v.len() * 2, "f16 is 2 bytes per element");
     assert_eq!(decode_embedding(&bytes), Some(v));
-    // A non-multiple-of-4 length is rejected (a corrupt row degrades to "no vector").
+    // A non-multiple-of-2 length is rejected (a corrupt row degrades to "no vector").
     assert_eq!(decode_embedding(&[1, 2, 3]), None);
+}
+
+#[test]
+fn f16_round_trip_stays_within_the_cosine_bound() {
+    // The M3 precision guarantee: f16 rounding shifts a realistic embedding's direction by
+    // far less than ranking noise (cosine delta <= 1e-3). Use non-round values that do NOT
+    // land exactly on f16, over a 512-d vector like the real CLIP embedding.
+    let original: Vec<f32> = (0..512).map(|i| ((i as f32) * 0.12345 + 0.0177).sin() * 0.37).collect();
+    let decoded = decode_embedding(&encode_embedding(&original)).expect("decode");
+    assert_eq!(decoded.len(), original.len());
+    let cos = crate::media_index::vector::cosine(&original, &decoded);
+    assert!(
+        (1.0 - cos) <= 1e-3,
+        "f16 round-trip cosine {cos} must be within 1e-3 of 1.0"
+    );
 }
 
 #[test]
@@ -163,11 +184,13 @@ fn tags_and_embedding_round_trip_and_filter_by_score() {
     let store = MediaStore::open(&db_path).expect("reopen");
     let conn = store.read_conn();
 
-    // The embedding persists and decodes.
-    assert_eq!(
-        read_embedding_for(conn, "/a.jpg").expect("read"),
-        Some(vec![0.1, 0.2, 0.3, 0.4])
-    );
+    // The embedding persists and decodes (within f16 precision — plan M3).
+    let got = read_embedding_for(conn, "/a.jpg").expect("read").expect("present");
+    let want = [0.1f32, 0.2, 0.3, 0.4];
+    assert_eq!(got.len(), want.len());
+    for (g, w) in got.iter().zip(want.iter()) {
+        assert!((g - w).abs() <= 1e-3, "f16 round-trip {g} within 1e-3 of {w}");
+    }
 
     // Tag-score filtering: `beach` above 0.5 matches; `sky` at 0.3 doesn't clear 0.5.
     let beach = read_tag_matches(conn, "beach", 0.5).expect("read");
@@ -192,7 +215,7 @@ fn sum_bytes_for_paths_totals_the_doomed_rows_content_and_only_those() {
     MediaStore::open(&db_path).expect("open");
     let writer = MediaWriter::spawn(&db_path, "root").expect("writer");
 
-    // Image a: OCR text "hello" (5 bytes) + a 2-float embedding (8 bytes), no tags.
+    // Image a: OCR text "hello" (5 bytes) + a 2-element f16 embedding (4 bytes), no tags.
     writer
         .upsert(
             MediaStatusRow {
@@ -212,7 +235,7 @@ fn sum_bytes_for_paths_totals_the_doomed_rows_content_and_only_those() {
         )
         .expect("upsert a");
     // Image b: no OCR text, one tag "beach" (folded FTS text 5 + structured label 5),
-    // and a 1-float embedding (4 bytes).
+    // and a 1-element f16 embedding (2 bytes).
     writer
         .upsert(
             MediaStatusRow {
@@ -246,17 +269,17 @@ fn sum_bytes_for_paths_totals_the_doomed_rows_content_and_only_those() {
 
     assert_eq!(
         sum_bytes_for_paths(conn, &only_a).expect("sum a"),
-        5 + 8,
-        "a: ocr text + embedding"
+        5 + 4,
+        "a: ocr text + f16 embedding (2 elems × 2 B)"
     );
     assert_eq!(
         sum_bytes_for_paths(conn, &only_b).expect("sum b"),
-        5 + 5 + 4,
-        "b: folded tag text + structured label + embedding"
+        5 + 5 + 2,
+        "b: folded tag text + structured label + f16 embedding (1 elem × 2 B)"
     );
     assert_eq!(
         sum_bytes_for_paths(conn, &both).expect("sum both"),
-        (5 + 8) + (5 + 5 + 4),
+        (5 + 4) + (5 + 5 + 2),
         "both is the sum of each"
     );
     assert_eq!(

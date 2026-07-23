@@ -135,6 +135,17 @@ latency).
 palettized model also changes embeddings, so sequence the M3/M4 bump and the M5 model-pin bump to land **before the same
 next pass** — one re-enrich, not two. Never two agents in this schema concurrently.
 
+### Status — done (branch `david/media-schema-slim`, with M4 in the same `SCHEMA_VERSION = 4` bump)
+
+- Embeddings (CLIP 512-d + Vision feature print 768-d) persist as `f16` le blobs; `dims` column kept. `encode_embedding`
+  → f16; `decode_embedding` widens to f32 (query direction); `decode_embedding_f16` loads f16 for the resident cache.
+- **Scoring choice: score against `f16` directly, not widen-on-load.** The resident `BruteForceVectorStore` holds `f16`
+  (halving RAM as well as disk); `cosine_f16` widens each stored element inline (no temp `Vec`). The brute-force scan is
+  memory-bandwidth-bound, so half the bytes keeps or improves latency — the plan's "measure, pick the simpler one that
+  keeps latency" resolved by that bandwidth argument rather than a micro-bench.
+- Tests: f16 round-trip cosine ≤ 1e-3 (512-d fixture); top-k order preserved vs the exact f32 reference over 100 vectors
+  (0.008 score gaps, scrambled path order); the store round-trip / tag-filter tests now assert within f16 tolerance.
+
 ---
 
 ## M4. Integer-id keying in the media DB
@@ -155,6 +166,22 @@ by path go through one resolved id. Renames/moves become an UPDATE of one row.
 under the new schema vs expected values; rename handling (one-row UPDATE reflected across children).
 
 **Merges with M3** (one schema bump, one agent).
+
+### Status — done (in the same `SCHEMA_VERSION = 4` bump as M3)
+
+- `media_file(id INTEGER PRIMARY KEY, path TEXT UNIQUE)` is the identity table; `media_status`, `media_ocr`,
+  `media_tags`, `media_embedding`, `media_clip_embedding` all key on `file_id`. Decided against merging `media_status`
+  into `media_file` (they're 1:1) to keep identity separate from enrichment-state and match the plan's shape.
+- **Read-path audit (every raw `path =` query became a `media_file` join):** store (`read_status`, `read_all_status`,
+  `read_status_paths`, `sum_bytes_for_paths`, `read_all_embeddings_from`, `read_embedding_for`, `read_tag_matches`); read
+  API (`search_ocr`, `facts_for_paths`, `images_with_tag`); coverage (`scan_accounted`); writer (upsert / upsert_clip /
+  GC / prune / prune-prefix / purge). The Rust layer above the store stays path-addressed (reads join back to a path).
+- Rename is `MediaWriter::rename_path`: a one-row `UPDATE media_file.path`, children follow via `file_id`; maintains the
+  accounted aggregate across a parent-dir change. It's the seam a future rename-following hook calls (renames still
+  manifest as GC+re-enrich until one is wired).
+- Tests: rename moves all five children + the CLIP embedding and only those, refuses a taken destination / missing
+  source, and moves the accounted unit between dirs; the existing search/coverage/facts read tests now exercise the
+  join-based schema (read-path equivalence). All 229 `media_index` tests pass.
 
 ---
 
@@ -180,6 +207,25 @@ keeps the source), embedding sanity harness in the convert pipeline.
 schema bump** (hard constraint, not a preference): a palettized model changes embeddings slightly, so re-embedding on
 the next pass is the clean story, and landing the two bumps around the same pass means the corpus re-embeds ONCE. An
 agent landing M5's pins ahead of the schema bump causes a second full re-embed.
+
+### Status
+
+- **M5a (delete `.mlpackage` after a verified compile) — done** (`clip/install.rs`, `clip/macos.rs`, branch
+  `david/media-schema-slim`). On the `clip-worker`'s first load, once both towers load AND a zero-input encode is sane
+  (512-d, all-finite — `verify_sane`, guarding against a NaN model), each `.mlpackage` source is deleted
+  (`reclaim_source_package`), keeping only the compiled `.mlmodelc` (~550 MB saved). Fallback: `load_tower` prefers the
+  cached `.mlmodelc`; a stale one (OS upgrade) is dropped and recompiled from the `.mlpackage` if present; if NEITHER a
+  loadable compiled model nor a source remains it drops the stale compiled and returns `NotAvailable`, so `is_installed`
+  (now **`.mlpackage` OR `.mlmodelc` per tower**) flips to `false` and `media_index_download_clip_model` refetches the
+  pinned zip. Tradeoff (≈550 MB/user saved vs a rare ~200 MB re-download) documented in `install.rs` + `DETAILS.md`. The
+  filesystem logic is unit-tested; the Core ML FFI around it isn't (needs a real model).
+- **M5b (palettization) — not shipped.** The 2026-07-23 experiment (image-8bit/text-fp16, image-6bit/text-fp16,
+  image-8bit/text-8bit variants with per-tower fidelity gates) died before producing numbers; the earlier finding
+  stands (8-bit palettization NaN'd on the text tower — noted in `install.rs`). Still worth a timeboxed retry. Note:
+  the M3/M4 schema bump has shipped, so a later palettized model costs one extra re-enrich — acceptable while corpora
+  stay small (~9k rows/volume), decreasingly so as they grow. ⚠️ Upload stays David-gated (the no-external-actions
+  rule): an agent stages artifacts + the exact pin diff; the lead uploads additively (new versioned filenames) before
+  any pin bump.
 
 ---
 

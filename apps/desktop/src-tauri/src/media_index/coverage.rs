@@ -223,7 +223,7 @@ fn build_subtree_rollup(per_folder: &HashMap<String, u64>) -> HashMap<String, u6
 /// `done`/`failed` (the store persists no other state), so both count; the `state`
 /// filter is explicit for robustness against a future state that shouldn't.
 fn scan_accounted(conn: &Connection) -> Result<HashMap<String, u64>, super::store::MediaStoreError> {
-    let mut stmt = conn.prepare("SELECT path, state FROM media_status")?;
+    let mut stmt = conn.prepare("SELECT f.path, s.state FROM media_status s JOIN media_file f ON f.id = s.file_id")?;
     let rows = stmt.query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))?;
     let mut per_folder: HashMap<String, u64> = HashMap::new();
     for row in rows {

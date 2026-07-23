@@ -17,10 +17,10 @@
 //!   (plan M3 two-part staleness): installing/upgrading the CLIP model re-embeds CLIP
 //!   without re-running OCR/tags, and a Vision engine bump re-runs OCR/tags without
 //!   re-embedding CLIP.
-//! - [`gc_paths`](MediaWriter::gc_paths): delete the `media_status` + `media_ocr` +
-//!   `media_tags` + `media_embedding` rows for a set of paths whose source files
-//!   vanished (deletion-driven GC, run ONLY on a completed-scan edge — see
-//!   [`super::scheduler`]).
+//! - [`gc_paths`](MediaWriter::gc_paths): delete the `media_file` identity row and its
+//!   `media_status` + `media_ocr` + `media_tags` + `media_embedding` +
+//!   `media_clip_embedding` children for a set of paths whose source files vanished
+//!   (deletion-driven GC, run ONLY on a completed-scan edge — see [`super::scheduler`]).
 //! - [`prune_paths`](MediaWriter::prune_paths) /
 //!   [`prune_under_folder`](MediaWriter::prune_under_folder): USER-EXPLICIT deletion
 //!   (the privacy retro-delete + the reclaim prune), by an explicit path list or by a
@@ -92,6 +92,16 @@ enum WriteMessage {
     /// (the delete-CLIP-model reclaim). Vision columns/tables are untouched. Replies with
     /// the embedding-row count deleted (a barrier). One transaction.
     PruneAllClip { done: mpsc::Sender<usize> },
+    /// Move a stored image's enrichment from `old` to `new` by a ONE-ROW
+    /// `UPDATE media_file.path` — the whole point of integer-id keying (plan M4): every
+    /// child (`media_status`, OCR, tags, embeddings) keys on the unchanged `file_id`, so
+    /// they follow for free. Replies whether a row actually moved (a barrier). One
+    /// transaction.
+    Rename {
+        old: String,
+        new: String,
+        done: mpsc::Sender<bool>,
+    },
     /// Reclaim free pages after a prune (`VACUUM`). `media.db` is a disposable cache,
     /// so `VACUUM` is acceptable, and for the privacy retro-delete it's what actually
     /// removes the deleted text from disk. Replies when done (a barrier).
@@ -227,6 +237,22 @@ impl MediaWriter {
         Ok(rx.recv().unwrap_or(0))
     }
 
+    /// Move a stored image's enrichment from `old` to `new` with a one-row
+    /// `UPDATE media_file.path`; the `file_id`-keyed children (status, OCR, tags,
+    /// embeddings) follow untouched (plan M4). Blocks until committed and returns whether a
+    /// row actually moved (`false` when `old` had no row, or `new` was already taken). This
+    /// is the seam a rename-following hook calls; until one is wired, a rename still
+    /// manifests as GC(old) + enrich(new), which this replaces with an O(1) update.
+    pub fn rename_path(&self, old: &str, new: &str) -> Result<bool, MediaStoreError> {
+        let (tx, rx) = mpsc::channel();
+        self.send(WriteMessage::Rename {
+            old: old.to_string(),
+            new: new.to_string(),
+            done: tx,
+        })?;
+        Ok(rx.recv().unwrap_or(false))
+    }
+
     /// Delete every CLIP embedding and reset every row's `clip_stamp` (the delete-model
     /// reclaim). Blocks until committed and returns the embedding-row count removed.
     /// Resetting each stamp to empty ("no model") means a later re-install re-embeds
@@ -348,6 +374,21 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>, vol
                 decrement_accounted(&volume_id, &deleted);
                 let _ = done.send(deleted.len());
             }
+            WriteMessage::Rename { old, new, done } => {
+                let moved = apply_rename(&mut conn, &old, &new).unwrap_or_else(|e| {
+                    log::warn!(target: "media_index", "rename '{old}' -> '{new}' failed: {e}");
+                    false
+                });
+                // A rename that crosses parent dirs moves one accounted unit between them.
+                if moved {
+                    let (old_dir, new_dir) = (parent_dir(&old), parent_dir(&new));
+                    if old_dir != new_dir {
+                        coverage::accounted_dec(&volume_id, old_dir);
+                        coverage::accounted_inc(&volume_id, new_dir);
+                    }
+                }
+                let _ = done.send(moved);
+            }
             WriteMessage::PruneAllClip { done } => {
                 // CLIP embeddings aren't part of the accounted aggregate (that counts
                 // `media_status` rows, which this leaves intact), so no delta here.
@@ -396,21 +437,19 @@ fn apply_upsert(
     analysis: Option<&UpsertAnalysis>,
 ) -> Result<bool, MediaStoreError> {
     let tx = conn.transaction()?;
-    // Distinguish insert from update BEFORE the upsert (a cheap point lookup on the PK).
-    let exists: i64 = tx.query_row(
-        "SELECT EXISTS(SELECT 1 FROM media_status WHERE path = ?1)",
-        rusqlite::params![row.path],
-        |r| r.get(0),
-    )?;
-    let inserted = exists == 0;
+    // Resolve the path to its `media_file` id, creating the identity row if it's new. A
+    // brand-new `media_file` row means a genuinely-new image (media_file ⇔ media_status
+    // 1:1: they're written together and deleted together), which the caller uses to bump
+    // the accounted aggregate only on a first completion.
+    let (file_id, inserted) = resolve_or_create_file_id(&tx, &row.path)?;
     {
         tx.execute(
-            "INSERT INTO media_status (path, mtime, size, media_kind, state, engine_version)
+            "INSERT INTO media_status (file_id, mtime, size, media_kind, state, engine_version)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6)
-             ON CONFLICT(path) DO UPDATE SET
+             ON CONFLICT(file_id) DO UPDATE SET
                 mtime = ?2, size = ?3, media_kind = ?4, state = ?5, engine_version = ?6",
             rusqlite::params![
-                row.path,
+                file_id,
                 row.mtime.map(|v| v as i64),
                 row.size.map(|v| v as i64),
                 row.media_kind.as_token(),
@@ -418,19 +457,19 @@ fn apply_upsert(
                 row.engine_version,
             ],
         )?;
-        // Clear every prior derived row for this path (one `WHERE path = ?` each).
-        tx.execute("DELETE FROM media_ocr WHERE path = ?1", rusqlite::params![row.path])?;
-        tx.execute("DELETE FROM media_tags WHERE path = ?1", rusqlite::params![row.path])?;
+        // Clear every prior derived row for this file (one `WHERE file_id = ?` each).
+        tx.execute("DELETE FROM media_ocr WHERE file_id = ?1", rusqlite::params![file_id])?;
+        tx.execute("DELETE FROM media_tags WHERE file_id = ?1", rusqlite::params![file_id])?;
         tx.execute(
-            "DELETE FROM media_embedding WHERE path = ?1",
-            rusqlite::params![row.path],
+            "DELETE FROM media_embedding WHERE file_id = ?1",
+            rusqlite::params![file_id],
         )?;
 
         if let Some(analysis) = analysis {
             if !analysis.ocr_text.is_empty() {
                 tx.execute(
-                    "INSERT INTO media_ocr (path, source, text) VALUES (?1, 'ocr', ?2)",
-                    rusqlite::params![row.path, analysis.ocr_text],
+                    "INSERT INTO media_ocr (file_id, source, text) VALUES (?1, 'ocr', ?2)",
+                    rusqlite::params![file_id, analysis.ocr_text],
                 )?;
             }
             if !analysis.tags.is_empty() {
@@ -443,25 +482,47 @@ fn apply_upsert(
                     .collect::<Vec<_>>()
                     .join(" ");
                 tx.execute(
-                    "INSERT INTO media_ocr (path, source, text) VALUES (?1, 'tag', ?2)",
-                    rusqlite::params![row.path, labels],
+                    "INSERT INTO media_ocr (file_id, source, text) VALUES (?1, 'tag', ?2)",
+                    rusqlite::params![file_id, labels],
                 )?;
                 let mut ins_tag =
-                    tx.prepare_cached("INSERT INTO media_tags (path, label, score) VALUES (?1, ?2, ?3)")?;
+                    tx.prepare_cached("INSERT INTO media_tags (file_id, label, score) VALUES (?1, ?2, ?3)")?;
                 for tag in &analysis.tags {
-                    ins_tag.execute(rusqlite::params![row.path, tag.label, tag.score as f64])?;
+                    ins_tag.execute(rusqlite::params![file_id, tag.label, tag.score as f64])?;
                 }
             }
             if let Some(vector) = &analysis.embedding {
                 tx.execute(
-                    "INSERT INTO media_embedding (path, dims, vector) VALUES (?1, ?2, ?3)",
-                    rusqlite::params![row.path, vector.len() as i64, encode_embedding(vector)],
+                    "INSERT INTO media_embedding (file_id, dims, vector) VALUES (?1, ?2, ?3)",
+                    rusqlite::params![file_id, vector.len() as i64, encode_embedding(vector)],
                 )?;
             }
         }
     }
     tx.commit()?;
     Ok(inserted)
+}
+
+/// Resolve `path` to its `media_file` id, inserting a new identity row when the path is not
+/// yet known. Returns `(file_id, inserted)` where `inserted` is `true` only when a fresh row
+/// was created — the "genuinely-new image" signal the accounted aggregate rides on.
+fn resolve_or_create_file_id(tx: &rusqlite::Transaction<'_>, path: &str) -> Result<(i64, bool), MediaStoreError> {
+    if let Some(id) = lookup_file_id(tx, path)? {
+        return Ok((id, false));
+    }
+    tx.execute("INSERT INTO media_file (path) VALUES (?1)", rusqlite::params![path])?;
+    Ok((tx.last_insert_rowid(), true))
+}
+
+/// Look up an existing `media_file` id for `path`, or `None` if the path is unknown.
+fn lookup_file_id(conn: &Connection, path: &str) -> Result<Option<i64>, MediaStoreError> {
+    let mut stmt = conn.prepare_cached("SELECT id FROM media_file WHERE path = ?1")?;
+    let mut rows = stmt.query_map(rusqlite::params![path], |r| r.get::<_, i64>(0))?;
+    match rows.next() {
+        Some(Ok(id)) => Ok(Some(id)),
+        Some(Err(e)) => Err(e.into()),
+        None => Ok(None),
+    }
 }
 
 /// Stamp `path`'s `media_status.clip_stamp` and replace its `media_clip_embedding` in one
@@ -476,21 +537,26 @@ fn apply_upsert_clip(
 ) -> Result<(), MediaStoreError> {
     let tx = conn.transaction()?;
     {
-        let updated = tx.execute(
-            "UPDATE media_status SET clip_stamp = ?2 WHERE path = ?1",
-            rusqlite::params![path, clip_stamp],
-        )?;
-        tx.execute(
-            "DELETE FROM media_clip_embedding WHERE path = ?1",
-            rusqlite::params![path],
-        )?;
-        if updated > 0
-            && let Some(vector) = embedding
-        {
-            tx.execute(
-                "INSERT INTO media_clip_embedding (path, dims, vector) VALUES (?1, ?2, ?3)",
-                rusqlite::params![path, vector.len() as i64, encode_embedding(vector)],
+        // CLIP is eligible only for a path Vision already covered, so its `media_file` +
+        // `media_status` rows exist. A missing row (shouldn't happen) skips the write
+        // rather than orphaning an embedding.
+        if let Some(file_id) = lookup_file_id(&tx, path)? {
+            let updated = tx.execute(
+                "UPDATE media_status SET clip_stamp = ?2 WHERE file_id = ?1",
+                rusqlite::params![file_id, clip_stamp],
             )?;
+            tx.execute(
+                "DELETE FROM media_clip_embedding WHERE file_id = ?1",
+                rusqlite::params![file_id],
+            )?;
+            if updated > 0
+                && let Some(vector) = embedding
+            {
+                tx.execute(
+                    "INSERT INTO media_clip_embedding (file_id, dims, vector) VALUES (?1, ?2, ?3)",
+                    rusqlite::params![file_id, vector.len() as i64, encode_embedding(vector)],
+                )?;
+            }
         }
     }
     tx.commit()?;
@@ -520,20 +586,30 @@ fn delete_rows_for_paths(conn: &mut Connection, paths: &[String]) -> Result<Vec<
     let tx = conn.transaction()?;
     let mut deleted = Vec::new();
     {
-        let mut del_status = tx.prepare_cached("DELETE FROM media_status WHERE path = ?1")?;
-        let mut del_ocr = tx.prepare_cached("DELETE FROM media_ocr WHERE path = ?1")?;
-        let mut del_tags = tx.prepare_cached("DELETE FROM media_tags WHERE path = ?1")?;
-        let mut del_emb = tx.prepare_cached("DELETE FROM media_embedding WHERE path = ?1")?;
-        let mut del_clip = tx.prepare_cached("DELETE FROM media_clip_embedding WHERE path = ?1")?;
+        let mut find = tx.prepare_cached("SELECT id FROM media_file WHERE path = ?1")?;
+        let mut del_status = tx.prepare_cached("DELETE FROM media_status WHERE file_id = ?1")?;
+        let mut del_ocr = tx.prepare_cached("DELETE FROM media_ocr WHERE file_id = ?1")?;
+        let mut del_tags = tx.prepare_cached("DELETE FROM media_tags WHERE file_id = ?1")?;
+        let mut del_emb = tx.prepare_cached("DELETE FROM media_embedding WHERE file_id = ?1")?;
+        let mut del_clip = tx.prepare_cached("DELETE FROM media_clip_embedding WHERE file_id = ?1")?;
+        let mut del_file = tx.prepare_cached("DELETE FROM media_file WHERE id = ?1")?;
         for path in paths {
-            let removed = del_status.execute(rusqlite::params![path])?;
-            del_ocr.execute(rusqlite::params![path])?;
-            del_tags.execute(rusqlite::params![path])?;
-            del_emb.execute(rusqlite::params![path])?;
-            del_clip.execute(rusqlite::params![path])?;
-            if removed > 0 {
-                deleted.push(path.clone());
-            }
+            // A path with no `media_file` row was never enriched: nothing to remove, and
+            // it must NOT count toward the accounted decrement.
+            let Some(file_id) = find
+                .query_map(rusqlite::params![path], |r| r.get::<_, i64>(0))?
+                .next()
+                .transpose()?
+            else {
+                continue;
+            };
+            del_status.execute(rusqlite::params![file_id])?;
+            del_ocr.execute(rusqlite::params![file_id])?;
+            del_tags.execute(rusqlite::params![file_id])?;
+            del_emb.execute(rusqlite::params![file_id])?;
+            del_clip.execute(rusqlite::params![file_id])?;
+            del_file.execute(rusqlite::params![file_id])?;
+            deleted.push(path.clone());
         }
     }
     tx.commit()?;
@@ -549,7 +625,7 @@ fn delete_rows_for_paths(conn: &mut Connection, paths: &[String]) -> Result<Vec<
 /// the accounted decrement + the delete count).
 fn apply_prune_prefix(conn: &mut Connection, prefix: &str) -> Result<Vec<String>, MediaStoreError> {
     let doomed: Vec<String> = {
-        let mut stmt = conn.prepare_cached("SELECT path FROM media_status")?;
+        let mut stmt = conn.prepare_cached("SELECT path FROM media_file")?;
         let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
         let mut out = Vec::new();
         for path in rows {
@@ -575,6 +651,30 @@ fn apply_prune_all_clip(conn: &mut Connection) -> Result<usize, MediaStoreError>
     Ok(removed)
 }
 
+/// Move a stored image's identity row from `old` to `new` in one transaction — the O(1)
+/// rename the integer-id keying buys (plan M4): a single `UPDATE media_file.path`, and every
+/// `file_id`-keyed child (status, OCR, tags, embeddings) follows untouched. Returns whether a
+/// row moved: `false` when `old` has no row, or `new` is already a distinct enriched path
+/// (the `UNIQUE(path)` constraint would reject the update, so it's a no-op, not a crash).
+fn apply_rename(conn: &mut Connection, old: &str, new: &str) -> Result<bool, MediaStoreError> {
+    let tx = conn.transaction()?;
+    // Rename only when `old` has a row AND `new` is free (a taken `new` would violate the
+    // `UNIQUE(path)` constraint, so skip it rather than error).
+    let moved = if let Some(old_id) = lookup_file_id(&tx, old)?
+        && lookup_file_id(&tx, new)?.is_none()
+    {
+        tx.execute(
+            "UPDATE media_file SET path = ?2 WHERE id = ?1",
+            rusqlite::params![old_id, new],
+        )?;
+        true
+    } else {
+        false
+    };
+    tx.commit()?;
+    Ok(moved)
+}
+
 /// `VACUUM` the DB (reclaim free pages; can't run inside a transaction, so it's its own
 /// statement).
 fn apply_vacuum(conn: &Connection) -> Result<(), MediaStoreError> {
@@ -585,7 +685,7 @@ fn apply_vacuum(conn: &Connection) -> Result<(), MediaStoreError> {
 /// Drop every derived row. Schema stays.
 fn apply_purge(conn: &Connection) -> Result<(), MediaStoreError> {
     conn.execute_batch(
-        "DELETE FROM media_status; DELETE FROM media_ocr; DELETE FROM media_tags; DELETE FROM media_embedding; DELETE FROM media_clip_embedding;",
+        "DELETE FROM media_status; DELETE FROM media_ocr; DELETE FROM media_tags; DELETE FROM media_embedding; DELETE FROM media_clip_embedding; DELETE FROM media_file;",
     )?;
     Ok(())
 }
@@ -685,11 +785,13 @@ mod tests {
             conn.query_row(sql, rusqlite::params![path], |r| r.get(0))
                 .expect("count")
         };
+        // Each child table keys on `file_id` now (plan M4), so count via a join on
+        // `media_file`. A fully-`seed`ed image reads `(1, 2, 1, 1)`; a deleted one `(0,…)`.
         (
-            count("SELECT COUNT(*) FROM media_status WHERE path = ?1"),
-            count("SELECT COUNT(*) FROM media_ocr WHERE path = ?1"),
-            count("SELECT COUNT(*) FROM media_tags WHERE path = ?1"),
-            count("SELECT COUNT(*) FROM media_embedding WHERE path = ?1"),
+            count("SELECT COUNT(*) FROM media_status s JOIN media_file f ON f.id = s.file_id WHERE f.path = ?1"),
+            count("SELECT COUNT(*) FROM media_ocr o JOIN media_file f ON f.id = o.file_id WHERE f.path = ?1"),
+            count("SELECT COUNT(*) FROM media_tags t JOIN media_file f ON f.id = t.file_id WHERE f.path = ?1"),
+            count("SELECT COUNT(*) FROM media_embedding e JOIN media_file f ON f.id = e.file_id WHERE f.path = ?1"),
         )
     }
 
@@ -816,6 +918,57 @@ mod tests {
         assert_eq!(row_counts(&db_path, "/a/x.jpg"), (1, 2, 1, 1), "Vision rows kept for x");
         assert_eq!(row_counts(&db_path, "/a/y.jpg"), (1, 2, 1, 1), "Vision rows kept for y");
         w.shutdown();
+    }
+
+    #[test]
+    fn rename_moves_all_children_via_one_row_update_and_keeps_only_those() {
+        let dir = tempfile::tempdir().expect("temp");
+        let vid = "writer-test-rename";
+        coverage::invalidate_accounted(vid);
+        let w = writer(dir.path(), vid);
+        let db_path = media_db_path(dir.path(), vid);
+        seed(&w, "/a/x.jpg");
+        seed(&w, "/a/keep.jpg");
+        // A CLIP embedding + stamp on the renamed image, so the rename must carry it too.
+        w.upsert_clip("/a/x.jpg".to_string(), "clip-v1".to_string(), Some(vec![1.0, 0.0]))
+            .expect("clip x");
+        w.flush_blocking().expect("flush");
+
+        // The whole enrichment moves from /a/x.jpg to /b/y.jpg with one media_file update.
+        assert!(w.rename_path("/a/x.jpg", "/b/y.jpg").expect("rename"), "a row moved");
+
+        // Every Vision child followed (keyed on the unchanged file_id), and the CLIP row +
+        // stamp came along; the source path holds nothing anymore.
+        assert_eq!(row_counts(&db_path, "/a/x.jpg"), (0, 0, 0, 0), "old path fully empty");
+        assert_eq!(
+            row_counts(&db_path, "/b/y.jpg"),
+            (1, 2, 1, 1),
+            "children at the new path"
+        );
+        let conn = open_read_connection(&db_path).expect("open read");
+        let clip_at_new: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM media_clip_embedding c JOIN media_file f ON f.id = c.file_id WHERE f.path = ?1",
+                rusqlite::params!["/b/y.jpg"],
+                |r| r.get(0),
+            )
+            .expect("clip count");
+        assert_eq!(clip_at_new, 1, "the CLIP embedding followed the rename");
+        // The unrelated image is untouched.
+        assert_eq!(row_counts(&db_path, "/a/keep.jpg"), (1, 2, 1, 1), "sibling untouched");
+
+        // Accounted moved from /a to /b (the rename crossed parent dirs).
+        assert_eq!(accounted(vid, "/a"), 1, "one row left in /a (the sibling)");
+        assert_eq!(accounted(vid, "/b"), 1, "the renamed row now counts under /b");
+
+        // A rename of a path with no row is a no-op; a rename onto a taken path is refused.
+        assert!(!w.rename_path("/nope.jpg", "/z.jpg").expect("rename"), "no source row");
+        assert!(
+            !w.rename_path("/b/y.jpg", "/a/keep.jpg").expect("rename"),
+            "destination already enriched"
+        );
+        w.shutdown();
+        coverage::invalidate_accounted(vid);
     }
 
     #[test]
