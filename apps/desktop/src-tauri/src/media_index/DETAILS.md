@@ -731,6 +731,21 @@ OCR text stops being searchable at once (privacy is a hard requirement, not "eve
   rollback pattern from `network-volume-prefs.ts`, in `src/lib/media-index/excluded-folders.ts`, wired in the main
   route's `setupMenuListeners`.
 
+### WAL checkpoint at pass completion (Decision/Why, plan M9)
+
+**Decision:** the writer runs `PRAGMA wal_checkpoint(TRUNCATE)` (`writer::run_wal_checkpoint`, driven by
+`MediaWriter::checkpoint_wal`) once an enrichment pass completes and actually wrote rows — at both the local
+(`run_pass_blocking`) and network (`run_network_pass_blocking`) seams, inside the same `enriched > 0 || gc_count > 0`
+guard that drops the vector cache. It runs on the writer thread's own connection (the single-writer invariant), in
+autocommit. This mirrors `importance/writer.rs::run_wal_checkpoint` verbatim (this module ports importance's patterns);
+the "why", busy tolerance, and the 250 ms bracket are documented there.
+
+**Why here:** without a `wal_autocheckpoint` override, SQLite's default PASSIVE autocheckpoint never shrinks the WAL
+file, so a per-image-upsert enrichment pass lets it creep up in place. A pass completion is the natural quiet point to
+TRUNCATE it back down (target ≤ ~16 MB at rest). Best-effort: the callers `let _ =` the result, so a reader-blocked
+checkpoint never fails a pass. Distinct from `VACUUM` (the reclaim/retro-delete path below), which reclaims free *pages*
+in the main DB after deletes; the checkpoint reclaims the *WAL file* after writes.
+
 ### Reclaim space
 
 Lowering the importance slider is forward-only: it never deletes rows, so a drive indexed at a broad setting keeps that

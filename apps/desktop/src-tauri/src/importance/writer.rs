@@ -26,12 +26,14 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::mpsc;
 use std::thread;
+use std::time::Duration;
 
 use rusqlite::Connection;
 
 use super::store::{ImportanceStoreError, RECOMPUTE_GENERATION_KEY, open_write_connection};
 use crate::ignore_poison::IgnorePoison;
 use crate::indexing::store::normalize_for_comparison;
+use crate::pluralize::pluralize;
 
 /// Bounded channel capacity. A recompute pass sends one `WriteWeights` message
 /// carrying the whole volume, so the queue never holds many messages; a modest
@@ -79,6 +81,10 @@ enum WriteMessage {
     NextGeneration(mpsc::Sender<u64>),
     /// Barrier: signal once all prior messages are committed.
     Flush(mpsc::Sender<()>),
+    /// TRUNCATE the WAL file at a quiet point (recompute completion). Replies once
+    /// the checkpoint attempt finishes, so a caller can sequence "recompute, then
+    /// checkpoint" deterministically. See [`run_wal_checkpoint`].
+    Checkpoint(mpsc::Sender<()>),
     /// Shut the writer thread down.
     Shutdown,
 }
@@ -189,6 +195,19 @@ impl ImportanceWriter {
         Ok(())
     }
 
+    /// TRUNCATE the WAL on the writer thread's own connection (the single-writer
+    /// invariant) at a quiet point — call it right after a recompute completes.
+    /// Blocks until the checkpoint attempt finishes. Best-effort: a reader-blocked
+    /// truncate degrades to PASSIVE and logs at debug, never an error (the WAL just
+    /// doesn't shrink this time; the next recompute retries). See
+    /// [`run_wal_checkpoint`].
+    pub fn checkpoint_wal(&self) -> Result<(), ImportanceStoreError> {
+        let (tx, rx) = mpsc::channel();
+        self.send(WriteMessage::Checkpoint(tx))?;
+        let _ = rx.recv();
+        Ok(())
+    }
+
     /// Shut the writer down and join its thread. Idempotent.
     pub fn shutdown(&self) {
         let _ = self.sender.send(WriteMessage::Shutdown);
@@ -244,6 +263,10 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>) {
                 let _ = reply.send(next);
             }
             WriteMessage::Flush(done) => {
+                let _ = done.send(());
+            }
+            WriteMessage::Checkpoint(done) => {
+                run_wal_checkpoint(&conn);
                 let _ = done.send(());
             }
             WriteMessage::Shutdown => break,
@@ -364,4 +387,121 @@ fn apply_visit(conn: &Connection, path: &str, at_secs: u64) -> Result<(), Import
         rusqlite::params![normalize_for_comparison(path), path, at_secs as i64],
     )?;
     Ok(())
+}
+
+/// TRUNCATE the WAL file so its high-water mark doesn't sit on disk. SQLite's
+/// default PASSIVE `wal_autocheckpoint` copies frames back into the main DB but
+/// reuses the WAL file in place and never shrinks it; only an explicit TRUNCATE
+/// reclaims the space. A full recompute REPLACES the whole `weights` table and the
+/// every-60s incremental churns pages, so without this the WAL grows to ~100% of the
+/// DB and stays there (plan M9).
+///
+/// Runs on the writer thread's own connection in autocommit: every message commits
+/// its transaction before the loop reads the next, so `wal_checkpoint(TRUNCATE)`
+/// (which SQLite refuses inside a transaction) is always safe here.
+///
+/// A long-lived reader snapshot can block the truncate. We give readers a short,
+/// bounded grace (mirroring the index writer's ~250 ms cap in
+/// `indexing/writer/maintenance.rs`) then degrade to PASSIVE (`busy = 1`): the frames
+/// still checkpoint into the main DB, the file just doesn't shrink this time, and the
+/// next recompute retries. No retry loop: a persistent reader is working-as-designed.
+fn run_wal_checkpoint(conn: &Connection) {
+    // A short busy timeout around the truncate: without it the connection's default
+    // 5 s timeout (set in `store/connection.rs`) would stall the writer thread (and
+    // every write queued behind it) waiting a reader out. Restored right after.
+    let _ = conn.busy_timeout(Duration::from_millis(250));
+    let result: rusqlite::Result<(i64, i64, i64)> = conn.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |row| {
+        Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+    });
+    let _ = conn.busy_timeout(Duration::from_millis(5000));
+    match result {
+        Ok((0, log_size, checkpointed)) => {
+            log::debug!(target: "importance", "wal_checkpoint TRUNCATE done ({checkpointed} of {})", pluralize(log_size as u64, "frame"));
+        }
+        Ok((_, log_size, checkpointed)) => {
+            log::debug!(target: "importance", "wal_checkpoint partial ({checkpointed} of {}, blocked by readers)", pluralize(log_size as u64, "frame"));
+        }
+        Err(e) => {
+            log::warn!(target: "importance", "wal_checkpoint failed: {e}");
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::importance::store::{ImportanceStore, importance_db_path, open_read_connection};
+
+    /// The on-disk size of the DB's `-wal` sidecar, or 0 if it's absent.
+    fn wal_len(db_path: &Path) -> u64 {
+        std::fs::metadata(db_path.with_extension("db-wal"))
+            .map(|m| m.len())
+            .unwrap_or(0)
+    }
+
+    /// A fresh importance store + writer over a scratch volume.
+    fn writer(dir: &Path) -> (ImportanceWriter, PathBuf) {
+        let db_path = importance_db_path(dir, "root");
+        ImportanceStore::open(&db_path).expect("open store");
+        let w = ImportanceWriter::spawn(&db_path).expect("spawn writer");
+        (w, db_path)
+    }
+
+    /// Write a full pass of `n` rows through `w` and block until it commits.
+    fn write_pass(w: &ImportanceWriter, n: usize) {
+        let rows: Vec<WeightRow> = (0..n)
+            .map(|i| WeightRow {
+                path: format!("/folder/{i}"),
+                score: 0.5,
+                signals_json: "{}".to_string(),
+            })
+            .collect();
+        let generation = w.next_generation().expect("generation");
+        w.write_weights(generation, rows).expect("write weights");
+        w.flush_blocking().expect("flush");
+    }
+
+    #[test]
+    fn checkpoint_truncates_the_wal_at_rest() {
+        let dir = tempfile::tempdir().expect("temp");
+        let (w, db_path) = writer(dir.path());
+
+        // A committed full pass leaves frames in the WAL; passive autocheckpoint never
+        // truncates the file, so it sits non-empty on disk.
+        write_pass(&w, 500);
+        assert!(wal_len(&db_path) > 0, "the WAL holds frames before the checkpoint");
+
+        // The checkpoint hook truncates it to zero (no reader is blocking).
+        w.checkpoint_wal().expect("checkpoint");
+        assert_eq!(wal_len(&db_path), 0, "the checkpoint truncated the WAL to zero at rest");
+
+        w.shutdown();
+    }
+
+    #[test]
+    fn checkpoint_tolerates_a_blocking_reader_without_erroring() {
+        let dir = tempfile::tempdir().expect("temp");
+        let (w, db_path) = writer(dir.path());
+        write_pass(&w, 50);
+
+        // Pin an old read snapshot: an open read transaction holds a WAL read mark, so a
+        // later TRUNCATE can't reclaim the frames past it.
+        let reader = open_read_connection(&db_path).expect("reader");
+        reader.execute_batch("BEGIN").expect("begin read txn");
+        let _pinned: i64 = reader
+            .query_row("SELECT COUNT(*) FROM weights", [], |r| r.get(0))
+            .expect("pin snapshot");
+
+        // Advance the WAL past the reader's snapshot, then checkpoint. The truncate is
+        // blocked, but the hook must NOT surface an error (it degrades to PASSIVE).
+        write_pass(&w, 50);
+        w.checkpoint_wal()
+            .expect("checkpoint tolerates the reader without erroring");
+
+        reader.execute_batch("END").ok();
+
+        // The writer keeps working after a blocked checkpoint (the recompute path is intact).
+        write_pass(&w, 10);
+        w.shutdown();
+    }
 }

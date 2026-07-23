@@ -282,6 +282,9 @@ impl MediaScheduler {
         // Query-time vector residency).
         if summary.enriched > 0 || summary.gc_count > 0 {
             super::vector::cache::invalidate(&super::store::media_db_path(&self.data_dir, volume_id));
+            // The pass wrote rows, so the WAL grew: truncate it at this quiet point
+            // (plan M9). Best-effort, never fails the pass.
+            let _ = writer.checkpoint_wal();
         }
         // Refill the covered-count cache from THIS pass's own walk instead of invalidating:
         // the pass already ran the exact whole-volume `walk_image_entries`, so refilling keeps
@@ -539,6 +542,9 @@ impl MediaScheduler {
                 network::config::clear_paused(volume_id);
                 if summary.enriched > 0 || summary.gc_count > 0 {
                     super::vector::cache::invalidate(&super::store::media_db_path(&self.data_dir, volume_id));
+                    // The pass wrote rows, so the WAL grew: truncate it at this quiet
+                    // point (plan M9). Best-effort, never fails the pass.
+                    let _ = writer.checkpoint_wal();
                 }
                 // Refill coverage from this pass's whole-index walk (as the local pass does),
                 // so an opted-in SMB volume's slider preview also stays warm without a cold

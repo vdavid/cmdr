@@ -268,6 +268,15 @@ rest.
 
 **Smallest item; bundle with M8 in one agent if convenient.**
 
+### Status: shipped
+
+`PRAGMA wal_checkpoint(TRUNCATE)` now runs on each DB's own writer thread at its natural quiet point: after every
+importance recompute (full pass + the every-60s incremental, in `importance/scheduler/recompute.rs`) and after every
+media enrichment pass that wrote rows (local + network seams in `media_index/scheduler/mod.rs`). Both writers gained a
+`checkpoint_wal()` method + `run_wal_checkpoint` helper (`{importance,media_index}/writer.rs`) that brackets the
+truncate with a short 250 ms busy timeout (mirroring the index writer's cap), degrades to PASSIVE on a reader-blocked
+truncate, logs at debug, and never errors the pass. Decision/Why in each area's `DETAILS.md`.
+
 ---
 
 ## M10. Gate the Vision embedding (optional, last)

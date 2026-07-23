@@ -299,6 +299,10 @@ pub(super) fn recompute_folders(
     let generation = writer.next_generation().map_err(|e| e.to_string())?;
     writer.write_weights(generation, rows).map_err(|e| e.to_string())?;
     writer.flush_blocking().map_err(|e| e.to_string())?;
+    // A full pass REPLACES the whole `weights` table, so the WAL just grew to ~DB size.
+    // Truncate it now that the pass is committed (a quiet point). Best-effort: it never
+    // fails the recompute (plan M9).
+    let _ = writer.checkpoint_wal();
 
     Ok(RecomputeOutcome { count, generation })
 }
@@ -498,6 +502,9 @@ pub(super) fn incremental_rescore(
         .write_weights_incremental(generation, rows, changed_paths.to_vec())
         .map_err(|e| e.to_string())?;
     writer.flush_blocking().map_err(|e| e.to_string())?;
+    // The every-60s incremental is the WAL churn source (plan M9): truncate at this
+    // quiet point so the file doesn't creep up in place. Best-effort, never fails.
+    let _ = writer.checkpoint_wal();
     Ok(count)
 }
 

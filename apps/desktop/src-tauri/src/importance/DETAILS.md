@@ -400,6 +400,26 @@ recompute reaches it via `writer_for`. Creation reserves the slot then builds ou
 first-uses can't race two threads onto one DB. `next_generation()` reads the current generation on the writer thread's own
 connection (not a separate reader), keeping the generation a single-writer-owned value.
 
+### WAL checkpoint at recompute completion (Decision/Why, plan M9)
+
+**Decision:** the writer runs `PRAGMA wal_checkpoint(TRUNCATE)` (`writer::run_wal_checkpoint`, driven by
+`ImportanceWriter::checkpoint_wal`) at every recompute completion — after both a full pass (`recompute_folders`) and an
+incremental rescore (`incremental_rescore`), once the write is flushed. It runs on the writer thread's own connection (the
+single-writer invariant; never a side connection), in autocommit (each message commits before the next, so the TRUNCATE —
+which SQLite refuses inside a transaction — is always legal here).
+
+**Why:** no `wal_autocheckpoint` override is set, so SQLite's default PASSIVE autocheckpoint copies frames back into the
+main DB but reuses the WAL file in place and never shrinks it. A full pass REPLACES the whole `weights` table and the
+every-60s incremental churns pages, so the WAL climbed to ~100% of the DB size (100 MB DB, 100 MB WAL observed on the dev
+`importance-root.db`) and stayed there. Only an explicit TRUNCATE reclaims that on-disk space; a recompute completion is
+the natural quiet point to take it, keeping the WAL small (≤ ~16 MB at rest).
+
+**Busy tolerance, no retry loop:** a long-lived reader snapshot can block the truncate. The checkpoint brackets itself with
+a short busy timeout (250 ms, mirroring the index writer's cap in `indexing/writer/maintenance.rs`) so it can't stall the
+writer thread for the connection's default 5 s, then degrades to PASSIVE (`busy = 1`): the frames still checkpoint into the
+main DB, the file just doesn't shrink this time, and the next recompute retries. It logs at debug and moves on; the
+recompute callers `let _ =` the result, so a checkpoint hiccup never fails a pass.
+
 ## Dev tuning surface (`crates/index-query`'s `importance-tune` bin, M3, plan Decision 6)
 
 A minimal dev-only binary extending the `index-query` pattern (a `cmdr_lib`-linking CLI with the collation registered).
