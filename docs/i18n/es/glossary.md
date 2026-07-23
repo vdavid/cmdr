@@ -435,21 +435,13 @@ AppKit + SystemSettings, 2026-06-21).
   standalone "Back" button is the adverb "Atrás" (backArrow), but "Back to X" needs the verb "Volver a X" (pile: "volver
   a la versión anterior") · Double Commander es ("Preajustes"; "El preajuste «%s» ya existe") · high
 
-### Settled during the copy/delete dialog-polish pass (Action/Route field labels + scan tooltips; macOS Finder/AppKit + MS terminology, 2026-06-30)
+### Settled during the copy/delete dialog-polish pass (Action label + scan tooltip; macOS Finder/AppKit + MS terminology, 2026-06-30)
 
-- "Action:" (field label before the Copy/Move or Trash/Delete segmented control) → Acción: · macOS ("Action"→"Acción",
-  e.g. Finder TL26/SP95, AppKit 200/201.title) · high. Keep the trailing colon.
-- "Route:" (field label before the source→destination line in the copy/move dialog) → Ruta: · MS terminology ("route"
-  noun → "ruta", id 181744/181745, all regions incl. ESP/419). "Ruta" carries the route/itinerary sense, which fits the
-  from→to line better than English "Route". Note the collision with path→ruta (glossary), accepted: the visible label is
-  short and the destination-path strings qualify themselves ("Ruta de destino"); the English author likewise reused a
-  path-ish word distinct from "Path" · high
+- action (what a control chooses; screen-reader label `fileOperations.transferDialog.operationAria`) → Acción · macOS
+  ("Action"→"Acción", e.g. Finder TL26/SP95, AppKit 200/201.title) · high
 - "Scanning…" (spinner tooltip while counting items) → Analizando… · reuses the settled
   scan/scanning→analizar/Analizando choice; matches this file''s `transferProgress.stageScanning` = "Analizando". Source
   uses a Unicode ellipsis (U+2026), so the value does too · high
-- "Scan complete" (checkmark tooltip after counting) → Análisis completado · "análisis" (masc.) for the scan noun +
-  "completado" agreeing (macOS "completado/completada" for complete, e.g. "Sincronización … completada", "Porcentaje
-  completado"); parallels the transfer-toast "Copia completada"/"Movimiento completado" pattern · high
 - "This folder doesn''t exist yet" (destination-not-found warning) → Esta carpeta todavía no existe · "carpeta" = folder
   (glossary); "todavía no existe" for "doesn''t exist yet" (macOS uses both "aún no" e.g. "iCloud aún no tiene…" and "ya
   no existe" for the negative-existence sense; "todavía no" reads natural and friendly) · high
@@ -782,3 +774,18 @@ sessions, attachments, consent screen, cost footer, settings section; macOS AppK
   etiquetas"); "Keyword and tag search keep working" → "La búsqueda por palabras clave y por etiquetas sigue
   funcionando" · high
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+### Settled during the dialog-polish pass: delete-dialog trash switch + transfer From/To groups (`fileOperations.delete.trashSwitch`/`confirmDelete`, `fileOperations.transferDialog.sourceGroupTitle`/`targetGroupTitle`; macOS Finder + Total/Double Commander, 2026-07-23)
+
+- "Move to trash" (switch in the delete dialog, on = trash, off = permanent delete) → Mover a la papelera · identical to
+  every sibling trash string in this file (`transferDialog.titleVerbOnly`'s `other {Mover a la papelera}`,
+  `transfer.trash`) and to the settled `move → mover`. macOS Finder's own menu item is "Trasladar a la papelera" (Finder
+  AL13/N153); not taken, so the catalog keeps ONE move verb · high
+- "Delete" (destructive confirm button while the switch is off) → Eliminar · settled delete verb, identical to
+  `transferDialog.titleVerbOnly`'s `delete {Eliminar}` arm · high
+- "From" / "To" (headings over the source path and over the destination volume + path) → Desde / Hacia · Double
+  Commander es ships this exact pair as the copy/move dialog's field labels ("Desde:"/"Hacia:"); the directional "hacia"
+  is the partner "desde" asks for, where a bare "A" would read as a stray single letter above a group. Total Commander
+  es (`662="DE:  "`, `663="EN: "`) rejected: uppercase, and "EN" is a locative, not a destination. The settled nouns
+  origen / destino stay for the destination CONTROLS ("Volumen de destino", "Ruta de destino"); the headings take the
+  light prepositional pair the English uses · high

@@ -411,20 +411,12 @@ From the FAT32-size-guard pass (`errors.write.filesTooLargeForFilesystem.*` +
 From the dialog-polish pass (2026-06-30; new `fileOperations.json` field labels + scan-spinner tooltips). Reuses
 scan/genomsökning terms above; new ones:
 
-- **Action (field label before the Copy/Move · Trash/Delete segmented control): `Åtgärd:`** · macOS Finder ("Åtgärd",
-  standalone label) and MS terminology both render action → "åtgärd"; matches the glossary's `åtgärden {verb}` framing.
-  Keep the trailing colon. `high`.
-- **Route (field label before the `source → destination` line in the copy/move dialog): `Rutt:`** · Cmdr-coined label
-  with no direct source. EN deliberately chose "Route" over "Path" to convey the from→to of a transfer, so kept distinct
-  from `sökväg` (= path; MS renders the filesystem-route sense of "route" as "sökväg", but that collides with the path
-  term). "Rutt" is the cognate that reads as a from-A-to-B route and stays distinct. Keep the trailing colon.
-  `tentative` (Cmdr-coined; review).
+- **Action (what a control chooses; screen-reader label `transferDialog.operationAria`): `Åtgärd`** · macOS Finder
+  ("Åtgärd", standalone label) and MS terminology both render action → "åtgärd"; matches the glossary's
+  `åtgärden {verb}` framing. `high`.
 - **Scanning… (tooltip + SR label on the counting spinner): `Söker igenom…`** · matches this file's
   `transferProgress.stageScanning` ("Söker igenom") and the glossary `genomsökning` / `söker igenom` scan-pass entries.
   Unicode ellipsis mirrors the EN source per the ellipsis rule. `high`.
-- **Scan complete (tooltip + SR label on the done checkmark): `Genomsökning klar`** · scan noun `genomsökning`
-  (glossary) + macOS "Klar" (done/complete, 12 pile hits). Pairs with `Söker igenom…`; mirrors EN's gerund→noun form
-  shift. `high`.
 - **"doesn''t exist yet … will create it during the copy/move" (yellow inline warning under the destination box):
   `finns inte än` + `Cmdr skapar den under {kopieringen|flytten}`** · "doesn''t exist" → `finns inte` (Total Commander
   "Katalogen … finns inte. Vill du skapa den?"), warmed with `än` (yet); created actively (`Cmdr skapar den`, active
@@ -795,3 +787,16 @@ Reuses the settled indexing family (`indexera`/`indexering`, passive `indexeras`
   `settings.mediaIndex.progressSummary.title`. `high`.
 
 No `sameAsSourceJustification` needed: all 12 values differ from English.
+
+## Delete-dialog trash switch + transfer From/To groups (2026-07-23; `fileOperations.delete.trashSwitch`/`confirmDelete` + `fileOperations.transferDialog.sourceGroupTitle`/`targetGroupTitle`)
+
+- **"Move to trash" (switch in the delete dialog, on = papperskorgen, off = permanent delete):
+  `Flytta till papperskorgen`** · macOS Finder sv AL13/N153 verbatim; identical to this file's
+  `transferDialog.titleVerbOnly` `other {Flytta till papperskorgen}` arm, so the switch and the confirm button read as
+  one pair. `high`.
+- **"Delete" (destructive confirm button while the switch is off): `Radera`** · settled delete verb, identical to
+  `transferDialog.titleVerbOnly`'s `delete {Radera}` arm. `high`.
+- **"From" / "To" (headings over the source path and over the destination volume + path): `Från` / `Till`** · Total
+  Commander sv ships this exact label pair in its copy/move dialog (`662="Från: "`, `663="Till: "`); macOS "Flytta till"
+  confirms `till` for a destination. The settled `mål` target noun stays for the destination CONTROLS (`Målvolym`,
+  `Målsökväg`); the headings take the light prepositional pair the English uses. `high`.

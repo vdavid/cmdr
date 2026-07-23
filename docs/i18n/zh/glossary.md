@@ -453,18 +453,13 @@ macOS Finder zh-CN Tier 1 (`PE4.5` = the same "too large for the volume's format
 - preset (value in a settings-picker dropdown) → 预设; "back to presets" → "返回预设" · Microsoft terminology ("indexing
   preset" → "索引预设"); 预设 dominates the corpus over 预置 (~30:1) · high
 
-### Copy/delete dialog field labels + scan spinner (dialog-polish pass)
+### Copy/delete dialog labels + scan spinner (dialog-polish pass)
 
-- **Action: (field label before a Copy/Move or Trash/Delete two-option picker)** · `操作：` · Microsoft TBX (`action` →
-  `操作`); matches result-column `操作` from the search pass. Full-width colon per style.md punctuation rule (matches
-  sibling labels `来自：`, `AI 建议：`) · `high`
-- **Route: (field label before a "source → destination" line in the copy/move dialog)** · `路线：` · no reference-pile
-  source for this metaphorical "route" label; `路线` (route/itinerary) carries the en journey metaphor and avoids the
-  file-path collision of `路径`. Full-width colon · `tentative`
+- **action (what a control chooses; screen-reader label `transferDialog.operationAria`)** · `操作` · Microsoft TBX
+  (`action` → `操作`); matches result-column `操作` from the search pass. No colon: it's an aria-label, not a visible
+  field label · `high`
 - **Scanning… (spinner tooltip while counting selected items)** · `正在扫描…` · reused from the search pass
   (`正在扫描`); the locale-wide `正在…` in-progress pattern + single full-width `…` ellipsis normalization · `high`
-- **Scan complete (checkmark tooltip once counting finished)** · `扫描完成` · macOS `完成` is the standard
-  "complete/done" word (`完成` / `已完成`); `扫描` from the scan term · `high`
 - **"doesn''t exist yet" (destination folder, yellow inline warning)** · `还不存在` · macOS Finder PE131
   (`doesn''t exist anymore` → `不再存在`) + Nautilus (`does not exist` → `不存在`); `还` carries the "yet" nuance ·
   `high`
@@ -796,3 +791,16 @@ term used instead), Microsoft zh-Hans TBX cross-check. Three settings-card title
   now, calm) + `请稍后重试` reused from `operationLog.loadError`; no bare 失败/错误 per style.md · `high`
 - No `sameAsSourceJustification` needed: every value differs from English; only `Apple`/`Mac`/`Cmdr` and the `{size}`
   placeholder stay verbatim.
+
+### Delete-dialog trash switch + transfer From/To group headings (`fileOperations.delete.trashSwitch`/`confirmDelete`, `fileOperations.transferDialog.sourceGroupTitle`/`targetGroupTitle`, 2026-07-23)
+
+- **"Move to trash" (switch in the delete dialog, on = 废纸篓, off = permanent delete)** · `移到废纸篓` · macOS Finder
+  zh-CN AL13/N153 verbatim; identical to this file's `transferDialog.titleVerbOnly` `other {移到废纸篓}` arm, so the
+  switch and the confirm button read as one pair · `high`
+- **"Delete" (destructive confirm button while the switch is off)** · `删除` · settled delete verb, identical to
+  `transferDialog.titleVerbOnly`'s `delete {删除}` arm · `high`
+- **"From" / "To" (headings over the source path and over the destination volume + path)** · `来源` / `目标` · Total
+  Commander zh renders the copy/move source→target pair as `来源: […]` / `目标: […]` (message 112), and `目标` is what
+  the group's own controls already carry (`destVolumeAria` = `目标宗卷`, `destPathAria` = `目标路径`), so heading and
+  contents agree. TC/DC's other rendering (`从:` / `到:`) rejected: `从` and `到` are coverbs that need a following
+  object, so they read as fragments once the path sits BELOW the heading instead of after a colon · `high`

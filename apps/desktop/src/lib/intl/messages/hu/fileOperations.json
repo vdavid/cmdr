@@ -173,11 +173,11 @@
   "@fileOperations.transferDialog.toggleCompress": {
     "sourceHash": "033fc04"
   },
-  "fileOperations.transferDialog.sourceGroupTitle": "Innen",
+  "fileOperations.transferDialog.sourceGroupTitle": "Forrás",
   "@fileOperations.transferDialog.sourceGroupTitle": {
     "sourceHash": "2181976"
   },
-  "fileOperations.transferDialog.targetGroupTitle": "Ide",
+  "fileOperations.transferDialog.targetGroupTitle": "Cél",
   "@fileOperations.transferDialog.targetGroupTitle": {
     "sourceHash": "f4b06ef"
   },

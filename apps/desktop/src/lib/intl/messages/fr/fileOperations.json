@@ -177,14 +177,14 @@
   "@fileOperations.transferDialog.sourceGroupTitle": {
     "sourceHash": "2181976"
   },
-  "fileOperations.transferDialog.targetGroupTitle": "Vers",
+  "fileOperations.transferDialog.targetGroupTitle": "À",
   "@fileOperations.transferDialog.targetGroupTitle": {
     "sourceHash": "f4b06ef"
   },
   "fileOperations.transferDialog.operationAria": "Action",
   "@fileOperations.transferDialog.operationAria": {
     "sourceHash": "64cff13",
-    "sameAsSourceJustification": "\"Action\" is spelled the same in French."
+    "sameAsSourceJustification": "\"Action\" is a genuine French noun with identical spelling, pervasive as a UI term (macOS Finder/AppKit \"Action\", Microsoft terminology FRA \"action\"). Nothing to translate; this key is an aria-label with no colon, so it lands byte-identical to English."
   },
   "fileOperations.transferDialog.destVolumeAria": "Volume de destination",
   "@fileOperations.transferDialog.destVolumeAria": {

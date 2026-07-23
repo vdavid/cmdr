@@ -351,17 +351,11 @@ Format, the confidence scale, and the full process: `docs/guides/i18n-translatio
 - preset (value in a settings-picker dropdown; opposite of the custom-value option) → Voreinstellung; "back to presets"
   → "Zurück zu den Voreinstellungen" · Microsoft terminology ("indexing preset" → "Indizierungsvoreinstellung"), macOS
   DE print dialog "Voreinstellungen" · high
-- action (generic "Action:" field label before a Copy/Move or Trash/Delete segmented control) → Aktion ("Aktion:") ·
-  macOS ("Aktion" appears as a bare label, 6× in the pile; "Diese Aktion …") · high
-- route ("Route:" label before a source → destination line in the copy/move dialog) → Route (kept; identical to English)
-  · no transfer-label source (TC/DC phrase it in full as "von X nach Y", not a label); "die Route" is a genuine German
-  noun for a path between two points, fits the FROM→TO arrow and keeps the compact, evocative English register · high.
-  Recorded as sameAsSourceJustification in the catalog
+- action (what the Copy/Move/Compress segmented control chooses; screen-reader label `transferDialog.operationAria`) →
+  Aktion · macOS ("Aktion" appears as a bare label, 6× in the pile; "Diese Aktion …") · high
 - "Scanning…" (spinner tooltip while the dialog counts selected items) → "Wird durchsucht …" · aligns with the settled
   scan → durchsuchen term and the existing `transferProgress.stageScanning` "Wird durchsucht"; progress-line
   space-before-ellipsis per style guide · high
-- "Scan complete" (checkmark tooltip once counting finished) → "Durchsuchen abgeschlossen" · scan → durchsuchen +
-  complete → abgeschlossen (matches the catalog pattern "Löschen abgeschlossen"/"Kopieren abgeschlossen") · high
 - "This folder doesn't exist yet. Cmdr will create it during the copy/move." (yellow warning under the dest-path box
   when the typed folder is missing) → "Diesen Ordner gibt es noch nicht. Cmdr erstellt ihn beim Kopieren." / "… beim
   Bewegen." · folder → Ordner (masc., so accusative "diesen Ordner" / pronoun "ihn"); existence via the catalog's
@@ -688,3 +682,22 @@ delete flow, and the "Indexing now" file badge).
 - "Apple silicon" kept verbatim (lowercase `silicon`, per the en @key "keep it"); no de-macOS rendering exists in the
   pile.
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+## Delete-dialog trash switch + transfer From/To groups (2026-07-23)
+
+New `fileOperations.json` keys from the dialog-polish pass: the delete dialog swapped its Trash/Delete picker for a
+"Move to trash" switch plus a matching confirm button, and the copy/move/compress dialog groups the source path and the
+destination volume+path under "From" and "To" headings.
+
+- "Move to trash" (`delete.trashSwitch`; switch in the delete dialog, on = trash, off = permanent delete) →
+  `In den Papierkorb bewegen` · the catalog's settled `move → bewegen` (macOS Finder "Bewegen", not the Microsoft
+  "Verschieben"), and identical to every sibling trash string in this file (`transferDialog.titleVerbOnly`'s
+  `other {In den Papierkorb bewegen}`, `transfer.trash`). macOS Finder's own menu item is `In den Papierkorb legen`
+  (Finder AL13/N153); not taken, so the catalog keeps ONE move verb · high
+- "Delete" (`delete.confirmDelete`; destructive confirm button while the switch is off) → `Löschen` · settled delete
+  verb, identical to `transferDialog.titleVerbOnly`'s `delete {Löschen}` arm · high
+- "From" / "To" (`transferDialog.sourceGroupTitle` / `targetGroupTitle`; headings over the source path and over the
+  destination volume + path) → `Von` / `Nach` · Total Commander de (`662="VON:  "`, `663="NACH: "`) and Double Commander
+  de ("Von:"/"Nach:") both ship this label pair in the same copy/move dialog, and "von X nach Y" is the German transfer
+  idiom. The settled nouns `Quelle` / `Ziel` stay for the destination CONTROLS (`Zielvolume`, `Zielpfad`); the headings
+  take the light prepositional pair the English uses · high

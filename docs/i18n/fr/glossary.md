@@ -506,21 +506,13 @@ RAW `errors.*` strings use single apostrophes; the `fileOperations.*` ICU string
 Settled during the `dialog-polish` copy/delete-dialog field-label pass (2026-06-30). ICU values, so single apostrophes
 doubled below to match this doc's convention:
 
-- Action (field label before the Copy/Move or Trash/Delete segmented control) → "Action :" · "Action" is a genuine
+- Action (what a control chooses; screen-reader label `transferDialog.operationAria`) → "Action" · "Action" is a genuine
   French word (identical spelling), pile-pervasive as a UI noun (macOS Finder/AppKit "Action", MS terminology FRA
-  "action"); the FR rendering differs from EN only by the catalog-wide ASCII space before the colon, so it's NOT
-  identical-to-English (no justification needed) · high
-- Route (field label before the "source → destination" line in the copy/move dialog) → "Trajet :" · NO settled pile term
-  — in the references "route" is networking-only (MS terminology "routeur"/"route" = router/network route; macOS has no
-  source-to-destination label). "Trajet" is the natural FR for the from-A-to-B movement of a transfer (a journey/route
-  you travel), fitting the metaphor better than the filesystem-path "Chemin" (already used for `destPathAria` "Chemin de
-  destination") or the heavier "Itinéraire". ASCII space before the colon per the catalog-wide spacing rule · tentative
-  (Cmdr coinage, no pile source; matches the EN's own metaphorical "Route")
+  "action"). With no colon on this key the FR value lands byte-identical to EN, so it carries a
+  `sameAsSourceJustification` in the catalog · high
 - "Scanning…" (spinner tooltip + SR label while the dialog counts selected items) → "Analyse…" · reuses the settled
   `scanning (transfer stage) → analyse` term (`transferProgress.stageScanning` = "Analyse"); the single … char kept
   verbatim (EN uses one … glyph, not three dots) · high
-- "Scan complete" (checkmark tooltip + SR label once counting finished) → "Analyse terminée" · "analyse" is feminine, so
-  the past participle agrees "terminée"; matches the settled `Done → Terminé` pattern · high
 - "This folder doesn''t exist yet. Cmdr will create it during the copy/move." (yellow inline warning under the
   destination box when the typed target folder is missing) → "Ce dossier n''existe pas encore. Cmdr le créera lors de la
   copie." / "… lors du déplacement." · "doesn''t exist (yet)" → "n''existe pas (encore)" (pile: Double Commander "Le
@@ -919,3 +911,19 @@ titles, the Semantic search card, one file-list badge;
   `N''a pas pu se terminer`/`réessayez` register (queue + errors passes), avoiding "erreur"/"échec" per the style guide
   · high.
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+Settled during the dialog-polish pass (`fileOperations.json`, 2026-07-23): the delete dialog swapped its Trash/Delete
+picker for a "Move to trash" switch plus a matching confirm button, and the copy/move/compress dialog groups the source
+path and the destination volume+path under "From" and "To" headings.
+
+- "Move to trash" (`delete.trashSwitch`; switch in the delete dialog, on = trash, off = permanent delete) →
+  `Placer dans la corbeille` · macOS Finder AL13/N153 verbatim, and identical to this file's
+  `transferDialog.titleVerbOnly` `other {Placer dans la corbeille}` arm · high
+- "Delete" (`delete.confirmDelete`; destructive confirm button while the switch is off) → `Supprimer` · settled delete
+  verb, identical to `transferDialog.titleVerbOnly`'s `delete {Supprimer}` arm · high
+- "From" / "To" (`transferDialog.sourceGroupTitle` / `targetGroupTitle`; headings over the source path and over the
+  destination volume + path) → `De` / `À` · Total Commander fr (`662="De : "`, `663="À : "`) and Double Commander fr
+  ("De :"/"A :") both ship this label pair in the same copy/move dialog, and "De … à …" is the idiomatic French from/to
+  pair. macOS's `Déplacer vers :` ("Move To:") is verb-bound, so it settles the destination PREPOSITION inside a verb
+  phrase, not the standalone heading; bare "Vers" was weighed on that basis and set aside for the pile-attested,
+  symmetrical pair. No space before a colon applies here: the headings carry no colon · high

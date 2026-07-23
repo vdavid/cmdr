@@ -550,21 +550,15 @@ From the `filesTooLargeForFilesystem` pass (FAT32 file-size-cap error; mined `_i
 - preset (value in a settings-picker dropdown) → voorinstelling; "back to presets" → "Terug naar voorinstellingen" ·
   Double Commander nl ("voorinstelling": "gewijzigde voorinstelling") · high
 
-From the dialog-polish pass (4 new `fileOperations` keys; mined `_ignored/i18n/nl/`, 2026-06-30):
+From the dialog-polish pass (new `fileOperations` keys; mined `_ignored/i18n/nl/`, 2026-06-30):
 
-- action (operation-picker field label "Action:") → Bewerking: · macOS AppKit ("This action cannot be performed"→"Deze
-  bewerking kan niet worden uitgevoerd"); matches glossary "File operations"→"Bestandsbewerkingen". macOS "bewerking"
-  (Tier 1) over Double Commander "actie" (DC: "The action cannot be completed"→"De actie kan niet worden voltooid").
-  Keeps the trailing colon like macOS labels "Naam:"/"Opties:" · high
-- route (field label "Route:" before a source → destination line) → Route: · kept identical: "route" (de route) is a
-  native Dutch word for the path from source to destination, same spelling/sense as EN; MS terminology corroborates the
-  root ("routering", "gerouteerde gebeurtenis"). Recorded via `sameAsSourceJustification` · high
+- action (what a control chooses; screen-reader label `transferDialog.operationAria`) → Bewerking · macOS AppKit ("This
+  action cannot be performed"→"Deze bewerking kan niet worden uitgevoerd"); matches glossary "File
+  operations"→"Bestandsbewerkingen". macOS "bewerking" (Tier 1) over Double Commander "actie" (DC: "The action cannot be
+  completed"→"De actie kan niet worden voltooid") · high
 - scanning (spinner tooltip/SR label while counting items, "Scanning…") → Doorzoeken… · Double Commander
   ("Scanning"→"Doorzoeken"); matches the existing `transferProgress.stageScanning` "Doorzoeken" in this file. Ellipsis
   kept · high
-- scan complete (checkmark tooltip/SR label once counting finished, "Scan complete") → Doorzoeken voltooid ·
-  "Doorzoeken" (DC scanning) + "voltooid" (macOS/DC for completed, cf. DC "Exporteren … voltooid"); parallels the
-  in-progress "Doorzoeken…" so spinner→checkmark reads cohesively · high
 - create (a folder) → aanmaken (maakt … aan) · macOS Finder ("Create a folder named …"→"Maak … een map aan", "Could not
   create the folder."→"De map kon niet worden aangemaakt."); matches the existing in-file "dat de map is aangemaakt"
   (mkdir.timeoutMessage). Separable verb: "Cmdr maakt hem aan" · high
@@ -919,3 +913,20 @@ badge; mined `_ignored/i18n/nl/`, 2026-07-23):
   niet" idiom carries "just now / not at this moment" better than the past-tense "zojuist"; "Try again in a moment"→
   "Probeer het zo opnieuw"; avoids bare "mislukt"/"fout" per Cmdr voice · high
 - No `sameAsSourceJustification` needed: all 12 values differ from English.
+
+From the dialog-polish pass (`fileOperations.json`, 2026-07-23): the delete dialog swapped its Prullenmand/Verwijderen
+picker for a "Move to trash" switch plus a matching confirm button, and the copy/move/compress dialog groups the source
+path and the destination volume+path under "From" and "To" headings.
+
+- "Move to trash" (`delete.trashSwitch`; switch in the delete dialog, on = prullenmand, off = permanent delete) → Naar
+  prullenmand · identical to this file's `transferDialog.titleVerbOnly` `other {Naar prullenmand}` arm, so the switch
+  and the confirm button read as one pair. macOS Finder's fuller "Verplaats naar prullenmand" (AL13/N153) stays the
+  SENTENCE form, matching the gerund arm "Naar prullenmand verplaatsen"; a switch takes the terse label · high
+- "Delete" (`delete.confirmDelete`; destructive confirm button while the switch is off) → Verwijder · settled imperative
+  button form, identical to `transferDialog.titleVerbOnly`'s `delete {Verwijder}` arm · high
+- "From" / "To" (`transferDialog.sourceGroupTitle` / `targetGroupTitle`; headings over the source path and over the
+  destination volume + path) → Van / Naar · Total Commander nl (`662="Van: "`, `663="Naar: "`) and Double Commander nl
+  ("Van:"/"Naar:") both ship this label pair in the same copy/move dialog; macOS "Verplaats naar" confirms "naar" for a
+  destination. The settled nouns bron / bestemming stay for the destination CONTROLS; the headings take the light
+  prepositional pair the English uses. "Naar" doubles as the trash-switch preposition, but the two live in different
+  dialogs, so there's no in-screen clash · high

@@ -171,11 +171,11 @@
   "@fileOperations.transferDialog.toggleCompress": {
     "sourceHash": "033fc04"
   },
-  "fileOperations.transferDialog.sourceGroupTitle": "从",
+  "fileOperations.transferDialog.sourceGroupTitle": "来源",
   "@fileOperations.transferDialog.sourceGroupTitle": {
     "sourceHash": "2181976"
   },
-  "fileOperations.transferDialog.targetGroupTitle": "到",
+  "fileOperations.transferDialog.targetGroupTitle": "目标",
   "@fileOperations.transferDialog.targetGroupTitle": {
     "sourceHash": "f4b06ef"
   },

@@ -482,23 +482,16 @@ prior terms (tệp, ổ đĩa = drive, không thể = can''t). New terms below, 
   trước"); "tùy chọn" (options) heavily attested. "đặt trước" can also read as "reserved", so pairing it with "tùy chọn"
   disambiguates · tentative
 
-Added during the dialog-polish pass (2026-06-30): four short field labels / tooltips in `fileOperations.json` (the
-copy/move + delete dialogs). Reuses prior terms (scan/scanning → `quét`/`đang quét`, source → `nguồn`, destination →
-`đích`, file ops → `Thao tác tệp`):
+Added during the dialog-polish pass (2026-06-30): short labels / tooltips in `fileOperations.json` (the copy/move +
+delete dialogs). Reuses prior terms (scan/scanning → `quét`/`đang quét`, source → `nguồn`, destination → `đích`, file
+ops → `Thao tác tệp`):
 
-- **"Action:" (field label before the Copy/Move or Trash/Delete segmented control): `Thao tác:`** · the catalog''s
-  established operation term (`Thao tác tệp` = file operations). Labels which operation to run; `thao tác` (operation,
+- **action (what a control chooses; screen-reader label `transferDialog.operationAria`): `Thao tác`** · the catalog''s
+  established operation term (`Thao tác tệp` = file operations). Names which operation to run; `thao tác` (operation,
   user-performed action) reads more natural here than MS''s `hành động` (action, behavioral sense) or macOS''s `tác vụ`
   (task; macOS uses it for "undo this action"). Catalog-consistent. `high`.
-- **"Route:" (field label before a `source → destination` line): `Lộ trình:`** · `lộ trình` = route/itinerary, the
-  origin-to-destination path sense (standard vi, e.g. maps navigation). NOT MS''s `định tuyến` (route a packet —
-  networking sense, wrong here). Matches the evocative-but-clear English "Route". `tentative` (no direct pile string for
-  this UI sense; networking source rejected).
 - **"Scanning…" (spinner tooltip / SR label while counting): `Đang quét…`** · reuses the glossary''s "scan in progress"
   → `Đang quét`; ellipsis `…` kept. `high`.
-- **"Scan complete" (checkmark tooltip / SR label once counting finished): `Đã quét xong`** · `đã…xong` completed
-  aspect, parallel to `Đang quét` (in-progress) ↔ `Đã quét xong` (done). MS/macOS "complete/completed" →
-  `hoàn tất`/`xong`; the concise completed-aspect form fits a tooltip. `high`.
 - **"This folder doesn''t exist yet. Cmdr will create it during the copy/move." (yellow inline warning under the
   destination box): `Thư mục này chưa tồn tại. Cmdr sẽ tạo nó khi sao chép.` / `… khi di chuyển.`** · `chưa tồn tại`
   (not-yet-exist) is the precise "doesn''t exist yet" counterpart to the catalog''s `đã tồn tại` (already exists); GNOME
@@ -787,3 +780,21 @@ file list → `danh sách tệp`; scope → `phạm vi`; can't → `không thể
   placeholder set. `drive.indexing` fronts the drive ("Trên ổ đĩa này, …") to avoid a double `trên` (of / on this
   drive).
 - No `sameAsSourceJustification` needed: all 13 values differ from English.
+
+Added during the dialog-polish pass (2026-07-23): the delete dialog swapped its Thùng rác/Xóa picker for a "Move to
+trash" switch plus a matching confirm button, and the copy/move/compress dialog groups the source path and the
+destination volume+path under "From" and "To" headings.
+
+- **"Move to trash" (`delete.trashSwitch`; switch in the delete dialog, on = thùng rác, off = permanent delete):
+  `Chuyển vào thùng rác`** · identical to this file''s `transferDialog.titleVerbOnly` `other {Chuyển vào thùng rác}`
+  arm, so the switch and the confirm button read as one pair; macOS Finder vi AL13/N153 `Chuyển vào Thùng rác` confirms
+  the phrase. The catalog capitalizes `Thùng rác` only where it names the Trash location itself ("check the Trash"), and
+  lowercases it inside an action phrase. `high`.
+- **"Delete" (`delete.confirmDelete`; destructive confirm button while the switch is off): `Xóa`** · settled delete
+  verb, identical to `transferDialog.titleVerbOnly`''s `delete {Xóa}` arm. `high`.
+- **"From" / "To" (`transferDialog.sourceGroupTitle` / `targetGroupTitle`; headings over the source path and over the
+  destination volume + path): `Từ` / `Đến`** · Total Commander vi ships this exact label pair in its copy/move dialog
+  (entries 662/663; the `.LNG` file sits in the pile as UTF-8 misread as Latin-1, so decode before reading it); macOS
+  "Move To" = `Di chuyển đến` confirms `đến` for a destination. The settled nouns `nguồn` / `đích` stay for the
+  destination CONTROLS (`Ổ đĩa đích`, `Đường dẫn đích`); the headings take the light prepositional pair the English
+  uses. `high`.

@@ -276,18 +276,13 @@ Cmdr browses zip/tar/7z archives like folders; this batch added the settings, me
   pastas**
 - preset (value in a settings-picker dropdown) → predefinição; "back to presets" → "Voltar às predefinições" · Microsoft
   terminology pt-BR ("indexing preset" → "predefinição da indexação"), macOS pt-BR print dialog "Predefinições" · high
-- scan / scanning (counting/sizing items before a transfer or delete) · **Analisar** / **Analisando** (in progress);
-  scan complete → **Análise concluída** · matches the shipped `fileOperations.transferProgress.stageScanning`
-  ("Scanning" → "Analisando"); "concluída" is the macOS Finder term for complete/concluded ("não pode ser concluída",
-  "Download concluído"). Used in the shared `fileOperations.shared.scanningTooltip` / `scanCompleteTooltip`
-  spinner+checkmark. · high. Distinct from the conflict-check sense, which stays **Verificando** (see verify/check).
-- Action (field label) · **Ação** · macOS Finder (6 hits), MS terminology (BRA) · confirmed.
-  `fileOperations.shared.actionLabel` "Action:" → "Ação:" (label before the Copy/Move or Trash/Delete segmented
-  control).
-- Route (transfer source→destination field label) · **Rota** · MS terminology (BRA, route→rota); no macOS/file-manager
-  source (Finder has no such label) · high. `fileOperations.transferDialog.routeLabel` "Route:" → "Rota:" before the
-  "source → destination" line. The word is the direct pt-BR cognate and reads as a compact label; the UI usage itself is
-  Cmdr-specific.
+- scan / scanning (counting/sizing items before a transfer or delete) · **Analisar** / **Analisando** (in progress) ·
+  matches the shipped `fileOperations.transferProgress.stageScanning` ("Scanning" → "Analisando"). Used in the shared
+  `fileOperations.shared.scanningTooltip` spinner. · high. Distinct from the conflict-check sense, which stays
+  **Verificando** (see verify/check). "Concluída" is the macOS Finder term for complete/concluded ("não pode ser
+  concluída", "Download concluído") when a completion phrase is needed.
+- Action (what a control chooses; screen-reader label `fileOperations.transferDialog.operationAria`) · **Ação** · macOS
+  Finder (6 hits), MS terminology (BRA) · confirmed.
 - preset (value in a settings-picker dropdown) → predefinição; "back to presets" → "Voltar às predefinições" · Microsoft
   terminology pt-BR ("indexing preset" → "predefinição da indexação"), macOS pt-BR print dialog "Predefinições" · high
 - "doesn't exist yet" (destination not-yet-created warning) · **ainda não existe** · standard pt-BR; pile has "A pasta
@@ -605,3 +600,16 @@ per-file badge.
   (`settings.listing.showTags` "etiquetas do Finder do macOS", `commands.tagsToggle*` "etiqueta") · confirmed.
   `deleteConfirmBody` "Keyword and tag search" → "A busca por palavra-chave e por etiqueta".
 - No `sameAsSourceJustification` needed: all 12 values differ from English.
+
+### Delete-dialog trash switch + transfer From/To group headings (`fileOperations.delete.trashSwitch`/`confirmDelete` + `fileOperations.transferDialog.sourceGroupTitle`/`targetGroupTitle`, 2026-07-23)
+
+- "Move to trash" (switch in the delete dialog, on = Lixo, off = permanent delete) · **Mover para o Lixo** · macOS
+  Finder pt-BR AL13/N153 verbatim; identical to this file's `transferDialog.titleVerbOnly` `other {Mover para o Lixo}`
+  arm, so the switch and the confirm button read as one pair · confirmed
+- "Delete" (destructive confirm button while the switch is off) · **Apagar** · the settled Finder verb (not the Windows
+  "Excluir"); identical to `transferDialog.titleVerbOnly`'s `delete {Apagar}` arm · high
+- "From" / "To" (headings over the source path and over the destination volume + path) · **De** / **Para** · Total
+  Commander pt-BR (`662="DE: "`, `663="PARA: "`) and Double Commander pt-BR ("De:"/"Para:") both ship this label pair in
+  the same copy/move dialog; sentence case here per the style guide. The settled nouns origem / destino stay for the
+  destination CONTROLS ("Volume de destino", "Caminho de destino"); the headings take the light prepositional pair the
+  English uses · high

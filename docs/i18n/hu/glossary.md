@@ -459,23 +459,14 @@ Settled while translating the FAT32-file-too-large keys (`errors.write.filesTooL
   (allative -hoz, vowel-harmonized) · Double Commander hu ("előbeállítás": "módosított előbeállítással", "a …
   előbeállítást") · high
 
-Settled while translating the four copy/delete-dialog polish keys (`fileOperations.json`, 2026-06-30):
+Settled while translating the copy/delete-dialog polish keys (`fileOperations.json`, 2026-06-30):
 
-- "Action:" (field label before the Copy/Move or Trash/Delete segmented control, `shared.actionLabel`) → `Művelet:` · ms
-  terminology ("action" = `művelet`, Noun), macOS Finder ("This action cannot be performed." = "Ez a művelet nem
-  hajtható végre.") · high. Matches the settled `File operations → Fájlműveletek` (művelet = operation/action). Sentence
-  case, trailing colon kept.
-- "Route:" (field label before a "source → destination" line in the copy/move dialog, `transferDialog.routeLabel`) →
-  `Útvonal:` · ms terminology ("route" = `útvonal`, network-address and path/road senses both) · high. The from→to of
-  the transfer; `útvonal` is the natural Hungarian word for "route". Note it shares the word with `path → útvonal`, but
-  they're separate labels on separate lines (this is the whole source→dest route; `destPathAria` = `Célútvonal` is the
-  destination field), so no in-screen clash. Trailing colon kept.
+- action (what a control chooses; screen-reader label `transferDialog.operationAria`) → `Művelet` · ms terminology
+  ("action" = `művelet`, Noun), macOS Finder ("This action cannot be performed." = "Ez a művelet nem hajtható végre.") ·
+  high. Matches the settled `File operations → Fájlműveletek` (művelet = operation/action). Sentence case.
 - "Scanning…" (spinner tooltip + SR label WHILE counting selected items, `shared.scanningTooltip`) → `Átvizsgálás…` ·
   in-file consistency with `transferProgress.stageScanning` = `Átvizsgálás`, glossary `scan (index) → átvizsgálás`, ms
   ("scan" = examine files/data = `vizsgál`) · high. Ellipsis `…` kept (single char, per the typography reconciliation).
-- "Scan complete" (checkmark tooltip + SR label once counting FINISHED, `shared.scanCompleteTooltip`) →
-  `Átvizsgálás kész` · reuses the `Átvizsgálás` scan term + settled `Done → Kész` · high. "Scanning finished/done" reads
-  naturally and stays terse for a tooltip.
 
 Settled while translating the destination-will-be-created warning keys (`fileOperations.json`, 2026-06-30):
 
@@ -933,3 +924,20 @@ Settled while translating the image-indexing settings restructure + "Indexing no
   moment." = `A modellt most nem sikerült eltávolítani. Próbáld újra egy pillanat múlva.` (`nem sikerült` calm rule +
   informal `próbáld újra`) · high.
 - No `sameAsSourceJustification` needed: all 12 values differ from English.
+
+Settled while translating the delete-switch and transfer From/To keys (`fileOperations.json`, 2026-07-23): the delete
+dialog swapped its Kuka/Törlés picker for a "Move to trash" switch plus a matching confirm button, and the
+copy/move/compress dialog groups the source path and the destination volume+path under "From" and "To" headings.
+
+- "Move to trash" (`delete.trashSwitch`; switch in the delete dialog, on = Kuka, off = permanent delete) →
+  `Áthelyezés a Kukába` · already settled catalog-wide (`transferDialog.titleVerbOnly` `other` arm, `queue.row.label`
+  trash arm, `operationLog.summary` trash arm); macOS Finder AL13/N153 `Áthelyezés a kukába` confirms the phrase, and
+  the catalog keeps `Kuka` capitalized as the feature name (settled) · high
+- "Delete" (`delete.confirmDelete`; destructive confirm button while the switch is off) → `Törlés` · settled delete
+  noun, identical to `transferDialog.titleVerbOnly`'s `delete {Törlés}` arm · high
+- "From" / "To" (`transferDialog.sourceGroupTitle` / `targetGroupTitle`; headings over the source path and over the
+  destination volume + path) → `Forrás` / `Cél` · Total Commander hu (`662="Forrás:  "`, `663="Cél   : "`) and Double
+  Commander hu ("Forrás:"/"Cél:") both ship this label pair in the same copy/move dialog, and `Cél` is what the group's
+  own controls already carry (`destVolumeAria` = `Célkötet`, `destPathAria` = `Célútvonal`), so heading and contents
+  agree. Hungarian has no standalone from/to prepositions: the deictic `Innen` / `Ide` is what macOS uses INSIDE a verb
+  phrase (`Move To:` = `Áthelyezés ide:`) and dangles as a bare heading, so the source/target nouns win here · high
