@@ -11,7 +11,8 @@ here.
 - Primitives: `Icon`, `Spinner`, `Button`, `LinkButton`, `Checkbox`, `Switch`, `RadioGroup`, `ToggleGroup` (segmented
   toggle, distinct from `RadioGroup`), `Select`, `Combobox`, `ShortcutChip`, the `toast/` system, and more (full list:
   DETAILS § Key files). Tooltip is the sibling `../tooltip/tooltip.ts`. Ark UI (`@ark-ui/svelte`) backs complex
-  interactive components; simple ones are thin in-house wrappers.
+  interactive components; simple ones are thin in-house wrappers. `@ark-ui/svelte` may be imported only here (and a few
+  sanctioned settings wrappers), never in feature code (enforced by `cmdr/no-raw-ark-import`).
 
 ## Must-knows
 

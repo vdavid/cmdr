@@ -34,6 +34,7 @@ import noRawBindingsImport from './eslint-plugins/no-raw-bindings-import.js'
 import noExplorerStateWrites from './eslint-plugins/no-explorer-state-writes.js'
 import noRawCommandDispatch from './eslint-plugins/no-raw-command-dispatch.js'
 import noRawLucideImport from './eslint-plugins/no-raw-lucide-import.js'
+import noRawArkImport from './eslint-plugins/no-raw-ark-import.js'
 import noRawLocaleFormat from './eslint-plugins/no-raw-locale-format.js'
 import noRawUserFacingString from './eslint-plugins/no-raw-user-facing-string.js'
 import dialogNeedsFocusTrap from './eslint-plugins/dialog-needs-focus-trap.js'
@@ -265,6 +266,7 @@ export default tseslint.config(
           'no-explorer-state-writes': noExplorerStateWrites,
           'no-raw-command-dispatch': noRawCommandDispatch,
           'no-raw-lucide-import': noRawLucideImport,
+          'no-raw-ark-import': noRawArkImport,
           'no-raw-locale-format': noRawLocaleFormat,
           'no-raw-user-facing-string': noRawUserFacingString,
           'dialog-needs-focus-trap': dialogNeedsFocusTrap,
@@ -281,6 +283,11 @@ export default tseslint.config(
       'cmdr/no-explorer-state-writes': 'error',
       'cmdr/no-raw-command-dispatch': 'error',
       'cmdr/no-raw-lucide-import': 'error',
+      // Each `@ark-ui/svelte` primitive is wrapped once in a house component
+      // under `lib/ui/` (named 1:1 after Ark); feature/section code uses those
+      // wrappers, never Ark directly. Allowlisted: everything under `lib/ui/`
+      // plus the three sanctioned settings wrappers (see the rule).
+      'cmdr/no-raw-ark-import': 'error',
       // One locale source, one formatting layer: feature code routes every
       // user-facing number/size/date through `$lib/intl` and the central format
       // utils, never a raw `.toLocaleString(...)` or a hand-built `Intl.*`
