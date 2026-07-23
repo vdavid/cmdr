@@ -6,6 +6,11 @@
 //! - **[`scope`]**: WHICH folders a pass may cover — the user's explicit choice
 //!   between "only the folders I chose" and "automatically, by folder importance".
 //!   The importance threshold is consulted ONLY in the automatic scope.
+//! - **[`semantic_search_enabled`]**: the CLIP semantic-search on/off (ON by default),
+//!   seeded from settings at startup and live-applied. It gates BOTH the read
+//!   (`search_semantic` returns nothing when off) and the CLIP embedding WRITE
+//!   (`clip::current_stamp` returns `None` when off, so `needs_clip` is never true and
+//!   no pass embeds CLIP), so turning it off stops all new CLIP work at once.
 //! - **[`is_cancelled`]**: the emergency stop the indexing memory watchdog sets via
 //!   its subsystem-stop hook (media_index shares the ONE resident-memory ceiling,
 //!   it does not stand up a second one — see the plan's Resources cross-cutting).
@@ -20,6 +25,12 @@ use std::sync::atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering};
 
 static ENABLED: AtomicBool = AtomicBool::new(false);
 static CANCELLED: AtomicBool = AtomicBool::new(false);
+
+/// The CLIP semantic-search on/off. ON by default: with no model installed it's inert
+/// anyway (nothing to embed, no embeddings to search), so defaulting on keeps the
+/// download-then-search flow one step. Seeded from `mediaIndex.semanticSearch.enabled`
+/// at startup and live-applied by [`set_semantic_search_enabled`].
+static SEMANTIC_SEARCH_ENABLED: AtomicBool = AtomicBool::new(true);
 
 /// WHICH folders image indexing may cover — the user's explicit scope choice, an
 /// enum rather than a sentinel threshold value so "index nothing but my chosen
@@ -118,6 +129,21 @@ pub fn request_cancel() {
 /// Whether an emergency stop is in effect. The pass checks this between images.
 pub fn is_cancelled() -> bool {
     CANCELLED.load(Ordering::SeqCst)
+}
+
+/// Set the CLIP semantic-search toggle (live-applied by the settings control, and seeded
+/// at startup). When off, [`clip::current_stamp`](super::clip::current_stamp) returns
+/// `None` (so no pass embeds CLIP) and `search_semantic` returns nothing; existing
+/// embeddings are kept (turning off is "stop", never "erase" — the delete-model action is
+/// the separate explicit reclaim).
+pub fn set_semantic_search_enabled(enabled: bool) {
+    SEMANTIC_SEARCH_ENABLED.store(enabled, Ordering::SeqCst);
+}
+
+/// Whether CLIP semantic search is on (the read gate AND the CLIP-write gate both read
+/// this ONE value, so they can't disagree about whether CLIP work happens).
+pub fn semantic_search_enabled() -> bool {
+    SEMANTIC_SEARCH_ENABLED.load(Ordering::SeqCst)
 }
 
 /// Whether an in-flight enrichment pass should STOP promptly. It's the ONE predicate

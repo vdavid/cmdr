@@ -45,9 +45,15 @@ pub fn set_data_dir(data_dir: &Path) {
 }
 
 /// The currently-installed CLIP model's provenance stamp, or `None` when no model is
-/// installed. The scheduler reads this once per pass and threads it into the enrich core's
-/// [`needs_clip`](super::store::needs_clip) decision (plan M3 two-part staleness).
+/// installed OR semantic search is turned off. The scheduler reads this once per pass and
+/// threads it into the enrich core's [`needs_clip`](super::store::needs_clip) decision
+/// (plan M3 two-part staleness); `None` makes `needs_clip` always false, so this is the
+/// ONE seam that stops every pass type (full / network / live) from embedding CLIP when
+/// the user turns semantic search off.
 pub fn current_stamp(data_dir: &Path) -> Option<String> {
+    if !super::gate::semantic_search_enabled() {
+        return None;
+    }
     install::installed_stamp(data_dir)
 }
 

@@ -171,6 +171,9 @@ pub fn start(app: &AppHandle) {
             .media_index_importance_threshold
             .unwrap_or(gate::DEFAULT_IMPORTANCE_THRESHOLD),
     );
+    // Semantic search: ON unless explicitly turned off (absent means on — inert with no
+    // model installed anyway). Gates both the CLIP write path and `search_semantic`.
+    gate::set_semantic_search_enabled(settings.media_index_semantic_search_enabled.unwrap_or(true));
     network::config::set_config(network::config::NetworkEnrichConfig {
         opted_in_volumes: settings.media_index_network_volumes.iter().cloned().collect(),
         always_index_volumes: settings.media_index_always_index_volumes.iter().cloned().collect(),

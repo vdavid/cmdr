@@ -49,8 +49,11 @@ A PORT of `importance/`'s patterns (store, writer, scheduler, read API): read `i
   `images.len()`) + `media-enrich-terminal` on EVERY exit path.
 - **CLIP semantic search is a SEPARATE vector space** (`clip/`, macOS Core ML; § CLIP semantic search):
   `media_clip_embedding` + `clip_stamp`, INDEPENDENT staleness (`needs_clip`). One decode runs the stale side(s) via
-  `analyze_media(want_vision, want_clip)`. ❌ NEVER compare CLIP against the Vision feature print. Off with no model
-  installed (`search_semantic` returns `[]`).
+  `analyze_media(want_vision, want_clip)`. ❌ NEVER compare CLIP against the Vision feature print. A real on/off
+  (`gate::semantic_search_enabled`, ON by default) gates both: `search_semantic` returns `[]` (also off with no model),
+  and `clip::current_stamp` returns `None` so no pass embeds CLIP (the single CLIP-write seam; ❌ don't re-gate
+  `want_clip`). `media_index_delete_clip_model` deletes the model + every volume's clip embeddings (`prune_all_clip`
+  resets `clip_stamp`); Vision kept, off ≠ delete.
 
 - **Per-folder `accounted` aggregate** (`coverage.rs`; feeds `media_index_file_status`/`_folder_coverage`): ❌ INCREMENTAL
   (writer `+1`/`-1`, seeded at spawn), never rebuilt from a walk (wipes it); SEPARATE `ACCOUNTED` cache, not `COUNTS`.

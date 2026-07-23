@@ -627,8 +627,9 @@ fn read_head_bytes(path: &std::path::Path, max: usize) -> Vec<u8> {
 ///
 /// Runs OFF the IPC thread (`spawn_blocking`): the tokenize + warm-text-tower encode hops to
 /// the CLIP worker thread, then a brute-force top-k over the resident CLIP cache. Returns an
-/// empty list (never an error) when image indexing is off, no CLIP model is installed, or
-/// the volume has no CLIP embeddings — so the UI voices coverage rather than failing.
+/// empty list (never an error) when image indexing is off, semantic search is turned off,
+/// no CLIP model is installed, or the volume has no CLIP embeddings — so the UI voices
+/// coverage rather than failing.
 #[tauri::command]
 #[specta::specta]
 pub async fn media_index_search_semantic(
@@ -637,7 +638,7 @@ pub async fn media_index_search_semantic(
     query: String,
     limit: Option<u32>,
 ) -> Result<Vec<SemanticHit>, String> {
-    if !gate::is_enabled() || query.trim().is_empty() {
+    if !gate::is_enabled() || !gate::semantic_search_enabled() || query.trim().is_empty() {
         return Ok(Vec::new());
     }
     let data_dir = crate::config::resolved_app_data_dir(&app)?;
@@ -731,6 +732,34 @@ pub async fn media_index_download_clip_model(app: AppHandle) -> Result<(), Strin
     Ok(())
 }
 
+/// Delete the installed CLIP model and reclaim its disk: remove the on-disk model
+/// artifacts, then prune every enriched volume's `media_clip_embedding` rows (resetting
+/// each `clip_stamp` so a later re-download re-embeds) and `VACUUM` to free the pages.
+/// Vision data (OCR, tags, feature print) is untouched — semantic search and Vision are
+/// independent halves, so this returns the CLIP model status to `configured`/`supported`
+/// (installed → false) while keeping keyword + tag search working. Runs OFF the IPC
+/// thread (it blocks on each volume's writer). Idempotent: with nothing installed and
+/// nothing enriched it removes any stray artifacts and returns.
+#[tauri::command]
+#[specta::specta]
+pub async fn media_index_delete_clip_model(app: AppHandle) -> Result<(), String> {
+    // No scheduler yet (nothing enriched) ⇒ just remove any on-disk artifacts.
+    let Some(scheduler) = app.try_state::<Arc<MediaScheduler>>() else {
+        let data_dir = crate::config::resolved_app_data_dir(&app)?;
+        let model_dir = clip::install::clip_model_dir(&data_dir);
+        if model_dir.exists() {
+            std::fs::remove_dir_all(&model_dir).map_err(|e| format!("delete clip model: {e}"))?;
+        }
+        return Ok(());
+    };
+    let scheduler = Arc::clone(scheduler.inner());
+    tauri::async_runtime::spawn_blocking(move || {
+        scheduler.delete_clip_model();
+    })
+    .await
+    .map_err(|e| format!("delete-clip-model task panicked: {e}"))
+}
+
 // ── Per-file + per-folder index status (the quiet glanceable indicators) ─────
 
 /// The index status of ONE file, as the file-icon overlay reads it. Serialized
@@ -747,8 +776,14 @@ pub enum FileIndexState {
     /// A `failed` row (a broken/undecodable file). Won't progress on its own.
     Failed,
     /// An indexable image that the coverage gate would enrich, but which has no stored
-    /// row yet (indexing hasn't reached it).
+    /// row yet, and NO pass is running for the volume — genuinely queued, indexing hasn't
+    /// reached it.
     Pending,
+    /// An indexable image with no stored row yet WHILE a pass is actively running for the
+    /// volume: it's being worked on right now, not merely queued. Distinct from `Pending`
+    /// so a file whose row was transiently GC'd during a re-enriching pass (a move/rename)
+    /// reads "indexing now" rather than a false "never indexed."
+    Indexing,
     /// An indexable image the coverage gate would NOT enrich: out of scope, below the
     /// importance threshold, or under an excluded folder.
     Excluded,
@@ -811,7 +846,10 @@ pub async fn media_index_file_status(
 
     tauri::async_runtime::spawn_blocking(move || {
         let stamp = scheduler.as_ref().map(|s| s.current_analysis_stamp());
-        classify_file_statuses(&data_dir, &vid, paths, scope, threshold, stamp.as_deref())
+        // A pass running for this volume ⇒ an un-rowed covered image is being worked on
+        // NOW (`indexing`), not merely queued (`pending`). Cheap in-memory snapshot.
+        let is_enriching = scheduler.as_ref().is_some_and(|s| s.is_enriching(&vid));
+        classify_file_statuses(&data_dir, &vid, paths, scope, threshold, stamp.as_deref(), is_enriching)
     })
     .await
     .map_err(|e| format!("file-status task panicked: {e}"))
@@ -844,6 +882,7 @@ fn classify_file_statuses(
     scope: gate::IndexScope,
     threshold: f64,
     stamp: Option<&str>,
+    is_enriching: bool,
 ) -> Vec<FileIndexStatus> {
     use super::scheduler::enrich::{ImageEntry, parent_dir, walk_image_entries_in_dirs};
     use super::store::{MediaStatusRow, media_db_path, open_read_connection, read_status};
@@ -879,7 +918,16 @@ fn classify_file_statuses(
     let scores = coverage_scores(data_dir, volume_id, scope, threshold);
     let config = network_config::snapshot();
 
-    classify_all(&paths, &qualifying, &stored, stamp, scores.as_ref(), &config, volume_id)
+    classify_all(
+        &paths,
+        &qualifying,
+        &stored,
+        stamp,
+        scores.as_ref(),
+        &config,
+        volume_id,
+        is_enriching,
+    )
 }
 
 /// The PURE classification core: one [`FileIndexStatus`] per input path, in order,
@@ -897,6 +945,7 @@ fn classify_all(
     scores: Option<&std::collections::HashMap<String, f64>>,
     config: &super::network::config::NetworkEnrichConfig,
     volume_id: &str,
+    is_enriching: bool,
 ) -> Vec<FileIndexStatus> {
     paths
         .iter()
@@ -910,6 +959,7 @@ fn classify_all(
                 scores,
                 config,
                 volume_id,
+                is_enriching,
             ),
         })
         .collect()
@@ -918,7 +968,8 @@ fn classify_all(
 /// Classify ONE path. Priority: a non-qualifying entry is `notApplicable`; otherwise a
 /// stored row decides `failed`/`stale`/`indexed` (an indexed image reads as such even if
 /// the current setting no longer covers it — forward-only); with no row, the coverage
-/// gate splits `pending` (would enrich) from `excluded` (wouldn't).
+/// gate splits a covered image into `indexing` (a pass is running now) vs `pending` (none
+/// is), and an uncovered one into `excluded`.
 #[allow(
     clippy::too_many_arguments,
     reason = "the classification inputs are all distinct and resolved once"
@@ -931,6 +982,7 @@ fn classify_one(
     scores: Option<&std::collections::HashMap<String, f64>>,
     config: &super::network::config::NetworkEnrichConfig,
     volume_id: &str,
+    is_enriching: bool,
 ) -> FileIndexState {
     use super::store::{EnrichmentState, needs_enrichment};
 
@@ -956,10 +1008,15 @@ fn classify_one(
         None => {
             // No row yet: would a pass enrich it? The live exclusion veto beats coverage.
             let covered = !config.is_excluded(path) && scheduler::local_should_enrich(path, scores, config, volume_id);
-            if covered {
-                FileIndexState::Pending
-            } else {
+            if !covered {
                 FileIndexState::Excluded
+            } else if is_enriching {
+                // A pass is running for the volume, so this covered-but-unrowed image is
+                // being worked on now (or its row was transiently GC'd mid-reenrich by a
+                // move/rename), not merely queued.
+                FileIndexState::Indexing
+            } else {
+                FileIndexState::Pending
             }
         }
     }

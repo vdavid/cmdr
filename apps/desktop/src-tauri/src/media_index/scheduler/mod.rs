@@ -389,6 +389,49 @@ impl MediaScheduler {
         total
     }
 
+    /// Delete the on-disk CLIP model + every enriched volume's CLIP embeddings (the
+    /// settings "Delete model" action). Removes the shared `clip-model` dir, then, for
+    /// every volume with a `media.db`, prunes its `media_clip_embedding` rows and resets
+    /// each `clip_stamp` (so a later re-download re-embeds), `VACUUM`s to reclaim the
+    /// disk, and drops the resident CLIP vector cache. Vision data (OCR/tags/feature
+    /// print) is untouched — semantic search and Vision are independent halves. Returns
+    /// the total embedding rows removed. Runs off the IPC thread (it blocks on writers).
+    pub fn delete_clip_model(&self) -> usize {
+        // Remove the shared model artifacts (both towers) from disk first.
+        let model_dir = crate::media_index::clip::install::clip_model_dir(&self.data_dir);
+        if model_dir.exists()
+            && let Err(e) = std::fs::remove_dir_all(&model_dir)
+        {
+            log::warn!(target: "media_index", "delete clip model dir failed: {e}");
+        }
+        // Prune CLIP rows from every enriched volume's `media.db`.
+        let mut total = 0usize;
+        for volume_id in media_volume_ids(&self.data_dir) {
+            let db_path = super::store::media_db_path(&self.data_dir, &volume_id);
+            let writer = match self.writers.writer_for(&self.data_dir, &volume_id) {
+                Ok(w) => w,
+                Err(e) => {
+                    log::warn!(target: "media_index", "delete-clip-model: writer for '{volume_id}' failed: {e}");
+                    continue;
+                }
+            };
+            let removed = writer.prune_all_clip().unwrap_or(0);
+            if removed > 0 {
+                let _ = writer.vacuum();
+                super::vector::cache::invalidate(&db_path);
+                total += removed;
+            }
+        }
+        if total > 0 {
+            log::info!(
+                target: "media_index",
+                "delete CLIP model: removed {}",
+                crate::pluralize::pluralize(total as u64, "embedding")
+            );
+        }
+        total
+    }
+
     /// Run one CONSERVATIVE network enrichment pass for an opted-in SMB volume
     /// (network enrichment): read each eligible image's bytes off the OS mount (bounded against
     /// a hung mount), OCR them, and GC vanished rows — idle-gated, bandwidth-bounded,
@@ -544,4 +587,18 @@ impl MediaScheduler {
         };
         Ok(outcome)
     }
+}
+
+/// The volume ids that have a `media-{id}.db` in `data_dir` — every volume ever enriched,
+/// mounted or not (so a delete-model reclaim reaches an unmounted NAS's embeddings too).
+/// Parses the ids back out of the `media-{id}.db` filenames the store writes.
+fn media_volume_ids(data_dir: &std::path::Path) -> Vec<String> {
+    let Ok(entries) = std::fs::read_dir(data_dir) else {
+        return Vec::new();
+    };
+    entries
+        .filter_map(|e| e.ok())
+        .filter_map(|e| e.file_name().into_string().ok())
+        .filter_map(|name| name.strip_prefix("media-")?.strip_suffix(".db").map(str::to_string))
+        .collect()
 }

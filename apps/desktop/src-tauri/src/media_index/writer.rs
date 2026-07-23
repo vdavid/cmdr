@@ -86,6 +86,10 @@ enum WriteMessage {
     /// concurrent upsert just committed. Replies with the row count deleted. One
     /// transaction.
     PrunePrefix { prefix: String, done: mpsc::Sender<usize> },
+    /// Delete every `media_clip_embedding` row and reset every `media_status.clip_stamp`
+    /// (the delete-CLIP-model reclaim). Vision columns/tables are untouched. Replies with
+    /// the embedding-row count deleted (a barrier). One transaction.
+    PruneAllClip { done: mpsc::Sender<usize> },
     /// Reclaim free pages after a prune (`VACUUM`). `media.db` is a disposable cache,
     /// so `VACUUM` is acceptable, and for the privacy retro-delete it's what actually
     /// removes the deleted text from disk. Replies when done (a barrier).
@@ -218,6 +222,16 @@ impl MediaWriter {
         Ok(rx.recv().unwrap_or(0))
     }
 
+    /// Delete every CLIP embedding and reset every row's `clip_stamp` (the delete-model
+    /// reclaim). Blocks until committed and returns the embedding-row count removed.
+    /// Resetting each stamp to empty ("no model") means a later re-install re-embeds
+    /// (the row goes CLIP-stale again). Vision data (OCR/tags/feature print) is kept.
+    pub fn prune_all_clip(&self) -> Result<usize, MediaStoreError> {
+        let (tx, rx) = mpsc::channel();
+        self.send(WriteMessage::PruneAllClip { done: tx })?;
+        Ok(rx.recv().unwrap_or(0))
+    }
+
     /// `VACUUM` the DB to reclaim the free pages a prune left (and, for the privacy
     /// retro-delete, actually remove the deleted text from disk). Blocks until done.
     pub fn vacuum(&self) -> Result<(), MediaStoreError> {
@@ -317,6 +331,15 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>, vol
                 });
                 decrement_accounted(&volume_id, &deleted);
                 let _ = done.send(deleted.len());
+            }
+            WriteMessage::PruneAllClip { done } => {
+                // CLIP embeddings aren't part of the accounted aggregate (that counts
+                // `media_status` rows, which this leaves intact), so no delta here.
+                let removed = apply_prune_all_clip(&mut conn).unwrap_or_else(|e| {
+                    log::warn!(target: "media_index", "prune-all-clip failed: {e}");
+                    0
+                });
+                let _ = done.send(removed);
             }
             WriteMessage::Vacuum { done } => {
                 if let Err(e) = apply_vacuum(&conn) {
@@ -520,6 +543,18 @@ fn apply_prune_prefix(conn: &mut Connection, prefix: &str) -> Result<Vec<String>
     apply_prune_paths(conn, &doomed)
 }
 
+/// Delete every `media_clip_embedding` row and reset every `media_status.clip_stamp` to
+/// empty (no model), in one transaction. Returns the embedding rows removed. Resetting the
+/// stamp is what makes a later re-install re-embed (`needs_clip` sees `'' != model_stamp`).
+/// Touches NO Vision column or table — deleting the CLIP model must not re-run OCR/tags.
+fn apply_prune_all_clip(conn: &mut Connection) -> Result<usize, MediaStoreError> {
+    let tx = conn.transaction()?;
+    let removed = tx.execute("DELETE FROM media_clip_embedding", [])?;
+    tx.execute("UPDATE media_status SET clip_stamp = '' WHERE clip_stamp != ''", [])?;
+    tx.commit()?;
+    Ok(removed)
+}
+
 /// `VACUUM` the DB (reclaim free pages; can't run inside a transaction, so it's its own
 /// statement).
 fn apply_vacuum(conn: &Connection) -> Result<(), MediaStoreError> {
@@ -622,6 +657,49 @@ mod tests {
             "/a/sub/y.jpg fully gone (nested under /a)"
         );
         assert_eq!(row_counts(&db_path, "/b/z.jpg"), (1, 2, 1, 1), "/b/z.jpg untouched");
+        w.shutdown();
+    }
+
+    #[test]
+    fn prune_all_clip_drops_embeddings_resets_stamps_and_keeps_vision() {
+        let dir = tempfile::tempdir().expect("temp");
+        let w = writer(dir.path(), "root");
+        let db_path = media_db_path(dir.path(), "root");
+        // Two fully-enriched images, each with a CLIP embedding + stamp on top.
+        seed(&w, "/a/x.jpg");
+        seed(&w, "/a/y.jpg");
+        w.upsert_clip("/a/x.jpg".to_string(), "clip-v1".to_string(), Some(vec![1.0, 0.0]))
+            .expect("clip x");
+        w.upsert_clip("/a/y.jpg".to_string(), "clip-v1".to_string(), Some(vec![0.0, 1.0]))
+            .expect("clip y");
+        w.flush_blocking().expect("flush");
+
+        let clip_count = |db: &Path| -> i64 {
+            let conn = open_read_connection(db).expect("open read");
+            conn.query_row("SELECT COUNT(*) FROM media_clip_embedding", [], |r| r.get(0))
+                .expect("count clip")
+        };
+        let stamps_set = |db: &Path| -> i64 {
+            let conn = open_read_connection(db).expect("open read");
+            conn.query_row("SELECT COUNT(*) FROM media_status WHERE clip_stamp != ''", [], |r| {
+                r.get(0)
+            })
+            .expect("count stamps")
+        };
+        assert_eq!(clip_count(&db_path), 2, "both clip embeddings seeded");
+        assert_eq!(stamps_set(&db_path), 2, "both clip stamps set");
+
+        let removed = w.prune_all_clip().expect("prune all clip");
+        assert_eq!(removed, 2, "both clip embedding rows removed");
+        assert_eq!(clip_count(&db_path), 0, "no clip embeddings remain");
+        assert_eq!(
+            stamps_set(&db_path),
+            0,
+            "every clip stamp reset to empty (re-install re-embeds)"
+        );
+        // Vision data (status + ocr + tags + feature-print embedding) is untouched.
+        assert_eq!(row_counts(&db_path, "/a/x.jpg"), (1, 2, 1, 1), "Vision rows kept for x");
+        assert_eq!(row_counts(&db_path, "/a/y.jpg"), (1, 2, 1, 1), "Vision rows kept for y");
         w.shutdown();
     }
 

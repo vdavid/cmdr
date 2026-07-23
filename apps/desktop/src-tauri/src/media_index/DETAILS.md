@@ -965,6 +965,39 @@ transient CLIP miss. The `clip_stamp` reaches the passes via `EnrichGates.clip_s
 read once per pass from `clip::current_stamp(data_dir)`. The whole-store `enrich_and_gc` wrapper is Vision-only (CLIP-agnostic,
 `clip_stamp: None`) and test-only now; production reaches the scoped core directly with the installed stamp.
 
+### The semantic-search on/off gate + delete-model
+
+Semantic search is a real user toggle (`gate::semantic_search_enabled`, an atomic ON by default, seeded from the FE-owned
+`mediaIndex.semanticSearch.enabled` at startup and live-applied by `media_index_set_semantic_search_enabled` in
+`commands/policy.rs`). Downloading the model is no longer the de-facto opt-in — the toggle is.
+
+**One atomic, both sides.** The gate is enforced at exactly two seams so read and write can't disagree:
+
+- **Read:** `media_index_search_semantic` short-circuits to `[]` when the atomic is off (beside the master-toggle and
+  empty-query checks).
+- **CLIP write:** `clip::current_stamp` returns `None` when the atomic is off. Because `needs_clip(_, None)` is always
+  false, EVERY pass type (full `run_pass_blocking`, network `run_network_pass_blocking`, live tick) computes `want_clip =
+  false` and embeds no CLIP — without touching the per-pass `want_clip` line. This is the SINGLE CLIP-write seam; ❌ don't
+  re-gate `want_clip` per pass. Turning off mid-pass stops new CLIP work at the next image (the pass reads the stamp once
+  per pass, so an in-flight pass finishes its current image's already-decided CLIP work; a `should_stop`-style per-image
+  re-read isn't needed because turning off is non-destructive).
+
+Enabling the toggle while a model is installed makes every image CLIP-stale again, so the command kicks the ready passes
+(guarded on `is_installed`, so with no model it's a no-op — nothing to embed). Disabling kicks nothing and deletes
+nothing: existing embeddings stay searchable until re-enabled or the model is deleted. Turning off ≠ erase.
+
+**Delete model (`media_index_delete_clip_model`).** The explicit reclaim: `MediaScheduler::delete_clip_model` removes the
+shared on-disk `clip-model` dir (both towers), then, for EVERY volume with a `media-{id}.db` (mounted or not —
+`media_volume_ids` reads the data dir, so an unmounted NAS's embeddings are reclaimed too), prunes its
+`media_clip_embedding` rows via the writer's `prune_all_clip`, `VACUUM`s, and drops the resident CLIP vector cache.
+`prune_all_clip` deletes every embedding AND resets every `media_status.clip_stamp` to `''` in one transaction —
+resetting the stamp is what makes a later re-download re-embed (the row goes CLIP-stale again against the reinstalled
+stamp). Vision data (status/OCR/tags/feature print) is untouched, and CLIP embeddings aren't part of the `accounted`
+aggregate (that counts `media_status` rows), so no aggregate delta. After the delete, `media_index_clip_model_status`
+reads `installed: false`, so the UI returns to the download affordance. Pinned by
+`writer::tests::prune_all_clip_drops_embeddings_resets_stamps_and_keeps_vision` and
+`enrich_tests::delete_clip_model_removes_the_model_and_every_volumes_embeddings`.
+
 ### The Core ML towers + worker thread (`clip/macos.rs`)
 
 Mirrors the Vision backend's threading discipline: `MLModel` is `!Send` and a synchronous ANE predict is an XPC round-trip

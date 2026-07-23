@@ -1109,3 +1109,69 @@ fn a_clip_model_bump_re_embeds_without_touching_vision() {
     assert_eq!(clip_state(&db_path, "/p/beach.jpg"), (1, "clip-v2".to_string()));
     writer.shutdown();
 }
+
+#[test]
+fn delete_clip_model_removes_the_model_and_every_volumes_embeddings() {
+    use crate::media_index::clip::install;
+    // Two enriched volumes, each with a CLIP embedding + stamp, plus a fake installed
+    // model on disk (both towers). Deleting must remove the model dir (status →
+    // not-installed) AND every volume's CLIP rows, while keeping the Vision side.
+    let dir = tempfile::tempdir().expect("temp");
+    let data_dir = dir.path();
+    for vid in ["root", "naspi"] {
+        let writer = media_writer(data_dir, vid);
+        writer
+            .upsert(
+                MediaStatusRow {
+                    path: "/p/beach.jpg".to_string(),
+                    mtime: Some(1),
+                    size: Some(10),
+                    media_kind: MediaKind::Image,
+                    state: EnrichmentState::Done,
+                    engine_version: "e1".to_string(),
+                    clip_stamp: String::new(),
+                },
+                Some(crate::media_index::writer::UpsertAnalysis::ocr_only("beach text")),
+            )
+            .expect("seed vision");
+        writer
+            .upsert_clip("/p/beach.jpg".to_string(), "clip-v1".to_string(), Some(vec![1.0, 0.0]))
+            .expect("seed clip");
+        writer.flush_blocking().expect("flush");
+        writer.shutdown();
+    }
+    // Fake an installed model (both towers) so status reads installed.
+    let model_dir = install::clip_model_dir(data_dir);
+    for tower in install::CLIP_TOWERS {
+        std::fs::create_dir_all(model_dir.join(tower.package_dir)).expect("mk tower dir");
+    }
+    assert!(install::is_installed(data_dir), "the fake model reads as installed");
+
+    let backend: std::sync::Arc<dyn crate::media_index::backend::VisionBackend> =
+        std::sync::Arc::new(FakeVisionBackend::new());
+    let scheduler = super::MediaScheduler::new(data_dir.to_path_buf(), backend);
+
+    let removed = scheduler.delete_clip_model();
+    assert_eq!(removed, 2, "one CLIP embedding removed per volume");
+
+    // Status transitions back to not-installed (the on-disk artifacts are gone).
+    assert!(
+        !install::is_installed(data_dir),
+        "the model dir is gone ⇒ status is no longer installed"
+    );
+    // Every volume's CLIP rows are gone and stamps reset, Vision kept.
+    for vid in ["root", "naspi"] {
+        let db_path = media_db_path(data_dir, vid);
+        assert_eq!(
+            clip_state(&db_path, "/p/beach.jpg"),
+            (0, String::new()),
+            "{vid}: clip embedding gone + stamp reset (re-install re-embeds)"
+        );
+        let index = MediaIndex::open(data_dir, vid);
+        assert_eq!(
+            index.search_ocr("beach", 10).expect("ocr").len(),
+            1,
+            "{vid}: Vision OCR survives the CLIP-model delete"
+        );
+    }
+}

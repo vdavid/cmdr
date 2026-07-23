@@ -137,13 +137,24 @@ mod file_status {
     }
 
     /// Classify one path against optional entry + optional stored row, an "all covered"
-    /// override config, and the current engine stamp `e1`.
+    /// override config, and the current engine stamp `e1`. No pass is running (so a
+    /// covered-but-unrowed image reads `pending`, not `indexing`).
     fn classify(
         entry: Option<&ImageEntry>,
         stored: Option<&MediaStatusRow>,
         config: &NetworkEnrichConfig,
     ) -> FileIndexState {
-        classify_one("/photos/a.jpg", entry, stored, Some("e1"), None, config, "vol")
+        classify_one("/photos/a.jpg", entry, stored, Some("e1"), None, config, "vol", false)
+    }
+
+    /// Like [`classify`], but with a pass actively running for the volume (so a
+    /// covered-but-unrowed image reads `indexing`).
+    fn classify_enriching(
+        entry: Option<&ImageEntry>,
+        stored: Option<&MediaStatusRow>,
+        config: &NetworkEnrichConfig,
+    ) -> FileIndexState {
+        classify_one("/photos/a.jpg", entry, stored, Some("e1"), None, config, "vol", true)
     }
 
     fn cover_all() -> NetworkEnrichConfig {
@@ -203,9 +214,57 @@ mod file_status {
     }
 
     #[test]
-    fn an_un_enriched_covered_image_is_pending() {
+    fn an_un_enriched_covered_image_is_pending_when_no_pass_runs() {
+        // Covered, no row, and NO pass running for the volume ⇒ genuinely queued.
         let e = entry("/photos/a.jpg", 1, 2);
         assert_eq!(classify(Some(&e), None, &cover_all()), FileIndexState::Pending);
+    }
+
+    #[test]
+    fn an_un_enriched_covered_image_is_indexing_while_a_pass_runs() {
+        // Covered, no row, and a pass IS running ⇒ being worked on now, not a false
+        // "never indexed" (the move/rename transient-GC honesty fix).
+        let e = entry("/photos/a.jpg", 1, 2);
+        assert_eq!(
+            classify_enriching(Some(&e), None, &cover_all()),
+            FileIndexState::Indexing
+        );
+    }
+
+    #[test]
+    fn a_pass_running_does_not_change_the_stored_or_uncovered_states() {
+        // `indexing` only ever replaces `pending` (covered + un-rowed). Every other
+        // state is decided before the pass-running check, so a running pass leaves them
+        // untouched.
+        let e = entry("/photos/a.jpg", 1, 2);
+        // Indexed row stays indexed.
+        let done = row("/photos/a.jpg", EnrichmentState::Done, 1, 2, "e1");
+        assert_eq!(
+            classify_enriching(Some(&e), Some(&done), &cover_all()),
+            FileIndexState::Indexed
+        );
+        // Stale row stays stale.
+        let changed = entry("/photos/a.jpg", 1, 999);
+        assert_eq!(
+            classify_enriching(Some(&changed), Some(&done), &cover_all()),
+            FileIndexState::Stale
+        );
+        // Failed row stays failed.
+        let failed = row("/photos/a.jpg", EnrichmentState::Failed, 1, 2, "e1");
+        assert_eq!(
+            classify_enriching(Some(&e), Some(&failed), &cover_all()),
+            FileIndexState::Failed
+        );
+        // An un-rowed UNCOVERED image stays excluded even mid-pass.
+        assert_eq!(
+            classify_enriching(Some(&e), None, &NetworkEnrichConfig::default()),
+            FileIndexState::Excluded
+        );
+        // Not-applicable stays not-applicable.
+        assert_eq!(
+            classify_enriching(None, None, &cover_all()),
+            FileIndexState::NotApplicable
+        );
     }
 
     #[test]
@@ -252,7 +311,16 @@ mod file_status {
         .into_iter()
         .collect();
 
-        let out = classify_all(&paths, &qualifying, &stored, Some("e1"), None, &cover_all(), "vol");
+        let out = classify_all(
+            &paths,
+            &qualifying,
+            &stored,
+            Some("e1"),
+            None,
+            &cover_all(),
+            "vol",
+            false,
+        );
         assert_eq!(out.len(), 3);
         assert_eq!(out[0].path, "/photos/folder");
         assert_eq!(out[0].state, FileIndexState::NotApplicable, "the folder gets no badge");

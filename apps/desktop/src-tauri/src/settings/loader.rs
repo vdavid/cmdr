@@ -138,6 +138,12 @@ pub struct Settings {
     /// startup; live changes flow through `media_index_set_scope`.
     #[serde(alias = "mediaIndex.scope", default)]
     pub media_index_scope: Option<String>,
+    /// The CLIP semantic-search on/off. Absent means ON (with no model installed it's
+    /// inert anyway, so defaulting on keeps the download-then-search flow one step).
+    /// Seeded into `media_index::gate` at startup; live changes flow through
+    /// `media_index_set_semantic_search_enabled`.
+    #[serde(alias = "mediaIndex.semanticSearch.enabled", default)]
+    pub media_index_semantic_search_enabled: Option<bool>,
 }
 
 fn default_show_hidden() -> bool {
@@ -185,6 +191,7 @@ impl Default for Settings {
             media_index_importance_threshold: None,
             media_index_excluded_folders: Vec::new(),
             media_index_scope: None,
+            media_index_semantic_search_enabled: None,
         }
     }
 }
@@ -266,6 +273,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         .get("mediaIndex.scope")
         .and_then(|v| v.as_str())
         .map(|s| s.to_string());
+    let media_index_semantic_search_enabled = json.get("mediaIndex.semanticSearch.enabled").and_then(|v| v.as_bool());
 
     Ok(Settings {
         show_hidden_files,
@@ -298,6 +306,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         media_index_importance_threshold,
         media_index_excluded_folders,
         media_index_scope,
+        media_index_semantic_search_enabled,
     })
 }
 

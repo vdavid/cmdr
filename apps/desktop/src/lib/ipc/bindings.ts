@@ -1945,6 +1945,20 @@ export const commands = {
    */
   mediaIndexSetImportanceThreshold: (threshold: number) =>
     __TAURI_INVOKE<void>('media_index_set_importance_threshold', { threshold }),
+  /**
+   *  Turn CLIP semantic search on or off (the "search photos by description" feature).
+   *  Live-applied; the frontend persists `mediaIndex.semanticSearch.enabled` and calls this
+   *  on change. The one atomic gates BOTH sides: `search_semantic` returns nothing when off,
+   *  and `clip::current_stamp` returns `None` when off so no pass embeds CLIP.
+   *
+   *  Turning it OFF stops future CLIP work without deleting anything (a running pass simply
+   *  stops embedding CLIP; existing embeddings stay searchable until the user turns it back
+   *  on or deletes the model). Turning it ON while a model is installed makes every image
+   *  CLIP-stale again, so it kicks the ready passes to embed now (like a fresh model
+   *  install); with no model installed there's nothing to embed, so no kick.
+   */
+  mediaIndexSetSemanticSearchEnabled: (enabled: boolean) =>
+    __TAURI_INVOKE<void>('media_index_set_semantic_search_enabled', { enabled }),
   mediaIndexCoveredCount: (threshold: number, volumeIds: string[]) =>
     typedError<CoveredCount, string>(__TAURI_INVOKE('media_index_covered_count', { threshold, volumeIds })),
   /**
@@ -1996,8 +2010,9 @@ export const commands = {
    *
    *  Runs OFF the IPC thread (`spawn_blocking`): the tokenize + warm-text-tower encode hops to
    *  the CLIP worker thread, then a brute-force top-k over the resident CLIP cache. Returns an
-   *  empty list (never an error) when image indexing is off, no CLIP model is installed, or
-   *  the volume has no CLIP embeddings — so the UI voices coverage rather than failing.
+   *  empty list (never an error) when image indexing is off, semantic search is turned off,
+   *  no CLIP model is installed, or the volume has no CLIP embeddings — so the UI voices
+   *  coverage rather than failing.
    */
   mediaIndexSearchSemantic: (volumeId: string, query: string, limit: number | null) =>
     typedError<SemanticHit[], string>(__TAURI_INVOKE('media_index_search_semantic', { volumeId, query, limit })),
@@ -2014,6 +2029,17 @@ export const commands = {
    *  The intermediate zip is removed after a successful unpack.
    */
   mediaIndexDownloadClipModel: () => typedError<null, string>(__TAURI_INVOKE('media_index_download_clip_model')),
+  /**
+   *  Delete the installed CLIP model and reclaim its disk: remove the on-disk model
+   *  artifacts, then prune every enriched volume's `media_clip_embedding` rows (resetting
+   *  each `clip_stamp` so a later re-download re-embeds) and `VACUUM` to free the pages.
+   *  Vision data (OCR, tags, feature print) is untouched — semantic search and Vision are
+   *  independent halves, so this returns the CLIP model status to `configured`/`supported`
+   *  (installed → false) while keeping keyword + tag search working. Runs OFF the IPC
+   *  thread (it blocks on each volume's writer). Idempotent: with nothing installed and
+   *  nothing enriched it removes any stray artifacts and returns.
+   */
+  mediaIndexDeleteClipModel: () => typedError<null, string>(__TAURI_INVOKE('media_index_delete_clip_model')),
   /**
    *  Classify the index status of each file in `paths` (in request order) on `volume_id`.
    *
@@ -4324,9 +4350,17 @@ export type FileIndexState =
   | 'failed'
   /**
    *  An indexable image that the coverage gate would enrich, but which has no stored
-   *  row yet (indexing hasn't reached it).
+   *  row yet, and NO pass is running for the volume — genuinely queued, indexing hasn't
+   *  reached it.
    */
   | 'pending'
+  /**
+   *  An indexable image with no stored row yet WHILE a pass is actively running for the
+   *  volume: it's being worked on right now, not merely queued. Distinct from `Pending`
+   *  so a file whose row was transiently GC'd during a re-enriching pass (a move/rename)
+   *  reads "indexing now" rather than a false "never indexed."
+   */
+  | 'indexing'
   /**
    *  An indexable image the coverage gate would NOT enrich: out of scope, below the
    *  importance threshold, or under an excluded folder.

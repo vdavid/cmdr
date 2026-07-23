@@ -281,6 +281,30 @@ export async function mediaIndexSearchSemantic(
 }
 
 /**
+ * Turn CLIP semantic search on or off (the "search photos by description" feature). One
+ * backend atomic gates both sides: searching returns `[]` when off, and no pass embeds CLIP
+ * when off (so turning it off stops new CLIP work without deleting anything). Turning it on
+ * while a model is installed kicks a pass to embed already-indexed images. Live-applied
+ * after the FE persists `mediaIndex.semanticSearch.enabled`.
+ */
+export async function mediaIndexSetSemanticSearchEnabled(enabled: boolean): Promise<void> {
+  await commands.mediaIndexSetSemanticSearchEnabled(enabled)
+}
+
+/**
+ * Delete the installed CLIP model and reclaim its disk: removes the on-disk model artifacts
+ * and every volume's semantic embeddings, returning the model status to not-installed
+ * (`configured` / `supported`). Keyword + tag search keep working (Vision data is untouched);
+ * re-downloading the model re-embeds. Use `mediaIndexClipModelStatus` afterwards to refresh
+ * the UI. The reclaimable size to show in the button comes from `ClipModelStatus.downloadBytes`
+ * (the model's own size) plus, if surfaced elsewhere, the embedding bytes.
+ */
+export async function mediaIndexDeleteClipModel(): Promise<void> {
+  const res = await commands.mediaIndexDeleteClipModel()
+  if (res.status === 'error') throwIpcError(res.error)
+}
+
+/**
  * The CLIP semantic-search model's install state for the settings download affordance:
  * whether the device supports it (Apple Silicon), whether it's installed, whether a real
  * artifact is published yet, and the total download size in bytes.

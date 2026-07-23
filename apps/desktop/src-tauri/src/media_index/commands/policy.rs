@@ -157,6 +157,33 @@ pub async fn media_index_set_excluded_folder(app: AppHandle, folder: String, exc
     .map_err(|e| format!("retro-delete task panicked: {e}"))
 }
 
+/// Turn CLIP semantic search on or off (the "search photos by description" feature).
+/// Live-applied; the frontend persists `mediaIndex.semanticSearch.enabled` and calls this
+/// on change. The one atomic gates BOTH sides: `search_semantic` returns nothing when off,
+/// and `clip::current_stamp` returns `None` when off so no pass embeds CLIP.
+///
+/// Turning it OFF stops future CLIP work without deleting anything (a running pass simply
+/// stops embedding CLIP; existing embeddings stay searchable until the user turns it back
+/// on or deletes the model). Turning it ON while a model is installed makes every image
+/// CLIP-stale again, so it kicks the ready passes to embed now (like a fresh model
+/// install); with no model installed there's nothing to embed, so no kick.
+#[tauri::command]
+#[specta::specta]
+pub fn media_index_set_semantic_search_enabled(app: AppHandle, enabled: bool) {
+    gate::set_semantic_search_enabled(enabled);
+    if !enabled || !gate::is_enabled() {
+        return;
+    }
+    // Only worth a pass if a model is actually installed (else `current_stamp` is `None`
+    // and the pass would walk the index to embed nothing).
+    let model_installed = crate::config::resolved_app_data_dir(&app)
+        .map(|dir| crate::media_index::clip::install::is_installed(&dir))
+        .unwrap_or(false);
+    if model_installed {
+        scheduler::kick_all_ready_passes(&app);
+    }
+}
+
 /// Set the folder-importance threshold the scheduler enriches by — the importance settings
 /// slider's typed value (`0.0..=1.0`, clamped), never a string (`no-string-matching`).
 /// Below-threshold folders are deferred; an override still forces enrichment. Live-
