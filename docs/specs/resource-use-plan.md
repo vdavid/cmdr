@@ -316,6 +316,34 @@ near-term goal is David's corpus rather than shipping 2M-scale search to users, 
 user approaches the wall — decide at execution time. Ordering that stays fixed either way: M5 (final model) before M6,
 since the ANN index must be built over the final-model vectors. Start after M1–M5; independent of M7–M10.
 
+### Status: spike done (2026-07-24), recommendation `usearch`
+
+Measured 2026-07-24 on an M3 Max (64 GB, macOS 26.5.2, rustc 1.97.1): 200k synthetic 512-d unit-norm vectors (200
+Gaussian clusters, fixed seeds), 1,000 held-out queries, exact-cosine ground truth. Full methodology, raw tables, and
+the harness path: `../notes/ann-vector-search-spike-2026-07-24.md`. Key numbers:
+
+- **`usearch` 2.26.0 (HNSW, f16 storage, cosine)**: query p50 **0.30 ms** / p95 0.38 ms at **0.994 recall@10**
+  (expansion_search 128; defaults give 0.96), index **235 MB on disk** for 200k (1,173 B/vector), mmap-backed `view`
+  mode with ~47 MB RSS at rest (pages fault in on demand and stay evictable), upsert 467 µs/vector, full 200k build 71 s
+  single-thread. 1M sanity run (measured, same method): p50 0.68 ms, build 12.8 min single-thread, disk 1.17 GB; recall
+  at fixed expansion decays with corpus size (0.895 at 128, 0.958 at 256, 0.982 at 512, still 1.6 ms p50), so
+  expansion_search scales with the corpus. Apache-2.0; ~+1 MB binary.
+- **`sqlite-vec` 0.1.9 is disqualified on the data: it is not ANN.** Its `vec0` KNN is an exact linear scan: recall 1.0,
+  p50 **141 ms** at 200k (~1.4 s extrapolated at 2M), twice our own resident-f16 scan. It also silently stores f32 (a
+  `float16[512]` column parses but rejects f16 blobs), so disk is 416 MB for 200k. Fails the "single-digit-ms at 2M"
+  gate outright; revisit only if a stable release ships real ANN.
+- **What ANN buys** (vs the M3-shape brute-force f16 baseline, same machine): 74 ms p50 and 205 MB resident at 200k →
+  ~744 ms and ~2.05 GB extrapolated at 2M. usearch replaces that with sub-ms queries and an on-disk, evictable index at
+  a 0.6% recall cost.
+
+**Integration shape** (as this plan already sketches): per-volume `.usearch` index files next to the media DB; upserts
+fed by the enrichment writer (`media_file` integer ids from M4 map directly to usearch u64 keys; at 467 µs/vector the
+writer outruns ANE-bound enrichment by three orders of magnitude); a full-rebuild path for corruption/version bumps
+(rebuild from the media DB's f16 blobs, ~71 s per 200k single-thread, background); brute-force fallback below ~50k
+vectors (simpler, exact, and the resident cost is small there). Scale expansion_search with corpus size (128 at 200k,
+256–512 toward 1M+); verify recall on real embeddings with the importance-evals harness + dog-search QA set during
+integration.
+
 ---
 
 ## M7. `ext` column + partial index for the coverage cold walk
@@ -414,7 +442,7 @@ unnecessary.
   so the corpus re-enriches ONCE, not twice.
 - **Parallel-safe cluster after the spine**: M7, M8+M9 (different DBs/modules; keep M7 and M9's checkpoint touch-points
   coordinated if simultaneous; M8 starts with its where-does-1.4s-go measurement).
-- **M6** after M1–M5, standalone (biggest; spike first, addendum to this doc, then decide ship-now vs behind-a-flag).
+- **M6** after M1–M5, standalone (biggest; spike done, see its status addendum, then decide ship-now vs behind-a-flag).
 - **M10** last, only if still wanted (two-feature tradeoff: similar-images AND dedup).
 
 Every milestone: colocated `CLAUDE.md`/`DETAILS.md` updates ride along (per the docs rule — decision + why in DETAILS,
