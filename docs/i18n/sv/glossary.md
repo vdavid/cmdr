@@ -760,3 +760,38 @@ image-search indexing state. Reuses the settled indexing family; new/confirmed t
   `progress.ofTotal` pattern) so the `indexerad`/`indexerade` adjective agrees in number without a second ICU block.
 
 No `sameAsSourceJustification` needed: all 13 values differ from English.
+
+## Image-indexing progress/settings UX pass (2026-07-23; `settings.mediaIndex.*` + `fileExplorer.imageIndex.file.indexing`)
+
+From the image-indexing progress/settings restructure pass (2026-07-23; the 12 keys: 3 card titles, the Semantic search
+card's feature label + not-supported/off-but-installed notes + delete-model flow, and the "Indexing now" file badge).
+Reuses the settled indexing family (`indexera`/`indexering`, passive `indexeras`), `aktivera` (enable), `modell`
+(model), `ladda ner`/`nedladdad` (download/downloaded), `frigöra` (free/reclaim, from `reclaim.freed` "Frigjorde"),
+`ta bort` (remove a re-downloadable resource), `mapp`, `bild`, and the calm-failure `Gick inte att…` form. New/settled:
+
+- **search by description (the semantic-photo-search feature, in running copy): `sökning med beskrivning`; toggle label
+  "Search photos by description" → `Sök bilder med en beskrivning`** · reuses the shipped `clip.ready` "…sök bland dina
+  foton med en beskrivning" pattern and pairs with the card title `Semantisk sökning` (`clip.title`). Generic feature
+  noun (no article) as a sentence subject/object: "Sökning med beskrivning kräver…", "…sökning med beskrivning är
+  avstängd", "…stänger av sökning med beskrivning". Photos → `bilder` per the settled photo→bild decision. `high`.
+- **Apple silicon: kept verbatim `Apple silicon`** · the macOS reference-pile bundle has NO occurrence (pile gap), and
+  the English `@key.description` explicitly says "keep it". "en Mac med Apple silicon" mirrors Apple's own "Mac med
+  Apple-kisel" structure; the bare English term reads as a recognizable tech proper noun in Swedish. (If a native
+  reviewer prefers Apple's Swedish marketing term, `Apple-kisel` is the apple.com/se rendering.) `tentative` (pile gap;
+  kept per source instruction, flag for native review).
+- **enable indexing / folders to index (card titles): `Aktivera indexering` / `Mappar att indexera`** · `aktivera`
+  (enable) + `indexering`; `att`+infinitive for "to index". Sentence case. `high`.
+- **delete model (a re-downloadable resource, reclaim disk): `Ta bort modell` (button) / `Tar bort…` (in progress) /
+  `Ta bort modellen för semantisk sökning?` (confirm title)** · `ta bort` (remove-from-collection sense, NOT the
+  destructive `radera`) since the model is re-downloadable; pairs with `Ladda ner modell` (`clip.download`) and its
+  present-tense `Laddar ner…`. "reclaim {size}" → "frigör {size}" (verb of `reclaim.freed` "Frigjorde"). Confirm title
+  reuses `Semantisk sökning`. `high`.
+- **keyword / tag search (in the delete-confirm body): `nyckelordssökning` / `taggsökning`; combined
+  `Nyckelords- och taggsökning`** · `nyckelord` (MS keyword) + `sökning`; `tagg` (catalog `Visa taggar`,
+  "macOS Finder-taggar") + `sökning`. "keep working" → "fortsätter fungera". `high`.
+- **Indexing now (badge tooltip + progress heading, same EN source/sourceHash 44501db): `Indexeras nu`** · passive
+  present of `indexera` (implied subject `bilden`/the drive), meaning actively being processed now, distinct from the
+  queued `Väntar på att indexeras` (`file.pending`). Serves both `fileExplorer.imageIndex.file.indexing` and
+  `settings.mediaIndex.progressSummary.title`. `high`.
+
+No `sameAsSourceJustification` needed: all 12 values differ from English.
