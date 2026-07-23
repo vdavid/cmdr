@@ -581,8 +581,11 @@ specific option is selected).
 
 **`Switch`** (`lib/ui/Switch.svelte`) is the track-and-thumb on/off control: a thin wrapper over Ark UI's `Switch`, with
 the same prop shape as `Checkbox` minus `indeterminate` (`checked` bindable, `disabled`, `id`, `ariaLabel`,
-`onCheckedChange`, `children`). The track fills with `--color-accent` when on; the thumb stays white in both themes.
-`SettingSwitch` wraps it with the settings-registry wiring, so settings rows and feature code share one implementation.
+`onCheckedChange`, `children`), plus a `data-*` pass-through onto the hidden input for test hooks. The track fills with
+`--color-accent` when on; the thumb stays white in both themes. There is ONE size (36×20 track, 16 px thumb) and one
+implementation: every switch in the app renders through this file, so nothing hand-rolls Ark's `Switch` or re-declares
+`.switch-control` / `.switch-thumb`. `SettingSwitch` wraps it with the settings-registry wiring, so settings rows and
+feature code share it.
 
 **When to use which:**
 
@@ -597,9 +600,13 @@ the same prop shape as `Checkbox` minus `indeterminate` (`checked` bindable, `di
 optical middle. Ark's `Root` is a `<label>` that would otherwise baseline-align the two and leave the box sitting low;
 the gap belongs on the root because the label span is the box's SIBLING, not its container.
 
-An EMPTY control (unchecked box, off switch) outlines with `--color-control-border`, a dedicated token sized for the
-WCAG 3:1 non-text minimum on every app surface. The decorative `--color-border*` tokens sit at ~1.3–1.8:1 and are too
-faint to carry an affordance on their own.
+An empty `Checkbox` outlines with `--color-control-border`, a dedicated token sized for the WCAG 3:1 non-text minimum on
+every app surface. The decorative `--color-border*` tokens sit at ~1.3–1.8:1 and are too faint to carry an affordance on
+their own.
+
+The OFF `Switch` track has no such outline: it's a bare `--color-bg-tertiary` fill, which lands at 1.1–1.3:1 against the
+surfaces it sits on (computed from the tokens in `app.css`, 2026-07-23), so it doesn't clear 3:1 on its own the way the
+checkbox does. Giving it one is a deliberate visual change to make with David, not a drive-by fix.
 
 ### Tooltips (app)
 

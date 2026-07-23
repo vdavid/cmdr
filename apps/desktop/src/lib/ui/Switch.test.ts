@@ -54,6 +54,23 @@ describe('Switch', () => {
     target.remove()
   })
 
+  it('forwards `data-*` attributes to the hidden input, not the track', async () => {
+    // Test and automation hooks have to land on the input: Ark marks the styled track
+    // `aria-hidden`, and the input is what a click and a query resolve to.
+    const target = await mountSwitch({
+      ariaLabel: 'Index photos on naspi',
+      'data-test': 'media-net-optin',
+      'data-volume-id': 'smb-naspi',
+    })
+
+    const input = target.querySelector<HTMLInputElement>('input[type="checkbox"]')
+    expect(input?.getAttribute('data-test')).toBe('media-net-optin')
+    expect(input?.getAttribute('data-volume-id')).toBe('smb-naspi')
+    expect(target.querySelector('.switch-control')?.hasAttribute('data-test')).toBe(false)
+
+    target.remove()
+  })
+
   it('does not toggle or notify while disabled', async () => {
     const onCheckedChange = vi.fn()
     const target = await mountSwitch({ ariaLabel: 'Search subfolders', disabled: true, onCheckedChange })

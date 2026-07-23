@@ -56,13 +56,17 @@ function clickSectionByTextJs(name: string): string {
   })()`
 }
 
-/** Clicks the master toggle control; returns false if absent. */
+/**
+ * Clicks the master toggle; returns false if absent. `[aria-label="…"]` resolves to the
+ * switch's hidden `<input>` (see `lib/ui/DETAILS.md` § Switch), which is exactly what we want
+ * to click: the styled track sits inside the `<label>`, so clicking it also triggers label
+ * activation and the toggle can fire twice.
+ */
 function clickMasterJs(): string {
   return `(function() {
-    var root = document.querySelector('[aria-label=${JSON.stringify(MASTER_LABEL)}]');
-    if (!root) return false;
-    var control = root.querySelector('.switch-control') || root;
-    control.click();
+    var input = document.querySelector('[aria-label=${JSON.stringify(MASTER_LABEL)}]');
+    if (!input) return false;
+    input.click();
     return true;
   })()`
 }

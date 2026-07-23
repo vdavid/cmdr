@@ -12,6 +12,11 @@
      *
      * Switch vs `Checkbox`: a switch reads as "this is on/off right now", a checkbox as "this
      * option is selected". Both are fine in a form; pick by which sentence the control tells.
+     *
+     * Any extra `data-*` attribute passes straight through to the hidden `<input>`
+     * (`<Switch data-test="media-net-optin" data-volume-id={id} />`). The input is the element
+     * tests query and click: Ark marks the styled track `aria-hidden`, so a hook on the track
+     * would sit on decoration. Nothing else spreads through, so the API stays a fixed shape.
      */
     interface Props {
         checked?: boolean
@@ -19,12 +24,27 @@
         id?: string
         /** Accessible name when there's no visible `children` label. */
         ariaLabel?: string
+        /**
+         * Annotate the parameter at inline call sites (`(next: boolean) => …`): svelte2tsx
+         * doesn't contextually type an arrow passed to a component prop, so an unannotated
+         * one is `any` and trips `@typescript-eslint/no-unsafe-argument`.
+         */
         onCheckedChange?: (checked: boolean) => void
         children?: Snippet
+        /** Test/automation hooks; they land on the hidden `<input>`, not the track. */
+        [dataAttribute: `data-${string}`]: string | undefined
     }
 
     /* eslint-disable prefer-const -- $bindable() requires `let` destructuring */
-    let { checked = $bindable(false), disabled = false, id, ariaLabel, onCheckedChange, children }: Props = $props()
+    let {
+        checked = $bindable(false),
+        disabled = false,
+        id,
+        ariaLabel,
+        onCheckedChange,
+        children,
+        ...dataAttributes
+    }: Props = $props()
     /* eslint-enable prefer-const */
 </script>
 
@@ -51,7 +71,7 @@
          doesn't exist when the caller passes no `children` — a dangling reference
          leaves the control with NO accessible name. `aria-labelledby` still wins when
          a visible label IS rendered, so passing both is safe. -->
-    <Switch.HiddenInput role="switch" aria-label={ariaLabel} />
+    <Switch.HiddenInput role="switch" aria-label={ariaLabel} {...dataAttributes} />
 </Switch.Root>
 
 <style>

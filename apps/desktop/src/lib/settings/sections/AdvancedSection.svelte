@@ -15,7 +15,7 @@
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
-    import { Switch } from '@ark-ui/svelte/switch'
+    import Switch from '$lib/ui/Switch.svelte'
     import { NumberInput, type NumberInputValueChangeDetails } from '@ark-ui/svelte/number-input'
     import {
         createShouldShow,
@@ -214,18 +214,13 @@ Timestamp: ${info.timestamp}
 
                 <div class="setting-control">
                     {#if setting.type === 'boolean'}
-                        <Switch.Root
+                        <Switch
                             checked={Boolean(getSetting(id))}
-                            onCheckedChange={(d) => {
-                                handleBooleanChange(id, d.checked)
+                            onCheckedChange={(next: boolean) => {
+                                handleBooleanChange(id, next)
                             }}
-                        >
-                            <Switch.Control class="switch-control">
-                                <Switch.Thumb class="switch-thumb" />
-                            </Switch.Control>
-                            <!-- `role` + `aria-label` on the INPUT, not the root: see `lib/ui/Switch.svelte`. -->
-                            <Switch.HiddenInput role="switch" aria-label={setting.label} />
-                        </Switch.Root>
+                            ariaLabel={setting.label}
+                        />
                     {:else if setting.type === 'number' || setting.type === 'duration'}
                         {@const durationUnit =
                             setting.type === 'duration' ? setting.constraints?.unit : undefined}
@@ -424,39 +419,6 @@ Timestamp: ${info.timestamp}
     }
 
     /* Ark UI component styles */
-    :global(.switch-control) {
-        display: inline-flex;
-        align-items: center;
-        width: 36px;
-        height: 20px;
-        background: var(--color-bg-tertiary);
-        border-radius: var(--radius-full);
-        padding: var(--spacing-xxs);
-        cursor: default;
-        transition: background-color var(--transition-base);
-    }
-
-    :global(.switch-control[data-state='checked']) {
-        background: var(--color-accent);
-    }
-
-    :global(.switch-control[data-state='checked']:hover) {
-        background: var(--color-accent-hover);
-    }
-
-    :global(.switch-thumb) {
-        width: 16px;
-        height: 16px;
-        background: white;
-        border-radius: var(--radius-full);
-        transition: transform var(--transition-base);
-        box-shadow: var(--shadow-sm);
-    }
-
-    :global(.switch-control[data-state='checked'] .switch-thumb) {
-        transform: translateX(16px);
-    }
-
     :global(.number-control) {
         display: flex;
         align-items: center;

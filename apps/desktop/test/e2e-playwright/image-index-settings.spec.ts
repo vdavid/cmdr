@@ -21,7 +21,7 @@ import { closeScopedWindow, openSettingsWindowViaProd } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 const SWITCH_LABEL = 'Index image contents'
-const SECTION_ID = 'ai-image-search'
+const SECTION_ID = 'indexing-image-indexing'
 const SETTING_KEY = 'mediaIndex.enabled'
 
 const settingsFilePath = (() => {
@@ -56,31 +56,38 @@ function clickSectionByTextJs(name: string): string {
   })()`
 }
 
-/** Reads the toggle's `data-state` ('checked' | 'unchecked' | 'missing'). */
+/**
+ * `[aria-label="…"]` resolves to the switch's hidden `<input>`, not to the Ark root: that's the
+ * element assistive tech names (see `lib/ui/DETAILS.md` § Switch). So state reads have to climb
+ * to the root first, since `data-state` lives on the styled track.
+ *
+ * Clicks go on the INPUT, never on the track: the track sits inside the `<label>`, so clicking
+ * it also triggers label activation and the toggle can fire twice.
+ */
 function switchStateJs(): string {
   return `(function() {
-    var root = document.querySelector('[aria-label=${JSON.stringify(SWITCH_LABEL)}]');
-    if (!root) return 'missing';
-    var control = root.querySelector('.switch-control') || root;
-    return control.getAttribute('data-state') || 'unknown';
+    var input = document.querySelector('[aria-label=${JSON.stringify(SWITCH_LABEL)}]');
+    if (!input) return 'missing';
+    var root = input.closest('[data-scope="switch"][data-part="root"]');
+    var control = root ? root.querySelector('.switch-control') : null;
+    return (control || input).getAttribute('data-state') || 'unknown';
   })()`
 }
 
-/** Clicks the toggle control; returns false if the switch isn't present. */
+/** Clicks the toggle; returns false if the switch isn't present. */
 function clickSwitchJs(): string {
   return `(function() {
-    var root = document.querySelector('[aria-label=${JSON.stringify(SWITCH_LABEL)}]');
-    if (!root) return false;
-    var control = root.querySelector('.switch-control') || root;
-    control.click();
+    var input = document.querySelector('[aria-label=${JSON.stringify(SWITCH_LABEL)}]');
+    if (!input) return false;
+    input.click();
     return true;
   })()`
 }
 
-/** Navigates the settings window to AI > Image search and waits for its wrapper + switch. */
-async function openImageSearch(settings: TauriPage): Promise<void> {
-  const clicked = await settings.evaluate<boolean>(clickSectionByTextJs('Image search'))
-  expect(clicked, 'Image search sidebar item exists').toBe(true)
+/** Navigates the settings window to Indexing > Image indexing and waits for its wrapper + switch. */
+async function openImageIndexing(settings: TauriPage): Promise<void> {
+  const clicked = await settings.evaluate<boolean>(clickSectionByTextJs('Image indexing'))
+  expect(clicked, 'Image indexing sidebar item exists').toBe(true)
   await settings.waitForSelector(`[data-section-id="${SECTION_ID}"]`, 3000)
   await settings.waitForSelector(`[aria-label="${SWITCH_LABEL}"]`, 3000)
 }
@@ -89,7 +96,7 @@ async function openSettings(tauriPage: TauriPage): Promise<TauriPage> {
   const settings = await openSettingsWindowViaProd(tauriPage)
   await settings.waitForSelector('.settings-window', 3000)
   await settings.waitForSelector('.settings-sidebar', 3000)
-  await openImageSearch(settings)
+  await openImageIndexing(settings)
   return settings
 }
 

@@ -33,7 +33,7 @@
      * prop and carries the single FDA hint, per the "Locked copy" decision.
      */
     import { onMount } from 'svelte'
-    import { Switch } from '@ark-ui/svelte/switch'
+    import Switch from '$lib/ui/Switch.svelte'
     import SettingsSection from '../components/SettingsSection.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
@@ -223,21 +223,16 @@
                     description={shortcutDescription}
                     {searchQuery}
                 >
-                    <Switch.Root
+                    <!-- The `lib/ui/Switch` primitive rather than the registry `SettingSwitch`:
+                         this toggle's live-apply runs a custom IPC handler, not a plain
+                         `setSetting`. -->
+                    <Switch
                         checked={shortcutEnabled}
-                        onCheckedChange={(details) => void handleShortcutEnabledChange(details.checked)}
+                        onCheckedChange={(next: boolean) => void handleShortcutEnabledChange(next)}
                         disabled={downloadsGated}
-                    >
-                        <Switch.Control class="go-to-latest-switch-control">
-                            <Switch.Thumb class="go-to-latest-switch-thumb" />
-                        </Switch.Control>
-                        <!-- `role` + `aria-label` on the INPUT, not the root: see `lib/ui/Switch.svelte`. -->
-                        <Switch.HiddenInput
-                            role="switch"
-                            aria-label={globalShortcutDef.label}
-                            data-test="global-shortcut-enabled"
-                        />
-                    </Switch.Root>
+                        ariaLabel={globalShortcutDef.label}
+                        data-test="global-shortcut-enabled"
+                    />
                 </SettingRow>
                 <p class="shortcut-hint">
                     {tString('settings.fileSystemWatching.globalShortcutHint')}
@@ -302,53 +297,5 @@
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
         line-height: 1.4;
-    }
-
-    /* Ark UI Switch used inline here (not the registry `SettingSwitch`, because
-       the toggle's live-apply runs a custom IPC handler rather than a plain
-       `setSetting`). Styling mirrors `SettingSwitch.svelte`; class names are
-       local to keep the rules scoped to this component. */
-    :global(.go-to-latest-switch-control) {
-        display: inline-flex;
-        align-items: center;
-        width: 36px;
-        height: 20px;
-        background: var(--color-bg-tertiary);
-        border-radius: var(--radius-full);
-        padding: var(--spacing-xxs);
-        cursor: default;
-        transition: background-color var(--transition-base);
-    }
-
-    :global(.go-to-latest-switch-control[data-state='checked']) {
-        background: var(--color-accent);
-    }
-
-    :global(.go-to-latest-switch-control[data-disabled]) {
-        cursor: not-allowed;
-        opacity: 0.5;
-    }
-
-    :global(.go-to-latest-switch-thumb) {
-        width: 16px;
-        height: 16px;
-        background: white;
-        border-radius: var(--radius-full);
-        transition: transform var(--transition-base);
-        box-shadow: var(--shadow-sm);
-    }
-
-    :global(.go-to-latest-switch-control[data-state='checked'] .go-to-latest-switch-thumb) {
-        transform: translateX(16px);
-    }
-
-    :global(.go-to-latest-switch-control[data-state='checked']:hover) {
-        background: var(--color-accent-hover);
-    }
-
-    :global(.go-to-latest-switch-control[data-focus]) {
-        outline: 2px solid var(--color-accent);
-        outline-offset: 2px;
-        box-shadow: var(--shadow-focus);
     }
 </style>

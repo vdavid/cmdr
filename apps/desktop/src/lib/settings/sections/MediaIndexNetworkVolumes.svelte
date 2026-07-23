@@ -13,6 +13,9 @@
      *     its photos would defer forever), plus a live status line (indexing now /
      *     paused because disconnected / how many photos are indexed).
      *
+     * Both toggles use the `lib/ui/Switch` primitive directly rather than the registry
+     * `SettingSwitch`, which is keyed to a single setting id.
+     *
      * The opt-in / always-index switches are driven by the persisted settings (the
      * source of truth, live-synced cross-window); the status line is driven by a polled
      * `mediaIndexVolumeState` snapshot. Local volumes never appear here — they enrich by
@@ -20,7 +23,7 @@
      */
     import { onMount } from 'svelte'
     import { SvelteMap } from 'svelte/reactivity'
-    import { Switch } from '@ark-ui/svelte/switch'
+    import Switch from '$lib/ui/Switch.svelte'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
     import type { VolumeInfo } from '$lib/file-explorer/types'
     import { tString } from '$lib/intl/messages.svelte'
@@ -95,8 +98,12 @@
         reseedFromSettings()
         void refreshStates()
         // Keep the switches in sync when the same settings change in another window.
-        const unsubOptIn = onSpecificSettingChange('mediaIndex.networkVolumes', () => { reseedFromSettings(); })
-        const unsubAlways = onSpecificSettingChange('mediaIndex.alwaysIndexVolumes', () => { reseedFromSettings(); })
+        const unsubOptIn = onSpecificSettingChange('mediaIndex.networkVolumes', () => {
+            reseedFromSettings()
+        })
+        const unsubAlways = onSpecificSettingChange('mediaIndex.alwaysIndexVolumes', () => {
+            reseedFromSettings()
+        })
         // Light poll so "indexing" / "paused" / count stay honest while Settings is open.
         const timer = setInterval(() => void refreshStates(), 3000)
         return () => {
@@ -173,27 +180,19 @@
                                 {/if}
                             {/if}
                         </div>
-                        <Switch.Root
+                        <Switch
                             checked={isOn}
-                            onCheckedChange={(d) => {
-                                void handleOptInChange(volume.id, d.checked).catch((err: unknown) => {
+                            onCheckedChange={(next: boolean) => {
+                                void handleOptInChange(volume.id, next).catch((err: unknown) => {
                                     log.warn('opt-in toggle failed: {err}', { err: String(err) })
                                 })
                             }}
-                        >
-                            <Switch.Control class="mi-switch-control">
-                                <Switch.Thumb class="mi-switch-thumb" />
-                            </Switch.Control>
-                            <!-- `role` + `aria-label` on the INPUT, not the root: see `lib/ui/Switch.svelte`. -->
-                            <Switch.HiddenInput
-                                role="switch"
-                                aria-label={tString('settings.mediaIndex.networkVolumes.optInLabel', {
-                                    name: volume.name,
-                                })}
-                                data-test="media-net-optin"
-                                data-volume-id={volume.id}
-                            />
-                        </Switch.Root>
+                            ariaLabel={tString('settings.mediaIndex.networkVolumes.optInLabel', {
+                                name: volume.name,
+                            })}
+                            data-test="media-net-optin"
+                            data-volume-id={volume.id}
+                        />
                     </div>
 
                     {#if isOn}
@@ -207,27 +206,19 @@
                                     >{tString('settings.mediaIndex.networkVolumes.alwaysHelp')}</span
                                 >
                             </div>
-                            <Switch.Root
+                            <Switch
                                 checked={always.get(volume.id) ?? false}
-                                onCheckedChange={(d) => {
-                                    void handleAlwaysChange(volume.id, d.checked).catch((err: unknown) => {
+                                onCheckedChange={(next: boolean) => {
+                                    void handleAlwaysChange(volume.id, next).catch((err: unknown) => {
                                         log.warn('always-index toggle failed: {err}', { err: String(err) })
                                     })
                                 }}
-                            >
-                                <Switch.Control class="mi-switch-control">
-                                    <Switch.Thumb class="mi-switch-thumb" />
-                                </Switch.Control>
-                                <!-- `role` + `aria-label` on the INPUT: see `lib/ui/Switch.svelte`. -->
-                                <Switch.HiddenInput
-                                    role="switch"
-                                    aria-label={tString('settings.mediaIndex.networkVolumes.alwaysAria', {
-                                        name: volume.name,
-                                    })}
-                                    data-test="media-net-always"
-                                    data-volume-id={volume.id}
-                                />
-                            </Switch.Root>
+                                ariaLabel={tString('settings.mediaIndex.networkVolumes.alwaysAria', {
+                                    name: volume.name,
+                                })}
+                                data-test="media-net-always"
+                                data-volume-id={volume.id}
+                            />
                         </div>
                     {/if}
                 </li>
@@ -325,48 +316,5 @@
     .net-help-inline {
         margin: 0;
         color: var(--color-text-tertiary);
-    }
-
-    /* Switch styling mirrors `SettingSwitch.svelte`; scoped class names keep the
-       rules local to this dynamic per-volume list (it can't use the registry
-       `SettingSwitch`, which is keyed to a single setting id). */
-    :global(.mi-switch-control) {
-        display: inline-flex;
-        align-items: center;
-        width: 36px;
-        height: 20px;
-        background: var(--color-bg-tertiary);
-        border-radius: var(--radius-full);
-        padding: var(--spacing-xxs);
-        cursor: default;
-        transition: background-color var(--transition-base);
-        flex-shrink: 0;
-    }
-
-    :global(.mi-switch-control[data-state='checked']) {
-        background: var(--color-accent);
-    }
-
-    :global(.mi-switch-control[data-state='checked']:hover) {
-        background: var(--color-accent-hover);
-    }
-
-    :global(.mi-switch-thumb) {
-        width: 16px;
-        height: 16px;
-        background: white;
-        border-radius: var(--radius-full);
-        transition: transform var(--transition-base);
-        box-shadow: var(--shadow-sm);
-    }
-
-    :global(.mi-switch-control[data-state='checked'] .mi-switch-thumb) {
-        transform: translateX(16px);
-    }
-
-    :global(.mi-switch-control[data-focus]) {
-        outline: 2px solid var(--color-accent);
-        outline-offset: 2px;
-        box-shadow: var(--shadow-focus);
     }
 </style>

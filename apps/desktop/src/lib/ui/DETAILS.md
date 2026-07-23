@@ -850,14 +850,26 @@ primitive directly.
 
 ## Switch
 
-The track-and-thumb on/off control, a presentational wrapper over Ark's `Switch`. Props mirror `Checkbox` minus
-`indeterminate`: `checked` (bindable, default `false`), `disabled`, `id`, `ariaLabel` (accessible name when there's no
-visible label), `onCheckedChange`, and `children` (an inline label right of the track).
+The track-and-thumb on/off control, a presentational wrapper over Ark's `Switch`, and the ONLY switch in the app: every
+on/off toggle renders through it, so the geometry (36×20 track, 16 px thumb, 16 px travel) lives in exactly one place.
+There is one size; nothing takes a `size` prop.
+
+Props mirror `Checkbox` minus `indeterminate`: `checked` (bindable, default `false`), `disabled`, `id`, `ariaLabel`
+(accessible name when there's no visible label), `onCheckedChange`, and `children` (an inline label right of the track).
+Plus a `data-*` pass-through: any `data-…` prop lands on the hidden `<input>`
+(`<Switch data-test="media-net-optin" data-volume-id={volume.id} />`). That's deliberate about WHERE: the styled track
+is `aria-hidden` decoration, so a test hook belongs on the input, which is also what a query resolves to and what a
+click toggles. Nothing else spreads through, so the API stays a fixed, reviewable shape.
 
 Ark renders the semantic control as a visually-hidden native `<input type="checkbox">` inside a `<label>` root; the
 styled track (`.switch-control`) and thumb (`.switch-thumb`) are decorative. The thumb is a literal `white`, not a
-token, so it reads against the accent-filled track in both themes; the off track's outline uses `--color-control-border`
-for the WCAG 3:1 non-text minimum.
+token, so it reads against the accent-filled track in both themes. The off track is a plain `--color-bg-tertiary` fill
+with no outline.
+
+Gotcha for tests and automation: because `aria-label` sits on the input, `document.querySelector('[aria-label="…"]')`
+resolves to the INPUT, not the root, and the input has no `data-state` and no `.switch-control` child. Walk up with
+`.closest('[data-scope="switch"][data-part="root"]')` before reading state off the track (both image-index E2E specs
+do).
 
 **Two ARIA attributes go on that INPUT, and both are ours to set** (`Switch.test.ts` pins them):
 
@@ -869,16 +881,19 @@ for the WCAG 3:1 non-text minimum.
   label IS rendered, so setting both is safe. `Checkbox` has the identical trap and the identical fix.
 
 Neither is caught by the axe tier-3 audits (they check that a labelling mechanism is PRESENT, not that it resolves), so
-the pinning tests are the only guard. Any hand-rolled Ark `Switch` outside this primitive needs both attributes too —
-the three settings sections that still hand-roll one carry them explicitly.
+the pinning tests are the only guard. That's the main reason nothing may hand-roll Ark's `Switch` again: a copy starts
+life without both attributes and nothing fails.
 
 `SettingSwitch` (`lib/settings/components/`) is the registry-wired wrapper: it resolves the label from the setting
 definition, subscribes to external resets, and writes through `setSetting`. Use it for anything registry-backed; use
-`Switch` directly in feature code that owns its own state (for example `DeleteDialog`'s "Delete permanently").
+`Switch` directly in feature code that owns its own state (`DeleteDialog`'s "Delete permanently", `AdvancedSection`'s
+auto-rendered booleans, `NotificationsSection`'s go-to-latest toggle, and the per-volume toggles in
+`MediaIndexNetworkVolumes`, whose live-apply runs custom IPC rather than a plain `setSetting`).
 
-Gotcha: three settings sections (`AdvancedSection`, `NotificationsSection`, `MediaIndexNetworkVolumes`) still hand-roll
-Ark's `Switch` with mirrored CSS, because they need `data-test` attributes on the hidden input that this primitive
-doesn't forward. Migrating them means adding that pass-through first; don't copy their pattern for new code.
+❌ Don't re-declare `.switch-control` / `.switch-thumb` from a feature component. Svelte's `:global(...)` escapes the
+component boundary, so a scoped file redefining the primitive's own class names restyles every switch in the window,
+with the winner decided by bundle order rather than by anything visible in either file. A settings section once carried
+such a copy (missing `flex-shrink`, `[data-focus]`, and `[data-disabled]`) and nothing flagged it.
 
 Switch vs `Checkbox`: a switch says "this is on/off right now", a checkbox says "this option is selected". See
 `docs/design-system.md` § "Checkbox and radio group".

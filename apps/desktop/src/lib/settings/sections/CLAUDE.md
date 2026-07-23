@@ -21,6 +21,9 @@ Parents: `../CLAUDE.md` (registry, store, applier, search), `../components/CLAUD
   [Checklist](../../../../../../docs/guides/adding-a-new-setting.md).
 - **New section = route in `SettingsContent.svelte` + entry in `TOP_LEVEL_ORDER` (`SettingsSidebar.svelte`) + mirror in
   `settings.spec.ts`.** Routing is registry-driven, not string match.
+- **A toggle that can't use `SettingSwitch` still uses `$lib/ui/Switch`.** Never hand-roll Ark's `Switch.Root`/`Control`
+  here (it silently ships without the ARIA the primitive carries), and never `:global(.switch-control)` from a section:
+  those class names are the primitive's and leak app-wide. Test hooks ride `data-*` props onto the hidden input.
 - **Don't push AI config from a section.** Just `setSetting(...)`; `settings-applier.ts` →
   `ai-config.ts::pushConfigToBackend()` hot-applies (re-reads fresh).
 - **Cloud AI keys never touch registry primitives.** `AiCloudSection` uses `SettingPasswordInput` in controlled mode;

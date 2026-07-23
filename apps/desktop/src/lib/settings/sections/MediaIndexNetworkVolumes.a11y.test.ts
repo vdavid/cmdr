@@ -92,9 +92,11 @@ describe('MediaIndexNetworkVolumes', () => {
 
   it('toggling the opt-in switch calls the persist+apply helper', async () => {
     const target = await mountAndSettle()
-    const control = target.querySelector('.mi-switch-control')
-    expect(control).not.toBeNull()
-    ;(control as HTMLElement).click()
+    // The hooks sit on the hidden input (the primitive forwards `data-*` there); the
+    // styled track is `aria-hidden` decoration.
+    const input = target.querySelector('input[data-test="media-net-optin"][data-volume-id="smb-naspi"]')
+    expect(input).not.toBeNull()
+    ;(input as HTMLElement).click()
     await tick()
     expect(setNetworkVolumeOptedIn).toHaveBeenCalledWith('smb-naspi', true)
   })
