@@ -251,6 +251,116 @@ mod tests {
         writer.shutdown();
     }
 
+    /// A brand-new subtree (an updater unpacking a bundle) is queued but SETTLING:
+    /// nothing is in flight and nothing is imminent, so it must hold nothing — and
+    /// above all must not drag its ancestors up to `/` into the "size updating"
+    /// hourglass, which is the half a user sees.
+    #[test]
+    fn a_settling_anchor_does_not_hold_its_ancestors_hourglass() {
+        let volume_id = "smb://rescan-test-settling-quiet";
+        let (writer, _dir, instance) = spawn_probe_writer_for(volume_id);
+        let mut reconciler = EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root());
+        // Keep the anchor queued (no spawn), so we observe the pending state itself.
+        reconciler.set_rescan_active_for_test(true);
+        // A REAL directory created a moment ago: the enqueue path stats it.
+        let staging = tempfile::tempdir().expect("temp dir");
+        let anchor = staging.path().join("update.a1b2c3/App.app/Contents/Resources");
+        std::fs::create_dir_all(&anchor).expect("create the fresh bundle");
+
+        reconciler.queue_must_scan_sub_dirs(anchor.clone(), &writer);
+
+        assert_eq!(
+            reconciler.pending_rescans_snapshot(),
+            vec![anchor.clone()],
+            "the anchor is still queued: it walks once it has settled"
+        );
+        assert!(
+            !instance.tracker.is_pending(&anchor.to_string_lossy()),
+            "a settling anchor has no writes in flight, so it holds no hourglass"
+        );
+        assert!(
+            !instance.tracker.is_pending(&staging.path().to_string_lossy()),
+            "and no ancestor reads as 'size updating' either"
+        );
+        writer.shutdown();
+    }
+
+    /// The guard: an ESTABLISHED directory behaves exactly as before the settle
+    /// delay existed — its walk is imminent, so it holds from the moment it's
+    /// queued. (A zero delay is the same question as an old birthtime.)
+    #[test]
+    fn an_established_anchor_holds_from_the_moment_it_is_queued() {
+        let volume_id = "smb://rescan-test-established-holds";
+        let (writer, _dir, instance) = spawn_probe_writer_for(volume_id);
+        let mut reconciler = EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root());
+        reconciler.set_rescan_active_for_test(true);
+        reconciler.set_settle_delay_for_test(Duration::ZERO);
+        let established = tempfile::tempdir().expect("temp dir");
+        let anchor = established.path().join("projects/site/build");
+        std::fs::create_dir_all(&anchor).expect("create");
+
+        reconciler.queue_must_scan_sub_dirs(anchor.clone(), &writer);
+
+        assert!(
+            instance.tracker.is_pending(&anchor.to_string_lossy()),
+            "an established anchor's walk is imminent, so it holds"
+        );
+        assert!(
+            instance.tracker.is_pending(&established.path().to_string_lossy()),
+            "and its ancestors read as 'size updating', which is honest here"
+        );
+        writer.shutdown();
+    }
+
+    /// Fail open: an anchor whose directory has no readable birthtime (it already
+    /// vanished, or the filesystem records none) is never stalled. It holds and
+    /// walks exactly as it does today.
+    #[test]
+    fn an_anchor_with_no_readable_birthtime_is_not_delayed() {
+        let volume_id = "smb://rescan-test-no-birthtime";
+        let (writer, _dir, instance) = spawn_probe_writer_for(volume_id);
+        let mut reconciler = EventReconciler::new_for(volume_id.to_string(), IndexPathSpace::root());
+        reconciler.set_rescan_active_for_test(true);
+        let staging = tempfile::tempdir().expect("temp dir");
+        // Never created on disk: there is no birthtime to read.
+        let anchor = staging.path().join("already-gone/App.app");
+
+        reconciler.queue_must_scan_sub_dirs(anchor.clone(), &writer);
+
+        assert!(
+            instance.tracker.is_pending(&anchor.to_string_lossy()),
+            "no birthtime must not stall the anchor: it holds and walks as before"
+        );
+        writer.shutdown();
+    }
+
+    /// The sweep tick carries settling the same way it carries the throttle: the
+    /// anchor is quiet while it settles, and re-arms once it has (one tick before
+    /// the re-kick walks it).
+    #[test]
+    fn the_sweep_rearms_the_hold_when_the_subtree_settles() {
+        let volume_id = "smb://rescan-test-sweep-settle";
+        let (_writer, _dir, instance) = spawn_probe_writer_for(volume_id);
+        let root = PathBuf::from("/aaa/Caches/update.a1b2c3");
+        instance.tracker.hold("/aaa/Caches/update.a1b2c3");
+        let now = Instant::now();
+        let mut throttle = RescanThrottle::new();
+        throttle.note_settle_deadline(&root, now + Duration::from_secs(30));
+        let pending: HashSet<PathBuf> = [root].into_iter().collect();
+
+        reconcile_with_eligibility(volume_id, &pending, None, &throttle, now);
+        assert!(
+            !instance.tracker.is_pending("/aaa"),
+            "a settling anchor stops holding its ancestors"
+        );
+
+        reconcile_with_eligibility(volume_id, &pending, None, &throttle, now + Duration::from_secs(30));
+        assert!(
+            instance.tracker.is_pending("/aaa/Caches/update.a1b2c3"),
+            "once it has settled the walk is imminent, so it holds again"
+        );
+    }
+
     /// The honest signal stays: an anchor that MAY walk now and is only waiting
     /// behind the single-flight active walk still holds. Its walk is imminent.
     #[test]

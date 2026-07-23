@@ -18,6 +18,7 @@ use super::rescan_hold::{
     adopt_picked_holds, hold_if_eligible, reconcile_with_eligibility, release_and_emit_completion, release_rescan_hold,
 };
 use super::rescan_route::{self, RescanRoute};
+use super::rescan_settle;
 use super::rescan_throttle::RescanThrottle;
 use super::*;
 use crate::indexing::lifecycle::manager;
@@ -114,12 +115,20 @@ impl EventReconciler {
     /// scanner via [`route_must_scan_sub_dirs`](Self::route_must_scan_sub_dirs).
     pub(in crate::indexing) fn queue_must_scan_sub_dirs(&mut self, path: PathBuf, writer: &IndexWriter) {
         DEBUG_STATS.record_must_scan(&path.to_string_lossy());
+        // Stat the anchor for its birthtime BEFORE it's queued or held: a subtree
+        // created seconds ago is still being written (an updater unpacking a
+        // bundle), and walking it indexes rows for data that's usually deleted
+        // before we finish. See `rescan_settle`.
+        rescan_settle::note_settle_deadline(&self.rescan_throttle, &path, Instant::now());
         self.enqueue_rescan(path, writer);
     }
 
-    /// Re-queue a rescan anchor without the `DEBUG_STATS` bookkeeping. Used by the
-    /// removal-storm drop rule, which fires once per dropped event (thousands in a
-    /// storm) — the debug ring buffer and counter would just churn. Set-dedup makes
+    /// Re-queue a rescan anchor without the `DEBUG_STATS` bookkeeping or the
+    /// settle stat. Used by the removal-storm drop rule, which fires once per
+    /// dropped event (thousands in a storm) — the debug ring buffer, the counter,
+    /// and a syscall per dropped event would all just churn, and the scope being
+    /// re-queued is already queued or walking, so its settle verdict is already
+    /// recorded. Set-dedup makes
     /// re-inserting the already-queued (or active) anchor idempotent; if it's the
     /// ACTIVE rescan's path (popped out of `pending_rescans`), re-inserting
     /// schedules the follow-up pass the tail events need.
@@ -253,13 +262,24 @@ impl EventReconciler {
         *self.active_rescan_path.lock_ignore_poison() = path;
     }
 
-    /// Test-only: zero both throttle bounds, so every anchor is always eligible.
-    /// The storm/stress fixed-point tests use this so a re-queued anchor drains
-    /// immediately instead of lingering in `pending_rescans` for the production
-    /// window. Cadence itself is covered by `rescan_throttle`'s unit tests.
+    /// Test-only: zero both throttle bounds AND the settle delay, so every anchor
+    /// is always eligible. The storm/stress fixed-point tests use this so a
+    /// re-queued anchor drains immediately instead of lingering in
+    /// `pending_rescans` — they queue brand-new temp dirs, which the settle delay
+    /// would otherwise hold back past the test's budget. Cadence itself is covered
+    /// by `rescan_throttle`'s unit tests.
     #[cfg(test)]
     pub(in crate::indexing) fn disable_rescan_throttle_for_test(&self) {
-        *self.rescan_throttle.lock_ignore_poison() = RescanThrottle::with_bounds(Duration::ZERO, Duration::ZERO);
+        let mut throttle = self.rescan_throttle.lock_ignore_poison();
+        *throttle = RescanThrottle::with_bounds(Duration::ZERO, Duration::ZERO);
+        throttle.set_settle_delay(Duration::ZERO);
+    }
+
+    /// Test-only: shorten the settle delay. Zero means "every directory reads as
+    /// established", the pre-settle-delay behavior.
+    #[cfg(test)]
+    pub(in crate::indexing) fn set_settle_delay_for_test(&self, delay: Duration) {
+        self.rescan_throttle.lock_ignore_poison().set_settle_delay(delay);
     }
 }
 
@@ -418,6 +438,10 @@ pub(super) fn start_next_rescan(
             // proper ancestor of `path` (never equal), so it doesn't affect `path`'s
             // own release decision. The drain below picks it up.
             if let Some(anchor) = escalation {
+                // Same settle question as any other enqueue: the missing chain is
+                // often missing precisely BECAUSE it was created seconds ago, and
+                // that is the subtree we don't want to walk yet.
+                rescan_settle::note_settle_deadline(&throttle_for_task, &anchor, Instant::now());
                 hold_if_eligible(&volume_id_for_task, &anchor, &throttle_for_task, Instant::now());
                 pending_for_task.lock_ignore_poison().insert(anchor);
             }
@@ -539,6 +563,7 @@ fn reconcile_report(path: &Path, summary: &ReconcileSummary) -> (log::Level, Str
 
 #[cfg(test)]
 mod tests {
+    use super::super::rescan_settle::NEW_SUBTREE_SETTLE_DELAY;
     use super::super::rescan_throttle::RESCAN_THROTTLE_WINDOW;
     use super::*;
 
@@ -696,6 +721,29 @@ mod tests {
             vec![PathBuf::from("/a")],
             "the throttled anchor stays queued for a later sweep, not dropped"
         );
+    }
+
+    /// A brand-new subtree is left QUEUED while it settles, not dropped, and it is
+    /// picked the moment it has settled. This is what keeps an updater's ephemeral
+    /// bundle out of the index while still honoring the signal for a directory a
+    /// person actually created.
+    #[test]
+    fn a_settling_anchor_is_left_queued_then_picked_once_it_settles() {
+        let mut throttle = RescanThrottle::new();
+        let t0 = Instant::now();
+        let anchor = PathBuf::from("/aaa/Caches/update.a1b2c3/App.app/Contents");
+        throttle.note_settle_deadline(&anchor, t0 + NEW_SUBTREE_SETTLE_DELAY);
+        let mut pending: HashSet<PathBuf> = [anchor.clone()].into_iter().collect();
+
+        assert!(
+            pick_and_collapse_rescan(&mut pending, &throttle, t0).is_none(),
+            "a subtree created a moment ago is not walked yet"
+        );
+        assert_eq!(pending.len(), 1, "and it stays queued: nothing is dropped or forgotten");
+
+        let (picked, _dropped) = pick_and_collapse_rescan(&mut pending, &throttle, t0 + NEW_SUBTREE_SETTLE_DELAY)
+            .expect("eligible once it has settled");
+        assert_eq!(picked, anchor, "the settled anchor walks");
     }
 
     /// When every queued anchor is inside its throttle window nothing is picked (the

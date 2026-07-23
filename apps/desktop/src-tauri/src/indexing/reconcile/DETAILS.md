@@ -411,6 +411,63 @@ hour. This is the same attribution `reconcile_report` makes for its log level, f
 would be evicted the moment the floor elapsed, and the anchor would then be eligible on its leading edge, defeating the
 back-off entirely.
 
+## The settle delay for brand-new subtrees (`reconciler/rescan_settle.rs`)
+
+An anchor whose directory was created less than `NEW_SUBTREE_SETTLE_DELAY` (30 s) ago is not walked yet. It stays queued
+and becomes eligible once it has settled; nothing is dropped or forgotten.
+
+**Why youth and not repetition.** Measured on David's machine (2026-07-23, a day of reconciler logs): 2,315 of the day's
+4,626 subtree reconciles — 422 s, 40% of the total reconcile time, 550,868 row deltas — went to roughly 2,300 UNIQUE
+ephemeral paths under `~/Library/Caches/com.inkeep.open-knowledge.ShipIt/update.<random>/OpenKnowledge.app/…`, an app
+updater unpacking Electron bundles. That cache directory now holds three entries totalling 36 KB: every one of those
+bundles was deleted before we finished indexing it. The per-subtree throttle cannot catch this, and no tuning of it
+would: its signal is REPETITION, and every path is unique, so no anchor ever reaches a second strike. The signal that
+separates an updater's staging dir from a folder someone made is how long it has existed.
+
+**Birthtime, not mtime.** "Brand new" is a creation-time question. Using mtime would delay a busy but long-established
+directory, which is exactly the case the throttle already handles well and this must not touch.
+
+**The stat lives at the enqueue call site, never in the throttle.** `RescanThrottle` is pure and clock-injected (no
+filesystem, no logging, no clock of its own), which is why every one of its rules is deterministically unit-testable.
+So `rescan_settle::note_settle_deadline` does the `symlink_metadata` and passes the resulting DEADLINE into the throttle
+as data, the same way `now` and `walk_cost` are passed in. The throttle lock is taken once to read the policy and once
+to store the result, never held across the syscall. Cost is one stat on the anchor itself (never a walk), on the same
+event-loop thread that already stats once per live create/modify event.
+
+**A re-enqueue can't push the deadline out.** Every enqueue re-derives the deadline from the same immutable birthtime,
+so an anchor that keeps raising `MustScanSubDirs` settles on schedule. The deadline moves only when the directory
+itself is replaced (delete + recreate gives a new inode with a new birthtime), and that genuinely IS a new subtree, not
+the same one being starved.
+
+**Fail open, never closed.** No readable birthtime (a filesystem or platform that doesn't record one, a directory that
+already vanished, a wall clock that moved backwards) means no deadline and the anchor walks exactly as before. A missing
+birthtime must never stall an anchor.
+
+**It composes as a second eligibility gate.** `RescanThrottle::is_eligible` answers to BOTH the settle deadline and the
+cost-proportional window, and whichever says "not yet" wins; neither can starve an anchor, because both are absolute
+deadlines that pass. Everything downstream follows for free, because everything downstream asks the same question:
+`pick_and_collapse_rescan` leaves a settling anchor queued, and the hourglass hold (below) reads a settling anchor as
+neither walking nor queued-and-eligible, so it holds nothing and drags no ancestor into "size updating". The ~1 s sweep
+tick re-asks each tick, so the anchor walks within a second of settling. `gc` bounds the settle map exactly as it bounds
+completions: drop an elapsed deadline for an anchor nobody has queued (it reads the same as no record at all), keep a
+live anchor's.
+
+**Two enqueue sites take the stat, one deliberately doesn't.** `queue_must_scan_sub_dirs` (every live/replay/storm
+feeder) and the Leak-B escalation re-queue both stat, the latter because a missing chain is often missing precisely
+BECAUSE it was created seconds ago. `requeue_rescan` (the removal-storm drop rule) does not: it fires once per dropped
+event, thousands in a storm, and the scope it re-queues is already queued or walking, so its settle verdict is already
+recorded.
+
+**The vanished anchor, which is the designed outcome.** Most of these directories are gone by the time they settle.
+`reconcile_subtree` on a vanished root that was never indexed resolves neither root nor parent, stats the root, fails,
+and returns an empty summary with `escalation: None` at debug level: no rows, no re-queue, no hold left behind (the
+completion path releases as usual), and the single-flight drain moves straight to the next anchor. If the root IS in the
+DB, `read_fs_children` returns `None` and the walk lists nothing — the rescan drain never deletes rows for a vanished
+subtree by design; that is the FSEvents delete path's business (`handle_creation_or_modification`'s stat-failure branch
+sends `DeleteSubtreeById`, and the storm drop rule deliberately keeps a scope's OWN removal event on that cheap path).
+Worst case an escalation hop re-queues the highest missing dir once; that hop's parent IS in the DB, so it terminates on
+the stat-failure branch rather than escalating again.
+
 ## The rescan hourglass hold (`reconciler/rescan_hold.rs`)
 
 A rescan root held in `PendingSizes` marks its whole chain pending in BOTH directions (`../read/pending_sizes.rs`), so

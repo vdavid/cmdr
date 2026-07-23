@@ -1,8 +1,8 @@
 # Reconcile (keep the index matching disk)
 
 Three mechanisms resync the index after the initial scan: the event-triggered `reconciler`, the full `local_reconcile`
-(rescan-in-place), and the per-navigation `verifier`. Rationale, evidence, and the full mechanics are in
-`DETAILS.md`; the bullets below are only the guardrails.
+(rescan-in-place), and the per-navigation `verifier`. Rationale, evidence, and full mechanics: `DETAILS.md`; the
+bullets below are only the guardrails.
 
 ## Module map
 
@@ -35,12 +35,13 @@ Three mechanisms resync the index after the initial scan: the event-triggered `r
   snapshot + a `read_dir` iteration cap. ❌ A declined dir keeps claiming exact (owned debt), never `listed_epoch = 0`.
 - **Per-subtree rescan throttle is COST-PROPORTIONAL:** each anchor's window is `30 × walk_cost` clamped to 60 s–30 min;
   leading + trailing, `Utility`-QoS thread. Cost is duration MINUS writer wait (else one saturated writer over-throttles
-  every anchor at once), and `gc` measures each record against its OWN window (a global one evicts a backed-off anchor
-  early and it re-walks on its leading edge).
+  every anchor at once); `gc` measures each record against its OWN window (a global one frees a backed-off anchor early).
+- **A brand-new anchor SETTLES 30 s (from BIRTHTIME) before it walks** (`rescan_settle.rs`): it reads INELIGIBLE, so it
+  stays queued and holds nothing. ❌ No stat inside the pure throttle (the call site passes a deadline in), ❌ no mtime;
+  a missing birthtime FAILS OPEN.
 - **A rescan anchor holds the hourglass ONLY while walking or queued-AND-eligible** (`rescan_hold.rs`). ❌ Don't restore
-  an unconditional hold at enqueue: a throttled anchor is resting with no writes in flight, and a held root flags its
-  whole chain, so it would put "size updating" on `~` and `/` for up to 30 min. ❌ Don't drop the pick-time hold either;
-  it's what leaves no unheld-write window.
+  an unconditional hold at enqueue: a resting anchor flags its whole chain, putting "size updating" on `~` and `/` for
+  up to 30 min. ❌ Don't drop the pick-time hold either; it's what leaves no unheld-write window.
 - **Depth-split `MustScanSubDirs`:** SHALLOW (`depth ≤ 2`) → visible scanner, NO hourglass hold, never `pending_rescans`;
   DEEP (`≥ 3`) → throttled drain.
 - **A shallow anchor sweeps at most ONCE A DAY, boot disk only** (24 h; mount-rooted keeps 45 s). Coalesced anchors are

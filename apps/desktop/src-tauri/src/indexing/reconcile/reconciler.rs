@@ -43,6 +43,7 @@ mod escalation;
 mod rescan;
 mod rescan_hold;
 mod rescan_route;
+mod rescan_settle;
 mod rescan_throttle;
 mod throttle;
 use escalation::resolve_escalation_anchor;

@@ -1878,7 +1878,7 @@ fn live_delete_under_mount_rooted_index_resolves_via_strip() {
 // ── Test helpers ─────────────────────────────────────────────────
 
 /// Set up a writer and a read connection for tests.
-fn setup_test_writer() -> (IndexWriter, tempfile::TempDir, Connection) {
+pub(super) fn setup_test_writer() -> (IndexWriter, tempfile::TempDir, Connection) {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = dir.path().join("test-reconciler.db");
     let _store = IndexStore::open(&db_path).expect("open store");
@@ -1911,7 +1911,7 @@ fn setup_private_writer(volume_id: &str) -> (IndexWriter, tempfile::TempDir, Con
 /// Walks from root downward, inserting each missing component. This simulates
 /// what the full scan does in production: all directories are indexed before
 /// live events arrive. Also syncs the writer's shared `next_id` counter.
-fn ensure_path_in_db(db_path: &Path, abs_path: &str, writer: &IndexWriter) {
+pub(super) fn ensure_path_in_db(db_path: &Path, abs_path: &str, writer: &IndexWriter) {
     let conn = IndexStore::open_write_connection(db_path).unwrap();
     let components: Vec<&str> = abs_path
         .strip_prefix('/')
@@ -1938,7 +1938,7 @@ fn ensure_path_in_db(db_path: &Path, abs_path: &str, writer: &IndexWriter) {
 
 /// Create a temp directory outside indexing-excluded paths.
 /// On Linux, `/tmp/` is excluded from indexing; use the current directory instead.
-fn non_excluded_tempdir() -> tempfile::TempDir {
+pub(super) fn non_excluded_tempdir() -> tempfile::TempDir {
     // Create in CWD instead of /tmp/ to avoid:
     // - Linux: /tmp/ is in EXCLUDED_PREFIXES
     // - macOS: /tmp is a symlink to /private/tmp, causing path mismatches with normalize_path() which

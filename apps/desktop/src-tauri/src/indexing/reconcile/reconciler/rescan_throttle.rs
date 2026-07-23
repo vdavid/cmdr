@@ -47,6 +47,7 @@
 //! every rule below is deterministically unit-tested; it makes no filesystem,
 //! logging, or clock calls.
 
+use super::rescan_settle::NEW_SUBTREE_SETTLE_DELAY;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -80,9 +81,17 @@ struct Completion {
 pub(in crate::indexing) struct RescanThrottle {
     floor: Duration,
     ceiling: Duration,
+    /// The policy the enqueue call site reads before stat-ing an anchor (see
+    /// [`super::rescan_settle`]). A `Duration`, so the engine stays pure: the
+    /// syscall and the clock both live at the call site.
+    settle_delay: Duration,
     /// Each anchor's last completion. Absent = never walked (eligible on the
     /// leading edge). Bounded by [`RescanThrottle::gc`].
     last_completed: HashMap<PathBuf, Completion>,
+    /// Each still-SETTLING anchor's deadline: the instant its brand-new directory
+    /// has existed long enough to be worth walking. Absent = settled, or no
+    /// birthtime to judge by (fail open). Bounded by [`RescanThrottle::gc`].
+    settling: HashMap<PathBuf, Instant>,
 }
 
 impl RescanThrottle {
@@ -100,8 +109,31 @@ impl RescanThrottle {
         Self {
             floor,
             ceiling: ceiling.max(floor),
+            settle_delay: NEW_SUBTREE_SETTLE_DELAY,
             last_completed: HashMap::new(),
+            settling: HashMap::new(),
         }
+    }
+
+    /// How long a brand-new directory must have existed before its subtree is
+    /// walked. Read by the enqueue call site, which owns the `stat`.
+    pub(in crate::indexing) fn settle_delay(&self) -> Duration {
+        self.settle_delay
+    }
+
+    /// Test-only: shorten (or zero) the settle delay. Zero makes every anchor read
+    /// as established, which is what the storm/stress fixed-point tests need — they
+    /// queue brand-new temp dirs and drain to an empty `pending_rescans`.
+    #[cfg(test)]
+    pub(in crate::indexing) fn set_settle_delay(&mut self, delay: Duration) {
+        self.settle_delay = delay;
+    }
+
+    /// Record that `path` is a brand-new directory that may not be walked until
+    /// `deadline`. Data in, exactly like `now` and `walk_cost`: the `stat` that
+    /// produced it happened at the call site ([`super::rescan_settle`]).
+    pub(in crate::indexing) fn note_settle_deadline(&mut self, path: &Path, deadline: Instant) {
+        self.settling.insert(path.to_path_buf(), deadline);
     }
 
     /// The window a walk costing `walk_cost` earns: [`WALK_COST_MULTIPLIER`] times
@@ -114,14 +146,25 @@ impl RescanThrottle {
             .clamp(self.floor, self.ceiling)
     }
 
-    /// Whether `path` may (re)start a reconcile now.
+    /// Whether `path` may (re)start a reconcile now. Two independent gates, and
+    /// whichever says "not yet" wins. Neither can starve an anchor: both are
+    /// absolute deadlines that pass on their own. `now` is injected.
     ///
-    /// Leading edge: an anchor with no completion record is eligible immediately,
-    /// so a first `MustScanSubDirs` re-walks without added latency. Otherwise
-    /// eligible iff the anchor's own window has elapsed since its last completion,
-    /// which guarantees even an expensive anchor still re-walks once per window
-    /// (never starves). `now` is injected.
+    /// **Settling** (youth): a brand-new directory isn't walked until its deadline,
+    /// so an ephemeral subtree that's deleted meanwhile is never indexed at all. No
+    /// deadline recorded = nothing to wait for.
+    ///
+    /// **The cost window** (repetition): an anchor with no completion record is
+    /// eligible immediately, so a first `MustScanSubDirs` re-walks without added
+    /// latency (the leading edge). Otherwise eligible once the anchor's own window
+    /// has elapsed since its last completion, which guarantees even an expensive
+    /// anchor still re-walks once per window.
     pub(in crate::indexing) fn is_eligible(&self, path: &Path, now: Instant) -> bool {
+        if let Some(settled_at) = self.settling.get(path)
+            && now < *settled_at
+        {
+            return false;
+        }
         match self.last_completed.get(path) {
             None => true,
             Some(completion) => now.duration_since(completion.at) >= completion.window,
@@ -151,6 +194,11 @@ impl RescanThrottle {
         self.last_completed.retain(|path, completion| {
             live_anchors.contains(path) || now.duration_since(completion.at) < completion.window
         });
+        // Same rule for settle deadlines: an elapsed one for an anchor nobody has
+        // queued says nothing (the anchor is settled, which is also what no record
+        // at all means), so drop it.
+        self.settling
+            .retain(|path, deadline| live_anchors.contains(path) || now < *deadline);
     }
 }
 
@@ -326,6 +374,103 @@ mod tests {
         assert!(
             !t.last_completed.contains_key(Path::new("/cheap")),
             "an elapsed, non-live record is still dropped"
+        );
+    }
+
+    /// A brand-new subtree is not walked while it settles, and IS walked the
+    /// moment it has. Nothing is dropped: the anchor stays queued throughout.
+    #[test]
+    fn a_settling_anchor_is_not_eligible_until_its_deadline() {
+        let mut t = throttle();
+        let t0 = Instant::now();
+        let settled_at = t0 + NEW_SUBTREE_SETTLE_DELAY;
+        t.note_settle_deadline(Path::new("/new-subtree"), settled_at);
+
+        assert!(
+            !t.is_eligible(Path::new("/new-subtree"), t0),
+            "a directory created a moment ago is not walked yet"
+        );
+        assert!(
+            !t.is_eligible(Path::new("/new-subtree"), settled_at - Duration::from_millis(1)),
+            "still settling right up to its deadline"
+        );
+        assert!(
+            t.is_eligible(Path::new("/new-subtree"), settled_at),
+            "and it walks the moment it has settled"
+        );
+    }
+
+    /// The guard for everything established: an anchor with no settle deadline
+    /// (an old directory, or one with no readable birthtime) is eligible exactly
+    /// as it was before there was a settle delay at all.
+    #[test]
+    fn an_anchor_with_no_settle_deadline_is_eligible_immediately() {
+        let t = throttle();
+        assert!(
+            t.is_eligible(Path::new("/established"), Instant::now()),
+            "no deadline recorded means nothing to wait for"
+        );
+    }
+
+    /// Two independent gates, so whichever says "not yet" wins — and neither can
+    /// starve the anchor, because both are absolute deadlines that pass.
+    #[test]
+    fn the_settle_delay_and_the_cost_window_compose() {
+        let t0 = Instant::now();
+
+        // Settling outlasts the cost window: the floor elapses first, the anchor
+        // still waits.
+        let mut settle_wins = production_throttle();
+        settle_wins.record_completion(Path::new("/a"), t0, Duration::ZERO); // the 60 s floor
+        settle_wins.note_settle_deadline(Path::new("/a"), t0 + Duration::from_secs(90));
+        assert!(
+            !settle_wins.is_eligible(Path::new("/a"), t0 + RESCAN_THROTTLE_WINDOW),
+            "the throttle window elapsed, but the subtree is still settling"
+        );
+        assert!(
+            settle_wins.is_eligible(Path::new("/a"), t0 + Duration::from_secs(90)),
+            "eligible once BOTH have elapsed"
+        );
+
+        // The other way round: settled, but the expensive anchor's back-off runs on.
+        let mut window_wins = production_throttle();
+        window_wins.record_completion(Path::new("/b"), t0, Duration::from_secs(10)); // a 5 min window
+        window_wins.note_settle_deadline(Path::new("/b"), t0 + NEW_SUBTREE_SETTLE_DELAY);
+        assert!(
+            !window_wins.is_eligible(Path::new("/b"), t0 + NEW_SUBTREE_SETTLE_DELAY),
+            "settled, but the cost-proportional window still says not yet"
+        );
+        assert!(
+            window_wins.is_eligible(Path::new("/b"), t0 + Duration::from_secs(300)),
+            "and neither gate starves it: it walks when the later one elapses"
+        );
+    }
+
+    /// Settle deadlines are bounded like completions: a live anchor keeps its
+    /// record, a settled-and-forgotten one is dropped (it reads the same as no
+    /// record at all).
+    #[test]
+    fn gc_keeps_a_settling_anchor_and_drops_a_settled_one() {
+        let mut t = throttle();
+        let t0 = Instant::now();
+        t.note_settle_deadline(Path::new("/still-settling"), t0 + Duration::from_secs(60));
+        t.note_settle_deadline(Path::new("/settled"), t0 + Duration::from_secs(1));
+        t.note_settle_deadline(Path::new("/settled-but-queued"), t0 + Duration::from_secs(1));
+
+        let live: HashSet<PathBuf> = [PathBuf::from("/settled-but-queued")].into_iter().collect();
+        t.gc(&live, t0 + Duration::from_secs(30));
+
+        assert!(
+            t.settling.contains_key(Path::new("/still-settling")),
+            "a deadline still in the future is kept"
+        );
+        assert!(
+            t.settling.contains_key(Path::new("/settled-but-queued")),
+            "a queued anchor's record is kept whatever its deadline"
+        );
+        assert!(
+            !t.settling.contains_key(Path::new("/settled")),
+            "an elapsed, non-live deadline is inert, so it's dropped"
         );
     }
 
