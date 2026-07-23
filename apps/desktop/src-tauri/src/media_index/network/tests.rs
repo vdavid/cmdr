@@ -494,7 +494,10 @@ fn exclusion_landing_during_network_analyze_writes_no_row() {
     };
     let outcome = enrich_network_and_gc(&ctx).expect("pass");
     assert!(matches!(outcome, NetworkPassOutcome::Completed(s) if s.enriched == 0));
-    assert!(calls.load(std::sync::atomic::Ordering::SeqCst) >= 2, "the veto is re-checked before the upsert");
+    assert!(
+        calls.load(std::sync::atomic::Ordering::SeqCst) >= 2,
+        "the veto is re-checked before the upsert"
+    );
     let store = MediaStore::open(&media_db_path(dir.path(), "smb-vol")).expect("reopen");
     assert!(
         store.status_for("/DCIM/a.jpg").expect("read").is_none(),
@@ -615,8 +618,16 @@ fn parallel_network_enriches_each_path_once_and_the_byte_budget_bounds_concurren
     };
     let outcome = enrich_network_and_gc(&ctx).expect("pass");
     assert!(matches!(outcome, NetworkPassOutcome::Completed(s) if s.enriched == 40));
-    assert_eq!(backend.max_calls_for_any_path(), 1, "no double-enrichment across workers");
-    assert!(backend.peak() <= 2, "byte budget should bound concurrency to 2, saw {}", backend.peak());
+    assert_eq!(
+        backend.max_calls_for_any_path(),
+        1,
+        "no double-enrichment across workers"
+    );
+    assert!(
+        backend.peak() <= 2,
+        "byte budget should bound concurrency to 2, saw {}",
+        backend.peak()
+    );
     // Every row landed through the single writer.
     let statuses = crate::media_index::scheduler::enrich::load_statuses(dir.path(), "smb-vol");
     assert_eq!(statuses.len(), 40);

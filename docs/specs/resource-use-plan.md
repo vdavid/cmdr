@@ -112,18 +112,57 @@ agents.
 
 ### Spike results and success metric (measured 2026-07-23, M3 Max, 200 local images from `~/Downloads`)
 
-Measured with the ignored spike `media_index::backend::vision::spike` (decode-only vs full-analyze scaling at N ∈ {1, 2, 4, 8}, same image set, ANE warmed once):
+Measured with the ignored spike `media_index::backend::vision::spike` (decode-only vs full-analyze scaling at N ∈ {1, 2,
+4, 8}, same image set, ANE warmed once):
 
-- **Decode-only** (ImageIO decode, the CPU part): 58.7 → 117.9 → 208.4 → 316.7 img/s = **1.00x → 2.01x → 3.55x → 5.40x**. Scales near-linearly to N=2, sublinearly to ~5.4x at N=8 (performance-core count).
-- **Full analyze** (decode + OCR + classify + feature-print): 6.3 → 8.0 → 8.0 → 7.5 img/s = **1.00x → 1.26x → 1.26x → 1.18x**. Plateaus at ~1.25x by N=2 and mildly REGRESSES at N=8 (scheduling/thermal contention).
+- **Decode-only** (ImageIO decode, the CPU part): 58.7 → 117.9 → 208.4 → 316.7 img/s = **1.00x → 2.01x → 3.55x →
+  5.40x**. Scales near-linearly to N=2, sublinearly to ~5.4x at N=8 (performance-core count).
+- **Full analyze** (decode + OCR + classify + feature-print): 6.3 → 8.0 → 8.0 → 7.5 img/s = **1.00x → 1.26x → 1.26x →
+  1.18x**. Plateaus at ~1.25x by N=2 and mildly REGRESSES at N=8 (scheduling/thermal contention).
 
-**Reading**: at N=1, full analyze is ~159 ms/image and decode alone is ~17 ms/image, so inference (OCR + classify + feature-print, all on the ANE) is ~89% of per-image wall time and decode is ~11%. The ANE serializes inference in the framework, so it does NOT parallelize; decode scales with cores but is too small a share to move the total. **The plan's "4–6x on the table" premise (from the wire at 4%) does not hold for compute — the bottleneck is the ANE, not the wire.** The wire-at-4% only means the NAS fetch can overlap compute; it can't make the ANE faster.
+**Reading**: at N=1, full analyze is ~159 ms/image and decode alone is ~17 ms/image, so inference (OCR + classify +
+feature-print, all on the ANE) is ~89% of per-image wall time and decode is ~11%. The ANE serializes inference in the
+framework, so it does NOT parallelize; decode scales with cores but is too small a share to move the total. **The plan's
+"4–6x on the table" premise (from the wire at 4%) does not hold for compute — the bottleneck is the ANE, not the wire.**
+The wire-at-4% only means the NAS fetch can overlap compute; it can't make the ANE faster.
 
-**Success metric (measured, not asserted)**: parallel enrichment tops out at **~1.25x throughput at N=2** on this machine, with no gain (slight loss) beyond N=2. So:
+**Success metric (measured, not asserted)**: parallel enrichment tops out at **~1.25x throughput at N=2** on this
+machine, with no gain (slight loss) beyond N=2. So:
 
-- Default **1** is correct (conservative, byte-for-byte today's behavior); N=2 is the practical sweet spot (~25% faster); the slider's higher stops exist for future hardware / more-parallel inference backends, not present ANE gains.
+- Default **1** is correct (conservative, byte-for-byte today's behavior); N=2 is the practical sweet spot (~25%
+  faster); the slider's higher stops exist for future hardware / more-parallel inference backends, not present ANE
+  gains.
 - Thermal backoff capping the effective worker count LOW is aligned with the ANE ceiling, not a tax on throughput.
-- On network volumes the extra win is fetch↔compute overlap (a fetch of image k+1 proceeds while image k infers), bounded by the same ANE ceiling; the byte-bounded prefetch is what makes that overlap safe, not a multiplier.
+- On network volumes the extra win is fetch↔compute overlap (a fetch of image k+1 proceeds while image k infers),
+  bounded by the same ANE ceiling; the byte-bounded prefetch is what makes that overlap safe, not a multiplier.
+
+### Status — done (branch `david/parallel-enrichment`)
+
+- **Backend pool** (`scheduler/pool.rs`, the ONE enrich core): parallelism is N INDEPENDENT `VisionOcrBackend`s (each
+  its own 8 MB-stack thread + autoreleasepool + request handlers), NOT concurrent calls into one. Worker 0 rides the
+  scheduler's long-lived backend; workers 1..N come from a `BackendFactory` and drop on shrink, so a steady N=1 pass
+  builds nothing extra. Workers pull ONE shared atomic cursor (no double-enrichment, structural), the single
+  `MediaWriter` thread is untouched, and the serial `enrich_and_gc_scoped` is now a thin wrapper over the pool at width
+  1 (every enrich test exercises the pool core).
+- **Setting + slider**: `mediaIndex.parallelism` (integer, default 1, min 1, max = `available_parallelism()` read at
+  runtime). Slider in Settings > Indexing > Image indexing > Enable indexing, reusing the house `SettingSlider` with a
+  runtime-max override (the CPU count via `media_index_max_parallelism`). Live-applied via the settings-applier →
+  `media_index_set_parallelism` (no kick: it changes speed, not coverage); a running pass resizes its pool between
+  images. Copy + i18n in all 10 locales.
+- **Live-apply + thermal backoff**: the effective worker count = `gate::parallelism()` capped by
+  `thermal::current_pressure()` (typed `NSProcessInfoThermalState`, never a string), re-read between images; a shrink
+  retires slots in-batch, a grow re-spawns wider, cursor never rewinds.
+- **Network compute** parallelizes behind a byte-bounded prefetch (`network/budget.rs`): a producer/consumer keeping all
+  conservative fetch-side decisions on ONE fetcher thread and N compute workers, with prefetch admission bounded by
+  BYTES (256 MB budget, over-cap file admitted alone, stop wakes a blocked acquire). Disconnect drains workers and skips
+  GC.
+- **Tests**: pool honors N incl. live grow/shrink mid-pass; no double-enrichment under concurrency (racy instrumented
+  backend); N=1 strictly serial; cancellation drains within a bound and skips GC; thermal cap bounds concurrency; the
+  byte budget never exceeds its capacity under 16-thread contention; parallel network enriches each path once with the
+  budget bounding concurrency and a disconnect draining without GC. The 8 pre-M2 network data-safety tests stay green
+  unchanged (they exercise the width-1 sequential path).
+- **Measured success metric** vs the spike above: a 16-core user moving the slider to 2 sees ~1.25x (the honest ANE
+  ceiling); default 1 is byte-for-byte today.
 
 ---
 

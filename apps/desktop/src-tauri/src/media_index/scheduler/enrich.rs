@@ -388,9 +388,8 @@ pub(crate) fn enrich_and_gc_scoped(
         images,
         statuses,
         backend,
-        &(|| -> std::sync::Arc<dyn VisionBackend> {
-            unreachable!("the N=1 serial path never builds an extra backend")
-        }) as &super::pool::MakeBackend,
+        &(|| -> std::sync::Arc<dyn VisionBackend> { unreachable!("the N=1 serial path never builds an extra backend") })
+            as &super::pool::MakeBackend,
         &|| 1,
         writer,
         gates,

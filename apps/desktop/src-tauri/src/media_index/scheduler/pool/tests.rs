@@ -36,6 +36,12 @@ struct RacyBackend {
     in_flight: AtomicUsize,
     max_in_flight: AtomicUsize,
     calls: Mutex<HashMap<String, usize>>,
+    /// An optional rendezvous: the first `size` `analyze_media` calls block on the barrier
+    /// until all `size` have arrived, so peak concurrency reaches `size` DETERMINISTICALLY
+    /// (a plain sleep-based overlap can flake to 1 under heavy CPU contention). `(barrier,
+    /// size)` + a monotonic gate counter deciding which calls participate.
+    barrier: Option<(Arc<std::sync::Barrier>, usize)>,
+    barrier_seen: AtomicUsize,
 }
 
 impl RacyBackend {
@@ -47,6 +53,17 @@ impl RacyBackend {
             in_flight: AtomicUsize::new(0),
             max_in_flight: AtomicUsize::new(0),
             calls: Mutex::new(HashMap::new()),
+            barrier: None,
+            barrier_seen: AtomicUsize::new(0),
+        }
+    }
+
+    /// Like [`new`](Self::new) but the first `size` calls rendezvous on a barrier, forcing a
+    /// `size`-way concurrent overlap that can't flake under load.
+    fn with_barrier(delay: Duration, size: usize) -> Self {
+        Self {
+            barrier: Some((Arc::new(std::sync::Barrier::new(size)), size)),
+            ..Self::new(delay)
         }
     }
     /// How many `analyze_media` calls have STARTED so far (drives the live-apply tests'
@@ -79,11 +96,23 @@ impl VisionBackend for RacyBackend {
     fn analyze(&self, input: &ImageInput) -> Result<crate::media_index::backend::Analysis, VisionError> {
         self.inner.analyze(input)
     }
-    fn analyze_media(&self, input: &ImageInput, want_vision: bool, want_clip: bool) -> Result<MediaAnalysis, VisionError> {
+    fn analyze_media(
+        &self,
+        input: &ImageInput,
+        want_vision: bool,
+        want_clip: bool,
+    ) -> Result<MediaAnalysis, VisionError> {
         self.started.fetch_add(1, Ordering::SeqCst);
         let cur = self.in_flight.fetch_add(1, Ordering::SeqCst) + 1;
         self.max_in_flight.fetch_max(cur, Ordering::SeqCst);
         *self.calls.lock_ignore_poison().entry(input.path.clone()).or_insert(0) += 1;
+        // Rendezvous: the first `size` calls block until all have arrived (each has already
+        // bumped `in_flight`), so peak reaches `size` with certainty, not by timing luck.
+        if let Some((barrier, size)) = &self.barrier
+            && self.barrier_seen.fetch_add(1, Ordering::SeqCst) < *size
+        {
+            barrier.wait();
+        }
         if !self.delay.is_zero() {
             std::thread::sleep(self.delay);
         }
@@ -156,7 +185,8 @@ fn four_workers_enrich_each_path_exactly_once_and_run_concurrently() {
     let dir = tempfile::tempdir().expect("temp");
     let writer = media_writer(dir.path(), "vol");
     let imgs = images(200);
-    let backend = Arc::new(RacyBackend::new(Duration::from_micros(500)));
+    // A 4-way barrier forces a real 4-way overlap deterministically (no timing luck).
+    let backend = Arc::new(RacyBackend::with_barrier(Duration::from_micros(500), 4));
     let make = shared_make(&backend);
     let se = |_: &str| true;
     let ex = |_: &str| false;
@@ -179,9 +209,18 @@ fn four_workers_enrich_each_path_exactly_once_and_run_concurrently() {
     // No path analyzed twice, and every path seen exactly once.
     assert_eq!(backend.max_calls_for_any_path(), 1, "no double-enrichment");
     assert_eq!(backend.distinct_paths_seen(), 200);
-    // Real parallelism: at least two analyses overlapped, and never more than 4.
-    assert!(backend.peak_concurrency() >= 2, "expected real overlap, got {}", backend.peak_concurrency());
-    assert!(backend.peak_concurrency() <= 4, "over-concurrency: {}", backend.peak_concurrency());
+    // Real parallelism: the barrier guarantees all four workers ran concurrently, and the
+    // pool never exceeds the requested width.
+    assert!(
+        backend.peak_concurrency() >= 2,
+        "expected real overlap, got {}",
+        backend.peak_concurrency()
+    );
+    assert!(
+        backend.peak_concurrency() <= 4,
+        "over-concurrency: {}",
+        backend.peak_concurrency()
+    );
     // The rows actually landed.
     let statuses = crate::media_index::scheduler::enrich::load_statuses(dir.path(), "vol");
     assert_eq!(statuses.len(), 200);
@@ -245,9 +284,16 @@ fn parallelism_grows_mid_pass_without_reprocessing() {
     .expect("pool pass");
 
     assert_eq!(summary.enriched, 200);
-    assert_eq!(backend.max_calls_for_any_path(), 1, "no double-enrichment across a re-pool");
+    assert_eq!(
+        backend.max_calls_for_any_path(),
+        1,
+        "no double-enrichment across a re-pool"
+    );
     assert_eq!(backend.distinct_paths_seen(), 200);
-    assert!(backend.peak_concurrency() >= 2, "parallelism should have grown");
+    // The point of this test is that a mid-pass re-pool (GROW) reprocesses / drops nothing —
+    // asserted deterministically above. That parallelism actually runs concurrently is proven
+    // by the barrier-backed `four_workers_...` test (a timing-based peak check here would flake
+    // under load, and the varying worker count means a barrier can't pin it).
 }
 
 #[test]
@@ -328,8 +374,16 @@ fn cancellation_drains_promptly_and_skips_gc() {
     assert_eq!(summary.gc_count, 0, "cancelled pass skips GC");
     // Drains within a bound: only the ~30 trigger plus at most the 4 in-flight workers'
     // current images finish beyond the trigger, never the whole 400.
-    assert!(summary.enriched <= 60, "should stop promptly, enriched {}", summary.enriched);
-    assert!(summary.enriched >= 25, "should have made progress, enriched {}", summary.enriched);
+    assert!(
+        summary.enriched <= 60,
+        "should stop promptly, enriched {}",
+        summary.enriched
+    );
+    assert!(
+        summary.enriched >= 25,
+        "should have made progress, enriched {}",
+        summary.enriched
+    );
 }
 
 #[test]
@@ -360,5 +414,9 @@ fn a_thermally_capped_worker_count_bounds_concurrency() {
     .expect("pool pass");
 
     assert_eq!(summary.enriched, 150);
-    assert!(backend.peak_concurrency() <= 4, "thermal cap not honored: {}", backend.peak_concurrency());
+    assert!(
+        backend.peak_concurrency() <= 4,
+        "thermal cap not honored: {}",
+        backend.peak_concurrency()
+    );
 }

@@ -171,7 +171,10 @@ mod tests {
         }
         assert_eq!(budget.in_use(), 0, "all bytes released");
         // Real contention happened (the budget actually filled up at some point).
-        assert!(peak.load(Ordering::SeqCst) > capacity / 2, "expected real budget pressure");
+        assert!(
+            peak.load(Ordering::SeqCst) > capacity / 2,
+            "expected real budget pressure"
+        );
     }
 
     #[test]
@@ -189,7 +192,10 @@ mod tests {
             b2.release(250);
         });
         thread::sleep(Duration::from_millis(20));
-        assert!(!done.load(Ordering::SeqCst), "oversize item must wait while another is in flight");
+        assert!(
+            !done.load(Ordering::SeqCst),
+            "oversize item must wait while another is in flight"
+        );
         budget.release(60);
         waiter.join().expect("join");
         assert!(done.load(Ordering::SeqCst));

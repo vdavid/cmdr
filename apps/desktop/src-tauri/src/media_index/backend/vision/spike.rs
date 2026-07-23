@@ -118,6 +118,10 @@ where
 
 #[test]
 #[ignore = "measurement spike; run by hand against a real image dir (see module docs)"]
+#[allow(
+    clippy::print_stderr,
+    reason = "an ignored measurement spike prints its scaling table to stderr for `--nocapture`; it never runs in the app or CI"
+)]
 fn parallelism_scaling_spike() {
     let paths = collect_images();
     assert!(

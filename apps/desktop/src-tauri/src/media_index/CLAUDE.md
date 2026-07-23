@@ -39,8 +39,12 @@ A PORT of `importance/`'s patterns (store, writer, scheduler, read API): read `i
 - **What starts a pass**: a `Completed` bus edge, or a user kick (`kick_all_ready_passes` on toggle-on / restart /
   threshold DECREASE / scope BROADEN / a folder added; `kick_network_pass` on opt-in). The sweep only WIRES subs. Plus
   **live index updates** (LOCAL only): a throttled, touched-dirs-SCOPED tick on a distinct `#live` coordinator key.
-- **`FakeVisionBackend` via `MediaScheduler::new`, never `start`.** Real backend: ALL Vision/ImageIO on ONE 8 MB-stack
-  thread (never rayon); a hostile image gives a typed `VisionError`, never a panic.
+- **`FakeVisionBackend` via `MediaScheduler::new`, never `start`.** Real backend: each Vision/ImageIO worker on its OWN
+  8 MB-stack thread (never rayon), confining `!Send` CF objects; a hostile image gives a typed `VisionError`, never a
+  panic.
+- **Parallel enrichment = N INDEPENDENT backends** (`scheduler/pool.rs`, plan M2): ❌ never feed one backend
+  concurrently (CF confinement) or fan out the single writer. `gate::parallelism` (default 1 = today) capped by
+  `thermal`; byte-bounded network prefetch (`network/budget.rs`). Depth: `DETAILS.md` § Parallel enrichment.
 - **Off by default + ONE shared memory ceiling** (§ Disabling stops the running pass). Cancellation hooks the EXISTING
   indexing watchdog; ❌ don't add a second. The between-images hook is `gate::should_stop` (watchdog OR toggle OFF), so
   disabling stops the RUNNING pass; ❌ don't narrow it to `is_cancelled`.

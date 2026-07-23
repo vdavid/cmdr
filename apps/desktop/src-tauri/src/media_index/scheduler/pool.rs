@@ -95,7 +95,10 @@ struct PassState<'a> {
 ///
 /// `representative` is worker 0's backend (the scheduler's long-lived one, or the test
 /// fake); `make` builds workers 1..N; `workers` is the live effective count.
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the pass's inputs (images, statuses, backend, factory, worker count, writer, gates, cancel, progress) are each a distinct seam; bundling them into a struct would just move the arg list, not shrink it"
+)]
 pub(crate) fn run_enrich_pool(
     images: &[ImageEntry],
     statuses: &std::collections::HashMap<String, crate::media_index::store::MediaStatusRow>,
@@ -155,7 +158,11 @@ pub(crate) fn run_enrich_pool(
 
         thread::scope(|scope| {
             for id in 0..n {
-                let backend: &dyn VisionBackend = if id == 0 { representative } else { extra[id - 1].as_ref() };
+                let backend: &dyn VisionBackend = if id == 0 {
+                    representative
+                } else {
+                    extra[id - 1].as_ref()
+                };
                 let state = &state;
                 let cursor = &cursor;
                 scope.spawn(move || worker_loop(id, n, backend, state, cursor, workers, cancel, images));
@@ -201,7 +208,10 @@ pub(crate) fn run_enrich_pool(
 /// cursor and process it until the pass stops, the batch's width changes, or the images
 /// run out. `id` is the worker's slot (0-based); worker 0 rides the representative
 /// backend, so it never retires on a shrink to 1.
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "a worker needs its id, batch width, backend, shared state, cursor, live worker count, cancel hook, and the image slice; all distinct, no natural grouping"
+)]
 fn worker_loop(
     id: usize,
     n: usize,
@@ -279,7 +289,14 @@ fn process_image(image: &ImageEntry, backend: &dyn VisionBackend, state: &PassSt
         if !is_excluded(&image.path) {
             match analysis {
                 Ok(media) => {
-                    if apply_media_upsert(state.writer, image, state.stamp, state.gates.clip_stamp, want_vision, media)? {
+                    if apply_media_upsert(
+                        state.writer,
+                        image,
+                        state.stamp,
+                        state.gates.clip_stamp,
+                        want_vision,
+                        media,
+                    )? {
                         state.enriched.fetch_add(1, Ordering::AcqRel);
                     }
                 }

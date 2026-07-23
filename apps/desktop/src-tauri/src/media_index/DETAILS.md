@@ -336,11 +336,74 @@ fakeable the same way.
    `performRequests`, then the top candidate per `VNRecognizedTextObservation`, newline-joined.
 
 **Threading + the 8 MB stack.** Vision/ImageIO do synchronous XPC round-trips into system daemons (ANE) that can overrun
-a small worker stack — the same hazard as calling AppKit off rayon (`src-tauri/CLAUDE.md`). So the backend owns ONE
-dedicated OS thread with an 8 MB stack; `ocr` dispatches each image to it over a channel and blocks for the reply. One
-thread also SERIALIZES Vision calls (Apple's recommendation for pooled inference) and confines every `Retained`/
-`CFRetained` object to that thread (nothing `!Send` crosses a boundary — only the path `String` in and `OcrResult`
-out). Each job runs inside `objc2::rc::autoreleasepool`, so framework temporaries free per image, not per pass.
+a small worker stack — the same hazard as calling AppKit off rayon (`src-tauri/CLAUDE.md`). So each backend owns a
+dedicated OS thread with an 8 MB stack; `ocr`/`analyze_media` dispatch each image to it over a channel and block for the
+reply. The single thread SERIALIZES that backend's Vision calls (Apple's recommendation for pooled inference) and
+confines every `Retained`/`CFRetained` object to it (nothing `!Send` crosses a boundary — only the path `String` +
+bytes in and the analysis out). Each job runs inside `objc2::rc::autoreleasepool`, so framework temporaries free per
+image, not per pass.
+
+### Parallel enrichment (plan M2)
+
+**Decision: parallelism is N INDEPENDENT backends, not concurrent calls into one.** A `VisionBackend` is single-threaded
+by construction (the CF confinement above), so N-way parallelism means N whole backends — each its own thread, stack,
+autoreleasepool, and request handlers — driven by N worker threads in `scheduler/pool.rs`. Worker 0 rides the
+scheduler's long-lived backend; workers 1..N are built on demand from a `BackendFactory` and dropped when the pool
+shrinks, so a steady N=1 pass builds nothing extra and behaves byte-for-byte like the pre-M2 loop (the serial
+`enrich_and_gc_scoped` is now a thin wrapper over the pool at width 1, so every enrich test exercises the pool core).
+
+**Why measured, not asserted.** The M2 spike (`backend/vision/spike.rs`, recorded in `docs/specs/resource-use-plan.md`
+§ M2) measured throughput topping out at ~1.25x by N=2 on an M3 Max (verified 2026-07-23, decode-vs-full-analyze scaling
+at N ∈ {1,2,4,8} over 200 local images): the ANE serializes inference (~89% of per-image wall time) so it doesn't
+parallelize; only decode (~11%, CPU) scales (to 5.4x at N=8). So the default is 1 (never take more machine unasked —
+principle 5), the slider is explicit consent, and the microcopy doesn't over-promise.
+
+**The win is decode↔inference OVERLAP, captured by symmetric workers.** The ~25% at N=2 is not "two inferences at once"
+(the ANE won't) — it's that while worker A blocks in ANE inference, worker B decodes the next image on the CPU, so the
+decode stage runs AHEAD of and overlaps the serialized inference stage. N independent full workers yield exactly this
+pipelining without an explicit decode-stage/inference-stage split: the ANE is the single bottleneck, so a symmetric pool
+feeding it keeps it saturated just as a dedicated decode-fan-in would, and is far simpler (no cross-stage `!Send`
+handoff of `CGImage`s). Past N=2 the extra workers only pile up behind the ANE, hence the plateau/regression.
+
+**Decision anchor — what would lift the ~1.25x ceiling (and what would NOT).** ❌ Do not "clean up" the slider as
+useless because N=8 ≈ N=2 today: the cap is the ANE serializing per-request inference, NOT the thread model. What lifts
+it is a BACKEND change — batched Vision requests (one `performRequests` over many images), an explicit
+`MLComputeUnits`/compute-unit configuration, or a GPU/CPU inference fallback that adds a second parallel compute unit —
+at which point the SAME pool scales further with no rework. More threads never will. The slider's max is the CPU count
+by design (David's call), and the backend clamps to it; the honest low-gain-past-2 shape lives in the microcopy, not in
+a shrunk range.
+
+**How the pool honors N, live.** `run_enrich_pool` runs in batches: workers pull image indices off ONE shared atomic
+cursor (each index taken once ⇒ no double-enrichment is structural, not a lock), re-reading the effective worker count
+(`gate::parallelism` capped by `thermal::current_pressure`) between images. A SHRINK retires the excess worker slots
+within the running batch; a GROW ends the batch so the outer loop re-spawns wider. The cursor never rewinds, so a
+mid-pass slider move or a thermal event applies within ~one image with no pass restart. The single `MediaWriter` thread
+is untouched (parallelize compute, never DB writes), and `gate::should_stop` (watchdog OR master toggle off) still stops
+the pass promptly and skips GC.
+
+**Thermal backoff** (`thermal.rs`, new M2 scope): `NSProcessInfo.thermalState` read as a TYPED enum (never a string —
+`no-string-matching`) caps the EFFECTIVE workers — halved at `serious`, dropped to 1 at `critical` — so N workers
+pounding the ANE can't cook the machine into a system-wide throttle that hurts the foreground app more than it helps
+enrichment. It only ever lowers the user's chosen count.
+
+**Network parallelism + the byte-bounded prefetch** (`network/enrich.rs`, `network/budget.rs`): the network pass keeps
+its conservative sequential fetch (idle-gate, disconnect→pause, bandwidth throttle, gates all on ONE fetcher thread) and
+parallelizes only the COMPUTE — a producer/consumer where the fetcher feeds fetched bytes to N compute workers. Prefetch
+admission is bounded by BYTES, not file count (`ByteBudget`): the fetcher acquires an image's size before reading and a
+worker releases it after the decode, so the buffer can't blow the memory ceiling on a RAW-heavy corpus (256 MB/file cap
+× ~36 MB/decode would otherwise let a count-based queue buffer gigabytes). An over-cap file is admitted alone (never
+deadlocks); a stop wakes a blocked acquire. The data-safety lines hold: a disconnect stops the fetcher, workers drain
+the already-fetched jobs, and NO GC runs (§ Resumability). The wire is serialized on the one smb2 session either way, so
+the win is overlapping that serialized fetch with parallel compute, bounded by the same ANE ceiling as local.
+
+**Expected NAS-side effect** (not benched in dev — the OS-mount read hits a TCC `EPERM` for the unsigned dev binary, so
+a real NAS pass can't run here; reasoned from the spike + the design). On a network volume the prefetch is a genuinely
+bigger share of the win than on local: the fetcher reads image k+1 off the (serialized) wire WHILE the compute workers
+decode+infer images already in the byte-bounded queue, so the fetch latency hides behind compute instead of adding to
+it — on top of the same decode↔inference overlap as local. The ceiling is still the ANE (compute dominates a gigabit
+NAS, per the baseline), so expect the same ~1.25x order plus whatever the fetch-hiding recovers; the byte budget is what
+makes that overlap SAFE (bounded buffer), never a multiplier. Re-measure against David's NAS once M1's direct-session
+read path removes the dev-mount `EPERM`.
 
 **FFI discipline.** Every `unsafe` block carries a per-site `// SAFETY:` naming the concrete invariant — pointer/buffer
 validity for `CFData`/`CFNumber`/`CFDictionary` creation, Create-vs-Get ownership (the `+1 CFRetained` on every CF
