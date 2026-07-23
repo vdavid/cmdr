@@ -748,3 +748,37 @@ sessions, attachments, consent screen, cost footer, settings section; macOS AppK
   every arm; `{total}` is the selector; `{done}` is unused (English doesn't use it either). "All N …" → definite "Todas
   las {totalText} …" in the plural arms, collapsing to "{totalText} imagen indexada" in the one arm · high
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+### Settled during the image-index settings restructure + progress-UX pass (`settings.mediaIndex.cards.*`, `progressSummary.title`, `semanticSearch.label`, `clip.{notSupported,offButInstalled,deleteButton,deleting,deleteConfirmTitle,deleteConfirmBody,deleteFailed}`, `fileExplorer.imageIndex.file.indexing`; three card titles + Semantic search card + a file badge; catalog-consistency + macOS, 2026-07-22)
+
+- **search by description (the semantic-search feature, phrased plainly) → búsqueda por descripción (noun) / Buscar
+  fotos por descripción (label)** · reuses the settled catalog phrasing: `clip.ready` = "busca tus fotos por
+  descripción" and `clip.description` = "describiendo lo que aparece en ellas". So the toggle "Search photos by
+  description" → "Buscar fotos por descripción" (photo→foto, infinitive label), and the sentence-internal "search by
+  description" → "la búsqueda por descripción" (fem., agrees "está desactivada"). Kept distinct from the card title
+  "Semantic search" → "Búsqueda semántica" (`clip.title`) · high (consistency-settled)
+- **Apple silicon → Apple silicon (kept verbatim)** · the en `@key` for `clip.notSupported` says "keep it" (Apple's own
+  term for its M-series chips); Apple's Spanish keeps "Apple silicon" untranslated. "a Mac with Apple silicon" → "un Mac
+  con Apple silicon" · high
+- **Enable indexing (card title) → Activar la indexación** · enable→activar + index/indexing→indexación (glossary) ·
+  high
+- **Folders to index (card title) → Carpetas para indexar** · REAFFIRMS the settled entry (rename-review pass): matches
+  `alwaysIndexFolders.label` = "Carpetas para indexar siempre" so the lists read as siblings · high
+  (consistency-settled)
+- **Indexing now → Indexando ahora (heading) / Indexándose ahora (single-file badge)** · the `progressSummary.title`
+  heading takes the subjectless active "Indexando ahora" (parallel to the status-bar "Indexando imágenes"); the
+  per-image badge `file.indexing` takes the reflexive fem. "Indexándose ahora", matching its fem-perspective sibling
+  tooltips (`file.indexed` "Indexada…", `file.pending` "Esperando a ser indexada"). Same en source + sourceHash, two
+  contexts · high
+- **reclaim (disk space, on the delete button) → liberar** · reuses the settled free-space verb (`reclaim.freed` = "Se
+  liberaron unos {size}", `reclaim.button` = "liberar unos {size}"). "Delete model (reclaim {size})" → "Eliminar modelo
+  (liberar {size})" (article dropped to parallel `clip.download` = "Descargar modelo (~{sizeText} MB)"); "This frees
+  {size}" → "Esto libera {size}" · high
+- **delete model / removed (no-bare-"failed" voice) → eliminar el modelo / No se pudo eliminar** · delete→eliminar +
+  model→modelo (glossary). "The model couldn''t be removed just now" → "No se pudo eliminar el modelo ahora mismo"
+  (reuses the calm "No se pudo …" failure pattern); "Deleting…" → "Eliminando…" (Unicode ellipsis, matching
+  `clip.downloading` = "Descargando…") · high
+- **keyword / tag search → búsqueda por palabras clave / por etiquetas** · tag→etiqueta (`showTags` = "Mostrar
+  etiquetas"); "Keyword and tag search keep working" → "La búsqueda por palabras clave y por etiquetas sigue
+  funcionando" · high
+- No `sameAsSourceJustification` needed: every value differs from English.

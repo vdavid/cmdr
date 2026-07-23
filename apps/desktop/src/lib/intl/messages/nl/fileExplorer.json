@@ -921,6 +921,10 @@
   "@fileExplorer.imageIndex.file.pending": {
     "sourceHash": "73eb99a"
   },
+  "fileExplorer.imageIndex.file.indexing": "Wordt nu geïndexeerd",
+  "@fileExplorer.imageIndex.file.indexing": {
+    "sourceHash": "44501db"
+  },
   "fileExplorer.imageIndex.file.stale": "Gewijzigd sinds het indexeren; wordt opnieuw geïndexeerd",
   "@fileExplorer.imageIndex.file.stale": {
     "sourceHash": "1766bc3"

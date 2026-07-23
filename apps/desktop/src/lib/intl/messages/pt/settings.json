@@ -488,6 +488,50 @@
   "@settings.mediaIndex.clip.failed": {
     "sourceHash": "5feb349"
   },
+  "settings.mediaIndex.clip.notSupported": "A busca por descrição precisa de um Mac com Apple silicon.",
+  "@settings.mediaIndex.clip.notSupported": {
+    "sourceHash": "8ef7848"
+  },
+  "settings.mediaIndex.clip.offButInstalled": "O modelo está baixado, mas a busca por descrição está desativada.",
+  "@settings.mediaIndex.clip.offButInstalled": {
+    "sourceHash": "d70c2fe"
+  },
+  "settings.mediaIndex.clip.deleteButton": "Excluir modelo (liberar {size})",
+  "@settings.mediaIndex.clip.deleteButton": {
+    "sourceHash": "1957b82"
+  },
+  "settings.mediaIndex.clip.deleting": "Excluindo…",
+  "@settings.mediaIndex.clip.deleting": {
+    "sourceHash": "43b5894"
+  },
+  "settings.mediaIndex.clip.deleteConfirmTitle": "Excluir o modelo de busca semântica?",
+  "@settings.mediaIndex.clip.deleteConfirmTitle": {
+    "sourceHash": "f55b160"
+  },
+  "settings.mediaIndex.clip.deleteConfirmBody": "Isso libera {size} e desativa a busca por descrição. A busca por palavra-chave e por etiqueta continua funcionando, e você pode baixar o modelo de novo quando quiser.",
+  "@settings.mediaIndex.clip.deleteConfirmBody": {
+    "sourceHash": "f3703a7"
+  },
+  "settings.mediaIndex.clip.deleteFailed": "Não foi possível remover o modelo agora. Tente novamente em instantes.",
+  "@settings.mediaIndex.clip.deleteFailed": {
+    "sourceHash": "6c9ced5"
+  },
+  "settings.mediaIndex.cards.enable": "Ativar indexação",
+  "@settings.mediaIndex.cards.enable": {
+    "sourceHash": "3dc7ddf"
+  },
+  "settings.mediaIndex.cards.folders": "Pastas para indexar",
+  "@settings.mediaIndex.cards.folders": {
+    "sourceHash": "1aa33d2"
+  },
+  "settings.mediaIndex.semanticSearch.label": "Buscar fotos por descrição",
+  "@settings.mediaIndex.semanticSearch.label": {
+    "sourceHash": "8cbf6af"
+  },
+  "settings.mediaIndex.progressSummary.title": "Indexando agora",
+  "@settings.mediaIndex.progressSummary.title": {
+    "sourceHash": "44501db"
+  },
   "settings.mediaIndex.enabled.label": "Indexar o conteúdo das imagens",
   "@settings.mediaIndex.enabled.label": {
     "sourceHash": "a2e6604"

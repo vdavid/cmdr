@@ -897,3 +897,39 @@ Settled while translating the image-index indicator badges (`fileExplorer.imageI
   `drive.indexing` reuses the live-progress `folyamatban van` (shipped `search.imageResults.indexing`):
   `{doneText} / {totalText} {plural kép} indexelve ezen a meghajtón; még folyamatban van.` · high.
 - No `sameAsSourceJustification` needed in this batch: all 13 values differ from English.
+
+Settled while translating the image-indexing settings restructure + "Indexing now" badge (12 keys, `settings.json` +
+`fileExplorer.json`, 2026-07-22):
+
+- **"search by description" (semantic-search feature concept) → `leírás szerinti keresés`** (attributive) /
+  `leírás alapján` (adverbial) · REUSED from the shipped `settings.mediaIndex.clip.ready` =
+  `… keress a fotóid között leírás alapján` and `clip.description` (`… a tartalmuk leírásával …`) · high. The nominal
+  subject/object form uses the clean attributive `leírás szerinti keresés` (`settings.mediaIndex.clip.offButInstalled`,
+  `…deleteConfirmBody`, `…notSupported`); the toggle LABEL mirrors the shipped adverbial phrasing: "Search photos by
+  description" = `Fotók keresése leírás alapján` (`settings.mediaIndex.semanticSearch.label`,
+  nominal/no-direct-address). Don''t fork into `leírás alapú` or a verb form.
+- **Apple silicon → kept verbatim `Apple silicon`** · en `@key` "keep it"; no reference-pile localization exists (grep
+  of `_ignored/i18n/hu/` found zero `Apple silicon`/`Apple chip`/`szilícium` hits) · high. Connector uses the
+  pile-dominant `chip` (46 hits vs 13 `lapka`): "needs a Mac with Apple silicon" =
+  `Apple silicon chippel szerelt Mac szükséges` (`settings.mediaIndex.clip.notSupported`). Phrased so the kept brand
+  token takes no Hungarian case suffix.
+- **card titles (image-indexing settings restructure)**: "Enable indexing" = `Indexelés bekapcsolása`
+  (`enable → bekapcsolás`, matching `settings.network.enabled.label` = `… bekapcsolása`); "Folders to index" =
+  `Indexelendő mappák` (`-endő` "to-be-…" gerundive, terse card title); nominal/no-direct-address per label style ·
+  high.
+- **"Indexing now" → `Indexelés folyamatban`** · used for BOTH surfaces sharing the English string + `sourceHash`
+  (`settings.mediaIndex.progressSummary.title` heading and `fileExplorer.imageIndex.file.indexing` badge tooltip), kept
+  consistent. `folyamatban` ("in progress") carries the "now"; reuses the catalog''s `folyamatban van` live-progress
+  idiom (shipped `search.imageResults.indexing`). Contrasts the sibling badge states `.indexed` =
+  `Indexelve a képkereséshez` (done) and `.pending` = `Várakozás az indexelésre` (queued) · high.
+- **delete-model flow (reuses shipped `clip.download`/`clip.downloading` parallels)**: "Delete model (reclaim {size})" =
+  `Modell törlése ({size} felszabadítása)` (mirrors `clip.download` = `Modell letöltése (~{sizeText} MB)`;
+  `reclaim → felszabadítás`, pile-attested + shipped `reclaim.button`/`reclaim.freed`); "Deleting…" = `Törlés…` (mirrors
+  `clip.downloading` = `Letöltés…`); confirm title (a question, informal `te`) "Delete the semantic search model?" =
+  `Törlöd a szemantikus keresés modelljét?` (reuses `clip.title` = `Szemantikus keresés`); confirm body avoids suffixing
+  the `{size}` placeholder via the intransitive `Ezzel felszabadul {size}, és kikapcsol a leírás szerinti keresés. …`
+  ("keyword search" = `kulcsszavas keresés`, pile `kulcsszó`; "tag search" = `címke szerinti keresés`, `tag → címke`);
+  delete-failure stays calm/no-"hiba" per the voice rule: "The model couldn''t be removed just now. Try again in a
+  moment." = `A modellt most nem sikerült eltávolítani. Próbáld újra egy pillanat múlva.` (`nem sikerült` calm rule +
+  informal `próbáld újra`) · high.
+- No `sameAsSourceJustification` needed: all 12 values differ from English.

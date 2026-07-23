@@ -485,6 +485,50 @@
   "@settings.mediaIndex.clip.failed": {
     "sourceHash": "5feb349"
   },
+  "settings.mediaIndex.clip.notSupported": "A leírás szerinti kereséshez Apple silicon chippel szerelt Mac szükséges.",
+  "@settings.mediaIndex.clip.notSupported": {
+    "sourceHash": "8ef7848"
+  },
+  "settings.mediaIndex.clip.offButInstalled": "A modell le van töltve, de a leírás szerinti keresés ki van kapcsolva.",
+  "@settings.mediaIndex.clip.offButInstalled": {
+    "sourceHash": "d70c2fe"
+  },
+  "settings.mediaIndex.clip.deleteButton": "Modell törlése ({size} felszabadítása)",
+  "@settings.mediaIndex.clip.deleteButton": {
+    "sourceHash": "1957b82"
+  },
+  "settings.mediaIndex.clip.deleting": "Törlés…",
+  "@settings.mediaIndex.clip.deleting": {
+    "sourceHash": "43b5894"
+  },
+  "settings.mediaIndex.clip.deleteConfirmTitle": "Törlöd a szemantikus keresés modelljét?",
+  "@settings.mediaIndex.clip.deleteConfirmTitle": {
+    "sourceHash": "f55b160"
+  },
+  "settings.mediaIndex.clip.deleteConfirmBody": "Ezzel felszabadul {size}, és kikapcsol a leírás szerinti keresés. A kulcsszavas és a címke szerinti keresés továbbra is működik, a modellt pedig bármikor újra letöltheted.",
+  "@settings.mediaIndex.clip.deleteConfirmBody": {
+    "sourceHash": "f3703a7"
+  },
+  "settings.mediaIndex.clip.deleteFailed": "A modellt most nem sikerült eltávolítani. Próbáld újra egy pillanat múlva.",
+  "@settings.mediaIndex.clip.deleteFailed": {
+    "sourceHash": "6c9ced5"
+  },
+  "settings.mediaIndex.cards.enable": "Indexelés bekapcsolása",
+  "@settings.mediaIndex.cards.enable": {
+    "sourceHash": "3dc7ddf"
+  },
+  "settings.mediaIndex.cards.folders": "Indexelendő mappák",
+  "@settings.mediaIndex.cards.folders": {
+    "sourceHash": "1aa33d2"
+  },
+  "settings.mediaIndex.semanticSearch.label": "Fotók keresése leírás alapján",
+  "@settings.mediaIndex.semanticSearch.label": {
+    "sourceHash": "8cbf6af"
+  },
+  "settings.mediaIndex.progressSummary.title": "Indexelés folyamatban",
+  "@settings.mediaIndex.progressSummary.title": {
+    "sourceHash": "44501db"
+  },
   "settings.mediaIndex.enabled.label": "Képek tartalmának indexelése",
   "@settings.mediaIndex.enabled.label": {
     "sourceHash": "a2e6604"

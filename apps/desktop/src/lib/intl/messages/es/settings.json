@@ -488,6 +488,50 @@
   "@settings.mediaIndex.clip.failed": {
     "sourceHash": "5feb349"
   },
+  "settings.mediaIndex.clip.notSupported": "La búsqueda por descripción necesita un Mac con Apple silicon.",
+  "@settings.mediaIndex.clip.notSupported": {
+    "sourceHash": "8ef7848"
+  },
+  "settings.mediaIndex.clip.offButInstalled": "El modelo está descargado, pero la búsqueda por descripción está desactivada.",
+  "@settings.mediaIndex.clip.offButInstalled": {
+    "sourceHash": "d70c2fe"
+  },
+  "settings.mediaIndex.clip.deleteButton": "Eliminar modelo (liberar {size})",
+  "@settings.mediaIndex.clip.deleteButton": {
+    "sourceHash": "1957b82"
+  },
+  "settings.mediaIndex.clip.deleting": "Eliminando…",
+  "@settings.mediaIndex.clip.deleting": {
+    "sourceHash": "43b5894"
+  },
+  "settings.mediaIndex.clip.deleteConfirmTitle": "¿Eliminar el modelo de búsqueda semántica?",
+  "@settings.mediaIndex.clip.deleteConfirmTitle": {
+    "sourceHash": "f55b160"
+  },
+  "settings.mediaIndex.clip.deleteConfirmBody": "Esto libera {size} y desactiva la búsqueda por descripción. La búsqueda por palabras clave y por etiquetas sigue funcionando, y puedes volver a descargar el modelo cuando quieras.",
+  "@settings.mediaIndex.clip.deleteConfirmBody": {
+    "sourceHash": "f3703a7"
+  },
+  "settings.mediaIndex.clip.deleteFailed": "No se pudo eliminar el modelo ahora mismo. Inténtalo de nuevo en un momento.",
+  "@settings.mediaIndex.clip.deleteFailed": {
+    "sourceHash": "6c9ced5"
+  },
+  "settings.mediaIndex.cards.enable": "Activar la indexación",
+  "@settings.mediaIndex.cards.enable": {
+    "sourceHash": "3dc7ddf"
+  },
+  "settings.mediaIndex.cards.folders": "Carpetas para indexar",
+  "@settings.mediaIndex.cards.folders": {
+    "sourceHash": "1aa33d2"
+  },
+  "settings.mediaIndex.semanticSearch.label": "Buscar fotos por descripción",
+  "@settings.mediaIndex.semanticSearch.label": {
+    "sourceHash": "8cbf6af"
+  },
+  "settings.mediaIndex.progressSummary.title": "Indexando ahora",
+  "@settings.mediaIndex.progressSummary.title": {
+    "sourceHash": "44501db"
+  },
   "settings.mediaIndex.enabled.label": "Indexar el contenido de las imágenes",
   "@settings.mediaIndex.enabled.label": {
     "sourceHash": "a2e6604"

@@ -487,6 +487,50 @@
   "@settings.mediaIndex.clip.failed": {
     "sourceHash": "5feb349"
   },
+  "settings.mediaIndex.clip.notSupported": "La recherche par description nécessite un Mac équipé d''une puce Apple Silicon.",
+  "@settings.mediaIndex.clip.notSupported": {
+    "sourceHash": "8ef7848"
+  },
+  "settings.mediaIndex.clip.offButInstalled": "Le modèle est téléchargé, mais la recherche par description est désactivée.",
+  "@settings.mediaIndex.clip.offButInstalled": {
+    "sourceHash": "d70c2fe"
+  },
+  "settings.mediaIndex.clip.deleteButton": "Supprimer le modèle (libérer {size})",
+  "@settings.mediaIndex.clip.deleteButton": {
+    "sourceHash": "1957b82"
+  },
+  "settings.mediaIndex.clip.deleting": "Suppression…",
+  "@settings.mediaIndex.clip.deleting": {
+    "sourceHash": "43b5894"
+  },
+  "settings.mediaIndex.clip.deleteConfirmTitle": "Supprimer le modèle de recherche sémantique ?",
+  "@settings.mediaIndex.clip.deleteConfirmTitle": {
+    "sourceHash": "f55b160"
+  },
+  "settings.mediaIndex.clip.deleteConfirmBody": "Cela libère {size} et désactive la recherche par description. La recherche par mot-clé et par tag continue de fonctionner, et vous pouvez télécharger le modèle à nouveau à tout moment.",
+  "@settings.mediaIndex.clip.deleteConfirmBody": {
+    "sourceHash": "f3703a7"
+  },
+  "settings.mediaIndex.clip.deleteFailed": "Le modèle n''a pas pu être supprimé pour le moment. Réessayez dans un instant.",
+  "@settings.mediaIndex.clip.deleteFailed": {
+    "sourceHash": "6c9ced5"
+  },
+  "settings.mediaIndex.cards.enable": "Activer l''indexation",
+  "@settings.mediaIndex.cards.enable": {
+    "sourceHash": "3dc7ddf"
+  },
+  "settings.mediaIndex.cards.folders": "Dossiers à indexer",
+  "@settings.mediaIndex.cards.folders": {
+    "sourceHash": "1aa33d2"
+  },
+  "settings.mediaIndex.semanticSearch.label": "Rechercher des photos par description",
+  "@settings.mediaIndex.semanticSearch.label": {
+    "sourceHash": "8cbf6af"
+  },
+  "settings.mediaIndex.progressSummary.title": "Indexation en cours",
+  "@settings.mediaIndex.progressSummary.title": {
+    "sourceHash": "44501db"
+  },
   "settings.mediaIndex.enabled.label": "Indexer le contenu des images",
   "@settings.mediaIndex.enabled.label": {
     "sourceHash": "a2e6604"

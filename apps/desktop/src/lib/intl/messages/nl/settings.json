@@ -490,6 +490,50 @@
   "@settings.mediaIndex.clip.failed": {
     "sourceHash": "5feb349"
   },
+  "settings.mediaIndex.clip.notSupported": "Zoeken op beschrijving vereist een Mac met Apple silicon.",
+  "@settings.mediaIndex.clip.notSupported": {
+    "sourceHash": "8ef7848"
+  },
+  "settings.mediaIndex.clip.offButInstalled": "Het model is gedownload, maar zoeken op beschrijving staat uit.",
+  "@settings.mediaIndex.clip.offButInstalled": {
+    "sourceHash": "d70c2fe"
+  },
+  "settings.mediaIndex.clip.deleteButton": "Verwijder model ({size} vrijmaken)",
+  "@settings.mediaIndex.clip.deleteButton": {
+    "sourceHash": "1957b82"
+  },
+  "settings.mediaIndex.clip.deleting": "Bezig met verwijderen…",
+  "@settings.mediaIndex.clip.deleting": {
+    "sourceHash": "43b5894"
+  },
+  "settings.mediaIndex.clip.deleteConfirmTitle": "Het model voor semantisch zoeken verwijderen?",
+  "@settings.mediaIndex.clip.deleteConfirmTitle": {
+    "sourceHash": "f55b160"
+  },
+  "settings.mediaIndex.clip.deleteConfirmBody": "Dit maakt {size} vrij en zet zoeken op beschrijving uit. Zoeken op trefwoord en tag blijft werken, en je kunt het model altijd opnieuw downloaden.",
+  "@settings.mediaIndex.clip.deleteConfirmBody": {
+    "sourceHash": "f3703a7"
+  },
+  "settings.mediaIndex.clip.deleteFailed": "Het model kon nu even niet worden verwijderd. Probeer het zo opnieuw.",
+  "@settings.mediaIndex.clip.deleteFailed": {
+    "sourceHash": "6c9ced5"
+  },
+  "settings.mediaIndex.cards.enable": "Indexeren inschakelen",
+  "@settings.mediaIndex.cards.enable": {
+    "sourceHash": "3dc7ddf"
+  },
+  "settings.mediaIndex.cards.folders": "Mappen om te indexeren",
+  "@settings.mediaIndex.cards.folders": {
+    "sourceHash": "1aa33d2"
+  },
+  "settings.mediaIndex.semanticSearch.label": "Foto''s op beschrijving zoeken",
+  "@settings.mediaIndex.semanticSearch.label": {
+    "sourceHash": "8cbf6af"
+  },
+  "settings.mediaIndex.progressSummary.title": "Wordt nu geïndexeerd",
+  "@settings.mediaIndex.progressSummary.title": {
+    "sourceHash": "44501db"
+  },
   "settings.mediaIndex.enabled.label": "Inhoud van afbeeldingen indexeren",
   "@settings.mediaIndex.enabled.label": {
     "sourceHash": "a2e6604"

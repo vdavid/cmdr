@@ -569,3 +569,39 @@ per-file badge.
   INSIDE the branches so total=1 reads "1 imagem indexada", not "Todas as 1 imagem"; `{doneText}`/"deste disco"/"; ainda
   em andamento." stay outside · high.
 - No `sameAsSourceJustification` needed: all 13 values differ from English.
+
+### Image-indexing settings restructure + Semantic-search card terms (`settings.mediaIndex.cards.*` + `settings.mediaIndex.progressSummary.title` + `settings.mediaIndex.semanticSearch.label` + `settings.mediaIndex.clip.notSupported/offButInstalled/deleteButton/deleting/deleteConfirmTitle/deleteConfirmBody/deleteFailed` + `fileExplorer.imageIndex.file.indexing`, 2026-07-22)
+
+- search by description (the semantic-search feature, plainer name; card title stays "Busca semântica") · **busca por
+  descrição** (noun) / **Buscar fotos por descrição** (the toggle label) · glossary `search → busca/buscar` (macOS
+  Finder, confirmed) + the feature-name rule ("❌ Not 'pesquisa …' when naming the feature") + the shipped card "Busca
+  de imagens" · high. Keeps the whole card in the **busca** family (busca semântica / busca por descrição / busca por
+  palavra-chave / busca por etiqueta). ⚠️ The already-shipped `settings.mediaIndex.clip.ready` uses "pesquise … por
+  descrição" (a pre-existing minor divergence, unchanged sourceHash, left as-is); new strings follow the glossary
+  **buscar**.
+- delete the on-device semantic-search (CLIP) model · **Excluir** (button/title) / **Excluindo…** (in progress) · reuses
+  the model-deletion domain settled in `ai.local.deleteModel` = "Excluir modelo" / `deleteDialogTitle` = "Excluir modelo
+  de IA?" · confirmed. ❌ NOT the file-delete **Apagar**: the glossary reconciliation note reserves "Excluir" for the
+  on-device-model deletion sense (ai.json), and this CLIP model is the same domain. `deleteButton` "Delete model" →
+  "Excluir modelo"; `deleteConfirmTitle` → "Excluir o modelo de busca semântica?".
+- reclaim / frees (disk space when deleting the model) · **liberar** ("reclaim {size}" → "liberar {size}"; "This frees
+  {size}" → "Isso libera {size}") · reuses the `settings.mediaIndex.reclaim.*` family already shipped with **liberar**
+  ("liberar cerca de {size}") · confirmed.
+- "couldn''t be removed just now" (delete-model failure, no error/failed words) · **Não foi possível remover o modelo
+  agora.** · no-bare-error voice (glossary error-copy phrasings); "removed" → **remover** (mirrors the English variation
+  from "delete") · high. "Try again in a moment." → "Tente novamente em instantes." (Try again → glossary **Tentar
+  novamente**).
+- Enable indexing (card title, master on/off) · **Ativar indexação** · glossary Turn on → **Ativar** + Indexing noun →
+  **indexação**; matches the shipped `fileExplorer.navigation.driveIndex.menuEnable` "Turn on indexing…" → "Ativar
+  indexação…" · confirmed. `cards.enable`.
+- Folders to index (card title) · **Pastas para indexar** · matches the shipped always-index label pattern "Pastas para
+  sempre indexar" · high. `cards.folders`.
+- Indexing now (live-progress heading + the file badge tooltip; same sourceHash, same value) · **Indexando agora** ·
+  glossary indexing-in-progress → **Indexando** (pt-BR gerund) + **agora** for the "now" emphasis; avoids the pt-PT "A
+  indexar" · high. `progressSummary.title`, `fileExplorer.imageIndex.file.indexing`.
+- Apple silicon · kept verbatim · English `@key.description` says keep it; no pt-BR pile hit for a localized form.
+  `clip.notSupported`.
+- keyword · **palavra-chave** · standard pt-BR · high. tag (Finder-tag search sense) · **etiqueta** · shipped pt catalog
+  (`settings.listing.showTags` "etiquetas do Finder do macOS", `commands.tagsToggle*` "etiqueta") · confirmed.
+  `deleteConfirmBody` "Keyword and tag search" → "A busca por palavra-chave e por etiqueta".
+- No `sameAsSourceJustification` needed: all 12 values differ from English.

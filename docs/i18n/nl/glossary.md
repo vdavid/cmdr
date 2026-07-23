@@ -890,3 +890,32 @@ REVIEW FLAGS (image-index-indicators pass):
 - `drive.ariaLabel` "Image search status for this drive" → "Status van het doorzoeken van afbeeldingen voor deze schijf"
   keeps the feature-name phrase for consistency; the double `van` is grammatical but slightly heavy. Acceptable for an
   aria-label (clarity over brevity).
+
+From the image-indexing progress/settings pass (12 keys: 3 card titles, the Semantic search card, the "Indexing now"
+badge; mined `_ignored/i18n/nl/`, 2026-07-23):
+
+- search by description / search photos by description (the semantic-search feature) → `zoeken op beschrijving` /
+  `Foto''s op beschrijving zoeken` (toggle label, infinitive-final, matching the sibling
+  `settings.mediaIndex.enabled.label` "Inhoud van afbeeldingen indexeren") · reuses the already-translated
+  `settings.mediaIndex.clip.ready` "zoek je foto''s op beschrijving" and `clip.description` phrasing; `foto` per the
+  settled network-image split (warm user-facing photo rows use `foto''s`, ICU-doubled) · high
+- Apple silicon → kept verbatim · Apple's Dutch macOS keeps "Apple silicon" untranslated (M-series chip family name);
+  brand/hardware token · high. `clip.notSupported` = "Zoeken op beschrijving vereist een Mac met Apple silicon."
+- reclaim / free (disk space, the delete-model button + confirm) → `vrijmaken` · matches the in-catalog
+  `settings.mediaIndex.reclaim.*` ("vrij te maken", "vrijgemaakt"); "reclaim {size}"→"{size} vrijmaken", "This frees
+  {size}"→"Dit maakt {size} vrij" · high
+- Enable indexing (card title) → `Indexeren inschakelen` · glossary enable→inschakelen + index→indexeren · high
+- Folders to index (card title) → `Mappen om te indexeren` · glossary folder→map + index→indexeren; friendlier "om te +
+  infinitief" over the stiffer "Te indexeren mappen" for a card heading · high
+- Indexing now (badge tooltip + progress heading, both source hash 44501db) → `Wordt nu geïndexeerd` · passive-progress
+  form (cf. "wordt gedownload"/"wordt geïnstalleerd"), contrasts cleanly with the sibling badge `pending` "Wacht op
+  indexering"; used identically for the file badge and the progress-summary heading · high
+- semantic search model (delete-confirm title) → `het model voor semantisch zoeken` · reuses the settled `clip.title`
+  "Semantisch zoeken"; the "model voor X" construction reads more naturally than a "semantische-zoekmodel" compound ·
+  high
+- keyword search / tag search (delete-confirm reassurance) → `zoeken op trefwoord` / `zoeken op tag` · keyword→trefwoord
+  (standard NL, MS), tag→tag (in-catalog `settings.listing.showTags` "Tags tonen") · high
+- "couldn''t be removed just now" (delete-model failure, gentle) → "kon nu even niet worden verwijderd" · the "nu even
+  niet" idiom carries "just now / not at this moment" better than the past-tense "zojuist"; "Try again in a moment"→
+  "Probeer het zo opnieuw"; avoids bare "mislukt"/"fout" per Cmdr voice · high
+- No `sameAsSourceJustification` needed: all 12 values differ from English.

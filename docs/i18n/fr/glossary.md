@@ -882,3 +882,40 @@ Phrasing notes for this pass:
   les images" and third-person help "Ajoute une petite pastille sur chaque image de la liste des fichiers…" (settled
   `file list → liste des fichiers`), matching the catalog's toggle-label + help-text register.
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+Settled during the `image-indexing-progress-ux` pass (2026-07-22, image-indexing settings restructure: three card
+titles, the Semantic search card, one file-list badge;
+`settings.mediaIndex.{cards.enable,cards.folders, progressSummary.title,semanticSearch.label,clip.*}`,
+`fileExplorer.imageIndex.file.indexing`, 12 keys). ICU values, so every apostrophe is doubled in the catalog:
+
+- "Indexing now" (active status: an image being processed RIGHT NOW, contrasted with `pending` = queued) →
+  `Indexation en cours` · reuses the settled `indexing → indexation` term + the catalog''s calm "en cours" progress
+  convention (`drive.indexing` closes "; indexation en cours."). Deliberately distinct from `file.pending` ("En attente
+  d''indexation", the queued sense). Used for BOTH `fileExplorer.imageIndex.file.indexing` (the badge tooltip) and
+  `settings.mediaIndex.progressSummary.title` (the live-progress heading) · high.
+- "Enable indexing" (card title over the master toggle) → `Activer l''indexation` · settled `index → indexation` +
+  macOS-pattern `Activer` (catalog `Activer le réseau`, `driveIndex.menuEnable` "Activer l''indexation…") · high.
+- "Folders to index" (card title) → `Dossiers à indexer` · settled `folder → dossier` + `index → indexer`; mirrors the
+  existing `alwaysIndexFolders.label` "Dossiers à toujours indexer" shape · high.
+- search by description (the CLIP semantic-search feature, "find a photo by describing it") →
+  `la recherche par description` · anchored on the existing catalog phrasing `clip.ready` ("recherchez vos photos par
+  description") and `clip.description` ("en décrivant ce qu''elles contiennent"); distinct from the card title
+  `clip.title` = "Recherche sémantique" (kept for the model name in `deleteConfirmTitle` "modèle de recherche
+  sémantique") · high. The toggle label "Search photos by description" (`semanticSearch.label`) →
+  `Rechercher des photos par description` (infinitive-label form).
+- Apple silicon → `Apple Silicon` · kept verbatim per the settled glossary term (licensing/ai pass, line ~165); no
+  reference-pile hit for a French rendering. "a Mac with Apple silicon" phrased naturally as
+  `un Mac équipé d''une puce Apple Silicon` (`clip.notSupported`) · high (brand verbatim), the "équipé d''une puce"
+  framing tentative (idiomatic, no pile phrase).
+- "Delete model (reclaim {size})" → `Supprimer le modèle (libérer {size})` · settled `delete → supprimer`,
+  `model → modèle`; "reclaim" reuses `reclaim.button`''s `libérer` verb (dropping its "environ" since the source has no
+  "roughly" here). "Deleting…" → `Suppression…` (noun+ellipsis progress convention, sibling of `clip.downloading`
+  "Téléchargement…"; single `…` char per the source) · high.
+- keyword → `mot-clé`; tag (Finder tag, in "keyword and tag search") → `tag` · settled catalog-wide (`showTags.label`
+  "Afficher les tags") · high. `deleteConfirmBody`: "Keyword and tag search keep working" → "La recherche par mot-clé et
+  par tag continue de fonctionner".
+- "The model couldn''t be removed just now. Try again in a moment." (non-alarmist delete-failure) →
+  `Le modèle n''a pas pu être supprimé pour le moment. Réessayez dans un instant.` · reuses the calm
+  `N''a pas pu se terminer`/`réessayez` register (queue + errors passes), avoiding "erreur"/"échec" per the style guide
+  · high.
+- No `sameAsSourceJustification` needed: every value differs from English.

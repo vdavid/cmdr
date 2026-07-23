@@ -917,6 +917,10 @@
   "@fileExplorer.imageIndex.file.pending": {
     "sourceHash": "73eb99a"
   },
+  "fileExplorer.imageIndex.file.indexing": "Đang lập chỉ mục",
+  "@fileExplorer.imageIndex.file.indexing": {
+    "sourceHash": "44501db"
+  },
   "fileExplorer.imageIndex.file.stale": "Đã thay đổi kể từ khi lập chỉ mục; sẽ được lập chỉ mục lại",
   "@fileExplorer.imageIndex.file.stale": {
     "sourceHash": "1766bc3"
