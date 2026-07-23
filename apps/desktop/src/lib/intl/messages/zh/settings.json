@@ -245,25 +245,17 @@
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
   },
-  "settings.appearance.fileSizeFormat.description": "文件列表中文件大小的显示方式。",
+  "settings.appearance.fileSizeFormat.description": "文件列表中文件大小的显示方式：二进制（KiB、MiB，其中 1 KiB = 1,024 bytes）或 SI 十进制（KB、MB，其中 1 KB = 1,000 bytes）。",
   "@settings.appearance.fileSizeFormat.description": {
-    "sourceHash": "0ffee96"
+    "sourceHash": "8219704"
   },
   "settings.appearance.fileSizeFormat.opt.binary": "二进制（KiB、MiB、GiB）",
   "@settings.appearance.fileSizeFormat.opt.binary": {
     "sourceHash": "0a4ce4e"
   },
-  "settings.appearance.fileSizeFormat.optDesc.binary": "1 KiB = 1024 字节",
-  "@settings.appearance.fileSizeFormat.optDesc.binary": {
-    "sourceHash": "ee2d07b"
-  },
   "settings.appearance.fileSizeFormat.opt.si": "SI 十进制（KB、MB、GB）",
   "@settings.appearance.fileSizeFormat.opt.si": {
     "sourceHash": "8984a13"
-  },
-  "settings.appearance.fileSizeFormat.optDesc.si": "1 KB = 1000 字节",
-  "@settings.appearance.fileSizeFormat.optDesc.si": {
-    "sourceHash": "04b2c3b"
   },
   "settings.listing.sizeMismatchWarning.label": "大小不一致警告",
   "@settings.listing.sizeMismatchWarning.label": {
@@ -793,9 +785,10 @@
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": {
     "sourceHash": "a2de156"
   },
-  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "macOS 通知",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "macOS",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": {
-    "sourceHash": "d2f2b45"
+    "sourceHash": "aed6b7a",
+    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list)."
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": "两者都用",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": {
@@ -849,9 +842,10 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": {
     "sourceHash": "a2de156"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "macOS 通知",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "macOS",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": {
-    "sourceHash": "d594ece"
+    "sourceHash": "aed6b7a",
+    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list)."
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": "关闭",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": {

@@ -246,27 +246,17 @@
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
   },
-  "settings.appearance.fileSizeFormat.description": "Cómo se muestran los tamaños de archivo en la lista.",
+  "settings.appearance.fileSizeFormat.description": "Cómo se muestran los tamaños de archivo en la lista: binario (KiB, MiB, donde 1 KiB = 1,024 bytes) o decimal SI (KB, MB, donde 1 KB = 1,000 bytes).",
   "@settings.appearance.fileSizeFormat.description": {
-    "sourceHash": "0ffee96"
+    "sourceHash": "8219704"
   },
   "settings.appearance.fileSizeFormat.opt.binary": "Binario (KiB, MiB, GiB)",
   "@settings.appearance.fileSizeFormat.opt.binary": {
     "sourceHash": "0a4ce4e"
   },
-  "settings.appearance.fileSizeFormat.optDesc.binary": "1 KiB = 1024 bytes",
-  "@settings.appearance.fileSizeFormat.optDesc.binary": {
-    "sourceHash": "ee2d07b",
-    "sameAsSourceJustification": "'1 KiB = 1024 bytes': the unit symbol 'KiB', the literal numbers, and 'bytes' (kept verbatim in Spanish, macOS es) are all identical; nothing renders differently."
-  },
   "settings.appearance.fileSizeFormat.opt.si": "Decimal SI (KB, MB, GB)",
   "@settings.appearance.fileSizeFormat.opt.si": {
     "sourceHash": "8984a13"
-  },
-  "settings.appearance.fileSizeFormat.optDesc.si": "1 KB = 1000 bytes",
-  "@settings.appearance.fileSizeFormat.optDesc.si": {
-    "sourceHash": "04b2c3b",
-    "sameAsSourceJustification": "'1 KB = 1000 bytes': the unit symbol 'KB', the literal numbers, and 'bytes' (kept verbatim in Spanish) are all identical."
   },
   "settings.listing.sizeMismatchWarning.label": "Aviso de discrepancia de tamaño",
   "@settings.listing.sizeMismatchWarning.label": {
@@ -796,9 +786,10 @@
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": {
     "sourceHash": "a2de156"
   },
-  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "Notificaciones de macOS",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "macOS",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": {
-    "sourceHash": "d2f2b45"
+    "sourceHash": "aed6b7a",
+    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list)."
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": "Ambas",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": {
@@ -852,9 +843,10 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": {
     "sourceHash": "a2de156"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "Notificación de macOS",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "macOS",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": {
-    "sourceHash": "d594ece"
+    "sourceHash": "aed6b7a",
+    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list)."
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": "Desactivado",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": {

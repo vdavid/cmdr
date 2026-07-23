@@ -245,25 +245,17 @@
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
   },
-  "settings.appearance.fileSizeFormat.description": "Hogyan jelenjenek meg a fájlméretek a fájllistában.",
+  "settings.appearance.fileSizeFormat.description": "Hogyan jelenjenek meg a fájlméretek a fájllistában: bináris (KiB, MiB, ahol 1 KiB = 1,024 bytes) vagy SI decimális (KB, MB, ahol 1 KB = 1,000 bytes).",
   "@settings.appearance.fileSizeFormat.description": {
-    "sourceHash": "0ffee96"
+    "sourceHash": "8219704"
   },
   "settings.appearance.fileSizeFormat.opt.binary": "Bináris (KiB, MiB, GiB)",
   "@settings.appearance.fileSizeFormat.opt.binary": {
     "sourceHash": "0a4ce4e"
   },
-  "settings.appearance.fileSizeFormat.optDesc.binary": "1 KiB = 1024 bájt",
-  "@settings.appearance.fileSizeFormat.optDesc.binary": {
-    "sourceHash": "ee2d07b"
-  },
   "settings.appearance.fileSizeFormat.opt.si": "SI decimális (KB, MB, GB)",
   "@settings.appearance.fileSizeFormat.opt.si": {
     "sourceHash": "8984a13"
-  },
-  "settings.appearance.fileSizeFormat.optDesc.si": "1 KB = 1000 bájt",
-  "@settings.appearance.fileSizeFormat.optDesc.si": {
-    "sourceHash": "04b2c3b"
   },
   "settings.listing.sizeMismatchWarning.label": "Mérteltérés-figyelmeztetés",
   "@settings.listing.sizeMismatchWarning.label": {
@@ -793,9 +785,10 @@
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": {
     "sourceHash": "a2de156"
   },
-  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "macOS-értesítések",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "macOS",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": {
-    "sourceHash": "d2f2b45"
+    "sourceHash": "aed6b7a",
+    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list)."
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": "Mindkettő",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": {
@@ -849,9 +842,10 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": {
     "sourceHash": "a2de156"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "macOS-értesítés",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "macOS",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": {
-    "sourceHash": "d594ece"
+    "sourceHash": "aed6b7a",
+    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list)."
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": "Ki",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": {

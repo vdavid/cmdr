@@ -243,25 +243,17 @@
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
   },
-  "settings.appearance.fileSizeFormat.description": "Cách hiển thị kích thước tệp trong danh sách tệp.",
+  "settings.appearance.fileSizeFormat.description": "Cách hiển thị kích thước tệp trong danh sách tệp: nhị phân (KiB, MiB, trong đó 1 KiB = 1,024 bytes) hoặc thập phân SI (KB, MB, trong đó 1 KB = 1,000 bytes).",
   "@settings.appearance.fileSizeFormat.description": {
-    "sourceHash": "0ffee96"
+    "sourceHash": "8219704"
   },
   "settings.appearance.fileSizeFormat.opt.binary": "Nhị phân (KiB, MiB, GiB)",
   "@settings.appearance.fileSizeFormat.opt.binary": {
     "sourceHash": "0a4ce4e"
   },
-  "settings.appearance.fileSizeFormat.optDesc.binary": "1 KiB = 1024 byte",
-  "@settings.appearance.fileSizeFormat.optDesc.binary": {
-    "sourceHash": "ee2d07b"
-  },
   "settings.appearance.fileSizeFormat.opt.si": "Thập phân SI (KB, MB, GB)",
   "@settings.appearance.fileSizeFormat.opt.si": {
     "sourceHash": "8984a13"
-  },
-  "settings.appearance.fileSizeFormat.optDesc.si": "1 KB = 1000 byte",
-  "@settings.appearance.fileSizeFormat.optDesc.si": {
-    "sourceHash": "04b2c3b"
   },
   "settings.listing.sizeMismatchWarning.label": "Cảnh báo lệch kích thước",
   "@settings.listing.sizeMismatchWarning.label": {
@@ -791,9 +783,10 @@
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": {
     "sourceHash": "a2de156"
   },
-  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "Thông báo macOS",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "macOS",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": {
-    "sourceHash": "d2f2b45"
+    "sourceHash": "aed6b7a",
+    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list)."
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": "Cả hai",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": {
@@ -847,9 +840,10 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": {
     "sourceHash": "a2de156"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "Thông báo macOS",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "macOS",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": {
-    "sourceHash": "d594ece"
+    "sourceHash": "aed6b7a",
+    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list)."
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": "Tắt",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": {
