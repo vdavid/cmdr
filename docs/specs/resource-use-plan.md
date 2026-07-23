@@ -110,6 +110,21 @@ the commit message. TDD the concurrency-correctness tests (red first with a deli
 **Depends on M1** (same pass code; M1's read routing feeds the prefetcher). Sequential, same agent or consecutive
 agents.
 
+### Spike results and success metric (measured 2026-07-23, M3 Max, 200 local images from `~/Downloads`)
+
+Measured with the ignored spike `media_index::backend::vision::spike` (decode-only vs full-analyze scaling at N ∈ {1, 2, 4, 8}, same image set, ANE warmed once):
+
+- **Decode-only** (ImageIO decode, the CPU part): 58.7 → 117.9 → 208.4 → 316.7 img/s = **1.00x → 2.01x → 3.55x → 5.40x**. Scales near-linearly to N=2, sublinearly to ~5.4x at N=8 (performance-core count).
+- **Full analyze** (decode + OCR + classify + feature-print): 6.3 → 8.0 → 8.0 → 7.5 img/s = **1.00x → 1.26x → 1.26x → 1.18x**. Plateaus at ~1.25x by N=2 and mildly REGRESSES at N=8 (scheduling/thermal contention).
+
+**Reading**: at N=1, full analyze is ~159 ms/image and decode alone is ~17 ms/image, so inference (OCR + classify + feature-print, all on the ANE) is ~89% of per-image wall time and decode is ~11%. The ANE serializes inference in the framework, so it does NOT parallelize; decode scales with cores but is too small a share to move the total. **The plan's "4–6x on the table" premise (from the wire at 4%) does not hold for compute — the bottleneck is the ANE, not the wire.** The wire-at-4% only means the NAS fetch can overlap compute; it can't make the ANE faster.
+
+**Success metric (measured, not asserted)**: parallel enrichment tops out at **~1.25x throughput at N=2** on this machine, with no gain (slight loss) beyond N=2. So:
+
+- Default **1** is correct (conservative, byte-for-byte today's behavior); N=2 is the practical sweet spot (~25% faster); the slider's higher stops exist for future hardware / more-parallel inference backends, not present ANE gains.
+- Thermal backoff capping the effective worker count LOW is aligned with the ANE ceiling, not a tax on throughput.
+- On network volumes the extra win is fetch↔compute overlap (a fetch of image k+1 proceeds while image k infers), bounded by the same ANE ceiling; the byte-bounded prefetch is what makes that overlap safe, not a multiplier.
+
 ---
 
 ## M3. f16 embeddings

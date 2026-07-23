@@ -733,3 +733,6 @@ fn read_feature_print(request: &VNGenerateImageFeaturePrintRequest) -> Option<Ve
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod spike;
