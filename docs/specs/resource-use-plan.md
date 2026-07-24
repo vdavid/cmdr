@@ -369,6 +369,43 @@ vectors (simpler, exact, and the resident cost is small there). Scale expansion_
 256–512 toward 1M+); verify recall on real embeddings with the importance-evals harness + dog-search QA set during
 integration.
 
+### Status: shipped (2026-07-24)
+
+Integrated behind `search_semantic` in `apps/desktop/src-tauri/src/media_index/ann/` (design + every Decision/Why: the
+media_index `DETAILS.md` § ANN vector search). Key facts:
+
+- **Route**: below `ANN_MIN_VECTORS` = 50,000 stored CLIP vectors per volume, the exact resident-f16 scan stays; at or
+  above, a per-volume `media-{id}.clip.usearch` HNSW index (usearch 2.26.0, f16 storage, cosine, keys = `media_file`
+  ids) answers via mmap `view` with `expansion_search` scaled stepwise (128/256/512). The ANN route over-fetches `k × 4`
+  and re-ranks the candidates EXACTLY against the stored f16 blobs, so result ordering stays exact-quality and hits
+  resolve ids to CURRENT paths (renames need no index touch; ghost keys drop out).
+- **Writer-fed**: the one `MediaWriter` thread buffers an ANN op per CLIP write/GC/prune it commits and flushes at the
+  same seams that invalidate the resident vector cache, plus an 8,192-op auto-flush. Saves are temp+rename; a sidecar
+  (format version, model id, dims, rows, SHA-256) is verified before every open — usearch mmap-views a corrupt file into
+  a SIGSEGV, found by test, so the checksum gate is load-bearing.
+- **Disposable derivative**: missing/corrupt/mismatched/crash-lagged indexes fall back to the exact scan and heal via a
+  single-flight background rebuild (streamed, watchdog-cancellable); a dirty-marker file makes crashed sessions
+  detectable at the next writer spawn; a `SCHEMA_VERSION` wipe, delete-CLIP-model, and volume purge all take the index
+  files along. No schema bump was needed.
+- **Measured on real CLIP embeddings** (M3 Max, release build, 2026-07-24; harness:
+  `ann/tests.rs::real_corpus_recall_and_latency`, run against a copy of the dev machine's NAS `media.db` converted to
+  the v4 shape — same f16 encode production uses. 500 leave-one-out queries from the corpus's own image embeddings,
+  exact brute-force top-10 as ground truth — real-vector geometry, per this plan's verification requirement):
+  - NAS corpus, **7,936 real CLIP vectors**: ANN + exact re-rank **recall@10 1.0000** (raw HNSW also 1.0000 at this size
+    — HNSW is effectively exact below ~10k; the spike's 200k/1M runs are where recall dips and the ef scaling + re-rank
+    earn their keep), query p50 **0.74 ms** / p95 4.01 ms vs the exact scan's 4.11 ms / 48.10 ms; full rebuild 3.40 s
+    (consistent with the spike's 71 s per 200k).
+  - The local root `media.db` holds only 37 CLIP rows (CLIP enrichment barely ran there) — too small to measure, and
+    both real corpora route to the exact scan in production anyway (below the 50k threshold).
+  - The dog-search QA set's checked-in reference text vectors are 8-element prefixes (`reference-vectors.json` stores
+    `coreml_first8`), so full text-query vectors aren't reproducible offline; text queries search the same geometry the
+    image-embedding queries verified.
+- **Scope boundary honored**: the Vision feature print (768-d similar-images/dedup) is NOT wired; `AnnSpace` is the
+  documented seam (add a variant).
+- **Ship-now vs behind-a-flag, resolved**: shipped live with no flag — the 50k threshold IS the gate. Every current
+  corpus (dev root ~9k, NAS ~30k) stays on the exact scan, byte-for-byte unchanged; the ANN path self-activates only
+  when a volume crosses 50k stored vectors.
+
 ---
 
 ## M7. `ext` column + partial index for the coverage cold walk
@@ -475,7 +512,8 @@ unnecessary.
   so the corpus re-enriches ONCE, not twice.
 - **Parallel-safe cluster after the spine**: M7, M8+M9 (different DBs/modules; keep M7 and M9's checkpoint touch-points
   coordinated if simultaneous; M8 starts with its where-does-1.4s-go measurement).
-- **M6** after M1–M5, standalone (biggest; spike done, see its status addendum, then decide ship-now vs behind-a-flag).
+- **M6** after M1–M5, standalone — shipped (see its status; no flag needed: below 50k vectors per volume the exact scan
+  still serves, so the ANN path self-activates only once a corpus crosses the threshold).
 - **M10** dropped (see its status).
 
 Every milestone: colocated `CLAUDE.md`/`DETAILS.md` updates ride along (per the docs rule — decision + why in DETAILS,

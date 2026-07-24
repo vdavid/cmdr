@@ -77,8 +77,9 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 - [ ] 2026-07-16 `resource-use-plan.md` - Make media indexing fast, small, and honest at NAS scale: 10 items in impact
       order (fix the network-pass read path + error classification, parallel enrichment workers + a Settings slider, f16
       embeddings, integer-id media-DB keying, CLIP model palettization, ANN vector search, coverage cold-walk index,
-      importance-read caching, WAL hygiene). M6's ANN spike is done (recommendation: `usearch`; evidence in
-      `../notes/ann-vector-search-spike-2026-07-24.md`); M10 (Vision-embedding gating) is dropped; the feature-print
+      importance-read caching, WAL hygiene). M6 (ANN vector search) is shipped: per-volume `usearch` index behind
+      `search_semantic`, self-activating at 50k vectors, writer-fed, exact re-rank (spike evidence in
+      `../notes/ann-vector-search-spike-2026-07-24.md`). M10 (Vision-embedding gating) is dropped; the feature-print
       stays on by default everywhere.
 
 - [ ] 2026-07-16 `index-ledger-plan.md` - Drive-index aggregate integrity (the `dir_stats` ledger): a real incident (60
