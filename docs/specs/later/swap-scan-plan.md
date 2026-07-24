@@ -1,9 +1,9 @@
 # Swap-scan: replace the in-place reconcile rescan with a build-and-swap
 
 Status: plan, 2026-07-22. Local-disk only. Author-facing (AI agents). Read the two foundation notes first:
-`../../notes/swap-scan-feasibility.md` (the read-only study and the traps) and `../../notes/indexing-benchmarks-2026-07-21.md`
-§ "Swap-scan re-measurement, 2026-07-22" (the justification). This plan names current post-reorg paths under
-`apps/desktop/src-tauri/src/indexing`.
+`../../notes/swap-scan-feasibility.md` (the read-only study and the traps) and
+`../../notes/indexing-benchmarks-2026-07-21.md` § "Swap-scan re-measurement, 2026-07-22" (the justification). This plan
+names current post-reorg paths under `apps/desktop/src-tauri/src/indexing`.
 
 ## 1. Intention
 
@@ -391,8 +391,8 @@ field-measurement logging (swap wall time vs the stored reconcile baseline; a cr
 torn-index incidents). **Tests:** each abort path leaves no orphan file (assert via the recovery no-op); the kill-switch
 flips a live rescan back to reconcile.
 
-Docs: append a "Swap-scan, shipped" section to `../../notes/indexing-benchmarks-2026-07-21.md` with the field numbers once
-measured; confirm the `indexing/DETAILS.md` decision record is complete; update this spec's status. Checks: full
+Docs: append a "Swap-scan, shipped" section to `../../notes/indexing-benchmarks-2026-07-21.md` with the field numbers
+once measured; confirm the `indexing/DETAILS.md` decision record is complete; update this spec's status. Checks: full
 `pnpm check --include-slow`.
 
 ## 6. Rollout and guardrails

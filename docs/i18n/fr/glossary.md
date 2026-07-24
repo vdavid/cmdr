@@ -876,8 +876,7 @@ Phrasing notes for this pass:
 - No `sameAsSourceJustification` needed: every value differs from English.
 
 Settled for the image-indexing settings restructure (2026-07-22: three card titles, the Semantic search card, one
-file-list badge;
-`settings.mediaIndex.{cards.enable,cards.folders, progressSummary.title,semanticSearch.label,clip.*}`,
+file-list badge; `settings.mediaIndex.{cards.enable,cards.folders, progressSummary.title,semanticSearch.label,clip.*}`,
 `fileExplorer.imageIndex.file.indexing`, 12 keys). ICU values, so every apostrophe is doubled in the catalog:
 
 - "Indexing now" (active status: an image being processed RIGHT NOW, contrasted with `pending` = queued) →

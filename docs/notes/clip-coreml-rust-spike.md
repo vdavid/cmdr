@@ -1,7 +1,7 @@
 # Spike: CLIP text→image via Core ML, called from Rust
 
-Backs the `docs/specs/later/media-ml-index-plan.md` M3 decision. Run 2026-06-30 on Apple Silicon, macOS 26.5.1 (arm64), Xcode 26.5,
-coremltools 9.0. Independently license-verified against Apple's own `LICENSE_MODELS`.
+Backs the `docs/specs/later/media-ml-index-plan.md` M3 decision. Run 2026-06-30 on Apple Silicon, macOS 26.5.1 (arm64),
+Xcode 26.5, coremltools 9.0. Independently license-verified against Apple's own `LICENSE_MODELS`.
 
 ## Verdict
 

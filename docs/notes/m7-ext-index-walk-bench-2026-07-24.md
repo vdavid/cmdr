@@ -1,11 +1,10 @@
 # M7 `ext`-column + partial-index walk bench (2026-07-24)
 
 The measurement that retired resource-use-plan M7 (the plan itself is wiped; this note is the durable record, and the
-skip verdict is at the bottom). Measures the coverage cold walk
-(`media_index/scheduler/enrich.rs::walk_image_entries`, the `coverage::get_or_build` path) against copies of the two
-real dev drive-index DBs, then prototypes M7's `ext` column + partial image-extension index on those copies and re-runs
-the walk in the pruned shape. David rejected the per-folder image-count-aggregate alternative; only the `ext`-column
-shape was evaluated.
+skip verdict is at the bottom). Measures the coverage cold walk (`media_index/scheduler/enrich.rs::walk_image_entries`,
+the `coverage::get_or_build` path) against copies of the two real dev drive-index DBs, then prototypes M7's `ext`
+column + partial image-extension index on those copies and re-runs the walk in the pruned shape. David rejected the
+per-folder image-count-aggregate alternative; only the `ext`-column shape was evaluated.
 
 **Headline**: the pruned walk is **6.4x faster on the root DB** (4.7 s → 0.74 s warm) and **statistically nothing on the
 NAS DB** (2.2 s → 2.1 s), because 85% of the NAS's files are images so there is almost nothing to prune. Disk cost after

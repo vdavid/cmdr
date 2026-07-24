@@ -850,8 +850,8 @@ REVIEW FLAGS (bulk-rename / image-index quality pass):
 - `askCmdr.renameReview.title` "Review file renames" → `Naamwijzigingen beoordelen` (drops the explicit "file", which
   the modal context supplies). Subjective.
 
-For the image-search index status badges (11 `fileExplorer.imageIndex.*` + 2 `settings.mediaIndex.showFileStatusIcons.*`;
-mined `_ignored/i18n/nl/`, 2026-07-22):
+For the image-search index status badges (11 `fileExplorer.imageIndex.*` + 2
+`settings.mediaIndex.showFileStatusIcons.*`; mined `_ignored/i18n/nl/`, 2026-07-22):
 
 - badge / status badge (small overlay marker on a file/folder icon showing image-index state) → `markering` /
   `statusmarkering` (plural `markeringen`/`statusmarkeringen`) · macOS Finder `Markeer` (Mark/Flag verb, key QK4) +

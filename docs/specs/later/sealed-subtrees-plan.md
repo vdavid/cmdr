@@ -1,7 +1,7 @@
 # Sealed subtrees: bounding the cost of high-churn directories
 
-Status: plan for implementation. Branch: `david/sealed-subtrees`. Follows the
-per-subtree rescan throttle (`indexing/DETAILS.md` § "Per-subtree rescan throttle").
+Status: plan for implementation. Branch: `david/sealed-subtrees`. Follows the per-subtree rescan throttle
+(`indexing/DETAILS.md` § "Per-subtree rescan throttle").
 
 ## The incident that motivated this
 
