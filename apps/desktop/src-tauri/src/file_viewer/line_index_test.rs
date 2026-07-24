@@ -6,6 +6,7 @@ use std::sync::Mutex;
 use std::sync::atomic::AtomicBool;
 
 use super::line_index::LineIndexBackend;
+use super::search_cancel_test_support::{assert_search_stops_on_per_match_cancel, many_matches_corpus};
 use super::search_matcher::{Matcher, SearchMode};
 use super::{FileViewerBackend, INDEX_CHECKPOINT_INTERVAL, SearchMatch, SeekTarget};
 
@@ -604,62 +605,12 @@ proptest! {
 
 #[test]
 fn test_per_match_cancel_observes_within_100ms() {
-    // Build a file with many matches per line and trigger cancel after the
-    // first batch lands. The scan must stop within 100 ms (timer-based) so
-    // the per-match cancel check inside `scan_line_with_matcher` is exercised.
-    use std::sync::Mutex;
-    use std::sync::atomic::Ordering;
-    use std::thread;
-    use std::time::{Duration, Instant};
-
     let dir = create_test_dir("per_match_cancel");
-    // 1,000 lines × 1,000 matches per line.
-    let line: String = "a".repeat(1_000) + "\n";
-    let content: String = line.repeat(1_000);
-    let path = write_test_file(&dir, "many_matches.txt", &content);
+    let path = write_test_file(&dir, "many_matches.txt", &many_matches_corpus());
 
-    let cancel = std::sync::Arc::new(AtomicBool::new(false));
-    let backend = LineIndexBackend::open(&path, &cancel).unwrap();
-
-    let matches: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
-    let progress = Mutex::new(0u64);
-    let matcher = literal_matcher("a", true);
-
-    let cancel_for_killer = cancel.clone();
-    let killer = thread::spawn(move || {
-        // Wait until the search has reported some matches, then cancel.
-        let start = Instant::now();
-        loop {
-            thread::sleep(Duration::from_millis(5));
-            if start.elapsed() > Duration::from_secs(2) {
-                break; // safety
-            }
-        }
-        cancel_for_killer.store(true, Ordering::Relaxed);
-    });
-    // Run the search; measure how long after we set cancel the call returns.
-    let cancel_setter = cancel.clone();
-    thread::spawn(move || {
-        // Set cancel after a short delay so we observe the per-match path
-        // taking effect within 100 ms.
-        thread::sleep(Duration::from_millis(20));
-        cancel_setter.store(true, Ordering::Relaxed);
-    });
-    let start = Instant::now();
-    let _ = backend.search(&matcher, &cancel, &matches, &progress);
-    let elapsed = start.elapsed();
-    let _ = killer.join();
-
-    assert!(
-        elapsed < Duration::from_millis(800),
-        "search must observe cancel quickly; took {:?}",
-        elapsed
-    );
-    // At least one match should have been recorded before cancel.
-    assert!(
-        !matches.lock().unwrap().is_empty(),
-        "scan must have reported at least one match before cancel"
-    );
+    let open_cancel = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&path, &open_cancel).unwrap();
+    assert_search_stops_on_per_match_cancel(&backend, &literal_matcher("a", true));
 
     cleanup(&dir);
 }

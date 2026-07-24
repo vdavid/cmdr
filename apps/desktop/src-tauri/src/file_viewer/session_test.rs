@@ -319,15 +319,16 @@ fn large_file_upgrades_to_line_index() {
     // Initially ByteSeek
     assert!(matches!(open_result.backend_type, session::BackendType::ByteSeek));
 
-    // Wait for upgrade to complete (should be fast for a ~1MB file)
-    thread::sleep(Duration::from_millis(500));
 
-    // After upgrade, get_lines with Line target should work correctly
+    wait_until(Duration::from_secs(3), "the background upgrade to LineIndex to finish", || {
+        upgraded_to_line_index(sid)
+    });
+
+    // On LineIndex a `Line` target lands on exactly that line, so the chunk reports it back.
     let chunk = session::get_lines(sid, super::SeekTarget::Line(10), 3).unwrap();
-    // If upgraded to LineIndex, first_line_number should be correct
-    // If still ByteSeek, it will default to 0
-    // We check that it works either way
-    assert!(!chunk.lines.is_empty());
+    assert_eq!(chunk.first_line_number, 10);
+    assert_eq!(chunk.lines.len(), 3);
+    assert!(chunk.lines[0].starts_with("line 00000010 "));
 
     session::close_session(sid).unwrap();
     cleanup(&dir);
@@ -636,6 +637,8 @@ fn read_range_session_cancellation_returns_cancelled_and_cleans_up() {
         // 2 ms is enough that the read has started but nowhere near done on a ~16 MB
         // file. The in-loop check (every 64 KB or 256 lines) fires well before the
         // read completes.
+        // allowed-test-sleep: the canceller's head start IS the scenario; it has to land while
+        // the read is mid-flight, and the read exposes no "I have started" signal to wait on
         thread::sleep(Duration::from_millis(2));
         session::cancel_read(&sid_for_cancel, 42).unwrap();
     });
@@ -880,9 +883,8 @@ fn test_watchdog_forces_cancel_when_worker_ignores_flag() {
     let watchdog_cancel = cancel.clone();
     let handle = thread::spawn(move || session::run_search_watchdog(watchdog_cancel, watchdog_status));
 
-    // Set the cancel flag after a short delay so the watchdog observes
-    // Running first, then sees the cancel.
-    thread::sleep(Duration::from_millis(50));
+    // No delay needed: the watchdog's first poll is a 250 ms tick away, and the status stays
+    // `Running` for the whole test, so it always reads a running worker before it reads this flag.
     cancel.store(true, std::sync::atomic::Ordering::Relaxed);
 
     let start = std::time::Instant::now();
@@ -914,8 +916,7 @@ fn test_watchdog_exits_when_worker_finishes_first() {
     let watchdog_cancel = cancel.clone();
     let handle = thread::spawn(move || session::run_search_watchdog(watchdog_cancel, watchdog_status));
 
-    // Mark worker done before the watchdog's first poll tick (250 ms).
-    thread::sleep(Duration::from_millis(50));
+    // The watchdog's first poll is a 250 ms tick away, so `Done` is in place before it looks.
     *status.lock().unwrap() = SearchStatus::Done;
 
     handle.join().unwrap();
@@ -1556,8 +1557,9 @@ fn test_session_tail_mode_off_does_not_extend_index() {
     let canonical = fs::canonicalize(&file).unwrap();
     super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::Grew(new_size));
 
-    // Give the manager thread time to process the event (200 ms poll plus
-    // slack); confirm total_lines did NOT move.
+    // allowed-test-sleep: negative assertion. With tail mode off the manager's only reaction to a
+    // Grew event is a Tauri emit, which no test can observe, so there is nothing to wait on; the
+    // window is what gives "total_lines never moved" its meaning
     thread::sleep(Duration::from_millis(400));
     let after_lines = session::get_session_status(&sid).unwrap().total_lines;
     assert_eq!(

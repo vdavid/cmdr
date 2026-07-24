@@ -282,6 +282,13 @@ so under load the worker runs past the intended window and the test either flake
 is a condvar handshake: the worker signals arrival, the test blocks until it lands, sets up, then releases. The worker
 holds no lock while parked, so the test can freely take `SESSIONS` and `pending_grew`.
 
+**The per-match cancel tests must prove the scan ended on the flag, not on the match limit.** A search stops for two
+reasons: the cancel flag, or `MAX_SEARCH_MATCHES`. Both back-end tests run against a corpus with 1,000,000 matches, so a
+canceller that arrives late leaves a run that ended on the limit and still satisfies every "it returned quickly, with
+matches" assertion. `search_cancel_test_support.rs` closes that hole: the canceller waits on the first reported match
+rather than on a clock, and the shared assertion requires the final count to stay under the limit. Keep both halves; a
+corpus small enough to finish under the limit removes the distinguishing evidence.
+
 **Which gate a drain test parks at decides whether it tests anything.** `UPGRADE_PRE_DRAIN` / `REBUILD_PRE_DRAIN` park
 with the scan already finished, so an append made while parked is invisible to the fresh backend and can reach it only
 through `pending_grew`. Parking at `REBUILD_PRE_SCAN` instead lets the scan pick the append up off disk by itself, and

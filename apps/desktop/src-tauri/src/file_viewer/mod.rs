@@ -37,6 +37,8 @@ mod media_protocol_test;
 #[cfg(test)]
 mod media_session_test;
 #[cfg(test)]
+mod search_cancel_test_support;
+#[cfg(test)]
 mod search_matcher_test;
 #[cfg(test)]
 mod session_test;
