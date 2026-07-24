@@ -2,7 +2,7 @@
 
 use super::*;
 use std::fs;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 /// Creates a unique temp dir under the OS temp root and returns its path. Tests are
 /// responsible for cleaning up. We deliberately avoid the `tempfile` crate to keep this
@@ -17,42 +17,25 @@ fn make_temp_dir(label: &str) -> PathBuf {
     dir
 }
 
-/// Touches a file with a deterministic mtime offset so sorting is stable across systems
-/// with low-resolution mtimes.
+/// Writes a log file and stamps its mtime `age_secs` into the past.
+///
+/// Sorting is by mtime, so the tests need an exact age per file. Stamping gives that on any
+/// filesystem, however coarse its timestamp resolution, and creation order stops mattering.
 fn touch_log(dir: &Path, name: &str, age_secs: u64) {
     let path = dir.join(name);
     fs::write(&path, format!("{name}\n")).expect("write");
-    // Set mtime to (now - age_secs). `filetime` isn't available, so use `utimes` via std
-    // on Unix; on Windows we'd need a different path. Tests run on macOS/Linux only.
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::MetadataExt;
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-        let target = now.saturating_sub(age_secs);
-        // `utimensat` via libc is overkill for tests; instead, sleep a bit to create a
-        // monotonically increasing mtime ordering. Caller passes age_secs in *descending*
-        // order for newest-first lists.
-        let _ = (target, path.metadata().map(|m| m.mtime()));
-        std::thread::sleep(Duration::from_millis(15));
-    }
-    #[cfg(not(unix))]
-    {
-        let _ = path;
-        std::thread::sleep(Duration::from_millis(15));
-    }
+    let aged = SystemTime::now() - Duration::from_secs(age_secs);
+    filetime::set_file_mtime(&path, filetime::FileTime::from_system_time(aged)).expect("stamp mtime");
 }
 
 #[test]
 fn list_recent_log_files_sorted() {
     let dir = make_temp_dir("list");
-    // Create in oldest-first order so mtime grows with index. file-rotate uses
-    // numeric suffixes (`cmdr.log.1`, `.2`, ...), with the live file having no suffix.
-    touch_log(&dir, "cmdr.log.3", 0);
-    touch_log(&dir, "cmdr.log.2", 0);
-    touch_log(&dir, "cmdr.log.1", 0);
+    // file-rotate uses numeric suffixes (`cmdr.log.1`, `.2`, ...), with the live file having no
+    // suffix, so a higher suffix is an older file.
+    touch_log(&dir, "cmdr.log.3", 30);
+    touch_log(&dir, "cmdr.log.2", 20);
+    touch_log(&dir, "cmdr.log.1", 10);
     touch_log(&dir, "cmdr.log", 0);
     // Non-log siblings should be ignored.
     fs::write(dir.join("settings.json"), "{}").unwrap();
@@ -73,9 +56,9 @@ fn list_recent_log_files_sorted() {
 #[test]
 fn eager_prune_keeps_n_newest() {
     let dir = make_temp_dir("keep-n");
-    // Older suffixes touched first so their mtimes are oldest.
-    for i in (1..=5).rev() {
-        touch_log(&dir, &format!("cmdr.log.{i}"), 0);
+    // A higher suffix is an older file.
+    for i in 1..=5 {
+        touch_log(&dir, &format!("cmdr.log.{i}"), i * 10);
     }
     touch_log(&dir, "cmdr.log", 0);
     assert_eq!(list_recent_log_files(&dir).len(), 6);
@@ -100,7 +83,7 @@ fn eager_prune_keeps_n_newest() {
 fn eager_prune_handles_zero() {
     let dir = make_temp_dir("zero");
     for i in 1..=3 {
-        touch_log(&dir, &format!("cmdr.log.{i}"), 0);
+        touch_log(&dir, &format!("cmdr.log.{i}"), i * 10);
     }
     touch_log(&dir, "cmdr.log", 0);
 

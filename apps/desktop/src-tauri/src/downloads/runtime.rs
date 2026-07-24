@@ -360,14 +360,13 @@ mod tests {
         note_pending_write_for_cmdr(&dest);
         std::fs::write(&dest, b"payload").expect("write");
 
-        // Give the debouncer (200 ms) plus a generous margin to flush.
-        // `try_recv` after a bounded wait keeps the test fast on the happy
-        // path; the 8 s nextest cap is the safety net.
-        std::thread::sleep(Duration::from_millis(700));
-        match rx.try_recv() {
+        // Nothing should ever arrive, so the assertion is a window: the debouncer's 200 ms plus a
+        // generous margin. Blocking on the channel rather than sleeping then peeking means a
+        // suppression leak fails the instant it lands.
+        match rx.recv_timeout(Duration::from_millis(700)) {
+            Err(mpsc::RecvTimeoutError::Timeout) => { /* expected */ }
             Ok(ev) => panic!("expected suppression, got event: {ev:?}"),
-            Err(mpsc::TryRecvError::Empty) => { /* expected */ }
-            Err(mpsc::TryRecvError::Disconnected) => panic!("sink disconnected"),
+            Err(mpsc::RecvTimeoutError::Disconnected) => panic!("sink disconnected"),
         }
     }
 

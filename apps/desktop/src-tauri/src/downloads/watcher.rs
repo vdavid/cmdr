@@ -552,6 +552,17 @@ mod tests {
         p
     }
 
+    /// `touch`, then stamp the file's mtime at `unix_secs`.
+    ///
+    /// `scan_latest` ranks by mtime, so its tests need one file to be provably newer than another.
+    /// Stamping beats writing them a few milliseconds apart: the ordering holds no matter how
+    /// coarse the filesystem's timestamp granularity is, and the test costs nothing to run.
+    fn touch_stamped(dir: &Path, name: &str, unix_secs: i64) -> PathBuf {
+        let p = touch(dir, name);
+        filetime::set_file_mtime(&p, filetime::FileTime::from_unix_time(unix_secs, 0)).unwrap();
+        p
+    }
+
     fn make_event(kind: EventKind, paths: Vec<PathBuf>) -> DebouncedEvent {
         let raw = Event {
             kind,
@@ -731,9 +742,8 @@ mod tests {
     #[test]
     fn scan_latest_picks_most_recent() {
         let td = unhidden_tempdir();
-        let _a = touch(td.path(), "a.txt");
-        thread::sleep(Duration::from_millis(20));
-        let b = touch(td.path(), "b.txt");
+        let _a = touch_stamped(td.path(), "a.txt", 1_700_000_000);
+        let b = touch_stamped(td.path(), "b.txt", 1_700_000_060);
         let latest = scan_latest(td.path()).unwrap();
         assert_eq!(latest, b);
     }
@@ -746,7 +756,7 @@ mod tests {
         // ignored even if it's the most recent eligible file in the tree.
         let td = unhidden_tempdir();
         // Shallow file: directly under root.
-        let shallow = touch(td.path(), "shallow.bin");
+        let shallow = touch_stamped(td.path(), "shallow.bin", 1_700_000_000);
 
         // Deep file: 7 levels under root (root/d1/d2/d3/d4/d5/d6/d7/deep.bin).
         let mut deep_dir = td.path().to_path_buf();
@@ -755,9 +765,7 @@ mod tests {
         }
         fs::create_dir_all(&deep_dir).unwrap();
         // Make sure the deep file is newer than the shallow one.
-        thread::sleep(Duration::from_millis(20));
-        let deep = deep_dir.join("deep.bin");
-        fs::write(&deep, b"deep").unwrap();
+        let deep = touch_stamped(&deep_dir, "deep.bin", 1_700_000_060);
 
         let latest = scan_latest(td.path()).expect("expected at least the shallow file");
         // The cap means the deep file isn't visited, so the shallow one wins
@@ -781,11 +789,9 @@ mod tests {
     #[test]
     fn scan_latest_skips_partial_and_hidden() {
         let td = unhidden_tempdir();
-        let real = touch(td.path(), "real.zip");
-        thread::sleep(Duration::from_millis(20));
-        let _partial = touch(td.path(), "newer.crdownload");
-        thread::sleep(Duration::from_millis(20));
-        let _hidden = touch(td.path(), ".secret");
+        let real = touch_stamped(td.path(), "real.zip", 1_700_000_000);
+        let _partial = touch_stamped(td.path(), "newer.crdownload", 1_700_000_060);
+        let _hidden = touch_stamped(td.path(), ".secret", 1_700_000_120);
         let latest = scan_latest(td.path()).unwrap();
         assert_eq!(latest, real);
     }
@@ -972,6 +978,9 @@ mod tests {
                 let partial = td.path().join(format!("dl-{n}.zip.crdownload"));
                 let final_path = td.path().join(format!("dl-{n}.zip"));
                 fs::write(&partial, b"data").unwrap();
+                // allowed-test-sleep: the gap between create and rename IS the scenario. Without
+                // it the platform coalesces the pair into one ambiguous event and the rename this
+                // test is about never reaches the watcher separately
                 thread::sleep(Duration::from_millis(400));
                 fs::rename(&partial, &final_path).unwrap();
             },

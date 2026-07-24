@@ -160,6 +160,8 @@ mod tests {
         let set = make(root.path());
         let p = root.path().join("foo.zip");
         set.note_pending(p.clone(), Duration::from_millis(10));
+        // allowed-test-sleep: outliving the 10 ms TTL is the whole subject; expiry is deadline-based
+        // with no event to wait on
         thread::sleep(Duration::from_millis(40));
         assert!(!set.is_pending(&p));
         assert_eq!(set.len(), 0);
@@ -196,6 +198,8 @@ mod tests {
         let p = root.path().join("foo.zip");
         set.note_pending(p.clone(), Duration::from_millis(1));
         set.note_pending(p.clone(), Duration::from_secs(1));
+        // allowed-test-sleep: the window between the two TTLs is the subject. It has to outlive the
+        // 1 ms deadline the re-insert replaced and stay inside the 1 s one it installed
         thread::sleep(Duration::from_millis(100));
         assert!(set.is_pending(&p));
         assert_eq!(set.len(), 1);
@@ -251,6 +255,8 @@ mod tests {
         let p = root.path().join("foo.zip");
         set.note_pending(p, Duration::from_millis(5));
         assert_eq!(set.len(), 1);
+        // allowed-test-sleep: outliving the 5 ms TTL is the subject; nothing runs in the background,
+        // `len` is what prunes
         thread::sleep(Duration::from_millis(30));
         // `len` itself performs lazy expiry.
         assert_eq!(set.len(), 0);
