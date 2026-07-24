@@ -9,9 +9,15 @@
 
 use super::super::state::busy_volume_ids;
 use super::*;
+use crate::test_support::wait_until_async;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 use tokio::sync::oneshot;
+
+/// Deadline for every wait here. Generous on purpose: each wait has a real
+/// condition, so a healthy run satisfies it in microseconds and only a genuine
+/// hang burns the budget.
+const WAIT: Duration = Duration::from_secs(5);
 
 fn unique(label: &str) -> String {
     static N: AtomicU64 = AtomicU64::new(0);
@@ -234,10 +240,15 @@ async fn two_lane_op_waits_until_both_lanes_free_and_does_not_starve() {
     );
     assert_eq!(manager().status_of(&op_b), Some(LifecycleStatus::Queued));
 
-    // Free only X (settle A). B still can't run — Y is busy.
+    // Free only X (settle A). B still can't run, because Y is busy. Waiting for A's
+    // settle pass to complete means the pass that could have (wrongly) admitted B
+    // provably ran: an admission pass walks the whole queue, so B was considered.
+    let passes = manager().admission_pass_count();
     let _ = a_rel_tx.send(());
-    // Give the admission pass a chance to (wrongly) run B.
-    tokio::time::sleep(Duration::from_millis(150)).await;
+    wait_until_async(WAIT, "A to settle and its admission pass to complete", || {
+        manager().status_of(&op_a).is_none() && manager().admission_pass_count() > passes
+    })
+    .await;
     assert_eq!(
         manager().status_of(&op_b),
         Some(LifecycleStatus::Queued),
@@ -295,10 +306,15 @@ async fn cancel_queued_op_removes_it_without_spawning() {
     );
     assert_eq!(manager().status_of(&op_b), None, "queued op removed from registry");
 
-    // Settle A (frees the lane + runs an admission pass). B is gone, so its
-    // deferred must still never have run.
+    // Settle A (frees the lane + runs an admission pass). That pass is exactly
+    // where a still-registered B would have been admitted, so once it has
+    // completed, B's deferred has provably had its one chance to run.
+    let passes = manager().admission_pass_count();
     let _ = a_rel_tx.send(());
-    tokio::time::sleep(Duration::from_millis(200)).await;
+    wait_until_async(WAIT, "A to settle and its admission pass to complete", || {
+        manager().status_of(&op_a).is_none() && manager().admission_pass_count() > passes
+    })
+    .await;
     assert!(
         !b_ran.load(Ordering::SeqCst),
         "a cancelled queued op's deferred start must never run"
@@ -350,13 +366,13 @@ async fn panicking_op_releases_its_lane_without_spawning_next() {
     });
     manager().spawn_managed(descriptor(&op_a, vec![&lane]), fresh_state(), panic_deferred);
 
-    // Let A's task run + panic + unwind (its Drop frees the lane).
-    tokio::time::sleep(Duration::from_millis(200)).await;
-    assert_eq!(
-        manager().status_of(&op_a),
-        None,
-        "panicked op is removed by the Drop guard"
-    );
+    // Let A's task run + panic + unwind. The Drop guard removes the record and
+    // releases the lane in ONE locked section, so a gone record means the release
+    // has landed too: waiting on the record covers both.
+    wait_until_async(WAIT, "the panicking op's Drop guard to remove its record", || {
+        manager().status_of(&op_a).is_none()
+    })
+    .await;
     let lane_use = manager().lane_use_snapshot();
     assert!(
         !lane_use.contains_key(&lane),
@@ -430,7 +446,7 @@ async fn paused_running_op_does_not_admit_a_queued_same_lane_op() {
     );
     a_started_rx.await.expect("A started");
 
-    let (b_started_tx, b_started_rx) = oneshot::channel();
+    let (b_started_tx, _b_started_rx) = oneshot::channel();
     let (b_rel_tx, b_rel_rx) = oneshot::channel();
     manager().spawn_managed(
         descriptor(&op_b, vec![&lane]),
@@ -439,16 +455,17 @@ async fn paused_running_op_does_not_admit_a_queued_same_lane_op() {
     );
     assert_eq!(manager().status_of(&op_b), Some(LifecycleStatus::Queued));
 
-    // Pause A. B must still be Queued (A kept the lane) — pause runs no admission.
+    // Pause A, then run a pass by hand: pause itself admits nobody, so without
+    // forcing one nothing would ever exercise the claim. Admission flips a record
+    // to Running BEFORE it spawns, so a still-Queued B after a completed pass is
+    // proof its deferred never ran.
     assert!(manager().set_paused(&op_a, true));
-    tokio::time::sleep(Duration::from_millis(150)).await;
-    assert!(
-        tokio::time::timeout(Duration::from_millis(100), b_started_rx)
-            .await
-            .is_err(),
-        "a queued same-lane op must not start while the holder is merely paused"
+    manager().force_admission_pass();
+    assert_eq!(
+        manager().status_of(&op_b),
+        Some(LifecycleStatus::Queued),
+        "a queued same-lane op must not be admitted while the holder is merely paused"
     );
-    assert_eq!(manager().status_of(&op_b), Some(LifecycleStatus::Queued));
 
     let _ = a_rel_tx.send(());
     let _ = b_rel_tx.send(());
@@ -507,9 +524,12 @@ async fn single_op_with_free_lanes_behaves_like_immediate_spawn() {
     started_rx.await.expect("started immediately");
     let _ = rel_tx.send(());
 
-    // After settle the op is gone and its lane is free.
-    tokio::time::sleep(Duration::from_millis(150)).await;
-    assert_eq!(manager().status_of(&op), None);
+    // After settle the op is gone and its lane is free (both land in the same
+    // locked section, so the record going away is the signal for both).
+    wait_until_async(WAIT, "the op to settle and leave the registry", || {
+        manager().status_of(&op).is_none()
+    })
+    .await;
     assert!(!manager().lane_use_snapshot().contains_key(&lane));
 }
 
@@ -563,23 +583,16 @@ async fn admitted_op_runs_even_if_the_admitting_runtime_is_dropped() {
 
     // The op runs on the app runtime, not the dropped one, so it completes and
     // settles (removed from the registry).
-    let deadline = std::time::Instant::now() + Duration::from_secs(5);
-    while !ran.load(Ordering::SeqCst) {
-        assert!(
-            std::time::Instant::now() < deadline,
-            "an admitted op must run on the app runtime, not die with the admitting runtime"
-        );
-        tokio::time::sleep(Duration::from_millis(5)).await;
-    }
-    // Give `on_settled` a beat to remove the record.
-    let deadline = std::time::Instant::now() + Duration::from_secs(5);
-    while manager().status_of(&op).is_some() {
-        assert!(
-            std::time::Instant::now() < deadline,
-            "the op must settle and be removed"
-        );
-        tokio::time::sleep(Duration::from_millis(5)).await;
-    }
+    wait_until_async(
+        WAIT,
+        "the admitted op to run on the app runtime rather than die with the admitting one",
+        || ran.load(Ordering::SeqCst),
+    )
+    .await;
+    wait_until_async(WAIT, "the op to settle and be removed", || {
+        manager().status_of(&op).is_none()
+    })
+    .await;
     assert!(!manager().lane_use_snapshot().contains_key(&lane), "its lane is freed");
 }
 

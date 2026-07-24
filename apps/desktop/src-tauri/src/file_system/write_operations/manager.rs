@@ -63,6 +63,7 @@
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, LazyLock, Mutex, OnceLock};
 
 use crate::file_system::volume::LaneKey;
@@ -222,6 +223,12 @@ const LANE_BUDGET: usize = 1;
 /// hazards). Spawning happens OUTSIDE the lock.
 pub(crate) struct OperationManager {
     inner: Mutex<ManagerInner>,
+    /// Completed admission passes, ever. Bumped once at the END of
+    /// `run_admission_pass`, so an advance means a pass walked the whole queue
+    /// and admitted everything it could. Nothing in production reads it: it's
+    /// the signal tests wait on instead of sleeping. `SeqCst`, and see DETAILS
+    /// § "Observing an admission pass" for why.
+    admission_passes: AtomicU64,
 }
 
 /// Global manager handle. `OnceLock` rather than `LazyLock` only because the
@@ -261,6 +268,7 @@ impl OperationManager {
                 order: Vec::new(),
                 lane_use: HashMap::new(),
             }),
+            admission_passes: AtomicU64::new(0),
         }
     }
 
@@ -307,6 +315,9 @@ impl OperationManager {
     /// deferred start. Repeats until no further op can be admitted on this pass
     /// (admitting one frees nothing, but a single pass may admit several
     /// disjoint-lane ops). Spawns OUTSIDE the lock.
+    ///
+    /// Ends by bumping `admission_passes`; keep that bump last and unconditional
+    /// (it's what makes "a pass ran and declined" observable to a test).
     fn run_admission_pass(&'static self) {
         loop {
             let to_spawn = {
@@ -379,6 +390,7 @@ impl OperationManager {
                 }
             }
         }
+        self.admission_passes.fetch_add(1, Ordering::SeqCst);
     }
 
     /// Happy-path dequeue: frees the op's lane slots, cleans the caches,
@@ -592,6 +604,22 @@ impl OperationManager {
             .iter()
             .map(|(k, v)| (k.as_str().to_string(), *v))
             .collect()
+    }
+
+    /// Completed admission passes so far. A test reads it, acts, and waits for it
+    /// to grow: once it has, a pass has considered every queued op and either
+    /// admitted it or declined.
+    #[cfg(test)]
+    pub(crate) fn admission_pass_count(&self) -> u64 {
+        self.admission_passes.load(Ordering::SeqCst)
+    }
+
+    /// Runs an admission pass inline, returning once it has completed. For the
+    /// paths production never runs one on: pause admits nobody, so a test proving
+    /// "not even a pass would admit this queued op" has to run one itself.
+    #[cfg(test)]
+    pub(crate) fn force_admission_pass(&'static self) {
+        self.run_admission_pass();
     }
 
     /// Test-only: lifecycle status of an op, if present.

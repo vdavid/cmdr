@@ -211,6 +211,20 @@ A queued op holds only DATA describing how to begin: a boxed `FnOnce() -> Pin<Bo
 
 `on_settled(id)` (the happy path) frees the op's lane slots, removes it from the registry, cleans `WRITE_OPERATION_STATE` + the status cache, and runs an admission pass (which may spawn the next op). It's sequenced after the terminal event, exactly where the old per-site cache cleanup ran. The `ManagedTaskGuard` is the panic safety net: held by each spawned task, its `Drop` frees lanes + cleans caches but NEVER spawns (no admission pass). Spawning during the previous op's unwind would re-enter the manager mid-panic (abort) or deadlock on a lock held up-stack. So a panicking op still releases its lanes, but the next op is admitted only on a healthy settle (the next registration's admission pass, or another op's `on_settled`, picks it up). The happy path calls `task_guard.disarm()` right before `on_settled` so its now-redundant Drop is a no-op. Pinned by `manager::tests::panicking_op_releases_its_lane_without_spawning_next`.
 
+### Observing an admission pass (`admission_passes`)
+
+Admission is otherwise invisible from outside: a pass that walks the queue and admits NOBODY changes no status, emits no event, and touches no lane. The negative assertions ("B must still be Queued after A settles") need exactly that moment, and without a signal for it a test can only guess at a wall-clock span.
+
+`OperationManager::admission_passes` is an `AtomicU64` bumped ONCE at the end of `run_admission_pass`, read by `admission_pass_count()` (test-only). A test reads the count, triggers the settle, and waits for it to grow: an advance means a pass walked the whole FIFO queue and either admitted the waiting op or declined to. Three properties make it work:
+
+- **Bumped LAST, and on every exit.** The signal means "the pass finished", so a new early `return` inside `run_admission_pass` that skips the bump would hang every waiting test. Nothing in production reads the count, so the bump is pure signal, never a decision input.
+- **`SeqCst` on the bump and the load,** not `Relaxed`. The waiter reads the count, acts, and waits for it to advance, so the bump has to be ordered against the admission work it claims finished; a `Relaxed` counter buys a rarer, harder flake than the sleep it replaces.
+- **Global count, global queue.** A pass triggered by an unrelated concurrent test is equally good evidence, because a pass considers every registered op, not just its trigger's.
+
+`Notify` would be wrong here and `watch` is second-best: the settle path runs the pass BEFORE a test could await, so `notified()` created afterwards is a guaranteed lost wakeup. Prefer a monotonic counter for any future "background work reached a point" signal.
+
+`force_admission_pass()` (test-only) runs a pass inline and returns when it's done, for the paths production never runs one on: `set_paused` admits nobody, so `paused_running_op_does_not_admit_a_queued_same_lane_op` runs its own pass and asserts B is STILL Queued. Admission flips a record to Running before it spawns, so a Queued status after a completed pass also proves the deferred start never ran. The waits themselves use `crate::test_support::wait_until_async` (`docs/testing.md`).
+
 ### The admission pass spawns admitted ops on the APP runtime, not the caller's
 
 The admission pass (from `spawn_managed` or `on_settled`) spawns each admitted op's deferred start with **`tauri::async_runtime::spawn`, deliberately NOT `tokio::spawn`**. `tokio::spawn` binds to whatever runtime is current when the pass runs — and the pass can run on a runtime that has nothing to do with the op it's admitting. Admission is global and there is a lock-free window between an op's registration (`spawn_managed` inserts it Queued, drops the lock) and its own admission pass: a CONCURRENT op's `on_settled`, running on a different runtime, can reach the pass first and admit the freshly-registered op. So the runtime that spawns an op is racy, not "the op's own caller". `async_runtime::spawn` pins every op to the one process-global runtime that outlives them all.
