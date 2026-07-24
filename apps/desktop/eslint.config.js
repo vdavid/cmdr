@@ -177,7 +177,7 @@ export default tseslint.config(
     // Fixture generators and JS config files need Node globals. The `scripts/` dev/build
     // scripts are all TypeScript and get Node globals plus type-aware rules from the
     // TypeScript block above.
-    files: ['test/fixtures/**/*.js', 'vite.config.js', 'vitest.config.ts', 'playwright.config.ts'],
+    files: ['test/fixtures/**/*.js', 'vite.config.js', 'svelte.config.js', 'vitest.config.ts', 'playwright.config.ts'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
