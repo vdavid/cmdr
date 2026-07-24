@@ -326,6 +326,8 @@ impl CooperativeCancelVolume {
                 if cancel.as_ref().is_some_and(|c| c.load(Ordering::Relaxed)) {
                     break;
                 }
+                // allowed-test-sleep: this fake backend simulates a long, cancellable listing; the
+                // per-iteration wait is what keeps it in flight long enough for a cancel to land mid-run
                 tokio::time::sleep(std::time::Duration::from_millis(2)).await;
             }
             witness.armed = false;

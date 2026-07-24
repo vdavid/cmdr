@@ -13,6 +13,8 @@ fn scripted_reader(marker: &'static str, slow: Duration) -> GuardedReader {
         Duration::from_secs(5),
         Arc::new(move |p: &Path| {
             if p.to_string_lossy().contains(marker) {
+                // allowed-test-sleep: this reader fakes a pathological subtree's read cost, which is
+                // what the cost budget measures to decide the branch is too expensive to keep reading
                 std::thread::sleep(slow);
             }
             reconciler::read_fs_children(p, &space)

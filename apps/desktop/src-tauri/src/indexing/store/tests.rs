@@ -706,6 +706,8 @@ fn busy_db_is_retried_not_deleted() {
     let holder = std::thread::spawn(move || {
         let conn = IndexStore::open_write_connection(&holder_path).expect("holder connection");
         conn.execute_batch("BEGIN EXCLUSIVE").expect("hold the write lock");
+        // allowed-test-sleep: holding the lock PAST the 5 s `busy_timeout` is the subject; the open
+        // below must hit a real `SQLITE_BUSY` and recover rather than delete the index
         std::thread::sleep(std::time::Duration::from_millis(5_500));
         conn.execute_batch("COMMIT").expect("release the write lock");
     });

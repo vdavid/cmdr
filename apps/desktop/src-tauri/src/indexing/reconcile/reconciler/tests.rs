@@ -2000,6 +2000,8 @@ fn live_throttle_collapses_rapid_rewrites_and_trailing_flushes_last_size() {
     );
 
     // After the window, the trailing sweep applies the LAST-seen size (no re-stat).
+    // allowed-test-sleep: outliving the throttle window is the subject. `sweep_throttle` compares
+    // the passed `Instant::now()` against the per-path window, so only real elapsed time crosses it
     std::thread::sleep(window + Duration::from_millis(50));
     let affected = reconciler.sweep_throttle(&writer, Instant::now());
     assert!(

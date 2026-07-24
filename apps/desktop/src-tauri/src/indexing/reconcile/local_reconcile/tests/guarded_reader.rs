@@ -24,6 +24,8 @@ fn guarded_reader_abandons_a_hung_read_and_recovers() {
         let calls = Arc::clone(&calls);
         Arc::new(move |_p| {
             if calls.fetch_add(1, Ordering::SeqCst) == 0 {
+                // allowed-test-sleep: this stub fakes a hung read; the whole test is that the reader
+                // abandons it near the 50 ms timeout instead of waiting it out
                 std::thread::sleep(Duration::from_secs(2));
             }
             Some(vec![])

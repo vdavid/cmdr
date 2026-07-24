@@ -1154,13 +1154,16 @@ fn test_listings_complete_under_reconciler_load_and_rapid_navigation() {
                 Err(_) => return,
             };
             while !stop_checkpoint.load(Ordering::Relaxed) {
+                // allowed-test-sleep: this is a background load generator; the interval paces the
+                // WAL checkpoints that model the "checkpoint stall" hypothesis under the storm
                 std::thread::sleep(Duration::from_millis(500));
                 let _ = conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);");
             }
         })
     };
 
-    // Give the storm a moment to warm up so listings hit it mid-stride.
+    // allowed-test-sleep: this test measures listing latency WHILE a write storm runs; the warm-up
+    // window is what guarantees the listings land mid-storm rather than before it builds pressure
     std::thread::sleep(Duration::from_millis(500));
 
     // ── Listing operations: 8 concurrent, root + subdir mix ───────────
@@ -1190,7 +1193,8 @@ fn test_listings_complete_under_reconciler_load_and_rapid_navigation() {
             let started = Arc::clone(&started);
             let root_for_thread = root_for_listing.clone();
             std::thread::spawn(move || {
-                // Stagger the starts so we hit different points of the storm.
+                // allowed-test-sleep: the staggered starts ARE the design; each listing thread is
+                // meant to hit a different point of the storm, which same-instant starts wouldn't
                 let s = started.fetch_add(1, Ordering::Relaxed);
                 std::thread::sleep(Duration::from_millis(50 * s as u64));
 

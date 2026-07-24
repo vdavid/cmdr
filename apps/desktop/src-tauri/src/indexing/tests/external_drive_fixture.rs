@@ -293,6 +293,9 @@ fn run_hdiutil_guarded(args: &[&str]) -> io::Result<Output> {
                         ),
                     ));
                 }
+                // allowed-test-sleep: poll interval for a hard-timeout wait on a real `hdiutil`
+                // child. The timeout plus single-detach discipline is the FSKit kernel-panic
+                // guardrail (indexing/tests/CLAUDE.md); this is not waiting for in-process work
                 std::thread::sleep(Duration::from_millis(50));
             }
         }

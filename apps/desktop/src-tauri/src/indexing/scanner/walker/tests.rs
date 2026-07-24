@@ -24,8 +24,8 @@ impl MockFs {
     fn reader(self: Arc<Self>) -> ReadDirFn {
         Arc::new(move |p: &Path, progress: &ReadProgress| {
             if self.hang.contains(p) {
-                // A hung mount publishes nothing while it blocks — the whole point
-                // of the signal.
+                // allowed-test-sleep: this stub fakes a hung mount, which publishes nothing while it
+                // blocks; that stall is exactly the condition the watchdog signal exists to catch
                 std::thread::sleep(self.hang_dur);
             }
             match self.dirs.get(p) {
@@ -217,6 +217,8 @@ fn batched_reader(plan: BatchPlan) -> ReadDirFn {
         }
         let mut out = Vec::new();
         for batch in 0..plan.batches {
+            // allowed-test-sleep: the gap between batches fakes a slow directory read, which is what
+            // lets the progress-watchdog tests observe a mid-read stall versus steady publishing
             std::thread::sleep(plan.gap);
             if plan.publish {
                 progress.record_entries(plan.per_batch as u64);
@@ -295,7 +297,9 @@ fn a_read_that_stops_delivering_is_abandoned_promptly() {
             let out = inner(p, progress)?;
             if p == Path::new("/r/big") {
                 stalling.store(true, Ordering::SeqCst);
-                std::thread::sleep(Duration::from_secs(5)); // never returns in time
+                // allowed-test-sleep: this stub fakes a read that never returns in time, so the
+                // watchdog has a genuine stall to detect
+                std::thread::sleep(Duration::from_secs(5));
             }
             Ok(out)
         });
@@ -598,6 +602,8 @@ fn cancellation_returns_promptly() {
     {
         let cancelled = cancelled.clone();
         std::thread::spawn(move || {
+            // allowed-test-sleep: the canceller's head start IS the scenario. It has to fire while
+            // the walk is parked in the hung subtree, and the walk exposes no "I am hung" signal
             std::thread::sleep(Duration::from_millis(20));
             cancelled.store(true, Ordering::SeqCst);
         });

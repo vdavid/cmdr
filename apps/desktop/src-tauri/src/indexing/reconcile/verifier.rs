@@ -425,8 +425,6 @@ mod tests {
     use crate::indexing::writer::IndexWriter;
     use std::fs;
     use std::sync::Arc;
-    use std::thread;
-    use std::time::Duration;
 
     /// Create a temp dir in the crate root instead of `/tmp/`.
     /// On Linux, `/tmp/` is in `EXCLUDED_PREFIXES`, so `should_exclude`
@@ -608,8 +606,6 @@ mod tests {
         let children_before = list_db_children_on(&db_path, parent_id);
         let file1_before = children_before.iter().find(|e| e.name == "file1.txt").unwrap().clone();
 
-        // Wait so mtime definitely changes (1s resolution on some filesystems)
-        thread::sleep(Duration::from_secs(1));
         // Write content large enough to span multiple disk blocks (>4KB ensures physical size change)
         let large_content = vec![b'A'; 8192];
         fs::write(fs_root.path().join("file1.txt"), &large_content).unwrap();

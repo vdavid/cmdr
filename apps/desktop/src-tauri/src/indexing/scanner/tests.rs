@@ -835,7 +835,9 @@ fn timed_out_dir_is_not_marked_listed() {
         let slow = slow.clone();
         Arc::new(move |p: &Path, progress: &ReadProgress| {
             if p == slow {
-                std::thread::sleep(Duration::from_secs(2)); // stall past the timeout
+                // allowed-test-sleep: this stub fakes a hung directory read; stalling past the
+                // walker's timeout is exactly what the "not marked listed" assertion needs
+                std::thread::sleep(Duration::from_secs(2));
             }
             match dirs.get(p) {
                 Some(children) => Ok(children

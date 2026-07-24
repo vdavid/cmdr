@@ -69,6 +69,8 @@ mod tests {
     #[tokio::test]
     async fn test_blocking_with_timeout_slow_closure_returns_fallback() {
         let result = blocking_with_timeout(Duration::from_millis(50), false, || {
+            // allowed-test-sleep: this closure fakes slow blocking work; overrunning the 50 ms
+            // timeout is exactly what makes `blocking_with_timeout` return its fallback
             std::thread::sleep(Duration::from_secs(2));
             true
         })
@@ -79,6 +81,8 @@ mod tests {
     #[tokio::test]
     async fn test_blocking_with_timeout_returns_custom_fallback() {
         let result = blocking_with_timeout(Duration::from_millis(50), 42, || {
+            // allowed-test-sleep: this closure fakes slow blocking work; overrunning the 50 ms
+            // timeout is what makes `blocking_with_timeout` return the custom fallback
             std::thread::sleep(Duration::from_secs(2));
             99
         })

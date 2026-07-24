@@ -269,6 +269,8 @@ mod tests {
         foreground::note_foreground_activity_on(volume_id);
         assert_eq!(pacer.listing_budget(), YIELDING_LISTING_BUDGET, "browsing right now");
 
+        // allowed-test-sleep: outliving the 50 ms quiet window is the subject. The pacer reads the
+        // real clock against the last foreground timestamp, so only elapsed wall time reopens it
         tokio::time::sleep(Duration::from_millis(80)).await;
         assert_eq!(
             pacer.listing_budget(),

@@ -169,9 +169,10 @@ fn lifecycle_transitions_under_load() {
     let w = IndexWriter::spawn(&db_path, None).expect("spawn for double shutdown test");
     w.send(WriteMessage::TruncateData).unwrap();
     w.send(WriteMessage::Shutdown).unwrap();
-    // Brief sleep so the writer thread has time to process Shutdown and
-    // exit, releasing the DB write lock. Needed because we used
-    // send(Shutdown) instead of shutdown() (which would join the thread).
+    // allowed-test-sleep: this waits for the writer thread to process Shutdown and exit, which is
+    // what disconnects the channel and makes the second send below fail. `IndexWriter` exposes no
+    // "thread exited" signal short of `shutdown()`, which joins, and this test deliberately uses a
+    // bare `send(Shutdown)` instead so it can prove a second send doesn't panic.
     std::thread::sleep(std::time::Duration::from_millis(100));
 
     // Second shutdown: channel is closed, send returns Err. Must not panic.
@@ -339,7 +340,8 @@ fn early_shutdown_during_active_writes() {
         sent
     });
 
-    // Give the sender a tiny head start, then shut down
+    // allowed-test-sleep: the sender's head start IS the scenario. Shutting down mid-stream is what
+    // this test exercises, and the sender exposes no "I have sent some" signal to wait on
     std::thread::sleep(std::time::Duration::from_millis(1));
     writer.shutdown();
 

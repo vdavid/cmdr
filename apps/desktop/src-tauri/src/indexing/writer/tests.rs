@@ -702,9 +702,12 @@ fn a_parked_send_records_its_wait_and_an_immediate_one_does_not() {
     // The slot is full now, so this send parks until the receiver drains it.
     let drain_after = Duration::from_millis(50);
     let drainer = thread::spawn(move || {
+        // allowed-test-sleep: this delay IS the measured quantity. The parked send must record at
+        // least `drain_after`, so the drainer holds the slot full for exactly that long
         thread::sleep(drain_after);
         let _ = receiver.recv();
-        // Keep the channel alive so the parked send lands rather than erroring.
+        // allowed-test-sleep: keeps the channel alive after the drain so the parked send lands
+        // rather than erroring on a hung-up receiver
         thread::sleep(Duration::from_millis(100));
     });
     send_blocking_with_depth(&sender, &depth, partial_agg()).expect("the drain lets the parked send land");

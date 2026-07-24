@@ -532,19 +532,27 @@ fn enrichment_under_contention() {
     // registry entry is needed here.
     *read::enrichment::READ_POOL.lock().unwrap() = Some(Arc::clone(&pool));
 
-    // Hold INDEX_REGISTRY.lock() on a background thread for 2 seconds
-    let lock_handle = std::thread::spawn(|| {
+    // Hold INDEX_REGISTRY.lock() on a background thread. It signals once the lock is actually held,
+    // then blocks until this thread releases it, so the enrichment below is guaranteed to run while
+    // the lock is contended. Channels replace the old "sleep 2 s holding, sleep 50 ms to catch up"
+    // pair, which only made the overlap probable.
+    let (acquired_tx, acquired_rx) = std::sync::mpsc::channel::<()>();
+    let (release_tx, release_rx) = std::sync::mpsc::channel::<()>();
+    let lock_handle = std::thread::spawn(move || {
         let guard = INDEX_REGISTRY.lock().unwrap();
-        std::thread::sleep(Duration::from_secs(2));
+        acquired_tx.send(()).unwrap();
+        release_rx.recv().unwrap();
         drop(guard);
     });
 
-    // Give the locker thread time to acquire
-    std::thread::sleep(Duration::from_millis(50));
+    // Wait for the lock to be held before enriching.
+    acquired_rx.recv().unwrap();
 
     // Enrich on this thread; must succeed despite INDEX_REGISTRY being locked
     let mut entries = vec![make_file_entry("projects", "/projects", true)];
     enrich_entries_with_index(&mut entries);
+
+    release_tx.send(()).unwrap();
 
     assert_eq!(
         entries[0].recursive_size,
@@ -1177,6 +1185,8 @@ fn shutdown_drain_does_not_hold_indexing_lock() {
     let drain_done = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let drain_done_bg = Arc::clone(&drain_done);
     let drain = std::thread::spawn(move || {
+        // allowed-test-sleep: this stands in for a long in-flight drain. The assertion below is that
+        // `get_status` returns before this flag flips, so the window IS the evidence of no blocking
         std::thread::sleep(Duration::from_millis(800));
         drain_done_bg.store(true, std::sync::atomic::Ordering::SeqCst);
     });

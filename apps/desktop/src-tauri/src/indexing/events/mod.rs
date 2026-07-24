@@ -581,7 +581,6 @@ mod tests {
     //! We construct a fresh `DebugStats` per test (not the global) so tests
     //! don't fight over the singleton.
     use super::*;
-    use std::time::Duration;
 
     fn last_phase(stats: &DebugStats) -> ActivityPhase {
         let history = stats.phase_history.lock().expect("phase_history poisoned");
@@ -661,13 +660,12 @@ mod tests {
         // strip would show only the latest phase without elapsed times.
         let stats = DebugStats::new();
         stats.set_phase(ActivityPhase::Scanning, "scan");
-        // Sleep a tiny bit so the next set_phase computes a non-zero duration
-        // for the Scanning entry it just closed.
-        std::thread::sleep(Duration::from_millis(2));
         stats.set_phase(ActivityPhase::Live, "live");
 
         let history = stats.phase_history.lock().unwrap();
-        // Entry index 1 is Scanning; it should be closed (duration_ms = Some).
+        // Entry index 1 is Scanning; it should be closed (duration_ms = Some). `set_phase` stamps
+        // the closed entry with `Some(elapsed)` unconditionally, so no elapsed time is needed to
+        // make the field populated; a same-instant close still records `Some(0)`.
         assert!(matches!(history[1].phase, ActivityPhase::Scanning));
         assert!(
             history[1].duration_ms.is_some(),
