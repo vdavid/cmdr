@@ -1544,10 +1544,14 @@ fn reconcile_subtree_marks_listed_dirs_at_current_epoch() {
     );
 }
 
-/// Bug 2: after a MustScanSubDirs rescan completes, pending queued rescans
-/// should be started automatically. Previously the spawned task set
-/// rescan_active=false but never called start_next_rescan, so queued paths
-/// were abandoned unless a new must_scan_sub_dirs event happened to arrive.
+/// A finished rescan starts the next queued one itself: the completion handler
+/// drains `pending_rescans`, so a path queued behind an active walk runs without
+/// waiting for another `must_scan_sub_dirs` event to happen along.
+///
+/// Poll to quiescence, never sleep a fixed span: the completion handler clears
+/// `rescan_active` BEFORE it drains, and a walk of a missing root escalates to
+/// its ancestor, so the drain is several thread-spawn + open-connection rounds.
+/// A loaded machine takes far longer over those than any fixed sleep would guess.
 #[tokio::test]
 async fn queued_rescans_start_after_active_completes() {
     let mut reconciler = EventReconciler::new();
@@ -1555,44 +1559,27 @@ async fn queued_rescans_start_after_active_completes() {
 
     let (writer, _dir, _conn) = setup_test_writer();
 
-    // Start a rescan for a nonexistent path (completes almost immediately
-    // because reconcile_subtree returns early when root isn't in DB).
+    // Two rescans for nonexistent paths (each completes almost immediately
+    // because reconcile_subtree returns early when root isn't in DB). The second
+    // queues behind the first, or is picked up straight away if the first
+    // already finished; either way the queue has to drain to empty.
     reconciler.queue_must_scan_sub_dirs(PathBuf::from("/nonexistent_cmdr_test/first"), &writer);
-    assert!(reconciler.rescan_active.load(Ordering::Relaxed));
-
-    // Queue a second path while the first is active
     reconciler.queue_must_scan_sub_dirs(PathBuf::from("/nonexistent_cmdr_test/second"), &writer);
-    assert_eq!(
-        reconciler.pending_rescans.lock().unwrap().len(),
-        1,
-        "second path should be queued"
-    );
 
-    // Wait for the first rescan to complete (it should be near-instant since
-    // the path doesn't exist in the DB).
-    for _ in 0..100 {
-        if !reconciler.rescan_active.load(Ordering::Relaxed) {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while Instant::now() < deadline {
+        if !reconciler.is_rescan_active_for_test() && reconciler.pending_rescans_snapshot().is_empty() {
             break;
         }
         tokio::time::sleep(Duration::from_millis(10)).await;
     }
-    assert!(
-        !reconciler.rescan_active.load(Ordering::Relaxed),
-        "first rescan should have completed"
-    );
 
-    // Give the system a moment for the completion handler to start the next rescan
-    tokio::time::sleep(Duration::from_millis(50)).await;
-
-    // The second queued rescan should have started automatically after
-    // the first completed. Without the fix, it stays in pending_rescans
-    // forever.
-    let remaining = reconciler.pending_rescans.lock().unwrap().len();
+    // Without the drain, the second path stays queued forever.
+    let remaining = reconciler.pending_rescans_snapshot();
     assert!(
-        remaining == 0,
-        "pending rescans should be drained after active rescan completes, \
-             but {} remain",
-        pluralize(remaining as u64, "path")
+        remaining.is_empty(),
+        "pending rescans should drain after each active rescan completes, but {} still queued: {remaining:?}",
+        pluralize(remaining.len() as u64, "path")
     );
 
     writer.shutdown();
