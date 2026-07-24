@@ -15,6 +15,17 @@ const suppressedWarnings = [
   'non_reactive_update',
 ]
 
+// Where adapter-static writes the site. Default `build` matches tauri.conf.json's
+// `frontendDist: "../build"`. The Linux-E2E Docker build overrides this (paired with a
+// tauri `--config` frontendDist override in `scripts/e2e-linux.sh`): the container
+// builds from the SAME bind-mounted tree the host may be building in (`pnpm check
+// --include-slow` runs the host Playwright build and the container build
+// concurrently), so it redirects its output into its own Docker-volume-backed dir.
+// The adapter rimrafs this dir on every build, so it must never BE a mount point
+// (rmdir on a mount point is EBUSY) — pointing it INSIDE the container's
+// `.svelte-kit` volume satisfies both.
+const pagesDir = process.env.CMDR_FRONTEND_BUILD_DIR ?? 'build'
+
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
   preprocess: vitePreprocess(),
@@ -24,6 +35,8 @@ const config = {
   kit: {
     adapter: adapter({
       fallback: 'index.html',
+      pages: pagesDir,
+      assets: pagesDir,
     }),
   },
 }

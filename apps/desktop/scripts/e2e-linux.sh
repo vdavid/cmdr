@@ -59,6 +59,16 @@ TARGET_VOLUME="${TARGET_VOLUME:-cmdr-target-cache}"
 # This prevents Linux binaries from contaminating the host's node_modules
 ROOT_NODE_MODULES_VOLUME="${ROOT_NODE_MODULES_VOLUME:-cmdr-root-node-modules-cache}"
 DESKTOP_NODE_MODULES_VOLUME="${DESKTOP_NODE_MODULES_VOLUME:-cmdr-desktop-node-modules-cache}"
+# The frontend build state (.svelte-kit) gets its own volume for the same reason as
+# node_modules, plus a concurrency one: the repo is BIND-MOUNTED at /app, and under
+# `pnpm check --include-slow` the desktop-e2e-playwright check builds the app on the
+# HOST at the same time as this container's `pnpm build`. Sharing `.svelte-kit/output`
+# between those two vite builds tears the SvelteKit prerender step mid-run (ENOENT on
+# `.svelte-kit/output/server/_app/immutable`). The adapter-static `build` output is
+# redirected INSIDE this volume too (CMDR_FRONTEND_BUILD_DIR + the tauri --config
+# override in the build step below), NOT given its own volume: adapter-static rimrafs
+# its output dir on every build, and rmdir on a mount point is EBUSY.
+DESKTOP_SVELTEKIT_VOLUME="${DESKTOP_SVELTEKIT_VOLUME:-cmdr-desktop-sveltekit-cache}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -145,6 +155,7 @@ if $CLEAN; then
     docker volume rm "$TARGET_VOLUME" 2>/dev/null || true
     docker volume rm "$ROOT_NODE_MODULES_VOLUME" 2>/dev/null || true
     docker volume rm "$DESKTOP_NODE_MODULES_VOLUME" 2>/dev/null || true
+    docker volume rm "$DESKTOP_SVELTEKIT_VOLUME" 2>/dev/null || true
     log_info "Cache cleaned."
     exit 0
 fi
@@ -223,6 +234,7 @@ if $VNC_MODE; then
         -v "$TARGET_VOLUME:/target" \
         -v "$ROOT_NODE_MODULES_VOLUME:/app/node_modules" \
         -v "$DESKTOP_NODE_MODULES_VOLUME:/app/apps/desktop/node_modules" \
+    -v "$DESKTOP_SVELTEKIT_VOLUME:/app/apps/desktop/.svelte-kit" \
         -w /app \
         -p 5990:5990 \
         -p 6090:6090 \
@@ -264,9 +276,11 @@ docker run --rm \
     -v "$TARGET_VOLUME:/target" \
     -v "$ROOT_NODE_MODULES_VOLUME:/app/node_modules" \
     -v "$DESKTOP_NODE_MODULES_VOLUME:/app/apps/desktop/node_modules" \
+    -v "$DESKTOP_SVELTEKIT_VOLUME:/app/apps/desktop/.svelte-kit" \
     -w /app/apps/desktop \
     -e CI=true \
     -e CARGO_TARGET_DIR=/target \
+    -e CMDR_FRONTEND_BUILD_DIR=.svelte-kit/linux-build \
     "$IMAGE_NAME" \
     bash -c '
         set -e
@@ -304,7 +318,10 @@ docker run --rm \
 
         echo "Building Tauri app for target: $LINUX_TARGET"
         # --no-bundle to skip creating .deb/.rpm/.appimage (not needed for E2E tests)
-        pnpm tauri build --ci --target "$LINUX_TARGET" --no-bundle -- --features playwright-e2e,virtual-mtp,smb-e2e
+        # --config: point frontendDist at the container-private adapter output
+        # (CMDR_FRONTEND_BUILD_DIR above; see the volume comment at the top) so the
+        # embed reads the dir THIS build wrote, not the bind-mounted host build/.
+        pnpm tauri build --ci --target "$LINUX_TARGET" --no-bundle --config "{\"build\":{\"frontendDist\":\"../.svelte-kit/linux-build\"}}" -- --features playwright-e2e,virtual-mtp,smb-e2e
 
         # Write the target triple so the host script can find the binary
         echo "$LINUX_TARGET" > /target/.linux-target
@@ -470,6 +487,7 @@ if $INTERACTIVE; then
         -v "$TARGET_VOLUME:/target" \
         -v "$ROOT_NODE_MODULES_VOLUME:/app/node_modules" \
         -v "$DESKTOP_NODE_MODULES_VOLUME:/app/apps/desktop/node_modules" \
+    -v "$DESKTOP_SVELTEKIT_VOLUME:/app/apps/desktop/.svelte-kit" \
         -w /app/apps/desktop \
         -p 5900:5900 \
         -e TAURI_BINARY="$DOCKER_TAURI_BINARY" \
@@ -513,6 +531,7 @@ else
         -v "$TARGET_VOLUME:/target" \
         -v "$ROOT_NODE_MODULES_VOLUME:/app/node_modules" \
         -v "$DESKTOP_NODE_MODULES_VOLUME:/app/apps/desktop/node_modules" \
+    -v "$DESKTOP_SVELTEKIT_VOLUME:/app/apps/desktop/.svelte-kit" \
         -v "$LINUX_E2E_JSON_REPORT:$CONTAINER_E2E_JSON_REPORT" \
         -w /app/apps/desktop \
         -e TAURI_BINARY="$DOCKER_TAURI_BINARY" \
