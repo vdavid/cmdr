@@ -20,10 +20,11 @@
 use super::super::super::state::{OperationIntent, cancel_write_operation, load_intent};
 use super::super::super::test_support::TestOperationGuard;
 use super::test_support::{
-    AutoYieldTuningGuard, NeverPendingYieldSource, REL_CHUNK, REL_TOTAL, RelLog, ReleasingSource, YieldingSource,
-    make_state, rel_expected_bytes,
+    AutoYieldTuningGuard, NeverPendingYieldSource, PARK_WINDOW, REL_CHUNK, REL_TOTAL, RelLog, ReleasingSource,
+    YieldingSource, make_state, park_holds_at, rel_expected_bytes,
 };
 use super::*;
+use crate::test_support::wait_until_async;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex as StdMutex};
@@ -84,20 +85,22 @@ async fn auto_yield_parks_before_next_window_then_resumes_byte_exact() {
                 .await
             });
 
-            // Let a few windows stream past the floor, then raise foreground.
-            tokio::time::sleep(Duration::from_millis(40)).await;
+            // Stream past the min-progress floor, then raise foreground.
+            wait_until_async(
+                Duration::from_secs(10),
+                "the copy to clear the min-progress floor",
+                || bytes_seen.load(Ordering::SeqCst) >= REL_CHUNK as u64,
+            )
+            .await;
             foreground.store(true, Ordering::SeqCst);
 
             // The copy must NOT start the next window (freeze) while foreground is
             // held — but it must NOT release the source either (park-in-place).
-            tokio::time::sleep(Duration::from_millis(40)).await;
-            let frozen = bytes_seen.load(Ordering::SeqCst);
-            tokio::time::sleep(Duration::from_millis(40)).await;
-            assert_eq!(
-                bytes_seen.load(Ordering::SeqCst),
-                frozen,
-                "a copy yielding to foreground must stop advancing while foreground is held"
-            );
+            let frozen = park_holds_at(
+                &bytes_seen,
+                "a copy yielding to foreground must stop advancing while foreground is held",
+            )
+            .await;
             assert!(
                 frozen > 0 && (frozen as usize) < REL_TOTAL,
                 "must have yielded mid-file, short of completion"
@@ -141,7 +144,11 @@ async fn auto_yield_parks_before_next_window_then_resumes_byte_exact() {
     let _ = fs::remove_dir_all(&dst_dir);
 }
 
-#[tokio::test(flavor = "current_thread")]
+// The clock is PAUSED for this test: tokio auto-advances virtual time only when
+// every task is idle, so each `sleep` below is an exact, instant jump to a point in
+// the burst rather than a wall-clock bet. That's what makes "the second listing
+// landed inside the quiet window" a fact instead of a race, and it runs in ~30 ms.
+#[tokio::test(flavor = "current_thread", start_paused = true)]
 async fn auto_yield_debounces_a_burst_into_one_park() {
     use std::fs;
 
@@ -195,8 +202,11 @@ async fn auto_yield_debounces_a_burst_into_one_park() {
 
             // First listing: stream past the floor, raise, then drop. The copy
             // parks (doesn't start the next window) and enters the debounce window.
+            // allowed-test-sleep: a virtual-clock advance to "several windows in", on the paused
+            // runtime. It IS the burst's shape, which is this test's whole subject.
             tokio::time::sleep(Duration::from_millis(40)).await;
             foreground.store(true, Ordering::SeqCst);
+            // allowed-test-sleep: how long the first listing holds the device, in virtual time.
             tokio::time::sleep(Duration::from_millis(40)).await;
             foreground.store(false, Ordering::SeqCst);
             // Sample the parked offset: the copy has been parked since ~the raise
@@ -211,8 +221,11 @@ async fn auto_yield_debounces_a_burst_into_one_park() {
             // debounce collapses the burst, the copy stays parked the whole time
             // (no next window between the two listings); without it, the copy would
             // have resumed and advanced in the gap.
+            // allowed-test-sleep: THE subject. This gap must be shorter than the 120 ms debounce,
+            // so the second listing lands inside the quiet window. Virtual time makes it exact.
             tokio::time::sleep(Duration::from_millis(40)).await;
             foreground.store(true, Ordering::SeqCst);
+            // allowed-test-sleep: how long the second listing holds the device, in virtual time.
             tokio::time::sleep(Duration::from_millis(40)).await;
             foreground.store(false, Ordering::SeqCst);
             assert_eq!(
@@ -302,9 +315,14 @@ async fn auto_yield_min_progress_floor_prevents_starvation() {
             for _ in 0..8 {
                 // Allow a drain so a parked yield can resume.
                 foreground.store(false, Ordering::SeqCst);
-                tokio::time::sleep(Duration::from_millis(20)).await;
+                // allowed-test-sleep: the drain half of a browse cycle. Waiting on progress here
+                // would assume the very forward progress the floor is supposed to guarantee, which
+                // is what this test measures.
+                tokio::time::sleep(PARK_WINDOW / 2).await;
                 foreground.store(true, Ordering::SeqCst);
-                tokio::time::sleep(Duration::from_millis(20)).await;
+                // allowed-test-sleep: the busy half of the cycle, held long enough for the arm to
+                // park again before the next sample.
+                tokio::time::sleep(PARK_WINDOW / 2).await;
                 let now = bytes_seen.load(Ordering::SeqCst);
                 if now >= last + floor {
                     advanced_cycles += 1;
@@ -355,6 +373,7 @@ async fn auto_yield_cancel_while_yielding_keeps_no_partial() {
     let op = TestOperationGuard::register_state("test-autoyield-cancel", make_state());
     let op_id = op.id().to_string();
     let state = Arc::clone(op.state());
+    let bytes_seen = Arc::new(AtomicU64::new(0));
 
     let local = tokio::task::LocalSet::new();
     local
@@ -362,8 +381,10 @@ async fn auto_yield_cancel_while_yielding_keeps_no_partial() {
             let source_drv = Arc::clone(&source);
             let dest_drv = Arc::clone(&dest);
             let state_drv = Arc::clone(&state);
+            let bytes_seen_drv = Arc::clone(&bytes_seen);
             let op = tokio::task::spawn_local(async move {
                 let state_ref = &state_drv;
+                let bytes_ref = &bytes_seen_drv;
                 copy_single_path(
                     &source_drv,
                     Path::new("/movie.bin"),
@@ -373,7 +394,8 @@ async fn auto_yield_cancel_while_yielding_keeps_no_partial() {
                     Path::new("movie.bin"),
                     state_ref,
                     &CreatedPaths::default(),
-                    &|_bytes_done, _total| {
+                    &|bytes_done, _total| {
+                        bytes_ref.store(bytes_done, Ordering::SeqCst);
                         if crate::file_system::write_operations::state::is_cancelled(&state_ref.intent) {
                             ControlFlow::Break(())
                         } else {
@@ -388,9 +410,19 @@ async fn auto_yield_cancel_while_yielding_keeps_no_partial() {
 
             // Let it stream past the floor, then hold foreground so it yields and parks
             // in the (long) debounce window.
-            tokio::time::sleep(Duration::from_millis(40)).await;
+            wait_until_async(
+                Duration::from_secs(10),
+                "the copy to clear the min-progress floor",
+                || bytes_seen.load(Ordering::SeqCst) >= REL_CHUNK as u64,
+            )
+            .await;
             foreground.store(true, Ordering::SeqCst);
-            tokio::time::sleep(Duration::from_millis(40)).await;
+            let parked_at =
+                park_holds_at(&bytes_seen, "the copy must park, not advance, while foreground is held").await;
+            assert!(
+                parked_at >= REL_CHUNK as u64 && (parked_at as usize) < REL_TOTAL,
+                "the cancel must land on a copy parked MID-FILE, past the floor and short of the end; parked_at={parked_at}"
+            );
             assert_eq!(log.lock().unwrap().releases, 0, "parked, not released");
             assert!(!op.is_finished(), "parked in the debounce window");
 

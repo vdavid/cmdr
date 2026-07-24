@@ -25,25 +25,55 @@ pub(super) fn make_state() -> Arc<WriteOperationState> {
 }
 
 // ========================================================================
-// Slow chunked source (mid-file pause): a multi-chunk volume copy whose
-// stream sleeps per chunk so a pause from the controlling task lands mid-file.
+// The one sanctioned wall-clock window in these suites.
+// ========================================================================
+
+/// How long a "the copy is parked" window runs. Long enough that a running copy
+/// would have advanced several chunks inside it, short enough to keep the suite
+/// quick.
+pub(super) const PARK_WINDOW: Duration = Duration::from_millis(40);
+
+/// Asserts a park is HOLDING: waits one [`PARK_WINDOW`] for the in-flight chunk
+/// to drain into the park, samples the copy's byte offset, then holds a second
+/// window and asserts the offset never moved. Returns the frozen offset.
+///
+/// "Nothing happened" has no signal to wait on, so a window is the only evidence
+/// available. Every frozen-offset check in the `volume_strategy` suites routes
+/// through here, which is why these are the only two fixed waits left in them:
+/// keep it that way rather than sprinkling `sleep` back into the tests.
+pub(super) async fn park_holds_at(seen: &std::sync::atomic::AtomicU64, what: &str) -> u64 {
+    // allowed-test-sleep: lets the chunk that was already past its checkpoint finish, so the
+    // sample below is the parked offset rather than a mid-write one. No signal marks "the copy
+    // reached its park".
+    tokio::time::sleep(PARK_WINDOW).await;
+    let frozen = seen.load(Ordering::SeqCst);
+    // allowed-test-sleep: the negative assertion itself. A running copy would advance several
+    // chunks across this window, so a stable offset is what proves the park is holding.
+    tokio::time::sleep(PARK_WINDOW).await;
+    assert_eq!(seen.load(Ordering::SeqCst), frozen, "{what}");
+    frozen
+}
+
+// ========================================================================
+// Gated chunked source (mid-file pause): a multi-chunk volume copy whose
+// stream emits one chunk per test-granted permit, so the controlling task
+// holds it at an exact byte offset instead of racing a wall-clock timer.
 // ========================================================================
 
 pub(super) const SLOW_CHUNK_SIZE: usize = 64 * 1024;
 pub(super) const SLOW_CHUNK_COUNT: usize = 30;
-/// Per-chunk delay so the whole transfer spans ~120 ms — wide enough that a
-/// pause from the controlling task reliably lands between two chunks, short
-/// enough to keep the test from lingering across other globally-stateful tests.
-pub(super) const SLOW_CHUNK_DELAY: Duration = Duration::from_millis(4);
 
 /// A read stream that yields `SLOW_CHUNK_COUNT` chunks of `SLOW_CHUNK_SIZE`
-/// bytes, sleeping `SLOW_CHUNK_DELAY` before each, so a multi-chunk copy spans a
-/// real wall-clock window for pause/cancel to land mid-stream.
+/// bytes, each one costing a permit from the test-owned chunk budget. The test
+/// decides exactly how far the copy gets before it perturbs it, so "the pause
+/// landed mid-file" is a fact rather than a timing bet.
 pub(super) struct SlowChunkedStream {
     pub(super) chunks_left: usize,
     pub(super) fill: u8,
     pub(super) total: u64,
     pub(super) emitted: u64,
+    /// Chunk budget: one permit per chunk. A closed semaphore ends the stream.
+    pub(super) gate: Arc<tokio::sync::Semaphore>,
 }
 
 impl VolumeReadStream for SlowChunkedStream {
@@ -52,7 +82,10 @@ impl VolumeReadStream for SlowChunkedStream {
             if self.chunks_left == 0 {
                 return None;
             }
-            tokio::time::sleep(SLOW_CHUNK_DELAY).await;
+            match self.gate.acquire().await {
+                Ok(permit) => permit.forget(),
+                Err(_) => return None,
+            }
             self.chunks_left -= 1;
             self.emitted += SLOW_CHUNK_SIZE as u64;
             Some(Ok(vec![self.fill; SLOW_CHUNK_SIZE]))
@@ -68,10 +101,12 @@ impl VolumeReadStream for SlowChunkedStream {
     }
 }
 
-/// Minimal source volume whose `open_read_stream` returns a `SlowChunkedStream`.
-/// Non-local + streaming so `copy_single_path` routes through the streaming
-/// pipe (and thus the `CheckpointStream` wrapper).
-pub(super) struct SlowSource;
+/// Minimal source volume whose `open_read_stream` returns a `SlowChunkedStream`
+/// on the shared chunk budget. Non-local + streaming so `copy_single_path`
+/// routes through the streaming pipe (and thus the `CheckpointStream` wrapper).
+pub(super) struct SlowSource {
+    pub(super) gate: Arc<tokio::sync::Semaphore>,
+}
 
 impl Volume for SlowSource {
     fn name(&self) -> &str {
@@ -112,12 +147,14 @@ impl Volume for SlowSource {
         &'a self,
         _path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
-        Box::pin(async {
+        let gate = Arc::clone(&self.gate);
+        Box::pin(async move {
             Ok(Box::new(SlowChunkedStream {
                 chunks_left: SLOW_CHUNK_COUNT,
                 fill: 0xCD,
                 total: (SLOW_CHUNK_COUNT * SLOW_CHUNK_SIZE) as u64,
                 emitted: 0,
+                gate,
             }) as Box<dyn VolumeReadStream>)
         })
     }
@@ -243,6 +280,9 @@ impl VolumeReadStream for ReleasingStream {
                     Err(_) => return None,
                 }
             }
+            // allowed-test-sleep: simulated per-window device latency. It IS the modeled cost of an
+            // MTP/SMB read window; without it a 200 KiB copy finishes before the controlling task can
+            // raise foreground or pause it, so the yield and pause arms would never be exercised.
             tokio::time::sleep(REL_CHUNK_DELAY).await;
             let start = self.pos;
             let end = (start + REL_CHUNK as u64).min(REL_TOTAL as u64);
@@ -456,6 +496,9 @@ impl Volume for YieldingSource {
         let flag = Arc::clone(&self.foreground);
         Box::pin(async move {
             while flag.load(Ordering::SeqCst) {
+                // allowed-test-sleep: this is the DOUBLE's own park, standing in for the real
+                // per-device gate's poll. It's production behavior being simulated, not a test
+                // waiting for background work.
                 tokio::time::sleep(Duration::from_millis(2)).await;
             }
         })

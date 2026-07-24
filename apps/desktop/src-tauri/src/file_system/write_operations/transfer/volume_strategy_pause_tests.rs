@@ -7,8 +7,8 @@
 //!   / unblock on cancel. The cross-volume streaming path's per-chunk progress
 //!   callback is sync, so `stream_pipe_file` wraps the source stream in a
 //!   `CheckpointStream` whose `next_chunk()` parks while paused once per chunk.
-//!   The `SlowSource` double sleeps per chunk so "pause lands mid-file" is
-//!   deterministic.
+//!   The `SlowSource` double spends one test-granted permit per chunk, so "pause
+//!   lands mid-file" is a fact the test controls, not a timing bet.
 //! - **Bounded-window park-in-place** for an MTP-shaped source: an MTP read is
 //!   bounded windows that hold nothing between chunks, so a paused MTP→local copy
 //!   parks IN PLACE — it stops starting the next window and resumes from the
@@ -20,9 +20,10 @@ use super::super::super::state::{OperationIntent, cancel_write_operation, load_i
 use super::super::super::test_support::TestOperationGuard;
 use super::test_support::{
     REL_CHUNK, REL_TOTAL, RelLog, ReleasingSource, SLOW_CHUNK_COUNT, SLOW_CHUNK_SIZE, SlowSource, make_state,
-    rel_expected_bytes,
+    park_holds_at, rel_expected_bytes,
 };
 use super::*;
+use crate::test_support::wait_until_async;
 use std::path::Path;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex as StdMutex};
@@ -30,9 +31,23 @@ use std::time::Duration;
 
 use crate::file_system::volume::{InMemoryVolume, LocalPosixVolume, Volume, VolumeError};
 
+/// Waits until the copy has reported at least `target` bytes. Progress is the
+/// real signal, so a descheduled runtime can't race the assertion.
+async fn wait_for_bytes(seen: &AtomicU64, target: u64) {
+    wait_until_async(Duration::from_secs(10), "the copy to report the released bytes", || {
+        seen.load(Ordering::SeqCst) >= target
+    })
+    .await;
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn streaming_copy_parks_mid_file_while_paused_then_resumes() {
-    let source: Arc<dyn Volume> = Arc::new(SlowSource);
+    // A chunk-budget gate holds the source at an exact byte offset, so the pause
+    // lands mid-file by construction.
+    let gate = Arc::new(tokio::sync::Semaphore::new(0));
+    let source: Arc<dyn Volume> = Arc::new(SlowSource {
+        gate: Arc::clone(&gate),
+    });
     let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest"));
     let total = (SLOW_CHUNK_COUNT * SLOW_CHUNK_SIZE) as u64;
 
@@ -64,21 +79,20 @@ async fn streaming_copy_parks_mid_file_while_paused_then_resumes() {
         .await
     });
 
-    // Let a few chunks stream, then pause MID-FILE.
-    tokio::time::sleep(Duration::from_millis(30)).await;
-    state.pause_gate.pause();
+    // Release exactly one chunk and wait for it to land. The source now blocks on
+    // the next permit, so the copy is provably mid-file.
+    gate.add_permits(1);
+    wait_for_bytes(&bytes_seen, SLOW_CHUNK_SIZE as u64).await;
 
-    // Sample twice across several chunk intervals: the byte count must freeze
-    // (the wrapped stream parks before reading the next chunk) and the op must
-    // not finish.
-    tokio::time::sleep(Duration::from_millis(40)).await;
-    let frozen = bytes_seen.load(Ordering::SeqCst);
-    tokio::time::sleep(Duration::from_millis(120)).await;
-    assert_eq!(
-        bytes_seen.load(Ordering::SeqCst),
-        frozen,
-        "a paused multi-chunk copy must stop advancing mid-file"
-    );
+    // Pause MID-FILE, then lift the budget entirely. The source can now serve every
+    // remaining chunk, so if the copy stops it's the PAUSE holding it, not a starved
+    // source. The chunk already past its checkpoint completes, then the copy parks at
+    // the next one: it settles at exactly two chunks.
+    state.pause_gate.pause();
+    gate.add_permits(SLOW_CHUNK_COUNT + 4);
+    wait_for_bytes(&bytes_seen, 2 * SLOW_CHUNK_SIZE as u64).await;
+    // With the budget wide open, only the pause can hold the offset still.
+    let frozen = park_holds_at(&bytes_seen, "a paused multi-chunk copy must stop advancing mid-file").await;
     assert!(
         frozen < total,
         "the copy must be parked short of completion while paused"
@@ -110,7 +124,10 @@ async fn streaming_copy_parks_mid_file_while_paused_then_resumes() {
 async fn streaming_copy_cancel_while_paused_mid_file_unblocks() {
     use std::fs;
 
-    let source: Arc<dyn Volume> = Arc::new(SlowSource);
+    let gate = Arc::new(tokio::sync::Semaphore::new(0));
+    let source: Arc<dyn Volume> = Arc::new(SlowSource {
+        gate: Arc::clone(&gate),
+    });
     // Local-FS destination — the user's real case is MTP→local, whose dest is
     // `LocalPosixVolume`. On cancel its `write_from_stream` returns typed
     // `VolumeError::Cancelled` and removes the in-flight partial.
@@ -157,9 +174,16 @@ async fn streaming_copy_cancel_while_paused_mid_file_unblocks() {
         .await
     });
 
-    tokio::time::sleep(Duration::from_millis(30)).await;
+    gate.add_permits(1);
+    wait_for_bytes(&bytes_seen, SLOW_CHUNK_SIZE as u64).await;
     state.pause_gate.pause();
-    tokio::time::sleep(Duration::from_millis(40)).await;
+    gate.add_permits(SLOW_CHUNK_COUNT + 4);
+    wait_for_bytes(&bytes_seen, 2 * SLOW_CHUNK_SIZE as u64).await;
+    let parked_at = bytes_seen.load(Ordering::SeqCst);
+    assert!(
+        parked_at >= 2 * SLOW_CHUNK_SIZE as u64 && parked_at < (SLOW_CHUNK_COUNT * SLOW_CHUNK_SIZE) as u64,
+        "the cancel must land MID-FILE: the copy has to be parked past the first chunk and short of the last; parked_at={parked_at}"
+    );
     assert!(!op.is_finished(), "parked while paused");
 
     // Cancel (keep partials) while paused: the production cancel path flips
@@ -187,22 +211,6 @@ async fn streaming_copy_cancel_while_paused_mid_file_unblocks() {
         "a cancelled mid-file copy leaves no partial dest file"
     );
     let _ = fs::remove_dir_all(&dst_dir);
-}
-
-/// Poll `seen` until it reaches at least `target` bytes, then return; panic after a
-/// generous budget. Lets the pause test wait on real copy progress instead of a
-/// fixed sleep, so a descheduled runtime can't race the assertion.
-async fn wait_for_bytes(seen: &AtomicU64, target: u64) {
-    for _ in 0..3_000 {
-        if seen.load(Ordering::SeqCst) >= target {
-            return;
-        }
-        tokio::time::sleep(Duration::from_millis(1)).await;
-    }
-    panic!(
-        "bytes_seen never reached {target}; last = {}",
-        seen.load(Ordering::SeqCst)
-    );
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
@@ -279,14 +287,10 @@ async fn paused_mtp_copy_parks_in_place_then_resumes_byte_exact() {
     );
 
     // The park must HOLD: with the budget wide open, an UNpaused copy would race to
-    // completion, so a stable offset across this grace window proves the pause (not
-    // a starved source) is what's holding it.
-    tokio::time::sleep(Duration::from_millis(50)).await;
-    assert_eq!(
-        bytes_seen.load(Ordering::SeqCst),
-        frozen,
-        "a paused copy must stop starting the next window mid-file"
-    );
+    // completion, so a stable offset proves the pause (not a starved source) is what's
+    // holding it.
+    let held = park_holds_at(&bytes_seen, "a paused copy must stop starting the next window mid-file").await;
+    assert_eq!(held, frozen, "the park must not have advanced at all");
     assert!(!op.is_finished(), "the copy task must still be parked while paused");
 
     // Resume → keeps reading from the current offset and completes.
@@ -322,9 +326,10 @@ async fn paused_mtp_copy_cancel_while_paused_keeps_no_partial() {
     use std::fs;
 
     let log = Arc::new(StdMutex::new(RelLog::default()));
+    let gate = Arc::new(tokio::sync::Semaphore::new(0));
     let source: Arc<dyn Volume> = Arc::new(ReleasingSource {
         log: Arc::clone(&log),
-        gate: None,
+        gate: Some(Arc::clone(&gate)),
     });
 
     let dst_dir = std::env::temp_dir().join(format!("cmdr_relpause_cancel_dst_{:?}", std::thread::current().id()));
@@ -336,11 +341,14 @@ async fn paused_mtp_copy_cancel_while_paused_keeps_no_partial() {
     let op_id = op.id().to_string();
     let state = Arc::clone(op.state());
 
+    let bytes_seen = Arc::new(AtomicU64::new(0));
     let source_drv = Arc::clone(&source);
     let dest_drv = Arc::clone(&dest);
     let state_drv = Arc::clone(&state);
+    let bytes_seen_drv = Arc::clone(&bytes_seen);
     let op = tokio::spawn(async move {
         let state_ref = &state_drv;
+        let bytes_ref = &bytes_seen_drv;
         copy_single_path(
             &source_drv,
             Path::new("/movie.bin"),
@@ -352,7 +360,8 @@ async fn paused_mtp_copy_cancel_while_paused_keeps_no_partial() {
             &CreatedPaths::default(),
             // Mirror the production per-file callback: break on cancel so the
             // backend's chunk loop tears down the partial.
-            &|_bytes_done, _total| {
+            &|bytes_done, _total| {
+                bytes_ref.store(bytes_done, Ordering::SeqCst);
                 if crate::file_system::write_operations::state::is_cancelled(&state_ref.intent) {
                     ControlFlow::Break(())
                 } else {
@@ -365,9 +374,18 @@ async fn paused_mtp_copy_cancel_while_paused_keeps_no_partial() {
         .await
     });
 
-    tokio::time::sleep(Duration::from_millis(30)).await;
+    // One window through, then pause and lift the budget: the copy settles at two
+    // windows and parks, with nothing left to blame but the pause.
+    gate.add_permits(1);
+    wait_for_bytes(&bytes_seen, REL_CHUNK as u64).await;
     state.pause_gate.pause();
-    tokio::time::sleep(Duration::from_millis(60)).await;
+    gate.add_permits(REL_TOTAL / REL_CHUNK + 4);
+    wait_for_bytes(&bytes_seen, 2 * REL_CHUNK as u64).await;
+    let parked_at = bytes_seen.load(Ordering::SeqCst);
+    assert!(
+        parked_at >= 2 * REL_CHUNK as u64 && (parked_at as usize) < REL_TOTAL,
+        "the cancel must land MID-FILE: the copy has to be parked past the first window and short of the last; parked_at={parked_at}"
+    );
     assert!(!op.is_finished(), "parked while paused");
     assert_eq!(
         log.lock().unwrap().releases,

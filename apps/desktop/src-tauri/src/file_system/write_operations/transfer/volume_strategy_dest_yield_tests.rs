@@ -30,9 +30,10 @@ use super::super::super::state::cancel_write_operation;
 use super::super::super::test_support::TestOperationGuard;
 use super::test_support::{
     AutoYieldTuningGuard, ForegroundBusyDest, PanicIfProbedDest, REL_CHUNK, REL_TOTAL, RelLog, ReleasingSource,
-    make_state, rel_expected_bytes,
+    make_state, park_holds_at, rel_expected_bytes,
 };
 use super::*;
+use crate::test_support::wait_until_async;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex as StdMutex};
@@ -99,25 +100,27 @@ async fn dest_yield_parks_before_next_write_then_resumes_byte_exact() {
                 .await
             });
 
-            // Let a few chunks stream past the floor, then mark the share busy. The
-            // in-memory dest writes fast, so raise EARLY to be sure we catch the
-            // upload mid-file.
-            tokio::time::sleep(Duration::from_millis(16)).await;
+            // Let the upload clear the floor, then mark the share busy. The in-memory
+            // dest writes fast, so gate on the floor itself to be sure we catch it
+            // mid-file.
+            wait_until_async(
+                Duration::from_secs(10),
+                "the upload to clear the min-progress floor",
+                || bytes_seen.load(Ordering::SeqCst) >= REL_CHUNK as u64,
+            )
+            .await;
             foreground.store(true, Ordering::SeqCst);
 
             // The upload must stop advancing (stand aside for the browsing) while
             // the share stays busy.
-            tokio::time::sleep(Duration::from_millis(30)).await;
-            let frozen = bytes_seen.load(Ordering::SeqCst);
+            let frozen = park_holds_at(
+                &bytes_seen,
+                "an upload yielding to the destination share must not advance while the share is busy",
+            )
+            .await;
             assert!(
                 frozen > 0 && (frozen as usize) < REL_TOTAL,
                 "the upload must have stood aside mid-file, short of completion; frozen={frozen}"
-            );
-            tokio::time::sleep(Duration::from_millis(40)).await;
-            assert_eq!(
-                bytes_seen.load(Ordering::SeqCst),
-                frozen,
-                "an upload yielding to the destination share must not advance while the share is busy"
             );
             assert!(
                 !op.is_finished(),
@@ -245,6 +248,7 @@ async fn dest_yield_cancel_while_parked_returns_cancelled_promptly() {
     let op = TestOperationGuard::register_state("test-dest-yield-cancel", make_state());
     let op_id = op.id().to_string();
     let state = Arc::clone(op.state());
+    let bytes_seen = Arc::new(AtomicU64::new(0));
 
     let local = tokio::task::LocalSet::new();
     local
@@ -252,8 +256,10 @@ async fn dest_yield_cancel_while_parked_returns_cancelled_promptly() {
             let source_drv = Arc::clone(&source);
             let dest_drv = Arc::clone(&dest);
             let state_drv = Arc::clone(&state);
+            let bytes_seen_drv = Arc::clone(&bytes_seen);
             let op = tokio::task::spawn_local(async move {
                 let state_ref = &state_drv;
+                let bytes_ref = &bytes_seen_drv;
                 copy_single_path(
                     &source_drv,
                     Path::new("/movie.bin"),
@@ -263,7 +269,8 @@ async fn dest_yield_cancel_while_parked_returns_cancelled_promptly() {
                     Path::new("movie.bin"),
                     state_ref,
                     &CreatedPaths::default(),
-                    &|_bytes_done, _total| {
+                    &|bytes_done, _total| {
+                        bytes_ref.store(bytes_done, Ordering::SeqCst);
                         if crate::file_system::write_operations::state::is_cancelled(&state_ref.intent) {
                             ControlFlow::Break(())
                         } else {
@@ -278,9 +285,18 @@ async fn dest_yield_cancel_while_parked_returns_cancelled_promptly() {
 
             // Let it stream past the floor, then hold the share busy so it stands
             // aside (a long cap keeps it parked for the whole test window).
-            tokio::time::sleep(Duration::from_millis(16)).await;
+            wait_until_async(
+                Duration::from_secs(10),
+                "the upload to clear the min-progress floor",
+                || bytes_seen.load(Ordering::SeqCst) >= REL_CHUNK as u64,
+            )
+            .await;
             foreground.store(true, Ordering::SeqCst);
-            tokio::time::sleep(Duration::from_millis(40)).await;
+            park_holds_at(
+                &bytes_seen,
+                "the upload must stand aside, not advance, while the share is busy",
+            )
+            .await;
             assert!(
                 !op.is_finished(),
                 "must be standing aside for the busy share before the cancel"
