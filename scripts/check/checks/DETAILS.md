@@ -137,7 +137,8 @@ CheckDefinition{
 ### Return values
 
 - `Success(message)` on success with a short, informative message
-- `CheckResult{Code: ResultWarning, Message: ...}` for a non-fatal warning (there is no `Warning()` constructor; build the struct directly, as the length and coverage scanners do)
+- `CheckResult{Code: ResultWarning, Message: ...}` for a non-fatal warning (there is no `Warning()` constructor; build
+  the struct directly, as the length and coverage scanners do)
 - `Skipped(reason)` when the check can't run (for example, missing config)
 - `CheckResult{}, error` on failure
 - `SuccessWithChanges(message)` when the check made local fixes (auto-fix mode); CI mode should still error
