@@ -9,10 +9,24 @@ use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
 use crate::indexing::stress_test_helpers::TestInstanceGuard;
 use crate::test_support::wait_until;
 
-/// The budget for the end-of-iteration hooks (tracker clear, queue drain) to land after a
-/// `flush_blocking`. `flush_blocking` replies from inside `process_message`, so the hooks run one
-/// loop iteration later; that gap is microseconds, and 1 s means a genuine regression.
-const DRAIN_LANDS_WITHIN: Duration = Duration::from_secs(1);
+/// The budget for the writer's `idle_epoch` to tick after a `flush_blocking`, that is, for the
+/// end-of-iteration hooks (hourglass clear, deferred-repair drain) to run. `flush_blocking` replies
+/// from inside `process_message`, so the hooks run a moment later in the same loop iteration; that
+/// gap is microseconds, and 1 s means a genuine regression.
+const WRITER_SETTLES_WITHIN: Duration = Duration::from_secs(1);
+
+/// Waits for `writer` to reach its next caught-up point, so a test can assert on what the
+/// end-of-iteration hooks did rather than polling for it. Read `before` with
+/// `writer.idle_epoch()` BEFORE sending the flush: the epoch only ticks on an empty queue, so an
+/// advance past it means every message sent before the flush is processed AND its hooks have run.
+#[track_caller]
+fn wait_for_writer_to_settle(writer: &IndexWriter, before: u64) {
+    wait_until(
+        WRITER_SETTLES_WITHIN,
+        "the writer to settle: its idle epoch ticks once the end-of-iteration hooks have run",
+        || writer.idle_epoch() > before,
+    );
+}
 
 // ── Search-generation gating (D7: search is single-volume / root-only) ──
 
@@ -267,6 +281,33 @@ fn spawn_and_shutdown() {
     let _ = result;
 }
 
+/// The idle epoch is the writer saying "I ran my caught-up hooks and have nothing left to do",
+/// which is what `flush_blocking` alone can't tell a caller (it replies from inside the message
+/// handler, before those hooks). A writer that has processed nothing has never settled, and every
+/// later catch-up ticks it again, so a waiter that reads it, sends work, and waits for it to move
+/// can't miss the transition.
+#[test]
+fn the_idle_epoch_ticks_every_time_the_writer_catches_up() {
+    let (db_path, _dir) = setup_db();
+    let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+    assert_eq!(
+        writer.idle_epoch(),
+        0,
+        "a writer that has processed nothing has never reached a caught-up point"
+    );
+
+    writer.flush_blocking().unwrap();
+    wait_for_writer_to_settle(&writer, 0);
+
+    // A second round ticks it again rather than latching at "settled once".
+    let after_first = writer.idle_epoch();
+    writer.flush_blocking().unwrap();
+    wait_for_writer_to_settle(&writer, after_first);
+
+    writer.shutdown();
+}
+
 /// A NON-root writer draining its queue routes its pending-sizes clear to ITS OWN
 /// volume's tracker (`get_pending_sizes_for(volume_id)`), never the root-only
 /// `get_pending_sizes`. Pre-fix the drain called the root-only lookup from every
@@ -302,11 +343,13 @@ fn non_root_writer_drain_clears_its_own_tracker_not_root() {
 
     // Drain the non-root writer. The end-of-iteration clear hook resolves the
     // tracker by volume id and clears its transient marks once the queue empties.
+    let before = writer.idle_epoch();
     writer.flush_blocking().unwrap();
-    wait_until(
-        DRAIN_LANDS_WITHIN,
-        "the non-root writer's drain to clear ITS OWN tracker (routed by volume id, not root-only)",
-        || !instance.tracker.is_pending("/aaa/bbb/ccc"),
+    wait_for_writer_to_settle(&writer, before);
+
+    assert!(
+        !instance.tracker.is_pending("/aaa/bbb/ccc"),
+        "the drain cleared ITS OWN tracker (routed by volume id, not root-only)"
     );
 
     writer.shutdown();
@@ -341,11 +384,13 @@ fn writer_drain_clears_transient_marks_but_preserves_held_roots() {
     );
 
     // Drain to empty: the end-of-iteration hook clears transient marks wholesale.
+    let before = writer.idle_epoch();
     writer.flush_blocking().unwrap();
-    wait_until(
-        DRAIN_LANDS_WITHIN,
-        "the drain to clear the transient mark once the writer queue emptied",
-        || !instance.tracker.is_pending("/aaa/bbb/ccc"),
+    wait_for_writer_to_settle(&writer, before);
+
+    assert!(
+        !instance.tracker.is_pending("/aaa/bbb/ccc"),
+        "the drain cleared the transient mark once the writer queue emptied"
     );
     assert!(
         instance.tracker.is_pending("/aaa/rescan"),
@@ -553,13 +598,16 @@ fn try_send_enqueues_and_tracks_queue_depth() {
         .expect("try_send on a live writer should not error");
     assert!(sent, "try_send into an empty channel should enqueue (Ok(true))");
 
-    // After a flush barrier the writer has processed every prior message,
-    // so the depth is back to 0.
+    // After a flush barrier the writer has processed every prior message, and once it
+    // settles the depth is back to 0.
+    let before = writer.idle_epoch();
     writer.flush_blocking().unwrap();
-    wait_until(
-        DRAIN_LANDS_WITHIN,
-        "queue_depth to return to 0 once the writer drains",
-        || writer.queue_depth() == 0,
+    wait_for_writer_to_settle(&writer, before);
+
+    assert_eq!(
+        writer.queue_depth(),
+        0,
+        "queue_depth returns to 0 once the writer drains"
     );
 
     writer.shutdown();
@@ -747,6 +795,7 @@ fn a_fatal_storage_error_stops_the_writer_and_trips_the_signal() {
             Arc::new(AtomicI64::new(2)),
             Arc::new(MutationTracker::new(true)),
             queue_depth_for_loop,
+            Arc::new(AtomicU64::new(0)),
             signal_for_loop,
         );
     });

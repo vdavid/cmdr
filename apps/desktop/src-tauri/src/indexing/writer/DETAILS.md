@@ -28,6 +28,45 @@ the async `flush()` let callers wait for all prior writes to commit.
 design. Rather than fight it with `BUSY_TIMEOUT` + retries, one thread owns the write connection and eliminates
 contention entirely.
 
+## The caught-up point and the idle epoch
+
+Every `writer_loop` iteration ends with two hooks that run only when `queue_depth == 0`: the pending-size hourglass
+clear (`pending_sizes::get_pending_sizes_for(volume_id).clear()`) and the deferred `dir_stats` repair drain (why that's
+the right moment: § "The dir_stats ledger"). Together they are the writer's caught-up point.
+
+`Flush` replies from INSIDE `process_message`, so `flush_blocking()` and `flush().await` return one hook run too early:
+every prior message is committed, but the hourglass is still up and the repair queue still full. No production caller
+minds, because every one of them uses a flush as a COMMIT barrier, which is exactly what the reply does guarantee:
+`../lifecycle/manager.rs` and `../lifecycle/network_scan.rs` flush so the walk reads the bumped `current_epoch` on its
+own connection, `../reconcile/local_reconcile.rs` and `../reconcile/reconciler.rs` so a read connection resolves
+freshly-assigned ids, `../lifecycle/scan_completion.rs` so the replay's snapshot includes the last batches. The
+hourglass lingering one iteration longer is invisible (nothing outside `../read/` reads it).
+
+❌ Don't close the gap by moving the `Flush` reply to the end of the iteration. It is a shipping backpressure barrier
+for all of those callers, and moving the reply changes what a flush means to every one of them.
+
+`idle_epoch: Arc<AtomicU64>` makes the caught-up point observable instead. `writer_loop` ticks it (`SeqCst`, so a
+reader that sees a new value is guaranteed to see the hooks' effects; `queue_depth`'s `Relaxed` is fine for a heuristic
+depth but would buy a rarer race here than the fixed sleep it replaces) at the very end of any iteration that reached
+the caught-up point. Monotonic on purpose: a waiter reads it, sends work, and waits for it to move past what it read,
+so it can't miss the transition the way a boolean "idle" flag would. `IndexWriter::idle_epoch()` is the reader,
+`#[cfg(test)]` because no production caller waits on it yet; un-gate it (and the field's `dead_code` allow) if one
+does.
+
+**The wait protocol**, wrapped as `tests::wait_for_writer_to_settle`: read the epoch, send the flush, then wait for it
+to advance. Because the epoch only ticks on an empty queue, an advance past a value read BEFORE the flush means every
+message sent before the flush is processed AND its hooks have run. That lets a test assert the hooks' effect outright
+instead of polling for it, so a regression fails on the assertion rather than on a timeout.
+
+**Decision: the tick is gated on `settled`, the OR of the two hooks' own `queue_depth` samples.** Each hook samples the
+depth for itself, so a send landing between the two samples can let one run and not the other; a third sample for the
+tick could miss both and hang a waiter forever. Reading the depth once for all three would be tidier but would change
+when the existing hooks run, which this signal deliberately doesn't touch.
+
+**Not `Notify`, not `watch`.** The writer is a `std::thread` and its tests are sync `#[test]`s, where
+`Notify::notified()` and `watch::changed()` are both async. A `Notify` would also lose the wakeup outright: the settle
+normally runs before the waiter parks.
+
 ## The shared ID counter and its self-heal
 
 All ID allocation goes through an `Arc<AtomicI64>` owned by `IndexWriter`, seeded from `IndexStore::get_next_id` at

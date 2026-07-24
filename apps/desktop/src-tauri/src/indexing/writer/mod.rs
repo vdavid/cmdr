@@ -471,6 +471,14 @@ pub struct IndexWriter {
     /// Incremented on each `send()`; the writer thread decrements it after each `recv()`.
     /// Used by the heartbeat (writer thread) to log queue pressure.
     queue_depth: Arc<AtomicUsize>,
+    /// Monotonic count of the iterations that reached the writer's caught-up point:
+    /// an empty queue, the pending-size hourglass cleared, and the deferred `dir_stats`
+    /// repairs drained. A `Flush` replies from inside the message handler, one hook run
+    /// BEFORE that point, so this counter is the only observable that means "the writer
+    /// has nothing left to do". See DETAILS § "The caught-up point". The writer thread holds
+    /// its own `Arc` clone and always ticks it; only the reader here is test-gated.
+    #[cfg_attr(not(test), allow(dead_code, reason = "test-only observable"))]
+    idle_epoch: Arc<AtomicU64>,
     /// The per-volume fatal-storage-failure signal. The writer thread trips this on
     /// the first fatal DB error (`SQLITE_IOERR` / corruption / full / read-only) and
     /// then exits, rather than logging and retrying forever. Shared with the live
@@ -539,6 +547,8 @@ impl IndexWriter {
         let mutation_tracker_clone = Arc::clone(&mutation_tracker);
         let queue_depth = Arc::new(AtomicUsize::new(0));
         let queue_depth_clone = Arc::clone(&queue_depth);
+        let idle_epoch = Arc::new(AtomicU64::new(0));
+        let idle_epoch_clone = Arc::clone(&idle_epoch);
         let failure_signal = Arc::new(IndexFailureSignal::new());
         let failure_signal_clone = Arc::clone(&failure_signal);
 
@@ -556,6 +566,7 @@ impl IndexWriter {
                     next_id_clone,
                     mutation_tracker_clone,
                     queue_depth_clone,
+                    idle_epoch_clone,
                     failure_signal_clone,
                 )
             })
@@ -569,6 +580,7 @@ impl IndexWriter {
             next_id,
             mutation_tracker,
             queue_depth,
+            idle_epoch,
             failure_signal,
         })
     }
@@ -646,6 +658,18 @@ impl IndexWriter {
     /// passes while the writer is catching up on an insert backlog.
     pub fn queue_depth(&self) -> usize {
         self.queue_depth.load(Ordering::Relaxed)
+    }
+
+    /// How many times the writer has reached its caught-up point (see the `idle_epoch`
+    /// field). Monotonic, so a waiter can read it, send work, and wait for it to move
+    /// past the value it read without any chance of missing the transition.
+    ///
+    /// `flush_blocking` alone does NOT imply a tick: the flush replies from inside the
+    /// message handler, and the hourglass clear plus the repair drain run afterwards.
+    /// Read this before the flush and wait for it to advance to observe those.
+    #[cfg(test)]
+    pub(crate) fn idle_epoch(&self) -> u64 {
+        self.idle_epoch.load(Ordering::SeqCst)
     }
 
     /// Non-blocking send. Unlike `send`, never parks the caller when the channel
@@ -996,6 +1020,7 @@ fn writer_loop(
     next_id: Arc<AtomicI64>,
     mutation_tracker: Arc<MutationTracker>,
     queue_depth: Arc<AtomicUsize>,
+    idle_epoch: Arc<AtomicU64>,
     failure_signal: Arc<IndexFailureSignal>,
 ) {
     log::debug!("Writer: thread started");
@@ -1117,6 +1142,12 @@ fn writer_loop(
         stats.maybe_log_summary();
         probe.maybe_emit_heartbeat(queue_depth.load(Ordering::Relaxed));
 
+        // Set by either caught-up hook below, and the trigger for the `idle_epoch` tick
+        // that closes the iteration. Each hook samples `queue_depth` for itself, so a
+        // send landing between the two samples can let one run and not the other; the
+        // epoch ticks whenever either of them saw an empty queue.
+        let mut settled = false;
+
         // Pending-size hourglass: once the writer has fully caught up (no more
         // queued work), every directory's `dir_stats` reflects all known
         // changes, so the transient "size updating" marks are correct to clear
@@ -1127,10 +1158,11 @@ fn writer_loop(
         // a not-yet-updated size. Route to THIS volume's tracker: a root-only
         // `get_pending_sizes()` from a non-root writer would wipe root's hourglass
         // and never clear its own. See `indexing/read/pending_sizes.rs`.
-        if queue_depth.load(Ordering::Relaxed) == 0
-            && let Some(tracker) = pending_sizes::get_pending_sizes_for(&volume_id)
-        {
-            tracker.clear();
+        if queue_depth.load(Ordering::Relaxed) == 0 {
+            settled = true;
+            if let Some(tracker) = pending_sizes::get_pending_sizes_for(&volume_id) {
+                tracker.clear();
+            }
         }
 
         // Drain deferred `dir_stats` repairs at the same caught-up point, and for
@@ -1141,8 +1173,21 @@ fn writer_loop(
         // open `BeginTransaction` batch, where the tree is only half written: a
         // repair there would roll ancestors up from a partial state and then
         // dequeue the id, baking that half-state in.
-        if queue_depth.load(Ordering::Relaxed) == 0 && conn.is_autocommit() && !repairs.is_empty() {
-            repairs.drain(&conn);
+        if queue_depth.load(Ordering::Relaxed) == 0 {
+            settled = true;
+            if conn.is_autocommit() && !repairs.is_empty() {
+                repairs.drain(&conn);
+            }
+        }
+
+        // The writer is now genuinely caught up for this iteration, so publish it. This
+        // is the moment `flush_blocking` does NOT give a caller: the flush reply goes
+        // out from inside `process_message`, before the two hooks above. `SeqCst` (not
+        // `Relaxed`, unlike the heuristic `queue_depth`) so a reader that sees the tick
+        // is guaranteed to see the hooks' effects too — a `Relaxed` tick would buy a
+        // rarer race than the fixed sleep it replaces.
+        if settled {
+            idle_epoch.fetch_add(1, Ordering::SeqCst);
         }
     }
 

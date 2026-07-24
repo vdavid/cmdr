@@ -11,13 +11,13 @@ propagation, and the search-feeding generation bump. Other areas point here.
 - **entries.rs**: entry handlers (insert/upsert/move/delete/truncate). **delta.rs**: `propagate_delta_by_id` +
   `propagate_min_subtree_epoch` + `propagate_recursive_has_symlinks`. **aggregation.rs**: `Compute*`/`Backfill`
   delegation to `../aggregator/` + `SkipSeverity`. **repair.rs**: `repair_dir_stats_upward`. **deferred_repair.rs**:
-  the `DeferredRepairs` queue. **maintenance.rs**: incremental vacuum + WAL checkpoint. **wait_probe.rs**: per-thread
-  writer-queue wait accounting (read by reconcile).
+  the `DeferredRepairs` queue. **maintenance.rs**: incremental vacuum + WAL checkpoint. **wait_probe.rs**: writer-queue
+  wait accounting (read by reconcile).
 
 ## Must-knows (all hold PER volume id)
 
-- **Bounded `sync_channel` (20K); a full channel blocks the sender (backpressure).** The writer owns the WRITE
-  connection; reads go through `ReadPool`, never here. Priority: `UpdateDirStats` before `InsertEntries`.
+- **Bounded `sync_channel` (20K); a full channel blocks the sender.** The writer owns the WRITE connection; reads go
+  through `ReadPool`, never here. Priority: `UpdateDirStats` before `InsertEntries`.
 - **The writer owns the shared `Arc<AtomicI64>` ID counter; never allocate from `MAX(id)`** (uncommitted inserts sit in
   the channel, so a read sees a stale max and double-assigns). `TruncateData` resets it to 2. A drifted counter
   SELF-HEALS on a PK conflict: extended `1555` → `fetch_max` from the table + one retry (`entries.rs`). ❌ Never extend
@@ -40,11 +40,12 @@ propagation, and the search-feeding generation bump. Other areas point here.
   partial pass must see empty maps and no-op), never bumps the generation, writes depth ≤ 3 + hot dirs.
 - **`WRITER_GENERATION` bumps only for the search-feeding (root) writer** (`MutationTracker`), so an SMB/MTP write never
   thrashes the root search reload. Meta-only messages (`MarkDirsListed`, `UpdateMeta`, `BumpCurrentEpoch`) never bump it.
-- **Tests here must never assert on process-global state (`WRITER_GENERATION`, `PENDING_SIZES`) across a before/after
-  window.** Every `IndexWriter::spawn()` in the binary is a ROOT writer that bumps the generation and clears the root
-  tracker, so under `cargo test` (threads in one process) a global read flakes and can poison a shared test mutex. Use a
-  per-writer probe (`global_generation_bumps`) or a per-volume `IndexInstance` (`stress_test_helpers::TestInstanceGuard`). See DETAILS §
-  "Test isolation".
+- **Tests must never assert on process-global state (`WRITER_GENERATION`, `PENDING_SIZES`) across a before/after
+  window**: every `IndexWriter::spawn()` is a ROOT writer that bumps the generation and clears the root tracker, so
+  under `cargo test` a global read flakes and can poison a shared test mutex. Use a per-writer probe
+  (`global_generation_bumps`) or a per-volume `IndexInstance` (`TestInstanceGuard`). DETAILS § "Test isolation".
+- **`flush_blocking` ≠ settled**: it replies from inside the handler, before the end-of-iteration hourglass clear and
+  repair drain. Wait on `idle_epoch()`; ❌ never move the reply.
 
-Single-writer architecture, honest sizes, the ledger, epochs, accumulation, partial aggregation, the heal, and
-maintenance: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Everything above in depth, plus the caught-up point, partial aggregation, the heal, and maintenance: `DETAILS.md`. Read
+it before any non-trivial work here: editing, planning, reorganizing, or advising.
