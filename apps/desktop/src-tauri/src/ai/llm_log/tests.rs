@@ -244,8 +244,8 @@ fn an_unwritable_root_never_panics_the_caller() {
     let ctx = LlmLogContext::agent_chat(9);
     let handle = record_request(&bad_root, &ctx, sample_request_info("hi"), json!({}));
     handle.log_response(ResponseInfo::default(), json!({}));
-    // Give the detached writer a moment; the assertion is simply that nothing above panicked.
-    std::thread::sleep(Duration::from_millis(50));
+    // The assertion is that neither call above panicked, so there is nothing further to wait for:
+    // the detached writer's own failure is contained inside it either way.
 }
 
 // ── Enabled gate (mutates the process-global ENABLED; nextest isolates each test) ─

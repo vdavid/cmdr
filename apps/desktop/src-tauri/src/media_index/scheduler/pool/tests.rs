@@ -114,6 +114,8 @@ impl VisionBackend for RacyBackend {
             barrier.wait();
         }
         if !self.delay.is_zero() {
+            // allowed-test-sleep: this stub fakes analysis latency, which is what keeps workers
+            // busy long enough for the pool's queueing behavior to be observable
             std::thread::sleep(self.delay);
         }
         let result = self.inner.analyze_media(input, want_vision, want_clip);

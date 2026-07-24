@@ -568,6 +568,8 @@ impl crate::media_index::backend::VisionBackend for ParallelProbe {
         let cur = self.in_flight.fetch_add(1, Ordering::SeqCst) + 1;
         self.peak.fetch_max(cur, Ordering::SeqCst);
         *self.calls.lock_ignore_poison().entry(input.path.clone()).or_insert(0) += 1;
+        // allowed-test-sleep: this probe fakes analysis latency, and the in-flight peak the tests
+        // assert on only exists while calls actually overlap
         std::thread::sleep(self.delay);
         let r = self.inner.analyze_media(input, want_vision, want_clip);
         self.in_flight.fetch_sub(1, Ordering::SeqCst);
@@ -854,6 +856,8 @@ impl super::fetch::ByteFetcher for FetchProbe {
         use std::sync::atomic::Ordering;
         let cur = self.in_flight.fetch_add(1, Ordering::SeqCst) + 1;
         self.peak.fetch_max(cur, Ordering::SeqCst);
+        // allowed-test-sleep: this probe fakes fetch latency, and the in-flight peak the tests
+        // assert on only exists while fetches actually overlap
         std::thread::sleep(self.delay);
         let r = self.inner.fetch(os_path, size_hint, timeout);
         self.in_flight.fetch_sub(1, Ordering::SeqCst);

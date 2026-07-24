@@ -167,7 +167,8 @@ mod tests {
             g2.background_yield_point().await;
         });
 
-        // Give the waiter a moment to park, then confirm it's still parked.
+        // allowed-test-sleep: negative assertion. The waiter must still be parked, so the window is
+        // the evidence; a "still blocked" state has no event to wait on
         tokio::time::sleep(Duration::from_millis(50)).await;
         assert!(!waiter.is_finished(), "background must park while foreground pends");
 
@@ -190,9 +191,12 @@ mod tests {
             g2.background_yield_point().await;
         });
 
+        // allowed-test-sleep: lets the waiter park before the first guard drops, so the second
+        // window below is measuring the remaining guard rather than a waiter that never started
         tokio::time::sleep(Duration::from_millis(50)).await;
         drop(g_a);
-        // One still held: still parked.
+        // allowed-test-sleep: negative assertion. One guard is still held, so the waiter must stay
+        // parked, and the window is the only evidence of that
         tokio::time::sleep(Duration::from_millis(50)).await;
         assert!(!waiter.is_finished(), "still parked while the second op pends");
 

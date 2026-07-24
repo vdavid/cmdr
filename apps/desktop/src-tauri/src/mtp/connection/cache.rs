@@ -158,7 +158,8 @@ mod tests {
         // First event should be allowed
         assert!(debouncer.should_emit("device-1"));
 
-        // Wait for debounce period to elapse
+        // allowed-test-sleep: outliving the 10 ms debounce window is the subject; `should_emit`
+        // compares against the wall clock, so only real elapsed time reopens it
         std::thread::sleep(Duration::from_millis(20));
 
         // Event after timeout should be allowed

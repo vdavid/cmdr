@@ -161,6 +161,8 @@ mod tests {
                     let now = budget.in_use();
                     peak.fetch_max(now, Ordering::SeqCst);
                     assert!(now <= capacity, "in_use {now} exceeded capacity {capacity}");
+                    // allowed-test-sleep: holding the bytes for a beat is what creates the
+                    // contention this test needs; releasing instantly, nobody ever overlaps
                     thread::sleep(Duration::from_micros(50));
                     budget.release(bytes);
                 }
@@ -191,6 +193,8 @@ mod tests {
             d2.store(true, Ordering::SeqCst);
             b2.release(250);
         });
+        // allowed-test-sleep: negative assertion. The waiter must still be blocked, so the window
+        // is the evidence; there is no "it stayed blocked" event to wait on
         thread::sleep(Duration::from_millis(20));
         assert!(
             !done.load(Ordering::SeqCst),

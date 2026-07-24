@@ -55,8 +55,9 @@ async fn handler(State(state): State<ServerState>) -> Sse<BoxStream<'static, Res
             if idx >= frames.len() {
                 return None;
             }
-            // Small delay forces genai's SSE parser to receive each frame separately
-            // rather than as one big body.
+            // allowed-test-sleep: the gap between frames IS the fixture. Emitting them back to back
+            // lets the transport coalesce them into one body, and the parser's incremental path,
+            // which is what these tests cover, never runs.
             tokio::time::sleep(Duration::from_millis(15)).await;
             let event = match &frames[idx] {
                 Frame::Delta(text) => {

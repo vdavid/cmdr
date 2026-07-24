@@ -127,6 +127,8 @@ mod tests {
         // gets a strictly later timestamp than `mid` (otherwise the test is flaky
         // on machines where SystemTime resolution is coarse enough that two
         // back-to-back calls land in the same millisecond).
+        // allowed-test-sleep: crossing a millisecond boundary is the subject. `record` stamps with
+        // the wall clock, so only elapsed real time can make `l2` strictly later than `mid`
         std::thread::sleep(std::time::Duration::from_millis(2));
         record("l2", "v", "/p", "err");
         let recent = snapshot_since(mid);

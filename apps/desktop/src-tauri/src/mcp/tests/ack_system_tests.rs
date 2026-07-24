@@ -125,6 +125,8 @@ fn generation_gate_stays_false_when_no_push_happens() {
     let start = Instant::now();
     while start.elapsed() < Duration::from_millis(50) {
         assert!(store.get_generation() <= pre_gen);
+        // allowed-test-sleep: negative assertion. Nothing is supposed to happen, so the 50 ms
+        // window is the test and this is only how often it re-checks
         std::thread::sleep(Duration::from_millis(5));
     }
 }

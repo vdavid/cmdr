@@ -26,6 +26,7 @@ use crate::agent::llm::types::{
     ProviderTag, ToolId,
 };
 use crate::agent::store;
+use crate::test_support::wait_until_async;
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -242,6 +243,8 @@ struct SleepingDispatcher {
 impl ToolDispatcher for SleepingDispatcher {
     fn dispatch<'a>(&'a self, call: &'a AgentToolCall) -> BoxFuture<'a, ToolDispatchOutcome> {
         async move {
+            // allowed-test-sleep: this stub's whole job is to burn wall-time budget, and under
+            // `start_paused` the runtime advances the clock rather than waiting
             tokio::time::sleep(Duration::from_secs(self.secs)).await;
             ToolDispatchOutcome {
                 result: AgentToolResult {
@@ -295,13 +298,13 @@ async fn a_second_send_queues_and_emits_queued() {
     let waiter = tokio::spawn(async move {
         let _guard = locks2.acquire(7, &tx2).await;
     });
-    tokio::task::yield_now().await;
-    tokio::time::sleep(Duration::from_millis(5)).await;
-    assert_eq!(
-        drain(&mut rx),
-        vec![AgentChatEvent::Queued],
-        "the queued send signals Queued"
-    );
+    let mut events = Vec::new();
+    wait_until_async(Duration::from_secs(2), "the queued send to signal Queued", || {
+        events.extend(drain(&mut rx));
+        !events.is_empty()
+    })
+    .await;
+    assert_eq!(events, vec![AgentChatEvent::Queued], "the queued send signals Queued");
     assert!(!waiter.is_finished(), "the second send waits for the lock");
 
     drop(first);
