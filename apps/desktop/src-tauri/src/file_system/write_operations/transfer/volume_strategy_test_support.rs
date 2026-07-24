@@ -24,35 +24,13 @@ pub(super) fn make_state() -> Arc<WriteOperationState> {
     Arc::new(WriteOperationState::new(Duration::from_millis(200)))
 }
 
-// ========================================================================
-// The one sanctioned wall-clock window in these suites.
-// ========================================================================
-
-/// How long a "the copy is parked" window runs. Long enough that a running copy
-/// would have advanced several chunks inside it, short enough to keep the suite
-/// quick.
-pub(super) const PARK_WINDOW: Duration = Duration::from_millis(40);
-
-/// Asserts a park is HOLDING: waits one [`PARK_WINDOW`] for the in-flight chunk
-/// to drain into the park, samples the copy's byte offset, then holds a second
-/// window and asserts the offset never moved. Returns the frozen offset.
-///
-/// "Nothing happened" has no signal to wait on, so a window is the only evidence
-/// available. Every frozen-offset check in the `volume_strategy` suites routes
-/// through here, which is why these are the only two fixed waits left in them:
-/// keep it that way rather than sprinkling `sleep` back into the tests.
+/// Byte-offset flavor of the shared [`super::super::super::test_support::park_holds_at`],
+/// so the copy suites can hand it an `AtomicU64` directly.
 pub(super) async fn park_holds_at(seen: &std::sync::atomic::AtomicU64, what: &str) -> u64 {
-    // allowed-test-sleep: lets the chunk that was already past its checkpoint finish, so the
-    // sample below is the parked offset rather than a mid-write one. No signal marks "the copy
-    // reached its park".
-    tokio::time::sleep(PARK_WINDOW).await;
-    let frozen = seen.load(Ordering::SeqCst);
-    // allowed-test-sleep: the negative assertion itself. A running copy would advance several
-    // chunks across this window, so a stable offset is what proves the park is holding.
-    tokio::time::sleep(PARK_WINDOW).await;
-    assert_eq!(seen.load(Ordering::SeqCst), frozen, "{what}");
-    frozen
+    super::super::super::test_support::park_holds_at(|| seen.load(Ordering::SeqCst), what).await
 }
+
+pub(super) use super::super::super::test_support::PARK_WINDOW;
 
 // ========================================================================
 // Gated chunked source (mid-file pause): a multi-chunk volume copy whose

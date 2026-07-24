@@ -18,9 +18,11 @@
 //!   completion, and a cancel while paused unblocks and ends as Cancelled.
 
 use super::super::super::state::{OperationIntent, register_operation_status, unregister_operation_status};
+use super::super::super::test_support::park_holds_at;
 use super::super::super::types::{CollectorEventSink, WriteOperationError, WriteOperationType};
 use super::test_support::{CallLog, copy_config, install_state, make_state, paths, unique_op_id};
 use super::{PostLoopIntent, TransferContext, TransferOutcome, drive_transfer_serial_sync};
+use crate::test_support::wait_until_async;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -513,9 +515,13 @@ fn sync_driver_status_cache_matches_emitted_progress() {
 // The gate sits immediately AFTER the loop-top `is_cancelled` check. These
 // tests prove the sync driver parks on its condvar (running on a real OS thread
 // under `spawn_blocking`, as in production), resumes to completion, and that a
-// cancel while paused unblocks the condvar and ends the loop as Cancelled. Each
-// source closure throttles (an artificial per-file sleep) so a pause from the
-// controlling task lands mid-loop deterministically.
+// cancel while paused unblocks the condvar and ends the loop as Cancelled.
+//
+// A per-file channel gates the loop position deterministically: the transfer
+// closure bumps `entered`, then blocks on `rx.recv()` for the test's token, so
+// `entered == k` proves file k already cleared the loop-top pause check (which runs
+// BEFORE the closure). The test sends exactly the tokens it wants consumed; a parked
+// loop consumes none.
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn sync_driver_parks_while_paused_then_resumes_to_completion() {
@@ -528,10 +534,13 @@ async fn sync_driver_parks_while_paused_then_resumes_to_completion() {
 
     let sources = paths(&["/a", "/b", "/c", "/d"]);
     let transferred = Arc::new(AtomicUsize::new(0));
+    let entered = Arc::new(AtomicUsize::new(0));
+    let (tx, rx) = std::sync::mpsc::channel::<()>();
 
     let state_drv = Arc::clone(&state);
     let op = op_id.clone();
     let transferred_drv = Arc::clone(&transferred);
+    let entered_drv = Arc::clone(&entered);
     let driver = tokio::task::spawn_blocking(move || {
         let sink = CollectorEventSink::new();
         drive_transfer_serial_sync(
@@ -546,29 +555,39 @@ async fn sync_driver_parks_while_paused_then_resumes_to_completion() {
             &HashSet::new(),
             &copy_config(),
             |_ctx: TransferContext<'_>| {
-                // Synchronous artificial throttle.
-                std::thread::sleep(Duration::from_millis(40));
+                // Enter (past the pause check), then block for the test's token.
+                entered_drv.fetch_add(1, Ordering::SeqCst);
+                let _ = rx.recv();
                 transferred_drv.fetch_add(1, Ordering::SeqCst);
                 Ok(TransferOutcome::Transferred { bytes: 0 })
             },
         )
     });
 
-    tokio::time::sleep(Duration::from_millis(60)).await;
+    // Let /a through, wait for /b to clear the pause check, then pause. /b (past
+    // its check) completes on the next token; /c hits the check and PARKS.
+    tx.send(()).unwrap();
+    wait_until_async(Duration::from_secs(5), "file /b to clear the pause check", || {
+        entered.load(Ordering::SeqCst) == 2
+    })
+    .await;
     state.pause_gate.pause();
-    let done_at_pause = transferred.load(Ordering::SeqCst);
-    assert!((1..4).contains(&done_at_pause));
-
-    // Let the in-flight file drain (mid-file pause is v2), then assert steady.
-    tokio::time::sleep(Duration::from_millis(120)).await;
-    let steady = transferred.load(Ordering::SeqCst);
-    tokio::time::sleep(Duration::from_millis(200)).await;
-    assert_eq!(
-        transferred.load(Ordering::SeqCst),
-        steady,
-        "sync driver must not advance once the in-flight file drains and the gate parks"
-    );
-    assert!(steady < 4, "sync driver parked short of completion while paused");
+    // Fill the token budget WIDE OPEN. /b (past its check) drains; /c parks on the
+    // pause and leaves its token unread. With tokens to spare, a frozen count can
+    // only mean the pause is holding, never a starved channel.
+    tx.send(()).unwrap();
+    tx.send(()).unwrap();
+    tx.send(()).unwrap();
+    wait_until_async(Duration::from_secs(5), "the in-flight file to drain", || {
+        transferred.load(Ordering::SeqCst) == 2
+    })
+    .await;
+    let steady = park_holds_at(
+        || transferred.load(Ordering::SeqCst) as u64,
+        "sync driver must not advance once the in-flight file drains and the gate parks",
+    )
+    .await;
+    assert_eq!(steady, 2, "sync driver parked short of completion while paused");
     assert!(!driver.is_finished(), "sync driver parked on the condvar while paused");
 
     state.pause_gate.resume();
@@ -590,10 +609,13 @@ async fn sync_driver_cancel_while_paused_unblocks_and_cancels() {
 
     let sources = paths(&["/a", "/b", "/c", "/d"]);
     let transferred = Arc::new(AtomicUsize::new(0));
+    let entered = Arc::new(AtomicUsize::new(0));
+    let (tx, rx) = std::sync::mpsc::channel::<()>();
 
     let state_drv = Arc::clone(&state);
     let op = op_id.clone();
     let transferred_drv = Arc::clone(&transferred);
+    let entered_drv = Arc::clone(&entered);
     let driver = tokio::task::spawn_blocking(move || {
         let sink = CollectorEventSink::new();
         drive_transfer_serial_sync(
@@ -608,16 +630,36 @@ async fn sync_driver_cancel_while_paused_unblocks_and_cancels() {
             &HashSet::new(),
             &copy_config(),
             |_ctx: TransferContext<'_>| {
-                std::thread::sleep(Duration::from_millis(40));
+                entered_drv.fetch_add(1, Ordering::SeqCst);
+                let _ = rx.recv();
                 transferred_drv.fetch_add(1, Ordering::SeqCst);
                 Ok(TransferOutcome::Transferred { bytes: 0 })
             },
         )
     });
 
-    tokio::time::sleep(Duration::from_millis(60)).await;
+    // Send tokens as fast as files enter, so the loop advances until it PARKS on
+    // the pause; then confirm it's genuinely parked before cancelling.
+    tx.send(()).unwrap();
+    wait_until_async(Duration::from_secs(5), "file /b to clear the pause check", || {
+        entered.load(Ordering::SeqCst) == 2
+    })
+    .await;
     state.pause_gate.pause();
-    tokio::time::sleep(Duration::from_millis(80)).await;
+    // Keep the token budget open so the ONLY thing that can stop the loop is the
+    // pause, not a starved channel.
+    tx.send(()).unwrap();
+    tx.send(()).unwrap();
+    tx.send(()).unwrap();
+    wait_until_async(Duration::from_secs(5), "the in-flight file to drain", || {
+        transferred.load(Ordering::SeqCst) == 2
+    })
+    .await;
+    park_holds_at(
+        || transferred.load(Ordering::SeqCst) as u64,
+        "the sync driver must park on the pause even with tokens available",
+    )
+    .await;
 
     super::super::super::state::cancel_write_operation(&op_id, false);
 

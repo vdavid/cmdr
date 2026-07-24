@@ -24,12 +24,14 @@
 //!   to completion, and a cancel while paused unblocks and ends as Cancelled.
 
 use super::super::super::state::{OperationIntent, register_operation_status, unregister_operation_status};
+use super::super::super::test_support::park_holds_at;
 use super::super::super::types::{CollectorEventSink, WriteOperationError, WriteOperationType};
 use super::test_support::{CallLog, copy_config, install_state, make_state, paths, unique_op_id};
 use super::{
     ConflictDecision, ConflictDecisionInput, PostLoopIntent, TransferContext, TransferOutcome,
     drive_transfer_serial_async,
 };
+use crate::test_support::wait_until_async;
 use std::collections::HashSet;
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -954,9 +956,13 @@ async fn driver_future_is_send_across_spawn() {
 // tests prove: (1) while paused, no further sources transfer and no further
 // progress fires; (2) resume continues to completion; (3) a cancel while paused
 // unblocks the gate and ends the loop as Cancelled; (4) pause never perturbs
-// `OperationIntent` (it stays Running). Each source closure throttles (an
-// artificial per-file sleep) so a pause from the controlling task lands mid-loop
-// deterministically.
+// `OperationIntent` (it stays Running).
+//
+// A per-file `Semaphore` gate makes the pause land mid-loop deterministically: the
+// transfer closure bumps `entered` and then blocks on a permit, so `entered == k`
+// proves file k already cleared the loop-top pause check (the check runs BEFORE the
+// closure). The test grants exactly the permits it wants consumed; a parked loop
+// consumes none.
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn async_driver_parks_while_paused_then_resumes_to_completion() {
@@ -967,14 +973,20 @@ async fn async_driver_parks_while_paused_then_resumes_to_completion() {
 
     let sources = paths(&["/a", "/b", "/c", "/d"]);
     let transferred = Arc::new(AtomicUsize::new(0));
+    let entered = Arc::new(AtomicUsize::new(0));
+    let gate = Arc::new(tokio::sync::Semaphore::new(0));
 
     let state_drv = Arc::clone(&state);
     let op = op_id.clone();
     let transferred_drv = Arc::clone(&transferred);
+    let entered_drv = Arc::clone(&entered);
+    let gate_drv = Arc::clone(&gate);
     let srcs = sources.clone();
     let driver = tokio::spawn(async move {
         let sink = CollectorEventSink::new();
         let transferred_ref = &transferred_drv;
+        let entered_ref = &entered_drv;
+        let gate_ref = &gate_drv;
         drive_transfer_serial_async(
             &sink,
             &state_drv,
@@ -991,9 +1003,12 @@ async fn async_driver_parks_while_paused_then_resumes_to_completion() {
             |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> { Box::pin(async { unreachable!() }) },
             |_ctx: TransferContext<'_>| -> TransferFut<'_> {
                 let t = Arc::clone(transferred_ref);
+                let e = Arc::clone(entered_ref);
+                let g = Arc::clone(gate_ref);
                 Box::pin(async move {
-                    // Artificial per-file throttle so the pause lands mid-loop.
-                    tokio::time::sleep(Duration::from_millis(40)).await;
+                    // Enter (past the pause check), then block for the test's permit.
+                    e.fetch_add(1, Ordering::SeqCst);
+                    g.acquire().await.expect("gate open").forget();
                     t.fetch_add(1, Ordering::SeqCst);
                     Ok(TransferOutcome::Transferred { bytes: 0 })
                 })
@@ -1002,30 +1017,28 @@ async fn async_driver_parks_while_paused_then_resumes_to_completion() {
         .await
     });
 
-    // Let one or two files transfer, then pause.
-    tokio::time::sleep(Duration::from_millis(60)).await;
+    // Let /a through, then wait for /b to clear the pause check and block on the
+    // gate. Now the pause is guaranteed to land while /b is mid-loop.
+    gate.add_permits(1);
+    wait_until_async(Duration::from_secs(5), "file /b to clear the pause check", || {
+        entered.load(Ordering::SeqCst) == 2
+    })
+    .await;
     state.pause_gate.pause();
-    let done_at_pause = transferred.load(Ordering::SeqCst);
-    assert!(
-        done_at_pause >= 1,
-        "at least one file should have transferred pre-pause"
-    );
-    assert!(done_at_pause < 4, "not all files should be done at pause time");
 
-    // The gate parks BETWEEN files, so an already-in-flight file (mid-throttle
-    // when pause landed) may still complete; mid-file pause is v2. After it
-    // drains, the count must hold steady at the next-file boundary. Sample, wait
-    // past several throttle intervals, sample again: the two must match (steady
-    // state reached) and still be short of completion.
-    tokio::time::sleep(Duration::from_millis(120)).await;
-    let steady = transferred.load(Ordering::SeqCst);
-    tokio::time::sleep(Duration::from_millis(200)).await;
-    assert_eq!(
-        transferred.load(Ordering::SeqCst),
-        steady,
-        "no further sources may transfer once the in-flight file drains and the gate parks"
-    );
-    assert!(steady < 4, "the op must be parked short of completion while paused");
+    // Open the budget wide. /b (already past its check) completes; /c hits the
+    // pause check and PARKS, consuming no permit. The count settles at 2.
+    gate.add_permits(10);
+    wait_until_async(Duration::from_secs(5), "the in-flight file to drain", || {
+        transferred.load(Ordering::SeqCst) == 2
+    })
+    .await;
+    let steady = park_holds_at(
+        || transferred.load(Ordering::SeqCst) as u64,
+        "no further sources may transfer once the in-flight file drains and the gate parks",
+    )
+    .await;
+    assert_eq!(steady, 2, "the op must be parked short of completion while paused");
     assert!(!driver.is_finished(), "the driver must still be parked while paused");
     // Pause is orthogonal to OperationIntent.
     assert_eq!(
@@ -1058,14 +1071,20 @@ async fn async_driver_cancel_while_paused_unblocks_and_cancels() {
 
     let sources = paths(&["/a", "/b", "/c", "/d"]);
     let transferred = Arc::new(AtomicUsize::new(0));
+    let entered = Arc::new(AtomicUsize::new(0));
+    let gate = Arc::new(tokio::sync::Semaphore::new(0));
 
     let state_drv = Arc::clone(&state);
     let op = op_id.clone();
     let transferred_drv = Arc::clone(&transferred);
+    let entered_drv = Arc::clone(&entered);
+    let gate_drv = Arc::clone(&gate);
     let srcs = sources.clone();
     let driver = tokio::spawn(async move {
         let sink = CollectorEventSink::new();
         let transferred_ref = &transferred_drv;
+        let entered_ref = &entered_drv;
+        let gate_ref = &gate_drv;
         drive_transfer_serial_async(
             &sink,
             &state_drv,
@@ -1082,8 +1101,11 @@ async fn async_driver_cancel_while_paused_unblocks_and_cancels() {
             |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> { Box::pin(async { unreachable!() }) },
             |_ctx: TransferContext<'_>| -> TransferFut<'_> {
                 let t = Arc::clone(transferred_ref);
+                let e = Arc::clone(entered_ref);
+                let g = Arc::clone(gate_ref);
                 Box::pin(async move {
-                    tokio::time::sleep(Duration::from_millis(40)).await;
+                    e.fetch_add(1, Ordering::SeqCst);
+                    g.acquire().await.expect("gate open").forget();
                     t.fetch_add(1, Ordering::SeqCst);
                     Ok(TransferOutcome::Transferred { bytes: 0 })
                 })
@@ -1092,10 +1114,24 @@ async fn async_driver_cancel_while_paused_unblocks_and_cancels() {
         .await
     });
 
-    tokio::time::sleep(Duration::from_millis(60)).await;
+    // Let /a through, wait for /b to clear the pause check, then pause. /b (past
+    // its check) completes; /c parks.
+    gate.add_permits(1);
+    wait_until_async(Duration::from_secs(5), "file /b to clear the pause check", || {
+        entered.load(Ordering::SeqCst) == 2
+    })
+    .await;
     state.pause_gate.pause();
-    tokio::time::sleep(Duration::from_millis(80)).await;
-    let done_at_cancel = transferred.load(Ordering::SeqCst);
+    gate.add_permits(10);
+    wait_until_async(Duration::from_secs(5), "the in-flight file to drain", || {
+        transferred.load(Ordering::SeqCst) == 2
+    })
+    .await;
+    let done_at_cancel = park_holds_at(
+        || transferred.load(Ordering::SeqCst) as u64,
+        "no further sources may transfer while paused",
+    )
+    .await as usize;
     assert!(done_at_cancel < 4, "not finished while paused");
 
     // Cancel while paused: the production cancel path flips intent AND wakes the
@@ -1110,9 +1146,14 @@ async fn async_driver_cancel_while_paused_unblocks_and_cancels() {
         matches!(outcome.intent, PostLoopIntent::Cancelled),
         "cancel wins over pause"
     );
-    // Already-copied files are kept (the driver returns the count it reached);
-    // no further sources transferred after the cancel.
-    assert!(transferred.load(Ordering::SeqCst) <= done_at_cancel + 1);
+    // Cancel wakes the parked file; the driver has no second cancel check between
+    // the pause wait and the transfer, so that ONE file completes, then the next
+    // iteration's loop-top `is_cancelled` bails. So exactly one more transfers.
+    assert_eq!(
+        transferred.load(Ordering::SeqCst),
+        done_at_cancel + 1,
+        "the woken file finishes, then the loop bails; no further sources transfer"
+    );
     assert_eq!(
         super::super::super::state::load_intent(&state.intent),
         OperationIntent::Stopped,

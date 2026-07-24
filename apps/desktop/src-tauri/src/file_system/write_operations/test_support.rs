@@ -1,8 +1,8 @@
-//! Test isolation for the process-global `WRITE_OPERATION_STATE` map.
+//! Cross-cutting write-operation test fixtures: isolation for the process-global
+//! `WRITE_OPERATION_STATE` map, and the one sanctioned "a park is holding" wait.
 //!
-//! Only the cross-cutting global-state fixture lives here. Per-driver fixtures
-//! (fake volumes, gated sources, collector sinks) stay in their own module's
-//! `test_support`, like `transfer/test_support.rs`.
+//! Per-driver fixtures (fake volumes, gated sources, collector sinks) stay in
+//! their own module's `test_support`, like `transfer/test_support.rs`.
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -73,6 +73,34 @@ impl Drop for TestOperationGuard {
     fn drop(&mut self) {
         WRITE_OPERATION_STATE.write_ignore_poison().remove(&self.op_id);
     }
+}
+
+/// How long a "the op is parked" window runs. Long enough that a running op would
+/// have advanced several units inside it, short enough to keep the suites quick.
+pub(crate) const PARK_WINDOW: Duration = Duration::from_millis(40);
+
+/// Asserts a park is HOLDING: waits one [`PARK_WINDOW`] for whatever was already
+/// in flight to drain into the park, samples `progress`, then holds a second
+/// window and asserts the sample never moved. Returns the parked value.
+///
+/// "Nothing happened" has no signal to wait on, so a window is the only evidence
+/// available. Give the op an unlimited budget first (lift the chunk or file gate)
+/// so a frozen count can only mean the park is holding, never a starved source.
+///
+/// Every frozen-progress check in the write-operation suites routes through here,
+/// which is why these are the only two fixed waits left in them: keep it that way
+/// rather than sprinkling `sleep` back into the tests.
+pub(crate) async fn park_holds_at(progress: impl Fn() -> u64, what: &str) -> u64 {
+    // allowed-test-sleep: lets whatever was already past its checkpoint finish, so the sample
+    // below is the parked value rather than a mid-flight one. No signal marks "the op reached
+    // its park".
+    tokio::time::sleep(PARK_WINDOW).await;
+    let frozen = progress();
+    // allowed-test-sleep: the negative assertion itself. A running op would advance several
+    // units across this window, so a stable value is what proves the park is holding.
+    tokio::time::sleep(PARK_WINDOW).await;
+    assert_eq!(progress(), frozen, "{what}");
+    frozen
 }
 
 /// A process-unique operation id. The counter alone would collide across
