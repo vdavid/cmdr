@@ -436,6 +436,11 @@ fresh spared, other-archive ignored, delete-failure doesn't fail the edit).
 
 Drives "disable Eject while an op reads from / writes to this device" so a disconnect can't truncate an in-flight file. Lives in `state.rs`.
 
+The same two register/unregister functions also feed `crate::priority::transfers` (the per-volume "a transfer is
+running" gauge indexing yields to — transfers trump indexing). ONE lifecycle choke point on purpose: a new op kind that
+guards eject automatically also outranks indexing, and the panic-safe unregister paths below cover both signals. Don't
+add a second feed site (see `../../priority/CLAUDE.md`).
+
 - The manager registers an op's volume IDs busy (`register_operation_status(op_id, type, volume_ids)`) **only when it admits the op (Running)** — a Queued op isn't touching the device, so it marks nothing busy. Source **and** destination go in (a download from a phone is as corruptible as an upload to it). The manager's `on_settled` / `ManagedTaskGuard` Drop unregisters on every exit (including panic), so a finished or panicking op can't leave a volume stuck busy.
 - The busy set is the union of every Running op's `volume_ids` **∪ external registrations**, minus `root` (never ejectable). `recompute_and_emit_busy_volumes` fires `volumes-busy-changed` only when membership changes — progress ticks don't churn it (`LAST_EMITTED_BUSY`). Membership-by-union means two concurrent transfers to one device keep it busy until both finish, with no manual refcount.
 - **Where `volume_ids` come from**: the `OperationDescriptor` each spawn site hands the manager. The cross-volume entry points (`copy_between_volumes`, `move_between_volumes`, `move_within_same_volume`) and the volume-aware delete carry the IDs; the both-local branch of `copy_between_volumes` (a local→USB / DMG copy) passes both IDs through `copy_files_start` / `move_files_start` so the ejectable destination is still marked. The plain `copy_files` / `move_files` / `trash` commands pass an empty list — the unified transfer dialog only routes through them for same-`root` ops, where no ejectable volume is involved.

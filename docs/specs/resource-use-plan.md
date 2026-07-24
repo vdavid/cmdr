@@ -65,6 +65,31 @@ error can't masquerade as one and dodge it.
 **Docs**: `media_index/DETAILS.md` decision (read-path routing + why), `CLAUDE.md` one-liner only if it clears the
 must-know bar.
 
+### Status — done (branch `david/m1-direct-enrich-reads`), plus the priority mechanism
+
+- **Direct read path**: Direct-smb2 volumes fetch image bytes through the app's own session (`VolumeByteFetcher` →
+  `Volume::open_read_stream_for_scan`, sync-bridged via a captured runtime handle, timeout-bounded), picked per pass by
+  `Volume::supports_local_fs_access()`; mount-only volumes keep the OS-mount `FsByteFetcher`. The superseded "why the OS
+  mount" decision is rewritten in `media_index/DETAILS.md` § The byte-fetch decision.
+- **Honest classification**: only a TYPED transport loss pauses (`VolumeError::DeviceDisconnected`/`ConnectionTimeout`
+  direct; a transport-loss errno set or the read timeout on the mount). Everything else per-file is the new
+  `FetchError::Unreadable`: skip, count (`PassSummary.skipped_unreadable`), log "N skipped: unreadable" at pass end, no
+  row written. Landed together with the read path per the plan's MUST (an all-skip completion stays loud in the log).
+- **Multi-connection prefetch**: the parallel pass fans byte-reads out to `max_concurrency` (3) fetch workers; over SMB
+  small hinted files ride the scan-connection pool's 1-RTT compound reads (pool now REFCOUNTED across overlapping scan
+  sessions; media passes bracket `begin`/`end_scan_session` when direct + parallel). Budget/cap/cancellation semantics
+  unchanged (admission still byte-bounded on the dispatcher; 256 MB per-file cap enforced twice on the direct path).
+- **Priority mechanism** (transport-generic, `src/priority/`): interactive > transfers > indexing, per volume. New
+  `priority::transfers` gauge fed from the write-op lifecycle choke point; drive-index scan pacing AND the enrichment
+  gate/resume now yield to transfers (enrichment already paused on navigation app-wide; drive indexing keeps its
+  per-volume throttle-to-1). MTP drive indexing adopts it for free (same pacer, same op registry); MTP media enrichment
+  never background-sweeps, so nothing further to wire. Design/why: `src/priority/DETAILS.md`.
+- **Verified**: unit + pass-level tests (red→green on the classification and the fetch fan-out), Docker SMB integration
+  (`smb_integration_media_*`: direct byte-fetch compound + streaming, NotFound, six concurrent pooled reads, scan-
+  session refcount). **Not measured**: real-NAS throughput — see § M2's "Expected NAS-side effect — still unmeasured"
+  pointer (`media_index/DETAILS.md`), which now states exactly what to measure and how. Live NAS QA (the pass running
+  past `/Volumes/naspi/_todo_pics/...`) is the post-merge check.
+
 ---
 
 ## M2. Parallel enrichment workers + Settings slider

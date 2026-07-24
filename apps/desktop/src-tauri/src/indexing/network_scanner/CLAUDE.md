@@ -26,8 +26,9 @@ are discovered and stat'd differs from the local guarded walker.
   `0` (`—`/`≥`); the DB is kept. A user cancel writes no marks/aggregate.
 - **This scanner NEVER writes `scan_completed_at`** (on any path); the completion handler does, only on a clean finish.
   And **never on an empty root** (`VolumeScanError::EmptyRoot`): a false "complete" permanently strands the index.
-- **The listing budget is PACED per volume, not constant** (`scan_pace.rs`): browsing the share drops it 64 → 1 so nav
-  isn't queued behind the scan. ❌ Never let it reach 0 — one-at-a-time is what makes forward progress structural.
+- **The listing budget is PACED per volume, not constant** (`scan_pace.rs`): browsing the share OR a running transfer
+  on it (`crate::priority` — transfers trump indexing) drops it 64 → 1 so higher-priority work isn't queued behind the
+  scan. ❌ Never let it reach 0 — one-at-a-time is what makes forward progress structural.
 - **NAS system/snapshot dirs aren't recursed** (`system_dirs.rs`): the dir's own row IS indexed (navigable), but its
   subtree is never walked (rolls up honestly-unknown). Don't remove it to "fill in" sizes — it re-triggers the stall.
 - **The FRESH scan wraps its inserts in periodic explicit transactions** (`SCAN_COMMIT_INTERVAL`, 2 s): the single

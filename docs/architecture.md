@@ -141,6 +141,9 @@ All under `apps/desktop/src-tauri/src/`.
 - `indexing/`: Background drive indexing (SQLite, jwalk, FSEvents), recursive directory sizes. Per-volume registry (one
   index DB per drive, not just local) with a per-volume freshness model (Fresh/Stale/gray); SMB and MTP drives index too
   and stay live via smb2 `CHANGE_NOTIFY` / PTP events, with an "admittedly stale" model on launch and disconnect
+- `priority/`: The per-volume priority signals background work yields to (interactive > transfers > indexing):
+  `foreground` activity timestamps + the `transfers` gauge, composed by drive indexing's scan pacing and media
+  enrichment's pass gate. See its `apps/desktop/src-tauri/src/priority/CLAUDE.md`
 - `importance/`: Deterministic folder-importance scoring (pure `scorer/`: values-in/score-out `Weights` + explain
   breakdown) that expensive features (agent, media-ML enrichment) consume. A read-consumer of `indexing/`, sibling to
   `search/`, with its own per-volume `importance.db` store, a multi-volume kind-aware scheduler (Local + SMB scored, MTP
@@ -157,9 +160,10 @@ All under `apps/desktop/src-tauri/src/`.
   the settings slider threshold deferred, with "always index" overrides + a per-folder privacy exclude), inference
   behind a `VisionBackend` seam (real objc2-vision OCR + classify + feature print, a fake for tests), deletion-driven GC
   gated on a completed scan, and the consumable `MediaIndex` read API (OCR/tag search + find-similar, offline after
-  unmount). Enriches local volumes plus opt-in network (SMB) volumes conservatively (idle-gated, bandwidth-bounded
-  byte-fetch off the OS mount; disconnect pauses without losing coverage; MTP never background-sweeps). Off by default.
-  See its `apps/desktop/src-tauri/src/media_index/CLAUDE.md` and `specs/media-ml-index-plan.md`
+  unmount). Enriches local volumes plus opt-in network (SMB) volumes conservatively (priority-gated via `priority/`,
+  bandwidth-bounded byte-fetch through the app's own smb2 session for Direct volumes with an OS-mount fallback;
+  disconnect pauses without losing coverage; MTP never background-sweeps). Off by default. See its
+  `apps/desktop/src-tauri/src/media_index/CLAUDE.md` and `specs/media-ml-index-plan.md`
 - `operation_log/`: The durable, cross-volume journal of file mutations — the app's first durable DB
   (`operation-log.db`), the foundation for rollback, indexed name search, and a future undo. Single writer thread, a
   forward-migration ladder (not delete-and-recreate) and retention discipline, interned dir prefixes + per-item rows,

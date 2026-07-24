@@ -44,8 +44,8 @@ operation goes through a `Volume`, with **paths relative to the volume root**.
 - **`listing_is_watched(path)` defaults `false`**: a backend without a real watcher must not claim freshness, or
   pre-flight scans reuse stale cache. `true` means "fresh as our latest observation"; honor the per-backend debounce
   window. See `DETAILS.md` § "Trait capability model".
-- **`begin_scan_session` / `end_scan_session` (default no-op) bracket a background scan** for scan-scoped resources
-  (SMB's extra-session pool; `backends/DETAILS.md`).
+- **`begin_scan_session` / `end_scan_session` (default no-op) bracket background bulk work** (index scan, media
+  enrichment prefetch) for scan-scoped resources (SMB's refcounted extra-session pool; `backends/DETAILS.md`).
 - **`LocalPosixVolume::resolve` has a three-way branch for absolute paths** (the frontend sends full absolute paths, not
   always root-relative). Getting it wrong silently serves the wrong directory. See `DETAILS.md` § "Path handling
   gotchas".

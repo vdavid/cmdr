@@ -85,19 +85,36 @@ against an SMB/MTP mount"), but media enrichment MUST read image bytes off the w
 the scheduler routes SMB volumes to it (§ "The lifecycle bus"). Scoped to OCR (it inherits the OCR slice's Vision backend — no new
 models).
 
-### The byte-fetch decision (`network/fetch.rs`) — why the OS mount, not a direct smb2 client
+### The byte-fetch decision (`network/fetch.rs`) — the app's own session first, OS mount as fallback
 
-**Decision: read image bytes via the OS mount path (`/Volumes/<share>/…`) with plain `std::fs`, bounded by a timeout —
-the SAME transport the file viewer already uses for SMB image preview** (`file_viewer/media_protocol.rs` reads bytes with
-`std::fs::File::open` on the mount path + its own `spawn_blocking` + timeout). We do NOT stand up a parallel direct-`smb2`
-client (`Volume::open_read_stream`). Why:
+**Decision (plan M1): read image bytes through the `Volume` trait when the app holds its own transport session — a
+Direct-smb2 `SmbVolume` — and fall back to the OS mount path (`/Volumes/<share>/…` via `std::fs`) only for mount-only
+volumes.** Two fetchers behind the one `ByteFetcher` seam, picked per pass by `Volume::supports_local_fs_access()` (the
+same local-vs-remote predicate the archive backend uses for its byte source). Why the direct session, not the mount:
 
-- The viewer's OS-mount read is the ONE existing byte-read path for images over SMB; reusing it keeps a single transport
-  and matches what the local pass already does (`std::fs::read`).
-- The direct-`smb2` `open_read_stream` is the chunked large-transfer/copy path; an OCR fetch wants the whole (bounded)
-  compressed file, which a single `std::fs::read` gives simply.
-- The whole use case is an OS-mounted NAS. The mount root comes from `VolumeManager::get(volume_id).root()` — the same
-  source `indexing::paths::routing::index_read_path` uses for its read-side mount strip.
+- **macOS TCC ("network volumes") owns the mount.** `std::fs` on `/Volumes/…` gets `EPERM` for unsigned dev binaries
+  (rebuilds shed grants — reproduced twice, 2026-07-16, the pass stalled at zero images) and triggers a permission
+  prompt in prod. The direct smb2 session is the connection Cmdr already owns, health-checks, and auto-reconnects; TCC
+  has no say over it.
+- **Typed errors.** The direct path fails with `VolumeError` variants (`DeviceDisconnected`, `NotFound`, …), so
+  pause-vs-skip classification is exact instead of errno inference on the mount.
+- **`VolumeByteFetcher`** drains `Volume::open_read_stream_for_scan` (SMB serves small hinted files via the 1-RTT
+  compound read, from the scan-connection pool when one is up — § Parallel enrichment) and bridges async→sync with a
+  captured runtime handle + `block_on`, sound because enrichment fetch runs on `spawn_blocking`/plain worker threads,
+  never a runtime worker (the archive backend's `VolumeByteSource` bridge). The whole read sits under
+  `tokio::time::timeout` ⇒ a hung transport is a `Disconnected` pause, never a wedge.
+- The mount root still comes from `VolumeManager::get(volume_id).root()` — the same source
+  `indexing::paths::routing::index_read_path` uses for its read-side mount strip — and `Volume` impls accept
+  mount-absolute display paths, so the os-joined path feeds both fetchers unchanged.
+
+**Per-file errors never pause the pass (the second M1 defect).** Only a TYPED transport loss pauses
+(`VolumeError::DeviceDisconnected`/`ConnectionTimeout` on the direct path; a transport-loss errno set or the read
+timeout on the mount path — `classify_io_error`). Everything else per-file (permission denied, `EIO`, `EISDIR`) is
+`FetchError::Unreadable`: skip it, count it (`PassSummary.skipped_unreadable`), log "N skipped: unreadable" at pass end,
+write NO row (`Failed` stays reserved for a good read with a bad decode). Bias documented in `classify_io_error`: a
+misread dead mount completes honestly and re-enriches next scan; a misread per-file fault would pause the pass against
+a condition that never clears — exactly the TCC-EPERM stall this fixes. Without this line, an all-EPERM mount would
+either stall forever (old behavior) or silently "complete"; the skip count keeps it loud.
 
 **Path mapping.** An SMB index's `ROOT_ID` is the mount root, so `walk_image_entries` reconstructs MOUNT-RELATIVE paths
 (`/DCIM/x.jpg`). `os_join(mount_root, rel)` prepends the mount root to reach the real file (`/Volumes/naspi/DCIM/x.jpg`);
@@ -105,36 +122,41 @@ for the `root`/local volume the mount root is `/`, so the path passes through un
 the index-relative identity (matching the index + GC set); the network-enrichment UI reconstructs the display/open path via the mount
 root.
 
-**Non-blocking discipline (the crux).** A network `std::fs::read` can block indefinitely on a hung mount. So `FsByteFetcher`
-runs the read on a throwaway thread and waits with `recv_timeout`; a timeout returns `FetchError::Disconnected` (pause),
-never a wedge. Critically, the fetch happens in the ENRICH layer, not on the serialized Vision OCR worker thread — the
-backend receives the already-fetched bytes via `ImageInput.bytes` (`Some` = network, `None` = local read-it-yourself), so a
-hung mount can never stall OCR of other (local) volumes. Failures classify by I/O error KIND (a typed errno, not a message
-match): `NotFound` ⇒ skip (a vanished source; GC collects it), else ⇒ `Disconnected` (pause). A `MAX_FETCH_BYTES` cap skips
-a pathological file rather than OOMing.
+**Non-blocking discipline (the crux).** A network read can block indefinitely on a hung transport. `FsByteFetcher` runs
+its `std::fs` read on a throwaway thread and waits with `recv_timeout`; `VolumeByteFetcher` bounds the whole async read
+with `tokio::time::timeout`. Either timeout returns `FetchError::Disconnected` (pause), never a wedge. Critically, the
+fetch happens in the ENRICH layer, not on the serialized Vision OCR worker thread — the backend receives the
+already-fetched bytes via `ImageInput.bytes` (`Some` = network, `None` = local read-it-yourself), so a hung transport
+can never stall OCR of other (local) volumes. A `MAX_FETCH_BYTES` cap skips a pathological file rather than OOMing (the
+direct fetcher also short-circuits on an over-cap size hint, without touching the wire).
 
 ### The conservative-fetch policy with teeth (`network/policy.rs`)
 
 Typed knobs (`ConservativeFetchPolicy`), each a real gate, not a comment:
 
-- **Idle-gated.** The pass proceeds only while the app has been idle for `idle_threshold` (default 5 s). `foreground.rs`
-  holds the process-global "last foreground activity" timestamps, stamped by the hot foreground filesystem IPC
-  (directory listing = every navigation); the pure `is_idle(now, last, threshold)` is unit-tested over a fake clock.
-  Enrichment reads the **app-wide** scope, not the per-volume one the index scan and SMB transfers use: this is heavy
-  on-device ML with no deadline, so foreground work anywhere is reason enough to wait. (`foreground.rs`'s module doc
-  lists all three consumers and why each picks its scope.) A non-idle app pauses the pass (`PauseReason::NotIdle`) so a NAS is never dragged over the wire while the
-  user browses. A `NotIdle` pause is TRANSIENT, not terminal: `run_network_pass_blocking` returns
+- **Priority-gated.** The pass proceeds only while the volume is CLEAR of higher-priority work
+  (`volume_clear_for_enrichment`, pure and tested — `crate::priority`'s order: interactive > transfers > indexing): the
+  app has been foreground-idle for `idle_threshold` (default 5 s) AND no user-initiated transfer is touching this
+  volume (`priority::transfers`). `priority::foreground` holds the process-global "last foreground activity"
+  timestamps, stamped by the hot foreground filesystem IPC (directory listing = every navigation); the pure
+  `is_idle(now, last, threshold)` is unit-tested over a fake clock. Enrichment reads the **app-wide** foreground scope,
+  not the per-volume one the index scan and SMB transfers use: this is heavy on-device ML with no deadline, so
+  foreground work anywhere is reason enough to wait — while the transfer check is per-volume (a copy elsewhere is no
+  reason to wait). A busy volume pauses the pass (`PauseReason::NotIdle`) so a NAS is never dragged over the wire while
+  the user browses or a copy runs. A `NotIdle` pause is TRANSIENT, not terminal: `run_network_pass_blocking` returns
   `PassOutcome::RetryWhenIdle`, and `spawn_pass` keeps the volume's coordinator slot and re-runs the pass (from the
-  store, skipping done rows) once the app is idle again (`wait_until_idle_to_resume`, polling every 2 s, ending on idle
-  OR `gate::should_stop`). Without this resume the enrichment would stall permanently after the first pause — a NAS that
-  the user keeps browsing near would freeze mid-sweep and never finish. The `should_retry_when_idle` gate is `NotIdle`
-  ONLY: `Disconnected` resumes via the registration bus on remount, `Cancelled` via the next scan or user kick, so
-  looping on either would spin the idle-wait against a condition this loop can't clear.
+  store, skipping done rows) once the volume is clear again (`wait_until_idle_to_resume(volume_id)`, polling every 2 s
+  over the SAME composed condition, ending on clear OR `gate::should_stop`). Without this resume the enrichment would
+  stall permanently after the first pause — a NAS that the user keeps browsing near would freeze mid-sweep and never
+  finish. The `should_retry_when_idle` gate is `NotIdle` ONLY: `Disconnected` resumes via the registration bus on
+  remount, `Cancelled` via the next scan or user kick, so looping on either would spin the idle-wait against a
+  condition this loop can't clear.
 - **Bandwidth-bounded.** After each image, `throttle_delay(bytes, max_bytes_per_sec)` sleeps so the sustained fetch rate
   stays under the cap (default 8 MB/s). Pure and tested; it deliberately over-throttles slightly (ignores OCR time) — the
-  conservative direction.
-- **Bounded concurrency.** `max_concurrency` (default 1); the pass fetches serially today, so it's honestly 1, with the
-  field bounding any future parallel fetch.
+  conservative direction. (The parallel pass paces at dispatch on the index's last-known size, since the actual count
+  lands on a fetch worker; a stale size self-corrects over the pass.)
+- **Bounded concurrency.** `max_concurrency` (default 3) is the PARALLEL pass's prefetch fan-out width (§ Parallel
+  enrichment); the sequential pass is inherently 1.
 - **Resumable.** Each completed image persists immediately (path-keyed upsert), so an interrupted pass resumes from the
   store on the next scan; unchanged images skip via `needs_enrichment`.
 
@@ -386,24 +408,30 @@ the pass promptly and skips GC.
 pounding the ANE can't cook the machine into a system-wide throttle that hurts the foreground app more than it helps
 enrichment. It only ever lowers the user's chosen count.
 
-**Network parallelism + the byte-bounded prefetch** (`network/enrich.rs`, `network/budget.rs`): the network pass keeps
-its conservative sequential fetch (idle-gate, disconnect→pause, bandwidth throttle, gates all on ONE fetcher thread) and
-parallelizes only the COMPUTE — a producer/consumer where the fetcher feeds fetched bytes to N compute workers. Prefetch
-admission is bounded by BYTES, not file count (`ByteBudget`): the fetcher acquires an image's size before reading and a
-worker releases it after the decode, so the buffer can't blow the memory ceiling on a RAW-heavy corpus (256 MB/file cap
-× ~36 MB/decode would otherwise let a count-based queue buffer gigabytes). An over-cap file is admitted alone (never
-deadlocks); a stop wakes a blocked acquire. The data-safety lines hold: a disconnect stops the fetcher, workers drain
-the already-fetched jobs, and NO GC runs (§ Resumability). The wire is serialized on the one smb2 session either way, so
-the win is overlapping that serialized fetch with parallel compute, bounded by the same ANE ceiling as local.
+**Network parallelism + the byte-bounded prefetch** (`network/enrich.rs`, `network/budget.rs`): the parallel network
+pass is a three-stage pipeline. ONE dispatcher thread keeps every conservative fetch-side DECISION (priority gate,
+coverage gates, byte-budget admission, bandwidth pacing, progress); K fetch workers (`max_concurrency`, plan M1)
+perform the byte-reads in parallel — over SMB they spread across the scan-session connection pool (§ The byte-fetch
+decision; the pass brackets `begin`/`end_scan_session` when direct AND parallel, refcounted on `SmbVolume` so an
+overlapping index rescan shares the pool), which is what lets the reads genuinely overlap (ksmbd serializes per
+connection); N compute workers (each its own backend) analyze and write. Prefetch admission is bounded by BYTES, not
+file count (`ByteBudget`): the dispatcher acquires an image's size before handing it to a fetch worker and a compute
+worker releases it after the decode, so the whole fan-out can't blow the memory ceiling on a RAW-heavy corpus
+(256 MB/file cap × ~36 MB/decode would otherwise let a count-based queue buffer gigabytes). An over-cap file is
+admitted alone (never deadlocks); a stop wakes a blocked acquire. The data-safety lines hold: a typed disconnect on ANY
+fetch worker stops the dispatcher, queued jobs drain-release their reservations, compute workers drain the
+already-fetched jobs, and NO GC runs (§ Resumability); the disconnect wins the pause-reason merge (a `NotIdle` retry
+would only re-hit the dead transport).
 
-**Expected NAS-side effect** (not benched in dev — the OS-mount read hits a TCC `EPERM` for the unsigned dev binary, so
-a real NAS pass can't run here; reasoned from the spike + the design). On a network volume the prefetch is a genuinely
-bigger share of the win than on local: the fetcher reads image k+1 off the (serialized) wire WHILE the compute workers
-decode+infer images already in the byte-bounded queue, so the fetch latency hides behind compute instead of adding to
-it — on top of the same decode↔inference overlap as local. The ceiling is still the ANE (compute dominates a gigabit
-NAS, per the baseline), so expect the same ~1.25x order plus whatever the fetch-hiding recovers; the byte budget is what
-makes that overlap SAFE (bounded buffer), never a multiplier. Re-measure against David's NAS once M1's direct-session
-read path removes the dev-mount `EPERM`.
+**Expected NAS-side effect — still unmeasured.** M1's direct-session read path removed the dev-mount `EPERM` blocker,
+but a real-NAS throughput number hasn't been produced yet (M1 validated correctness on the Docker SMB fixtures; a
+bounded re-enrich of the ~9k-image NAS corpus is the intended measurement, deliberately not run as part of the M1
+worktree). Reasoned expectation from the M2 spike + the design: prefetch fan-out hides per-file SMB latency behind
+neighboring reads and behind compute, so the pass should approach the local ~1.25x-at-N=2 ANE ceiling instead of adding
+wire latency on top. To measure: opt the NAS in, set `mediaIndex.parallelism` to 2, run a bounded re-enrich over the
+existing corpus (bump a folder's mtimes or clear its rows), and read images/min off the `media-enrich-progress` log
+against the 2026-07-16 ~60–80 img/min baseline. The byte budget is what makes the overlap SAFE (bounded buffer), never
+a multiplier.
 
 **FFI discipline.** Every `unsafe` block carries a per-site `// SAFETY:` naming the concrete invariant — pointer/buffer
 validity for `CFData`/`CFNumber`/`CFDictionary` creation, Create-vs-Get ownership (the `+1 CFRetained` on every CF

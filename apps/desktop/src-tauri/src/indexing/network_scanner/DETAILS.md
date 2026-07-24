@@ -117,21 +117,25 @@ leaves ancestors claiming exact sizes over an unstamped descendant. Reconcile is
 bulk writes via `BulkReconcileGuard`. The remaining lever is fewer round trips per huge directory (a larger
 `QueryDirectory` buffer in smb2), NOT more in-flight listings.
 
-## Yielding to navigation (`scan_pace.rs`)
+## Yielding to navigation and transfers (`scan_pace.rs`)
 
 The walk's listing budget isn't a constant: at every top-up it asks `ScanPacer::listing_budget()`, which returns
-`FULL_LISTING_BUDGET` (64) while the share is quiet and `YIELDING_LISTING_BUDGET` (1) while the user is browsing it.
-Both the fresh scan and the reconcile walk read it. **Why it exists:** a scan and the pane's own listings share ONE SMB
+`FULL_LISTING_BUDGET` (64) while the share is quiet and `YIELDING_LISTING_BUDGET` (1) while a higher-priority claim
+holds it — the user browsing it, OR a user-initiated transfer touching it (`crate::priority`'s order: interactive >
+transfers > indexing; the transfer signal is `priority::transfers`' per-volume gauge). Both the fresh scan and the
+reconcile walk read it. **Why it exists:** a scan and the pane's own listings share ONE SMB
 session (every `SmbVolume` clone multiplexes frames over the same connection), so 64 in-flight listings bury a
 navigation behind the backlog — a 40-entry folder took **10.7 s** to open mid-scan on a real QNAP (`/Volumes/naspi`,
 ~2M entries, 2026-07-19) and was instant the second the scan finished. That's also the first impression the app makes on
 someone who connects a NAS and enables indexing because it sounds good.
 
-**The signal** is `media_index::foreground`'s per-volume timestamp, stamped by the listing IPC
-(`note_foreground_activity_on`) on every navigation. A share counts as in use for `SCAN_FOREGROUND_IDLE_THRESHOLD` (2 s)
-after the last one — long enough to span the gaps in real browsing so a session of clicking around is ONE throttled
-stretch, short enough to be back at full speed a couple of seconds after the user stops. There's no separate debounce:
-the window IS the debounce.
+**The signals** are `priority::foreground`'s per-volume timestamp, stamped by the listing IPC
+(`note_foreground_activity_on`) on every navigation, and `priority::transfers`' per-volume gauge, raised for the whole
+life of a write operation touching the volume. A browsed share counts as in use for
+`SCAN_FOREGROUND_IDLE_THRESHOLD` (2 s) after the last navigation — long enough to span the gaps in real browsing so a
+session of clicking around is ONE throttled stretch, short enough to be back at full speed a couple of seconds after
+the user stops. There's no separate debounce: the window IS the debounce. The transfer signal needs no window at all
+(an op's start and finish are exact).
 
 **Decision/Why throttle instead of park, and why no anti-starvation floor.** The obvious gate ("only scan while idle")
 converts "indexing is in the way" into "indexing never finishes", and then needs a quota, a minimum-progress floor, or a
@@ -149,7 +153,7 @@ real hardware, the lever is a lower `FULL_LISTING_BUDGET`, not cancelling in-fli
 **Decision/Why the scope is per volume, not app-wide.** The contention is one share's SMB session, so browsing a LOCAL
 folder is no reason to slow a NAS scan — the app-wide signal would throttle it for activity that isn't competing at all.
 Media enrichment keeps reading the app-wide signal, because it's heavy on-device ML where any foreground work is reason
-enough to wait; `media_index/foreground.rs` documents the two scopes side by side. A volume nobody has browsed has no
+enough to wait; `priority/foreground.rs` documents the two scopes side by side. A volume nobody has browsed has no
 entry and reads as idle, so a first scan starts at full speed. ❌ Don't collapse a missing entry to a `0` timestamp: `0`
 is a real point on that clock, so "never browsed" would read as "browsed at startup" and throttle every scan for the
 app's first two seconds.

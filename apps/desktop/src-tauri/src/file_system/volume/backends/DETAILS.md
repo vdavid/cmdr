@@ -116,14 +116,18 @@ window. NAS-side measurement (2026-07-22) held total in-flight depth constant an
 `~/projects-git/vdavid/smb2/docs/benchmark-findings.md` §§ "Directory-listing throughput probe" and "NAS-side ground truth" — link, don't
 restate.
 
-So a background scan opens `SCAN_POOL_SIZE` (4) EXTRA smb2 sessions (separate TCP connections) for its duration and
-spreads its directory listings across them; the pane's own session keeps serving browsing.
+So background bulk work opens `SCAN_POOL_SIZE` (4) EXTRA smb2 sessions (separate TCP connections) for its duration and
+spreads across them; the pane's own session keeps serving browsing. Two users today: the index scan's directory
+listings, and media enrichment's parallel prefetch reads.
 
-- **Lifecycle.** Opened LAZILY on `Volume::begin_scan_session` (`SmbVolume::open_scan_pool`), closed on
-  `end_scan_session` (`close_scan_pool`); `on_unmount` tears it down synchronously (`close_scan_pool_sync` flips the
-  pool's `closed` flag so reconnect loops bail — a member must not keep walking an unmounted volume). Steady-state
-  footprint between scans is unchanged (`scan_pool: RwLock<Option<Arc<ScanPool>>>` is `None`). The lifecycle brackets the
-  spawned walk task (`indexing/lifecycle/network_scan.rs`), so `end` runs on every outcome.
+- **Lifecycle, refcounted.** Opened LAZILY on `Volume::begin_scan_session` (`SmbVolume::open_scan_pool`, idempotent),
+  closed when the LAST concurrent scan session ends (`scan_session_refs`, a saturating counter — an index rescan and an
+  enrichment pass can overlap, and either one's `end_scan_session` must not tear the pool out from under the other);
+  `on_unmount` tears it down synchronously regardless (`close_scan_pool_sync` flips the pool's `closed` flag so
+  reconnect loops bail — a member must not keep walking an unmounted volume). Steady-state footprint between scans is
+  unchanged (`scan_pool: RwLock<Option<Arc<ScanPool>>>` is `None`). The index-scan lifecycle brackets the spawned walk
+  task (`indexing/lifecycle/network_scan.rs`); the media pass brackets via a drop-guard in its scheduler — both run
+  `end` on every outcome.
 - **Invisible to the scanner.** The `network_scanner` walk is unchanged and transport-agnostic; it keeps calling
   `list_directory_for_scan`, which draws from the pool (round-robin) when one is active and falls back to the main
   session otherwise. **Pacing stays in the scanner** (`network_scanner/scan_pace.rs`): the global in-flight budget caps
@@ -144,6 +148,11 @@ spreads its directory listings across them; the pane's own session keeps serving
   Nth session (server session cap) just means the pool runs with fewer.
 - **Params are a snapshot.** If the main session refreshes credentials mid-scan (password change), members failing auth
   give up and listings fall back to the main session (documented degradation, not a correctness issue).
+- **Reads: compound-only on members** (`open_read_stream_for_scan_impl`). Media enrichment's prefetch reads small
+  HINTED files from pool members via the 1-RTT `read_file_compound` (dead member ⇒ sibling retry, exactly like a
+  listing; size drift or a too-large file ⇒ main-session streaming). Members deliberately never serve STREAMING reads:
+  a member dying mid-stream would surface as a transport error the pool can't transparently retry for the consumer —
+  the main session, with its reconnect machinery and connection-state signaling, owns streaming.
 
 ## Per-backend decisions
 

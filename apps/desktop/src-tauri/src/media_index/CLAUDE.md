@@ -4,7 +4,7 @@ Image-ML enrichment: images searchable by content. A read-consumer of `indexing/
 Vision tags + similarity embeddings. Local by default; SMB opt-in conservative; MTP never; LocalExternal (USB/SD)
 parked (❌ never treat as Local).
 
-A PORT of `importance/`'s patterns (store, writer, scheduler, read API): read `importance/CLAUDE.md` first.
+A PORT of `importance/`'s patterns (`importance/CLAUDE.md` first).
 
 ## Module map
 
@@ -40,15 +40,16 @@ A PORT of `importance/`'s patterns (store, writer, scheduler, read API): read `i
   threshold DECREASE / scope BROADEN / a folder added; `kick_network_pass` on opt-in). The sweep only WIRES subs. Plus
   **live index updates** (LOCAL only): a throttled, touched-dirs-SCOPED tick on a distinct `#live` coordinator key.
 - **`FakeVisionBackend` via `MediaScheduler::new`, never `start`.** Real backend: each Vision/ImageIO worker on its OWN
-  8 MB-stack thread (never rayon), confining `!Send` CF objects; a hostile image gives a typed `VisionError`, never a
-  panic.
-- **Parallel enrichment = N INDEPENDENT backends** (`scheduler/pool.rs`, plan M2): ❌ never feed one backend
-  concurrently (CF confinement) or fan out the single writer. `gate::parallelism` (default 1 = today) capped by
-  `thermal`; byte-bounded network prefetch (`network/budget.rs`). Depth: `DETAILS.md` § Parallel enrichment.
+  8 MB-stack thread (never rayon), confining `!Send` CF objects; hostile images give typed `VisionError`s, never panics.
+- **Parallel enrichment = N INDEPENDENT backends** (`scheduler/pool.rs`): ❌ never feed one backend concurrently (CF
+  confinement) or fan out the single writer. `gate::parallelism` (default 1) capped by `thermal`; network prefetch is
+  byte-bounded (`network/budget.rs`). Depth: `DETAILS.md` § Parallel enrichment.
 - **Off by default + ONE shared memory ceiling** (§ Disabling stops the running pass). Cancellation hooks the EXISTING
-  indexing watchdog; ❌ don't add a second. The between-images hook is `gate::should_stop` (watchdog OR toggle OFF), so
-  disabling stops the RUNNING pass; ❌ don't narrow it to `is_cancelled`.
-- **A disconnect is NOT a bad file**: a mid-pass SMB unmount PAUSES (rows kept, no GC, no `Failed`).
+  indexing watchdog; ❌ don't add a second. The between-images hook is `gate::should_stop` (watchdog OR toggle OFF);
+  ❌ don't narrow it to `is_cancelled`.
+- **ONLY a typed disconnect pauses a network pass** (rows kept, no GC, no `Failed`); every other per-file read error is
+  `FetchError::Unreadable` = skip-and-count, ❌ never a pause. Direct-SMB fetches bytes via the app's OWN smb2 session
+  (no TCC); mount-only via the OS mount (`network/fetch.rs`).
 - **`search/` reaches `media.db` ONLY through `MediaIndex`.** Commands register in BOTH `ipc.rs` +
   `ipc_collectors.rs`; events in `collect_events!` only.
 - **A pass publishes progress** (§ Progress events): `media-enrich-progress` over the ENRICHABLE subset (❌ never
@@ -59,13 +60,12 @@ A PORT of `importance/`'s patterns (store, writer, scheduler, read API): read `i
   (`gate::semantic_search_enabled`, ON by default) gates both: `search_semantic` returns `[]` (also off with no model),
   and `clip::current_stamp` returns `None` so no pass embeds CLIP (the single CLIP-write seam; ❌ don't re-gate
   `want_clip`). `media_index_delete_clip_model` deletes the model + every volume's clip embeddings (`prune_all_clip`
-  resets `clip_stamp`); Vision kept, off ≠ delete. After a verified compile the `.mlpackage` source is deleted (M5a), so
-  `is_installed` is `.mlpackage` OR `.mlmodelc` per tower (❌ don't revert to package-only); an unloadable compiled + no
-  source drops the stale `.mlmodelc` to re-trigger download.
+  resets `clip_stamp`); Vision kept, off ≠ delete. After a verified compile the `.mlpackage` source is deleted, so
+  `is_installed` is `.mlpackage` OR `.mlmodelc` per tower (❌ don't revert to package-only); an unloadable compiled
+  model with no source re-triggers download.
 
 - **Per-folder `accounted` aggregate** (`coverage.rs`; feeds `media_index_file_status`/`_folder_coverage`): ❌ INCREMENTAL
   (writer `+1`/`-1`, seeded at spawn), never rebuilt from a walk (wipes it); SEPARATE `ACCOUNTED` cache, not `COUNTS`.
-  Invariants: `DETAILS.md`.
 
 Still open: MTP, faces/captions.
 

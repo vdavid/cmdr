@@ -9,7 +9,7 @@ checklist live in the parent `../CLAUDE.md` + `../DETAILS.md`.
   + `indexing`, copy scan via `walkdir`, space via `libc::statvfs` FFI.
 - `mtp.rs`: `MtpVolume`, MTP device storage; direct async MTP calls, `MtpReadStream` (bounded-window reads).
   macOS/Linux only.
-- `smb/`: `SmbVolume`, direct async smb2, as a directory module. `mod.rs` owns the struct + `connect_smb_volume`;
+- `smb/`: `SmbVolume`, direct async smb2. `mod.rs` owns the struct + `connect_smb_volume`;
   concerns split into `events`, `state`, `mapping`, `session`, `reconnect`, `streams`, `scan`, `scan_pool`, and
   `volume_impl` (the whole `impl Volume`, since a trait impl can't be split across files).
 - `smb_watcher.rs`: background SMB change watcher on a dedicated smb2 session.
@@ -23,9 +23,10 @@ Depth: `DETAILS.md` (§§ Per-backend decisions, Gotchas, SMB auto-upgrade / rec
 
 - **The SMB watcher runs on a dedicated smb2 session, not a clone of the main connection.** Stacking CHANGE_NOTIFY
   long-polls on the write session wedges Samba (pinned by `smb_integration_concurrent_streaming_writes_no_deadlock`).
-- **A background index scan lists across a pool of extra smb2 sessions (`smb/scan_pool.rs`)** (cold-NAS scans are
-  ksmbd per-connection-serialized; 4 connections ≈ 3.8×). Transparent to the scanner; a dead member retries on a
-  sibling, never the MAIN session. See DETAILS § "SMB scan-connection pool".
+- **Background bulk work (scan listings + media prefetch) uses a pool of extra smb2 sessions**
+  (`smb/scan_pool.rs`; ksmbd serializes per connection, 4 connections ≈ 3.8×). Reads are compound-only on members;
+  dead members retry on siblings, never the MAIN session; REFCOUNTED across overlapping sessions. DETAILS § "SMB
+  scan-connection pool".
 - **The SMB watcher doesn't reconnect itself; on death it kicks the one reconnect path** (`spawn_watcher_death_reconnect`
   → `do_attempt_reconnect`, single source of truth, bounded backoff), which respawns the watcher AND resumes the index.
   Don't give it its OWN reconnect loop (a second state machine swallows real disconnects).
