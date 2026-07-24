@@ -1567,8 +1567,12 @@ async fn queued_rescans_start_after_active_completes() {
     reconciler.queue_must_scan_sub_dirs(PathBuf::from("/nonexistent_cmdr_test/second"), &writer);
 
     // Without the drain, the second path stays queued forever.
+    // 30 s is a backstop, not a guess: the drain runs on detached OS threads that
+    // each open a SQLite connection and ride the writer, and under a saturated CI
+    // runner (thousands of tests in parallel) those threads can wait seconds just
+    // to be scheduled. A 5 s ceiling sat too close to that worst case and tripped.
     crate::test_support::wait_until_async(
-        Duration::from_secs(5),
+        Duration::from_secs(30),
         "the rescan queue to drain after each active rescan completes",
         || !reconciler.is_rescan_active_for_test() && reconciler.pending_rescans_snapshot().is_empty(),
     )
