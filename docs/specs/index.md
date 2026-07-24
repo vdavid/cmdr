@@ -6,6 +6,12 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
+- [ ] 2026-07-24 `test-hardening-plan.md` - Kill the Rust test-synchronization flake class at its root: one canonical
+      `wait_until` helper (panics on timeout) replacing ~11 ad-hoc copies and ~49 hand-rolled poll loops, RAII isolation
+      guards for the two globals tests contend on (`LISTING_CACHE`, `WRITE_OPERATION_STATE`), two real completion
+      counters (`indexing/writer` idle epoch, `write_operations/manager` admission passes), a mop-up of every remaining
+      sleep site, and a `desktop-rust-test-sleep` check landing error-level on a clean tree. Frontend production races
+      are explicitly out of scope.
 - [ ] 2026-07-23 `image-indexing-progress-ux.md` - Four image-indexing UX changes: (1) a new `indexing` file-badge state
       so a re-enriching file reads "indexing now" instead of a false "waiting to be indexed"; (2) surface the existing
       per-drive enrichment progress (counts + per-minute rate + ETA) inside Settings; (3) restructure
