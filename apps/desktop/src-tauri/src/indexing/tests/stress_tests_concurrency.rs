@@ -1193,9 +1193,9 @@ fn test_listings_complete_under_reconciler_load_and_rapid_navigation() {
             let started = Arc::clone(&started);
             let root_for_thread = root_for_listing.clone();
             std::thread::spawn(move || {
+                let s = started.fetch_add(1, Ordering::Relaxed);
                 // allowed-test-sleep: the staggered starts ARE the design; each listing thread is
                 // meant to hit a different point of the storm, which same-instant starts wouldn't
-                let s = started.fetch_add(1, Ordering::Relaxed);
                 std::thread::sleep(Duration::from_millis(50 * s as u64));
 
                 // path is already canonical (we use `canonical_root` and subdirs under it)

@@ -168,6 +168,9 @@ jobs:
       - name: Check lock-poison
         run: ./scripts/check/check --check desktop-rust-lock-poison --ci
 
+      - name: Check test-sleep
+        run: ./scripts/check/check --check desktop-rust-test-sleep --ci
+
       - name: Check mtp-dropping-timeout
         run: ./scripts/check/check --check desktop-rust-mtp-dropping-timeout --ci
 

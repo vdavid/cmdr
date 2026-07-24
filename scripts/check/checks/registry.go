@@ -141,6 +141,18 @@ var AllChecks = []CheckDefinition{
 		Run:               RunErrorStringMatch,
 	},
 	{
+		ID:                "desktop-rust-test-sleep",
+		Nickname:          "test-sleep",
+		DisplayName:       "test-sleep",
+		App:               AppDesktop,
+		Tech:              "🦀 Rust",
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Inputs:            rustInputs,
+		Run:               RunTestSleep,
+	},
+	{
 		ID:                "desktop-rust-lock-poison",
 		Nickname:          "lock-poison",
 		DisplayName:       "lock-poison",

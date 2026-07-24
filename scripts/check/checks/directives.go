@@ -70,6 +70,15 @@ func (t *directiveTracker) markUsed(lineNum int, line, prev string) {
 	}
 }
 
+// markLineUsed flags a specific directive line as having excused a violation.
+// Use it when the directive is not on the immediately-preceding line but earlier
+// in the contiguous comment block above the flagged code (a wrapped, multi-line
+// reason). The caller found the directive line itself; this records it so it
+// isn't reported as an orphan.
+func (t *directiveTracker) markLineUsed(lineNum int) {
+	t.used[lineNum] = true
+}
+
 // orphans returns the recorded-but-never-used directive sites, sorted by line.
 func (t *directiveTracker) orphans(relPath string) []orphanDirective {
 	var out []orphanDirective

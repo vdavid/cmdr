@@ -137,7 +137,7 @@ CheckDefinition{
 ### Return values
 
 - `Success(message)` on success with a short, informative message
-- `Warning(message)` for non-fatal issues
+- `CheckResult{Code: ResultWarning, Message: ...}` for a non-fatal warning (there is no `Warning()` constructor; build the struct directly, as the length and coverage scanners do)
 - `Skipped(reason)` when the check can't run (for example, missing config)
 - `CheckResult{}, error` on failure
 - `SuccessWithChanges(message)` when the check made local fixes (auto-fix mode); CI mode should still error
@@ -397,8 +397,10 @@ Prerequisites these tests rely on (per-test temp backing root, watcher off, `vir
 Checks by app and tech:
 
 - **Desktop / Rust**: rustfmt, clippy, cargo-audit, cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd,
-  log-error-macro, error-string-match, lock-poison, mtp-dropping-timeout, mtp-no-transport-reset, bindings-fresh,
-  ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)
+  log-error-macro, error-string-match, lock-poison, test-sleep (flags a fixed `thread::sleep` / `tokio::time::sleep` in
+  test code, where a condition-based `wait_until` belongs; opt out a genuine sleep-is-the-subject site with
+  `// allowed-test-sleep: <reason>`), mtp-dropping-timeout, mtp-no-transport-reset, bindings-fresh, ipc-enum-camelcase,
+  tests, integration-tests (Docker SMB), tests-linux (slow)
 - **Desktop / Svelte**: prettier, eslint, svelte-kit-sync, eslint-typecheck-svelte, eslint-typecheck-typescript,
   stylelint, css-unused, a11y-contrast, a11y-coverage (every primitive has a tier-3 a11y test), ui-primitive-coverage
   (every top-level `lib/ui/*.svelte` primitive has a Debug > Components catalog section), dialog-gallery-coverage (every

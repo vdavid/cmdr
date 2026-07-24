@@ -71,9 +71,10 @@ sharded workers on macOS (one MTP-only + two non-MTP). Run: `pnpm check desktop-
 
 ### `pollUntil`: condition-based wait
 
-In `apps/desktop/test/e2e-playwright/helpers.ts`. **The canonical way to wait** in E2E. Polls a condition every 50ms
-(default) until it returns true or times out. Never use `await sleep(N)` in spec files; the
-`cmdr/no-arbitrary-sleep-in-e2e` ESLint rule will flag it.
+In `apps/desktop/test/e2e-playwright/helpers.ts`. The condition-based wait for the E2E suite. Polls a condition every
+50ms (default) until it returns true or times out. The rules for how to wait (never `await sleep(N)`, never a bare
+`await pollUntil(...)` whose timeout is silently discarded) live in `../testing.md` § Anti-patterns; the
+`cmdr/no-arbitrary-sleep-in-e2e` and `bare-poll` checks enforce them.
 
 ```ts
 await pollUntil(tauriPage, async () => tauriPage.isVisible('.error-pane'), 5000)
