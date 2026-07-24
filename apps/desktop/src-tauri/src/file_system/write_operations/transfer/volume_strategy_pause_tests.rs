@@ -16,7 +16,8 @@
 //!   double records every open and counts any (now-unexpected) `cancel_and_release`,
 //!   so no real device is needed. Includes a no-pause sanity case.
 
-use super::super::super::state::{OperationIntent, WRITE_OPERATION_STATE, cancel_write_operation, load_intent};
+use super::super::super::state::{OperationIntent, cancel_write_operation, load_intent};
+use super::super::super::test_support::TestOperationGuard;
 use super::test_support::{
     REL_CHUNK, REL_TOTAL, RelLog, ReleasingSource, SLOW_CHUNK_COUNT, SLOW_CHUNK_SIZE, SlowSource, make_state,
     rel_expected_bytes,
@@ -119,12 +120,9 @@ async fn streaming_copy_cancel_while_paused_mid_file_unblocks() {
     let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
     // Install into the global state cache so the production cancel API reaches it.
-    let op_id = format!("test-midchunk-cancel-{:?}", std::thread::current().id());
-    let state = make_state();
-    WRITE_OPERATION_STATE
-        .write()
-        .unwrap()
-        .insert(op_id.clone(), Arc::clone(&state));
+    let op = TestOperationGuard::register_state("test-midchunk-cancel", make_state());
+    let op_id = op.id().to_string();
+    let state = Arc::clone(op.state());
 
     let bytes_seen = Arc::new(AtomicU64::new(0));
     let source_drv = Arc::clone(&source);
@@ -188,8 +186,6 @@ async fn streaming_copy_cancel_while_paused_mid_file_unblocks() {
         !dest.exists(Path::new("big.bin")).await,
         "a cancelled mid-file copy leaves no partial dest file"
     );
-
-    WRITE_OPERATION_STATE.write().unwrap().remove(&op_id);
     let _ = fs::remove_dir_all(&dst_dir);
 }
 
@@ -336,12 +332,9 @@ async fn paused_mtp_copy_cancel_while_paused_keeps_no_partial() {
     fs::create_dir_all(&dst_dir).unwrap();
     let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
-    let op_id = format!("test-relpause-cancel-{:?}", std::thread::current().id());
-    let state = make_state();
-    WRITE_OPERATION_STATE
-        .write()
-        .unwrap()
-        .insert(op_id.clone(), Arc::clone(&state));
+    let op = TestOperationGuard::register_state("test-relpause-cancel", make_state());
+    let op_id = op.id().to_string();
+    let state = Arc::clone(op.state());
 
     let source_drv = Arc::clone(&source);
     let dest_drv = Arc::clone(&dest);
@@ -399,8 +392,6 @@ async fn paused_mtp_copy_cancel_while_paused_keeps_no_partial() {
         !dest.exists(Path::new("movie.bin")).await,
         "a cancelled mid-file copy leaves no partial dest file"
     );
-
-    WRITE_OPERATION_STATE.write().unwrap().remove(&op_id);
     let _ = fs::remove_dir_all(&dst_dir);
 }
 

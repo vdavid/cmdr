@@ -5,10 +5,11 @@
 //! Items are `pub(super)` so the sibling test modules (all children of the
 //! `transfer_driver` module) can reach them through `super::test_support::…`.
 
-use super::super::super::state::{WRITE_OPERATION_STATE, WriteOperationState};
+use super::super::super::state::WriteOperationState;
+use super::super::super::test_support::TestOperationGuard;
 use super::super::super::types::{ConflictResolution, WriteOperationPhase, WriteOperationType};
 use super::DriverConfig;
-use crate::ignore_poison::{IgnorePoison, RwLockIgnorePoison};
+use crate::ignore_poison::IgnorePoison;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -26,14 +27,12 @@ pub(super) fn make_state() -> Arc<WriteOperationState> {
     Arc::new(WriteOperationState::new(Duration::from_millis(0)))
 }
 
-pub(super) fn install_state(op_id: &str, state: Arc<WriteOperationState>) {
-    WRITE_OPERATION_STATE
-        .write_ignore_poison()
-        .insert(op_id.to_string(), state);
-}
-
-pub(super) fn uninstall_state(op_id: &str) {
-    WRITE_OPERATION_STATE.write_ignore_poison().remove(op_id);
+/// Registers `state` under `op_id`. Bind the returned guard for the whole test:
+/// it removes the `WRITE_OPERATION_STATE` entry on drop, so a failing assertion
+/// can't leave a corpse for the next test's `cancel_all_write_operations` to walk.
+#[must_use = "bind the guard; dropping it immediately unregisters the state"]
+pub(super) fn install_state(op_id: &str, state: Arc<WriteOperationState>) -> TestOperationGuard {
+    TestOperationGuard::register_as(op_id, state)
 }
 
 pub(super) fn paths(names: &[&str]) -> Vec<PathBuf> {

@@ -10,7 +10,7 @@
 
 use super::super::super::state::{register_operation_status, unregister_operation_status};
 use super::super::super::types::{CollectorEventSink, WriteOperationType};
-use super::test_support::{install_state, make_state, uninstall_state, unique_op_id};
+use super::test_support::{install_state, make_state, unique_op_id};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -27,7 +27,7 @@ async fn concurrent_per_file_callback_is_cancel_only_not_pause_aware() {
 
     let op_id = unique_op_id("concurrent-pause-noop");
     let state = make_state();
-    install_state(&op_id, Arc::clone(&state));
+    let _op_guard = install_state(&op_id, Arc::clone(&state));
     register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink: Arc<dyn super::super::super::types::OperationEventSink> = Arc::new(CollectorEventSink::new());
 
@@ -62,7 +62,5 @@ async fn concurrent_per_file_callback_is_cancel_only_not_pause_aware() {
         std::ops::ControlFlow::Break(()),
         "concurrent per-file callback must still break on cancel"
     );
-
-    uninstall_state(&op_id);
     unregister_operation_status(&op_id);
 }

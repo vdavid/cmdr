@@ -9,11 +9,11 @@ use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 
-use super::caching::{CachedListing, LISTING_CACHE, try_get_watched_listing};
+use super::caching::try_get_watched_listing;
+use super::caching_test_support::{TestListing, TestListingGuard, unique_test_id};
 use super::metadata::FileEntry;
-use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use crate::file_system::get_volume_manager;
 use crate::file_system::volume::{
     BatchScanResult, CopyScanResult, InMemoryVolume, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError,
@@ -129,61 +129,37 @@ fn make_test_entry(name: &str) -> FileEntry {
     }
 }
 
-/// Inserts a `CachedListing` directly into `LISTING_CACHE` with a controllable
-/// sequence. Returns the listing_id.
+/// A test-owned cached listing with a controllable sequence, on the test's own
+/// volume id. Removed from `LISTING_CACHE` when the returned guard drops.
 fn insert_listing_with_sequence(
-    id: &str,
+    tag: &str,
     volume_id: &str,
     path: &str,
     entries: Vec<FileEntry>,
     sequence: u64,
-) -> String {
-    let listing_id = id.to_string();
-    let mut cache = LISTING_CACHE.write().unwrap();
-    cache.insert(
-        listing_id.clone(),
-        CachedListing {
-            volume_id: volume_id.to_string(),
-            path: PathBuf::from(path),
-            entries,
-            sort_by: SortColumn::Name,
-            sort_order: SortOrder::Ascending,
-            directory_sort_mode: DirectorySortMode::LikeFiles,
-            sequence: AtomicU64::new(sequence),
-            created_at: std::time::Instant::now(),
-            last_accessed_ms: AtomicU64::new(0),
-        },
-    );
-    listing_id
-}
-
-fn remove_listing(id: &str) {
-    let mut cache = LISTING_CACHE.write().unwrap();
-    cache.remove(id);
+) -> TestListingGuard {
+    TestListing::new()
+        .volume(volume_id)
+        .path(path)
+        .entries(entries)
+        .sequence(sequence)
+        .insert(tag)
 }
 
 fn unique(suffix: &str) -> String {
-    use std::sync::atomic::AtomicU64;
-    static N: AtomicU64 = AtomicU64::new(0);
-    format!(
-        "oracle_{}_{}_{}",
-        suffix,
-        std::process::id(),
-        N.fetch_add(1, Ordering::Relaxed)
-    )
+    unique_test_id(&format!("oracle-{suffix}"))
 }
 
 #[test]
 fn try_get_watched_listing_hit_when_watcher_reports_true() {
     let vid = unique("hit_vid");
-    let lid = unique("hit_lid");
     let path = "/oracle/hit";
 
     let vol = Arc::new(WatchedFlagVolume::new("hit-vol", true));
     get_volume_manager().register(&vid, vol);
 
     let entries = vec![make_test_entry("a.txt"), make_test_entry("b.txt")];
-    let lid_inserted = insert_listing_with_sequence(&lid, &vid, path, entries.clone(), 0);
+    let _lid = insert_listing_with_sequence("listing", &vid, path, entries.clone(), 0);
 
     let result = try_get_watched_listing(&vid, Path::new(path));
     assert!(result.is_some(), "expected Some(entries) on watched listing");
@@ -192,26 +168,23 @@ fn try_get_watched_listing_hit_when_watcher_reports_true() {
     assert_eq!(returned[0].name, "a.txt");
     assert_eq!(returned[1].name, "b.txt");
 
-    remove_listing(&lid_inserted);
     get_volume_manager().unregister(&vid);
 }
 
 #[test]
 fn try_get_watched_listing_miss_when_watcher_reports_false() {
     let vid = unique("miss_watch_vid");
-    let lid = unique("miss_watch_lid");
     let path = "/oracle/miss_watch";
 
     let vol = Arc::new(WatchedFlagVolume::new("miss-vol", false));
     get_volume_manager().register(&vid, vol);
 
     let entries = vec![make_test_entry("a.txt")];
-    let lid_inserted = insert_listing_with_sequence(&lid, &vid, path, entries, 0);
+    let _lid = insert_listing_with_sequence("listing", &vid, path, entries, 0);
 
     let result = try_get_watched_listing(&vid, Path::new(path));
     assert!(result.is_none(), "expected None when watcher is dead");
 
-    remove_listing(&lid_inserted);
     get_volume_manager().unregister(&vid);
 }
 
@@ -230,16 +203,13 @@ fn try_get_watched_listing_miss_when_no_listing_exists() {
 #[test]
 fn try_get_watched_listing_miss_when_volume_not_registered() {
     let vid = unique("no_vol");
-    let lid = unique("no_vol_lid");
     let path = "/oracle/no_vol";
 
     // Listing exists in cache, but no volume is registered for this ID.
-    let lid_inserted = insert_listing_with_sequence(&lid, &vid, path, vec![make_test_entry("a.txt")], 0);
+    let _lid = insert_listing_with_sequence("listing", &vid, path, vec![make_test_entry("a.txt")], 0);
 
     let result = try_get_watched_listing(&vid, Path::new(path));
     assert!(result.is_none(), "expected None when volume isn't registered");
-
-    remove_listing(&lid_inserted);
 }
 
 #[test]
@@ -248,15 +218,13 @@ fn try_get_watched_listing_picks_highest_sequence() {
     // numbers. The oracle must return the entries from the higher-sequence
     // listing, deterministically — never the lower-sequence one.
     let vid = unique("seq_vid");
-    let lid_lo = unique("seq_lo");
-    let lid_hi = unique("seq_hi");
     let path = "/oracle/seq_path";
 
     let vol = Arc::new(WatchedFlagVolume::new("seq-vol", true));
     get_volume_manager().register(&vid, vol);
 
-    let lid_lo_inserted = insert_listing_with_sequence(&lid_lo, &vid, path, vec![make_test_entry("low.txt")], 1);
-    let lid_hi_inserted = insert_listing_with_sequence(&lid_hi, &vid, path, vec![make_test_entry("high.txt")], 9);
+    let _lid_lo = insert_listing_with_sequence("listing", &vid, path, vec![make_test_entry("low.txt")], 1);
+    let _lid_hi = insert_listing_with_sequence("listing", &vid, path, vec![make_test_entry("high.txt")], 9);
 
     let result = try_get_watched_listing(&vid, Path::new(path));
     assert!(result.is_some());
@@ -264,8 +232,6 @@ fn try_get_watched_listing_picks_highest_sequence() {
     assert_eq!(returned.len(), 1);
     assert_eq!(returned[0].name, "high.txt", "expected the higher-sequence listing");
 
-    remove_listing(&lid_lo_inserted);
-    remove_listing(&lid_hi_inserted);
     get_volume_manager().unregister(&vid);
 }
 
@@ -278,7 +244,6 @@ fn try_get_watched_listing_miss_for_start_streaming_watcher_gap() {
     // `false` from the test volume's `listing_is_watched`). The oracle
     // must miss in that window so write ops fall through to a real read.
     let vid = unique("race_vid");
-    let lid = unique("race_lid");
     let path = "/oracle/race";
 
     // `watched=false` mirrors "WATCHER_MANAGER has no entry yet" on the
@@ -286,12 +251,11 @@ fn try_get_watched_listing_miss_for_start_streaming_watcher_gap() {
     let vol = Arc::new(WatchedFlagVolume::new("race-vol", false));
     get_volume_manager().register(&vid, vol);
 
-    let lid_inserted = insert_listing_with_sequence(&lid, &vid, path, vec![make_test_entry("a.txt")], 0);
+    let _lid = insert_listing_with_sequence("listing", &vid, path, vec![make_test_entry("a.txt")], 0);
 
     let result = try_get_watched_listing(&vid, Path::new(path));
     assert!(result.is_none(), "expected None during the streaming->watcher gap");
 
-    remove_listing(&lid_inserted);
     get_volume_manager().unregister(&vid);
 }
 
@@ -301,18 +265,16 @@ fn try_get_watched_listing_reflects_flip_to_unwatched() {
     // on subsequent calls. Documents that the oracle is a live query and
     // doesn't memoize per-listing.
     let vid = unique("flip_vid");
-    let lid = unique("flip_lid");
     let path = "/oracle/flip";
 
     let vol: Arc<WatchedFlagVolume> = Arc::new(WatchedFlagVolume::new("flip-vol", true));
     get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
 
-    let lid_inserted = insert_listing_with_sequence(&lid, &vid, path, vec![make_test_entry("x.txt")], 0);
+    let _lid = insert_listing_with_sequence("listing", &vid, path, vec![make_test_entry("x.txt")], 0);
 
     assert!(try_get_watched_listing(&vid, Path::new(path)).is_some());
     vol.set_watched(false);
     assert!(try_get_watched_listing(&vid, Path::new(path)).is_none());
 
-    remove_listing(&lid_inserted);
     get_volume_manager().unregister(&vid);
 }

@@ -15,7 +15,8 @@ use super::super::conflict_responder_test_support::{
 use super::tests::{make_state, make_volumes};
 use super::*;
 use crate::file_system::volume::Volume;
-use crate::file_system::write_operations::state::{WRITE_OPERATION_STATE, cancel_write_operation};
+use crate::file_system::write_operations::state::cancel_write_operation;
+use crate::file_system::write_operations::test_support::TestOperationGuard;
 use crate::file_system::write_operations::types::{
     CollectorEventSink, ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
     WriteErrorEvent, WriteSourceItemDoneEvent,
@@ -204,11 +205,8 @@ async fn merge_cancel_mid_stream_preserves_unshadowed_dest_files() {
     // Register the op in the global cache so `cancel_write_operation` (the
     // public path) can find and transition it — exercising the real cancel
     // machinery, not a direct intent store.
-    let op_id = "op-merge-cancel-public";
-    WRITE_OPERATION_STATE
-        .write()
-        .unwrap()
-        .insert(op_id.to_string(), Arc::clone(&state));
+    let op = TestOperationGuard::register_state("merge-cancel-public", Arc::clone(&state));
+    let op_id = op.id();
 
     // A sink that cancels (public path) once any byte has been copied.
     struct CancelOnByteSink {
@@ -270,8 +268,6 @@ async fn merge_cancel_mid_stream_preserves_unshadowed_dest_files() {
         &config,
     )
     .await;
-
-    WRITE_OPERATION_STATE.write().unwrap().remove(op_id);
 
     assert!(result.is_err(), "expected a cancelled result, got {result:?}");
     // Cancel keeps partials but must never destroy a dest-only file.
@@ -809,11 +805,8 @@ async fn cancel_while_queued_unblocks_both_no_hang() {
     source.create_file(Path::new("/three.txt"), b"THREE").await.unwrap();
 
     let state = make_state();
-    let op_id = "op-cancel-while-queued";
-    WRITE_OPERATION_STATE
-        .write()
-        .unwrap()
-        .insert(op_id.to_string(), Arc::clone(&state));
+    let op = TestOperationGuard::register_state("cancel-while-queued", Arc::clone(&state));
+    let op_id = op.id();
 
     // Wait until the FIRST prompt is installed (proving task A is awaiting and
     // task B is queued on the mutex), then cancel via the public path. Cancelling
@@ -861,8 +854,6 @@ async fn cancel_while_queued_unblocks_both_no_hang() {
         ),
     )
     .await;
-
-    WRITE_OPERATION_STATE.write().unwrap().remove(op_id);
 
     let installed = canceller.await.unwrap();
     assert!(installed, "a Stop prompt should have been installed before cancel");

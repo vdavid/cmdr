@@ -26,7 +26,8 @@
 //! WIRING (opt-in gate, floor, cap, cancel-awareness, byte-exact resume) is
 //! covered end to end.
 
-use super::super::super::state::{WRITE_OPERATION_STATE, cancel_write_operation};
+use super::super::super::state::cancel_write_operation;
+use super::super::super::test_support::TestOperationGuard;
 use super::test_support::{
     AutoYieldTuningGuard, ForegroundBusyDest, PanicIfProbedDest, REL_CHUNK, REL_TOTAL, RelLog, ReleasingSource,
     make_state, rel_expected_bytes,
@@ -241,12 +242,9 @@ async fn dest_yield_cancel_while_parked_returns_cancelled_promptly() {
         written: Arc::clone(&written),
     });
 
-    let op_id = format!("test-dest-yield-cancel-{:?}", std::thread::current().id());
-    let state = make_state();
-    WRITE_OPERATION_STATE
-        .write()
-        .unwrap()
-        .insert(op_id.clone(), Arc::clone(&state));
+    let op = TestOperationGuard::register_state("test-dest-yield-cancel", make_state());
+    let op_id = op.id().to_string();
+    let state = Arc::clone(op.state());
 
     let local = tokio::task::LocalSet::new();
     local
@@ -306,8 +304,6 @@ async fn dest_yield_cancel_while_parked_returns_cancelled_promptly() {
             );
         })
         .await;
-
-    WRITE_OPERATION_STATE.write().unwrap().remove(&op_id);
 }
 
 #[tokio::test(flavor = "current_thread")]

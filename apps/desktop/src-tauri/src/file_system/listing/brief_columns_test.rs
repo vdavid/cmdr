@@ -4,55 +4,38 @@
 //! with deterministic per-codepoint widths so we can assert exact pixel sums.
 //! Each font ID gets a fixed width-per-char so the widest filename's width
 //! collapses to `width_per_char * name.chars().count()`.
+//!
+//! Both globals are keyed per test: the listing id comes from `TestListing`, and
+//! the font id from `seed_font`'s own counter. `font_metrics::METRICS_CACHE` is
+//! process-global too, so a shared font id let one test's `store_metrics` change
+//! the width-per-char another test was mid-assertion on.
 
 use std::collections::HashMap;
-use std::path::PathBuf;
-use std::sync::atomic::AtomicU64;
 
 use super::brief_columns::{BriefColumnsError, compute_brief_column_text_widths};
-use super::caching::{CachedListing, LISTING_CACHE};
+use super::caching_test_support::{TestListing, TestListingGuard, unique_test_id};
 use super::metadata::FileEntry;
-use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
 
-const DEFAULT_FONT_ID: &str = "brief-columns-test-1";
-const ALT_FONT_ID: &str = "brief-columns-test-2";
-
-/// Seeds `font_metrics` with a uniform `width_per_char` for ASCII printable
-/// code points so any filename of length N measures to `N * width_per_char`.
-fn seed_font(font_id: &str, width_per_char: f32) {
+/// Seeds `font_metrics` with a uniform `width_per_char` for ASCII printable code
+/// points, under a font id unique to this call, so any filename of length N
+/// measures to `N * width_per_char`. Returns the font id.
+fn seed_font(width_per_char: f32) -> String {
+    let font_id = unique_test_id("brief-columns-font");
     let mut widths = HashMap::new();
     // ASCII printable range covers all test filenames; the `..` literal too.
     for cp in 0x20u32..=0x7Eu32 {
         widths.insert(cp, width_per_char);
     }
-    crate::font_metrics::store_metrics(font_id.to_string(), widths).unwrap();
+    crate::font_metrics::store_metrics(font_id.clone(), widths).expect("store font metrics");
+    font_id
 }
 
 fn make_entry(name: &str) -> FileEntry {
     FileEntry::new(name.to_string(), format!("/test/{}", name), false, false)
 }
 
-fn insert_listing(id: &str, entries: Vec<FileEntry>) {
-    let mut cache = LISTING_CACHE.write().unwrap();
-    cache.insert(
-        id.to_string(),
-        CachedListing {
-            volume_id: "root".to_string(),
-            path: PathBuf::from("/test"),
-            entries,
-            sort_by: SortColumn::Name,
-            sort_order: SortOrder::Ascending,
-            directory_sort_mode: DirectorySortMode::LikeFiles,
-            sequence: AtomicU64::new(0),
-            created_at: std::time::Instant::now(),
-            last_accessed_ms: AtomicU64::new(0),
-        },
-    );
-}
-
-fn cleanup(id: &str) {
-    let mut cache = LISTING_CACHE.write().unwrap();
-    cache.remove(id);
+fn insert_listing(tag: &str, entries: Vec<FileEntry>) -> TestListingGuard {
+    TestListing::new().entries(entries).insert(tag)
 }
 
 // ============================================================================
@@ -61,27 +44,23 @@ fn cleanup(id: &str) {
 
 #[test]
 fn empty_listing_returns_empty_vec() {
-    seed_font(DEFAULT_FONT_ID, 7.0);
-    insert_listing("bc_empty", vec![]);
+    let font = seed_font(7.0);
+    let listing = insert_listing("bc_empty", vec![]);
 
-    let widths = compute_brief_column_text_widths("bc_empty", 5, false, DEFAULT_FONT_ID, false).unwrap();
+    let widths = compute_brief_column_text_widths(listing.id(), 5, false, &font, false).unwrap();
     assert!(widths.is_empty());
-
-    cleanup("bc_empty");
 }
 
 #[test]
 fn empty_listing_with_has_parent_returns_one_column() {
     // Just ".." → 1 cell → 1 column.
-    seed_font(DEFAULT_FONT_ID, 7.0);
-    insert_listing("bc_empty_parent", vec![]);
+    let font = seed_font(7.0);
+    let listing = insert_listing("bc_empty_parent", vec![]);
 
-    let widths = compute_brief_column_text_widths("bc_empty_parent", 5, true, DEFAULT_FONT_ID, false).unwrap();
+    let widths = compute_brief_column_text_widths(listing.id(), 5, true, &font, false).unwrap();
     assert_eq!(widths.len(), 1);
     // Width of ".." (2 chars) * 7.0
     assert_eq!(widths[0], 14.0);
-
-    cleanup("bc_empty_parent");
 }
 
 // ============================================================================
@@ -90,14 +69,12 @@ fn empty_listing_with_has_parent_returns_one_column() {
 
 #[test]
 fn single_column_single_short_name() {
-    seed_font(DEFAULT_FONT_ID, 10.0);
-    insert_listing("bc_single", vec![make_entry("abc")]);
+    let font = seed_font(10.0);
+    let listing = insert_listing("bc_single", vec![make_entry("abc")]);
 
-    let widths = compute_brief_column_text_widths("bc_single", 5, false, DEFAULT_FONT_ID, false).unwrap();
+    let widths = compute_brief_column_text_widths(listing.id(), 5, false, &font, false).unwrap();
     assert_eq!(widths.len(), 1);
     assert_eq!(widths[0], 30.0);
-
-    cleanup("bc_single");
 }
 
 // ============================================================================
@@ -108,15 +85,13 @@ fn single_column_single_short_name() {
 fn long_name_unclamped_width() {
     // Backend doesn't clamp; FE owns the cap. Verify a very long name
     // measures to its full width.
-    seed_font(DEFAULT_FONT_ID, 8.0);
+    let font = seed_font(8.0);
     let long = "a".repeat(200);
-    insert_listing("bc_long", vec![make_entry(&long)]);
+    let listing = insert_listing("bc_long", vec![make_entry(&long)]);
 
-    let widths = compute_brief_column_text_widths("bc_long", 5, false, DEFAULT_FONT_ID, false).unwrap();
+    let widths = compute_brief_column_text_widths(listing.id(), 5, false, &font, false).unwrap();
     assert_eq!(widths.len(), 1);
     assert_eq!(widths[0], 8.0 * 200.0);
-
-    cleanup("bc_long");
 }
 
 // ============================================================================
@@ -125,7 +100,7 @@ fn long_name_unclamped_width() {
 
 #[test]
 fn two_columns_second_shorter() {
-    seed_font(DEFAULT_FONT_ID, 5.0);
+    let font = seed_font(5.0);
     // 6 entries, items_per_column = 3 → 2 columns.
     // Col 0: longest is "wide-name" (9 chars)
     // Col 1: longest is "ok.txt" (6 chars)
@@ -137,15 +112,13 @@ fn two_columns_second_shorter() {
         make_entry("ok.txt"),
         make_entry("d.txt"),
     ];
-    insert_listing("bc_two_cols", entries);
+    let listing = insert_listing("bc_two_cols", entries);
 
-    let widths = compute_brief_column_text_widths("bc_two_cols", 3, false, DEFAULT_FONT_ID, false).unwrap();
+    let widths = compute_brief_column_text_widths(listing.id(), 3, false, &font, false).unwrap();
     assert_eq!(widths.len(), 2);
     assert_eq!(widths[0], 9.0 * 5.0); // "wide-name"
     assert_eq!(widths[1], 6.0 * 5.0); // "ok.txt"
     assert!(widths[1] < widths[0]);
-
-    cleanup("bc_two_cols");
 }
 
 // ============================================================================
@@ -154,13 +127,11 @@ fn two_columns_second_shorter() {
 
 #[test]
 fn items_per_column_zero_rejected() {
-    seed_font(DEFAULT_FONT_ID, 5.0);
-    insert_listing("bc_zero", vec![make_entry("a.txt")]);
+    let font = seed_font(5.0);
+    let listing = insert_listing("bc_zero", vec![make_entry("a.txt")]);
 
-    let result = compute_brief_column_text_widths("bc_zero", 0, false, DEFAULT_FONT_ID, false);
+    let result = compute_brief_column_text_widths(listing.id(), 0, false, &font, false);
     assert_eq!(result, Err(BriefColumnsError::InvalidItemsPerColumn));
-
-    cleanup("bc_zero");
 }
 
 // ============================================================================
@@ -178,7 +149,7 @@ fn has_parent_offset_math_items_per_column_5() {
     // Col 2: entries[9..14) clamped to [9..12) -> 3 cells: "j", "k", "l"
     //
     // We'll plant a known-width filename in each column to verify the slicing.
-    seed_font(DEFAULT_FONT_ID, 3.0);
+    let font = seed_font(3.0);
 
     let entries = vec![
         // entries[0..4) → column 0 (alongside "..")
@@ -198,33 +169,29 @@ fn has_parent_offset_math_items_per_column_5() {
         make_entry("ll"),
     ];
 
-    insert_listing("bc_parent", entries);
+    let listing = insert_listing("bc_parent", entries);
 
-    let widths = compute_brief_column_text_widths("bc_parent", 5, true, DEFAULT_FONT_ID, false).unwrap();
+    let widths = compute_brief_column_text_widths(listing.id(), 5, true, &font, false).unwrap();
     assert_eq!(widths.len(), 3, "expected 3 columns, got {:?}", widths);
     assert_eq!(widths[0], 7.0 * 3.0, "col 0: widest is 'ddddddd' (7 chars)");
     assert_eq!(widths[1], 9.0 * 3.0, "col 1: widest is 'iiiiiiiii' (9 chars)");
     assert_eq!(widths[2], 5.0 * 3.0, "col 2: widest is 'kkkkk' (5 chars)");
-
-    cleanup("bc_parent");
 }
 
 #[test]
 fn has_parent_parent_literal_counts_in_col0() {
     // Verify ".." (2 chars) is the widest if real entries are shorter.
-    seed_font(DEFAULT_FONT_ID, 4.0);
+    let font = seed_font(4.0);
 
-    insert_listing("bc_parent_widest", vec![make_entry("a"), make_entry("b")]);
+    let listing = insert_listing("bc_parent_widest", vec![make_entry("a"), make_entry("b")]);
 
-    let widths = compute_brief_column_text_widths("bc_parent_widest", 5, true, DEFAULT_FONT_ID, false).unwrap();
+    let widths = compute_brief_column_text_widths(listing.id(), 5, true, &font, false).unwrap();
     assert_eq!(widths.len(), 1);
     assert_eq!(
         widths[0],
         2.0 * 4.0,
         "'..' (2 chars * 4.0) should beat single-char entries"
     );
-
-    cleanup("bc_parent_widest");
 }
 
 #[test]
@@ -233,17 +200,15 @@ fn has_parent_items_per_column_1() {
     // Col 0: ".." only (entries[0..0)).
     // Col 1: entries[0..1) -> first entry.
     // Col 2: entries[1..2) -> second entry.
-    seed_font(DEFAULT_FONT_ID, 2.0);
+    let font = seed_font(2.0);
 
-    insert_listing("bc_parent_ipc1", vec![make_entry("foo"), make_entry("longername")]);
+    let listing = insert_listing("bc_parent_ipc1", vec![make_entry("foo"), make_entry("longername")]);
 
-    let widths = compute_brief_column_text_widths("bc_parent_ipc1", 1, true, DEFAULT_FONT_ID, false).unwrap();
+    let widths = compute_brief_column_text_widths(listing.id(), 1, true, &font, false).unwrap();
     assert_eq!(widths.len(), 3);
     assert_eq!(widths[0], 2.0 * 2.0); // ".."
     assert_eq!(widths[1], 3.0 * 2.0); // "foo"
     assert_eq!(widths[2], 10.0 * 2.0); // "longername"
-
-    cleanup("bc_parent_ipc1");
 }
 
 // ============================================================================
@@ -252,24 +217,22 @@ fn has_parent_items_per_column_1() {
 
 #[test]
 fn include_hidden_false_filters_dotfiles() {
-    seed_font(DEFAULT_FONT_ID, 5.0);
-    insert_listing(
+    let font = seed_font(5.0);
+    let listing = insert_listing(
         "bc_hidden_off",
         vec![make_entry(".hidden-very-long-name"), make_entry("v")],
     );
 
-    let widths = compute_brief_column_text_widths("bc_hidden_off", 5, false, DEFAULT_FONT_ID, false).unwrap();
+    let widths = compute_brief_column_text_widths(listing.id(), 5, false, &font, false).unwrap();
     assert_eq!(widths.len(), 1);
     // Only "v" remains; ".hidden..." is filtered out.
     assert_eq!(widths[0], 1.0 * 5.0);
-
-    cleanup("bc_hidden_off");
 }
 
 #[test]
 fn include_hidden_true_includes_dotfiles() {
-    seed_font(DEFAULT_FONT_ID, 5.0);
-    insert_listing(
+    let font = seed_font(5.0);
+    let listing = insert_listing(
         "bc_hidden_on",
         vec![
             make_entry(".hidden-very-long-name"), // 22 chars
@@ -277,11 +240,9 @@ fn include_hidden_true_includes_dotfiles() {
         ],
     );
 
-    let widths = compute_brief_column_text_widths("bc_hidden_on", 5, false, DEFAULT_FONT_ID, true).unwrap();
+    let widths = compute_brief_column_text_widths(listing.id(), 5, false, &font, true).unwrap();
     assert_eq!(widths.len(), 1);
     assert_eq!(widths[0], 22.0 * 5.0);
-
-    cleanup("bc_hidden_on");
 }
 
 // ============================================================================
@@ -290,19 +251,17 @@ fn include_hidden_true_includes_dotfiles() {
 
 #[test]
 fn non_default_font_id_uses_alt_metrics() {
-    seed_font(DEFAULT_FONT_ID, 5.0);
-    seed_font(ALT_FONT_ID, 8.0);
+    let font = seed_font(5.0);
+    let alt_font = seed_font(8.0);
 
-    insert_listing("bc_alt_font", vec![make_entry("hello")]);
+    let listing = insert_listing("bc_alt_font", vec![make_entry("hello")]);
 
-    let widths_default = compute_brief_column_text_widths("bc_alt_font", 5, false, DEFAULT_FONT_ID, false).unwrap();
-    let widths_alt = compute_brief_column_text_widths("bc_alt_font", 5, false, ALT_FONT_ID, false).unwrap();
+    let widths_default = compute_brief_column_text_widths(listing.id(), 5, false, &font, false).unwrap();
+    let widths_alt = compute_brief_column_text_widths(listing.id(), 5, false, &alt_font, false).unwrap();
 
     assert_eq!(widths_default[0], 5.0 * 5.0);
     assert_eq!(widths_alt[0], 5.0 * 8.0);
     assert_ne!(widths_default[0], widths_alt[0]);
-
-    cleanup("bc_alt_font");
 }
 
 // ============================================================================
@@ -311,12 +270,10 @@ fn non_default_font_id_uses_alt_metrics() {
 
 #[test]
 fn missing_font_id_returns_font_metrics_not_ready() {
-    insert_listing("bc_no_font", vec![make_entry("a.txt")]);
+    let listing = insert_listing("bc_no_font", vec![make_entry("a.txt")]);
 
-    let result = compute_brief_column_text_widths("bc_no_font", 5, false, "definitely-not-cached-font-id-xyz", false);
+    let result = compute_brief_column_text_widths(listing.id(), 5, false, "definitely-not-cached-font-id-xyz", false);
     assert_eq!(result, Err(BriefColumnsError::FontMetricsNotReady));
-
-    cleanup("bc_no_font");
 }
 
 // ============================================================================
@@ -325,12 +282,13 @@ fn missing_font_id_returns_font_metrics_not_ready() {
 
 #[test]
 fn missing_listing_returns_listing_not_found() {
-    seed_font(DEFAULT_FONT_ID, 5.0);
+    let font = seed_font(5.0);
+    let absent = "bc_listing_definitely_not_there";
 
-    let result = compute_brief_column_text_widths("bc_listing_definitely_not_there", 5, false, DEFAULT_FONT_ID, false);
+    let result = compute_brief_column_text_widths(absent, 5, false, &font, false);
     match result {
         Err(BriefColumnsError::ListingNotFound(id)) => {
-            assert_eq!(id, "bc_listing_definitely_not_there");
+            assert_eq!(id, absent);
         }
         other => panic!("expected ListingNotFound, got {:?}", other),
     }
@@ -342,17 +300,15 @@ fn missing_listing_returns_listing_not_found() {
 
 #[test]
 fn all_returned_widths_are_finite() {
-    seed_font(DEFAULT_FONT_ID, 6.0);
+    let font = seed_font(6.0);
     let entries: Vec<FileEntry> = (0..50).map(|i| make_entry(&format!("entry-{:03}", i))).collect();
-    insert_listing("bc_finite", entries);
+    let listing = insert_listing("bc_finite", entries);
 
-    let widths = compute_brief_column_text_widths("bc_finite", 7, true, DEFAULT_FONT_ID, false).unwrap();
+    let widths = compute_brief_column_text_widths(listing.id(), 7, true, &font, false).unwrap();
 
     assert!(!widths.is_empty());
     for (i, w) in widths.iter().enumerate() {
         assert!(w.is_finite(), "column {} returned non-finite width {}", i, w);
         assert!(*w >= 0.0, "column {} returned negative width {}", i, w);
     }
-
-    cleanup("bc_finite");
 }

@@ -718,9 +718,11 @@ mod tests {
     //! `FileInfo` sort-key and scan-result TTL tests live in `scan_cache.rs`.
     //!
     //! Tests that touch the global `WRITE_OPERATION_STATE` /
-    //! `OPERATION_STATUS_CACHE` caches use unique operation IDs so they don't
-    //! collide with concurrent test runs in the same process.
+    //! `OPERATION_STATUS_CACHE` caches key their entries per test, so they don't
+    //! collide with concurrent test runs in the same process. `WRITE_OPERATION_STATE`
+    //! entries go through `TestOperationGuard`, which also removes them on unwind.
     use super::*;
+    use crate::file_system::write_operations::test_support::TestOperationGuard;
     use crate::file_system::write_operations::types::{ConflictResolution, WriteOperationType};
     use std::sync::atomic::Ordering;
 
@@ -733,91 +735,71 @@ mod tests {
 
     // ---- cancel_write_operation state-machine transitions ----
     //
-    // Helper: install a fresh state into the global cache under `op_id`, run
-    // the cancellation, then read back the resulting intent. Cleans up after
-    // itself so the global cache isn't polluted.
+    // Helper: install a fresh state into the global cache under a unique op id,
+    // run the cancellation, then read back the resulting intent. The guard removes
+    // the entry when it drops, so a failing assertion can't leak it.
 
-    fn install_state(op_id: &str, initial: OperationIntent) -> Arc<WriteOperationState> {
-        let state = Arc::new(WriteOperationState::new(Duration::from_millis(50)));
-        state.intent.store(initial as u8, Ordering::Relaxed);
-        WRITE_OPERATION_STATE
-            .write()
-            .unwrap()
-            .insert(op_id.to_string(), Arc::clone(&state));
-        state
-    }
-
-    fn uninstall_state(op_id: &str) {
-        WRITE_OPERATION_STATE.write().unwrap().remove(op_id);
+    fn install_state(label: &str, initial: OperationIntent) -> TestOperationGuard {
+        let op = TestOperationGuard::register(label);
+        op.state().intent.store(initial as u8, Ordering::Relaxed);
+        op
     }
 
     #[test]
     fn cancel_running_with_rollback_goes_to_rolling_back() {
-        let id = unique_id("cancel-running-rollback");
-        let state = install_state(&id, OperationIntent::Running);
-        cancel_write_operation(&id, true);
-        assert_eq!(load_intent(&state.intent), OperationIntent::RollingBack);
-        uninstall_state(&id);
+        let op = install_state("cancel-running-rollback", OperationIntent::Running);
+        cancel_write_operation(op.id(), true);
+        assert_eq!(load_intent(&op.state().intent), OperationIntent::RollingBack);
     }
 
     #[test]
     fn cancel_running_without_rollback_goes_to_stopped() {
-        let id = unique_id("cancel-running-stop");
-        let state = install_state(&id, OperationIntent::Running);
-        cancel_write_operation(&id, false);
-        assert_eq!(load_intent(&state.intent), OperationIntent::Stopped);
-        uninstall_state(&id);
+        let op = install_state("cancel-running-stop", OperationIntent::Running);
+        cancel_write_operation(op.id(), false);
+        assert_eq!(load_intent(&op.state().intent), OperationIntent::Stopped);
     }
 
     #[test]
     fn cancel_rolling_back_with_rollback_is_a_noop() {
         // Only RollingBack → Stopped is valid; RollingBack → RollingBack is a no-op.
-        let id = unique_id("cancel-rb-rb");
-        let state = install_state(&id, OperationIntent::RollingBack);
-        cancel_write_operation(&id, true);
+        let op = install_state("cancel-rb-rb", OperationIntent::RollingBack);
+        cancel_write_operation(op.id(), true);
         assert_eq!(
-            load_intent(&state.intent),
+            load_intent(&op.state().intent),
             OperationIntent::RollingBack,
             "RollingBack → RollingBack is not a valid transition; intent must not change"
         );
-        uninstall_state(&id);
     }
 
     #[test]
     fn cancel_rolling_back_without_rollback_goes_to_stopped() {
-        let id = unique_id("cancel-rb-stop");
-        let state = install_state(&id, OperationIntent::RollingBack);
-        cancel_write_operation(&id, false);
-        assert_eq!(load_intent(&state.intent), OperationIntent::Stopped);
-        uninstall_state(&id);
+        let op = install_state("cancel-rb-stop", OperationIntent::RollingBack);
+        cancel_write_operation(op.id(), false);
+        assert_eq!(load_intent(&op.state().intent), OperationIntent::Stopped);
     }
 
     #[test]
     fn cancel_stopped_is_terminal_for_any_target() {
         // Stopped is terminal; no transition is valid from it.
-        let id = unique_id("cancel-stopped");
-        let state = install_state(&id, OperationIntent::Stopped);
-        cancel_write_operation(&id, true);
-        assert_eq!(load_intent(&state.intent), OperationIntent::Stopped);
-        cancel_write_operation(&id, false);
-        assert_eq!(load_intent(&state.intent), OperationIntent::Stopped);
-        uninstall_state(&id);
+        let op = install_state("cancel-stopped", OperationIntent::Stopped);
+        cancel_write_operation(op.id(), true);
+        assert_eq!(load_intent(&op.state().intent), OperationIntent::Stopped);
+        cancel_write_operation(op.id(), false);
+        assert_eq!(load_intent(&op.state().intent), OperationIntent::Stopped);
     }
 
     #[test]
     fn cancel_drops_the_conflict_resolution_sender() {
         // After cancel, any pending receiver should observe a closed channel.
-        let id = unique_id("cancel-drops-tx");
-        let state = install_state(&id, OperationIntent::Running);
+        let op = install_state("cancel-drops-tx", OperationIntent::Running);
         let (tx, mut rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
-        *state.conflict_resolution_tx.lock().unwrap() = Some(tx);
-        cancel_write_operation(&id, false);
+        *op.state().conflict_resolution_tx.lock().unwrap() = Some(tx);
+        cancel_write_operation(op.id(), false);
         // The receiver should now be closed (sender dropped).
         match rx.try_recv() {
             Err(tokio::sync::oneshot::error::TryRecvError::Closed) => {} // good
             other => panic!("expected sender to be dropped, got {other:?}"),
         }
-        uninstall_state(&id);
     }
 
     // ---- backend_cancel flag flipping ---------------------------------------
@@ -830,39 +812,33 @@ mod tests {
 
     #[test]
     fn cancel_write_operation_flips_backend_cancel_to_stopped() {
-        let id = unique_id("cancel-flips-backend-stopped");
-        let state = install_state(&id, OperationIntent::Running);
-        assert!(!state.backend_cancel.load(Ordering::Acquire));
-        cancel_write_operation(&id, false);
+        let op = install_state("cancel-flips-backend-stopped", OperationIntent::Running);
+        assert!(!op.state().backend_cancel.load(Ordering::Acquire));
+        cancel_write_operation(op.id(), false);
         assert!(
-            state.backend_cancel.load(Ordering::Acquire),
+            op.state().backend_cancel.load(Ordering::Acquire),
             "cancel → Stopped must also flip backend_cancel so in-flight USB ops bail"
         );
-        uninstall_state(&id);
     }
 
     #[test]
     fn cancel_write_operation_flips_backend_cancel_to_rolling_back() {
-        let id = unique_id("cancel-flips-backend-rb");
-        let state = install_state(&id, OperationIntent::Running);
-        cancel_write_operation(&id, true);
+        let op = install_state("cancel-flips-backend-rb", OperationIntent::Running);
+        cancel_write_operation(op.id(), true);
         assert!(
-            state.backend_cancel.load(Ordering::Acquire),
+            op.state().backend_cancel.load(Ordering::Acquire),
             "cancel → RollingBack must also flip backend_cancel — the user wants the wire activity stopped, even though we're going to delete created files"
         );
-        uninstall_state(&id);
     }
 
     #[test]
     fn cancel_all_write_operations_flips_backend_cancel() {
-        let id = unique_id("cancel-all-flips-backend");
-        let state = install_state(&id, OperationIntent::Running);
+        let op = install_state("cancel-all-flips-backend", OperationIntent::Running);
         cancel_all_write_operations();
         assert!(
-            state.backend_cancel.load(Ordering::Acquire),
+            op.state().backend_cancel.load(Ordering::Acquire),
             "cancel_all must flip backend_cancel so teardown also stops the wire activity"
         );
-        uninstall_state(&id);
     }
 
     #[test]
@@ -870,15 +846,13 @@ mod tests {
         // Stopped → anything is terminal, so backend_cancel state must not
         // change either. This guards against a subtle regression where the
         // flag flip happens before the validity check.
-        let id = unique_id("cancel-stopped-noop");
-        let state = install_state(&id, OperationIntent::Stopped);
-        state.backend_cancel.store(false, Ordering::Release);
-        cancel_write_operation(&id, true);
+        let op = install_state("cancel-stopped-noop", OperationIntent::Stopped);
+        op.state().backend_cancel.store(false, Ordering::Release);
+        cancel_write_operation(op.id(), true);
         assert!(
-            !state.backend_cancel.load(Ordering::Acquire),
+            !op.state().backend_cancel.load(Ordering::Acquire),
             "Stopped is terminal: invalid transition must not flip backend_cancel"
         );
-        uninstall_state(&id);
     }
 
     #[test]
@@ -895,27 +869,19 @@ mod tests {
         // Pins the `current != OperationIntent::Stopped` guard. If the guard
         // flips to `==`, running operations would NOT be stopped; they'd
         // remain running.
-        let running_id = unique_id("cancel-all-running");
-        let stopped_id = unique_id("cancel-all-stopped");
-        let rb_id = unique_id("cancel-all-rb");
-
-        let running = install_state(&running_id, OperationIntent::Running);
-        let stopped = install_state(&stopped_id, OperationIntent::Stopped);
-        let rb = install_state(&rb_id, OperationIntent::RollingBack);
+        let running = install_state("cancel-all-running", OperationIntent::Running);
+        let stopped = install_state("cancel-all-stopped", OperationIntent::Stopped);
+        let rb = install_state("cancel-all-rb", OperationIntent::RollingBack);
 
         cancel_all_write_operations();
 
-        assert_eq!(load_intent(&running.intent), OperationIntent::Stopped);
-        assert_eq!(load_intent(&stopped.intent), OperationIntent::Stopped);
+        assert_eq!(load_intent(&running.state().intent), OperationIntent::Stopped);
+        assert_eq!(load_intent(&stopped.state().intent), OperationIntent::Stopped);
         assert_eq!(
-            load_intent(&rb.intent),
+            load_intent(&rb.state().intent),
             OperationIntent::Stopped,
             "RollingBack should also be force-stopped on teardown"
         );
-
-        uninstall_state(&running_id);
-        uninstall_state(&stopped_id);
-        uninstall_state(&rb_id);
     }
 
     // Panic-safe cache + lane cleanup is now `manager::ManagedTaskGuard`; its
@@ -925,37 +891,32 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn resolve_write_conflict_delivers_response_to_waiter() {
-        let id = unique_id("resolve-conflict");
-        let state = install_state(&id, OperationIntent::Running);
+        let op = install_state("resolve-conflict", OperationIntent::Running);
 
         let (tx, rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
-        *state.conflict_resolution_tx.lock().unwrap() = Some(tx);
+        *op.state().conflict_resolution_tx.lock().unwrap() = Some(tx);
 
-        resolve_write_conflict(&id, ConflictResolution::Overwrite, true);
+        resolve_write_conflict(op.id(), ConflictResolution::Overwrite, true);
 
         let resp = rx.await.expect("sender should have delivered the response");
         assert_eq!(resp.resolution, ConflictResolution::Overwrite);
         assert!(resp.apply_to_all);
-
-        uninstall_state(&id);
     }
 
     #[test]
     fn resolve_write_conflict_without_pending_sender_is_a_noop() {
-        let id = unique_id("resolve-no-tx");
-        let _state = install_state(&id, OperationIntent::Running);
+        let op = install_state("resolve-no-tx", OperationIntent::Running);
         // No sender stashed; must not panic.
-        resolve_write_conflict(&id, ConflictResolution::Skip, false);
-        uninstall_state(&id);
+        resolve_write_conflict(op.id(), ConflictResolution::Skip, false);
     }
 
     // ---- register / update / unregister + list / get ----
 
     #[test]
     fn register_then_get_status_roundtrip() {
-        let id = unique_id("reg-get");
+        let op = install_state("reg-get", OperationIntent::Running);
+        let id = op.id().to_string();
         register_operation_status(&id, WriteOperationType::Copy, vec![]);
-        let _state = install_state(&id, OperationIntent::Running);
 
         let status = get_operation_status(&id).expect("operation should be in cache");
         assert_eq!(status.operation_id, id);
@@ -970,8 +931,8 @@ mod tests {
         assert_eq!(status.bytes_done, 0);
         assert_eq!(status.bytes_total, 0);
 
-        // is_running flips when WRITE_OPERATION_STATE entry is removed.
-        uninstall_state(&id);
+        // is_running flips when the WRITE_OPERATION_STATE entry is removed.
+        drop(op);
         let status = get_operation_status(&id).expect("status cache still has it");
         assert!(!status.is_running);
 
@@ -1247,22 +1208,48 @@ mod tests {
 
     #[test]
     fn pause_resume_write_operation_flip_the_live_gate() {
-        let id = unique_id("pause-live");
-        let state = install_state(&id, OperationIntent::Running);
-        assert!(!state.pause_gate.is_paused());
+        let op = install_state("pause-live", OperationIntent::Running);
+        assert!(!op.state().pause_gate.is_paused());
 
-        assert!(pause_write_operation(&id), "should find the live state");
-        assert!(state.pause_gate.is_paused(), "pause must set the gate flag");
+        assert!(pause_write_operation(op.id()), "should find the live state");
+        assert!(op.state().pause_gate.is_paused(), "pause must set the gate flag");
 
-        assert!(resume_write_operation(&id), "should find the live state");
-        assert!(!state.pause_gate.is_paused(), "resume must clear the gate flag");
-
-        uninstall_state(&id);
+        assert!(resume_write_operation(op.id()), "should find the live state");
+        assert!(!op.state().pause_gate.is_paused(), "resume must clear the gate flag");
     }
 
     #[test]
     fn pause_resume_unknown_operation_returns_false() {
         assert!(!pause_write_operation("does-not-exist-pause"));
         assert!(!resume_write_operation("does-not-exist-pause"));
+    }
+
+    // ---- TestOperationGuard's own contract -----------------------------------
+
+    #[test]
+    fn guard_unregisters_its_state_even_when_the_test_body_panics() {
+        // Pins the panic-safety the guard exists for: a hand-rolled `remove` placed
+        // after the assertions leaked the entry whenever an assertion failed first,
+        // and the corpse then showed up in the next test's
+        // `cancel_all_write_operations` / `list_active_operations`.
+        let payload = std::panic::catch_unwind(|| {
+            let op = TestOperationGuard::register("guard-panic-safety");
+            let id = op.id().to_string();
+            assert!(WRITE_OPERATION_STATE.read().unwrap().contains_key(&id));
+            panic!("simulated assertion failure while the state is registered: {id}");
+        })
+        .expect_err("the closure should have panicked");
+        let id = payload
+            .downcast_ref::<String>()
+            .expect("panic payload is the formatted message")
+            .rsplit(": ")
+            .next()
+            .expect("message ends with the operation id")
+            .to_string();
+
+        assert!(
+            !WRITE_OPERATION_STATE.read().unwrap().contains_key(&id),
+            "Drop must unregister on unwind, not only on the happy path"
+        );
     }
 }

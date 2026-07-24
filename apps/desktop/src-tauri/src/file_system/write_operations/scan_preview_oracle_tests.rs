@@ -13,9 +13,8 @@ use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 
 use super::scan_preview::run_oracle_aware_batch_scan;
 use crate::file_system::get_volume_manager;
-use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
+use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard};
 use crate::file_system::listing::metadata::FileEntry;
-use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use crate::file_system::volume::{BatchScanResult, CopyScanResult, InMemoryVolume, Volume, VolumeError};
 
 /// Wraps an `InMemoryVolume` and counts `list_directory` calls so tests can
@@ -175,28 +174,16 @@ fn make_symlinked_dir_entry(name: &str, parent: &str) -> FileEntry {
 }
 
 /// Inserts a CachedListing directly into LISTING_CACHE. Returns the listing_id.
-fn insert_listing(id: &str, volume_id: &str, path: &str, entries: Vec<FileEntry>) -> String {
-    let mut cache = LISTING_CACHE.write().unwrap();
-    cache.insert(
-        id.to_string(),
-        CachedListing {
-            volume_id: volume_id.to_string(),
-            path: PathBuf::from(path),
-            entries,
-            sort_by: SortColumn::Name,
-            sort_order: SortOrder::Ascending,
-            directory_sort_mode: DirectorySortMode::LikeFiles,
-            sequence: AtomicU64::new(1),
-            created_at: std::time::Instant::now(),
-            last_accessed_ms: AtomicU64::new(0),
-        },
-    );
-    id.to_string()
-}
-
-fn remove_listing(id: &str) {
-    let mut cache = LISTING_CACHE.write().unwrap();
-    cache.remove(id);
+/// A cached pane listing owned by the caller: the guard removes it from the
+/// process-global `LISTING_CACHE` on drop, unwind included.
+#[must_use = "bind the guard; dropping it immediately removes the listing"]
+fn insert_listing(tag: &str, volume_id: &str, path: &str, entries: Vec<FileEntry>) -> TestListingGuard {
+    TestListing::new()
+        .volume(volume_id)
+        .path(path)
+        .entries(entries)
+        .sequence(1)
+        .insert(tag)
 }
 
 /// Test 1: when the parent listing is watcher-backed, scan-preview reads sizes
@@ -204,7 +191,6 @@ fn remove_listing(id: &str) {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn scan_preview_uses_watched_listing_for_top_level_files() {
     let vid = unique("uses_watched");
-    let lid = unique("uses_watched_lid");
 
     // Pre-populate the InMemoryVolume so the wrapper's `list_directory` would
     // actually return useful data IF called. We assert it ISN'T called.
@@ -218,7 +204,7 @@ async fn scan_preview_uses_watched_listing_for_top_level_files() {
         make_file_entry("b.jpg", "/dcim", 2000),
         make_file_entry("c.jpg", "/dcim", 3000),
     ];
-    let lid_inserted = insert_listing(&lid, &vid, "/dcim", cached);
+    let _listing = insert_listing("listing", &vid, "/dcim", cached);
 
     let sources = vec![
         PathBuf::from("/dcim/a.jpg"),
@@ -244,7 +230,6 @@ async fn scan_preview_uses_watched_listing_for_top_level_files() {
     assert_eq!(result.per_path[1].0, PathBuf::from("/dcim/b.jpg"));
     assert_eq!(result.per_path[2].0, PathBuf::from("/dcim/c.jpg"));
 
-    remove_listing(&lid_inserted);
     get_volume_manager().unregister(&vid);
 }
 
@@ -256,7 +241,6 @@ async fn scan_preview_uses_watched_listing_for_top_level_files() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn scan_preview_falls_through_when_watcher_dead() {
     let vid = unique("dead_watcher");
-    let lid = unique("dead_watcher_lid");
 
     let vol = Arc::new(CountingWatchedVolume::new("dead-watcher-vol", false));
     // Seed the backend so the cold-path scan can answer correctly.
@@ -270,7 +254,7 @@ async fn scan_preview_falls_through_when_watcher_dead() {
     // the watcher being dead, the result would carry this size instead of the
     // backend's real 12 bytes.
     let cached = vec![make_file_entry("a.jpg", "/cold", 99999)];
-    let lid_inserted = insert_listing(&lid, &vid, "/cold", cached);
+    let _listing = insert_listing("listing", &vid, "/cold", cached);
 
     let sources = vec![PathBuf::from("/cold/a.jpg")];
     let is_cancelled = || false;
@@ -286,7 +270,6 @@ async fn scan_preview_falls_through_when_watcher_dead() {
         "watcher-dead path must NOT consume the cached size"
     );
 
-    remove_listing(&lid_inserted);
     get_volume_manager().unregister(&vid);
 }
 
@@ -296,15 +279,13 @@ async fn scan_preview_falls_through_when_watcher_dead() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn scan_preview_uses_cached_subfolder_listing_when_other_pane_has_it() {
     let vid = unique("subfolder_pane");
-    let parent_lid = unique("subfolder_parent_lid");
-    let sub_lid = unique("subfolder_child_lid");
 
     let vol = Arc::new(CountingWatchedVolume::new("subfolder-vol", true));
     get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
 
     // Parent pane lists `/a` with one entry: subfolder `sub` (a directory).
     let parent_cached = vec![make_dir_entry("sub", "/a")];
-    let parent_lid_inserted = insert_listing(&parent_lid, &vid, "/a", parent_cached);
+    let _parent_listing = insert_listing("listing", &vid, "/a", parent_cached);
 
     // Other pane lists `/a/sub` with two cached files. Both panes share the
     // same volume; `listing_is_watched` returns true volume-wide so the oracle
@@ -313,7 +294,7 @@ async fn scan_preview_uses_cached_subfolder_listing_when_other_pane_has_it() {
         make_file_entry("x.txt", "/a/sub", 100),
         make_file_entry("y.txt", "/a/sub", 200),
     ];
-    let sub_lid_inserted = insert_listing(&sub_lid, &vid, "/a/sub", sub_cached);
+    let _sub_listing = insert_listing("listing", &vid, "/a/sub", sub_cached);
 
     // Scanning a copy of `/a` (selecting the subfolder).
     let sources = vec![PathBuf::from("/a/sub")];
@@ -336,8 +317,6 @@ async fn scan_preview_uses_cached_subfolder_listing_when_other_pane_has_it() {
     assert_eq!(result.aggregate.dir_count, 0);
     assert_eq!(result.aggregate.total_bytes, 300);
 
-    remove_listing(&parent_lid_inserted);
-    remove_listing(&sub_lid_inserted);
     get_volume_manager().unregister(&vid);
 }
 
@@ -346,14 +325,13 @@ async fn scan_preview_uses_cached_subfolder_listing_when_other_pane_has_it() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn scan_preview_preserves_symlink_semantics() {
     let vid = unique("symlink");
-    let parent_lid = unique("symlink_parent_lid");
 
     let vol = Arc::new(CountingWatchedVolume::new("symlink-vol", true));
     get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
 
     // /a is open, has one entry: `link-to-elsewhere`, a symlinked directory.
     let parent_cached = vec![make_symlinked_dir_entry("link-to-elsewhere", "/a")];
-    let parent_lid_inserted = insert_listing(&parent_lid, &vid, "/a", parent_cached);
+    let _parent_listing = insert_listing("listing", &vid, "/a", parent_cached);
 
     // We do NOT cache anything for /a/link-to-elsewhere. If the walker were
     // to recurse into a symlinked directory, the oracle would miss for that
@@ -376,7 +354,6 @@ async fn scan_preview_preserves_symlink_semantics() {
     assert_eq!(result.aggregate.file_count, 1);
     assert_eq!(result.aggregate.dir_count, 0);
 
-    remove_listing(&parent_lid_inserted);
     get_volume_manager().unregister(&vid);
 }
 
@@ -387,8 +364,6 @@ async fn scan_preview_preserves_symlink_semantics() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn scan_preview_handles_listing_closed_mid_walk() {
     let vid = unique("mid_walk_close");
-    let parent_lid = unique("mid_walk_parent_lid");
-    let sub_lid = unique("mid_walk_sub_lid");
 
     let vol = Arc::new(CountingWatchedVolume::new("mid-walk-vol", true));
     // Seed the backing volume with what /a/sub really contains, so the
@@ -401,13 +376,13 @@ async fn scan_preview_handles_listing_closed_mid_walk() {
 
     // Parent pane lists `/a` with one entry: subfolder `sub`.
     let parent_cached = vec![make_dir_entry("sub", "/a")];
-    let parent_lid_inserted = insert_listing(&parent_lid, &vid, "/a", parent_cached);
+    let _parent_listing = insert_listing("listing", &vid, "/a", parent_cached);
 
     // Pane B has `/a/sub` cached too, but we close it BEFORE running the scan.
     let sub_entries = vec![make_file_entry("phantom.bin", "/a/sub", 12345)];
-    let sub_lid_inserted = insert_listing(&sub_lid, &vid, "/a/sub", sub_entries);
+    let sub_listing = insert_listing("listing", &vid, "/a/sub", sub_entries);
     // Simulate pane B closing: remove the listing right before the scan.
-    remove_listing(&sub_lid_inserted);
+    drop(sub_listing);
 
     let sources = vec![PathBuf::from("/a/sub")];
     let is_cancelled = || false;
@@ -431,6 +406,5 @@ async fn scan_preview_handles_listing_closed_mid_walk() {
         "should reflect real file size, not the stale cache"
     );
 
-    remove_listing(&parent_lid_inserted);
     get_volume_manager().unregister(&vid);
 }

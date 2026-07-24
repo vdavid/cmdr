@@ -513,4 +513,23 @@ This module's state machine (`state.rs`) is the spine of the cancel UX. Past inv
 3. **Add at least one E2E test** for user-visible flows (transfer dialogs, conflict policies); use `dispatchMenuCommand` for keyboard-shortcut triggers, see `docs/testing.md` § "❌ Synthesized F-key dispatches".
 4. **Run `cargo mutants --file src/file_system/write_operations/<file>.rs`** after substantial changes; this module has ~85-90% mutation score per file and shouldn't regress. See `docs/testing.md` § "Process".
 
+### Test isolation for `WRITE_OPERATION_STATE`
+
+`cargo test` runs the crate's tests as threads in ONE process, so the `WRITE_OPERATION_STATE` map is shared by every
+write-op test at once. `test_support::TestOperationGuard` owns one entry per test:
+
+- **Unique key.** `register(tag)` / `register_state(tag, state)` mint a process-unique op id (tag + pid + counter), so a
+  hardcoded literal can't collide with a sibling test. `register_as(op_id, state)` adopts an id the suite already
+  generated (`transfer_driver`'s `unique_op_id`), for tests that thread the id through the call under test.
+- **Panic-safe teardown.** `Drop` removes the entry, so an assertion that fails before a hand-rolled `remove` can't
+  leave a corpse for the next test's `cancel_all_write_operations` to walk or `list_active_operations` to count. Pinned
+  by `state::tests::guard_unregisters_its_state_even_when_the_test_body_panics`. Keep the guard on the stack: a
+  `std::mem::forget` or a clone that outlives the test defeats it.
+
+Same shape as `listing::caching_test_support::TestListingGuard` (over `LISTING_CACHE`) and
+`indexing::tests::stress_test_helpers::TestInstanceGuard` (over `INDEX_REGISTRY`).
+
+**New subsystem state hangs off a struct, not a `static`.** These guards are the retrofit cost of a process-global; a
+handle threaded through its callers needs none of it.
+
 See also: `docs/testing.md` for the project-wide testing playbook.

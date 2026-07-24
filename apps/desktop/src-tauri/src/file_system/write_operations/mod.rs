@@ -660,6 +660,8 @@ mod scan_preview_oracle_tests;
 #[cfg(test)]
 mod settle_event_tests;
 #[cfg(test)]
+pub(crate) mod test_support;
+#[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod validation_integration_test;

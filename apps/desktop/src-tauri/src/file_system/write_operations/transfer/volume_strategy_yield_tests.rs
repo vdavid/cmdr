@@ -17,7 +17,8 @@
 //! that does NOT opt into foreground-yield never yields, and that a yield-capable
 //! source with nothing pending never self-yields.
 
-use super::super::super::state::{OperationIntent, WRITE_OPERATION_STATE, cancel_write_operation, load_intent};
+use super::super::super::state::{OperationIntent, cancel_write_operation, load_intent};
+use super::super::super::test_support::TestOperationGuard;
 use super::test_support::{
     AutoYieldTuningGuard, NeverPendingYieldSource, REL_CHUNK, REL_TOTAL, RelLog, ReleasingSource, YieldingSource,
     make_state, rel_expected_bytes,
@@ -351,12 +352,9 @@ async fn auto_yield_cancel_while_yielding_keeps_no_partial() {
     fs::create_dir_all(&dst_dir).unwrap();
     let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
-    let op_id = format!("test-autoyield-cancel-{:?}", std::thread::current().id());
-    let state = make_state();
-    WRITE_OPERATION_STATE
-        .write()
-        .unwrap()
-        .insert(op_id.clone(), Arc::clone(&state));
+    let op = TestOperationGuard::register_state("test-autoyield-cancel", make_state());
+    let op_id = op.id().to_string();
+    let state = Arc::clone(op.state());
 
     let local = tokio::task::LocalSet::new();
     local
@@ -416,8 +414,6 @@ async fn auto_yield_cancel_while_yielding_keeps_no_partial() {
             );
         })
         .await;
-
-    WRITE_OPERATION_STATE.write().unwrap().remove(&op_id);
     let _ = fs::remove_dir_all(&dst_dir);
 }
 

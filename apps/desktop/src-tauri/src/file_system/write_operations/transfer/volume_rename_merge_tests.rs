@@ -23,7 +23,8 @@ use super::conflict_responder_test_support::{
 use super::volume_move_same::move_within_same_volume_with_progress;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{LocalPosixVolume, Volume, VolumeError};
-use crate::file_system::write_operations::state::{WRITE_OPERATION_STATE, WriteOperationState, cancel_write_operation};
+use crate::file_system::write_operations::state::{WriteOperationState, cancel_write_operation};
+use crate::file_system::write_operations::test_support::TestOperationGuard;
 use crate::file_system::write_operations::types::{
     CollectorEventSink, ConflictResolution, VolumeCopyConfig, WriteOperationError,
 };
@@ -478,18 +479,14 @@ async fn rename_merge_cancel_keeps_moved_children_and_preserves_source() {
     }
     mkdir(root, "dst/album");
 
+    let op = TestOperationGuard::register_state("rename-merge-cancel", make_state());
     let volume: Arc<dyn Volume> = Arc::new(CancelOnFirstRenameVolume {
         inner: Arc::new(LocalPosixVolume::new("V", root.to_path_buf())),
-        operation_id: "op-merge-cancel".to_string(),
+        operation_id: op.id().to_string(),
         renames: AtomicUsize::new(0),
     });
 
     let events = Arc::new(CollectorEventSink::new());
-    let state = make_state();
-    WRITE_OPERATION_STATE
-        .write()
-        .unwrap()
-        .insert("op-merge-cancel".to_string(), Arc::clone(&state));
     let config = VolumeCopyConfig {
         conflict_resolution: ConflictResolution::Stop,
         progress_interval_ms: 0,
@@ -498,15 +495,14 @@ async fn rename_merge_cancel_keeps_moved_children_and_preserves_source() {
 
     let result = move_within_same_volume_with_progress(
         events.clone(),
-        "op-merge-cancel",
-        &state,
+        op.id(),
+        op.state(),
         Arc::clone(&volume),
         &[PathBuf::from("src/album")],
         Path::new("dst"),
         &config,
     )
     .await;
-    WRITE_OPERATION_STATE.write().unwrap().remove("op-merge-cancel");
 
     assert!(
         matches!(result, Err(WriteOperationError::Cancelled { .. })),

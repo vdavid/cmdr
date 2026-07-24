@@ -5,35 +5,15 @@
 //! that producers coalesce into one logical flush, not that Tauri routing works
 //! (that's covered by the existing watcher integration tests).
 
-use std::path::PathBuf;
-
-use super::caching::{CachedListing, LISTING_CACHE};
+use super::caching_test_support::{TestListing, TestListingGuard};
 use super::diff_emitter::{drop_pending, enqueue_diff, flush_now_for_test, pending_count};
 use super::metadata::FileEntry;
-use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use crate::file_system::watcher::DiffChange;
 
-fn install_listing(id: &str) {
-    let mut cache = LISTING_CACHE.write().unwrap();
-    cache.insert(
-        id.to_string(),
-        CachedListing {
-            volume_id: "root".to_string(),
-            path: PathBuf::from("/test"),
-            entries: Vec::new(),
-            sort_by: SortColumn::Name,
-            sort_order: SortOrder::Ascending,
-            directory_sort_mode: DirectorySortMode::default(),
-            sequence: std::sync::atomic::AtomicU64::new(0),
-            created_at: std::time::Instant::now(),
-            last_accessed_ms: std::sync::atomic::AtomicU64::new(0),
-        },
-    );
-}
-
-fn drop_listing(id: &str) {
-    let mut cache = LISTING_CACHE.write().unwrap();
-    cache.remove(id);
+/// A cached listing under a unique id. Dropping the guard runs the production
+/// teardown, which also drops the listing's pending diff buffer.
+fn install_listing(tag: &str) -> TestListingGuard {
+    TestListing::new().insert(tag)
 }
 
 fn make_change(name: &str, index: usize) -> DiffChange {
@@ -46,80 +26,59 @@ fn make_change(name: &str, index: usize) -> DiffChange {
 
 #[test]
 fn enqueue_accumulates_changes_in_buffer() {
-    let id = "diff-emitter-accumulate";
-    install_listing(id);
+    let listing = install_listing("diff-emitter-accumulate");
 
-    enqueue_diff(id, vec![make_change("a", 0)]);
-    enqueue_diff(id, vec![make_change("b", 1), make_change("c", 2)]);
-    enqueue_diff(id, vec![make_change("d", 3)]);
+    enqueue_diff(listing.id(), vec![make_change("a", 0)]);
+    enqueue_diff(listing.id(), vec![make_change("b", 1), make_change("c", 2)]);
+    enqueue_diff(listing.id(), vec![make_change("d", 3)]);
 
-    assert_eq!(pending_count(id), 4, "all changes should buffer until flush");
-
-    drop_pending(id);
-    drop_listing(id);
+    assert_eq!(pending_count(listing.id()), 4, "all changes should buffer until flush");
 }
 
 #[test]
 fn empty_changes_is_noop() {
-    let id = "diff-emitter-empty";
-    install_listing(id);
+    let listing = install_listing("diff-emitter-empty");
 
-    enqueue_diff(id, Vec::new());
-    assert_eq!(pending_count(id), 0);
-
-    drop_listing(id);
+    enqueue_diff(listing.id(), Vec::new());
+    assert_eq!(pending_count(listing.id()), 0);
 }
 
 #[test]
 fn drop_pending_clears_buffer() {
-    let id = "diff-emitter-drop";
-    install_listing(id);
+    let listing = install_listing("diff-emitter-drop");
 
-    enqueue_diff(id, vec![make_change("x", 0), make_change("y", 1)]);
-    assert_eq!(pending_count(id), 2);
+    enqueue_diff(listing.id(), vec![make_change("x", 0), make_change("y", 1)]);
+    assert_eq!(pending_count(listing.id()), 2);
 
-    drop_pending(id);
-    assert_eq!(pending_count(id), 0);
-
-    drop_listing(id);
+    drop_pending(listing.id());
+    assert_eq!(pending_count(listing.id()), 0);
 }
 
 #[test]
 fn buffers_are_isolated_per_listing() {
-    let a = "diff-emitter-iso-a";
-    let b = "diff-emitter-iso-b";
-    install_listing(a);
-    install_listing(b);
+    let a = install_listing("diff-emitter-iso-a");
+    let b = install_listing("diff-emitter-iso-b");
 
-    enqueue_diff(a, vec![make_change("x", 0)]);
-    enqueue_diff(b, vec![make_change("y", 0), make_change("z", 1)]);
+    enqueue_diff(a.id(), vec![make_change("x", 0)]);
+    enqueue_diff(b.id(), vec![make_change("y", 0), make_change("z", 1)]);
 
-    assert_eq!(pending_count(a), 1);
-    assert_eq!(pending_count(b), 2);
-
-    drop_pending(a);
-    drop_pending(b);
-    drop_listing(a);
-    drop_listing(b);
+    assert_eq!(pending_count(a.id()), 1);
+    assert_eq!(pending_count(b.id()), 2);
 }
 
 #[test]
 fn flush_empties_buffer_and_re_arms_for_next_burst() {
-    let id = "diff-emitter-flush";
-    install_listing(id);
+    let listing = install_listing("diff-emitter-flush");
 
-    enqueue_diff(id, vec![make_change("a", 0), make_change("b", 1)]);
-    assert_eq!(pending_count(id), 2);
+    enqueue_diff(listing.id(), vec![make_change("a", 0), make_change("b", 1)]);
+    assert_eq!(pending_count(listing.id()), 2);
 
     // Flush is best-effort: no AppHandle in unit tests, so the emit is a no-op,
     // but the buffer must still be drained and re-armed.
-    flush_now_for_test(id);
-    assert_eq!(pending_count(id), 0);
+    flush_now_for_test(listing.id());
+    assert_eq!(pending_count(listing.id()), 0);
 
     // A new enqueue after flush should accumulate again.
-    enqueue_diff(id, vec![make_change("c", 0)]);
-    assert_eq!(pending_count(id), 1);
-
-    drop_pending(id);
-    drop_listing(id);
+    enqueue_diff(listing.id(), vec![make_change("c", 0)]);
+    assert_eq!(pending_count(listing.id()), 1);
 }

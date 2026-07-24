@@ -19,7 +19,7 @@
 
 use super::super::super::state::{OperationIntent, register_operation_status, unregister_operation_status};
 use super::super::super::types::{CollectorEventSink, WriteOperationError, WriteOperationType};
-use super::test_support::{CallLog, copy_config, install_state, make_state, paths, uninstall_state, unique_op_id};
+use super::test_support::{CallLog, copy_config, install_state, make_state, paths, unique_op_id};
 use super::{PostLoopIntent, TransferContext, TransferOutcome, drive_transfer_serial_sync};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -38,7 +38,7 @@ fn sync_driver_does_not_invoke_closure_for_pre_skipped_sources() {
     // for a source the user already opted to skip.
     let op_id = unique_op_id("sync-pre-skip-no-closure");
     let state = make_state();
-    install_state(&op_id, Arc::clone(&state));
+    let _op_guard = install_state(&op_id, Arc::clone(&state));
     register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
     let log = CallLog::new();
@@ -74,7 +74,6 @@ fn sync_driver_does_not_invoke_closure_for_pre_skipped_sources() {
         vec![PathBuf::from("/b.txt")],
         "closure must NEVER fire for pre-skipped sources"
     );
-    uninstall_state(&op_id);
     unregister_operation_status(&op_id);
 }
 
@@ -84,7 +83,7 @@ fn sync_driver_honors_cancellation_at_start_of_iteration() {
     let op_id = unique_op_id("sync-pre-cancel");
     let state = make_state();
     state.intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
-    install_state(&op_id, Arc::clone(&state));
+    let _op_guard = install_state(&op_id, Arc::clone(&state));
     register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
     let log = CallLog::new();
@@ -109,7 +108,6 @@ fn sync_driver_honors_cancellation_at_start_of_iteration() {
 
     assert!(matches!(outcome.intent, PostLoopIntent::Cancelled));
     assert!(log.sources().is_empty(), "no closure invocations after cancellation");
-    uninstall_state(&op_id);
     unregister_operation_status(&op_id);
 }
 
@@ -119,7 +117,7 @@ fn sync_driver_stops_invoking_closure_after_mid_loop_cancel() {
     // the second iteration's cancel-check intercepts.
     let op_id = unique_op_id("sync-mid-cancel");
     let state = make_state();
-    install_state(&op_id, Arc::clone(&state));
+    let _op_guard = install_state(&op_id, Arc::clone(&state));
     register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
     let log = CallLog::new();
@@ -155,7 +153,6 @@ fn sync_driver_stops_invoking_closure_after_mid_loop_cancel() {
     );
     assert_eq!(outcome.files_done, 1);
     assert_eq!(outcome.bytes_done, 50);
-    uninstall_state(&op_id);
     unregister_operation_status(&op_id);
 }
 
@@ -163,7 +160,7 @@ fn sync_driver_stops_invoking_closure_after_mid_loop_cancel() {
 fn sync_driver_propagates_closure_failure_as_failed_intent() {
     let op_id = unique_op_id("sync-fail");
     let state = make_state();
-    install_state(&op_id, Arc::clone(&state));
+    let _op_guard = install_state(&op_id, Arc::clone(&state));
     register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
@@ -194,7 +191,6 @@ fn sync_driver_propagates_closure_failure_as_failed_intent() {
         "got {:?}",
         outcome.intent
     );
-    uninstall_state(&op_id);
     unregister_operation_status(&op_id);
 }
 
@@ -205,7 +201,7 @@ fn sync_driver_closure_can_capture_mut_state() {
     // SourceItemTracker, etc.). Exercise a captured counter to pin this.
     let op_id = unique_op_id("sync-mut-capture");
     let state = make_state();
-    install_state(&op_id, Arc::clone(&state));
+    let _op_guard = install_state(&op_id, Arc::clone(&state));
     register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
@@ -233,7 +229,6 @@ fn sync_driver_closure_can_capture_mut_state() {
     assert!(matches!(outcome.intent, PostLoopIntent::Completed));
     assert_eq!(tracker_counter, 3);
     assert_eq!(outcome.files_done, 3);
-    uninstall_state(&op_id);
     unregister_operation_status(&op_id);
 }
 
@@ -245,7 +240,7 @@ fn sync_driver_closure_can_capture_mut_state() {
 fn sync_driver_skipped_outcome_bumps_counters_and_emits_progress() {
     let op_id = unique_op_id("sync-skip-outcome");
     let state = make_state();
-    install_state(&op_id, Arc::clone(&state));
+    let _op_guard = install_state(&op_id, Arc::clone(&state));
     register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
@@ -283,7 +278,6 @@ fn sync_driver_skipped_outcome_bumps_counters_and_emits_progress() {
         "expected a progress event for skipped /a with files_done=1; got: {:?}",
         *progress
     );
-    uninstall_state(&op_id);
     unregister_operation_status(&op_id);
 }
 
@@ -291,7 +285,7 @@ fn sync_driver_skipped_outcome_bumps_counters_and_emits_progress() {
 fn sync_driver_bulk_skip_emits_one_progress_event() {
     let op_id = unique_op_id("sync-bulk-skip-event");
     let state = make_state();
-    install_state(&op_id, Arc::clone(&state));
+    let _op_guard = install_state(&op_id, Arc::clone(&state));
     register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
@@ -324,7 +318,6 @@ fn sync_driver_bulk_skip_emits_one_progress_event() {
         "exactly one progress event should reflect the bulk skip; got: {:?}",
         *progress
     );
-    uninstall_state(&op_id);
     unregister_operation_status(&op_id);
 }
 
@@ -336,7 +329,7 @@ fn sync_driver_tracks_files_skipped_across_bulk_and_per_iter() {
     // path — used by the volume-copy completion log annotation.
     let op_id = unique_op_id("sync-skip-counters");
     let state = make_state();
-    install_state(&op_id, Arc::clone(&state));
+    let _op_guard = install_state(&op_id, Arc::clone(&state));
     register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
@@ -369,7 +362,6 @@ fn sync_driver_tracks_files_skipped_across_bulk_and_per_iter() {
     assert_eq!(outcome.bytes_done, 350, "200 bulk + 50 skip + 100 transferred");
     assert_eq!(outcome.files_skipped, 3, "2 bulk + 1 per-iter");
     assert_eq!(outcome.bytes_skipped, 250, "200 bulk + 50 per-iter");
-    uninstall_state(&op_id);
     unregister_operation_status(&op_id);
 }
 
@@ -377,7 +369,7 @@ fn sync_driver_tracks_files_skipped_across_bulk_and_per_iter() {
 fn sync_driver_skip_counters_zero_when_nothing_skipped() {
     let op_id = unique_op_id("sync-skip-counters-zero");
     let state = make_state();
-    install_state(&op_id, Arc::clone(&state));
+    let _op_guard = install_state(&op_id, Arc::clone(&state));
     register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
@@ -400,7 +392,6 @@ fn sync_driver_skip_counters_zero_when_nothing_skipped() {
     assert_eq!(outcome.bytes_done, 200);
     assert_eq!(outcome.files_skipped, 0);
     assert_eq!(outcome.bytes_skipped, 0);
-    uninstall_state(&op_id);
     unregister_operation_status(&op_id);
 }
 
@@ -408,7 +399,7 @@ fn sync_driver_skip_counters_zero_when_nothing_skipped() {
 fn sync_driver_bulk_skip_zero_does_not_emit_extra_event() {
     let op_id = unique_op_id("sync-bulk-skip-zero");
     let state = make_state();
-    install_state(&op_id, Arc::clone(&state));
+    let _op_guard = install_state(&op_id, Arc::clone(&state));
     register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
@@ -430,7 +421,6 @@ fn sync_driver_bulk_skip_zero_does_not_emit_extra_event() {
         sink.progress.lock().unwrap().is_empty(),
         "no sources + no bulk-skip should mean no progress events from the driver"
     );
-    uninstall_state(&op_id);
     unregister_operation_status(&op_id);
 }
 
@@ -440,7 +430,7 @@ fn sync_driver_threads_running_totals_through_transfer_context() {
     // The closure needs these for intra-file progress callbacks.
     let op_id = unique_op_id("sync-totals-context");
     let state = make_state();
-    install_state(&op_id, Arc::clone(&state));
+    let _op_guard = install_state(&op_id, Arc::clone(&state));
     register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
     let seen_totals: Arc<Mutex<Vec<(usize, u64)>>> = Arc::new(Mutex::new(Vec::new()));
@@ -468,7 +458,6 @@ fn sync_driver_threads_running_totals_through_transfer_context() {
 
     let seen = seen_totals.lock().unwrap();
     assert_eq!(seen.as_slice(), &[(0, 0), (1, 100), (2, 200)]);
-    uninstall_state(&op_id);
     unregister_operation_status(&op_id);
 }
 
@@ -483,7 +472,7 @@ fn sync_driver_status_cache_matches_emitted_progress() {
     // the global progress list) see the same numbers as the dialog.
     let op_id = unique_op_id("sync-status-cache");
     let state = make_state();
-    install_state(&op_id, Arc::clone(&state));
+    let _op_guard = install_state(&op_id, Arc::clone(&state));
     register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
@@ -514,7 +503,6 @@ fn sync_driver_status_cache_matches_emitted_progress() {
     // mid-iteration emits.
     assert_eq!(status.files_done, 1);
     assert_eq!(status.bytes_done, 100);
-    uninstall_state(&op_id);
     unregister_operation_status(&op_id);
 }
 
@@ -535,7 +523,7 @@ async fn sync_driver_parks_while_paused_then_resumes_to_completion() {
     // so its condvar park happens on a real OS thread.
     let op_id = unique_op_id("sync-pause-resume");
     let state = make_state();
-    install_state(&op_id, Arc::clone(&state));
+    let _op_guard = install_state(&op_id, Arc::clone(&state));
     register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
 
     let sources = paths(&["/a", "/b", "/c", "/d"]);
@@ -590,8 +578,6 @@ async fn sync_driver_parks_while_paused_then_resumes_to_completion() {
         .expect("spawn_blocking joins");
     assert!(matches!(outcome.intent, PostLoopIntent::Completed));
     assert_eq!(transferred.load(Ordering::SeqCst), 4);
-
-    uninstall_state(&op_id);
     unregister_operation_status(&op_id);
 }
 
@@ -599,7 +585,7 @@ async fn sync_driver_parks_while_paused_then_resumes_to_completion() {
 async fn sync_driver_cancel_while_paused_unblocks_and_cancels() {
     let op_id = unique_op_id("sync-pause-cancel");
     let state = make_state();
-    install_state(&op_id, Arc::clone(&state));
+    let _op_guard = install_state(&op_id, Arc::clone(&state));
     register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
 
     let sources = paths(&["/a", "/b", "/c", "/d"]);
@@ -644,7 +630,5 @@ async fn sync_driver_cancel_while_paused_unblocks_and_cancels() {
         super::super::super::state::load_intent(&state.intent),
         OperationIntent::Stopped
     );
-
-    uninstall_state(&op_id);
     unregister_operation_status(&op_id);
 }

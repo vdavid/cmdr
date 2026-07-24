@@ -160,6 +160,22 @@ pub(crate) fn reap_orphaned_listings() -> Vec<String> {
 /// simulate "6 hours idle" deterministically (the real epoch clock starts at process
 /// launch, so a real 6 h gap can't be produced in a unit test without sleeping).
 pub(crate) fn reap_orphaned_listings_at(now_ms: u64, window_ms: u64) -> Vec<String> {
+    reap_orphaned_listings_scoped(now_ms, window_ms, None)
+}
+
+/// `reap_orphaned_listings_at` restricted to the listing ids in `only`.
+///
+/// The sweep walks the process-global cache, and under `cargo test` that cache is
+/// shared by every concurrently-running listing test, so an unrestricted sweep
+/// evicts other tests' fixtures (cache entry AND watcher) mid-assertion. The
+/// reaper's own tests scope the sweep to the ids they own; production passes
+/// `None` and sweeps everything.
+#[cfg(test)]
+pub(crate) fn reap_orphaned_listings_at_for(now_ms: u64, window_ms: u64, only: &[&str]) -> Vec<String> {
+    reap_orphaned_listings_scoped(now_ms, window_ms, Some(only))
+}
+
+fn reap_orphaned_listings_scoped(now_ms: u64, window_ms: u64, only: Option<&[&str]>) -> Vec<String> {
     let ids = {
         let cache = match LISTING_CACHE.read() {
             Ok(c) => c,
@@ -170,6 +186,7 @@ pub(crate) fn reap_orphaned_listings_at(now_ms: u64, window_ms: u64) -> Vec<Stri
             window_ms,
             cache
                 .iter()
+                .filter(|(id, _)| only.is_none_or(|ids| ids.contains(&id.as_str())))
                 .map(|(id, listing)| (id.as_str(), listing.last_accessed_ms.load(Ordering::Relaxed))),
         )
     };

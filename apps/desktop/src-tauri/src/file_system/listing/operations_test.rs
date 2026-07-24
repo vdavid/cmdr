@@ -286,11 +286,10 @@ fn test_process_dir_entry_handles_directory() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_list_directory_start_with_volume_caches_entries() {
     use crate::file_system::get_volume_manager;
-    use crate::file_system::listing::caching::LISTING_CACHE;
+    use crate::file_system::listing::caching_test_support::TestListingGuard;
     use crate::file_system::listing::metadata::FileEntry;
     use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
     use crate::file_system::volume::InMemoryVolume;
-    use crate::file_system::watcher::stop_watching;
     use std::path::PathBuf;
     use std::sync::Arc;
 
@@ -348,25 +347,20 @@ async fn test_list_directory_start_with_volume_caches_entries() {
     let result = result.unwrap();
     assert_eq!(result.total_count, 3);
 
-    // Verify LISTING_CACHE has the entries
-    {
-        let cache = LISTING_CACHE.read().unwrap();
-        let listing = cache.get(&result.listing_id).unwrap();
-        assert_eq!(listing.entries.len(), 3);
-        let names: Vec<&str> = listing.entries.iter().map(|e| e.name.as_str()).collect();
-        assert!(names.contains(&"p.txt"));
-        assert!(names.contains(&"q.txt"));
-        assert!(names.contains(&"r.txt"));
-        assert_eq!(listing.volume_id, volume_id);
-        assert_eq!(listing.path, dir_path);
-    }
+    // The production call created the cache entry and its watcher; hand both to a
+    // guard so they're torn down even if an assertion below panics.
+    let listing = TestListingGuard::adopt(&result.listing_id);
 
-    // Cleanup: stop watcher and remove from cache
-    stop_watching(&result.listing_id);
-    {
-        let mut cache = LISTING_CACHE.write().unwrap();
-        cache.remove(&result.listing_id);
-    }
+    let names = listing.entry_names();
+    assert_eq!(names.len(), 3);
+    assert!(names.iter().any(|n| n == "p.txt"));
+    assert!(names.iter().any(|n| n == "q.txt"));
+    assert!(names.iter().any(|n| n == "r.txt"));
+    listing.with_listing(|cached| {
+        assert_eq!(cached.volume_id, volume_id);
+        assert_eq!(cached.path, dir_path);
+    });
+
     get_volume_manager().unregister(&volume_id);
 }
 

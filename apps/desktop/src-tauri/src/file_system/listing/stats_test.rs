@@ -1,9 +1,8 @@
 //! Tests for `get_listing_stats()`: total/visible counts, sizes, and selection sums.
 
-use super::caching::{CachedListing, LISTING_CACHE};
-use super::operations::{get_listing_stats, list_directory_end};
-use super::sorting::DirectorySortMode;
-use super::{FileEntry, SortColumn, SortOrder};
+use super::FileEntry;
+use super::caching_test_support::{TestListing, TestListingGuard};
+use super::operations::get_listing_stats;
 
 /// Creates a test entry with configurable sizes.
 fn make_entry(name: &str, is_dir: bool, size: Option<u64>, physical_size: Option<u64>) -> FileEntry {
@@ -31,25 +30,9 @@ fn make_entry(name: &str, is_dir: bool, size: Option<u64>, physical_size: Option
     entry
 }
 
-/// Inserts entries into the listing cache and returns the listing ID.
-fn insert_test_listing(id: &str, entries: Vec<FileEntry>) -> String {
-    let listing_id = id.to_string();
-    let mut cache = LISTING_CACHE.write().unwrap();
-    cache.insert(
-        listing_id.clone(),
-        CachedListing {
-            volume_id: "test".to_string(),
-            path: std::path::PathBuf::from("/"),
-            entries,
-            sort_by: SortColumn::Name,
-            sort_order: SortOrder::Ascending,
-            directory_sort_mode: DirectorySortMode::LikeFiles,
-            sequence: std::sync::atomic::AtomicU64::new(0),
-            created_at: std::time::Instant::now(),
-            last_accessed_ms: std::sync::atomic::AtomicU64::new(0),
-        },
-    );
-    listing_id
+/// Inserts entries into the listing cache under a unique id, owned by the caller.
+fn insert_test_listing(tag: &str, entries: Vec<FileEntry>) -> TestListingGuard {
+    TestListing::new().volume("test").path("/").entries(entries).insert(tag)
 }
 
 // ============================================================================
@@ -65,11 +48,9 @@ fn test_stats_mixed_files_and_dirs() {
         make_entry("report.pdf", false, Some(2_048), Some(4_096)),
         make_entry("tiny.log", false, Some(10), Some(4_096)),
     ];
-    let listing_id = insert_test_listing("test-stats-mixed", entries);
+    let listing = insert_test_listing("stats-mixed", entries);
 
-    let stats = get_listing_stats(&listing_id, true, None).unwrap();
-
-    list_directory_end(&listing_id);
+    let stats = get_listing_stats(listing.id(), true, None).unwrap();
 
     assert_eq!(stats.total_dirs, 2);
     assert_eq!(stats.total_files, 3);
@@ -93,12 +74,10 @@ fn test_stats_hidden_files_excluded() {
         make_entry("Documents", true, Some(50_000), Some(52_000)),
         make_entry("readme.md", false, Some(1_024), Some(4_096)),
     ];
-    let listing_id = insert_test_listing("test-stats-hidden-excluded", entries);
+    let listing = insert_test_listing("stats-hidden-excluded", entries);
 
-    let stats_all = get_listing_stats(&listing_id, true, None).unwrap();
-    let stats_visible = get_listing_stats(&listing_id, false, None).unwrap();
-
-    list_directory_end(&listing_id);
+    let stats_all = get_listing_stats(listing.id(), true, None).unwrap();
+    let stats_visible = get_listing_stats(listing.id(), false, None).unwrap();
 
     // With hidden: all 4 entries
     assert_eq!(stats_all.total_dirs, 2);
@@ -124,12 +103,10 @@ fn test_stats_with_selection() {
         make_entry("notes.txt", false, Some(1_024), Some(4_096)),
         make_entry("report.pdf", false, Some(2_048), Some(4_096)),
     ];
-    let listing_id = insert_test_listing("test-stats-selection", entries);
+    let listing = insert_test_listing("stats-selection", entries);
 
     // Select indices 0 (Documents) and 2 (notes.txt)
-    let stats = get_listing_stats(&listing_id, true, Some(&[0, 2])).unwrap();
-
-    list_directory_end(&listing_id);
+    let stats = get_listing_stats(listing.id(), true, Some(&[0, 2])).unwrap();
 
     // Totals cover all entries
     assert_eq!(stats.total_dirs, 2);
@@ -148,11 +125,9 @@ fn test_stats_with_selection() {
 
 #[test]
 fn test_stats_empty_directory() {
-    let listing_id = insert_test_listing("test-stats-empty", vec![]);
+    let listing = insert_test_listing("stats-empty", vec![]);
 
-    let stats = get_listing_stats(&listing_id, true, None).unwrap();
-
-    list_directory_end(&listing_id);
+    let stats = get_listing_stats(listing.id(), true, None).unwrap();
 
     assert_eq!(stats.total_dirs, 0);
     assert_eq!(stats.total_files, 0);
@@ -168,11 +143,9 @@ fn test_stats_all_hidden_without_hidden_flag() {
         make_entry(".gitignore", false, Some(256), Some(4_096)),
         make_entry(".env", false, Some(128), Some(4_096)),
     ];
-    let listing_id = insert_test_listing("test-stats-all-hidden", entries);
+    let listing = insert_test_listing("stats-all-hidden", entries);
 
-    let stats = get_listing_stats(&listing_id, false, None).unwrap();
-
-    list_directory_end(&listing_id);
+    let stats = get_listing_stats(listing.id(), false, None).unwrap();
 
     // Everything is hidden, so visible stats are all zero
     assert_eq!(stats.total_dirs, 0);
@@ -184,12 +157,10 @@ fn test_stats_all_hidden_without_hidden_flag() {
 #[test]
 fn test_stats_selection_with_out_of_bounds_index_is_ignored() {
     let entries = vec![make_entry("file.txt", false, Some(1_000), Some(4_096))];
-    let listing_id = insert_test_listing("test-stats-oob-selection", entries);
+    let listing = insert_test_listing("stats-oob-selection", entries);
 
     // Index 0 is valid, index 99 is out of bounds
-    let stats = get_listing_stats(&listing_id, true, Some(&[0, 99])).unwrap();
-
-    list_directory_end(&listing_id);
+    let stats = get_listing_stats(listing.id(), true, Some(&[0, 99])).unwrap();
 
     // Only the valid index should be counted
     assert_eq!(stats.selected_files, Some(1));
@@ -204,11 +175,9 @@ fn test_stats_entries_without_sizes() {
         make_entry("remote_dir", true, None, None),
         make_entry("unknown.dat", false, None, None),
     ];
-    let listing_id = insert_test_listing("test-stats-no-sizes", entries);
+    let listing = insert_test_listing("stats-no-sizes", entries);
 
-    let stats = get_listing_stats(&listing_id, true, Some(&[0, 1])).unwrap();
-
-    list_directory_end(&listing_id);
+    let stats = get_listing_stats(listing.id(), true, Some(&[0, 1])).unwrap();
 
     assert_eq!(stats.total_dirs, 1);
     assert_eq!(stats.total_files, 1);

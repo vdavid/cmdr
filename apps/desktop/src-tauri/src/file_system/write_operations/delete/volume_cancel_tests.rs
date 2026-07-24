@@ -19,9 +19,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
-use super::super::state::{
-    OperationIntent, WRITE_OPERATION_STATE, WriteOperationState, cancel_write_operation, load_intent,
-};
+use super::super::state::{OperationIntent, WriteOperationState, cancel_write_operation, load_intent};
+use super::super::test_support::TestOperationGuard;
 use super::super::types::{CollectorEventSink, WriteOperationConfig};
 use super::walker::delete_volume_files_with_progress_inner;
 use crate::file_system::get_volume_manager;
@@ -237,11 +236,11 @@ async fn mtp_listing_cancels_promptly_when_intent_flips() {
     get_volume_manager().register(&vol_name, vol.clone() as Arc<dyn Volume>);
 
     let op_id = unique("op");
-    let state = Arc::new(WriteOperationState::new(Duration::from_millis(50)));
-    WRITE_OPERATION_STATE
-        .write()
-        .unwrap()
-        .insert(op_id.clone(), Arc::clone(&state));
+    let op = TestOperationGuard::register_as(
+        op_id.clone(),
+        Arc::new(WriteOperationState::new(Duration::from_millis(50))),
+    );
+    let state = Arc::clone(op.state());
 
     // Spawn the delete; while it's running, fire cancel from another task.
     let op_id_for_cancel = op_id.clone();
@@ -304,8 +303,6 @@ async fn mtp_listing_cancels_promptly_when_intent_flips() {
         elapsed < Duration::from_secs(3),
         "cancel must propagate promptly; took {elapsed:?}"
     );
-
-    WRITE_OPERATION_STATE.write().unwrap().remove(&op_id);
 }
 
 /// Pins the settle-event contract: when an MTP-style volume delete is
@@ -384,11 +381,11 @@ async fn volume_cancel_emits_write_settled_event() {
     get_volume_manager().register(&vol_name, vol.clone() as Arc<dyn Volume>);
 
     let op_id = unique("op");
-    let state = Arc::new(WriteOperationState::new(Duration::from_millis(50)));
-    WRITE_OPERATION_STATE
-        .write()
-        .unwrap()
-        .insert(op_id.clone(), Arc::clone(&state));
+    let op = TestOperationGuard::register_as(
+        op_id.clone(),
+        Arc::new(WriteOperationState::new(Duration::from_millis(50))),
+    );
+    let state = Arc::clone(op.state());
 
     let op_id_for_cancel = op_id.clone();
     let canceller = tokio::spawn(async move {
@@ -447,8 +444,6 @@ async fn volume_cancel_emits_write_settled_event() {
         Some("settled"),
         "settled must be the last event to fire (guard drops at end of scope)"
     );
-
-    WRITE_OPERATION_STATE.write().unwrap().remove(&op_id);
 }
 
 /// Pins that successful volume delete also gets a `write-settled` event.
@@ -470,11 +465,11 @@ async fn volume_complete_emits_write_settled_event() {
     get_volume_manager().register(&vol_name, vol.clone() as Arc<dyn Volume>);
 
     let op_id = unique("op");
-    let state = Arc::new(WriteOperationState::new(Duration::from_millis(50)));
-    WRITE_OPERATION_STATE
-        .write()
-        .unwrap()
-        .insert(op_id.clone(), Arc::clone(&state));
+    let op = TestOperationGuard::register_as(
+        op_id.clone(),
+        Arc::new(WriteOperationState::new(Duration::from_millis(50))),
+    );
+    let state = Arc::clone(op.state());
 
     let sources = vec![PathBuf::from("/dir")];
     let config = WriteOperationConfig::default();
@@ -505,8 +500,6 @@ async fn volume_complete_emits_write_settled_event() {
     let settled = inner_collector.settled.lock().unwrap();
     assert_eq!(settled.len(), 1, "settle must fire once on successful completion");
     assert_eq!(settled[0].operation_id, op_id);
-
-    WRITE_OPERATION_STATE.write().unwrap().remove(&op_id);
 }
 
 /// Pins that an error path also fires `write-settled`. We use a volume that
@@ -594,11 +587,11 @@ async fn volume_error_emits_write_settled_event() {
     get_volume_manager().register(&vol_name, vol.clone() as Arc<dyn Volume>);
 
     let op_id = unique("op");
-    let state = Arc::new(WriteOperationState::new(Duration::from_millis(50)));
-    WRITE_OPERATION_STATE
-        .write()
-        .unwrap()
-        .insert(op_id.clone(), Arc::clone(&state));
+    let op = TestOperationGuard::register_as(
+        op_id.clone(),
+        Arc::new(WriteOperationState::new(Duration::from_millis(50))),
+    );
+    let state = Arc::clone(op.state());
 
     let sources = vec![PathBuf::from("/dir")];
     let config = WriteOperationConfig::default();
@@ -630,8 +623,6 @@ async fn volume_error_emits_write_settled_event() {
 
     let settled = inner_collector.settled.lock().unwrap();
     assert_eq!(settled.len(), 1, "settle must fire once even on error path");
-
-    WRITE_OPERATION_STATE.write().unwrap().remove(&op_id);
 }
 
 /// Asserts that the cancel-flag adapter wiring is correct: flipping
@@ -640,11 +631,11 @@ async fn volume_error_emits_write_settled_event() {
 #[test]
 fn cancel_flag_adapter_links_intent_to_backend_cancel() {
     let op_id = unique("adapter");
-    let state = Arc::new(WriteOperationState::new(Duration::from_millis(50)));
-    WRITE_OPERATION_STATE
-        .write()
-        .unwrap()
-        .insert(op_id.clone(), Arc::clone(&state));
+    let op = TestOperationGuard::register_as(
+        op_id.clone(),
+        Arc::new(WriteOperationState::new(Duration::from_millis(50))),
+    );
+    let state = Arc::clone(op.state());
 
     assert!(
         !state.backend_cancel.load(Ordering::Acquire),
@@ -657,6 +648,4 @@ fn cancel_flag_adapter_links_intent_to_backend_cancel() {
         state.backend_cancel.load(Ordering::Acquire),
         "cancel_write_operation must flip backend_cancel as a side effect of intent → Stopped"
     );
-
-    WRITE_OPERATION_STATE.write().unwrap().remove(&op_id);
 }

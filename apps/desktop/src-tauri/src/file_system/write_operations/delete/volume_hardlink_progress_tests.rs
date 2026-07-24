@@ -16,7 +16,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
-use super::super::state::{WRITE_OPERATION_STATE, WriteOperationState};
+use super::super::state::WriteOperationState;
+use super::super::test_support::TestOperationGuard;
 use super::super::types::{CollectorEventSink, WriteOperationConfig, WriteOperationPhase};
 use super::walker::delete_volume_files_with_progress_inner;
 use crate::file_system::get_volume_manager;
@@ -39,17 +40,11 @@ fn unique_op_id(name: &str) -> String {
     )
 }
 
-fn install_state(op_id: &str) -> Arc<WriteOperationState> {
-    let state = Arc::new(WriteOperationState::new(Duration::from_millis(10)));
-    WRITE_OPERATION_STATE
-        .write()
-        .unwrap()
-        .insert(op_id.to_string(), Arc::clone(&state));
-    state
-}
-
-fn uninstall_state(op_id: &str) {
-    WRITE_OPERATION_STATE.write().unwrap().remove(op_id);
+/// Registers a fresh state under `op_id`. Bind the returned guard for the whole
+/// test: it unregisters on drop, unwind included.
+#[must_use = "bind the guard; dropping it immediately unregisters the state"]
+fn install_state(op_id: &str) -> TestOperationGuard {
+    TestOperationGuard::register_as(op_id, Arc::new(WriteOperationState::new(Duration::from_millis(10))))
 }
 
 /// Build a tree where one inode is shared by three hardlinks plus one
@@ -80,7 +75,7 @@ async fn volume_delete_hardlinked_files_reports_dedup_d_bytes() {
     get_volume_manager().register(&volume_id, Arc::clone(&volume) as Arc<dyn Volume>);
 
     let op_id = unique_op_id("op");
-    let state = install_state(&op_id);
+    let op = install_state(&op_id);
     let sink = CollectorEventSink::new();
     // Volume paths are anchored at the volume root. Source = `/to_delete`.
     let sources = vec![PathBuf::from("/to_delete")];
@@ -91,14 +86,13 @@ async fn volume_delete_hardlinked_files_reports_dedup_d_bytes() {
         &volume_id,
         &sink,
         &op_id,
-        &state,
+        op.state(),
         &sources,
         &config,
     )
     .await;
 
     get_volume_manager().unregister(&volume_id);
-    uninstall_state(&op_id);
 
     assert!(result.is_ok(), "volume delete must succeed; got {result:?}");
 

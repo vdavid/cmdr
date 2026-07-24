@@ -25,30 +25,32 @@ catalogs, diff coalescing, metadata tiers): `DETAILS.md`.
 
 - **`get_file_range()` indices are over VISIBLE items only.** With `include_hidden=false` the frontend sees a dense
   array, so backend index N maps to a different absolute entry. Filtering happens in Rust.
+
 - **Watcher diffs must update the cache AND emit an event.** The cache is the source of truth for `get_file_range()`;
-  the event tells the frontend to re-fetch the visible range. Miss either and you get stale data or no UI update.
+  the event tells the frontend to re-fetch. Miss either and you get stale data or no UI update.
 - **The full re-read watcher path re-sorts `new_entries` before `compute_diff` (looks like a double-sort, isn't).**
-  `list_directory_core` always returns Name/Asc order, but the cached listing may use a different sort. Without the
-  re-sort, diff indices are computed against a differently-ordered list and add/remove positions come out wrong.
+  `list_directory_core` always returns Name/Asc, but the listing may use another sort; without the re-sort, diff indices
+  are computed against a differently-ordered list and add/remove positions come out wrong.
 - **All `directory-diff` emits must go through `diff_emitter::enqueue_diff`, never `app.emit` directly.** Direct emits
-  bypass the 50 ms coalescing and re-introduce the per-file flicker on bulk operations. Cache mutations stay synchronous
-  and inline; only the emit is deferred.
-- **The orphan reaper keys on `last_accessed_ms`, not `created_at`.** Every read accessor and cache patch must keep
-  bumping `last_accessed_ms`, or the reaper (6 h idle window) could evict a live pane. Do NOT bump it from
-  `refresh_listing_index_sizes` (background-indexing driven, not user activity).
+  bypass the 50 ms coalescing and re-introduce per-file flicker on bulk operations. Cache mutations stay synchronous and
+  inline; only the emit is deferred.
+- **The orphan reaper keys on `last_accessed_ms`, not `created_at`.** Every read accessor and cache patch must bump it,
+  or the reaper (6 h idle window) could evict a live pane. Not from `refresh_listing_index_sizes` though
+  (background-indexing driven, not user activity).
 - **Listing cancellation sets both `AtomicBool` and `tokio::sync::Notify`.** `cancel_listing()` does
   `cancelled.store(true)` + `cancel_notify.notify_waiters()`: the `Notify` drives async cancellation via `select!`, the
-  `AtomicBool` covers sync check points and is what actually stops the task early. ❌ The `select!` cancel arm must
-  never `listing_task.abort()`: `cancelled` IS the backend's cancel token, so returning detaches a safely-unwinding
-  task, while aborting drops the listing mid-round-trip and wedges an MTP phone. `DETAILS.md` §
-  "Cancelling a listing detaches, never aborts".
+  `AtomicBool` covers sync check points and actually stops the task early. ❌ The `select!` cancel arm must never
+  `listing_task.abort()`: `cancelled` IS the backend's cancel token, so returning detaches a safely-unwinding task,
+  while aborting wedges an MTP phone mid-round-trip. `DETAILS.md` § "Cancelling a listing detaches, never aborts".
 - **Watcher callbacks run on OS threads, not the tokio runtime.** Async work from a callback must use
-  `tauri::async_runtime::spawn`, never bare `tokio::spawn`, which panics with "there is no reactor running" and aborts
-  the app. All FullRefresh dispatch funnels through `caching::spawn_full_refresh`; keep it that way so every producer
-  (FSEvents, git, SMB, MTP, archive) is covered at once. The incremental path stays sync.
+  `tauri::async_runtime::spawn`; bare `tokio::spawn` panics ("there is no reactor running") and aborts the app. All
+  FullRefresh dispatch funnels through `caching::spawn_full_refresh`, covering every producer (FSEvents, git, SMB, MTP,
+  archive) at once. The incremental path stays sync.
 - **Sequence counter lives on `CachedListing`, not `WatchedDirectory`.** SMB/MTP have no `WatchedDirectory`; keeping it
-  there breaks `directory-diff` for those volumes.
-- **A sort change invalidates the frontend's cached range.** Bump `cacheGeneration` to force a re-fetch.
+  there breaks their `directory-diff`.
+- **A sort change invalidates the frontend's cached range.** Bump `cacheGeneration` to re-fetch.
+- **New listing state hangs off a struct, not a `static`.** Fixtures go through `caching_test_support::TestListing`
+  (unique id, RAII teardown); cache-wide assertions need a unique path. `DETAILS.md` § "Test isolation".
 - **Finder tags are deferred and must survive re-stats.** `list_directory_core` never reads tags (`getxattr` is ~6× an
   `lstat`); `enrich_tags` fills them visible-range-first via `apply_tags_to_listing`, which replaces unconditionally so
   external removals propagate. A watcher re-stat builds entries with empty tags, so every modify path calls

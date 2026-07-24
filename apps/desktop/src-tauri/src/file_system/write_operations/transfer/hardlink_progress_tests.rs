@@ -13,7 +13,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
-use super::super::state::{WRITE_OPERATION_STATE, WriteOperationState};
+use super::super::state::WriteOperationState;
+use super::super::test_support::TestOperationGuard;
 use super::super::types::{CollectorEventSink, WriteOperationConfig};
 use super::copy::copy_files_with_progress_inner;
 use super::move_op::move_files_with_progress_inner;
@@ -55,17 +56,11 @@ fn build_hardlink_tree(root: &Path, subdir: &str) -> PathBuf {
     src
 }
 
-fn install_state(op_id: &str) -> Arc<WriteOperationState> {
-    let state = Arc::new(WriteOperationState::new(Duration::from_millis(10)));
-    WRITE_OPERATION_STATE
-        .write()
-        .unwrap()
-        .insert(op_id.to_string(), Arc::clone(&state));
-    state
-}
-
-fn uninstall_state(op_id: &str) {
-    WRITE_OPERATION_STATE.write().unwrap().remove(op_id);
+/// Registers a fresh state under `op_id`. Bind the returned guard for the whole
+/// test: it unregisters on drop, unwind included.
+#[must_use = "bind the guard; dropping it immediately unregisters the state"]
+fn install_state(op_id: &str) -> TestOperationGuard {
+    TestOperationGuard::register_as(op_id, Arc::new(WriteOperationState::new(Duration::from_millis(10))))
 }
 
 fn copying_phase_bytes_total(sink: &CollectorEventSink) -> u64 {
@@ -104,13 +99,12 @@ fn copy_counts_write_footprint_for_hardlinks() {
     fs::create_dir_all(&dest).unwrap();
 
     let op_id = unique_op_id("copy");
-    let state = install_state(&op_id);
+    let op = install_state(&op_id);
     let sink = CollectorEventSink::new();
     let sources = vec![src.clone()];
     let config = WriteOperationConfig::default();
 
-    let result = copy_files_with_progress_inner(&sink, &op_id, &state, &sources, &dest, &config);
-    uninstall_state(&op_id);
+    let result = copy_files_with_progress_inner(&sink, &op_id, op.state(), &sources, &dest, &config);
 
     assert!(result.is_ok(), "copy must succeed; got {result:?}");
 
@@ -149,13 +143,12 @@ fn move_hardlinked_files_does_not_overshoot_progress() {
     fs::create_dir_all(&dest).unwrap();
 
     let op_id = unique_op_id("move");
-    let state = install_state(&op_id);
+    let op = install_state(&op_id);
     let sink = CollectorEventSink::new();
     let sources = vec![src.clone()];
     let config = WriteOperationConfig::default();
 
-    let result = move_files_with_progress_inner(&sink, &op_id, &state, &sources, &dest, &config);
-    uninstall_state(&op_id);
+    let result = move_files_with_progress_inner(&sink, &op_id, op.state(), &sources, &dest, &config);
 
     assert!(result.is_ok(), "move must succeed; got {result:?}");
     assert_no_mid_flight_overshoot(&sink);

@@ -63,18 +63,31 @@ watcher/notify cache patch (`insert_entry_sorted` / `remove_entry_by_path` / `up
 `refresh_listing_index_sizes` intentionally does NOT touch it: it's driven by background indexing, not user/FS activity,
 so touching there could keep a truly-orphaned listing alive indefinitely.
 
-#### Reaper test serialization
+#### Test isolation for `LISTING_CACHE`
 
-`reap_orphaned_listings_at` sweeps the process-global `LISTING_CACHE` and evicts EVERY listing idle past the (injected)
-window. The tests that drive the wired sweep therefore mutate shared global state destructively. Under `cargo nextest`
-each test runs in its own process (a fresh global cache), so they're isolated for free — but `cargo test --lib
-listing::caching` (the module-run command) shares one process and runs tests as parallel threads, where two concurrent
-sweeps cross-evict each other's freshly-inserted stale listings and a "the listing I just inserted is still cached"
-precondition flakes (rotating victim). A `REAPER_SERIAL` mutex in `reaper_tests`, held for the duration of every test
-that calls the wired `reap_orphaned_listings_at`, keeps exactly one global sweep running at a time under `cargo test` —
-the in-process equivalent of nextest's process-per-test. The pure `orphan_ids` tests pass explicit stamps and never
-touch the global cache, so they stay lock-free. This mirrors `downloads/DETAILS.md` § the `WATCH_SERIAL` convention:
-serialize the process-global-state tests for `cargo test`; nextest's process isolation covers itself.
+`cargo test` runs the crate's tests as threads in ONE process, so `LISTING_CACHE` is shared by every listing test at
+once (`cargo nextest` gets isolation free from process-per-test, but the module-run command and CI's lib run don't).
+Three failure modes follow, and `caching_test_support.rs` closes all three:
+
+- **Colliding keys.** Two tests picking the same literal listing id clobber each other. `TestListing::insert(tag)` mints
+  a process-unique id (`unique_test_id`: tag + pid + counter).
+- **Leaks on a failed assertion.** A hand-rolled `cache.remove(...)` placed after the assertions never runs when one
+  fails, so the entry stays visible to every later test. `TestListingGuard`'s `Drop` tears down through the production
+  `list_directory_end` (entry, watcher, and pending coalesced diff together), and `Drop` runs on unwind.
+- **Cache-wide assertions.** `find_listings_for_path`, `find_listings_on_volume`, and the orphan sweep all scan the
+  whole map, so a shared path or volume id makes a count assertion depend on what else is running. Those tests derive a
+  unique path / volume id per test. For the sweep, `reap_orphaned_listings_at_for(now, window, only)` restricts the
+  wired teardown to the ids the test owns; production keeps calling the unrestricted `reap_orphaned_listings_at`.
+  `TestListing` also stamps `last_accessed_ms` at NOW (a live pane's value) rather than 0, so a fixture isn't
+  orphan-eligible under someone else's sweep in the first place. Pinned by
+  `caching_reaper_test::a_reaper_sweep_leaves_a_sibling_tests_listing_alone`.
+
+The guard mirrors `indexing::tests::stress_test_helpers::TestInstanceGuard` (same pattern over `INDEX_REGISTRY`) and
+`write_operations::test_support::TestOperationGuard` (over `WRITE_OPERATION_STATE`); knowing one is knowing all three.
+
+**New subsystem state hangs off a struct, not a `static`.** These guards are the retrofit cost of a process-global; a
+handle threaded through its callers needs none of it.
+
 
 ## Decisions
 

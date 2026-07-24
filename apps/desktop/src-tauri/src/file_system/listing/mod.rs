@@ -46,6 +46,8 @@ mod caching_reaper_test;
 #[cfg(test)]
 mod caching_test;
 #[cfg(test)]
+pub(crate) mod caching_test_support;
+#[cfg(test)]
 mod diff_emitter_test;
 #[cfg(test)]
 mod hidden_files_test;

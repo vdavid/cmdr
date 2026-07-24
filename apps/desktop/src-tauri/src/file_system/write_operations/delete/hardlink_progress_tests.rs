@@ -14,7 +14,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use super::super::state::{WRITE_OPERATION_STATE, WriteOperationState};
+use super::super::state::WriteOperationState;
+use super::super::test_support::TestOperationGuard;
 use super::super::types::{CollectorEventSink, WriteOperationConfig};
 use super::walker::delete_files_with_progress_inner;
 
@@ -60,19 +61,16 @@ fn delete_hardlinked_files_does_not_overshoot_progress() {
     fs::write(dir.join("standalone"), vec![0u8; 4096]).unwrap();
 
     let op_id = unique_op_id("overshoot");
-    let state = Arc::new(WriteOperationState::new(Duration::from_millis(10)));
-    WRITE_OPERATION_STATE
-        .write()
-        .unwrap()
-        .insert(op_id.clone(), Arc::clone(&state));
+    let op = TestOperationGuard::register_as(
+        op_id.clone(),
+        Arc::new(WriteOperationState::new(Duration::from_millis(10))),
+    );
 
     let sink = CollectorEventSink::new();
     let sources = vec![dir.clone()];
     let config = WriteOperationConfig::default();
 
-    let result = delete_files_with_progress_inner(&sink, &op_id, &state, &sources, &config);
-
-    WRITE_OPERATION_STATE.write().unwrap().remove(&op_id);
+    let result = delete_files_with_progress_inner(&sink, &op_id, op.state(), &sources, &config);
 
     assert!(result.is_ok(), "delete must succeed; got {result:?}");
 

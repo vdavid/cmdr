@@ -18,9 +18,8 @@ use super::super::state::{CachedScanResult, OperationIntent, SCAN_PREVIEW_RESULT
 use super::super::types::{CollectorEventSink, WriteOperationConfig, WriteOperationError};
 use super::walker::delete_volume_files_with_progress_inner;
 use crate::file_system::get_volume_manager;
-use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
+use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard};
 use crate::file_system::listing::metadata::FileEntry;
-use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use crate::file_system::volume::{BatchScanResult, CopyScanResult, InMemoryVolume, Volume, VolumeError};
 
 // ----------------------------------------------------------------------------
@@ -162,28 +161,16 @@ fn make_file_entry(name: &str, parent: &str, size: u64, is_dir: bool) -> FileEnt
     }
 }
 
-fn insert_listing(id: &str, volume_id: &str, path: &str, entries: Vec<FileEntry>) -> String {
-    let mut cache = LISTING_CACHE.write().unwrap();
-    cache.insert(
-        id.to_string(),
-        CachedListing {
-            volume_id: volume_id.to_string(),
-            path: PathBuf::from(path),
-            entries,
-            sort_by: SortColumn::Name,
-            sort_order: SortOrder::Ascending,
-            directory_sort_mode: DirectorySortMode::LikeFiles,
-            sequence: AtomicU64::new(1),
-            created_at: std::time::Instant::now(),
-            last_accessed_ms: AtomicU64::new(0),
-        },
-    );
-    id.to_string()
-}
-
-fn remove_listing(id: &str) {
-    let mut cache = LISTING_CACHE.write().unwrap();
-    cache.remove(id);
+/// A cached pane listing owned by the caller: the guard removes it from the
+/// process-global `LISTING_CACHE` on drop, unwind included.
+#[must_use = "bind the guard; dropping it immediately removes the listing"]
+fn insert_listing(tag: &str, volume_id: &str, path: &str, entries: Vec<FileEntry>) -> TestListingGuard {
+    TestListing::new()
+        .volume(volume_id)
+        .path(path)
+        .entries(entries)
+        .sequence(1)
+        .insert(tag)
 }
 
 fn make_state() -> Arc<WriteOperationState> {
@@ -328,7 +315,6 @@ async fn delete_without_preview_id_still_walks() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn delete_top_level_files_no_is_directory_probes() {
     let vid = unique("oracle_top_level");
-    let parent_lid = unique("oracle_top_level_lid");
 
     let vol = Arc::new(CountingVolume::new("oracle-top-level-vol", true));
     vol.inner.create_file(Path::new("/dcim/a.jpg"), b"alpha").await.unwrap();
@@ -343,7 +329,7 @@ async fn delete_top_level_files_no_is_directory_probes() {
         make_file_entry("a.jpg", "/dcim", 5, false),
         make_file_entry("b.jpg", "/dcim", 6, false),
     ];
-    let parent_lid_inserted = insert_listing(&parent_lid, &vid, "/dcim", cached);
+    let _parent_listing = insert_listing("listing", &vid, "/dcim", cached);
 
     let events = Arc::new(CollectorEventSink::new());
     let state = make_state();
@@ -373,7 +359,6 @@ async fn delete_top_level_files_no_is_directory_probes() {
     );
     assert_eq!(vol.delete_count(), 2);
 
-    remove_listing(&parent_lid_inserted);
     get_volume_manager().unregister(&vid);
 }
 
@@ -385,8 +370,6 @@ async fn delete_top_level_files_no_is_directory_probes() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn delete_mid_scan_listing_close() {
     let vid = unique("mid_scan_close");
-    let parent_lid = unique("mid_scan_parent_lid");
-    let sub_lid = unique("mid_scan_sub_lid");
 
     let vol = Arc::new(CountingVolume::new("mid-scan-vol", true));
     // Real backend content for the subfolder so the fallthrough produces a
@@ -399,13 +382,13 @@ async fn delete_mid_scan_listing_close() {
 
     // Pane A has /root open: one subfolder `sub`.
     let parent_cached = vec![make_file_entry("sub", "/root", 0, true)];
-    let parent_lid_inserted = insert_listing(&parent_lid, &vid, "/root", parent_cached);
+    let _parent_listing = insert_listing("listing", &vid, "/root", parent_cached);
 
     // Pane B has /root/sub open, but we close it BEFORE the delete starts —
     // mirroring the "user closes pane mid-recursion" scenario.
     let sub_entries = vec![make_file_entry("phantom.bin", "/root/sub", 12345, false)];
-    let sub_lid_inserted = insert_listing(&sub_lid, &vid, "/root/sub", sub_entries);
-    remove_listing(&sub_lid_inserted);
+    let sub_listing = insert_listing("listing", &vid, "/root/sub", sub_entries);
+    drop(sub_listing);
 
     let events = Arc::new(CollectorEventSink::new());
     let state = make_state();
@@ -441,7 +424,6 @@ async fn delete_mid_scan_listing_close() {
         "at least the real file should be deleted; dir cleanup is best-effort"
     );
 
-    remove_listing(&parent_lid_inserted);
     get_volume_manager().unregister(&vid);
 }
 
