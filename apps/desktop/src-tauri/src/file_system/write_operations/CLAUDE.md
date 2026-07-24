@@ -49,10 +49,9 @@ cross-cutting machinery both subdirs share.
   `"root"` silently corrupts history. DETAILS § Capture.
 - **The busy-volumes set disables Eject mid-op** (source AND dest IDs); the `eject_volume` server-side guard is the
   real safety net.
-- **New op state hangs off a struct, not a `static`.** Fixtures register through `test_support::TestOperationGuard`
-  (unique op id, unregisters on drop), never a literal id plus a manual remove. Tests installing a journal use
-  `operation_log::TestJournalGuard` (serializes the single global slot), never `set_journal`. DETAILS § "Test
-  isolation".
+- **New op state hangs off a struct, not a `static`.** Fixtures: `test_support::TestOperationGuard` (unique id,
+  drop-unregisters), never a literal id + manual remove; journal installs: `operation_log::TestJournalGuard`, never
+  `set_journal`. DETAILS § "Test isolation".
 - **Volume-aware ops must not emit `write-error` on `Cancelled`**: the inner handler already emitted `write-cancelled`.
 
 Architecture, flows, decisions: `DETAILS.md`. Read before non-trivial work here.
