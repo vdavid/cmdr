@@ -35,9 +35,9 @@ already healthy (`vi.useFakeTimers` dominates, zero `sleep()`).
 - **~86 further sleep sites are production code** (`delete/walker.rs:850`, `session.rs:490`, `writer/mod.rs:523`, …) and
   must never be flagged. Test-vs-production detection is M5's real landmine, not the poll-loop regex.
 - **~11 ad-hoc wait helpers**, not six: `media_index/scheduler/kick_tests.rs` (two), `archive_edit/test_support.rs`,
-  `listing/streaming_test.rs`, `file_viewer/session_test.rs`, `file_viewer/watcher_test.rs`, `session/test_hooks.rs:218`,
-  `ai/llm_log/tests.rs:134`, `ai/client_streaming_test.rs:241`, plus inline loops at `stress_tests_concurrency.rs:885`
-  and `reconciler/tests.rs:1570`.
+  `listing/streaming_test.rs`, `file_viewer/session_test.rs`, `file_viewer/watcher_test.rs`,
+  `session/test_hooks.rs:218`, `ai/llm_log/tests.rs:134`, `ai/client_streaming_test.rs:241`, plus inline loops at
+  `stress_tests_concurrency.rs:885` and `reconciler/tests.rs:1570`.
 - **The E2E surface is already enforced.** `cmdr/no-arbitrary-sleep-in-e2e` runs at error level
   (`apps/desktop/eslint.config.js:317-326`, plugin in `apps/desktop/eslint-plugins/`), and all 8 spec sites carry a
   reasoned `eslint-disable`. There is no E2E backlog and no second check to write; the only E2E-adjacent work is
@@ -149,17 +149,17 @@ permanently bless the shape M1 exists to delete. Every sleep in test code is eit
 `// allowed-test-sleep: <reason>`.
 
 **Landmines.** Test-vs-production detection is the hard part (~86 production sleep sites must not be flagged, and
-`writer/mod.rs` has a `#[cfg(test)] mod tests;` *declaration* at line 19 with production sleeps far below). Reuse
+`writer/mod.rs` has a `#[cfg(test)] mod tests;` _declaration_ at line 19 with production sleeps far below). Reuse
 `lock-poison.go:124-200`'s tested `#[cfg(test)]` region tracking rather than writing a third copy, and make the
 test-file predicate path-aware (`isRustTestFile` is base-name-only today and misses `indexing/tests/*.rs` and
 `*test_support.rs`). Directive plumbing: `newDirectiveTracker` → `observe` on scanned lines → `markUsed` → `orphans` +
 `formatOrphanDirectives`. Per `checks/CLAUDE.md`: declare `Inputs`, wire CI, no length truncation, update the count
 table in `checks/DETAILS.md`.
 
-**Riders.** (a) Extend `cmdr/no-arbitrary-sleep-in-e2e` to `src/**/*.test.ts` (35 real-wall-clock waits, 8 files).
-(b) Fix the live single-source violation: `docs/tooling/testing.md:65` calls `pollUntil` "the canonical way to wait"
-while `docs/testing.md:81` bans the bare form. (c) Fix `checks/DETAILS.md`'s reference to a `Warning(message)`
-constructor that doesn't exist.
+**Riders.** (a) Extend `cmdr/no-arbitrary-sleep-in-e2e` to `src/**/*.test.ts` (35 real-wall-clock waits, 8 files). (b)
+Fix the live single-source violation: `docs/tooling/testing.md:65` calls `pollUntil` "the canonical way to wait" while
+`docs/testing.md:81` bans the bare form. (c) Fix `checks/DETAILS.md`'s reference to a `Warning(message)` constructor
+that doesn't exist.
 
 **DONE.** Check registered, CI-wired, error-level, green with zero allowlist entries.
 
