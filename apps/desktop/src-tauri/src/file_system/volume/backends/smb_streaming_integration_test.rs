@@ -149,7 +149,7 @@ async fn smb_integration_write_from_stream_cancel() {
     let data = vec![0xEF; 500_000]; // ~500 KB, several chunks
     source.create_file(Path::new("/big.bin"), &data).await.unwrap();
 
-    let call_count = std::sync::atomic::AtomicUsize::new(0);
+    let call_count = AtomicUsize::new(0);
     let stream = source.open_read_stream(Path::new("/big.bin")).await.unwrap();
     let result = vol
         .write_from_stream(Path::new(&format!("{}/big.bin", dir)), 500_000, stream, &|_, _| {
@@ -476,7 +476,7 @@ async fn smb_integration_write_from_stream_cancel_mid_write() {
     source.create_file(Path::new("/cancel-me.bin"), &data).await.unwrap();
 
     let smb_path = format!("{}/cancel-me.bin", dir);
-    let call_count = std::sync::atomic::AtomicUsize::new(0);
+    let call_count = AtomicUsize::new(0);
 
     let stream = source.open_read_stream(Path::new("/cancel-me.bin")).await.unwrap();
     let result = vol

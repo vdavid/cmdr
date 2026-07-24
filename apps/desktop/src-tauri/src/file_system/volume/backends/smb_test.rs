@@ -508,7 +508,7 @@ fn make_test_volume() -> SmbVolume {
         reconnect_lock: Arc::new(tokio::sync::Mutex::new(())),
         unmounted: Arc::new(AtomicBool::new(false)),
         scan_pool: tokio::sync::RwLock::new(None),
-        scan_session_refs: std::sync::atomic::AtomicUsize::new(0),
+        scan_session_refs: AtomicUsize::new(0),
     }
 }
 

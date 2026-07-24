@@ -533,14 +533,13 @@ impl MediaScheduler {
         // (refcounted; a concurrent index rescan shares them). The guard releases on
         // every exit path, including the `?` bubbles below. A sequential pass reads
         // one file at a time, where extra sessions would be idle cost.
-        let _scan_session =
-            if direct && (|| crate::media_index::thermal::current_pressure().cap(gate::parallelism()))() > 1 {
-                runtime
-                    .as_ref()
-                    .map(|handle| ScanSessionBracket::open(volume.clone(), handle.clone()))
-            } else {
-                None
-            };
+        let _scan_session = if direct && crate::media_index::thermal::current_pressure().cap(gate::parallelism()) > 1 {
+            runtime
+                .as_ref()
+                .map(|handle| ScanSessionBracket::open(volume.clone(), handle.clone()))
+        } else {
+            None
+        };
         let idle_threshold = policy.idle_threshold;
         // The between-images proceed gate: the app is foreground-idle AND no
         // user-initiated transfer touches this volume (`crate::priority`'s order —
@@ -685,12 +684,12 @@ impl MediaScheduler {
 /// which fires on EVERY pass exit, including error bubbles. The end is spawned
 /// (not blocked on) so a `Drop` on a blocking thread never waits on the runtime.
 struct ScanSessionBracket {
-    volume: std::sync::Arc<dyn crate::file_system::volume::Volume>,
+    volume: Arc<dyn crate::file_system::volume::Volume>,
     handle: tokio::runtime::Handle,
 }
 
 impl ScanSessionBracket {
-    fn open(volume: std::sync::Arc<dyn crate::file_system::volume::Volume>, handle: tokio::runtime::Handle) -> Self {
+    fn open(volume: Arc<dyn crate::file_system::volume::Volume>, handle: tokio::runtime::Handle) -> Self {
         let v = volume.clone();
         handle.block_on(async move { v.begin_scan_session().await });
         Self { volume, handle }

@@ -23,7 +23,7 @@ use crate::media_index::network::fetch::{ByteFetcher, FetchError, VolumeByteFetc
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_media_fetch_reads_bytes_via_direct_session() {
-    let vol = std::sync::Arc::new(make_docker_volume().await);
+    let vol = Arc::new(make_docker_volume().await);
     let mount_root = vol.root().to_string_lossy().into_owned();
 
     // A unique file so parallel runs never collide; content big enough to span
@@ -40,8 +40,8 @@ async fn smb_integration_media_fetch_reads_bytes_via_direct_session() {
 
     // The enrichment pass fetches from a blocking thread, never a runtime worker.
     let (with_hint, without_hint) = tokio::task::spawn_blocking(move || {
-        let with_hint = fetcher.fetch(&os_path, Some(size), std::time::Duration::from_secs(30));
-        let without_hint = fetcher.fetch(&os_path, None, std::time::Duration::from_secs(30));
+        let with_hint = fetcher.fetch(&os_path, Some(size), Duration::from_secs(30));
+        let without_hint = fetcher.fetch(&os_path, None, Duration::from_secs(30));
         (with_hint, without_hint)
     })
     .await
@@ -66,16 +66,15 @@ async fn smb_integration_media_fetch_reads_bytes_via_direct_session() {
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_media_fetch_missing_file_is_not_found() {
-    let vol = std::sync::Arc::new(make_docker_volume().await);
+    let vol = Arc::new(make_docker_volume().await);
     let mount_root = vol.root().to_string_lossy().into_owned();
     let fetcher = VolumeByteFetcher::new(vol.clone(), tokio::runtime::Handle::current());
     let os_path = os_join(&mount_root, &format!("/{}-missing.jpg", test_dir_name()));
 
-    let err =
-        tokio::task::spawn_blocking(move || fetcher.fetch(&os_path, Some(10), std::time::Duration::from_secs(30)))
-            .await
-            .expect("blocking task")
-            .expect_err("a missing file must error");
+    let err = tokio::task::spawn_blocking(move || fetcher.fetch(&os_path, Some(10), Duration::from_secs(30)))
+        .await
+        .expect("blocking task")
+        .expect_err("a missing file must error");
     assert!(
         matches!(err, FetchError::NotFound),
         "a vanished source is NotFound, got {err:?}"
@@ -91,7 +90,7 @@ async fn smb_integration_media_fetch_missing_file_is_not_found() {
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_media_fetch_parallel_reads_over_the_scan_pool() {
-    let vol = std::sync::Arc::new(make_docker_volume().await);
+    let vol = Arc::new(make_docker_volume().await);
     let mount_root = vol.root().to_string_lossy().into_owned();
 
     // Seed several distinct small files (well under max_read, so the compound
@@ -114,7 +113,7 @@ async fn smb_integration_media_fetch_parallel_reads_over_the_scan_pool() {
         "the pooled connections come up with the scan session"
     );
 
-    let fetcher = std::sync::Arc::new(VolumeByteFetcher::new(vol.clone(), tokio::runtime::Handle::current()));
+    let fetcher = Arc::new(VolumeByteFetcher::new(vol.clone(), tokio::runtime::Handle::current()));
 
     // Concurrent fetches from plain threads, like the parallel pass's fetch workers.
     let results = tokio::task::spawn_blocking({
@@ -131,7 +130,7 @@ async fn smb_integration_media_fetch_parallel_reads_over_the_scan_pool() {
                         s.spawn(move || {
                             let os_path = os_join(mount_root, &format!("/{name}"));
                             let bytes = fetcher
-                                .fetch(&os_path, Some(content.len() as u64), std::time::Duration::from_secs(30))
+                                .fetch(&os_path, Some(content.len() as u64), Duration::from_secs(30))
                                 .expect("pooled fetch");
                             bytes == *content
                         })
