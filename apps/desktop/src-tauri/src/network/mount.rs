@@ -776,33 +776,42 @@ mod tests {
             .await
             .unwrap_or_else(|e| panic!("guest mount against {host}:{port} failed: {e:?}"));
 
-        // Poll for NetFS to register the mount so statfs reports the SMB info. A
+        // Force-unmount on EVERY exit path — assertions passing, a panic in them,
+        // or the settle wait below timing out — so no run leaks the mount into the
+        // next (`Drop` runs on unwind).
+        struct UnmountOnDrop(String);
+        impl Drop for UnmountOnDrop {
+            fn drop(&mut self) {
+                let _ = std::process::Command::new("diskutil")
+                    .args(["unmount", "force", &self.0])
+                    .output();
+            }
+        }
+        let _unmount = UnmountOnDrop(mount_result.mount_path.clone());
+
+        // Wait for NetFS to register the mount so statfs reports the SMB info. A
         // fixed sleep here raced the OS settling and flaked in BOTH debug and
         // release (the magic-timer-wait anti-pattern — see docs/testing.md). We
         // wait for the settled, SMB-shaped id: an early statfs can briefly report
         // the path-shape id (`volumespublic`) before the SMB mount info lands.
         // The ceiling is generous (20s) because NetFS settle time stretches under
         // the parallel load of the full slow-check suite (Linux tests + both e2e
-        // lanes running concurrently); the early break keeps the common case fast,
-        // so the budget only ever elapses on a genuine failure.
+        // lanes running concurrently); the wait returns on the first satisfied
+        // poll, so the budget only ever elapses on a genuine failure.
         let mut volume = None;
-        for _ in 0..200 {
-            if let Some(v) = crate::volumes::resolve_path_volume_fast(&mount_result.mount_path)
-                && v.id.starts_with("smb-")
-            {
-                volume = Some(v);
-                break;
-            }
-            tokio::time::sleep(Duration::from_millis(100)).await;
-        }
-
-        // Unmount before assertions so a panic doesn't leak the mount.
-        let _ = std::process::Command::new("diskutil")
-            .args(["unmount", "force", &mount_result.mount_path])
-            .output();
-
-        let volume =
-            volume.expect("resolve_path_volume_fast should return an smb- volume within 20s of a fresh SMB mount");
+        crate::test_support::wait_until_async(
+            Duration::from_secs(20),
+            "resolve_path_volume_fast to report the settled smb- volume id for a fresh SMB mount",
+            || match crate::volumes::resolve_path_volume_fast(&mount_result.mount_path) {
+                Some(v) if v.id.starts_with("smb-") => {
+                    volume = Some(v);
+                    true
+                }
+                _ => false,
+            },
+        )
+        .await;
+        let volume = volume.expect("the satisfied wait stores the resolved volume");
 
         // The pre-fix ID was `volumespublic`, which is what `path_to_id` produces
         // for `/Volumes/public`. The new ID encodes server, port, and share.

@@ -86,6 +86,41 @@ filter = 'test(smb_integration_copy_100_unique_files_no_cross_contamination)'
 test-group = 'smb-stress'
 
 [[profile.default.overrides]]
+# The two disconnect-storm stress tests run ~20 rounds × 2 volumes of FULL index-DB
+# lifecycles (SQLite open, freshness churn, writer drain, delete) in one test. Idle
+# macOS runtime is ~0.15 s, but on the Docker Linux lane during a saturated
+# full-suite run (both e2e lanes + a workspace build on the host, measured
+# 2026-07-24 at host load ~150) the ~40 real DB open/drain/delete cycles starved
+# past the global 8 s cap. 20 s keeps the wedge-detection teeth (a genuinely
+# wedged registry/writer still fails, in 20 s instead of 8) without flaking on
+# container I/O starvation.
+filter = 'test(indexing::lifecycle::state::tests::disconnect_storm_two_volumes_never_wedges_the_registry) + test(indexing::tests::stress_tests_lifecycle::disconnect_storm_writer_drain_holds_across_volumes)'
+slow-timeout = { period = "20s", terminate-after = 1 }
+
+[[profile.default.overrides]]
+# The two kick tests that wait on a REAL spawned enrichment pass (tauri runtime →
+# blocking pool → SQLite → media writer thread → poll). Their in-test
+# `PASS_LANDS_WITHIN` wait is 20 s (see `kick_tests.rs` for the measured
+# saturation diagnosis: at host load ~150 a 5 s budget expired while the pass
+# was healthy), and `kick_runs_…` prefixes it with a 1 s negative window — both
+# past the global 8 s cap. 30 s keeps the in-test deadline authoritative (its
+# panic names the exact wait that starved) with the cap as a hang backstop.
+# Keep this above `PASS_LANDS_WITHIN`.
+filter = 'test(kick_tests::wire_volume_kicks_an_initial_pass_for_a_fresh_at_launch_volume) + test(kick_tests::kick_runs_a_pass_for_a_ready_volume_only_when_enabled)'
+slow-timeout = { period = "30s", terminate-after = 1 }
+
+[[profile.default.overrides]]
+# The volume-id NetFS test's internal deadlines are 16 s (kernel-mount connect, the
+# sanctioned exception documented at the call site) + 20 s (NetFS settle wait), so the
+# general 30 s `smb_integration_` cap below could SIGKILL it before its own waits
+# report WHICH stage starved. 40 s keeps the in-test deadlines authoritative (their
+# panics name the stage) with the cap as a hang backstop. Precedes the general
+# override so it wins slow-timeout for this test (first matching override per
+# setting wins).
+filter = 'test(smb_integration_volume_id_is_per_mount_not_per_path_shape)'
+slow-timeout = { period = "40s", terminate-after = 1 }
+
+[[profile.default.overrides]]
 # SMB integration tests (`#[ignore]`-gated, only run by the
 # `desktop-rust-integration-tests` check, which boots a real Docker Samba stack).
 # Each test pays the SMB session setup + auth + network round-trip cost; the

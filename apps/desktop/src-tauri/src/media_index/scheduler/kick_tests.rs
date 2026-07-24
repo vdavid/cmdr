@@ -268,9 +268,19 @@ pub(super) fn use_automatic_scope() {
 
 /// The budget for a POSITIVE wait on a kicked pass. The kick paths spawn their pass on the
 /// tauri runtime (off this test thread), so an assertion on the pass's effect has to wait
-/// for it. Far above the sub-millisecond real work, so a timeout means a genuine
-/// regression, never load.
-const PASS_LANDS_WITHIN: Duration = Duration::from_secs(5);
+/// for it.
+///
+/// The real work is sub-millisecond, but the kick crosses several scheduling hops before
+/// the row is observable (async spawn → blocking-pool thread → SQLite writes → the media
+/// writer thread → the poll's own read), and each hop can wait hundreds of ms when the
+/// host is saturated (measured 2026-07-24: at load ~150 — full slow-check suite plus a
+/// Docker workspace build — a 5 s budget expired with the pass landing fine on the next
+/// run; solo the same test lands in ~80 ms). The wait returns on the first poll that
+/// sees the row, so this ceiling costs nothing on the happy path and only ever elapses
+/// on a genuine dead-start regression. The matching nextest override in
+/// `.config/nextest.toml` (`kick_tests` block) keeps the process cap above this budget;
+/// keep the two in sync.
+const PASS_LANDS_WITHIN: Duration = Duration::from_secs(20);
 
 /// Whether `cond` stays false for a full second — for a NEGATIVE assertion. A spurious
 /// enrichment would land in tens of milliseconds, so 1 s is ample without dragging the
