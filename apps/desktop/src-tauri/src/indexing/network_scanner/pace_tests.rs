@@ -91,6 +91,8 @@ async fn a_continuously_browsed_share_still_finishes_its_scan() {
         async move {
             while !stop.load(Ordering::Relaxed) {
                 crate::priority::foreground::note_foreground_activity_on(&volume_id);
+                // allowed-test-sleep: this is a background load generator modeling a user arrow-keying
+                // through the share for the whole scan; the interval paces the foreground pings
                 tokio::time::sleep(Duration::from_millis(2)).await;
             }
         }

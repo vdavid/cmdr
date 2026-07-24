@@ -175,6 +175,7 @@ mod tests {
     use crate::indexing::writer::delta::propagate_delta_by_id;
     use crate::indexing::writer::tests::setup_db;
     use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
+    use crate::test_support::wait_until;
 
     /// Reject every `dir_stats` write for `entry_id`, with a real SQLite failure
     /// (`RAISE(ABORT)`) rather than a mocked store: the propagation walk sees the
@@ -366,14 +367,16 @@ mod tests {
         // Any later message gives the loop its next tick; the drain runs at the
         // end of that iteration, just after the flush reply.
         writer.flush_blocking().unwrap();
-        let healed = (0..100).any(|_| {
-            std::thread::sleep(std::time::Duration::from_millis(10));
-            IndexStore::get_dir_stats_by_id(&conn, 10)
-                .unwrap()
-                .map(|s| s.recursive_logical_size)
-                == Some(1000)
-        });
-        assert!(healed, "the writer must repair the drifted chain without being asked");
+        wait_until(
+            std::time::Duration::from_secs(2),
+            "the writer to repair the drifted chain without being asked",
+            || {
+                IndexStore::get_dir_stats_by_id(&conn, 10)
+                    .unwrap()
+                    .map(|s| s.recursive_logical_size)
+                    == Some(1000)
+            },
+        );
         check_db_consistency(&conn);
 
         writer.shutdown();
