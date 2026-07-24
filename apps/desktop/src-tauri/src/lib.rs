@@ -153,6 +153,9 @@ mod system_events;
 mod system_memory;
 mod system_strings;
 pub mod test_mode;
+/// The sanctioned way to wait for background work in a Rust test. See `docs/testing.md`.
+#[cfg(test)]
+pub(crate) mod test_support;
 #[cfg(target_os = "macos")]
 mod text_size;
 mod thread_qos;
