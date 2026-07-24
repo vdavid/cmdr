@@ -100,14 +100,14 @@ slow-timeout = { period = "20s", terminate-after = 1 }
 [[profile.default.overrides]]
 # The two kick tests that wait on a REAL spawned enrichment pass (tauri runtime →
 # blocking pool → SQLite → media writer thread → poll). Their in-test
-# `PASS_LANDS_WITHIN` wait is 20 s (see `kick_tests.rs` for the measured
-# saturation diagnosis: at host load ~150 a 5 s budget expired while the pass
-# was healthy), and `kick_runs_…` prefixes it with a 1 s negative window — both
-# past the global 8 s cap. 30 s keeps the in-test deadline authoritative (its
-# panic names the exact wait that starved) with the cap as a hang backstop.
-# Keep this above `PASS_LANDS_WITHIN`.
+# `PASS_LANDS_WITHIN` wait is 10 s (saturation headroom; see its doc — and
+# `has_enriched_row`'s, for the probe bug that USED to make this wait unwinnable),
+# and `kick_runs_…` prefixes it with a 1 s negative window — together past the
+# global 8 s cap. 20 s keeps the in-test deadline authoritative (its panic names
+# the exact wait) with the cap as a hang backstop. Keep this above
+# `PASS_LANDS_WITHIN`.
 filter = 'test(kick_tests::wire_volume_kicks_an_initial_pass_for_a_fresh_at_launch_volume) + test(kick_tests::kick_runs_a_pass_for_a_ready_volume_only_when_enabled)'
-slow-timeout = { period = "30s", terminate-after = 1 }
+slow-timeout = { period = "20s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 # The volume-id NetFS test's internal deadlines are 16 s (kernel-mount connect, the

@@ -389,7 +389,11 @@ fn read_meta_value(conn: &Connection, key: &str) -> Result<Option<String>, Media
 }
 
 /// Read one `media_status` row, joined to its path in `media_file`.
-pub(super) fn read_status(conn: &Connection, path: &str) -> Result<Option<MediaStatusRow>, MediaStoreError> {
+///
+/// `pub(crate)` so test probes can poll it over [`open_read_connection`] instead of
+/// re-opening a full `MediaStore` (a WRITE connection) per poll — see
+/// `scheduler/kick_tests.rs::has_enriched_row` for why that contention matters.
+pub(crate) fn read_status(conn: &Connection, path: &str) -> Result<Option<MediaStatusRow>, MediaStoreError> {
     let mut stmt = conn.prepare_cached(
         "SELECT f.path, s.mtime, s.size, s.media_kind, s.state, s.engine_version, s.clip_stamp
          FROM media_status s JOIN media_file f ON f.id = s.file_id

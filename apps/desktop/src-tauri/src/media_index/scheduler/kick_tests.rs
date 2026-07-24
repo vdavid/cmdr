@@ -270,17 +270,16 @@ pub(super) fn use_automatic_scope() {
 /// tauri runtime (off this test thread), so an assertion on the pass's effect has to wait
 /// for it.
 ///
-/// The real work is sub-millisecond, but the kick crosses several scheduling hops before
-/// the row is observable (async spawn → blocking-pool thread → SQLite writes → the media
-/// writer thread → the poll's own read), and each hop can wait hundreds of ms when the
-/// host is saturated (measured 2026-07-24: at load ~150 — full slow-check suite plus a
-/// Docker workspace build — a 5 s budget expired with the pass landing fine on the next
-/// run; solo the same test lands in ~80 ms). The wait returns on the first poll that
-/// sees the row, so this ceiling costs nothing on the happy path and only ever elapses
-/// on a genuine dead-start regression. The matching nextest override in
-/// `.config/nextest.toml` (`kick_tests` block) keeps the process cap above this budget;
-/// keep the two in sync.
-const PASS_LANDS_WITHIN: Duration = Duration::from_secs(20);
+/// The real work is sub-millisecond (solo the pass lands in ~80 ms), but the kick crosses
+/// several scheduling hops before the row is observable (async spawn → blocking-pool
+/// thread → SQLite writes → the media writer thread → the poll's own read), so under a
+/// saturated host (a full slow-check suite plus a Docker workspace build) 10 s buys real
+/// headroom while the early return keeps the happy path instant. A timeout here means a
+/// genuine dead-start regression — or a probe regression: see `has_enriched_row`'s doc
+/// for the write-connection-per-poll shape that made the writer DROP the awaited row, a
+/// failure no budget can wait out. The matching nextest override in `.config/nextest.toml`
+/// (`kick_tests` block) keeps the process cap above this budget; keep the two in sync.
+const PASS_LANDS_WITHIN: Duration = Duration::from_secs(10);
 
 /// Whether `cond` stays false for a full second — for a NEGATIVE assertion. A spurious
 /// enrichment would land in tens of milliseconds, so 1 s is ample without dragging the
@@ -300,10 +299,24 @@ fn never_within_a_second(mut cond: impl FnMut() -> bool) -> bool {
 
 /// Whether `media.db` for `volume_id` under `data_dir` carries an enriched row for
 /// `path` — the "did a spawned pass enrich it?" probe the async kick tests poll on.
+///
+/// READ-ONLY on purpose, and load-bearing: `wait_until` polls this every few ms, and
+/// the previous shape (`MediaStore::open`, a WRITE connection: WAL conversion plus
+/// `CREATE TABLE IF NOT EXISTS` per poll) contended with the enrichment writer hard
+/// enough that its upsert failed with SQLITE_BUSY — a lock-upgrade deadlock check
+/// SQLite fails immediately, BYPASSING `busy_timeout` — and the pass "completed"
+/// with the row silently dropped, so the wait could never succeed (caught via
+/// `RUST_LOG=media_index=trace`: "upsert failed for '/keep/a.jpg': … database is
+/// locked"). A read-only WAL connection never blocks or is blocked by the writer.
 fn has_enriched_row(data_dir: &std::path::Path, volume_id: &str, path: &str) -> bool {
-    MediaStore::open(&media_db_path(data_dir, volume_id))
+    use crate::media_index::store::open_read_connection;
+    let db = media_db_path(data_dir, volume_id);
+    if !db.exists() {
+        return false;
+    }
+    open_read_connection(&db)
         .ok()
-        .and_then(|s| s.status_for(path).ok().flatten())
+        .and_then(|conn| crate::media_index::store::read_status(&conn, path).ok().flatten())
         .is_some()
 }
 
