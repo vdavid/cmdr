@@ -1381,19 +1381,22 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
     // channel as soon as it's installed. This races, so poll briefly.
     let state_for_resolver = Arc::clone(&stop_state);
     let resolver = tokio::spawn(async move {
-        for _ in 0..200 {
-            if let Some(tx) = state_for_resolver.conflict_resolution_tx.lock().unwrap().take() {
-                let _ = tx.send(
-                    crate::file_system::write_operations::state::ConflictResolutionResponse {
-                        resolution: ConflictResolution::Skip,
-                        apply_to_all: true,
-                    },
-                );
-                return;
-            }
-            tokio::time::sleep(Duration::from_millis(10)).await;
-        }
-        panic!("conflict_resolution_tx was never installed");
+        crate::test_support::wait_until_async(Duration::from_secs(5), "the conflict prompt to install", || {
+            state_for_resolver.conflict_resolution_tx.lock().unwrap().is_some()
+        })
+        .await;
+        let tx = state_for_resolver
+            .conflict_resolution_tx
+            .lock()
+            .unwrap()
+            .take()
+            .expect("conflict_resolution_tx installed");
+        let _ = tx.send(
+            crate::file_system::write_operations::state::ConflictResolutionResponse {
+                resolution: ConflictResolution::Skip,
+                apply_to_all: true,
+            },
+        );
     });
 
     let stop_result = copy_volumes_with_progress(
@@ -1577,19 +1580,22 @@ async fn test_stop_mode_does_not_bulk_skip_pre_known_conflicts() {
     // flow ran), not that the user chose any specific action.
     let state_for_resolver = Arc::clone(&state);
     let resolver = tokio::spawn(async move {
-        for _ in 0..200 {
-            if let Some(tx) = state_for_resolver.conflict_resolution_tx.lock().unwrap().take() {
-                let _ = tx.send(
-                    crate::file_system::write_operations::state::ConflictResolutionResponse {
-                        resolution: ConflictResolution::Skip,
-                        apply_to_all: true,
-                    },
-                );
-                return;
-            }
-            tokio::time::sleep(Duration::from_millis(10)).await;
-        }
-        panic!("conflict_resolution_tx was never installed");
+        crate::test_support::wait_until_async(Duration::from_secs(5), "the conflict prompt to install", || {
+            state_for_resolver.conflict_resolution_tx.lock().unwrap().is_some()
+        })
+        .await;
+        let tx = state_for_resolver
+            .conflict_resolution_tx
+            .lock()
+            .unwrap()
+            .take()
+            .expect("conflict_resolution_tx installed");
+        let _ = tx.send(
+            crate::file_system::write_operations::state::ConflictResolutionResponse {
+                resolution: ConflictResolution::Skip,
+                apply_to_all: true,
+            },
+        );
     });
 
     let result = copy_volumes_with_progress(

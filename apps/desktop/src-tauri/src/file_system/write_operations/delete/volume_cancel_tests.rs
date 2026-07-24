@@ -25,6 +25,7 @@ use super::super::types::{CollectorEventSink, WriteOperationConfig};
 use super::walker::delete_volume_files_with_progress_inner;
 use crate::file_system::get_volume_manager;
 use crate::file_system::volume::{InMemoryVolume, Volume, VolumeError};
+use crate::test_support::wait_until_async;
 
 // ----------------------------------------------------------------------------
 // Volume that honors `list_directory_with_cancel` / `delete_with_cancel`
@@ -45,6 +46,10 @@ struct CancellingVolume {
     /// Number of entries the per-handle loop fetched before bailing on a
     /// flipped cancel. Reset per listing call.
     fetched_before_cancel: AtomicUsize,
+    /// Live count of entries handed out so far, bumped every iteration. Lets a
+    /// canceller wait until the listing is genuinely in-flight instead of
+    /// sleeping a fixed span and hoping.
+    fetched_live: AtomicUsize,
     /// Whether a listing call observed a cancel.
     listing_observed_cancel: AtomicBool,
     /// Whether the per-leaf delete observed a cancel.
@@ -57,6 +62,7 @@ impl CancellingVolume {
             inner: InMemoryVolume::new(name),
             children,
             fetched_before_cancel: AtomicUsize::new(0),
+            fetched_live: AtomicUsize::new(0),
             listing_observed_cancel: AtomicBool::new(false),
             delete_observed_cancel: AtomicBool::new(false),
         }
@@ -108,6 +114,7 @@ impl Volume for CancellingVolume {
                     return Err(VolumeError::Cancelled("listing cancelled".to_string()));
                 }
                 yielded.push(entry.clone());
+                self.fetched_live.fetch_add(1, Ordering::Release);
                 if let Some(cb) = on_progress {
                     cb(crate::file_system::volume::ListingProgress {
                         files: yielded.len(),
@@ -115,10 +122,10 @@ impl Volume for CancellingVolume {
                         bytes: 0,
                     });
                 }
-                // Simulate a slow USB roundtrip per handle. Each `GetObjectInfo`
-                // on a real MTP device is on the order of milliseconds; we use
-                // a similar delay so a concurrent cancel reliably lands between
-                // iterations under test conditions.
+                // Each `GetObjectInfo` on a real MTP device costs milliseconds; this IS that modeled
+                // cost, keeping the 500-entry listing in flight long enough for the canceller (which
+                // waits on `fetched_live`, not the clock) to land its cancel mid-listing.
+                // allowed-test-sleep: simulated per-handle USB roundtrip; the modeled device cost, not a wait.
                 tokio::time::sleep(Duration::from_millis(2)).await;
             }
             self.fetched_before_cancel.store(yielded.len(), Ordering::Release);
@@ -242,11 +249,17 @@ async fn mtp_listing_cancels_promptly_when_intent_flips() {
     );
     let state = Arc::clone(op.state());
 
-    // Spawn the delete; while it's running, fire cancel from another task.
+    // Spawn the delete; once the listing is genuinely in-flight (several entries
+    // fetched), fire cancel from another task so it lands mid-listing.
     let op_id_for_cancel = op_id.clone();
+    let vol_for_cancel = Arc::clone(&vol);
     let canceller = tokio::spawn(async move {
-        // Let the listing get going before we cancel.
-        tokio::time::sleep(Duration::from_millis(20)).await;
+        wait_until_async(
+            Duration::from_secs(5),
+            "the MTP listing to get several entries in",
+            || vol_for_cancel.fetched_live.load(Ordering::Acquire) >= 5,
+        )
+        .await;
         cancel_write_operation(&op_id_for_cancel, false);
     });
 
@@ -291,14 +304,14 @@ async fn mtp_listing_cancels_promptly_when_intent_flips() {
     );
     let fetched = vol.fetched_before_cancel.load(Ordering::Acquire);
     assert!(
-        fetched < total_children,
+        (1..total_children).contains(&fetched),
         // allowed-pluralize-noun: total_children is the const 500.
-        "expected listing to bail before fetching all {total_children} entries, got {fetched}"
+        "the cancel must land MID-listing: past the first entry and before all {total_children}, got {fetched}"
     );
 
-    // Should be much faster than the 30 s wedge from the incident. With a
-    // sleep-then-cancel of 20 ms and prompt propagation, the whole op fits in
-    // a few hundred ms; we give ourselves comfortable headroom for slow CI.
+    // Should be much faster than the 30 s wedge from the incident. Cancelling
+    // once the listing is in-flight, plus prompt propagation, fits the whole op
+    // in a few hundred ms; we give ourselves comfortable headroom for slow CI.
     assert!(
         elapsed < Duration::from_secs(3),
         "cancel must propagate promptly; took {elapsed:?}"
@@ -388,8 +401,14 @@ async fn volume_cancel_emits_write_settled_event() {
     let state = Arc::clone(op.state());
 
     let op_id_for_cancel = op_id.clone();
+    let vol_for_cancel = Arc::clone(&vol);
     let canceller = tokio::spawn(async move {
-        tokio::time::sleep(Duration::from_millis(20)).await;
+        wait_until_async(
+            Duration::from_secs(5),
+            "the MTP listing to get several entries in",
+            || vol_for_cancel.fetched_live.load(Ordering::Acquire) >= 5,
+        )
+        .await;
         cancel_write_operation(&op_id_for_cancel, false);
     });
 

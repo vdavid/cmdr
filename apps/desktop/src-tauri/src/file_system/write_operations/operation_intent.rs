@@ -275,7 +275,9 @@ mod tests {
             woke_t.store(true, Ordering::SeqCst);
         });
 
-        // Give the worker time to park, then resume.
+        // The condvar park exposes no "I am parked now" signal, so a window is the only way to
+        // establish the worker really stays blocked while paused before we resume it.
+        // allowed-test-sleep: negative assertion over a window; the condvar park has nothing to await.
         std::thread::sleep(Duration::from_millis(50));
         assert!(!woke.load(Ordering::SeqCst), "worker must still be parked while paused");
         gate.resume();
@@ -300,6 +302,9 @@ mod tests {
             woke_t.store(true, Ordering::SeqCst);
         });
 
+        // The condvar park has no "parked now" signal, so we hold a window to prove the worker
+        // stays blocked before the cancel lands.
+        // allowed-test-sleep: negative assertion over a window; the condvar park has nothing to await.
         std::thread::sleep(Duration::from_millis(50));
         assert!(!woke.load(Ordering::SeqCst), "still parked before cancel");
         // Mirror the production cancel path: flip intent to a non-Running state,
@@ -337,6 +342,9 @@ mod tests {
             gate_t.wait_while_paused_async(&intent_t).await;
         });
 
+        // `notified().await` exposes no "registered" signal, so we hold a window to prove the
+        // waiter stays parked before resume.
+        // allowed-test-sleep: negative assertion over a window; `notified().await` has nothing to await on.
         tokio::time::sleep(Duration::from_millis(50)).await;
         assert!(!task.is_finished(), "async waiter must still be parked while paused");
         gate.resume();
@@ -359,6 +367,9 @@ mod tests {
             gate_t.wait_while_paused_async(&intent_t).await;
         });
 
+        // `notified().await` has no "registered now" signal, so we hold a window to prove the
+        // waiter stays parked before the cancel lands.
+        // allowed-test-sleep: negative assertion over a window; `notified().await` has nothing to await on.
         tokio::time::sleep(Duration::from_millis(50)).await;
         assert!(!task.is_finished(), "still parked before cancel");
         // Mirror the production cancel path: flip intent, then `wake()` (NOT

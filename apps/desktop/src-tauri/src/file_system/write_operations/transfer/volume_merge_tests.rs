@@ -815,16 +815,17 @@ async fn cancel_while_queued_unblocks_both_no_hang() {
     let state_for_cancel = Arc::clone(&state);
     let op_id_for_cancel = op_id.to_string();
     let canceller = tokio::spawn(async move {
-        for _ in 0..400 {
-            // A sender is installed while a task awaits the prompt.
-            if state_for_cancel.conflict_resolution_tx.lock().unwrap().is_some() {
-                tokio::time::sleep(Duration::from_millis(20)).await; // let task B park on the mutex
-                cancel_write_operation(&op_id_for_cancel, false);
-                return true;
-            }
-            tokio::time::sleep(Duration::from_millis(5)).await;
-        }
-        false
+        // A sender is installed while task A awaits the prompt (task B is then
+        // queued behind it on the dispatch mutex).
+        crate::test_support::wait_until_async(Duration::from_secs(5), "the Stop prompt to be installed", || {
+            state_for_cancel.conflict_resolution_tx.lock().unwrap().is_some()
+        })
+        .await;
+        // Task B parking on the dispatch mutex is not observable from here, and this test's whole
+        // point is the cancel landing WHILE B is queued, so we give B a beat to reach the mutex.
+        // allowed-test-sleep: no signal for "B is queued on the dispatch mutex"; the window creates the race.
+        tokio::time::sleep(Duration::from_millis(20)).await;
+        cancel_write_operation(&op_id_for_cancel, false);
     });
 
     let events = Arc::new(CollectorEventSink::new());
@@ -855,8 +856,7 @@ async fn cancel_while_queued_unblocks_both_no_hang() {
     )
     .await;
 
-    let installed = canceller.await.unwrap();
-    assert!(installed, "a Stop prompt should have been installed before cancel");
+    canceller.await.unwrap();
     assert!(
         driven.is_ok(),
         "operation hung after cancel-while-queued (dispatch-mutex deadlock)"

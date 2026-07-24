@@ -258,9 +258,10 @@ impl VolumeReadStream for ReleasingStream {
                     Err(_) => return None,
                 }
             }
-            // allowed-test-sleep: simulated per-window device latency. It IS the modeled cost of an
-            // MTP/SMB read window; without it a 200 KiB copy finishes before the controlling task can
-            // raise foreground or pause it, so the yield and pause arms would never be exercised.
+            // The modeled cost of an MTP/SMB read window: without it a 200 KiB copy finishes before
+            // the controlling task can raise foreground or pause it, so the yield and pause arms
+            // would never be exercised.
+            // allowed-test-sleep: simulated per-window device latency; the modeled cost, not a wait.
             tokio::time::sleep(REL_CHUNK_DELAY).await;
             let start = self.pos;
             let end = (start + REL_CHUNK as u64).min(REL_TOTAL as u64);
@@ -474,9 +475,9 @@ impl Volume for YieldingSource {
         let flag = Arc::clone(&self.foreground);
         Box::pin(async move {
             while flag.load(Ordering::SeqCst) {
-                // allowed-test-sleep: this is the DOUBLE's own park, standing in for the real
-                // per-device gate's poll. It's production behavior being simulated, not a test
-                // waiting for background work.
+                // The DOUBLE's own park, standing in for the real per-device gate's poll: production
+                // behavior being simulated, not a test waiting for background work.
+                // allowed-test-sleep: the fake device gate's poll interval; simulated production behavior.
                 tokio::time::sleep(Duration::from_millis(2)).await;
             }
         })

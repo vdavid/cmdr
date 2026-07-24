@@ -91,13 +91,14 @@ pub(crate) const PARK_WINDOW: Duration = Duration::from_millis(40);
 /// which is why these are the only two fixed waits left in them: keep it that way
 /// rather than sprinkling `sleep` back into the tests.
 pub(crate) async fn park_holds_at(progress: impl Fn() -> u64, what: &str) -> u64 {
-    // allowed-test-sleep: lets whatever was already past its checkpoint finish, so the sample
-    // below is the parked value rather than a mid-flight one. No signal marks "the op reached
-    // its park".
+    // Let whatever was already past its checkpoint finish, so the sample below is the parked
+    // value rather than a mid-flight one. No signal marks "the op reached its park".
+    // allowed-test-sleep: no signal exists for "the op is now parked"; a window is the only evidence.
     tokio::time::sleep(PARK_WINDOW).await;
     let frozen = progress();
-    // allowed-test-sleep: the negative assertion itself. A running op would advance several
-    // units across this window, so a stable value is what proves the park is holding.
+    // The negative assertion itself: a running op would advance several units across this window,
+    // so a stable value is what proves the park is holding.
+    // allowed-test-sleep: negative assertion over a window; "nothing advanced" has nothing to await.
     tokio::time::sleep(PARK_WINDOW).await;
     assert_eq!(progress(), frozen, "{what}");
     frozen

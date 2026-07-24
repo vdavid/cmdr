@@ -202,8 +202,9 @@ async fn auto_yield_debounces_a_burst_into_one_park() {
 
             // First listing: stream past the floor, raise, then drop. The copy
             // parks (doesn't start the next window) and enters the debounce window.
-            // allowed-test-sleep: a virtual-clock advance to "several windows in", on the paused
-            // runtime. It IS the burst's shape, which is this test's whole subject.
+            // A virtual-clock advance to "several windows in" on the paused runtime; it IS the
+            // burst's shape, which is this test's whole subject.
+            // allowed-test-sleep: virtual-time advance on a start_paused runtime; the burst shape under test.
             tokio::time::sleep(Duration::from_millis(40)).await;
             foreground.store(true, Ordering::SeqCst);
             // allowed-test-sleep: how long the first listing holds the device, in virtual time.
@@ -221,8 +222,9 @@ async fn auto_yield_debounces_a_burst_into_one_park() {
             // debounce collapses the burst, the copy stays parked the whole time
             // (no next window between the two listings); without it, the copy would
             // have resumed and advanced in the gap.
-            // allowed-test-sleep: THE subject. This gap must be shorter than the 120 ms debounce,
-            // so the second listing lands inside the quiet window. Virtual time makes it exact.
+            // THE subject: this gap must be shorter than the 120 ms debounce, so the second listing
+            // lands inside the quiet window. Virtual time makes it exact.
+            // allowed-test-sleep: virtual-time advance on a start_paused runtime; the debounce window under test.
             tokio::time::sleep(Duration::from_millis(40)).await;
             foreground.store(true, Ordering::SeqCst);
             // allowed-test-sleep: how long the second listing holds the device, in virtual time.
@@ -315,13 +317,13 @@ async fn auto_yield_min_progress_floor_prevents_starvation() {
             for _ in 0..8 {
                 // Allow a drain so a parked yield can resume.
                 foreground.store(false, Ordering::SeqCst);
-                // allowed-test-sleep: the drain half of a browse cycle. Waiting on progress here
-                // would assume the very forward progress the floor is supposed to guarantee, which
-                // is what this test measures.
+                // The drain half of a browse cycle. Waiting on progress here would assume the very
+                // forward progress the floor is supposed to guarantee, which is what this test measures.
+                // allowed-test-sleep: the drain half of the browse cycle; the floor's forward progress is under test.
                 tokio::time::sleep(PARK_WINDOW / 2).await;
                 foreground.store(true, Ordering::SeqCst);
-                // allowed-test-sleep: the busy half of the cycle, held long enough for the arm to
-                // park again before the next sample.
+                // The busy half of the cycle, held long enough for the arm to park again before the sample.
+                // allowed-test-sleep: the busy half of the browse cycle; holds until the arm re-parks.
                 tokio::time::sleep(PARK_WINDOW / 2).await;
                 let now = bytes_seen.load(Ordering::SeqCst);
                 if now >= last + floor {

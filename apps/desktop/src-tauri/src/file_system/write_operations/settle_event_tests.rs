@@ -226,24 +226,20 @@ async fn injected_sink_receives_complete_and_settled_for_local_copy() {
     .await
     .expect("copy_files_start should return Ok");
 
-    // The deferred task runs asynchronously; poll until it settles.
-    let mut settled_ok = false;
-    for _ in 0..200 {
-        {
-            let settled = collector.settled.lock().unwrap();
-            if let Some(ev) = settled.first() {
-                assert_eq!(ev.operation_id, result.operation_id);
-                assert_eq!(ev.operation_type, WriteOperationType::Copy);
-                assert!(ev.volume_id.is_none(), "a same-root local copy carries volume_id=None");
-                settled_ok = true;
-            }
-        }
-        if settled_ok {
-            break;
-        }
-        tokio::time::sleep(Duration::from_millis(25)).await;
+    // The deferred task runs asynchronously; wait until it settles.
+    crate::test_support::wait_until_async(Duration::from_secs(5), "the write-settled event to arrive", || {
+        !collector.settled.lock().unwrap().is_empty()
+    })
+    .await;
+    {
+        let settled = collector.settled.lock().unwrap();
+        let ev = settled
+            .first()
+            .expect("write-settled must arrive via the injected sink");
+        assert_eq!(ev.operation_id, result.operation_id);
+        assert_eq!(ev.operation_type, WriteOperationType::Copy);
+        assert!(ev.volume_id.is_none(), "a same-root local copy carries volume_id=None");
     }
-    assert!(settled_ok, "write-settled must arrive via the injected sink");
 
     // The full managed pipeline ran through the injected sink, not just the
     // settle guard: the terminal write-complete arrived and the bytes landed.

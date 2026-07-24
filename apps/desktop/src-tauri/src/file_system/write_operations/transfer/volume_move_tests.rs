@@ -243,17 +243,20 @@ async fn cross_volume_move_conflict_stop_resolves_via_oneshot() {
     // Race the resolver: wait until the inner installs a oneshot sender, then push Skip-all.
     let state_for_resolver = Arc::clone(&state);
     let resolver = tokio::spawn(async move {
-        for _ in 0..200 {
-            if let Some(tx) = state_for_resolver.conflict_resolution_tx.lock().unwrap().take() {
-                let _ = tx.send(ConflictResolutionResponse {
-                    resolution: ConflictResolution::Skip,
-                    apply_to_all: true,
-                });
-                return;
-            }
-            tokio::time::sleep(Duration::from_millis(10)).await;
-        }
-        panic!("conflict_resolution_tx was never installed");
+        crate::test_support::wait_until_async(Duration::from_secs(5), "the conflict prompt to install", || {
+            state_for_resolver.conflict_resolution_tx.lock().unwrap().is_some()
+        })
+        .await;
+        let tx = state_for_resolver
+            .conflict_resolution_tx
+            .lock()
+            .unwrap()
+            .take()
+            .expect("conflict_resolution_tx installed");
+        let _ = tx.send(ConflictResolutionResponse {
+            resolution: ConflictResolution::Skip,
+            apply_to_all: true,
+        });
     });
 
     let result = move_volumes_with_progress(
