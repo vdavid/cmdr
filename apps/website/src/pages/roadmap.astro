@@ -21,7 +21,8 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
             </p>
             <p>&nbsp;</p>
             <p class="text-[var(--color-text-secondary)]">
-                I'm also pretty proud of Cmdr's history, so keeping the list of the major milestones here.</p>
+                I'm also pretty proud of Cmdr's history, so keeping the list of the major milestones here.
+            </p>
         </header>
 
         <div class="roadmap-content">
@@ -31,34 +32,56 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                 <h2>2025</h2>
                 <ul class="milestone-list">
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Dec 25)</span>
-                        <span class="title">Start project <Icon name="party-popper" size={18} class="ml-1.5" /></span>
-                        <span class="description">Create Rust + Tauri + Svelte boilerplate.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Dec 25)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title"
+                                >Start project <Icon name="party-popper" size={18} class="ml-1.5" /></span
+                            >
+                            <span class="description">Create Rust + Tauri + Svelte boilerplate.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Dec 27)</span>
-                        <span class="title">Build the core</span>
-                        <span class="description">Two-pane view, Full/Brief mode, virtual scrolling, icons.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Dec 27)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Build the core</span>
+                            <span class="description">Two-pane view, Full/Brief mode, virtual scrolling, icons.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Dec 29)</span>
-                        <span class="title">Make listing crazy fast</span>
-                        <span class="description">350ms to first file for a 50k file folder!</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Dec 29)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Make listing crazy fast</span>
+                            <span class="description">350ms to first file for a 50k file folder!</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Dec 30)</span>
-                        <span class="title">Add file watching</span>
-                        <span class="description">Live updates, always.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Dec 30)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add file watching</span>
+                            <span class="description">Live updates, always.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Dec 31)</span>
-                        <span class="title">Show Dropbox overlays</span>
-                        <span class="description">See synced/syncing/offline-only/online-only statuses.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Dec 31)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Show Dropbox overlays</span>
+                            <span class="description">See synced/syncing/offline-only/online-only statuses.</span>
+                        </span>
                     </li>
                 </ul>
             </section>
@@ -66,408 +89,737 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
             <!-- 2026 -->
             <section class="year-section">
                 <h2>2026</h2>
-                <h3>Jan</h3>
+                <h3>Jan 2026</h3>
                 <ul class="milestone-list">
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jan 1)</span>
-                        <span class="title">Add volumes and drag &amp; drop</span>
-                        <span class="description">Volume switching, drag <em>from</em> app.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jan 1)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add volumes and drag &amp; drop</span>
+                            <span class="description">Volume switching, drag <em>from</em> app.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jan 5)</span>
-                        <span class="title">Add network drive support!</span>
-                        <span class="description">SMB host discovery via Bonjour, share mounting, authentication.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jan 5)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add network drive support!</span>
+                            <span class="description"
+                                >SMB host discovery via Bonjour, share mounting, authentication.</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jan 7)</span>
-                        <span class="title">Add command palette</span>
-                        <span class="description">⌘P to find your actions fast.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jan 7)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add command palette</span>
+                            <span class="description">⌘P to find your actions fast.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jan 9)</span>
-                        <span class="title">Set up licensing</span>
-                        <span class="description">Business planning, set up Paddle. It's free for individuals!</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jan 9)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Set up licensing</span>
+                            <span class="description">Business planning, set up Paddle. It's free for individuals!</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jan 10)</span>
-                        <span class="title">Ship initial release <Icon name="ship" size={18} class="ml-1.5" /></span>
-                        <span class="description">And created getcmdr.com!</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jan 10)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Ship initial release <Icon name="ship" size={18} class="ml-1.5" /></span
+                            >
+                            <span class="description">And created getcmdr.com!</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jan 13)</span>
-                        <span class="title">Add MCP server</span>
-                        <span class="description">AI agents can now use the app.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jan 13)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add MCP server</span>
+                            <span class="description">AI agents can now use the app.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jan 14)</span>
-                        <span class="title">Add automatic updates</span>
-                        <span class="description">Auto-updater, plus a custom title bar and website redesign.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jan 14)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add automatic updates</span>
+                            <span class="description">Auto-updater, plus a custom title bar and website redesign.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jan 16)</span>
-                        <span class="title">Add file selection</span>
-                        <span class="description">Space to toggle, Shift+arrows for range, Cmd+A for all.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jan 16)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add file selection</span>
+                            <span class="description">Space to toggle, Shift+arrows for range, Cmd+A for all.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jan 17)</span>
-                        <span class="title">Make SMB access delightful</span>
-                        <span class="description">Show progress: "Opening...", "Loaded N files...", be transparent.</span
-                        >
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jan 17)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Make SMB access delightful</span>
+                            <span class="description"
+                                >Show progress: "Opening...", "Loaded N files...", be transparent.</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jan 20)</span>
-                        <span class="title">Add copy! (F5)</span>
-                        <span class="description">Pre-flight check for precise stats, progress, even rollback!</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jan 20)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add copy! (F5)</span>
+                            <span class="description">Pre-flight check for precise stats, progress, even rollback!</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jan 20)</span>
-                        <span class="title">Add multifile drag &amp; drop</span>
-                        <span class="description">Drag several files out of the app.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jan 20)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add multifile drag &amp; drop</span>
+                            <span class="description">Drag several files out of the app.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jan 21)</span>
-                        <span class="title">Add copy conflict handling</span>
-                        <span class="description">Skip, overwrite, or rename when files/folders collide.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jan 21)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add copy conflict handling</span>
+                            <span class="description">Skip, overwrite, or rename when files/folders collide.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jan 22)</span>
-                        <span class="title">Add mkdir (F7)</span>
-                        <span class="description">Folder creation with conflict handling and file watching.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jan 22)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add mkdir (F7)</span>
+                            <span class="description">Folder creation with conflict handling and file watching.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jan 24)</span>
-                        <span class="title">Add file viewer (F3) <Icon name="file-text" size={18} class="ml-1.5" /></span>
-                        <span class="description">Works for 10+ GB files instantly, with fast search.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jan 24)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title"
+                                >Add file viewer (F3) <Icon name="file-text" size={18} class="ml-1.5" /></span
+                            >
+                            <span class="description">Works for 10+ GB files instantly, with fast search.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jan 24)</span>
-                        <span class="title">Make "copy" operation safe</span>
-                        <span class="description">Check for writability, disk space, inode identity, path limits.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jan 24)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Make "copy" operation safe</span>
+                            <span class="description"
+                                >Check for writability, disk space, inode identity, path limits.</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jan 25)</span>
-                        <span class="title">Add settings dialog</span>
-                        <span class="description">Ark UI components, fuzzy search, 9+ sections.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jan 25)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add settings dialog</span>
+                            <span class="description">Ark UI components, fuzzy search, 9+ sections.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jan 26)</span>
-                        <span class="title">Edit keyboard shortcuts</span>
-                        <span class="description">Click-to-edit, conflict detection, searchable.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jan 26)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Edit keyboard shortcuts</span>
+                            <span class="description">Click-to-edit, conflict detection, searchable.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jan 27)</span>
-                        <span class="title">Add local AI <Icon name="brain" size={18} class="ml-1.5" /></span>
-                        <span class="description"
-                            >Privacy-first on-device LLM, folder name suggestions, no data leaves your Mac</span
-                        >
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jan 27)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add local AI <Icon name="brain" size={18} class="ml-1.5" /></span>
+                            <span class="description"
+                                >Privacy-first on-device LLM, no data leaves your Mac.</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jan 31)</span>
-                        <span class="title">Wire up Settings</span>
-                        <span class="description">Every setting applies instantly.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jan 31)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Wire up Settings</span>
+                            <span class="description">Every setting applies instantly.</span>
+                        </span>
                     </li>
                 </ul>
-                <h3>Feb</h3>
+                <h3>Feb 2026</h3>
                 <ul class="milestone-list">
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Feb 4)</span>
-                        <span class="title">Add MTP support <Icon name="smartphone" size={18} class="ml-1.5" /></span>
-                        <span class="description">Copy files to/from Android phones and cameras very fast!</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Feb 4)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title"
+                                >Add MTP support <Icon name="smartphone" size={18} class="ml-1.5" /></span
+                            >
+                            <span class="description">Copy files to/from Android phones and cameras very fast!</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Feb 10–27)</span>
-                        <span class="title">Add move and delete</span>
-                        <span class="description"
-                            >Implement remaining basic file operations to make this actually useful 😅</span
-                        >
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Feb 10)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Make app a drag &amp; drop target</span>
+                            <span class="description">Drag between panes and from Finder and other apps.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Feb 10)</span>
-                        <span class="title">Make app a drag &amp; drop target</span>
-                        <span class="description">Drag between panes and from Finder and other apps.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Feb 13)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add renaming</span>
+                            <span class="description"
+                                >Inline, with conflict handling and extension-change warnings.</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Feb 13)</span>
-                        <span class="title">Add renaming</span>
-                        <span class="description">Inline, with conflict handling and extension-change warnings.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Feb 21)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Calculate folder sizes</span>
+                            <span class="description">See how big folders are, sort by size.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Feb 21)</span>
-                        <span class="title">Calculate folder sizes</span>
-                        <span class="description">See how big folders are, sort by size.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Feb 25)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add tabs</span>
+                            <span class="description">For easy switching between folders.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Feb 25)</span>
-                        <span class="title">Add tabs</span>
-                        <span class="description">For easy switching between folders.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Feb 27)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add move and delete</span>
+                            <span class="description"
+                                >Implement remaining basic file operations to make this actually useful 😅</span
+                            >
+                        </span>
                     </li>
                 </ul>
-                <h3>Mar</h3>
+                <h3>Mar 2026</h3>
                 <ul class="milestone-list">
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Mar 1)</span>
-                        <span class="title">Add Linux support (alpha) 🐧</span>
-                        <span class="description">Volumes, file ops, trash, inotify, SMB, native icons.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Mar 1)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add Linux support (alpha) 🐧</span>
+                            <span class="description">Volumes, file ops, trash, inotify, SMB, native icons.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Mar 7)</span>
-                        <span class="title">Add ⌘C ⌘V</span>
-                        <span class="description">Copy and paste files, works with Finder too.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Mar 7)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add ⌘C ⌘V</span>
+                            <span class="description">Copy and paste files, works with Finder too.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Mar 9)</span>
-                        <span class="title">Add context menu actions</span>
-                        <span class="description">View, Copy, Move, New folder, and Delete from right-click.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Mar 9)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add context menu actions</span>
+                            <span class="description">View, Copy, Move, New folder, and Delete from right-click.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Mar 11)</span>
-                        <span class="title">Add cloud AI support <Icon name="cloud" size={18} class="ml-1.5" /></span>
-                        <span class="description"
-                            >15 providers incl. OpenAI, Anthropic, Gemini, xAI, OpenRouter, and Ollama</span
-                        >
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Mar 11)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title"
+                                >Add cloud AI support <Icon name="cloud" size={18} class="ml-1.5" /></span
+                            >
+                            <span class="description"
+                                >15 providers incl. OpenAI, Anthropic, xAI, OpenRouter, and Ollama.</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Mar 16)</span>
-                        <span class="title">Find files</span>
-                        <span class="description"
-                            >Find files instantly on all your drives, with AI-powered natural language search</span
-                        >
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Mar 16)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Find files</span>
+                            <span class="description"
+                                >Find files instantly on all your drives, with AI-powered natural language search.</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Mar 23)</span>
-                        <span class="title">Add crash reporting</span>
-                        <span class="description">Opt-in crash reports to help improve stability, no PII.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Mar 23)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add crash reporting</span>
+                            <span class="description">Opt-in crash reports to help improve stability, no PII.</span>
+                        </span>
                     </li>
                 </ul>
-                <h3>Apr</h3>
+                <h3>Apr 2026</h3>
                 <ul class="milestone-list">
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Apr 10)</span>
-                        <span class="title">Direct SMB connections <Icon name="sparkles" size={18} class="ml-1.5" /></span>
-                        <span class="description">~4x faster file ops via native smb2 protocol, manual connections.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Apr 10)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title"
+                                >Direct SMB connections <Icon name="sparkles" size={18} class="ml-1.5" /></span
+                            >
+                            <span class="description"
+                                >~4x faster file ops via native smb2 protocol, manual connections.</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Apr 28)</span>
-                        <span class="title">Browse git!</span>
-                        <span class="description">Browse git history, branches, tags, stash, worktrees like folders, copy out files.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Apr 28)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Browse git!</span>
+                            <span class="description"
+                                >Browse git history, branches, tags, stash, worktrees like folders, copy out files.</span
+                            >
+                        </span>
                     </li>
                 </ul>
-                <h3>May</h3>
+                <h3>May 2026</h3>
                 <ul class="milestone-list">
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(May 6)</span>
-                        <span class="title">Dynamic text size</span>
-                        <span class="description">Zoom that considers macOS Accessibility text size. Text, icons, viewer all scale.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(May 6)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Dynamic text size</span>
+                            <span class="description"
+                                >Zoom that considers macOS Accessibility. Text, icons, viewer all scale.</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(May 16)</span>
-                        <span class="title">Settings 1.0</span>
-                        <span class="description">Settings had no real structure before. Now it's actually nice to use.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(May 16)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Settings 1.0</span>
+                            <span class="description"
+                                >Settings had no real structure before. Now it's actually nice to use.</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(May 19)</span>
-                        <span class="title">Cross-volume operations</span>
-                        <span class="description">Like direct MTP → SMB. Optimized ops, precise progress, cancellation.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(May 19)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Cross-volume operations</span>
+                            <span class="description"
+                                >Like direct MTP → SMB. Optimized ops, precise progress, cancellation.</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(May 21)</span>
-                        <span class="title">Polished UI</span>
-                        <span class="description">Main window is flatter and simpler. Settings window got liquid glass design.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(May 21)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Polished UI</span>
+                            <span class="description"
+                                >Main window is flatter and simpler. Settings window got liquid glass design.</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(May 22)</span>
-                        <span class="title">Search redesign</span>
-                        <span class="description">Overall improved UX, recent searches, "Open in pane".</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(May 22)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Search redesign</span>
+                            <span class="description">Overall improved UX, recent searches, "Open in pane".</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(May 23)</span>
-                        <span class="title">AI-powered smart selection <Icon name="sparkles" size={18} class="ml-1.5" /></span>
-                        <span class="description">Support queries like "Select all error logs from last week".</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(May 23)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title"
+                                >AI-powered smart selection <Icon name="sparkles" size={18} class="ml-1.5" /></span
+                            >
+                            <span class="description">Support queries like "Select all error logs from last week".</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(May 24)</span>
-                        <span class="title">Onboarding revamp</span>
-                        <span class="description">Guided first-launch wizard: Full Disk Access, AI provider, and optionals.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(May 24)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Onboarding revamp</span>
+                            <span class="description"
+                                >Guided first-launch wizard: Full Disk Access, AI provider, and optionals.</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(May 29)</span>
-                        <span class="title">Downloads watcher</span>
-                        <span class="description">Notification when a download lands; jump to the latest with ⌘J / ⌃⌥⌘J.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(May 29)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Downloads watcher</span>
+                            <span class="description"
+                                >Notification when a download lands; jump to the latest with ⌘J / ⌃⌥⌘J.</span
+                            >
+                        </span>
                     </li>
                 </ul>
-                <h3>Jun</h3>
+                <h3>Jun 2026</h3>
                 <ul class="milestone-list">
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jun 3)</span>
-                        <span class="title">Go to path</span>
-                        <span class="description">⌘G to jump anywhere: paste a path, ~ expansion, recent paths.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jun 3)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Go to path</span>
+                            <span class="description"
+                                >⌘G to jump anywhere: paste a path, ~ expansion, recent paths.</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jun 5)</span>
-                        <span class="title">Smarter copy and move</span>
-                        <span class="description">Folders merge, non-conflicting same-volume moves are instant.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jun 5)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Smarter copy and move</span>
+                            <span class="description"
+                                >Folders merge, non-conflicting same-volume moves are instant.</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jun 6)</span>
-                        <span class="title">Smarter SMB sign-in</span>
-                        <span class="description">Reuse saved passwords from Finder, re-auth on pw change.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jun 6)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Smarter SMB sign-in</span>
+                            <span class="description">Reuse saved passwords from Finder, re-auth on pw change.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jun 7)</span>
-                        <span class="title">Low disk space warning</span>
-                        <span class="description">Notifies when a drive runs low.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jun 7)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Low disk space warning</span>
+                            <span class="description">Notifies when a drive runs low.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jun 10)</span>
-                        <span class="title">Open beta <Icon name="rocket" size={18} class="ml-1.5" /></span>
-                        <span class="description">Feature status page, in-app Beta badges, Send feedback, anonymous usage stats.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jun 10)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Open beta <Icon name="rocket" size={18} class="ml-1.5" /></span>
+                            <span class="description"
+                                >Feature status page, in-app Beta badges, Send feedback, anonymous usage stats.</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jun 14)</span>
-                        <span class="title">Editable favorites</span>
-                        <span class="description">Add/rename/reorder/remove Favorite folders.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jun 14)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Editable favorites</span>
+                            <span class="description">Add/rename/reorder/remove Favorite folders.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jun 17)</span>
-                        <span class="title">File viewer media support</span>
-                        <span class="description">View images and PDFs in the file viewer.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jun 17)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">File viewer media support</span>
+                            <span class="description">View images and PDFs in the file viewer.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jun 18)</span>
-                        <span class="title">Multi-language (i18n)</span>
-                        <span class="description">Support multiple languages (but no translations yet).</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jun 18)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Multi-language (i18n)</span>
+                            <span class="description">Support multiple languages (but no translations yet).</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jun 19)</span>
-                        <span class="title">Index network drives and phones</span>
-                        <span class="description">Full drive indexing for SMB shares and MTP devices.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jun 19)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Index network drives and phones</span>
+                            <span class="description">Full drive indexing for SMB shares and MTP devices.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jun 21)</span>
-                        <span class="title"><span title="Localization">L10n</span></span>
-                        <span class="description">Chinese, Dutch, French, German, Hungarian, Portuguese, Spanish, Swedish, and Vietnamese!</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jun 21)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title"><span title="Localization">L10n</span></span>
+                            <span class="description"
+                                >Chinese, Dutch, French, German, Hungarian, Portuguese, Spanish, Swedish,                                 Vietnamese!</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jun 22)</span>
-                        <span class="title">Transfer queue and pause</span>
-                        <span class="description">Enqueue and pause/resume transfers/deletes.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jun 22)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Transfer queue and pause</span>
+                            <span class="description">Enqueue and pause/resume transfers/deletes.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jun 30)</span>
-                        <span class="title">macOS Finder tags</span>
-                        <span class="description">See and set Finder's colored tags.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jun 30)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">macOS Finder tags</span>
+                            <span class="description">See and set Finder's colored tags.</span>
+                        </span>
                     </li>
                 </ul>
-                <h3>Jul</h3>
+                <h3>Jul 2026</h3>
                 <ul class="milestone-list">
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jul 6)</span>
-                        <span class="title">Handle archives <Icon name="file-archive" size={18} class="ml-1.5" /></span>
-                        <span class="description">Browse, create, extract, and edit zips like folders.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jul 6)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title"
+                                >Handle archives <Icon name="file-archive" size={18} class="ml-1.5" /></span
+                            >
+                            <span class="description">Browse, create, extract, and edit zips like folders.</span>
+                        </span>
                     </li>
                 </ul>
                 <ul class="milestone-list">
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jul 8)</span>
-                        <span class="title">Folder importance</span>
-                        <span class="description">Search (and other features) now have a clue which folders are important.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jul 8)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Folder importance</span>
+                            <span class="description"
+                                >Search (and other features) now have a clue which folders are important.</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jul 10)</span>
-                        <span class="title">Operation log and rollback</span>
-                        <span class="description">A durable history of every file change, with rollback.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jul 10)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Operation log and rollback</span>
+                            <span class="description">A durable history of every file change, with rollback.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jul 10)</span>
-                        <span class="title">Better MCP</span>
-                        <span class="description">Agents can rename, tag, favorite, eject, and queue/dequeue like you.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jul 10)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Better MCP</span>
+                            <span class="description"
+                                >Agents can rename, tag, favorite, eject, and queue/dequeue like you.</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jul 13)</span>
-                        <span class="title">Ask Cmdr <Icon name="brain" size={18} class="ml-1.5" /></span>
-                        <span class="description">Chat with the built-in agent about your files, right in the app.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jul 13)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Ask Cmdr <Icon name="brain" size={18} class="ml-1.5" /></span>
+                            <span class="description"
+                                >Chat with the built-in agent about your files, right in the app.</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jul 15)</span>
-                        <span class="title">Index external drives</span>
-                        <span class="description">Drive indexing now works for USB sticks, SD cards, and external disks.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jul 15)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Index external drives</span>
+                            <span class="description"
+                                >Drive indexing now works for USB sticks, SD cards, and external disks.</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jul 16)</span>
-                        <span class="title">Search your photos</span>
-                        <span class="description">Natural language ("Duck on tree"), OCR ("Pizza receipt"). 100% on-device!</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jul 16)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Search your photos</span>
+                            <span class="description"
+                                >Natural language ("Duck on tree"), OCR ("Pizza receipt"). 100% on-device!</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jul 20)</span>
-                        <span class="title">Natural language bulk rename <Icon name="sparkles" size={18} class="ml-1.5" /></span>
-                        <span class="description">After human review, undoable.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jul 20)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title"
+                                >Natural language bulk rename <Icon name="sparkles" size={18} class="ml-1.5" /></span
+                            >
+                            <span class="description">After human review, undoable.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(Jul 21)</span>
-                        <span class="title">Browse SMB and MTP while indexing</span>
-                        <span class="description">Scans and write ops now pause while navigating.</span>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jul 21)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Browse SMB and MTP while indexing</span>
+                            <span class="description">Scans and write ops now pause while navigating.</span>
+                        </span>
+                    </li>
+                    <li>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jul 22)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Huge indexing revamp</span>
+                            <span class="description">Up to 4x faster and more transparent file+photo indexing</span>
+                        </span>
+                    </li>
+                    <li>
+                        <span class="lead">
+                            <CheckIcon checked={true} />
+                            <span class="date">(Jul 23)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title"
+                                >Big design polish <Icon name="sparkles" size={18} class="ml-1.5" /></span
+                            >
+                            <span class="description">Dialogs, main window, shared components all much nicer now</span>
+                        </span>
                     </li>
                 </ul>
             </section>
@@ -477,14 +829,24 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                 <h2 id="very-soon">Very soon</h2>
                 <ul class="milestone-list">
                     <li>
-                        <CheckIcon checked={false} />
-                        <span class="title">Support more file systems</span>
-                        <span class="description">S3 buckets, FTP(S), SFTP, SCP, WebDAV, NFS, etc.</span>
+                        <span class="lead">
+                            <CheckIcon checked={false} />
+                            <span class="date">(summer?)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Support more file systems</span>
+                            <span class="description">S3 buckets, FTP(S), SFTP, SCP, WebDAV, NFS, etc.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={false} />
-                        <span class="title">AI-powered rename</span>
-                        <span class="description">"Name these screenshots based on contents in 50 chars each"</span>
+                        <span class="lead">
+                            <CheckIcon checked={false} />
+                            <span class="date">(summer?)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">AI-powered "Tell me about this"</span>
+                            <span class="description">Right-click any file for a quick AI explanation.</span>
+                        </span>
                     </li>
                 </ul>
             </section>
@@ -493,39 +855,59 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                 <h2 id="also-soon">Also soon</h2>
                 <ul class="milestone-list">
                     <li>
-                        <CheckIcon checked={false} />
-                        <span class="title">Add plugins</span>
-                        <span class="description">Let you extend Cmdr with your scripts and tools.</span>
+                        <span class="lead">
+                            <CheckIcon checked={false} />
+                            <span class="date">(fall?)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add plugins</span>
+                            <span class="description">Let you extend Cmdr with your scripts and tools.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={false} />
-                        <span class="title">AI-powered "Tell me about this"</span>
-                        <span class="description">Right-click any file for a quick AI explanation.</span>
+                        <span class="lead">
+                            <CheckIcon checked={false} />
+                            <span class="date">(fall?)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">AI-powered file organization</span>
+                            <span class="description">Clean up your Downloads folder, with 100% human oversight.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={false} />
-                        <span class="title">AI-powered file organization</span>
-                        <span class="description">Clean up your Downloads folder, with 100% human oversight.</span>
+                        <span class="lead">
+                            <CheckIcon checked={false} />
+                            <span class="date">(fall?)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Folder sync</span>
+                            <span class="description">Compare/sync two folders.</span>
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={false} />
-                        <span class="title">Folder sync</span>
-                        <span class="description">Compare/sync two folders.</span>
+                        <span class="lead">
+                            <CheckIcon checked={false} />
+                            <span class="date">(fall?)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add disk space visualizer</span>
+                            <span class="description"
+                                ><a
+                                    href="https://grandperspectiv.sourceforge.net/HelpDocumentation/QuickStart.html"
+                                    target="_blank">GrandPerspective</a
+                                >-style treemap built-in</span
+                            >
+                        </span>
                     </li>
                     <li>
-                        <CheckIcon checked={false} />
-                        <span class="title">Add disk space visualizer</span>
-                        <span class="description"
-                            ><a
-                                href="https://grandperspectiv.sourceforge.net/HelpDocumentation/QuickStart.html"
-                                target="_blank">GrandPerspective</a
-                            >-style treemap built-in</span
-                        >
-                    </li>
-                    <li>
-                        <CheckIcon checked={false} />
-                        <span class="title">Add Windows and true Linux support</span>
-                        <span class="description">Bring Cmdr to more platforms.</span>
+                        <span class="lead">
+                            <CheckIcon checked={false} />
+                            <span class="date">(winter?)</span>
+                        </span>
+                        <span class="body">
+                            <span class="title">Add Windows and true Linux support</span>
+                            <span class="description">Bring Cmdr to more platforms.</span>
+                        </span>
                     </li>
                 </ul>
             </section>
@@ -539,13 +921,28 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
 </Layout>
 
 <style>
+    /* Two columns: [checkbox + date] and [title + description]. A grid on .roadmap-content
+       defines the tracks, and each section, list, and row is a column subgrid, so the lead
+       column sizes to the widest checkbox + date anywhere on the page and every title starts
+       at the same x across all months. */
     .roadmap-content {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
         font-family: var(--font-sans) sans-serif;
         line-height: 1.5;
     }
 
     .year-section {
+        display: grid;
+        grid-template-columns: subgrid;
+        grid-column: 1 / -1;
         margin-bottom: 2.5rem;
+    }
+
+    .year-section > h2,
+    .year-section > h3,
+    .year-section > p {
+        grid-column: 1 / -1;
     }
 
     .year-section h2 {
@@ -566,22 +963,41 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
     }
 
     .milestone-list {
+        display: grid;
+        grid-template-columns: subgrid;
+        grid-column: 1 / -1;
         list-style: none;
         padding: 0;
         margin: 0;
     }
 
     .milestone-list li {
-        display: flex;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: subgrid;
+        grid-column: 1 / -1;
         align-items: center;
-        gap: 0.5rem;
+        column-gap: 0.5rem;
         padding: 0.5rem 0;
         border-bottom: 1px solid var(--color-border-subtle);
     }
 
     .milestone-list li:last-child {
         border-bottom: none;
+    }
+
+    .lead {
+        grid-column: 1;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .body {
+        grid-column: 2;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0.25rem 0.5rem;
     }
 
     .title {
@@ -598,13 +1014,5 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
         color: var(--color-text-tertiary);
         font-size: 0.875rem;
         font-family: var(--font-mono) monospace;
-    }
-
-    /* Mobile: checkbox + date + title stay inline, description drops below */
-    @media (max-width: 640px) {
-        .description {
-            flex-basis: 100%;
-            padding-left: 1.75rem;
-        }
     }
 </style>

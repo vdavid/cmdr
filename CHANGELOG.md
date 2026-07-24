@@ -5,10 +5,140 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+The three main advancements:
+
+1. A very nice design facelift
+2. Photo search stays fast even with 2M+ images, reports status+progress nicely. SMB connections stay nice and
+   responsive during indexing.
+3. More RAM+CPU+disk use streamlining
+
+### Added
+
+- Keep photo search fast past 50,000 images with an on-device index that activates automatically at scale
+  ([c4f65cbf](https://github.com/vdavid/cmdr/commit/c4f65cbf))
+- Show image-index status right on the icons: a per-file badge, per-folder coverage, and a per-drive dot
+  ([8a8ceb76](https://github.com/vdavid/cmdr/commit/8a8ceb76),
+  [fab1f8ac](https://github.com/vdavid/cmdr/commit/fab1f8ac),
+  [66fe72e6](https://github.com/vdavid/cmdr/commit/66fe72e6),
+  [c101c196](https://github.com/vdavid/cmdr/commit/c101c196))
+- Manage image indexing from three focused settings cards, switch semantic search on or off, and reclaim the model's
+  disk with Delete model ([8c31e9c6](https://github.com/vdavid/cmdr/commit/8c31e9c6),
+  [52ea7bf8](https://github.com/vdavid/cmdr/commit/52ea7bf8))
+- Speed up image indexing with a Parallel workers slider, from one to your machine's CPU count
+  ([46bd40d5](https://github.com/vdavid/cmdr/commit/46bd40d5),
+  [23c10d6e](https://github.com/vdavid/cmdr/commit/23c10d6e))
+
+### Changed
+
+- Give file transfers and browsing priority over background indexing, and pause background uploads while you browse the
+  same share ([e00321e6](https://github.com/vdavid/cmdr/commit/e00321e6),
+  [2d83ea8d](https://github.com/vdavid/cmdr/commit/2d83ea8d))
+- Index a NAS about 3.8x faster by spreading the scan across multiple SMB connections
+  ([f482daa9](https://github.com/vdavid/cmdr/commit/f482daa9),
+  [2a803d5e](https://github.com/vdavid/cmdr/commit/2a803d5e))
+- Read NAS image bytes in parallel over multiple connections while indexing
+  ([fdf5832a](https://github.com/vdavid/cmdr/commit/fdf5832a),
+  [fc0c79fd](https://github.com/vdavid/cmdr/commit/fc0c79fd))
+- Shrink the image-search model download by about a third, reclaim ~550 MB after it installs, and roughly halve
+  per-image disk and search memory ([d91d92bb](https://github.com/vdavid/cmdr/commit/d91d92bb),
+  [eb5b629c](https://github.com/vdavid/cmdr/commit/eb5b629c))
+- Refresh the app toward a native macOS feel: rounder dialogs, capsule buttons, redesigned Copy/Move and Delete dialogs,
+  squared-off tabs, inset file panes, and right-aligned Size and Modified columns
+  ([cae582c7](https://github.com/vdavid/cmdr/commit/cae582c7))
+- Match each settings control to its job: segmented toggles for quick switches, drag-only sliders for coarse values, and
+  framed number fields elsewhere ([99ce8537](https://github.com/vdavid/cmdr/commit/99ce8537),
+  [088fdc38](https://github.com/vdavid/cmdr/commit/088fdc38),
+  [95c8fd34](https://github.com/vdavid/cmdr/commit/95c8fd34))
+- Reorganize Settings into Indexing and Notifications, with a leaner AI, Behavior, and Advanced
+  ([f03119c1](https://github.com/vdavid/cmdr/commit/f03119c1),
+  [8f1e470b](https://github.com/vdavid/cmdr/commit/8f1e470b))
+- Redesign the Ask Cmdr rename review to read as a calm, native rename list
+  ([6dcc6f6e](https://github.com/vdavid/cmdr/commit/6dcc6f6e),
+  [c5774727](https://github.com/vdavid/cmdr/commit/c5774727))
+- Update the low-disk-space warning live and clear it once you free space
+  ([69b0146b](https://github.com/vdavid/cmdr/commit/69b0146b))
+- Stop a single churning folder or an app updater's throwaway files from dominating indexing CPU
+  ([d33f8ea6](https://github.com/vdavid/cmdr/commit/d33f8ea6),
+  [7b7c7b28](https://github.com/vdavid/cmdr/commit/7b7c7b28))
+- Keep the search-index journal files small instead of letting them grow to the size of the database
+  ([c1e167d0](https://github.com/vdavid/cmdr/commit/c1e167d0))
+
+### Fixed
+
+- Stop the app crashing when you close Settings or the file viewer
+  ([72dfeb58](https://github.com/vdavid/cmdr/commit/72dfeb58),
+  [8713f797](https://github.com/vdavid/cmdr/commit/8713f797))
+- Fix NAS image indexing stalling at zero images, and skip an unreadable file instead of pausing the whole pass
+  ([bb714a85](https://github.com/vdavid/cmdr/commit/bb714a85),
+  [a8b063dd](https://github.com/vdavid/cmdr/commit/a8b063dd))
+- Stop Ask Cmdr reporting a fully-indexed folder as not indexed
+  ([cb0b2685](https://github.com/vdavid/cmdr/commit/cb0b2685))
+- Fix a rare blank window on cold launch ([d24cc367](https://github.com/vdavid/cmdr/commit/d24cc367))
+- Fix three messages that rendered a code fragment or dropped their text: the license verify banner, the file-viewer
+  type warning, and the MTP conflict dialog ([c1267c5a](https://github.com/vdavid/cmdr/commit/c1267c5a),
+  [5a60f21d](https://github.com/vdavid/cmdr/commit/5a60f21d),
+  [67dba4e1](https://github.com/vdavid/cmdr/commit/67dba4e1))
+- Keep per-folder image counts accurate right after you delete files
+  ([7e9837ef](https://github.com/vdavid/cmdr/commit/7e9837ef))
+- Keep the Settings and Debug sidebars from sliding under the traffic-light buttons
+  ([7d9651bc](https://github.com/vdavid/cmdr/commit/7d9651bc))
+- Stop deduplicated hardlinks from being rewritten on every index pass
+  ([0932ea3e](https://github.com/vdavid/cmdr/commit/0932ea3e))
+- Stop a resting folder from holding the whole disk under a "size updating" indicator
+  ([04108314](https://github.com/vdavid/cmdr/commit/04108314))
+- Give every switch and checkbox a real name and role for screen readers
+  ([53a0e8f8](https://github.com/vdavid/cmdr/commit/53a0e8f8),
+  [c3fbc4e1](https://github.com/vdavid/cmdr/commit/c3fbc4e1),
+  [1a71baea](https://github.com/vdavid/cmdr/commit/1a71baea))
+- Restore the missing apostrophes in the French drive-index tooltip
+  ([47e9c79e](https://github.com/vdavid/cmdr/commit/47e9c79e))
+
+### Non-app
+
+- Kill the Rust test-synchronization flake class: one canonical wait helper, RAII isolation guards for shared globals,
+  real completion counters, and a lint that fails on fixed sleeps
+  ([14d1a5a4](https://github.com/vdavid/cmdr/commit/14d1a5a4),
+  [cd437885](https://github.com/vdavid/cmdr/commit/cd437885),
+  [7013648b](https://github.com/vdavid/cmdr/commit/7013648b),
+  [97819d46](https://github.com/vdavid/cmdr/commit/97819d46),
+  [ae57706d](https://github.com/vdavid/cmdr/commit/ae57706d),
+  [814629a9](https://github.com/vdavid/cmdr/commit/814629a9))
+- Reorganize the indexing subsystem into 13 stage-based areas, each with colocated docs
+  ([ff63e6df](https://github.com/vdavid/cmdr/commit/ff63e6df),
+  [47624e9b](https://github.com/vdavid/cmdr/commit/47624e9b),
+  [840b31ad](https://github.com/vdavid/cmdr/commit/840b31ad),
+  [e67ef280](https://github.com/vdavid/cmdr/commit/e67ef280))
+- Add Debug > Soft dialogs, a gallery that opens every dialog on demand for design review
+  ([43f1f51f](https://github.com/vdavid/cmdr/commit/43f1f51f),
+  [656f24bf](https://github.com/vdavid/cmdr/commit/656f24bf),
+  [996aef5d](https://github.com/vdavid/cmdr/commit/996aef5d),
+  [bcc8bd27](https://github.com/vdavid/cmdr/commit/bcc8bd27))
+- Enforce house UI primitives and add a building-UI guide so new work stops reinventing controls
+  ([67e2f03d](https://github.com/vdavid/cmdr/commit/67e2f03d),
+  [4c2cf75b](https://github.com/vdavid/cmdr/commit/4c2cf75b))
+- Reference docs by bare path with dead-link checks, plus per-doc read/write usage stats
+  ([df663786](https://github.com/vdavid/cmdr/commit/df663786),
+  [ee010a2b](https://github.com/vdavid/cmdr/commit/ee010a2b))
+- Overhaul indexing logs: report reconcile churn by trend, attribute writer waits, and truncate the WAL during long
+  replays ([96297bc4](https://github.com/vdavid/cmdr/commit/96297bc4),
+  [e5b6abed](https://github.com/vdavid/cmdr/commit/e5b6abed),
+  [08e45f10](https://github.com/vdavid/cmdr/commit/08e45f10),
+  [65e7beff](https://github.com/vdavid/cmdr/commit/65e7beff))
+- Make signal-crash reports group across installs and become symbolicatable by recording the image base
+  ([cca5011c](https://github.com/vdavid/cmdr/commit/cca5011c))
+- Stop dev builds writing ~1 GB of dead WebKit cache ([eee12e07](https://github.com/vdavid/cmdr/commit/eee12e07))
+- Benchmark the NAS scan and add a reliable CPU/RSS sampler ([e740933a](https://github.com/vdavid/cmdr/commit/e740933a),
+  [c4baeb26](https://github.com/vdavid/cmdr/commit/c4baeb26))
+
 ## [0.35.0] - 2026-07-21
 
-Rename a pile of files by describing what you want and approving each row, choose exactly which folders get
-image-indexed instead of guessing at a slider, and browse a NAS at full speed while it's being indexed.
+The three major things:
+
+1. A lot of CPU+RAM use improvements
+2. Bulk rename with natural language, with an approve/reject UI
+3. Manually configurable image-indexed instead of a slider
 
 ### Added
 
