@@ -15,21 +15,26 @@ use super::transfer::move_op::move_files_with_progress_inner;
 use super::types::{CollectorEventSink, WriteOperationConfig, WriteOperationType};
 use super::{copy_files_with_progress_inner, delete_files_with_progress_inner};
 
+use crate::operation_log::TestJournalGuard;
 use crate::operation_log::capture::WriterJournal;
 use crate::operation_log::store::{open_read_connection, operation_log_db_path, read_operation, read_operation_items};
 use crate::operation_log::types::{EntryType, ExecutionStatus, Initiator, OpKind, RollbackState, RowRole};
 use crate::operation_log::writer::OperationLogWriter;
-use crate::operation_log::{clear_journal, set_journal};
 
-/// Install a fresh temp-DB journal as the process-global one and hand back its
-/// DB path + the temp dir (kept alive by the caller). nextest isolates each test
-/// in its own process, so the global is hermetic.
-fn install_journal() -> (tempfile::TempDir, std::path::PathBuf) {
+/// Install a fresh temp-DB journal as the process-global one and hand back the
+/// [`TestJournalGuard`] (teardown + serialization), the temp dir (kept alive by
+/// the caller), and the DB path. nextest isolates each test in its own process;
+/// under plain `cargo test` the guard's lock is what keeps parallel journal
+/// tests from clobbering each other's slot mid-operation. Reads after
+/// `journal::finalize_op` don't need an explicit clear first: finalize is a
+/// synchronous round-trip through the writer thread, so every prior row is
+/// committed by the time it returns.
+fn install_journal() -> (TestJournalGuard, tempfile::TempDir, std::path::PathBuf) {
     let dir = tempfile::tempdir().expect("tempdir");
     let db = operation_log_db_path(dir.path());
     let writer = OperationLogWriter::spawn(&db).expect("spawn writer");
-    set_journal(Arc::new(WriterJournal::new(writer)));
-    (dir, db)
+    let guard = TestJournalGuard::install(Arc::new(WriterJournal::new(writer)));
+    (guard, dir, db)
 }
 
 fn state() -> Arc<WriteOperationState> {
@@ -38,7 +43,7 @@ fn state() -> Arc<WriteOperationState> {
 
 #[test]
 fn grouped_copy_journals_leaf_files_and_created_dir_rows() {
-    let (_jdir, jdb) = install_journal();
+    let (_journal, _jdir, jdb) = install_journal();
     let work = tempfile::tempdir().expect("work");
     // A source tree: src/a.txt and src/sub/b.txt.
     let src = work.path().join("src");
@@ -54,7 +59,6 @@ fn grouped_copy_journals_leaf_files_and_created_dir_rows() {
     let cfg = WriteOperationConfig::default();
     copy_files_with_progress_inner(&events, op_id, &state(), std::slice::from_ref(&src), &dst, &cfg).expect("copy");
     journal::finalize_op(op_id, OpKind::Copy, ExecutionStatus::Done);
-    clear_journal();
 
     let conn = open_read_connection(&jdb).expect("read conn");
     let row = read_operation(&conn, op_id).expect("read op").expect("op row");
@@ -90,7 +94,7 @@ fn grouped_copy_journals_leaf_files_and_created_dir_rows() {
 /// zero here would show "Copy 0 items".
 #[test]
 fn local_copy_header_carries_planned_count_items_done_and_dest_volume() {
-    let (_jdir, jdb) = install_journal();
+    let (_journal, _jdir, jdb) = install_journal();
     let work = tempfile::tempdir().expect("work");
     // One top-level source directory holding three files, so the scanned leaf
     // total (3) differs from the provisional top-level count (1) the open uses —
@@ -116,7 +120,6 @@ fn local_copy_header_carries_planned_count_items_done_and_dest_volume() {
     let status = get_operation_status(op_id).expect("status present after copy");
     journal::finalize_op(op_id, OpKind::Copy, ExecutionStatus::Done);
     unregister_operation_status(op_id);
-    clear_journal();
 
     let conn = open_read_connection(&jdb).expect("read conn");
     let row = read_operation(&conn, op_id).expect("read op").expect("op row");
@@ -146,7 +149,7 @@ fn local_copy_header_carries_planned_count_items_done_and_dest_volume() {
 
 #[test]
 fn overwriting_copy_finalizes_not_rollbackable() {
-    let (_jdir, jdb) = install_journal();
+    let (_journal, _jdir, jdb) = install_journal();
     let work = tempfile::tempdir().expect("work");
     let src = work.path().join("src");
     std::fs::create_dir_all(&src).expect("mk src");
@@ -165,7 +168,6 @@ fn overwriting_copy_finalizes_not_rollbackable() {
     };
     copy_files_with_progress_inner(&events, op_id, &state(), std::slice::from_ref(&src), &dst, &cfg).expect("copy");
     journal::finalize_op(op_id, OpKind::Copy, ExecutionStatus::Done);
-    clear_journal();
 
     let conn = open_read_connection(&jdb).expect("read conn");
     let row = read_operation(&conn, op_id).expect("read op").expect("op row");
@@ -178,7 +180,7 @@ fn overwriting_copy_finalizes_not_rollbackable() {
 
 #[test]
 fn same_fs_move_journals_the_top_level_item_as_rollback_unit() {
-    let (_jdir, jdb) = install_journal();
+    let (_journal, _jdir, jdb) = install_journal();
     let work = tempfile::tempdir().expect("work");
     // Source and dest in the same tempdir ⇒ same filesystem ⇒ rename path.
     let src = work.path().join("photos");
@@ -193,7 +195,6 @@ fn same_fs_move_journals_the_top_level_item_as_rollback_unit() {
     let cfg = WriteOperationConfig::default();
     move_files_with_progress_inner(&events, op_id, &state(), std::slice::from_ref(&src), &dst, &cfg).expect("move");
     journal::finalize_op(op_id, OpKind::Move, ExecutionStatus::Done);
-    clear_journal();
 
     let conn = open_read_connection(&jdb).expect("read conn");
     let row = read_operation(&conn, op_id).expect("read op").expect("op row");
@@ -214,7 +215,7 @@ fn initiator_threads_from_the_op_into_the_journal_row() {
     // An AI-client-initiated copy records `ai_client`; the default path records
     // `user`. Provenance (D5) crosses as a typed enum, not a string.
     for initiator in [Initiator::User, Initiator::AiClient] {
-        let (jdir, jdb) = install_journal();
+        let (journal, jdir, jdb) = install_journal();
         let work = tempfile::tempdir().expect("work");
         let src = work.path().join("src");
         std::fs::create_dir_all(&src).expect("mk src");
@@ -228,18 +229,21 @@ fn initiator_threads_from_the_op_into_the_journal_row() {
         copy_files_with_progress_inner(&events, op_id, &state(), &[src], &dst, &WriteOperationConfig::default())
             .expect("copy");
         journal::finalize_op(op_id, OpKind::Copy, ExecutionStatus::Done);
-        clear_journal();
 
         let conn = open_read_connection(&jdb).expect("read conn");
         let row = read_operation(&conn, op_id).expect("read").expect("row");
         assert_eq!(row.initiator, initiator);
+        // Shut the journal's writer down before its temp dir goes away, then
+        // release the lock so the next iteration can re-install.
+        journal.clear();
+        drop(journal);
         drop(jdir);
     }
 }
 
 #[test]
 fn delete_journals_search_leaves_and_stays_not_rollbackable() {
-    let (_jdir, jdb) = install_journal();
+    let (_journal, _jdir, jdb) = install_journal();
     let work = tempfile::tempdir().expect("work");
     let a = work.path().join("dog.jpg");
     let b = work.path().join("cat.jpg");
@@ -252,7 +256,6 @@ fn delete_journals_search_leaves_and_stays_not_rollbackable() {
     let cfg = WriteOperationConfig::default();
     delete_files_with_progress_inner(&events, op_id, &state(), &[a.clone(), b.clone()], &cfg).expect("delete");
     journal::finalize_op(op_id, OpKind::Delete, ExecutionStatus::Done);
-    clear_journal();
 
     let conn = open_read_connection(&jdb).expect("read conn");
     let row = read_operation(&conn, op_id).expect("read op").expect("op row");
@@ -306,7 +309,6 @@ fn trash(op_id: &str, sources: &[std::path::PathBuf]) {
     let _ = trash_files_with_progress(&events, op_id, &st, sources, None);
     journal::finalize_op(op_id, OpKind::Trash, ExecutionStatus::Done);
     super::journal_search::test_hook::clear();
-    clear_journal();
 }
 
 /// A trashed folder records the top-level `rollback_unit` row AND the subtree's
@@ -315,7 +317,7 @@ fn trash(op_id: &str, sources: &[std::path::PathBuf]) {
 #[cfg(target_os = "macos")]
 #[test]
 fn trashed_dir_records_search_leaves_and_stays_full() {
-    let (_jdir, jdb) = install_journal();
+    let (_journal, _jdir, jdb) = install_journal();
     let work = tempfile::tempdir().expect("work");
     let dir = work.path().join("photos");
     std::fs::create_dir_all(dir.join("sub")).expect("mk");
@@ -349,7 +351,7 @@ fn trashed_dir_records_search_leaves_and_stays_full() {
 #[cfg(target_os = "macos")]
 #[test]
 fn failed_trash_item_records_no_search_leaves_but_a_sibling_keeps_its_own() {
-    let (_jdir, jdb) = install_journal();
+    let (_journal, _jdir, jdb) = install_journal();
     let work = tempfile::tempdir().expect("work");
     let good = work.path().join("good");
     std::fs::create_dir_all(&good).expect("mk good");
@@ -426,6 +428,11 @@ fn time_delete(op_id: &str, paths: &[std::path::PathBuf]) -> Duration {
 fn capture_stays_off_the_hot_path_under_writer_load() {
     const N: usize = 1_500;
 
+    // One guard across all three arms (`install_journal` would deadlock on the
+    // already-held lock): arm (a) runs journal-less under the lock so no parallel
+    // test's journal can capture the baseline, then (b)/(c) swap journals in.
+    let journal = TestJournalGuard::hold_empty();
+
     // Arm (a): no journal — the baseline op cost (pure file I/O).
     let (_da, pa) = make_files(N);
     let events = CollectorEventSink::new();
@@ -435,7 +442,11 @@ fn capture_stays_off_the_hot_path_under_writer_load() {
     let base = t.elapsed();
 
     // Arm (b): a keeping-up journal.
-    let (_jb, jdb) = install_journal();
+    let _jb = tempfile::tempdir().expect("jb tempdir");
+    let jdb = operation_log_db_path(_jb.path());
+    journal.set(Arc::new(WriterJournal::new(
+        OperationLogWriter::spawn(&jdb).expect("spawn writer"),
+    )));
     let (_db, pb) = make_files(N);
     let kept_up = time_delete("perf-b", &pb);
     {
@@ -443,7 +454,7 @@ fn capture_stays_off_the_hot_path_under_writer_load() {
         let items = read_operation_items(&conn, "perf-b", 100_000).expect("items");
         assert_eq!(items.len(), N, "every deleted leaf journaled under normal load");
     }
-    clear_journal();
+    journal.clear();
 
     // Arm (c): a journal whose writer is under concurrent prune + vacuum load.
     let cdir = tempfile::tempdir().expect("cdir");
@@ -467,7 +478,7 @@ fn capture_stays_off_the_hot_path_under_writer_load() {
             .expect("seed open");
     }
     writer.flush_blocking().expect("flush seed");
-    set_journal(Arc::new(WriterJournal::new(writer.clone())));
+    journal.set(Arc::new(WriterJournal::new(writer.clone())));
 
     let stop = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let pruner = {
@@ -489,7 +500,7 @@ fn capture_stays_off_the_hot_path_under_writer_load() {
     let stalled = time_delete("perf-c", &pc);
     stop.store(true, std::sync::atomic::Ordering::Relaxed);
     pruner.join().expect("join pruner");
-    clear_journal();
+    journal.clear();
 
     // Generous budget: journaling must not MULTIPLY op time. A synchronous capture
     // would make (b)/(c) an order of magnitude over the baseline; a bounded-channel
@@ -569,6 +580,11 @@ fn bench_persist_throughput() {
 fn bench_same_fs_move_latency_delta() {
     const K: usize = 200;
 
+    // One guard across both arms (`install_journal` would deadlock on the
+    // already-held lock): the OFF arm runs journal-less under the lock, then the
+    // ON arm swaps a journal in.
+    let journal = TestJournalGuard::hold_empty();
+
     // OFF: no journal — the baseline rename cost.
     let off = {
         let work = tempfile::tempdir().expect("work");
@@ -600,7 +616,10 @@ fn bench_same_fs_move_latency_delta() {
 
     // ON: journal installed (no drive index registered, so each move records one
     // top-level row + a fast VolumeNotLive enumerate).
-    let (_j, _jdb) = install_journal();
+    let _jdir = tempfile::tempdir().expect("jdir");
+    journal.set(Arc::new(WriterJournal::new(
+        OperationLogWriter::spawn(&operation_log_db_path(_jdir.path())).expect("spawn writer"),
+    )));
     let on = {
         let work = tempfile::tempdir().expect("work");
         let dst = work.path().join("dst");
@@ -631,7 +650,6 @@ fn bench_same_fs_move_latency_delta() {
         }
         t.elapsed()
     };
-    clear_journal();
     println!(
         "same-FS move x{K}: off={off:?} ({:?}/op) on={on:?} ({:?}/op)",
         off / K as u32,
@@ -645,7 +663,7 @@ fn bench_same_fs_move_latency_delta() {
 #[test]
 fn same_fs_move_dir_records_search_leaves() {
     use super::transfer::move_op::move_files_with_progress_inner;
-    let (_jdir, jdb) = install_journal();
+    let (_journal, _jdir, jdb) = install_journal();
     let work = tempfile::tempdir().expect("work");
     let src = work.path().join("photos");
     std::fs::create_dir_all(&src).expect("mk src");
@@ -668,7 +686,6 @@ fn same_fs_move_dir_records_search_leaves() {
     .expect("move");
     journal::finalize_op(op_id, OpKind::Move, ExecutionStatus::Done);
     super::journal_search::test_hook::clear();
-    clear_journal();
 
     let conn = open_read_connection(&jdb).expect("read conn");
     let items = read_operation_items(&conn, op_id, 1000).expect("items");
@@ -685,7 +702,7 @@ fn same_fs_move_dir_records_search_leaves() {
 #[cfg(target_os = "macos")]
 #[test]
 fn over_cap_trash_is_top_level_only_capped_but_still_rollbackable() {
-    let (_jdir, jdb) = install_journal();
+    let (_journal, _jdir, jdb) = install_journal();
     let work = tempfile::tempdir().expect("work");
     let dir = work.path().join("huge");
     std::fs::create_dir_all(&dir).expect("mk");
@@ -716,12 +733,23 @@ use super::types::VolumeCopyConfig;
 use super::{copy_volumes_with_progress, move_volumes_with_progress};
 use crate::file_system::volume::{InMemoryVolume, Volume};
 
-/// Every distinct `volume_id` interned in the `dirs` table (fresh DB per test, so
-/// this is exactly the set the op journaled under).
-fn dir_volume_ids(conn: &rusqlite::Connection) -> Vec<String> {
-    let mut stmt = conn.prepare("SELECT DISTINCT volume_id FROM dirs").expect("prepare");
+/// Every distinct `volume_id` among the dirs referenced by `op_id`'s item rows.
+/// Scoped to the op rather than the whole `dirs` table: under plain `cargo test`
+/// a concurrent NON-journal write-op test can journal its own rows into the
+/// installed DB (only journal-installing tests serialize on `TestJournalGuard`),
+/// and a whole-table read would pick up its `root`-interned dirs.
+fn dir_volume_ids(conn: &rusqlite::Connection, op_id: &str) -> Vec<String> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT DISTINCT d.volume_id FROM dirs d WHERE d.dir_id IN (
+                 SELECT source_dir_id FROM operation_items WHERE op_id = ?1
+                 UNION
+                 SELECT dest_dir_id FROM operation_items WHERE op_id = ?1 AND dest_dir_id IS NOT NULL
+             )",
+        )
+        .expect("prepare");
 
-    stmt.query_map([], |r| r.get::<_, String>(0))
+    stmt.query_map([op_id], |r| r.get::<_, String>(0))
         .expect("query")
         .collect::<Result<Vec<_>, _>>()
         .expect("collect")
@@ -733,7 +761,7 @@ fn in_memory(name: &str) -> Arc<InMemoryVolume> {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn volume_copy_journals_under_the_real_volume_ids_not_root() {
-    let (_jdir, jdb) = install_journal();
+    let (_journal, _jdir, jdb) = install_journal();
     let source = in_memory("Src");
     source
         .create_file(std::path::Path::new("/a.txt"), b"aaa")
@@ -763,7 +791,6 @@ async fn volume_copy_journals_under_the_real_volume_ids_not_root() {
     .await
     .expect("volume copy");
     journal::finalize_op(op_id, OpKind::Copy, ExecutionStatus::Done);
-    clear_journal();
 
     let conn = open_read_connection(&jdb).expect("read conn");
     let row = read_operation(&conn, op_id).expect("read").expect("op row");
@@ -780,7 +807,7 @@ async fn volume_copy_journals_under_the_real_volume_ids_not_root() {
     assert!(items.iter().all(|i| i.row_role == RowRole::RollbackUnit));
 
     // The honesty invariant: every interned dir is on a REAL volume, never "root".
-    let vols = dir_volume_ids(&conn);
+    let vols = dir_volume_ids(&conn, op_id);
     assert!(
         vols.iter().all(|v| v == "smb-src" || v == "smb-dst"),
         "volume copy dirs must carry the real volume ids, got {vols:?}"
@@ -794,7 +821,7 @@ async fn volume_copy_journals_under_the_real_volume_ids_not_root() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn overwriting_volume_copy_finalizes_not_rollbackable() {
-    let (_jdir, jdb) = install_journal();
+    let (_journal, _jdir, jdb) = install_journal();
     let source = in_memory("Src");
     source
         .create_file(std::path::Path::new("/dup.txt"), b"new")
@@ -828,7 +855,6 @@ async fn overwriting_volume_copy_finalizes_not_rollbackable() {
     .await
     .expect("volume copy");
     journal::finalize_op(op_id, OpKind::Copy, ExecutionStatus::Done);
-    clear_journal();
 
     let conn = open_read_connection(&jdb).expect("read conn");
     let row = read_operation(&conn, op_id).expect("read").expect("op row");
@@ -843,7 +869,7 @@ async fn overwriting_volume_copy_finalizes_not_rollbackable() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn cross_volume_move_journals_per_leaf_move_rows() {
-    let (_jdir, jdb) = install_journal();
+    let (_journal, _jdir, jdb) = install_journal();
     let source = in_memory("Src");
     source
         .create_file(std::path::Path::new("/one.txt"), b"1")
@@ -876,7 +902,6 @@ async fn cross_volume_move_journals_per_leaf_move_rows() {
     .await
     .expect("volume move");
     journal::finalize_op(op_id, OpKind::Move, ExecutionStatus::Done);
-    clear_journal();
 
     let conn = open_read_connection(&jdb).expect("read conn");
     let row = read_operation(&conn, op_id).expect("read").expect("op row");
@@ -890,7 +915,7 @@ async fn cross_volume_move_journals_per_leaf_move_rows() {
     let files: Vec<_> = items.iter().filter(|i| i.entry_type == EntryType::File).collect();
     assert_eq!(files.len(), 2, "one leaf row per moved file, got {items:?}");
     assert!(files.iter().all(|i| i.row_role == RowRole::RollbackUnit));
-    let vols = dir_volume_ids(&conn);
+    let vols = dir_volume_ids(&conn, op_id);
     assert!(
         !vols.iter().any(|v| v == "root"),
         "a cross-volume move must never journal under root"
@@ -900,7 +925,7 @@ async fn cross_volume_move_journals_per_leaf_move_rows() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn volume_delete_journals_per_leaf_under_the_real_volume_id() {
-    let (_jdir, jdb) = install_journal();
+    let (_journal, _jdir, jdb) = install_journal();
     let volume = in_memory("Src");
     volume
         .create_file(std::path::Path::new("/gone1.txt"), b"x")
@@ -929,7 +954,6 @@ async fn volume_delete_journals_per_leaf_under_the_real_volume_id() {
     .await
     .expect("volume delete");
     journal::finalize_op(op_id, OpKind::Delete, ExecutionStatus::Done);
-    clear_journal();
 
     let conn = open_read_connection(&jdb).expect("read conn");
     let row = read_operation(&conn, op_id).expect("read").expect("op row");
@@ -939,7 +963,7 @@ async fn volume_delete_journals_per_leaf_under_the_real_volume_id() {
     let items = read_operation_items(&conn, op_id, 1000).expect("items");
     let files: Vec<_> = items.iter().filter(|i| i.entry_type == EntryType::File).collect();
     assert_eq!(files.len(), 2, "one leaf row per deleted file, got {items:?}");
-    let vols = dir_volume_ids(&conn);
+    let vols = dir_volume_ids(&conn, op_id);
     assert_eq!(
         vols,
         vec!["smb-src".to_string()],

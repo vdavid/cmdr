@@ -79,7 +79,8 @@ async fn create_directory_managed_journals_a_create_folder_op() {
     ensure_root_volume();
     let jdir = tempfile::tempdir().expect("jdir");
     let jdb = operation_log_db_path(jdir.path());
-    crate::operation_log::set_journal(Arc::new(WriterJournal::new(
+    // Serializes journal-slot tests under plain `cargo test`; clears on drop.
+    let _journal = crate::operation_log::TestJournalGuard::install(Arc::new(WriterJournal::new(
         OperationLogWriter::spawn(&jdb).expect("writer"),
     )));
 
@@ -93,7 +94,6 @@ async fn create_directory_managed_journals_a_create_folder_op() {
     )
     .await
     .expect("mkdir");
-    crate::operation_log::clear_journal();
 
     let conn = open_read_connection(&jdb).expect("read conn");
     // Exactly one CreateFolder op, rollbackable (net-new), with one Dir item row.

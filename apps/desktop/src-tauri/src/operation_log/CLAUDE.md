@@ -39,7 +39,8 @@ Alpha UI).
 - **The writer stores terminal state; it does NOT compute eligibility.** Rollback eligibility (D3) + net-new/subkind
   reasoning live in `capture.rs` — keep business logic out of `writer.rs`.
 - **Capture is a process-global journal reached by `op_id`, NOT threaded through the pipeline** (recorded deviation
-  from D4; its hard rule — never extend `OperationEventSink` — still holds). Install via `set_journal`; the pipeline
+  from D4; its hard rule — never extend `OperationEventSink` — still holds). Install via `set_journal` (production
+  `start` only; tests go through `TestJournalGuard`, which serializes the slot under plain `cargo test`); the pipeline
   calls the `journal_*` free functions by `op_id`. Rationale + record points: `DETAILS.md` § Capture.
 - **Rollback FAILS SAFE** (data-safety-critical): recheck each item against its snapshot AND its restore target; drift
   / unverifiable / occupied target ⇒ SKIP (→ `partially_rolled_back`), never operate; a restore-move never overwrites

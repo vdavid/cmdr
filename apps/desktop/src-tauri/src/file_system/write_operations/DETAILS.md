@@ -543,6 +543,18 @@ write-op test at once. `test_support::TestOperationGuard` owns one entry per tes
 Same shape as `listing::caching_test_support::TestListingGuard` (over `LISTING_CACHE`) and
 `indexing::tests::stress_test_helpers::TestInstanceGuard` (over `INDEX_REGISTRY`).
 
+The operation-log journal slot is the exception to the unique-key pattern: it's a single value, not a keyed map, so
+tests that install a journal SERIALIZE on `operation_log::TestJournalGuard` (one guard per test, lock held for the
+test's duration, slot cleared on drop — see its doc for the multi-arm `hold_empty`/`set` shape and the non-reentrancy
+deadlock warning). Never call `set_journal` directly from a test. Residual under plain `cargo test`: non-journal
+write-op tests still journal their own ops into whatever DB is installed, so journal assertions stay scoped to the
+test's own `op_id` (`journal_capture_tests::dir_volume_ids` joins dirs through the op's item rows for this reason).
+
+Known plain-`cargo test`-only race (masked by nextest's process-per-test, the sanctioned runner):
+`cancel_all_write_operations` cancels every registered op process-wide, so a concurrently-running managed-op test (for
+example `settle_event_tests::injected_sink_receives_complete_and_settled_for_local_copy`) can see `write-cancelled`
+instead of `write-complete`. Isolating it structurally needs a manager-level guard (an M2-shape effort), not a sleep.
+
 **New subsystem state hangs off a struct, not a `static`.** These guards are the retrofit cost of a process-global; a
 handle threaded through its callers needs none of it.
 

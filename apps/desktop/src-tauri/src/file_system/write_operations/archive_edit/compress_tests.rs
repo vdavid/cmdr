@@ -113,17 +113,18 @@ async fn compress_start_packs_local_files_into_a_new_zip() {
 #[tokio::test]
 async fn compress_journals_subkind_and_net_new_from_the_driver() {
     use crate::file_system::volume::backends::LocalPosixVolume;
+    use crate::operation_log::TestJournalGuard;
     use crate::operation_log::capture::WriterJournal;
     use crate::operation_log::store::{
         open_read_connection, operation_log_db_path, read_operation, read_operation_items,
     };
     use crate::operation_log::types::{ArchiveSubkind, ExecutionStatus, Initiator, OpKind, RollbackState, RowRole};
     use crate::operation_log::writer::OperationLogWriter;
-    use crate::operation_log::{clear_journal, set_journal};
 
     let jdir = tempfile::tempdir().expect("jdir");
     let jdb = operation_log_db_path(jdir.path());
-    set_journal(Arc::new(WriterJournal::new(
+    // Serializes journal-slot tests under plain `cargo test`; clears on drop.
+    let _journal = TestJournalGuard::install(Arc::new(WriterJournal::new(
         OperationLogWriter::spawn(&jdb).expect("spawn writer"),
     )));
 
@@ -165,7 +166,6 @@ async fn compress_journals_subkind_and_net_new_from_the_driver() {
         .await,
         "the compress op should finalize in the journal"
     );
-    clear_journal();
 
     let conn = open_read_connection(&jdb).expect("read conn");
     let row = read_operation(&conn, &start.operation_id).expect("read").expect("row");
