@@ -8,9 +8,10 @@
 //!   never dragged over the wire while the user is browsing.
 //! - **Bandwidth-bounded**: after each image, sleep so the sustained fetch rate stays
 //!   under [`ConservativeFetchPolicy::max_bytes_per_sec`] ([`throttle_delay`]).
-//! - **Bounded concurrency**: [`ConservativeFetchPolicy::max_concurrency`] images in
-//!   flight at once (the pass fetches serially = 1 today; the field bounds any future
-//!   parallel fetch and is honest about the current shape).
+//! - **Bounded concurrency**: [`ConservativeFetchPolicy::max_concurrency`] byte-reads
+//!   in flight at once. The sequential (one-worker) pass is inherently 1; the parallel
+//!   pass fans its prefetch out to this many fetch workers (plan M1), each read still
+//!   admitted against the byte budget first.
 //! - **Resumable**: each completed image persists immediately, so an interrupted pass
 //!   resumes from the path-keyed store (see [`super::enrich`]).
 
@@ -24,8 +25,10 @@ pub struct ConservativeFetchPolicy {
     /// Sustained fetch-rate ceiling in bytes/sec (`0` = unbounded). A gentle cap so
     /// background enrichment never saturates the link the user shares with the NAS.
     pub max_bytes_per_sec: u64,
-    /// Maximum images fetched concurrently (`>= 1`). The pass fetches serially today,
-    /// so this is effectively `1`; kept typed so a future parallel fetch is bounded.
+    /// Maximum images fetched concurrently (`>= 1`). The PARALLEL pass's prefetch
+    /// fan-out width: this many fetch workers read at once (over SMB, spread across
+    /// the scan-session connection pool), hiding per-file open/read/close latency.
+    /// The sequential (one-worker) pass is inherently 1 regardless.
     pub max_concurrency: usize,
     /// Per-image byte-read timeout: past this a fetch is treated as a disconnect and
     /// the volume pauses (never a false `Failed`).
@@ -38,7 +41,10 @@ impl Default for ConservativeFetchPolicy {
             idle_threshold: Duration::from_secs(5),
             // 8 MB/s: a few photos per second, well under a gigabit NAS link.
             max_bytes_per_sec: 8 * 1024 * 1024,
-            max_concurrency: 1,
+            // Three concurrent reads: enough to hide per-file SMB latency behind one
+            // another (the scan pool holds 4 extra connections), small enough to stay
+            // gentle; the bandwidth cap and byte budget bound it either way.
+            max_concurrency: 3,
             read_timeout: Duration::from_secs(15),
         }
     }

@@ -818,3 +818,162 @@ fn parallel_unreadable_files_skip_and_count_without_pausing() {
     assert_eq!(summary.skipped_unreadable, 4);
     writer.shutdown();
 }
+
+// ── The multi-connection fetch fan-out (plan M1): prefetch reads in parallel ─
+
+/// A fetcher wrapper that records how many fetches run simultaneously (and adds a
+/// small delay so overlap is real), delegating to an inner [`FakeByteFetcher`].
+struct FetchProbe {
+    inner: FakeByteFetcher,
+    in_flight: std::sync::atomic::AtomicUsize,
+    peak: std::sync::atomic::AtomicUsize,
+    delay: Duration,
+}
+
+impl FetchProbe {
+    fn new(inner: FakeByteFetcher, delay: Duration) -> Self {
+        Self {
+            inner,
+            in_flight: std::sync::atomic::AtomicUsize::new(0),
+            peak: std::sync::atomic::AtomicUsize::new(0),
+            delay,
+        }
+    }
+    fn peak(&self) -> usize {
+        self.peak.load(std::sync::atomic::Ordering::SeqCst)
+    }
+}
+
+impl super::fetch::ByteFetcher for FetchProbe {
+    fn fetch(
+        &self,
+        os_path: &str,
+        size_hint: Option<u64>,
+        timeout: Duration,
+    ) -> Result<Vec<u8>, super::fetch::FetchError> {
+        use std::sync::atomic::Ordering;
+        let cur = self.in_flight.fetch_add(1, Ordering::SeqCst) + 1;
+        self.peak.fetch_max(cur, Ordering::SeqCst);
+        std::thread::sleep(self.delay);
+        let r = self.inner.fetch(os_path, size_hint, timeout);
+        self.in_flight.fetch_sub(1, Ordering::SeqCst);
+        r
+    }
+}
+
+/// The M1 prefetch fan-out: with `max_concurrency` > 1 and budget to spare, the
+/// parallel pass keeps SEVERAL fetches in flight at once (hiding per-file SMB
+/// latency), while every image still enriches exactly once.
+#[test]
+fn parallel_prefetch_overlaps_fetches_up_to_max_concurrency() {
+    let dir = tempfile::tempdir().expect("temp");
+    let writer = media_writer(dir.path(), "smb-vol");
+    let images: Vec<ImageEntry> = (0..30).map(|i| image(&format!("/DCIM/img{i:03}.jpg"), 1, 10)).collect();
+    let mut inner = FakeByteFetcher::new();
+    for img in &images {
+        inner = inner.with_bytes(os(&img.path), vec![0u8; 10]);
+    }
+    // A real per-fetch delay so overlap (or its absence) is observable.
+    let fetcher = FetchProbe::new(inner, Duration::from_millis(2));
+    let backend = ParallelProbe::new(Duration::from_micros(100));
+    let make_backend = backend.clone();
+    let make = move || make_backend.clone() as std::sync::Arc<dyn crate::media_index::backend::VisionBackend>;
+    let two = || 2usize;
+    let policy = ConservativeFetchPolicy {
+        max_concurrency: 3,
+        ..ConservativeFetchPolicy::default()
+    };
+    // A generous budget: the fan-out, not the budget, is the bound under test.
+    let budget = ByteBudget::new(10_000);
+    let idle = || true;
+    let cancel = || false;
+    let ctx = NetworkEnrichCtx {
+        volume_id: "smb-vol",
+        mount_root: MOUNT,
+        images: &images,
+        statuses: &HashMap::new(),
+        backend: backend.as_ref(),
+        make: &make,
+        workers: &two,
+        budget: &budget,
+        fetcher: &fetcher,
+        writer: &writer,
+        policy: &policy,
+        is_idle: &idle,
+        should_enrich: &always_enrich,
+        is_excluded: &never_excluded,
+        cancel: &cancel,
+        sleep: &no_sleep,
+        progress: &NoopProgressSink,
+        clip_stamp: None,
+    };
+    let outcome = enrich_network_and_gc(&ctx).expect("pass");
+    assert!(matches!(outcome, NetworkPassOutcome::Completed(s) if s.enriched == 30));
+    assert!(
+        fetcher.peak() > 1,
+        "parallel prefetch must overlap fetches (peak in flight = {}, want > 1)",
+        fetcher.peak()
+    );
+    assert!(
+        fetcher.peak() <= 3,
+        "fetch fan-out must stay within max_concurrency (peak = {})",
+        fetcher.peak()
+    );
+    assert_eq!(backend.max_calls_for_any_path(), 1, "no double-enrichment");
+    writer.shutdown();
+}
+
+/// A disconnect seen by ONE of the parallel fetch workers still pauses the whole
+/// pass (no GC, completed rows kept) — the fan-out must not swallow the typed
+/// transport-loss signal.
+#[test]
+fn parallel_prefetch_disconnect_on_one_fetch_worker_pauses_the_pass() {
+    let dir = tempfile::tempdir().expect("temp");
+    let writer = media_writer(dir.path(), "smb-vol");
+    let images: Vec<ImageEntry> = (0..20).map(|i| image(&format!("/DCIM/img{i:03}.jpg"), 1, 10)).collect();
+    let mut inner = FakeByteFetcher::new();
+    for img in &images {
+        inner = inner.with_bytes(os(&img.path), vec![0u8; 10]);
+    }
+    inner = inner.disconnect_on(os("/DCIM/img007.jpg"));
+    let fetcher = FetchProbe::new(inner, Duration::from_millis(1));
+    let backend = ParallelProbe::new(Duration::from_micros(100));
+    let make_backend = backend.clone();
+    let make = move || make_backend.clone() as std::sync::Arc<dyn crate::media_index::backend::VisionBackend>;
+    let two = || 2usize;
+    let policy = ConservativeFetchPolicy {
+        max_concurrency: 3,
+        ..ConservativeFetchPolicy::default()
+    };
+    let budget = ByteBudget::new(10_000);
+    let idle = || true;
+    let cancel = || false;
+    let ctx = NetworkEnrichCtx {
+        volume_id: "smb-vol",
+        mount_root: MOUNT,
+        images: &images,
+        statuses: &HashMap::new(),
+        backend: backend.as_ref(),
+        make: &make,
+        workers: &two,
+        budget: &budget,
+        fetcher: &fetcher,
+        writer: &writer,
+        policy: &policy,
+        is_idle: &idle,
+        should_enrich: &always_enrich,
+        is_excluded: &never_excluded,
+        cancel: &cancel,
+        sleep: &no_sleep,
+        progress: &NoopProgressSink,
+        clip_stamp: None,
+    };
+    let outcome = enrich_network_and_gc(&ctx).expect("pass");
+    let NetworkPassOutcome::Paused { summary, reason } = outcome else {
+        panic!("a disconnect on a fetch worker must pause the pass, got {outcome:?}");
+    };
+    assert_eq!(reason, PauseReason::Disconnected);
+    assert_eq!(summary.gc_count, 0, "a paused pass never GCs");
+    assert_eq!(backend.max_calls_for_any_path(), 1);
+    writer.shutdown();
+}

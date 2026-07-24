@@ -8,12 +8,15 @@
 //!
 //! At one worker (the default) the pass is a plain sequential loop: fetch one image,
 //! analyze it, write it, throttle, repeat — byte-for-byte the pre-M2 behavior. Above one
-//! worker it becomes a producer/consumer: ONE fetcher thread keeps every conservative
-//! fetch-side decision (idle-gate, disconnect→pause, bandwidth throttle, gates) and hands
-//! fetched bytes to N compute workers (each its own Vision backend) over a channel, with
-//! admission bounded by BYTES ([`ByteBudget`]) so the prefetch buffer can't blow the memory
-//! ceiling on a RAW-heavy corpus. The wire is serialized on the one smb2 session either
-//! way; the win is overlapping that serialized fetch with parallel compute.
+//! worker it becomes a three-stage pipeline: ONE dispatcher thread keeps every
+//! conservative fetch-side DECISION (idle-gate, gates, byte-budget admission, bandwidth
+//! pacing, progress), K fetch workers (`max_concurrency`, plan M1) perform the byte-
+//! reads in parallel — over SMB they spread across the scan-session connection pool, so
+//! per-file open/read/close latency hides behind neighboring reads — and N compute
+//! workers (each its own Vision backend) analyze and write. Admission is bounded by
+//! BYTES ([`ByteBudget`]) on the dispatcher, so the whole fan-out can't blow the memory
+//! ceiling on a RAW-heavy corpus. A fetch worker classifies its errors exactly as the
+//! sequential loop does; a typed disconnect stops the dispatcher and pauses the pass.
 //!
 //! ## Data-safety lines (plan Decision 3 + Cross-cutting § Cancellation)
 //!
@@ -239,10 +242,20 @@ impl<'a> ComputeCtx<'a> {
     }
 }
 
-/// One fetched image handed from the fetcher to a compute worker.
+/// One fetched image handed from a fetch worker to a compute worker.
 struct FetchedJob {
     image: ImageEntry,
     bytes: Vec<u8>,
+    want_vision: bool,
+    want_clip: bool,
+}
+
+/// One budget-admitted image handed from the dispatcher to a fetch worker. The
+/// dispatcher has already acquired `image.size` against the byte budget; whoever
+/// consumes the job owns balancing that reservation (reconcile on a successful
+/// read, release on any failure or drain).
+struct FetchJob {
+    image: ImageEntry,
     want_vision: bool,
     want_clip: bool,
 }
@@ -269,18 +282,34 @@ fn run_parallel(ctx: &NetworkEnrichCtx) -> Result<NetworkPassOutcome, String> {
         bytes_total,
     });
 
+    // The fetch fan-out width (plan M1): how many byte-reads run at once. The wire-
+    // side counterpart of the N compute workers — parallel reads hide per-file SMB
+    // open/read/close latency (the SMB backend spreads them over its scan-session
+    // connection pool). Admission stays byte-bounded on the DISPATCHER, so the
+    // fan-out can never hold more bytes than the budget allows.
+    let k = ctx.policy.max_concurrency.max(1);
+
     // A small bounded channel: the byte budget is the real backpressure, this just caps the
     // handful of decoded-but-unprocessed jobs.
     let (tx, rx) = std::sync::mpsc::sync_channel::<FetchedJob>(n * 2);
     let rx = Mutex::new(rx);
+    // Dispatcher → fetch workers: budget-admitted images awaiting their byte-read.
+    let (fetch_tx, fetch_rx) = std::sync::mpsc::sync_channel::<FetchJob>(k);
+    let fetch_rx = Mutex::new(fetch_rx);
     let enriched = AtomicUsize::new(0);
-    // Only the fetcher thread observes fetch errors, but the count outlives the
-    // thread scope, so it rides an atomic like `enriched`.
+    // Fetch workers observe per-file read failures; the count outlives the thread
+    // scope, so it rides an atomic like `enriched`.
     let skipped_unreadable = AtomicUsize::new(0);
     // The first per-image writer error; fails the whole pass (as the sequential `?` does).
     let first_error: Mutex<Option<String>> = Mutex::new(None);
     // Workers set this on a writer error so the fetcher stops promptly.
     let worker_error = AtomicBool::new(false);
+    // A fetch worker saw a typed disconnect: the dispatcher stops producing, and the
+    // remaining queued jobs drain-release their budget reservations without fetching.
+    let fetch_disconnected = AtomicBool::new(false);
+    // The disconnect's pause reason (first observer wins), merged with the
+    // dispatcher's own reason after the scope.
+    let fetch_pause: Mutex<Option<PauseReason>> = Mutex::new(None);
 
     // Extra backends for workers 1..n (worker 0 rides `ctx.backend`); owned here, borrowed by
     // the scoped worker threads.
@@ -333,12 +362,113 @@ fn run_parallel(ctx: &NetworkEnrichCtx) -> Result<NetworkPassOutcome, String> {
             });
         }
 
-        // The fetcher (this thread): every conservative fetch-side decision stays here.
+        // Fetch workers: each pulls a budget-admitted job, reads its bytes, and hands
+        // them to the compute channel. K of them keep K reads in flight (the SMB
+        // backend spreads concurrent reads across its scan-session connection pool),
+        // hiding per-file open/read/close latency behind one another. Fetch ERRORS
+        // are classified here exactly as the sequential loop does; a typed
+        // disconnect flips `fetch_disconnected` so the dispatcher stops and the
+        // remaining queued jobs drain-release their reservations.
+        for _ in 0..k {
+            let tx = tx.clone();
+            let fetch_rx = &fetch_rx;
+            let skipped_unreadable = &skipped_unreadable;
+            let fetch_disconnected = &fetch_disconnected;
+            let fetch_pause = &fetch_pause;
+            // Only the Sync slice of the ctx crosses into the fetch workers; the
+            // non-Sync seams (`is_idle`, `should_enrich`, `sleep`) stay on the
+            // dispatcher thread by construction.
+            let fetcher = ctx.fetcher;
+            let mount_root = ctx.mount_root;
+            let volume_id = ctx.volume_id;
+            let read_timeout = ctx.policy.read_timeout;
+            let cancel = ctx.cancel;
+            scope.spawn(move || {
+                loop {
+                    let job = {
+                        let guard = fetch_rx.lock_ignore_poison();
+                        guard.recv()
+                    };
+                    let Ok(FetchJob {
+                        image,
+                        want_vision,
+                        want_clip,
+                    }) = job
+                    else {
+                        break; // dispatcher dropped fetch_tx and the queue drained
+                    };
+                    let reserved = image.size.unwrap_or(0);
+                    // After a disconnect, don't hit the dead transport again: just
+                    // balance the reservation and move on (the dispatcher stops
+                    // producing as soon as it observes the flag).
+                    if fetch_disconnected.load(Ordering::Acquire) {
+                        budget.release(reserved);
+                        continue;
+                    }
+                    let os_path = os_join(mount_root, &image.path);
+                    match fetcher.fetch(&os_path, image.size, read_timeout) {
+                        Ok(bytes) => {
+                            let fetched = bytes.len() as u64;
+                            // Reconcile the reservation (`image.size`) with the ACTUAL
+                            // bytes read, so the compute worker's release balances.
+                            reconcile_budget(budget, reserved, fetched, cancel);
+                            if tx
+                                .send(FetchedJob {
+                                    image,
+                                    bytes,
+                                    want_vision,
+                                    want_clip,
+                                })
+                                .is_err()
+                            {
+                                // All compute workers gone (a writer error): stop.
+                                budget.release(fetched);
+                                break;
+                            }
+                        }
+                        Err(FetchError::Disconnected(msg)) => {
+                            budget.release(reserved);
+                            log::info!(
+                                target: "media_index",
+                                "network enrichment of '{}' paused (disconnected): {msg}", volume_id
+                            );
+                            let mut pause = fetch_pause.lock_ignore_poison();
+                            if pause.is_none() {
+                                *pause = Some(PauseReason::Disconnected);
+                            }
+                            drop(pause);
+                            fetch_disconnected.store(true, Ordering::Release);
+                        }
+                        Err(FetchError::NotFound) => {
+                            budget.release(reserved);
+                        }
+                        Err(FetchError::TooLarge) => {
+                            budget.release(reserved);
+                            log::debug!(target: "media_index", "network enrichment skips oversized '{}'", image.path);
+                        }
+                        // Per-file read failure: skip-and-count, never a pause (see
+                        // the sequential arm).
+                        Err(FetchError::Unreadable(msg)) => {
+                            budget.release(reserved);
+                            skipped_unreadable.fetch_add(1, Ordering::Relaxed);
+                            log::debug!(target: "media_index", "network enrichment skips unreadable '{}': {msg}", image.path);
+                        }
+                    }
+                }
+            });
+        }
+        // The fetch workers hold their own compute-channel clones; drop the original
+        // so the compute channel closes when THEY finish, not at scope end.
+        drop(tx);
+
+        // The dispatcher (this thread): every conservative fetch-side DECISION stays
+        // here — gates, budget admission, throttle pacing, progress — only the byte-
+        // read itself is fanned out.
         let mut done = 0u64;
         let mut bytes_done = 0u64;
         let mut reason: Option<PauseReason> = None;
         for image in ctx.images {
-            if worker_error.load(Ordering::Acquire) {
+            if worker_error.load(Ordering::Acquire) || fetch_disconnected.load(Ordering::Acquire) {
                 break;
             }
             if (ctx.cancel)() {
@@ -360,57 +490,31 @@ fn run_parallel(ctx: &NetworkEnrichCtx) -> Result<NetworkPassOutcome, String> {
             let want_vision = needs_enrichment(stored, image.mtime, image.size, &stamp);
             let want_clip = needs_clip(stored, ctx.clip_stamp);
             if want_vision || want_clip {
-                // Admit this image's bytes against the prefetch budget before reading; a stop
-                // wakes the wait so a stopping pass never blocks here.
-                if !ctx.budget.acquire(image.size.unwrap_or(0), ctx.cancel) {
+                let reserved = image.size.unwrap_or(0);
+                // Admit this image's bytes against the prefetch budget before handing
+                // it to a fetch worker; a stop wakes the wait so a stopping pass never
+                // blocks here.
+                if !ctx.budget.acquire(reserved, ctx.cancel) {
                     reason = Some(PauseReason::Cancelled);
                     break;
                 }
-                match ctx.fetcher.fetch(&os_path, image.size, ctx.policy.read_timeout) {
-                    Ok(bytes) => {
-                        let fetched = bytes.len() as u64;
-                        // Reconcile the reservation (`image.size`) with the ACTUAL bytes read,
-                        // so the worker's release balances exactly.
-                        reconcile_budget(ctx.budget, image.size.unwrap_or(0), fetched, ctx.cancel);
-                        (ctx.sleep)(throttle_delay(fetched, ctx.policy.max_bytes_per_sec));
-                        if tx
-                            .send(FetchedJob {
-                                image: image.clone(),
-                                bytes,
-                                want_vision,
-                                want_clip,
-                            })
-                            .is_err()
-                        {
-                            // All workers gone (a writer error): stop fetching.
-                            ctx.budget.release(fetched);
-                            break;
-                        }
-                    }
-                    Err(FetchError::Disconnected(msg)) => {
-                        ctx.budget.release(image.size.unwrap_or(0));
-                        log::info!(
-                            target: "media_index",
-                            "network enrichment of '{}' paused (disconnected): {msg}", ctx.volume_id
-                        );
-                        reason = Some(PauseReason::Disconnected);
-                        break;
-                    }
-                    Err(FetchError::NotFound) => {
-                        ctx.budget.release(image.size.unwrap_or(0));
-                    }
-                    Err(FetchError::TooLarge) => {
-                        ctx.budget.release(image.size.unwrap_or(0));
-                        log::debug!(target: "media_index", "network enrichment skips oversized '{}'", image.path);
-                    }
-                    // Per-file read failure: skip-and-count, never a pause (see the
-                    // sequential arm). Only the fetcher observes fetch errors, so a
-                    // plain local counter is race-free.
-                    Err(FetchError::Unreadable(msg)) => {
-                        ctx.budget.release(image.size.unwrap_or(0));
-                        skipped_unreadable.fetch_add(1, Ordering::Relaxed);
-                        log::debug!(target: "media_index", "network enrichment skips unreadable '{}': {msg}", image.path);
-                    }
+                // Bandwidth pacing stays centralized on the dispatcher, keyed on the
+                // RESERVED size (the index's last-known bytes) since the actual count
+                // lands on a fetch worker later. A stale size self-corrects over the
+                // pass; the direction of error is bounded by the budget either way.
+                (ctx.sleep)(throttle_delay(reserved, ctx.policy.max_bytes_per_sec));
+                if fetch_tx
+                    .send(FetchJob {
+                        image: image.clone(),
+                        want_vision,
+                        want_clip,
+                    })
+                    .is_err()
+                {
+                    // Every fetch worker exited (compute channel gone after a writer
+                    // error): balance the reservation and stop.
+                    ctx.budget.release(reserved);
+                    break;
                 }
             }
             ctx.progress.report(EnrichProgress {
@@ -420,8 +524,10 @@ fn run_parallel(ctx: &NetworkEnrichCtx) -> Result<NetworkPassOutcome, String> {
                 bytes_total,
             });
         }
-        // Drop tx so workers finish the drained queue and exit; the scope joins them.
-        drop(tx);
+        // Drop fetch_tx so the fetch workers drain the queue and exit (dropping their
+        // compute-channel clones, which lets the compute workers exit); the scope
+        // joins them all.
+        drop(fetch_tx);
         *pause_reason.lock_ignore_poison() = reason;
     });
 
@@ -435,7 +541,13 @@ fn run_parallel(ctx: &NetworkEnrichCtx) -> Result<NetworkPassOutcome, String> {
         cancelled: false,
         skipped_unreadable: skipped_unreadable.load(Ordering::Relaxed),
     };
-    let reason = *pause_reason.lock_ignore_poison();
+    // Merge the two pause sources: a fetch worker's typed disconnect wins over the
+    // dispatcher's own reason (a NotIdle retry would only re-hit the dead transport;
+    // Disconnected resumes via the registration bus on reconnect, the accurate path).
+    let reason = fetch_pause
+        .lock_ignore_poison()
+        .take()
+        .or(*pause_reason.lock_ignore_poison());
     if let Some(reason) = reason {
         // A paused pass keeps its completed rows and NEVER GCs (a disconnect can't wipe
         // coverage). Flush what the workers wrote.

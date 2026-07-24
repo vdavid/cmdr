@@ -145,11 +145,28 @@ impl Volume for SmbVolume {
     }
 
     fn begin_scan_session<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
-        Box::pin(async move { self.open_scan_pool().await })
+        Box::pin(async move {
+            // Refcounted: concurrent background users (an index rescan overlapping a
+            // media enrichment pass) share ONE pool; `open_scan_pool` is idempotent.
+            self.scan_session_refs.fetch_add(1, Ordering::AcqRel);
+            self.open_scan_pool().await
+        })
     }
 
     fn end_scan_session<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
-        Box::pin(async move { self.close_scan_pool().await })
+        Box::pin(async move {
+            // Saturating decrement: an unmatched end (a pass racing unmount
+            // teardown) must not underflow into a never-closing pool.
+            let prev = self
+                .scan_session_refs
+                .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| Some(n.saturating_sub(1)))
+                .unwrap_or(0);
+            // Close only when the LAST session ends; an earlier end while a sibling
+            // still scans would tear the pool out from under it mid-flight.
+            if prev <= 1 {
+                self.close_scan_pool().await;
+            }
+        })
     }
 
     fn get_metadata<'a>(
@@ -689,6 +706,16 @@ impl Volume for SmbVolume {
             let stream = self.open_smb_download_stream(&smb_path).await?;
             Ok(Box::new(stream) as Box<dyn VolumeReadStream>)
         })
+    }
+
+    fn open_read_stream_for_scan<'a>(
+        &'a self,
+        path: &'a Path,
+        size_hint: Option<u64>,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        // Background bulk reads (media enrichment prefetch) draw small hinted files
+        // from the scan-connection pool when one is active; see `scan_pool.rs`.
+        Box::pin(async move { self.open_read_stream_for_scan_impl(path, size_hint).await })
     }
 
     fn read_range<'a>(

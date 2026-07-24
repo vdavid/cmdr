@@ -521,12 +521,26 @@ impl MediaScheduler {
         // errors. Mount-only volumes keep the OS-mount fetcher. The runtime handle is
         // captured here (this runs on `spawn_blocking`, inside the runtime context);
         // outside a runtime (direct-call unit tests) the OS-mount fallback applies.
-        let fetcher: Box<dyn network::fetch::ByteFetcher> = match tokio::runtime::Handle::try_current() {
-            Ok(handle) if !volume.supports_local_fs_access() => {
-                Box::new(network::fetch::VolumeByteFetcher::new(volume.clone(), handle))
-            }
+        let runtime = tokio::runtime::Handle::try_current().ok();
+        let direct = runtime.is_some() && !volume.supports_local_fs_access();
+        let fetcher: Box<dyn network::fetch::ByteFetcher> = match (&runtime, direct) {
+            (Some(handle), true) => Box::new(network::fetch::VolumeByteFetcher::new(volume.clone(), handle.clone())),
             _ => Box::new(FsByteFetcher),
         };
+        // A PARALLEL direct pass fans its prefetch reads out (`max_concurrency`), and
+        // over SMB those overlap only across separate TCP connections — so bracket a
+        // scan session for the pass, which opens the backend's pooled connections
+        // (refcounted; a concurrent index rescan shares them). The guard releases on
+        // every exit path, including the `?` bubbles below. A sequential pass reads
+        // one file at a time, where extra sessions would be idle cost.
+        let _scan_session =
+            if direct && (|| crate::media_index::thermal::current_pressure().cap(gate::parallelism()))() > 1 {
+                runtime
+                    .as_ref()
+                    .map(|handle| ScanSessionBracket::open(volume.clone(), handle.clone()))
+            } else {
+                None
+            };
         let idle_threshold = policy.idle_threshold;
         // The between-images proceed gate: the app is foreground-idle AND no
         // user-initiated transfer touches this volume (`crate::priority`'s order —
@@ -662,6 +676,31 @@ impl MediaScheduler {
             }
         };
         Ok(outcome)
+    }
+}
+
+/// Brackets a volume's scan session for the duration of a network enrichment pass:
+/// `begin_scan_session` on open (over SMB this brings up the pooled extra
+/// connections the parallel prefetch spreads across), `end_scan_session` on drop —
+/// which fires on EVERY pass exit, including error bubbles. The end is spawned
+/// (not blocked on) so a `Drop` on a blocking thread never waits on the runtime.
+struct ScanSessionBracket {
+    volume: std::sync::Arc<dyn crate::file_system::volume::Volume>,
+    handle: tokio::runtime::Handle,
+}
+
+impl ScanSessionBracket {
+    fn open(volume: std::sync::Arc<dyn crate::file_system::volume::Volume>, handle: tokio::runtime::Handle) -> Self {
+        let v = volume.clone();
+        handle.block_on(async move { v.begin_scan_session().await });
+        Self { volume, handle }
+    }
+}
+
+impl Drop for ScanSessionBracket {
+    fn drop(&mut self) {
+        let volume = self.volume.clone();
+        self.handle.spawn(async move { volume.end_scan_session().await });
     }
 }
 

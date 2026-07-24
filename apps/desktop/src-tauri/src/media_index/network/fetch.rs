@@ -9,7 +9,9 @@
 //! for its local-vs-remote byte source):
 //!
 //! - [`VolumeByteFetcher`] for a volume the app holds its OWN transport session to
-//!   (a Direct-smb2 `SmbVolume`): reads via `Volume::open_read_stream_with_hint`.
+//!   (a Direct-smb2 `SmbVolume`): reads via `Volume::open_read_stream_for_scan` (over
+//!   SMB, small hinted files come from the scan-session connection pool, so the
+//!   parallel pass's fan-out reads genuinely overlap).
 //!   The OS mount is deliberately avoided there: macOS TCC ("network volumes")
 //!   denies `std::fs` on `/Volumes/…` for unsigned dev binaries and can regress
 //!   per-binary on rebuilds, while the direct session is the connection Cmdr
@@ -205,16 +207,18 @@ impl ByteFetcher for VolumeByteFetcher {
     }
 }
 
-/// Drain one file through `Volume::open_read_stream_with_hint`, capping at
-/// [`MAX_FETCH_BYTES`] (stop draining and skip, rather than buffering a pathological
-/// file), classifying failures by TYPED `VolumeError` variant.
+/// Drain one file through `Volume::open_read_stream_for_scan` (the background bulk
+/// read: over SMB, small hinted files come from the scan-session connection pool so
+/// parallel prefetch reads actually overlap), capping at [`MAX_FETCH_BYTES`] (stop
+/// draining and skip, rather than buffering a pathological file), classifying
+/// failures by TYPED `VolumeError` variant.
 async fn read_via_volume(
     volume: &dyn crate::file_system::volume::Volume,
     path: &std::path::Path,
     size_hint: Option<u64>,
 ) -> Result<Vec<u8>, FetchError> {
     let mut stream = volume
-        .open_read_stream_with_hint(path, size_hint)
+        .open_read_stream_for_scan(path, size_hint)
         .await
         .map_err(classify_volume_error)?;
     // Pre-size from the hint (capped), so a typical photo lands in one allocation.
@@ -582,11 +586,8 @@ mod tests {
             fn open_read_stream<'a>(
                 &'a self,
                 _path: &'a std::path::Path,
-            ) -> Pin<
-                Box<
-                    dyn std::future::Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a,
-                >,
-            > {
+            ) -> Pin<Box<dyn std::future::Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>>
+            {
                 Box::pin(async { Ok(Box::new(YankedStream { sent: false }) as Box<dyn VolumeReadStream>) })
             }
         }

@@ -23,7 +23,7 @@ use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, AtomicUsize, Ordering};
 use std::sync::{Mutex as StdMutex, OnceLock};
 use std::time::Duration;
 use tauri::AppHandle;
@@ -136,11 +136,18 @@ pub struct SmbVolume {
     /// Once `true`, the volume is permanently dead; `attempt_reconnect` becomes
     /// a no-op error.
     unmounted: Arc<AtomicBool>,
-    /// The per-scan connection pool: extra smb2 sessions a background index scan
-    /// spreads its listings across, opened lazily on `begin_scan_session` and torn
-    /// down on `end_scan_session`. `None` between scans (steady-state footprint is
+    /// The per-scan connection pool: extra smb2 sessions that background bulk work
+    /// (the index scan's listings, media enrichment's prefetch reads) spreads
+    /// across, opened lazily on `begin_scan_session` and torn down when the LAST
+    /// concurrent session ends. `None` between scans (steady-state footprint is
     /// just the one browsing session). See `scan_pool.rs`.
     scan_pool: tokio::sync::RwLock<Option<Arc<scan_pool::ScanPool>>>,
+    /// How many scan sessions are open right now. Two background users can overlap
+    /// (an index rescan kicked while an enrichment pass runs); the pool must
+    /// survive until the LAST one ends, or one user's `end_scan_session` tears the
+    /// pool out from under the other mid-flight. Saturating at 0 so an unmatched
+    /// end (unmount teardown raced a pass) can't underflow.
+    scan_session_refs: AtomicUsize,
 }
 
 impl SmbVolume {
@@ -176,6 +183,7 @@ impl SmbVolume {
             reconnect_lock: Arc::new(tokio::sync::Mutex::new(())),
             unmounted: Arc::new(AtomicBool::new(false)),
             scan_pool: tokio::sync::RwLock::new(None),
+            scan_session_refs: AtomicUsize::new(0),
         }
     }
 
@@ -251,11 +259,11 @@ impl SmbConnectionParams {
 mod smb_archive_integration_test;
 
 #[cfg(test)]
-#[path = "../smb_media_fetch_integration_test.rs"]
-mod smb_media_fetch_integration_test;
-#[cfg(test)]
 #[path = "../smb_integration_test.rs"]
 mod smb_integration_test;
+#[cfg(test)]
+#[path = "../smb_media_fetch_integration_test.rs"]
+mod smb_media_fetch_integration_test;
 #[cfg(test)]
 #[path = "../smb_soak_test.rs"]
 mod smb_soak_test;

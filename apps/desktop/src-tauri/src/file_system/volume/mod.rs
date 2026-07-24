@@ -840,6 +840,28 @@ pub trait Volume: Send + Sync {
         self.open_read_stream(path)
     }
 
+    /// Opens a read stream for BACKGROUND bulk work (media enrichment prefetch),
+    /// bracketed by [`begin_scan_session`](Self::begin_scan_session) /
+    /// [`end_scan_session`](Self::end_scan_session).
+    ///
+    /// A backend may route it over scan-scoped resources so concurrent background
+    /// reads don't serialize on — or compete with — the session the pane browses
+    /// through: `SmbVolume` serves small hinted files from its scan-connection
+    /// pool via the 1-RTT compound read (see `smb/scan_pool.rs`). Semantically
+    /// identical to [`open_read_stream_with_hint`](Self::open_read_stream_with_hint),
+    /// which is also the default.
+    #[allow(
+        clippy::type_complexity,
+        reason = "async trait method returns a pinned boxed future by design"
+    )]
+    fn open_read_stream_for_scan<'a>(
+        &'a self,
+        path: &'a Path,
+        size_hint: Option<u64>,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        self.open_read_stream_with_hint(path, size_hint)
+    }
+
     /// Opens a streaming reader that starts at a byte offset (resumable read).
     ///
     /// Streams `[offset, size)` of `path`. `offset == 0` is equivalent to

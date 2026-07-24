@@ -465,6 +465,62 @@ impl SmbVolume {
         }
         self.list_directory_impl(path).await
     }
+
+    /// The `open_read_stream_for_scan` body: serve a SMALL hinted file from a scan-
+    /// pool member via the 1-RTT compound read; everything else (no pool, no/large
+    /// hint, size drift) falls through to the main-session path. Media enrichment's
+    /// parallel prefetch calls this with several reads in flight, so spreading the
+    /// compound reads over the pool's separate TCP connections is what lets them
+    /// actually overlap (ksmbd serializes per connection; see the module docs).
+    ///
+    /// Pool members serve ONLY the compound (single-round-trip) shape on purpose:
+    /// an error surfaces at the request boundary, where a dead member is retried on
+    /// a sibling exactly like a listing. A STREAMING read on a member could die
+    /// mid-stream, which would surface as a transport error to a consumer the pool
+    /// can't transparently retry for — the main session (with its reconnect
+    /// machinery and connection-state signaling) owns streaming.
+    pub(super) async fn open_read_stream_for_scan_impl(
+        &self,
+        path: &Path,
+        size_hint: Option<u64>,
+    ) -> Result<Box<dyn VolumeReadStream>, VolumeError> {
+        if let Some(size) = size_hint
+            && size > 0
+        {
+            let pool = { self.scan_pool.read().await.clone() };
+            if let Some(pool) = pool {
+                let smb_path = self.to_smb_path(path);
+                for _ in 0..pool.member_count() {
+                    let Some((idx, tree, mut conn)) = pool.acquire().await else {
+                        break; // every member momentarily dead ⇒ main session
+                    };
+                    let max_read = conn.params().map(|p| p.max_read_size).unwrap_or(65536) as u64;
+                    if size > max_read {
+                        break; // too big for one compound READ ⇒ main-session streaming
+                    }
+                    match tree.read_file_compound(&mut conn, &smb_path).await {
+                        Ok(data) if data.len() as u64 == size => {
+                            return Ok(Box::new(InlineReadStream::new(data)) as Box<dyn VolumeReadStream>);
+                        }
+                        Ok(_) => break, // size drifted since the scan ⇒ streaming self-corrects
+                        Err(e) if is_pool_member_dead(&e) => {
+                            log::debug!(
+                                "smb scan pool: member {idx} died reading {smb_path:?} ({e}); retrying on a sibling"
+                            );
+                            pool.mark_member_dead(idx);
+                            continue;
+                        }
+                        Err(e) if matches!(e.kind(), smb2::ErrorKind::TooLarge) => break, // grew past max_read
+                        // A real per-file error (permission, not-found, …): the same
+                        // on any connection; surface it typed, don't touch the main
+                        // session's state (this wasn't its connection).
+                        Err(e) => return Err(map_smb_error(e)),
+                    }
+                }
+            }
+        }
+        Volume::open_read_stream_with_hint(self, path, size_hint).await
+    }
 }
 
 #[cfg(test)]
