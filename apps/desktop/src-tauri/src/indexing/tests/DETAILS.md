@@ -92,8 +92,8 @@ They're serialized and granted a 30 s cap via the `disk-image` nextest group (`.
 attach/detach churn on one FSKit service is the very surface the incident warns about, and the live-FSEvents probes
 block on real delivery. Those probes pin the load-bearing fact that **live FSEvents fire on FAT/exFAT despite no
 `.fseventsd` journal** (no `sinceWhen` replay, but a running watcher keeps an external index current). The human-run
-reference probes are `docs/specs/local-drive-indexing-probes/{fat32-probe.sh,fsevents-probe.swift}`; the Rust fixture is
-the automated form.
+reference probes live beside this fixture in `external-drive-probes/` (`fat32-probe.sh`, `fsevents-probe.swift`); the
+Rust fixture is the automated form.
 
 `fat32_mount_relative_scan_indexes_the_tree_with_sizes_and_null_inodes` is the one end-to-end test on a real `msdos`
 filesystem: it drives `scanner::scan_volume` with the mount-rooted `IndexPathSpace` (MountRooted exclusion scope + FAT's

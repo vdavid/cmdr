@@ -17,9 +17,8 @@
 //!   [`DiskImageFixture`]'s `Drop`, so it runs even on panic or early return:
 //!   `hdiutil detach`, then a `hdiutil detach -force` fallback, each guarded.
 //!
-//! The human-run reference probes this ports are
-//! `docs/specs/local-drive-indexing-probes/fat32-probe.sh` and
-//! `fsevents-probe.swift`.
+//! The human-run reference probes this ports live beside it in
+//! `external-drive-probes/`: `fat32-probe.sh` and `fsevents-probe.swift`.
 //!
 //! [`DETAILS.md`]: ./DETAILS.md
 
