@@ -11,6 +11,7 @@ use std::time::{Duration, Instant};
 
 use super::search_matcher::Matcher;
 use super::{FileViewerBackend, MAX_SEARCH_MATCHES, SearchMatch};
+use crate::ignore_poison::IgnorePoison;
 use crate::test_support::wait_until;
 
 /// Asserts that `backend.search` stops on the cancel flag mid-scan, and stops promptly.
@@ -31,9 +32,9 @@ pub(super) fn assert_search_stops_on_per_match_cancel(backend: &impl FileViewerB
     let stamp = Arc::clone(&cancelled_at);
     let canceller = thread::spawn(move || {
         wait_until(Duration::from_secs(5), "the scan to report its first match", || {
-            !watched.lock().unwrap().is_empty()
+            !watched.lock_ignore_poison().is_empty()
         });
-        *stamp.lock().unwrap() = Some(Instant::now());
+        *stamp.lock_ignore_poison() = Some(Instant::now());
         cancel_setter.store(true, Ordering::Relaxed);
     });
 
@@ -41,7 +42,7 @@ pub(super) fn assert_search_stops_on_per_match_cancel(backend: &impl FileViewerB
     let returned_at = Instant::now();
     canceller.join().expect("the canceller must reach the cancel flag");
 
-    let found = matches.lock().unwrap().len();
+    let found = matches.lock_ignore_poison().len();
     assert!(found > 0, "the scan must report matches before it gets cancelled");
     assert!(
         found < MAX_SEARCH_MATCHES,
@@ -49,7 +50,9 @@ pub(super) fn assert_search_stops_on_per_match_cancel(backend: &impl FileViewerB
          rather than on cancel and says nothing about cancellation"
     );
 
-    let cancelled_at = cancelled_at.lock().unwrap().expect("the canceller must stamp its time");
+    let cancelled_at = cancelled_at
+        .lock_ignore_poison()
+        .expect("the canceller must stamp its time");
     let observed_in = returned_at.saturating_duration_since(cancelled_at);
     assert!(
         observed_in < Duration::from_millis(800),

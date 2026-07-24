@@ -8,7 +8,7 @@ use std::time::{Duration, SystemTime};
 /// responsible for cleaning up. We deliberately avoid the `tempfile` crate to keep this
 /// module dependency-free.
 fn make_temp_dir(label: &str) -> PathBuf {
-    let nanos = std::time::SystemTime::now()
+    let nanos = SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_nanos())
         .unwrap_or(0);

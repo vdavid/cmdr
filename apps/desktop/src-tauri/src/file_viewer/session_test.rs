@@ -319,10 +319,11 @@ fn large_file_upgrades_to_line_index() {
     // Initially ByteSeek
     assert!(matches!(open_result.backend_type, session::BackendType::ByteSeek));
 
-
-    wait_until(Duration::from_secs(3), "the background upgrade to LineIndex to finish", || {
-        upgraded_to_line_index(sid)
-    });
+    wait_until(
+        Duration::from_secs(3),
+        "the background upgrade to LineIndex to finish",
+        || upgraded_to_line_index(sid),
+    );
 
     // On LineIndex a `Line` target lands on exactly that line, so the chunk reports it back.
     let chunk = session::get_lines(sid, super::SeekTarget::Line(10), 3).unwrap();
