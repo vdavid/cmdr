@@ -111,6 +111,12 @@ exacl = "0.13"
 # `f16` for the media index's on-disk + resident image embeddings (half the bytes of
 # `f32` on disk and in the resident vector cache; widened to `f32` at score time).
 half = "2"
+# ANN vector search for CLIP text→image at scale (plan M6): HNSW with f16 storage +
+# cosine metric, mmap `view` reads (at-rest RSS stays small, pages evictable). Chosen by
+# the measured spike (`docs/notes/ann-vector-search-spike-2026-07-24.md`): 0.30 ms p50 at
+# 0.994 recall@10 over 200k vectors. Apache-2.0 (incl. vendored SimSIMD); ~+1 MB binary
+# (accepted). Pinned =2.26.0 (published 2026-07-10, outside the 3-day window).
+usearch = "=2.26.0"
 sysinfo = { version = "0.39.0", default-features = false, features = ["system"] }
 time = { version = "0.3", features = ["parsing", "macros", "formatting"] }
 # Playwright E2E testing plugin: socket bridge for direct webview injection (optional, feature-gated, dev-only).

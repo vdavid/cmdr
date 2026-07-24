@@ -11,6 +11,7 @@
 //! port rationale, the GC safety argument, and the schema. Full plan:
 //! `docs/specs/media-ml-index-plan.md`.
 
+pub(crate) mod ann;
 pub mod backend;
 pub mod clip;
 pub mod commands;

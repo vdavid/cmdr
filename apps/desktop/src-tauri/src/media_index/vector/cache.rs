@@ -75,15 +75,22 @@ fn load(db_path: &Path, table: EmbeddingTable) -> BruteForceVectorStore {
 }
 
 /// Drop BOTH of a volume's cached stores so the next query reloads them. Called after a
-/// completed enrichment pass (its embeddings changed) and after a purge.
+/// completed enrichment pass (its embeddings changed) and after a purge. This is the ONE
+/// choke point for "this volume's derived query caches changed", so it also drops the
+/// ANN route/view cache (plan M6) — every existing invalidation seam stays correct
+/// without naming the ANN layer.
 pub fn invalidate(db_path: &Path) {
     let mut cache = CACHE.lock_ignore_poison();
     cache.remove(&(db_path.to_path_buf(), EmbeddingTable::FeaturePrint));
     cache.remove(&(db_path.to_path_buf(), EmbeddingTable::Clip));
+    drop(cache);
+    crate::media_index::ann::cache::invalidate(db_path);
 }
 
 /// Drop every cached store (the memory watchdog's stop action, so resident vectors
-/// release under memory pressure). The next query reloads lazily.
+/// release under memory pressure), plus the ANN route/view caches. The next query
+/// reloads lazily.
 pub fn clear_all() {
     CACHE.lock_ignore_poison().clear();
+    crate::media_index::ann::cache::clear_all();
 }

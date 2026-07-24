@@ -319,6 +319,9 @@ impl MediaScheduler {
         // find-similar / dedup reloads (per-pass invalidation, not per-write — plan §
         // Query-time vector residency).
         if summary.enriched > 0 || summary.gc_count > 0 {
+            // Land the pass's buffered ANN ops BEFORE invalidating, so the mmap view
+            // the next query reloads is current (plan M6). Best-effort.
+            let _ = writer.flush_ann_index();
             super::vector::cache::invalidate(&super::store::media_db_path(&self.data_dir, volume_id));
             // The pass wrote rows, so the WAL grew: truncate it at this quiet point
             // (plan M9). Best-effort, never fails the pass.
@@ -416,6 +419,9 @@ impl MediaScheduler {
             if deleted > 0 {
                 // Reclaim the pages (privacy: the OCR text leaves the disk), then drop
                 // the derived caches so a later search / slider preview rebuilds honestly.
+                // The ANN flush lands the buffered key removals first, so the pruned
+                // images stop being ANN-reachable at the same moment (plan M6).
+                let _ = writer.flush_ann_index();
                 let _ = writer.vacuum();
                 super::vector::cache::invalidate(&db_path);
                 super::coverage::invalidate(volume_id);
@@ -622,6 +628,9 @@ impl MediaScheduler {
             NetworkPassOutcome::Completed(summary) => {
                 network::config::clear_paused(volume_id);
                 if summary.enriched > 0 || summary.gc_count > 0 {
+                    // Land the buffered ANN ops before invalidating (plan M6; as the
+                    // local pass does). Best-effort.
+                    let _ = writer.flush_ann_index();
                     super::vector::cache::invalidate(&super::store::media_db_path(&self.data_dir, volume_id));
                     // The pass wrote rows, so the WAL grew: truncate it at this quiet
                     // point (plan M9). Best-effort, never fails the pass.

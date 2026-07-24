@@ -31,6 +31,9 @@
 //!   (privacy: the deleted OCR text is gone from disk, not just logically). Blocking.
 //! - [`purge_volume`](MediaWriter::purge_volume): drop all rows (the feature was
 //!   disabled and the user chose to delete `media.db`'s contents).
+//! - [`flush_ann_index`](MediaWriter::flush_ann_index): land the buffered ANN index
+//!   ops (plan M6). The writer thread is the ONE producer of incremental ANN
+//!   mutations, mirroring each CLIP write/delete it commits; see [`super::ann`].
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -41,6 +44,7 @@ use std::time::Duration;
 
 use rusqlite::Connection;
 
+use super::ann;
 use super::backend::Tag;
 use super::coverage;
 use super::scheduler::enrich::parent_dir;
@@ -108,6 +112,10 @@ enum WriteMessage {
     Vacuum { done: mpsc::Sender<()> },
     /// Drop every status and OCR row for this volume (disable + delete contents).
     PurgeVolume,
+    /// Apply the buffered ANN ops to the on-disk index (plan M6) and reply once
+    /// saved — a barrier. Called at the same seams that invalidate the resident
+    /// vector cache, so the mmap view the query path reloads is current.
+    FlushAnn(mpsc::Sender<()>),
     /// Barrier: signal once all prior messages are committed.
     Flush(mpsc::Sender<()>),
     /// TRUNCATE the WAL file at a quiet point (enrichment-pass completion). Replies
@@ -162,9 +170,10 @@ impl MediaWriter {
         let conn = open_write_connection(db_path)?;
         let (sender, receiver) = mpsc::sync_channel::<WriteMessage>(CHANNEL_CAPACITY);
         let volume_id = volume_id.to_string();
+        let loop_db_path = db_path.to_path_buf();
         let handle = thread::Builder::new()
             .name("media-writer".into())
-            .spawn(move || writer_loop(conn, receiver, volume_id))
+            .spawn(move || writer_loop(conn, receiver, volume_id, loop_db_path))
             .map_err(MediaStoreError::Io)?;
         Ok(Self {
             sender,
@@ -296,6 +305,18 @@ impl MediaWriter {
         Ok(())
     }
 
+    /// Apply the buffered ANN index ops (CLIP upserts/removes since the last flush)
+    /// to the on-disk `.usearch` file and block until saved (plan M6). Call at the
+    /// same quiet points that invalidate the resident vector cache, BEFORE the
+    /// invalidation, so the reloaded mmap view sees the pass's writes. Best-effort:
+    /// an unusable index is wiped for rebuild, never an error to the pass.
+    pub fn flush_ann_index(&self) -> Result<(), MediaStoreError> {
+        let (tx, rx) = mpsc::channel();
+        self.send(WriteMessage::FlushAnn(tx))?;
+        let _ = rx.recv();
+        Ok(())
+    }
+
     /// Shut the writer down and join its thread. Idempotent.
     pub fn shutdown(&self) {
         let _ = self.sender.send(WriteMessage::Shutdown);
@@ -314,17 +335,80 @@ impl MediaWriter {
     }
 }
 
+/// The writer thread's buffered ANN mutations (plan M6): ops accumulate beside the
+/// DB writes they mirror and land on the `.usearch` file at flush seams. The dirty
+/// marker goes on disk BEFORE the first tracked commit, so a crash with unflushed
+/// ops is detectable next session (`ann::wipe_if_crashed`).
+struct AnnPending {
+    db_path: PathBuf,
+    ops: Vec<ann::AnnOp>,
+    dirty_marked: bool,
+}
+
+impl AnnPending {
+    fn new(db_path: PathBuf) -> Self {
+        Self {
+            db_path,
+            ops: Vec::new(),
+            dirty_marked: false,
+        }
+    }
+
+    /// Put the dirty marker on disk (once per batch). MUST run before the DB write
+    /// it tracks commits — that ordering is what makes a crash between the commit
+    /// and the flush detectable rather than a silently-lagging index.
+    fn mark_dirty(&mut self) {
+        if !self.dirty_marked {
+            ann::mark_dirty(&self.db_path, ann::AnnSpace::Clip);
+            self.dirty_marked = true;
+        }
+    }
+
+    /// Buffer one op; auto-flush past the bound so a long pass can't hold an
+    /// unbounded vector buffer.
+    fn push(&mut self, op: ann::AnnOp) {
+        self.ops.push(op);
+        if self.ops.len() >= ann::ANN_PENDING_FLUSH_LIMIT {
+            self.flush();
+        }
+    }
+
+    /// Apply the buffered ops to the on-disk index (best-effort; an unusable index
+    /// is wiped for rebuild). Clears the dirty marker via `ann::flush_ops`.
+    fn flush(&mut self) {
+        let ops = std::mem::take(&mut self.ops);
+        let space = ann::AnnSpace::Clip;
+        let outcome = ann::flush_ops(&self.db_path, space, space.current_model_id(), ops);
+        log::debug!(target: "media_index", "ann flush for {}: {outcome:?}", self.db_path.display());
+        self.dirty_marked = false;
+    }
+
+    /// The volume's ANN index files are being deleted wholesale (purge /
+    /// delete-CLIP-model): drop the buffered ops with them.
+    fn clear_after_delete(&mut self) {
+        self.ops.clear();
+        self.dirty_marked = false;
+    }
+}
+
 /// The writer thread's main loop: own the write connection, apply each message
 /// under a transaction, exit on `Shutdown` or when the channel closes.
 ///
-/// The loop is the ONE mutator of both `media.db` and this volume's `accounted`
-/// aggregate: it SEEDS the aggregate from the existing rows before processing any write
-/// (so every delta composes onto a correct baseline), then increments on a genuinely-new
-/// `done`/`failed` insert and decrements on each deleted row.
-fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>, volume_id: String) {
+/// The loop is the ONE mutator of `media.db`, this volume's `accounted` aggregate,
+/// AND the volume's ANN index deltas (plan M6): it SEEDS the aggregate from the
+/// existing rows before processing any write (so every delta composes onto a correct
+/// baseline), increments on a genuinely-new `done`/`failed` insert and decrements on
+/// each deleted row, and buffers an ANN op per CLIP write/delete
+/// ([`AnnPending`]).
+fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>, volume_id: String, db_path: PathBuf) {
+    // A dirty marker from a previous session means that session crashed with
+    // unflushed ANN ops, so the on-disk index silently lags the DB: wipe it (the
+    // next query rebuilds from the DB, the truth). Before any write.
+    ann::wipe_if_crashed(&db_path, ann::AnnSpace::Clip);
     // Seed BEFORE the first write (§ accounted): if a row is ever committed, the seed
     // already ran, so a concurrent command-side seed can never race a delta.
     coverage::seed_accounted_from_conn(&volume_id, &conn);
+    let mut ann_pending = AnnPending::new(db_path);
     while let Ok(msg) = receiver.recv() {
         match msg {
             WriteMessage::Upsert { row, analysis } => {
@@ -345,36 +429,58 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>, vol
                 clip_stamp,
                 embedding,
             } => {
-                if let Err(e) = apply_upsert_clip(&mut conn, &path, &clip_stamp, embedding.as_deref()) {
-                    log::warn!(target: "media_index", "clip upsert failed for '{path}': {e}");
+                // Dirty BEFORE the commit (see `AnnPending::mark_dirty`).
+                ann_pending.mark_dirty();
+                match apply_upsert_clip(&mut conn, &path, &clip_stamp, embedding.as_deref()) {
+                    Ok(ClipWrite::Stored { file_id }) => {
+                        if let Some(vector) = embedding {
+                            ann_pending.push(ann::AnnOp::Upsert {
+                                key: file_id as u64,
+                                vector,
+                            });
+                        }
+                    }
+                    Ok(ClipWrite::Cleared { file_id }) => {
+                        ann_pending.push(ann::AnnOp::Remove { key: file_id as u64 });
+                    }
+                    Ok(ClipWrite::NoRow) => {}
+                    Err(e) => log::warn!(target: "media_index", "clip upsert failed for '{path}': {e}"),
                 }
             }
-            WriteMessage::GcPaths { paths } => match apply_gc(&mut conn, &paths) {
-                Ok(deleted) => decrement_accounted(&volume_id, &deleted),
-                Err(e) => log::warn!(target: "media_index", "gc failed ({} paths): {e}", paths.len()),
-            },
+            WriteMessage::GcPaths { paths } => {
+                ann_pending.mark_dirty();
+                match apply_gc(&mut conn, &paths) {
+                    Ok(deleted) => note_deleted(&volume_id, &mut ann_pending, &deleted),
+                    Err(e) => log::warn!(target: "media_index", "gc failed ({} paths): {e}", paths.len()),
+                }
+            }
             // ❌ Decrement BEFORE signalling `done`, here and in `PrunePrefix`. These are
             // the BLOCKING prunes, and a caller that blocked on a delete reads the
             // aggregate next (reclaim, the coverage badges). Sending first races that
             // read — a race macOS usually wins and Linux usually loses, so it surfaces as
             // a flaky test rather than the stale folder count it is.
             WriteMessage::PrunePaths { paths, done } => {
+                ann_pending.mark_dirty();
                 let deleted = apply_prune_paths(&mut conn, &paths).unwrap_or_else(|e| {
                     log::warn!(target: "media_index", "prune ({} paths) failed: {e}", paths.len());
                     Vec::new()
                 });
-                decrement_accounted(&volume_id, &deleted);
+                note_deleted(&volume_id, &mut ann_pending, &deleted);
                 let _ = done.send(deleted.len());
             }
             WriteMessage::PrunePrefix { prefix, done } => {
+                ann_pending.mark_dirty();
                 let deleted = apply_prune_prefix(&mut conn, &prefix).unwrap_or_else(|e| {
                     log::warn!(target: "media_index", "prune under '{prefix}' failed: {e}");
                     Vec::new()
                 });
-                decrement_accounted(&volume_id, &deleted);
+                note_deleted(&volume_id, &mut ann_pending, &deleted);
                 let _ = done.send(deleted.len());
             }
             WriteMessage::Rename { old, new, done } => {
+                // Deliberately NO ANN op: the index keys on the `media_file` id, which a
+                // rename leaves unchanged (plan M4/M6) — hits resolve ids back to the
+                // CURRENT path at query time.
                 let moved = apply_rename(&mut conn, &old, &new).unwrap_or_else(|e| {
                     log::warn!(target: "media_index", "rename '{old}' -> '{new}' failed: {e}");
                     false
@@ -392,10 +498,15 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>, vol
             WriteMessage::PruneAllClip { done } => {
                 // CLIP embeddings aren't part of the accounted aggregate (that counts
                 // `media_status` rows, which this leaves intact), so no delta here.
+                ann_pending.mark_dirty();
                 let removed = apply_prune_all_clip(&mut conn).unwrap_or_else(|e| {
                     log::warn!(target: "media_index", "prune-all-clip failed: {e}");
                     0
                 });
+                // Every CLIP vector is gone, so the whole CLIP index goes with the rows
+                // (incl. the dirty marker); pending clip ops are moot.
+                ann::delete_index_files(&ann_pending.db_path, ann::AnnSpace::Clip);
+                ann_pending.clear_after_delete();
                 let _ = done.send(removed);
             }
             WriteMessage::Vacuum { done } => {
@@ -404,10 +515,22 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>, vol
                 }
                 let _ = done.send(());
             }
-            WriteMessage::PurgeVolume => match apply_purge(&conn) {
-                Ok(()) => coverage::accounted_reset(&volume_id),
-                Err(e) => log::warn!(target: "media_index", "purge_volume failed: {e}"),
-            },
+            WriteMessage::PurgeVolume => {
+                ann_pending.mark_dirty();
+                match apply_purge(&conn) {
+                    Ok(()) => {
+                        coverage::accounted_reset(&volume_id);
+                        // All rows are gone; the derivative index goes with them.
+                        ann::delete_index_files(&ann_pending.db_path, ann::AnnSpace::Clip);
+                        ann_pending.clear_after_delete();
+                    }
+                    Err(e) => log::warn!(target: "media_index", "purge_volume failed: {e}"),
+                }
+            }
+            WriteMessage::FlushAnn(done) => {
+                ann_pending.flush();
+                let _ = done.send(());
+            }
             WriteMessage::Flush(done) => {
                 let _ = done.send(());
             }
@@ -417,6 +540,21 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>, vol
             }
             WriteMessage::Shutdown => break,
         }
+    }
+    // Land any straggler ANN ops before the thread dies (a clean shutdown must not
+    // look like a crash to the next session's dirty-marker check).
+    ann_pending.flush();
+}
+
+/// The deletion bookkeeping GC and both prunes share: decrement the accounted
+/// aggregate per removed row, and buffer an ANN remove per id (an absent key is a
+/// no-op at flush, so rows without a CLIP vector cost nothing).
+fn note_deleted(volume_id: &str, ann_pending: &mut AnnPending, deleted: &[DeletedRow]) {
+    for row in deleted {
+        coverage::accounted_dec(volume_id, parent_dir(&row.path));
+        ann_pending.push(ann::AnnOp::Remove {
+            key: row.file_id as u64,
+        });
     }
 }
 
@@ -525,6 +663,17 @@ fn lookup_file_id(conn: &Connection, path: &str) -> Result<Option<i64>, MediaSto
     }
 }
 
+/// What a CLIP upsert did — the writer buffers the matching ANN op off this (plan M6).
+enum ClipWrite {
+    /// The embedding row was replaced with a fresh vector (ANN: upsert the key).
+    Stored { file_id: i64 },
+    /// The row was stamped but the embedding cleared — a CLIP failure/skip (ANN:
+    /// remove the key so a ghost vector can't linger).
+    Cleared { file_id: i64 },
+    /// No `media_status` row for the path; nothing was written.
+    NoRow,
+}
+
 /// Stamp `path`'s `media_status.clip_stamp` and replace its `media_clip_embedding` in one
 /// transaction, touching NO Vision column or table. If no `media_status` row exists (CLIP
 /// only runs when Vision is current, so this shouldn't happen) the embedding write is
@@ -534,8 +683,9 @@ fn apply_upsert_clip(
     path: &str,
     clip_stamp: &str,
     embedding: Option<&[f32]>,
-) -> Result<(), MediaStoreError> {
+) -> Result<ClipWrite, MediaStoreError> {
     let tx = conn.transaction()?;
+    let mut write = ClipWrite::NoRow;
     {
         // CLIP is eligible only for a path Vision already covered, so its `media_file` +
         // `media_status` rows exist. A missing row (shouldn't happen) skips the write
@@ -549,6 +699,7 @@ fn apply_upsert_clip(
                 "DELETE FROM media_clip_embedding WHERE file_id = ?1",
                 rusqlite::params![file_id],
             )?;
+            write = ClipWrite::Cleared { file_id };
             if updated > 0
                 && let Some(vector) = embedding
             {
@@ -556,33 +707,41 @@ fn apply_upsert_clip(
                     "INSERT INTO media_clip_embedding (file_id, dims, vector) VALUES (?1, ?2, ?3)",
                     rusqlite::params![file_id, vector.len() as i64, encode_embedding(vector)],
                 )?;
+                write = ClipWrite::Stored { file_id };
             }
         }
     }
     tx.commit()?;
-    Ok(())
+    Ok(write)
+}
+
+/// One row a delete actually removed: its path (the accounted decrement) and its
+/// `media_file` id (the ANN index key to remove — plan M6).
+struct DeletedRow {
+    path: String,
+    file_id: i64,
 }
 
 /// Delete the status + text + tag + embedding + clip-embedding rows for each path in one
-/// transaction. Returns the paths whose `media_status` row actually existed and was
+/// transaction. Returns the rows whose `media_status` row actually existed and was
 /// deleted, so the caller decrements the accounted aggregate once per genuinely-removed
-/// row (a GC of a path with no row moves nothing).
-fn apply_gc(conn: &mut Connection, paths: &[String]) -> Result<Vec<String>, MediaStoreError> {
+/// row (a GC of a path with no row moves nothing) and removes the matching ANN keys.
+fn apply_gc(conn: &mut Connection, paths: &[String]) -> Result<Vec<DeletedRow>, MediaStoreError> {
     delete_rows_for_paths(conn, paths)
 }
 
 /// Prune the four tables for an explicit path list in one transaction (the same delete
-/// primitive GC uses, reused for the user-explicit prune). Returns the paths whose
-/// `media_status` row was actually removed, so the count matches the images the user
-/// removed and the caller can decrement the accounted aggregate per removed row.
-fn apply_prune_paths(conn: &mut Connection, paths: &[String]) -> Result<Vec<String>, MediaStoreError> {
+/// primitive GC uses, reused for the user-explicit prune). Returns the rows actually
+/// removed, so the count matches the images the user removed and the caller can
+/// decrement the accounted aggregate (and the ANN keys) per removed row.
+fn apply_prune_paths(conn: &mut Connection, paths: &[String]) -> Result<Vec<DeletedRow>, MediaStoreError> {
     delete_rows_for_paths(conn, paths)
 }
 
-/// Delete every table's rows for each path in one transaction, returning the paths whose
+/// Delete every table's rows for each path in one transaction, returning the rows whose
 /// `media_status` row existed (so `delete_status.execute` reported a removal). Shared by
 /// GC and the explicit prune so both report the SAME "rows that actually left" set.
-fn delete_rows_for_paths(conn: &mut Connection, paths: &[String]) -> Result<Vec<String>, MediaStoreError> {
+fn delete_rows_for_paths(conn: &mut Connection, paths: &[String]) -> Result<Vec<DeletedRow>, MediaStoreError> {
     let tx = conn.transaction()?;
     let mut deleted = Vec::new();
     {
@@ -609,7 +768,10 @@ fn delete_rows_for_paths(conn: &mut Connection, paths: &[String]) -> Result<Vec<
             del_emb.execute(rusqlite::params![file_id])?;
             del_clip.execute(rusqlite::params![file_id])?;
             del_file.execute(rusqlite::params![file_id])?;
-            deleted.push(path.clone());
+            deleted.push(DeletedRow {
+                path: path.clone(),
+                file_id,
+            });
         }
     }
     tx.commit()?;
@@ -623,7 +785,7 @@ fn delete_rows_for_paths(conn: &mut Connection, paths: &[String]) -> Result<Vec<
 /// deleted via [`apply_prune_paths`]. An empty `prefix` matches every path (the whole
 /// volume — the user excluded the mount root). Returns the paths actually removed (for
 /// the accounted decrement + the delete count).
-fn apply_prune_prefix(conn: &mut Connection, prefix: &str) -> Result<Vec<String>, MediaStoreError> {
+fn apply_prune_prefix(conn: &mut Connection, prefix: &str) -> Result<Vec<DeletedRow>, MediaStoreError> {
     let doomed: Vec<String> = {
         let mut stmt = conn.prepare_cached("SELECT path FROM media_file")?;
         let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
@@ -688,14 +850,6 @@ fn apply_purge(conn: &Connection) -> Result<(), MediaStoreError> {
         "DELETE FROM media_status; DELETE FROM media_ocr; DELETE FROM media_tags; DELETE FROM media_embedding; DELETE FROM media_clip_embedding; DELETE FROM media_file;",
     )?;
     Ok(())
-}
-
-/// Decrement the accounted aggregate once per deleted path, bucketed by parent dir — the
-/// shared bookkeeping the GC and both prune paths run after committing their deletes.
-fn decrement_accounted(volume_id: &str, deleted: &[String]) {
-    for path in deleted {
-        coverage::accounted_dec(volume_id, parent_dir(path));
-    }
 }
 
 /// TRUNCATE the WAL file so its high-water mark doesn't sit on disk. Mirrors

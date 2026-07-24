@@ -17,8 +17,12 @@
 
 use std::path::PathBuf;
 
-use super::store::{MediaStoreError, media_db_path, open_read_connection, read_embedding_for, read_tag_matches};
-use super::vector::{DedupCluster, SimilarImage, VectorStore, cache};
+use super::ann;
+use super::store::{
+    EmbeddingTable, MediaStoreError, media_db_path, open_read_connection, read_embedding_for, read_embeddings_for_ids,
+    read_tag_matches,
+};
+use super::vector::{DedupCluster, SimilarImage, VectorStore, cache, cosine_f16};
 
 /// One OCR search hit: the matched image's path and a highlighted snippet of the
 /// matched text (the "why matched" reason the results grid shows). Crosses the IPC
@@ -172,12 +176,49 @@ impl MediaIndex {
 
     /// The `k` images whose CLIP embeddings are closest (by cosine) to an
     /// already-encoded `query` text vector — natural-language text→image search (plan
-    /// M3). Brute-force ranks over the volume's resident CLIP cache (loaded once, kept
-    /// warm — plan § Query-time vector residency); the query text is tokenized +
-    /// text-encoded by the command layer (the warm CLIP text tower), which keeps this
-    /// method a pure vector query testable with deterministic vectors. Empty when the
-    /// volume has no CLIP embeddings (no model installed, un-enriched, or offline).
+    /// M3). The query text is tokenized + text-encoded by the command layer (the warm
+    /// CLIP text tower), which keeps this method a pure vector query testable with
+    /// deterministic vectors. Empty when the volume has no CLIP embeddings (no model
+    /// installed, un-enriched, or offline).
+    ///
+    /// Below [`ann::ANN_MIN_VECTORS`] stored vectors this is the exact brute-force
+    /// scan over the resident CLIP cache; at or above it, the per-volume usearch
+    /// index answers (mmap view, over-fetch + exact re-rank — plan M6), and any
+    /// unusable index falls back to the exact scan while a background rebuild heals
+    /// it. Callers never see the difference except in latency.
     pub fn search_semantic(&self, query: &[f32], k: usize) -> Vec<SemanticHit> {
+        self.search_semantic_with_threshold(query, k, ann::ANN_MIN_VECTORS)
+    }
+
+    /// [`Self::search_semantic`] with an explicit ANN threshold (tests exercise the
+    /// ANN route with small corpora; production always passes
+    /// [`ann::ANN_MIN_VECTORS`]).
+    pub(crate) fn search_semantic_with_threshold(&self, query: &[f32], k: usize, threshold: usize) -> Vec<SemanticHit> {
+        if k == 0 || query.is_empty() {
+            return Vec::new();
+        }
+        let space = ann::AnnSpace::Clip;
+        if let ann::cache::Route::Ann(handle) =
+            ann::cache::route(&self.db_path, space, threshold, space.current_model_id())
+        {
+            match self.search_semantic_ann(&handle, query, k) {
+                Ok(hits) => return hits,
+                Err(e) => {
+                    // A query-time engine failure demotes to the exact scan; the next
+                    // route decision (post-invalidate) re-checks the index's health.
+                    log::warn!(
+                        target: "media_index",
+                        "ann semantic search failed for {} ({e}); brute-force fallback",
+                        self.db_path.display()
+                    );
+                }
+            }
+        }
+        self.search_semantic_brute_force(query, k)
+    }
+
+    /// The exact path: brute-force cosine over the resident CLIP cache.
+    fn search_semantic_brute_force(&self, query: &[f32], k: usize) -> Vec<SemanticHit> {
         cache::get_or_load_clip(&self.db_path)
             .top_k(query, k, None)
             .into_iter()
@@ -186,6 +227,51 @@ impl MediaIndex {
                 score: hit.score,
             })
             .collect()
+    }
+
+    /// The ANN path (plan M6): over-fetch `k ×` [`ann::ANN_OVERFETCH_FACTOR`]
+    /// approximate candidates from the HNSW view, then re-rank them EXACTLY — read
+    /// each candidate's stored f16 vector and CURRENT path from the DB and score
+    /// with the same `cosine_f16` the brute-force scan uses — and return the top
+    /// `k`. The exact re-rank keeps result ORDERING at brute-force quality even
+    /// when HNSW recall dips, and the DB join both follows renames and drops ghost
+    /// keys (a candidate whose row is gone yields no row and falls out).
+    fn search_semantic_ann(
+        &self,
+        handle: &ann::cache::AnnHandle,
+        query: &[f32],
+        k: usize,
+    ) -> Result<Vec<SemanticHit>, MediaStoreError> {
+        if query.len() != handle.dims {
+            // A query from a different embedding world (model transition edge); the
+            // exact scan degrades gracefully (length-mismatched vectors score 0).
+            return Err(MediaStoreError::Io(std::io::Error::other("ann query dims mismatch")));
+        }
+        let fetch = k.saturating_mul(ann::ANN_OVERFETCH_FACTOR).max(k);
+        let matches = handle
+            .index
+            .search(query, fetch)
+            .map_err(|e| MediaStoreError::Io(std::io::Error::other(e.to_string())))?;
+        if matches.keys.is_empty() {
+            return Ok(Vec::new());
+        }
+        let conn = open_read_connection(&self.db_path)?;
+        let candidates = read_embeddings_for_ids(&conn, EmbeddingTable::Clip, &matches.keys)?;
+        let mut hits: Vec<SemanticHit> = candidates
+            .into_iter()
+            .map(|(path, vector)| SemanticHit {
+                score: cosine_f16(query, &vector),
+                path,
+            })
+            .collect();
+        hits.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+                .then_with(|| a.path.cmp(&b.path))
+        });
+        hits.truncate(k);
+        Ok(hits)
     }
 
     /// The stored image facts for paths the caller ALREADY has — the lookup direction,

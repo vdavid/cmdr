@@ -1192,9 +1192,9 @@ memory watchdog with the feature-print cache). The read API takes the already-en
 query testable with deterministic vectors; the command owns the encode. `[]` (never an error) when indexing is off, no
 model is installed, or the volume has no CLIP embeddings — so the UI voices coverage. Answers offline from `media.db`.
 
-**Latency:** the text tower is kept warm (a cold Core ML load is 1–2 s; a warm encode ~2 ms — spike numbers); brute-force
-top-k over a single user's library is low-ms. Measure on a real corpus and record in `docs/notes/` before adopting
-`sqlite-vec` (the deferred decision rule stands: >~100k vectors AND over budget; it's a signing project, not a flag).
+**Latency:** the text tower is kept warm (a cold Core ML load is 1–2 s; a warm encode ~2 ms — spike numbers); the vector
+top-k is brute force below ~50k stored vectors and the per-volume ANN index at or above it (§ ANN vector search — the
+engine decision went to `usearch` by a measured spike; `sqlite-vec` was disqualified as not actually ANN).
 
 ### Frontend
 
@@ -1207,6 +1207,74 @@ top-k over a single user's library is low-ms. Measure on a real corpus and recor
   (`is_local_ai_supported`), shows install state + a "Download model (~X MB)" button (honest size from
   `media_index_clip_model_status`), and downloads/installs via `media_index_download_clip_model`, which kicks a pass so
   already-enriched images gain CLIP embeddings (like a threshold decrease). "Coming soon" until the artifact is published.
+
+## ANN vector search (`ann/`, plan M6)
+
+CLIP text→image search over a per-volume `usearch` HNSW index, so semantic search stays low-ms as a corpus scales past
+what the exact resident-f16 scan can serve. Engine chosen by a measured spike
+(`docs/notes/ann-vector-search-spike-2026-07-24.md`): at 200k vectors usearch answers in 0.30 ms p50 at 0.994 recall@10
+from an mmap-backed view, where `sqlite-vec` 0.1.9 turned out to be an exact linear scan (141 ms p50, not ANN at all).
+Files: `media-{id}.clip.usearch` beside the media DB, plus a JSON sidecar (`….usearch.meta`: format version, model id,
+dims, rows, SHA-256 of the index file) and a transient dirty marker (`….usearch.dirty`). The module is
+dimension-generic: `AnnSpace` names the space (table + file suffix + model identity), so the 768-d Vision feature print
+(similar-images/dedup) adopts ANN later by adding a variant — deliberately NOT wired now.
+
+**Decision: the writer thread owns incremental index mutations (single-writer discipline).** The `MediaWriter` loop
+buffers an `AnnOp` (upsert/remove, keyed by the `media_file` id as `u64`) beside every CLIP write/delete it commits, and
+lands the batch via `flush_ann_index()` at exactly the seams that invalidate the resident vector cache (local/network
+pass completion, live tick, reclaim prune, retro-delete), plus an in-writer auto-flush at 8,192 pending ops. usearch has
+no in-place file mutation, so a flush loads the index to the heap, applies the ops in order (an upsert removes the key
+first, so re-embeds overwrite), and saves temp+rename — a live mmap view keeps the old inode, and a crash never leaves a
+torn file. The one writer-external mutator is the background rebuild, and its install serializes with flushes on a
+per-file mutex (`ann::file_lock`); ops buffered while a rebuild snapshot was building re-apply idempotently on top of
+it. Accepted cost: a flush's load+save is linear in index size (~235 MB of I/O and transient heap at 200k), paid once
+per pass seam, not per image.
+
+**Decision: crash detection is a dirty marker, not a row-count compare.** The writer creates the marker BEFORE the first
+buffered op's DB write commits and the flush removes it after a successful save, so a session that dies with unflushed
+ops leaves it behind and the next writer spawn wipes the index (the next query rebuilds from the DB, the truth). A
+count-compare at query time would misread normal mid-pass write lag as corruption and rebuild-storm during enrichment.
+Until the wipe, a lagging index only under-returns (missing newest vectors); it can never return wrong paths, because
+hits resolve ids through the DB (below).
+
+**Decision: verify a SHA-256 of the index file before EVERY load/view.** usearch trusts the bytes it maps: viewing a
+garbage file SIGSEGVs (observed in tests), so corruption cannot be caught at open time by the engine itself. The sidecar
+carries the checksum from the last save; a mismatch fails closed (`AnnError::Corrupt` → exact-scan fallback + background
+rebuild). Cost: one streamed hash per open/flush (~0.1 s per GB), paid at pass seams, not per query.
+
+**Decision: brute force below `ANN_MIN_VECTORS` = 50,000 vectors.** Below it the exact scan is ≤ ~19 ms from a ≤ ~50 MB
+resident cache (74 ms/205 MB measured at 200k, linear) — exact, with no index file to build, maintain, or store. At/above
+it, latency and RAM grow linearly while HNSW stays sub-ms over an evictable mmap. No index file is ever created below
+the threshold (a flush with no index drops its ops); crossing it makes the first query kick the rebuild.
+
+**Decision: over-fetch 4× + exact re-rank, so ORDERING stays exact-quality.** The ANN route fetches `k × 4` candidates,
+reads each candidate's stored f16 vector and CURRENT path from the DB, re-scores with the same `cosine_f16` the exact
+scan uses, and returns the top `k`. HNSW recall dips as corpora grow (0.895–0.982 at 1M depending on `expansion_search`
+— spike); re-ranking the over-fetched set exactly restores exact ordering for the k callers see, and the DB join both
+follows renames (keys are stable `media_file` ids — a rename needs NO index touch, pinned by
+`a_rename_touches_neither_the_index_nor_the_dirty_marker_and_hits_follow`) and silently drops ghost keys (a key whose
+row is gone yields nothing). Measured on the real corpora below: the re-rank's read-and-rescore adds well under a
+millisecond at k = 10.
+
+**Rebuild** (`ann/rebuild.rs`): background thread, single-flight per index file, streams `(file_id, f16)` rows from the
+DB (no whole-corpus `Vec`), single-threaded on purpose (spike: 71 s per 200k; usearch `add` is thread-safe, so a
+parallel build is a future lever), polls the memory watchdog's cancel every 1,024 adds (deliberately NOT
+`gate::should_stop`: queries can't kick a rebuild while the master toggle is off, and the watchdog cancel is the
+"release resources now" signal that matters). Triggered by the query-side route whenever the index is missing, corrupt,
+or sidecar-incompatible; search answers exactly via the fallback until it lands. `expansion_search` scales stepwise with
+corpus size (`expansion_search_for`: 128 ≤ 300k, 256 ≤ 700k, 512 beyond — the spike's recall-vs-ef curve).
+
+**Versioning + lifecycle:** the sidecar pins `ANN_FORMAT_VERSION` and the space's model id (`CLIP_MODEL_ID`, no OS
+component — OS-drift re-embeds flow through writer upserts row by row), so a model bump or index-format change reads as
+`MetaIncompatible` and rebuilds. The index is versioned independently of `SCHEMA_VERSION`, and the disposable-cache
+paths all take it along: `MediaStore::delete_and_recreate` (schema wipe), `PruneAllClip` (delete model), `PurgeVolume`,
+and the crashed-session wipe. `ann::cache` holds the query-side route + warm view per volume, invalidated through
+`vector::cache::invalidate` — the ONE choke point for "this volume's derived query caches changed" — and dropped by the
+memory-watchdog stop hook with the resident caches.
+
+**Measured on real embeddings (M6 verification, 2026-07-24, M3 Max):** see the harness
+(`ann/tests.rs::real_corpus_recall_and_latency`, run against copies of the real `media.db`s) — recall@10 and
+before/after latency numbers are recorded in the plan's M6 status (`docs/specs/resource-use-plan.md`).
 
 ## What's left for later
 

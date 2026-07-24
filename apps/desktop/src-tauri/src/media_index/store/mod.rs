@@ -340,6 +340,10 @@ impl MediaStore {
                 let _ = std::fs::remove_file(&sidecar);
             }
         }
+        // The ANN index is a derivative of this DB's rows, so a schema wipe takes it
+        // (and its sidecars) along — a fresh DB must never be searched through an
+        // index built from the old rows (plan M6).
+        super::ann::delete_index_files(db_path, super::ann::AnnSpace::Clip);
         let conn = open_write_connection(db_path)?;
         stamp_schema_version(&conn)?;
         Ok(Self {
@@ -535,6 +539,84 @@ pub(crate) fn read_all_embeddings_from(
         let (path, blob) = row?;
         if let Some(vector) = decode_embedding_f16(&blob) {
             out.push(EmbeddingRow { path, vector });
+        }
+    }
+    Ok(out)
+}
+
+/// Stream every stored embedding of one space as `(file_id, f16 vector)` — the ANN
+/// rebuild's source (plan M6: the index keys on the `media_file` integer ids). Streams
+/// row by row (no whole-corpus `Vec`); a row whose BLOB can't be decoded is skipped, not
+/// fatal. The callback's error type is generic so the ANN layer can thread its own
+/// error through.
+pub(crate) fn for_each_embedding_with_id<E: From<MediaStoreError>>(
+    conn: &Connection,
+    table: EmbeddingTable,
+    mut f: impl FnMut(i64, &[f16]) -> Result<(), E>,
+) -> Result<(), E> {
+    let mut stmt = conn
+        .prepare_cached(&format!("SELECT file_id, vector FROM {}", table.name()))
+        .map_err(MediaStoreError::from)?;
+    let rows = stmt
+        .query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, Vec<u8>>(1)?)))
+        .map_err(MediaStoreError::from)?;
+    for row in rows {
+        let (file_id, blob) = row.map_err(MediaStoreError::from)?;
+        if let Some(vector) = decode_embedding_f16(&blob) {
+            f(file_id, &vector)?;
+        }
+    }
+    Ok(())
+}
+
+/// The number of stored embeddings in one space, read on an existing connection
+/// (the ANN rebuild's `reserve` size).
+pub(crate) fn embedding_count_on(conn: &Connection, table: EmbeddingTable) -> Result<u64, MediaStoreError> {
+    let count: i64 = conn.query_row(&format!("SELECT COUNT(*) FROM {}", table.name()), [], |row| row.get(0))?;
+    Ok(count.max(0) as u64)
+}
+
+/// The number of stored embeddings in one space, by DB path — the ANN route's
+/// corpus-size input. `0` for a missing/unreadable DB (the offline / never-enriched
+/// case routes to brute force, which answers empty).
+pub(crate) fn embedding_count(db_path: &Path, table: EmbeddingTable) -> u64 {
+    if !db_path.exists() {
+        return 0;
+    }
+    open_read_connection(db_path)
+        .and_then(|conn| embedding_count_on(&conn, table))
+        .unwrap_or_else(|e| {
+            log::warn!(target: "media_index", "embedding count failed for {}: {e}", db_path.display());
+            0
+        })
+}
+
+/// The current `(path, f16 vector)` for each requested `media_file` id in one space —
+/// the ANN re-rank's exact-score source. Chunked at [`u64`] ids ≤ 900 per `IN (…)`
+/// (SQLite's host-parameter ceiling). An id with no row (a ghost key whose file was
+/// GC'd after the index last saved) simply yields nothing, which is what silently
+/// drops ghosts from ANN results; the path is the CURRENT `media_file.path`, so hits
+/// follow renames.
+pub(crate) fn read_embeddings_for_ids(
+    conn: &Connection,
+    table: EmbeddingTable,
+    ids: &[u64],
+) -> Result<Vec<(String, Vec<f16>)>, MediaStoreError> {
+    let mut out = Vec::with_capacity(ids.len());
+    for chunk in ids.chunks(900) {
+        let placeholders = std::iter::repeat_n("?", chunk.len()).collect::<Vec<_>>().join(",");
+        let mut stmt = conn.prepare(&format!(
+            "SELECT f.path, e.vector FROM {} e JOIN media_file f ON f.id = e.file_id
+             WHERE e.file_id IN ({placeholders})",
+            table.name()
+        ))?;
+        let params = rusqlite::params_from_iter(chunk.iter().map(|id| *id as i64));
+        let rows = stmt.query_map(params, |row| Ok((row.get::<_, String>(0)?, row.get::<_, Vec<u8>>(1)?)))?;
+        for row in rows {
+            let (path, blob) = row?;
+            if let Some(vector) = decode_embedding_f16(&blob) {
+                out.push((path, vector));
+            }
         }
     }
     Ok(out)

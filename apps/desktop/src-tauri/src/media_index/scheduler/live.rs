@@ -205,6 +205,9 @@ impl MediaScheduler {
         });
 
         if summary.enriched > 0 || summary.gc_count > 0 {
+            // Land the tick's buffered ANN ops before invalidating (plan M6; as the
+            // full pass does). Best-effort.
+            let _ = writer.flush_ann_index();
             // The volume's embeddings changed; drop the resident vector cache so the next
             // find-similar / dedup reloads (as the full pass does).
             super::super::vector::cache::invalidate(&super::super::store::media_db_path(&self.data_dir, volume_id));

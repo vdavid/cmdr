@@ -243,7 +243,9 @@ impl MediaScheduler {
         let deleted = writer.prune_paths(coverage.doomed_paths).unwrap_or(0);
         if deleted > 0 {
             // Reclaim the pages, then drop the derived caches so a later search / slider
-            // preview rebuilds honestly.
+            // preview rebuilds honestly. The ANN flush lands the buffered key removals
+            // first, so pruned images stop being ANN-reachable too (plan M6).
+            let _ = writer.flush_ann_index();
             let _ = writer.vacuum();
             vector::cache::invalidate(&db_path);
             coverage::invalidate(volume_id);

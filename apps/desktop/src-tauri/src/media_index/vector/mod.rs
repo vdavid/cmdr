@@ -76,7 +76,7 @@ pub fn cosine(a: &[f32], b: &[f32]) -> f32 {
 /// cache allocates nothing. Same degenerate-input guards as [`cosine`]. The scan is
 /// memory-bandwidth-bound, and `f16` entries are half the bytes, so this keeps (or improves)
 /// query latency while halving the resident cache's RAM.
-fn cosine_f16(query: &[f32], stored: &[f16]) -> f32 {
+pub(crate) fn cosine_f16(query: &[f32], stored: &[f16]) -> f32 {
     if query.len() != stored.len() || query.is_empty() {
         return 0.0;
     }
