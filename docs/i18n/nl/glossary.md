@@ -850,7 +850,7 @@ REVIEW FLAGS (bulk-rename / image-index quality pass):
 - `askCmdr.renameReview.title` "Review file renames" → `Naamwijzigingen beoordelen` (drops the explicit "file", which
   the modal context supplies). Subjective.
 
-From the image-index-indicators pass (11 `fileExplorer.imageIndex.*` + 2 `settings.mediaIndex.showFileStatusIcons.*`;
+For the image-search index status badges (11 `fileExplorer.imageIndex.*` + 2 `settings.mediaIndex.showFileStatusIcons.*`;
 mined `_ignored/i18n/nl/`, 2026-07-22):
 
 - badge / status badge (small overlay marker on a file/folder icon showing image-index state) → `markering` /
@@ -876,7 +876,7 @@ mined `_ignored/i18n/nl/`, 2026-07-22):
   badge…"→"Voeg … een kleine markering toe …" · high
 - No `sameAsSourceJustification` needed: all 13 values differ from English.
 
-REVIEW FLAGS (image-index-indicators pass):
+REVIEW FLAGS (image-search index status badges):
 
 - **badge → `markering`/`statusmarkering`**: no Tier-1 Apple term for an icon-overlay status marker exists in the pile
   (macOS has no "insigne" hit; the `BADGE_AX_LABEL` string is the app-icon count badge, a different object). Grounded on

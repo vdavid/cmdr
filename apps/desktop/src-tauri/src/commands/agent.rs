@@ -1,4 +1,4 @@
-//! IPC commands for Ask Cmdr, the read-only chat rail (spec `docs/specs/ask-cmdr-spec.md`).
+//! IPC commands for Ask Cmdr, the read-only chat rail.
 //! Thin pass-throughs: the runtime, store, and context assembly all live in
 //! [`crate::agent`]; these commands only bridge the frontend to them.
 //!

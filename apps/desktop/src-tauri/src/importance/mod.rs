@@ -4,7 +4,7 @@
 //!
 //! M1 ships the pure heart of it: the [`scorer`] (values-in / score-out, no I/O)
 //! and its tunable [`Weights`]. Storage, the lifecycle bus, the scheduler, and the
-//! read API land in later milestones (see `docs/specs/importance-subsystem-plan.md`).
+//! read API land in later milestones (see `docs/specs/later/importance-subsystem-plan.md`).
 //!
 //! Read [`DETAILS.md`](DETAILS.md) before working here: the signal catalog, the
 //! formula shape, and the tunable-weights rationale.

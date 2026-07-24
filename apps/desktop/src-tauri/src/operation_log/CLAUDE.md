@@ -2,8 +2,7 @@
 
 The durable, cross-volume journal of every file mutation: the base for rollback, indexed name search, retention, and a
 future undo. **The app's first durable DB** (`operation-log.db` in the app data dir, Time Machine-backed) — every other
-on-disk store here is a disposable cache. Full design + rationale: `DETAILS.md`. Plan:
-`docs/specs/operation-log-plan.md`.
+on-disk store here is a disposable cache. Full design + rationale: `DETAILS.md`.
 
 MCP tools live in `mcp/executor/operation_log.rs`; the UI is frontend-only over the read API (Debug panel in
 `routes/debug/DebugOperationLogPanel.svelte`, alpha dialog in `src/lib/operation-log/` — `DETAILS.md` §

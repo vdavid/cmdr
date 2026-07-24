@@ -1,7 +1,6 @@
 # Agent subsystem
 
-The in-app AI agent. First user-facing slice is **Ask Cmdr**, a read-only chat rail (spec:
-`docs/specs/ask-cmdr-spec.md`, plan: `docs/specs/ask-cmdr-plan.md`). Named after the persistent
+The in-app AI agent. First user-facing slice is **Ask Cmdr**, a read-only chat rail. Named after the persistent
 entity, not the surface, so later proactive slices (proposals, notifications) grow here too.
 
 ## Module map

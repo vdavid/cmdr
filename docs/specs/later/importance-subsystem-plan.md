@@ -12,7 +12,7 @@ Several planned features need to know, cheaply and deterministically, **which fo
 - The in-app **agent** (`docs/specs/later/agent-spec.md`) gates LLM summarization on importance (§5.1, §5.2), scores
   event-bundle interest by it (§6.2), and feeds the weight to the LLM as a reasoning input (§5.1). Its decision D8 fixes
   "deterministic importance scorer, cached in the drive index."
-- The **media-ML enrichment scheduler** (`docs/specs/media-ml-index-plan.md`) wants to enrich important folders first
+- The **media-ML enrichment scheduler** (`docs/specs/later/media-ml-index-plan.md`) wants to enrich important folders first
   and gate expensive passes (its enrichment is opt-in, throttled, and should not spend the ANE on a `node_modules`).
 - Future expensive features generally (disk-cleanup advice, proactive summaries, prefetch) will want the same signal.
 
@@ -398,7 +398,7 @@ and `indexing/` C+D.md.
   slow, so the cap and sample strategy are guesses **still unmeasured** on a real home. Measure and record in
   `docs/notes/`; only local volumes sample (SMB has no Spotlight), so the cost is bounded to the boot disk.
 - **The visit signal's frontend wiring** (Decision 3): the navigation-commit call is expected thin, but the frontend
-  navigation path is non-trivial (see `location-type-nav-plan.md`'s map). If it balloons, the signal defers and the
+  navigation path is non-trivial. If it balloons, the signal defers and the
   scorer runs one term short — acceptable, flagged.
 - **Agent-spec D8 reconciliation** (Decision 2): this plan places weights in a separate `importance.db`, not an index
   column as D8 literally says. Intent-preserving, but the agent-spec author should confirm — flagged in the handoff.

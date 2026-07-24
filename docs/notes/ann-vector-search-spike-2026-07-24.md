@@ -1,11 +1,10 @@
 # ANN vector-search spike: sqlite-vec vs usearch (M6, 2026-07-24)
 
-Evidence behind the M6 recommendation in `../specs/resource-use-plan.md`. Empirical comparison of the two candidate
+Evidence behind the M6 ANN-engine recommendation. Empirical comparison of the two candidate
 vector-search engines on a synthetic CLIP-scale corpus, plus the brute-force f16 baseline that shows what ANN buys.
 
 **Recommendation: `usearch`.** At 200k vectors it answers in 0.30 ms (p50) at 0.994 recall@10, where `sqlite-vec` 0.1.9
-turns out not to be ANN at all (exact linear scan, 141 ms p50 at 200k, ~1.4 s extrapolated at 2M). Details below; the
-decision summary lives in the plan's M6 addendum.
+turns out not to be ANN at all (exact linear scan, 141 ms p50 at 200k, ~1.4 s extrapolated at 2M). Details below.
 
 ## Environment
 

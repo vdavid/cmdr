@@ -150,7 +150,7 @@ All under `apps/desktop/src-tauri/src/`.
   excluded) that recomputes on scan completion (full) and on live listing changes (incremental) — both driven by a
   neutral lifecycle bus in `indexing/` — and the consumable `ImportanceIndex` read API consumers reach it through
   (queryable even for an unmounted volume). See its `apps/desktop/src-tauri/src/importance/CLAUDE.md` and
-  `specs/importance-subsystem-plan.md`
+  `specs/later/importance-subsystem-plan.md`
 - `media_index/`: Image-ML enrichment — makes a volume's images searchable by their content (OCR text, Vision scene/
   object tags, image-similarity "find similar" via feature-print embeddings, and natural-language semantic search via an
   on-demand on-device CLIP model — `clip/`, macOS Core ML, a SEPARATE vector space with independent two-part staleness).
@@ -163,16 +163,16 @@ All under `apps/desktop/src-tauri/src/`.
   unmount). Enriches local volumes plus opt-in network (SMB) volumes conservatively (priority-gated via `priority/`,
   bandwidth-bounded byte-fetch through the app's own smb2 session for Direct volumes with an OS-mount fallback;
   disconnect pauses without losing coverage; MTP never background-sweeps). Off by default. See its
-  `apps/desktop/src-tauri/src/media_index/CLAUDE.md` and `specs/media-ml-index-plan.md`
+  `apps/desktop/src-tauri/src/media_index/CLAUDE.md` and `specs/later/media-ml-index-plan.md`
 - `operation_log/`: The durable, cross-volume journal of file mutations — the app's first durable DB
   (`operation-log.db`), the foundation for rollback, indexed name search, and a future undo. Single writer thread, a
   forward-migration ladder (not delete-and-recreate) and retention discipline, interned dir prefixes + per-item rows,
   app-side case folding with no collation (stays `sqlite3`-inspectable). See its
-  `apps/desktop/src-tauri/src/operation_log/CLAUDE.md` and `specs/operation-log-plan.md`
-- `agent/`: The in-app AI agent, whose first user-facing slice is "Ask Cmdr" (a read-only chat rail; plan:
-  `docs/specs/ask-cmdr-plan.md`). Its `agent/llm/` holds the provider-agnostic `AgentLlm` seam over the shipped `genai`
-  client, its deterministic fake, and the typed message-part model that keeps opaque provider reasoning state lossless.
-  See its `apps/desktop/src-tauri/src/agent/CLAUDE.md` and `specs/ask-cmdr-spec.md`
+  `apps/desktop/src-tauri/src/operation_log/CLAUDE.md`
+- `agent/`: The in-app AI agent, whose first user-facing slice is "Ask Cmdr" (a read-only chat rail). Its `agent/llm/`
+  holds the provider-agnostic `AgentLlm` seam over the shipped `genai` client, its deterministic fake, and the typed
+  message-part model that keeps opaque provider reasoning state lossless. See its
+  `apps/desktop/src-tauri/src/agent/CLAUDE.md`
 - `downloads/`: `notify`-based `~/Downloads` watcher, FDA-gated, browser-rename-aware filter, Cmdr-own-write ignore set
 - `search/`: In-memory search index (lazy load, rayon parallel scan, glob/regex) + AI query translation (`search/ai/`)
 - `selection/`: Selection dialog backend: recent-selections store + cloud AI translation (`selection/ai/`); the matcher

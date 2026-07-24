@@ -17,7 +17,7 @@ decision rationale): `DETAILS.md`.
 - **Never flatten a message to `content: String + reasoning: String`.** A turn is an ordered list of typed parts, and
   opaque reasoning state is **provider-tagged and rides on the part that owns it** (`ReasoningState` on the tool call,
   or a standalone `Reasoning` part). That lossy flat shape is exactly what breaks a multi-step tool loop on step 3
-  (spike Gaps A/B — `docs/specs/ask-cmdr-genai-spike.md`). The
+  (the genai reasoning-replay gaps). The
   `ReasoningState.blob` is opaque outside `genai_impl.rs`: persist and replay it untouched, never inspect or reshape it,
   and it NEVER crosses to the frontend.
 - **Reasoning is OFF on the Anthropic and OpenAI-Responses paths in v1.** genai drops their reasoning state on replay

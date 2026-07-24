@@ -1,7 +1,7 @@
 # Index DB freelist: reader-pinned incremental vacuum can't reclaim during a session
 
-Status: deferred. Captured from the index-disk-reclaim work (2026-06-28); see the shipped
-`local-reconcile-rescan-plan.md` for the two fixes that made this low-priority.
+Status: deferred. Captured from the index-disk-reclaim work (2026-06-28); two shipped fixes in the local
+reconcile/rescan work made this low-priority.
 
 ## The diagnosis
 

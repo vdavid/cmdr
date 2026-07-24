@@ -9,7 +9,7 @@
 //! A deliberate port of `importance/` (store, scheduler, read API); see
 //! [`CLAUDE.md`](CLAUDE.md) for the must-knows and [`DETAILS.md`](DETAILS.md) for the
 //! port rationale, the GC safety argument, and the schema. Full plan:
-//! `docs/specs/media-ml-index-plan.md`.
+//! `docs/specs/later/media-ml-index-plan.md`.
 
 pub(crate) mod ann;
 pub mod backend;

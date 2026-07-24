@@ -1,6 +1,6 @@
 # Ask Cmdr rail details
 
-Pull-tier docs for `lib/ask-cmdr/`. Must-knows live in `CLAUDE.md`. Plan: `docs/specs/ask-cmdr-plan.md`. Backend:
+Pull-tier docs for `lib/ask-cmdr/`. Must-knows live in `CLAUDE.md`. Backend:
 `apps/desktop/src-tauri/src/agent/CLAUDE.md` and `apps/desktop/src-tauri/src/commands/agent.rs`.
 
 ## The IPC surface

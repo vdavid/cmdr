@@ -113,8 +113,7 @@ the scheme + range support regardless, so one path (the token scheme for everyth
 `archive_extract.rs` lets the viewer preview a file addressed by an archive-inner path (`/…/foo.zip/inner.txt`). The
 viewer core is 100% `std::fs::File`-based (byte-seek, line-index, encoding, and the `cmdr-media://` handler all `File::open`
 a real path), so there's no `Volume` byte-source seam to thread through. Instead of that larger refactor, `open_session`
-extracts the addressed entry to a bounded temp and opens THAT — the deliberately simple bridge per
-`docs/specs/archive-browsing-m1b-derivation.md` lead decision 5.
+extracts the addressed entry to a bounded temp and opens THAT — the deliberately simple bridge.
 
 Flow (in `open_session_inner`, before the media/text split):
 

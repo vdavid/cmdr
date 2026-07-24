@@ -1,7 +1,7 @@
 # Swap-scan: replace the in-place reconcile rescan with a build-and-swap
 
 Status: plan, 2026-07-22. Local-disk only. Author-facing (AI agents). Read the two foundation notes first:
-`../notes/swap-scan-feasibility.md` (the read-only study and the traps) and `../notes/indexing-benchmarks-2026-07-21.md`
+`../../notes/swap-scan-feasibility.md` (the read-only study and the traps) and `../../notes/indexing-benchmarks-2026-07-21.md`
 § "Swap-scan re-measurement, 2026-07-22" (the justification). This plan names current post-reorg paths under
 `apps/desktop/src-tauri/src/indexing`.
 
@@ -314,7 +314,7 @@ that remain relevant, plus one new to the file variant:
   one complete index. This harness graduates into the M1/M3 test suite.
 
 Docs: capture spike results in a new `docs/notes/swap-scan-spikes-<date>.md`, linked from
-`../notes/swap-scan-feasibility.md`. Checks: none beyond the spike code compiling.
+`../../notes/swap-scan-feasibility.md`. Checks: none beyond the spike code compiling.
 
 ### M1. The swap file protocol and idempotent recovery (store layer)
 
@@ -365,7 +365,7 @@ correctly; (3) a cancelled swap-scan leaves the old index complete and queryable
 `get_status` / `get_debug_status`).
 
 Docs: `apps/desktop/src-tauri/src/indexing/lifecycle/DETAILS.md` (the swap sequence and the completion-handler wiring);
-a `Decision/Why` in `../notes/swap-scan-feasibility.md` is not needed (that's a research note), but add the decision
+a `Decision/Why` in `../../notes/swap-scan-feasibility.md` is not needed (that's a research note), but add the decision
 record to `indexing/DETAILS.md` (§ new "Swap-scan"). Checks: `pnpm check rust`, `--include-slow` for the integration
 tests, doc-graph.
 
@@ -391,7 +391,7 @@ field-measurement logging (swap wall time vs the stored reconcile baseline; a cr
 torn-index incidents). **Tests:** each abort path leaves no orphan file (assert via the recovery no-op); the kill-switch
 flips a live rescan back to reconcile.
 
-Docs: append a "Swap-scan, shipped" section to `../notes/indexing-benchmarks-2026-07-21.md` with the field numbers once
+Docs: append a "Swap-scan, shipped" section to `../../notes/indexing-benchmarks-2026-07-21.md` with the field numbers once
 measured; confirm the `indexing/DETAILS.md` decision record is complete; update this spec's status. Checks: full
 `pnpm check --include-slow`.
 

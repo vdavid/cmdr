@@ -1,6 +1,6 @@
 # M-append spike — findings & recommendation
 
-Research spike for Cmdr `docs/specs/archive-browsing-polish.md` §3 / `archive-browsing-plan.md` §M-append. All work in
+Research spike for Cmdr `docs/specs/later/archive-browsing-polish.md` §3. All work in
 this scratch crate; nothing written into the repo. Verified on macOS 15 (Darwin 25.5.0), Apple Silicon, APFS local disk,
 2026-07-09. Tools: Info-ZIP `unzip` 6.00, `ditto`, Archive Utility.app, 7-Zip `7z` 24.x (Homebrew), `jar` (JDK present),
 `qlmanage`, plus the Rust `zip` 8.6 and `rc-zip` 5.4.1 (Cmdr's own readers).

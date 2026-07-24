@@ -2,7 +2,7 @@
 
 Deterministic, cheap folder-importance scoring for expensive features (agent, media-ML, future cleanup/prefetch). A pure
 read-consumer of `indexing/`, sibling to `search/`. Design + depth for every must-know below: `DETAILS.md` and
-`docs/specs/importance-subsystem-plan.md`.
+`docs/specs/later/importance-subsystem-plan.md`.
 
 ## Module map
 

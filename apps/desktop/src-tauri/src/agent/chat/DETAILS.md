@@ -1,9 +1,6 @@
 # Agent chat details
 
-Pull-tier docs for `agent/chat/`. Must-knows live in `CLAUDE.md`. Plan:
-`docs/specs/ask-cmdr-plan.md` § M5, §9
-(envelope), §10 (constants). Spec: `docs/specs/ask-cmdr-spec.md`
-§5 (anatomy of one call), §2 (principles).
+Pull-tier docs for `agent/chat/`. Must-knows live in `CLAUDE.md`.
 
 ## Anatomy of one call (spec §5, as built)
 

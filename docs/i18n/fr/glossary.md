@@ -829,9 +829,9 @@ Phrasing notes for this pass:
   counts, no "erreur"/"échec" wording, and the calm close ("remettra tout d'aplomb" / "rien de grave donc") matches the
   reassuring register the `@key` description asks for.
 
-Settled during the `image-index-indicators` pass (2026-07-22, the per-file/folder/drive image-search index status badges
-in the file list: `fileExplorer.imageIndex.{file,folder,drive}.*`, `settings.mediaIndex.showFileStatusIcons.*`, 13
-keys). ICU values, so every apostrophe is doubled in the catalog:
+Settled for the per-file/folder/drive image-search index status badges in the file list (2026-07-22:
+`fileExplorer.imageIndex.{file,folder,drive}.*`, `settings.mediaIndex.showFileStatusIcons.*`, 13 keys). ICU values, so
+every apostrophe is doubled in the catalog:
 
 - image search (the OCR/photo-content search FEATURE) → `recherche d''images` · settled catalog-wide, NOT re-derived:
   `settings.mediaIndex.card` and `settings.section.imageSearch` both already render "Recherche d''images", and
@@ -875,8 +875,8 @@ Phrasing notes for this pass:
   `file list → liste des fichiers`), matching the catalog's toggle-label + help-text register.
 - No `sameAsSourceJustification` needed: every value differs from English.
 
-Settled during the `image-indexing-progress-ux` pass (2026-07-22, image-indexing settings restructure: three card
-titles, the Semantic search card, one file-list badge;
+Settled for the image-indexing settings restructure (2026-07-22: three card titles, the Semantic search card, one
+file-list badge;
 `settings.mediaIndex.{cards.enable,cards.folders, progressSummary.title,semanticSearch.label,clip.*}`,
 `fileExplorer.imageIndex.file.indexing`, 12 keys). ICU values, so every apostrophe is doubled in the catalog:
 

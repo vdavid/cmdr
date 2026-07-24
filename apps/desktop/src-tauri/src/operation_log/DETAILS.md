@@ -1,8 +1,7 @@
 # Operation log — details
 
-Depth for the operation-log subsystem. Must-knows and the module map: `CLAUDE.md`. The full design, every
-decision (D1–D10), and the milestone breakdown: `docs/specs/operation-log-plan.md`
-— this doc captures what shipped and the durable rationale a future agent needs on hand; the plan holds the rest.
+Depth for the operation-log subsystem. Must-knows and the module map: `CLAUDE.md`. This doc captures what shipped and
+the durable rationale a future agent needs on hand, including every decision (D1–D10).
 
 ## What this is
 

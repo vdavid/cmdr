@@ -1,7 +1,7 @@
 # Media index subsystem — details
 
 Image-ML enrichment: makes a volume's images searchable by their content. Full design and milestone plan:
-`docs/specs/media-ml-index-plan.md`. This doc covers what the OCR slice shipped, the port-from-`importance/` rationale,
+`docs/specs/later/media-ml-index-plan.md`. This doc covers what the OCR slice shipped, the port-from-`importance/` rationale,
 the GC safety argument, and the schema.
 
 The OCR slice ships the plumbing + OCR-text search with **no model download and no vector math**: a per-volume
@@ -374,8 +374,7 @@ scheduler's long-lived backend; workers 1..N are built on demand from a `Backend
 shrinks, so a steady N=1 pass builds nothing extra and behaves byte-for-byte like the pre-M2 loop (the serial
 `enrich_and_gc_scoped` is now a thin wrapper over the pool at width 1, so every enrich test exercises the pool core).
 
-**Why measured, not asserted.** The M2 spike (`backend/vision/spike.rs`, recorded in `docs/specs/resource-use-plan.md`
-§ M2) measured throughput topping out at ~1.25x by N=2 on an M3 Max (verified 2026-07-23, decode-vs-full-analyze scaling
+**Why measured, not asserted.** The M2 spike (`backend/vision/spike.rs`) measured throughput topping out at ~1.25x by N=2 on an M3 Max (verified 2026-07-23, decode-vs-full-analyze scaling
 at N ∈ {1,2,4,8} over 200 local images): the ANE serializes inference (~89% of per-image wall time) so it doesn't
 parallelize; only decode (~11%, CPU) scales (to 5.4x at N=8). So the default is 1 (never take more machine unasked —
 principle 5), the slider is explicit consent, and the microcopy doesn't over-promise.
@@ -1075,7 +1074,7 @@ space, so a typed query is encoded to a vector and cosine-matched against stored
   palettized** (M5b, 2026-07-23), the **text tower stays fp**. Image ~83 MB (cosine min 0.9988 / mean 0.9995 vs torch
   fp32 over a 50-image fixture), text ~184 MB (cosine 1.0000), combined ~267 MB (down from ~392 MB non-palettized). The
   text tower stays fp because its 8-bit Core ML inference is all-NaN; 6-bit on the image tower falls below the 0.99 gate
-  (min 0.957), so 8-bit is the floor. Per-variant numbers: the plan's M5b status (`docs/specs/resource-use-plan.md`).
+  (min 0.957), so 8-bit is the floor.
 - **Conversion is an out-of-tree dev script** (`apps/desktop/scripts/convert-clip-model/`), NEVER run by CI/pnpm: a
   throwaway `uv` venv (Python 3.11–3.12; coremltools/torch have no cp314 wheels), pinned `requirements.txt`. It bakes
   CLIP's per-channel `(x-mean)/std` normalization INTO the image model and prints each zip's SHA-256 + size + the
@@ -1286,8 +1285,8 @@ and the crashed-session wipe. `ann::cache` holds the query-side route + warm vie
 memory-watchdog stop hook with the resident caches.
 
 **Measured on real embeddings (M6 verification, 2026-07-24, M3 Max):** see the harness
-(`ann/tests.rs::real_corpus_recall_and_latency`, run against copies of the real `media.db`s) — recall@10 and
-before/after latency numbers are recorded in the plan's M6 status (`docs/specs/resource-use-plan.md`).
+(`ann/tests.rs::real_corpus_recall_and_latency`, run against copies of the real `media.db`s), which records recall@10
+and before/after latency numbers.
 
 ## What's left for later
 
@@ -1298,8 +1297,7 @@ before/after latency numbers are recorded in the plan's M6 status (`docs/specs/r
   re-enriched, so a folder/drive can briefly read complete while a changed file awaits re-work. Excluding stale rows would
   need a per-row `(mtime, size)` compare against the live index; out of scope.
 - **CLIP model size:** ~267 MB combined — the image tower is 8-bit palettized (M5b, 2026-07-23; cosine 0.9995, ~83 MB),
-  the text tower stays fp (~184 MB; its 8-bit inference NaNs). Down from ~392 MB non-palettized. Numbers: the plan's M5b
-  status (`docs/specs/resource-use-plan.md`) + `clip/install.rs`.
+  the text tower stays fp (~184 MB; its 8-bit inference NaNs). Down from ~392 MB non-palettized. Numbers: `clip/install.rs`.
 - **Later:** faces (detect/embed/cluster/name), the durable identity store, and LLM captions.
 
 ## Testing

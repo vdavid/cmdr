@@ -719,7 +719,7 @@ A re-translation review of the 54 keys added for natural-language bulk rename (`
 
 No `sameAsSourceJustification` needed: all 54 values differ from English.
 
-From the image-index-indicators pass (2026-07-22; the 11 `fileExplorer.imageIndex.*` badge/dot tooltips + 2
+For the image-search index status badges (2026-07-22; the 11 `fileExplorer.imageIndex.*` badge/dot tooltips + 2
 `settings.mediaIndex.showFileStatusIcons.*` keys). Small status indicators on image files, folders, and drives showing
 image-search indexing state. Reuses the settled indexing family; new/confirmed terms:
 

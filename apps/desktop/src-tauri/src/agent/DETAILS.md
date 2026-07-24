@@ -16,7 +16,7 @@ rather than forcing a rename. `name-internals-after-the-UI` still applies to the
 
 ## Module layout
 
-Construction plan: `docs/specs/ask-cmdr-plan.md`. The backend modules:
+The backend modules:
 
 - `llm/`: the `AgentLlm` trait, its genai-backed impl over `crate::ai::AiBackend`, the deterministic fake,
   and the typed message-part model. This is the seam the whole runtime and UI test against. Depth:

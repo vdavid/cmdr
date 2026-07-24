@@ -6,8 +6,7 @@ impact (highest first). Each item stands alone; pick from the top.
 
 Canonical docs (don't restate mechanisms here): `apps/desktop/src-tauri/src/file_system/volume/backends/archive/` C+D.md
 (read core, formats, remote sources), `apps/desktop/src-tauri/src/file_system/write_operations/` C+D.md § "Archive
-edits" (mutation, remote edit contract). The shipped plan (`archive-browsing-plan.md`) holds the original decisions
-until it gets wiped; the durable ones are already in the colocated docs.
+edits" (mutation, remote edit contract). The durable original decisions are already in the colocated docs.
 
 ## 1. One-pass bulk extract for sequential archives (perf, user-visible) — SHIPPED 2026-07-08
 
@@ -48,7 +47,7 @@ real plumbing (not just the flag): a per-archive password threads through `seven
 Every zip edit is an O(archive) temp+rename rewrite — safe and uniform, but adding one small file to a 2 GB zip rewrites
 2 GB (and for a NAS-hosted zip, round-trips the whole archive over the wire).
 
-**Spiked 2026-07-09; full evidence in `../notes/m-append-spike.md`.** The original append-past-EOF design (append
+**Spiked 2026-07-09; full evidence in `../../notes/m-append-spike.md`.** The original append-past-EOF design (append
 entries + fresh CD + new EOCD, old CD left as dead bytes) is a **no-go**: `ditto -x -k` (the programmatic Archive
 Utility path) forward-scans local file headers, stops dead at the old central directory, and silently drops every
 appended entry (exit 0) — unfixable within the layout, since crash-safety requires that old CD to survive. CD-rewrite
@@ -212,7 +211,6 @@ into `files_skipped` and reports fully-extracted sources via `note_source_landed
 
 In-place remote editing for MTP devices (today: pull-edit-upload-swap, which is correct but O(archive) over USB both
 ways). Touches `mtp-rs` (first-party). Stretch from the original plan; only worth it if MTP zip editing sees real use.
-Notes: `archive-browsing-plan.md` § M6.
 
 ## 10. Dev-side debt (warns and tight margins)
 

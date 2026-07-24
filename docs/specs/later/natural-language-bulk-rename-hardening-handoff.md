@@ -51,7 +51,6 @@ Changed or added files at capture time:
 
 - `README.md`
 - `docs/hackathon-submission.md`
-- `docs/specs/natural-language-bulk-rename-plan.md`
 - `apps/desktop/src-tauri/src/agent/tools/propose/DETAILS.md`
 - `apps/desktop/src-tauri/src/agent/tools/propose/rename.rs`
 - `apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md`

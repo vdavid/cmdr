@@ -4,8 +4,7 @@
 //! into prompt (input) and completion (output). Matched by model-id prefix, longest
 //! first, because ids drift within a family (`gpt-4o-mini` must win over `gpt-4o`).
 //!
-//! **PRICES DRIFT — verify against each provider's pricing page at release time** (see the
-//! follow-ups ledger in `docs/specs/ask-cmdr-plan.md`). A model NOT in the table is
+//! **PRICES DRIFT — verify against each provider's pricing page at release time.** A model NOT in the table is
 //! UNPRICED: the meter records its tokens with cost 0 and `priced = false`, so the UI shows
 //! the token counts with cost "unknown", never a silent $0. A local model is free/on-device:
 //! cost 0 and `priced = true`. This honest miss-path is the point — an approximate estimate

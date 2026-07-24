@@ -2,7 +2,7 @@
 
 The deterministic, cheap folder-importance score that any expensive feature consumes (the in-app agent, the media-ML
 enrichment scheduler, future disk-cleanup / prefetch). Full design and milestone plan:
-`docs/specs/importance-subsystem-plan.md`.
+`docs/specs/later/importance-subsystem-plan.md`.
 
 M1 shipped the pure heart: the [`scorer`](scorer/mod.rs) and its tunable [`Weights`](scorer/weights.rs). M2 added storage
 (`importance.db`), the scheduler that fills it on scan completion, and the navigation-visit signal. **M3 adds the

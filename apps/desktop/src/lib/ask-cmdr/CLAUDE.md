@@ -1,8 +1,7 @@
 # Ask Cmdr rail (`lib/ask-cmdr/`)
 
 The frontend of Ask Cmdr, the read-only chat rail: a toggleable right-side panel where the user chats with a BYO-key LLM
-about their files. Backend seam + IPC: `src-tauri/src/agent/` and `commands/agent.rs`. Plan:
-`docs/specs/ask-cmdr-plan.md`. Depth (the streaming flow, the fake E2E path, layout, decisions): `DETAILS.md`.
+about their files. Backend seam + IPC: `src-tauri/src/agent/` and `commands/agent.rs`. Depth (the streaming flow, the fake E2E path, layout, decisions): `DETAILS.md`.
 
 ## Module map
 

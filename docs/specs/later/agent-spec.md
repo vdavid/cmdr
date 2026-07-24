@@ -116,8 +116,8 @@ platform-native way to say "purgeable, don't back up": macOS may purge it under 
 (it triggers the same reconciliation path as a full reindex, §6.4).
 
 `main.db` is deliberately a catch-all, not specialized: future durable state lands here too. **Exception — the
-file-mutation journal is NOT a `main.db` table.** It ships as its own durable `operation-log.db` (the operation log,
-`../operation-log-plan.md`, D1): a multi-GB append-heavy per-mutation journal would bloat `main.db`'s backups and defeat
+file-mutation journal is NOT a `main.db` table.** It ships as its own durable `operation-log.db` (the operation log): a
+multi-GB append-heavy per-mutation journal would bloat `main.db`'s backups and defeat
 its small-inspectable-catch-all nature, and the two have different write cadences (per-mutation vs agent-episodic) and
 different retention. `main.db` stays the agent's durable catch-all; the mutation journal is a peer durable DB. The split
 serves D3's "generic catch-all" intent better (keeps `main.db` small) than a giant table would. The two DBs share the
@@ -155,7 +155,7 @@ Names are indicative; the implementing agent owns the final DDL.
   feeds the activity UI and is also context input (recent rejections, §9.2). Terminology mapping, since the spec uses
   several names: the user-facing **"activity log"** IS this table; the **"read log"** is its `kind = file_read` filtered
   view, not a separate table; `user_action_log` (below) is separate because its writer is the user, not the agent. **No
-  term collision with the operation log** (`../operation-log-plan.md`, Naming): that journal is the **"operation log"**
+  term collision with the operation log**: that journal is the **"operation log"**
   (its rows are operations), this `agent_log` is the agent's **decision** log, and **"action"** stays reserved for the
   `user_action_log` navigation/intent stream. Their future \_merged UI surface* may be labelled **"Activity"** then (a
   UI-copy call, not an entity/table name) — so a future planner reads the three surfaces correctly and doesn't
@@ -172,8 +172,8 @@ Names are indicative; the implementing agent owns the final DDL.
   richer than this table's sketch (per-item rows, snapshots, rollback linkage). So this table is navigation/intent
   signals, NOT mutations. The three-way boundary, stated so no future effort builds a second operations recorder:
   **mutations → `operation-log.db`; navigation counts + recency → `importance.db`'s `record_visit` today (folding into
-  the agent's intent stream later); this `user_action_log` → navigation/intent events.** See `../operation-log-plan.md`
-  § Agent-spec reconciliation (D6: the operation log records mutations only, never navigation).
+  the agent's intent stream later); this `user_action_log` → navigation/intent events.** The operation log records
+  mutations only, never navigation.
 - `walk_state`: resumable summarization-walk bookkeeping.
 
 ### 4.3 Multi-volume identity
@@ -217,7 +217,7 @@ A fast, pure-Rust algorithm assigning each folder an interest weight. Inputs (ha
 - Path class priors: Downloads, Desktop, Documents, project roots high; `~/Library`, caches low.
 
 Weights live in the importance subsystem's separate per-volume `importance.db` (a regenerable cache; see
-`docs/specs/importance-subsystem-plan.md`, a confirmed refinement of D8) and recompute cheaply when listings change. The
+`docs/specs/later/importance-subsystem-plan.md`, a confirmed refinement of D8) and recompute cheaply when listings change. The
 weight serves three consumers: summary generation gating, event-bundle interest (§6.2), and as an input the LLM sees
 when reasoning about folders.
 
@@ -400,7 +400,7 @@ and whether it reports a per-op result the `proposal_ops` table can consume. Des
 `OperationManager`'s API, and file any batch-semantics gaps as small extensions to it.
 
 Because applied proposals execute through the managed pipeline, **the operation log journals every applied proposal
-batch for free** (the operation log hooks that pipeline — `../operation-log-plan.md`, D33 reconciliation). A _rejected_
+batch for free** (the operation log hooks that pipeline). A _rejected_
 proposal never becomes an operation, so it never appears in that journal — the `proposals` / `proposal_ops` tables above
 hold the "agent-suggested / accepted / rejected" pre-operation states and reference `operations.op_id` for the ops that
 were accepted and executed. When the agent lands, its applied ops are tagged `initiator = agent` in the journal (the
@@ -759,8 +759,8 @@ These came out of a later review pass and are captured as open items, not settle
 of sections above; treat them as inputs to the next planning round.
 
 15. **Importance scorer as a standalone neutral subsystem — decided and planned.** The scorer (§5.1) is its own
-    subsystem with its own plan (`docs/specs/importance-subsystem-plan.md`), serving multiple consumers: the agent, the
-    media-ML enrichment scheduler (`docs/specs/media-ml-index-plan.md`), and future ones. §5.1 stays the requirements
+    subsystem with its own plan (`docs/specs/later/importance-subsystem-plan.md`), serving multiple consumers: the
+    agent, the media-ML enrichment scheduler (`docs/specs/later/media-ml-index-plan.md`), and future ones. §5.1 stays the requirements
     source; placement under `src/agent/` and D8's "cached in the drive index" are superseded (separate per-volume
     `importance.db`, storing the raw signal vector alongside the scalar, confirmed).
 16. **Per-folder "capability enrollment."** A concept for which folders are enrolled in which expensive analyses (e.g.

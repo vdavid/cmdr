@@ -1,10 +1,9 @@
 //! M2 scaling spike (ignored, measurement-only): does parallel Vision enrichment
 //! actually scale, and where does it plateau?
 //!
-//! The plan (`docs/specs/resource-use-plan.md` § M2) mandates measuring
-//! decode-vs-inference scaling at N ∈ {1, 2, 4, 8} BEFORE building the worker pool, so
-//! the milestone's success metric comes from a measurement rather than an asserted
-//! multiplier. This test is the measurement, not a regression assertion, so it's
+//! This spike measures decode-vs-inference scaling at N ∈ {1, 2, 4, 8} BEFORE building
+//! the worker pool, so the milestone's success metric comes from a measurement rather
+//! than an asserted multiplier. This test is the measurement, not a regression assertion, so it's
 //! `#[ignore]`d — run it by hand against a real local image dir:
 //!
 //! ```sh

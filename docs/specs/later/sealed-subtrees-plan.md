@@ -1,6 +1,6 @@
 # Sealed subtrees: bounding the cost of high-churn directories
 
-Status: plan for implementation. Branch: `david/sealed-subtrees`. Follows `indexing-churn-resilience.md` and the
+Status: plan for implementation. Branch: `david/sealed-subtrees`. Follows the
 per-subtree rescan throttle (`indexing/DETAILS.md` § "Per-subtree rescan throttle").
 
 ## The incident that motivated this
@@ -468,7 +468,7 @@ choices beats a pattern table.
 
 ## Spike results (2026-07-20) — read this before Phase B
 
-All three spikes ran. Notes: `../notes/reanchor-cost-spike.md` and `../notes/churn-observability-spike.md`.
+All three spikes ran. Notes: `../../notes/reanchor-cost-spike.md` and `../../notes/churn-observability-spike.md`.
 
 **Spike A: GO, with conditions.** A re-anchor of the worst directory (1.44M entries) costs 96–181 s wall, 19–29 s CPU,
 zero writer messages, and a flat 128 KiB using `getattrlistbulk` — about a quarter of the 426 s verification pass it
@@ -518,7 +518,7 @@ instead of judgment. **None require the feature to exist.**
 
 ### Spike A — re-anchor cost — DONE, go with conditions
 
-Measured 2026-07-20. Full numbers, method, and reasoning: `../notes/reanchor-cost-spike.md`. Tool:
+Measured 2026-07-20. Full numbers, method, and reasoning: `../../notes/reanchor-cost-spike.md`. Tool:
 `scripts/reanchor-cost`.
 
 **Result: go.** One `getattrlistbulk` re-anchor of `fetch_temp` (now 1.44M entries) is 96–181 s wall, 19–29 s CPU, no

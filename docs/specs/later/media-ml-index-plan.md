@@ -4,7 +4,7 @@
 
 - **Shipped:** M1 (plumbing + OCR search), M1.5 (SMB opt-in enrichment), M2 (tags + image-similarity) all landed in the
   initial effort (~2026-07-14); M3 (natural-language CLIP semantic search) and M6 (photo search as an Ask Cmdr + MCP
-  tool) landed on this branch (2026-07-16). A separate polish effort (`media-index-polish-plan.md`) then hardened
+  tool) landed on this branch (2026-07-16). A separate polish effort then hardened
   everything shipped (dead-start fixes, never-scored detection, progress-indicator integration, privacy retro-delete,
   settings moved to AI › Image search).
 - **Parked (deliberate):** M4a + M4b (faces: detect/embed/cluster, then naming + durable identity + People UI) and M5
@@ -116,7 +116,7 @@ each `unsafe` block needs a specific `// SAFETY:` per `src-tauri/CLAUDE.md` (Dec
    `objc2-core-ml`, and **Foundation Models** (Swift bridge) for the optional caption path.
    - _Why:_ macOS-only app → native frameworks give ANE acceleration and the smallest binary (no bundled ONNX Runtime
      native lib). "Ideal over cheap" + "rely on macOS where reasonable."
-   - **Gates (a) + (c) RESOLVED by spike** (2026-06-30; `../notes/clip-coreml-rust-spike.md`). The Core ML text encoder
+   - **Gates (a) + (c) RESOLVED by spike** (2026-06-30; `../../notes/clip-coreml-rust-spike.md`). The Core ML text encoder
      and the Rust round-trip both work: a minimal `objc2-core-ml` 0.3.2 spike loaded a compiled model, predicted, and
      returned an embedding **bit-identical** to the `coremltools` reference; text→image alignment runs correctly
      on-device (ANE); native Core ML adds **zero binary weight**; the `unsafe` surface is ~12–15 mechanical objc2 calls
@@ -339,8 +339,7 @@ each `unsafe` block needs a specific `// SAFETY:` per `src-tauri/CLAUDE.md` (Dec
 
 10. **The cloud is opt-in and only for premium captions** (M5), reusing the whole shipped `agent/` LLM stack behind a
     _distinct_ explicit egress consent. On-device captions (Foundation Models) are the default for that feature. What to
-    reuse (all shipped as of Ask Cmdr M1–M8, verified 2026-07-13 — see `agent/CLAUDE.md` and
-    `docs/specs/ask-cmdr-plan.md`):
+    reuse (all shipped as of Ask Cmdr M1–M8, verified 2026-07-13 — see `agent/CLAUDE.md`):
     - **The `AgentLlm` seam** (`agent/llm/`): a provider-agnostic trait (`AgentLlm::respond`), its genai-backed impl
       (`genai_impl.rs`), a deterministic zero-network `FakeAgentLlm` (`fake.rs`) for tests, and the typed message-part
       model (`types.rs`). **Caveat to check at impl time:** `AgentLlm::respond` is chat/tool-loop-shaped — one streaming
@@ -597,7 +596,7 @@ Vision OCR and adds no new models, so it proves the transport without model-down
 
 - **Gate RESOLVED (spike, 2026-06-30):** the Core ML text encoder + `objc2-core-ml` round-trip work (bit-identical to
   the `coremltools` reference), so the native path stands. **Use a commercially-licensed CLIP — NOT Apple's MobileCLIP**
-  (research-only weights, can't ship; see Decision 1 and `../notes/clip-coreml-rust-spike.md`). Candidates: OpenAI CLIP
+  (research-only weights, can't ship; see Decision 1 and `../../notes/clip-coreml-rust-spike.md`). Candidates: OpenAI CLIP
   (MIT) or SigLIP 2 (Apache-2.0); convert once with `coremltools` on a dev box, ship the pre-converted `.mlpackage`
   (image + text towers). **Verify the chosen model's license + Core ML conversion fidelity at impl time.**
 - Wrap the `objc2-core-ml` calls in a safe `encode_text`/`encode_image` API (~150–250 lines, per-block `// SAFETY:`).
