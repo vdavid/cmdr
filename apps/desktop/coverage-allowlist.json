@@ -212,7 +212,7 @@
       "reason": "Depends on DOM APIs (document.documentElement.style)"
     },
     "settings/settings-store.ts": {
-      "reason": "Depends on Tauri store APIs"
+      "reason": "Depends on Tauri store APIs. Reads above the threshold only because `restricted-settings.test.ts` imports it statically to warm the transform cache, which is load-time execution rather than assertions, so the entry stays."
     },
     "settings/settings-window.ts": {
       "reason": "Depends on Tauri window APIs"

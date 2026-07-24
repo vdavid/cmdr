@@ -12,22 +12,21 @@
  * `viewer-wordwrap-persistence` Playwright spec.
  */
 
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearIpcMocks, installIpcMock, type IpcRecorder } from '$lib/ipc/test-helpers'
 import type { RestrictedWindowSettings } from '$lib/ipc/bindings'
+// Warms Vite's transform cache for the modules each test dynamically re-imports.
+// `settings-store` transitively pulls the whole intl catalog (the eager
+// `messages/*/*.json` glob in `messages.svelte.ts`) plus `intl-messageformat`, so a cold
+// transform runs ~6 s, and longer under coverage on a busy machine. These imports are
+// static on purpose: module loading carries no hook or test timeout, so the cost lands
+// where nothing can time it out, and each test's `vi.resetModules()` re-import then hits
+// a warm cache. Paying it inside a `beforeAll` raced that hook's 10 s budget and failed
+// the whole suite whenever the machine was loaded.
+import './settings-store'
+import './restricted-settings-bridge'
 
 let ipc: IpcRecorder
-
-// Warm Vite's transform cache for the modules each test dynamically re-imports.
-// `settings-store` transitively pulls the whole intl catalog (the eager
-// `messages/*/*.json` glob in `messages.svelte.ts`) plus `intl-messageformat`,
-// so a cold transform runs ~5-6 s. Paying that inside the first test body would
-// race the 5 s per-test timeout; a `beforeAll` gets the 10 s hook timeout, and
-// the per-test `vi.resetModules()` + re-import then hit a warm transform cache.
-beforeAll(async () => {
-  await import('./settings-store')
-  await import('./restricted-settings-bridge')
-})
 
 const snapshot: RestrictedWindowSettings = {
   viewerWordWrap: true,
