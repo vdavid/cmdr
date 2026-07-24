@@ -411,6 +411,17 @@ mod tests {
     #[cfg(unix)]
     fn fs_fetch_permission_denied_is_unreadable_not_disconnected() {
         use std::os::unix::fs::PermissionsExt;
+        // Root bypasses file permissions entirely (CAP_DAC_OVERRIDE): a 0o000 file
+        // opens fine, so the EACCES scenario is UNATTAINABLE under root — and the
+        // local Linux test lane runs in Docker as root. The errno → classification
+        // contract this test guards end to end is covered unconditionally by
+        // `io_errors_classify_by_errno_kind`; this real-chmod variant runs wherever
+        // a non-root euid can actually produce the errno (macOS dev machines, CI
+        // runners).
+        // SAFETY: geteuid takes no arguments, touches no memory, and cannot fail.
+        if unsafe { libc::geteuid() } == 0 {
+            return;
+        }
         let dir = tempfile::tempdir().expect("temp");
         let path = dir.path().join("locked.jpg");
         std::fs::write(&path, b"jpeg bytes").expect("write");
