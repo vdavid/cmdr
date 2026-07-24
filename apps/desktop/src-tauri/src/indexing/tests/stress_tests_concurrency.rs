@@ -678,7 +678,7 @@ fn make_file_entry_row(id: i64, parent_id: i64, name: &str) -> EntryRow {
 fn mixed_storm_reaches_consistent_fixed_point() {
     use crate::indexing::watch::event_loop::process_live_batch;
     use std::collections::{HashMap, HashSet};
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
 
     // > REMOVAL_STORM_THRESHOLD (200), kept local: `event_loop::storm` isn't
     // nameable from here, and the exact value only needs to trip the detector.
@@ -872,29 +872,20 @@ fn mixed_storm_reaches_consistent_fixed_point() {
             &mut churn_monitor::ChurnObserver::disabled(),
         );
 
-        // Fixed-point quiescence loop: drain the writer, then require BOTH no
-        // active rescan AND an empty pending set, confirmed stable across a final
-        // drain (a rescan finishing after a drain can enqueue more messages, and
-        // start_next_rescan chains). Bounded so a regression fails instead of
-        // hanging. Termination: with no new events, escalations re-fire only from
-        // reconcile_subtree's skip branch, each anchoring strictly closer to the
-        // volume root; successful rescans strictly shrink the missing set.
-        let start = Instant::now();
-        loop {
+        // Fixed point: drain the writer, then require BOTH no active rescan AND an empty
+        // pending set — twice, since a rescan finishing after a drain can enqueue more
+        // messages and `start_next_rescan` chains. Termination: with no new events,
+        // escalations re-fire only from `reconcile_subtree`'s skip branch, each anchoring
+        // strictly closer to the volume root; successful rescans strictly shrink the missing
+        // set.
+        let drained_and_quiet = || {
             tokio::task::block_in_place(|| writer.flush_blocking().unwrap());
-            let quiesced = !reconciler.is_rescan_active_for_test() && reconciler.pending_rescans_snapshot().is_empty();
-            if quiesced {
-                tokio::task::block_in_place(|| writer.flush_blocking().unwrap());
-                if !reconciler.is_rescan_active_for_test() && reconciler.pending_rescans_snapshot().is_empty() {
-                    break;
-                }
-            }
-            assert!(
-                start.elapsed() < Duration::from_secs(30),
-                "rescans did not quiesce within 30s"
-            );
-            tokio::time::sleep(Duration::from_millis(20)).await;
-        }
+            !reconciler.is_rescan_active_for_test() && reconciler.pending_rescans_snapshot().is_empty()
+        };
+        crate::test_support::wait_until_async(Duration::from_secs(30), "the rescans to quiesce", || {
+            drained_and_quiet() && drained_and_quiet()
+        })
+        .await;
     });
 
     // The oracle: after quiescence, dir_stats ≡ recompute-from-entries.

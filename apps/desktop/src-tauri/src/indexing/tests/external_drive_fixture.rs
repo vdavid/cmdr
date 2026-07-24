@@ -422,19 +422,9 @@ mod tests {
             mount
         }; // fixture dropped here -> guarded detach
 
-        // Give the OS a moment to tear the mount down, then assert it's gone.
         // Detach is synchronous, but the /Volumes entry can linger briefly.
-        for _ in 0..50 {
-            if !mount.exists() {
-                break;
-            }
-            std::thread::sleep(Duration::from_millis(100));
-        }
-        assert!(
-            !mount.exists(),
-            "mount point {} should be gone after detach",
-            mount.display()
-        );
+        let description = format!("mount point {} to be gone after detach", mount.display());
+        crate::test_support::wait_until(Duration::from_secs(5), &description, || !mount.exists());
     }
 
     /// exFAT variant of the attach/populate/detach smoke test, so the later
@@ -466,17 +456,9 @@ mod tests {
             mount
         };
 
-        for _ in 0..50 {
-            if !mount.exists() {
-                break;
-            }
-            std::thread::sleep(Duration::from_millis(100));
-        }
-        assert!(
-            !mount.exists(),
-            "mount point {} should be gone after detach",
-            mount.display()
-        );
+        // Detach is synchronous, but the /Volumes entry can linger briefly.
+        let description = format!("mount point {} to be gone after detach", mount.display());
+        crate::test_support::wait_until(Duration::from_secs(5), &description, || !mount.exists());
     }
 
     /// Live-FSEvents regression probe (ports `fsevents-probe.swift` over the

@@ -12,6 +12,7 @@
 //! parallel tests and resets the gate itself.
 
 use std::collections::{HashMap, HashSet};
+use std::time::Instant;
 
 use super::*;
 use crate::importance::store::{ImportanceStore, importance_db_path};
@@ -23,6 +24,7 @@ use crate::media_index::network::config::NetworkEnrichConfig;
 use crate::media_index::predicate::MediaKind;
 use crate::media_index::store::{EnrichmentState, MediaStatusRow, MediaStore, media_db_path};
 use crate::media_index::writer::MediaWriter;
+use crate::test_support::wait_until;
 
 const ROOT: &str = "root";
 
@@ -264,31 +266,26 @@ pub(super) fn use_automatic_scope() {
     gate::set_scope(gate::IndexScope::ByImportance);
 }
 
-/// Poll `cond` up to `iters` × 20 ms, returning whether it ever held. The kick paths
-/// spawn their pass on the tauri runtime (off this test thread), so an assertion on the
-/// pass's effect has to wait for it.
-fn poll_until(iters: u32, mut cond: impl FnMut() -> bool) -> bool {
-    for _ in 0..iters {
-        if cond() {
-            return true;
-        }
-        std::thread::sleep(Duration::from_millis(20));
-    }
-    cond()
-}
+/// The budget for a POSITIVE wait on a kicked pass. The kick paths spawn their pass on the
+/// tauri runtime (off this test thread), so an assertion on the pass's effect has to wait
+/// for it. Far above the sub-millisecond real work, so a timeout means a genuine
+/// regression, never load.
+const PASS_LANDS_WITHIN: Duration = Duration::from_secs(5);
 
-/// ~5 s — for a POSITIVE assertion. Far above the sub-millisecond real work, so a
-/// timeout means a genuine regression, never load.
-fn wait_until(cond: impl FnMut() -> bool) -> bool {
-    poll_until(250, cond)
-}
-
-/// ~1 s — for a NEGATIVE assertion (the condition must NEVER hold). A spurious
+/// Whether `cond` stays false for a full second — for a NEGATIVE assertion. A spurious
 /// enrichment would land in tens of milliseconds, so 1 s is ample without dragging the
 /// suite; the authoritative disabled-pass no-op proof is the synchronous
 /// `a_pass_no_ops_while_disabled_and_enriches_once_enabled`.
-fn never_within_a_second(cond: impl FnMut() -> bool) -> bool {
-    !poll_until(50, cond)
+fn never_within_a_second(mut cond: impl FnMut() -> bool) -> bool {
+    let deadline = Instant::now() + Duration::from_secs(1);
+    while Instant::now() < deadline {
+        if cond() {
+            return false;
+        }
+        // allowed-test-sleep: a negative assertion has no condition to wait on; the window IS the test
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    !cond()
 }
 
 /// Whether `media.db` for `volume_id` under `data_dir` carries an enriched row for
@@ -329,9 +326,10 @@ fn wire_volume_kicks_an_initial_pass_for_a_fresh_at_launch_volume() {
     // never publish a ScanCompleted) — the Fresh-at-launch shape the race hits.
     wire_volume(Arc::clone(&sched), ROOT.to_string(), IndexVolumeKind::Local);
 
-    assert!(
-        wait_until(|| has_enriched_row(dir.path(), ROOT, "/keep/a.jpg")),
-        "wire_volume must kick an initial pass for a Fresh-at-launch volume (the restart race)"
+    wait_until(
+        PASS_LANDS_WITHIN,
+        "wire_volume to kick an initial pass for a Fresh-at-launch volume (the restart race)",
+        || has_enriched_row(dir.path(), ROOT, "/keep/a.jpg"),
     );
 
     crate::indexing::test_uninstall_root_read_pool();
@@ -375,9 +373,10 @@ fn kick_runs_a_pass_for_a_ready_volume_only_when_enabled() {
     // Gate ON: the ready Local volume enriches; the MTP entry never does.
     gate::set_enabled(true);
     kick_ready_passes_from(&sched, ready());
-    assert!(
-        wait_until(|| has_enriched_row(dir.path(), ROOT, "/keep/a.jpg")),
-        "an enabled kick runs the ready volume's pass (the dead-start fix)"
+    wait_until(
+        PASS_LANDS_WITHIN,
+        "an enabled kick to run the ready volume's pass (the dead-start fix)",
+        || has_enriched_row(dir.path(), ROOT, "/keep/a.jpg"),
     );
     assert!(
         !media_db_path(dir.path(), "phone-mtp").exists(),

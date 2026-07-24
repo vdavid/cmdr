@@ -7,6 +7,7 @@ use std::time::Duration;
 
 use super::session::{self, SearchStatus};
 use super::{FULL_LOAD_THRESHOLD, FileEncoding, MAX_SEARCH_MATCHES, RangeEnd, SearchMode, ViewerError};
+use crate::test_support::wait_until;
 
 /// Default mode for existing tests: literal, case-sensitive (matches pre-mode behaviour
 /// for ASCII queries). Tests that exercise case-insensitivity should pass an explicit
@@ -68,13 +69,15 @@ fn append_test_file(file: &Path, extra: &str) -> u64 {
 /// Each test runs in its own nextest process, so `watch_count() > 0` reflects
 /// only the session(s) opened in this test.
 fn wait_for_watcher_subscribed() {
-    for _ in 0..200 {
-        if super::watcher::VIEWER_WATCHER_MANAGER.watch_count() > 0 {
-            return;
-        }
-        thread::sleep(Duration::from_millis(10));
-    }
-    panic!("watcher subscribe did not land within 2s");
+    wait_until(Duration::from_secs(2), "the watcher subscribe to land", || {
+        super::watcher::VIEWER_WATCHER_MANAGER.watch_count() > 0
+    });
+}
+
+/// Whether the background ByteSeek → LineIndex upgrade (or an encoding rebuild) has settled.
+fn upgraded_to_line_index(sid: &str) -> bool {
+    let status = session::get_session_status(sid).expect("session status");
+    matches!(status.backend_type, session::BackendType::LineIndex) && !status.is_indexing
 }
 
 #[test]
@@ -187,19 +190,15 @@ fn search_start_and_poll() {
     // Start search
     session::search_start(sid, "hello".to_string(), literal_mode()).unwrap();
 
-    // Poll until done (with timeout)
-    let mut done = false;
-    for _ in 0..100 {
-        let poll = session::search_poll(sid, 0).unwrap();
-        if matches!(poll.status, SearchStatus::Done) {
-            assert_eq!(poll.new_matches.len(), 2);
-            assert_eq!(poll.total_match_count, 2);
-            done = true;
-            break;
+    wait_until(Duration::from_secs(1), "the search to complete", || {
+        let poll = session::search_poll(sid, 0).expect("search poll");
+        if !matches!(poll.status, SearchStatus::Done) {
+            return false;
         }
-        thread::sleep(Duration::from_millis(10));
-    }
-    assert!(done, "Search did not complete in time");
+        assert_eq!(poll.new_matches.len(), 2);
+        assert_eq!(poll.total_match_count, 2);
+        true
+    });
 
     session::close_session(sid).unwrap();
     cleanup(&dir);
@@ -221,23 +220,20 @@ fn search_cancel_works() {
     // `SearchStatus::Cancelled` to the shared status mutex.
     session::search_cancel(sid).unwrap();
 
-    // Poll until the thread observes the cancel and transitions to Cancelled.
+    // Wait for the thread to observe the cancel and transition to Cancelled.
     // We accept Running (thread still in flight) along the way.
-    let mut saw_cancelled = false;
-    for _ in 0..200 {
-        let poll = session::search_poll(sid, 0).unwrap();
+    wait_until(Duration::from_secs(2), "the search to transition to Cancelled", || {
+        let poll = session::search_poll(sid, 0).expect("search poll");
         if matches!(poll.status, SearchStatus::Cancelled) {
-            saw_cancelled = true;
-            break;
+            return true;
         }
         assert!(
             matches!(poll.status, SearchStatus::Running),
             "expected Running or Cancelled while cancellation propagates, got {:?}",
             poll.status
         );
-        thread::sleep(Duration::from_millis(10));
-    }
-    assert!(saw_cancelled, "search did not transition to Cancelled in time");
+        false
+    });
 
     session::close_session(sid).unwrap();
     cleanup(&dir);
@@ -262,17 +258,12 @@ fn search_poll_after_cancel_surfaces_cancelled_then_idle_after_new_start() {
     session::search_start(sid, "hello".to_string(), literal_mode()).unwrap();
     session::search_cancel(sid).unwrap();
 
-    // Wait for the Cancelled transition.
-    let mut saw_cancelled = false;
-    for _ in 0..200 {
-        let poll = session::search_poll(sid, 0).unwrap();
-        if matches!(poll.status, SearchStatus::Cancelled) {
-            saw_cancelled = true;
-            break;
-        }
-        thread::sleep(Duration::from_millis(10));
-    }
-    assert!(saw_cancelled, "Cancelled was never observed by poll");
+    wait_until(Duration::from_secs(2), "poll to observe Cancelled", || {
+        matches!(
+            session::search_poll(sid, 0).expect("search poll").status,
+            SearchStatus::Cancelled
+        )
+    });
 
     // Starting a fresh search must reset the observable status.
     session::search_start(sid, "world".to_string(), literal_mode()).unwrap();
@@ -378,22 +369,18 @@ fn search_poll_reports_match_limit() {
 
     session::search_start(sid, "a".to_string(), literal_mode()).unwrap();
 
-    // Poll until done
-    let mut done = false;
-    for _ in 0..200 {
-        let poll = session::search_poll(sid, 0).unwrap();
-        if matches!(poll.status, SearchStatus::Done) {
-            assert_eq!(poll.new_matches.len(), MAX_SEARCH_MATCHES);
-            assert_eq!(poll.total_match_count, MAX_SEARCH_MATCHES);
-            assert!(poll.match_limit_reached);
-            // Should have stopped early (not scanned the whole file)
-            assert!(poll.bytes_scanned < poll.total_bytes);
-            done = true;
-            break;
+    wait_until(Duration::from_secs(2), "the search to complete", || {
+        let poll = session::search_poll(sid, 0).expect("search poll");
+        if !matches!(poll.status, SearchStatus::Done) {
+            return false;
         }
-        thread::sleep(Duration::from_millis(10));
-    }
-    assert!(done, "Search did not complete in time");
+        assert_eq!(poll.new_matches.len(), MAX_SEARCH_MATCHES);
+        assert_eq!(poll.total_match_count, MAX_SEARCH_MATCHES);
+        assert!(poll.match_limit_reached);
+        // Should have stopped early (not scanned the whole file)
+        assert!(poll.bytes_scanned < poll.total_bytes);
+        true
+    });
 
     session::close_session(sid).unwrap();
     cleanup(&dir);
@@ -409,14 +396,12 @@ fn search_poll_incremental_delivery() {
 
     session::search_start(sid, "aaa".to_string(), literal_mode()).unwrap();
 
-    // Wait for search to finish
-    for _ in 0..100 {
-        let poll = session::search_poll(sid, 0).unwrap();
-        if matches!(poll.status, SearchStatus::Done) {
-            break;
-        }
-        thread::sleep(Duration::from_millis(10));
-    }
+    wait_until(Duration::from_secs(1), "the search to finish", || {
+        matches!(
+            session::search_poll(sid, 0).expect("search poll").status,
+            SearchStatus::Done
+        )
+    });
 
     // since_index=0 returns all 3 matches
     let poll_all = session::search_poll(sid, 0).unwrap();
@@ -813,19 +798,15 @@ fn search_pre_cancelled_starts_and_finishes_quickly() {
     session::search_start(sid, "a".to_string(), literal_mode()).unwrap();
     session::search_cancel(sid).unwrap();
 
-    let start = std::time::Instant::now();
-    let mut saw_terminal = false;
-    while start.elapsed() < Duration::from_millis(1_500) {
-        let poll = session::search_poll(sid, 0).unwrap();
-        if matches!(poll.status, SearchStatus::Cancelled | SearchStatus::Done) {
-            saw_terminal = true;
-            break;
-        }
-        thread::sleep(Duration::from_millis(10));
-    }
-    assert!(
-        saw_terminal,
-        "search did not reach a terminal status within 1.5s of cancel"
+    wait_until(
+        Duration::from_millis(1_500),
+        "the search to reach a terminal status after the cancel",
+        || {
+            matches!(
+                session::search_poll(sid, 0).expect("search poll").status,
+                SearchStatus::Cancelled | SearchStatus::Done
+            )
+        },
     );
 
     session::close_session(sid).unwrap();
@@ -955,15 +936,12 @@ fn test_new_search_after_watchdog_cancelled_starts_clean() {
     session::search_start(sid, "hello".to_string(), literal_mode()).unwrap();
     session::search_cancel(sid).unwrap();
 
-    // Wait until we see Cancelled.
-    let start = std::time::Instant::now();
-    while start.elapsed() < Duration::from_millis(2_000) {
-        let poll = session::search_poll(sid, 0).unwrap();
-        if matches!(poll.status, SearchStatus::Cancelled) {
-            break;
-        }
-        thread::sleep(Duration::from_millis(10));
-    }
+    wait_until(Duration::from_secs(2), "poll to observe Cancelled", || {
+        matches!(
+            session::search_poll(sid, 0).expect("search poll").status,
+            SearchStatus::Cancelled
+        )
+    });
 
     // Fresh search must clear the Cancelled state.
     session::search_start(sid, "world".to_string(), literal_mode()).unwrap();
@@ -1046,18 +1024,14 @@ fn test_regex_search_returns_matches() {
     };
     session::search_start(&sid, r"\d+".to_string(), mode).unwrap();
 
-    let start = std::time::Instant::now();
-    let mut done = false;
-    while start.elapsed() < Duration::from_secs(2) {
-        let poll = session::search_poll(&sid, 0).unwrap();
-        if matches!(poll.status, SearchStatus::Done) {
-            assert_eq!(poll.total_match_count, 3);
-            done = true;
-            break;
+    wait_until(Duration::from_secs(2), "the regex search to complete", || {
+        let poll = session::search_poll(&sid, 0).expect("search poll");
+        if !matches!(poll.status, SearchStatus::Done) {
+            return false;
         }
-        thread::sleep(Duration::from_millis(10));
-    }
-    assert!(done, "regex search did not complete");
+        assert_eq!(poll.total_match_count, 3);
+        true
+    });
 
     session::close_session(&sid).unwrap();
     cleanup(&dir);
@@ -1139,21 +1113,13 @@ fn set_encoding_large_file_utf8_to_utf16_rebuilds_under_new_encoding() {
     // Force UTF-8: each "hello world" line becomes a garbled string (every other byte 0x00),
     // but the backend doesn't crash and `get_lines` still returns content.
     session::set_encoding(&result.session_id, FileEncoding::Utf8).unwrap();
-    // Wait briefly for the BG rebuild thread to complete (or time out).
-    let start = std::time::Instant::now();
-    while start.elapsed() < Duration::from_secs(8) {
-        let opts = session::get_encoding_options(&result.session_id).unwrap();
+    // The rebuild runs on a background thread; the encoding it reports must never wobble
+    // while it does.
+    wait_until(Duration::from_secs(8), "the background rebuild to complete", || {
+        let opts = session::get_encoding_options(&result.session_id).expect("encoding options");
         assert_eq!(opts.current, FileEncoding::Utf8);
-        if !session::test_only_rebuilding_active(&result.session_id) {
-            break;
-        }
-        thread::sleep(Duration::from_millis(20));
-    }
-    // Status should not loop forever.
-    assert!(
-        !session::test_only_rebuilding_active(&result.session_id),
-        "rebuild did not complete within 8 s"
-    );
+        !session::test_only_rebuilding_active(&result.session_id)
+    });
 
     session::close_session(&result.session_id).unwrap();
     cleanup(&dir);
@@ -1182,14 +1148,11 @@ fn test_append_during_encoding_rebuild_not_dropped() {
     // pending_grew queue only exercises the rebuild's drain, not the
     // upgrade's. (Otherwise the upgrade could drain our queued EOF before
     // the rebuild ever sees it.)
-    let start = std::time::Instant::now();
-    while start.elapsed() < Duration::from_secs(8) {
-        let status = session::get_session_status(&result.session_id).unwrap();
-        if matches!(status.backend_type, session::BackendType::LineIndex) && !status.is_indexing {
-            break;
-        }
-        thread::sleep(Duration::from_millis(20));
-    }
+    wait_until(
+        Duration::from_secs(8),
+        "the initial upgrade to LineIndex to finish",
+        || upgraded_to_line_index(&result.session_id),
+    );
 
     // Park the rebuild with its scan already done, so the 10 KB we append next
     // is invisible to the rebuilt index and can only arrive via the drain.
@@ -1207,18 +1170,9 @@ fn test_append_during_encoding_rebuild_not_dropped() {
     session::test_only_push_pending_grew(&result.session_id, new_size);
     session::test_gate::REBUILD_PRE_DRAIN.release();
 
-    // Wait for rebuild to finish.
-    let start = std::time::Instant::now();
-    while start.elapsed() < Duration::from_secs(10) {
-        if !session::test_only_rebuilding_active(&result.session_id) {
-            break;
-        }
-        thread::sleep(Duration::from_millis(20));
-    }
-    assert!(
-        !session::test_only_rebuilding_active(&result.session_id),
-        "rebuild did not complete"
-    );
+    wait_until(Duration::from_secs(10), "the rebuild to finish", || {
+        !session::test_only_rebuilding_active(&result.session_id)
+    });
 
     // The final backend should cover the FULL new_size (not the pre-append size).
     // We can't read total_bytes directly from outside; use get_lines with a Fraction
@@ -1336,24 +1290,9 @@ fn tail_mode_on_extends_backend_when_watcher_reports_grew() {
     // we're testing the post-upgrade fast path (extend an existing
     // LineIndex), not the upgrade-queue interaction (already covered by
     // `test_append_during_upgrade_not_dropped`).
-    let mut upgrade_done = false;
-    let mut last_backend = format!("{:?}", session::get_session_status(&sid).unwrap().backend_type);
-    let mut last_indexing = session::get_session_status(&sid).unwrap().is_indexing;
-    for _ in 0..30 {
-        thread::sleep(Duration::from_millis(100));
-        let status = session::get_session_status(&sid).unwrap();
-        last_backend = format!("{:?}", status.backend_type);
-        last_indexing = status.is_indexing;
-        if matches!(status.backend_type, session::BackendType::LineIndex) && !status.is_indexing {
-            upgrade_done = true;
-            break;
-        }
-    }
-    assert!(
-        upgrade_done,
-        "upgrade thread should have completed within 3 s; last_backend={}, last_indexing={}",
-        last_backend, last_indexing,
-    );
+    wait_until(Duration::from_secs(3), "the upgrade thread to complete", || {
+        upgraded_to_line_index(&sid)
+    });
 
     // Switch on tail mode now (before the watcher fires).
     session::set_tail_mode(&sid, true).unwrap();
@@ -1376,23 +1315,13 @@ fn tail_mode_on_extends_backend_when_watcher_reports_grew() {
     );
     assert!(sent > 0, "test_only_emit should have found a subscriber");
 
-    let mut caught_up = false;
-    let mut last_chunk_bytes = 0;
-    for _ in 0..30 {
-        thread::sleep(Duration::from_millis(100));
-        let chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1).unwrap();
-        last_chunk_bytes = chunk.total_bytes;
-        if chunk.total_bytes >= want_size {
-            caught_up = true;
-            break;
-        }
-    }
-    let status = session::get_session_status(&sid).unwrap();
-    assert!(
-        caught_up,
-        "tail-mode handler should have extended the backend; last={}, want={}, backend={:?}, indexing={}",
-        last_chunk_bytes, want_size, status.backend_type, status.is_indexing,
-    );
+    let description = format!("the tail-mode handler to extend the backend to a total of {want_size}");
+    wait_until(Duration::from_secs(3), &description, || {
+        session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1)
+            .expect("get lines")
+            .total_bytes
+            >= want_size
+    });
 
     session::close_session(&sid).unwrap();
     cleanup(&dir);
@@ -1489,15 +1418,9 @@ fn test_append_during_upgrade_not_dropped() {
     session::test_only_push_pending_grew(&sid, new_size);
     session::test_gate::UPGRADE_PRE_DRAIN.release();
 
-    // Wait for the upgrade thread to drain and swap.
-    let start = std::time::Instant::now();
-    while start.elapsed() < Duration::from_secs(15) {
-        let status = session::get_session_status(&sid).unwrap();
-        if matches!(status.backend_type, session::BackendType::LineIndex) && !status.is_indexing {
-            break;
-        }
-        thread::sleep(Duration::from_millis(50));
-    }
+    wait_until(Duration::from_secs(15), "the upgrade thread to drain and swap", || {
+        upgraded_to_line_index(&sid)
+    });
 
     let chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1).unwrap();
     assert_eq!(
@@ -1552,14 +1475,9 @@ fn test_append_between_drain_and_swap_not_dropped() {
     );
     session::test_gate::UPGRADE_PRE_DRAIN.release();
 
-    let start = std::time::Instant::now();
-    while start.elapsed() < Duration::from_secs(15) {
-        let status = session::get_session_status(&sid).unwrap();
-        if matches!(status.backend_type, session::BackendType::LineIndex) && !status.is_indexing {
-            break;
-        }
-        thread::sleep(Duration::from_millis(50));
-    }
+    wait_until(Duration::from_secs(15), "the upgrade thread to drain and swap", || {
+        upgraded_to_line_index(&sid)
+    });
 
     let chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1).unwrap();
     assert_eq!(
@@ -1598,19 +1516,20 @@ fn test_session_emits_file_changed_on_append() {
     let sent = super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::Grew(new_size));
     assert!(sent > 0, "test_only_emit must reach the session's subscriber");
 
-    let start = std::time::Instant::now();
-    let mut observed = 0;
-    while start.elapsed() < Duration::from_secs(8) {
-        let chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1).unwrap();
-        observed = chunk.total_bytes;
-        if observed >= new_size {
-            break;
-        }
-        thread::sleep(Duration::from_millis(20));
-    }
+    let total_bytes = || {
+        session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1)
+            .expect("get lines")
+            .total_bytes
+    };
+    wait_until(
+        Duration::from_secs(8),
+        "the tail-on watcher event to advance backend total_bytes",
+        || total_bytes() >= new_size,
+    );
     assert_eq!(
-        observed, new_size,
-        "tail-on watcher event must advance backend total_bytes"
+        total_bytes(),
+        new_size,
+        "tail-on watcher event must advance backend total_bytes to exactly the new size"
     );
 
     session::close_session(&sid).unwrap();
@@ -1682,17 +1601,16 @@ fn test_session_rotation_reopens_backend() {
     let canonical = fs::canonicalize(&file).unwrap();
     super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::Replaced);
 
-    let start = std::time::Instant::now();
-    let mut observed = 0;
-    while start.elapsed() < Duration::from_secs(3) {
-        let chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1).unwrap();
-        observed = chunk.total_bytes;
-        if observed == new_size {
-            break;
-        }
-        thread::sleep(Duration::from_millis(20));
-    }
-    assert_eq!(observed, new_size, "rotation must reopen against the new bytes");
+    wait_until(
+        Duration::from_secs(3),
+        "the rotation to reopen against the new bytes",
+        || {
+            session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1)
+                .expect("get lines")
+                .total_bytes
+                == new_size
+        },
+    );
 
     session::close_session(&sid).unwrap();
     cleanup(&dir);
@@ -1719,16 +1637,11 @@ fn test_session_close_stops_watcher() {
 
     // Give the manager thread ~300 ms to observe `watcher_stop` and drop its
     // subscription. After that, no subscribers should remain for the path.
-    let start = std::time::Instant::now();
-    while start.elapsed() < Duration::from_secs(2) {
-        let sent = super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::MetadataOnly);
-        if sent == 0 {
-            break;
-        }
-        thread::sleep(Duration::from_millis(50));
-    }
-    let sent_after = super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::MetadataOnly);
-    assert_eq!(sent_after, 0, "close_session must drop the watcher subscription");
+    wait_until(
+        Duration::from_secs(2),
+        "close_session to drop the watcher subscription",
+        || super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::MetadataOnly) == 0,
+    );
 
     cleanup(&dir);
 }
@@ -1749,14 +1662,11 @@ fn test_set_encoding_during_rebuild_serialization() {
 
     // Wait for the initial upgrade so we test the rebuild path, not the
     // upgrade path.
-    let start = std::time::Instant::now();
-    while start.elapsed() < Duration::from_secs(8) {
-        let status = session::get_session_status(&sid).unwrap();
-        if matches!(status.backend_type, session::BackendType::LineIndex) && !status.is_indexing {
-            break;
-        }
-        thread::sleep(Duration::from_millis(50));
-    }
+    wait_until(
+        Duration::from_secs(8),
+        "the initial upgrade to LineIndex to finish",
+        || upgraded_to_line_index(&sid),
+    );
 
     // Park the next rebuild so the first set_encoding is provably superseded
     // by the second BEFORE its scan starts.
@@ -1778,17 +1688,13 @@ fn test_set_encoding_during_rebuild_serialization() {
     // Wait for BOTH rebuild threads to exit, not just for `rebuilding` to
     // clear. The winner clears that flag while the superseded thread is still
     // running, so asserting earlier would race right past a late stale store.
-    let start = std::time::Instant::now();
-    while start.elapsed() < Duration::from_secs(15) {
-        if session::test_gate::rebuild_exit_count() >= exits_before + 2 {
-            break;
-        }
-        thread::sleep(Duration::from_millis(10));
-    }
+    wait_until(Duration::from_secs(15), "both rebuild threads to finish", || {
+        session::test_gate::rebuild_exit_count() >= exits_before + 2
+    });
     assert_eq!(
         session::test_gate::rebuild_exit_count(),
         exits_before + 2,
-        "both rebuild threads must finish"
+        "exactly two rebuild threads may run"
     );
     assert!(!session::test_only_rebuilding_active(&sid), "rebuild must settle");
 
@@ -1825,27 +1731,19 @@ fn test_set_encoding_ascii_compatible_is_instant() {
     let sid = result.session_id.clone();
 
     // Wait for the initial upgrade so we count from a stable baseline.
-    let start = std::time::Instant::now();
-    while start.elapsed() < Duration::from_secs(8) {
-        let status = session::get_session_status(&sid).unwrap();
-        if matches!(status.backend_type, session::BackendType::LineIndex) && !status.is_indexing {
-            break;
-        }
-        thread::sleep(Duration::from_millis(50));
-    }
+    wait_until(
+        Duration::from_secs(8),
+        "the initial upgrade to LineIndex to finish",
+        || upgraded_to_line_index(&sid),
+    );
     let baseline = super::line_index::test_only_open_call_count();
 
     // UTF-8 -> Windows-1252: same byte layout (no BOM, ASCII-compatible).
     session::set_encoding(&sid, FileEncoding::Windows1252).unwrap();
 
-    // Wait for any in-flight rebuild to settle.
-    let start = std::time::Instant::now();
-    while start.elapsed() < Duration::from_secs(3) {
-        if !session::test_only_rebuilding_active(&sid) {
-            break;
-        }
-        thread::sleep(Duration::from_millis(50));
-    }
+    wait_until(Duration::from_secs(3), "any in-flight rebuild to settle", || {
+        !session::test_only_rebuilding_active(&sid)
+    });
 
     let post = super::line_index::test_only_open_call_count();
     assert_eq!(

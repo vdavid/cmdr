@@ -523,13 +523,9 @@ fn a_paused_add_parks_then_completes_on_resume() {
         apply(&path_for_thread, &changeset, &*hooks_for_thread)
     });
 
-    // Wait until the edit has parked (bounded, no arbitrary sleep budget).
-    let mut waited = 0;
-    while !hooks.parked.load(Ordering::SeqCst) {
-        std::thread::sleep(std::time::Duration::from_millis(1));
-        waited += 1;
-        assert!(waited < 2000, "edit never parked");
-    }
+    crate::test_support::wait_until(std::time::Duration::from_secs(2), "the edit to park", || {
+        hooks.parked.load(Ordering::SeqCst)
+    });
     // While parked, the original archive is untouched (nothing renamed yet).
     assert_eq!(
         std::fs::read(&path).expect("read while parked"),

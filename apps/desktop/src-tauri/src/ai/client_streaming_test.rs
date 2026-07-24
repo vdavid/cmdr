@@ -237,22 +237,23 @@ async fn logging_tap_writes_the_assembled_request_and_response_end_to_end() {
     assert_eq!(res["body"]["content"]["text"], json!("hello world!"));
 }
 
-/// Waits (bounded) for the session dir to hold two files, returning their sorted names.
+/// The names currently in `session_dir`, sorted.
+fn log_file_names(session_dir: &std::path::Path) -> Vec<String> {
+    let mut names: Vec<String> = std::fs::read_dir(session_dir)
+        .map(|rd| rd.flatten().filter_map(|e| e.file_name().into_string().ok()).collect())
+        .unwrap_or_default();
+    names.sort();
+    names
+}
+
+/// Waits (bounded) for the session dir to hold two files, returning their sorted names. The
+/// request and response writes are on detached threads, so the test has to wait for them.
 fn wait_for_two_files(session_dir: &std::path::Path) -> Vec<String> {
-    let deadline = std::time::Instant::now() + Duration::from_secs(3);
-    loop {
-        let mut names: Vec<String> = std::fs::read_dir(session_dir)
-            .map(|rd| rd.flatten().filter_map(|e| e.file_name().into_string().ok()).collect())
-            .unwrap_or_default();
-        if names.len() >= 2 {
-            names.sort();
-            return names;
-        }
-        if std::time::Instant::now() >= deadline {
-            panic!("timed out waiting for two log files in {session_dir:?}; saw {names:?}");
-        }
-        std::thread::sleep(Duration::from_millis(10));
-    }
+    let description = format!("both log files to land in {session_dir:?}");
+    crate::test_support::wait_until(Duration::from_secs(3), &description, || {
+        log_file_names(session_dir).len() >= 2
+    });
+    log_file_names(session_dir)
 }
 
 #[tokio::test]

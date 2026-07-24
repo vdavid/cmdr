@@ -242,6 +242,7 @@ mod device_tests {
     use crate::mtp::virtual_device::{
         VirtualDeviceFixture, setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
     };
+    use crate::test_support::wait_until_async;
     use std::path::Path;
 
     struct Device {
@@ -275,18 +276,9 @@ mod device_tests {
         }
     }
 
-    /// Polls `condition` until it holds, or gives up. The budget covers the
-    /// quiet pause plus a reopen attempt with room to spare.
-    async fn wait_for(mut condition: impl FnMut() -> bool) -> bool {
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-        while tokio::time::Instant::now() < deadline {
-            if condition() {
-                return true;
-            }
-            tokio::time::sleep(Duration::from_millis(10)).await;
-        }
-        condition()
-    }
+    /// The budget for a recovery step. It covers the quiet pause plus a reopen attempt with
+    /// room to spare.
+    const RECOVERY_STEP_WITHIN: Duration = Duration::from_secs(5);
 
     async fn teardown(device: Device) {
         connection_manager()
@@ -408,14 +400,14 @@ mod device_tests {
         // Recovery is fire-and-forget, so the failing op returned before the
         // spawned task had done anything. Wait for the teardown FIRST, or
         // polling straight for `is_connected` passes on the not-yet-dropped entry.
-        assert!(
-            wait_for(|| !connection_manager().is_connected(&device.id)).await,
-            "recovery must drop the dead session",
-        );
-        assert!(
-            wait_for(|| connection_manager().is_connected(&device.id)).await,
-            "recovery must reopen the device on its own",
-        );
+        wait_until_async(RECOVERY_STEP_WITHIN, "recovery to drop the dead session", || {
+            !connection_manager().is_connected(&device.id)
+        })
+        .await;
+        wait_until_async(RECOVERY_STEP_WITHIN, "recovery to reopen the device on its own", || {
+            connection_manager().is_connected(&device.id)
+        })
+        .await;
 
         assert_eq!(
             super::super::directory_ops::disconnect_test_hooks::count(),

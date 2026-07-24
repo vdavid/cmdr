@@ -7,11 +7,12 @@
 //! cache never collides across parallel tests.
 
 use std::path::Path;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use serde_json::{Value, json};
 
 use super::*;
+use crate::test_support::wait_until;
 
 // ── Pure helpers ────────────────────────────────────────────────────────────────
 
@@ -129,25 +130,24 @@ fn sample_request_info(user_message: &str) -> RequestInfo {
     }
 }
 
-/// Waits (bounded) for `session_dir` to hold exactly `count` files, then returns their sorted
-/// names. The write is on a detached thread, so a short poll avoids flakiness.
+/// The names currently in `session_dir`, sorted.
+fn log_file_names(session_dir: &Path) -> Vec<String> {
+    let mut names: Vec<String> = std::fs::read_dir(session_dir)
+        .map(|rd| rd.flatten().filter_map(|e| e.file_name().into_string().ok()).collect())
+        .unwrap_or_default();
+    names.sort();
+    names
+}
+
+/// Waits (bounded) for `session_dir` to hold at least `count` files, then returns their sorted
+/// names. The write is on a detached thread, so the test has to wait for it to land.
 fn wait_for_files(session_dir: &Path, count: usize) -> Vec<String> {
-    let deadline = Instant::now() + Duration::from_secs(3);
-    loop {
-        let names: Vec<String> = std::fs::read_dir(session_dir)
-            .map(|rd| rd.flatten().filter_map(|e| e.file_name().into_string().ok()).collect())
-            .unwrap_or_default();
-        if names.len() >= count {
-            let mut names = names;
-            names.sort();
-            return names;
-        }
-        if Instant::now() >= deadline {
-            // allowed-pluralize-noun: test timeout panic; count is a fixed test expectation (never 1 in practice)
-            panic!("timed out waiting for {count} files in {session_dir:?}; saw {names:?}");
-        }
-        std::thread::sleep(Duration::from_millis(10));
-    }
+    // allowed-pluralize-noun: a fixed test expectation, never 1 in practice
+    let description = format!("{count} log files to land in {session_dir:?}");
+    wait_until(Duration::from_secs(3), &description, || {
+        log_file_names(session_dir).len() >= count
+    });
+    log_file_names(session_dir)
 }
 
 #[test]

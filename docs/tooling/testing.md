@@ -13,6 +13,13 @@ fixture trees, see `../guides/generating-test-files.md`.
 Standard. Faster than `cargo test`. Run a single test by name: `cd apps/desktop/src-tauri && cargo nextest run <name>`.
 Run all: through the checker: `pnpm check rust-tests`. Don't run raw `cargo test` (see AGENTS.md).
 
+### `crate::test_support::wait_until` / `wait_until_async` (waiting for background work)
+
+In `apps/desktop/src-tauri/src/test_support.rs`, `#[cfg(test)]` at the crate root. `wait_until` for sync `#[test]`s,
+`wait_until_async` for `#[tokio::test]`s; both take a timeout, a description, and a condition closure, and panic on
+timeout. The only sanctioned sleep in Rust test code lives inside them. Rules and examples: `../testing.md` § "Waiting
+for background work (Rust)".
+
 ### `proptest` (property-based testing)
 
 Dev-dependency on `cmdr-lib`. Use for pure functions where the input space is large enough that example tests miss edge

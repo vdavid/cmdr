@@ -7,6 +7,12 @@ use super::*;
 use crate::indexing::lifecycle::state::IndexVolumeKind;
 use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
 use crate::indexing::stress_test_helpers::TestInstanceGuard;
+use crate::test_support::wait_until;
+
+/// The budget for the end-of-iteration hooks (tracker clear, queue drain) to land after a
+/// `flush_blocking`. `flush_blocking` replies from inside `process_message`, so the hooks run one
+/// loop iteration later; that gap is microseconds, and 1 s means a genuine regression.
+const DRAIN_LANDS_WITHIN: Duration = Duration::from_secs(1);
 
 // ── Search-generation gating (D7: search is single-volume / root-only) ──
 
@@ -297,17 +303,10 @@ fn non_root_writer_drain_clears_its_own_tracker_not_root() {
     // Drain the non-root writer. The end-of-iteration clear hook resolves the
     // tracker by volume id and clears its transient marks once the queue empties.
     writer.flush_blocking().unwrap();
-    let mut cleared = false;
-    for _ in 0..200 {
-        if !instance.tracker.is_pending("/aaa/bbb/ccc") {
-            cleared = true;
-            break;
-        }
-        thread::sleep(Duration::from_millis(5));
-    }
-    assert!(
-        cleared,
-        "the non-root writer's drain cleared ITS OWN tracker (routed by volume id, not root-only)"
+    wait_until(
+        DRAIN_LANDS_WITHIN,
+        "the non-root writer's drain to clear ITS OWN tracker (routed by volume id, not root-only)",
+        || !instance.tracker.is_pending("/aaa/bbb/ccc"),
     );
 
     writer.shutdown();
@@ -343,17 +342,10 @@ fn writer_drain_clears_transient_marks_but_preserves_held_roots() {
 
     // Drain to empty: the end-of-iteration hook clears transient marks wholesale.
     writer.flush_blocking().unwrap();
-    let mut cleared = false;
-    for _ in 0..200 {
-        if !instance.tracker.is_pending("/aaa/bbb/ccc") {
-            cleared = true;
-            break;
-        }
-        thread::sleep(Duration::from_millis(5));
-    }
-    assert!(
-        cleared,
-        "the drain cleared the transient mark once the writer queue emptied"
+    wait_until(
+        DRAIN_LANDS_WITHIN,
+        "the drain to clear the transient mark once the writer queue emptied",
+        || !instance.tracker.is_pending("/aaa/bbb/ccc"),
     );
     assert!(
         instance.tracker.is_pending("/aaa/rescan"),
@@ -564,15 +556,11 @@ fn try_send_enqueues_and_tracks_queue_depth() {
     // After a flush barrier the writer has processed every prior message,
     // so the depth is back to 0.
     writer.flush_blocking().unwrap();
-    let mut drained = false;
-    for _ in 0..200 {
-        if writer.queue_depth() == 0 {
-            drained = true;
-            break;
-        }
-        thread::sleep(Duration::from_millis(5));
-    }
-    assert!(drained, "queue_depth should return to 0 once the writer drains");
+    wait_until(
+        DRAIN_LANDS_WITHIN,
+        "queue_depth to return to 0 once the writer drains",
+        || writer.queue_depth() == 0,
+    );
 
     writer.shutdown();
 }
@@ -764,14 +752,11 @@ fn a_fatal_storage_error_stops_the_writer_and_trips_the_signal() {
     });
 
     // The loop must terminate ON ITS OWN — we keep the sender alive, so a
-    // still-running loop would block on recv, not exit. Join with a timeout.
-    let start = Instant::now();
-    while !handle.is_finished() && start.elapsed() < Duration::from_secs(5) {
-        thread::sleep(Duration::from_millis(10));
-    }
-    assert!(
-        handle.is_finished(),
-        "the writer loop must stop after a fatal storage error, not retry forever"
+    // still-running loop would block on recv, not exit.
+    wait_until(
+        Duration::from_secs(5),
+        "the writer loop to stop after a fatal storage error rather than retry forever",
+        || handle.is_finished(),
     );
     handle.join().expect("writer thread join");
 

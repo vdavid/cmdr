@@ -1566,21 +1566,13 @@ async fn queued_rescans_start_after_active_completes() {
     reconciler.queue_must_scan_sub_dirs(PathBuf::from("/nonexistent_cmdr_test/first"), &writer);
     reconciler.queue_must_scan_sub_dirs(PathBuf::from("/nonexistent_cmdr_test/second"), &writer);
 
-    let deadline = Instant::now() + Duration::from_secs(5);
-    while Instant::now() < deadline {
-        if !reconciler.is_rescan_active_for_test() && reconciler.pending_rescans_snapshot().is_empty() {
-            break;
-        }
-        tokio::time::sleep(Duration::from_millis(10)).await;
-    }
-
     // Without the drain, the second path stays queued forever.
-    let remaining = reconciler.pending_rescans_snapshot();
-    assert!(
-        remaining.is_empty(),
-        "pending rescans should drain after each active rescan completes, but {} still queued: {remaining:?}",
-        pluralize(remaining.len() as u64, "path")
-    );
+    crate::test_support::wait_until_async(
+        Duration::from_secs(5),
+        "the rescan queue to drain after each active rescan completes",
+        || !reconciler.is_rescan_active_for_test() && reconciler.pending_rescans_snapshot().is_empty(),
+    )
+    .await;
 
     writer.shutdown();
 }

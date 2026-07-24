@@ -129,25 +129,21 @@ fn drop_listing(listing_id: &str) {
 /// the retries=0 self-healing nextest group.
 async fn drive_refresh_until(listing_id: &str, target: &str, mut rewrite: impl FnMut()) {
     const BUDGET: Duration = Duration::from_secs(15);
-    let deadline = Instant::now() + BUDGET;
-    loop {
-        assert!(
-            Instant::now() < deadline,
-            "the live watch never refreshed the listing to include `{target}` within {BUDGET:?} (FSEvents watch starved)"
-        );
-        rewrite();
-        // A live stream refreshes within the debounce (a few hundred ms) plus the
-        // async re-read; cap each round so a dropped event triggers another
-        // rewrite rather than burning the whole budget, but never exceed the
-        // overall deadline.
-        let round_deadline = (Instant::now() + Duration::from_millis(750)).min(deadline);
-        while Instant::now() < round_deadline {
-            if listing_names(listing_id).iter().any(|n| n == target) {
-                return;
-            }
-            tokio::time::sleep(Duration::from_millis(25)).await;
+    // A live stream refreshes within the debounce (a few hundred ms) plus the async
+    // re-read, so re-rewrite on that cadence: a dropped event triggers another rewrite
+    // rather than burning the whole budget.
+    const ROUND: Duration = Duration::from_millis(750);
+
+    let description = format!("the live watch to refresh the listing to include `{target}` (FSEvents watch starved)");
+    let mut next_rewrite = Instant::now();
+    crate::test_support::wait_until_async(BUDGET, &description, || {
+        if Instant::now() >= next_rewrite {
+            rewrite();
+            next_rewrite = Instant::now() + ROUND;
         }
-    }
+        listing_names(listing_id).iter().any(|n| n == target)
+    })
+    .await;
 }
 
 /// Re-reading through the re-resolved `ArchiveVolume` picks up an entry added to

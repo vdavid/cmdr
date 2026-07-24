@@ -16,6 +16,7 @@ use crate::file_system::listing::streaming::{
     CollectorListingEventSink, ListingEventSink, StreamingListingState, read_directory_with_progress,
 };
 use crate::file_system::volume::{InMemoryVolume, ListingProgress, Volume, VolumeError};
+use crate::test_support::wait_until_async;
 
 /// Creates a test file entry under the root directory.
 fn test_entry(name: &str, is_dir: bool) -> FileEntry {
@@ -385,17 +386,9 @@ impl Volume for CooperativeCancelVolume {
     }
 }
 
-/// Waits up to ~2 s for `flag`, so the test reads a settled value rather than a
-/// racing one.
-async fn wait_for(flag: &Arc<AtomicBool>) -> bool {
-    for _ in 0..1_000 {
-        if flag.load(Ordering::SeqCst) {
-            return true;
-        }
-        tokio::time::sleep(std::time::Duration::from_millis(2)).await;
-    }
-    false
-}
+/// The budget for either flag below: the backend flips both within a few polls, so a
+/// timeout means the cancel path stopped working, never load.
+const FLAG_FLIPS_WITHIN: std::time::Duration = std::time::Duration::from_secs(2);
 
 /// Cancelling a listing must let the backend unwind at its own safe boundary,
 /// never drop its future. On MTP a dropped future abandons an in-flight PTP
@@ -436,7 +429,10 @@ async fn test_cancel_unwinds_the_listing_instead_of_aborting_it() {
         })
     };
 
-    assert!(wait_for(&started).await, "the listing must start before we cancel it");
+    wait_until_async(FLAG_FLIPS_WITHIN, "the listing to start before we cancel it", || {
+        started.load(Ordering::SeqCst)
+    })
+    .await;
 
     // Same two steps as `cancel_listing`.
     state.cancelled.store(true, Ordering::Relaxed);
@@ -450,10 +446,12 @@ async fn test_cancel_unwinds_the_listing_instead_of_aborting_it() {
         "the user must see a prompt cancel"
     );
 
-    assert!(
-        wait_for(&finished).await,
-        "the backend must reach its own cooperative end after a cancel"
-    );
+    wait_until_async(
+        FLAG_FLIPS_WITHIN,
+        "the backend to reach its own cooperative end after a cancel",
+        || finished.load(Ordering::SeqCst),
+    )
+    .await;
     assert!(
         !aborted.load(Ordering::SeqCst),
         "the listing future was dropped mid-flight; on MTP that abandons a PTP transaction and wedges the device"

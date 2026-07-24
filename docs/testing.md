@@ -28,6 +28,8 @@ work into it that a unit test would cover.
 - **Behavior coverage of an existing tested function**: `cargo mutants` survivor triage: every survived mutant is a
   behavior-level gap
 - **State machine transition**: Rust unit test, **drive via the public interface**, not by setting the atomic directly
+- **Wait for background work in a Rust test**: `crate::test_support::wait_until` (sync) / `wait_until_async`
+  (`#[tokio::test]`), see § "Waiting for background work (Rust)". **Never** a hand-rolled poll loop or a fixed sleep
 - **`#[tauri::command]` boundary**: vitest IPC contract test using `installIpcMock()` from
   `apps/desktop/src/lib/ipc/test-helpers.ts`
 - **Frontend component logic**: vitest + svelte-testing-library in `*.test.ts`
@@ -40,6 +42,37 @@ work into it that a unit test would cover.
 - **Cross-component flow (return-focus, dialog stack, navigation)**: E2E (Playwright)
 - **Storage volume operation (MTP, SMB)**: Integration test against a virtual fixture (virtual-mtp feature, Docker SMB
   containers)
+
+## Waiting for background work (Rust)
+
+`crate::test_support` is the sanctioned way for a Rust test to wait, and the only place in Rust test code that sleeps.
+Two flavors, same shape:
+
+```rust
+use crate::test_support::{wait_until, wait_until_async};
+
+// Sync `#[test]`:
+wait_until(Duration::from_secs(2), "the upgrade to LineIndex to finish", || {
+    upgraded_to_line_index(&sid)
+});
+
+// `#[tokio::test]`:
+wait_until_async(Duration::from_secs(5), "recovery to reopen the device", || {
+    connection_manager().is_connected(&device.id)
+}).await;
+```
+
+- Both **panic** on timeout with the caller's description and (for the sync one, via `#[track_caller]`) the caller's
+  file and line. Neither returns anything, so a wait can't silently pass the way a bare `bool` helper can.
+- Phrase `description` as a noun phrase: it completes "timed out after 2.0s waiting for …".
+- Pick the timeout as a **backstop**, not a guess: far above the real work, so a trip means a regression rather than a
+  loaded machine. Never enlarge one to fix a flake; find the missing condition instead.
+- ❌ Don't call the sync one from an async test: `std::thread::sleep` blocks the runtime worker and deadlocks a
+  current-thread scheduler. `wait_until_async` measures on tokio's clock, so a `start_paused` runtime auto-advances
+  through the wait.
+- ❌ Don't hand-roll a poll loop, and ❌ don't sleep a fixed span hoping the work landed. A test that genuinely needs a
+  fixed wall-clock wait (fake latency in a stub, a negative assertion over a window, a test whose subject IS a debounce)
+  carries an `// allowed-test-sleep: <reason>` comment.
 
 ## Anti-patterns
 

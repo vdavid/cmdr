@@ -449,29 +449,16 @@ async fn smb_integration_compress_local_files_onto_the_share() {
     .await
     .expect("start SMB compress");
 
-    // Poll for completion (bounded); surface an error event loudly.
-    let mut done = false;
-    for _ in 0..600 {
-        // Snapshot both queues in a tight scope so no lock guard is held across the
-        // await below (`clippy::await_holding_lock`).
-        let (completed, err_msg) = {
-            let completed = !events.complete.lock().unwrap().is_empty();
-            let errs = events.errors.lock().unwrap();
-            let err_msg = (!errs.is_empty()).then(|| format!("{errs:?}"));
-            (completed, err_msg)
-        };
-        assert!(
-            err_msg.is_none(),
-            "SMB compress errored: {}",
-            err_msg.unwrap_or_default()
-        );
-        if completed {
-            done = true;
-            break;
-        }
-        tokio::time::sleep(Duration::from_millis(50)).await;
-    }
-    assert!(done, "SMB compress should complete within the timeout");
+    // Wait for completion, surfacing an error event loudly rather than waiting it out.
+    crate::test_support::wait_until_async(Duration::from_secs(30), "the SMB compress to complete", || {
+        // Snapshot both queues in a tight scope so no lock guard outlives the closure
+        // (`clippy::await_holding_lock`).
+        let completed = !events.complete.lock().unwrap().is_empty();
+        let errs = events.errors.lock().unwrap();
+        assert!(errs.is_empty(), "SMB compress errored: {errs:?}");
+        completed
+    })
+    .await;
 
     // Read the zip back off the share and parse it: it must be a valid archive
     // holding both sources with their exact bytes.

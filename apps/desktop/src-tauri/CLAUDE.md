@@ -15,6 +15,8 @@ The Tauri 2 + Rust backend. Subsystem must-knows live in each module's colocated
   can genuinely be absent, or `.expect("<concrete why it can't fail>")` for a true invariant. Enforced by
   `clippy::unwrap_used`; `#[test]` fns are exempt (`clippy.toml` `allow-unwrap-in-tests`), but test *helper* fns outside
   `#[test]` aren't, so they use `.expect("…")` too.
+- ❌ No hand-rolled poll loop or fixed sleep in a test: both pass silently or flake. Wait on a condition with
+  `crate::test_support::wait_until` / `wait_until_async`, which panic on timeout. Rules: `docs/testing.md`.
 - ❌ Never build with raw `cargo build` (white screen, no embedded frontend). Use `pnpm tauri build` or the
   `tauri-wrapper.ts build` wrapper, which runs `beforeBuildCommand`. See `../scripts/CLAUDE.md`.
 - ❌ Every `unsafe {}` block (and `unsafe impl`) needs a `// SAFETY:` comment on the immediately-preceding line, stating
