@@ -753,6 +753,11 @@ unchanged and invalidate is conservative — a cheap cold rebuild on a rare user
 streaming `walk_image_entries` (ordered by `parent_id`, one dir-group in memory at a time) keeps even that cold rebuild
 in constant memory instead of materializing every file row.
 
+An `ext` column + partial index in the drive index to prune this cold walk was measured on copies of the real dev DBs
+and skipped: 6.4x on the root DB but ~nothing on the image-dense NAS, for a schema bump and +58 MB, against a walk that
+runs once per session (`docs/notes/m7-ext-index-walk-bench-2026-07-24.md`, incl. why the old 42 s baseline didn't
+reproduce). Revisit only off an in-app measurement showing tens of seconds, or a sparse-image 10M+-file corpus.
+
 ### The per-folder accounted aggregate + the index-status indicators (`coverage.rs`, `commands.rs`)
 
 The covered-count cache above is the DENOMINATOR (`eligible`: images the drive index says qualify per folder). The quiet

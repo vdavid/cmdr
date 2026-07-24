@@ -1,6 +1,7 @@
 # M7 `ext`-column + partial-index walk bench (2026-07-24)
 
-Evidence behind the M7 addendum in `../specs/resource-use-plan.md`. Measures the coverage cold walk
+The measurement that retired resource-use-plan M7 (the plan itself is wiped; this note is the durable record, and the
+skip verdict is at the bottom). Measures the coverage cold walk
 (`media_index/scheduler/enrich.rs::walk_image_entries`, the `coverage::get_or_build` path) against copies of the two
 real dev drive-index DBs, then prototypes M7's `ext` column + partial image-extension index on those copies and re-runs
 the walk in the pruned shape. David rejected the per-folder image-count-aggregate alternative; only the `ext`-column
@@ -119,3 +120,10 @@ M7 would ship as a plain `SCHEMA_VERSION` "14" → "15" bump (`indexing/store/`:
 migrations by design). That deletes and rebuilds every volume's drive index: a full filesystem rescan per volume (David:
 NAS ~10 min, local ~2 min — declared cheap, 2026-07-24). `dir_stats` rebuilds with the rescan. The importance and media
 DBs are separate files and survive; media staleness keys on `(path, mtime, size)`, so no re-enrichment follows.
+
+## Verdict: skip (evidence above; David rejected the folder-aggregate alternative, 2026-07-24)
+
+The walk runs once per session (`coverage::get_or_build`, kept warm by passes), so M7 buys ~4 s once per launch on root
+and ~0.1 s on the NAS, for a schema bump, two writer-site changes, and +58 MB across the two DBs. Revisit only if an
+in-app measurement shows the cold preview still costs tens of seconds (then the fix is the contention actually burning
+the time, not the index), or if a sparse-image corpus at 10M+ files appears.
