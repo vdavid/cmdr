@@ -77,8 +77,8 @@ wait_until_async(Duration::from_secs(5), "recovery to reopen the device", || {
   sabotage the very work it waits for: `media_index/scheduler/kick_tests.rs::has_enriched_row` used to re-open a full
   `MediaStore` (a write connection: WAL conversion + `CREATE TABLE IF NOT EXISTS`) per poll, and SQLite's lock-upgrade
   deadlock check — which BYPASSES `busy_timeout` — made the enrichment writer's upsert fail with SQLITE_BUSY, silently
-  dropping the row the wait was polling for. Probe SQLite state through a read-only connection
-  (`open_read_connection`), never by re-opening the store.
+  dropping the row the wait was polling for. Probe SQLite state through a read-only connection (`open_read_connection`),
+  never by re-opening the store.
 
 ## Anti-patterns
 
