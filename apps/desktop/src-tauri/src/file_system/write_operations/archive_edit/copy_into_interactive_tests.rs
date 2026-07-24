@@ -50,16 +50,16 @@ async fn interactive_copy_into_prompts_on_a_file_collision_and_overwrite_replace
     let (events, op_id) = start_interactive_copy_into(&archive, &src_root, "d").await;
 
     // The collision fires a prompt; answer Overwrite.
-    assert!(
-        wait_until(|| !events.conflicts.lock_ignore_poison().is_empty()).await,
-        "a file collision must emit a write-conflict prompt"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-conflict event", || {
+        !events.conflicts.lock_ignore_poison().is_empty()
+    })
+    .await;
     resolve_write_conflict(&op_id, ConflictResolution::Overwrite, false);
 
-    assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
-        "the edit should complete after the prompt is answered"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert_eq!(
         read_entry(&archive, "d/existing.txt").as_deref(),
         Some(b"NEW".as_slice()),
@@ -73,7 +73,10 @@ async fn interactive_copy_into_prompts_on_a_file_collision_and_overwrite_replace
     // A NON-root parent carries its volume id in the settle event (so the FE can
     // clear that drive's eject guard); a `root` local disk settles with `None`,
     // pinned by `driver_tests` and `move_out_tests`.
-    assert!(wait_until(|| !events.settled.lock_ignore_poison().is_empty()).await);
+    wait_until_async(Duration::from_secs(5), "the write-settled event", || {
+        !events.settled.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert!(
         events.settled.lock_ignore_poison()[0].volume_id.is_some(),
         "a non-root parent archive edit carries its volume id in the settle event"
@@ -94,16 +97,16 @@ async fn interactive_copy_into_skip_keeps_the_existing_entry() {
 
     let (events, op_id) = start_interactive_copy_into(&archive, &src_root, "d").await;
 
-    assert!(
-        wait_until(|| !events.conflicts.lock_ignore_poison().is_empty()).await,
-        "a file collision must prompt"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-conflict event", || {
+        !events.conflicts.lock_ignore_poison().is_empty()
+    })
+    .await;
     resolve_write_conflict(&op_id, ConflictResolution::Skip, false);
 
-    assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
-        "the edit should complete"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert_eq!(
         read_entry(&archive, "d/existing.txt").as_deref(),
         Some(b"OLD".as_slice()),
@@ -128,16 +131,16 @@ async fn interactive_apply_to_all_latches_and_stops_prompting() {
 
     // Answer the FIRST prompt with Skip + apply-to-all; the second collision must
     // be resolved from the latch WITHOUT a second prompt.
-    assert!(
-        wait_until(|| !events.conflicts.lock_ignore_poison().is_empty()).await,
-        "the first collision must prompt"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-conflict event", || {
+        !events.conflicts.lock_ignore_poison().is_empty()
+    })
+    .await;
     resolve_write_conflict(&op_id, ConflictResolution::Skip, true);
 
-    assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
-        "the edit should complete"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert_eq!(
         events.conflicts.lock_ignore_poison().len(),
         1,
@@ -163,18 +166,18 @@ async fn interactive_cancel_during_a_prompt_leaves_the_archive_intact() {
 
     let (events, op_id) = start_interactive_copy_into(&archive, &src_root, "d").await;
 
-    assert!(
-        wait_until(|| !events.conflicts.lock_ignore_poison().is_empty()).await,
-        "the collision must prompt"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-conflict event", || {
+        !events.conflicts.lock_ignore_poison().is_empty()
+    })
+    .await;
     // Cancel while the prompt is pending: the planner's recv unblocks with an
     // error, the mutator never runs, and the archive is untouched.
     cancel_write_operation(&op_id, false);
 
-    assert!(
-        wait_until(|| !events.cancelled.lock_ignore_poison().is_empty()).await,
-        "cancel during a prompt should reach write-cancelled"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-cancelled event", || {
+        !events.cancelled.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert_eq!(
         read_entry(&archive, "d/existing.txt").as_deref(),
         Some(b"OLD".as_slice()),
@@ -204,10 +207,10 @@ async fn interactive_conflict_event_carries_both_sides_metadata() {
 
     let (events, op_id) = start_interactive_copy_into(&archive, &src_root, "d").await;
 
-    assert!(
-        wait_until(|| !events.conflicts.lock_ignore_poison().is_empty()).await,
-        "a file collision must prompt"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-conflict event", || {
+        !events.conflicts.lock_ignore_poison().is_empty()
+    })
+    .await;
     {
         let conflicts = events.conflicts.lock_ignore_poison();
         let ev = &conflicts[0];
@@ -221,7 +224,10 @@ async fn interactive_conflict_event_carries_both_sides_metadata() {
         );
     }
     resolve_write_conflict(&op_id, ConflictResolution::Skip, false);
-    assert!(wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await);
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
 }
 
 #[tokio::test]
@@ -253,13 +259,16 @@ async fn interactive_move_into_with_a_skipped_collision_keeps_the_source() {
     .await
     .expect("start interactive move-into");
 
-    assert!(
-        wait_until(|| !events.conflicts.lock_ignore_poison().is_empty()).await,
-        "the collision must prompt"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-conflict event", || {
+        !events.conflicts.lock_ignore_poison().is_empty()
+    })
+    .await;
     resolve_write_conflict(&start.operation_id, ConflictResolution::Skip, false);
 
-    assert!(wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await);
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     // Something was skipped → the move invariant keeps the source intact.
     assert!(
         src_root.join("d/a.txt").exists() && src_root.join("d/b.txt").exists(),
@@ -280,10 +289,10 @@ async fn interactive_dir_vs_dir_merges_without_prompting() {
 
     let (events, _op_id) = start_interactive_copy_into(&archive, &src_root, "d").await;
 
-    assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
-        "the merge should complete with no prompt"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     // The directory collision merged silently — no prompt fired.
     assert!(
         events.conflicts.lock_ignore_poison().is_empty(),

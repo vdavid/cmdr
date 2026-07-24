@@ -78,8 +78,12 @@ async fn compress_onto_a_remote_parent_seeds_and_packs_local_files() {
     .await
     .expect("start remote compress");
 
+    wait_until_async(Duration::from_secs(5), "a terminal event (complete or error)", || {
+        !events.complete.lock_ignore_poison().is_empty() || !events.errors.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
+        !events.complete.lock_ignore_poison().is_empty(),
         "remote compress should complete, errors: {:?}",
         events.errors.lock_ignore_poison()
     );
@@ -132,8 +136,12 @@ async fn compress_onto_a_remote_parent_overwrites_an_existing_zip_with_a_fresh_a
     .await
     .expect("start remote compress over existing");
 
+    wait_until_async(Duration::from_secs(5), "a terminal event (complete or error)", || {
+        !events.complete.lock_ignore_poison().is_empty() || !events.errors.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
+        !events.complete.lock_ignore_poison().is_empty(),
         "remote compress-overwrite should complete, errors: {:?}",
         events.errors.lock_ignore_poison()
     );
@@ -180,8 +188,12 @@ async fn compress_onto_an_mtp_style_remote_parent_seeds_and_packs() {
     .await
     .expect("start mtp-style remote compress");
 
+    wait_until_async(Duration::from_secs(5), "a terminal event (complete or error)", || {
+        !events.complete.lock_ignore_poison().is_empty() || !events.errors.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
+        !events.complete.lock_ignore_poison().is_empty(),
         "mtp-style remote compress should complete, errors: {:?}",
         events.errors.lock_ignore_poison()
     );

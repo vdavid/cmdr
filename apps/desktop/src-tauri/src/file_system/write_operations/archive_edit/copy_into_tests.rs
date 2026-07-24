@@ -51,10 +51,10 @@ async fn copy_into_adds_a_local_directory_tree_and_skips_conflicts() {
     .await
     .expect("start copy-into");
 
-    assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
-        "copy-into should complete"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     // The colliding file kept its OLD bytes (Skip), the new files were added.
     assert_eq!(
         read_entry(&archive, "payload/existing.txt").as_deref(),
@@ -127,10 +127,10 @@ async fn rename_policy_picks_the_next_free_numbered_name() {
 
     let events = run_policy_copy_into(&archive, &src_root, "d", ConflictResolution::Rename, false).await;
 
-    assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
-        "rename copy-into should complete"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     // Originals untouched; the incoming file lands under the next free name with
     // the extension kept BEFORE the ` (n)` suffix.
     assert_eq!(
@@ -168,7 +168,10 @@ async fn overwrite_smaller_overwrites_only_a_strictly_smaller_entry() {
     std::fs::create_dir_all(src_a.join("d")).expect("mkdir");
     std::fs::write(src_a.join("d/f.txt"), b"hi").expect("w"); // 2 bytes
     let events_a = run_policy_copy_into(&archive_a, &src_a, "d", ConflictResolution::OverwriteSmaller, false).await;
-    assert!(wait_until(|| !events_a.complete.lock_ignore_poison().is_empty()).await);
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events_a.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert_eq!(
         read_entry(&archive_a, "d/f.txt").as_deref(),
         Some(b"BIGDATA".as_slice()),
@@ -182,7 +185,10 @@ async fn overwrite_smaller_overwrites_only_a_strictly_smaller_entry() {
     std::fs::create_dir_all(src_b.join("d")).expect("mkdir");
     std::fs::write(src_b.join("d/f.txt"), b"BIGDATA").expect("w"); // 7 bytes
     let events_b = run_policy_copy_into(&archive_b, &src_b, "d", ConflictResolution::OverwriteSmaller, false).await;
-    assert!(wait_until(|| !events_b.complete.lock_ignore_poison().is_empty()).await);
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events_b.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert_eq!(
         read_entry(&archive_b, "d/f.txt").as_deref(),
         Some(b"BIGDATA".as_slice()),
@@ -196,7 +202,10 @@ async fn overwrite_smaller_overwrites_only_a_strictly_smaller_entry() {
     std::fs::create_dir_all(src_c.join("d")).expect("mkdir");
     std::fs::write(src_c.join("d/f.txt"), b"XY").expect("w"); // 2 bytes, equal
     let events_c = run_policy_copy_into(&archive_c, &src_c, "d", ConflictResolution::OverwriteSmaller, false).await;
-    assert!(wait_until(|| !events_c.complete.lock_ignore_poison().is_empty()).await);
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events_c.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert_eq!(
         read_entry(&archive_c, "d/f.txt").as_deref(),
         Some(b"AB".as_slice()),
@@ -234,7 +243,10 @@ async fn overwrite_older_overwrites_only_a_strictly_older_entry() {
     std::fs::write(src_a.join("d/f.txt"), b"INCOMING").expect("w");
     filetime::set_file_mtime(src_a.join("d/f.txt"), src_2020).expect("mtime");
     let events_a = run_policy_copy_into(&archive_a, &src_a, "d", ConflictResolution::OverwriteOlder, false).await;
-    assert!(wait_until(|| !events_a.complete.lock_ignore_poison().is_empty()).await);
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events_a.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert_eq!(
         read_entry(&archive_a, "d/f.txt").as_deref(),
         Some(b"KEEP".as_slice()),
@@ -249,7 +261,10 @@ async fn overwrite_older_overwrites_only_a_strictly_older_entry() {
     std::fs::write(src_b.join("d/f.txt"), b"INCOMING").expect("w");
     filetime::set_file_mtime(src_b.join("d/f.txt"), src_2024).expect("mtime");
     let events_b = run_policy_copy_into(&archive_b, &src_b, "d", ConflictResolution::OverwriteOlder, false).await;
-    assert!(wait_until(|| !events_b.complete.lock_ignore_poison().is_empty()).await);
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events_b.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert_eq!(
         read_entry(&archive_b, "d/f.txt").as_deref(),
         Some(b"INCOMING".as_slice()),
@@ -276,7 +291,10 @@ async fn overwrite_older_overwrites_only_a_strictly_older_entry() {
     )
     .expect("mtime");
     let events_c = run_policy_copy_into(&archive_c, &src_c, "d", ConflictResolution::OverwriteOlder, false).await;
-    assert!(wait_until(|| !events_c.complete.lock_ignore_poison().is_empty()).await);
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events_c.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert_eq!(
         read_entry(&archive_c, "d/f.txt").as_deref(),
         Some(b"KEEP".as_slice()),
@@ -295,12 +313,17 @@ async fn move_into_deletes_the_source_only_on_a_clean_transfer() {
     std::fs::write(src_root.join("d/a.txt"), b"aaa").expect("w");
 
     let events = run_policy_copy_into(&archive, &src_root, "d", ConflictResolution::Overwrite, true).await;
-    assert!(wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await);
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert_eq!(read_entry(&archive, "d/a.txt").as_deref(), Some(b"aaa".as_slice()));
-    assert!(
-        wait_until(|| !src_root.join("d").exists()).await,
-        "a clean move INTO the archive must delete the source after commit"
-    );
+    wait_until_async(
+        Duration::from_secs(5),
+        "the moved-out source directory to disappear",
+        || !src_root.join("d").exists(),
+    )
+    .await;
 }
 
 #[tokio::test]
@@ -316,7 +339,10 @@ async fn move_into_with_a_skipped_collision_keeps_the_source() {
     std::fs::write(src_root.join("d/b.txt"), b"bbb").expect("w2"); // lands
 
     let events = run_policy_copy_into(&archive, &src_root, "d", ConflictResolution::Skip, true).await;
-    assert!(wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await);
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     // The non-colliding file landed, the colliding one kept its OLD bytes, and the
     // source survives because something was skipped.
     assert_eq!(read_entry(&archive, "d/b.txt").as_deref(), Some(b"bbb".as_slice()));
@@ -339,7 +365,10 @@ async fn copy_into_preserves_an_empty_source_directory() {
     std::fs::write(src_root.join("d/f.txt"), b"f").expect("w");
 
     let events = run_policy_copy_into(&archive, &src_root, "d", ConflictResolution::Skip, false).await;
-    assert!(wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await);
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     // The empty directory survives as an explicit `d/empty_sub/` entry.
     let file = std::fs::File::open(&archive).expect("open");
     let mut zip = ZipArchive::new(file).expect("zip");
@@ -389,7 +418,10 @@ async fn move_into_a_top_level_symlink_preserves_the_source_and_surfaces_the_ski
     .await
     .expect("start move-into");
 
-    assert!(wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await);
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     // DATA SAFETY: the source symlink survives (it can't be archived, so the move
     // deletes nothing), and it never entered the archive.
     assert!(
@@ -441,7 +473,10 @@ async fn move_into_a_dir_containing_a_symlink_preserves_the_whole_source_tree() 
     .await
     .expect("start move-into");
 
-    assert!(wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await);
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     // DATA SAFETY: the source tree survives (a contained symlink can't be archived,
     // so the batch is all-or-nothing skipped and the source dir is NOT removed).
     assert!(
@@ -499,7 +534,10 @@ async fn move_into_a_broken_symlink_preserves_the_source() {
     .await
     .expect("start move-into");
 
-    assert!(wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await);
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert!(
         std::fs::symlink_metadata(src_root.join("broken")).is_ok(),
         "a broken symlink must be preserved at the source, never silently deleted"
@@ -554,10 +592,10 @@ async fn copy_into_a_remote_archive_lands_the_file_via_the_pulled_local_copy() {
         "a non-interactive copy INTO a remote archive must start (plan against the pulled copy), got {result:?}"
     );
 
-    assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
-        "the remote copy-into should complete"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     // The copied file landed in the re-read remote archive, next to the original.
     assert_eq!(
         read_remote_entry(parent.as_ref(), &archive_path, "keep.txt")

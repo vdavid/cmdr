@@ -39,10 +39,10 @@ async fn a_successful_edit_rewrites_the_archive_and_emits_complete_then_settled(
         .expect("start archive edit");
     assert_eq!(start.operation_type, WriteOperationType::ArchiveEdit);
 
-    assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
-        "a write-complete should fire"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
 
     // The archive was actually rewritten.
     assert_eq!(read_entry(&path, "keep.txt").as_deref(), Some(b"keep".as_slice()));
@@ -58,10 +58,10 @@ async fn a_successful_edit_rewrites_the_archive_and_emits_complete_then_settled(
         events.errors.lock_ignore_poison().is_empty(),
         "no write-error on success"
     );
-    assert!(
-        wait_until(|| !events.settled.lock_ignore_poison().is_empty()).await,
-        "write-settled should fire"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-settled event", || {
+        !events.settled.lock_ignore_poison().is_empty()
+    })
+    .await;
     // A NON-root parent carries its volume id in the settle event (the FE clears
     // that drive's eject guard on it). The `root` → `None` case is pinned by
     // `move_out_tests`.
@@ -90,10 +90,10 @@ async fn route_archive_delete_removes_entries_and_completes() {
         .await
         .expect("start delete");
 
-    assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
-        "the delete should complete"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert!(read_entry(&path, "drop.txt").is_none(), "the entry was removed");
     assert_eq!(read_entry(&path, "keep.txt").as_deref(), Some(b"keep.txt".as_slice()));
 }
@@ -121,7 +121,10 @@ async fn route_archive_delete_reports_the_deleted_count_not_the_retained_count()
     .await
     .expect("start delete");
 
-    assert!(wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await);
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert!(read_entry(&path, "drop.txt").is_none(), "the entry was removed");
     let complete = events.complete.lock_ignore_poison();
     assert_eq!(
@@ -152,17 +155,17 @@ async fn a_missing_archive_emits_a_write_error_not_a_panic() {
         .await
         .expect("start archive edit");
 
-    assert!(
-        wait_until(|| !events.errors.lock_ignore_poison().is_empty()).await,
-        "a missing archive should surface a write-error"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-error event", || {
+        !events.errors.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert!(
         events.complete.lock_ignore_poison().is_empty(),
         "no write-complete on failure"
     );
     // Settle still fires (torn-down cleanly, no hang).
-    assert!(
-        wait_until(|| !events.settled.lock_ignore_poison().is_empty()).await,
-        "write-settled fires even on the error path"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-settled event", || {
+        !events.settled.lock_ignore_poison().is_empty()
+    })
+    .await;
 }

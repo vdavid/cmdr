@@ -130,10 +130,10 @@ async fn move_out_lands_files_at_dest_deletes_entries_and_keeps_the_remainder() 
     .await
     .expect("start move-out");
 
-    assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
-        "move-out should complete"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     // The file landed at the destination.
     assert_eq!(
         std::fs::read(dest_dir.join("move_me.txt")).ok().as_deref(),
@@ -155,7 +155,10 @@ async fn move_out_lands_files_at_dest_deletes_entries_and_keeps_the_remainder() 
         assert_eq!(complete[0].operation_type, WriteOperationType::Move);
     }
     // A `root`-parent op carries no settle volume id (it's `None`, not `"root"`).
-    assert!(wait_until(|| !events.settled.lock_ignore_poison().is_empty()).await);
+    wait_until_async(Duration::from_secs(5), "the write-settled event", || {
+        !events.settled.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert_eq!(
         events.settled.lock_ignore_poison()[0].volume_id,
         None,
@@ -191,10 +194,10 @@ async fn move_out_dest_failure_deletes_nothing_and_leaves_the_archive_readable()
     .await
     .expect("start move-out");
 
-    assert!(
-        wait_until(|| !events.errors.lock_ignore_poison().is_empty()).await,
-        "a dest-side failure must surface a write-error"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-error event", || {
+        !events.errors.lock_ignore_poison().is_empty()
+    })
+    .await;
     // CRITICAL: nothing was deleted — the archive is byte-for-byte intact.
     assert_eq!(
         read_entry(&archive, "move_me.txt").as_deref(),
@@ -246,10 +249,10 @@ async fn move_out_a_lone_skipped_source_stays_in_the_archive() {
     .await
     .expect("start move-out");
 
-    assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
-        "the move-out should complete (nothing extracted, nothing deleted)"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     // All-or-nothing on a skip: the archive entry survives, and the pre-existing
     // destination file is untouched.
     assert_eq!(
@@ -299,13 +302,12 @@ async fn move_out_cancel_leaves_the_archive_untouched() {
     // awaits). `false` = keep already-copied files, no rollback.
     cancel_write_operation(&start.operation_id, false);
 
-    assert!(
-        wait_until(|| {
-            !events.cancelled.lock_ignore_poison().is_empty() || !events.complete.lock_ignore_poison().is_empty()
-        })
-        .await,
-        "the cancelled move-out should reach a terminal event"
-    );
+    wait_until_async(
+        Duration::from_secs(5),
+        "a terminal event (cancelled or complete)",
+        || !events.cancelled.lock_ignore_poison().is_empty() || !events.complete.lock_ignore_poison().is_empty(),
+    )
+    .await;
     // The archive is untouched: nothing was deleted on cancel.
     assert_eq!(
         read_entry(&archive, "move_me.txt").as_deref(),
@@ -360,10 +362,10 @@ async fn move_out_dir_with_a_deep_skipped_child_keeps_that_child_in_the_archive(
     .await
     .expect("start move-out");
 
-    assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
-        "the move-out should complete"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     // CRITICAL (data safety): the deep-skipped child never landed at the dest, so
     // its archive entry MUST survive — deleting the whole `dir/` subtree would
     // lose it.
@@ -508,10 +510,10 @@ async fn move_out_partial_skip_converges_deletes_landed_keeps_skipped() {
     .await
     .expect("start move-out");
 
-    assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
-        "the move-out should complete"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     // The landed source is gone from the archive; the skipped one survives.
     assert!(
         read_entry(&archive, "a.txt").is_none(),
@@ -570,10 +572,10 @@ async fn move_out_error_mid_tree_deletes_only_the_durable_prefix() {
     .await
     .expect("start move-out");
 
-    assert!(
-        wait_until(|| !events.errors.lock_ignore_poison().is_empty()).await,
-        "a dest-side failure mid-tree must surface a write-error"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-error event", || {
+        !events.errors.lock_ignore_poison().is_empty()
+    })
+    .await;
     // Convergence on error: the durable prefix `a.txt` is deleted, the failed
     // `b.txt` stays (no data loss — its bytes never landed).
     assert!(
@@ -624,13 +626,12 @@ async fn move_out_rollback_deletes_nothing_from_the_archive() {
     // regardless: a rolled-back extraction leaves nothing durable to move out.
     cancel_write_operation(&start.operation_id, true);
 
-    assert!(
-        wait_until(|| {
-            !events.cancelled.lock_ignore_poison().is_empty() || !events.complete.lock_ignore_poison().is_empty()
-        })
-        .await,
-        "the rolled-back move-out should reach a terminal event"
-    );
+    wait_until_async(
+        Duration::from_secs(5),
+        "a terminal event (cancelled or complete)",
+        || !events.cancelled.lock_ignore_poison().is_empty() || !events.complete.lock_ignore_poison().is_empty(),
+    )
+    .await;
     assert_eq!(
         read_entry(&archive, "move_me.txt").as_deref(),
         Some(b"payload".as_slice()),

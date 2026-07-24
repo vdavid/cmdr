@@ -19,6 +19,7 @@ pub(super) use crate::file_system::get_volume_manager;
 pub(super) use crate::file_system::volume::Volume;
 pub(super) use crate::file_system::volume::backends::archive::mutator::Changeset;
 pub(super) use crate::ignore_poison::IgnorePoison;
+pub(super) use crate::test_support::wait_until_async;
 pub(super) use zip::write::SimpleFileOptions;
 pub(super) use zip::{ZipArchive, ZipWriter};
 
@@ -52,19 +53,6 @@ pub(super) fn read_entry(path: &Path, name: &str) -> Option<Vec<u8>> {
     let mut buf = Vec::new();
     entry.read_to_end(&mut buf).ok()?;
     Some(buf)
-}
-
-/// Polls until `predicate` holds or a bounded timeout elapses, yielding to the
-/// runtime so the spawned op makes progress. The cap only bites on a genuine
-/// hang — success returns early, so a comfortable cap costs nothing.
-pub(super) async fn wait_until(mut predicate: impl FnMut() -> bool) -> bool {
-    for _ in 0..5_000 {
-        if predicate() {
-            return true;
-        }
-        tokio::time::sleep(Duration::from_millis(1)).await;
-    }
-    false
 }
 
 /// A unique id giving one archive-edit test op its OWN operation-manager lane,

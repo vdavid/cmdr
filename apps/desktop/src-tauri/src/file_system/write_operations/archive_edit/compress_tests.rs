@@ -91,10 +91,10 @@ async fn compress_start_packs_local_files_into_a_new_zip() {
     .await
     .expect("start compress");
 
-    assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
-        "compress should complete"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
 
     // Both files landed at the archive root with their exact bytes.
     assert_eq!(read_entry(&dest, "one.txt").as_deref(), Some(b"first".as_slice()));
@@ -156,16 +156,17 @@ async fn compress_journals_subkind_and_net_new_from_the_driver() {
     // finalize) until the op is durably finalized.
     let op_id = start.operation_id.clone();
     let jdb_poll = jdb.clone();
-    assert!(
-        wait_until(|| {
+    wait_until_async(
+        Duration::from_secs(5),
+        "the operation to reach Done in the journal",
+        || {
             open_read_connection(&jdb_poll)
                 .ok()
                 .and_then(|c| read_operation(&c, &op_id).ok().flatten())
                 .is_some_and(|r| r.execution_status == ExecutionStatus::Done)
-        })
-        .await,
-        "the compress op should finalize in the journal"
-    );
+        },
+    )
+    .await;
 
     let conn = open_read_connection(&jdb).expect("read conn");
     let row = read_operation(&conn, &start.operation_id).expect("read").expect("row");
@@ -219,7 +220,10 @@ async fn compress_start_packs_a_directory_subtree() {
     .await
     .expect("start compress");
 
-    assert!(wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await);
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert_eq!(
         read_entry(&dest, "project/readme.txt").as_deref(),
         Some(b"top".as_slice())
@@ -276,10 +280,10 @@ async fn compress_payload_at(dir: &Path, tag: &str, level: Option<i64>, payload:
     )
     .await
     .expect("start compress");
-    assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
-        "compress at level {level:?} should complete"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     // Every level must round-trip to the exact original bytes.
     assert_eq!(
         read_entry(&dest, "data.txt").as_deref(),

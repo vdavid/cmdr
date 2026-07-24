@@ -34,8 +34,12 @@ async fn copy_into_from_a_remote_source_lands_the_file() {
     .await
     .expect("start remote-source copy-into");
 
+    wait_until_async(Duration::from_secs(5), "a terminal event (complete or error)", || {
+        !events.complete.lock_ignore_poison().is_empty() || !events.errors.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
+        !events.complete.lock_ignore_poison().is_empty(),
         "remote-source copy-into should complete, errors: {:?}",
         events.errors.lock_ignore_poison()
     );
@@ -76,8 +80,12 @@ async fn copy_into_from_a_remote_source_lands_a_nested_tree() {
     .await
     .expect("start remote-source tree copy-into");
 
+    wait_until_async(Duration::from_secs(5), "a terminal event (complete or error)", || {
+        !events.complete.lock_ignore_poison().is_empty() || !events.errors.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
+        !events.complete.lock_ignore_poison().is_empty(),
         "remote-source tree copy-into should complete, errors: {:?}",
         events.errors.lock_ignore_poison()
     );
@@ -123,8 +131,12 @@ async fn copy_into_from_a_remote_source_uses_the_real_bytes_not_the_lying_size()
     .await
     .expect("start lying-size copy-into");
 
+    wait_until_async(Duration::from_secs(5), "a terminal event (complete or error)", || {
+        !events.complete.lock_ignore_poison().is_empty() || !events.errors.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
+        !events.complete.lock_ignore_poison().is_empty(),
         "lying-size copy-into should complete, errors: {:?}",
         events.errors.lock_ignore_poison()
     );
@@ -163,8 +175,12 @@ async fn move_into_from_a_remote_source_deletes_the_remote_originals_after_commi
     .await
     .expect("start remote-source move-into");
 
+    wait_until_async(Duration::from_secs(5), "a terminal event (complete or error)", || {
+        !events.complete.lock_ignore_poison().is_empty() || !events.errors.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert!(
-        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
+        !events.complete.lock_ignore_poison().is_empty(),
         "remote-source move-into should complete, errors: {:?}",
         events.errors.lock_ignore_poison()
     );
@@ -215,7 +231,10 @@ async fn move_into_from_a_remote_source_keeps_originals_when_a_collision_is_skip
     .await
     .expect("start remote-source move-into with a skip");
 
-    assert!(wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await);
+    wait_until_async(Duration::from_secs(5), "the write-complete event", || {
+        !events.complete.lock_ignore_poison().is_empty()
+    })
+    .await;
     assert_eq!(read_entry(&archive, "d/b.txt").as_deref(), Some(b"bbb".as_slice()));
     assert_eq!(read_entry(&archive, "d/a.txt").as_deref(), Some(b"OLD".as_slice()));
     assert!(
@@ -254,10 +273,10 @@ async fn copy_into_from_a_remote_source_surfaces_a_pull_failure_and_leaves_the_z
     .await
     .expect("start (the fault surfaces on the terminal event, not the start)");
 
-    assert!(
-        wait_until(|| !events.errors.lock_ignore_poison().is_empty()).await,
-        "a remote pull fault must surface as a write-error"
-    );
+    wait_until_async(Duration::from_secs(5), "the write-error event", || {
+        !events.errors.lock_ignore_poison().is_empty()
+    })
+    .await;
     // No entry was added and the archive bytes are unchanged: the pull faulted
     // before the rewrite ever opened the zip.
     assert!(read_entry(&archive, "missing.txt").is_none());
@@ -303,8 +322,18 @@ async fn copy_into_from_a_remote_source_cancelled_before_the_pull_leaves_the_zip
     // Cancel before yielding to the spawned op.
     super::super::state::cancel_write_operation(&start.operation_id, false);
 
+    wait_until_async(
+        Duration::from_secs(5),
+        "a terminal event (cancelled, complete, or error)",
+        || {
+            !events.cancelled.lock_ignore_poison().is_empty()
+                || !events.complete.lock_ignore_poison().is_empty()
+                || !events.errors.lock_ignore_poison().is_empty()
+        },
+    )
+    .await;
     assert!(
-        wait_until(|| !events.cancelled.lock_ignore_poison().is_empty()).await,
+        !events.cancelled.lock_ignore_poison().is_empty(),
         "a cancel before the pull must emit write-cancelled, complete: {:?}, errors: {:?}",
         events.complete.lock_ignore_poison(),
         events.errors.lock_ignore_poison()
