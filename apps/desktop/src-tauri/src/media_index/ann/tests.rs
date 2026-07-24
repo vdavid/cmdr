@@ -395,6 +395,93 @@ fn a_bad_index_kicks_a_background_rebuild_that_heals_it() {
 }
 
 #[test]
+fn a_flush_during_an_in_flight_rebuild_retains_ops_and_replays_them_after() {
+    let dir = tempfile::tempdir().expect("temp");
+    let (w, db_path) = writer(dir.path(), "ann-rebuild-race");
+    seed_corpus(&w, 5);
+    rebuild_now(&db_path);
+    w.flush_ann_index().expect("flush ann"); // land the seeding ops; marker clear
+    assert!(
+        !dirty_path(&db_path, AnnSpace::Clip).exists(),
+        "precondition: marker clear"
+    );
+
+    // A rebuild is "in flight": its snapshot was taken BEFORE the row below commits.
+    rebuild::test_hold_in_flight(&db_path, AnnSpace::Clip);
+
+    // A row committed mid-rebuild, then a seam flush. The flush must RETAIN the op
+    // AND the dirty marker: applying now would land on a file the install is about
+    // to overwrite, and dropping would lose the row forever (the in-flight snapshot
+    // predates it). Pre-fix this applied immediately: rows read 6 and the marker
+    // cleared — the silent-loss shape.
+    seed_clip(&w, "/p/mid.jpg", query());
+    w.flush_ann_index().expect("flush ann");
+    let meta = read_meta(&db_path, AnnSpace::Clip, AnnSpace::Clip.current_model_id()).expect("meta");
+    assert_eq!(meta.rows, 5, "the mid-rebuild op is retained, not applied");
+    assert!(
+        dirty_path(&db_path, AnnSpace::Clip).exists(),
+        "the dirty marker stays until the retained ops land"
+    );
+
+    // The rebuild completes; the next seam flush replays the retained op on top of
+    // the installed index (idempotent by design), and the row becomes searchable.
+    rebuild::test_release_in_flight(&db_path, AnnSpace::Clip);
+    w.flush_ann_index().expect("flush ann");
+    let meta = read_meta(&db_path, AnnSpace::Clip, AnnSpace::Clip.current_model_id()).expect("meta");
+    assert_eq!(meta.rows, 6, "the retained op landed after the rebuild");
+    assert!(
+        !dirty_path(&db_path, AnnSpace::Clip).exists(),
+        "the marker cleared with the replay"
+    );
+    vector_cache::invalidate(&db_path);
+    let index = MediaIndex::open_at(db_path.clone());
+    let hits = index.search_semantic_with_threshold(&query(), 1, 1);
+    assert!(matches!(route_for(&db_path, 1), Route::Ann(_)));
+    assert_eq!(
+        paths_of(&hits),
+        vec!["/p/mid.jpg"],
+        "the mid-rebuild row is ANN-searchable"
+    );
+
+    w.shutdown();
+    coverage::invalidate_accounted("ann-rebuild-race");
+}
+
+#[test]
+fn a_shutdown_during_an_in_flight_rebuild_keeps_the_marker_and_the_next_spawn_wipes() {
+    let dir = tempfile::tempdir().expect("temp");
+    let vid = "ann-shutdown-mid-rebuild";
+    let (w, db_path) = writer(dir.path(), vid);
+    seed_corpus(&w, 4);
+    rebuild_now(&db_path);
+    w.flush_ann_index().expect("flush ann");
+
+    // An op lands while a rebuild is in flight, then the writer shuts down. The
+    // shutdown flush RETAINS (deliberately): the on-disk index may lag this op with
+    // nobody left to replay it, so the dirty marker must survive the session and the
+    // next spawn wipes the possibly-lagging index for a fresh rebuild.
+    rebuild::test_hold_in_flight(&db_path, AnnSpace::Clip);
+    seed_clip(&w, "/p/late.jpg", query());
+    w.flush_blocking().expect("flush db");
+    w.shutdown();
+    assert!(
+        dirty_path(&db_path, AnnSpace::Clip).exists(),
+        "shutdown mid-rebuild keeps the marker (conservative, never silent loss)"
+    );
+    rebuild::test_release_in_flight(&db_path, AnnSpace::Clip);
+
+    let (w2, _) = writer(dir.path(), vid);
+    w2.flush_blocking().expect("spawn ran");
+    assert!(
+        !index_path(&db_path, AnnSpace::Clip).exists(),
+        "the possibly-lagging index was wiped at the next spawn"
+    );
+
+    w2.shutdown();
+    coverage::invalidate_accounted(vid);
+}
+
+#[test]
 fn a_model_mismatch_in_the_sidecar_is_detected_and_a_rebuild_recovers() {
     let dir = tempfile::tempdir().expect("temp");
     let (w, db_path) = writer(dir.path(), "ann-model-mismatch");

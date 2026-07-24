@@ -375,9 +375,30 @@ impl AnnPending {
 
     /// Apply the buffered ops to the on-disk index (best-effort; an unusable index
     /// is wiped for rebuild). Clears the dirty marker via `ann::flush_ops`.
+    ///
+    /// While a rebuild is IN FLIGHT the buffer is RETAINED instead (ops kept, dirty
+    /// marker kept): a flush landing mid-rebuild would lose the ops — applied to a
+    /// file the install is about to overwrite, or dropped against a missing/stale
+    /// file whose replacement was snapshotted BEFORE these rows committed. The next
+    /// seam flush replays the retained batch idempotently on top of the installed
+    /// index. The `is_in_flight` → `kick` race is benign in the other direction
+    /// too: if a rebuild starts right after this check returns false, its snapshot
+    /// includes the rows this flush just applied (their DB writes committed before
+    /// the rebuild opens its read connection). The buffer may exceed
+    /// [`ann::ANN_PENDING_FLUSH_LIMIT`] during the window — accepted, bounded by
+    /// the rebuild's duration (minutes at worst).
     fn flush(&mut self) {
-        let ops = std::mem::take(&mut self.ops);
         let space = ann::AnnSpace::Clip;
+        if ann::rebuild::is_in_flight(&self.db_path, space) {
+            log::debug!(
+                target: "media_index",
+                "ann flush deferred for {} (rebuild in flight; {} ops retained)",
+                self.db_path.display(),
+                self.ops.len()
+            );
+            return;
+        }
+        let ops = std::mem::take(&mut self.ops);
         let outcome = ann::flush_ops(&self.db_path, space, space.current_model_id(), ops);
         log::debug!(target: "media_index", "ann flush for {}: {outcome:?}", self.db_path.display());
         self.dirty_marked = false;
@@ -542,7 +563,11 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>, vol
         }
     }
     // Land any straggler ANN ops before the thread dies (a clean shutdown must not
-    // look like a crash to the next session's dirty-marker check).
+    // look like a crash to the next session's dirty-marker check). If a rebuild is
+    // in flight this RETAINS instead — deliberately: nobody is left to replay the
+    // buffer, so the dirty marker stays on disk and the next session's spawn wipes
+    // the possibly-lagging index for a fresh rebuild (conservative, never silent
+    // loss).
     ann_pending.flush();
 }
 

@@ -1226,9 +1226,22 @@ pass completion, live tick, reclaim prune, retro-delete), plus an in-writer auto
 no in-place file mutation, so a flush loads the index to the heap, applies the ops in order (an upsert removes the key
 first, so re-embeds overwrite), and saves temp+rename — a live mmap view keeps the old inode, and a crash never leaves a
 torn file. The one writer-external mutator is the background rebuild, and its install serializes with flushes on a
-per-file mutex (`ann::file_lock`); ops buffered while a rebuild snapshot was building re-apply idempotently on top of
-it. Accepted cost: a flush's load+save is linear in index size (~235 MB of I/O and transient heap at 200k), paid once
-per pass seam, not per image.
+per-file mutex (`ann::file_lock`). Accepted cost: a flush's load+save is linear in index size (~235 MB of I/O and
+transient heap at 200k), paid once per pass seam, not per image.
+
+**Decision: a flush RETAINS its buffer while a rebuild is in flight (`rebuild::is_in_flight`), never applies or drops.**
+The rebuild's DB snapshot predates rows committed after it opened its read connection, so a flush landing mid-rebuild
+would lose those ops every way it could resolve: applied to the old file (the install then overwrites it), dropped
+against a missing file (`NoIndex` — but the in-flight rebuild's snapshot doesn't have the rows either), or dropped with
+a stale-file wipe. So the writer keeps the ops AND the dirty marker for the whole rebuild window and replays the batch
+idempotently on the installed index at the next seam flush (upserts overwrite, removes of absent keys no-op — replay
+safety is what makes retention sufficient). The reverse race is benign: a rebuild kicked right after `is_in_flight`
+returned false snapshots AFTER the flush's DB writes committed, so it includes them. A writer shutdown mid-rebuild also
+retains — deliberately: the marker survives the session and the next spawn wipes the possibly-lagging index for a fresh
+rebuild, conservative over silent loss. The pending buffer may exceed its auto-flush bound during the window, bounded
+by the rebuild's duration (minutes at worst). Pinned by
+`a_flush_during_an_in_flight_rebuild_retains_ops_and_replays_them_after` and
+`a_shutdown_during_an_in_flight_rebuild_keeps_the_marker_and_the_next_spawn_wipes` (both real red→green).
 
 **Decision: crash detection is a dirty marker, not a row-count compare.** The writer creates the marker BEFORE the first
 buffered op's DB write commits and the flush removes it after a successful save, so a session that dies with unflushed

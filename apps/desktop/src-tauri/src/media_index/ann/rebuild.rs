@@ -26,6 +26,29 @@ use crate::media_index::store;
 /// route unusable while a rebuild is already running just keeps brute-forcing.
 static IN_FLIGHT: LazyLock<Mutex<HashSet<(PathBuf, AnnSpace)>>> = LazyLock::new(|| Mutex::new(HashSet::new()));
 
+/// Whether a rebuild for `db_path`/`space` is currently running. The writer's flush
+/// consults this to RETAIN its buffered ops for the whole rebuild window (see
+/// `writer::AnnPending::flush`): a flush landing mid-rebuild would either apply to a
+/// file the install is about to overwrite, or be dropped against a missing/stale
+/// file whose replacement was snapshotted BEFORE those rows committed — either way
+/// the ops would be silently lost.
+pub(crate) fn is_in_flight(db_path: &Path, space: AnnSpace) -> bool {
+    IN_FLIGHT.lock_ignore_poison().contains(&(db_path.to_path_buf(), space))
+}
+
+/// Test seam: mark a rebuild in flight without running one, so tests exercise the
+/// writer's retain-during-rebuild behavior deterministically.
+#[cfg(test)]
+pub(crate) fn test_hold_in_flight(db_path: &Path, space: AnnSpace) {
+    IN_FLIGHT.lock_ignore_poison().insert((db_path.to_path_buf(), space));
+}
+
+/// Test seam: release a [`test_hold_in_flight`] marker.
+#[cfg(test)]
+pub(crate) fn test_release_in_flight(db_path: &Path, space: AnnSpace) {
+    IN_FLIGHT.lock_ignore_poison().remove(&(db_path.to_path_buf(), space));
+}
+
 /// Kick a background rebuild for `db_path`/`space` unless one is already running.
 pub(crate) fn kick(db_path: &Path, space: AnnSpace, model_id: &str) {
     let key = (db_path.to_path_buf(), space);
@@ -124,8 +147,11 @@ pub(crate) fn rebuild_blocking(
     };
 
     // Install under the per-file lock so a concurrent writer flush can't load the
-    // old file, lose this rename, and save over it. Ops the writer buffered while
-    // this snapshot was building re-apply idempotently on its next flush.
+    // old file, lose this rename, and save over it. Writer flushes additionally
+    // RETAIN their buffered ops for the whole in-flight window (see
+    // `writer::AnnPending::flush`) and replay them idempotently on top of this
+    // install at the next seam, so rows committed after this snapshot are never
+    // lost.
     let lock = super::file_lock(db_path, space);
     let _guard = lock.lock_ignore_poison();
     super::save_index_atomically(&index, &super::index_path(db_path, space))?;
