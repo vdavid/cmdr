@@ -742,6 +742,14 @@
   "@settings.indexing.staleNotify.description": {
     "sourceHash": "c4216d8"
   },
+  "settings.indexing.masterOffNote": "La indexación de unidades está desactivada, así que no se indexa ninguna unidad y los tamaños de carpeta quedan ocultos. Cada unidad conserva su propia elección de activada o desactivada, lista para cuando vuelvas a activar esto.",
+  "@settings.indexing.masterOffNote": {
+    "sourceHash": "311f02a"
+  },
+  "settings.indexing.overriddenBadge": "Desactivado con la indexación",
+  "@settings.indexing.overriddenBadge": {
+    "sourceHash": "89db71f"
+  },
   "settings.indexing.reEnableNotifications.label": "Reactivar las notificaciones de todas las unidades",
   "@settings.indexing.reEnableNotifications.label": {
     "sourceHash": "d1cc5fa"

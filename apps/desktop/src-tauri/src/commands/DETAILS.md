@@ -96,7 +96,10 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `whats_new_dev_override` (dev-only).
 - **`indexing.rs`**: `start_drive_index`, `stop_drive_index`, `get_index_status`, `get_dir_stats`,
   `get_dir_stats_batch`, `clear_drive_index`, `set_indexing_enabled`, `get_index_debug_status` (dev-only). Uses
-  `State<IndexManagerState>`.
+  `State<IndexManagerState>`. Two of these carry the MASTER drive-indexing switch (the model lives in
+  `indexing/lifecycle/DETAILS.md` § The two indexing switches): `set_indexing_enabled` moves the gate first, then stops
+  every volume or resumes only the drives whose per-drive intent says yes, and `enable_drive_index` refuses once,
+  transport-neutrally, with `EnableIndexingOutcome::IndexingDisabled` so the FE has one shape to match.
 - **`clipboard.rs`**: `copy_files_to_clipboard`, `cut_files_to_clipboard`, `copy_paths_to_clipboard` /
   `cut_paths_to_clipboard` (paths-by-value siblings for the search-results pane, which has no backend listing),
   `read_clipboard_files`, `clear_clipboard_cut_state`. macOS uses NSPasteboard via `clipboard::pasteboard`; non-macOS

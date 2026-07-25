@@ -215,6 +215,10 @@ via `data-size-colors` / `data-date-colors` attributes on `<html>`. Settings app
 - Svelte 5 `$state` for settings that affect UI rendering (density, date format, file size format, directory sort mode)
 - Subscribes to `onSettingChange()` and updates reactive values immediately
 - Provides derived getters like `getRowHeight()` based on current density
+- Also mirrors two MASTER switches whose "off" state other surfaces must render as overriding, not just as their own
+  value: `getDriveIndexingEnabled()` (`indexing.enabled`, read by the per-drive index badge menu) and
+  `getMediaIndexEnabled()` (`mediaIndex.enabled`). Both are hard gates in the backend, so a surface that ignores them
+  offers actions that get refused.
 
 ### Sections (`sections/`)
 

@@ -1372,5 +1372,17 @@
   "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr a rencontré un souci en activant l''indexation de {name}. Cela ne devrait pas arriver. Redémarrer Cmdr règle généralement le problème.",
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
     "sourceHash": "e9adbcc"
+  },
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "L'indexation du disque est désactivée dans les Réglages, donc {name} reste non indexé. Activez-la dans Indexation > Indexation du disque.",
+  "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
+    "sourceHash": "ce0d45c"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "L'indexation du disque est désactivée dans les Réglages, donc aucun disque n'est indexé pour le moment.",
+  "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
+    "sourceHash": "6ebf6f4"
+  },
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "L'indexation du disque est désactivée dans les Réglages. Activez-la dans Indexation > Indexation du disque, et ce disque reprendra où il s'était arrêté.",
+  "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
+    "sourceHash": "e045664"
   }
 }

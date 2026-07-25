@@ -915,6 +915,16 @@
     "description": "Help text under the stale-notification toggle, reassuring that the yellow drive-index status dot stays visible even with the notification turned off.",
     "screenshot": "settings-behavior-file-system-watching.png"
   },
+  "settings.indexing.masterOffNote": "Drive indexing is off, so no drive is indexed and folder sizes stay hidden. Each drive keeps its own on or off choice, ready for when you turn this back on.",
+  "@settings.indexing.masterOffNote": {
+    "description": "Note under the master drive-indexing toggle, shown only while it''s off. States what stops happening and reassures that the per-drive choices survive the master switch. Sentence case.",
+    "screenshot": "settings-behavior-file-system-watching.png"
+  },
+  "settings.indexing.overriddenBadge": "Off with drive indexing",
+  "@settings.indexing.overriddenBadge": {
+    "description": "Small badge next to a settings row that the master drive-indexing switch has overridden, shown while that switch is off. Very short; sentence case.",
+    "screenshot": "settings-behavior-file-system-watching.png"
+  },
   "settings.indexing.reEnableNotifications.label": "Re-enable notifications for all drives",
   "@settings.indexing.reEnableNotifications.label": {
     "description": "Label for the row holding the button that clears every per-drive \"Don''t ask again\" silence, so Cmdr will ask about indexing each drive again.",

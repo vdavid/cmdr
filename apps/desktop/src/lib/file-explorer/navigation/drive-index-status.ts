@@ -59,7 +59,12 @@ export function driveIndexColorClass(state: DriveIndexState): string {
  */
 export type DriveIndexMenuAction = 'enable' | 'rescan' | 'disable' | 'stop' | 'forget'
 
-export function driveIndexMenuActions(state: DriveIndexState): DriveIndexMenuAction[] {
+export function driveIndexMenuActions(state: DriveIndexState, masterEnabled = true): DriveIndexMenuAction[] {
+  // The master switch (`indexing.enabled`) outranks every per-drive choice: while
+  // it's off nothing can index, so offering per-drive actions would promise work
+  // the backend refuses. The menu shows the explanatory note instead. The drive's
+  // own choice is untouched and comes back when the master does.
+  if (!masterEnabled) return []
   switch (state) {
     case 'disabled':
       return ['enable']
@@ -211,5 +216,11 @@ export function driveIndexRefusalMessageKey(reason: SmbIndexGateReason): Message
     case 'not_registered':
     case 'not_an_smb_volume':
       return 'fileExplorer.navigation.driveIndex.refusedInternal'
+    // The master switch is off. Not a share problem, so it gets the settings-
+    // oriented copy rather than reconnect advice. Normally unreachable from the
+    // UI (the menu offers no actions while the master is off), but MCP and a
+    // stale open menu can still land here.
+    case 'indexing_disabled':
+      return 'fileExplorer.navigation.driveIndex.refusedIndexingOff'
   }
 }

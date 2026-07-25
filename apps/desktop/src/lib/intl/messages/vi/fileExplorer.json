@@ -1364,5 +1364,17 @@
   "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr gặp một trục trặc khi bật lập chỉ mục cho {name}. Điều này không nên xảy ra. Khởi động lại Cmdr thường khắc phục được.",
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
     "sourceHash": "e9adbcc"
+  },
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Lập chỉ mục ổ đĩa đang tắt trong Cài đặt, nên {name} vẫn chưa được lập chỉ mục. Hãy bật trong Lập chỉ mục > Lập chỉ mục ổ đĩa.",
+  "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
+    "sourceHash": "ce0d45c"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "Lập chỉ mục ổ đĩa đang tắt trong Cài đặt, nên hiện chưa ổ đĩa nào được lập chỉ mục.",
+  "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
+    "sourceHash": "6ebf6f4"
+  },
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Lập chỉ mục ổ đĩa đang tắt trong Cài đặt. Hãy bật trong Lập chỉ mục > Lập chỉ mục ổ đĩa, và ổ đĩa này sẽ tiếp tục từ chỗ đã dừng.",
+  "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
+    "sourceHash": "e045664"
   }
 }

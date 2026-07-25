@@ -744,6 +744,14 @@
   "@settings.indexing.staleNotify.description": {
     "sourceHash": "c4216d8"
   },
+  "settings.indexing.masterOffNote": "Schijf indexeren staat uit, dus er wordt geen schijf geïndexeerd en mapgroottes blijven verborgen. Elke schijf houdt zijn eigen aan- of uitkeuze, klaar voor wanneer je dit weer aanzet.",
+  "@settings.indexing.masterOffNote": {
+    "sourceHash": "311f02a"
+  },
+  "settings.indexing.overriddenBadge": "Uit met schijf indexeren",
+  "@settings.indexing.overriddenBadge": {
+    "sourceHash": "89db71f"
+  },
   "settings.indexing.reEnableNotifications.label": "Meldingen voor alle schijven opnieuw inschakelen",
   "@settings.indexing.reEnableNotifications.label": {
     "sourceHash": "d1cc5fa"

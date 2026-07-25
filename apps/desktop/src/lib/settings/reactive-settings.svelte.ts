@@ -43,6 +43,7 @@ let briefColumnWidthMode = $state<BriefColumnWidthMode>('paneWidth')
 let briefColumnWidthMaxPx = $state<number>(400)
 let networkEnabled = $state<boolean>(true)
 let typeToJumpResetDelay = $state<number>(1000)
+let driveIndexingEnabled = $state<boolean>(true)
 let mediaIndexEnabled = $state<boolean>(false)
 let mediaIndexShowFileStatusIcons = $state<boolean>(true)
 
@@ -79,6 +80,7 @@ export async function initReactiveSettings(): Promise<void> {
     briefColumnWidthMaxPx = getSetting('listing.briefColumnWidthMaxPx')
     networkEnabled = getSetting('network.enabled')
     typeToJumpResetDelay = getSetting('fileExplorer.typeToJump.resetDelay')
+    driveIndexingEnabled = getSetting('indexing.enabled')
     mediaIndexEnabled = getSetting('mediaIndex.enabled')
     mediaIndexShowFileStatusIcons = getSetting('mediaIndex.showFileStatusIcons')
 
@@ -161,6 +163,9 @@ function applySettingChange(id: string, value: unknown): void {
       break
     case 'fileExplorer.typeToJump.resetDelay':
       typeToJumpResetDelay = value as number
+      break
+    case 'indexing.enabled':
+      driveIndexingEnabled = value as boolean
       break
     case 'mediaIndex.enabled':
       mediaIndexEnabled = value as boolean
@@ -308,6 +313,18 @@ export function getNetworkEnabled(): boolean {
  */
 export function getTypeToJumpResetDelay(): number {
   return typeToJumpResetDelay
+}
+
+/**
+ * Whether the MASTER drive-indexing switch (`indexing.enabled`) is on.
+ *
+ * It's a hard gate in the backend: off means no drive indexes, whatever a
+ * drive's own per-drive choice says. The per-drive controls read this so they can
+ * render as overridden instead of pretending to work. Backend counterpart:
+ * `indexing/lifecycle/master.rs`.
+ */
+export function getDriveIndexingEnabled(): boolean {
+  return driveIndexingEnabled
 }
 
 /** Whether image-content (OCR) indexing is on (the `mediaIndex.enabled` master toggle). */

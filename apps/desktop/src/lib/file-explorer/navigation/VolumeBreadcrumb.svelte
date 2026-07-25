@@ -711,6 +711,13 @@
                         : await rescanDriveIndex(vid)
                 if (res.status === 'ok' && res.data.status === 'refused') {
                     handleIndexRefusal(vid, name, res.data.reason)
+                } else if (res.status === 'ok' && res.data.status === 'indexing_disabled') {
+                    // The master switch went off between the menu opening and the
+                    // click (or the action came from MCP). Say so rather than
+                    // leaving a click that quietly did nothing.
+                    addToast(tString('fileExplorer.navigation.driveIndex.refusedIndexingOff', { name }), {
+                        level: 'info',
+                    })
                 }
             }
         } catch (e) {

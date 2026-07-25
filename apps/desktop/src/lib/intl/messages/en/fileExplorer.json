@@ -1978,5 +1978,21 @@
     "placeholders": {
       "name": "the drive''s display name (e.g. Backups)"
     }
+  },
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Drive indexing is off in Settings, so {name} stays unindexed. Turn it on under Indexing > Drive indexing.",
+  "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
+    "description": "Toast shown when a per-drive \"turn on indexing\" request is refused because the master drive-indexing switch is off. Points at the settings page that owns the switch. Sentence case; avoid the words ''error'' and ''failed''.",
+    "placeholders": {
+      "name": "the drive''s display name (e.g. Backups)"
+    }
+  },
+  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "Drive indexing is off in Settings, so no drive is indexed right now.",
+  "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
+    "description": "Hover tooltip on the gray drive-index dot when the master drive-indexing switch is off. Explains that the gray dot is about the global switch, not this one drive.",
+    "screenshot": "mtp-browse.png"
+  },
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Drive indexing is off in Settings. Turn it on under Indexing > Drive indexing, and this drive picks up where it left off.",
+  "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
+    "description": "Note replacing the per-drive index menu''s actions while the master drive-indexing switch is off. Says where to turn the switch back on and reassures that the drive''s own on/off choice is remembered. Sentence case."
   }
 }

@@ -35,6 +35,13 @@ vi.mock('$lib/indexing', () => ({
   }),
 }))
 
+// The badge reads the MASTER drive-indexing switch to decide whether this drive's
+// own controls are overridden. Mock it so both sides of the gate are testable.
+let masterIndexingEnabled = true
+vi.mock('$lib/settings/reactive-settings.svelte', () => ({
+  getDriveIndexingEnabled: () => masterIndexingEnabled,
+}))
+
 import DriveIndexBadge from './DriveIndexBadge.svelte'
 
 function scanActivity(overrides: Partial<VolumeIndexActivity> = {}): VolumeIndexActivity {
@@ -95,6 +102,7 @@ function ariaLabel(target: HTMLElement): string {
 beforeEach(() => {
   badgeActivity = undefined
   badgePhase = undefined
+  masterIndexingEnabled = true
 })
 
 describe('DriveIndexBadge color class', () => {
@@ -163,6 +171,23 @@ describe('DriveIndexBadge menu', () => {
     must(target, '.drive-index-menu-item').click()
     flushSync()
     expect(onAction).toHaveBeenCalledWith('smb-test', 'rescan')
+  })
+
+  it('swaps every action for one explanation while drive indexing is off in Settings', () => {
+    // A drive whose own choice is "indexed and fresh" still can't act while the
+    // master switch is off, so the menu says why instead of offering buttons the
+    // backend would refuse.
+    masterIndexingEnabled = false
+    const { target } = render(makeStatus({ freshness: 'fresh' }))
+    openMenu(target)
+    expect(menuLabels(target)).toEqual([])
+    expect(must(target, '.drive-index-menu-note').textContent).toContain('Drive indexing is off in Settings')
+  })
+
+  it('says the master switch is off in the tooltip, not "off for this drive"', () => {
+    masterIndexingEnabled = false
+    const { target } = render(makeStatus({ enabled: false, freshness: null }))
+    expect(ariaLabel(target)).toContain('Drive indexing is off in Settings')
   })
 })
 

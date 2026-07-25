@@ -33,8 +33,11 @@ index would stay dark (registry-absent = gray) until re-enabled by hand. So ever
 `resume_smb_index_if_enabled(volume_id)` (fired from the volume backend; see `backends/DETAILS.md` § "Backend-autonomous
 reconnect and index resume" for the trigger sites). It's fire-and-forget (spawns, so the async start never runs under a
 reconnect/registry lock), a no-op if already active, and gated on the PERSISTED per-volume state (never the live
-registry) via `smb_index_was_enabled`, which requires BOTH:
+registry) via `smb_index_was_enabled`, which delegates to `lifecycle::master::drive_index_should_run`. Three facts must
+hold, and the master switch outranks both per-drive ones:
 
+- **The master drive-indexing switch is on** (`indexing.enabled`). Canonical model: `../lifecycle/DETAILS.md` § The two
+  indexing switches. Missing this check is what let a NAS re-index itself at every launch despite the setting being off.
 - **A completed scan is recorded** — `IndexStore::persisted_scan_completed(db_path)`, a `scan_completed_at` marker read
   off a short-lived READ-ONLY connection (never the delete-and-recreate `open`). A never-enabled share has no such DB,
   so it's never indexed uninvited.
@@ -43,8 +46,9 @@ registry) via `smb_index_was_enabled`, which requires BOTH:
   a reconnect never turns back on what the user turned off. Enabling (`start_indexing_for_smb`, both the manual command
   and the auto-resume hook) clears it; `forget_drive_index` deletes the whole DB. **The marker is written ONLY at the
   explicit user-disable command, NEVER inside `stop_indexing`** (which also runs on eject, unmount, an interrupted
-  network scan, and the memory watchdog — marking there would suppress resume after a transient teardown). Its only
-  consumer is this SMB gate.
+  network scan, and the memory watchdog — marking there would suppress resume after a transient teardown, and the master
+  switch going off would silently erase per-drive intent). Its consumers are this SMB gate and
+  `master::drives_to_resume`.
 
 The resumed index loads Stale: we weren't watching while disconnected, so a rescan — not the reconnect — restores Fresh.
 

@@ -739,6 +739,14 @@
   "@settings.indexing.staleNotify.description": {
     "sourceHash": "c4216d8"
   },
+  "settings.indexing.masterOffNote": "Lập chỉ mục ổ đĩa đang tắt, nên không ổ đĩa nào được lập chỉ mục và kích thước thư mục vẫn ẩn. Mỗi ổ đĩa giữ lựa chọn bật hay tắt của riêng nó, sẵn sàng cho lúc bạn bật lại mục này.",
+  "@settings.indexing.masterOffNote": {
+    "sourceHash": "311f02a"
+  },
+  "settings.indexing.overriddenBadge": "Tắt theo lập chỉ mục ổ đĩa",
+  "@settings.indexing.overriddenBadge": {
+    "sourceHash": "89db71f"
+  },
   "settings.indexing.reEnableNotifications.label": "Bật lại thông báo cho mọi ổ đĩa",
   "@settings.indexing.reEnableNotifications.label": {
     "sourceHash": "d1cc5fa"

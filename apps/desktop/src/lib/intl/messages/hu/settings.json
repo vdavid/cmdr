@@ -741,6 +741,14 @@
   "@settings.indexing.staleNotify.description": {
     "sourceHash": "c4216d8"
   },
+  "settings.indexing.masterOffNote": "A meghajtó-indexelés ki van kapcsolva, ezért egyetlen meghajtó sincs indexelve, és a mappaméretek rejtve maradnak. Minden meghajtó megőrzi a saját be- vagy kikapcsolt választását, arra az esetre, amikor ezt újra bekapcsolod.",
+  "@settings.indexing.masterOffNote": {
+    "sourceHash": "311f02a"
+  },
+  "settings.indexing.overriddenBadge": "Az indexeléssel együtt ki",
+  "@settings.indexing.overriddenBadge": {
+    "sourceHash": "89db71f"
+  },
   "settings.indexing.reEnableNotifications.label": "Értesítések újraengedélyezése minden meghajtóhoz",
   "@settings.indexing.reEnableNotifications.label": {
     "sourceHash": "d1cc5fa"

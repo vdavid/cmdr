@@ -25,7 +25,7 @@
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { tString } from '$lib/intl/messages.svelte'
-    import { getSettingDefinition, onSpecificSettingChange } from '$lib/settings'
+    import { getSetting, getSettingDefinition, onSpecificSettingChange } from '$lib/settings'
     import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
     import { clearSilencedDrives, hasSilencedDrives } from '$lib/indexing/drive-index-prefs'
     import { tooltip } from '$lib/tooltip/tooltip'
@@ -42,6 +42,13 @@
     const log = getAppLogger('settings')
 
     const shouldShow = $derived(createShouldShow(searchQuery))
+
+    // The MASTER switch. It's a hard gate in the backend (`indexing/lifecycle/master.rs`):
+    // while it's off, no drive indexes, whatever each drive's own choice says. So the
+    // rows below it render as overridden rather than pretending to have an effect.
+    // Per-drive choices are kept and come back when the master switch does.
+    let masterEnabled = $state(getSetting('indexing.enabled'))
+    const overriddenReason = $derived(masterEnabled ? undefined : tString('settings.indexing.overriddenBadge'))
 
     const enabledDef = getSettingDefinition('indexing.enabled') ?? { label: '', description: '' }
     const askForEachDriveDef = getSettingDefinition('indexing.askForEachDrive') ?? { label: '', description: '' }
@@ -95,12 +102,18 @@
         const unsubSilenced = onSpecificSettingChange('indexing.silencedDrives', () => {
             hasSilenced = hasSilencedDrives()
         })
+        // The master switch can flip from the other window (or a reset), and every
+        // row below it reads from this.
+        const unsubMaster = onSpecificSettingChange('indexing.enabled', (_id, value) => {
+            masterEnabled = value
+        })
         // Refresh DB size every 2 seconds while visible
         refreshTimer = setInterval(() => void refreshDbSize(), 2000)
 
         return () => {
             clearInterval(refreshTimer)
             unsubSilenced()
+            unsubMaster()
         }
     })
 </script>
@@ -117,6 +130,11 @@
                 >
                     <SettingSwitch id="indexing.enabled" />
                 </SettingRow>
+                {#if !masterEnabled}
+                    <!-- One line explaining what the master switch overrides, and
+                         that per-drive choices survive it. -->
+                    <p class="master-off-note">{tString('settings.indexing.masterOffNote')}</p>
+                {/if}
             {/if}
 
             {#if shouldShow('indexing.indexSize')}
@@ -156,23 +174,29 @@
                     id="indexing.askForEachDrive"
                     label={askForEachDriveDef.label}
                     description={askForEachDriveDef.description}
+                    disabled={!masterEnabled}
+                    disabledReason={overriddenReason}
                     {searchQuery}
                 >
-                    <SettingSwitch id="indexing.askForEachDrive" />
+                    <SettingSwitch id="indexing.askForEachDrive" disabled={!masterEnabled} />
                 </SettingRow>
             {/if}
 
             {#if shouldShow('indexing.askForEachDrive')}
-                <div class="reenable-row">
+                <div class="reenable-row" class:overridden={!masterEnabled}>
                     <div class="reenable-header">
                         <span class="info-label">{tString('settings.indexing.reEnableNotifications.label')}</span>
                         <span
-                            use:tooltip={hasSilenced ? '' : tString('settings.indexing.reEnableNotifications.disabledTooltip')}
+                            use:tooltip={masterEnabled
+                                ? hasSilenced
+                                    ? ''
+                                    : tString('settings.indexing.reEnableNotifications.disabledTooltip')
+                                : tString('settings.indexing.masterOffNote')}
                         >
                             <Button
                                 variant="secondary"
                                 size="mini"
-                                disabled={!hasSilenced}
+                                disabled={!hasSilenced || !masterEnabled}
                                 onclick={handleReEnableNotifications}
                             >
                                 {tString('settings.indexing.reEnableNotifications.button')}
@@ -190,9 +214,11 @@
                     id="indexing.staleNotify"
                     label={staleNotifyDef.label}
                     description={staleNotifyDef.description}
+                    disabled={!masterEnabled}
+                    disabledReason={overriddenReason}
                     {searchQuery}
                 >
-                    <SettingSwitch id="indexing.staleNotify" />
+                    <SettingSwitch id="indexing.staleNotify" disabled={!masterEnabled} />
                 </SettingRow>
             {/if}
         </SectionCard>
@@ -239,6 +265,22 @@
     .reenable-row {
         padding: var(--spacing-sm) 0;
         border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    /* Matches `SettingRow`'s overridden look, so the hand-rendered row dims in step
+       with the registry rows above it when the master switch is off. */
+    .reenable-row.overridden {
+        opacity: 0.6;
+    }
+
+    .master-off-note {
+        margin: 0 0 var(--spacing-sm);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border-radius: var(--radius-sm);
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
+        line-height: 1.4;
     }
 
     .reenable-header {

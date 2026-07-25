@@ -1374,5 +1374,17 @@
   "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr liep tegen een probleempje aan bij het inschakelen van indexeren voor {name}. Dit zou niet mogen gebeuren. Cmdr opnieuw starten lost het meestal op.",
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
     "sourceHash": "e9adbcc"
+  },
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Schijf indexeren staat uit in Instellingen, dus {name} blijft ongeïndexeerd. Zet het aan bij Indexeren > Schijf indexeren.",
+  "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
+    "sourceHash": "ce0d45c"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "Schijf indexeren staat uit in Instellingen, dus er wordt op dit moment geen schijf geïndexeerd.",
+  "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
+    "sourceHash": "6ebf6f4"
+  },
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Schijf indexeren staat uit in Instellingen. Zet het aan bij Indexeren > Schijf indexeren, dan pakt deze schijf de draad weer op.",
+  "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
+    "sourceHash": "e045664"
   }
 }

@@ -287,6 +287,35 @@ coalesced_signals_since_sweep, next_sweep_due_at }`: freshness from the registry
 `meta`. `enabled: false` + `freshness: None` is gray. The path→volume resolution feeding these lives in
 `../paths/CLAUDE.md`.
 
+## The two indexing switches
+
+Canonical model; everywhere else points here. Two switches decide whether a volume indexes, and they compose ONE way.
+
+- The **master switch** is `indexing.enabled` in settings, mirrored into the process-wide atomic in `master.rs`. It's a
+  hard gate: off ⇒ nothing indexes, anywhere. Seeded in `lib.rs` setup BEFORE `indexing::init` (which is what unblocks
+  the handle-free SMB reconnect resume, so a late seed lets a NAS re-index itself), then live-applied by
+  `set_indexing_enabled` per the settings live-apply rule.
+- The **per-drive intent** lives on each volume's own index DB, as two meta markers read by
+  `master::drive_index_should_run`: the sticky `user_disabled` (an unconditional veto) and `scan_completed_at`. The boot
+  disk is opt-OUT (`is_root`: it indexes unless disabled); every external drive is opt-IN, so it needs a completed scan
+  on record before anything resumes it uninvited.
+
+Enforcement is one choke point: `start_indexing_for`, which all four transports funnel through, refuses while the master
+is off. Callers that answer a user get a typed refusal of their own instead of a silent no-op:
+`enable_drive_index` → `EnableIndexingOutcome::IndexingDisabled` (transport-neutral, so the FE has one shape to match),
+`start_indexing_for_smb` → `SmbIndexGateReason::IndexingDisabled` (refused BEFORE the os_mount upgrade, so a refused
+start can't clear the drive's `user_disabled` marker as a side effect).
+
+Toggling the master switch never writes per-drive intent, in either direction. Off runs `stop_all_indexing`, which is
+`stop_indexing` per volume and so leaves the markers alone (see `../transports/CLAUDE.md` for why that separation is
+load-bearing). On walks `master::drives_to_resume` (root plus every registered volume whose persisted intent says yes,
+minus the already-active ones) and routes each through the normal per-drive enable, so each transport's own gate still
+applies and an offline share simply waits for its reconnect resume. Net effect: any number of master toggles round-trips
+to exactly the set of drives the user chose.
+
+The FE mirrors this rather than re-deriving it: `getDriveIndexingEnabled()` (reactive settings) makes the per-drive
+badge menu and the `Indexing > Drive indexing` sub-rows render as overridden while the master is off.
+
 ## FDA-deferred root auto-start
 
 At first launch on macOS, recursively scanning from `/` opens iCloud Drive, Photos, and other TCC-protected directories,
@@ -295,7 +324,8 @@ which makes macOS stack native permission popups on top of the in-app FDA modal 
 `crate::fda_gate::is_fda_pending`: skip when `fda_choice == NotAskedYet` AND `os_fda_granted == false`. Once the user
 picks Allow (restart) or Deny (same session, via `start_indexing_after_fda_decision`), the indexer starts.
 `os_fda_granted == true` overrides `NotAskedYet`. FDA gates ONLY `root` — SMB/MTP/external paths aren't TCC-protected, so
-`start_indexing_for_smb` and the MTP/local-external enables never route through this gate. After Deny the indexer runs
+`start_indexing_for_smb` and the MTP/local-external enables never route through this gate (unlike the master switch,
+which gates every transport). After Deny the indexer runs
 in degraded mode (one TCC prompt per protected folder, the contract the user opted into). Launch-time NSWorkspace icon
 fetches in `volumes::list_locations` share the same `is_fda_pending` predicate so the two gate sites can't drift.
 

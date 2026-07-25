@@ -1364,5 +1364,17 @@
   "fileExplorer.navigation.driveIndex.refusedInternal": "A Cmdr valamibe beleütközött, miközben bekapcsolta az indexelést ehhez: {name}. Ennek nem szabadna előfordulnia. A Cmdr újraindítása általában megoldja.",
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
     "sourceHash": "e9adbcc"
+  },
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "A meghajtó-indexelés ki van kapcsolva a Beállításokban, ezért a(z) {name} indexeletlen marad. Kapcsold be itt: Indexelés > Meghajtó indexelése.",
+  "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
+    "sourceHash": "ce0d45c"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "A meghajtó-indexelés ki van kapcsolva a Beállításokban, ezért most egyetlen meghajtó sincs indexelve.",
+  "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
+    "sourceHash": "6ebf6f4"
+  },
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "A meghajtó-indexelés ki van kapcsolva a Beállításokban. Kapcsold be itt: Indexelés > Meghajtó indexelése, és ez a meghajtó onnan folytatja, ahol abbahagyta.",
+  "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
+    "sourceHash": "e045664"
   }
 }

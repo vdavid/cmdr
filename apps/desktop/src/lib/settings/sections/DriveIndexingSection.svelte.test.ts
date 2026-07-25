@@ -106,4 +106,49 @@ describe('DriveIndexingSection', () => {
     expect(target.textContent).toContain('Index size')
     target.remove()
   })
+
+  it('leaves the per-drive rows fully live while drive indexing is on', async () => {
+    const target = await mountSection()
+    expect(target.querySelector('.master-off-note')).toBeNull()
+    expect(target.querySelectorAll('.setting-row.disabled')).toHaveLength(0)
+    expect(target.querySelector('.reenable-row.overridden')).toBeNull()
+    target.remove()
+  })
+
+  it('marks the per-drive rows overridden, with one explanation, when drive indexing is off', async () => {
+    // The master switch is a hard gate in the backend, so the rows it overrides
+    // must LOOK overridden instead of pretending to work. The per-drive choices
+    // themselves are untouched, which the note says out loud.
+    getSettingMock.mockImplementation((key: string): unknown => {
+      switch (key) {
+        case 'indexing.enabled':
+          return false
+        case 'indexing.askForEachDrive':
+        case 'indexing.staleNotify':
+          return true
+        case 'indexing.silencedDrives':
+          return '[]'
+        default:
+          return undefined
+      }
+    })
+    const target = await mountSection()
+
+    const note = target.querySelector('.master-off-note')?.textContent.trim() ?? ''
+    expect(note).toContain('Drive indexing is off')
+    expect(note).toContain('keeps its own on or off choice')
+
+    // Both per-drive rows dim and carry the badge; the hand-rendered re-enable row
+    // dims with them rather than staying bright beside them.
+    expect(target.querySelectorAll('.setting-row.disabled')).toHaveLength(2)
+    expect(target.querySelectorAll('.disabled-badge')).toHaveLength(2)
+    expect(target.querySelector('.reenable-row.overridden')).not.toBeNull()
+
+    // Every switch below the master one is inert.
+    const switches = Array.from(target.querySelectorAll<HTMLInputElement>('.setting-row.disabled input'))
+    expect(switches).toHaveLength(2)
+    for (const input of switches) expect(input.disabled).toBe(true)
+
+    target.remove()
+  })
 })

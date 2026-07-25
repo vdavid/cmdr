@@ -743,6 +743,14 @@
   "@settings.indexing.staleNotify.description": {
     "sourceHash": "c4216d8"
   },
+  "settings.indexing.masterOffNote": "L'indexation du disque est désactivée, donc aucun disque n'est indexé et les tailles de dossier restent masquées. Chaque disque garde son propre choix activé ou désactivé, prêt pour le moment où vous réactiverez ceci.",
+  "@settings.indexing.masterOffNote": {
+    "sourceHash": "311f02a"
+  },
+  "settings.indexing.overriddenBadge": "Désactivé avec l'indexation",
+  "@settings.indexing.overriddenBadge": {
+    "sourceHash": "89db71f"
+  },
   "settings.indexing.reEnableNotifications.label": "Réactiver les notifications pour tous les disques",
   "@settings.indexing.reEnableNotifications.label": {
     "sourceHash": "d1cc5fa"

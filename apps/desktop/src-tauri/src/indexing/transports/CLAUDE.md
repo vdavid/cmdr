@@ -8,7 +8,7 @@ and HOW live changes arrive.
 
 - **SMB/MTP index only over a `direct` (smb2/PTP) session; an `os_mount` SMB share upgrades first.** Every SMB refusal
   is a TYPED `SmbIndexGateReason` (`NotRegistered` / `NotAnSmbVolume` / `UpgradeFailed` / `CredentialsNeeded` /
-  `Disconnected`) crossing IPC as a snake_case tag, NEVER a message substring. MTP has no gate (USB is FDA-independent).
+  `Disconnected` / `IndexingDisabled`) crossing IPC as a snake_case tag, NEVER a message substring. MTP has no gate.
 - **Live watch runs with NO pane open.** `apply_smb_change` hooks BEFORE the pane-listing early-return (the watcher's
   lifetime is the volume's, not a pane's). MTP's `mtp_watch` feeds off the PTP event loop the same way.
 - **Deletes resolve against the INDEX, never a live stat.** A `Removed` / `ObjectRemoved` for a name/handle the index
@@ -16,10 +16,11 @@ and HOW live changes arrive.
   stored in the `inode` column (`find_entry_by_inode`), since PTP `ObjectRemoved` carries only an opaque handle.
 - **MTP gates BEFORE resolving** (`buffer_mtp_handle_if_scanning`): during a scan it buffers the RAW handle (zero device
   I/O); resolving ahead of the scanning check timed out on the contended device (the livelock).
-- **Reconnect AUTO-RESUMES an SMB index only when a scan completed AND `user_disabled` is unset**
-  (`resume_smb_index_if_enabled`, gated on the PERSISTED state, never the live registry). The sticky `user_disabled`
-  marker is written ONLY at the explicit disable command, NEVER inside `stop_indexing` (which also runs on eject,
-  unmount, an interrupted scan, and the memory watchdog).
+- **Reconnect AUTO-RESUMES an SMB index only when the MASTER switch is on AND a scan completed AND `user_disabled` is
+  unset** (`resume_smb_index_if_enabled` → `master::drive_index_should_run`, on the PERSISTED state, never the live
+  registry). The master switch outranks per-drive intent; never gate a start on the per-drive markers alone. The sticky
+  `user_disabled` marker is written ONLY at the explicit disable command, NEVER inside `stop_indexing` (which also runs
+  on eject, unmount, an interrupted scan, the memory watchdog, and the master switch going off).
 - **FAT/exFAT `LocalExternal` drives store `inode: None`** (via `IndexPathSpace::trust_inode`): a reused derived inode
   false-matches the local rename pre-pass and corrupts `dir_stats`. `classify` decides local-external vs SMB-fall-through
   from TYPED facts (a live smb2 session, or a network fs-type), never a volume-id/path substring.

@@ -1373,5 +1373,17 @@
   "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr ist beim Einschalten der Indizierung für {name} auf ein Problem gestoßen. Das sollte nicht passieren. Ein Neustart von Cmdr behebt das normalerweise.",
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
     "sourceHash": "e9adbcc"
+  },
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Die Laufwerksindizierung ist in den Einstellungen aus, deshalb bleibt {name} unindiziert. Schalte sie unter Indizierung > Laufwerksindizierung ein.",
+  "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
+    "sourceHash": "ce0d45c"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "Die Laufwerksindizierung ist in den Einstellungen aus, deshalb wird gerade kein Laufwerk indiziert.",
+  "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
+    "sourceHash": "6ebf6f4"
+  },
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Die Laufwerksindizierung ist in den Einstellungen aus. Schalte sie unter Indizierung > Laufwerksindizierung ein, dann macht dieses Laufwerk dort weiter, wo es aufgehört hat.",
+  "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
+    "sourceHash": "e045664"
   }
 }

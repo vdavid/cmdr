@@ -743,6 +743,14 @@
   "@settings.indexing.staleNotify.description": {
     "sourceHash": "c4216d8"
   },
+  "settings.indexing.masterOffNote": "Indexering av enhet är av, så ingen enhet indexeras och mappstorlekar förblir dolda. Varje enhet behåller sitt eget på- eller av-val, redo för när du slår på det här igen.",
+  "@settings.indexing.masterOffNote": {
+    "sourceHash": "311f02a"
+  },
+  "settings.indexing.overriddenBadge": "Av med enhetsindexering",
+  "@settings.indexing.overriddenBadge": {
+    "sourceHash": "89db71f"
+  },
   "settings.indexing.reEnableNotifications.label": "Återaktivera aviseringar för alla enheter",
   "@settings.indexing.reEnableNotifications.label": {
     "sourceHash": "d1cc5fa"

@@ -17,7 +17,8 @@ Each area subdir has its own `CLAUDE.md` (must-knows) + `DETAILS.md` (depth). To
 autoloads; read it before non-trivial work there.
 
 - **`lifecycle/CLAUDE.md`** — the registry + `IndexPhase` machine + `IndexManager` coordinator + scan completion +
-  freshness + failure + the lifecycle bus. Owns the per-volume registry and lock discipline.
+  freshness + failure + the lifecycle bus. Owns the per-volume registry, lock discipline, and the master
+  drive-indexing switch (`indexing.enabled`), a hard gate over every per-drive choice.
 - **`resources/CLAUDE.md`** — process-wide caps: the 16 GB memory watchdog, subsystem stop-hooks, and the
   external-index-DB retention cap.
 - **`scanner/CLAUDE.md`** — the LOCAL guarded parallel walker (hang-tolerant) + the scope-aware exclusion policy.

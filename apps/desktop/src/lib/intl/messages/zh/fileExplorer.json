@@ -1363,5 +1363,17 @@
   "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr 在为 {name} 打开索引时遇到了问题。这本不该发生。重新启动 Cmdr 通常就能解决。",
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
     "sourceHash": "e9adbcc"
+  },
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "驱动器索引已在设置中关闭，因此 {name} 仍未建立索引。可在 索引 > 驱动器索引 中开启。",
+  "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
+    "sourceHash": "ce0d45c"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "驱动器索引已在设置中关闭，因此目前没有驱动器在建立索引。",
+  "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
+    "sourceHash": "6ebf6f4"
+  },
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "驱动器索引已在设置中关闭。可在 索引 > 驱动器索引 中开启，这个驱动器会从上次的进度继续。",
+  "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
+    "sourceHash": "e045664"
   }
 }

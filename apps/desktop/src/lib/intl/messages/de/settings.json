@@ -743,6 +743,14 @@
   "@settings.indexing.staleNotify.description": {
     "sourceHash": "c4216d8"
   },
+  "settings.indexing.masterOffNote": "Die Laufwerksindizierung ist aus, deshalb wird kein Laufwerk indiziert und Ordnergrößen bleiben verborgen. Jedes Laufwerk behält seine eigene Ein-/Aus-Wahl, bereit für den Moment, in dem du das wieder einschaltest.",
+  "@settings.indexing.masterOffNote": {
+    "sourceHash": "311f02a"
+  },
+  "settings.indexing.overriddenBadge": "Aus mit der Laufwerksindizierung",
+  "@settings.indexing.overriddenBadge": {
+    "sourceHash": "89db71f"
+  },
   "settings.indexing.reEnableNotifications.label": "Benachrichtigungen für alle Laufwerke wieder aktivieren",
   "@settings.indexing.reEnableNotifications.label": {
     "sourceHash": "d1cc5fa"

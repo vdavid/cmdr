@@ -1368,5 +1368,17 @@
   "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr stötte på ett problem när indexeringen för {name} skulle slås på. Det här borde inte hända. Att starta om Cmdr brukar lösa det.",
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
     "sourceHash": "e9adbcc"
+  },
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Indexering av enhet är av i Inställningar, så {name} förblir oindexerad. Slå på den under Indexering > Indexering av enhet.",
+  "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
+    "sourceHash": "ce0d45c"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "Indexering av enhet är av i Inställningar, så ingen enhet indexeras just nu.",
+  "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
+    "sourceHash": "6ebf6f4"
+  },
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Indexering av enhet är av i Inställningar. Slå på den under Indexering > Indexering av enhet, så fortsätter den här enheten där den slutade.",
+  "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
+    "sourceHash": "e045664"
   }
 }

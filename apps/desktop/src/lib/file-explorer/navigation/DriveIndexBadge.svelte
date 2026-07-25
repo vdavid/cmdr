@@ -29,6 +29,7 @@
     } from './drive-index-status'
     import { getVolumeActivity, getVolumeAggregation, getVolumePhase, placeholderActivity } from '$lib/indexing'
     import IndexingDriveRow from '$lib/indexing/IndexingDriveRow.svelte'
+    import { getDriveIndexingEnabled } from '$lib/settings/reactive-settings.svelte'
 
     interface Props {
         /** The drive this badge describes. */
@@ -49,6 +50,12 @@
     const { volumeId, status, breadcrumb = false, driveName, onAction }: Props = $props()
 
     const badgeState = $derived<DriveIndexState>(driveIndexState(status))
+
+    // The MASTER drive-indexing switch. While it's off the backend refuses every
+    // start, so this drive's own choice is overridden: the menu drops its actions
+    // and says so instead of offering buttons that would be refused. The drive's
+    // choice is remembered and comes back with the master switch.
+    const masterEnabled = $derived(getDriveIndexingEnabled())
 
     // ISO date (date portion only) for the "last indexed" copy. We always format
     // ISO regardless of the user's date-format preference, per the plan (ISO
@@ -111,6 +118,9 @@
     // the no-activity-yet window (the rich body replaces it once activity lands);
     // unified onto the `indexing.scan.*` family so both surfaces say the same.
     const stateTooltipText = $derived.by(() => {
+        // The master switch is the honest headline whenever it's off: the dot is
+        // gray because indexing is off everywhere, not because of this drive.
+        if (!masterEnabled) return tString('fileExplorer.navigation.driveIndex.tooltipIndexingOff')
         switch (badgeState) {
             case 'disabled':
                 return tString('fileExplorer.navigation.driveIndex.tooltipDisabled')
@@ -139,7 +149,7 @@
     // menu is open.
     const tooltipParam = $derived(useRichScanningTooltip ? { contentEl: scanBodyEl } : tooltipText)
 
-    const menuActions = $derived(driveIndexMenuActions(badgeState))
+    const menuActions = $derived(driveIndexMenuActions(badgeState, masterEnabled))
     const showFooter = $derived(hasLastScanFacts(status))
 
     let menuOpen = $state(false)
@@ -207,6 +217,11 @@
 
 {#if menuOpen}
     <div class="drive-index-menu" bind:this={menuRef} role="menu" onclick={(e: MouseEvent) => { e.stopPropagation() }}>
+        {#if !masterEnabled}
+            <!-- Master switch off: no actions, one line saying why and where to
+                 change it, plus the reassurance that this drive's own choice is kept. -->
+            <p class="drive-index-menu-note">{tString('fileExplorer.navigation.driveIndex.menuIndexingOffNote')}</p>
+        {/if}
         {#each menuActions as action (action)}
             <button type="button" class="drive-index-menu-item" role="menuitem" onclick={(e: MouseEvent) => { pickAction(action, e) }}>
                 {tString(driveIndexMenuLabelKey(action))}
@@ -350,6 +365,17 @@
     .drive-index-menu-item:focus-visible {
         background-color: var(--color-accent-subtle);
         outline: none;
+    }
+
+    /* The master-switch-off explanation. Wraps (unlike the nowrap action rows), so
+       the sentence stays readable inside the menu's width. */
+    .drive-index-menu-note {
+        margin: 0;
+        padding: var(--spacing-xs) var(--spacing-md);
+        max-width: 260px;
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
+        line-height: 1.4;
     }
 
     .drive-index-menu-separator {

@@ -86,6 +86,22 @@ describe('driveIndexMenuActions', () => {
   it('does not offer forget when disabled (no index to delete)', () => {
     expect(driveIndexMenuActions('disabled')).not.toContain('forget')
   })
+
+  it('offers nothing at all while the master drive-indexing switch is off', () => {
+    // The master switch outranks every per-drive choice: the backend refuses every
+    // start while it's off, so offering per-drive actions would promise work that
+    // can't happen. The menu shows the explanatory note instead.
+    for (const state of ['disabled', 'scanning', 'fresh', 'stale', 'failed'] as const) {
+      expect(driveIndexMenuActions(state, false)).toEqual([])
+    }
+  })
+
+  it('restores the per-state actions when the master switch is back on', () => {
+    // Turning the master switch back on must return each drive to the actions its
+    // OWN state allows, not a blanket set.
+    expect(driveIndexMenuActions('fresh', true)).toEqual(['rescan', 'disable', 'forget'])
+    expect(driveIndexMenuActions('disabled', true)).toEqual(['enable'])
+  })
 })
 
 describe('driveIndexMenuLabelKey', () => {
@@ -158,6 +174,13 @@ describe('driveIndexRefusalMessageKey', () => {
 
   it('returns null for credentials_needed (routes to the reconnect flow, no toast)', () => {
     expect(driveIndexRefusalMessageKey('credentials_needed')).toBeNull()
+  })
+
+  it('sends the master-switch refusal to the settings-oriented copy, not reconnect advice', () => {
+    // Nothing is wrong with the share; drive indexing is off in Settings.
+    expect(driveIndexRefusalMessageKey('indexing_disabled')).toBe(
+      'fileExplorer.navigation.driveIndex.refusedIndexingOff',
+    )
   })
 })
 

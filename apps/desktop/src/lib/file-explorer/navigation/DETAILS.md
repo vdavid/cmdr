@@ -382,9 +382,16 @@ formatter are the pure `drive-index-status.ts` (unit-tested). Blue pulses (gated
   round UP with a floor of one, so the tooltip never reads "in the last 0 hours" and the window it names always covers
   what happened. Hours come from `scanCompletedAt` (the FE's only honest last-full-check anchor); don't reconstruct them
   from `nextSweepDueAt` minus the window, that would duplicate the backend's policy constant.
+- **The MASTER drive-indexing switch overrides the whole menu.** While `indexing.enabled` is off (read reactively via
+  `getDriveIndexingEnabled()`), `driveIndexMenuActions(state, false)` returns `[]` and the menu renders one note saying
+  indexing is off in Settings and that this drive picks up where it left off. The tooltip swaps to the same headline, so
+  a gray dot doesn't read as "off for THIS drive". The backend refuses every start while the master is off (the model is
+  `src-tauri/src/indexing/lifecycle/DETAILS.md` § The two indexing switches), so an actionable menu would be a lie; the
+  drive's own choice is untouched and returns with the switch.
 - **Refused enable/rescan is classified by TYPED variant** (`SmbIndexGateReason`), never message text:
   `credentials_needed` routes into the existing direct-connect/login flow (`handleSubmenuAction`); the others show a
-  friendly toast.
+  friendly toast. The transport-neutral `EnableIndexingOutcome::IndexingDisabled` is a separate arm (the master switch
+  can flip between the menu opening and the click, and MCP can call in), toasted at `info`, not `error`.
 - **The dropdown-row menu can be clipped by the dropdown's `overflow-y: auto`** (unlike the breadcrumb placement). The
   breadcrumb badge is the primary surface (D3) and isn't clipped; the row menu is a convenience. If this becomes a
   problem, switch the row menu to `position: fixed` from `getBoundingClientRect()` like the connection submenu.

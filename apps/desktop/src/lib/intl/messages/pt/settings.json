@@ -742,6 +742,14 @@
   "@settings.indexing.staleNotify.description": {
     "sourceHash": "c4216d8"
   },
+  "settings.indexing.masterOffNote": "A indexação de disco está desativada, então nenhum disco é indexado e os tamanhos de pasta ficam ocultos. Cada disco mantém a própria escolha de ligado ou desligado, pronta para quando você ativar isto de novo.",
+  "@settings.indexing.masterOffNote": {
+    "sourceHash": "311f02a"
+  },
+  "settings.indexing.overriddenBadge": "Desligado com a indexação",
+  "@settings.indexing.overriddenBadge": {
+    "sourceHash": "89db71f"
+  },
   "settings.indexing.reEnableNotifications.label": "Reativar avisos para todos os discos",
   "@settings.indexing.reEnableNotifications.label": {
     "sourceHash": "d1cc5fa"
