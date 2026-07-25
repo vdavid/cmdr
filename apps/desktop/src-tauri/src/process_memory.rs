@@ -437,7 +437,7 @@ mod tests {
         // the same pointer back to `mi_free` exactly once.
         let (zones_after, mimalloc_after) = unsafe {
             let block = libmimalloc_sys::mi_malloc(CHUNK) as *mut u8;
-            assert!(!block.is_null(), "mi_malloc should hand back {CHUNK} bytes");
+            assert!(!block.is_null(), "mi_malloc should hand back a {CHUNK}-byte block");
             // Touch every page so the bytes are really committed, not just reserved.
             std::ptr::write_bytes(block, 1u8, CHUNK);
             let readings = (query_system_malloc_zones().in_use, query_mimalloc_heap().committed);
