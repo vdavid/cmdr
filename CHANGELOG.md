@@ -5,6 +5,48 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.36.1] - 2026-07-25
+
+Cmdr could balloon to tens of gigabytes of memory within minutes of launching; that's fixed. Network drives stop
+hoarding NAS snapshot folders in the index, and switching drive indexing off now really stops every drive.
+
+### Fixed
+
+- Fix Cmdr ballooning to tens of gigabytes of memory shortly after launch
+  ([28967ce8](https://github.com/vdavid/cmdr/commit/28967ce8),
+  [fb874666](https://github.com/vdavid/cmdr/commit/fb874666),
+  [89d2befb](https://github.com/vdavid/cmdr/commit/89d2befb))
+- Fix a network drive re-indexing itself at every launch while drive indexing is off
+  ([27227669](https://github.com/vdavid/cmdr/commit/27227669))
+- Keep NAS snapshot folders out of the drive index, so a share's file count and size are real
+  ([1046a5d2](https://github.com/vdavid/cmdr/commit/1046a5d2),
+  [6d260eba](https://github.com/vdavid/cmdr/commit/6d260eba),
+  [c802ed91](https://github.com/vdavid/cmdr/commit/c802ed91),
+  [85c3777e](https://github.com/vdavid/cmdr/commit/85c3777e))
+- Fix error reports failing to send when you leave the note empty
+  ([326ccf12](https://github.com/vdavid/cmdr/commit/326ccf12),
+  [b3fd57d3](https://github.com/vdavid/cmdr/commit/b3fd57d3))
+- Drop "Send error report…" from the toast that reports a failed send
+  ([22001eed](https://github.com/vdavid/cmdr/commit/22001eed))
+
+### Changed
+
+- Cut memory for a big network drive's folder tree by two thirds, and load it three times faster
+  ([0f6663b8](https://github.com/vdavid/cmdr/commit/0f6663b8))
+- Grey out the per-drive indexing controls while the main drive-indexing switch is off
+  ([50b0cb5d](https://github.com/vdavid/cmdr/commit/50b0cb5d))
+- Make the memory safeguard measure Cmdr's real memory use and keep watching after it steps in
+  ([7230e86f](https://github.com/vdavid/cmdr/commit/7230e86f),
+  [f7631999](https://github.com/vdavid/cmdr/commit/f7631999))
+
+### Non-app
+
+- Document that `vmmap` reports Cmdr's Rust heap under a GPU name, and how to measure memory properly
+  ([b4b2c175](https://github.com/vdavid/cmdr/commit/b4b2c175),
+  [76bafde1](https://github.com/vdavid/cmdr/commit/76bafde1))
+- Add a test helper that proves a hot path doesn't allocate per row
+  ([f3e76419](https://github.com/vdavid/cmdr/commit/f3e76419))
+
 ## [0.36.0] - 2026-07-24
 
 The three main advancements:
