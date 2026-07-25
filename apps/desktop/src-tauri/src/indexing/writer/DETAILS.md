@@ -21,7 +21,7 @@ enrichment/verification never contend on the write connection or the lifecycle m
 `DeleteSubtreeById`, `PropagateDeltaById`, `ComputeAllAggregates`, `ComputeSubtreeAggregates`,
 `ComputePartialAggregates`, `BackfillMissingDirStats`, `TruncateData`, `MarkDirsListed`, `PropagateMinSubtreeEpoch`,
 `BumpCurrentEpoch`, `SetDeltaPropagation`, `MarkLedgerUnpaid`/`PayLedgerIfUnpaid`, `ArmLedgerHealLatch`,
-`PruneExcludedSubtrees`, `IncrementalVacuum`/`WalCheckpoint`, `EmitDirUpdated`, `Flush`) plus path-keyed
+`IncrementalVacuum`/`WalCheckpoint`, `EmitDirUpdated`, `Flush`) plus path-keyed
 backward-compat variants. `Flush` + the async `flush()` let callers wait for all prior writes to commit.
 
 **Rationale — single writer, not connection pooling.** SQLite's write concurrency is limited by its single-writer
@@ -432,72 +432,6 @@ approach depends on: (1) a test must NEVER `INDEX_REGISTRY.clear()` (it wipes ev
 `lifecycle/state/tests.rs` removes only its own ids); (2) `stress_test_helpers::TestInstanceGuard::register_identity_paths`
 uses an `mtp-` id so `get_dir_stats_on_volume` / `enrich_*_on_volume` map plain `/paths` identically (identity read-side
 routing) while staying private.
-
-## Pruning recursion-excluded subtrees (`prune.rs`)
-
-`PruneExcludedSubtrees { excluded_dir_names, fingerprint }` deletes every row BENEATH a directory whose name is in the
-list, keeps the directory's own row, resets that row's `listed_epoch` to 0, drops its stale `dir_stats`, sweeps rows an
-older run left stranded, and records the fingerprint under `EXCLUDED_SUBTREES_PRUNED_KEY`. The senders, the triggers,
-the name list and its `IndexVolumeKind` gate are canonical in `../network_scanner/DETAILS.md` § "NAS snapshot/system
-dirs aren't recursed"; this section owns the writer-side mechanics.
-
-**Why it exists.** The trait scanner keeps such a dir's row but never walks its subtree, and a reconcile only diffs the
-dirs it LISTS, so rows an older index put there were invisible to every later pass. On the author's QNAP index:
-10 898 710 such rows, 80% of a 13 541 603-row, 1.88 GB DB (2026-07-25, direct query against a copy of
-`index-smb-192-168-1-111-445-naspi.db`). Full measurements, including where the rows came from and the nesting trap
-that makes naive per-root counts overshoot: `docs/notes/orphaned-excluded-subtree-rows-2026-07-25.md`.
-
-**Why it can only ever prune LESS than intended, never more.** Three narrowing steps: the kind gate (trait-scanned
-volumes only), then SQL `is_directory = 1 AND lower(name) IN (…)`, then a Rust `eq_ignore_ascii_case` re-check of every
-candidate before anything is deleted. SQLite's `lower()` is ASCII-only, which is exactly `eq_ignore_ascii_case` for
-these ASCII names, but the re-check means a future divergence can only shrink the set. Pinned by
-`prune_never_touches_a_lookalike_user_folder`.
-
-**Why `listed_epoch = 0` here is the one truthful zero.** A dir an older index DID list carries a non-zero epoch; once
-its subtree is gone, that would roll up as an EXACT `0 B` for a folder holding terabytes. The current scanner never
-lists it, so 0 (unknown, `—`) is precisely the state a scan under today's rules would leave. This is the documented
-exception to `CLAUDE.md`'s "never write `listed_epoch = 0` for a dir we listed but skipped" — that rule is about a dir we
-DID list.
-
-**The caller must follow with a `ComputeAllAggregates`** (every sender does): ancestors keep the deleted rows' bytes in
-their `dir_stats` until it runs.
-
-**Interrupting a prune is ordinary, and must stay harmless.** It runs at startup and takes tens of seconds on a real
-NAS index, so a user quitting mid-run is a normal case, not an exotic one. Three mechanisms make the run resumable, and
-all three are needed:
-
-1. **The deletes are post-order** (`store/DETAILS.md` § "Decision: a subtree delete is post-order…"), so no stop point
-   can sever the tree. Re-descending from the same excluded root finds whatever is left. This is what makes the prune
-   idempotent rather than merely re-attemptable.
-2. **`EXCLUDED_SUBTREES_PRUNE_STARTED_KEY` is written before the FIRST delete** and cleared only once the whole run
-   finished, so `lifecycle/network_scan.rs::excluded_subtree_prune_pending` re-arms an unfinished run even when the
-   fingerprint already matches. `record_fingerprint` writes the fingerprint first and clears the mark second; an
-   interruption between the two still leaves the next load seeing work pending, and a redundant prune is a no-op.
-3. **Every run ends with `IndexStore::sweep_orphaned_entries`**, the ONLY thing that can reach rows an older top-down
-   run already stranded on an existing install. Stranded rows are unreachable, so re-descending the excluded roots
-   walks straight past them. Its cost is bounded by the same fingerprint gate as the prune itself (once per DB per
-   exclusion-list version), never per launch.
-
-**Gotcha/Why — a "just re-run it next launch" recovery story needs the DELETE ORDER to back it.** Writing the
-completion marker last isn't enough on its own. Under a top-down delete, the rows an interrupted run leaves behind are
-no longer reachable, so the re-run finds nothing to do and the fix silently never completes on any machine whose first
-post-upgrade launch got interrupted. The marker only says "try again"; the post-order is what guarantees there's still
-something findable to try on.
-
-**Measured with this code over copies of the production DB** (2026-07-25, debug build; discovery, a full table scan
-for candidates, was 8 s cold in each):
-
-- Pristine 13 541 603-row DB: post-order delete of all 10 898 710 rows in 54 s, sweep 0.4 s and 0 rows, ending at
-  2 642 893 rows, all reachable — exactly the last scan's own count.
-- Same DB, interrupted after 1 100 000 deletes: 12 441 603 rows and **0 orphans** mid-way; the relaunch removed the
-  remaining 9 798 710 and landed on the same 2 642 893.
-- The half-pruned DB an interrupted TOP-DOWN run produced (12 442 990 rows, 910 316 direct orphans): re-descending the
-  excluded roots reached only 6 735 rows, and the sweep removed the other 9 793 362, in 54 s. Final: 2 642 893 rows, 0
-  orphans, everything reachable.
-
-Freed pages go to the freelist (1 353 MB of it), which the 30 s `IncrementalVacuum` tick drains; draining it fully took
-45 s and brought the file from 1.88 GB to 529 MB. Full evidence, including where the rows came from:
-`docs/notes/orphaned-excluded-subtree-rows-2026-07-25.md`.
 
 ## Maintenance: vacuum and WAL checkpoint (`maintenance.rs`)
 

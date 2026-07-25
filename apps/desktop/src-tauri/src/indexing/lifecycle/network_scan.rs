@@ -26,6 +26,20 @@ use crate::indexing::events::{
 use crate::indexing::store::IndexStore;
 use crate::indexing::writer::{AggSource, WriteMessage};
 
+/// How a `Volume`-trait scan treats whatever the index already holds.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum NetworkScanMode {
+    /// Pick by what's in the DB: reconcile a populated index in place (so the
+    /// last-good data stays visible), bulk-build an empty one. The normal mode for
+    /// startup scans and manual rescans.
+    Auto,
+    /// Truncate first, whatever the DB holds. For invalidation: the indexed rows
+    /// are known-unusable, so rebuilding is cheaper and more honest than any
+    /// in-place repair. Reconcile CAN'T do this job — it only diffs the dirs it
+    /// lists, so rows under a dir the scanner no longer walks would survive it.
+    Rebuild,
+}
+
 /// Replay the changes the live watcher buffered during a `Volume`-trait scan,
 /// dispatching to the right per-backend buffer (SMB `CHANGE_NOTIFY` vs. MTP PTP
 /// events). Returns whether the volume stays Fresh (false ⇒ overflow forced
@@ -87,15 +101,28 @@ impl IndexManager {
             let _ = self.writer.send(WriteMessage::ArmLedgerHealLatch);
         }
 
-        // One-shot prune of rows left beneath dirs the scanner refuses to walk.
-        // A COMPLETED network index loads Stale and never rescans on its own, so
-        // without this an install carrying them keeps them until the user asks for
-        // a rescan by hand; on the author's QNAP that was 10 898 710 rows, 80% of
-        // the index. Gated on the exclusion list's fingerprint, so it runs once per
-        // DB and again whenever the list GROWS.
-        let prune_pending = self.excluded_subtree_prune_pending();
-        if prune_pending && let Some(msg) = crate::indexing::network_scanner::prune_message_for_kind(self.kind) {
-            let _ = self.writer.send(msg);
+        // One-time rebuild for an index built under an older NAS system-dir
+        // exclusion list. Such an index still holds rows beneath dirs today's
+        // scanner never walks (10 898 710 of them on the author's QNAP, 80% of the
+        // index), and no reconcile can shed them: it only diffs the dirs it LISTS,
+        // and it never lists these. The drive index is a disposable cache, so we
+        // rebuild rather than migrate. The stamp is written when a scan truncates,
+        // so this fires once per list version, not once per launch.
+        if crate::indexing::network_scanner::index_predates_exclusion_list(self.store.read_conn()) {
+            log::info!(
+                "Startup: {kind} volume '{}' isn't built against the current NAS system-dir exclusion list; rebuilding it from scratch",
+                self.volume_id
+            );
+            match self.start_volume_scan(NetworkScanMode::Rebuild, "NAS system-dir exclusion list changed") {
+                Ok(()) => return Ok(()),
+                // Can't scan right now (share unmounted, or a scan is already
+                // running). Keep the existing index browsable and re-arm next load:
+                // nothing stamps the DB until a rebuild actually truncates it.
+                Err(e) => log::warn!(
+                    "Startup: {kind} volume '{}' couldn't start its exclusion-list rebuild ({e}); keeping the existing index for now",
+                    self.volume_id
+                ),
+            }
         }
 
         if status.scan_completed_at.is_some() {
@@ -112,9 +139,7 @@ impl IndexManager {
             // armed heal latch — enqueue the heal's own aggregate directly. It
             // recomputes `dir_stats` from the committed `entries` (Sql), so the
             // stale-but-browsable index gets its drifted sizes healed in place.
-            // The prune above needs the same aggregate to un-inflate the ancestors
-            // of everything it deleted, so either pending job asks for one.
-            if heal_pending || prune_pending {
+            if heal_pending {
                 let _ = self
                     .writer
                     .send(WriteMessage::ComputeAllAggregates { source: AggSource::Sql });
@@ -131,29 +156,7 @@ impl IndexManager {
             "Startup: {kind} volume '{}' scan (no completion marker; reconcile if a partial persists)",
             self.volume_id
         );
-        self.start_volume_scan("startup scan (no completion marker)")
-    }
-
-    /// Whether this index still has to be pruned against the CURRENT
-    /// recursion-exclusion list.
-    ///
-    /// The stored fingerprint says which list the DB was last pruned against, so
-    /// adding a name re-arms every existing index without a schema bump (which
-    /// would throw away every index on the machine, including a 6.9M-entry local
-    /// one, to fix a network-only problem). A read failure answers "yes": a
-    /// redundant prune is a no-op, a skipped one leaves the rows.
-    ///
-    /// A leftover in-progress mark answers "yes" on its own: a run the user quit
-    /// part-way through is resumable but not finished, and that run is also what
-    /// sweeps rows an older top-down delete stranded.
-    fn excluded_subtree_prune_pending(&self) -> bool {
-        let conn = self.store.read_conn();
-        let started = IndexStore::get_meta(conn, crate::indexing::store::EXCLUDED_SUBTREES_PRUNE_STARTED_KEY);
-        if !matches!(started, Ok(None)) {
-            return true;
-        }
-        let stored = IndexStore::get_meta(conn, crate::indexing::store::EXCLUDED_SUBTREES_PRUNED_KEY);
-        !matches!(stored, Ok(Some(ref v)) if *v == crate::indexing::network_scanner::exclusion_list_fingerprint())
+        self.start_volume_scan(NetworkScanMode::Auto, "startup scan (no completion marker)")
     }
 
     /// A short label for this volume kind, for diagnostics. Only `Smb`/`Mtp`
@@ -171,16 +174,17 @@ impl IndexManager {
     ///
     /// Mirrors `start_scan`'s shape (bump epoch → walk → aggregate → meta on clean
     /// completion) but walks via `network_scanner` instead of the guarded walker, and starts NO
-    /// `DriveWatcher` (the live-watch layer owns that). Picks the WALK by whether
-    /// the index already has data: an empty DB does a fresh `scan_volume_via_trait`
-    /// (truncate + bulk build); a populated DB does a non-destructive
-    /// `reconcile_volume_via_trait` (diff each dir, write only changes, never blank
-    /// the index). See `indexing/DETAILS.md` § "Non-destructive rescan".
+    /// `DriveWatcher` (the live-watch layer owns that). In `Auto` mode it picks the
+    /// WALK by whether the index already has data: an empty DB does a fresh
+    /// `scan_volume_via_trait` (truncate + bulk build); a populated DB does a
+    /// non-destructive `reconcile_volume_via_trait` (diff each dir, write only
+    /// changes, never blank the index). `Rebuild` forces the truncate + bulk build.
+    /// See `indexing/DETAILS.md` § "Non-destructive rescan".
     /// Freshness transitions: `ScanStarted` ⇒ Scanning now; on clean completion the
     /// completion task fires `ScanCompleted` ⇒ Fresh and writes the meta marker;
     /// on cancel/error the partial is discarded by RESETTING the volume to gray
     /// (removing the registry instance), per D-interrupted.
-    pub(super) fn start_volume_scan(&mut self, scan_trigger: &str) -> Result<(), String> {
+    pub(super) fn start_volume_scan(&mut self, mode: NetworkScanMode, scan_trigger: &str) -> Result<(), String> {
         use crate::indexing::scanner::{ScanHandle, ScanProgress};
         use std::sync::atomic::AtomicBool;
 
@@ -232,9 +236,10 @@ impl IndexManager {
         // `entry_count == 1`. With `> 0`, a first connect would run the per-entry
         // reconcile against the 1-row sentinel DB instead of the faster bulk build.
         // (Same `> 1` rule as the LOCAL path's `local_rescan_reconciles`.)
-        let reconcile = IndexStore::get_entry_count(self.store.read_conn())
-            .map(|n| n > 1)
-            .unwrap_or(false);
+        let reconcile = mode == NetworkScanMode::Auto
+            && IndexStore::get_entry_count(self.store.read_conn())
+                .map(|n| n > 1)
+                .unwrap_or(false);
 
         // Clear the prior completion marker (so an interrupted rescan heals — no
         // stale `scan_completed_at` over a now-stale/partly-rewritten table) and
@@ -253,6 +258,14 @@ impl IndexManager {
         let _ = self.writer.send(WriteMessage::BumpCurrentEpoch);
         if !reconcile {
             let _ = self.writer.send(WriteMessage::TruncateData);
+            // Right after the truncate is the ONE moment this DB provably holds no
+            // row beneath a dir the scanner refuses to walk, so it's where the index
+            // records the NAS system-dir exclusion list it's built against. A
+            // reconcile must never claim it: it doesn't list those dirs, so it can't
+            // clear what an older list let in.
+            let _ = self
+                .writer
+                .send(crate::indexing::network_scanner::exclusion_stamp_message());
         }
         if let Err(e) = tokio::task::block_in_place(|| self.writer.flush_blocking()) {
             log::warn!("network scan: flush after scan-start meta/truncate failed: {e}");

@@ -11,7 +11,7 @@ search-generation bump. Other areas point here.
 - **entries.rs** (insert/upsert/move/delete/truncate), **delta.rs** (`propagate_delta_by_id` +
   `propagate_min_subtree_epoch` + `propagate_recursive_has_symlinks`), **aggregation.rs** (`Compute*`/`Backfill` →
   `../aggregator/`), **repair.rs** (`repair_dir_stats_upward`), **deferred_repair.rs**, **maintenance.rs** (vacuum +
-  WAL checkpoint), **prune.rs** (`PruneExcludedSubtrees`), **wait_probe.rs** (writer-queue wait accounting).
+  WAL checkpoint), **wait_probe.rs** (writer-queue wait accounting).
 
 ## Must-knows (all hold PER volume id)
 
@@ -32,12 +32,7 @@ search-generation bump. Other areas point here.
   249 dirs claiming exact sizes.
 - **Coverage epochs:** `propagate_delta_by_id` carries `min_subtree_epoch` through UNCHANGED on a pure size/count delta
   (resetting it flips exact→"≥" on every file write); `propagate_min_subtree_epoch` fires on TREE-SHAPE changes only.
-  Marks (`MarkDirsListed`) land BEFORE the aggregate. ❌ Never write `listed_epoch = 0` for a dir we listed but skipped
-  (`prune.rs` excepted: its dirs are never LISTED).
-- **`PruneExcludedSubtrees` deletes rows: a `ComputeAllAggregates` must follow, or ancestors keep the bytes.** ❌ Never
-  send it for a locally-scanned volume; gated by its only outside constructor,
-  `network_scanner::system_dirs::prune_message_for_kind`. ❌ Its in-progress mark goes down BEFORE the first delete
-  (re-arms a quit run). DETAILS § "Pruning recursion-excluded subtrees".
+  Marks (`MarkDirsListed`) land BEFORE the aggregate. ❌ Never write `listed_epoch = 0` for a dir we listed but skipped.
 - **Full-aggregate source is sender-declared (`source: Maps|Sql`), never sniffed.** `Maps` (the in-memory accumulator)
   comes ONLY from a fresh full scan; every other flow sends `Sql`. The subtree handler must NOT clear the accumulator.
 - **Partial aggregation borrows the maps READ-ONLY**, no-ops on empty maps with NO SQL fallback (load-bearing: a late

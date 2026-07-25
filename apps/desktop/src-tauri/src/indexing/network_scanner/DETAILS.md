@@ -181,11 +181,11 @@ local walker has its own `should_exclude` (`../scanner/DETAILS.md`).
 `FileEntry` carries no DOS hidden/system attribute today; if one is plumbed through, "hidden + system" would generalize
 this without the hardcoded list.
 
-### The bar for adding a name (it now deletes rows)
+### The bar for adding a name (it drops the folder from the index)
 
-A name in this list means "the scanner never walks here" AND "prune anything already indexed here", so a false positive
-deletes a user's folder from the index. A candidate needs a vendor/protocol citation, and it needs to be a name no user
-would pick. Vendor attribution, verified 2026-07-25 against vendor docs:
+A name in this list means "the scanner never walks here", and adding one re-arms the rebuild below, so a false positive
+costs a user their indexed folder until they rename it. A candidate needs a vendor/protocol citation, and it needs to be
+a name no user would pick. Vendor attribution, verified 2026-07-25 against vendor docs:
 
 - **Synology DSM**: `@eaDir` (media-index thumbnails, in every folder holding indexed media), `#recycle`, `#snapshot`,
   `@sharesnap`, `@tmp`.
@@ -206,29 +206,40 @@ false-positive risk with zero benefit. Pinned by `does_not_exclude_the_smb_invis
 snapper's default subvolume name, which a Btrfs user could plausibly have created themselves; `@tmp` and `@sharesnap`
 live at the Synology volume root and so normally aren't reachable through a share at all.
 
-### Pruning what an older index left behind
+### Rebuilding an index that predates the current list
 
-The exclusion only stops the walk. Rows an OLDER index (or a pre-exclusion build) already wrote under such a dir were
-invisible to every later pass, because a reconcile diffs the dirs it LISTS and this one is never listed. Nothing removed
-them: on the author's QNAP index that was 10 898 710 rows, 80% of a 13 541 603-row, 1.88 GB DB, against a last-scan
-count of 2 642 902 — enough to roll a 10 TB NAS up to 89 TB and make every O(entries) walk pay 5×.
-`writer::prune` (canonical: `../writer/DETAILS.md` § "Pruning recursion-excluded subtrees") is what removes them.
-This module owns the two triggers and the safety gate:
+The exclusion only stops the walk. Rows an OLDER index (or a pre-exclusion build) already wrote under such a dir are
+invisible to every later pass, because a reconcile diffs the dirs it LISTS and this one is never listed. On the author's
+QNAP index that was 10 898 710 rows, 80% of a 13 541 603-row, 1.88 GB DB, against a last-scan count of 2 642 902 —
+enough to roll a 10 TB NAS up to 89 TB and make every O(entries) walk pay 5×. Measurements:
+`docs/notes/excluded-subtree-rows-2026-07-25.md`.
 
-- `finish_reconcile` (this module's network-only wrapper) sends the prune before the shared
-  `reconciler::finish_reconcile`, so the marks and the single `ComputeAllAggregates` that follow recompute ancestors
-  over the pruned tree. The FRESH scan doesn't need it: `TruncateData` runs first, so it can't inherit an orphan.
-- `lifecycle/network_scan.rs`'s `resume_or_scan_network` sends it once per DB at load, gated on
-  `exclusion_list_fingerprint()`. **Why a load pass at all:** a completed network index loads Stale and never rescans on
-  its own, so an existing install would otherwise keep its rows until the user asked for a rescan by hand.
+**Decision/Why we rebuild instead of pruning in place.** A prune is a migration: it has to find the roots, delete
+post-order, survive a mid-run quit, un-inflate every ancestor, and stay provably narrower than the scanner's own rule,
+all so an index nobody would miss keeps its rows. The drive index is a disposable cache (`../CLAUDE.md` § "Rebuild,
+don't migrate"), and a NAS rescan is ~10 minutes, so the index is invalidated and rebuilt instead. That also fixes
+whatever ELSE an old build got wrong, which no targeted prune can claim.
+
+The mechanism, all in `system_dirs.rs` plus two call sites:
+
+- `exclusion_list_fingerprint()` digests the name list; `exclusion_stamp_message()` writes it under
+  `store::SYSTEM_DIR_EXCLUSIONS_KEY`, and `lifecycle/network_scan.rs::start_volume_scan` sends that message ONLY right
+  after a `TruncateData`. That's the one moment the DB provably holds nothing beneath an excluded dir. A reconcile never
+  stamps: it can't clear what an older list let in.
+- `index_predates_exclusion_list()` compares the stamp to the current list. `resume_or_scan_network` asks at load and,
+  on a mismatch, runs `start_volume_scan(NetworkScanMode::Rebuild, …)` — a truncate + full walk, not a reconcile.
+  **Why at load:** a completed network index loads Stale and never rescans on its own, so an existing install would
+  otherwise keep its rows until the user asked for a rescan by hand.
 - **Why a content fingerprint, not a schema bump or a version constant.** `SCHEMA_VERSION` deletes EVERY index on the
-  machine, including a 6.9M-entry local one, to fix a network-only problem, and costs a 12-minute NAS rescan on top; a
-  hand-maintained version constant is one someone forgets to bump when they add a name. The fingerprint is derived from
-  the list's contents, so growing the list re-arms every existing index automatically and shrinking it doesn't resurrect
-  anything.
-- `prune_message_for_kind` is the gate: only `is_trait_scanned()` kinds get a message, because the LOCAL walker indexes
-  a folder called `@eaDir` or `.snapshot` in full, and pruning a local index against this list would delete real user
-  data. Pinned by `only_trait_scanned_volumes_get_a_prune_message`.
+  machine, including a 6.9M-entry local one, to fix a network-only problem; a hand-maintained version constant is one
+  someone forgets to bump when they add a name. The fingerprint is derived from the list's contents, so growing the list
+  re-arms every existing network index automatically and shrinking it doesn't resurrect anything.
+- **Why it can't loop.** The stamp lands with the truncate, before the walk, so even a rebuild the user cancels leaves
+  an index that's honestly built against the current list. A rebuild that can't START (share unmounted) writes nothing
+  and re-arms on the next load.
+- **Why locally-scanned volumes are untouched.** The stamp and the rebuild live on the network scan path only, which
+  `Local`/`LocalExternal` volumes never take. The local walker indexes a folder called `@eaDir` or `.snapshot` in full,
+  and rebuilding a local index against this list would be pure loss.
 
 ## Empty root
 

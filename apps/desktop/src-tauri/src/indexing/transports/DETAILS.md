@@ -78,12 +78,12 @@ lifetime, not just while a pane shows the share, so the index must update even w
   index-relative PARENT path has a component matching `network_scanner::is_recursion_excluded_dir` (checked before the
   `resolve_path`, so it costs nothing on the hot path). **Decision/Why:** the excluded dir keeps its own row, so its
   path resolves fine, and without the gate a `CHANGE_NOTIFY` under `@eaDir` upserted children no scan would ever
-  produce — the exact rows `writer/prune.rs` deletes, re-dirtying a freshly pruned index. Gating in `resolve_change`
+  produce, re-dirtying a freshly rebuilt index one event at a time. Gating in `resolve_change`
   covers the live path, the mid-scan replay, and the Docker integration harness in one place, and it also suppresses the
   `EmitDirUpdated` (nothing to refresh: the dir's size is honestly unknown). The check is on the PARENT, so a change to
   the excluded dir ITSELF (which arrives under its parent) still upserts or deletes it — the "stays listed and
-  navigable" invariant is untouched. A `Removed` under an excluded dir is gated too: post-prune the row doesn't exist,
-  and the prune is what heals a pre-prune index, so letting the delete through would buy nothing for an asymmetric rule.
+  navigable" invariant is untouched. A `Removed` under an excluded dir is gated too: after a rebuild the row doesn't
+  exist, so letting the delete through would buy nothing for an asymmetric rule.
   Pinned by `change_inside_a_recursion_excluded_dir_writes_nothing`,
   `the_gate_looks_at_every_ancestor_not_only_the_immediate_parent`, and
   `the_excluded_dir_s_own_row_and_ordinary_siblings_still_update`. MTP's watcher resolves by object handle, not by path,

@@ -26,9 +26,7 @@ pulling shared items via `use super::*`):
   per-parent folding need and so let the caller hold a compact structure instead of a row per entry. Reach for a
   streaming one unless the consumer genuinely wants the metadata. `delete_descendants_by_id` descends in bounded chunks
   rather than issuing one recursive-CTE `DELETE` (which materialized 10.9M ids into a single ephemeral table and
-  transaction on a real index), and deletes POST-ORDER (see below); `find_dirs_named_any_of`, `clear_listed_epoch`, and
-  `sweep_orphaned_entries` serve the excluded-subtree prune (`../writer/DETAILS.md` §
-  "Pruning recursion-excluded subtrees").
+  transaction on a real index), and deletes POST-ORDER (see below).
 - `dir_stats.rs`: `dir_stats` reads and writes plus `recompute_min_subtree_epoch`.
 - `meta.rs`: meta-table + epoch helpers, `mark_dirs_listed`, `get_all_directory_paths`, `clear_all`, and the
   aggregates-are-known-good marker (`ledger_heal_done` / `mark_ledger_heal_done` / `clear_ledger_heal_done`, keyed on
@@ -63,22 +61,18 @@ finds exactly what's left.
 **Why the ordering is load-bearing.** The delete is autocommitted per batch, so a quit or crash freezes it wherever it
 got to. Top-down, that severs the tree at the cut and every row below loses its path to the root — invisible to any
 later descent, so nothing can ever collect it. On a copy of the author's production QNAP index one interrupted run left
-12 442 990 rows of which 9 793 362 were unreachable (910 316 of them directly parentless), and a relaunch pruned nothing
-(2026-07-25). Reading children by `parent_id` is what makes the order free to choose: a deleted parent row never hides
-its children. Pinned by `../writer/prune/tests.rs::interrupting_a_subtree_delete_never_strands_a_row`, which asserts
-zero orphans after EVERY prefix of the deletion order (via the `#[cfg(test)]`
-`delete_descendants_by_id_stopping_after`, whose mid-batch stops are a superset of the points a real crash can reach).
+12 442 990 rows of which 9 793 362 were unreachable (910 316 of them directly parentless), and a relaunch collected
+nothing (2026-07-25). Reading children by `parent_id` is what makes the order free to choose: a deleted parent row never
+hides its children. Pinned by `tests.rs::interrupting_a_subtree_delete_never_strands_a_row`, which asserts zero orphans
+after EVERY prefix of the deletion order (via the `#[cfg(test)]` `delete_descendants_by_id_stopping_after`, whose
+mid-batch stops are a superset of the points a real crash can reach, and the `#[cfg(test)]` `find_orphan_entries`).
 
 **Cost of the ordering.** Post-order retains the directory ids of all levels instead of one frontier: 324 128 ids
 (2.6 MB) across seven levels on that index, versus a 5 951-id peak for the old single frontier. Both stay orders of
 magnitude under the ~87 MB the recursive-CTE form materializes, and files never accumulate at all.
 
-`sweep_orphaned_entries` is the repair side, for indexes ALREADY severed by the top-down version. It deletes every row
-unreachable from the root: `find_orphan_entries` (one table scan with a PK probe, 0.65 s over 12.4M rows) then each
-orphan directory's subtree post-order, orphan roots last, so an interruption leaves the remainder a direct orphan the
-next sweep re-finds. One pass suffices, since a direct orphan's own descendants all have a live parent. The root
-sentinel is excluded by id: its `parent_id` is `ROOT_PARENT_ID`, which has no row by design. Only a prune run calls it
-(`../writer/DETAILS.md` § "Pruning recursion-excluded subtrees"), so it's once per DB per exclusion-list version.
+There is deliberately NO repair pass for rows already stranded that way, and there shouldn't be one: an index is a
+disposable cache, so a damaged one is invalidated and rebuilt (`../CLAUDE.md` § "Rebuild, don't migrate").
 
 ## Decision: only proven corruption deletes an index; everything else fails loudly
 

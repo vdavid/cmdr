@@ -471,7 +471,9 @@ impl IndexManager {
     /// typed `kind`, never a volume-id substring.
     pub fn force_rescan(&mut self, scan_trigger: &str) -> Result<(), String> {
         match rescan_scanner_for_kind(self.kind) {
-            RescanScanner::VolumeTrait => self.start_volume_scan(scan_trigger),
+            RescanScanner::VolumeTrait => {
+                self.start_volume_scan(super::network_scan::NetworkScanMode::Auto, scan_trigger)
+            }
             RescanScanner::LocalWalker => self.start_scan(scan_trigger),
         }
     }

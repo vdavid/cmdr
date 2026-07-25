@@ -11,6 +11,14 @@ real code is in the area subdirs below.
 reservation, reads-via-`ReadPool`-never-under-the-lifecycle-lock, freshness, and the `dir_stats` ledger all hold
 independently per key. When you touch any area, keep the reasoning per-volume.
 
+## Rebuild, don't migrate
+
+Pre-launch, we do NOT preserve index contents across a format or scope change. The drive index, media index, and
+importance index are disposable caches, and a full rescan is acceptable (~10 minutes on a big NAS), so invalidate and
+rebuild. ❌ Don't build machinery to preserve them unless David says so for a specific case: a migration is a permanent
+maintenance cost for rows nobody would miss, and it only fixes the one thing it targets. The exclusion-list rebuild is
+the pattern to copy (`network_scanner/DETAILS.md` § "Rebuilding an index that predates the current list").
+
 ## Areas (routing map)
 
 Each area subdir has its own `CLAUDE.md` (must-knows) + `DETAILS.md` (depth). Touch a dir and its `CLAUDE.md`

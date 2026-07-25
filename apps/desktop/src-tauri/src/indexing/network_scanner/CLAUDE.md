@@ -10,8 +10,8 @@ are discovered and stat'd differs from the local guarded walker.
   round-trip disciplines, the terminal-disconnect partial-preserving finish, and the consecutive-failure backstop.
 - **scan_pace.rs** — `ScanPacer`: the per-volume paced listing budget (`FULL_LISTING_BUDGET` 64 ↔ `YIELDING_LISTING_BUDGET`
   1) that yields to navigation. `pace_tests.rs` is its test module.
-- **system_dirs.rs** — `is_recursion_excluded_dir`: NAS snapshot/system pseudo-dirs whose subtree isn't recursed, plus
-  the prune message's kind gate and the list fingerprint.
+- **system_dirs.rs** — `is_recursion_excluded_dir` (NAS pseudo-dirs whose subtree isn't recursed) plus the
+  exclusion-list stamp that drives the rebuild.
 - **tests.rs** — the scanner test module.
 
 ## Must-knows
@@ -32,10 +32,10 @@ are discovered and stat'd differs from the local guarded walker.
   scan. ❌ Never let it reach 0 — one-at-a-time is what makes forward progress structural.
 - **NAS system/snapshot dirs aren't recursed** (`system_dirs.rs`): the dir's own row IS indexed (navigable), but its
   subtree is never walked (rolls up honestly-unknown). Don't remove it to "fill in" sizes — it re-triggers the stall.
-- **A name on that list also DELETES rows** (`writer/prune.rs`), so a false positive costs a user their indexed folder.
-  Add one only with a vendor citation, and only if it's SMB-visible (why ONTAP's `~snapshot` is absent). The reconcile
-  finish and the load-time one-shot prune; a FRESH scan needn't (`TruncateData` runs first), and
-  `prune_message_for_kind` keeps it off locally-scanned indexes, which index those folders in full.
+- **Adding a name REBUILDS every network index**, so a false positive costs a user their indexed folder: add one only
+  with a vendor citation, and only if it's SMB-visible (why ONTAP's `~snapshot` is absent). An index stamps the list it
+  was built against and `lifecycle/network_scan.rs` truncate-rescans on a mismatch. ❌ Stamp only right after a
+  `TruncateData`; ❌ never migrate an old index (`../CLAUDE.md` § "Rebuild, don't migrate").
 - **The FRESH scan wraps its inserts in periodic explicit transactions** (`SCAN_COMMIT_INTERVAL`, 2 s): the single
   writer fsyncs per interval, not per 2000-entry batch — the writer-side lever that keeps it from becoming the bottleneck
   once the SMB connection pool lifts listing throughput ~4×. `commit_scan_tx` closes the transaction before EVERY exit,

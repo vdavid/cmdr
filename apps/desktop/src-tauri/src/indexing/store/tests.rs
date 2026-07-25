@@ -1116,6 +1116,86 @@ fn delete_subtree_by_id_test() {
     assert!(IndexStore::get_dir_stats_by_id(&conn, b).unwrap().is_none());
 }
 
+/// Insert one dir plus one file per level, `breadth` wide and `depth` deep, under
+/// `parent`. Returns how many rows landed.
+fn seed_subtree(conn: &Connection, parent: i64, depth: u32, breadth: usize) -> u64 {
+    if depth == 0 {
+        return 0;
+    }
+    let mut rows = 0;
+    for i in 0..breadth {
+        let d = insert_entry(conn, parent, &format!("d{depth}-{i}"), true, None);
+        insert_entry(conn, d, &format!("f{depth}-{i}.bin"), false, Some(7));
+        rows += 2 + seed_subtree(conn, d, depth - 1, breadth);
+    }
+    rows
+}
+
+fn entry_count(conn: &Connection) -> u64 {
+    conn.query_row("SELECT count(*) FROM entries", [], |row| row.get::<_, u64>(0))
+        .expect("count entries")
+}
+
+fn orphan_count(conn: &Connection) -> usize {
+    IndexStore::find_orphan_entries(conn).expect("find orphans").0.len()
+}
+
+/// **The crash-safety guard for every subtree delete.** A top-down delete severs
+/// the tree at whatever point the process dies, so every row below the cut loses
+/// its path to the root and NO later descent can ever reach it again — one
+/// interrupted bulk delete on the author's QNAP left 9 793 362 rows that no later
+/// pass could see or repair.
+///
+/// So the delete is post-order: a directory row goes only once its whole subtree
+/// is gone. Checked over EVERY prefix of the deletion order, and each prefix must
+/// still be completable by a plain re-run.
+#[test]
+fn interrupting_a_subtree_delete_never_strands_a_row() {
+    let seed = |conn: &Connection| {
+        let root = insert_entry(conn, ROOT_ID, "doomed", true, None);
+        let under = seed_subtree(conn, root, 3, 2);
+        let mine = insert_entry(conn, ROOT_ID, "photos", true, None);
+        let user_rows = seed_subtree(conn, mine, 2, 2);
+        assert_eq!(
+            (under, user_rows),
+            (28, 12),
+            "the fixture's shape is load-bearing below"
+        );
+        (root, under)
+    };
+
+    let (_store, dir) = open_temp_store();
+    let db_path = dir.path().join("test-index.db");
+    let total = {
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        seed(&conn).1
+    };
+
+    for stop_after in 1..=total {
+        let (_store, dir) = open_temp_store();
+        let conn = IndexStore::open_write_connection(&dir.path().join("test-index.db")).unwrap();
+        let (root, under) = seed(&conn);
+        let before = entry_count(&conn);
+
+        let cut =
+            IndexStore::delete_descendants_by_id_stopping_after(&conn, root, stop_after).expect("interrupted delete");
+        assert_eq!(cut, stop_after, "the simulated interruption must stop where asked");
+        assert_eq!(
+            orphan_count(&conn),
+            0,
+            "interrupting at {stop_after}/{under} left rows unreachable from the root"
+        );
+
+        let rest = IndexStore::delete_descendants_by_id(&conn, root).expect("resume");
+        assert_eq!(cut + rest, under, "a re-run must finish exactly the rows left over");
+        assert_eq!(
+            entry_count(&conn),
+            before - under,
+            "the resumed run must land on the same index an uninterrupted one would"
+        );
+    }
+}
+
 #[test]
 fn subtree_totals_by_id() {
     let (_store, dir) = open_temp_store();

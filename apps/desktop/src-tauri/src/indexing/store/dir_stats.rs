@@ -108,29 +108,6 @@ impl IndexStore {
         })
     }
 
-    /// Drop the `dir_stats` rows for these entries, leaving the entries alone.
-    ///
-    /// A missing row reads as "unknown", which is the honest state for a directory
-    /// whose subtree we've stopped indexing — strictly better than leaving a row
-    /// that still claims the old inflated total until the next aggregate lands.
-    pub fn delete_dir_stats_by_ids(conn: &Connection, ids: &[i64]) -> Result<(), IndexStoreError> {
-        if ids.is_empty() {
-            return Ok(());
-        }
-        // Stay well under SQLite's default 999-parameter ceiling.
-        const CHUNK: usize = 900;
-        with_savepoint(conn, "delete_dir_stats", |conn| {
-            for chunk in ids.chunks(CHUNK) {
-                let placeholders = vec!["?"; chunk.len()].join(", ");
-                let sql = format!("DELETE FROM dir_stats WHERE entry_id IN ({placeholders})");
-                let values: Vec<&dyn rusqlite::types::ToSql> =
-                    chunk.iter().map(|id| id as &dyn rusqlite::types::ToSql).collect();
-                conn.prepare_cached(&sql)?.execute(&*values)?;
-            }
-            Ok(())
-        })
-    }
-
     /// Get aggregated child stats for a parent directory by entry ID.
     #[cfg(test)]
     pub fn get_children_stats_by_id(

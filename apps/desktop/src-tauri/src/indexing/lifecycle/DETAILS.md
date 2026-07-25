@@ -23,13 +23,14 @@ concurrently without corrupting each other. Every invariant below holds independ
   `resume_or_scan_network` (a completed prior scan loads Stale and does NOT auto-rescan; a never-completed one scans) and
   `start_volume_scan` (the scan/rescan entry plus its bespoke completion handler). Mirrors `start_scan` but walks via the
   `../network_scanner` trait BFS, starts NO `DriveWatcher` (the live-watch layer owns that), and fires freshness through
-  the manager's own `freshness` `Arc` (no registry re-lock). `resume_or_scan_network` also carries two one-shot
-  self-heals for an index that loads Stale and never rescans on its own: the `dir_stats` ledger heal (below) and the
-  recursion-excluded-subtree prune, each gated on its own `meta` marker and each needing a `ComputeAllAggregates` to
-  follow, so the two share one when both are pending. `excluded_subtree_prune_pending` answers yes on a stale
-  fingerprint OR a leftover in-progress mark, so a prune the user quit part-way is retried; why that mark exists is in
-  `../writer/DETAILS.md` § "Pruning recursion-excluded subtrees". The prune's triggers, name list, and volume-kind gate
-  are canonical in `../network_scanner/DETAILS.md` § "NAS snapshot/system dirs aren't recursed".
+  the manager's own `freshness` `Arc` (no registry re-lock). `start_volume_scan` takes a `NetworkScanMode`: `Auto` picks
+  reconcile-vs-truncate by what the DB holds, `Rebuild` forces the truncate. `resume_or_scan_network` carries the two
+  jobs an index that loads Stale would otherwise never get: the one-shot `dir_stats` ledger heal (below, gated on its
+  `meta` marker and needing a `ComputeAllAggregates` to follow), and the one-time `Rebuild` for an index built under an
+  older NAS system-dir exclusion list. The rebuild wins when both apply: its own aggregate consumes the heal latch. If
+  the rebuild can't start (share unmounted, scan already running) we log and keep serving the existing index; nothing
+  stamps the DB until a rebuild actually truncates, so the next load re-arms. Triggers, name list, and the stamp are
+  canonical in `../network_scanner/DETAILS.md` § "NAS snapshot/system dirs aren't recursed".
 - **scan_completion.rs** — the post-scan handler: the vanished-volume abort and the LOCAL failure→Stale arm (below).
 - **freshness.rs** — the `Fresh`/`Stale`/`Scanning`/`Failed` transition table (`Freshness::on`) + `initial_freshness_on_launch`.
 - **failure.rs** — `IndexFailureSignal`, the one-shot per-volume fatal-storage-error signal.

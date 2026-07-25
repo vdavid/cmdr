@@ -479,17 +479,17 @@ impl IndexStore {
     /// Delete all descendants of an entry (but not the entry itself), returning
     /// how many rows went.
     ///
-    /// Used before a subtree rescan to prevent orphaned entries, and by the
-    /// recursion-excluded-subtree prune. The root entry is kept because the
-    /// scanner's `ScanContext` resolves it by path and reuses its existing ID.
+    /// Used before a subtree rescan to prevent orphaned entries. The root entry is
+    /// kept because the scanner's `ScanContext` resolves it by path and reuses its
+    /// existing ID.
     ///
     /// **Post-order: a directory row goes only once its whole subtree is gone.**
     /// Deleting top-down instead severs the tree at whatever point the process
     /// dies, and every row below the cut loses its path to the root, so no later
-    /// descent can reach it — one interrupted run on the author's QNAP stranded
-    /// 9 793 362 rows permanently. Files are leaves, so they go on the way DOWN;
-    /// directory ids are recorded per level and deleted deepest level first.
-    /// Pinned by `writer/prune/tests.rs::interrupting_a_subtree_delete_never_strands_a_row`.
+    /// descent can reach it — one interrupted bulk delete on the author's QNAP
+    /// stranded 9 793 362 rows permanently. Files are leaves, so they go on the way
+    /// DOWN; directory ids are recorded per level and deleted deepest level first.
+    /// Pinned by `tests.rs::interrupting_a_subtree_delete_never_strands_a_row`.
     ///
     /// **Walks the tree in bounded chunks rather than one recursive-CTE `DELETE`.**
     /// A single CTE delete materializes every descendant id into one ephemeral
@@ -619,18 +619,15 @@ impl IndexStore {
         Ok(())
     }
 
-    /// Every entry whose `parent_id` points at a row that no longer exists, as
-    /// `(all ids, the directory ids among them)`.
+    /// Test-only: every entry whose `parent_id` points at a row that no longer
+    /// exists, as `(all ids, the directory ids among them)`.
     ///
-    /// These rows are unreachable from the index root, so nothing in the app can
+    /// Such rows are unreachable from the index root, so nothing in the app can
     /// list, enrich, or path-resolve them; they only bloat the file and every
-    /// O(entries) walk. The index root is excluded: its `parent_id` is the
-    /// `ROOT_PARENT_ID` sentinel, which has no row by design.
-    ///
-    /// One full table scan with a PK probe per row, 0.65 s over a 12.4M-row
-    /// index with 910 316 orphans (2026-07-25, copy of the author's production
-    /// NAS DB). Only a prune run calls it, so it's once per DB per exclusion-list
-    /// version, never a per-launch cost.
+    /// O(entries) walk. Post-order deletion is what keeps them from ever being
+    /// created, and this is how the tests prove it. The index root is excluded: its
+    /// `parent_id` is the `ROOT_PARENT_ID` sentinel, which has no row by design.
+    #[cfg(test)]
     pub fn find_orphan_entries(conn: &Connection) -> Result<(Vec<i64>, Vec<i64>), IndexStoreError> {
         let mut stmt = conn.prepare_cached(
             "SELECT e.id, e.is_directory FROM entries e
@@ -650,66 +647,6 @@ impl IndexStore {
             all.push(id);
         }
         Ok((all, dirs))
-    }
-
-    /// Delete every row unreachable from the index root, returning how many went.
-    ///
-    /// Heals an index a top-down subtree delete severed before this module went
-    /// post-order: those rows are invisible to any descent from the root, so no
-    /// re-run of the prune that made them could ever find them again.
-    ///
-    /// **Interruption-safe.** Each orphan root's subtree goes first (post-order,
-    /// via `delete_descendants_by_id`) and the orphan roots themselves last, so
-    /// dying anywhere leaves the remainder still a DIRECT orphan that the next
-    /// sweep finds. One pass suffices: a direct orphan's descendants all have a
-    /// live parent, so clearing the orphan roots creates no new ones.
-    pub fn sweep_orphaned_entries(conn: &Connection) -> Result<u64, IndexStoreError> {
-        let (all, dirs) = Self::find_orphan_entries(conn)?;
-        let mut deleted: u64 = 0;
-        for dir_id in &dirs {
-            deleted += Self::delete_descendants_by_id(conn, *dir_id)?;
-        }
-        Self::delete_batched(conn, &all, &mut None, &mut deleted)?;
-        Ok(deleted)
-    }
-
-    /// Every DIRECTORY whose name lowercases to one of `lowercase_names`, as
-    /// `(id, name)`.
-    ///
-    /// SQLite's `lower()` is ASCII-only, which is exactly `eq_ignore_ascii_case`
-    /// for the ASCII reserved names this serves; callers still re-check each
-    /// returned name with the Rust matcher, so SQL only ever NARROWS the set.
-    /// No index covers `name` alone, so this is a full table scan: 0.7 s warm /
-    /// 4.4 s cold over a 13.5M-row, 1.88 GB index (2026-07-25, production NAS DB
-    /// copy). Fine as a once-per-scan / once-per-DB step, not a hot path.
-    pub fn find_dirs_named_any_of(
-        conn: &Connection,
-        lowercase_names: &[String],
-    ) -> Result<Vec<(i64, String)>, IndexStoreError> {
-        if lowercase_names.is_empty() {
-            return Ok(Vec::new());
-        }
-        let placeholders = vec!["?"; lowercase_names.len()].join(", ");
-        let sql = format!("SELECT id, name FROM entries WHERE is_directory = 1 AND lower(name) IN ({placeholders})");
-        let mut stmt = conn.prepare_cached(&sql)?;
-        let values: Vec<&dyn rusqlite::types::ToSql> = lowercase_names
-            .iter()
-            .map(|n| n as &dyn rusqlite::types::ToSql)
-            .collect();
-        let rows = stmt.query_map(&*values, |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)))?;
-        Ok(rows.collect::<Result<Vec<_>, _>>()?)
-    }
-
-    /// Reset these directories to "never listed" (`listed_epoch = 0`).
-    ///
-    /// The one truthful use of a zero epoch: a directory the scanner deliberately
-    /// does NOT descend into was never listed, so its subtree coverage is unknown
-    /// (`—`/`≥`), not an exact `0 B`. Written when a dir that an older index DID
-    /// list becomes recursion-excluded, so the index ends up in the state a scan
-    /// under today's rules would have produced. ❌ Don't reach for this for a dir
-    /// we listed but skipped writing — that one keeps its epoch.
-    pub fn clear_listed_epoch(conn: &Connection, ids: &[i64]) -> Result<(), IndexStoreError> {
-        Self::mark_dirs_listed(conn, ids, 0)
     }
 
     /// Delete an entire subtree by root entry ID using recursive CTE.

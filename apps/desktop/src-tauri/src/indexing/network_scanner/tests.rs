@@ -1403,15 +1403,17 @@ fn seed_stale_subtree(writer: &IndexWriter, db_path: &Path, parent_id: i64, firs
     nested_id
 }
 
-/// An index built BEFORE a directory was recursion-excluded carries every row of
-/// that subtree, and nothing ever removed them: the reconcile walk skips
-/// descending into the dir, so its per-dir diff never sees those rows. On a real
-/// QNAP that left 10 898 710 out-of-scope rows (80% of a 13.5M-row, 1.88 GB index)
-/// and rolled a 10 TB NAS up to 89 TB. A reconcile must prune them, keep the
-/// excluded dir's OWN row (still listed and navigable), and leave its size
-/// honestly unknown rather than claiming an exact `0 B`.
+/// **Why the exclusion-list rebuild exists.** An index built BEFORE a directory
+/// was recursion-excluded carries every row of that subtree, and a reconcile can
+/// never shed them: it only diffs the dirs it LISTS, and it deliberately doesn't
+/// list this one. On a real QNAP that left 10 898 710 out-of-scope rows (80% of a
+/// 13.5M-row, 1.88 GB index) and rolled a 10 TB NAS up to 89 TB.
+///
+/// So a rescan-in-place is NOT a fix for such an index; only a truncate-and-build
+/// is (`lifecycle/network_scan.rs`, `NetworkScanMode::Rebuild`). This pins that
+/// premise, so nobody re-derives "a reconcile will clean it up".
 #[tokio::test]
-async fn reconcile_prunes_rows_left_under_a_now_excluded_dir() {
+async fn reconcile_cannot_shed_rows_left_under_a_now_excluded_dir() {
     let tree = vec![
         entry("@Recently-Snapshot", "/@Recently-Snapshot", true, None),
         entry("sub", "/sub", true, None),
@@ -1463,7 +1465,8 @@ async fn reconcile_prunes_rows_left_under_a_now_excluded_dir() {
 
     let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
 
-    // The excluded dir's OWN row survives (listed + navigable), its descendants don't.
+    // The excluded dir's OWN row stays indexed (listed + navigable) — and so does
+    // everything an older list left beneath it.
     assert!(
         IndexStore::get_entry_by_id(&conn, snapshot_id)
             .expect("entry")
@@ -1471,44 +1474,34 @@ async fn reconcile_prunes_rows_left_under_a_now_excluded_dir() {
         "the excluded dir's own row must stay indexed so it's listed and navigable"
     );
     assert!(
-        IndexStore::get_entry_by_id(&conn, nested_id).expect("entry").is_none(),
-        "rows beneath a recursion-excluded dir must be pruned, not carried forever"
+        IndexStore::get_entry_by_id(&conn, nested_id).expect("entry").is_some(),
+        "a reconcile can't reach rows under a dir it never lists: rebuilding is the only fix"
     );
     assert_eq!(
-        IndexStore::list_children_on(snapshot_id, &conn)
-            .expect("children")
-            .len(),
-        0,
-        "the excluded dir must have no indexed children after the prune"
+        dir_size(&conn, "/@Recently-Snapshot"),
+        4_000_000,
+        "and the stale rows keep inflating the roll-up until the index is rebuilt"
     );
 
-    // Size is honestly unknown again, not an exact-looking roll-up.
-    assert_eq!(dir_size(&conn, "/@Recently-Snapshot"), 0, "the inflated size is gone");
-    assert_eq!(
-        min_epoch(&conn, "/@Recently-Snapshot"),
-        0,
-        "an un-listed excluded dir reads as unknown (`—`), never an exact `0 B`"
-    );
-
-    // The in-scope tree is untouched.
+    // The in-scope tree is walked normally throughout.
     assert_eq!(dir_size(&conn, "/sub"), 4, "the real tree keeps its size");
     assert!(
         IndexStore::resolve_component(&conn, ROOT_ID, "top.txt")
             .expect("resolve")
             .is_some(),
-        "in-scope rows must survive the prune"
+        "in-scope rows are untouched"
     );
 
     writer.shutdown();
 }
 
-/// The data-safety guard: the prune deletes ONLY what the current scanner would
-/// refuse to walk. A folder whose name merely LOOKS like a reserved NAS name
-/// (`snapshot`, `eaDir`, `@myfiles`, `System Volume Information Archive`) is real
-/// user data the scanner indexes in full, so its subtree must survive a reconcile
-/// untouched. A matcher bug here silently deletes a user's indexed files.
+/// The data-safety guard: the exclusion matches ONLY reserved names. A folder
+/// whose name merely LOOKS like one (`snapshot`, `eaDir`, `@myfiles`, `System
+/// Volume Information Archive`) is real user data the scanner must keep walking,
+/// so its subtree and sizes come through a reconcile intact. A matcher bug here
+/// would drop a user's folder from the index on the next rebuild.
 #[tokio::test]
-async fn reconcile_never_prunes_lookalike_user_folders() {
+async fn reconcile_keeps_walking_lookalike_user_folders() {
     let lookalikes = [
         "snapshot",
         "eaDir",
@@ -1549,7 +1542,7 @@ async fn reconcile_never_prunes_lookalike_user_folders() {
     assert_eq!(
         entry_count(&conn),
         rows_before,
-        "a reconcile must not delete a single row of a look-alike user folder"
+        "a reconcile must not drop a single row of a look-alike user folder"
     );
     for name in lookalikes {
         assert_eq!(
