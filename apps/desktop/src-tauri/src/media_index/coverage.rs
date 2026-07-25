@@ -38,20 +38,57 @@ pub struct FolderImageCounts {
 /// The process-global per-volume counts cache.
 static COUNTS: LazyLock<Mutex<HashMap<String, Arc<FolderImageCounts>>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 
+/// One build lock per volume, so concurrent cold callers run ONE walk between them
+/// instead of each paying the full O(entries) walk (and its transient heap). Bounded by
+/// the volume count, and entries are kept (a `()` mutex costs nothing) so the lock
+/// identity survives an [`invalidate`] and a later rebuild.
+static BUILD_LOCKS: LazyLock<Mutex<HashMap<String, Arc<Mutex<()>>>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
+
 /// Get the cached folder image counts for `volume_id`, building them from the drive
 /// index on first use (or after an [`invalidate`]). `None` when the volume's index
 /// isn't registered (offline / never scanned) — the caller reports that volume as
 /// still pending rather than counting a wrong number.
 pub fn get_or_build(volume_id: &str) -> Option<Arc<FolderImageCounts>> {
-    if let Some(counts) = COUNTS.lock_ignore_poison().get(volume_id) {
-        return Some(Arc::clone(counts));
+    get_or_build_with(volume_id, || {
+        let pool = crate::indexing::get_read_pool_for(volume_id)?;
+        pool.with_conn(count_qualifying_images).ok()?.ok()
+    })
+}
+
+/// [`get_or_build`] over an injectable builder: serve the cache, else run `build` ONCE
+/// per volume and cache it. Split out so the tests can drive the caching and
+/// deduplication behavior without a registered index read pool.
+///
+/// The build runs under the volume's [`BUILD_LOCKS`] entry, never under the `COUNTS` lock:
+/// holding `COUNTS` across a walk that takes tens of seconds would stall every other
+/// volume's cheap cached read (and the live tick's patch).
+fn get_or_build_with<F>(volume_id: &str, build: F) -> Option<Arc<FolderImageCounts>>
+where
+    F: FnOnce() -> Option<FolderImageCounts>,
+{
+    if let Some(counts) = cached(volume_id) {
+        return Some(counts);
     }
-    let pool = crate::indexing::get_read_pool_for(volume_id)?;
-    let counts = Arc::new(pool.with_conn(count_qualifying_images).ok()?.ok()?);
+    let build_lock = {
+        let mut locks = BUILD_LOCKS.lock_ignore_poison();
+        Arc::clone(locks.entry(volume_id.to_string()).or_default())
+    };
+    let _building = build_lock.lock_ignore_poison();
+    // Re-check under the build lock: a caller that queued behind the winner finds the
+    // cache warm here and skips the walk entirely.
+    if let Some(counts) = cached(volume_id) {
+        return Some(counts);
+    }
+    let counts = Arc::new(build()?);
     COUNTS
         .lock_ignore_poison()
         .insert(volume_id.to_string(), Arc::clone(&counts));
     Some(counts)
+}
+
+/// The CACHED counts for `volume_id`, or `None` when nothing is cached — never a build.
+fn cached(volume_id: &str) -> Option<Arc<FolderImageCounts>> {
+    COUNTS.lock_ignore_poison().get(volume_id).map(Arc::clone)
 }
 
 /// Count a volume's qualifying images per folder WITHOUT materializing them: the
@@ -715,6 +752,54 @@ mod tests {
             !COUNTS.lock_ignore_poison().contains_key(vid),
             "a patch with nothing cached inserts nothing"
         );
+    }
+
+    #[test]
+    fn concurrent_cold_builds_run_the_walk_once() {
+        // The cold build is an O(entries) index walk costing gigabytes of transient heap on
+        // a multi-million-entry volume. Several callers can go cold at once (the volume-state
+        // poll, the slider preview, the reclaim preview all land within milliseconds of a
+        // launch), so N concurrent callers must NOT each run their own walk — they queue on
+        // the volume's build and the losers find the cache warm.
+        let vid = "coverage-test-concurrent-build";
+        invalidate(vid);
+        let builds = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let threads = 8;
+        let barrier = Arc::new(std::sync::Barrier::new(threads));
+
+        let handles: Vec<_> = (0..threads)
+            .map(|_| {
+                let builds = Arc::clone(&builds);
+                let barrier = Arc::clone(&barrier);
+                std::thread::spawn(move || {
+                    // Every thread arrives before any of them looks at the cache, so they all
+                    // genuinely race the cold path.
+                    barrier.wait();
+                    let counts = get_or_build_with(vid, || {
+                        builds.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                        // Stand in for the walk's duration, so a racing caller would have
+                        // time to start a second one.
+                        // allowed-test-sleep: the fake walk latency IS the subject — without it the racers could serialize by luck and pass an un-deduplicated build
+                        std::thread::sleep(std::time::Duration::from_millis(50));
+                        Some(FolderImageCounts {
+                            per_folder: [("/photos".to_string(), 3u64)].into_iter().collect(),
+                            total: 3,
+                        })
+                    });
+                    counts.expect("built").total
+                })
+            })
+            .collect();
+        for handle in handles {
+            assert_eq!(handle.join().expect("thread"), 3, "every caller gets the counts");
+        }
+
+        assert_eq!(
+            builds.load(std::sync::atomic::Ordering::SeqCst),
+            1,
+            "the concurrent callers share ONE walk"
+        );
+        invalidate(vid);
     }
 
     #[test]
