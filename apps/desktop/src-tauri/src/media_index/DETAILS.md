@@ -750,6 +750,23 @@ prod, against a flat 155 MB with the build suppressed; measured on a fresh launc
 2026-07-25 — `docs/notes/memory-runaway-rust-heap-2026-07-25.md`, which isolates it to this exact call with a
 single-lever A/B and a `malloc_history` stack).
 
+**The walk's floor is its FOLDER side, held compactly.** File rows stream by, but the directories have to stay resident
+for the whole walk: rebuilding a folder's absolute path follows parent pointers upward, in any order. So
+`scheduler/dir_tree.rs` holds them as one name arena plus a 24-byte `(id, parent_id, name slice)` record per folder,
+sorted by id and binary-searched, fed by `IndexStore::for_each_directory` (three columns, streamed, names borrowed off
+SQLite's row buffer so the query allocates nothing per row). Reading the same folders as `EntryRow`s and indexing them
+by id costs ~3× that and one heap `String` per folder: on the 13.5M-row NAS index, 76.0 MB against 24.6 MB, and 3.40 s
+against 1.22 s to load (measured 2026-07-25 over 391,563 directories, `test_support::heap_bytes_held` in a throwaway
+probe). Binary search costs nothing over the hash map it replaced (0.83 s → 0.70 s to reconstruct all 391,563 paths):
+the walk resolves a path once per folder-with-files, and the sorted array is far more cache-friendly than a map with
+hashbrown's power-of-two capacity slack. ❌ Don't reach for `IndexStore::all_directories` here.
+`importance/scheduler/recompute.rs::walk_index_folders` still has the `EntryRow` shape and would transfer, but it needs
+the sizes too, so it's a separate call.
+
+The guards live in `scheduler/enrich_memory_tests.rs`: one pins the whole walk's allocation count against a
+folder-heavy corpus (a per-folder allocation blows straight through it), the other pins the compact tree at several
+times smaller than the full-row shape.
+
 **Who may pay the cold walk.** `coverage::get_or_build` builds; `coverage::cached` reads the cache or returns `None`,
 never building. Polls and startup paths MUST use `cached`: `media_index_volume_state` (which fires at launch, before
 any user asks for a number) and `MediaScheduler::stored_coverage_counts` both do, so image indexing being OFF can't

@@ -8,7 +8,8 @@
 
 use std::collections::{HashMap, HashSet};
 
-use crate::indexing::store::{IndexStore, ROOT_ID, resolve_path};
+use super::dir_tree::DirTree;
+use crate::indexing::store::{IndexStore, resolve_path};
 use crate::media_index::backend::{Analysis, MediaAnalysis, VisionBackend};
 use crate::media_index::predicate::{MediaKind, Qualification, qualify_dir};
 use crate::media_index::progress::EnrichProgressSink;
@@ -108,16 +109,17 @@ impl QualifyingImage<'_> {
 /// ONE walk shape, so a counting consumer and a collecting one can never disagree about
 /// what qualifies.
 ///
-/// Directories are materialized once into an `id → row` map for path reconstruction (as
-/// `importance`'s walk does); files stream ordered by `parent_id` so each directory's
-/// children arrive as one contiguous group. The walk holds only the single in-flight group
-/// — never the whole file set at once, which on an 11.5M-row root index would materialize a
-/// transient `by_parent` map in the hundreds of MB. The `idx_parent_name_folded` index leads
-/// on `parent_id`, so SQLite can supply the order off the index. Sink order therefore follows
+/// Directories are held for the whole walk (path reconstruction follows parent pointers in
+/// any order), but in the compact [`DirTree`] shape: an arena plus 24 bytes per folder, never
+/// a `Vec<EntryRow>` and a heap `String` each. Files stream ordered by `parent_id` so each
+/// directory's children arrive as one contiguous group, and the walk holds only the single
+/// in-flight group, never the whole file set (which on an 11.5M-row index would be a
+/// transient `by_parent` map in the hundreds of MB). The `idx_parent_name_folded` index leads
+/// on `parent_id`, so SQLite supplies the order off the index. Sink order therefore follows
 /// `parent_id`, not insertion order — no caller depends on it (coverage aggregates into a map;
 /// the passes re-sort via [`prioritized`]).
 ///
-/// Resident memory is whatever the SINK keeps: `O(folders)` for
+/// On top of that floor, resident memory is whatever the SINK keeps: `O(folders)` for
 /// [`count_qualifying_images`](crate::media_index::coverage::count_qualifying_images),
 /// `O(images)` for the collecting [`walk_image_entries`]. Reach for the counting sink
 /// whenever only counts are needed; a multi-million-entry NAS index turns the collecting
@@ -127,8 +129,7 @@ pub(crate) fn for_each_qualifying_image(
     conn: &rusqlite::Connection,
     sink: &mut dyn FnMut(&QualifyingImage<'_>),
 ) -> Result<(), String> {
-    let dirs = IndexStore::all_directories(conn).map_err(|e| e.to_string())?;
-    let by_id: HashMap<i64, &crate::indexing::store::EntryRow> = dirs.iter().map(|e| (e.id, e)).collect();
+    let mut dirs = DirTree::load(conn)?;
 
     let mut stmt = conn
         .prepare_cached(
@@ -139,8 +140,10 @@ pub(crate) fn for_each_qualifying_image(
 
     // Accumulate the current parent's file group; when parent_id changes, qualify the
     // completed group (sibling-aware) and emit its images, then reset for the next dir.
+    // One reused path buffer, so a volume's folders cost one allocation between them.
     let mut group_parent: Option<i64> = None;
     let mut group: Vec<FileRow> = Vec::new();
+    let mut dir_path = String::new();
     while let Some(row) = rows.next().map_err(|e| e.to_string())? {
         let parent_id: i64 = row.get(0).map_err(|e| e.to_string())?;
         let name: String = row.get(1).map_err(|e| e.to_string())?;
@@ -148,7 +151,8 @@ pub(crate) fn for_each_qualifying_image(
         let size: Option<i64> = row.get(3).map_err(|e| e.to_string())?;
         if group_parent != Some(parent_id) {
             if let Some(pid) = group_parent {
-                emit_qualifying_group(pid, &group, &by_id, sink);
+                dirs.path_into(pid, &mut dir_path);
+                emit_qualifying_group(&dir_path, &group, sink);
             }
             group_parent = Some(parent_id);
             group.clear();
@@ -160,7 +164,8 @@ pub(crate) fn for_each_qualifying_image(
         });
     }
     if let Some(pid) = group_parent {
-        emit_qualifying_group(pid, &group, &by_id, sink);
+        dirs.path_into(pid, &mut dir_path);
+        emit_qualifying_group(&dir_path, &group, sink);
     }
     Ok(())
 }
@@ -186,22 +191,16 @@ pub(crate) fn walk_image_entries(conn: &rusqlite::Connection) -> Result<Vec<Imag
 }
 
 /// Qualify one directory's COMPLETE file group (sibling-aware) and hand its qualifying
-/// images to `sink`, reconstructing the dir path from the in-memory `id → row` map.
+/// images to `sink`, under the already-reconstructed `dir_path`.
 /// [`for_each_qualifying_image`] calls this once per parent group — the group is complete
 /// here, which is exactly what the sibling-aware rules (RAW+JPEG pairing, Live Photos)
 /// need, so ❌ never move qualification to a per-row shape.
-fn emit_qualifying_group(
-    parent_id: i64,
-    files: &[FileRow],
-    by_id: &HashMap<i64, &crate::indexing::store::EntryRow>,
-    sink: &mut dyn FnMut(&QualifyingImage<'_>),
-) {
-    let dir_path = reconstruct_dir_path(parent_id, by_id);
+fn emit_qualifying_group(dir_path: &str, files: &[FileRow], sink: &mut dyn FnMut(&QualifyingImage<'_>)) {
     let names: Vec<&str> = files.iter().map(|f| f.name.as_str()).collect();
     for (file, qual) in files.iter().zip(qualify_dir(&names)) {
         if let Qualification::Enrich(kind) = qual {
             sink(&QualifyingImage {
-                dir: &dir_path,
+                dir: dir_path,
                 name: &file.name,
                 mtime: file.mtime,
                 size: file.size,
@@ -247,26 +246,6 @@ pub(crate) fn walk_image_entries_in_dirs(
         }
     }
     Ok(out)
-}
-
-/// Reconstruct a directory's absolute path from the in-memory `id → row` map,
-/// walking parent pointers up to the root sentinel. Returns `"/"` for the root.
-fn reconstruct_dir_path(id: i64, by_id: &HashMap<i64, &crate::indexing::store::EntryRow>) -> String {
-    if id == ROOT_ID {
-        return "/".to_string();
-    }
-    let mut components: Vec<&str> = Vec::new();
-    let mut cursor = Some(id);
-    while let Some(cid) = cursor {
-        if cid == ROOT_ID {
-            break;
-        }
-        let Some(entry) = by_id.get(&cid) else { break };
-        components.push(&entry.name);
-        cursor = Some(entry.parent_id);
-    }
-    components.reverse();
-    format!("/{}", components.join("/"))
 }
 
 /// Join a directory path and a file name into an absolute path, avoiding a double

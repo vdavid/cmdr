@@ -137,6 +137,34 @@ impl IndexStore {
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
     }
 
+    /// Stream every DIRECTORY entry's `(id, parent_id, name)` through `f`, one row at a time,
+    /// ordered by `id`.
+    ///
+    /// The path-reconstruction subset: a consumer that only rebuilds absolute paths needs
+    /// exactly these three columns, never a full [`EntryRow`] (~112 bytes plus a heap `String`
+    /// per row). Streaming them, and handing the name out as a borrowed `&str` off SQLite's own
+    /// row buffer, lets the caller fold each directory into a compact structure without the
+    /// query itself allocating anything per row. The media walk's `DirTree` does exactly that,
+    /// holding a 391,563-directory NAS index in 24.6 MB against 76.0 MB for the full-row shape
+    /// (measured 2026-07-25; see `media_index/scheduler/dir_tree.rs` and its `DETAILS.md`).
+    ///
+    /// Prefer this over [`all_directories`](IndexStore::all_directories) whenever the consumer
+    /// wants paths rather than metadata. The `ORDER BY id` is what makes the result binary-
+    /// searchable, so don't drop it.
+    pub fn for_each_directory(conn: &Connection, mut f: impl FnMut(i64, i64, &str)) -> Result<(), IndexStoreError> {
+        let mut stmt =
+            conn.prepare_cached("SELECT id, parent_id, name FROM entries WHERE is_directory = 1 ORDER BY id")?;
+        let mut rows = stmt.query([])?;
+        while let Some(row) = rows.next()? {
+            let id: i64 = row.get(0)?;
+            let parent_id: i64 = row.get(1)?;
+            // `get_ref` borrows SQLite's own buffer, so no `String` is allocated per row.
+            let name = row.get_ref(2)?.as_str().map_err(rusqlite::Error::from)?;
+            f(id, parent_id, name);
+        }
+        Ok(())
+    }
+
     /// Stream every FILE entry's `(parent_id, name)` through `f`, one row at a time.
     ///
     /// The streaming half of the memory-lean importance walk: file rows are the
