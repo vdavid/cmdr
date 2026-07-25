@@ -1,5 +1,13 @@
 # High resident-memory / GPU-compositor investigation (2026-07-15)
 
+> **CORRECTION (2026-07-25): the core conclusion below is unsound.** It reads `IOAccelerator` as GPU memory and the
+> `MALLOC_*` zones as "the heap". Both are wrong for Cmdr: mimalloc (our global allocator) tags its arenas with VM tag
+> 100, which macOS names `VM_MEMORY_IOACCELERATOR`, so **the `IOAccelerator` rows ARE the Rust heap**; and
+> `malloc_zone_statistics` can't see mimalloc at all, so a small `MALLOC_*` figure says nothing about our memory use.
+> "The heap was only ~185 MB while IOAccelerator was ~3.8 GB" therefore describes a 3.8 GB Rust heap, not a GPU leak.
+> Read `docs/tooling/memory-debugging.md` before using anything here. The landed fixes and the measurement gotchas
+> (`phys_footprint` vs RSS, sticky surfaces, storm reproduction) still hold.
+
 Kick-off context for any future "Cmdr is using too much RAM" investigation. Captures the mental model, the fixes we
 landed, the dead ends, and — most valuable — the measurement methodology and its many gotchas, so the next effort
 doesn't re-derive them from scratch.

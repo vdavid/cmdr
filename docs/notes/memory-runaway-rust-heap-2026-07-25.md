@@ -2,9 +2,7 @@
 
 Earlier write-ups of this incident concluded the runaway was WebKit GPU compositor memory. **That conclusion was
 wrong**, for the measurement reason in the next section. Everything worth keeping from them is folded in here; the
-reusable measurement recipes now live in `docs/tooling/memory-debugging.md`. The superseded notes are kept only as an
-experiment log: `docs/notes/memory-runaway-gpu-slabs-2026-07-25.md` and
-`docs/notes/memory-runaway-nas-pane-2026-07-24.md` (both safe to delete once this one is read).
+reusable measurement recipes now live in `docs/tooling/memory-debugging.md`.
 
 ## The measurement trap (read this first)
 
