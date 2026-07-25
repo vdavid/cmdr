@@ -283,6 +283,9 @@ pub struct BundleManifest {
     /// command. Empty when nothing was recorded (e.g. very early failures, tests).
     /// See `breadcrumbs.rs` for the buffer semantics.
     pub breadcrumbs: Vec<breadcrumbs::Breadcrumb>,
+    /// Omitted from the wire when absent rather than sent as `null`: the api server treats
+    /// a missing and a `null` optional field alike, but omitting keeps the payload clean.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub user_note: Option<String>,
     /// The `diag_<uuid>` diagnostics id, attached at bundle assembly via
     /// [`crate::install_id::diagnostics_id`] (full stdlib here, so it's safe to mint/lock).
@@ -293,6 +296,7 @@ pub struct BundleManifest {
     /// attach-email box. Flow B ([`BundleKind::Auto`], the auto-dispatcher) ALWAYS leaves
     /// this `None`: a user who enabled auto-send hasn't consented to shipping their address
     /// on every report. Enforced structurally by [`bundle_builder::email_for_kind`].
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
     /// Machine snapshot (model, CPU, RAM, disk headroom, drive-index sizes, Cmdr's own RSS) for
     /// triage. Always the full [`collect_full`](crate::diagnostics_snapshot::SystemSnapshot::collect_full)
