@@ -46,6 +46,16 @@ export interface ErrorReportMeta {
   generatedAt: string
 }
 
+/**
+ * An optional field the Rust client may omit or send as `null`. serde serializes
+ * `Option::None` as JSON `null`, so a validator that only tolerates `undefined`
+ * rejects a note-less report with a 400 (the bug that once broke sending). `null`
+ * and `undefined` both mean "absent"; only a present-but-wrong value fails.
+ */
+function isAbsent(v: unknown): boolean {
+  return v === undefined || v === null
+}
+
 function isValidMeta(value: unknown): value is ErrorReportMeta {
   if (!value || typeof value !== 'object') return false
   const v = value as Record<string, unknown>
@@ -55,8 +65,8 @@ function isValidMeta(value: unknown): value is ErrorReportMeta {
     const val = v[k]
     if (typeof val !== 'string' || val.length === 0) return false
   }
-  if (v['userNote'] !== undefined && typeof v['userNote'] !== 'string') return false
-  if (v['buildMode'] !== undefined && v['buildMode'] !== 'release' && v['buildMode'] !== 'debug') return false
+  if (!isAbsent(v['userNote']) && typeof v['userNote'] !== 'string') return false
+  if (!isAbsent(v['buildMode']) && v['buildMode'] !== 'release' && v['buildMode'] !== 'debug') return false
   return true
 }
 

@@ -151,6 +151,19 @@ describe('POST /error-report', () => {
     expect(body.id).toBe(validMeta.id)
   })
 
+  it('accepts a note-less report where the Rust client sends userNote: null', async () => {
+    // serde `Option::None` serializes as JSON `null`, not omitted. A `!== undefined`-only
+    // validator rejected every note-less report with a 400 (the bug that broke sending).
+    const bindings = createBindings()
+    const fd = buildMultipart(new Uint8Array([1, 2, 3, 4]), { ...validMeta, userNote: null, buildMode: null })
+
+    const res = await app.request('/error-report', { method: 'POST', body: fd }, bindings)
+
+    expect(res.status).toBe(200)
+    const body = await res.json<{ id: string }>()
+    expect(body.id).toBe(validMeta.id)
+  })
+
   it('writes the bundle to R2 with the new env/date key shape and metadata', async () => {
     const bucket = createR2()
     const bindings = createBindings({ ERROR_REPORTS_BUCKET: bucket })
