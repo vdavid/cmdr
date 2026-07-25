@@ -211,6 +211,9 @@ All under `apps/desktop/src-tauri/src/`.
   platforms use stock Tauri
 - `redact/`: Shared PII redactor (path-shape preserving). Used by both crash and error reporters
 - `logging/`: Log directory resolver, `KeepSome(N)` post-rotation pruner, `list_recent_log_files`
+- `process_memory.rs`: The canonical "how much memory is this process using" readers (kernel footprint, RSS, the
+  mimalloc heap, the system malloc zones), shared by the indexing memory watchdog and the log RAM gauge. Read it before
+  interpreting any memory number: the macOS zone APIs can't see our Rust heap
 - `commands/`: Tauri command definitions (IPC entry points)
 - `capabilities/`: Per-window Tauri API permissions; update when using new Tauri APIs from a window
 - `icons/`: App icons for all platforms + macOS Tahoe Liquid Glass (Assets.car). See its CLAUDE.md for regeneration
