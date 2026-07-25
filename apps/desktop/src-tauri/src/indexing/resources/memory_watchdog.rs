@@ -11,16 +11,19 @@
 //!   falls back under the warning line.
 //!
 //! **The threshold basis is `phys_footprint`, not `resident_size`.** On macOS,
-//! `resident_size` (RSS) counts GPU/WebView graphics mappings (the WebKit Metal
-//! compositor's `IOAccelerator` region can be multiple GB) that are NOT real
-//! memory pressure. `phys_footprint` is the metric macOS itself keys memory
-//! pressure and jetsam on, and it's what Activity Monitor's "Memory" column
-//! shows. Basing the stop on RSS would let WebView graphics memory trip the
-//! machine-protection stop while the indexing heap is a couple hundred MB. So
-//! the per-tick check reads `phys_footprint`; when a threshold trips, a full
-//! `MemorySnapshot` (phys, resident, the resident−phys graphics delta, and the
-//! actual malloc heap) goes into the log so a rare event carries real
+//! RSS counts graphics and shared mappings that are NOT real memory pressure.
+//! `phys_footprint` is the metric macOS itself keys memory pressure and jetsam
+//! on, and it's what Activity Monitor's "Memory" column shows. So the per-tick
+//! check reads `phys_footprint` (one cheap `task_info` call); when a threshold
+//! trips, a full `MemorySnapshot` goes into the log so a rare event carries real
 //! diagnostic context, not a bare number.
+//!
+//! **The snapshot reads BOTH allocators, and says which one holds the bytes.**
+//! mimalloc (our global allocator, so the whole Rust heap) is invisible to the
+//! macOS malloc-zone APIs, so a zone-only reading under-reports the heap the
+//! watchdog polices by orders of magnitude. `crate::process_memory` owns that
+//! gotcha and the readers; `MemoryAttribution` here turns the numbers into the
+//! log's verdict, so the claim can never contradict the figures beside it.
 //!
 //! **The budget is GLOBAL, not per-volume** (plan rabbit hole #8, resolved by
 //! David). Scans run in parallel — the network/USB wire is the bottleneck, not
@@ -257,7 +260,12 @@ fn on_stop(app: &tauri::AppHandle, phys_footprint: u64) {
     // Emit user-visible event, carrying the discriminating figures (not just RSS)
     // so a shipped error report tells the real story.
     use tauri_specta::Event;
-    let _ = MemorySnapshot::memory_warning_event(snapshot.as_ref(), phys_footprint, "stopped_indexing").emit(app);
+    let _ = MemorySnapshot::memory_warning_event(
+        snapshot.as_ref(),
+        phys_footprint,
+        crate::indexing::MemoryWatchdogAction::StoppedIndexing,
+    )
+    .emit(app);
 
     // Global budget: stop EVERY registered volume's index, not just `root`. Scans
     // run in parallel (the wire, not RAM, is the bottleneck), so the safety net is
@@ -281,8 +289,12 @@ fn on_escalate(app: &tauri::AppHandle, phys_footprint: u64, escalations: u32, gr
     );
 
     use tauri_specta::Event;
-    let _ =
-        MemorySnapshot::memory_warning_event(snapshot.as_ref(), phys_footprint, "still_growing_after_stop").emit(app);
+    let _ = MemorySnapshot::memory_warning_event(
+        snapshot.as_ref(),
+        phys_footprint,
+        crate::indexing::MemoryWatchdogAction::StillGrowingAfterStop,
+    )
+    .emit(app);
 
     // Cheap and idempotent: a volume may have been registered again since the
     // stop, and the subsystem hooks only flip atomics.
@@ -303,9 +315,72 @@ fn mb(bytes: u64) -> f64 {
 
 // ── Memory snapshot ──────────────────────────────────────────────────
 
-/// A full memory breakdown, gathered when a threshold trips. Splitting the real
-/// heap (malloc) from resident and phys_footprint is the whole point: it tells
-/// at a glance whether a spike is the indexing heap or WebView/GPU graphics.
+/// Which accountant explains the bulk of `phys_footprint`. Derived purely from
+/// the numbers in a [`MemorySnapshot`], so the log's claim can't drift from the
+/// figures printed next to it.
+#[cfg(target_os = "macos")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum MemoryAttribution {
+    /// mimalloc, our global allocator: every Rust allocation, indexing included.
+    RustHeap,
+    /// The system malloc zones: WebKit, Objective-C, C libraries.
+    SystemMalloc,
+    /// Neither allocator claims it: graphics surfaces, mapped files, stacks.
+    Unattributed,
+    /// No single source holds a majority.
+    Mixed,
+}
+
+#[cfg(target_os = "macos")]
+impl MemoryAttribution {
+    /// Classify a footprint by its two allocator readings. `rust_heap` and
+    /// `system_malloc` are disjoint (see `crate::process_memory`), so whatever
+    /// they don't cover is unattributed.
+    fn classify(phys_footprint: u64, rust_heap: u64, system_malloc: u64) -> MemoryAttribution {
+        let untracked = untracked_bytes(phys_footprint, rust_heap, system_malloc);
+        let majority = phys_footprint / 2;
+        if phys_footprint == 0 {
+            return MemoryAttribution::Mixed;
+        }
+        if rust_heap >= majority && rust_heap >= system_malloc && rust_heap >= untracked {
+            MemoryAttribution::RustHeap
+        } else if system_malloc >= majority && system_malloc >= untracked {
+            MemoryAttribution::SystemMalloc
+        } else if untracked >= majority {
+            MemoryAttribution::Unattributed
+        } else {
+            MemoryAttribution::Mixed
+        }
+    }
+
+    /// The one-line verdict for the log.
+    fn explanation(self) -> &'static str {
+        match self {
+            MemoryAttribution::RustHeap => {
+                "the Rust heap (mimalloc) holds most of it, so this IS backend memory: indexing, media, or another Rust subsystem"
+            }
+            MemoryAttribution::SystemMalloc => {
+                "the system malloc zones hold most of it, so this is WebKit / Objective-C, not the Rust backend"
+            }
+            MemoryAttribution::Unattributed => {
+                "neither allocator claims most of it: look at graphics surfaces, mapped files, and thread stacks"
+            }
+            MemoryAttribution::Mixed => "no single source holds a majority; read the lines above",
+        }
+    }
+}
+
+/// `phys_footprint` minus what both allocators account for. Saturating: mimalloc
+/// can hold committed pages the footprint no longer counts, so the allocators
+/// can sum past `phys_footprint`.
+#[cfg(target_os = "macos")]
+fn untracked_bytes(phys_footprint: u64, rust_heap: u64, system_malloc: u64) -> u64 {
+    phys_footprint.saturating_sub(rust_heap.saturating_add(system_malloc))
+}
+
+/// A full memory breakdown, gathered when a threshold trips. The point is to
+/// name where the bytes actually are: our Rust heap, the system allocator, or
+/// neither.
 #[cfg(target_os = "macos")]
 #[derive(Debug, Clone)]
 struct MemorySnapshot {
@@ -315,18 +390,22 @@ struct MemorySnapshot {
     /// Peak `phys_footprint` over the process lifetime, if the running kernel
     /// reports it (`ledger_phys_footprint_peak`).
     phys_footprint_peak: Option<u64>,
-    /// Resident set size (RSS). Over-counts GPU/WebView graphics mappings.
+    /// Resident set size (RSS). Counts graphics and shared mappings that
+    /// `phys_footprint` excludes.
     resident_size: u64,
     /// High-water mark of RSS.
     resident_size_max: u64,
-    /// The real Rust/C heap in use across all malloc zones — indexing's actual
-    /// footprint.
-    heap_in_use: u64,
-    /// Heap bytes reserved from the OS across all zones (in use + free).
-    heap_reserved: u64,
-    /// Number of malloc zones.
+    /// Bytes mimalloc has committed: the Rust heap, where indexing lives.
+    rust_heap: u64,
+    /// High-water mark of the above.
+    rust_heap_peak: u64,
+    /// Bytes the SYSTEM malloc zones hold. Disjoint from `rust_heap`.
+    system_malloc_in_use: u64,
+    /// Bytes those zones reserved from the OS (in use + free).
+    system_malloc_reserved: u64,
+    /// Number of system malloc zones.
     zone_count: u32,
-    /// The largest zone by in-use bytes: `(name, in_use)`.
+    /// The largest system zone by in-use bytes: `(name, in_use)`.
     largest_zone: Option<(String, u64)>,
     /// Live FSEvents processed so far (a cheap indexing-internal pressure
     /// signal already tracked in this module's `super`).
@@ -340,37 +419,42 @@ struct MemorySnapshot {
 #[cfg(target_os = "macos")]
 impl MemorySnapshot {
     /// Gather the full breakdown. Returns `None` only if the load-bearing
-    /// `phys_footprint` query fails; the heap and peak degrade gracefully.
+    /// `phys_footprint` query fails; everything else degrades gracefully.
     fn capture() -> Option<MemorySnapshot> {
         let vm = crate::process_memory::query_task_vm_info()?;
-        let basic = query_basic_info().unwrap_or(BasicInfo {
-            resident_size: vm.resident_size,
-            resident_size_max: 0,
-        });
-        let heap = query_malloc_heap();
+        let basic = crate::process_memory::query_basic_info();
+        let rust_heap = crate::process_memory::query_mimalloc_heap();
+        let zones = crate::process_memory::query_system_malloc_zones();
 
         Some(MemorySnapshot {
             phys_footprint: vm.phys_footprint,
             phys_footprint_peak: vm.phys_footprint_peak,
-            resident_size: basic.resident_size,
-            resident_size_max: basic.resident_size_max,
-            heap_in_use: heap.in_use,
-            heap_reserved: heap.reserved,
-            zone_count: heap.zone_count,
-            largest_zone: heap.largest_zone,
+            resident_size: basic.as_ref().map_or(vm.resident_size, |b| b.resident_size),
+            resident_size_max: basic.as_ref().map_or(0, |b| b.resident_size_max),
+            rust_heap: rust_heap.committed,
+            rust_heap_peak: rust_heap.peak_committed,
+            system_malloc_in_use: zones.in_use,
+            system_malloc_reserved: zones.reserved,
+            zone_count: zones.zone_count,
+            largest_zone: zones.largest_zone,
             live_event_count: crate::indexing::DEBUG_STATS.live_event_count.load(Ordering::Relaxed),
         })
     }
 
-    /// The resident−phys_footprint delta: the tell for graphics/shared memory.
-    /// A large delta means GPU/WebView mappings (which RSS counts but
-    /// phys_footprint largely excludes), NOT the indexing heap.
-    fn graphics_delta(&self) -> u64 {
-        self.resident_size.saturating_sub(self.phys_footprint)
+    /// `phys_footprint` neither allocator accounts for.
+    fn untracked(&self) -> u64 {
+        untracked_bytes(self.phys_footprint, self.rust_heap, self.system_malloc_in_use)
+    }
+
+    /// Where the bulk of the footprint actually is.
+    fn attribution(&self) -> MemoryAttribution {
+        MemoryAttribution::classify(self.phys_footprint, self.rust_heap, self.system_malloc_in_use)
     }
 
     /// A multi-line breakdown for the log. Deliberately verbose: this fires
-    /// rarely, and when it does we want a real head start on diagnosis.
+    /// rarely, and when it does we want a real head start on diagnosis. Every
+    /// line says what its number MEANS, because the previous version's unlabeled
+    /// figures got read as the opposite of what they were.
     fn report(&self) -> String {
         let peak = match self.phys_footprint_peak {
             Some(p) => format!(", peak {:.2} GB", gb(p)),
@@ -381,21 +465,26 @@ impl MemorySnapshot {
             None => String::new(),
         };
         format!(
-            "  phys_footprint: {:.2} GB{} — machine-pressure metric (Activity Monitor's Memory, what jetsam keys on)\n\
-             \x20 resident_size:  {:.2} GB (max {:.2} GB) — RSS; includes GPU/shared mappings phys_footprint excludes\n\
-             \x20 resident−phys:  {:.2} GB — likely WebView/GPU memory (IOAccelerator), NOT the indexing heap\n\
-             \x20 malloc heap:    {:.0} MB in use, {:.0} MB reserved across {} zone(s){} — the real Rust/C heap; indexing lives here\n\
-             \x20 live FSEvents:  {} processed\n\
-             \x20 Hint: a large resident−phys_footprint delta usually means WebView/GPU memory, not the indexing heap.",
+            "  phys_footprint:  {:.2} GB{} — the metric macOS keys memory pressure and jetsam on (Activity Monitor's \"Memory\"); the thresholds key on this\n\
+             \x20 resident_size:   {:.2} GB (max {:.2} GB) — RSS; counts graphics and shared mappings phys_footprint excludes\n\
+             \x20 Rust heap:       {:.0} MB committed (peak {:.0} MB) — mimalloc, OUR global allocator: all Rust allocation, indexing included\n\
+             \x20 system malloc:   {:.0} MB in use, {:.0} MB reserved across {} zone(s){} — WebKit / Objective-C / C only; blind to the Rust heap above\n\
+             \x20 untracked:       {:.0} MB — phys_footprint minus both allocators: graphics surfaces, mapped files, thread stacks\n\
+             \x20 verdict:         {}\n\
+             \x20 live FSEvents:   {} processed\n\
+             \x20 Reading vmmap next? mimalloc tags its arenas with VM tag 100, which macOS names VM_MEMORY_IOACCELERATOR, so `IOAccelerator` rows ARE this Rust heap, not GPU memory.",
             gb(self.phys_footprint),
             peak,
             gb(self.resident_size),
             gb(self.resident_size_max),
-            gb(self.graphics_delta()),
-            mb(self.heap_in_use),
-            mb(self.heap_reserved),
+            mb(self.rust_heap),
+            mb(self.rust_heap_peak),
+            mb(self.system_malloc_in_use),
+            mb(self.system_malloc_reserved),
             self.zone_count,
             largest,
+            mb(self.untracked()),
+            self.attribution().explanation(),
             grouped(self.live_event_count),
         )
     }
@@ -405,196 +494,17 @@ impl MemorySnapshot {
     fn memory_warning_event(
         snapshot: Option<&MemorySnapshot>,
         phys_footprint: u64,
-        action: &str,
+        action: crate::indexing::MemoryWatchdogAction,
     ) -> crate::indexing::IndexMemoryWarningEvent {
         crate::indexing::IndexMemoryWarningEvent {
-            resident_gb: snapshot.map(|s| s.resident_size).unwrap_or(phys_footprint) / (1024 * 1024 * 1024),
-            phys_footprint_gb: phys_footprint / (1024 * 1024 * 1024),
-            heap_mb: snapshot.map(|s| s.heap_in_use).unwrap_or(0) / (1024 * 1024),
-            action: action.to_string(),
+            phys_footprint_bytes: phys_footprint,
+            resident_bytes: snapshot.map_or(phys_footprint, |s| s.resident_size),
+            rust_heap_bytes: snapshot.map_or(0, |s| s.rust_heap),
+            system_malloc_bytes: snapshot.map_or(0, |s| s.system_malloc_in_use),
+            untracked_bytes: snapshot.map_or(0, MemorySnapshot::untracked),
+            action,
         }
     }
-}
-
-// ── Mach `task_info` queries ─────────────────────────────────────────
-
-/// The prefix of `mach_task_basic_info` we read.
-#[cfg(target_os = "macos")]
-struct BasicInfo {
-    resident_size: u64,
-    resident_size_max: u64,
-}
-
-/// Query `mach_task_basic_info` for resident size and its high-water mark.
-///
-/// Uses raw FFI because the `libc` crate doesn't expose `MACH_TASK_BASIC_INFO`.
-#[cfg(target_os = "macos")]
-fn query_basic_info() -> Option<BasicInfo> {
-    // Mach task info flavor (from <mach/task_info.h>).
-    const MACH_TASK_BASIC_INFO: u32 = 20;
-
-    #[repr(C)]
-    struct MachTaskBasicInfo {
-        virtual_size: u64,
-        resident_size: u64,
-        resident_size_max: u64,
-        user_time_seconds: i32,
-        user_time_microseconds: i32,
-        system_time_seconds: i32,
-        system_time_microseconds: i32,
-        policy: i32,
-        suspend_count: i32,
-    }
-
-    let info_count = (size_of::<MachTaskBasicInfo>() / size_of::<libc::c_int>()) as u32;
-
-    #[allow(deprecated, reason = "mach_task_self is deprecated in libc but works fine")]
-    // SAFETY: `info` is zeroed before use, and `count` is set to the struct's size measured in
-    // `c_int` (natural_t) words, the count layout `task_info` with `MACH_TASK_BASIC_INFO` expects;
-    // `MachTaskBasicInfo` is `#[repr(C)]` and matches the `mach_task_basic_info` layout, so the
-    // kernel writes only within `info`. We read `info` only when `result == 0`.
-    unsafe {
-        let mut info: MachTaskBasicInfo = std::mem::zeroed();
-        let mut count = info_count;
-        let result = libc::task_info(
-            libc::mach_task_self(),
-            MACH_TASK_BASIC_INFO,
-            &mut info as *mut MachTaskBasicInfo as *mut i32,
-            &mut count,
-        );
-        if result == 0 {
-            Some(BasicInfo {
-                resident_size: info.resident_size,
-                resident_size_max: info.resident_size_max,
-            })
-        } else {
-            log::debug!("Memory watchdog: task_info(BASIC) failed with code {result}");
-            None
-        }
-    }
-}
-
-// The `task_vm_info` FFI (`phys_footprint`, resident size, ledger peak) lives in
-// `crate::process_memory`, the shared reader used by both this watchdog and the
-// log RAM gauge. `MemorySnapshot::capture` calls it directly.
-
-// ── malloc-heap query ────────────────────────────────────────────────
-
-/// `malloc_statistics_t` from `<malloc/malloc.h>`.
-#[cfg(target_os = "macos")]
-#[repr(C)]
-#[derive(Default)]
-struct MallocStatistics {
-    blocks_in_use: libc::c_uint,
-    size_in_use: libc::size_t,
-    max_size_in_use: libc::size_t,
-    size_allocated: libc::size_t,
-}
-
-#[cfg(target_os = "macos")]
-unsafe extern "C" {
-    /// With a NULL zone, aggregates statistics across every zone in the process.
-    fn malloc_zone_statistics(zone: *mut libc::c_void, stats: *mut MallocStatistics);
-    /// Fills `*addresses` with a pointer to an array of `*count` zone addresses.
-    /// A NULL `reader` uses the default in-process reader.
-    fn malloc_get_all_zones(
-        task: libc::mach_port_t,
-        reader: *mut libc::c_void,
-        addresses: *mut *mut usize,
-        count: *mut libc::c_uint,
-    ) -> libc::c_int;
-    /// Returns the zone's name (a NUL-terminated string owned by the zone), or NULL.
-    fn malloc_get_zone_name(zone: *mut libc::c_void) -> *const libc::c_char;
-}
-
-/// The malloc-heap breakdown: the real Rust/C footprint.
-#[cfg(target_os = "macos")]
-struct MallocHeap {
-    in_use: u64,
-    reserved: u64,
-    zone_count: u32,
-    largest_zone: Option<(String, u64)>,
-}
-
-/// Sum the malloc heap across all zones, plus the zone count and largest zone.
-///
-/// This is the single most useful discriminator: heap ~200 MB while resident is
-/// multi-GB immediately says "not indexing, it's graphics."
-#[cfg(target_os = "macos")]
-fn query_malloc_heap() -> MallocHeap {
-    // SAFETY: a NULL zone pointer asks `malloc_zone_statistics` for the
-    // all-zones aggregate (documented behavior); `agg` is a `#[repr(C)]` match
-    // of `malloc_statistics_t` and is fully written by the call.
-    let agg = unsafe {
-        let mut agg = MallocStatistics::default();
-        malloc_zone_statistics(std::ptr::null_mut(), &mut agg);
-        agg
-    };
-
-    let mut heap = MallocHeap {
-        in_use: agg.size_in_use as u64,
-        reserved: agg.size_allocated as u64,
-        zone_count: 0,
-        largest_zone: None,
-    };
-
-    let mut addresses: *mut usize = std::ptr::null_mut();
-    let mut count: libc::c_uint = 0;
-    #[allow(deprecated, reason = "mach_task_self is deprecated in libc but works fine")]
-    // SAFETY: `mach_task_self()` is our own task; a NULL `reader` selects the
-    // default in-process reader, which sets `addresses` to point at the live
-    // zone registry (process-owned; we must NOT free it) and `count` to its
-    // length. Both out-pointers are valid locals.
-    let kr = unsafe { malloc_get_all_zones(libc::mach_task_self(), std::ptr::null_mut(), &mut addresses, &mut count) };
-
-    if kr != 0 || addresses.is_null() {
-        return heap;
-    }
-    heap.zone_count = count;
-
-    // SAFETY: on success `malloc_get_all_zones` set `addresses` to a valid array
-    // of `count` zone addresses in this process; we read exactly `count` of them
-    // and never mutate or free the buffer.
-    let zones = unsafe { std::slice::from_raw_parts(addresses, count as usize) };
-
-    let mut largest = 0u64;
-    let mut largest_name: Option<String> = None;
-    for &addr in zones {
-        let zone = addr as *mut libc::c_void;
-        if zone.is_null() {
-            continue;
-        }
-        // SAFETY: `zone` is a live zone pointer from `malloc_get_all_zones`;
-        // `stats` is a `#[repr(C)]` match of `malloc_statistics_t`, fully written.
-        let stats = unsafe {
-            let mut stats = MallocStatistics::default();
-            malloc_zone_statistics(zone, &mut stats);
-            stats
-        };
-        let in_use = stats.size_in_use as u64;
-        if in_use > largest {
-            largest = in_use;
-            // SAFETY: `zone` is a live zone pointer; `malloc_get_zone_name`
-            // returns a NUL-terminated string owned by the zone, or NULL.
-            let name_ptr = unsafe { malloc_get_zone_name(zone) };
-            largest_name = if name_ptr.is_null() {
-                None
-            } else {
-                // SAFETY: `name_ptr` is non-NULL and points at a NUL-terminated,
-                // zone-owned C string that outlives this borrow.
-                Some(
-                    unsafe { std::ffi::CStr::from_ptr(name_ptr) }
-                        .to_string_lossy()
-                        .into_owned(),
-                )
-            };
-        }
-    }
-    if largest > 0 {
-        heap.largest_zone = Some((largest_name.unwrap_or_else(|| "?".to_string()), largest));
-    }
-
-    heap
 }
 
 // ── Tests ────────────────────────────────────────────────────────────
@@ -606,35 +516,24 @@ mod tests {
 
     #[cfg(target_os = "macos")]
     #[test]
-    fn query_basic_info_returns_positive_resident() {
-        let basic = query_basic_info();
-        assert!(basic.is_some(), "should be able to query resident memory");
-        assert!(basic.unwrap().resident_size > 0, "resident memory should be positive");
-    }
-
-    #[cfg(target_os = "macos")]
-    #[test]
-    fn malloc_heap_sum_is_positive() {
-        let heap = query_malloc_heap();
-        assert!(heap.in_use > 0, "malloc heap in-use should be positive");
-        assert!(heap.reserved >= heap.in_use, "reserved should be >= in-use");
-        assert!(heap.zone_count >= 1, "there should be at least one malloc zone");
-    }
-
-    #[cfg(target_os = "macos")]
-    #[test]
     fn snapshot_captures_and_reports_key_fields() {
         let snapshot = MemorySnapshot::capture().expect("snapshot should capture on macOS");
         assert!(snapshot.phys_footprint > 0, "phys_footprint should be positive");
         assert!(snapshot.resident_size > 0, "resident_size should be positive");
-        assert!(snapshot.heap_in_use > 0, "heap should be positive");
+        assert!(snapshot.rust_heap > 0, "the Rust heap should be positive");
+        assert!(
+            snapshot.system_malloc_in_use > 0,
+            "the system malloc zones should be positive"
+        );
 
         let report = snapshot.report();
         for needle in [
             "phys_footprint",
             "resident_size",
-            "resident−phys",
-            "malloc heap",
+            "Rust heap",
+            "system malloc",
+            "untracked",
+            "verdict",
             "live FSEvents",
         ] {
             assert!(
@@ -642,6 +541,90 @@ mod tests {
                 "report should mention {needle}; got:\n{report}"
             );
         }
+    }
+
+    // ── Attribution ──────────────────────────────────────────────────
+
+    /// The 2026-07 runaway, as the watchdog would have seen it: a 16.5 GB
+    /// footprint that was almost entirely the Rust heap, with `resident` equal
+    /// to `phys_footprint` (so a zero graphics delta).
+    #[cfg(target_os = "macos")]
+    fn incident_snapshot() -> MemorySnapshot {
+        MemorySnapshot {
+            phys_footprint: 16 * GB + GB / 2,
+            phys_footprint_peak: Some(16 * GB + GB / 2),
+            resident_size: 16 * GB + GB / 2,
+            resident_size_max: 16 * GB + GB / 2,
+            rust_heap: 15 * GB,
+            rust_heap_peak: 15 * GB,
+            system_malloc_in_use: GB + GB / 2,
+            system_malloc_reserved: 2 * GB,
+            zone_count: 4,
+            largest_zone: Some(("DefaultMallocZone".to_string(), GB)),
+            live_event_count: 1_234_567,
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn the_runaway_that_was_the_rust_heap_is_attributed_to_the_rust_heap() {
+        // Pre-fix, this exact shape was logged as "likely WebView/GPU memory
+        // (IOAccelerator), NOT the indexing heap" — off a resident−phys delta
+        // that was 0.00 GB. Three investigations chased the frontend for it.
+        let snapshot = incident_snapshot();
+        assert_eq!(snapshot.attribution(), MemoryAttribution::RustHeap);
+        assert_eq!(
+            snapshot.resident_size, snapshot.phys_footprint,
+            "the incident had no graphics delta at all"
+        );
+
+        let report = snapshot.report();
+        assert!(
+            !report.contains("NOT the indexing heap"),
+            "the report must not deny the heap it just measured; got:\n{report}"
+        );
+        assert!(
+            report.contains("IS backend memory"),
+            "the verdict should name the Rust heap; got:\n{report}"
+        );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn a_webkit_heavy_footprint_is_attributed_to_system_malloc() {
+        assert_eq!(
+            MemoryAttribution::classify(5 * GB, GB / 4, 4 * GB),
+            MemoryAttribution::SystemMalloc
+        );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn memory_neither_allocator_claims_is_unattributed() {
+        // Real graphics/mapped-file territory: both allocators are small.
+        assert_eq!(
+            MemoryAttribution::classify(8 * GB, GB / 2, GB / 2),
+            MemoryAttribution::Unattributed
+        );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn a_footprint_with_no_majority_holder_is_mixed() {
+        // 4 + 3.5 + 2.5 of 10: nobody owns half, so don't pretend to know.
+        assert_eq!(
+            MemoryAttribution::classify(10 * GB, 4 * GB, 3 * GB + GB / 2),
+            MemoryAttribution::Mixed
+        );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn untracked_bytes_never_underflow_when_the_allocators_overshoot() {
+        // mimalloc can hold committed pages phys_footprint no longer counts.
+        assert_eq!(untracked_bytes(4 * GB, 5 * GB, GB), 0);
+        assert_eq!(untracked_bytes(0, 0, 0), 0);
+        assert_eq!(MemoryAttribution::classify(0, 0, 0), MemoryAttribution::Mixed);
     }
 
     // ── Decision logic ───────────────────────────────────────────────

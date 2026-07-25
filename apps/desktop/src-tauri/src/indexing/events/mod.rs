@@ -142,25 +142,47 @@ pub struct IndexAggregationCompleteEvent {
     pub volume_id: String,
 }
 
-/// Emitted when the memory watchdog stops indexing to avoid a system crash.
-/// Drives a user-visible toast.
+/// What the memory watchdog did, as a typed variant rather than a string the
+/// frontend would have to match on (`no-string-matching`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum MemoryWatchdogAction {
+    /// The safety limit was crossed and every volume's index was stopped.
+    StoppedIndexing,
+    /// Memory kept climbing after that stop, so the growth isn't (only) indexing.
+    StillGrowingAfterStop,
+}
+
+/// Emitted when the memory watchdog stops indexing to avoid a system crash, and
+/// again whenever memory keeps climbing after that stop. Drives a user-visible
+/// toast.
+///
+/// Byte-precise on purpose: whole-GB rounding turned a 16.9 GB reading into
+/// "16 GB" in shipped reports, and that lost detail is exactly what an incident
+/// needs. The two allocator figures are disjoint and neither is "the heap" on
+/// its own; `crate::process_memory` explains why.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[tauri_specta(event_name = "index-memory-warning")]
 #[serde(rename_all = "camelCase")]
 pub struct IndexMemoryWarningEvent {
-    /// Resident set size (RSS) at the time, in GB. Over-counts GPU/WebView
-    /// graphics memory, so it's kept for context but is NOT the trigger metric.
-    pub resident_gb: u64,
-    /// `phys_footprint` at the time, in GB — the machine-pressure metric the
+    /// `phys_footprint` at the time, in bytes: the machine-pressure metric the
     /// watchdog thresholds key on (what Activity Monitor shows, what jetsam
-    /// watches). A large `resident_gb - phys_footprint_gb` gap is graphics
-    /// memory, not the indexing heap.
-    pub phys_footprint_gb: u64,
-    /// The real Rust/C malloc heap in use, in MB — indexing's actual footprint.
-    /// Tiny next to a multi-GB `resident_gb` means the spike isn't indexing.
-    pub heap_mb: u64,
-    /// What the watchdog did. Currently always `"stopped_indexing"`.
-    pub action: String,
+    /// watches).
+    pub phys_footprint_bytes: u64,
+    /// Resident set size (RSS) at the time, in bytes. Counts graphics and shared
+    /// mappings `phys_footprint` excludes, so it's context, not the trigger.
+    pub resident_bytes: u64,
+    /// Bytes mimalloc (our global allocator, so all Rust allocation including
+    /// indexing) has committed.
+    pub rust_heap_bytes: u64,
+    /// Bytes the system malloc zones hold: WebKit, Objective-C, and C libraries.
+    /// Does NOT include the Rust heap above.
+    pub system_malloc_bytes: u64,
+    /// `phys_footprint` minus both allocators: graphics surfaces, mapped files,
+    /// thread stacks, and anything neither allocator accounts for.
+    pub untracked_bytes: u64,
+    /// What the watchdog did.
+    pub action: MemoryWatchdogAction,
 }
 
 /// Emitted when a volume's freshness changes to a NEW value (blue/green/yellow

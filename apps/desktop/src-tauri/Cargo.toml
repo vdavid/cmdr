@@ -77,6 +77,12 @@ fern = "0.7.1"
 file-rotate = "0.8.0"
 # Memory allocator: returns memory to OS faster than system malloc, reduces fragmentation
 mimalloc = "0.1"
+# The raw mimalloc FFI, for `mi_process_info` (how many bytes OUR allocator has committed).
+# Needed because mimalloc is not a registered macOS malloc zone, so `malloc_zone_statistics`
+# can't see the Rust heap at all: `process_memory.rs` explains it. The `mimalloc` wrapper
+# doesn't re-export its `ffi` module, hence the direct dep; 0.1.49 is what `mimalloc` 0.1.52
+# already resolves to (latest stable, MIT).
+libmimalloc-sys = { version = "0.1.49", features = ["extended"] }
 # HTTP client for API server validation and AI downloads
 reqwest = { version = "0.13", features = ["json", "rustls", "stream", "multipart"], default-features = false }
 # MCP server

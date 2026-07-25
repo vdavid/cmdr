@@ -4769,29 +4769,44 @@ export type IndexFreshnessChangedEvent = {
 }
 
 /**
- *  Emitted when the memory watchdog stops indexing to avoid a system crash.
- *  Drives a user-visible toast.
+ *  Emitted when the memory watchdog stops indexing to avoid a system crash, and
+ *  again whenever memory keeps climbing after that stop. Drives a user-visible
+ *  toast.
+ *
+ *  Byte-precise on purpose: whole-GB rounding turned a 16.9 GB reading into
+ *  "16 GB" in shipped reports, and that lost detail is exactly what an incident
+ *  needs. The two allocator figures are disjoint and neither is "the heap" on
+ *  its own; `crate::process_memory` explains why.
  */
 export type IndexMemoryWarningEvent = {
   /**
-   *  Resident set size (RSS) at the time, in GB. Over-counts GPU/WebView
-   *  graphics memory, so it's kept for context but is NOT the trigger metric.
-   */
-  residentGb: number
-  /**
-   *  `phys_footprint` at the time, in GB — the machine-pressure metric the
+   *  `phys_footprint` at the time, in bytes: the machine-pressure metric the
    *  watchdog thresholds key on (what Activity Monitor shows, what jetsam
-   *  watches). A large `resident_gb - phys_footprint_gb` gap is graphics
-   *  memory, not the indexing heap.
+   *  watches).
    */
-  physFootprintGb: number
+  physFootprintBytes: number
   /**
-   *  The real Rust/C malloc heap in use, in MB — indexing's actual footprint.
-   *  Tiny next to a multi-GB `resident_gb` means the spike isn't indexing.
+   *  Resident set size (RSS) at the time, in bytes. Counts graphics and shared
+   *  mappings `phys_footprint` excludes, so it's context, not the trigger.
    */
-  heapMb: number
-  // What the watchdog did. Currently always `"stopped_indexing"`.
-  action: string
+  residentBytes: number
+  /**
+   *  Bytes mimalloc (our global allocator, so all Rust allocation including
+   *  indexing) has committed.
+   */
+  rustHeapBytes: number
+  /**
+   *  Bytes the system malloc zones hold: WebKit, Objective-C, and C libraries.
+   *  Does NOT include the Rust heap above.
+   */
+  systemMallocBytes: number
+  /**
+   *  `phys_footprint` minus both allocators: graphics surfaces, mapped files,
+   *  thread stacks, and anything neither allocator accounts for.
+   */
+  untrackedBytes: number
+  // What the watchdog did.
+  action: MemoryWatchdogAction
 }
 
 /**
@@ -5557,6 +5572,16 @@ export type MediaIndexVolumeState = {
    */
   keptCount: number | null
 }
+
+/**
+ *  What the memory watchdog did, as a typed variant rather than a string the
+ *  frontend would have to match on (`no-string-matching`).
+ */
+export type MemoryWatchdogAction =
+  // The safety limit was crossed and every volume's index was stopped.
+  | 'stoppedIndexing'
+  // Memory kept climbing after that stop, so the growth isn't (only) indexing.
+  | 'stillGrowingAfterStop'
 
 /**
  *  `menu-sort`: a Sort-by menu item (column or order) clicked. `action` is
