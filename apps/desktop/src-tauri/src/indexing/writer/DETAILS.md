@@ -436,11 +436,10 @@ routing) while staying private.
 ## Pruning recursion-excluded subtrees (`prune.rs`)
 
 `PruneExcludedSubtrees { excluded_dir_names, fingerprint }` deletes every row BENEATH a directory whose name is in the
-list, keeps the directory's own row, resets that row's `listed_epoch` to 0, drops its stale `dir_stats`, and records the
-fingerprint under `EXCLUDED_SUBTREES_PRUNED_KEY` — but only after the whole prune succeeded, so a failure re-prunes on
-the next load (the work is idempotent). The senders, the triggers, the name list and its `IndexVolumeKind` gate are
-canonical in `../network_scanner/DETAILS.md` § "NAS snapshot/system dirs aren't recursed"; this section owns the
-writer-side mechanics.
+list, keeps the directory's own row, resets that row's `listed_epoch` to 0, drops its stale `dir_stats`, sweeps rows an
+older run left stranded, and records the fingerprint under `EXCLUDED_SUBTREES_PRUNED_KEY`. The senders, the triggers,
+the name list and its `IndexVolumeKind` gate are canonical in `../network_scanner/DETAILS.md` § "NAS snapshot/system
+dirs aren't recursed"; this section owns the writer-side mechanics.
 
 **Why it exists.** The trait scanner keeps such a dir's row but never walks its subtree, and a reconcile only diffs the
 dirs it LISTS, so rows an older index put there were invisible to every later pass. On the author's QNAP index:
@@ -463,15 +462,41 @@ DID list.
 **The caller must follow with a `ComputeAllAggregates`** (every sender does): ancestors keep the deleted rows' bytes in
 their `dir_stats` until it runs.
 
-**`delete_descendants_by_id` walks in bounded chunks** (`store/entries.rs`), not one recursive-CTE `DELETE`. The CTE form
-materializes every descendant id into one ephemeral table and one transaction — 10.9M ids, twice, plus a multi-GB WAL
-spike in a single shot. Descending level by level with a frontier of dir ids caps both; the frontier holds ids whose rows
-are already deleted, which is safe because children are found by `parent_id`, so a deleted parent never hides them.
-Measured on a copy of the production DB (2026-07-25, Python prototype of this exact algorithm): 23 s for the full
-10 898 710-row delete, peak frontier 5 951 dir ids (48 KB), zero orphans, entry count landing exactly on the last scan's
-own 2 642 893. Discovery (the full-table scan for candidates) was 0.7 s warm / 4.4 s cold. Freed pages go to the freelist
-(1 353 MB of it), which the 30 s `IncrementalVacuum` tick drains; draining it fully took 45 s and brought the file from
-1.88 GB to 529 MB.
+**Interrupting a prune is ordinary, and must stay harmless.** It runs at startup and takes tens of seconds on a real
+NAS index, so a user quitting mid-run is a normal case, not an exotic one. Three mechanisms make the run resumable, and
+all three are needed:
+
+1. **The deletes are post-order** (`store/DETAILS.md` § "Decision: a subtree delete is post-order…"), so no stop point
+   can sever the tree. Re-descending from the same excluded root finds whatever is left. This is what makes the prune
+   idempotent rather than merely re-attemptable.
+2. **`EXCLUDED_SUBTREES_PRUNE_STARTED_KEY` is written before the FIRST delete** and cleared only once the whole run
+   finished, so `lifecycle/network_scan.rs::excluded_subtree_prune_pending` re-arms an unfinished run even when the
+   fingerprint already matches. `record_fingerprint` writes the fingerprint first and clears the mark second; an
+   interruption between the two still leaves the next load seeing work pending, and a redundant prune is a no-op.
+3. **Every run ends with `IndexStore::sweep_orphaned_entries`**, the ONLY thing that can reach rows an older top-down
+   run already stranded on an existing install. Stranded rows are unreachable, so re-descending the excluded roots
+   walks straight past them. Its cost is bounded by the same fingerprint gate as the prune itself (once per DB per
+   exclusion-list version), never per launch.
+
+**Gotcha/Why — a "just re-run it next launch" recovery story needs the DELETE ORDER to back it.** The handler's
+completion marker was always written last, on the theory that an interrupted run simply re-prunes. Top-down deletion
+made that false: the rows the interrupted run left behind were no longer reachable, so the re-run found nothing to do
+and the fix silently never completed on any machine whose first post-upgrade launch was interrupted.
+
+**Measured with this code over copies of the production DB** (2026-07-25, debug build; discovery, a full table scan
+for candidates, was 8 s cold in each):
+
+- Pristine 13 541 603-row DB: post-order delete of all 10 898 710 rows in 54 s, sweep 0.4 s and 0 rows, ending at
+  2 642 893 rows, all reachable — exactly the last scan's own count.
+- Same DB, interrupted after 1 100 000 deletes: 12 441 603 rows and **0 orphans** mid-way; the relaunch removed the
+  remaining 9 798 710 and landed on the same 2 642 893.
+- The half-pruned DB an interrupted TOP-DOWN run produced (12 442 990 rows, 910 316 direct orphans): re-descending the
+  excluded roots reached only 6 735 rows, and the sweep removed the other 9 793 362, in 54 s. Final: 2 642 893 rows, 0
+  orphans, everything reachable.
+
+Freed pages go to the freelist (1 353 MB of it), which the 30 s `IncrementalVacuum` tick drains; draining it fully took
+45 s and brought the file from 1.88 GB to 529 MB. Full evidence, including where the rows came from:
+`docs/notes/orphaned-excluded-subtree-rows-2026-07-25.md`.
 
 ## Maintenance: vacuum and WAL checkpoint (`maintenance.rs`)
 

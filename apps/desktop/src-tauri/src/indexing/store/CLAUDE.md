@@ -19,6 +19,11 @@ factories), `entries.rs` (entry-tree CRUD), `dir_stats.rs`, `meta.rs`; tests in 
   inner `SELECT 1 … LIMIT`, so the answer reads at most `cap` rows off the `parent_id` index. A plain `COUNT(*)` is
   O(children), which is exactly the cost the caller (verification's tooth-1 probe) exists to avoid on a 1.14M-child
   directory.
+- **Subtree deletes go POST-ORDER; never make one top-down.** `delete_descendants_by_id` drops files on the way down
+  and directories deepest-level-first, so any interruption still leaves a tree walkable from the root and a re-run
+  finishes it. Top-down severs the tree: one interrupted prune stranded 9 793 362 rows permanently, invisible to every
+  later pass. `sweep_orphaned_entries` is the repair for an index already damaged that way, and the only thing that can
+  reach those rows. DETAILS § "Decision: a subtree delete is post-order".
 - **The index is a disposable cache, but only PROVEN garbage is thrown away.** A schema-version mismatch or corruption
   (`indicates_corruption()`: `SQLITE_CORRUPT*` / `SQLITE_NOTADB`) deletes the DB file and recreates it fresh
   (`delete_and_recreate`), reclaiming disk with no freelist; no online migrations. Every OTHER `open` failure keeps the

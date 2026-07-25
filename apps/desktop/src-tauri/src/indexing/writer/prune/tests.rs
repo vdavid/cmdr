@@ -164,7 +164,7 @@ fn interrupting_a_subtree_delete_never_strands_a_row() {
         assert_eq!(
             orphan_count(&conn),
             0,
-            "stopping after {stop_after} of {under} rows stranded rows unreachable from the root"
+            "interrupting at {stop_after}/{under} left rows unreachable from the root"
         );
 
         let rest = IndexStore::delete_descendants_by_id(&conn, excluded).expect("resume");

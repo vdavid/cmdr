@@ -26,8 +26,10 @@ concurrently without corrupting each other. Every invariant below holds independ
   the manager's own `freshness` `Arc` (no registry re-lock). `resume_or_scan_network` also carries two one-shot
   self-heals for an index that loads Stale and never rescans on its own: the `dir_stats` ledger heal (below) and the
   recursion-excluded-subtree prune, each gated on its own `meta` marker and each needing a `ComputeAllAggregates` to
-  follow, so the two share one when both are pending. The prune's triggers, marker, and volume-kind gate are canonical
-  in `../network_scanner/DETAILS.md` § "NAS snapshot/system dirs aren't recursed".
+  follow, so the two share one when both are pending. `excluded_subtree_prune_pending` answers yes on a stale
+  fingerprint OR a leftover in-progress mark, so a prune the user quit part-way is retried; why that mark exists is in
+  `../writer/DETAILS.md` § "Pruning recursion-excluded subtrees". The prune's triggers, name list, and volume-kind gate
+  are canonical in `../network_scanner/DETAILS.md` § "NAS snapshot/system dirs aren't recursed".
 - **scan_completion.rs** — the post-scan handler: the vanished-volume abort and the LOCAL failure→Stale arm (below).
 - **freshness.rs** — the `Fresh`/`Stale`/`Scanning`/`Failed` transition table (`Freshness::on`) + `initial_freshness_on_launch`.
 - **failure.rs** — `IndexFailureSignal`, the one-shot per-volume fatal-storage-error signal.
