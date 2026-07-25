@@ -64,7 +64,7 @@ delete, and the ordering is why an interruption can't strand rows. The evidence:
 index left 12 442 990 rows of which **9 793 362 were unreachable** from the root (910 316 of them directly parentless),
 and re-running found nothing to do — severed rows are invisible to any descent. Post-order deletes files on the way down
 and directories deepest-level-first, so every stop point leaves a walkable tree. Zero orphans after interrupting a run
-1 100 000 deletes in, and after every prefix of the deletion order in
+1.1M deletes in, and after every prefix of the deletion order in
 `store/tests.rs::interrupting_a_subtree_delete_never_strands_a_row`. The price is 324 128 retained dir ids (2.6 MB)
 across seven levels, versus a 5 951-id peak for a single frontier, both far under the ~87 MB a recursive-CTE `DELETE`
 materializes.
