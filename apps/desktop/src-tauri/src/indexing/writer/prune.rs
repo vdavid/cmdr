@@ -132,10 +132,17 @@ pub(super) fn handle_prune_excluded_subtrees(
 
     if deleted > 0 || swept > 0 {
         mutation_tracker.bump();
+    }
+    if deleted > 0 {
         log::info!(
-            "Writer: pruned {} beneath {} that the scanner doesn't walk, and swept {} an earlier interrupted run had stranded",
+            "Writer: pruned {} beneath {} that the scanner doesn't walk",
             crate::pluralize::pluralize_with(deleted, "row", "rows"),
             crate::pluralize::pluralize(roots.len() as u64, "system dir"),
+        );
+    }
+    if swept > 0 {
+        log::info!(
+            "Writer: swept {} an interrupted earlier prune had left unreachable",
             crate::pluralize::pluralize_with(swept, "row", "rows"),
         );
     }
