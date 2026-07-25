@@ -25,7 +25,10 @@ Each struct derives `tauri_specta::Event` with a pinned `#[tauri_specta(event_na
 - `IndexReplayProgressEvent` / `IndexReplayCompleteEvent`.
 - `IndexAggregationCompleteEvent` (`index-aggregation-complete`) — carries `volume_id` so the FE clears the right
   drive's aggregation row.
-- `IndexMemoryWarningEvent` (`index-memory-warning`) — carries `resident_gb`, `phys_footprint_gb`, `heap_mb`.
+- `IndexMemoryWarningEvent` (`index-memory-warning`) — carries `phys_footprint_bytes`, `resident_bytes`,
+  `rust_heap_bytes`, `system_malloc_bytes`, `untracked_bytes`, and a typed `MemoryWatchdogAction`. Bytes, not rounded
+  GB, because shipped reports need the precision. The two allocator figures are disjoint and neither alone is "the
+  heap": `crate::process_memory` explains why. Emitted on the stop AND on each post-stop escalation.
 - `IndexPhaseChangedEvent` (`index-phase-changed`, `{ volume_id, phase: ActivityPhase }`) — the per-volume
   pipeline-phase event driving the FE step checklist; see § "set_phase_for".
 - `index-freshness-changed` — the per-volume badge-color event (`VolumeIndexStatus.freshness`); emitted by the

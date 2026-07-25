@@ -12,24 +12,69 @@ The memory watchdog is a single PROCESS-WIDE budget, not per-volume. At 16 GB it
 via `state::stop_all_indexing` (snapshot ids, then `stop_indexing` each), not just `root`. Scans run in PARALLEL — the
 network/USB wire is the bottleneck, not RAM (real scan memory is the accumulator maps plus the 20K writer channel,
 hundreds of MB per normal volume) — so there's no one-at-a-time serialization, just the catastrophe-stop safety net.
-`start()` is idempotent (a `WATCHDOG_RUNNING` atomic) so per-volume starts don't each spawn a redundant watchdog.
-Constants: `WARN_THRESHOLD = 8 GB`, `STOP_THRESHOLD = 16 GB`, `CHECK_INTERVAL_SECS = 5`. The 16 GB number is machine
+`start()` is idempotent (a `WATCHDOG_RUNNING` atomic) so per-volume starts don't each spawn a redundant watchdog; the
+atomic is never cleared because the loop now runs for the whole process lifetime. Constants: `WARN_THRESHOLD = 8 GB`,
+`STOP_THRESHOLD = 16 GB`, `CHECK_INTERVAL_SECS = 5`, `FIRST_ESCALATION_STEP = 2 GB`. The 16 GB number is machine
 protection, NOT expected usage; measuring real peak footprint is deferred to QA. No-op stub on non-macOS.
 
-**The threshold basis is `phys_footprint`, not `resident_size` (RSS).** On macOS, RSS counts GPU/WebView graphics
-mappings — the WebKit Metal compositor's `IOAccelerator` region measured ~3.8 GB resident (~79% of a 4.8 GB RSS) during
-an FSEvents storm while all malloc zones held ~185 MB (verified via `vmmap`/`footprint`, 2026-07). RSS also diverged
-from `phys_footprint` by ~the IOAccelerator size (4.8 GB RSS vs 1.1 GB `phys_footprint`). `phys_footprint` is the metric
-macOS keys memory pressure and jetsam on, and what Activity Monitor's "Memory" column shows, so keying the stop on RSS
-would let WebView graphics trip the machine-protection stop while indexing's own heap is a couple hundred MB.
+### The decision logic is pure (`WatchdogState::decide`)
 
-The per-tick check reads `phys_footprint` cheaply (one `TASK_VM_INFO` call). When a threshold trips, the watchdog
-gathers a full `MemorySnapshot` — `phys_footprint` (+ ledger peak), RSS (+ max), the resident−phys graphics delta, the
-summed malloc heap across all zones (in-use + reserved, zone count, largest zone), and `live_event_count` — and logs it
-as a multi-line breakdown. The malloc heap vs RSS gap is the single best discriminator: heap ~200 MB while RSS is
-multi-GB immediately says "graphics, not indexing." The `index-memory-warning` event carries `resident_gb`,
-`phys_footprint_gb`, and `heap_mb` so a shipped error report tells the same story. TODO (tracked in the snapshot's
-`live_event_count` comment): surface writer-channel depth and reconciler `pending_events` len once they're atomics.
+One tick in, one typed `WatchdogAction` out (`Nothing` / `Warn` / `Stop` / `Escalate` / `Recovered`), with no Mach call,
+no registry, and no `AppHandle` involved, so thresholds and escalation are unit-testable directly. The loop body just
+dispatches to `on_warn` / `on_stop` / `on_escalate`.
+
+**Decision (why the watchdog keeps looping after a stop).** In the 2026-07 runaway the watchdog stopped all indexing at
+16 GB and then `return`ed. Nothing watched afterwards, so the climb from 16 GB to 40 GB was unobserved and the app had
+to be stopped by hand. A stop is now one event in an endless loop. After a stop the watchdog holds a `PostStop` record
+and escalates when `phys_footprint` climbs another 2 GB, then 4, 8, 16: the step doubles so a runaway yields a handful
+of proportionate alerts instead of one per 5 s tick (a 16→40 GB climb produces three). Each escalation logs via
+`log_error!` (so it reaches shipped error reports), emits the event with `StillGrowingAfterStop`, and re-runs
+`stop_all_indexing` in case a volume registered again. It says plainly that the stop didn't hold, so the growth is not
+(only) the index scan. Dropping back under the warn line logs a recovery and clears the record, re-arming the stop.
+
+### What the snapshot measures, and the mimalloc blindness
+
+**The threshold basis is `phys_footprint`, not `resident_size` (RSS).** RSS counts graphics and shared mappings that
+aren't real memory pressure; `phys_footprint` is what macOS keys memory pressure and jetsam on and what Activity
+Monitor's "Memory" column shows. Keying the stop on RSS would let graphics trip a machine-protection stop.
+
+**Gotcha: the macOS malloc-zone APIs cannot see the Rust heap.** Cmdr sets mimalloc as the global allocator in
+`main.rs`, and mimalloc registers no malloc zone, so `malloc_zone_statistics` and `malloc_get_all_zones` report WebKit,
+Objective-C, and C-library allocations only. The snapshot used to read exactly those zones and label the result "the
+real Rust/C heap; indexing lives here"; in the runaway that printed "malloc heap 1.6 GB" against a 16.5 GB
+`phys_footprint`. `crate::process_memory` is the canonical home for this and for all four readers
+(`query_task_vm_info`, `query_basic_info`, `query_mimalloc_heap`, `query_system_malloc_zones`); the watchdog holds
+policy only.
+
+`query_mimalloc_heap` calls `mi_process_info` through a direct `libmimalloc-sys` dependency (the `mimalloc` wrapper
+crate doesn't re-export its `ffi` module) for `current_commit` / `peak_commit`. Committed, not in-use: mimalloc exposes
+no cheap process-wide in-use total, and committed is what tracks the arenas. Note that `#[global_allocator]` lives in
+`main.rs`, so the unit-test harness does NOT run on mimalloc; the blindness test allocates via `mi_malloc` directly to
+stay meaningful there.
+
+**Gotcha: `vmmap`'s `IOAccelerator` rows are the Rust heap.** mimalloc `mmap`s its arenas with `os_tag` 100, and macOS
+defines `VM_MEMORY_IOACCELERATOR = 100`, so `vmmap` / `footprint` label every 128 MB mimalloc arena `IOAccelerator`
+(verified with `MallocStackLogging=1` + `vmmap -fullStacks`: each region backtraces to `mmap` ← `_mi_prim_alloc` ←
+`mi_arena_reserve`; commenting out the `#[global_allocator]` collapses those rows to 64 KB and the same memory
+reappears as `MALLOC_*`, macOS 15, 2026-07). Reading those rows as GPU memory is what sent three investigations into
+the frontend. Any older analysis that split "GPU vs heap" off a zone-only heap reading inherits this error.
+
+When a threshold trips, the watchdog captures a `MemorySnapshot` — `phys_footprint` (+ ledger peak), RSS (+ max), the
+mimalloc heap (+ peak), the system malloc zones (in use + reserved, zone count, largest zone), the `untracked`
+remainder, and `live_event_count` — and logs it as a multi-line breakdown where every line states what its number
+MEANS.
+
+**Decision (why the verdict is derived, not asserted).** The old report ended with "a large resident−phys_footprint
+delta usually means WebView/GPU memory, not the indexing heap", printed unconditionally. In the runaway that delta was
+0.00 GB and the memory was the Rust heap, so the log confidently said the opposite of the truth and cost two days. The
+`verdict` line now comes from `MemoryAttribution::classify(phys_footprint, rust_heap, system_malloc)`, a pure function
+over the same figures the report prints: whichever source holds a majority wins (`RustHeap` / `SystemMalloc` /
+`Unattributed`), otherwise `Mixed`. Graphics is only ever named when neither allocator claims the majority. If you add
+a hint here, derive it from the numbers or leave it out.
+
+The `index-memory-warning` event carries the five figures in bytes plus a typed `MemoryWatchdogAction`; see
+`../events/DETAILS.md`. TODO (tracked in the snapshot's `live_event_count` comment): surface writer-channel depth and
+reconciler `pending_events` len once they're atomics.
 
 ### The shared ceiling (subsystem_stop.rs)
 
