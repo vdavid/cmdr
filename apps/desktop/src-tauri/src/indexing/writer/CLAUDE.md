@@ -11,8 +11,8 @@ propagation, and the search-feeding generation bump. Other areas point here.
 - **entries.rs**: entry handlers (insert/upsert/move/delete/truncate). **delta.rs**: `propagate_delta_by_id` +
   `propagate_min_subtree_epoch` + `propagate_recursive_has_symlinks`. **aggregation.rs**: `Compute*`/`Backfill`
   delegation to `../aggregator/` + `SkipSeverity`. **repair.rs**: `repair_dir_stats_upward`. **deferred_repair.rs**:
-  the `DeferredRepairs` queue. **maintenance.rs**: incremental vacuum + WAL checkpoint. **wait_probe.rs**: writer-queue
-  wait accounting (read by reconcile).
+  the `DeferredRepairs` queue. **maintenance.rs**: incremental vacuum + WAL checkpoint. **prune.rs**:
+  `PruneExcludedSubtrees`. **wait_probe.rs**: writer-queue wait accounting (read by reconcile).
 
 ## Must-knows (all hold PER volume id)
 
@@ -33,7 +33,11 @@ propagation, and the search-feeding generation bump. Other areas point here.
   `SetDeltaPropagation(false)` left 249 dirs claiming exact sizes.
 - **Coverage epochs:** `propagate_delta_by_id` carries `min_subtree_epoch` through UNCHANGED on a pure size/count delta
   (resetting it flips exact→"≥" on every file write); `propagate_min_subtree_epoch` fires on TREE-SHAPE changes only.
-  Marks (`MarkDirsListed`) land BEFORE the aggregate. ❌ Never write `listed_epoch = 0` for a dir we listed but skipped.
+  Marks (`MarkDirsListed`) land BEFORE the aggregate. ❌ Never write `listed_epoch = 0` for a dir we listed but skipped;
+  the one exception is `prune.rs`, for a dir the scanner refuses to LIST at all.
+- **`PruneExcludedSubtrees` deletes rows, so a `ComputeAllAggregates` must follow** (every sender does) or ancestors
+  keep the deleted bytes. ❌ Never send it for a locally-scanned volume: the gate lives in its only outside constructor,
+  `network_scanner::system_dirs::prune_message_for_kind`. DETAILS § "Pruning recursion-excluded subtrees".
 - **Full-aggregate source is sender-declared (`source: Maps|Sql`), never sniffed.** `Maps` (the in-memory accumulator)
   comes ONLY from a fresh full scan; every other flow sends `Sql`. The subtree handler must NOT clear the accumulator.
 - **Partial aggregation borrows the maps READ-ONLY**, no-ops on empty maps with NO SQL fallback (load-bearing: a late

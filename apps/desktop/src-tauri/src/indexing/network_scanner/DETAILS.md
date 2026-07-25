@@ -167,18 +167,66 @@ Pinned by `browsing_the_share_throttles_the_scan_to_one_listing_in_flight`,
 ## NAS snapshot/system dirs aren't recursed (`system_dirs.rs`)
 
 The BFS does NOT descend into NAS snapshot/system pseudo-directories (`@eaDir`, `@Recently-Snapshot`, `@Recycle`,
-`#recycle`, `#snapshot`, `.snapshot`, `$RECYCLE.BIN`, `System Volume Information`, …; matched case-insensitively by
-`system_dirs::is_recursion_excluded_dir`). Both the fresh scan and the reconcile walk apply it: the dir's own row is
-still indexed (so it stays listed and navigable — a user can walk into `@Recycle` to restore a file), but its subtree is
-never walked, so it rolls up as honestly-unknown (`—`/`≥`) rather than a misleading total. **Decision/Why:** these dirs
-are hardlinked, huge, and re-walking them costs a full filesystem traversal *per snapshot* over serialized SMB — a real
-first-scan stalled near 50% grinding `@Recently-Snapshot`, which alone reported 44 TB on a 10 TB volume. Summing them is
-both ruinous and wrong (the bytes are deduped, not real consumed space). The names are reserved vendor conventions
-(`@`/`#`/`$` prefixes) that don't collide with user folders, so a name match is safe. **Guardrail:** don't remove the
-exclusion to "fill in" the missing sizes — that re-triggers the stall. Scope is the network scanner only (the home of
-these dirs); the local walker has its own `should_exclude` (`../scanner/DETAILS.md`).
+`#recycle`, `#snapshot`, `.snapshot`, `.zfs`, `.AppleDouble`, `$RECYCLE.BIN`, `System Volume Information`, …; matched
+case-insensitively by `system_dirs::is_recursion_excluded_dir`). Both the fresh scan and the reconcile walk apply it:
+the dir's own row is still indexed (so it stays listed and navigable — a user can walk into `@Recycle` to restore a
+file), but its subtree is never walked, so it rolls up as honestly-unknown (`—`/`≥`) rather than a misleading total.
+**Decision/Why:** these dirs are hardlinked, huge, and re-walking them costs a full filesystem traversal *per snapshot*
+over serialized SMB — a real first-scan stalled near 50% grinding `@Recently-Snapshot`, which alone reported 44 TB on a
+10 TB volume. Summing them is both ruinous and wrong (the bytes are deduped, not real consumed space). **Guardrail:**
+don't remove the exclusion to "fill in" the missing sizes — that re-triggers the stall. Scope is the network scanner
+only (the home of these dirs); the local walker has its own `should_exclude` (`../scanner/DETAILS.md`).
 `FileEntry` carries no DOS hidden/system attribute today; if one is plumbed through, "hidden + system" would generalize
 this without the hardcoded list.
+
+### The bar for adding a name (it now deletes rows)
+
+A name in this list means "the scanner never walks here" AND "prune anything already indexed here", so a false positive
+deletes a user's folder from the index. A candidate needs a vendor/protocol citation, and it needs to be a name no user
+would pick. Vendor attribution, verified 2026-07-25 against vendor docs:
+
+- **Synology DSM**: `@eaDir` (media-index thumbnails, in every folder holding indexed media), `#recycle`, `#snapshot`,
+  `@sharesnap`, `@tmp`.
+- **QNAP QTS**: `@Recently-Snapshot`, `@Recycle`, `.@__thumb`. QNAP's FAQ documents `@Recently-Snapshot` as the
+  SMB/AFP/FTP-visible snapshot view; QTS docs document `@Recycle` as created per shared folder.
+- **NetApp ONTAP**: `.snapshot` (the NFS-side name). **Linux snapper / Btrfs**: `.snapshots`. **OpenZFS**: `.zfs`
+  (dataset root, hidden unless `snapdir=visible`). **Netatalk/AFP**: `.AppleDouble` (every folder), `.AppleDB`,
+  `.AppleDesktop`, `Network Trash Folder`, `TheFindByContentFolder`, `TheVolumeSettingsFolder`. **macOS**:
+  `.TemporaryItems`. **Windows/NTFS**: `$RECYCLE.BIN`, `System Volume Information`.
+
+**Decision/Why `~snapshot` is deliberately NOT on the list.** It's ONTAP's SMB rendering of `.snapshot`, so it looks
+like the obvious addition. But an SMB 2.x client cannot enumerate it even with `showsnapshot` enabled — it's reachable
+only by typing the path — so a `~snapshot` that actually appears in a listing is a user folder, making the entry pure
+false-positive risk with zero benefit. Pinned by `does_not_exclude_the_smb_invisible_ontap_snapshot_name`. Windows
+"Previous Versions" uses the SMB shadow-copy FSCTL, not a pseudo-directory, so it needs no entry either.
+
+**Weaker entries, kept but worth knowing:** `@sharebin` has no vendor documentation behind it; `.snapshots` is
+snapper's default subvolume name, which a Btrfs user could plausibly have created themselves; `@tmp` and `@sharesnap`
+live at the Synology volume root and so normally aren't reachable through a share at all.
+
+### Pruning what an older index left behind
+
+The exclusion only stops the walk. Rows an OLDER index (or a pre-exclusion build) already wrote under such a dir were
+invisible to every later pass, because a reconcile diffs the dirs it LISTS and this one is never listed. Nothing removed
+them: on the author's QNAP index that was 10 898 710 rows, 80% of a 13 541 603-row, 1.88 GB DB, against a last-scan
+count of 2 642 902 — enough to roll a 10 TB NAS up to 89 TB and make every O(entries) walk pay 5×.
+`writer::prune` (canonical: `../writer/DETAILS.md` § "Pruning recursion-excluded subtrees") is what removes them.
+This module owns the two triggers and the safety gate:
+
+- `finish_reconcile` (this module's network-only wrapper) sends the prune before the shared
+  `reconciler::finish_reconcile`, so the marks and the single `ComputeAllAggregates` that follow recompute ancestors
+  over the pruned tree. The FRESH scan doesn't need it: `TruncateData` runs first, so it can't inherit an orphan.
+- `lifecycle/network_scan.rs`'s `resume_or_scan_network` sends it once per DB at load, gated on
+  `exclusion_list_fingerprint()`. **Why a load pass at all:** a completed network index loads Stale and never rescans on
+  its own, so an existing install would otherwise keep its rows until the user asked for a rescan by hand.
+- **Why a content fingerprint, not a schema bump or a version constant.** `SCHEMA_VERSION` deletes EVERY index on the
+  machine, including a 6.9M-entry local one, to fix a network-only problem, and costs a 12-minute NAS rescan on top; a
+  hand-maintained version constant is one someone forgets to bump when they add a name. The fingerprint is derived from
+  the list's contents, so growing the list re-arms every existing index automatically and shrinking it doesn't resurrect
+  anything.
+- `prune_message_for_kind` is the gate: only `is_trait_scanned()` kinds get a message, because the LOCAL walker indexes
+  a folder called `@eaDir` or `.snapshot` in full, and pruning a local index against this list would delete real user
+  data. Pinned by `only_trait_scanned_volumes_get_a_prune_message`.
 
 ## Empty root
 

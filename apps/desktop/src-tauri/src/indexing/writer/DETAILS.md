@@ -21,8 +21,8 @@ enrichment/verification never contend on the write connection or the lifecycle m
 `DeleteSubtreeById`, `PropagateDeltaById`, `ComputeAllAggregates`, `ComputeSubtreeAggregates`,
 `ComputePartialAggregates`, `BackfillMissingDirStats`, `TruncateData`, `MarkDirsListed`, `PropagateMinSubtreeEpoch`,
 `BumpCurrentEpoch`, `SetDeltaPropagation`, `MarkLedgerUnpaid`/`PayLedgerIfUnpaid`, `ArmLedgerHealLatch`,
-`IncrementalVacuum`/`WalCheckpoint`, `EmitDirUpdated`, `Flush`) plus path-keyed backward-compat variants. `Flush` +
-the async `flush()` let callers wait for all prior writes to commit.
+`PruneExcludedSubtrees`, `IncrementalVacuum`/`WalCheckpoint`, `EmitDirUpdated`, `Flush`) plus path-keyed
+backward-compat variants. `Flush` + the async `flush()` let callers wait for all prior writes to commit.
 
 **Rationale — single writer, not connection pooling.** SQLite's write concurrency is limited by its single-writer
 design. Rather than fight it with `BUSY_TIMEOUT` + retries, one thread owns the write connection and eliminates
@@ -432,6 +432,45 @@ approach depends on: (1) a test must NEVER `INDEX_REGISTRY.clear()` (it wipes ev
 `lifecycle/state/tests.rs` removes only its own ids); (2) `stress_test_helpers::TestInstanceGuard::register_identity_paths`
 uses an `mtp-` id so `get_dir_stats_on_volume` / `enrich_*_on_volume` map plain `/paths` identically (identity read-side
 routing) while staying private.
+
+## Pruning recursion-excluded subtrees (`prune.rs`)
+
+`PruneExcludedSubtrees { excluded_dir_names, fingerprint }` deletes every row BENEATH a directory whose name is in the
+list, keeps the directory's own row, resets that row's `listed_epoch` to 0, drops its stale `dir_stats`, and records the
+fingerprint under `EXCLUDED_SUBTREES_PRUNED_KEY` — but only after the whole prune succeeded, so a failure re-prunes on
+the next load (the work is idempotent). The senders, the triggers, the name list and its `IndexVolumeKind` gate are
+canonical in `../network_scanner/DETAILS.md` § "NAS snapshot/system dirs aren't recursed"; this section owns the
+writer-side mechanics.
+
+**Why it exists.** The trait scanner keeps such a dir's row but never walks its subtree, and a reconcile only diffs the
+dirs it LISTS, so rows an older index put there were invisible to every later pass. On the author's QNAP index:
+10 898 710 orphaned rows, 80% of a 13 541 603-row, 1.88 GB DB (2026-07-25, direct query against a copy of
+`index-smb-192-168-1-111-445-naspi.db`).
+
+**Why it can only ever prune LESS than intended, never more.** Three narrowing steps: the kind gate (trait-scanned
+volumes only), then SQL `is_directory = 1 AND lower(name) IN (…)`, then a Rust `eq_ignore_ascii_case` re-check of every
+candidate before anything is deleted. SQLite's `lower()` is ASCII-only, which is exactly `eq_ignore_ascii_case` for
+these ASCII names, but the re-check means a future divergence can only shrink the set. Pinned by
+`prune_never_touches_a_lookalike_user_folder`.
+
+**Why `listed_epoch = 0` here is the one truthful zero.** A dir an older index DID list carries a non-zero epoch; once
+its subtree is gone, that would roll up as an EXACT `0 B` for a folder holding terabytes. The current scanner never
+lists it, so 0 (unknown, `—`) is precisely the state a scan under today's rules would leave. This is the documented
+exception to `CLAUDE.md`'s "never write `listed_epoch = 0` for a dir we listed but skipped" — that rule is about a dir we
+DID list.
+
+**The caller must follow with a `ComputeAllAggregates`** (every sender does): ancestors keep the deleted rows' bytes in
+their `dir_stats` until it runs.
+
+**`delete_descendants_by_id` walks in bounded chunks** (`store/entries.rs`), not one recursive-CTE `DELETE`. The CTE form
+materializes every descendant id into one ephemeral table and one transaction — 10.9M ids, twice, plus a multi-GB WAL
+spike in a single shot. Descending level by level with a frontier of dir ids caps both; the frontier holds ids whose rows
+are already deleted, which is safe because children are found by `parent_id`, so a deleted parent never hides them.
+Measured on a copy of the production DB (2026-07-25, Python prototype of this exact algorithm): 23 s for the full
+10 898 710-row delete, peak frontier 5 951 dir ids (48 KB), zero orphans, entry count landing exactly on the last scan's
+own 2 642 893. Discovery (the full-table scan for candidates) was 0.7 s warm / 4.4 s cold. Freed pages go to the freelist
+(1 353 MB of it), which the 30 s `IncrementalVacuum` tick drains; draining it fully took 45 s and brought the file from
+1.88 GB to 529 MB.
 
 ## Maintenance: vacuum and WAL checkpoint (`maintenance.rs`)
 

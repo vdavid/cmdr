@@ -1,32 +1,39 @@
 //! NAS system/snapshot directories the recursive size scan must not descend into.
 //!
-//! Synology, QNAP, NetApp, and Windows SMB shares expose reserved pseudo-directories
-//! that are catastrophic to recursively size:
+//! Synology, QNAP, NetApp, ZFS, netatalk, and Windows SMB shares all expose reserved
+//! pseudo-directories that are catastrophic to recursively size:
 //!
-//! - **Snapshot trees** (`@Recently-Snapshot`, `#snapshot`, `.snapshot`) hold full
+//! - **Snapshot trees** (`@Recently-Snapshot`, `#snapshot`, `.snapshot`, `.zfs`) hold full
 //!   point-in-time copies of the whole share. Their bytes are hardlinked/deduped, so
 //!   summing them is both ruinously expensive (the scanner re-walks the entire
 //!   filesystem once per snapshot) AND wrong (the total isn't real consumed space).
 //!   One real report: a NAS first-scan stalled near 50% grinding through
 //!   `@Recently-Snapshot`, which alone reported 44 TB on a 10 TB volume.
-//! - **Thumbnail/metadata sidecars** (`@eaDir`, `.@__thumb`) live inside *every* media
-//!   folder, so a position-based ("only at share root") skip would miss them — they
-//!   have to be matched at any depth.
-//! - **Recycle bins** (`@Recycle`, `#recycle`, `$RECYCLE.BIN`) and other system dirs
-//!   are large and never what a size roll-up wants.
+//! - **Thumbnail/metadata sidecars** (`@eaDir`, `.@__thumb`, `.AppleDouble`) live inside
+//!   *every* media folder, so a position-based ("only at share root") skip would miss
+//!   them — they have to be matched at any depth.
+//! - **Recycle bins** (`@Recycle`, `#recycle`, `$RECYCLE.BIN`, `Network Trash Folder`)
+//!   and other system dirs are large and never what a size roll-up wants.
 //!
-//! These names are reserved vendor conventions (the `@` / `#` / `$` prefixes and
-//! `System Volume Information` don't collide with real user folders), so a name match
-//! is safe. We only SKIP RECURSION: the directory's own row is still indexed and stays
-//! listed and navigable (a user can walk into `@Recycle` to restore a file); we just
-//! don't auto-walk its subtree to compute a recursive size. Its size shows as unknown
-//! (`—`/`≥`), the honest state, rather than `0 B`.
+//! **The bar for adding a name: it must be created by the vendor/protocol, documented,
+//! and one no user would pick for a real folder.** A false positive doesn't just hide a
+//! size — it makes the prune (`writer/prune.rs`) delete that folder's indexed rows. So a
+//! name goes in only with a citation, and the SMB-visibility question is part of it:
+//! ONTAP's `~snapshot` looks like an obvious candidate and is deliberately absent,
+//! because an SMB2 client can never enumerate it, so a `~snapshot` you can actually SEE
+//! is a user folder. Rationale and sources: `DETAILS.md`.
+//!
+//! We only SKIP RECURSION: the directory's own row is still indexed and stays listed and
+//! navigable (a user can walk into `@Recycle` to restore a file); we just don't auto-walk
+//! its subtree to compute a recursive size. Its size shows as unknown (`—`/`≥`), the
+//! honest state, rather than `0 B`.
 //!
 //! Scope: applied by the `Volume`-trait network scanner (`network_scanner/mod.rs`) only,
 //! which walks SMB/MTP shares — the home of these dirs. The local guarded walker has its
-//! own `should_exclude`. `FileEntry` carries no DOS hidden/system attribute, so matching
-//! the canonical names is the available signal; if attributes are plumbed through later,
-//! "hidden + system" would generalize this without a hardcoded list.
+//! own `should_exclude`, and indexes a folder with one of these names in FULL, which is
+//! why the prune is gated on the volume kind. `FileEntry` carries no DOS hidden/system
+//! attribute, so matching the canonical names is the available signal; if attributes are
+//! plumbed through later, "hidden + system" would generalize this without a hardcoded list.
 
 use crate::indexing::lifecycle::state::IndexVolumeKind;
 use crate::indexing::writer::WriteMessage;
@@ -35,20 +42,34 @@ use crate::indexing::writer::WriteMessage;
 /// (NAS shares are typically case-insensitive). Extend as new vendor conventions
 /// surface; keep it to reserved, non-user-collidable names.
 const EXCLUDED_DIR_NAMES: &[&str] = &[
-    // Synology
-    "@eaDir",
-    "@Recently-Snapshot",
-    "@Recycle",
-    "@sharesnap",
-    "@sharebin",
-    "@tmp",
-    // QNAP
-    "#recycle",
-    "#snapshot",
-    ".@__thumb",
-    // NetApp / generic
+    // Synology DSM
+    "@eaDir",     // media-index thumbnails, in EVERY folder holding indexed media
+    "#recycle",   // per-share recycle bin
+    "#snapshot",  // per-share snapshot view ("Make snapshot visible")
+    "@sharesnap", // share snapshots, volume root
+    "@sharebin",  // unverified; no vendor doc found
+    "@tmp",       // volume-root system dir
+    // QNAP QTS
+    "@Recently-Snapshot", // per-share snapshot view, on by default over SMB
+    "@Recycle",           // per-share network recycle bin
+    ".@__thumb",          // File Station / Multimedia Console thumbnail cache, any depth
+    // NetApp ONTAP (NFS-side name; ONTAP's SMB view is `~snapshot`, which an SMB2
+    // client can't enumerate at all, so a VISIBLE `~snapshot` is a user folder — see
+    // `DETAILS.md` § "NAS snapshot/system dirs aren't recursed")
     ".snapshot",
+    // Linux snapper / Btrfs default subvolume
     ".snapshots",
+    // OpenZFS control dir (`.zfs/snapshot`), dataset root, hidden unless `snapdir=visible`
+    ".zfs",
+    // Netatalk / AFP sidecars
+    ".AppleDouble", // resource forks, in EVERY folder
+    ".AppleDB",
+    ".AppleDesktop",
+    "Network Trash Folder",
+    "TheFindByContentFolder",
+    "TheVolumeSettingsFolder",
+    // macOS
+    ".TemporaryItems",
     // Windows / SMB
     "$RECYCLE.BIN",
     "System Volume Information",
@@ -121,11 +142,27 @@ mod tests {
             "#recycle",
             "#snapshot",
             ".snapshot",
+            ".zfs",
+            ".AppleDouble",
+            "Network Trash Folder",
+            ".TemporaryItems",
             "$RECYCLE.BIN",
             "System Volume Information",
         ] {
             assert!(is_recursion_excluded_dir(name), "{name} should be excluded");
         }
+    }
+
+    /// ONTAP renders `.snapshot` as `~snapshot` over SMB, but an SMB2 client can't
+    /// enumerate it even with `showsnapshot` on: it's reachable only by typing the
+    /// path. So a `~snapshot` that shows up in a listing is a USER folder, and
+    /// excluding the name would be pure false positive — which now also means
+    /// deleting that folder's indexed rows. Deliberately absent, pinned here so
+    /// nobody "completes the set" later.
+    #[test]
+    fn does_not_exclude_the_smb_invisible_ontap_snapshot_name() {
+        assert!(!is_recursion_excluded_dir("~snapshot"));
+        assert!(!is_recursion_excluded_dir("~snapshtable"));
     }
 
     #[test]
@@ -145,6 +182,11 @@ mod tests {
             "recycle",
             "snapshot",
             "@myfiles",
+            "zfs",
+            "AppleDouble",
+            "Trash",
+            "Temporary Items",
+            "Network Trash Folder Archive",
         ] {
             assert!(!is_recursion_excluded_dir(name), "{name} should NOT be excluded");
         }
