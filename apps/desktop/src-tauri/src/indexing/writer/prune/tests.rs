@@ -55,9 +55,7 @@ fn file(id: i64, parent_id: i64, name: &str, size: u64) -> EntryRow {
 fn writer_with(rows: Vec<EntryRow>) -> (IndexWriter, std::path::PathBuf, tempfile::TempDir) {
     let (db_path, dir) = setup_db();
     let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
-    writer
-        .send(WriteMessage::InsertEntriesV2(rows))
-        .expect("seed rows");
+    writer.send(WriteMessage::InsertEntriesV2(rows)).expect("seed rows");
     writer.flush_blocking().expect("flush");
     (writer, db_path, dir)
 }
@@ -66,11 +64,7 @@ fn ids_present(db_path: &std::path::Path, ids: &[i64]) -> Vec<i64> {
     let conn = IndexStore::open_read_connection(db_path).expect("read conn");
     ids.iter()
         .copied()
-        .filter(|id| {
-            IndexStore::get_entry_by_id(&conn, *id)
-                .expect("get entry")
-                .is_some()
-        })
+        .filter(|id| IndexStore::get_entry_by_id(&conn, *id).expect("get entry").is_some())
         .collect()
 }
 

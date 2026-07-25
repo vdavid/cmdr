@@ -1471,13 +1471,13 @@ async fn reconcile_prunes_rows_left_under_a_now_excluded_dir() {
         "the excluded dir's own row must stay indexed so it's listed and navigable"
     );
     assert!(
-        IndexStore::get_entry_by_id(&conn, nested_id)
-            .expect("entry")
-            .is_none(),
+        IndexStore::get_entry_by_id(&conn, nested_id).expect("entry").is_none(),
         "rows beneath a recursion-excluded dir must be pruned, not carried forever"
     );
     assert_eq!(
-        IndexStore::list_children_on(snapshot_id, &conn).expect("children").len(),
+        IndexStore::list_children_on(snapshot_id, &conn)
+            .expect("children")
+            .len(),
         0,
         "the excluded dir must have no indexed children after the prune"
     );

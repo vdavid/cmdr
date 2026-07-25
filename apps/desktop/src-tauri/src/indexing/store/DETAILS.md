@@ -20,7 +20,10 @@ pulling shared items via `use super::*`):
 - `connection.rs`: open/recreate, connection factories, DB-size + status reads, the `pub(super)` `read_meta_value`
   helper.
 - `entries.rs`: entry-tree reads and writes — child listings, lookups by id / inode / component, insert / update /
-  rename / move / delete, counts, `get_next_id`.
+  rename / move / delete, counts, `get_next_id`. `delete_descendants_by_id` descends in bounded chunks rather than
+  issuing one recursive-CTE `DELETE` (which materialized 10.9M ids into a single ephemeral table and transaction on a
+  real index); `find_dirs_named_any_of` and `clear_listed_epoch` serve the excluded-subtree prune
+  (`../writer/DETAILS.md` § "Pruning recursion-excluded subtrees").
 - `dir_stats.rs`: `dir_stats` reads and writes plus `recompute_min_subtree_epoch`.
 - `meta.rs`: meta-table + epoch helpers, `mark_dirs_listed`, `get_all_directory_paths`, `clear_all`, and the
   aggregates-are-known-good marker (`ledger_heal_done` / `mark_ledger_heal_done` / `clear_ledger_heal_done`, keyed on

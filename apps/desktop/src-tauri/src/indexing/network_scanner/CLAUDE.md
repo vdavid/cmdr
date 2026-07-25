@@ -33,9 +33,9 @@ are discovered and stat'd differs from the local guarded walker.
 - **NAS system/snapshot dirs aren't recursed** (`system_dirs.rs`): the dir's own row IS indexed (navigable), but its
   subtree is never walked (rolls up honestly-unknown). Don't remove it to "fill in" sizes — it re-triggers the stall.
 - **A name on that list also DELETES rows** (`writer/prune.rs`), so a false positive costs a user their indexed folder.
-  Add one only with a vendor citation, and only if it's SMB-visible (that's why ONTAP's `~snapshot` is absent). The
-  reconcile finish and the load-time one-shot both prune; the FRESH scan doesn't need it (`TruncateData` runs first),
-  and `prune_message_for_kind` keeps it away from locally-scanned indexes, which index those folders in full.
+  Add one only with a vendor citation, and only if it's SMB-visible (why ONTAP's `~snapshot` is absent). The reconcile
+  finish and the load-time one-shot prune; a FRESH scan needn't (`TruncateData` runs first), and
+  `prune_message_for_kind` keeps it off locally-scanned indexes, which index those folders in full.
 - **The FRESH scan wraps its inserts in periodic explicit transactions** (`SCAN_COMMIT_INTERVAL`, 2 s): the single
   writer fsyncs per interval, not per 2000-entry batch — the writer-side lever that keeps it from becoming the bottleneck
   once the SMB connection pool lifts listing throughput ~4×. `commit_scan_tx` closes the transaction before EVERY exit,

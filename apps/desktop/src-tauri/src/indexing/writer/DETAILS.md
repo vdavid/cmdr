@@ -445,7 +445,8 @@ writer-side mechanics.
 **Why it exists.** The trait scanner keeps such a dir's row but never walks its subtree, and a reconcile only diffs the
 dirs it LISTS, so rows an older index put there were invisible to every later pass. On the author's QNAP index:
 10 898 710 orphaned rows, 80% of a 13 541 603-row, 1.88 GB DB (2026-07-25, direct query against a copy of
-`index-smb-192-168-1-111-445-naspi.db`).
+`index-smb-192-168-1-111-445-naspi.db`). Full measurements, including where the rows came from and the nesting trap
+that makes naive per-root counts overshoot: `docs/notes/orphaned-excluded-subtree-rows-2026-07-25.md`.
 
 **Why it can only ever prune LESS than intended, never more.** Three narrowing steps: the kind gate (trait-scanned
 volumes only), then SQL `is_directory = 1 AND lower(name) IN (…)`, then a Rust `eq_ignore_ascii_case` re-check of every

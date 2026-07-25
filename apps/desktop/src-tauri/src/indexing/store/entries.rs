@@ -506,8 +506,7 @@ impl IndexStore {
             return Ok(());
         }
         let placeholders = vec!["?"; ids.len()].join(", ");
-        let values: Vec<&dyn rusqlite::types::ToSql> =
-            ids.iter().map(|id| id as &dyn rusqlite::types::ToSql).collect();
+        let values: Vec<&dyn rusqlite::types::ToSql> = ids.iter().map(|id| id as &dyn rusqlite::types::ToSql).collect();
         let stats_sql = format!("DELETE FROM dir_stats WHERE entry_id IN ({placeholders})");
         conn.prepare_cached(&stats_sql)?.execute(&*values)?;
         let entries_sql = format!("DELETE FROM entries WHERE id IN ({placeholders})");
