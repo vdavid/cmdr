@@ -22,7 +22,7 @@ use rusqlite::Connection;
 use crate::ignore_poison::IgnorePoison;
 
 use super::gate::IndexScope;
-use super::scheduler::enrich::{ImageEntry, parent_dir, walk_image_entries};
+use super::scheduler::enrich::{ImageEntry, for_each_qualifying_image, parent_dir};
 use super::store::EnrichmentState;
 
 /// The qualifying-image counts for one volume: how many images each folder holds, and
@@ -47,18 +47,44 @@ pub fn get_or_build(volume_id: &str) -> Option<Arc<FolderImageCounts>> {
         return Some(Arc::clone(counts));
     }
     let pool = crate::indexing::get_read_pool_for(volume_id)?;
-    let images = pool.with_conn(walk_image_entries).ok()?.ok()?;
-    let counts = Arc::new(build_counts(&images));
+    let counts = Arc::new(pool.with_conn(count_qualifying_images).ok()?.ok()?);
     COUNTS
         .lock_ignore_poison()
         .insert(volume_id.to_string(), Arc::clone(&counts));
     Some(counts)
 }
 
+/// Count a volume's qualifying images per folder WITHOUT materializing them: the
+/// streaming counterpart to `build_counts(&walk_image_entries(..))`, and the only shape a
+/// cold [`get_or_build`] uses.
+///
+/// Both go through the ONE [`for_each_qualifying_image`] walk, so the counts can't drift
+/// from what a pass would enrich (pinned by the walk-parity tests in
+/// `scheduler/enrich_tests.rs`). The difference is what's kept: this holds `O(folders)`
+/// (one `String` key per folder that has an image, allocated on first sight), where
+/// collecting holds one heap path `String` per IMAGE — gigabytes on a multi-million-entry
+/// NAS index (`docs/notes/memory-runaway-nas-pane-2026-07-24.md`).
+pub(crate) fn count_qualifying_images(conn: &Connection) -> Result<FolderImageCounts, String> {
+    let mut per_folder: HashMap<String, u64> = HashMap::new();
+    let mut total = 0u64;
+    for_each_qualifying_image(conn, &mut |image| {
+        total += 1;
+        // Look up before inserting so a repeat folder (the common case, since the walk
+        // streams a whole dir group at a time) allocates nothing.
+        match per_folder.get_mut(image.dir) {
+            Some(count) => *count += 1,
+            None => {
+                per_folder.insert(image.dir.to_string(), 1);
+            }
+        }
+    })?;
+    Ok(FolderImageCounts { per_folder, total })
+}
+
 /// Aggregate a full qualifying-image set into per-folder counts plus the volume total. The
-/// pure core both a cold [`get_or_build`] and a pass [`replace_from_entries`] share, so a
-/// rebuild and a refill produce identical counts.
-fn build_counts(entries: &[ImageEntry]) -> FolderImageCounts {
+/// pure core the pass refills ([`replace_from_entries`]) and the live-tick patch share, so a
+/// refill and a patch produce identical counts.
+pub(crate) fn build_counts(entries: &[ImageEntry]) -> FolderImageCounts {
     let mut per_folder: HashMap<String, u64> = HashMap::new();
     for image in entries {
         *per_folder.entry(parent_dir(&image.path).to_string()).or_default() += 1;

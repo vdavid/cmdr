@@ -11,6 +11,7 @@ use super::enrich::{
 };
 use crate::indexing::store::{IndexStore, ROOT_ID};
 use crate::media_index::backend::fake::FakeVisionBackend;
+use crate::media_index::coverage::{build_counts, count_qualifying_images};
 use crate::media_index::predicate::MediaKind;
 use crate::media_index::progress::{EnrichProgress, EnrichProgressSink, NoopProgressSink};
 use crate::media_index::read::MediaIndex;
@@ -149,6 +150,88 @@ fn walk_streams_multiple_dirs_grouped_by_parent() {
     // The staleness key rode along per file across the streamed groups.
     let lone = images.iter().find(|i| i.path == "/c/lone.cr2").expect("lone");
     assert_eq!((lone.mtime, lone.size), (Some(5), Some(50)));
+}
+
+// ── Counting the walk without materializing it (`coverage::count_qualifying_images`) ──
+//
+// These live here, beside the walk they characterize, because the synthetic-index fixture
+// does. They pin the streaming counting sink to the materializing walk BYTE-FOR-BYTE: the
+// counts side must never drift from what a pass would actually enrich.
+
+#[test]
+fn counting_the_walk_matches_materializing_then_reducing_it() {
+    // The characterization: for a corpus exercising every sibling-aware rule, counting
+    // straight off the walk must equal `build_counts(&walk_image_entries(..))` exactly.
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(
+        &index_path,
+        &[
+            ("/photos", "beach.jpg", 1, 10),
+            ("/photos", "beach.mov", 2, 20), // pairs beach.jpg ⇒ Live Photo still + skipped motion
+            ("/photos", "raw.cr2", 3, 30),   // defers to its JPEG sibling
+            ("/photos", "raw.jpg", 4, 40),
+            ("/photos", "edit.aae", 5, 50), // sidecar, no pixels
+            ("/photos/2024", "trip.heic", 6, 60),
+            ("/raws", "lone.dng", 7, 70), // lone RAW qualifies
+            ("/docs", "report.pdf", 8, 80),
+            ("/", "root.png", 9, 90),
+        ],
+    );
+    let store = IndexStore::open(&index_path).expect("reopen");
+
+    let materialized = build_counts(&walk_image_entries(store.read_conn()).expect("walk"));
+    let streamed = count_qualifying_images(store.read_conn()).expect("count");
+
+    assert_eq!(streamed.total, materialized.total, "volume total matches");
+    assert_eq!(streamed.per_folder, materialized.per_folder, "per-folder counts match");
+}
+
+#[test]
+fn counting_stays_sibling_aware_per_directory() {
+    // The same corpus, pinned against the EXPECTED counts rather than the old walk, so a
+    // regression in both paths at once can't slip through. `/docs` holds no qualifying
+    // image, so it's absent (the map only carries folders with ≥ 1).
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(
+        &index_path,
+        &[
+            ("/photos", "beach.jpg", 1, 10),
+            ("/photos", "beach.mov", 2, 20),
+            ("/photos", "raw.cr2", 3, 30),
+            ("/photos", "raw.jpg", 4, 40),
+            ("/photos", "edit.aae", 5, 50),
+            ("/photos/2024", "trip.heic", 6, 60),
+            ("/raws", "lone.dng", 7, 70),
+            ("/docs", "report.pdf", 8, 80),
+            ("/", "root.png", 9, 90),
+        ],
+    );
+    let store = IndexStore::open(&index_path).expect("reopen");
+    let counts = count_qualifying_images(store.read_conn()).expect("count");
+
+    let expected: HashMap<String, u64> = [
+        ("/photos".to_string(), 2u64), // the Live Photo still + the JPEG of the RAW pair
+        ("/photos/2024".to_string(), 1),
+        ("/raws".to_string(), 1),
+        ("/".to_string(), 1),
+    ]
+    .into_iter()
+    .collect();
+    assert_eq!(counts.per_folder, expected);
+    assert_eq!(counts.total, 5);
+}
+
+#[test]
+fn counting_an_empty_index_is_zero_not_an_error() {
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(&index_path, &[]);
+    let store = IndexStore::open(&index_path).expect("reopen");
+    let counts = count_qualifying_images(store.read_conn()).expect("count");
+    assert_eq!(counts.total, 0);
+    assert!(counts.per_folder.is_empty());
 }
 
 #[test]
