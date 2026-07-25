@@ -107,7 +107,14 @@ What lands where. **Treat this as the starting hypothesis, not the answer** (Dec
 - **`cmdr-index`**: the three subsystems, plus `SYSTEM_DIR_EXCLUDES` (moved down out of `search/`) and
   `sqlite_util::run_incremental_vacuum`.
 - **stays app-side**: every *real-storage* `Volume` backend (`LocalPosixVolume`, SMB, MTP, archive) with their `smb2` /
-  `mtp-rs` / `file_system::git` / mount-detection dependencies.
+  `mtp-rs` / `file_system::git` / mount-detection dependencies, plus **`VolumeManager`** (`file_system/mod.rs:221`),
+  which the crate reaches only through `VolumeProvider`.
+
+Two mechanics worth knowing before M2 estimates the work. `file_system/volume/mod.rs` is 1,078 lines declaring a module
+tree at `:1045-1078` (`ids`, `types`, `backends`, `eject`, `friendly_error`, `manager`), and the split runs *through*
+it: `types`, `ids`, `friendly_error`, and the trait move while `backends`, `eject`, and `manager` stay. So this is a
+module-tree restructure of the marquee file, not a `git mv`. And `FileEntry::new` is `pub(crate)`
+(`listing/metadata.rs:195`), so it needs a visibility decision on the way down.
 
 `VolumeId` is `pub(crate) type VolumeId = String` (`indexing/lifecycle/state.rs:50`), a bare alias. It moves to
 `cmdr-index`; making it a newtype is a separate, optional cleanup.
@@ -233,7 +240,7 @@ what blocks M6.
   trait; that only works if the trait actually answers "is this a network fs", so it gets an explicit method.
   Note: **no `scanner_for` / `watcher_for`** (Decision 1).
 - **`HostPolicy`** — "may I / should I do work right now?" Covers `priority::foreground::idle_for` and
-  `priority::transfers::transfer_active` (**six** production sites: `network_scanner/scan_pace.rs:27,130`,
+  `priority::transfers::transfer_active` (**five** call sites in three files: `network_scanner/scan_pace.rs:130`,
   `media_index/scheduler/mod.rs:566,567`, `media_index/scheduler/lifecycle.rs:437,438`) **and**
   `fda_gate::is_fda_pending` (a runtime query, not the static config value). One trait because they're one question.
   **It needs a write half too**: `indexing/network_scanner/pace_tests.rs` — a moving file — drives
@@ -253,7 +260,7 @@ what blocks M6.
 - **`pluralize`** (49 refs). Also a leaf, but filed here for convenience rather than because it's a host primitive:
   it's a copy formatter ("1 file" / "2 files"), so `cmdr-fs` becomes the home of English copy generation. All 49 uses
   build log lines, which contract item 2 exempts. Worth naming so nobody reads it as the contract slipping.
-- **`wait_until` / `wait_until_async`** (7 of the 9 `test_support` refs), behind a `testing` feature. See Decision 18
+- **`wait_until` / `wait_until_async`** (8 of the 9 `test_support` refs), behind a `testing` feature. See Decision 18
   for why the rest of `test_support` can't come along.
 
 **Moved down into `cmdr-index`** (misfiled today): `search::SYSTEM_DIR_EXCLUDES` (exclusion policy is the indexer's;
@@ -421,7 +428,9 @@ only then let code move. It is *not* a no-op: `cargo fmt -p cmdr-fsevent-stream 
 `crates/index-query/`). `crates/fsevent-stream` is a **vendored fork** of a third-party crate (published as
 `cmdr-fsevent-stream` 0.3.0, upstream author retained, `edition = "2021"`), where diff-vs-upstream is load-bearing —
 so the alternative there is a `crates/fsevent-stream/rustfmt.toml` pinning today's defaults. Same question for
-`clippy.toml`, which resolves from the workspace root and is *not* opt-in the way `lints.workspace = true` is. Likewise the crate-root lint block: `lib.rs:2-19` sets `#![deny(unused)]`,
+`clippy.toml` — with the correction that clippy resolves it from the package manifest dir upward (verified on the
+pinned 1.97.1 toolchain), so the fork *can* pin its own, the same escape hatch rustfmt has. What remains true is that a
+workspace-root `clippy.toml` applies to members that don't opt out, unlike `lints.workspace = true`, which is opt-in. Likewise the crate-root lint block: `lib.rs:2-19` sets `#![deny(unused)]`,
 `#![warn(unused_crate_dependencies)]`, `#![warn(unused_qualifications)]`, `#![deny(clippy::print_stdout,
 clippy::print_stderr, clippy::dbg_macro)]`, `#![deny(clippy::todo, clippy::unimplemented)]`,
 `#![warn(clippy::allow_attributes_without_reason)]`, `#![warn(clippy::undocumented_unsafe_blocks)]`, and
@@ -454,6 +463,22 @@ to four things, and all four bit:
 record it: move it down (if it's a pure predicate), invert it behind a `cmdr-fs`-owned trait the app implements, strip
 the field/method so the app fills it in, or push the whole item back to the app. **Budget M2 for this loop rather than
 for a list**, because the list has been wrong three times.
+
+**The loop is bounded, and the bound is a cliff, not a slope.** Measured at file granularity over transitive `crate::`
+references from the 17 hypothesised seed files:
+
+- **Without the cuts below: 89 files, ~36,200 lines.** It pulls in all of `network/`, `commands/network.rs`,
+  `secrets/`, `volumes/`, `volumes_linux/`, `favorites/`, `mtp/`, `settings/`, `fda_gate` — and ~15,600 lines of
+  `indexing/`, i.e. the cycle comes back.
+- **With exactly the four cuts already named** (M1's scanner/watcher deletion, `notify_mutation` losing
+  `listing::caching` + `listing::reading`, and `FileEntry::new` losing `icons::*` and
+  `archive::has_supported_archive_extension`): **18 files, ~5,600 lines**, dragging in one non-seed file
+  (`file_system/listing/mod.rs`, 61 lines).
+
+Essentially the whole blow-up runs through `Volume::notify_mutation`'s two `use`-inside-body edges. **So M2.2 is a hard
+gate with a named tripwire: if `notify_mutation` can't be cut, stop — the closure is the whole app**, and the right
+response is to shrink `cmdr-fs` (Risks) rather than push on. (File granularity over-approximates and follows only
+`crate::` paths, so treat ~5,600 as the order of magnitude, not a budget.)
 
 Known cases and their intended disposition, so the loop starts from a real position:
 
@@ -495,7 +520,7 @@ mimalloc (`main.rs:4`). Moving it into `cmdr-fs` as an ordinary module gives eve
 global allocator: a hard compile error. Feature-gating doesn't save it either, since dev-dependency features unify with
 normal ones for the same package under a workspace test build.
 
-**Decision:** `wait_until` / `wait_until_async` (7 of the 9 refs, and the module `desktop-rust-test-sleep` exists to
+**Decision:** `wait_until` / `wait_until_async` (8 of the 9 refs, and the module `desktop-rust-test-sleep` exists to
 enforce) move to `cmdr-fs` behind a `testing` feature. `count_allocations` / `heap_bytes_held` and the allocator itself
 become a `#[cfg(test)]` module *inside* `cmdr-index`, since `enrich_memory_tests.rs` is the only consumer and a global
 allocator has to be per-test-binary.
@@ -520,11 +545,12 @@ Sequential unless stated. Each ends green on the named checks and is its own com
    rests on), `get_dir_stats_batch` (`read/queries.rs:360`), and scan throughput on the disk-image fixture. **Put them
    in `src-tauri/benches` now and `git mv` them to `crates/cmdr-index/benches/` at M6.** The first two are fine
    immediately: `enrich_entries_with_index` and `get_dir_stats_batch` are genuine `pub` re-exports
-   (`indexing/mod.rs:38,55`), so no public surface gets pre-committed. **The scan-throughput bench is not buildable
+   (`indexing/mod.rs:37,56`), so no public surface gets pre-committed. **The scan-throughput bench is not buildable
    today**: benches compile against the lib as an external crate, and the disk-image fixture lives under
    `#[cfg(test)] mod tests` (`indexing/mod.rs:29-30`, `indexing/tests/mod.rs:19`). So either convert
    `external_drive_fixture` to `#[cfg(any(test, feature = "testing"))]` as an explicit M0 step, or drop scan
-   throughput from the baseline set and say so. A baseline you can't take is worse than one you never promised.
+   throughput from the baseline set and say so. Either way it's a macOS-only benchmark
+   (`indexing/tests/mod.rs:18`). A baseline you can't take is worse than one you never promised.
 3. Record baselines in `docs/notes/index-extraction-baseline.md`: the three above, plus clean build time, incremental
    rebuild after a one-line change in `indexing/`, and the same in `commands/`. Those last two are goal 2's scoreboard.
    **Note the allocator** (Decision 18) so M7 compares like with like.
@@ -545,7 +571,8 @@ baseline means anything. **Docs:** the baseline note, linked from `docs/notes/RE
 2. Remove the now-unused `crate::indexing::*` imports at `volume/mod.rs:20-22` and `local_posix.rs:11-13`, **and the
    re-export at `volume/backends/mod.rs:41`**, which names both traits and would otherwise leave M1 red.
 3. Narrow the `#![allow(dead_code)]` at `volume/mod.rs:17` if the remaining scaffolding no longer needs a
-   module-wide relaxation, and update its reason comment either way.
+   module-wide relaxation, and update its reason comment either way. (M2 finishes this off: `pub` items reachable from
+   a lib crate root are never dead, so most of what the relaxation covers stops needing it once the types move.)
 
 **Tests:** no new test. There is nothing to TDD: the deleted code has zero callers, so a test asserting its behavior
 would pass forever and protect nothing. The guard is the existing suite plus `--include-slow`, which exercises the
@@ -555,6 +582,12 @@ real scan paths (`scanner::scan_volume`, `scan_subtree`, `network_scanner::scan_
 
 ### M2 — `cmdr-fs`, and the tooling that must exist before any crate does
 
+**Land this as two independent groups: M2a** (items 1, 5–12: format/lint config promotion, check-runner rewrite,
+meta-check) **and M2b** (items 2–4: the crate itself). M2a touches no Rust source, is valuable on its own, and stays
+landed regardless of what happens next; M2b is the only unbounded piece (Decision 16). Splitting them keeps a bad M2b
+from dragging the tooling work back out.
+
+
 **Intent:** create the foundation crate **and** fix the check runner in the same milestone. A second crate the checks
 don't cover is worse than no second crate. `cmdr-fs` is the canary: small enough that a gap is obvious, real enough to
 prove the fix.
@@ -562,8 +595,8 @@ prove the fix.
 The tooling problem, measured. `desktop-rust-tests.go:13,29` runs `cargo nextest run --locked --features virtual-mtp`
 with `cmd.Dir` at the package and **no `--workspace`**. The three subsystems hold **1,194 of the app crate's 4,918
 tests (24%)**. Moved to a crate without this fix, they stop running and every later milestone goes green vacuously.
-Same shape in `desktop-rust-tests-linux.go`, `desktop-rust-integration-tests.go:44`, `desktop-rust-rustfmt.go`,
-`desktop-rust-clippy.go:38` (`--all-targets` applies to the *selected* package, so the moved test targets go unlinted),
+Same shape in `desktop-rust-tests-linux.go`, `desktop-rust-integration-tests.go:79-85`, `desktop-rust-rustfmt.go`,
+`desktop-rust-clippy.go:36` (`--all-targets` applies to the *selected* package, so the moved test targets go unlinted),
 `cargo-machete` (`:22`), and `cargo-udeps` (`:57`). Nine Go scanners hardcode `apps/desktop/src-tauri/src`:
 `lock-poison.go:48`, `desktop-rust-error-string-match.go:62`, `desktop-rust-log-error-macro.go:33`,
 `desktop-rust-ipc-enum-camelcase.go:16`, `desktop-rust-test-sleep.go:48`, `desktop-rust-cfg-gate.go:15`,
@@ -592,7 +625,12 @@ Same shape in `desktop-rust-tests-linux.go`, `desktop-rust-integration-tests.go:
    Linux lanes never touch it because selection is `cmd.Dir`-scoped and the macOS-only dep drops out of the graph;
    `--workspace` moves it into the *selection* set, where the target gate no longer applies and CoreFoundation's
    framework linkage isn't valid. Use `--workspace --exclude cmdr-fsevent-stream` on the Linux lanes (or add
-   `#![cfg(target_os = "macos")]` at the fork's root), and confirm the failure mode with one Linux run first.
+   `#![cfg(target_os = "macos")]` at the fork's root). **Blocking sub-step, not a parenthetical: reproduce the failure
+   on one Linux run before writing the exclusion**, because whether it breaks at `check` or only at link determines
+   which lanes need it. This is the highest-uncertainty mechanical claim in the plan.
+   Note also that `desktop-rust-rustfmt.go:15` shells out to `find src -name '*.rs'` with `cmd.Dir` at the package,
+   independent of its `cargo fmt` call at `:24`; switching to `--all` without fixing the enumeration reports counts for
+   one tree while formatting another.
 6. **Green up `crates/index-query` under the new lanes.** Nothing compiles it today (all lanes are `cmd.Dir`-scoped to
    `src-tauri`), so `--workspace` + `fmt --all` exposes it to `-D warnings` and default-width rustfmt in one step, at a
    boundary that must ship green.
@@ -667,18 +705,25 @@ member / hides a macOS-only import, asserting failure. Red first; they're checks
    injected `tokio::runtime::Handle` (Decision 8). **Verify thread QoS still applies to the spawned work**; that's the
    property that kept indexing in-process at all, and `thread_qos` moving to `cmdr-fs` is necessary but not sufficient.
 2. `VolumeProvider`: the 18 `get_volume_manager()` sites, volume identity, and mount classification (Decision 6).
-3. `HostPolicy`: four `priority` sites across three files in two subsystems, plus `fda_gate::is_fda_pending`.
+3. `HostPolicy`: the five `priority` call sites across three files in two subsystems, plus `fda_gate::is_fda_pending`.
+   Note `priority::foreground::is_idle` (used at `scan_pace.rs:72`) is a **pure function over caller-supplied values**,
+   so it's a move-down candidate rather than an injection point; only the four sites that query live global state need
+   the trait.
 4. `IndexConfig` (Decision 9), including `media_index/network/config.rs`'s `CONFIG` and `PAUSED`.
 5. Cancellation on `CancellationToken` (Decision 14).
 6. Relocate the 27 `#[tauri::command]` functions to `commands/` (`media_index/commands.rs` 17,
    `media_index/commands/policy.rs` 9, `importance/commands.rs` 1). Also resolves the `ai` and `file_viewer`
    back-edges, which live entirely in these files.
 7. Apply the Decision 11 transport cut.
-8. **Rewrite the test sites that construct app-side backends** onto `InMemoryVolume` + a test `VolumeProvider`
+8. **Move the allocation-counting harness into the crate** (Decision 18's second half): `count_allocations`,
+   `heap_bytes_held`, and `COUNTING_ALLOCATOR` become a `#[cfg(test)]` module inside the indexing tree.
+   `media_index/scheduler/enrich_memory_tests.rs:13` is the only consumer and is a live `crate::test_support`
+   reference from a moving tree, so M4's gate fails without this.
+9. **Rewrite the test sites that construct app-side backends** onto `InMemoryVolume` + a test `VolumeProvider`
    (Decision 17): `read/queries.rs:374`, `paths/routing.rs:525`, `transports/local_external/index.rs:183`, and
    `transports/smb/integration_test.rs:21` (decide whether that one moves app-side instead). Also rewrite
    `network_scanner/pace_tests.rs` against a controllable fake `HostPolicy` (Decision 6's write half).
-9. **Gate:** no reference to *any* app module from the three subsystems, not merely no `tauri::`. Verify with a scripted
+10. **Gate:** no reference to *any* app module from the three subsystems, not merely no `tauri::`. Verify with a scripted
    `crate::` census; a `grep tauri::` gate would pass with ~20 back-edges still open.
 
 **Tests, TDD:** `IndexConfig` round-trip (a value set via `reconfigure` is the value the scan reads, proving nothing
@@ -740,9 +785,10 @@ accident.
    after the rename. (`docs-reachable-allowlist.json` and `claude-md-length-allowlist.json` have zero entries under the
    three subsystems, so there's nothing to reset there.) Shrink-wrap **drops** gone paths but never adds new ones, so
    the 16 files return as fresh warnings. Note several have already outgrown their entries on `main`
-   (`network_scanner/tests.rs` +25%, `store/tests.rs` +14%, `scheduler/enrich_tests.rs` +13%), so the re-added numbers
-   are current sizes, not the old allowlist values — which is exactly why this needs consent rather than a quiet
-   regeneration. Per `.claude/rules/file-length-allowlist.md` these can't be
+   — **six** of the 16 are already past the 10% buffer (`file-length.go:19`): `network_scanner/tests.rs` +26%,
+   `store/tests.rs` +14%, `scheduler/enrich_tests.rs` +14%, `reconcile/reconciler/tests.rs` +11%,
+   `reconcile/reconciler.rs`, and `tests/integration_tests.rs`. So the re-added numbers are current sizes, not the old
+   allowlist values — which is exactly why this needs consent rather than a quiet regeneration. Per `.claude/rules/file-length-allowlist.md` these can't be
    re-added without David's explicit consent — **get it before starting M6**, since the numbers are unchanged and only
    the paths move.
 7. Check the `.taurignore` dev-watcher shield. It lives at `apps/desktop/src-tauri/.taurignore` with gitignore-style
@@ -760,8 +806,17 @@ wrong**; fix it there.
 **Intent:** convert the claims in "Why" into measurements, and make the boundary self-defending.
 
 1. Land `index-crate-isolation` (Decision 7), with a Go unit test using a fixture manifest that depends on `tauri`, and
-   a workflow reference or `NotInCI` reason (M2.11).
-2. Regenerate the `file-length` allowlist by running the check and committing its rewrite (never hand-edit).
+   a workflow reference or `NotInCI` reason (M2.11). **Give it a second assertion: a public-item ceiling on
+   `cmdr-index`**, counted from rustdoc JSON or `cargo public-api`. Decision 3's ~25-item target is otherwise the only
+   acceptance criterion in this plan with no mechanism behind it — everything else has a compiler, a check, or a test —
+   and the Risks section names "the audit gets skipped" as the main way this plan fails while appearing to succeed. The
+   plan's own pattern is to turn a load-bearing property into a check; this is the last place that hasn't been done.
+2. **Hand-add** the 16 `file-length` entries at their new paths with current line counts, then run the check to
+   confirm it shrink-wraps nothing. Regenerating does *not* work here: `shrinkwrapFileLengthAllowlist`
+   (`file-length.go:90-116`) only deletes dead entries and ratchets existing ones down (`:103` writes to keys already
+   present); **there is no code path that adds a key**. The "never hand-edit" instruction in
+   `.claude/rules/file-length-allowlist.md` is written for the ratchet case; a pure path rename is the one situation
+   where hand-editing is the only option, and M6.6's consent covers it.
 3. Re-run every M0 baseline, comparing like allocator with like (Decision 18). The enrichment hot path must be within
    noise; if it isn't, suspect a missing `#[inline]` on a small cross-boundary function or a trait that slipped onto a
    per-entry path.
@@ -792,7 +847,9 @@ Mostly sequential by design; the milestones are a dependency chain and we're not
 overlaps:
 
 - M0's benchmark harness can be built while M1 is in flight; it touches only `docs/notes/` and bench code.
-- M2's tooling work (items 5–11) is independent of M2's crate creation (items 3–4) and can be written first. Items 1–2
+- M2a (items 1, 5–12: config promotion, check-runner fix, meta-check) is independent of M2b (items 2–4, the crate) and
+  can be written first. It touches no Rust source, lands and stays landed regardless of what follows, and gives the
+  escape hatch a cleaner cut point. Items 1–2
   gate everything.
 - Within M5, the call-site migration splits cleanly by consumer (`mcp/`, `ipc*`, `file_system/`, `agent/`, `search/`)
   once the handle exists: different files, no shared edits. But the audit lands first, and one person owns it. It's a
