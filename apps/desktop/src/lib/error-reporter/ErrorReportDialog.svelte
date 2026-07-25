@@ -129,7 +129,12 @@
             closeErrorReportDialog()
         } catch (e) {
             log.warn('Sending error report returned an error: {error}', { error: String(e) })
-            addToast(tString('errorReporter.dialog.sendFailedToast', { error: String(e) }), { level: 'error' })
+            // Suppress the inline "Send error report…" action: this toast is the failure
+            // of that very flow, so offering to re-run it would be a confusing loop.
+            addToast(tString('errorReporter.dialog.sendFailedToast', { error: String(e) }), {
+                level: 'error',
+                suppressErrorReportAction: true,
+            })
         } finally {
             sending = false
         }

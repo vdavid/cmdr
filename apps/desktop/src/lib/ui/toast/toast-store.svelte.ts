@@ -89,6 +89,13 @@ export interface ToastOptions {
    * by hand. See ui/DETAILS.md § Toast system.
    */
   originPane?: ToastOriginPane
+  /**
+   * Suppress the inline "Send error report…" action that error-level string toasts
+   * get by default. Set this on a toast that is ITSELF about error reporting (for
+   * example the "Couldn't send error report" failure toast), so it doesn't offer to
+   * re-run the very flow that just failed. See `ToastItem.svelte`.
+   */
+  suppressErrorReportAction?: boolean
 }
 
 export interface Toast {
@@ -106,6 +113,7 @@ export interface Toast {
   props?: Record<string, any>
   widthPx?: number
   originPane?: ToastOriginPane
+  suppressErrorReportAction?: boolean
 }
 
 const maxVisibleToasts = 5
@@ -225,6 +233,7 @@ export function addToast(content: ToastContent, options?: ToastOptions): string 
     props: options?.props,
     widthPx: options?.widthPx,
     originPane: options?.originPane,
+    suppressErrorReportAction: options?.suppressErrorReportAction,
   })
   return id
 }

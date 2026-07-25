@@ -24,6 +24,12 @@
         contentProps?: Record<string, any>
         /** Optional per-toast max-width override in px (default 360). */
         widthPx?: number
+        /**
+         * Suppress the inline "Send error report…" action this toast would otherwise get.
+         * Set on toasts that are themselves about error reporting (the send-failure toast),
+         * so a failed send doesn't offer to re-run the same flow.
+         */
+        suppressErrorReportAction?: boolean
         /** Called when the auto-dismiss timer fires for transient toasts. */
         onTimeout: (id: string) => void
         /** Called when the user clicks the X button or the inline action. */
@@ -39,6 +45,7 @@
         closeTooltip,
         contentProps,
         widthPx,
+        suppressErrorReportAction = false,
         onTimeout,
         onUserDismiss,
     }: Props = $props()
@@ -74,8 +81,12 @@
 
     // Error-level toasts that carry a plain-text message get an inline "Send error
     // report…" action. Component-content toasts manage their own actions, so we don't
-    // add a second button on top of them.
-    const showSendErrorReport = $derived(level === 'error' && typeof content === 'string')
+    // add a second button on top of them. A toast that opts out via
+    // `suppressErrorReportAction` (the send-failure toast itself) never shows it, so a
+    // failed send doesn't offer to re-run the flow that just failed.
+    const showSendErrorReport = $derived(
+        !suppressErrorReportAction && level === 'error' && typeof content === 'string',
+    )
 
     function handleSendErrorReport() {
         // Pre-fill the user note with the toast text so the user has something to
