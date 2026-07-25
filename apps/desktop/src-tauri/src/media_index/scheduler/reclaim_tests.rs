@@ -128,7 +128,7 @@ fn the_volume_state_poll_never_pays_a_cold_coverage_walk() {
     // `stored_coverage_counts` backs the `media_index_volume_state` poll, which fires at
     // launch and every few seconds while the settings panel is open. A cold coverage build
     // there is a whole-index O(entries) walk — the launch-time memory runaway
-    // (a launch that ballooned to 50 GB in prod). So the poll reads the cache or
+    // (`docs/notes/memory-runaway-rust-heap-2026-07-25.md`). So the poll reads the cache or
     // reports "no number yet"; only a user-initiated read (the reclaim preview / the slider
     // preview) may pay the walk.
     let _guard = crate::indexing::test_read_pool_lock();

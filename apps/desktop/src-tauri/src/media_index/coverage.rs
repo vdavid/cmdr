@@ -108,7 +108,8 @@ pub(crate) fn cached(volume_id: &str) -> Option<Arc<FolderImageCounts>> {
 /// `scheduler/enrich_tests.rs`). The difference is what's kept: this holds `O(folders)`
 /// (one `String` key per folder that has an image, allocated on first sight), where
 /// collecting holds one heap path `String` per IMAGE — gigabytes on a multi-million-entry
-/// NAS index (11.3M entries, measured 2026-07-24).
+/// NAS index (11.3M entries, measured 2026-07-25 —
+/// `docs/notes/memory-runaway-rust-heap-2026-07-25.md`).
 pub(crate) fn count_qualifying_images(conn: &Connection) -> Result<FolderImageCounts, String> {
     let mut per_folder: HashMap<String, u64> = HashMap::new();
     let mut total = 0u64;

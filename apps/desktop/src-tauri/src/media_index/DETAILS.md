@@ -747,7 +747,8 @@ sibling-aware rules need the whole name set), and calls a sink with `(dir, name,
 path `String` per image. Deriving counts by collecting first was the launch-time memory runaway: on an 11.3M-entry NAS
 index it turned a handful of integers into gigabytes of transient heap (646 MB peak in dev, 6.7 GB and once 50 GB in
 prod, against a flat 155 MB with the build suppressed; measured on a fresh launch over the 11.3M-entry NAS index,
-2026-07-24).
+2026-07-25 — `docs/notes/memory-runaway-rust-heap-2026-07-25.md`, which isolates it to this exact call with a
+single-lever A/B and a `malloc_history` stack).
 
 **Who may pay the cold walk.** `coverage::get_or_build` builds; `coverage::cached` reads the cache or returns `None`,
 never building. Polls and startup paths MUST use `cached`: `media_index_volume_state` (which fires at launch, before
