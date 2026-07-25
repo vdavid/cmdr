@@ -168,8 +168,9 @@ CMDR_LOG_RAM_USE=1 RUST_LOG=cmdr_lib::indexing=debug,info pnpm dev
 ```
 
 Use it to keep RAM at bay: the inline number turns the log into a memory timeline, so you can see which operation
-coincided with a jump. It answers _when and near what_, not _what allocated_ (reach for Instruments or a heap profiler
-for that). Works in dev, E2E, and prod builds. Accepts `1`/`true`/`yes`/`on`.
+coincided with a jump. It answers _when and near what_, not _what allocated_. For _what allocated_ — and before you
+run `vmmap` at all, because it reports Cmdr's Rust heap under a GPU name — read
+[the memory-debugging guide](memory-debugging.md). Works in dev, E2E, and prod builds. Accepts `1`/`true`/`yes`/`on`.
 
 The number is `phys_footprint` (Activity Monitor's "Memory" metric, not RSS) of the Rust backend process only, sampled
 every 100 ms. Cmdr's WebView runs in separate processes, so it's not included. Mechanism and the file-dedup caveat:

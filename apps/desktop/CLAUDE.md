@@ -21,6 +21,10 @@ in `DETAILS.md`. Feature must-knows in the colocated `CLAUDE.md`s.
 - **Run Playwright E2E via `pnpm check desktop-e2e-playwright`** (full lifecycle: build, launch, run, teardown). Raw
   `npx playwright test` fails with `ECONNREFUSED` — the suite connects to a running app over a socket, it doesn't launch
   one. Single-spec iteration and the manual launch+`pkill` recipe: `test/e2e-playwright/CLAUDE.md`.
+- **Investigating high memory? `vmmap`'s `IOAccelerator` rows are the RUST HEAP, not GPU memory.** mimalloc tags its
+  arenas with VM tag 100, which macOS names `VM_MEMORY_IOACCELERATOR`; conversely the `MALLOC_*` zones are NOT Cmdr's
+  heap (mimalloc isn't a registered zone, so `malloc_zone_statistics` is blind to it). Mistaking this sends you
+  bisecting the frontend for a backend leak — it has, twice. Read `docs/tooling/memory-debugging.md` before measuring.
 - **The frontend is i18n-ized: user-facing strings live in the message catalog, not in components.** Resolve copy via
   `t()` / `getMessage()` / `<Trans>` from `$lib/intl`, with keys in `src/lib/intl/messages/en/<area>.json` carrying a
   translator `@key` description. Hardcoding a string in a known sink fails `cmdr/no-raw-user-facing-string`.
