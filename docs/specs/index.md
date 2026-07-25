@@ -6,8 +6,12 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
-Nothing active right now. Shipped plans have been wiped (durable intent lives in the colocated `CLAUDE.md`/`DETAILS.md`
-and git history); deferred work sits under `later/`.
+- [ ] 2026-07-25 `index-crate-extraction-plan.md` - Extract `indexing/` + `media_index/` + `importance/` (89.5k lines,
+      28% of `src-tauri/src`) into a Tauri-free `cmdr-index` workspace crate over a `cmdr-fs` foundation, with a
+      designed public API: an owned `Index` handle, typed errors, no user-facing strings, one cancellation primitive,
+      structured progress, and a first-class ingest side (so listing-enrichment and space-to-size fit later without
+      reshaping). Buys encapsulation, independent incremental builds, and the substrate for exposing the index to
+      external agents. PLANNED, not started.
 
 ## Later
 
