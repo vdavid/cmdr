@@ -520,7 +520,8 @@ Five levels. Pick by what kind of feedback the toast carries, not by how the mes
   notices that don't abort the rename.
 - **`error`** (red): an attempted operation actually failed. Examples: `Couldn't remove ${host}`,
   `Direct connection failed: …`, `Couldn't delete saved password`. Inline "Send error report…" button auto-attaches for
-  string-content errors.
+  string-content errors, unless the toast sets `suppressErrorReportAction: true` (used by the "Couldn't send error
+  report" toast itself, so a failed send doesn't offer to re-run the flow that just failed).
 
 Tiebreaker: when unsure between two adjacent levels, pick the lower-intensity one. Frequent feedback should be quiet;
 the user can read the text. Color is for the few cases where attention is warranted. Note that `default` is rare on
@@ -591,6 +592,9 @@ FIRST toast's `originPane` (consistent with its partial replace of other fields)
   (`align-items: flex-end`) and its own `max-width` (440) caps the widest opt-in, so a wider toast just extends leftward
   while default-width toasts keep hugging the screen edge. Plumbed `ToastOptions` → `Toast` → `ToastContainer` →
   `ToastItem` (inline `max-width`).
+- `suppressErrorReportAction?: boolean`: opt a string error toast out of the auto-attached "Send error report…" action.
+  Set it on a toast that is itself about error reporting (the "Couldn't send error report" failure toast), so it doesn't
+  offer to re-run the flow that just failed. Same `ToastOptions` → `Toast` → `ToastContainer` → `ToastItem` plumbing.
 
 ### Hover behavior
 
