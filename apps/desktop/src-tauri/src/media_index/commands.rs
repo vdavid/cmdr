@@ -88,9 +88,11 @@ pub struct MediaIndexVolumeState {
     pub enriched_count: u64,
     /// How many images the drive index says QUALIFY for enrichment on this volume —
     /// the honest denominator behind "12,000 of 38,900 images indexed" (plan §
-    /// Honest progress). `None` when the volume's index isn't ready (offline / still
-    /// scanning), so the UI voices that rather than a fabricated total. ETA math lives
-    /// UI-side off `(enriched_count, qualifying_count)`.
+    /// Honest progress). `None` when there's no honest number YET: the volume's index
+    /// isn't ready (offline / still scanning), OR nothing has computed the counts (this
+    /// command reads the coverage cache and never builds it — a cold build is a
+    /// whole-index walk). Either way the UI voices the wait rather than a fabricated
+    /// total. ETA math lives UI-side off `(enriched_count, qualifying_count)`.
     pub qualifying_count: Option<u64>,
     /// Whether this volume is opted into background network (SMB) enrichment. Only
     /// meaningful for network volumes; a local volume enriches by default when
@@ -175,8 +177,12 @@ pub(crate) async fn volume_state<R: tauri::Runtime>(
                 .enriched_count()
                 .map_err(|e| e.to_string())?;
             // The honest denominator: how many images qualify per the drive index.
-            // `None` when the index isn't registered (offline / still scanning).
-            let qualifying = coverage::get_or_build(&vid).map(|c| c.total);
+            // CACHED only — this is a poll that also runs at launch, and a cold build is a
+            // whole-index O(entries) walk (the 50 GB launch runaway). `None` therefore means
+            // "no honest number yet": the index isn't registered (offline / still scanning),
+            // no pass has walked it, and nobody has asked for the count. The settings panel
+            // asks via `media_index_covered_count` when it opens, which warms this.
+            let qualifying = coverage::cached(&vid).map(|c| c.total);
             // Whether importance has data for this volume — the same "has it scored?"
             // check the scheduler gates enrichment on (live weight rows OR a stamped
             // generation), so the deferred state can't disagree with the scheduler.
@@ -213,7 +219,7 @@ pub(crate) async fn volume_state<R: tauri::Runtime>(
         always_indexed: network_config::snapshot().always_index_volumes.contains(volume_id),
         paused: network_config::is_paused(volume_id),
         waiting_for_importance,
-        covered_qualifying_count: coverage_counts.as_ref().map(|c| c.covered_qualifying),
+        covered_qualifying_count: coverage_counts.as_ref().and_then(|c| c.covered_qualifying),
         kept_count: coverage_counts.as_ref().map(|c| c.doomed_stored),
     })
 }

@@ -114,15 +114,29 @@ describe('MediaIndexImportanceSlider', () => {
     expect(line).toContain('500')
   })
 
-  it('voices the drive-scan wait when the qualifying total is unknown', async () => {
+  it('voices the drive-scan wait when the drive genuinely is still scanning', async () => {
     volumeState.mockResolvedValue(vstate({ enrichedCount: 0, qualifyingCount: null }))
+    coveredCount.mockResolvedValue({ folders: 0, images: 0, pending: true })
     const target = await mountAndSettle()
-    // `qualifyingCount: null` means the drive index isn't ready (the scan is still
-    // running), so the preview says exactly that — the "I flipped the switch and
-    // nothing happened" answer — instead of a generic counting line.
+    // No qualifying total AND the covered count reports a volume not ready ⇒ the drive
+    // index is genuinely still scanning, so the preview says exactly that — the "I flipped
+    // the switch and nothing happened" answer — instead of a generic counting line.
     expect(target.querySelector('.mi-preview')?.textContent ?? '').toContain('drive scan is still running')
     // One honest line, not two: the per-volume progress line stays out.
     expect(target.querySelector('.mi-progress-line')).toBeNull()
+  })
+
+  it('does not claim a drive scan when the backend simply has no count cached yet', async () => {
+    // `mediaIndexVolumeState` is a poll: it reads the backend's coverage counts and never
+    // builds them (a cold build is a whole-index walk). So `qualifyingCount: null` also
+    // covers "nobody has counted yet" on a fully-scanned drive — claiming a drive scan
+    // there would be a lie. The covered count came back resolved, so the drive IS ready.
+    volumeState.mockResolvedValue(vstate({ enrichedCount: 0, qualifyingCount: null }))
+    coveredCount.mockResolvedValue({ folders: 12, images: 340, pending: false })
+    const target = await mountAndSettle()
+    const preview = target.querySelector('.mi-preview')?.textContent ?? ''
+    expect(preview).not.toContain('drive scan is still running')
+    expect(preview).toContain('340')
   })
 
   it('caveats the preview when an enabled volume is still scanning', async () => {

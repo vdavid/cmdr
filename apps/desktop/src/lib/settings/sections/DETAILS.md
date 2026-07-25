@@ -111,9 +111,13 @@ sections compose).
   `media.db` prefix scan per folder per poll), so progress stays a per-drive line rather than a faked per-row one.
 - **`MediaIndexImportanceSlider.svelte`** / **`MediaIndexReclaim.svelte`** / **`MediaIndexNetworkVolumes.svelte`**: the
   three self-contained image-indexing controls `ImageIndexingSection` composes — the importance-threshold slider with
-  its live coverage preview and honest wait lines (`waitingForDriveIndex` off `qualifyingCount === null` when the drive
-  scan is still running, `waitingForImportance` while ranking; each replaces the generic counting line so one wait never
-  shows two spinners) (the slider hosts the reclaim line), the reclaim-space line + prune confirm, and the
+  its live coverage preview and honest wait lines (`waitingForDriveIndex` off `qualifyingCount === null` AND
+  `covered.pending`, `waitingForImportance` while ranking; each replaces the generic counting line so one wait never
+  shows two spinners). Both signals are needed: `mediaIndexVolumeState` is a poll, so it READS the backend's coverage
+  counts and never builds them (a cold build is a whole-index walk), making `qualifyingCount === null` also mean "nobody
+  has counted yet" on a fully-scanned drive; `covered.pending` is what proves a volume genuinely isn't ready. This
+  section's own `mediaIndexCoveredCount` on mount is what warms a cold volume's counts, so the "counting…" gap is one
+  poll long. (The slider hosts the reclaim line.) Then the reclaim-space line + prune confirm, and the
   per-network-volume opt-in list. Each owns its own state and IPC; the section only renders and gates them on the live
   `mediaIndex.enabled` toggle.
 - **`NetworkSection.svelte`**: `File systems > SMB/Network shares`: two `SectionCard` card groups — Connection

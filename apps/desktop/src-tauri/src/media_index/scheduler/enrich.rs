@@ -121,7 +121,7 @@ impl QualifyingImage<'_> {
 /// [`count_qualifying_images`](crate::media_index::coverage::count_qualifying_images),
 /// `O(images)` for the collecting [`walk_image_entries`]. Reach for the counting sink
 /// whenever only counts are needed; a multi-million-entry NAS index turns the collecting
-/// one into gigabytes (`docs/notes/memory-runaway-nas-pane-2026-07-24.md`).
+/// one into gigabytes (11.3M entries, measured 2026-07-24).
 pub(crate) fn for_each_qualifying_image(
     conn: &rusqlite::Connection,
     sink: &mut dyn FnMut(&QualifyingImage<'_>),

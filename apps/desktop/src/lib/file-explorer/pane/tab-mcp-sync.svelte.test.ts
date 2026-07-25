@@ -113,9 +113,7 @@ describe('initTabMcpSync', () => {
       { id: leftActive.id, path: '/left/active', pinned: false, active: true },
       { id: leftPinned.id, path: '/left/pinned', pinned: true, active: false },
     ])
-    expect(callArgsFor('right')).toEqual([
-      { id: rightTab.id, path: '/right/only', pinned: false, active: true },
-    ])
+    expect(callArgsFor('right')).toEqual([{ id: rightTab.id, path: '/right/only', pinned: false, active: true }])
   })
 
   it('coalesces repeated calls inside the window into a single push per pane', () => {

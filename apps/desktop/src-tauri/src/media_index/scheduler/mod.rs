@@ -235,6 +235,13 @@ impl MediaScheduler {
         let images = pool
             .with_conn(walk_image_entries)
             .map_err(|e| format!("read pool error: {e}"))??;
+        // Refill the covered-count cache from THIS pass's own walk, right away: the walk
+        // just ran, the counts are correct whatever the pass does next, and the readers that
+        // need the denominator (the volume-state poll, the drive badge) are asking WHILE the
+        // pass runs. Refilling here rather than at the end also means no reader has to pay a
+        // cold rewalk during a long pass. `images` is the full qualifying set (unfiltered by
+        // threshold), which is what coverage counts.
+        super::coverage::replace_from_entries(volume_id, &images);
 
         let statuses = load_statuses(&self.data_dir, volume_id);
         let writer = self
@@ -327,11 +334,6 @@ impl MediaScheduler {
             // (plan M9). Best-effort, never fails the pass.
             let _ = writer.checkpoint_wal();
         }
-        // Refill the covered-count cache from THIS pass's own walk instead of invalidating:
-        // the pass already ran the exact whole-volume `walk_image_entries`, so refilling keeps
-        // the slider preview warm rather than forcing the next preview to pay a fresh cold
-        // O(entries) walk. `images` is the full qualifying set (unfiltered by threshold).
-        super::coverage::replace_from_entries(volume_id, &images);
         log::info!(
             target: "media_index",
             "enrichment of '{volume_id}': {} of {} images enriched, {} rows GC'd",
@@ -514,6 +516,10 @@ impl MediaScheduler {
         let images = pool
             .with_conn(walk_image_entries)
             .map_err(|e| format!("read pool error: {e}"))??;
+        // Refill coverage from this pass's whole-index walk right away (as the local pass
+        // does), so an opted-in SMB volume's slider preview and progress denominator stay
+        // warm for the whole pass without a cold rewalk. `images` is the full qualifying set.
+        super::coverage::replace_from_entries(volume_id, &images);
         let statuses = load_statuses(&self.data_dir, volume_id);
         let writer = self
             .writers
@@ -636,10 +642,6 @@ impl MediaScheduler {
                     // point (plan M9). Best-effort, never fails the pass.
                     let _ = writer.checkpoint_wal();
                 }
-                // Refill coverage from this pass's whole-index walk (as the local pass does),
-                // so an opted-in SMB volume's slider preview also stays warm without a cold
-                // rewalk. `images` is the full qualifying set.
-                super::coverage::replace_from_entries(volume_id, &images);
                 terminal.set(MediaEnrichTerminalReason::Completed {
                     enriched: summary.enriched as u64,
                     gc_count: summary.gc_count as u64,

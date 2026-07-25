@@ -50,8 +50,12 @@ pub struct StoredCoverageCounts {
     pub surviving_stored: u64,
     /// Stored rows OUTSIDE current coverage (the `keptCount`).
     pub doomed_stored: u64,
-    /// Drive-index qualifying images in covered folders (the slider-preview number).
-    pub covered_qualifying: u64,
+    /// Drive-index qualifying images in covered folders (the slider-preview number), or
+    /// `None` when the coverage counts aren't cached yet. `None` rather than `0` because
+    /// this reader NEVER pays the cold walk (see
+    /// [`stored_coverage_counts`](MediaScheduler::stored_coverage_counts)), and a
+    /// confident `0` would read as "nothing to index" on a volume full of photos.
+    pub covered_qualifying: Option<u64>,
 }
 
 /// What a reclaim prune did: the rows deleted and the freed-byte estimate.
@@ -138,11 +142,17 @@ impl MediaScheduler {
     /// The counts-only stored-coverage split for `volume_id` at `threshold`:
     /// `surviving_stored` / `doomed_stored` (= `keptCount`) / `covered_qualifying`,
     /// WITHOUT allocating the doomed-path list. The `media_index_volume_state` poll
-    /// calls this every few seconds while the settings panel is open, so it avoids the
-    /// 200k-path `Vec` [`stored_coverage`](Self::stored_coverage) builds for a prune. It
-    /// reuses the ONE canonical survival rule ([`coverage::stored_row_survives`]) and the
-    /// [`coverage`] cache, so its numbers can never disagree with the reclaim preview.
-    /// `None` when importance hasn't scored the volume (the partition isn't safe yet).
+    /// calls this at launch and every few seconds while the settings panel is open, so it
+    /// avoids the 200k-path `Vec` [`stored_coverage`](Self::stored_coverage) builds for a
+    /// prune. It reuses the ONE canonical survival rule ([`coverage::stored_row_survives`])
+    /// and the [`coverage`] cache, so its numbers can never disagree with the reclaim
+    /// preview. `None` when importance hasn't scored the volume (the partition isn't safe
+    /// yet).
+    ///
+    /// ❌ This is a POLL, so it reads the coverage cache and never builds it
+    /// ([`coverage::cached`], not `get_or_build`) — a cold build here is a whole-index walk
+    /// whose transient heap ran a launch to 50 GB. `covered_qualifying` is therefore
+    /// `None` until something warms the cache; report that as unknown, never as `0`.
     pub fn stored_coverage_counts(
         &self,
         volume_id: &str,
@@ -174,9 +184,12 @@ impl MediaScheduler {
             }
         }
 
-        let covered_qualifying = coverage::get_or_build(volume_id)
-            .map(|counts| coverage::covered_in_scope(&counts, &scores, threshold, scope, &is_override).1)
-            .unwrap_or(0);
+        // CACHED only: this runs from the `media_index_volume_state` poll, so it must never
+        // pay the cold whole-index walk (`coverage::cached`). The counts arrive from the
+        // passes, or from a user-initiated settings read; until then the number is honestly
+        // unknown.
+        let covered_qualifying = coverage::cached(volume_id)
+            .map(|counts| coverage::covered_in_scope(&counts, &scores, threshold, scope, &is_override).1);
 
         Some(StoredCoverageCounts {
             surviving_stored,

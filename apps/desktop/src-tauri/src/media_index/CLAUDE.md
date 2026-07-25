@@ -65,5 +65,9 @@ A PORT of `importance/`'s patterns (`importance/CLAUDE.md` first).
 - **Per-folder `accounted` aggregate** (`coverage.rs`; feeds `media_index_file_status`/`_folder_coverage`):
   ❌ INCREMENTAL (writer `+1`/`-1`, seeded at spawn), never rebuilt from a walk; SEPARATE `ACCOUNTED` cache, not
   `COUNTS`.
+- **Counts stream; polls never build them** (§ Covered-count preview). Aggregate via the `for_each_qualifying_image`
+  sink (`coverage::count_qualifying_images`, O(folders)); ❌ never over `walk_image_entries` (one path `String` per
+  image = the 50 GB launch runaway). Polls/startup (`volume_state`, `stored_coverage_counts`) use `coverage::cached`
+  (no walk); only user-initiated settings reads use `get_or_build`. `None` = "no number yet", ❌ never report `0`.
 
 Depth for every §, plus architecture and decisions: `DETAILS.md`; read it before non-trivial work.

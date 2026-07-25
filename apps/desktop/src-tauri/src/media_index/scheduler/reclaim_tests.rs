@@ -9,6 +9,7 @@ use crate::importance::writer::{ImportanceWriter, WeightRow};
 use crate::media_index::backend::fake::FakeVisionBackend;
 // Share the kick tests' tiny-index builder + gate reset (same shape).
 use super::kick_tests::{build_index, reset_gate, use_automatic_scope};
+use crate::media_index::coverage;
 use crate::media_index::gate::IndexScope;
 use crate::media_index::network::config::NetworkEnrichConfig;
 use crate::media_index::predicate::MediaKind;
@@ -96,7 +97,7 @@ fn stored_coverage_partitions_rows_by_the_threshold_and_counts_qualifying() {
     crate::indexing::test_install_root_read_pool(index_path).expect("install pool");
     // The covered-count cache is process-global and keyed by volume id ("root"); a prior
     // test may have cached a different index's counts, so drop it for a fresh build.
-    crate::media_index::coverage::invalidate(ROOT);
+    coverage::invalidate(ROOT);
     seed_importance(dir.path(), ROOT, &[("/keep", 0.9), ("/drop", 0.1)]);
     // media.db carries one stored row in each folder (only a.jpg enriched in /keep).
     seed_media_row(dir.path(), ROOT, "/keep/a.jpg");
@@ -118,6 +119,61 @@ fn stored_coverage_partitions_rows_by_the_threshold_and_counts_qualifying() {
     // Covered qualifying counts the DRIVE-INDEX images in /keep (2), not the 1 stored row.
     assert_eq!(cov.covered_qualifying, 2, "qualifying images in covered folders");
 
+    crate::indexing::test_uninstall_root_read_pool();
+    network::config::set_config(NetworkEnrichConfig::default());
+}
+
+#[test]
+fn the_volume_state_poll_never_pays_a_cold_coverage_walk() {
+    // `stored_coverage_counts` backs the `media_index_volume_state` poll, which fires at
+    // launch and every few seconds while the settings panel is open. A cold coverage build
+    // there is a whole-index O(entries) walk — the launch-time memory runaway
+    // (a launch that ballooned to 50 GB in prod). So the poll reads the cache or
+    // reports "no number yet"; only a user-initiated read (the reclaim preview / the slider
+    // preview) may pay the walk.
+    let _guard = crate::indexing::test_read_pool_lock();
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(
+        &index_path,
+        &[("/keep", "a.jpg"), ("/keep", "b.jpg"), ("/drop", "c.jpg")],
+    );
+    crate::indexing::test_install_root_read_pool(index_path).expect("install pool");
+    coverage::invalidate(ROOT);
+    seed_importance(dir.path(), ROOT, &[("/keep", 0.9), ("/drop", 0.1)]);
+    seed_media_row(dir.path(), ROOT, "/keep/a.jpg");
+    network::config::set_config(NetworkEnrichConfig::default());
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+
+    // Cold: the poll answers the stored-row split (cheap, from `media.db`) but has no
+    // honest qualifying number, and it leaves the cache cold.
+    let cold = sched
+        .stored_coverage_counts(ROOT, "/", 0.5, IndexScope::ByImportance)
+        .expect("scored");
+    assert_eq!(cold.surviving_stored, 1, "the stored split still answers");
+    assert_eq!(
+        cold.covered_qualifying, None,
+        "no cached counts ⇒ no number, never a confident 0"
+    );
+    assert!(coverage::cached(ROOT).is_none(), "the poll must not have run the walk");
+
+    // The user-initiated reclaim preview MAY pay the walk, which warms the cache…
+    let preview = sched
+        .stored_coverage(ROOT, "/", 0.5, IndexScope::ByImportance)
+        .expect("scored");
+    assert_eq!(preview.covered_qualifying, 2, "the covered folder holds two images");
+
+    // …and from then on the poll serves that same number, free.
+    let warm = sched
+        .stored_coverage_counts(ROOT, "/", 0.5, IndexScope::ByImportance)
+        .expect("scored");
+    assert_eq!(
+        warm.covered_qualifying,
+        Some(2),
+        "the poll reports the warm count, matching the preview"
+    );
+
+    coverage::invalidate(ROOT);
     crate::indexing::test_uninstall_root_read_pool();
     network::config::set_config(NetworkEnrichConfig::default());
 }
@@ -217,7 +273,7 @@ fn prune_below_threshold_deletes_the_doomed_set_and_keeps_the_rest() {
     crate::indexing::test_install_root_read_pool(index_path).expect("install pool");
     // The covered-count cache is process-global and keyed by volume id ("root"); a prior
     // test may have cached a different index's counts, so drop it for a fresh build.
-    crate::media_index::coverage::invalidate(ROOT);
+    coverage::invalidate(ROOT);
     seed_importance(dir.path(), ROOT, &[("/keep", 0.9), ("/drop", 0.1)]);
     seed_media_row(dir.path(), ROOT, "/keep/a.jpg");
     seed_media_row(dir.path(), ROOT, "/drop/c.jpg");
@@ -255,7 +311,7 @@ fn a_pass_enriching_covered_rows_and_a_prune_touch_disjoint_sets() {
     crate::indexing::test_install_root_read_pool(index_path).expect("install pool");
     // The covered-count cache is process-global and keyed by volume id ("root"); a prior
     // test may have cached a different index's counts, so drop it for a fresh build.
-    crate::media_index::coverage::invalidate(ROOT);
+    coverage::invalidate(ROOT);
     seed_importance(dir.path(), ROOT, &[("/keep", 0.9), ("/drop", 0.1)]);
     // media.db starts with only the doomed /drop row (the covered /keep row is enriched by
     // the pass below — the "new rows during prune").
@@ -296,7 +352,7 @@ fn prune_leaves_an_override_covered_row_below_threshold() {
     crate::indexing::test_install_root_read_pool(index_path).expect("install pool");
     // The covered-count cache is process-global and keyed by volume id ("root"); a prior
     // test may have cached a different index's counts, so drop it for a fresh build.
-    crate::media_index::coverage::invalidate(ROOT);
+    coverage::invalidate(ROOT);
     seed_importance(dir.path(), ROOT, &[("/archive", 0.1)]);
     seed_media_row(dir.path(), ROOT, "/archive/a.jpg");
     // Override /archive so it's covered regardless of its low score.

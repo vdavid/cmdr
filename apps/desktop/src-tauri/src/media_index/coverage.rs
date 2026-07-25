@@ -86,8 +86,16 @@ where
     Some(counts)
 }
 
-/// The CACHED counts for `volume_id`, or `None` when nothing is cached — never a build.
-fn cached(volume_id: &str) -> Option<Arc<FolderImageCounts>> {
+/// The CACHED counts for `volume_id`, or `None` when nothing is cached yet — NEVER the
+/// cold O(entries) index walk [`get_or_build`] may pay.
+///
+/// This is what every POLL and startup-path reader must use: the walk's transient heap is
+/// gigabytes on a multi-million-entry volume, and running it from a poll is what made a
+/// launch balloon to 50 GB (measured 2026-07-24). A `None` means "no honest number yet",
+/// so report it as unknown; ❌ never substitute `0`. The cache is filled by the passes
+/// (`replace_from_entries` / `patch_touched_dirs`) and by the user-initiated settings reads
+/// that legitimately call [`get_or_build`].
+pub(crate) fn cached(volume_id: &str) -> Option<Arc<FolderImageCounts>> {
     COUNTS.lock_ignore_poison().get(volume_id).map(Arc::clone)
 }
 
@@ -100,7 +108,7 @@ fn cached(volume_id: &str) -> Option<Arc<FolderImageCounts>> {
 /// `scheduler/enrich_tests.rs`). The difference is what's kept: this holds `O(folders)`
 /// (one `String` key per folder that has an image, allocated on first sight), where
 /// collecting holds one heap path `String` per IMAGE — gigabytes on a multi-million-entry
-/// NAS index (`docs/notes/memory-runaway-nas-pane-2026-07-24.md`).
+/// NAS index (11.3M entries, measured 2026-07-24).
 pub(crate) fn count_qualifying_images(conn: &Connection) -> Result<FolderImageCounts, String> {
     let mut per_folder: HashMap<String, u64> = HashMap::new();
     let mut total = 0u64;

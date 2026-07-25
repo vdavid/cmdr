@@ -736,22 +736,46 @@ threshold is applied cheaply by intersecting with `above_threshold` — a deboun
 only re-runs the cheap importance read + `covered_in_scope` (pure, unit-tested; it dispatches on the scope, so the
 count follows the same rule the enrichment gate does — § The indexing scope). `pending` is `true` when any enabled
 requested volume isn't ready (still scanning / not yet scored), so the UI voices "naspi still scanning" rather than a
-confident wrong number. `media_index_volume_state` gained `qualifying_count: Option<u64>` (the honest denominator for
-"12,000 of 38,900 images", `None` when offline/scanning); ETA math lives UI-side off `(enriched_count, qualifying_count)`.
+confident wrong number. `media_index_volume_state` carries `qualifying_count: Option<u64>` (the honest denominator for
+"12,000 of 38,900 images"); ETA math lives UI-side off `(enriched_count, qualifying_count)`.
+
+**Counting is a SINK over the walk, never a materialized list.** `enrich::for_each_qualifying_image` is the one walk
+shape: it streams file rows ordered by `parent_id`, hands each COMPLETE per-dir group to `qualify_dir` (the
+sibling-aware rules need the whole name set), and calls a sink with `(dir, name, mtime, size, kind)` still split.
+`coverage::count_qualifying_images` aggregates straight into `per_folder`/`total`, so a cold build holds `O(folders)`;
+`enrich::walk_image_entries` is the collecting sink for the passes, which genuinely need the list, and holds one heap
+path `String` per image. Deriving counts by collecting first was the launch-time memory runaway: on an 11.3M-entry NAS
+index it turned a handful of integers into gigabytes of transient heap (646 MB peak in dev, 6.7 GB and once 50 GB in
+prod, against a flat 155 MB with the build suppressed; measured on a fresh launch over the 11.3M-entry NAS index,
+2026-07-24).
+
+**Who may pay the cold walk.** `coverage::get_or_build` builds; `coverage::cached` reads the cache or returns `None`,
+never building. Polls and startup paths MUST use `cached`: `media_index_volume_state` (which fires at launch, before
+any user asks for a number) and `MediaScheduler::stored_coverage_counts` both do, so image indexing being OFF can't
+trigger a whole-index walk. The user-initiated settings reads build: `media_index_covered_count` (the slider preview,
+called on the image-indexing section's mount) and `stored_coverage` (the reclaim preview). Opening that section is
+therefore what warms a cold volume. `qualifying_count: None` consequently means "no honest number yet" (index not
+registered, OR nothing has counted); report it as unknown, never as `0`. `MediaIndexImportanceSlider` keys its "the
+drive scan is still running" line on `qualifyingCount === null` AND `covered.pending`, so it can't claim a scan that
+isn't happening; the plain "counting…" branch covers the gap.
+
+**One walk per volume, concurrent callers deduplicated.** `get_or_build` re-checks the cache under a per-volume build
+lock (`BUILD_LOCKS`), so racers queue and the losers find it warm rather than each running their own walk (launch logs
+once showed volume `root` walked twice within 70 ms). The build never runs under the `COUNTS` lock, which would stall
+every other volume's cheap cached read.
 
 **Keeping the cache warm, not cold.** The cache would go cold on every pass if a pass just invalidated it, so the next
 slider preview would pay the full O(entries) walk again (tens of seconds to minutes on a multi-million-entry root index)
 — even though the pass had just run that exact walk and thrown it away. So the pass that owns a walk refills from it
 instead: a full/network pass calls `coverage::replace_from_entries` with its whole-volume `walk_image_entries` result,
-and a live tick calls `coverage::patch_touched_dirs` to replace just the counts for the dirs it re-walked (a tick can't
-rebuild the whole cache — it only walked the touched dirs). `patch_touched_dirs` runs on the SAME
-`enriched > 0 || gc_count > 0` condition the live tick's vector-cache invalidate does: both a GC'd deletion and a
-new/changed image move a touched dir's qualifying count. The only remaining cold walk is the first preview after launch
-(or after a drive-index rescan, whose following pass refills). `coverage::invalidate` survives for the rare reclaim /
-retro-delete prunes: those change no index rows (only stored `media.db` rows), so the qualifying set is actually
-unchanged and invalidate is conservative — a cheap cold rebuild on a rare user action rather than a stale count. The
-streaming `walk_image_entries` (ordered by `parent_id`, one dir-group in memory at a time) keeps even that cold rebuild
-in constant memory instead of materializing every file row.
+IMMEDIATELY after the walk (not at the pass's end), so readers have the denominator for the pass's whole duration and
+a cancelled or paused pass still leaves correct counts behind. A live tick calls `coverage::patch_touched_dirs` to
+replace just the counts for the dirs it re-walked (a tick can't rebuild the whole cache — it only walked the touched
+dirs). `patch_touched_dirs` runs on the SAME `enriched > 0 || gc_count > 0` condition the live tick's vector-cache
+invalidate does: both a GC'd deletion and a new/changed image move a touched dir's qualifying count.
+`coverage::invalidate` survives for the rare reclaim / retro-delete prunes: those change no index rows (only stored
+`media.db` rows), so the qualifying set is actually unchanged and invalidate is conservative — a cheap cold rebuild on
+a rare user action rather than a stale count.
 
 An `ext` column + partial index in the drive index to prune this cold walk was measured on copies of the real dev DBs
 and skipped: 6.4x on the root DB but ~nothing on the image-dense NAS, for a schema bump and +58 MB, against a walk that

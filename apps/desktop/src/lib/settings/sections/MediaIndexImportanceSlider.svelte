@@ -183,10 +183,16 @@
     // The drive index isn't ready yet (for the local root: the full drive scan is
     // still running), so no image can be indexed yet — the pass starts by itself on
     // the scan's completion. Voiced explicitly, or flipping the master toggle
-    // mid-scan looks like the switch did nothing. `qualifyingCount === null` is the
-    // typed "index not registered" signal from `media_index_volume_state`.
+    // mid-scan looks like the switch did nothing.
+    //
+    // `qualifyingCount === null` alone doesn't prove it: `media_index_volume_state` is a
+    // poll, so it READS the backend's coverage counts and never builds them (a cold build
+    // is a whole-index walk). It's therefore also null in the moments before this section's
+    // own `mediaIndexCoveredCount` has landed. `covered.pending` is the signal that a
+    // volume genuinely isn't ready — and until the first covered-count lands, `covered` is
+    // null and the branch below voices the plain "counting…" line instead.
     const waitingForDriveIndex = $derived(
-        localState != null && localState.enabled && localState.qualifyingCount === null,
+        localState != null && localState.enabled && localState.qualifyingCount === null && covered?.pending === true,
     )
 
     // The incremental hint: the signed image delta vs the last settled bucket. Shown only while

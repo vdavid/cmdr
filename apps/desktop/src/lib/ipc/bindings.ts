@@ -5504,9 +5504,11 @@ export type MediaIndexVolumeState = {
   /**
    *  How many images the drive index says QUALIFY for enrichment on this volume —
    *  the honest denominator behind "12,000 of 38,900 images indexed" (plan §
-   *  Honest progress). `None` when the volume's index isn't ready (offline / still
-   *  scanning), so the UI voices that rather than a fabricated total. ETA math lives
-   *  UI-side off `(enriched_count, qualifying_count)`.
+   *  Honest progress). `None` when there's no honest number YET: the volume's index
+   *  isn't ready (offline / still scanning), OR nothing has computed the counts (this
+   *  command reads the coverage cache and never builds it — a cold build is a
+   *  whole-index walk). Either way the UI voices the wait rather than a fabricated
+   *  total. ETA math lives UI-side off `(enriched_count, qualifying_count)`.
    */
   qualifyingCount: number | null
   /**
