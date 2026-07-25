@@ -760,8 +760,9 @@ against 1.22 s to load (measured 2026-07-25 over 391,563 directories, `test_supp
 probe). Binary search costs nothing over the hash map it replaced (0.83 s → 0.70 s to reconstruct all 391,563 paths):
 the walk resolves a path once per folder-with-files, and the sorted array is far more cache-friendly than a map with
 hashbrown's power-of-two capacity slack. ❌ Don't reach for `IndexStore::all_directories` here.
-`importance/scheduler/recompute.rs::walk_index_folders` still has the `EntryRow` shape and would transfer, but it needs
-the sizes too, so it's a separate call.
+`importance/scheduler/recompute.rs::walk_index_folders` still has the `EntryRow` shape. The technique transfers to its
+path reconstruction, but not for free: it clones the whole `EntryRow` into each `IndexFolder`, so shrinking its walk
+means shrinking that type first.
 
 The guards live in `scheduler/enrich_memory_tests.rs`: one pins the whole walk's allocation count against a
 folder-heavy corpus (a per-folder allocation blows straight through it), the other pins the compact tree at several
