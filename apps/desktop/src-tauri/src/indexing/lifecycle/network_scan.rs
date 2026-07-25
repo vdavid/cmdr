@@ -87,6 +87,17 @@ impl IndexManager {
             let _ = self.writer.send(WriteMessage::ArmLedgerHealLatch);
         }
 
+        // One-shot prune of rows left beneath dirs the scanner refuses to walk.
+        // A COMPLETED network index loads Stale and never rescans on its own, so
+        // without this an install carrying them keeps them until the user asks for
+        // a rescan by hand; on the author's QNAP that was 10 898 710 rows, 80% of
+        // the index. Gated on the exclusion list's fingerprint, so it runs once per
+        // DB and again whenever the list GROWS.
+        let prune_pending = self.excluded_subtree_prune_pending();
+        if prune_pending && let Some(msg) = crate::indexing::network_scanner::prune_message_for_kind(self.kind) {
+            let _ = self.writer.send(msg);
+        }
+
         if status.scan_completed_at.is_some() {
             log::info!(
                 "Startup: {kind} volume '{}' has a completed index, loading as Stale (no journal to replay)",
@@ -101,7 +112,9 @@ impl IndexManager {
             // armed heal latch — enqueue the heal's own aggregate directly. It
             // recomputes `dir_stats` from the committed `entries` (Sql), so the
             // stale-but-browsable index gets its drifted sizes healed in place.
-            if heal_pending {
+            // The prune above needs the same aggregate to un-inflate the ancestors
+            // of everything it deleted, so either pending job asks for one.
+            if heal_pending || prune_pending {
                 let _ = self
                     .writer
                     .send(WriteMessage::ComputeAllAggregates { source: AggSource::Sql });
@@ -119,6 +132,22 @@ impl IndexManager {
             self.volume_id
         );
         self.start_volume_scan("startup scan (no completion marker)")
+    }
+
+    /// Whether this index still has to be pruned against the CURRENT
+    /// recursion-exclusion list.
+    ///
+    /// The stored fingerprint says which list the DB was last pruned against, so
+    /// adding a name re-arms every existing index without a schema bump (which
+    /// would throw away every index on the machine, including a 6.9M-entry local
+    /// one, to fix a network-only problem). A read failure answers "yes": a
+    /// redundant prune is a no-op, a skipped one leaves the rows.
+    fn excluded_subtree_prune_pending(&self) -> bool {
+        let stored = IndexStore::get_meta(
+            self.store.read_conn(),
+            crate::indexing::store::EXCLUDED_SUBTREES_PRUNED_KEY,
+        );
+        !matches!(stored, Ok(Some(ref v)) if *v == crate::indexing::network_scanner::exclusion_list_fingerprint())
     }
 
     /// A short label for this volume kind, for diagnostics. Only `Smb`/`Mtp`

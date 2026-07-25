@@ -57,6 +57,8 @@ use futures_util::stream::FuturesUnordered;
 pub(crate) mod scan_pace;
 mod system_dirs;
 
+pub(crate) use system_dirs::{exclusion_list_fingerprint, prune_message_for_kind};
+
 use crate::file_system::volume::Volume;
 use crate::indexing::store::{EntryRow, IndexStore, ScanContext};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
@@ -766,7 +768,16 @@ pub(crate) async fn reconcile_volume_via_trait(
 /// error into `VolumeScanError`. The finish logic — and the marks-before-aggregate
 /// ordering invariant — lives once in `reconciler`, shared with the local
 /// reconcile walk, so the two paths can't drift.
+///
+/// Prunes rows left beneath recursion-excluded dirs FIRST, so the aggregate that
+/// follows recomputes ancestors over the pruned tree in the same pass. Only the
+/// RECONCILE path needs it: a fresh scan is preceded by `TruncateData`, so it
+/// can't inherit an orphan. The prune is network-only — it must never reach the
+/// shared `reconciler::finish_reconcile`, which the LOCAL rescan uses too.
 fn finish_reconcile(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -> Result<(), VolumeScanError> {
+    writer
+        .send(system_dirs::prune_message())
+        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
     reconciler::finish_reconcile(listed_ids, epoch, writer).map_err(|e| VolumeScanError::WriterSend(e.to_string()))
 }
 

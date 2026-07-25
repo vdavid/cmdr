@@ -42,6 +42,14 @@ pub const CURRENT_EPOCH_KEY: &str = "current_epoch";
 /// `indexing/DETAILS.md` § "The dir_stats ledger".
 pub const LEDGER_HEAL_KEY: &str = "aggregates_rebuilt_for_ledger";
 
+/// Meta key recording WHICH recursion-exclusion list this DB has been pruned
+/// against (the value is the list's fingerprint). Absent or stale ⇒ the index may
+/// still carry rows beneath a directory today's scanner refuses to walk, so the
+/// next load prunes them once. Storing the fingerprint rather than a bare "done"
+/// flag is what makes GROWING the list re-heal every existing index. See
+/// `indexing/network_scanner/DETAILS.md` § "NAS snapshot/system dirs aren't recursed".
+pub const EXCLUDED_SUBTREES_PRUNED_KEY: &str = "excluded_subtrees_pruned_for";
+
 /// Root entry sentinel ID. All top-level entries have `parent_id = ROOT_ID`.
 pub const ROOT_ID: i64 = 1;
 

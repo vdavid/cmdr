@@ -29,6 +29,7 @@ mod deferred_repair;
 mod delta;
 mod entries;
 mod maintenance;
+mod prune;
 mod repair;
 pub(crate) mod wait_probe;
 
@@ -271,6 +272,26 @@ pub enum WriteMessage {
     /// Scanner: delete all descendants of an entry before a subtree rescan.
     /// Prevents orphaned entries when re-scanning an already-indexed subtree.
     DeleteDescendantsById(i64),
+    /// Delete every row BENEATH a directory whose name is in `excluded_dir_names`,
+    /// keeping the directory's own row, and record `fingerprint` as the list this
+    /// DB is now pruned against.
+    ///
+    /// The `Volume`-trait scanner deliberately doesn't descend into NAS
+    /// snapshot/system pseudo-dirs, so its per-dir reconcile diff never sees rows
+    /// an OLDER index put there and never removes them: a real QNAP index carried
+    /// 10 898 710 such rows (80% of it) forever. This is what removes them.
+    ///
+    /// ❌ Never send this for a locally-scanned volume — the local walker indexes
+    /// those folders in full, so the same names there are real user data. The
+    /// `IndexVolumeKind` gate lives in the message's only constructor,
+    /// `network_scanner::system_dirs::prune_message_for_kind`.
+    ///
+    /// Deletes rows, so it must be followed by a `ComputeAllAggregates` (every
+    /// sender does): the ancestors' `dir_stats` are only true again after that.
+    PruneExcludedSubtrees {
+        excluded_dir_names: Vec<String>,
+        fingerprint: String,
+    },
     /// Watcher: incremental delta propagation walking the parent_id chain.
     PropagateDeltaById {
         entry_id: i64,
@@ -1333,6 +1354,12 @@ fn process_message(
             if let Err(e) = IndexStore::delete_descendants_by_id(conn, root_id) {
                 signal.note(&e, &format!("delete_descendants_by_id id={root_id}"));
             }
+        }
+        WriteMessage::PruneExcludedSubtrees {
+            excluded_dir_names,
+            fingerprint,
+        } => {
+            prune::handle_prune_excluded_subtrees(conn, &excluded_dir_names, &fingerprint, mutation_tracker, signal);
         }
         WriteMessage::PropagateDeltaById {
             entry_id,

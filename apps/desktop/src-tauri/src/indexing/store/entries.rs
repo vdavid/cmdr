@@ -444,31 +444,114 @@ impl IndexStore {
         Ok(())
     }
 
-    /// Delete all descendants of an entry (but not the entry itself) using recursive CTE.
+    /// Delete all descendants of an entry (but not the entry itself), returning
+    /// how many rows went.
     ///
-    /// Used before subtree rescans to prevent orphaned entries. The root entry is kept
-    /// because the scanner's `ScanContext` resolves it by path and uses its existing ID.
-    pub fn delete_descendants_by_id(conn: &Connection, root_id: i64) -> Result<(), IndexStoreError> {
-        // Collect descendant IDs (excluding root) then delete dir_stats and entries
-        conn.execute(
-            "WITH RECURSIVE descendants(id) AS (
-                SELECT id FROM entries WHERE parent_id = ?1
-                UNION ALL
-                SELECT e.id FROM entries e JOIN descendants d ON e.parent_id = d.id
-            )
-            DELETE FROM dir_stats WHERE entry_id IN (SELECT id FROM descendants)",
-            params![root_id],
-        )?;
-        conn.execute(
-            "WITH RECURSIVE descendants(id) AS (
-                SELECT id FROM entries WHERE parent_id = ?1
-                UNION ALL
-                SELECT e.id FROM entries e JOIN descendants d ON e.parent_id = d.id
-            )
-            DELETE FROM entries WHERE id IN (SELECT id FROM descendants)",
-            params![root_id],
-        )?;
+    /// Used before a subtree rescan to prevent orphaned entries, and by the
+    /// recursion-excluded-subtree prune. The root entry is kept because the
+    /// scanner's `ScanContext` resolves it by path and reuses its existing ID.
+    ///
+    /// **Walks the tree in bounded chunks rather than one recursive-CTE `DELETE`.**
+    /// A single CTE delete materializes every descendant id into one ephemeral
+    /// table and one transaction: on a real QNAP index that meant 10 898 710 ids
+    /// (~87 MB of ephemeral rowids, twice) and a multi-GB WAL spike in one shot.
+    /// Descending level by level caps both — measured peak frontier on that index
+    /// was 5 951 dir ids (48 KB), and the whole delete took 23 s (2026-07-25,
+    /// Python prototype of this exact algorithm over a copy of the production DB).
+    /// The frontier holds ids we've already deleted rows for, which is safe:
+    /// children are found by `parent_id`, so a deleted parent row never hides them.
+    pub fn delete_descendants_by_id(conn: &Connection, root_id: i64) -> Result<u64, IndexStoreError> {
+        /// Parent ids per child-lookup query, and ids per `DELETE`. Both stay well
+        /// under SQLite's default 999-parameter ceiling.
+        const CHUNK: usize = 256;
+
+        let mut frontier = vec![root_id];
+        let mut deleted: u64 = 0;
+        while !frontier.is_empty() {
+            let take = frontier.len().saturating_sub(CHUNK);
+            let parents = frontier.split_off(take);
+            let children = Self::child_ids_of(conn, &parents)?;
+            if children.is_empty() {
+                continue;
+            }
+            frontier.extend(children.iter().filter(|(_, is_dir)| *is_dir).map(|(id, _)| *id));
+            let ids: Vec<i64> = children.iter().map(|(id, _)| *id).collect();
+            for chunk in ids.chunks(CHUNK) {
+                Self::delete_rows_by_id(conn, chunk)?;
+            }
+            deleted += ids.len() as u64;
+        }
+        Ok(deleted)
+    }
+
+    /// The `(id, is_directory)` of every direct child of the given parent ids.
+    /// Reads off the `idx_parent_name_folded` composite index.
+    fn child_ids_of(conn: &Connection, parent_ids: &[i64]) -> Result<Vec<(i64, bool)>, IndexStoreError> {
+        if parent_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let placeholders = vec!["?"; parent_ids.len()].join(", ");
+        let sql = format!("SELECT id, is_directory FROM entries WHERE parent_id IN ({placeholders})");
+        let mut stmt = conn.prepare_cached(&sql)?;
+        let values: Vec<&dyn rusqlite::types::ToSql> =
+            parent_ids.iter().map(|id| id as &dyn rusqlite::types::ToSql).collect();
+        let rows = stmt.query_map(&*values, |row| Ok((row.get::<_, i64>(0)?, row.get::<_, bool>(1)?)))?;
+        Ok(rows.collect::<Result<Vec<_>, _>>()?)
+    }
+
+    /// Delete the given entries and their `dir_stats` rows. `dir_stats` goes
+    /// first so no row ever references a missing entry.
+    fn delete_rows_by_id(conn: &Connection, ids: &[i64]) -> Result<(), IndexStoreError> {
+        if ids.is_empty() {
+            return Ok(());
+        }
+        let placeholders = vec!["?"; ids.len()].join(", ");
+        let values: Vec<&dyn rusqlite::types::ToSql> =
+            ids.iter().map(|id| id as &dyn rusqlite::types::ToSql).collect();
+        let stats_sql = format!("DELETE FROM dir_stats WHERE entry_id IN ({placeholders})");
+        conn.prepare_cached(&stats_sql)?.execute(&*values)?;
+        let entries_sql = format!("DELETE FROM entries WHERE id IN ({placeholders})");
+        conn.prepare_cached(&entries_sql)?.execute(&*values)?;
         Ok(())
+    }
+
+    /// Every DIRECTORY whose name lowercases to one of `lowercase_names`, as
+    /// `(id, name)`.
+    ///
+    /// SQLite's `lower()` is ASCII-only, which is exactly `eq_ignore_ascii_case`
+    /// for the ASCII reserved names this serves; callers still re-check each
+    /// returned name with the Rust matcher, so SQL only ever NARROWS the set.
+    /// No index covers `name` alone, so this is a full table scan: 0.7 s warm /
+    /// 4.4 s cold over a 13.5M-row, 1.88 GB index (2026-07-25, production NAS DB
+    /// copy). Fine as a once-per-scan / once-per-DB step, not a hot path.
+    pub fn find_dirs_named_any_of(
+        conn: &Connection,
+        lowercase_names: &[String],
+    ) -> Result<Vec<(i64, String)>, IndexStoreError> {
+        if lowercase_names.is_empty() {
+            return Ok(Vec::new());
+        }
+        let placeholders = vec!["?"; lowercase_names.len()].join(", ");
+        let sql = format!("SELECT id, name FROM entries WHERE is_directory = 1 AND lower(name) IN ({placeholders})");
+        let mut stmt = conn.prepare_cached(&sql)?;
+        let values: Vec<&dyn rusqlite::types::ToSql> = lowercase_names
+            .iter()
+            .map(|n| n as &dyn rusqlite::types::ToSql)
+            .collect();
+        let rows = stmt.query_map(&*values, |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)))?;
+        Ok(rows.collect::<Result<Vec<_>, _>>()?)
+    }
+
+    /// Reset these directories to "never listed" (`listed_epoch = 0`).
+    ///
+    /// The one truthful use of a zero epoch: a directory the scanner deliberately
+    /// does NOT descend into was never listed, so its subtree coverage is unknown
+    /// (`—`/`≥`), not an exact `0 B`. Written when a dir that an older index DID
+    /// list becomes recursion-excluded, so the index ends up in the state a scan
+    /// under today's rules would have produced. ❌ Don't reach for this for a dir
+    /// we listed but skipped writing — that one keeps its epoch.
+    pub fn clear_listed_epoch(conn: &Connection, ids: &[i64]) -> Result<(), IndexStoreError> {
+        Self::mark_dirs_listed(conn, ids, 0)
     }
 
     /// Delete an entire subtree by root entry ID using recursive CTE.

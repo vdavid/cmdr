@@ -1350,3 +1350,214 @@ async fn reconcile_from_empty_db_with_non_root_mount_indexes_full_tree() {
 
     writer.shutdown();
 }
+
+// ── Pruning rows left under a now-excluded dir ───────────────────
+
+/// Seed `count` file rows plus one nested dir under `parent_id`, as an index
+/// built BEFORE the dir was recursion-excluded would hold them, and give the
+/// parent a `listed_epoch` + inflated `dir_stats` the way that older scan did.
+/// Returns the nested dir's id.
+fn seed_stale_subtree(writer: &IndexWriter, db_path: &Path, parent_id: i64, first_id: i64, count: i64) -> i64 {
+    let nested_id = first_id;
+    let mut rows = vec![EntryRow {
+        id: nested_id,
+        parent_id,
+        name: "nested".into(),
+        is_directory: true,
+        is_symlink: false,
+        logical_size: None,
+        physical_size: None,
+        modified_at: None,
+        inode: None,
+    }];
+    for i in 0..count {
+        rows.push(EntryRow {
+            id: first_id + 1 + i,
+            parent_id: nested_id,
+            name: format!("stale-{i}.bin"),
+            is_directory: false,
+            is_symlink: false,
+            logical_size: Some(1_000_000),
+            physical_size: Some(1_000_000),
+            modified_at: None,
+            inode: None,
+        });
+    }
+    writer
+        .send(WriteMessage::InsertEntriesV2(rows))
+        .expect("seed stale rows");
+    // The older scan listed both dirs, so both carry a non-zero `listed_epoch`.
+    let epoch = {
+        let conn = IndexStore::open_read_connection(db_path).expect("read conn");
+        IndexStore::read_current_epoch(&conn).expect("epoch")
+    };
+    writer
+        .send(WriteMessage::MarkDirsListed {
+            ids: vec![parent_id, nested_id],
+            epoch,
+        })
+        .expect("mark seeded dirs listed");
+    writer
+        .send(WriteMessage::ComputeAllAggregates { source: AggSource::Sql })
+        .expect("aggregate the seeded tree");
+    nested_id
+}
+
+/// An index built BEFORE a directory was recursion-excluded carries every row of
+/// that subtree, and nothing ever removed them: the reconcile walk skips
+/// descending into the dir, so its per-dir diff never sees those rows. On a real
+/// QNAP that left 10 898 710 out-of-scope rows (80% of a 13.5M-row, 1.88 GB index)
+/// and rolled a 10 TB NAS up to 89 TB. A reconcile must prune them, keep the
+/// excluded dir's OWN row (still listed and navigable), and leave its size
+/// honestly unknown rather than claiming an exact `0 B`.
+#[tokio::test]
+async fn reconcile_prunes_rows_left_under_a_now_excluded_dir() {
+    let tree = vec![
+        entry("@Recently-Snapshot", "/@Recently-Snapshot", true, None),
+        entry("sub", "/sub", true, None),
+        entry("keep.txt", "/sub/keep.txt", false, Some(4)),
+        entry("top.txt", "/top.txt", false, Some(5)),
+    ];
+    let vol: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("Test", tree));
+    let (writer, db_path, _dir) = fresh_scan(Arc::clone(&vol)).await;
+
+    // Back-date the index to the pre-exclusion state: rows under the snapshot dir.
+    let snapshot_id = {
+        let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+        resolve_path(&conn, "/@Recently-Snapshot")
+            .expect("resolve")
+            .expect("snapshot dir indexed")
+    };
+    let nested_id = seed_stale_subtree(&writer, &db_path, snapshot_id, 9_000, 4);
+    writer.flush().await.expect("flush");
+
+    // The seeded state matches production: the snapshot dir claims an exact,
+    // inflated recursive size.
+    {
+        let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+        assert_eq!(
+            dir_size(&conn, "/@Recently-Snapshot"),
+            4_000_000,
+            "test setup: the stale subtree inflates the snapshot dir's size"
+        );
+    }
+
+    // A continuity break bumps the epoch before a rescan; mirror the manager.
+    {
+        let wconn = IndexStore::open_write_connection(&db_path).expect("write conn");
+        IndexStore::bump_current_epoch(&wconn).expect("bump epoch");
+    }
+
+    let cancelled = Arc::new(AtomicBool::new(false));
+    reconcile_volume_via_trait(
+        Arc::clone(&vol),
+        PathBuf::from("/"),
+        writer.clone(),
+        progress(),
+        cancelled,
+        ScanPacer::unpaced(),
+    )
+    .await
+    .expect("reconcile");
+    writer.flush().await.expect("flush");
+
+    let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+
+    // The excluded dir's OWN row survives (listed + navigable), its descendants don't.
+    assert!(
+        IndexStore::get_entry_by_id(&conn, snapshot_id)
+            .expect("entry")
+            .is_some(),
+        "the excluded dir's own row must stay indexed so it's listed and navigable"
+    );
+    assert!(
+        IndexStore::get_entry_by_id(&conn, nested_id)
+            .expect("entry")
+            .is_none(),
+        "rows beneath a recursion-excluded dir must be pruned, not carried forever"
+    );
+    assert_eq!(
+        IndexStore::list_children_on(snapshot_id, &conn).expect("children").len(),
+        0,
+        "the excluded dir must have no indexed children after the prune"
+    );
+
+    // Size is honestly unknown again, not an exact-looking roll-up.
+    assert_eq!(dir_size(&conn, "/@Recently-Snapshot"), 0, "the inflated size is gone");
+    assert_eq!(
+        min_epoch(&conn, "/@Recently-Snapshot"),
+        0,
+        "an un-listed excluded dir reads as unknown (`—`), never an exact `0 B`"
+    );
+
+    // The in-scope tree is untouched.
+    assert_eq!(dir_size(&conn, "/sub"), 4, "the real tree keeps its size");
+    assert!(
+        IndexStore::resolve_component(&conn, ROOT_ID, "top.txt")
+            .expect("resolve")
+            .is_some(),
+        "in-scope rows must survive the prune"
+    );
+
+    writer.shutdown();
+}
+
+/// The data-safety guard: the prune deletes ONLY what the current scanner would
+/// refuse to walk. A folder whose name merely LOOKS like a reserved NAS name
+/// (`snapshot`, `eaDir`, `@myfiles`, `System Volume Information Archive`) is real
+/// user data the scanner indexes in full, so its subtree must survive a reconcile
+/// untouched. A matcher bug here silently deletes a user's indexed files.
+#[tokio::test]
+async fn reconcile_never_prunes_lookalike_user_folders() {
+    let lookalikes = [
+        "snapshot",
+        "eaDir",
+        "recycle",
+        "@myfiles",
+        "@Recently-Snapshotted",
+        "System Volume Information Archive",
+        ".snapshot-backup",
+    ];
+    let mut tree = Vec::new();
+    for name in lookalikes {
+        tree.push(entry(name, &format!("/{name}"), true, None));
+        tree.push(entry("deep", &format!("/{name}/deep"), true, None));
+        tree.push(entry("mine.txt", &format!("/{name}/deep/mine.txt"), false, Some(11)));
+    }
+    let vol: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("Test", tree));
+    let (writer, db_path, _dir) = fresh_scan(Arc::clone(&vol)).await;
+
+    let rows_before = {
+        let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+        entry_count(&conn)
+    };
+
+    let cancelled = Arc::new(AtomicBool::new(false));
+    reconcile_volume_via_trait(
+        Arc::clone(&vol),
+        PathBuf::from("/"),
+        writer.clone(),
+        progress(),
+        cancelled,
+        ScanPacer::unpaced(),
+    )
+    .await
+    .expect("reconcile");
+    writer.flush().await.expect("flush");
+
+    let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+    assert_eq!(
+        entry_count(&conn),
+        rows_before,
+        "a reconcile must not delete a single row of a look-alike user folder"
+    );
+    for name in lookalikes {
+        assert_eq!(
+            dir_size(&conn, &format!("/{name}")),
+            11,
+            "{name} is real user data: its subtree and size must survive"
+        );
+    }
+
+    writer.shutdown();
+}
