@@ -635,6 +635,15 @@ fn start_indexing_for(
     kind: IndexVolumeKind,
     inodes_trustworthy: bool,
 ) -> Result<(), String> {
+    // The master switch is a HARD gate at the one choke point every transport
+    // funnels through, so no start or autonomous resume path can slip past it (an
+    // SMB reconnect used to, and re-indexed a whole NAS the user had opted out of).
+    // Callers that surface a refusal to the UI check `master_enabled()` themselves
+    // and return a typed reason; here we no-op, since nothing was promised.
+    if !super::master::master_enabled() {
+        log::info!("start_indexing: refusing '{volume_id}' ({kind:?}), drive indexing is off in settings");
+        return Ok(());
+    }
     log::info!("start_indexing: begin for '{volume_id}' ({kind:?})");
     crate::indexing::resources::memory_watchdog::start(app.clone());
 
@@ -1142,14 +1151,14 @@ pub(crate) fn all_registered_volume_ids() -> Vec<VolumeId> {
         .unwrap_or_default()
 }
 
-/// Stop indexing for every registered volume (the global memory-budget action).
-/// Each `stop_indexing` drains and removes one instance; we snapshot the ids
-/// first so we're not iterating the map while `stop_indexing` mutates it.
+/// Stop indexing for every registered volume. Each `stop_indexing` drains and
+/// removes one instance; we snapshot the ids first so we're not iterating the map
+/// while `stop_indexing` mutates it.
 ///
-/// macOS-only: its sole caller is the memory watchdog, which only monitors
-/// resident memory on macOS (`mach_task_info`); the non-macOS watchdog is a
-/// no-op stub, so this would be dead code there.
-#[cfg(target_os = "macos")]
+/// Two callers: the memory watchdog (the global memory-budget action) and the
+/// master switch going off. Neither writes the sticky `user_disabled` marker, so
+/// per-drive intent survives and the master switch can restore it (see
+/// `master::drives_to_resume`).
 pub(crate) fn stop_all_indexing() {
     for volume_id in all_registered_volume_ids() {
         if let Err(e) = stop_indexing(&volume_id) {

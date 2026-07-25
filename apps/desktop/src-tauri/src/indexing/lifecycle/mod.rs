@@ -9,11 +9,14 @@
 //! - [`freshness`]: the Fresh/Stale/Scanning transition table.
 //! - [`failure`]: the fatal-storage-error Failed state.
 //! - [`lifecycle_bus`]: the neutral registration / dirs-changed event bus.
+//! - [`master`]: the master drive-indexing switch and how it overrides per-drive
+//!   intent. Every start/resume path passes through its gate.
 
 pub(crate) mod failure;
 pub mod freshness;
 pub(crate) mod lifecycle_bus;
 pub(crate) mod manager;
+pub mod master;
 pub(crate) mod network_scan;
 pub(crate) mod scan_completion;
 pub(crate) mod state;

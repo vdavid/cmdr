@@ -1707,7 +1707,16 @@ export const commands = {
   getDirStatsBatch: (paths: string[]) =>
     typedError<(DirStats | null)[], string>(__TAURI_INVOKE('get_dir_stats_batch', { paths })),
   clearDriveIndex: () => typedError<null, string>(__TAURI_INVOKE('clear_drive_index')),
-  // Toggle drive indexing on/off based on the user's setting.
+  /**
+   *  Apply the master drive-indexing switch (`indexing.enabled`), live.
+   *
+   *  The master switch gates EVERY drive, not only the boot disk: off stops every
+   *  running index (an SMB/MTP/local-external one included) and blocks every later
+   *  start, including the autonomous SMB reconnect resume. On restores the drives
+   *  whose PER-DRIVE intent says they should index, and only those: a drive the user
+   *  never turned on, or explicitly turned off, stays off. Neither direction writes
+   *  per-drive intent, so the choice survives any number of master toggles.
+   */
   setIndexingEnabled: (enabled: boolean) =>
     typedError<null, string>(__TAURI_INVOKE('set_indexing_enabled', { enabled })),
   /**
@@ -4129,6 +4138,12 @@ export type DryRunResult = {
 export type EnableIndexingOutcome =
   // Indexing started (a scan is now running or resuming) for the volume.
   | { status: 'started' }
+  /**
+   *  The master drive-indexing switch is off, so no drive may index. Transport-
+   *  neutral (the master switch outranks every per-transport gate), so the FE
+   *  gets ONE shape to recognize whichever drive was asked for.
+   */
+  | { status: 'indexing_disabled' }
   /**
    *  An SMB volume couldn't be indexed yet; `reason` says why (upgrade failed,
    *  credentials needed, disconnected). The FE shows an honest status and, for
@@ -7140,6 +7155,11 @@ export type SmbIndexGateReason =
   | 'credentials_needed'
   // The volume's smb2 session is currently `Disconnected`. Reconnect first.
   | 'disconnected'
+  /**
+   *  The master drive-indexing switch is off, so no drive may index. Nothing is
+   *  wrong with the share; the user turned indexing off in settings.
+   */
+  | 'indexing_disabled'
 
 export type SmbVolumeRef = {
   volume_id: string

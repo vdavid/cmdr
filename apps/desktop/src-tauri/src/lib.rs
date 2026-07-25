@@ -813,6 +813,13 @@ pub fn run() {
             // Initialize AI manager (starts llama-server if model is installed)
             ai::manager::init(app.handle());
 
+            // Seed the master drive-indexing switch BEFORE anything can start an
+            // index (so before `init`, which is what unblocks the handle-free SMB
+            // reconnect resume). Seed it late and a NAS re-indexes itself despite the
+            // setting being off. The FDA gate below is a separate, narrower deferral
+            // (root only), so it must not feed this.
+            indexing::set_master_enabled(indexing::should_auto_start(saved_settings.indexing_enabled));
+
             // Initialize indexing state (does not start scanning until explicitly started)
             indexing::init(app.handle());
 

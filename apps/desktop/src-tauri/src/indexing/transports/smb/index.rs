@@ -21,6 +21,7 @@ use tauri::AppHandle;
 use crate::file_system::get_volume_manager;
 use crate::file_system::volume::SmbConnectionState;
 use crate::indexing::lifecycle::freshness;
+use crate::indexing::lifecycle::master;
 use crate::indexing::lifecycle::state;
 
 /// Why an SMB volume couldn't be indexed. Typed (and serialized as a
@@ -41,6 +42,9 @@ pub enum SmbIndexGateReason {
     CredentialsNeeded,
     /// The volume's smb2 session is currently `Disconnected`. Reconnect first.
     Disconnected,
+    /// The master drive-indexing switch is off, so no drive may index. Nothing is
+    /// wrong with the share; the user turned indexing off in settings.
+    IndexingDisabled,
 }
 
 impl std::fmt::Display for SmbIndexGateReason {
@@ -53,6 +57,7 @@ impl std::fmt::Display for SmbIndexGateReason {
             Self::UpgradeFailed => "upgrade to a direct smb2 connection failed",
             Self::CredentialsNeeded => "a direct smb2 connection needs credentials",
             Self::Disconnected => "the smb2 session is disconnected",
+            Self::IndexingDisabled => "drive indexing is off in settings",
         };
         f.write_str(s)
     }
@@ -179,6 +184,14 @@ pub async fn start_indexing_for_smb(app: AppHandle, volume_id: String) -> Result
         return Ok(());
     }
 
+    // Refuse BEFORE the os_mount upgrade: with the master switch off we must not
+    // even open an smb2 session, let alone clear the drive's `user_disabled` marker
+    // below (that would silently rewrite per-drive intent from a refused start).
+    if !master::master_enabled() {
+        log::info!(target: "indexing::smb_index", "SMB index gate: '{volume_id}' refused, drive indexing is off in settings");
+        return Err(SmbIndexGateReason::IndexingDisabled);
+    }
+
     let mount_root = ensure_direct_smb(&volume_id).await?;
 
     // (Re-)enabling clears any sticky `user_disabled` marker, so this reflects the
@@ -220,25 +233,25 @@ pub async fn start_indexing_for_smb(app: AppHandle, volume_id: String) -> Result
     Ok(())
 }
 
-/// Whether a reconnect should auto-resume indexing for this SMB volume. Both must
-/// hold on the PERSISTED per-volume state:
-/// - a completed scan is recorded (`persisted_scan_completed`) — the "the user
-///   enabled indexing here and it finished at least once" signal; a never-enabled
-///   share has no such DB, so it's never indexed uninvited, AND
-/// - the user hasn't turned indexing OFF (`user_disabled` marker absent).
+/// Whether a reconnect should auto-resume indexing for this SMB volume: the
+/// shared master-switch-plus-per-drive-intent gate (`master::drive_index_should_run`)
+/// applied to this share's persisted DB.
 ///
-/// The two facts are separate on purpose: `disable_drive_index` KEEPS the DB (with
-/// its completed-scan marker) on disk so a re-enable resumes fast rather than
-/// rescanning, but writes the sticky `user_disabled` marker to record intent — so a
-/// reconnect never turns back on what the user turned off. Enabling
+/// Three facts compose, and the master switch wins over both per-drive ones: the
+/// user turning drive indexing off in settings must stop a NAS re-index at every
+/// reconnect, however the share's own markers read.
+///
+/// The two per-drive facts are separate on purpose: `disable_drive_index` KEEPS
+/// the DB (with its completed-scan marker) on disk so a re-enable resumes fast
+/// rather than rescanning, but writes the sticky `user_disabled` marker to record
+/// intent, so a reconnect never turns back on what the user turned off. Enabling
 /// (`start_indexing_for_smb`) clears the marker; `forget_drive_index` deletes the
 /// whole DB.
 pub(crate) fn smb_index_was_enabled(app: &AppHandle, volume_id: &str) -> bool {
     match state::resolved_index_db_path(app, volume_id) {
-        Ok(db_path) => {
-            crate::indexing::store::IndexStore::persisted_scan_completed(&db_path)
-                && !crate::indexing::store::IndexStore::user_disabled(&db_path)
-        }
+        // An SMB share is opt-IN (`is_root: false`), so it needs a completed scan
+        // on record before any reconnect resumes it.
+        Ok(db_path) => master::drive_index_should_run(master::master_enabled(), &db_path, false),
         Err(e) => {
             log::debug!(target: "indexing::smb_index", "resume gate: can't resolve db path for '{volume_id}': {e}");
             false
@@ -339,6 +352,7 @@ mod tests {
             SmbIndexGateReason::UpgradeFailed,
             SmbIndexGateReason::CredentialsNeeded,
             SmbIndexGateReason::Disconnected,
+            SmbIndexGateReason::IndexingDisabled,
         ];
         for (i, a) in all.iter().enumerate() {
             for (j, b) in all.iter().enumerate() {

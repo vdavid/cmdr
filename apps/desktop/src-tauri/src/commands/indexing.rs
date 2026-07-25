@@ -25,6 +25,10 @@ use crate::indexing::{
 pub enum EnableIndexingOutcome {
     /// Indexing started (a scan is now running or resuming) for the volume.
     Started,
+    /// The master drive-indexing switch is off, so no drive may index. Transport-
+    /// neutral (the master switch outranks every per-transport gate), so the FE
+    /// gets ONE shape to recognize whichever drive was asked for.
+    IndexingDisabled,
     /// An SMB volume couldn't be indexed yet; `reason` says why (upgrade failed,
     /// credentials needed, disconnected). The FE shows an honest status and, for
     /// `credentials_needed`, can route into the reconnect/login flow.
@@ -111,16 +115,34 @@ pub async fn get_volume_index_status_by_id(volume_id: String) -> Result<VolumeIn
     Ok(indexing::get_volume_index_status(&volume_id))
 }
 
-/// Toggle drive indexing on/off based on the user's setting.
+/// Apply the master drive-indexing switch (`indexing.enabled`), live.
+///
+/// The master switch gates EVERY drive, not only the boot disk: off stops every
+/// running index (an SMB/MTP/local-external one included) and blocks every later
+/// start, including the autonomous SMB reconnect resume. On restores the drives
+/// whose PER-DRIVE intent says they should index, and only those: a drive the user
+/// never turned on, or explicitly turned off, stays off. Neither direction writes
+/// per-drive intent, so the choice survives any number of master toggles.
 #[tauri::command]
 #[specta::specta]
 pub async fn set_indexing_enabled(app: AppHandle, enabled: bool) -> Result<(), String> {
+    // Move the gate FIRST in both directions: on, so the starts below pass it; off,
+    // so a concurrent reconnect resume can't slip in behind the stop sweep.
+    indexing::set_master_enabled(enabled);
     if enabled {
-        if !indexing::is_active(ROOT_VOLUME_ID) {
-            indexing::start_indexing(&app)?;
+        for volume_id in indexing::drives_to_resume(&app) {
+            // Each drive routes through the normal per-drive enable, so its own gate
+            // (the direct-smb2 upgrade, MTP device presence) still applies. A refusal
+            // is expected here (a share that's offline right now) and only logged;
+            // the reconnect resume picks it up when the drive comes back.
+            match enable_drive_index(app.clone(), volume_id.clone()).await {
+                Ok(EnableIndexingOutcome::Started) => {}
+                Ok(other) => log::info!("set_indexing_enabled: '{volume_id}' not resumed: {other:?}"),
+                Err(e) => log::warn!("set_indexing_enabled: resuming '{volume_id}' failed: {e}"),
+            }
         }
     } else {
-        indexing::stop_indexing(ROOT_VOLUME_ID)?;
+        indexing::stop_all_indexing();
     }
     Ok(())
 }
@@ -192,6 +214,15 @@ pub async fn start_indexing_after_fda_decision(app: AppHandle) -> Result<(), Str
 pub async fn enable_drive_index(app: AppHandle, volume_id: String) -> Result<EnableIndexingOutcome, String> {
     if indexing::is_active(&volume_id) {
         return Ok(EnableIndexingOutcome::Started);
+    }
+
+    // The master switch outranks every per-drive choice, so refuse here, once, with
+    // one transport-neutral reason rather than letting each transport's own gate
+    // report it differently. The UI keeps the per-drive controls visible but inert
+    // while this holds.
+    if !indexing::master_enabled() {
+        log::info!("enable_drive_index: refusing '{volume_id}', drive indexing is off in settings");
+        return Ok(EnableIndexingOutcome::IndexingDisabled);
     }
 
     // A failed index (its DB died) can't resume in place: the writer/manager are

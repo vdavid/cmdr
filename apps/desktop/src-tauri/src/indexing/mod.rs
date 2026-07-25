@@ -39,10 +39,13 @@ pub use read::enrichment::{enrich_entries_with_index, enrich_entries_with_index_
 pub(crate) use read::enrichment::{test_install_root_read_pool, test_read_pool_lock, test_uninstall_root_read_pool};
 
 pub(crate) use lifecycle::failure::IndexFailureSignal;
+pub(crate) use lifecycle::master::drives_to_resume;
+pub use lifecycle::master::{master_enabled, set_master_enabled};
 pub(crate) use lifecycle::state::ROOT_VOLUME_ID;
 pub(crate) use lifecycle::state::get_freshness;
 #[cfg(test)]
 pub(crate) use lifecycle::state::reserve_initializing_index_for_test;
+pub(crate) use lifecycle::state::stop_all_indexing;
 pub(crate) use lifecycle::state::{IndexVolumeKind, all_registered_volume_ids, ready_volumes_with_kind, volume_kind};
 pub use lifecycle::state::{
     clear_index, disable_drive_index_persist_intent, force_scan, init, is_active, is_failed, should_auto_start,
