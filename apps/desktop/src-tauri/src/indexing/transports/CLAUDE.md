@@ -14,6 +14,9 @@ and HOW live changes arrive.
 - **Deletes resolve against the INDEX, never a live stat.** A `Removed` / `ObjectRemoved` for a name/handle the index
   never had is a no-op; SMB/MTP do not round-trip the device per delete. MTP resolves removals via the object handle
   stored in the `inode` column (`find_entry_by_inode`), since PTP `ObjectRemoved` carries only an opaque handle.
+- **The SMB live watch honors the scanner's NAS system-dir exclusion.** `resolve_change` drops any change whose PARENT
+  path has a recursion-excluded component, so `CHANGE_NOTIFY` can't re-create rows `writer/prune.rs` deleted. The
+  excluded dir's OWN row still updates: its change arrives under its parent.
 - **MTP gates BEFORE resolving** (`buffer_mtp_handle_if_scanning`): during a scan it buffers the RAW handle (zero device
   I/O); resolving ahead of the scanning check timed out on the contended device (the livelock).
 - **Reconnect AUTO-RESUMES an SMB index only when the MASTER switch is on AND a scan completed AND `user_disabled` is

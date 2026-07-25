@@ -55,6 +55,7 @@ use crate::file_system::listing::caching::DirectoryChange;
 use crate::file_system::listing::metadata::FileEntry;
 use crate::ignore_poison::IgnorePoison;
 use crate::indexing::lifecycle::state;
+use crate::indexing::network_scanner::is_recursion_excluded_dir;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 
@@ -381,6 +382,15 @@ pub(crate) fn discard_buffered_changes(volume_id: &str) {
 /// `None` means "nothing to write" (parent not indexed, or a `Removed`/`Renamed`
 /// whose target was never an index entry, so there's nothing to delete).
 fn resolve_change(conn: &rusqlite::Connection, parent_rel: &str, change: &DirectoryChange) -> Option<ResolvedWrite> {
+    // Stay out of the subtrees the scanner refuses to walk. `@eaDir` & co. keep
+    // their OWN row, so their path resolves fine and a live event would happily
+    // upsert children under them — rows no scan produces and `writer/prune.rs`
+    // deletes, so the watcher would re-dirty a freshly pruned index. A change TO
+    // the excluded dir itself arrives under its parent and is unaffected.
+    if is_under_recursion_excluded_dir(parent_rel) {
+        return None;
+    }
+
     let parent_id = store::resolve_path(conn, parent_rel).ok().flatten()?;
 
     match change {
@@ -421,6 +431,18 @@ fn resolve_change(conn: &rusqlite::Connection, parent_rel: &str, change: &Direct
             None
         }
     }
+}
+
+/// Whether an index-relative path sits INSIDE a NAS snapshot/system pseudo-dir the
+/// `Volume`-trait scanner refuses to walk (`network_scanner/system_dirs.rs`).
+///
+/// Matches whole path components, so an ordinary `@eaDirectory` is untouched, and
+/// checks EVERY component, not only the last: an excluded dir nested below an
+/// ordinary one gates its whole subtree too. The excluded dir's own path is
+/// deliberately included — a change TO it arrives under its PARENT, which is not
+/// excluded, so its own row still updates.
+fn is_under_recursion_excluded_dir(path_rel: &str) -> bool {
+    path_rel.split('/').any(is_recursion_excluded_dir)
 }
 
 /// Join an index-relative parent dir with a child name, normalizing the single
@@ -483,7 +505,9 @@ mod tests {
     // ── resolve_change: the change → write mapping against a seeded index ──
 
     /// Build a tiny SMB-shaped index: ROOT(1) → "sub"(dir) → "leaf.txt"(file),
-    /// and "top.txt"(file) at the root. Returns an open read/write connection.
+    /// "top.txt"(file) at the root, and "@eaDir"(dir) at the root — a
+    /// recursion-excluded NAS system dir whose OWN row the scanner does index.
+    /// Returns an open read/write connection.
     fn seed_index() -> (rusqlite::Connection, tempfile::TempDir) {
         use crate::indexing::store::{EntryRow, ROOT_ID};
         let dir = tempfile::tempdir().expect("temp dir");
@@ -524,6 +548,28 @@ mod tests {
                 is_symlink: false,
                 logical_size: Some(5),
                 physical_size: Some(5),
+                modified_at: None,
+                inode: None,
+            },
+            EntryRow {
+                id: 5,
+                parent_id: ROOT_ID,
+                name: "@eaDir".into(),
+                is_directory: true,
+                is_symlink: false,
+                logical_size: None,
+                physical_size: None,
+                modified_at: None,
+                inode: None,
+            },
+            EntryRow {
+                id: 6,
+                parent_id: 2,
+                name: "@Recycle".into(),
+                is_directory: true,
+                is_symlink: false,
+                logical_size: None,
+                physical_size: None,
                 modified_at: None,
                 inode: None,
             },
@@ -616,6 +662,88 @@ mod tests {
         let (conn, _dir) = seed_index();
         let change = DirectoryChange::Added(file_entry("x.txt", "/Volumes/share/nope/x.txt", 1));
         assert!(resolve_change(&conn, "/nope", &change).is_none());
+    }
+
+    // ── Recursion-excluded NAS system dirs (the scanner's rule, live-side) ──
+
+    #[test]
+    fn change_inside_a_recursion_excluded_dir_writes_nothing() {
+        // The scanner keeps `@eaDir`'s own row but never walks its subtree, so a
+        // child row under it is one no scan would ever produce — and `writer/prune.rs`
+        // deletes exactly those. Without this gate the live watcher re-creates them
+        // right after a prune, because `@eaDir` itself IS indexed and so resolves.
+        let (conn, _dir) = seed_index();
+        for change in [
+            DirectoryChange::Added(file_entry("thumb.jpg", "/Volumes/share/@eaDir/thumb.jpg", 3)),
+            DirectoryChange::Modified(file_entry("thumb.jpg", "/Volumes/share/@eaDir/thumb.jpg", 4)),
+            DirectoryChange::Renamed {
+                old_name: "thumb.jpg".into(),
+                new_entry: file_entry("thumb2.jpg", "/Volumes/share/@eaDir/thumb2.jpg", 4),
+            },
+            DirectoryChange::Removed("thumb.jpg".into()),
+        ] {
+            assert!(
+                resolve_change(&conn, "/@eaDir", &change).is_none(),
+                "no write may land inside a recursion-excluded dir",
+            );
+        }
+    }
+
+    #[test]
+    fn the_gate_looks_at_every_ancestor_not_only_the_immediate_parent() {
+        // An excluded dir nested below an ordinary one is gated the same way: the
+        // scanner stops at `@Recycle` wherever it sits, so nothing below it belongs
+        // in the index either.
+        let (conn, _dir) = seed_index();
+        let change = DirectoryChange::Added(file_entry("gone.txt", "/Volumes/share/sub/@Recycle/gone.txt", 1));
+        assert!(resolve_change(&conn, "/sub/@Recycle", &change).is_none());
+    }
+
+    #[test]
+    fn the_gate_matches_components_case_insensitively_and_whole() {
+        // The path predicate must follow the scanner's rule exactly: whole
+        // components, case-insensitive, at any depth — and never a substring match
+        // that would swallow an ordinary folder.
+        assert!(is_under_recursion_excluded_dir("/@eaDir"));
+        assert!(is_under_recursion_excluded_dir("/@eadir/deep"));
+        assert!(is_under_recursion_excluded_dir("/sub/@RECYCLE/x"));
+        assert!(!is_under_recursion_excluded_dir("/"));
+        assert!(!is_under_recursion_excluded_dir("/sub"));
+        assert!(!is_under_recursion_excluded_dir("/@eaDirectory"));
+        assert!(!is_under_recursion_excluded_dir("/my@eaDir"));
+    }
+
+    #[test]
+    fn the_excluded_dir_s_own_row_and_ordinary_siblings_still_update() {
+        // The invariant the gate must NOT break: `@eaDir` stays indexed, listed, and
+        // navigable. A change TO it (not inside it) arrives under its PARENT, so it
+        // passes the gate like any other entry — as do ordinary folders next to it.
+        let (conn, _dir) = seed_index();
+
+        let own = FileEntry::new("@eaDir".into(), "/Volumes/share/@eaDir".into(), true, false);
+        match resolve_change(&conn, "/", &DirectoryChange::Modified(own)).expect("a write") {
+            ResolvedWrite::Upsert {
+                name,
+                parent_id,
+                is_directory,
+                ..
+            } => {
+                assert_eq!(name, "@eaDir", "the excluded dir's own row must still be written");
+                assert_eq!(parent_id, 1);
+                assert!(is_directory);
+            }
+            _ => panic!("a change to the excluded dir itself must upsert it"),
+        }
+
+        // And deleting it outright is still a real removal of its subtree.
+        match resolve_change(&conn, "/", &DirectoryChange::Removed("@eaDir".into())).expect("a write") {
+            ResolvedWrite::DeleteSubtree(id) => assert_eq!(id, 5, "@eaDir is id=5"),
+            _ => panic!("removing the excluded dir itself must delete its subtree"),
+        }
+
+        // An ordinary sibling folder is untouched by the gate.
+        let change = DirectoryChange::Added(file_entry("new.txt", "/Volumes/share/sub/new.txt", 7));
+        assert!(resolve_change(&conn, "/sub", &change).is_some());
     }
 
     #[test]

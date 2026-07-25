@@ -28,10 +28,13 @@
 //! its subtree to compute a recursive size. Its size shows as unknown (`—`/`≥`), the
 //! honest state, rather than `0 B`.
 //!
-//! Scope: applied by the `Volume`-trait network scanner (`network_scanner/mod.rs`) only,
-//! which walks SMB/MTP shares — the home of these dirs. The local guarded walker has its
-//! own `should_exclude`, and indexes a folder with one of these names in FULL, which is
-//! why the prune is gated on the volume kind. `FileEntry` carries no DOS hidden/system
+//! Scope: the SMB/MTP side only — the home of these dirs. The `Volume`-trait network
+//! scanner (`network_scanner/mod.rs`) applies it to both the fresh and the reconcile
+//! walk, and the SMB live watcher (`transports/smb/watch.rs`) applies it to
+//! `CHANGE_NOTIFY` too, so a live event can't put back what the scan won't write and the
+//! prune just removed. The local guarded walker has its own `should_exclude`, and indexes
+//! a folder with one of these names in FULL, which is why the prune is gated on the
+//! volume kind. `FileEntry` carries no DOS hidden/system
 //! attribute, so matching the canonical names is the available signal; if attributes are
 //! plumbed through later, "hidden + system" would generalize this without a hardcoded list.
 

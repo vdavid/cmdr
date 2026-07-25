@@ -57,7 +57,7 @@ use futures_util::stream::FuturesUnordered;
 pub(crate) mod scan_pace;
 mod system_dirs;
 
-pub(crate) use system_dirs::{exclusion_list_fingerprint, prune_message_for_kind};
+pub(crate) use system_dirs::{exclusion_list_fingerprint, is_recursion_excluded_dir, prune_message_for_kind};
 
 use crate::file_system::volume::Volume;
 use crate::indexing::store::{EntryRow, IndexStore, ScanContext};
@@ -383,7 +383,7 @@ pub(crate) async fn scan_volume_via_trait(
                 // stalled a real first-scan. The row is still indexed (visible,
                 // navigable); we just don't walk its subtree, so its size stays
                 // honestly unknown rather than a misleading roll-up. See `system_dirs`.
-                if system_dirs::is_recursion_excluded_dir(&entry.name) {
+                if is_recursion_excluded_dir(&entry.name) {
                     log::debug!(
                         "network_scanner: not descending into NAS system dir {}",
                         child_path.display()
@@ -726,7 +726,7 @@ pub(crate) async fn reconcile_volume_via_trait(
         // (it's diffed in like any child) but don't recurse into its subtree. Logged
         // (like the fresh-scan branch) so an error report visibly confirms the skip.
         for (child_id, child_name) in diff.matched_child_dirs {
-            if system_dirs::is_recursion_excluded_dir(&child_name) {
+            if is_recursion_excluded_dir(&child_name) {
                 log::debug!(
                     "network_scanner: not descending into NAS system dir {}",
                     dir_path.join(&child_name).display()
@@ -736,7 +736,7 @@ pub(crate) async fn reconcile_volume_via_trait(
             queue.push_back((dir_path.join(child_name), child_id));
         }
         for child_name in diff.new_child_dir_names {
-            if system_dirs::is_recursion_excluded_dir(&child_name) {
+            if is_recursion_excluded_dir(&child_name) {
                 log::debug!(
                     "network_scanner: not descending into NAS system dir {}",
                     dir_path.join(&child_name).display()

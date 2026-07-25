@@ -174,8 +174,10 @@ file), but its subtree is never walked, so it rolls up as honestly-unknown (`—
 **Decision/Why:** these dirs are hardlinked, huge, and re-walking them costs a full filesystem traversal *per snapshot*
 over serialized SMB — a real first-scan stalled near 50% grinding `@Recently-Snapshot`, which alone reported 44 TB on a
 10 TB volume. Summing them is both ruinous and wrong (the bytes are deduped, not real consumed space). **Guardrail:**
-don't remove the exclusion to "fill in" the missing sizes — that re-triggers the stall. Scope is the network scanner
-only (the home of these dirs); the local walker has its own `should_exclude` (`../scanner/DETAILS.md`).
+don't remove the exclusion to "fill in" the missing sizes — that re-triggers the stall. Scope is the SMB/MTP side (the
+home of these dirs): both walks here, plus the SMB live watcher, which drops a `CHANGE_NOTIFY` landing under such a dir
+so a live event can't re-create what the walk won't write (`../transports/DETAILS.md` § "Live SMB watch → index"). The
+local walker has its own `should_exclude` (`../scanner/DETAILS.md`).
 `FileEntry` carries no DOS hidden/system attribute today; if one is plumbed through, "hidden + system" would generalize
 this without the hardcoded list.
 
