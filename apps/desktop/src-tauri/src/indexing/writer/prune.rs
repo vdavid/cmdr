@@ -27,15 +27,30 @@
 //! reads as honestly unknown (`—`) rather than an exact `0 B`.
 
 use crate::indexing::IndexFailureSignal;
-use crate::indexing::store::{EXCLUDED_SUBTREES_PRUNED_KEY, IndexStore};
+use crate::indexing::store::{EXCLUDED_SUBTREES_PRUNE_STARTED_KEY, EXCLUDED_SUBTREES_PRUNED_KEY, IndexStore};
 
 use super::MutationTracker;
 
 /// Delete every row beneath a directory named in `excluded_dir_names`, then record
 /// `fingerprint` as the list this DB is pruned against.
 ///
-/// The marker is written ONLY after the whole prune succeeded, so an interrupted
-/// or failing run simply re-prunes on the next load (the work is idempotent).
+/// ## Surviving an interruption
+///
+/// This runs at startup and takes 20–30 s on a real NAS index, so a user quitting
+/// mid-run is ordinary, not exotic. Three things make that safe:
+///
+/// 1. **The deletes are post-order** (`delete_descendants_by_id`), so no
+///    interruption can sever the tree and leave rows unreachable from the root.
+///    Re-descending from the same root finds whatever is left.
+/// 2. **An in-progress marker is written BEFORE the first delete** and cleared
+///    only after the whole run finished, so the next load re-runs the prune even
+///    if the fingerprint already matched.
+/// 3. **Every run ends with an orphan sweep**, which collects rows an older,
+///    top-down delete already stranded on installs carrying that damage. Nothing
+///    else can: stranded rows are invisible to any descent from the root.
+///
+/// The fingerprint gate keeps all of it to once per DB per exclusion-list
+/// version; none of it is a per-launch cost.
 pub(super) fn handle_prune_excluded_subtrees(
     conn: &rusqlite::Connection,
     excluded_dir_names: &[String],
@@ -63,8 +78,10 @@ pub(super) fn handle_prune_excluded_subtrees(
         .map(|(id, _)| id)
         .collect();
 
-    if roots.is_empty() {
-        record_fingerprint(conn, fingerprint, signal);
+    // Durable "started, not finished" mark, ahead of every delete. Autocommitted,
+    // so a quit or crash from here on leaves it behind for the next load to see.
+    if let Err(e) = IndexStore::update_meta(conn, EXCLUDED_SUBTREES_PRUNE_STARTED_KEY, "1") {
+        signal.note(&e, "prune_excluded_subtrees: mark in progress");
         return;
     }
 
@@ -84,36 +101,60 @@ pub(super) fn handle_prune_excluded_subtrees(
         }
     }
 
-    // A dir an older index DID list carries a non-zero `listed_epoch`; left alone,
-    // the now-childless dir would roll up as an EXACT `0 B`. It was never listed
-    // under today's rules, so 0 (unknown) is the truthful value.
-    if let Err(e) = IndexStore::clear_listed_epoch(conn, &roots) {
-        signal.note(&e, "prune_excluded_subtrees: clear listed_epoch");
-        return;
-    }
-    // Drop the stale inflated `dir_stats` rows too; the caller's
-    // `ComputeAllAggregates` rewrites them, and until it runs "no row" reads as
-    // unknown, which beats a row claiming 83 TB.
-    if let Err(e) = IndexStore::delete_dir_stats_by_ids(conn, &roots) {
-        signal.note(&e, "prune_excluded_subtrees: clear dir_stats");
-        return;
+    // Collect anything an older top-down run severed from the root. Post-order
+    // deletion means this run can't have created such rows, but a DB that already
+    // carries them has no other way back: they're unreachable, so re-descending
+    // from the excluded roots walks straight past them.
+    let swept = match IndexStore::sweep_orphaned_entries(conn) {
+        Ok(n) => n,
+        Err(e) => {
+            signal.note(&e, "prune_excluded_subtrees: sweep stranded rows");
+            return;
+        }
+    };
+
+    if !roots.is_empty() {
+        // A dir an older index DID list carries a non-zero `listed_epoch`; left
+        // alone, the now-childless dir would roll up as an EXACT `0 B`. It was
+        // never listed under today's rules, so 0 (unknown) is the truthful value.
+        if let Err(e) = IndexStore::clear_listed_epoch(conn, &roots) {
+            signal.note(&e, "prune_excluded_subtrees: clear listed_epoch");
+            return;
+        }
+        // Drop the stale inflated `dir_stats` rows too; the caller's
+        // `ComputeAllAggregates` rewrites them, and until it runs "no row" reads as
+        // unknown, which beats a row claiming 83 TB.
+        if let Err(e) = IndexStore::delete_dir_stats_by_ids(conn, &roots) {
+            signal.note(&e, "prune_excluded_subtrees: clear dir_stats");
+            return;
+        }
     }
 
-    if deleted > 0 {
+    if deleted > 0 || swept > 0 {
         mutation_tracker.bump();
         log::info!(
-            "Writer: pruned {} beneath {} that the scanner doesn't walk",
+            "Writer: pruned {} beneath {} that the scanner doesn't walk, and swept {} an earlier interrupted run had stranded",
             crate::pluralize::pluralize_with(deleted, "row", "rows"),
             crate::pluralize::pluralize(roots.len() as u64, "system dir"),
+            crate::pluralize::pluralize_with(swept, "row", "rows"),
         );
     }
     record_fingerprint(conn, fingerprint, signal);
 }
 
-/// Record which exclusion list this DB is now pruned against.
+/// Record which exclusion list this DB is now pruned against, and drop the
+/// in-progress mark.
+///
+/// Fingerprint first: whichever of the two writes an interruption lands between,
+/// the next load still sees work pending (a missing fingerprint OR a leftover
+/// mark), and re-running a finished prune is a no-op.
 fn record_fingerprint(conn: &rusqlite::Connection, fingerprint: &str, signal: &IndexFailureSignal) {
     if let Err(e) = IndexStore::update_meta(conn, EXCLUDED_SUBTREES_PRUNED_KEY, fingerprint) {
         signal.note(&e, "prune_excluded_subtrees: record fingerprint");
+        return;
+    }
+    if let Err(e) = IndexStore::delete_meta(conn, EXCLUDED_SUBTREES_PRUNE_STARTED_KEY) {
+        signal.note(&e, "prune_excluded_subtrees: clear in-progress mark");
     }
 }
 

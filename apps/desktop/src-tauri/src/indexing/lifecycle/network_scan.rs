@@ -142,11 +142,17 @@ impl IndexManager {
     /// would throw away every index on the machine, including a 6.9M-entry local
     /// one, to fix a network-only problem). A read failure answers "yes": a
     /// redundant prune is a no-op, a skipped one leaves the rows.
+    ///
+    /// A leftover in-progress mark answers "yes" on its own: a run the user quit
+    /// part-way through is resumable but not finished, and that run is also what
+    /// sweeps rows an older top-down delete stranded.
     fn excluded_subtree_prune_pending(&self) -> bool {
-        let stored = IndexStore::get_meta(
-            self.store.read_conn(),
-            crate::indexing::store::EXCLUDED_SUBTREES_PRUNED_KEY,
-        );
+        let conn = self.store.read_conn();
+        let started = IndexStore::get_meta(conn, crate::indexing::store::EXCLUDED_SUBTREES_PRUNE_STARTED_KEY);
+        if !matches!(started, Ok(None)) {
+            return true;
+        }
+        let stored = IndexStore::get_meta(conn, crate::indexing::store::EXCLUDED_SUBTREES_PRUNED_KEY);
         !matches!(stored, Ok(Some(ref v)) if *v == crate::indexing::network_scanner::exclusion_list_fingerprint())
     }
 

@@ -50,6 +50,13 @@ pub const LEDGER_HEAL_KEY: &str = "aggregates_rebuilt_for_ledger";
 /// `indexing/network_scanner/DETAILS.md` § "NAS snapshot/system dirs aren't recursed".
 pub const EXCLUDED_SUBTREES_PRUNED_KEY: &str = "excluded_subtrees_pruned_for";
 
+/// Meta key set BEFORE a prune's first delete and cleared only once the whole run
+/// finished. Present at load ⇒ a previous run died mid-way (a quit, a crash), so
+/// the next load re-runs the prune even when the fingerprint already matches, and
+/// that run also sweeps rows an older, pre-post-order delete may have stranded.
+/// Only presence matters (the value is a marker).
+pub const EXCLUDED_SUBTREES_PRUNE_STARTED_KEY: &str = "excluded_subtrees_prune_started";
+
 /// Root entry sentinel ID. All top-level entries have `parent_id = ROOT_ID`.
 pub const ROOT_ID: i64 = 1;
 

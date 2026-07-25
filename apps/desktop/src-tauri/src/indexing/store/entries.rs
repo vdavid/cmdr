@@ -4,6 +4,10 @@
 
 use super::*;
 
+/// Parent ids per child-lookup query, and ids per `DELETE`. Both stay well under
+/// SQLite's default 999-parameter ceiling.
+const DELETE_CHUNK: usize = 256;
+
 impl IndexStore {
     // ── Read methods (integer-keyed, new API) ────────────────────────
 
@@ -479,37 +483,110 @@ impl IndexStore {
     /// recursion-excluded-subtree prune. The root entry is kept because the
     /// scanner's `ScanContext` resolves it by path and reuses its existing ID.
     ///
+    /// **Post-order: a directory row goes only once its whole subtree is gone.**
+    /// Deleting top-down instead severs the tree at whatever point the process
+    /// dies, and every row below the cut loses its path to the root, so no later
+    /// descent can reach it — one interrupted run on the author's QNAP stranded
+    /// 9 793 362 rows permanently. Files are leaves, so they go on the way DOWN;
+    /// directory ids are recorded per level and deleted deepest level first.
+    /// Pinned by `writer/prune/tests.rs::interrupting_a_subtree_delete_never_strands_a_row`.
+    ///
     /// **Walks the tree in bounded chunks rather than one recursive-CTE `DELETE`.**
     /// A single CTE delete materializes every descendant id into one ephemeral
     /// table and one transaction: on a real QNAP index that meant 10 898 710 ids
     /// (~87 MB of ephemeral rowids, twice) and a multi-GB WAL spike in one shot.
-    /// Descending level by level caps both — measured peak frontier on that index
-    /// was 5 951 dir ids (48 KB), and the whole delete took 23 s (2026-07-25,
-    /// Python prototype of this exact algorithm over a copy of the production DB).
-    /// The frontier holds ids we've already deleted rows for, which is safe:
-    /// children are found by `parent_id`, so a deleted parent row never hides them.
+    /// Descending level by level caps both — the retained dir ids peaked at
+    /// 324 128 (2.6 MB) across all levels of that index, files never accumulate,
+    /// and the whole delete took 23 s (2026-07-25, measured over a copy of the
+    /// production DB). Reading children by `parent_id` is what makes the order
+    /// free to choose: a deleted parent row never hides its children.
     pub fn delete_descendants_by_id(conn: &Connection, root_id: i64) -> Result<u64, IndexStoreError> {
-        /// Parent ids per child-lookup query, and ids per `DELETE`. Both stay well
-        /// under SQLite's default 999-parameter ceiling.
-        const CHUNK: usize = 256;
+        Self::delete_descendants_inner(conn, root_id, &mut None)
+    }
 
-        let mut frontier = vec![root_id];
+    /// Test-only: run `delete_descendants_by_id` but stop after exactly
+    /// `max_rows` deletions, simulating the process dying mid-prune.
+    ///
+    /// Stopping mid-`DELETE`-batch is a state a real crash can't produce (SQLite
+    /// commits a statement atomically), so sweeping `max_rows` over `1..=total`
+    /// checks a SUPERSET of the reachable interruption points — every prefix of
+    /// the deletion order, not only the per-batch boundaries.
+    #[cfg(test)]
+    pub fn delete_descendants_by_id_stopping_after(
+        conn: &Connection,
+        root_id: i64,
+        max_rows: u64,
+    ) -> Result<u64, IndexStoreError> {
+        Self::delete_descendants_inner(conn, root_id, &mut Some(max_rows))
+    }
+
+    fn delete_descendants_inner(
+        conn: &Connection,
+        root_id: i64,
+        budget: &mut Option<u64>,
+    ) -> Result<u64, IndexStoreError> {
         let mut deleted: u64 = 0;
+        // Descend breadth-first, deleting the FILES of each level as we meet them
+        // (a leaf can't strand anything) and banking the level's directory ids.
+        let mut levels: Vec<Vec<i64>> = Vec::new();
+        let mut frontier = vec![root_id];
+        let mut at_root = true;
         while !frontier.is_empty() {
-            let take = frontier.len().saturating_sub(CHUNK);
-            let parents = frontier.split_off(take);
-            let children = Self::child_ids_of(conn, &parents)?;
-            if children.is_empty() {
-                continue;
+            let mut next_level = Vec::new();
+            for parents in frontier.chunks(DELETE_CHUNK) {
+                let children = Self::child_ids_of(conn, parents)?;
+                let mut files = Vec::new();
+                for (id, is_dir) in children {
+                    if is_dir {
+                        next_level.push(id);
+                    } else {
+                        files.push(id);
+                    }
+                }
+                if !Self::delete_batched(conn, &files, budget, &mut deleted)? {
+                    return Ok(deleted);
+                }
             }
-            frontier.extend(children.iter().filter(|(_, is_dir)| *is_dir).map(|(id, _)| *id));
-            let ids: Vec<i64> = children.iter().map(|(id, _)| *id).collect();
-            for chunk in ids.chunks(CHUNK) {
-                Self::delete_rows_by_id(conn, chunk)?;
+            let done = std::mem::replace(&mut frontier, next_level);
+            // `root_id` itself always survives; every deeper level is ours to drop.
+            if at_root {
+                at_root = false;
+            } else {
+                levels.push(done);
             }
-            deleted += ids.len() as u64;
+        }
+        // Now the directories, deepest level first: each one's descendants are
+        // already gone, so an interruption here leaves a walkable tree.
+        for level in levels.iter().rev() {
+            if !Self::delete_batched(conn, level, budget, &mut deleted)? {
+                return Ok(deleted);
+            }
         }
         Ok(deleted)
+    }
+
+    /// Delete `ids` in `DELETE_CHUNK`-sized batches, adding to `deleted`.
+    /// Returns `false` when a test budget ran out, so the caller stops.
+    fn delete_batched(
+        conn: &Connection,
+        ids: &[i64],
+        budget: &mut Option<u64>,
+        deleted: &mut u64,
+    ) -> Result<bool, IndexStoreError> {
+        for chunk in ids.chunks(DELETE_CHUNK) {
+            let chunk = match budget {
+                Some(0) => return Ok(false),
+                Some(left) => {
+                    let take = chunk.len().min(usize::try_from(*left).unwrap_or(usize::MAX));
+                    *left -= take as u64;
+                    &chunk[..take]
+                }
+                None => chunk,
+            };
+            Self::delete_rows_by_id(conn, chunk)?;
+            *deleted += chunk.len() as u64;
+        }
+        Ok(true)
     }
 
     /// The `(id, is_directory)` of every direct child of the given parent ids.
@@ -540,6 +617,60 @@ impl IndexStore {
         let entries_sql = format!("DELETE FROM entries WHERE id IN ({placeholders})");
         conn.prepare_cached(&entries_sql)?.execute(&*values)?;
         Ok(())
+    }
+
+    /// Every entry whose `parent_id` points at a row that no longer exists, as
+    /// `(all ids, the directory ids among them)`.
+    ///
+    /// These rows are unreachable from the index root, so nothing in the app can
+    /// list, enrich, or path-resolve them; they only bloat the file and every
+    /// O(entries) walk. The index root is excluded: its `parent_id` is the
+    /// `ROOT_PARENT_ID` sentinel, which has no row by design.
+    ///
+    /// One full table scan with a PK probe per row, 0.65 s over a 12.4M-row
+    /// index with 910 316 orphans (2026-07-25, copy of the author's production
+    /// NAS DB). Only a prune run calls it, so it's once per DB per exclusion-list
+    /// version, never a per-launch cost.
+    pub fn find_orphan_entries(conn: &Connection) -> Result<(Vec<i64>, Vec<i64>), IndexStoreError> {
+        let mut stmt = conn.prepare_cached(
+            "SELECT e.id, e.is_directory FROM entries e
+             LEFT JOIN entries p ON e.parent_id = p.id
+             WHERE p.id IS NULL AND e.id != ?1",
+        )?;
+        let rows = stmt.query_map(params![ROOT_ID], |row| {
+            Ok((row.get::<_, i64>(0)?, row.get::<_, bool>(1)?))
+        })?;
+        let mut all = Vec::new();
+        let mut dirs = Vec::new();
+        for row in rows {
+            let (id, is_dir) = row?;
+            if is_dir {
+                dirs.push(id);
+            }
+            all.push(id);
+        }
+        Ok((all, dirs))
+    }
+
+    /// Delete every row unreachable from the index root, returning how many went.
+    ///
+    /// Heals an index a top-down subtree delete severed before this module went
+    /// post-order: those rows are invisible to any descent from the root, so no
+    /// re-run of the prune that made them could ever find them again.
+    ///
+    /// **Interruption-safe.** Each orphan root's subtree goes first (post-order,
+    /// via `delete_descendants_by_id`) and the orphan roots themselves last, so
+    /// dying anywhere leaves the remainder still a DIRECT orphan that the next
+    /// sweep finds. One pass suffices: a direct orphan's descendants all have a
+    /// live parent, so clearing the orphan roots creates no new ones.
+    pub fn sweep_orphaned_entries(conn: &Connection) -> Result<u64, IndexStoreError> {
+        let (all, dirs) = Self::find_orphan_entries(conn)?;
+        let mut deleted: u64 = 0;
+        for dir_id in &dirs {
+            deleted += Self::delete_descendants_by_id(conn, *dir_id)?;
+        }
+        Self::delete_batched(conn, &all, &mut None, &mut deleted)?;
+        Ok(deleted)
     }
 
     /// Every DIRECTORY whose name lowercases to one of `lowercase_names`, as
