@@ -150,6 +150,13 @@ calling the network:
   we can't observe directly. Compile-time beats an env-var check: the only binaries
   carrying the feature are purpose-built for tests.
 
+On a non-2xx, [`upload`] returns `server returned <status>: <body>`, folding in the api
+server's own `{"error": "..."}` explanation (trimmed to 200 chars so a stray HTML error
+page can't flood the toast). The detail is displayed only, never branched on. A bare
+status code once hid a payload bug for a whole release: the server 400'd every note-less
+report over a `userNote: null` vs `undefined` mismatch, and the toast said only
+`server returned 400 Bad Request`, which named nothing actionable.
+
 Debug builds **do** upload (that's the point of "Send error report" working in dev). The
 manifest carries `buildMode: "debug"`, which the api server reads to prefix the Discord
 embed title with `[DEV]` so triage can separate dev-run reports from production traffic
