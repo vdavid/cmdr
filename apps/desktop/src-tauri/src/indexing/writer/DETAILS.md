@@ -443,7 +443,7 @@ dirs aren't recursed"; this section owns the writer-side mechanics.
 
 **Why it exists.** The trait scanner keeps such a dir's row but never walks its subtree, and a reconcile only diffs the
 dirs it LISTS, so rows an older index put there were invisible to every later pass. On the author's QNAP index:
-10 898 710 orphaned rows, 80% of a 13 541 603-row, 1.88 GB DB (2026-07-25, direct query against a copy of
+10 898 710 such rows, 80% of a 13 541 603-row, 1.88 GB DB (2026-07-25, direct query against a copy of
 `index-smb-192-168-1-111-445-naspi.db`). Full measurements, including where the rows came from and the nesting trap
 that makes naive per-root counts overshoot: `docs/notes/orphaned-excluded-subtree-rows-2026-07-25.md`.
 
@@ -478,10 +478,11 @@ all three are needed:
    walks straight past them. Its cost is bounded by the same fingerprint gate as the prune itself (once per DB per
    exclusion-list version), never per launch.
 
-**Gotcha/Why — a "just re-run it next launch" recovery story needs the DELETE ORDER to back it.** The handler's
-completion marker was always written last, on the theory that an interrupted run simply re-prunes. Top-down deletion
-made that false: the rows the interrupted run left behind were no longer reachable, so the re-run found nothing to do
-and the fix silently never completed on any machine whose first post-upgrade launch was interrupted.
+**Gotcha/Why — a "just re-run it next launch" recovery story needs the DELETE ORDER to back it.** Writing the
+completion marker last isn't enough on its own. Under a top-down delete, the rows an interrupted run leaves behind are
+no longer reachable, so the re-run finds nothing to do and the fix silently never completes on any machine whose first
+post-upgrade launch got interrupted. The marker only says "try again"; the post-order is what guarantees there's still
+something findable to try on.
 
 **Measured with this code over copies of the production DB** (2026-07-25, debug build; discovery, a full table scan
 for candidates, was 8 s cold in each):
