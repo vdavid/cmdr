@@ -6,21 +6,20 @@ wrong has cost multi-day investigations.
 ## The trap: `vmmap` reports Cmdr's Rust heap as `IOAccelerator`
 
 `vmmap` names VM regions by their VM tag. macOS defines `VM_MEMORY_IOACCELERATOR = 100`
-(`$(xcrun --show-sdk-path)/usr/include/mach/vm_statistics.h`), and **mimalloc tags every arena it `mmap`s with
-`os_tag` = 100 by default**. Cmdr's Rust global allocator is mimalloc (`apps/desktop/src-tauri/src/main.rs`), so:
+(`$(xcrun --show-sdk-path)/usr/include/mach/vm_statistics.h`), and **mimalloc tags every arena it `mmap`s with `os_tag`
+= 100 by default**. Cmdr's Rust global allocator is mimalloc (`apps/desktop/src-tauri/src/main.rs`), so:
 
 > **The `IOAccelerator` rows in Cmdr's `vmmap` / `footprint` output ARE the Rust heap** — not GPU memory, not WebKit,
 > not the compositor. Arenas are reserved in 128 MB chunks, so the region COUNT grows in 128 MB steps.
 
 The mirror-image trap: **`MALLOC_*` / `DefaultMallocZone` rows are NOT Cmdr's heap.** `malloc_zone_statistics` and
-`malloc_get_all_zones` only see registered system zones, and mimalloc isn't one. A snapshot reading "malloc heap
-1.6 GB" while `phys_footprint` is 16.5 GB is not a contradiction — it means ~15 GB of Rust heap is invisible to that
-API.
+`malloc_get_all_zones` only see registered system zones, and mimalloc isn't one. A snapshot reading "malloc heap 1.6 GB"
+while `phys_footprint` is 16.5 GB is not a contradiction — it means ~15 GB of Rust heap is invisible to that API.
 
 Consequences worth internalising, because each one burned a day:
 
-- A backend heap runaway **looks like a GPU/compositor leak**. If you find yourself bisecting CSS, layer promotion,
-  DOM churn, or event volume because "the compositor is leaking", stop and re-read this section.
+- A backend heap runaway **looks like a GPU/compositor leak**. If you find yourself bisecting CSS, layer promotion, DOM
+  churn, or event volume because "the compositor is leaking", stop and re-read this section.
 - Real WebKit compositor memory in Cmdr is small: measured at **35.6 MB in 10 allocations** during a climb where the
   process peaked at 646 MB. WebKit's helper processes (`com.apple.WebKit.GPU`, `…WebContent`) hold ~0 `IOAccelerator`;
   if the number is big and it's in the Cmdr process, it's Rust.
@@ -38,8 +37,8 @@ vmmap -summary "$PID" | grep -E "Physical footprint:|^IOAccelerator |^MALLOC_SMA
 here — it keeps counting regions long after `phys_footprint` collapses. Read the DIRTY column (col 4), not VIRTUAL or
 RESIDENT.
 
-Per-line RAM in the app's own log: launch with `CMDR_LOG_RAM_USE=1` (see `logging.md`), which makes every log line
-carry the current footprint — the cheapest way to correlate a climb with what the backend was doing.
+Per-line RAM in the app's own log: launch with `CMDR_LOG_RAM_USE=1` (see `logging.md`), which makes every log line carry
+the current footprint — the cheapest way to correlate a climb with what the backend was doing.
 
 ## How to attribute (which code allocates)
 
@@ -49,9 +48,9 @@ vmmap -fullStacks "$PID"        # allocation backtrace per VM region (confirms m
 malloc_history "$PID" -allBySize # biggest live allocations with stacks
 ```
 
-`malloc_history` only sees system-zone allocations, so mimalloc hides Rust allocations from it. To attribute a Rust
-heap problem, temporarily comment out the `#[global_allocator]` in `main.rs` and rebuild: the growth reappears as
-`MALLOC_*` and `malloc_history` can name the call sites. Revert afterwards.
+`malloc_history` only sees system-zone allocations, so mimalloc hides Rust allocations from it. To attribute a Rust heap
+problem, temporarily comment out the `#[global_allocator]` in `main.rs` and rebuild: the growth reappears as `MALLOC_*`
+and `malloc_history` can name the call sites. Revert afterwards.
 
 ## Rules for A/B experiments
 

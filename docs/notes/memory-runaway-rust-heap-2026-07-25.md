@@ -9,8 +9,8 @@ experiment log: `docs/notes/memory-runaway-gpu-slabs-2026-07-25.md` and
 ## The measurement trap (read this first)
 
 `vmmap` labels VM regions by their **VM tag number**. macOS defines `VM_MEMORY_IOACCELERATOR = 100`
-(`$(xcrun --show-sdk-path)/usr/include/mach/vm_statistics.h:642`). **mimalloc tags every arena it `mmap`s with
-`os_tag` = 100 by default.** Cmdr's Rust global allocator is mimalloc (`src-tauri/src/main.rs`), so:
+(`$(xcrun --show-sdk-path)/usr/include/mach/vm_statistics.h:642`). **mimalloc tags every arena it `mmap`s with `os_tag`
+= 100 by default.** Cmdr's Rust global allocator is mimalloc (`src-tauri/src/main.rs`), so:
 
 > **In any Cmdr `vmmap` / `footprint` output, the `IOAccelerator` rows ARE the Rust heap.** Not GPU memory, not WebKit,
 > not the compositor.
@@ -21,15 +21,15 @@ Proof, three independent ways:
 
 1. **Allocation backtraces.** Launch with `MallocStackLogging=1`, then `vmmap -fullStacks <pid>`. Every 128 MB
    `IOAccelerator` region's stack is
-   `mmap ← unix_mmap ← _mi_prim_alloc ← mi_os_prim_alloc ← mi_reserve_os_memory_ex2 ← mi_arena_reserve ←
-   _mi_malloc_generic ← <Rust GlobalAlloc>`. 128 MB is mimalloc's default arena reservation size.
+   `mmap ← unix_mmap ← _mi_prim_alloc ← mi_os_prim_alloc ← mi_reserve_os_memory_ex2 ← mi_arena_reserve ← _mi_malloc_generic ← <Rust GlobalAlloc>`.
+   128 MB is mimalloc's default arena reservation size.
 2. **Swap the allocator.** Comment out the `#[global_allocator]` in `main.rs` and the `IOAccelerator` rows collapse to
    64 KB / 2 regions, while the same growth reappears as `MALLOC_SMALL` + `MALLOC_LARGE`. Same memory, different label.
-3. **Process attribution.** During a full climb, WebKit's helper processes hold nothing:
-   `com.apple.WebKit.GPU` ≈ 64 KB `IOAccelerator`, `com.apple.WebKit.WebContent` = 0. All of it is in the Cmdr process.
+3. **Process attribution.** During a full climb, WebKit's helper processes hold nothing: `com.apple.WebKit.GPU` ≈ 64 KB
+   `IOAccelerator`, `com.apple.WebKit.WebContent` = 0. All of it is in the Cmdr process.
 
-Corollary: the external "128 MB IOAccelerator slab leak" reports the earlier note cites (Bun #28234, claude-code
-#35804) are very probably the same mislabel — Bun also uses mimalloc. They are not evidence about Cmdr.
+Corollary: the external "128 MB IOAccelerator slab leak" reports the earlier note cites (Bun #28234, claude-code #35804)
+are very probably the same mislabel — Bun also uses mimalloc. They are not evidence about Cmdr.
 
 ## What the bug actually is
 
@@ -39,14 +39,14 @@ and dominated by the SMB/NAS index. Measured in dev (fresh launch each time, pea
 - Floor, SMB index suppressed: **~148 MB, completely flat** (no climb at all).
 - SMB (NAS) index resumed at launch: **~560–660 MB**, climbing ~1 slab/s for ~20 s, then freeing back.
 - Plus local drive indexing: **~1.0 GB**.
-- Prod, real NAS index (1.88 GB DB, 11.3 M entries): **6.7 GB**, and in the worst observed run **50 GB, which never
-  came back down and had to be killed**.
+- Prod, real NAS index (1.88 GB DB, 11.3 M entries): **6.7 GB**, and in the worst observed run **50 GB, which never came
+  back down and had to be killed**.
 
 Behaviour that used to look mysterious, now explained:
 
-- **"It pops back to 0.5 GB on its own"** = mimalloc decommitting pages after the burst. The arena *regions* stay
+- **"It pops back to 0.5 GB on its own"** = mimalloc decommitting pages after the burst. The arena _regions_ stay
   mapped, which is why the region COUNT never drops while dirty bytes collapse.
-- **"The watchdog says malloc heap 1.6 GB while phys is 16.5 GB"** = `malloc_zone_statistics` only sees *system* malloc
+- **"The watchdog says malloc heap 1.6 GB while phys is 16.5 GB"** = `malloc_zone_statistics` only sees _system_ malloc
   zones. mimalloc is not a registered zone, so **the watchdog is structurally blind to ~all of Cmdr's real heap**.
 - **No frontend lever ever mattered** (view mode, window size, DOM churn, CSS animations, the `index-dir-updated` and
   `index-aggregation-complete` refresh handlers, emit volume, CPU contention): the frontend was never involved.
@@ -60,8 +60,8 @@ Positive controls added to the flat floor — both **negative**, which is what f
 
 Subtractive tests against the SMB-index-on condition, all **no effect**:
 
-- Both frontend index-refresh paths disabled (`initIndexEvents(handleIndexDirUpdated)` +
-  `index-aggregation-complete` → `refreshIndexSizes`).
+- Both frontend index-refresh paths disabled (`initIndexEvents(handleIndexDirUpdated)` + `index-aggregation-complete` →
+  `refreshIndexSizes`).
 - All CSS animations and transitions killed (`* { animation: none !important; transition: none !important }`).
 - Importance scheduler disabled (`importance::scheduler::start`): peak 625 MB vs 646 MB baseline — noise.
 
@@ -74,13 +74,13 @@ Subtractive tests against the SMB-index-on condition, all **no effect**:
 > image indexing being off means no walk at all; and `get_or_build` deduplicates concurrent cold callers behind a
 > per-volume build lock. The diagnosis below is preserved as-is.
 
-**Single-lever proof.** With `coverage::get_or_build` short-circuited to `None` and *everything else at defaults*
-(NAS index resumed, local drive indexing on, importance on, search weights on), a fresh launch stays **flat at
-154.8 MB** — 86 → 141 → 154.8 MB, then unchanged for the whole sample window. The same build with coverage active
-peaks at **646 MB**. That one function is essentially the entire burst.
+**Single-lever proof.** With `coverage::get_or_build` short-circuited to `None` and _everything else at defaults_ (NAS
+index resumed, local drive indexing on, importance on, search weights on), a fresh launch stays **flat at 154.8 MB** —
+86 → 141 → 154.8 MB, then unchanged for the whole sample window. The same build with coverage active peaks at **646
+MB**. That one function is essentially the entire burst.
 
-Full-mode `malloc_history` at peak puts the two largest allocation sites (**115 MB across ~693 000 `format!()`
-calls**, far ahead of everything else) on one stack:
+Full-mode `malloc_history` at peak puts the two largest allocation sites (**115 MB across ~693 000 `format!()` calls**,
+far ahead of everything else) on one stack:
 
 ```
 media_index::commands::volume_state              (IPC command, spawn_blocking)
@@ -97,10 +97,10 @@ let images = pool.with_conn(walk_image_entries).ok()?.ok()?;  // Vec<ImageEntry>
 let counts = Arc::new(build_counts(&images));                 // …then reduced to counts
 ```
 
-`walk_image_entries` also pulls **every directory row** into a `Vec` plus an `id → &row` `HashMap`, streams **every
-file row** in the index, and allocates a fresh absolute-path `String` per qualifying image. So peak heap scales with
-the volume's image count: fine for a local disk, catastrophic for the NAS index (**11.3 M images**, inflated ~10× by
-the un-excluded `@Recently-Snapshot` tree) — gigabytes of `String`s to produce a handful of integers.
+`walk_image_entries` also pulls **every directory row** into a `Vec` plus an `id → &row` `HashMap`, streams **every file
+row** in the index, and allocates a fresh absolute-path `String` per qualifying image. So peak heap scales with the
+volume's image count: fine for a local disk, catastrophic for the NAS index (**11.3 M images**, inflated ~10× by the
+un-excluded `@Recently-Snapshot` tree) — gigabytes of `String`s to produce a handful of integers.
 
 Why every earlier lever missed it:
 
@@ -113,9 +113,9 @@ Why every earlier lever missed it:
   ~50× the entries.
 - **No pane on the NAS is needed** — coverage is per volume, not per pane.
 
-Magnitude note: `get_or_build` checks the cache, drops the lock, then walks. Concurrent callers for the same volume
-each run their own full walk with its own multi-GB `Vec`, so several overlapping calls multiply the peak — a plausible
-route from "a few GB" to the observed 50 GB.
+Magnitude note: `get_or_build` checks the cache, drops the lock, then walks. Concurrent callers for the same volume each
+run their own full walk with its own multi-GB `Vec`, so several overlapping calls multiply the peak — a plausible route
+from "a few GB" to the observed 50 GB.
 
 ## Earlier attribution detail (smaller contributors)
 
@@ -159,11 +159,12 @@ recompiles.
 
 ## Bugs found along the way (independent of the root cause)
 
-1. **`indexing.enabled: false` does not stop the SMB index.** The log shows `Drive indexing auto-start skipped (disabled
-   in settings)` and then, ~2 s later, `start_indexing: begin for 'smb-…-naspi'`. Adding every drive to
-   `indexing.silencedDrives` doesn't stop it either. `resume_smb_index_if_enabled`
-   (`indexing/transports/smb/index.rs`) gates only on the persisted per-volume `user_disabled` marker, never on the
-   master setting. So a user who turns drive indexing off still pays the NAS index cost at every launch.
+1. **`indexing.enabled: false` does not stop the SMB index.** The log shows
+   `Drive indexing auto-start skipped (disabled in settings)` and then, ~2 s later,
+   `start_indexing: begin for 'smb-…-naspi'`. Adding every drive to `indexing.silencedDrives` doesn't stop it either.
+   `resume_smb_index_if_enabled` (`indexing/transports/smb/index.rs`) gates only on the persisted per-volume
+   `user_disabled` marker, never on the master setting. So a user who turns drive indexing off still pays the NAS index
+   cost at every launch.
 2. **The memory watchdog cannot see the heap it is meant to police** (see above), and its "graphics vs indexing"
    discriminator keys on `resident − phys_footprint`, which is ~0 here. It should read mimalloc's own accounting
    (`mi_process_info` / `mi_stats_merge`) or simply treat `phys_footprint − system-zones` as untracked heap.
@@ -175,25 +176,24 @@ recompiles.
 ## The fix (proposed, not yet implemented)
 
 Core: **count without materializing.** Give the walk a streaming shape — `for_each_qualifying_image(conn, |dir, name|)`
-— so `coverage` aggregates straight into `per_folder` / `total` with O(folders) memory and never builds a path
-`String` per image. `emit_qualifying_group` already has the complete per-dir name set it needs for sibling-aware
-qualification, so the semantics are unchanged; only the sink differs. The enrichment passes keep a collecting sink
-(they genuinely need the list, though bounding them is worth a follow-up — the same `Vec` is multi-GB on the NAS
-during a real pass).
+— so `coverage` aggregates straight into `per_folder` / `total` with O(folders) memory and never builds a path `String`
+per image. `emit_qualifying_group` already has the complete per-dir name set it needs for sibling-aware qualification,
+so the semantics are unchanged; only the sink differs. The enrichment passes keep a collecting sink (they genuinely need
+the list, though bounding them is worth a follow-up — the same `Vec` is multi-GB on the NAS during a real pass).
 
 Supporting changes, each worth doing on its own merits:
 
 - **Don't run a cold O(entries) walk from `volume_state`.** It's a startup-path IPC; serve `None`/cached and let the
   settings slider request the count when that section actually opens.
-- **Deduplicate concurrent builds** — hold a per-volume build guard so N simultaneous callers can't each run a full
-  walk (observed: `root` walked twice within 70 ms at one launch).
+- **Deduplicate concurrent builds** — hold a per-volume build guard so N simultaneous callers can't each run a full walk
+  (observed: `root` walked twice within 70 ms at one launch).
 - **Exclude `@Recently-Snapshot` / `#snapshot`** from SMB indexing — ~10× fewer entries feeding every structure
   downstream, and it fixes the bogus "76 TB on a 10 TB NAS" number too.
 - Note the module's own rule for the sibling `accounted` aggregate is "❌ INCREMENTAL … never rebuilt from a walk"
   (`media_index/CLAUDE.md`). `COUNTS` is the one that still rebuilds from a walk; the fix brings it in line.
 
-Then: re-measure with mimalloc restored (this session's ladder ran on the system allocator once the mislabel was
-found), and re-test on prod with the real NAS index.
+Then: re-measure with mimalloc restored (this session's ladder ran on the system allocator once the mislabel was found),
+and re-test on prod with the real NAS index.
 
 ## Also worth fixing (found along the way)
 
