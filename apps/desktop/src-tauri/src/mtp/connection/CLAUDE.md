@@ -43,8 +43,8 @@ Parent: `../CLAUDE.md`.
   drops the entry, flips the index Stale, KEEPS the volume in the sidebar, then reopens with backoff. ❌ Never route it
   to `handle_device_disconnected`; ❌ never tighten the backoff (hammering re-wedges it); ❌ never add a USB transport
   reset — on Android that's a kill switch costing the user a replug, and the reopen self-heals without it
-  (`pnpm check mtp-no-transport-reset`). Failing ops report the RETRYABLE `DeviceSessionReset`. `DETAILS.md` §§ "Session reset is not a disconnect", "No transport reset in
-  recovery".
+  (`pnpm check mtp-no-transport-reset`). Failing ops report the RETRYABLE `DeviceSessionReset`.
+  `DETAILS.md` § "Session reset is not a disconnect" and `DETAILS.md` § "No transport reset in recovery".
 - **The event loop feeds the per-volume index, not just the live pane**: `ObjectAdded`/`ObjectInfoChanged` →
   `feed_index_added_or_changed` (upsert STORING the handle in `inode`); `ObjectRemoved` → `feed_index_removed`.
 - **`MtpDisconnectReason`** drives logs/UI: `User` only for the settings toggle / explicit disconnect;

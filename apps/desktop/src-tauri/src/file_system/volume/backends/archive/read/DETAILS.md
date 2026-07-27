@@ -109,7 +109,7 @@ Note `..` matches only a whole component — `..foo` and `foo..bar` are legitima
 
 ## Streaming reads, off the executor (`ArchiveEntryReader`)
 
-Mirrors the SMB backend's channel-backed read (see `apps/desktop/src-tauri/src/file_system/volume/backends/DETAILS.md` § Pattern B):
+Mirrors the SMB backend's channel-backed read (see `apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "Pattern B"):
 
 - A `spawn_blocking` producer owns the `Arc<dyn ArchiveByteSource>` and the entry handle, seeks to the entry's local
   header offset, and drives `EntryFsm` (read compressed bytes → decompress) entirely off the executor.

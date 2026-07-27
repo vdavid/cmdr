@@ -49,11 +49,11 @@ Depth: `DETAILS.md` (§§ Per-backend decisions, Gotchas, SMB auto-upgrade / rec
 - **SMB auto-upgrade is gated on `network.directSmbConnection`** and no-ops with no SMB mounts (fires no macOS Local
   Network prompt).
 - **SMB drive INDEXING lives in `src/indexing/`, not here** (needs a `direct` smb2 session; an `os_mount` upgrades
-  first). See `apps/desktop/src-tauri/src/indexing/DETAILS.md` § "SMB indexing and the freshness model".
+  first). See `apps/desktop/src-tauri/src/indexing/transports/DETAILS.md` § "The direct-smb2 gate".
 - **The SMB watcher feeds the per-volume index; don't shorten its lifetime.** `smb_watcher.rs` also drives
   `indexing::apply_smb_change` (death/overflow ⇒ index Stale), so it lives for the whole volume lifetime (canceled only
   by `on_unmount` / `do_attempt_reconnect`), never by a pane close. See
-  `apps/desktop/src-tauri/src/indexing/DETAILS.md` § "Live SMB watch → index".
+  `apps/desktop/src-tauri/src/indexing/transports/DETAILS.md` § "Live SMB watch → index".
 
 Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.
