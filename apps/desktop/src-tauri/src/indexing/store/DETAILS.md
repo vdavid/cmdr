@@ -1,9 +1,8 @@
 # Index store (SQLite) details
 
 Depth for `src-tauri/src/indexing/store/`: the `IndexStore` handle and the concern-split CRUD. Must-know invariants
-live in `CLAUDE.md`. The SQLite schema itself and the honest-sizes epoch model that shares its columns are
-one coupled mechanism and live in the parent `../DETAILS.md` § "SQLite schema" + § "Honest sizes"; the
-broader indexing pipeline is the rest of that file.
+live in `CLAUDE.md`. The SQLite schema itself is described below; the honest-sizes epoch model that shares its columns
+lives in `../writer/DETAILS.md` § "Honest sizes", and the broader indexing pipeline in `../DETAILS.md`.
 
 ## Module structure
 
@@ -37,7 +36,7 @@ pulling shared items via `use super::*`):
   aggregates-are-known-good marker (`ledger_heal_done` / `mark_ledger_heal_done` / `clear_ledger_heal_done`, keyed on
   `LEDGER_HEAL_KEY`). Its absence means the aggregates are UNPAID and the next launch rebuilds them: a never-healed
   pre-ledger DB, or a bulk walk that suppressed ancestor propagation and hasn't run its terminal aggregate yet. See the
-  parent `DETAILS.md` § "The dir_stats ledger".
+  `../writer/DETAILS.md` § "The dir_stats ledger".
 
 `resolve_component` always queries by `(parent_id, name_folded)` using the `idx_parent_name_folded` composite **UNIQUE**
 index. On Linux/Windows `normalize_for_comparison()` is the identity function, so `name_folded = name` and the index
@@ -46,8 +45,7 @@ behaves identically to a `(parent_id, name)` index. A schema-version mismatch tr
 `is_fatal_storage_error()`, `as_index_failure()`, `is_primary_key_conflict()`, `is_transient_lock_error()`, and
 `indicates_corruption()`. `is_primary_key_conflict()` separates an `entries.id` collision (extended 1555, the writer
 heals it by resyncing its counter) from a `(parent_id, name_folded)` conflict (2067, which must never be retried under a
-fresh id); rationale and the writer side: parent `../DETAILS.md` § "Decision: a PRIMARY KEY conflict on an
-upsert insert resyncs the counter and retries once".
+fresh id); rationale and the writer side: `../writer/DETAILS.md` § "Decision: a PRIMARY KEY conflict".
 
 **`with_savepoint` releases on the error path too (load-bearing).** The failure arm runs
 `ROLLBACK TO <name>; RELEASE <name>`. `ROLLBACK TO` alone undoes the work but leaves the savepoint — and the implicit

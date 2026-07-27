@@ -472,7 +472,7 @@ oldest whole ops until the DB fits the budget) → **dir GC** → **reclaim**.
   physical file (in WAL mode `incremental_vacuum`'s page-count drop otherwise lands only in the WAL). Importance sets
   `auto_vacuum = INCREMENTAL` but never calls `incremental_vacuum`; this DB must, or it grows unboundedly. Both slices go
   through `crate::sqlite_util::run_incremental_vacuum` because `incremental_vacuum` frees one page per step — see the
-  canonical gotcha in `../indexing/DETAILS.md` § row-yielding pragmas.
+  canonical gotcha in `../indexing/writer/DETAILS.md` § "Gotcha — row-yielding pragmas".
 
 ## The dev bin
 

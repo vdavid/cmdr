@@ -84,7 +84,7 @@ the aggregate recomputes coverage AND sizes for the whole tree from the committe
 reconcile's own writes (`UpsertEntryV2`/`Delete*`, never `InsertEntriesV2`) leave the accumulator maps empty, but the
 finish does NOT rely on that: declaring `Sql` — not sniffing map-emptiness — is what keeps an interleaving verification
 subtree scan's map pollution from zeroing every out-of-subtree dir (see `../writer/DETAILS.md` §
-the source contract). Per-dir `PropagateMinSubtreeEpoch` stays ONLY for the small-scope LIVE reconciles
+"The full-aggregate source contract"). Per-dir `PropagateMinSubtreeEpoch` stays ONLY for the small-scope LIVE reconciles
 (`reconcile_subtree`: per-navigation verifier, `MustScanSubDirs`, SMB-overflow `FullRefresh`), where the chain is short.
 
 **Decision: the full reconcile suppresses per-entry ancestor propagation (`SetDeltaPropagation`).** The single-aggregate
