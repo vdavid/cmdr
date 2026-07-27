@@ -8,10 +8,11 @@ read-consumer of `indexing/`, sibling to `search/`. Design + depth for every mus
 
 - `scorer/` — the PURE formula (`score` + `explain`), `types.rs`, `weights.rs`.
 - `store/` — per-volume `importance.db`, its single writer, the writer registry.
-- `read.rs` — `ImportanceIndex`, the consumer read API + recompute subscription.
-- `scheduler/` — bus-driven full + incremental recompute (coalesced per volume); `walk.rs` (the index walk),
-  `recompute.rs` (score + write), `signals.rs`, `classify.rs`, `last_used.rs`, `commands.rs`.
-- `fixtures.rs` (`cfg(test)`) — `SyntheticHome`. `evals/` — ranking-quality suite + weight-tuning corpus.
+- `read/` — `ImportanceIndex`, the consumer read API + recompute subscription.
+- `scheduler/` — bus-driven full + incremental recompute (coalesced per volume); `walk.rs` (the index walk) and
+  `recompute.rs` (score + write).
+- Top-level leaves: `signals.rs`, `classify.rs`, `last_used.rs`, `commands.rs`, `writer.rs`, `writer_registry.rs`,
+  `fixtures.rs` (`cfg(test)`, `SyntheticHome`). `evals/` — ranking-quality suite + weight-tuning corpus.
 
 ## Must-knows
 

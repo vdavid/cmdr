@@ -322,7 +322,7 @@ MTP volume is skipped (recording a visit no recompute reads is dead weight), gat
 (`indexing::volume_kind`), never its id string. The agent spec's planned `user_action_log` is this signal's future
 superset — when it lands, `record_visit` folds into it (never two parallel recorders).
 
-## The read API (`read.rs`, M3) — the canonical consumer entry point
+## The read API (`read/`) — the canonical consumer entry point
 
 `ImportanceIndex` is the ONE way any consumer (the agent, media-ML enrichment, future cleanup/prefetch) reaches folder
 importance — the agent and media-ML plans point here rather than restating (single-source, `docs.md`). It mirrors
