@@ -11,7 +11,7 @@ module map below lists the pieces. Filter-chip internals: `filter-chips/CLAUDE.m
 - UI pieces (`QueryBar`, `ModeChips`, `AiPromptStrip`, `QueryResults`, `EmptyState`, `PathPills`, `SearchRowMenu`,
   `recent-items/*`), pure helpers, the `query-filter-state.svelte.ts` cross-consumer factory, `apply-ai-filters.ts`
   (`applySizeFromAi` / `applyDateFromAi` / `applyTypeFromAi`), `ai-summary.ts` (the `AiPromptStrip` mirror), and the
-  `filter-chips/` subsystem. Per-file catalog: DETAILS.md § Files.
+  `filter-chips/` subsystem. Consumer-subset differences and the `recent-items` adapter shape: DETAILS.md § Files.
 
 ## Must-knows
 
