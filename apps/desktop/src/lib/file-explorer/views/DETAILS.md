@@ -7,57 +7,44 @@ invariants and gotchas live in `CLAUDE.md`.
 
 ### Components
 
-- **BriefList.svelte** – Horizontal columns, per-column shrink-wrapped widths (capped), horizontal scrolling. Column
-  text widths come from the backend (`get_brief_column_text_widths` IPC); the component adds chrome, clamps, and builds
-  prefix sums for variable-width virtual-scroll math.
-- **FullList.svelte** – Vertical rows, full metadata display, vertical scrolling
-- **virtual-scroll.ts** – Pure math functions for calculating visible windows. Two flavors: uniform
-  (`calculateVirtualWindow` / `getScrollToPosition` for FullList) and variable (`calculateVirtualWindowVariable` /
-  `getScrollToPositionVariable` for BriefList, driven by a prefix-sum array).
-- **file-list-utils.ts** – Shared helpers: entry caching, icon prefetching, sync status
-- **brief-list-utils.ts** / **full-list-utils.ts** – Mode-specific rendering logic. `full-list-utils.ts` includes
-  dual-size display helpers: `getDisplaySize()` (picks logical/physical/smart), `hasSizeMismatch()`,
-  `buildFileSizeTooltip()`, `buildDirSizeTooltip()`, `buildSelectionSizeTooltip()`, and `getDirSizeDisplayState()` — the
-  single source of truth for a directory's size-column CONTENT state
-  (`'dir' | 'scanning' | 'lower-bound' | 'size' | 'size-stale'`, a pure function of
-  `{recursiveSize, complete, stale, updating}` — the "honest sizes" model; see `$lib/indexing/DETAILS.md` § Honest size
-  rendering). The in-flux hourglass is the ORTHOGONAL `isDirSizeUpdating` (`indexing || pending`), not a state value. An
-  unknown size (not enriched yet, OR an incomplete subtree with nothing known below it: `complete === false` and
-  `recursiveSize === 0`) collapses into `'dir'`/`'scanning'` → the familiar `<dir>` placeholder, never a settled-looking
-  value, kept distinct from a genuinely-empty `0 bytes` (`complete === true`, `recursiveSize === 0` → `'size'`).
-  `FullList.svelte`'s size cell, `SelectionInfo.svelte`'s Brief status bar, and `measure-column-widths.ts` all consume
-  these so rendered text and pre-measured column width agree; don't re-inline the decision in any of them. The
-  lower-bound prefix glyph is `LOWER_BOUND_GLYPH` (`≥`, a symbol, not copy).
-- **measure-column-widths.ts** – `computeFullListColumnWidths()`: pixel-accurate widths for the Ext / Size / Modified
-  columns based on the currently loaded entries. Uses `@chenglou/pretext` for canvas-based measurement (no DOM reflow).
-  FullList transitions `grid-template-columns` over 300ms so widths refine smoothly as more entries stream in.
-- **FullList.svelte** – `staticEntries?: FileEntry[]` overrides the backend-listing path entirely — the entries array is
-  mirrored into `cachedEntries` and the cache fetch / soft-refresh / cache-generation paths short-circuit. Used by the
-  search-results virtual volume, which feeds full paths as the entries' `name` field; the column-name cell mid-truncates
-  via `useShortenMiddle` (snapping to `/` when the name carries one, `.` otherwise). With the prop unset, FullList
-  renders identically to before (same grid template, same fetch loop, same DOM).
-- **FullList.svelte** – Reads `listing.sizeDisplay` (via `getSizeDisplayMode()`), `listing.sizeMismatchWarning` (via
-  `getSizeMismatchWarning()`), and `listing.sizeUnit` (via `getFileSizeUnit()`, paired with `getFileSizeFormat()`)
-  settings. Size cells are rendered through `formatSizeForDisplay` from `selection/selection-info-utils.ts`, which
-  delegates to triads in bytes mode, a dynamic friendliest-unit string in dynamic mode, and a forced single-unit string
-  in `kB`/`MB`/`GB` mode. `measure-column-widths.ts` accepts the same options so the size column shrink-wraps the
-  actually-rendered cell text. Renders glyphs via `<Icon>`: `circle-alert` for size mismatch warnings and `hourglass`
-  for the index indicators. The hourglass (`size-updating` wrapper class) shows whenever `isDirSizeUpdating` is true:
-  the global `indexing` flag (full scan/aggregation, every size in flux) OR the row's own `recursiveSizePending` (live
-  delete/copy in flight for that dir, even with no scan running) — orthogonal to the content state, so it rides on top
-  of a size, a `≥` lower bound, or the `<dir>` placeholder (the `dir`/`scanning` states, the latter's tooltip "Sizes
-  appear as the scan progresses", so a fresh install reads as quietly working rather than `Scanning...` on every row).
-  Freshness-stale (`size-stale` content state) is a SEPARATE, muted treatment on an exact-but-older size, no glyph.
-  `measure-column-widths.ts` reserves `SIZE_ICON_WIDTH` whenever `isDirSizeUpdating` so the shrink-wrapped column never
-  clips the glyph. The per-dir flag rides `DirStats.recursiveSizePending`, copied onto entries by
-  `updateIndexSizesInPlace` / `createParentEntry` (backend: `indexing/pending_sizes.rs`). Also renders an optional Git
-  status column between Name and Ext when `gitRepoRoot` is set and `showGitColumn` is true (gated by the
-  `fileExplorer.git.showStatusColumn` setting in `FilePane`); fetches `fetchStatusMap` and refreshes on
-  `git-state-changed` for the active repo
-- **dir-size-display.test.ts** – Tests for `getDirSizeDisplayState` / `buildDirSizeTooltip` (functions in
-  `full-list-utils.ts`)
-- **view-modes.test.ts** – Integration tests for hidden-file filtering and directory listing structure (uses
-  `test-helpers.ts` from parent)
+Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
+map. Column shrink-wrapping, the sticky header, prefetch, cache invalidation, icon and tag-dot passes, the date column,
+and `showExtensionInName` are all in § "Key decisions" below; the Git status column is in `../git/DETAILS.md`, and
+`formatSizeForDisplay`'s bytes / dynamic / forced-unit modes in `../selection/DETAILS.md`. Three things live here
+because nothing else carries them:
+
+**The size column's content state (`full-list-utils.ts::getDirSizeDisplayState`).** One pure function of
+`{recursiveSize, complete, stale, updating}` returns `'dir' | 'scanning' | 'lower-bound' | 'size' | 'size-stale'` (the
+"honest sizes" model; see `$lib/indexing/DETAILS.md` § Honest size rendering). `FullList.svelte`'s size cell,
+`SelectionInfo.svelte`'s Brief status bar, and `measure-column-widths.ts` ALL consume it, so rendered text and
+pre-measured column width agree: don't re-inline the decision in any of them.
+
+- An unknown size collapses to `'dir'` / `'scanning'` and shows the familiar `<dir>` placeholder rather than a
+  settled-looking value. "Unknown" covers both not-yet-enriched and an incomplete subtree with nothing known below it
+  (`complete === false` and `recursiveSize === 0`), kept distinct from a genuinely-empty `0 bytes`
+  (`complete === true`, `recursiveSize === 0` → `'size'`).
+- The lower-bound prefix is `LOWER_BOUND_GLYPH` (`≥`), a symbol rather than copy.
+- **The in-flux hourglass is ORTHOGONAL to the content state**, not a sixth value: `isDirSizeUpdating` is the global
+  `indexing` flag (a full scan or aggregation, every size in flux) OR the row's own `recursiveSizePending` (a live
+  delete/copy for that dir with no scan running), so it rides on TOP of a size, a `≥` lower bound, or the placeholder.
+  The `'scanning'` tooltip is "Sizes appear as the scan progresses", so a fresh install reads as quietly working rather
+  than `Scanning...` on every row. Freshness-stale (`'size-stale'`) is a separate muted treatment on an exact-but-older
+  size, with no glyph. `measure-column-widths.ts` reserves `SIZE_ICON_WIDTH` whenever `isDirSizeUpdating`, or the
+  shrink-wrapped column clips the glyph. The per-dir flag rides `DirStats.recursiveSizePending`, copied onto entries by
+  `updateIndexSizesInPlace` / `createParentEntry` (backend: `indexing/pending_sizes.rs`).
+
+**A file's size cell is dual-valued (logical vs physical on disk).** `full-list-utils.ts::getDisplaySize()` picks
+between them per the `listing.sizeDisplay` setting (logical / physical / smart), `hasSizeMismatch()` decides whether the
+two disagree enough to warn, and a `circle-alert` `<Icon>` marks the row when they do, gated by
+`listing.sizeMismatchWarning`. `buildFileSizeTooltip()` / `buildDirSizeTooltip()` / `buildSelectionSizeTooltip()` spell
+the pair out on hover. `measure-column-widths.ts` takes the SAME options, so the column shrink-wraps the text actually
+rendered.
+
+**`FullList`'s `staticEntries?: FileEntry[]` prop bypasses the backend-listing path entirely.** The array is mirrored
+into `cachedEntries` and the cache-fetch / soft-refresh / cache-generation paths short-circuit. The search-results
+virtual volume is the user: it feeds full paths as the entries' `name` field, so the name cell mid-truncates via
+`useShortenMiddle` (snapping to `/` when the name carries one, `.` otherwise). Unset, FullList renders identically:
+same grid template, same fetch loop, same DOM.
 
 ### Data flow
 
