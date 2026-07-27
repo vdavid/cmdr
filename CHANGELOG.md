@@ -1432,7 +1432,7 @@ to a high-contrast red. Cmdr now runs on macOS 12 Monterey, too.
   ([52f3cd81](https://github.com/vdavid/cmdr/commit/52f3cd81))
 - Fix every tokio task crashing when stderr becomes a broken pipe
   ([31d97e06](https://github.com/vdavid/cmdr/commit/31d97e06))
-- Fix Linux compile errors in `errno.rs` and `mcp/resources.rs`
+- Fix Linux compile errors in `errno.rs` and the MCP resources module
   ([90b0afee](https://github.com/vdavid/cmdr/commit/90b0afee))
 - Fix Linux compile errors in `system_strings.rs` (macOS-only loctable items)
   ([e852f04a](https://github.com/vdavid/cmdr/commit/e852f04a))

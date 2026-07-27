@@ -297,8 +297,8 @@ These modules have invested test infrastructure. New code here must keep that ba
   `IndexStore` (use `tempdir`-backed) and a dedicated test mutex (INDEXING is global).
 - **`apps/desktop/src-tauri/src/file_viewer/`**: `SearchStatus` transitions through `search_cancel` are subtle (the
   thread writes `Cancelled`, the caller must not null `session.search` first). See `session.rs::tests`.
-- **`apps/desktop/src-tauri/src/file_system/index/store.rs`**: `platform_case_compare` has proptests for comparator
-  algebra and NFC≡NFD equivalence. Don't regress these.
+- **`apps/desktop/src-tauri/src/indexing/store/`**: `platform_case_compare` (in `store/mod.rs`) has proptests in
+  `store/tests.rs` for comparator algebra and NFC≡NFD equivalence. Don't regress these.
 
 ## E2E env-var hooks
 

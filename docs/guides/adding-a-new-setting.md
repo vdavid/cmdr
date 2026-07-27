@@ -65,7 +65,7 @@ command, (b) a typed wrapper in `$lib/tauri-commands/settings.ts`, (c) an `onSet
 ## 4. If you're adding a whole new section
 
 Register the route in `components/SettingsContent.svelte`, add the entry to `TOP_LEVEL_ORDER` in
-`sections/SettingsSidebar.svelte`, and mirror the order in `apps/desktop/test/e2e-playwright/settings.spec.ts` (it
+`components/SettingsSidebar.svelte`, and mirror the order in `apps/desktop/test/e2e-playwright/settings.spec.ts` (it
 asserts the section list).
 
 ## 5. If you change the stored format

@@ -174,5 +174,5 @@ grep 'extended_metadata' benchmark.log
 
 - Rust: `src-tauri/src/benchmark.rs`
 - TypeScript: `src/lib/benchmark.ts`
-- File loading: `src-tauri/src/file_system/operations.rs`
-- Frontend: `src/lib/file-explorer/FilePane.svelte`
+- File loading: `src-tauri/src/file_system/listing/operations.rs`
+- Frontend: `src/lib/file-explorer/pane/FilePane.svelte`

@@ -18,7 +18,7 @@ normalization only, never region↔script remapping:
   `ca@valencia`→`ca-valencia`, `uz@cyrillic`→`uz-Cyrl`); legacy macOS `no`→`nb`.
 - **microsoft-terminology**: the TBX's authoritative internal `xml:lang` (already BCP-47: `zh-Hans`, `pt-BR`,
   `sr-Latn`).
-- **microsoft-style-guides**: the slug→tag table in `_extract/reorg/main.go` — derived from terminology's codes by
+- **microsoft-style-guides**: the slug→tag table in `_extract/reorg/` — derived from terminology's codes by
   name-matching, plus an override map for Microsoft's regional/script splits its terminology lumps (`french-canada`→
   `fr-CA`, `spanish-mexico`→`es-MX`, `english-uk`→`en-GB`, `azerbaijani`→`az-Latn`, etc.). Unspecified-script slugs map
   to base (`punjabi`→`pa`, `uzbek`→`uz`, `sanskrit`→`sa`).
@@ -75,7 +75,7 @@ them after a pile rebuild:
   volume), `AppKit` (standard buttons/menus: Cancel, Open, Eject, Move to Trash), `SystemSettings`.
 - **Coverage**: 42 languages, 6,174 JSON files, ~32 MB. Includes sv, de, hu plus the full macOS language set.
 - **Scope caveat**: curated to file-manager + standard-UI bundles, NOT every `.loctable` on the OS. Broaden by adding
-  entries to the `sources` list in `_extract/macos-extract/main.go` and re-running.
+  entries to the `sources` list in `_extract/macos-extract/` and re-running.
 - **Provenance**: extracted from `/System/…` on this machine via `plutil -convert json`, 2026-06-19. Re-run any time to
   refresh against the current macOS build.
 

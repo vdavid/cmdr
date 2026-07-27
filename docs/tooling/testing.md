@@ -33,9 +33,9 @@ growth and allocator internals, the shape is the invariant. Worked examples:
 
 Dev-dependency on `cmdr-lib`. Use for pure functions where the input space is large enough that example tests miss edge
 cases: comparators, parsers, transforms, generators. State a property (round-trip, idempotence, "output is valid for the
-consumer"), let proptest fuzz inputs. Patterns to copy: `indexing/aggregator.rs` (topological sort), `search/query.rs`
-(glob_to_regex + scope parsing), `indexing/store.rs` (platform_case_compare comparator laws). Keep properties **tight**:
-"function doesn't panic" is too weak.
+consumer"), let proptest fuzz inputs. Patterns to copy: `indexing/aggregator/tests.rs` (topological sort),
+`search/query.rs` (glob_to_regex + scope parsing), `indexing/store/tests.rs` (platform_case_compare comparator laws).
+Keep properties **tight**: "function doesn't panic" is too weak.
 
 ### `cargo-mutants` (mutation testing)
 

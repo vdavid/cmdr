@@ -15,7 +15,7 @@ VolumeError (with errno)
   → ErrorPane.svelte                    → renders markdown, category icon, retry button
 ```
 
-All classification and message authoring happens in Rust (`file_system/volume/friendly_error.rs`). The frontend renders
+All classification and message authoring happens in Rust (`file_system/volume/friendly_error/`). The frontend renders
 what it receives and never does OS-specific logic.
 
 ## Data model
@@ -88,7 +88,7 @@ Examples:
 Unrecognized errno codes fall through to a generic "Couldn't read this folder" message (Serious category, retry
 enabled).
 
-See the full list in `friendly_error.rs` (search for `fn friendly_error_from_errno`).
+See the full list in `friendly_error/errno.rs` (search for `fn listing_error_from_errno`).
 
 ### Layer 3: provider enrichment
 
@@ -181,8 +181,7 @@ suggestion: "You may want to try simply reconnecting the device."  ← permissiv
 
 ## Testing
 
-- **Unit tests**: `friendly_error.rs` has tests for category assignment, writing rule enforcement, and provider
-  detection
+- **Unit tests**: `friendly_error/` has tests for category assignment, writing rule enforcement, and provider detection
 - **E2E tests**: `test/e2e-playwright/error-pane.spec.ts` injects errno codes via `inject_listing_error` (feature-gated
   behind `playwright-e2e`) and verifies the full render pipeline:
   - Transient error (ETIMEDOUT): title, markdown rendering, "Try again" button, retry clears error
@@ -193,10 +192,11 @@ suggestion: "You may want to try simply reconnecting the device."  ← permissiv
 
 ## Key files
 
-- **`src-tauri/src/file_system/volume/friendly_error.rs`**: All error classification, messages, and provider detection
-- **`src-tauri/src/file_system/volume/mod.rs`**: `VolumeError` enum definition
+- **`src-tauri/src/file_system/volume/friendly_error/`**: All error classification, messages, and provider detection
+- **`src-tauri/src/file_system/volume/types.rs`**: `VolumeError` enum definition
 - **`src-tauri/src/file_system/listing/streaming.rs`**: Emits `listing-error` events
-- **`src-tauri/src/commands/file_system.rs`**: `inject_listing_error` (E2E) and `preview_friendly_error` (debug)
+- **`src-tauri/src/commands/file_system/e2e_support.rs`**: `inject_listing_error` (E2E) and `preview_friendly_error`
+  (debug)
 - **`src/lib/file-explorer/pane/ErrorPane.svelte`**: Renders the error pane UI
 - **`src/lib/file-explorer/pane/error-pane-utils.ts`**: Markdown rendering helper
 - **`src/lib/file-explorer/types.ts`**: `FriendlyError` and `ListingErrorEvent` TypeScript types
