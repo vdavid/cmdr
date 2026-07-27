@@ -7,42 +7,25 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
 
 ## Key files
 
-- **`navigation-history.ts`**: Purely functional immutable history stack
-- **`path-navigation.ts`**: Picks initial path when switching volumes
-- **`navigate-and-select.ts`**: Shared "jump into a pane" primitives (`navigateToDirInPane` / `navigateToFileInPane`)
-  used by Go-to-path; awaits `navigate()`'s `NavigateResult` (bails on `'refused'`, awaits `settled` otherwise). Plus
-  the pane-reuse variants the downloads flow uses (`revealFileInBestPane` / `navigateToDirInBestPane`): reuse a pane
-  already showing the target dir (volume-safe, active tab only) instead of duplicating the view; the plain primitives
-  keep their always-navigate-the-given-pane contract for Go-to-path
-- **`path-resolution.ts`**: Walk-up `resolveValidPath` (split out to break cycle)
-- **`path-segments.ts`**: Splits the breadcrumb display path into segments and flags any inside a `.git/...` portal
-  (consumer: `FilePane.svelte` paints them with `--color-git-portal-text`)
-- **`keyboard-shortcuts.ts`**: Home/End/PageUp/PageDown handling for file lists
-- **`VolumeBreadcrumb.svelte`**: Clickable volume label + grouped dropdown
-- **`volume-grouping.ts`**: Pure logic: group volumes by category, get volume icons
-- **`volume-space-manager.svelte.ts`**: Reactive state machine for disk space fetch/retry/timeout
-- **`volume-breadcrumb-handlers.svelte.ts`**: Submenu/breadcrumb-popup controllers, keyboard-mode tracker, and pure
-  key-dispatch helpers for `VolumeBreadcrumb.svelte`
-- **`favorites-controller.svelte.ts`**: `createFavoritesController(deps)`: the favorites INTERACTION layer (rename
-  start/cancel/commit + key guard, pointer-drag + keyboard reorder, remove, the local-first `optimisticFavoriteIds`
-  override and its reconciliation `$effect`) extracted from `VolumeBreadcrumb.svelte`. Owns the rename/drag `$state`;
-  exposes it via getters and exposes the handlers as methods plus a `destroy()` (window drag listeners).
-  `effectiveVolumes` / `favorites` stay in the component and read `fav.optimisticFavoriteIds`
-- **`eject-predicate.ts`**: Pure `isVolumeEjectable(volume)` used by the eject button gate. Returns true when NSURL says
-  ejectable OR the volume has any SMB connection state
-- **`DriveIndexBadge.svelte`**: Per-drive index freshness dot (gray/blue/green/yellow) + its click menu (see § Drive
-  index freshness badge)
-- **`ImageIndexDriveBadge.svelte`** + **`image-index-drive-state.ts`**: the second per-drive dot, for IMAGE-search
-  indexing (gray/yellow/green), and its pure state/coverage mapping (`image-index-drive-state.test.ts`). See §
-  Image-index drive dot
-- **`drive-index-status.ts`**: Pure mapping for the badge: `VolumeIndexStatus` → state/color, menu items per state, the
-  "N min, S s" duration formatter (`drive-index-status.test.ts`)
-- **`drive-index-manager.svelte.ts`**: Reactive `volumeId → VolumeIndexStatus` map; fetches on demand and subscribes to
-  the indexing events to stay live. `isDriveRow(volume)` is the badge-eligibility predicate
-- **`navigation-history.test.ts`**: Full unit test coverage of history functions
-- **`path-navigation.test.ts`**: Unit tests for path resolution and timeouts
-- **`keyboard-shortcuts.test.ts`**: Unit tests for shortcut calculations
-- **`path-segments.test.ts`**: Unit tests for git-portal segment detection
+Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
+map. What each piece DOES is in the sections below (a `##` per module for `navigation-history`, `path-navigation`,
+`path-resolution`, `keyboard-shortcuts`, `volume-grouping`, and `volume-space-manager`, plus a `###` per breadcrumb
+feature: the TCC indicator, SMB indicator, eject button, editable favorites, USB link speed, and the two per-drive
+badges). `resolve-location.ts` and `breadcrumb-navigation.ts` are documented where they're used, in
+`../pane/DETAILS.md`. Only the layout facts that none of those carry live here:
+
+- **`navigate-and-select.ts` holds TWO families with deliberately different contracts.** `navigateToDirInPane` /
+  `navigateToFileInPane` ALWAYS navigate the pane they're given (the Go-to-path contract); `revealFileInBestPane` /
+  `navigateToDirInBestPane` instead REUSE a pane already showing the target dir (volume-safe, active tab only) so the
+  downloads reveal doesn't duplicate a view. Both await `navigate()`'s `NavigateResult`, bailing on `'refused'` and
+  awaiting `settled` otherwise. Don't collapse the two families.
+- **`path-resolution.ts` exists to break an import cycle**, holding only the walk-up `resolveValidPath`:
+  `path-navigation.ts` imports `getLastUsedPathForVolume` from `app-status-store.ts`, so `app-status-store.ts` needs a
+  cycle-free way to reach the resolver. Folding it back into `path-navigation.ts` reintroduces the cycle.
+- **`path-segments.ts` flags segments inside a `.git/…` portal** as it splits the breadcrumb display path, purely so
+  `FilePane.svelte` can paint them with `--color-git-portal-text`. It's the only consumer of that flag.
+- **`eject-predicate.ts::isVolumeEjectable` is true when NSURL says ejectable OR the volume carries ANY SMB connection
+  state**, which is what puts SMB shares behind the same `⏏` affordance as physical media.
 
 ## `navigation-history.ts`
 
