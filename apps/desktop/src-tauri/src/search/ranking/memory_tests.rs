@@ -71,7 +71,7 @@ fn the_weight_map_holds_only_a_small_slot_per_scored_folder() {
     let budget = BYTES_PER_FOLDER_CEILING * FOLDERS as i64;
     assert!(
         bytes <= budget,
-        "the weight map holds {bytes} B over {FOLDERS} folders ({:.1} B each), past the \
+        "the weight map holds {bytes} B across the {FOLDERS}-folder corpus ({:.1} B each), past the \
          {BYTES_PER_FOLDER_CEILING} B-a-folder budget of {budget} B. Storing the path per folder \
          is what this catches.",
         bytes as f64 / FOLDERS as f64,
