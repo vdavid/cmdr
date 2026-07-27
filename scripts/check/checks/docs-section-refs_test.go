@@ -53,6 +53,53 @@ func TestRunDocsSectionRefs_BoldPseudoHeading(t *testing.T) {
 	}
 }
 
+func TestRunDocsSectionRefs_BoldLeadInsideListItem(t *testing.T) {
+	tmp := t.TempDir()
+	// The most common subsection marker in this corpus is a bullet, not a bare line:
+	// `- **Compression level applies to ADDED entries only.** …`.
+	writeDeadLinkFile(t, tmp, "CLAUDE.md", "See `lib/DETAILS.md` § Cancel propagation.")
+	writeDeadLinkFile(t, tmp, "lib/DETAILS.md", "## Rules\n\n- **Cancel propagation bails at the next boundary.** Text.\n")
+
+	if _, err := RunDocsSectionRefs(&CheckContext{RootDir: tmp}); err != nil {
+		t.Fatalf("a bold lead-in inside a list item is a valid § target: %v", err)
+	}
+}
+
+func TestRunDocsSectionRefs_LabelledDecisionBlock(t *testing.T) {
+	tmp := t.TempDir()
+	// `**Decision**: <name>` names the decision AFTER the bold label, and one doc holds
+	// many of them, so the label alone can't be the heading.
+	writeDeadLinkFile(t, tmp, "CLAUDE.md", "See `lib/DETAILS.md` § Live-toggleable portal.")
+	writeDeadLinkFile(t, tmp, "lib/DETAILS.md", "## Decisions\n\n**Decision**: Live-toggleable portal via a global `AtomicBool`.\n")
+
+	if _, err := RunDocsSectionRefs(&CheckContext{RootDir: tmp}); err != nil {
+		t.Fatalf("a labelled decision block is a valid § target: %v", err)
+	}
+}
+
+func TestRunDocsSectionRefs_ClaimIsHeadingSubsequence(t *testing.T) {
+	tmp := t.TempDir()
+	// "§ The source contract" for "The full-aggregate source contract": the claim's
+	// words are in order but not contiguous, which is how docs shorten a long heading.
+	writeDeadLinkFile(t, tmp, "CLAUDE.md", "See `lib/DETAILS.md` § The source contract.")
+	writeDeadLinkFile(t, tmp, "lib/DETAILS.md", "## Writer\n\n**The full-aggregate source contract.** Text.\n")
+
+	if _, err := RunDocsSectionRefs(&CheckContext{RootDir: tmp}); err != nil {
+		t.Fatalf("an in-order word subsequence must resolve: %v", err)
+	}
+}
+
+func TestRunDocsSectionRefs_ShuffledWordsStillFlagged(t *testing.T) {
+	tmp := t.TempDir()
+	// The subsequence rule must not decay into "shares some words with a heading".
+	writeDeadLinkFile(t, tmp, "CLAUDE.md", "See `lib/DETAILS.md` § Contract source full.")
+	writeDeadLinkFile(t, tmp, "lib/DETAILS.md", "## Writer\n\n**The full-aggregate source contract.** Text.\n")
+
+	if _, err := RunDocsSectionRefs(&CheckContext{RootDir: tmp}); err == nil {
+		t.Fatal("out-of-order words must not resolve; the rule would catch nothing")
+	}
+}
+
 func TestRunDocsSectionRefs_QuotedAndBacktickedHeading(t *testing.T) {
 	tmp := t.TempDir()
 	writeDeadLinkFile(t, tmp, "CLAUDE.md", "See `lib/DETAILS.md` § \"The `walk` pass\" for depth.")

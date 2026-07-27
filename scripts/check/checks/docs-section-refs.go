@@ -22,10 +22,18 @@ var sectionRefRe = regexp.MustCompile("`([^`\n]+\\.mdx?)`\\s*§\\s*(?:\"([^\"\n]
 // headingLineRe strips the leading #s off an ATX heading.
 var headingLineRe = regexp.MustCompile(`^#+\s*`)
 
-// boldLeadRe matches a bold lead-in used as a subsection marker: `**The rule.** …`.
-// These are real § targets in this corpus, so a check that only knew about `#`
-// headings would flag a pile of correct pointers.
-var boldLeadRe = regexp.MustCompile(`^\*\*(.+?)\*\*`)
+// boldLeadRe matches a bold lead-in used as a subsection marker, at the start of a
+// line or of a list item: `**The rule.** …` and `- **The rule.** …`. Both are real §
+// targets here, and the bullet form is the more common of the two, so a check that
+// knew only about `#` headings (or only about unindented bold) would flag a pile of
+// correct pointers.
+var boldLeadRe = regexp.MustCompile(`^\s*(?:[-*+]\s+)?\*\*(.+?)\*\*(.*)$`)
+
+// labelledBlockRe matches a bold LABEL introducing a named block: `**Decision**: Live
+// -toggleable portal …`. The name is what a § pointer cites, and one doc can hold
+// twenty `**Decision**` blocks, so the label alone is useless as a target. Captures
+// the text after the colon.
+var labelledBlockRe = regexp.MustCompile(`^\s*:\s*(.+)$`)
 
 // sentenceBreakRe splits a bare claim at its first sentence end, so
 // "§ Gotchas. If you ever need to…" claims "Gotchas", not the paragraph.
@@ -55,18 +63,25 @@ func headingWords(s string) []string {
 // lead-ins.
 func docHeadings(content string) [][]string {
 	var out [][]string
-	for line := range strings.SplitSeq(content, "\n") {
-		var raw string
-		switch {
-		case strings.HasPrefix(line, "#"):
-			raw = headingLineRe.ReplaceAllString(line, "")
-		case strings.HasPrefix(line, "**"):
-			if m := boldLeadRe.FindStringSubmatch(line); m != nil {
-				raw = m[1]
-			}
-		}
+	add := func(raw string) {
 		if w := headingWords(raw); len(w) > 0 {
 			out = append(out, w)
+		}
+	}
+	for line := range strings.SplitSeq(content, "\n") {
+		if strings.HasPrefix(line, "#") {
+			add(headingLineRe.ReplaceAllString(line, ""))
+			continue
+		}
+		m := boldLeadRe.FindStringSubmatch(line)
+		if m == nil {
+			continue
+		}
+		add(m[1])
+		// `**Decision**: <name>` — the name after the label is the real target, so
+		// index it too rather than leaving twenty identical `Decision` entries.
+		if rest := labelledBlockRe.FindStringSubmatch(m[2]); rest != nil {
+			add(rest[1])
 		}
 	}
 	return out
@@ -90,14 +105,24 @@ func claimText(quoted, bare string) (words []string, raw string) {
 	return w, raw
 }
 
-// isContiguousRun reports whether needle appears as a contiguous run inside hay.
-func isContiguousRun(needle, hay []string) bool {
-	if len(needle) == 0 || len(needle) > len(hay) {
+// isOrderedSubsequence reports whether every word of needle appears in hay, in the
+// same order, not necessarily adjacent. That's how docs shorten a long heading:
+// "§ The source contract" for "The full-aggregate source contract".
+//
+// Order is what keeps this from decaying into "shares some words with a heading" —
+// a claim whose words appear scrambled doesn't match. Needles under two words are
+// rejected outright, since a single common word would subsequence into almost
+// anything.
+func isOrderedSubsequence(needle, hay []string) bool {
+	if len(needle) < 2 || len(needle) > len(hay) {
 		return false
 	}
-	for i := 0; i+len(needle) <= len(hay); i++ {
-		if slicesEqual(needle, hay[i:i+len(needle)]) {
-			return true
+	i := 0
+	for _, w := range hay {
+		if w == needle[i] {
+			if i++; i == len(needle) {
+				return true
+			}
 		}
 	}
 	return false
@@ -121,8 +146,8 @@ func slicesEqual(a, b []string) bool {
 //
 //   - a shared prefix, so "§ Platform constraints" finds "Platform constraints
 //     (filesystem and IPC)" and vice versa
-//   - either one contained in the other as a contiguous run, so "§ The source
-//     contract" finds "The full-aggregate source contract"
+//   - either one an in-order subsequence of the other, so "§ The source contract"
+//     finds "The full-aggregate source contract"
 //
 // What it still catches is the case that matters: a heading that isn't there at
 // all, because it was renamed, moved to another doc, or never existed.
@@ -132,7 +157,7 @@ func claimMatches(claim []string, headings [][]string) bool {
 		if n > 0 && slicesEqual(claim[:n], h[:n]) {
 			return true
 		}
-		if isContiguousRun(claim, h) || isContiguousRun(h, claim) {
+		if isOrderedSubsequence(claim, h) || isOrderedSubsequence(h, claim) {
 			return true
 		}
 	}
