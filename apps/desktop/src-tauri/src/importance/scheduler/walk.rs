@@ -5,7 +5,7 @@
 //! Split from [`super::recompute`] (which scores and writes what this produces)
 //! because the walk's memory shape is a subject of its own: it runs over
 //! multi-million-row NAS indexes, so what it keeps per folder decides whether a
-//! pass costs tens of MB or hundreds. Depth: `../DETAILS.md` § The walk.
+//! pass costs tens of MB or hundreds. Depth: `DETAILS.md` § The walk.
 
 use crate::importance::classify::{is_project_marker, self_floors};
 use crate::importance::signals::ChildAggregate;

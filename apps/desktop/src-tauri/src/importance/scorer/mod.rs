@@ -7,8 +7,8 @@
 //! `rusqlite`, no `Volume`, no filesystem, no clocks; "now" is passed in as a
 //! value so recency is deterministic in tests.
 //!
-//! See the [`importance` module docs](../DETAILS.md) for the signal catalog and
-//! the tunable-weights rationale.
+//! See [`DETAILS.md`](DETAILS.md) for the signal catalog and the tunable-weights
+//! rationale.
 
 pub mod types;
 pub mod weights;

@@ -6,8 +6,8 @@
 //! and its tunable [`Weights`]. Storage, the lifecycle bus, the scheduler, and the
 //! read API land in later milestones (see `docs/specs/later/importance-subsystem-plan.md`).
 //!
-//! Read [`DETAILS.md`](DETAILS.md) before working here: the signal catalog, the
-//! formula shape, and the tunable-weights rationale.
+//! Read [`DETAILS.md`](DETAILS.md) before working here: the subsystem-wide rules
+//! and the top-level files. Each area subdir documents itself.
 
 pub(crate) mod classify;
 pub mod commands;

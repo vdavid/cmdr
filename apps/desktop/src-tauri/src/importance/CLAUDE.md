@@ -1,61 +1,43 @@
 # Importance subsystem
 
-Deterministic, cheap folder-importance scoring for expensive features (agent, media-ML, future cleanup/prefetch). A pure
-read-consumer of `indexing/`, sibling to `search/`. Design + depth for every must-know below: `DETAILS.md` and
-`docs/specs/later/importance-subsystem-plan.md`.
+Deterministic, cheap folder-importance scoring for expensive features (the in-app agent, media-ML enrichment, future
+cleanup/prefetch). A pure read-consumer of `indexing/`, sibling to `search/`.
 
-## Module map
+## Areas (routing map)
 
-- `scorer/` — the PURE formula (`score` + `explain`), `types.rs`, `weights.rs`.
-- `store/` — per-volume `importance.db`, its single writer, the writer registry.
-- `read/` — `ImportanceIndex`, the consumer read API + recompute subscription.
-- `scheduler/` — bus-driven full + incremental recompute (coalesced per volume); `walk.rs` (the index walk) and
-  `recompute.rs` (score + write).
-- Top-level leaves: `signals.rs`, `classify.rs`, `last_used.rs`, `commands.rs`, `writer.rs`, `writer_registry.rs`,
-  `fixtures.rs` (`cfg(test)`, `SyntheticHome`). `evals/` — ranking-quality suite + weight-tuning corpus.
+Each area subdir has its own `CLAUDE.md` (must-knows) + `DETAILS.md` (depth). Touch a dir and its `CLAUDE.md` autoloads;
+read it before non-trivial work there.
 
-## Must-knows
+- **`scorer/CLAUDE.md`** — the pure formula: `score` / `explain`, `FolderSignals`, the tunable `Weights`.
+  **`store/CLAUDE.md`** — per-volume `importance.db`: the schema, the folded PK, what earns a row.
+- **`scheduler/CLAUDE.md`** — bus-driven full and incremental recompute, the O(dirs) index walk, the kind policy.
+  **`read/CLAUDE.md`** — `ImportanceIndex`, the ONLY consumer entry, plus the recompute subscription.
+- **`evals/CLAUDE.md`** — the ranking-quality suite and the anonymized real-index corpus.
 
-Scorer:
+Top-level leaves this file owns: `classify.rs` (the shared categorical classifiers), `signals.rs` (index rows ⇒
+`FolderSignals`), `last_used.rs` (sampled Spotlight `kMDItemLastUsedDate`), `commands.rs` (`record_visit`), `writer.rs`
++ `writer_registry.rs` (ONE writer thread per volume), and `fixtures.rs` (`cfg(test)`, `SyntheticHome`).
 
-- **PURE** (no `rusqlite`/`Volume`/fs/clock; "now" is a `u64` arg). `score` delegates to `explain` ⇒ ONE formula; the
-  breakdown sums to the score when unfloored.
-- **Three FLOOR overrides cap the score at `0.0` OUTSIDE the signal sum**: `name_denylisted`, `hidden_or_system`,
-  `under_floored_ancestor` (floors the whole subtree; floor beats marker). Missing optional signals REDISTRIBUTE, never
-  fabricate.
-- **Classification is typed, never a string branch** (`no-string-matching`): `PathClass`/`SignalSet`/`SignalKind` enums;
-  denylist reuses `search::SYSTEM_DIR_EXCLUDES`.
-- **Default `Weights` are UNVALIDATED** — pass a `Weights`, don't hardcode; changes can fail the `evals/` soft floor.
+## Subsystem-wide must-knows
 
-Storage + scheduler:
+- **The scorer is PURE** — no `rusqlite`, no `Volume`, no filesystem, no clock ("now" is a `u64` argument). ❌ Don't
+  hand it a connection or let it read the wall clock; every caller passes values in.
+- **Three FLOOR overrides cap a folder at `0.0` OUTSIDE the additive sum**: `name_denylisted`, `hidden_or_system`, and
+  `under_floored_ancestor`, which floors the whole subtree. **Floor beats marker**: a repo vendored inside a
+  `node_modules` stays floored. **A floored folder gets NO row** — every read derives `Floored` from the path
+  (`classify::floors_by_path`); ❌ don't reintroduce a `0.0` row.
+- **Categorical signals come from `classify.rs`**, shared by production, fixtures, and evals — ❌ never re-derive them.
+  Classification is typed (`PathClass` / `SignalKind`), never a string branch (`no-string-matching`), and the denylist
+  reuses `search::SYSTEM_DIR_EXCLUDES`.
+- **`importance-{volume_id}.db` is a disposable cache**: a `SCHEMA_VERSION` mismatch delete-and-recreates it, no
+  migrations. ONE long-lived `ImportanceWriter` per volume through `writer_registry`; visits AND recomputes both route
+  through it. ❌ Never a second writer thread on one DB.
+- **Volume kind ⇒ policy, TYPED** (`scheduler::ScoringPolicy::for_kind`): Local and SMB scored, **MTP excluded** at
+  every entry point. ❌ NEVER a filesystem syscall against an SMB or MTP mount — read the local index DB only.
+- **Only a FULL pass stamps `recompute_generation`**, so generation `0` does NOT mean "no weights" (an
+  incremental-only store holds hundreds of thousands of rows at generation 0). A consumer asking "genuinely unscored?"
+  keys on the row count.
 
-- **Disposable cache** (delete-and-recreate on `SCHEMA_VERSION` mismatch). Rows key on a **BINARY `path_folded` PK**, ❌
-  never a `platform_case`-collated `path` PK (full-scans the incremental subtree-clear and pegs a core). ONE long-lived
-  `ImportanceWriter` per volume (scheduler's `WriterRegistry`); visits + recomputes route through it. A full pass
-  REPLACES the whole table + bumps the generation in ONE transaction; each row carries its as-of generation.
-- **Floored folders get NO row** — the read side derives `Floored`; don't reintroduce a `0.0` row. **`FolderSignals`
-  serde shape is load-bearing** (camelCase, `specta::Type`, per-field `skip_serializing_if`).
-- **The full walk (`scheduler/walk.rs`) is O(dirs) in a SMALL CONSTANT.** Dirs live in the shared `DirTree` (arena + 24
-  B/dir); each folder is one `Copy` record (tree index, mtime, `ChildAggregate`, two flags). ❌ No `EntryRow`, ❌ no
-  stored path (`for_each` reconstructs into one reused buffer), ❌ no per-folder extension set (file rows stream GROUPED
-  by parent). 84 MB not 244 MB on a 391k-folder NAS; `walk_memory_tests.rs` guards it.
-- **Categorical signals live in `classify.rs`**, shared by prod + fixtures/evals — don't re-derive.
-- **Drive full recompute off the bus `ScanCompleted` + sweep, NEVER phase events** (network never emits them). Coalesce
-  per volume. A volume Fresh at launch never re-fires `ScanCompleted`, so the sweep ALSO runs
-  `enqueue_initial_full_pass_if_unscored`: a store with no generation (fresh / schema-recreated / incremental-only) gets
-  one full pass. The "unscored?" check binds to `store::needs_initial_full_pass`, which forces the WRITE-path open
-  (triggering the lazy schema recreate) BEFORE reading the generation — ❌ never a sweep-time read probe (it reads the OLD
-  schema's stamped generation, skips, then the recreate wipes it: the stuck-at-generation-0 prod-upgrade trap).
-- **Volume kind ⇒ policy TYPED** (`ScoringPolicy::for_kind`): Local + SMB scored, **MTP excluded**. ❌ NEVER a filesystem
-  syscall against an SMB/MTP mount — read the local DB only.
-
-Read API + incremental:
-
-- **`ImportanceIndex` (`read/`) is the ONLY consumer entry** (no raw `rusqlite`); reads the DB directly so weights stay
-  queryable OFFLINE after unmount.
-- **Incremental writes at the CURRENT generation, does NOT bump it, and NEVER escalates to a full pass.** Clears each
-  changed subtree then re-inserts only non-floored folders. Every live batch carries the bare root `/`
-  (`collect_ancestor_paths`); `sanitize_incremental_batch` drops it — ❌ don't reintroduce a `/`→full-pass escalation (it
-  pegged a core with continuous recomputes). Throttled to ≤1 walk per `INCREMENTAL_THROTTLE_WINDOW`.
-
-Adding a signal, the signal catalog, and every "why": `DETAILS.md`.
+Why it's a separate subsystem, the writer and its registry, the WAL checkpoint, `record_visit`, Spotlight sampling, the
+floor-propagation rule, and the fixtures: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.
