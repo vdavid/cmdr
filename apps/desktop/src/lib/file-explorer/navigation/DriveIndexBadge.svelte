@@ -104,8 +104,10 @@
         const params: Record<string, string | number> = {
             count: coalescedNote.count,
             countText: formatInteger(coalescedNote.count),
-            hours: coalescedNote.hours,
-            hoursText: formatInteger(coalescedNote.hours),
+        }
+        if (coalescedNote.hours != null) {
+            params.hours = coalescedNote.hours
+            params.hoursText = formatInteger(coalescedNote.hours)
         }
         if (coalescedNote.remaining != null) {
             params.remaining = coalescedNote.remaining

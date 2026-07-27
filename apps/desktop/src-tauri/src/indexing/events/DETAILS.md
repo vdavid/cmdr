@@ -11,9 +11,9 @@ Each struct derives `tauri_specta::Event` with a pinned `#[tauri_specta(event_na
 `…Event` suffix wouldn't kebab-case to the existing string), emits via `payload.emit(app)`, is registered in `ipc.rs`'s
 `collect_events!`, and is consumed via typed `on*` wrappers in `tauri-commands/indexing.ts`:
 
-- `IndexScanStartedEvent` (`index-scan-started`) — carries `prior_total_entries`, `prior_scan_duration_ms`,
-  `volume_used_bytes` (the static per-scan calibration; the FE's calibrated-vs-rough tier decision is a pure function
-  of it).
+- `IndexScanStartedEvent` (`index-scan-started`) — carries `scan_run_kind` plus `prior_total_entries`,
+  `prior_scan_duration_ms`, `volume_used_bytes` (the static per-scan calibration; the FE's calibrated-vs-rough tier
+  decision is a pure function of it). See § "ScanRunKind" below.
 - `IndexScanProgressEvent` (`index-scan-progress`) — `entries_scanned`, `dirs_found`, `bytes_scanned`; emitted every
   500 ms by the reporter.
 - `IndexScanCompleteEvent` (`index-scan-complete`).
@@ -43,6 +43,25 @@ owns only the payload shape.
 Two payloads that could look like they belong here but don't: `AggregationProgressEvent` (`index-aggregation-progress`)
 lives in `../writer/DETAILS.md`, and `SearchIndexReadyEvent` (`search-index-ready`) lives in `commands/search.rs`. Also
 here: the IPC response types (`IndexStatusResponse`, `IndexDebugStatusResponse`).
+
+## `ScanRunKind` — what kind of run this is (`mod.rs`)
+
+A serde `snake_case` specta enum shipped on `index-scan-started` (and, for a mid-scan reload, on
+`IndexStatusResponse.scan_run_kind`) so the frontend states the run instead of inferring it:
+
+- **`FirstScan`**: no prior completed scan's calibration, so the index is built from nothing.
+- **`FullRebuild`**: an existing index truncated and re-walked. Folder sizes go blank for the whole run.
+- **`ChangeCheck`**: the rescan-in-place that diffs each directory and writes only changes. The last-good folder sizes
+  stay on screen (stale) throughout, and the run is roughly 5x slower per entry.
+
+`ScanRunKind::classify(reconciles_in_place, prior_total_entries)` is the whole derivation, called at both scan-start
+funnels (`lifecycle/manager.rs` for the local walker, `lifecycle/network_scan.rs` for the trait scan) right after each
+decides reconcile-vs-truncate. The frontend previously guessed from `prior_total_entries` alone, which disagrees on a
+populated index whose last scan never completed: that one truncates, so it's a rebuild, not a change check.
+
+`calibration_kind()` maps the run onto its ETA-calibration bucket (`store::ScanCalibrationKind`): the first scan and
+the full rebuild run the SAME walker so they share `FullWalk`, and only `ChangeCheck` gets its own. The buckets and the
+same-kind-then-any-kind fallback live in `../store/DETAILS.md`.
 
 ## `set_phase_for` — the two phase records (`mod.rs`)
 

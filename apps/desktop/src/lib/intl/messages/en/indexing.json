@@ -55,7 +55,12 @@
   },
   "indexing.run.rescan": "Full rescan",
   "@indexing.run.rescan": {
-    "description": "Run-kind header at the top of the drive-indexing checklist when Cmdr re-walks the whole drive even though an index already exists (a stale index, a change-log gap, and similar). Distinguishes this full pass from the quick update. Short noun phrase, sentence case, no trailing period.",
+    "description": "Run-kind header at the top of the drive-indexing checklist when Cmdr clears this drive''s existing index and rebuilds it from scratch (for example after a scan that never finished). Folder sizes stay blank until it''s done, which is what sets it apart from ''Checking for changes''. Short noun phrase, sentence case, no trailing period.",
+    "screenshot": "indexing-checklist.png"
+  },
+  "indexing.run.changeCheck": "Checking for changes",
+  "@indexing.run.changeCheck": {
+    "description": "Run-kind header at the top of the drive-indexing checklist when Cmdr re-walks an already-indexed drive WITHOUT clearing it: it compares every folder against the index and writes only what changed, so the user''s folder sizes stay on screen the whole time. Distinguishes this gentler pass from the ''Full rescan'' that rebuilds from scratch. Avoid the jargon ''reconcile''. Short noun phrase, sentence case, no trailing period.",
     "screenshot": "indexing-checklist.png"
   },
   "indexing.run.update": "Quick update",
@@ -71,7 +76,12 @@
   },
   "indexing.step.saveFileList": "Save the file list",
   "@indexing.step.saveFileList": {
-    "description": "Checklist step label in the drive-indexing tooltip for writing the scanned file list into Cmdr''s index. Shown only for a local drive (network drives save as they scan, so this step doesn''t appear). Avoid the word ''entries'' (a database term) and ''build the index'' (the whole operation is indexing). Short, sentence case, no trailing period.",
+    "description": "Checklist step label in the drive-indexing tooltip for writing the scanned file list into Cmdr''s index. Shown only for a local drive (network drives save as they scan, so this step doesn''t appear), and only for a run that writes a whole fresh list; a ''Checking for changes'' run shows ''indexing.step.updateFileList'' instead. Avoid the word ''entries'' (a database term) and ''build the index'' (the whole operation is indexing). Short, sentence case, no trailing period.",
+    "screenshot": "indexing-checklist.png"
+  },
+  "indexing.step.updateFileList": "Update the file list",
+  "@indexing.step.updateFileList": {
+    "description": "Checklist step label in the drive-indexing tooltip for the ''Checking for changes'' run, where Cmdr writes only the files that changed into its index instead of saving a whole fresh list (that variant is ''indexing.step.saveFileList''). Shown only for a local drive. Avoid the word ''entries'' (a database term) and ''build the index'' (the whole operation is indexing). Short, sentence case, no trailing period.",
     "screenshot": "indexing-checklist.png"
   },
   "indexing.step.computeFolderSizes": "Compute folder sizes",
@@ -102,6 +112,12 @@
   "indexing.step.findFilesFirstScan": "First scan, so this can take a while",
   "@indexing.step.findFilesFirstScan": {
     "description": "Reassuring sub-line under the active ''Find files'' checklist step the very FIRST time Cmdr scans a drive (no prior scan, so there''s no trustworthy time estimate). Sets the expectation that a first scan is slow, so the climbing count and clock don''t read as stuck. Calm and friendly; sentence case; no trailing period.",
+    "screenshot": "indexing-checklist.png"
+  },
+
+  "indexing.step.findFilesChangeCheck": "Checking every folder against the index. Your folder sizes stay visible while this runs.",
+  "@indexing.step.findFilesChangeCheck": {
+    "description": "Reassuring sub-line under the active ''Find files'' checklist step during a ''Checking for changes'' run. That run takes far longer than a rebuild (it compares every folder one by one), so this says what''s taking the time AND the payoff: unlike a full rescan, folder sizes don''t go blank, so the user can ignore the progress bar and keep working. Two short sentences, calm and friendly, sentence case. Avoid the jargon ''reconcile''.",
     "screenshot": "indexing-checklist.png"
   },
 

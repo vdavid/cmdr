@@ -1313,6 +1313,10 @@
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
     "sourceHash": "2b593c3"
   },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS đã mất dấu các thay đổi của hệ thống tệp {count, plural, other {{countText} lần}}, nên kích cỡ của vài thư mục có thể hơi lệch. Thường thì đó chỉ là các bộ đệm chứa đầy tệp nhỏ, và lần kiểm tra đang chạy ngay bây giờ sẽ chỉnh lại cho đúng.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
+    "sourceHash": "9cbf743"
+  },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS đã mất dấu các thay đổi của hệ thống tệp {count, plural, other {{countText} lần}} trong {hours, plural, other {{hoursText} giờ}} qua, nên kích cỡ của vài thư mục có thể hơi lệch. Thường thì đó chỉ là các bộ đệm chứa đầy tệp nhỏ, nên cũng không sao.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"

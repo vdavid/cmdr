@@ -356,15 +356,18 @@ formatter are the pure `drive-index-status.ts` (unit-tested). Blue pulses (gated
   (`driveIndexCoalescedNote`, pure + unit-tested). When `VolumeIndexStatus.coalescedSignalsSinceSweep > 0`, a second
   paragraph joins the state line (the tooltip is `white-space: pre-line`, so a `\n` renders) saying how many times macOS
   lost track, over how many hours, and when the next full check lands. The badge deliberately stays GREEN: once-a-day
-  sweeping is the designed operating state, and a badge that's yellow all day trains people to ignore it. Four
-  deliberate silences: count 0; any state but `fresh`/`stale` (while scanning the sweep may be the scan in flight;
-  disabled/failed have no live index to describe); no `scanCompletedAt` (nothing anchors the time window); and no
-  `nextSweepDueAt` or a sweep already due, which swaps in the `…NoNextCheck` variant that drops the "next full check in
-  N hours" clause. `nextSweepDueAt` is null for every volume WITHOUT a daily sweep (an external drive runs a 45-second
-  debounce, which promises nothing), so never render a zero there — it would be a lie about a USB drive. Both hour spans
-  round UP with a floor of one, so the tooltip never reads "in the last 0 hours" and the window it names always covers
-  what happened. Hours come from `scanCompletedAt` (the FE's only honest last-full-check anchor); don't reconstruct them
-  from `nextSweepDueAt` minus the window, that would duplicate the backend's policy constant.
+  sweeping is the designed operating state, and a badge that's yellow all day trains people to ignore it. While a check
+  is actually RUNNING (blue) the `…CheckRunning` variant takes over: the promise of a later check would be stale when
+  the repair is happening right now, and the running scan already cleared `scanCompletedAt`, so that variant names no
+  hour window at all (`hours: null`) and the badge builds its params conditionally. Any full walk repairs the drift and
+  resets the count, so the running variant doesn't branch on the run kind. Three remaining silences: count 0;
+  `disabled`/`failed` (no live index to describe); and, on a settled drive, no `scanCompletedAt` (nothing anchors the
+  time window). No `nextSweepDueAt` or a sweep already due swaps in the `…NoNextCheck` variant that drops the "next full
+  check in N hours" clause. `nextSweepDueAt` is null for every volume WITHOUT a daily sweep (an external drive runs a
+  45-second debounce, which promises nothing), so never render a zero there — it would be a lie about a USB drive. Both
+  hour spans round UP with a floor of one, so the tooltip never reads "in the last 0 hours" and the window it names
+  always covers what happened. Hours come from `scanCompletedAt` (the FE's only honest last-full-check anchor); don't
+  reconstruct them from `nextSweepDueAt` minus the window, that would duplicate the backend's policy constant.
 - **The MASTER drive-indexing switch overrides the whole menu.** While `indexing.enabled` is off (read reactively via
   `getDriveIndexingEnabled()`), `driveIndexMenuActions(state, false)` returns `[]` and the menu renders one note saying
   indexing is off in Settings and that this drive picks up where it left off. The tooltip swaps to the same headline, so

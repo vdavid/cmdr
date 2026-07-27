@@ -269,11 +269,27 @@ describe('driveIndexCoalescedNote', () => {
     expect(note?.remaining).toBe(5)
   })
 
+  it('points at the check in flight instead of promising a later one', () => {
+    // The other variants say "the next full check will fix it". While the check is
+    // actually running, that clause is stale: say it's happening now. The running
+    // scan cleared the completed-at marker, so there's no window left to name and
+    // the running variant asks for none.
+    expect(
+      driveIndexCoalescedNote(
+        makeStatus({ coalescedSignalsSinceSweep: 4, freshness: 'scanning', scanCompletedAt: null }),
+        NOW,
+      ),
+    ).toEqual({
+      key: 'fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning',
+      count: 4,
+      hours: null,
+      remaining: null,
+    })
+  })
+
   it('stays quiet on states where the note would confuse', () => {
-    // Scanning: the sweep may be the very scan in flight. Disabled/failed: there's
-    // no live index the note could describe.
+    // Disabled/failed: there's no live index the note could describe.
     for (const status of [
-      makeStatus({ coalescedSignalsSinceSweep: 4, freshness: 'scanning' }),
       makeStatus({ coalescedSignalsSinceSweep: 4, enabled: false, freshness: null }),
       makeStatus({ coalescedSignalsSinceSweep: 4, freshness: 'failed' }),
     ]) {
@@ -287,7 +303,7 @@ describe('driveIndexCoalescedNote', () => {
     )
   })
 
-  it('stays quiet when no completed scan anchors the time window', () => {
+  it('stays quiet when a settled drive has no completed scan to anchor the time window', () => {
     expect(
       driveIndexCoalescedNote(makeStatus({ coalescedSignalsSinceSweep: 4, scanCompletedAt: null }), NOW),
     ).toBeNull()

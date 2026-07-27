@@ -12,7 +12,14 @@
  * before the implementation existed.
  */
 import { describe, it, expect } from 'vitest'
-import { deriveSteps, activeStep, deriveRunLabel, type IndexStep, type IndexStepKind } from './indexing-steps'
+import {
+  deriveSteps,
+  activeStep,
+  deriveRunLabel,
+  activeStepHintKey,
+  type IndexStep,
+  type IndexStepKind,
+} from './indexing-steps'
 
 /** The ordered step kinds, for readable assertions. */
 function kinds(steps: IndexStep[]): IndexStepKind[] {
@@ -144,19 +151,61 @@ describe('deriveSteps — event-log roll-on (replay)', () => {
 describe('deriveRunLabel — the run-kind header above the checklist', () => {
   it('labels a replay run an update, regardless of scan kind', () => {
     expect(deriveRunLabel('replay', undefined)).toBe('update')
-    expect(deriveRunLabel('replay', 'rescan')).toBe('update')
+    expect(deriveRunLabel('replay', 'full_rebuild')).toBe('update')
   })
 
-  it('labels a scan by its first-vs-rescan kind', () => {
-    expect(deriveRunLabel('local', 'first')).toBe('firstScan')
-    expect(deriveRunLabel('local', 'rescan')).toBe('rescan')
-    expect(deriveRunLabel('network', 'first')).toBe('firstScan')
-    expect(deriveRunLabel('network', 'rescan')).toBe('rescan')
+  it('labels a scan by the kind the backend reported', () => {
+    expect(deriveRunLabel('local', 'first_scan')).toBe('firstScan')
+    expect(deriveRunLabel('local', 'full_rebuild')).toBe('rescan')
+    // The distinction the header exists for: a change check leaves folder sizes
+    // on screen, a full rebuild blanks them.
+    expect(deriveRunLabel('local', 'change_check')).toBe('changeCheck')
+    expect(deriveRunLabel('network', 'first_scan')).toBe('firstScan')
+    expect(deriveRunLabel('network', 'change_check')).toBe('changeCheck')
   })
 
   it('returns null when the scan kind is unknown (mid-scan reload), so no header lies', () => {
     expect(deriveRunLabel('local', undefined)).toBeNull()
     expect(deriveRunLabel('network', undefined)).toBeNull()
+  })
+})
+
+describe('the change-check checklist', () => {
+  it('swaps the save step for an update step, keeping the order and the state machine', () => {
+    const steps = deriveSteps({
+      runKind: 'local',
+      phase: 'aggregating',
+      aggregationSubPhase: 'saving_entries',
+      scanRunKind: 'change_check',
+    })
+    expect(steps.map((s) => s.kind)).toEqual(['findFiles', 'updateFileList', 'computeFolderSizes', 'catchUp'])
+    expect(statusOf(steps, 'updateFileList')).toBe('active')
+    expect(statusOf(steps, 'findFiles')).toBe('done')
+  })
+
+  it('leaves the other run kinds on the save step', () => {
+    for (const scanRunKind of ['first_scan', 'full_rebuild', undefined] as const) {
+      const steps = deriveSteps({ runKind: 'local', phase: 'scanning', aggregationSubPhase: undefined, scanRunKind })
+      expect(steps.map((s) => s.kind)).toContain('saveFileList')
+    }
+  })
+})
+
+describe('activeStepHintKey — the reassuring sub-line under the active step', () => {
+  it('tells a change check its folder sizes stay visible, whatever the tier', () => {
+    expect(activeStepHintKey('findFiles', 'change_check', false)).toBe('indexing.step.findFilesChangeCheck')
+    expect(activeStepHintKey('findFiles', 'change_check', true)).toBe('indexing.step.findFilesChangeCheck')
+  })
+
+  it('keeps the first-scan hint for the rough tier', () => {
+    expect(activeStepHintKey('findFiles', 'first_scan', true)).toBe('indexing.step.findFilesFirstScan')
+    expect(activeStepHintKey('findFiles', 'first_scan', false)).toBeNull()
+    expect(activeStepHintKey('findFiles', undefined, true)).toBe('indexing.step.findFilesFirstScan')
+  })
+
+  it('hints on the find-files step only', () => {
+    expect(activeStepHintKey('updateFileList', 'change_check', false)).toBeNull()
+    expect(activeStepHintKey('catchUp', 'change_check', true)).toBeNull()
   })
 })
 

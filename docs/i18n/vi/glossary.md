@@ -826,3 +826,14 @@ settled head terms (index/indexing → `chỉ mục`/`lập chỉ mục`, indexe
   `kích cỡ` (10 hits, per the 2026-07-21 decision). `masterOffNote` sits in the settings pane, so it matches its own
   file. The cross-file split is pre-existing; unifying it is a full-catalog migration, not a one-key edit.
 - No `sameAsSourceJustification` needed: all five values differ from English.
+
+## Chỉ mục ổ đĩa: lượt kiểm tra thay đổi (2026-07-28)
+
+- **"Checking for changes" (run-kind header) → `Kiểm tra thay đổi`** · verb-phrase shape matching the sibling headers
+  (`Quét toàn bộ lần đầu`, `Cập nhật nhanh`); `Kiểm tra` is macOS VI's checking verb (Finder BN9 "Kiểm tra nội dung
+  của…"), `thay đổi` is catalog-settled (`các thay đổi gần đây`) and glossary-settled as the MS term · high.
+- **"Update the file list" → `Cập nhật danh sách tệp`** · composed from the settled siblings `Lưu danh sách tệp` +
+  `Cập nhật chỉ mục` · high.
+- **"the check running right now" → `lần kiểm tra đang chạy ngay bây giờ`** · reuses `lần kiểm tra` as this catalog's
+  settled phrase for a full check (`tooltipCoalesced`: "lần kiểm tra toàn bộ tiếp theo của Cmdr") and that string's
+  closing `sẽ chỉnh lại cho đúng` · high.

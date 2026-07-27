@@ -99,6 +99,9 @@ fn disabled_status_response() -> IndexStatusResponse {
         index_status: None,
         db_file_size: None,
         volume_used_bytes: None,
+        scan_run_kind: None,
+        prior_total_entries: None,
+        prior_scan_duration_ms: None,
     }
 }
 
@@ -122,6 +125,11 @@ pub fn get_status(volume_id: &str) -> Result<IndexStatusResponse, String> {
                 index_status,
                 db_file_size,
                 volume_used_bytes: None,
+                // The manager isn't built yet, so no run has been classified and no
+                // calibration is stashed; the FE falls back to `index_status`'s meta.
+                scan_run_kind: None,
+                prior_total_entries: None,
+                prior_scan_duration_ms: None,
             })
         }
         Some(IndexPhase::Running(mgr)) => mgr.get_status(),
@@ -173,6 +181,9 @@ pub fn get_debug_status(volume_id: &str) -> Result<IndexDebugStatusResponse, Str
                 index_status,
                 db_file_size,
                 volume_used_bytes: None,
+                scan_run_kind: None,
+                prior_total_entries: None,
+                prior_scan_duration_ms: None,
             };
             let (activity_phase, phase_started_at, phase_duration_ms, phase_history) =
                 IndexManager::read_phase_timeline();

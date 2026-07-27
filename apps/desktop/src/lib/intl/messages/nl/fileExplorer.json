@@ -1321,6 +1321,10 @@
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
     "sourceHash": "2b593c3"
   },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS is {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijtgeraakt, dus een paar mapgroottes kunnen iets afwijken. Meestal gaat het om caches vol kleine bestanden, en de controle die nu bezig is zet dat weer recht.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
+    "sourceHash": "9cbf743"
+  },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS is {hours, plural, one {in het afgelopen uur} other {in de afgelopen {hoursText} uur}} {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijtgeraakt, dus een paar mapgroottes kunnen iets afwijken. Meestal gaat het om caches vol kleine bestanden, dus dat is geen probleem.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"

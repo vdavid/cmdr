@@ -1313,6 +1313,10 @@
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
     "sourceHash": "2b593c3"
   },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "A macOS {count, plural, one {egyszer} other {{countText} alkalommal}} elvesztette a fonalat a fájlrendszer-változásoknál, ezért néhány mappaméret kissé pontatlan lehet. Általában csak apró fájlokkal teli gyorsítótárakról van szó, és az éppen futó átvizsgálás ezt rendbe hozza.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
+    "sourceHash": "9cbf743"
+  },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "A macOS {hours, plural, one {az elmúlt órában} other {az elmúlt {hoursText} órában}} {count, plural, one {egyszer} other {{countText} alkalommal}} elvesztette a fonalat a fájlrendszer-változásoknál, ezért néhány mappaméret kissé pontatlan lehet. Általában csak apró fájlokkal teli gyorsítótárakról van szó, szóval nem nagy ügy.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"

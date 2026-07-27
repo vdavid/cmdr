@@ -18,7 +18,12 @@ concurrently without corrupting each other. Every invariant below holds independ
   Owns the SQLite store (reads), the writer thread (writes), the scanner handle, and the FSEvents watcher. `resume_or_scan`
   / `force_rescan` dispatch by TYPED `IndexVolumeKind`: a trait-scanned (SMB/MTP) volume routes to `network_scan.rs`,
   `Local`/`LocalExternal` to `start_scan` here. `start_scan` dispatches the guarded-walker scanner (fresh) or the
-  reconcile-in-place path (populated), and spawns the shared `ScanProgressReporter` (owned by `../events`).
+  reconcile-in-place path (populated), and spawns the shared `ScanProgressReporter` (owned by `../events`). Both
+  scan-start funnels (here and `network_scan.rs`) classify the run with `events::ScanRunKind::classify` right after
+  deciding reconcile-vs-truncate: the kind rides `index-scan-started` (what the FE states) and picks the calibration
+  bucket this run reads its ETA seed from and writes its timing back into (`../store/DETAILS.md` § "Scan calibration is
+  stored PER WALK KIND"). The stashed `ScanCalibration` also surfaces the kind on `get_status`, so a mid-scan window
+  reload recovers it.
 - **network_scan.rs** — the SMB/MTP `Volume`-trait scan path, split out as a sibling `impl IndexManager` block. Holds
   `resume_or_scan_network` (a completed prior scan loads Stale and does NOT auto-rescan; a never-completed one scans) and
   `start_volume_scan` (the scan/rescan entry plus its bespoke completion handler). Mirrors `start_scan` but walks via the

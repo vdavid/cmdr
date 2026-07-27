@@ -13,23 +13,76 @@ use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tauri_specta::Event;
 
-use super::store::{IndexFailure, IndexStatus};
+use super::store::{IndexFailure, IndexStatus, ScanCalibrationKind};
 
 pub(crate) mod partial_agg;
 pub(crate) mod progress_reporter;
 
 // ── Event payloads (Rust -> Frontend) ────────────────────────────────
 
+/// What kind of run a scan is, decided by the backend at the scan-start funnel
+/// and shipped to the frontend so the UI never has to guess from the calibration
+/// numbers (which answer a different question and disagree on a partial index).
+///
+/// The user-visible difference is what happens to folder sizes: a walk that
+/// truncates blanks them for its whole run, while a change check keeps the
+/// last-good sizes on screen, marked stale.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum ScanRunKind {
+    /// The volume's first index build: nothing usable on disk to keep, so the
+    /// walk starts from an empty index and folder sizes appear at the end.
+    FirstScan,
+    /// A full rebuild of an existing index: the entries are truncated and
+    /// re-walked, so folder sizes go blank until the run finishes. Taken when a
+    /// rescan can't reconcile in place (for example a previous scan that never
+    /// completed).
+    FullRebuild,
+    /// A rescan in place: every directory is diffed against the index and only
+    /// the changes are written, so the last-good folder sizes stay visible
+    /// (stale) for the whole run. Far slower per entry, far kinder to look at.
+    ChangeCheck,
+}
+
+impl ScanRunKind {
+    /// Classify the run about to start from the two facts the scan-start funnel
+    /// already holds: whether this walk reconciles in place, and what a prior
+    /// COMPLETED scan left behind as calibration.
+    pub fn classify(reconciles_in_place: bool, prior_total_entries: Option<u64>) -> Self {
+        if reconciles_in_place {
+            Self::ChangeCheck
+        } else if prior_total_entries.is_some_and(|n| n > 0) {
+            Self::FullRebuild
+        } else {
+            Self::FirstScan
+        }
+    }
+
+    /// Which calibration bucket this run's timing belongs in. A first scan and a
+    /// full rebuild run the SAME walker, so they share one bucket; only the
+    /// change check, which is roughly 5x slower, needs its own.
+    pub fn calibration_kind(self) -> ScanCalibrationKind {
+        match self {
+            Self::FirstScan | Self::FullRebuild => ScanCalibrationKind::FullWalk,
+            Self::ChangeCheck => ScanCalibrationKind::ChangeCheck,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[tauri_specta(event_name = "index-scan-started")]
 #[serde(rename_all = "camelCase")]
 pub struct IndexScanStartedEvent {
     pub volume_id: String,
-    /// The previous completed scan's final entry count, the tier-1 (calibrated)
-    /// progress denominator. `None` on a first-ever scan (no prior calibration).
+    /// What kind of run this is, so the frontend's run-kind header and its
+    /// per-step copy state what's actually happening instead of inferring it.
+    pub scan_run_kind: ScanRunKind,
+    /// The previous completed scan OF THIS RUN'S KIND: its final entry count, the
+    /// tier-1 (calibrated) progress denominator. Falls back to the last scan of
+    /// any kind, then to `None` (no calibration yet).
     pub prior_total_entries: Option<u64>,
-    /// The previous completed scan's wall-clock duration, used to seed the tier-1
-    /// ETA before the sliding window has samples. `None` on a first-ever scan.
+    /// The same prior scan's wall-clock duration, used to seed the tier-1 ETA
+    /// before the sliding window has samples. `None` when there's no calibration.
     pub prior_scan_duration_ms: Option<u64>,
     /// The scanned volume's used bytes at scan start, the tier-2 (rough, first-scan)
     /// progress denominator. `None` when the space-info fetch failed.
@@ -312,6 +365,19 @@ pub struct IndexStatusResponse {
     /// fetch succeeded). Lets the FE backfill tier-2 progress after a mid-scan
     /// window reload, where the `index-scan-started` event was missed.
     pub volume_used_bytes: Option<u64>,
+    /// The scan's kind, from the same stashed calibration, so a mid-scan window
+    /// reload recovers the run-kind header and its per-step copy instead of
+    /// dropping them. `None` before this volume's first scan of the session; like
+    /// `volume_used_bytes` it describes the LATEST scan, so read it only when
+    /// `scanning` is true.
+    pub scan_run_kind: Option<ScanRunKind>,
+    /// The tier-1 calibration the RUNNING scan is actually using, straight off the
+    /// stash — the per-kind bucket, not the unsuffixed `meta` keys `index_status`
+    /// carries. A reload that fell back to those would seed a full walk's ETA off
+    /// the ~5x slower change check that happened to run last. Same read-only-while-
+    /// `scanning` rule as the two fields above.
+    pub prior_total_entries: Option<u64>,
+    pub prior_scan_duration_ms: Option<u64>,
 }
 
 /// Per-volume index status for the per-drive freshness badge.
@@ -761,6 +827,54 @@ mod tests {
         );
         assert_eq!(serde_json::to_value(ActivityPhase::Live).unwrap(), json!("live"));
         assert_eq!(serde_json::to_value(ActivityPhase::Idle).unwrap(), json!("idle"));
+    }
+
+    #[test]
+    fn scan_run_kind_serializes_to_snake_case_wire_values() {
+        // The FE maps each wire string to a run-kind header and its per-step
+        // copy, so a rename here silently mislabels a running scan.
+        use serde_json::json;
+        assert_eq!(
+            serde_json::to_value(ScanRunKind::FirstScan).unwrap(),
+            json!("first_scan")
+        );
+        assert_eq!(
+            serde_json::to_value(ScanRunKind::FullRebuild).unwrap(),
+            json!("full_rebuild")
+        );
+        assert_eq!(
+            serde_json::to_value(ScanRunKind::ChangeCheck).unwrap(),
+            json!("change_check")
+        );
+    }
+
+    #[test]
+    fn scan_run_kind_classifies_the_three_runs() {
+        // Reconciling in place is a change check whatever the prior totals say.
+        assert_eq!(ScanRunKind::classify(true, Some(5_000_000)), ScanRunKind::ChangeCheck);
+        assert_eq!(ScanRunKind::classify(true, None), ScanRunKind::ChangeCheck);
+        // A truncating walk with a completed scan behind it is a full rebuild…
+        assert_eq!(ScanRunKind::classify(false, Some(5_000_000)), ScanRunKind::FullRebuild);
+        // …and without one it's the volume's first build. Pins the case the FE
+        // used to get wrong: a populated but never-completed index truncates, so
+        // it's a rebuild, not a change check.
+        assert_eq!(ScanRunKind::classify(false, None), ScanRunKind::FirstScan);
+        assert_eq!(ScanRunKind::classify(false, Some(0)), ScanRunKind::FirstScan);
+    }
+
+    #[test]
+    fn both_truncating_runs_share_one_calibration_bucket() {
+        // They run the same walker, so a first scan's timing calibrates a later
+        // full rebuild; only the ~5x slower change check needs its own bucket.
+        assert_eq!(ScanRunKind::FirstScan.calibration_kind(), ScanCalibrationKind::FullWalk);
+        assert_eq!(
+            ScanRunKind::FullRebuild.calibration_kind(),
+            ScanCalibrationKind::FullWalk
+        );
+        assert_eq!(
+            ScanRunKind::ChangeCheck.calibration_kind(),
+            ScanCalibrationKind::ChangeCheck
+        );
     }
 
     #[test]

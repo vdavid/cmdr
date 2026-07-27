@@ -33,6 +33,10 @@
   "@indexing.run.rescan": {
     "sourceHash": "f8cd103"
   },
+  "indexing.run.changeCheck": "检查更改",
+  "@indexing.run.changeCheck": {
+    "sourceHash": "9b43638"
+  },
   "indexing.run.update": "快速更新",
   "@indexing.run.update": {
     "sourceHash": "97ac3e3"
@@ -44,6 +48,10 @@
   "indexing.step.saveFileList": "保存文件列表",
   "@indexing.step.saveFileList": {
     "sourceHash": "92af072"
+  },
+  "indexing.step.updateFileList": "更新文件列表",
+  "@indexing.step.updateFileList": {
+    "sourceHash": "ef0a3d2"
   },
   "indexing.step.computeFolderSizes": "计算文件夹大小",
   "@indexing.step.computeFolderSizes": {
@@ -64,6 +72,10 @@
   "indexing.step.findFilesFirstScan": "首次扫描，可能需要一些时间",
   "@indexing.step.findFilesFirstScan": {
     "sourceHash": "5e9ea25"
+  },
+  "indexing.step.findFilesChangeCheck": "正在将每个文件夹与索引逐一比对。期间你的文件夹大小会一直显示。",
+  "@indexing.step.findFilesChangeCheck": {
+    "sourceHash": "8c23f1f"
   },
   "indexing.step.statusDone": "完成",
   "@indexing.step.statusDone": {

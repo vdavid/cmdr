@@ -282,8 +282,14 @@ describe('DriveIndexBadge coalesced-signal note', () => {
     expect(label).not.toContain('next full check')
   })
 
-  it('keeps the note out of the tooltip while a scan is running', () => {
-    const { target } = render({ ...sweptStatus(4, 6), freshness: 'scanning' })
-    expect(ariaLabel(target)).not.toContain('lost track')
+  it('points at the check in flight while one is running, instead of promising a later one', () => {
+    const { target } = render({ ...sweptStatus(4, 6), freshness: 'scanning', scanCompletedAt: null })
+    const label = ariaLabel(target)
+    expect(label).toContain('macOS lost track of file system changes 4 times')
+    expect(label).toContain('the check running right now will put them right.')
+    // The promise of a LATER check would be stale while one is in flight, and the
+    // running scan cleared the marker the "in the last N hours" window reads.
+    expect(label).not.toContain('next full check')
+    expect(label).not.toContain('in the last')
   })
 })

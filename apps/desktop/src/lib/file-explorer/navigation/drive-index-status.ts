@@ -133,8 +133,10 @@ export interface DriveIndexCoalescedNote {
   key: MessageKey
   /** Signals macOS coalesced since the last completed sweep. */
   count: number
-  /** Whole hours since that sweep, never below 1. */
-  hours: number
+  /** Whole hours since that sweep, never below 1; `null` while a check is
+   *  running (the scan clears the completed-at marker, so there's no honest
+   *  window to name, and the variant used then doesn't ask for one). */
+  hours: number | null
   /** Whole hours until the next sweep, never below 1; `null` when none is promised. */
   remaining: number | null
 }
@@ -156,12 +158,17 @@ function hoursAtLeastOne(seconds: number): number {
  * operating state, not a fault, so the transparency lives here rather than in the
  * dot's color.
  *
+ * While a check is actually RUNNING (blue), the note says so and stops there: the
+ * repair the other variants promise for later is happening right now, and the
+ * scan cleared `scanCompletedAt` at its start, so there's no honest "in the last
+ * N hours" window left to name. Any full walk repairs this drift and resets the
+ * count, so the running variant doesn't care which kind of run it is.
+ *
  * Four deliberate silences:
  * - `count === 0`: nothing was skipped, so the normal tooltip stands alone.
- * - Any state but `fresh`/`stale`: while scanning, the sweep may be the very scan
- *   in flight; disabled and failed have no live index the note could describe.
- * - No `scanCompletedAt`: the count is "since the last completed sweep", so with
- *   no completed scan there's no honest window to name.
+ * - `disabled` / `failed`: no live index the note could describe.
+ * - No `scanCompletedAt` on a settled (green/yellow) drive: the count is "since
+ *   the last completed sweep", so there's no honest window to name.
  * - No `nextSweepDueAt` (a volume with no daily sweep: an external drive runs a
  *   45-second debounce, which promises nothing), or a sweep already due: the
  *   "next full check in N hours" clause would be a lie, so a variant WITHOUT it
@@ -176,6 +183,14 @@ export function driveIndexCoalescedNote(status: VolumeIndexStatus, nowSeconds: n
   if (count <= 0) return null
 
   const state = driveIndexState(status)
+  if (state === 'scanning') {
+    return {
+      key: 'fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning',
+      count,
+      hours: null,
+      remaining: null,
+    }
+  }
   if (state !== 'fresh' && state !== 'stale') return null
 
   if (status.scanCompletedAt == null) return null

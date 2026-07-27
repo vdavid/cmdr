@@ -974,3 +974,14 @@ Settled in the REVIEW pass over the five drive-indexing-override keys
   `együtt`, which forces the comitative "along with" reading instead of the instrumental "by means of" one that a bare
   `Az indexeléssel kikapcsolva` would allow. `Ki` as an off-state word is catalog-settled
   (`settings.ai.provider.opt.off` = `Ki`) · high.
+
+## Meghajtóindex: a változásellenőrző futás (2026-07-28)
+
+- **"Checking for changes" (run-kind header) → `Változások ellenőrzése`** · deverbal-noun phrase matching the sibling
+  headers (`Első teljes átvizsgálás`, `Gyors frissítés`); `ellenőrzése` is macOS HU's checking noun (Finder BN9 „^0”
+  tartalmának ellenőrzése), `változások` is catalog-settled (`Legutóbbi változások pótlása`) · high.
+- **"Update the file list" → `Fájllista frissítése`** · composed from the settled siblings `Fájllista mentése` +
+  `Index frissítése` · high.
+- **"the check running right now" → `az éppen futó átvizsgálás`** · reuses `átvizsgálás` as this catalog's settled word
+  for a full check (`tooltipCoalesced`: "a Cmdr következő teljes átvizsgálása") and that string's closing
+  `ezt rendbe hozza` · high.

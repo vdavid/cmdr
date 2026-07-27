@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest'
 import { mount, flushSync } from 'svelte'
 import IndexingStatusBody from './IndexingStatusBody.svelte'
 import type { VolumeIndexActivity, AggregationActivity } from './index-state.svelte'
-import type { ActivityPhase } from '$lib/ipc/bindings'
+import type { ActivityPhase, ScanRunKind } from '$lib/ipc/bindings'
 
 function scanActivity(overrides: Partial<VolumeIndexActivity> = {}): VolumeIndexActivity {
   return {
@@ -51,6 +51,7 @@ function render(props: {
   windowedEta?: string | null
   phase?: ActivityPhase | undefined
   isNetwork?: boolean
+  scanRunKind?: ScanRunKind
 }) {
   const target = document.createElement('div')
   document.body.appendChild(target)
@@ -102,7 +103,7 @@ describe('IndexingStatusBody checklist', () => {
     const target = render({ activity: scanActivity({ priorTotalEntries: null, volumeUsedBytes: 10_000_000 }) })
     expect(target.querySelector('[role="progressbar"]')).toBeNull()
     expect(target.querySelector('.tooltip-progress')).toBeNull()
-    expect(target.querySelector('.first-scan-hint')?.textContent).toContain('First scan')
+    expect(target.querySelector('.step-hint')?.textContent).toContain('First scan')
     const detail = target.querySelector('.tooltip-detail')?.textContent ?? ''
     expect(detail).toContain('42,000')
     expect(detail).toMatch(/·\s*\d+:\d{2}/) // elapsed clock
@@ -131,6 +132,29 @@ describe('IndexingStatusBody checklist', () => {
     expect(stepStatus(target, 'Compute folder sizes')).toBe('done')
     expect(stepStatus(target, 'Catch up on recent changes')).toBe('active')
     expect(target.querySelector('[role="progressbar"]')).toBeNull()
+  })
+
+  it('a change check words its second step as an update and reassures about folder sizes', () => {
+    const target = render({
+      activity: scanActivity({ priorTotalEntries: 100_000 }),
+      scanRunKind: 'change_check',
+      windowedEta: '18m left',
+    })
+    expect(stepLabels(target)).toEqual([
+      'Find files',
+      'Update the file list',
+      'Compute folder sizes',
+      'Catch up on recent changes',
+    ])
+    // The whole point of the hint: a 20-minute bar is fine to ignore because the
+    // sizes on screen stay put.
+    expect(target.querySelector('.step-hint')?.textContent).toContain('folder sizes stay visible')
+  })
+
+  it('a full rebuild keeps the save wording (its list IS rewritten from scratch)', () => {
+    const target = render({ activity: scanActivity({ priorTotalEntries: 100_000 }), scanRunKind: 'full_rebuild' })
+    expect(stepLabels(target)).toContain('Save the file list')
+    expect(target.querySelector('.step-hint')).toBeNull()
   })
 
   it('network scan omits the save and catch-up steps', () => {

@@ -15,12 +15,15 @@ directly — that's what makes the indicator track local + SMB + MTP, not just r
 Aggregation carries its own `volumeId` too (see below), so it lives in a second per-volume map keyed by `volumeId`, each
 entry an `AggregationActivity` (`phase`, `current`, `total`, `startedAt`).
 
-A fourth map, `scanKind` (`volumeId → 'first' | 'rescan'`), stashes the first-build-vs-full-rescan fact from
-`index-scan-started` (prior scan totals present ⇒ rescan) so the checklist's run-kind header stays truthful through
-aggregation and reconcile, after the live scan entry (and its `priorTotalEntries`) is gone. It's cleared on the terminal
-`live`/`idle` phase transitions and on `index-scan-aborted`, mirroring the `phase` map. A volume seeded by a progress
-tick alone (mid-scan reload) gets NO entry — the header is omitted rather than guessed — and root recovers via the
-`get_index_status` backfill's prior-totals meta. Read via `getVolumeScanKind`.
+A fourth map, `scanRunKind` (`volumeId → ScanRunKind`, the backend enum
+`'first_scan' | 'full_rebuild' | 'change_check'`), stashes what kind of run this is, taken VERBATIM from
+`index-scan-started`. The frontend never infers it from the calibration numbers: those answer "is there a prior
+completed scan", which disagrees with the backend's truncate-vs-reconcile decision on a populated index whose last scan
+never finished. It stays put through aggregation and reconcile, after the live scan entry is gone, so the run-kind
+header and the per-step copy stay truthful; it's cleared on the terminal `live`/`idle` phase transitions and on
+`index-scan-aborted`, mirroring the `phase` map. A volume seeded by a progress tick alone (mid-scan reload) gets NO
+entry — the header is omitted rather than guessed — and root recovers via the `get_index_status` backfill's
+`scanRunKind`. Read via `getVolumeScanRunKind`.
 
 **Gotcha — store a FRESH object on every progress tick, never mutate-in-place + re-set.** `SvelteMap.set` bumps its
 per-key reactive source only when the stored value REFERENCE changes; re-setting the same (just-mutated) object is a
@@ -46,7 +49,7 @@ getVolumeActivity(volumeId): VolumeIndexActivity | undefined  // ONE volume's sc
 isAnyVolumeIndexing(): boolean                    // scan/replay map non-empty OR any volume aggregating (visibility gate)
 getVolumeAggregation(volumeId): AggregationActivity | undefined  // that volume's live aggregation, or undefined
 getVolumePhase(volumeId): ActivityPhase | undefined  // that volume's current mid-pipeline phase, or undefined (step checklist)
-getVolumeScanKind(volumeId): ScanKind | undefined  // 'first' | 'rescan', or undefined when unknown (the run-kind header)
+getVolumeScanRunKind(volumeId): ScanRunKind | undefined  // the backend's run kind, or undefined when unknown (the run-kind header + per-step copy)
 getAggregatingVolumeIds(): string[]               // every volume currently aggregating
 getActivePhaseVolumeIds(): string[]               // every volume with a live phase (incl. reconcile, no scan/agg entry)
 placeholderActivity(volumeId): VolumeIndexActivity  // a zero-valued activity for an aggregation-/reconcile-only row
@@ -70,9 +73,10 @@ with a path-prefix comparison, which relies on trailing-slash normalization.
 Ten Tauri events drive the state. All of them carry a `volumeId`: scan and replay key the live-`activity` map,
 aggregation keys its own `aggregation` map, and the phase event keys its own `phase` map.
 
-- **`index-scan-started`** (`{ volumeId, priorTotalEntries, priorScanDurationMs, volumeUsedBytes }`): create/replace the
-  volume's `activity` entry (`phase: 'scanning'`, `scanStartedAt = Date.now()`, stash the calibration), and stamp the
-  volume's `scanKind` (prior totals ⇒ `rescan`, none ⇒ `first`).
+- **`index-scan-started`** (`{ volumeId, scanRunKind, priorTotalEntries, priorScanDurationMs, volumeUsedBytes }`):
+  create/replace the volume's `activity` entry (`phase: 'scanning'`, `scanStartedAt = Date.now()`, stash the
+  calibration), and stamp the volume's `scanRunKind` from the payload. The prior totals are the backend's PER-KIND
+  calibration (a change check is timed off the last change check), so the tier-1 ETA no longer mixes the two walks.
 - **`index-scan-progress`** (`{ volumeId, entriesScanned, dirsFound, bytesScanned }`): update that volume's counters
   (seeds a scanning entry if the started event was missed, e.g. mid-scan reload).
 - **`index-scan-complete`** (`{ volumeId, totalEntries, totalDirs, durationMs }`): remove the volume's `activity` entry.
@@ -91,7 +95,7 @@ aggregation keys its own `aggregation` map, and the phase event keys its own `ph
 - **`index-aggregation-complete`** (`{ volumeId }`): remove that volume's `aggregation` entry.
 - **`index-phase-changed`** (`{ volumeId, phase: ActivityPhase }`): the volume's top-level pipeline phase changed. Set
   the `phase` map entry for the active steps (`scanning` / `aggregating` / `reconciling` / `replaying`); DELETE it on
-  the terminal `live` / `idle` transitions (the pipeline ended, which also drops the volume's `scanKind`) and on
+  the terminal `live` / `idle` transitions (the pipeline ended, which also drops the volume's `scanRunKind`) and on
   `index-scan-aborted` (the cancel/fail abort arm fires no phase event). So a present `phase` entry always means "this
   volume is at this step right now" — the spine of the step checklist, and the only signal for the reconcile step.
   Per-volume, unlike the global debug-window phase timeline. Fires only on transitions, so after a mid-scan reload the
@@ -156,11 +160,24 @@ step shows not-yet-active — but in that window the surface isn't rendered at a
 the badge's static "Scanning your drive…" text.
 
 **Run-kind header.** Above the step list the body renders what KIND of run this checklist is — "First full scan" / "Full
-rescan" / "Quick update" (`indexing.run.*`) — via the pure `deriveRunLabel(runKind, scanKind)` (`indexing-steps.ts`):
-replay ⇒ update, otherwise the per-volume `scanKind` decides, and an unknown kind (mid-scan reload) renders NO header
-rather than a guessed one. The wrapper reads `getVolumeScanKind` and passes it down (the body stays presentational). On
-the badge surface (drive heading off) this line doubles as the block's header, answering "is this a full reindex or a
-roll-on?" right in the tooltip.
+rescan" / "Checking for changes" / "Quick update" (`indexing.run.*`) — via the pure
+`deriveRunLabel(runKind, scanRunKind)` (`indexing-steps.ts`): replay ⇒ update, otherwise the backend's `ScanRunKind`
+maps 1:1, and an unknown kind (mid-scan reload) renders NO header rather than a guessed one. The wrapper reads
+`getVolumeScanRunKind` and passes it down (the body stays presentational). On the badge surface (drive heading off) this
+line doubles as the block's header, answering "is this a full reindex, a change check, or a roll-on?" right in the
+tooltip.
+
+**The change check's own copy.** A `change_check` run swaps one step label and adds one hint, because it behaves
+differently in the way the user actually feels:
+
+- Its second step is `updateFileList` ("Update the file list") instead of `saveFileList` ("Save the file list") — the
+  run writes only what changed. Same order, same state machine (`CHANGE_CHECK_STEPS` mirrors `LOCAL_STEPS`), so only the
+  label differs.
+- Its active find-files step carries `indexing.step.findFilesChangeCheck` ("Checking every folder against the index.
+  Your folder sizes stay visible while this runs."), via the pure
+  `activeStepHintKey(step, scanRunKind, roughFirstScan)`. The run takes ~20 minutes where a rebuild takes ~3, so the
+  reassurance is the point: the sizes on screen don't go blank, so the bar is safe to ignore. The same helper keeps the
+  first-scan hint on the rough tier; only find-files ever has a hint.
 
 **Two label maps, separate on purpose**: `indexing-steps.ts`'s `stepKindToLabelKey` keys the step labels off the typed
 `IndexStepKind`; its `computeSubPhaseToLabelKey` (imported by `IndexingStatusBody`) keys the compute step's
@@ -328,8 +345,8 @@ The app never clears the one-shot. `resetFirstStaleDialogShown` exists for the d
 - **`index-state.svelte.test.ts`**: per-volume aggregation attribution, plus `index-scan-aborted` clearing a volume's
   activity + aggregation (the network-abort stuck-row regression), plus the per-volume `phase` map
   (`index-phase-changed` sets the active phase, `live` / `idle` and an abort clear it, volumes stay independent), plus
-  the per-volume `scanKind` map (stamped at scan-started, survives into aggregation, expires on terminal/abort, stays
-  unknown on a progress-only seed).
+  the per-volume `scanRunKind` map (taken verbatim from scan-started, survives into aggregation, expires on
+  terminal/abort, stays unknown on a progress-only seed).
 - **`elapsed.test.ts`**: `formatElapsedClock` (sub-second → `null`, `m:ss` formatting, zero-padding, flooring).
 
 Manual end-to-end testing runs the Rust indexer via `pnpm dev`.

@@ -31,6 +31,12 @@ walks reconstruct paths from), `dir_stats.rs`, `meta.rs`; tests in `tests.rs`. P
   code) returns an error. Never widen `indicates_corruption()`; rebuilding a real index costs tens of minutes. Bump
   `SCHEMA_VERSION` (in `mod.rs`) for any schema change; there's no migration path by design.
 
+- **Scan calibration lives in PER-WALK-KIND `meta` buckets, never one slot.** A truncating full walk and a
+  rescan-in-place change check differ ~5x in wall clock, so sharing `scan_duration_ms` / `total_entries` makes each run
+  predict the other's time. Every completion writes the suffixed keys (`ScanCalibrationKind::meta_key`) AND the
+  unsuffixed last-scan ones; reads go through `read_scan_calibration_set` + `ScanCalibrationSet::for_kind`, which falls
+  back same-kind → any-kind → nothing. DETAILS § "Scan calibration is stored PER WALK KIND".
+
 The schema columns and the honest-sizes epoch model that shares them (`listed_epoch`, `min_subtree_epoch`,
 `current_epoch`), plus the module structure: `DETAILS.md`. Read it before any non-trivial work here:
 editing, planning, reorganizing, or advising.

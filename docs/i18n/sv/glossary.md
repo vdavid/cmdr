@@ -832,3 +832,15 @@ the catalog had been naming two ways.
 - **"picks up where it left off" → `fortsätter där den slutade`** · natural Swedish; no pile hit for the idiom. `high`.
 
 No `sameAsSourceJustification` needed: all five values differ from English.
+
+## Enhetsindex: genomsökningen som letar ändringar (2026-07-28)
+
+- **"Checking for changes" (run-kind header) → `Kontroll av ändringar`** · nominal phrase matching the sibling headers
+  (`Första fullständiga genomsökningen`, `Snabb uppdatering`); `Kontrollerar` is macOS SV's checking verb (Finder BN9
+  "Kontrollerar om innehållet…"), `ändringar` is catalog-settled (`senaste ändringarna`). Chose `kontroll` over the
+  colloquial `koll` (which `tooltipCoalesced` uses only inside the idiom `tappade koll på`) · high.
+- **"Update the file list" → `Uppdatera fillistan`** · composed from the settled siblings `Spara fillistan` +
+  `Uppdatera index` · high.
+- **"the check running right now" → `genomsökningen som pågår just nu`** · reuses `genomsökning` as this catalog's
+  settled word for a full check (`tooltipCoalesced`: "Cmdrs nästa fullständiga genomsökning") and that string's closing
+  `rättar till det` · high.

@@ -827,3 +827,12 @@ term used instead), Microsoft zh-Hans TBX cross-check. Three settings-card title
   `忘记此驱动器的索引`, the tooltips), which is exactly the terse-label carve-out style.md grants `此`; elsewhere the
   spoken `这个驱动器` still wins · `high`
 - No `sameAsSourceJustification` needed: every value differs from English; only `{name}` stays verbatim.
+
+## 驱动器索引：检查更改这一趟 (2026-07-28)
+
+- **"Checking for changes" (run-kind header)** · `检查更改` · sibling headers are verb-object phrases (`首次完整扫描`,
+  `快速更新`); `检查` is the settled checking verb (glossary `正在检查`, macOS Finder BN9 `正在检查“^0”的内容`), `更改`
+  is catalog-settled (`同步最近的更改`). Header, not live status, so no `正在` prefix · `high`.
+- **"Update the file list"** · `更新文件列表` · composed from the settled siblings `保存文件列表` + `更新索引` · `high`.
+- **"the check running right now"** · `正在进行的这次检查` · reuses `检查` as this catalog's settled word for a full
+  check (`tooltipCoalesced`: `下一次完整检查`) and that string's closing `恢复准确` · `high`.

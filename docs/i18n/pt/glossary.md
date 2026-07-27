@@ -650,3 +650,14 @@ Thunar / Nautilus" and notes "pt pile has no Total Commander" — that is the **
 EUROPEAN**. The Brazilian set is `_ignored/i18n/pt-BR/`, and it _does_ have `total-commander/`. Now reads "geram um
 arquivo menor, mas demoram mais para comprimir. Vale para o comando Comprimir e para a cópia ou movimentação de arquivos
 para um zip." Re-check any other row whose sources name the bare `pt` pile.
+
+## Índice do disco: a verificação de mudanças (2026-07-28)
+
+- **"Checking for changes" (run-kind header) → `Verificação de mudanças`** · nominal phrase matching the sibling headers
+  (`Primeira varredura completa`, `Atualização rápida`); `Verificando` is macOS pt-BR's checking verb (Finder BN9
+  "Verificando os conteúdos…"), `mudanças` is catalog-settled (`as mudanças recentes`) · high.
+- **"Update the file list" → `Atualizar a lista de arquivos`** · composed from the settled siblings
+  `Salvar a lista de arquivos` + `Atualizar o índice` · high.
+- **"the check running right now" → `a varredura que está em andamento agora`** · reuses `varredura` as this catalog's
+  settled word for a full check (`tooltipCoalesced`: "a próxima varredura completa do Cmdr") and that string's closing
+  `vai corrigir isso` · high.

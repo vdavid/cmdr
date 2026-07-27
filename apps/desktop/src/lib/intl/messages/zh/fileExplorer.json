@@ -1312,6 +1312,10 @@
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
     "sourceHash": "2b593c3"
   },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS 有 {count, plural, other {{countText} 次}}没能跟上文件系统的改动，因此少数文件夹大小可能略有偏差。这通常只是塞满小文件的缓存，正在进行的这次检查会将其恢复准确。",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
+    "sourceHash": "9cbf743"
+  },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "在过去 {hours, plural, other {{hoursText} 小时}}内，macOS 有 {count, plural, other {{countText} 次}}没能跟上文件系统的改动，因此少数文件夹大小可能略有偏差。这通常只是塞满小文件的缓存，问题不大。",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"

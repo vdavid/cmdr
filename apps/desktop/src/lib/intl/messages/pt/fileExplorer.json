@@ -1318,6 +1318,10 @@
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
     "sourceHash": "2b593c3"
   },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "O macOS deixou de acompanhar as mudanças no sistema de arquivos {count, plural, one {uma vez} many {{countText} vezes} other {{countText} vezes}}, então alguns tamanhos de pastas podem estar um pouco imprecisos. Normalmente são caches cheios de arquivos pequenos, e a varredura que está em andamento agora vai corrigir isso.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
+    "sourceHash": "9cbf743"
+  },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "O macOS deixou de acompanhar as mudanças no sistema de arquivos {count, plural, one {uma vez} many {{countText} vezes} other {{countText} vezes}} {hours, plural, one {na última hora} many {nas últimas {hoursText} horas} other {nas últimas {hoursText} horas}}, então alguns tamanhos de pastas podem estar um pouco imprecisos. Normalmente são caches cheios de arquivos pequenos, então não é nada preocupante.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"

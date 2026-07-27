@@ -244,13 +244,34 @@ impl IndexStore {
         })
     }
 
-    /// Read the previous completed scan's calibration from `meta` on the given
-    /// connection. Missing or unparseable keys map to `None`. Takes a connection
-    /// (rather than `&self`) so `start_scan` can read it off a fresh connection
-    /// before truncating; the keys survive `TruncateData` (it preserves `meta`).
-    pub fn read_scan_calibration(conn: &Connection) -> Result<ScanCalibration, IndexStoreError> {
-        let read_u64 = |key: &str| -> Result<Option<u64>, IndexStoreError> {
-            Ok(Self::read_meta_value(conn, key)?.and_then(|v| v.parse::<u64>().ok()))
+    /// Read every calibration bucket (per-walk-kind plus the unsuffixed
+    /// last-scan one) off the given connection, so the caller can pick the
+    /// bucket matching the run it's about to start via
+    /// [`ScanCalibrationSet::for_kind`].
+    ///
+    /// Missing or unparseable keys map to `None`. Takes a connection (rather
+    /// than `&self`) so `start_scan` can read it off a fresh connection before
+    /// truncating; the keys survive `TruncateData` (it preserves `meta`).
+    pub fn read_scan_calibration_set(conn: &Connection) -> Result<ScanCalibrationSet, IndexStoreError> {
+        Ok(ScanCalibrationSet {
+            full_walk: Self::read_scan_calibration_for(conn, Some(ScanCalibrationKind::FullWalk))?,
+            change_check: Self::read_scan_calibration_for(conn, Some(ScanCalibrationKind::ChangeCheck))?,
+            any: Self::read_scan_calibration_for(conn, None)?,
+        })
+    }
+
+    /// One calibration bucket: a walk kind's own keys, or the unsuffixed keys
+    /// (`None`) the last completed scan of any kind wrote.
+    fn read_scan_calibration_for(
+        conn: &Connection,
+        kind: Option<ScanCalibrationKind>,
+    ) -> Result<ScanCalibration, IndexStoreError> {
+        let read_u64 = |base: &str| -> Result<Option<u64>, IndexStoreError> {
+            let key = match kind {
+                Some(kind) => kind.meta_key(base),
+                None => base.to_string(),
+            };
+            Ok(Self::read_meta_value(conn, &key)?.and_then(|v| v.parse::<u64>().ok()))
         };
         Ok(ScanCalibration {
             total_entries: read_u64("total_entries")?,

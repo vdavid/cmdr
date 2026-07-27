@@ -820,3 +820,14 @@ sessions, attachments, consent screen, cost footer, settings section; macOS AppK
   (badges are inline chips next to a row label; 29 chars vs the source's 23) · high (kept), tentative (the comitative
   `con`, which mirrors what fr/pt/nl/sv all chose)
 - No `sameAsSourceJustification` needed: all five values differ from English.
+
+## Índice de unidades: la pasada de comprobación de cambios (2026-07-28)
+
+- **"Checking for changes" (run-kind header) → `Comprobación de cambios`** · nominal phrase matching the sibling headers
+  (`Primer análisis completo`, `Actualización rápida`); `Comprobando` is macOS ES's checking verb (Finder BN9
+  "Comprobando si los contenidos…"), `cambios` is catalog-settled (`los cambios recientes`) · high.
+- **"Update the file list" → `Actualizar la lista de archivos`** · composed from the settled siblings
+  `Guardar la lista de archivos` + `Actualizar el índice` · high.
+- **"the check running right now" → `el análisis que se está ejecutando ahora mismo`** · reuses `análisis` as this
+  catalog's settled word for a full check (`tooltipCoalesced`: "el próximo análisis completo de Cmdr") and that string's
+  closing `lo dejará al día` · high.

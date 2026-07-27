@@ -19,6 +19,7 @@ import type {
   IndexScanAbortedEvent,
   IndexScanProgressEvent,
   IndexScanStartedEvent,
+  ScanRunKind,
 } from '$lib/ipc/bindings'
 
 // Captured callbacks the module registers via the wrappers below.
@@ -82,7 +83,7 @@ import {
   getVolumeActivity,
   getEntriesScanned,
   getVolumePhase,
-  getVolumeScanKind,
+  getVolumeScanRunKind,
   getActivePhaseVolumeIds,
   getAggregatingVolumeIds,
   isVolumeScanning,
@@ -307,7 +308,7 @@ describe('index-state per-volume pipeline phase', () => {
   })
 })
 
-describe('index-state per-volume scan kind (the run-kind header fact)', () => {
+describe('index-state per-volume scan run kind (the run-kind header fact)', () => {
   beforeEach(async () => {
     destroyIndexState()
     scanStartedCb = undefined
@@ -317,44 +318,51 @@ describe('index-state per-volume scan kind (the run-kind header fact)', () => {
     await initIndexState()
   })
 
-  function emitStarted(volumeId: string, priorTotalEntries: number | null): void {
+  function emitStarted(volumeId: string, scanRunKind: ScanRunKind, priorTotalEntries: number | null = null): void {
     if (!scanStartedCb) throw new Error('scan-started callback not registered')
-    scanStartedCb({ volumeId, priorTotalEntries, priorScanDurationMs: null, volumeUsedBytes: null })
+    scanStartedCb({ volumeId, scanRunKind, priorTotalEntries, priorScanDurationMs: null, volumeUsedBytes: null })
   }
 
-  it('classifies a scan with prior totals as a rescan, without as a first build', () => {
-    emitStarted('root', 405356)
-    expect(getVolumeScanKind('root')).toBe('rescan')
+  it('takes the backend answer verbatim, including the case a prior-totals guess got wrong', () => {
+    emitStarted('root', 'change_check', 405356)
+    expect(getVolumeScanRunKind('root')).toBe('change_check')
 
-    emitStarted('smb-nas', null)
-    expect(getVolumeScanKind('smb-nas')).toBe('first')
+    emitStarted('smb-nas', 'first_scan')
+    expect(getVolumeScanRunKind('smb-nas')).toBe('first_scan')
+
+    // A populated index whose last scan never completed: prior totals exist, yet
+    // the walk truncates and rebuilds. Guessing from the totals called this a
+    // change check; the backend says rebuild, and the backend wins.
+    emitStarted('ext-usb', 'full_rebuild', 405356)
+    expect(getVolumeScanRunKind('ext-usb')).toBe('full_rebuild')
   })
 
   it('survives past the live scan entry, so the header holds through aggregation', () => {
     if (!phaseCb) throw new Error('phase-changed callback not registered')
-    emitStarted('root', 1000)
+    emitStarted('root', 'change_check', 1000)
     // The scan finished (activity entry gone), aggregation is running: the
     // pipeline isn't terminal, so the kind must still be known.
     phaseCb({ volumeId: 'root', phase: 'aggregating' })
-    expect(getVolumeScanKind('root')).toBe('rescan')
+    expect(getVolumeScanRunKind('root')).toBe('change_check')
   })
 
   it('expires on the terminal live transition and on an abort', () => {
     if (!phaseCb || !scanAbortedCb) throw new Error('callbacks not registered')
-    emitStarted('root', 1000)
+    emitStarted('root', 'full_rebuild', 1000)
     phaseCb({ volumeId: 'root', phase: 'live' })
-    expect(getVolumeScanKind('root')).toBeUndefined()
+    expect(getVolumeScanRunKind('root')).toBeUndefined()
 
-    emitStarted('smb-nas', null)
+    emitStarted('smb-nas', 'first_scan')
     scanAbortedCb({ volumeId: 'smb-nas' })
-    expect(getVolumeScanKind('smb-nas')).toBeUndefined()
+    expect(getVolumeScanRunKind('smb-nas')).toBeUndefined()
   })
 
   it('stays unknown for a volume seeded by a progress tick alone (mid-scan reload)', () => {
     if (!scanProgressCb) throw new Error('scan-progress callback not registered')
     scanProgressCb({ volumeId: 'smb-nas', entriesScanned: 10, dirsFound: 2, bytesScanned: 100 })
-    // No started event ⇒ no first-vs-rescan fact ⇒ the header is omitted, not guessed.
-    expect(getVolumeScanKind('smb-nas')).toBeUndefined()
+    // No started event and no status backfill ⇒ no run-kind fact ⇒ the header is
+    // omitted, not guessed.
+    expect(getVolumeScanRunKind('smb-nas')).toBeUndefined()
   })
 })
 

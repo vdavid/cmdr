@@ -257,6 +257,66 @@ pub struct ScanCalibration {
     pub scan_duration_ms: Option<u64>,
 }
 
+impl ScanCalibration {
+    /// Nothing recorded at all, so this bucket can't calibrate anything.
+    pub fn is_empty(&self) -> bool {
+        *self == Self::default()
+    }
+}
+
+/// Which WALK produced a calibration sample. The two walks differ by roughly 5x
+/// in wall clock on the same volume (a parallel truncate-and-rebuild vs a serial
+/// per-directory diff), so a timing from one is a bad ETA seed for the other:
+/// they're stored and read in separate `meta` buckets.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ScanCalibrationKind {
+    /// The walk that truncates the index and rebuilds it (a first scan or a full
+    /// rebuild), local guarded walker or network trait scan.
+    FullWalk,
+    /// The rescan-in-place that diffs every directory against the index and
+    /// writes only the changes.
+    ChangeCheck,
+}
+
+impl ScanCalibrationKind {
+    /// This kind's `meta` key for a calibration field, for example
+    /// `scan_duration_ms_change_check`.
+    pub fn meta_key(self, base: &str) -> String {
+        let suffix = match self {
+            Self::FullWalk => "full_walk",
+            Self::ChangeCheck => "change_check",
+        };
+        format!("{base}_{suffix}")
+    }
+}
+
+/// Every calibration bucket recorded on one index DB.
+///
+/// `any` holds the unsuffixed keys, which every completed scan writes whatever
+/// its kind, so it's the last completed scan's numbers. It's the fallback rung:
+/// a stale-but-present timing from the other walk beats showing no estimate at
+/// all (and a DB predating the per-kind keys only has this one).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct ScanCalibrationSet {
+    pub full_walk: ScanCalibration,
+    pub change_check: ScanCalibration,
+    pub any: ScanCalibration,
+}
+
+impl ScanCalibrationSet {
+    /// The calibration to seed the ETA and the percent denominator for a run of
+    /// this kind: the same kind's own numbers when it has any, else the last
+    /// completed scan of either kind, else nothing (the caller falls back to the
+    /// rough, untimed tier).
+    pub fn for_kind(&self, kind: ScanCalibrationKind) -> ScanCalibration {
+        let same_kind = match kind {
+            ScanCalibrationKind::FullWalk => self.full_walk,
+            ScanCalibrationKind::ChangeCheck => self.change_check,
+        };
+        if same_kind.is_empty() { self.any } else { same_kind }
+    }
+}
+
 // ── Errors ───────────────────────────────────────────────────────────
 
 #[derive(Debug)]

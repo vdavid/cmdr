@@ -79,7 +79,7 @@ style guide and a human-shaped review are the only defense:
 
 ## Copy-shape contracts worth stating once
 
-Three recurring string families whose SHAPE is the thing that drifts, so state the contract rather than "keep them
+Four recurring string families whose SHAPE is the thing that drifts, so state the contract rather than "keep them
 parallel":
 
 - **A warning badge is a state label, not an action.** English hides this because "(overwrite!)" is noun/verb ambiguous;
@@ -92,6 +92,16 @@ parallel":
   bare infinitive that changes the mood entirely.
 - **When adding a key to an existing parallel FAMILY, match the family's recorded shape, not the adjacent line.** fr had
   the pattern in its glossary and the new pair still broke it, because the agent copied its neighbour.
+- **A new key that VARIANTS an existing one is an edit of the locale's sibling, not a fresh translation of the
+  English.** Some keys ship as a set of near-identical sentences differing in one clause (the three
+  `driveIndex.tooltipCoalesced*` variants, `step.saveFileList` vs `step.updateFileList`). Translating the new variant
+  from English re-derives clauses the locale already settled, so the variants drift apart in wording even though every
+  one of them is fluent. Instead: copy the locale's nearest sibling verbatim and change only the clause English changed.
+  Two things to check after the edit, both bit us across the nine locales: (1) dropping a clause can strand the
+  sentence, because languages front adverbials English keeps medial (de "macOS hat **in den letzten X Stunden** einmal
+  …", hu "A macOS **az elmúlt X órában** egyszer …", zh "**在过去 X 小时内**，macOS 有 …") — re-read the remainder as a
+  standalone sentence; (2) the placeholder SET must end up exactly English's, so a dropped clause must take its
+  placeholders with it (parity is error-class and will catch it, but after you've written nine).
 
 ## Reference-pile notes
 

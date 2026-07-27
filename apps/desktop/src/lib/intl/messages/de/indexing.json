@@ -33,6 +33,10 @@
   "@indexing.run.rescan": {
     "sourceHash": "f8cd103"
   },
+  "indexing.run.changeCheck": "Prüfung auf Änderungen",
+  "@indexing.run.changeCheck": {
+    "sourceHash": "9b43638"
+  },
   "indexing.run.update": "Schnelle Aktualisierung",
   "@indexing.run.update": {
     "sourceHash": "97ac3e3"
@@ -44,6 +48,10 @@
   "indexing.step.saveFileList": "Dateiliste speichern",
   "@indexing.step.saveFileList": {
     "sourceHash": "92af072"
+  },
+  "indexing.step.updateFileList": "Dateiliste aktualisieren",
+  "@indexing.step.updateFileList": {
+    "sourceHash": "ef0a3d2"
   },
   "indexing.step.computeFolderSizes": "Ordnergrößen berechnen",
   "@indexing.step.computeFolderSizes": {
@@ -64,6 +72,10 @@
   "indexing.step.findFilesFirstScan": "Erster Durchlauf, das kann eine Weile dauern",
   "@indexing.step.findFilesFirstScan": {
     "sourceHash": "5e9ea25"
+  },
+  "indexing.step.findFilesChangeCheck": "Jeder Ordner wird mit dem Index verglichen. Deine Ordnergrößen bleiben währenddessen sichtbar.",
+  "@indexing.step.findFilesChangeCheck": {
+    "sourceHash": "8c23f1f"
   },
   "indexing.step.statusDone": "Fertig",
   "@indexing.step.statusDone": {

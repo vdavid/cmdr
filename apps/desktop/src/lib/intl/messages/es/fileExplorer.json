@@ -1315,6 +1315,10 @@
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
     "sourceHash": "2b593c3"
   },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS perdió la pista de los cambios en el sistema de archivos {count, plural, one {una vez} many {{countText} veces} other {{countText} veces}}, así que algunos tamaños de carpetas podrían no ser del todo exactos. Suelen ser cachés llenas de archivos pequeños, y el análisis que se está ejecutando ahora mismo lo dejará al día.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
+    "sourceHash": "9cbf743"
+  },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS perdió la pista de los cambios en el sistema de archivos {count, plural, one {una vez} many {{countText} veces} other {{countText} veces}} en {hours, plural, one {la última hora} many {las últimas {hoursText} horas} other {las últimas {hoursText} horas}}, así que algunos tamaños de carpetas podrían no ser del todo exactos. Suelen ser cachés llenas de archivos pequeños, así que no es para preocuparse.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"

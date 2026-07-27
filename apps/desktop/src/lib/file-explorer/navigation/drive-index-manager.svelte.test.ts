@@ -117,7 +117,13 @@ describe('drive index manager — freshness status', () => {
   it('refetches on scan start and scan complete (keeps the dot + footer facts in sync)', async () => {
     const mgr = await makeManager()
     getVolumeIndexStatusById.mockResolvedValue({ status: 'ok', data: status('smb-a', 'scanning') })
-    onStarted?.({ volumeId: 'smb-a', priorTotalEntries: null, priorScanDurationMs: null, volumeUsedBytes: null })
+    onStarted?.({
+      volumeId: 'smb-a',
+      scanRunKind: 'first_scan',
+      priorTotalEntries: null,
+      priorScanDurationMs: null,
+      volumeUsedBytes: null,
+    })
     await Promise.resolve()
     await Promise.resolve()
     expect(mgr.statusMap.get('smb-a')?.freshness).toBe('scanning')

@@ -33,6 +33,10 @@
   "@indexing.run.rescan": {
     "sourceHash": "f8cd103"
   },
+  "indexing.run.changeCheck": "Változások ellenőrzése",
+  "@indexing.run.changeCheck": {
+    "sourceHash": "9b43638"
+  },
   "indexing.run.update": "Gyors frissítés",
   "@indexing.run.update": {
     "sourceHash": "97ac3e3"
@@ -44,6 +48,10 @@
   "indexing.step.saveFileList": "Fájllista mentése",
   "@indexing.step.saveFileList": {
     "sourceHash": "92af072"
+  },
+  "indexing.step.updateFileList": "Fájllista frissítése",
+  "@indexing.step.updateFileList": {
+    "sourceHash": "ef0a3d2"
   },
   "indexing.step.computeFolderSizes": "Mappaméretek kiszámítása",
   "@indexing.step.computeFolderSizes": {
@@ -64,6 +72,10 @@
   "indexing.step.findFilesFirstScan": "Első átvizsgálás, ez eltarthat egy ideig",
   "@indexing.step.findFilesFirstScan": {
     "sourceHash": "5e9ea25"
+  },
+  "indexing.step.findFilesChangeCheck": "Minden mappa összevetése az indexszel. A mappaméretek közben végig láthatók maradnak.",
+  "@indexing.step.findFilesChangeCheck": {
+    "sourceHash": "8c23f1f"
   },
   "indexing.step.statusDone": "Kész",
   "@indexing.step.statusDone": {

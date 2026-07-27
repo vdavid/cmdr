@@ -21,7 +21,7 @@
     } from './eta'
     import {
         getVolumePhase,
-        getVolumeScanKind,
+        getVolumeScanRunKind,
         type VolumeIndexActivity,
         type AggregationActivity,
     } from './index-state.svelte'
@@ -182,16 +182,17 @@
     // body stays presentational, taking both as props.
     const phase = $derived(getVolumePhase(activity.volumeId))
     const isNetwork = $derived(isNetworkIndexRun(activity.volumeId, getVolumes()))
-    // First index build vs full rescan, for the run-kind header. Read here in the
-    // stateful wrapper (like `phase`); the body stays presentational.
-    const scanKind = $derived(getVolumeScanKind(activity.volumeId))
+    // What kind of run this is, for the run-kind header and the per-step copy.
+    // Read here in the stateful wrapper (like `phase`); the body stays
+    // presentational.
+    const scanRunKind = $derived(getVolumeScanRunKind(activity.volumeId))
 </script>
 
 <div class="drive-row">
     {#if showHeading}
         <span class="drive-heading">{tString('indexing.drive.heading', { name: driveName })}</span>
     {/if}
-    <IndexingStatusBody {activity} {aggregation} {now} {windowedEta} {phase} {isNetwork} {scanKind} />
+    <IndexingStatusBody {activity} {aggregation} {now} {windowedEta} {phase} {isNetwork} {scanRunKind} />
 </div>
 
 <style>

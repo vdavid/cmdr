@@ -54,6 +54,33 @@ transaction it opened — in place, so a single failed `upsert_dir_stats_by_id` 
 connection then sees `database is locked` indefinitely, and the writer's own later writes never commit. Regression:
 `store::tests::a_failed_savepoint_call_leaves_the_connection_in_autocommit`.
 
+## Scan calibration is stored PER WALK KIND
+
+The frontend's tier-1 progress denominator and its ETA seed come from the previous scan's `total_entries` and
+`scan_duration_ms` in `meta`. The two walks that write them differ by roughly 5x in wall clock on the same volume (the
+parallel truncate-and-rebuild vs the serial per-directory change check), so one slot for both means each run predicts
+the other's time. Measured on the boot disk: a ~3 minute rebuild seeded from a 1,180,696 ms change check would promise
+~20 minutes, and the reverse promises 3 minutes for a 20-minute run.
+
+So every completed scan writes its numbers TWICE:
+
+- **`<key>_full_walk` / `<key>_change_check`** — the per-kind bucket, keyed by `ScanCalibrationKind::meta_key(base)` for
+  `total_entries`, `total_physical_bytes`, and `scan_duration_ms`. `FullWalk` covers both truncating runs (a first scan
+  and a full rebuild are the same walker, so they calibrate each other).
+- **The unsuffixed `<key>`** — the last completed scan of any kind. This is what `VolumeIndexStatus.scan_duration_ms`
+  (the badge's "took N min" footer) and `IndexStatus` read, and it doubles as the fallback bucket.
+
+`IndexStore::read_scan_calibration_set` reads all three buckets; `ScanCalibrationSet::for_kind(kind)` picks one:
+same-kind if it holds anything, else the unsuffixed last-scan bucket, else empty (the caller then falls back to the
+rough, untimed tier). The any-kind rung is deliberate: on the first-ever change check a full walk's timing is wrong-ish
+but honest company, and better than showing no estimate at all. It also covers a DB written before the per-kind keys
+existed, with no migration — the index is a disposable cache (`../CLAUDE.md` § "Rebuild, don't migrate"), so a missing
+per-kind key is just "no same-kind calibration yet".
+
+Which bucket a run reads and writes is decided ONCE, by `events::ScanRunKind::calibration_kind()` at the scan-start
+funnel, and threaded to the completion handler (`lifecycle/scan_completion.rs` for local,
+`lifecycle/network_scan.rs`'s completion arm for SMB/MTP). Pinned by `store::tests::calibration_for_kind_*`.
+
 ## Decision: a subtree delete is post-order, so an interruption can never strand rows
 
 `delete_descendants_by_id` deletes files on the way down (a leaf can't strand anything), banks each level's directory

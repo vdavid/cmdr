@@ -22,6 +22,10 @@ mid-scan partial aggregation) shared by every scan path.
 - **The reporter runs on `tauri::async_runtime::spawn`, not `tokio::spawn`** — a scan can start from the synchronous
   Tauri `setup()` hook where no Tokio runtime exists. Its loop dies with the scan, which is what structurally scopes
   partial passes to the full-scan window (no partial passes in replay, subtree scans, or live mode).
+- **`ScanRunKind` on `index-scan-started` is the ONLY honest answer to "what kind of run is this"**
+  (`FirstScan` / `FullRebuild` / `ChangeCheck`, from `ScanRunKind::classify` at each scan-start funnel). Don't let the FE
+  re-derive it from `prior_total_entries`: that disagrees on a populated index whose last scan never completed. Its
+  `calibration_kind()` also picks the per-kind ETA bucket (`../store/`).
 - **Event structs derive `tauri_specta::Event` with a pinned kebab `event_name`** (the `…Event` suffix wouldn't
   kebab-case to the wire string) and are registered in `ipc.rs`'s `collect_events!`. Add a new event in both places or
   the FE never sees it.

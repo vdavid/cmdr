@@ -1897,6 +1897,14 @@
       "remainingText": "the same remaining-hour count, already formatted for the reader (e.g. 6)"
     }
   },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS lost track of file system changes {count, plural, one {once} other {{countText} times}}, so a few folder sizes might be slightly off. It''s usually caches full of small files, and the check running right now will put them right.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
+    "description": "The variant of the coalesced-changes tooltip paragraph shown while Cmdr is actually running the full check on this drive (the dot is blue). The other variants promise a check later; this one points at the one in progress, so don''t reintroduce a time. It also drops the ''in the last N hours'' window the others open with: the running scan cleared the last-completed-scan marker, so there''s no honest window to name. Reassuring, not alarming. Never use the words ''error'' or ''failed''.",
+    "placeholders": {
+      "count": "how many times macOS lost track since the last full check, as a raw number, used only to pick the plural branch",
+      "countText": "the same count, already formatted for the reader (e.g. 12)"
+    }
+  },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It''s usually caches full of small files, so it''s no big deal.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "description": "The variant of the tooltip paragraph above for a drive with no scheduled full check to promise (an external drive, or one whose check is already due). Same first sentence; the closing reassurance replaces the ''next full check in N hours'' promise, so don''t reintroduce a time here. Never use the words ''error'' or ''failed''.",

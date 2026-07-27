@@ -516,7 +516,7 @@ fn read_scan_calibration_reads_seeded_keys() {
     IndexStore::update_meta(&write_conn, "total_physical_bytes", "905000000000").unwrap();
     IndexStore::update_meta(&write_conn, "scan_duration_ms", "149000").unwrap();
 
-    let calibration = IndexStore::read_scan_calibration(&write_conn).unwrap();
+    let calibration = IndexStore::read_scan_calibration_set(&write_conn).unwrap().any;
     assert_eq!(calibration.total_entries, Some(5_000_000));
     assert_eq!(calibration.total_physical_bytes, Some(905_000_000_000));
     assert_eq!(calibration.scan_duration_ms, Some(149_000));
@@ -528,16 +528,98 @@ fn read_scan_calibration_missing_keys_are_none() {
     let conn = IndexStore::open_write_connection(store.db_path()).unwrap();
 
     // Fresh DB: none of the calibration keys exist yet.
-    let calibration = IndexStore::read_scan_calibration(&conn).unwrap();
-    assert_eq!(calibration, ScanCalibration::default());
-    assert_eq!(calibration.total_entries, None);
-    assert_eq!(calibration.total_physical_bytes, None);
-    assert_eq!(calibration.scan_duration_ms, None);
+    let set = IndexStore::read_scan_calibration_set(&conn).unwrap();
+    assert_eq!(set, ScanCalibrationSet::default());
+    assert_eq!(set.any.total_entries, None);
+    assert_eq!(set.any.total_physical_bytes, None);
+    assert_eq!(set.any.scan_duration_ms, None);
 
     // A non-numeric value also maps to None (parse failure), not an error.
     IndexStore::update_meta(&conn, "total_entries", "not-a-number").unwrap();
-    let calibration = IndexStore::read_scan_calibration(&conn).unwrap();
-    assert_eq!(calibration.total_entries, None);
+    let set = IndexStore::read_scan_calibration_set(&conn).unwrap();
+    assert_eq!(set.any.total_entries, None);
+}
+
+/// Every completed scan writes BOTH its own walk-kind bucket and the unsuffixed
+/// last-scan one, and the reader hands each back separately.
+#[test]
+fn read_scan_calibration_set_reads_each_bucket() {
+    let (store, _dir) = open_temp_store();
+    let conn = IndexStore::open_write_connection(store.db_path()).unwrap();
+
+    IndexStore::update_meta(&conn, "scan_duration_ms_full_walk", "180000").unwrap();
+    IndexStore::update_meta(&conn, "total_entries_full_walk", "5000000").unwrap();
+    IndexStore::update_meta(&conn, "scan_duration_ms_change_check", "1180696").unwrap();
+    IndexStore::update_meta(&conn, "total_entries_change_check", "5100000").unwrap();
+    IndexStore::update_meta(&conn, "scan_duration_ms", "1180696").unwrap();
+    IndexStore::update_meta(&conn, "total_entries", "5100000").unwrap();
+
+    let set = IndexStore::read_scan_calibration_set(&conn).unwrap();
+    assert_eq!(set.full_walk.scan_duration_ms, Some(180_000));
+    assert_eq!(set.full_walk.total_entries, Some(5_000_000));
+    assert_eq!(set.change_check.scan_duration_ms, Some(1_180_696));
+    assert_eq!(set.any.scan_duration_ms, Some(1_180_696));
+}
+
+/// The whole point of the split: a full walk must be timed off the last FULL
+/// WALK, never off the change check that ran more recently and takes ~5x longer.
+#[test]
+fn calibration_for_kind_prefers_the_same_kind() {
+    let set = ScanCalibrationSet {
+        full_walk: ScanCalibration {
+            total_entries: Some(5_000_000),
+            total_physical_bytes: Some(905_000_000_000),
+            scan_duration_ms: Some(180_000),
+        },
+        change_check: ScanCalibration {
+            total_entries: Some(5_100_000),
+            total_physical_bytes: Some(910_000_000_000),
+            scan_duration_ms: Some(1_180_696),
+        },
+        // The change check ran last, so it also owns the unsuffixed keys.
+        any: ScanCalibration {
+            total_entries: Some(5_100_000),
+            total_physical_bytes: Some(910_000_000_000),
+            scan_duration_ms: Some(1_180_696),
+        },
+    };
+
+    assert_eq!(
+        set.for_kind(ScanCalibrationKind::FullWalk).scan_duration_ms,
+        Some(180_000),
+        "a full walk must be timed off the last full walk, not off the slower change check"
+    );
+    assert_eq!(
+        set.for_kind(ScanCalibrationKind::ChangeCheck).scan_duration_ms,
+        Some(1_180_696)
+    );
+}
+
+/// No same-kind sample yet (the first-ever change check): the other walk's
+/// timing is wrong-ish but honest company, and beats showing no estimate.
+#[test]
+fn calibration_for_kind_falls_back_to_the_last_scan_of_any_kind() {
+    let last_full_walk = ScanCalibration {
+        total_entries: Some(5_000_000),
+        total_physical_bytes: Some(905_000_000_000),
+        scan_duration_ms: Some(180_000),
+    };
+    let set = ScanCalibrationSet {
+        full_walk: last_full_walk,
+        change_check: ScanCalibration::default(),
+        any: last_full_walk,
+    };
+
+    assert_eq!(set.for_kind(ScanCalibrationKind::ChangeCheck), last_full_walk);
+}
+
+/// A brand-new index has nothing to calibrate from, and says so (the caller then
+/// falls back to the rough, untimed tier) rather than inventing a number.
+#[test]
+fn calibration_for_kind_is_empty_when_nothing_is_recorded() {
+    let set = ScanCalibrationSet::default();
+    assert!(set.for_kind(ScanCalibrationKind::FullWalk).is_empty());
+    assert!(set.for_kind(ScanCalibrationKind::ChangeCheck).is_empty());
 }
 
 #[test]

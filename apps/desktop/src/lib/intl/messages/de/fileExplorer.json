@@ -1321,6 +1321,10 @@
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
     "sourceHash": "2b593c3"
   },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS hat {count, plural, one {einmal} other {{countText}-mal}} den Überblick über Dateisystemänderungen verloren, daher können ein paar Ordnergrößen leicht abweichen. Meist sind es Caches voller kleiner Dateien, und der gerade laufende Durchlauf bringt das wieder in Ordnung.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
+    "sourceHash": "9cbf743"
+  },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS hat {hours, plural, one {in der letzten Stunde} other {in den letzten {hoursText} Stunden}} {count, plural, one {einmal} other {{countText}-mal}} den Überblick über Dateisystemänderungen verloren, daher können ein paar Ordnergrößen leicht abweichen. Meist sind es Caches voller kleiner Dateien, also halb so wild.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"

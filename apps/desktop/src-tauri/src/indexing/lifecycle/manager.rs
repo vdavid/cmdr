@@ -13,7 +13,7 @@ use crate::ignore_poison::IgnorePoison;
 use crate::indexing::events::progress_reporter::ScanProgressReporter;
 use crate::indexing::events::{
     ActivityPhase, DEBUG_STATS, IndexDebugStatusResponse, IndexScanStartedEvent, IndexStatusResponse, PhaseRecord,
-    RescanReason, emit_rescan_notification, set_phase_for,
+    RescanReason, ScanRunKind, emit_rescan_notification, set_phase_for,
 };
 use crate::indexing::reconcile::local_reconcile;
 use crate::indexing::reconcile::reconciler;
@@ -81,11 +81,16 @@ pub(crate) struct IndexManager {
 /// late-join), so the moving 500 ms progress events carry only live counters.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct ScanCalibration {
-    /// The prior completed scan's persisted totals (tier-1 denominator + ETA seed).
+    /// The prior completed scan's persisted totals (tier-1 denominator + ETA
+    /// seed), picked for THIS run's kind: same-kind first, then the last scan of
+    /// any kind. The two walks differ ~5x, so mixing them ships a wrong ETA.
     pub(super) prior: crate::indexing::store::ScanCalibration,
     /// The scanned volume's used bytes at scan start (tier-2 denominator). `None`
     /// when the space-info fetch failed; never blocks or delays the scan.
     pub(super) volume_used_bytes: Option<u64>,
+    /// What kind of run this is. Rides the started event so the frontend states
+    /// it, and picks the calibration bucket the completion handler writes into.
+    pub(super) run_kind: ScanRunKind,
 }
 
 /// The live scan-progress fields `get_status` surfaces on `IndexStatusResponse`.
@@ -95,6 +100,9 @@ struct LiveScanCounters {
     dirs_found: u64,
     bytes_scanned: u64,
     volume_used_bytes: Option<u64>,
+    scan_run_kind: Option<ScanRunKind>,
+    prior_total_entries: Option<u64>,
+    prior_scan_duration_ms: Option<u64>,
 }
 
 /// Derive the live scan counters for `get_status` from the active scan's progress
@@ -113,6 +121,9 @@ fn live_scan_counters(
         dirs_found: snapshot.map(|s| s.dirs_found).unwrap_or(0),
         bytes_scanned: snapshot.map(|s| s.bytes_scanned).unwrap_or(0),
         volume_used_bytes: calibration.and_then(|c| c.volume_used_bytes),
+        scan_run_kind: calibration.map(|c| c.run_kind),
+        prior_total_entries: calibration.and_then(|c| c.prior.total_entries),
+        prior_scan_duration_ms: calibration.and_then(|c| c.prior.scan_duration_ms),
     }
 }
 
@@ -610,17 +621,6 @@ impl IndexManager {
             return Err("Scan already running".to_string());
         }
 
-        // Step 0: Capture this scan's calibration BEFORE truncating.
-        //
-        // The prior completed scan's totals are read straight off the live read
-        // connection: the calibration keys survive `TruncateData` (it preserves
-        // `meta`), but reading first keeps the data flow obviously correct — we
-        // snapshot the previous scan's numbers before the truncate touches anything.
-        let prior = IndexStore::read_scan_calibration(self.store.read_conn()).unwrap_or_else(|e| {
-            log::warn!("Failed to read prior scan calibration (tier-1 will degrade): {e}");
-            crate::indexing::store::ScanCalibration::default()
-        });
-
         // The completeness gate for reconcile-vs-truncate (see `local_rescan_reconciles`):
         // snapshot whether the prior scan COMPLETED, read BEFORE `DeleteMeta` clears
         // `scan_completed_at` below. A partial that never finished must NOT reconcile
@@ -631,6 +631,36 @@ impl IndexManager {
             .get_index_status()
             .map(|s| s.scan_completed_at.is_some())
             .unwrap_or(false);
+
+        // Reconcile vs truncate. A previously-COMPLETED, populated index (rows beyond
+        // the ROOT sentinel) is RESCANNED in place by `local_reconcile` (diff each dir,
+        // write only changes) so the last-good directory sizes stay visible (stale)
+        // throughout and no large freelist is minted. A first/empty scan OR a
+        // never-completed partial keeps the fast parallel guarded-walker bulk build
+        // (see `local_rescan_reconciles` for the completeness gate). Read the entry
+        // count from the live read connection BEFORE any truncate. (NOTE: the network
+        // predicate in `lifecycle/network_scan.rs` is intentionally left unchanged.)
+        let reconcile = IndexStore::get_entry_count(self.store.read_conn())
+            .map(|n| local_rescan_reconciles(n, prior_scan_completed))
+            .unwrap_or(false);
+
+        // Step 0: Capture this scan's calibration BEFORE truncating.
+        //
+        // The prior completed scans' totals are read straight off the live read
+        // connection: the calibration keys survive `TruncateData` (it preserves
+        // `meta`), but reading first keeps the data flow obviously correct — we
+        // snapshot the previous scans' numbers before the truncate touches anything.
+        //
+        // PER KIND: the two walks differ ~5x in wall clock, so a change check's
+        // duration would predict a wildly wrong ETA for a full walk and vice versa.
+        // `for_kind` prefers this run's own kind and falls back to the last scan of
+        // any kind (better a stale-ish number than none).
+        let calibration_set = IndexStore::read_scan_calibration_set(self.store.read_conn()).unwrap_or_else(|e| {
+            log::warn!("Failed to read prior scan calibration (tier-1 will degrade): {e}");
+            crate::indexing::store::ScanCalibrationSet::default()
+        });
+        let run_kind = ScanRunKind::classify(reconcile, calibration_set.any.total_entries);
+        let prior = calibration_set.for_kind(run_kind.calibration_kind());
 
         // Fetch the scanned volume's used bytes ONCE (tier-2 denominator). The call
         // does disk I/O — an NSURL XPC round-trip on macOS, `statvfs` on Linux — and
@@ -649,6 +679,7 @@ impl IndexManager {
         let calibration = ScanCalibration {
             prior,
             volume_used_bytes,
+            run_kind,
         };
         self.scan_calibration = Some(calibration);
 
@@ -657,9 +688,10 @@ impl IndexManager {
         // PREVIOUS scan's `scan_completed_at` in meta on top of a truncated/partial
         // `entries` table, so the next startup takes the journal-replay path over a
         // gutted index instead of the `IncompletePreviousScan` fresh rescan. The
-        // calibration keys (`total_entries`, `total_physical_bytes`, `scan_duration_ms`)
-        // are intentionally left intact so they keep describing the last COMPLETED
-        // scan throughout this one. The same flush below covers both sends.
+        // calibration keys (`total_entries`, `total_physical_bytes`, `scan_duration_ms`,
+        // and their per-walk-kind twins) are intentionally left intact so they keep
+        // describing the last COMPLETED scan throughout this one. The same flush below
+        // covers both sends.
         if let Err(e) = self
             .writer
             .send(WriteMessage::DeleteMeta("scan_completed_at".to_string()))
@@ -679,18 +711,6 @@ impl IndexManager {
         if let Err(e) = self.writer.send(WriteMessage::BumpCurrentEpoch) {
             log::warn!("Failed to send BumpCurrentEpoch: {e}");
         }
-
-        // Step 0a'': Reconcile vs truncate. A previously-COMPLETED, populated index
-        // (rows beyond the ROOT sentinel) is RESCANNED in place by `local_reconcile`
-        // (diff each dir, write only changes) so the last-good directory sizes stay
-        // visible (stale) throughout and no large freelist is minted. A first/empty
-        // scan OR a never-completed partial keeps the fast parallel guarded-walker bulk build
-        // (see `local_rescan_reconciles` for the completeness gate). Read the entry
-        // count from the live read connection BEFORE any truncate. (NOTE: the network
-        // predicate in `lifecycle/network_scan.rs` is intentionally left unchanged.)
-        let reconcile = IndexStore::get_entry_count(self.store.read_conn())
-            .map(|n| local_rescan_reconciles(n, prior_scan_completed))
-            .unwrap_or(false);
 
         // Step 0b: Truncate entries + dir_stats so a FRESH scan inserts into an empty
         // DB. Without this, INSERT OR REPLACE on a populated table with the
@@ -749,6 +769,7 @@ impl IndexManager {
         // (calibrated vs rough) is then a pure function of this one event.
         let _ = IndexScanStartedEvent {
             volume_id: self.volume_id.clone(),
+            scan_run_kind: calibration.run_kind,
             prior_total_entries: calibration.prior.total_entries,
             prior_scan_duration_ms: calibration.prior.scan_duration_ms,
             volume_used_bytes: calibration.volume_used_bytes,
@@ -845,6 +866,7 @@ impl IndexManager {
                 freshness,
                 live_event_task_slot,
                 scan_start_event_id,
+                calibration_kind: run_kind.calibration_kind(),
             },
         ));
 
@@ -900,6 +922,9 @@ impl IndexManager {
             index_status: Some(index_status),
             db_file_size,
             volume_used_bytes: counters.volume_used_bytes,
+            scan_run_kind: counters.scan_run_kind,
+            prior_total_entries: counters.prior_total_entries,
+            prior_scan_duration_ms: counters.prior_scan_duration_ms,
         })
     }
 
@@ -1045,6 +1070,7 @@ mod tests {
         ScanCalibration {
             prior: crate::indexing::store::ScanCalibration::default(),
             volume_used_bytes: used_bytes,
+            run_kind: ScanRunKind::FirstScan,
         }
     }
 
@@ -1061,6 +1087,35 @@ mod tests {
         assert_eq!(counters.dirs_found, 1_200);
         assert_eq!(counters.bytes_scanned, 905_000_000);
         assert_eq!(counters.volume_used_bytes, Some(746_000_000));
+    }
+
+    #[test]
+    fn live_counters_carry_the_running_scans_per_kind_calibration() {
+        // The reload path must seed its ETA off the SAME per-kind bucket the live
+        // path used. Falling back to the unsuffixed meta keys would hand a full
+        // walk the ~5x slower change check's duration — the exact bug the split
+        // exists to kill, reintroduced by a window reload.
+        let mut cal = calibration(Some(746_000_000));
+        cal.run_kind = ScanRunKind::ChangeCheck;
+        cal.prior = crate::indexing::store::ScanCalibration {
+            total_entries: Some(5_100_000),
+            total_physical_bytes: None,
+            scan_duration_ms: Some(1_180_696),
+        };
+        let counters = live_scan_counters(Some(snapshot(42_000, 1_200, 905_000_000)), Some(cal));
+        assert_eq!(counters.prior_total_entries, Some(5_100_000));
+        assert_eq!(counters.prior_scan_duration_ms, Some(1_180_696));
+    }
+
+    #[test]
+    fn live_counters_carry_the_running_scans_kind() {
+        // A mid-scan window reload misses `index-scan-started`, so `get_status` is
+        // the only way back to the run-kind header. Without this the checklist
+        // would silently drop it (or, worse, guess) for the rest of the run.
+        let mut change_check = calibration(Some(746_000_000));
+        change_check.run_kind = ScanRunKind::ChangeCheck;
+        let counters = live_scan_counters(Some(snapshot(42_000, 1_200, 905_000_000)), Some(change_check));
+        assert_eq!(counters.scan_run_kind, Some(ScanRunKind::ChangeCheck));
     }
 
     #[test]

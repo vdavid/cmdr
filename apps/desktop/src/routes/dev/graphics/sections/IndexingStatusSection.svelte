@@ -10,7 +10,7 @@
     import IndexingStatusBody from '$lib/indexing/IndexingStatusBody.svelte'
     import IndexingDriveSummary from '$lib/indexing/IndexingDriveSummary.svelte'
     import type { VolumeIndexActivity, AggregationActivity } from '$lib/indexing/index-state.svelte'
-    import type { ActivityPhase } from '$lib/ipc/bindings'
+    import type { ActivityPhase, ScanRunKind } from '$lib/ipc/bindings'
 
     // A fixed "now" so elapsed clocks ("· 5:23") and ETAs render identically every
     // capture. All `scanStartedAt` / `startedAt` fixtures are offsets from this.
@@ -47,6 +47,9 @@
         isNetwork: boolean
         windowedEta: string | null
         driveName: string
+        /** Set only where the tile is ABOUT the run kind (it adds the run-kind
+         *  header and swaps the second step's wording). */
+        scanRunKind?: ScanRunKind
     }
 
     // Each state names the drive it's plausibly about, so the heading reads true.
@@ -83,6 +86,24 @@
             isNetwork: false,
             windowedEta: '1m 20s left',
             driveName: 'Macintosh HD',
+        },
+        {
+            id: 'find-files-change-check',
+            caption: 'Local · checking for changes (run-kind header + the folder-sizes-stay-visible hint)',
+            activity: scan({
+                entriesScanned: 512_000,
+                dirsFound: 44_100,
+                bytesScanned: 90_000_000_000,
+                scanStartedAt: NOW - 640_000,
+                priorTotalEntries: 1_400_000,
+                priorScanDurationMs: 1_180_696,
+            }),
+            aggregation: undefined,
+            phase: 'scanning',
+            isNetwork: false,
+            windowedEta: '18m left',
+            driveName: 'Macintosh HD',
+            scanRunKind: 'change_check',
         },
         {
             id: 'save-file-list',
@@ -233,6 +254,7 @@
                         windowedEta={s.windowedEta}
                         phase={s.phase}
                         isNetwork={s.isNetwork}
+                        scanRunKind={s.scanRunKind}
                     />
                 </div>
                 <figcaption>{s.caption}</figcaption>

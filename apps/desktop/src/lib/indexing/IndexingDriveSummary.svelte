@@ -9,6 +9,7 @@
     // there's a trustworthy denominator, else the honest running count).
     import {
         getVolumePhase,
+        getVolumeScanRunKind,
         type VolumeIndexActivity,
         type AggregationActivity,
     } from './index-state.svelte'
@@ -39,7 +40,10 @@
         activity.phase === 'replaying' ? 'replay' : isNetwork ? 'network' : 'local',
     )
     const aggSubPhase = $derived(aggregation?.phase as AggregationSubPhase | undefined)
-    const steps = $derived(deriveSteps({ runKind, phase, aggregationSubPhase: aggSubPhase }))
+    // The run kind only picks the step LABELS here (a change check updates the
+    // file list rather than saving a fresh one); the order is the same.
+    const scanRunKind = $derived(getVolumeScanRunKind(activity.volumeId))
+    const steps = $derived(deriveSteps({ runKind, phase, aggregationSubPhase: aggSubPhase, scanRunKind }))
     const active = $derived(activeStep(steps))
     const activeLabel = $derived(active ? tString(stepKindToLabelKey[active.kind]) : '')
 
@@ -72,6 +76,7 @@
                     return tString('indexing.summary.found', { countText: formatNumber(activity.entriesScanned) })
                 return null
             case 'saveFileList':
+            case 'updateFileList':
             case 'computeFolderSizes':
                 return aggDeterminate && aggFraction != null ? pct(aggFraction) : null
             case 'updateIndex':

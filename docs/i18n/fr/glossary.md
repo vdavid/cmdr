@@ -968,3 +968,14 @@ Phrasing notes for this pass:
 - No `:` `?` `!` `%` `»` in any of the five values, so the settled ASCII-space-before-punctuation rule doesn''t apply
   here. Register is `vous` throughout ("Activez-la", "vous la réactiverez"); no "erreur"/"échec".
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+## Index de disque : l'analyse des changements (2026-07-28)
+
+- **"Checking for changes" (run-kind header) → `Recherche des changements`** · nominal phrase matching the sibling
+  headers (`Première analyse complète`, `Mise à jour rapide`); `Recherche de…` is the standard French UI shape for a
+  "checking for X" label, and `changements` is catalog-settled (`Rattraper les changements récents`) · high.
+- **"Update the file list" → `Mettre à jour la liste des fichiers`** · composed from the settled siblings
+  `Enregistrer la liste des fichiers` + `Mettre à jour l''index` · high.
+- **"the check running right now" → `l''analyse en cours`** · reuses `analyse` as this catalog's settled word for a full
+  check (`tooltipCoalesced`: "la prochaine analyse complète de Cmdr") and that string's closing
+  `remettre tout d''aplomb` · high.

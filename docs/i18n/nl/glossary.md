@@ -977,3 +977,14 @@ REVIEW FLAGS (drive-indexing master-switch review):
 - **Not changed, flagged**: `onboarding.stepOptional.indexing.descIntro` = "Schijf indexeren is supergaaf!" is the one
   remaining place the bare toggle label acts as a sentence subject. It sits directly under the identical heading, so the
   echo is deliberate there, but a locale-wide ruling would move it to "Het indexeren van schijven is supergaaf!".
+
+## Schijfindex: de wijzigingscontrole (2026-07-28)
+
+- **"Checking for changes" (run-kind header) → `Controleren op wijzigingen`** · Nautilus NL models the exact
+  construction ("Unable to poll “%s” for media changes" → "Kan ‘%s’ niet **controleren op** mediawijzigingen"), and
+  `wijzigingen` is catalog-settled (`Recente wijzigingen inhalen`) · high.
+- **"Update the file list" → `Bestandenlijst bijwerken`** · composed from the settled siblings `Bestandenlijst opslaan`
+  - `Index bijwerken` · high.
+- **"the check running right now" → `de controle die nu bezig is`** · reuses `controle` as this catalog's settled word
+  for a full check (`tooltipCoalesced`: "de volgende volledige controle van Cmdr") and that string's closing
+  `zet dat weer recht` · high.

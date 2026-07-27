@@ -24,16 +24,16 @@
         deriveSteps,
         activeStep,
         deriveRunLabel,
+        activeStepHintKey,
         stepKindToLabelKey,
         computeSubPhaseToLabelKey,
         runLabelToLabelKey,
         type IndexRunKind,
         type AggregationSubPhase,
         type IndexStepStatus,
-        type ScanKind,
     } from './indexing-steps'
     import type { VolumeIndexActivity, AggregationActivity } from './index-state.svelte'
-    import type { ActivityPhase } from '$lib/ipc/bindings'
+    import type { ActivityPhase, ScanRunKind } from '$lib/ipc/bindings'
     import type { MessageKey } from '$lib/intl/keys.gen'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import ProgressBar from '$lib/ui/ProgressBar.svelte'
@@ -60,23 +60,24 @@
         /** A network (SMB/MTP) volume: its checklist omits the Save-the-file-list
          *  and Catch-up steps (they don't run for an inline network scan). */
         isNetwork: boolean
-        /** First index build vs full rescan (from `getVolumeScanKind`), for the
-         *  run-kind header. `undefined` when unknown (a mid-scan reload): the
-         *  header is omitted rather than guessed. */
-        scanKind?: ScanKind
+        /** What kind of run this is (from `getVolumeScanRunKind`), for the
+         *  run-kind header and the per-step copy. `undefined` when unknown (a
+         *  mid-scan reload): the header is omitted rather than guessed. */
+        scanRunKind?: ScanRunKind
     }
 
-    const { activity, aggregation, now, windowedEta, phase, isNetwork, scanKind }: Props = $props()
+    const { activity, aggregation, now, windowedEta, phase, isNetwork, scanRunKind }: Props = $props()
 
     // ── Steps ─────────────────────────────────────────────────────────
     const runKind = $derived<IndexRunKind>(
         activity.phase === 'replaying' ? 'replay' : isNetwork ? 'network' : 'local',
     )
     const aggSubPhase = $derived(aggregation?.phase as AggregationSubPhase | undefined)
-    const steps = $derived(deriveSteps({ runKind, phase, aggregationSubPhase: aggSubPhase }))
-    // The run-kind header ("First full scan" / "Full rescan" / "Quick update"),
-    // so the user can tell a full walk from a quick roll-on at a glance.
-    const runLabel = $derived(deriveRunLabel(runKind, scanKind))
+    const steps = $derived(deriveSteps({ runKind, phase, aggregationSubPhase: aggSubPhase, scanRunKind }))
+    // The run-kind header ("First full scan" / "Full rescan" / "Checking for
+    // changes" / "Quick update"), so the user can tell a full walk from a change
+    // check from a quick roll-on at a glance.
+    const runLabel = $derived(deriveRunLabel(runKind, scanRunKind))
     const active = $derived(activeStep(steps))
     const activeLabel = $derived(active ? tString(stepKindToLabelKey[active.kind]) : '')
 
@@ -147,8 +148,8 @@
     // activity behind an aggregation-only or reconcile-only row never leaks scan
     // zeros: the catch-up step shows no detail, just its spinner.
     interface ActiveDetail {
-        /** Show the reassuring "first scan" sub-line above the counters. */
-        firstScanHint: boolean
+        /** The reassuring sub-line above the counters, or `null` for none. */
+        hintKey: MessageKey | null
         /** A muted sub-line under the step label (counters, sub-phase, or replay count). */
         subLine: string | null
         /** The progress-bar fraction, or `null` for an indeterminate step. */
@@ -161,29 +162,30 @@
         switch (active?.kind) {
             case 'findFiles':
                 return {
-                    firstScanHint: scanRough,
+                    hintKey: activeStepHintKey('findFiles', scanRunKind, scanRough),
                     subLine: scanDetailLine,
                     progress: scanRough ? null : scanProgress,
                     eta: windowedEta,
                 }
             case 'saveFileList':
+            case 'updateFileList':
                 // `saving_entries` is determinate; the step label says it all, so
                 // just the bar.
-                return { firstScanHint: false, subLine: null, progress: aggFraction, eta: aggEta }
+                return { hintKey: null, subLine: null, progress: aggFraction, eta: aggEta }
             case 'computeFolderSizes': {
                 // computing/writing have a real fraction; loading/sorting are
                 // indeterminate, conveyed by the folder-worded sub-line + spinner.
                 const determinate = aggSubPhase === 'computing' || aggSubPhase === 'writing'
                 const subKey = aggSubPhase ? computeSubPhaseToLabelKey[aggSubPhase] : undefined
                 return {
-                    firstScanHint: false,
+                    hintKey: null,
                     subLine: subKey ? tString(subKey) : null,
                     progress: determinate ? aggFraction : null,
                     eta: determinate ? aggEta : null,
                 }
             }
             case 'updateIndex':
-                return { firstScanHint: false, subLine: replayDetail, progress: replayProgress, eta: windowedEta }
+                return { hintKey: null, subLine: replayDetail, progress: replayProgress, eta: windowedEta }
             default:
                 // catchUp (indeterminate, spinner only) or no active step (done).
                 return null
@@ -227,8 +229,8 @@
                 <span class="sr-only">{tString(statusToLabelKey[step.status])}</span>
                 {#if step.status === 'active' && activeDetail}
                     <div class="step-detail">
-                        {#if activeDetail.firstScanHint}
-                            <span class="first-scan-hint">{tString('indexing.step.findFilesFirstScan')}</span>
+                        {#if activeDetail.hintKey}
+                            <span class="step-hint">{tString(activeDetail.hintKey)}</span>
                         {/if}
                         {#if activeDetail.subLine}
                             <span class="tooltip-detail">{activeDetail.subLine}</span>
@@ -326,9 +328,10 @@
         color: var(--color-text-tertiary);
     }
 
-    /* The reassuring first-scan sub-line: quiet and italic so it reads as an aside,
-       not another data line. */
-    .first-scan-hint {
+    /* The reassuring sub-line under the active step (a first scan's "this takes a
+       while", a change check's "your folder sizes stay visible"): quiet and italic
+       so it reads as an aside, not another data line. */
+    .step-hint {
         color: var(--color-text-tertiary);
         font-style: italic;
     }

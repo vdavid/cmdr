@@ -21,7 +21,7 @@ use super::state::IndexVolumeKind;
 use crate::indexing::events::progress_reporter::ScanProgressReporter;
 use crate::indexing::events::{
     ActivityPhase, DEBUG_STATS, IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexScanAbortedEvent,
-    IndexScanCompleteEvent, IndexScanStartedEvent, set_phase_for,
+    IndexScanCompleteEvent, IndexScanStartedEvent, ScanRunKind, set_phase_for,
 };
 use crate::indexing::store::IndexStore;
 use crate::indexing::writer::{AggSource, WriteMessage};
@@ -199,16 +199,13 @@ impl IndexManager {
             .ok_or_else(|| format!("Volume '{}' is not registered (unmounted?)", self.volume_id))?;
 
         // Capture tier-2 calibration before truncating (same flow as start_scan).
-        let prior = IndexStore::read_scan_calibration(self.store.read_conn()).unwrap_or_default();
+        // The per-kind bucket is picked below, once the walk kind is known.
+        let calibration_set = IndexStore::read_scan_calibration_set(self.store.read_conn()).unwrap_or_default();
         let volume_root = self.volume_root.clone();
         let volume_used_bytes = tokio::task::block_in_place(|| {
             crate::file_system::volume::backends::get_space_info_for_path(&volume_root)
                 .map(|info| info.used_bytes)
                 .ok()
-        });
-        self.scan_calibration = Some(ScanCalibration {
-            prior,
-            volume_used_bytes,
         });
 
         // Pre-arm-before-snapshot: flip `scanning` BEFORE truncating, so any live
@@ -240,6 +237,19 @@ impl IndexManager {
             && IndexStore::get_entry_count(self.store.read_conn())
                 .map(|n| n > 1)
                 .unwrap_or(false);
+
+        // The run's kind: what the frontend states, and which calibration bucket
+        // this run reads from and writes back into. A trait reconcile and a trait
+        // bulk build differ the same way the local pair does, so they keep
+        // separate timings too.
+        let run_kind = ScanRunKind::classify(reconcile, calibration_set.any.total_entries);
+        let prior = calibration_set.for_kind(run_kind.calibration_kind());
+        let calibration_kind = run_kind.calibration_kind();
+        self.scan_calibration = Some(ScanCalibration {
+            prior,
+            volume_used_bytes,
+            run_kind,
+        });
 
         // Clear the prior completion marker (so an interrupted rescan heals — no
         // stale `scan_completed_at` over a now-stale/partly-rewritten table) and
@@ -292,6 +302,7 @@ impl IndexManager {
 
         let _ = IndexScanStartedEvent {
             volume_id: self.volume_id.clone(),
+            scan_run_kind: run_kind,
             prior_total_entries: prior.total_entries,
             prior_scan_duration_ms: prior.scan_duration_ms,
             volume_used_bytes,
@@ -403,18 +414,23 @@ impl IndexManager {
                         key: "scan_completed_at".to_string(),
                         value: now,
                     });
-                    let _ = writer.send(WriteMessage::UpdateMeta {
-                        key: "scan_duration_ms".to_string(),
-                        value: summary.duration_ms.to_string(),
-                    });
-                    let _ = writer.send(WriteMessage::UpdateMeta {
-                        key: "total_entries".to_string(),
-                        value: summary.total_entries.to_string(),
-                    });
-                    let _ = writer.send(WriteMessage::UpdateMeta {
-                        key: "total_physical_bytes".to_string(),
-                        value: summary.total_physical_bytes.to_string(),
-                    });
+                    // Both buckets: this walk kind's own keys (so the next run of the
+                    // same kind gets a comparable ETA) and the unsuffixed
+                    // last-completed-scan keys. Same split as the local path.
+                    for (key, value) in [
+                        ("scan_duration_ms", summary.duration_ms.to_string()),
+                        ("total_entries", summary.total_entries.to_string()),
+                        ("total_physical_bytes", summary.total_physical_bytes.to_string()),
+                    ] {
+                        let _ = writer.send(WriteMessage::UpdateMeta {
+                            key: calibration_kind.meta_key(key),
+                            value: value.clone(),
+                        });
+                        let _ = writer.send(WriteMessage::UpdateMeta {
+                            key: key.to_string(),
+                            value,
+                        });
+                    }
                     let _ = writer.send(WriteMessage::UpdateMeta {
                         key: "volume_path".to_string(),
                         value: volume_root_str.clone(),

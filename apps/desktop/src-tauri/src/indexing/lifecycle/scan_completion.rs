@@ -22,7 +22,7 @@ use crate::indexing::events::{
 };
 use crate::indexing::reconcile::reconciler::{self, EventReconciler};
 use crate::indexing::scanner::{ScanError, ScanSummary};
-use crate::indexing::store::IndexStore;
+use crate::indexing::store::{IndexStore, ScanCalibrationKind};
 use crate::indexing::watch::event_loop::run_live_event_loop;
 use crate::indexing::watch::watcher::FsChangeEvent;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
@@ -65,6 +65,10 @@ pub(super) struct ScanCompletion {
     pub live_event_task_slot: Arc<std::sync::Mutex<Option<tauri::async_runtime::JoinHandle<()>>>>,
     /// The watcher event id captured at scan start; the replay baseline.
     pub scan_start_event_id: u64,
+    /// Which calibration bucket this run's totals and duration belong in. The
+    /// two walks differ ~5x in wall clock, so writing them into one slot makes
+    /// the next run of the OTHER kind predict a wildly wrong ETA.
+    pub calibration_kind: ScanCalibrationKind,
 }
 
 /// Whether a failed local scan should emit `index-scan-aborted`: only when the
@@ -92,6 +96,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
         freshness,
         live_event_task_slot,
         scan_start_event_id,
+        calibration_kind,
     } = params;
 
     // Wait for scan to complete
@@ -253,18 +258,24 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
                     key: reconciler::SHALLOW_COALESCED_KEY.to_string(),
                     value: "0".to_string(),
                 });
-                let _ = writer.send(WriteMessage::UpdateMeta {
-                    key: "scan_duration_ms".to_string(),
-                    value: summary.duration_ms.to_string(),
-                });
-                let _ = writer.send(WriteMessage::UpdateMeta {
-                    key: "total_entries".to_string(),
-                    value: summary.total_entries.to_string(),
-                });
-                let _ = writer.send(WriteMessage::UpdateMeta {
-                    key: "total_physical_bytes".to_string(),
-                    value: summary.total_physical_bytes.to_string(),
-                });
+                // The calibration numbers go into TWO buckets: this walk kind's own
+                // keys (so the next run of the same kind gets an ETA from a
+                // comparable run) and the unsuffixed keys (the last-completed-scan
+                // facts the badge tooltip and the any-kind fallback read).
+                for (key, value) in [
+                    ("scan_duration_ms", summary.duration_ms.to_string()),
+                    ("total_entries", summary.total_entries.to_string()),
+                    ("total_physical_bytes", summary.total_physical_bytes.to_string()),
+                ] {
+                    let _ = writer.send(WriteMessage::UpdateMeta {
+                        key: calibration_kind.meta_key(key),
+                        value: value.clone(),
+                    });
+                    let _ = writer.send(WriteMessage::UpdateMeta {
+                        key: key.to_string(),
+                        value,
+                    });
+                }
                 let _ = writer.send(WriteMessage::UpdateMeta {
                     key: "volume_path".to_string(),
                     value: space.volume_root_string(),

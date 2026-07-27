@@ -4,7 +4,9 @@
  * The checklist is COMPOSED from the events that actually fire for one volume,
  * never a hardcoded "every scan has these steps" list:
  *   - a LOCAL full scan runs all four steps (find files → save the file list →
- *     compute folder sizes → catch up on recent changes),
+ *     compute folder sizes → catch up on recent changes); a change check runs
+ *     the same four, with the second worded as an update (it writes only what
+ *     changed),
  *   - a NETWORK (SMB/MTP) scan inserts entries inline during the walk and emits
  *     no top-level Aggregating/Reconciling phase, so its Save and Catch-up steps
  *     never appear (find files → compute folder sizes only),
@@ -22,11 +24,17 @@
  * Kept pure and component-free so the risky state logic is unit-tested without
  * mounting (see `indexing-steps.test.ts`).
  */
-import type { ActivityPhase } from '$lib/ipc/bindings'
+import type { ActivityPhase, ScanRunKind } from '$lib/ipc/bindings'
 import type { MessageKey } from '$lib/intl/keys.gen'
 
 /** A checklist step's stable identity. Each maps to one user-facing label. */
-export type IndexStepKind = 'findFiles' | 'saveFileList' | 'computeFolderSizes' | 'catchUp' | 'updateIndex'
+export type IndexStepKind =
+  | 'findFiles'
+  | 'saveFileList'
+  | 'updateFileList'
+  | 'computeFolderSizes'
+  | 'catchUp'
+  | 'updateIndex'
 
 export type IndexStepStatus = 'pending' | 'active' | 'done'
 
@@ -43,32 +51,36 @@ export type AggregationSubPhase = 'saving_entries' | 'loading' | 'sorting' | 'co
 /** Which family of steps a volume's pipeline produces. */
 export type IndexRunKind = 'local' | 'network' | 'replay'
 
-/** Whether a scan is the volume's very first index build or a full re-walk of an
- *  already-indexed drive. Derived from the scan-started event's calibration (a
- *  prior scan's totals exist ⇒ rescan) and stashed per volume in `index-state`
- *  so the header stays truthful through the aggregation and reconcile steps,
- *  when the live scan entry is already gone. */
-export type ScanKind = 'first' | 'rescan'
-
 /** The run-kind header above the checklist: what KIND of run this is, answering
- *  "is this a full scan or a quick roll-on?" at a glance. */
-export type IndexRunLabel = 'firstScan' | 'rescan' | 'update'
+ *  "is this a full scan, a change check, or a quick roll-on?" at a glance. */
+export type IndexRunLabel = 'firstScan' | 'rescan' | 'changeCheck' | 'update'
 
 /**
  * Derive the run-kind header for one volume's checklist, or `null` when the scan
- * kind is unknown (a mid-scan reload dropped the scan-started event) — no header
- * beats a guessed one.
+ * kind is unknown (a mid-scan reload dropped both the scan-started event and the
+ * status backfill) — no header beats a guessed one.
+ *
+ * The scan kind is the BACKEND's own answer (`ScanRunKind`, off the scan-started
+ * event), never inferred from the calibration numbers: those answer a different
+ * question and disagree on a populated index whose last scan never completed.
  */
-export function deriveRunLabel(runKind: IndexRunKind, scanKind: ScanKind | undefined): IndexRunLabel | null {
+export function deriveRunLabel(runKind: IndexRunKind, scanRunKind: ScanRunKind | undefined): IndexRunLabel | null {
   if (runKind === 'replay') return 'update'
-  if (scanKind == null) return null
-  return scanKind === 'first' ? 'firstScan' : 'rescan'
+  if (scanRunKind == null) return null
+  return scanRunKindToLabel[scanRunKind]
+}
+
+const scanRunKindToLabel: Record<ScanRunKind, IndexRunLabel> = {
+  first_scan: 'firstScan',
+  full_rebuild: 'rescan',
+  change_check: 'changeCheck',
 }
 
 /** The user-facing label key for each run-kind header (resolved via `tString` at render). */
 export const runLabelToLabelKey: Record<IndexRunLabel, MessageKey> = {
   firstScan: 'indexing.run.firstScan',
   rescan: 'indexing.run.rescan',
+  changeCheck: 'indexing.run.changeCheck',
   update: 'indexing.run.update',
 }
 
@@ -79,6 +91,10 @@ export interface StepDerivationInput {
   phase: ActivityPhase | undefined
   /** The live aggregation sub-phase, when this volume is aggregating. */
   aggregationSubPhase: AggregationSubPhase | undefined
+  /** What kind of run the backend started, when known. Only picks the LABELS of
+   *  a local run's steps (a change check updates the file list rather than
+   *  saving a fresh one); the order and the state machine are identical. */
+  scanRunKind?: ScanRunKind
 }
 
 /** The compute step's four sub-phases (everything past saving entries). */
@@ -86,6 +102,9 @@ const COMPUTE_SUB_PHASES: ReadonlySet<AggregationSubPhase> = new Set(['loading',
 
 /** The ordered step kinds per run kind. */
 const LOCAL_STEPS: readonly IndexStepKind[] = ['findFiles', 'saveFileList', 'computeFolderSizes', 'catchUp']
+/** A change check writes only what changed, so its second step is worded as an
+ *  update. Same order and same state machine as `LOCAL_STEPS`. */
+const CHANGE_CHECK_STEPS: readonly IndexStepKind[] = ['findFiles', 'updateFileList', 'computeFolderSizes', 'catchUp']
 const NETWORK_STEPS: readonly IndexStepKind[] = ['findFiles', 'computeFolderSizes']
 const REPLAY_STEPS: readonly IndexStepKind[] = ['updateIndex']
 
@@ -140,7 +159,8 @@ export function deriveSteps(input: StepDerivationInput): IndexStep[] {
   if (input.runKind === 'network') {
     return statusesFromReached(NETWORK_STEPS, networkReachedIndex(input))
   }
-  return statusesFromReached(LOCAL_STEPS, localReachedIndex(input))
+  const order = input.scanRunKind === 'change_check' ? CHANGE_CHECK_STEPS : LOCAL_STEPS
+  return statusesFromReached(order, localReachedIndex(input))
 }
 
 /** The single active step, or `undefined` when every step is done (terminal). */
@@ -152,9 +172,29 @@ export function activeStep(steps: IndexStep[]): IndexStep | undefined {
 export const stepKindToLabelKey: Record<IndexStepKind, MessageKey> = {
   findFiles: 'indexing.step.findFiles',
   saveFileList: 'indexing.step.saveFileList',
+  updateFileList: 'indexing.step.updateFileList',
   computeFolderSizes: 'indexing.step.computeFolderSizes',
   catchUp: 'indexing.step.catchUp',
   updateIndex: 'indexing.step.updateIndex',
+}
+
+/**
+ * The reassuring sub-line under the ACTIVE step, or `null` when it needs none.
+ *
+ * Only the find-files step has one, and the two cases answer different worries:
+ * a change check is slow but leaves folder sizes on screen (say so, or a
+ * 20-minute bar looks like something is wrong), while a first scan has no
+ * trustworthy estimate at all (say that instead of showing a stuck-looking
+ * count).
+ */
+export function activeStepHintKey(
+  step: IndexStepKind,
+  scanRunKind: ScanRunKind | undefined,
+  roughFirstScan: boolean,
+): MessageKey | null {
+  if (step !== 'findFiles') return null
+  if (scanRunKind === 'change_check') return 'indexing.step.findFilesChangeCheck'
+  return roughFirstScan ? 'indexing.step.findFilesFirstScan' : null
 }
 
 /** The compute step's sub-phase detail line (folder-worded), resolved at render.

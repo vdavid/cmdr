@@ -1315,6 +1315,10 @@
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
     "sourceHash": "2b593c3"
   },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS tappade koll på ändringar i filsystemet {count, plural, one {en gång} other {{countText} gånger}}, så några mappstorlekar kan vara lite missvisande. Oftast handlar det om cachemappar fulla med små filer, och genomsökningen som pågår just nu rättar till det.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
+    "sourceHash": "9cbf743"
+  },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS tappade koll på ändringar i filsystemet {count, plural, one {en gång} other {{countText} gånger}} {hours, plural, one {under den senaste timmen} other {under de senaste {hoursText} timmarna}}, så några mappstorlekar kan vara lite missvisande. Oftast handlar det om cachemappar fulla med små filer, så det är ingen stor sak.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"

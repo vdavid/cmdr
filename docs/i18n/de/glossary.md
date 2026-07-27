@@ -729,3 +729,18 @@ Terms settled while reviewing the five strings the master-toggle feature added
   "X is over", so it reads as a slogan, not a state. Badge length is the German cost here: `Laufwerksindizierung` alone
   is 20 characters, so a faithful badge can't reach the English's 22.
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+## Drive index: the change-check run (2026-07-28)
+
+- **"Checking for changes" (run-kind header) → `Prüfung auf Änderungen`** · nominal phrase matching the sibling headers
+  (`Erster vollständiger Durchlauf`, `Schnelle Aktualisierung`); `überprüfen` is macOS DE's checking verb (Finder BN9
+  "Inhalt von „^0“ überprüfen"), `Änderungen` is the catalog-settled plural (`Neueste Änderungen nachholen`,
+  `Dateisystemänderungen`) · high.
+- **"Update the file list" → `Dateiliste aktualisieren`** · composed from the two settled siblings
+  `Dateiliste speichern` + `Index aktualisieren`; the run writes only what changed, so the verb swaps and the object
+  doesn't · high.
+- **"check against the index" → `mit dem Index verglichen`** · deliberately plain `vergleichen` over `abgleichen`, which
+  leans database-register; the English avoids that register on purpose · high.
+- **"the check running right now" → `der gerade laufende Durchlauf`** · reuses `Durchlauf` as this catalog's settled
+  word for a full check (`tooltipCoalesced`: "der nächste vollständige Durchlauf von Cmdr"), plus that string's own
+  closing `bringt das wieder in Ordnung` · high.

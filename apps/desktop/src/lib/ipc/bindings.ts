@@ -4901,13 +4901,19 @@ export type IndexScanProgressEvent = {
 export type IndexScanStartedEvent = {
   volumeId: string
   /**
-   *  The previous completed scan's final entry count, the tier-1 (calibrated)
-   *  progress denominator. `None` on a first-ever scan (no prior calibration).
+   *  What kind of run this is, so the frontend's run-kind header and its
+   *  per-step copy state what's actually happening instead of inferring it.
+   */
+  scanRunKind: ScanRunKind
+  /**
+   *  The previous completed scan OF THIS RUN'S KIND: its final entry count, the
+   *  tier-1 (calibrated) progress denominator. Falls back to the last scan of
+   *  any kind, then to `None` (no calibration yet).
    */
   priorTotalEntries: number | null
   /**
-   *  The previous completed scan's wall-clock duration, used to seed the tier-1
-   *  ETA before the sliding window has samples. `None` on a first-ever scan.
+   *  The same prior scan's wall-clock duration, used to seed the tier-1 ETA
+   *  before the sliding window has samples. `None` when there's no calibration.
    */
   priorScanDurationMs: number | null
   /**
@@ -4953,6 +4959,23 @@ export type IndexStatusResponse = {
    *  window reload, where the `index-scan-started` event was missed.
    */
   volumeUsedBytes: number | null
+  /**
+   *  The scan's kind, from the same stashed calibration, so a mid-scan window
+   *  reload recovers the run-kind header and its per-step copy instead of
+   *  dropping them. `None` before this volume's first scan of the session; like
+   *  `volume_used_bytes` it describes the LATEST scan, so read it only when
+   *  `scanning` is true.
+   */
+  scanRunKind: ScanRunKind | null
+  /**
+   *  The tier-1 calibration the RUNNING scan is actually using, straight off the
+   *  stash — the per-kind bucket, not the unsuffixed `meta` keys `index_status`
+   *  carries. A reload that fell back to those would seed a full walk's ETA off
+   *  the ~5x slower change check that happened to run last. Same read-only-while-
+   *  `scanning` rule as the two fields above.
+   */
+  priorTotalEntries: number | null
+  priorScanDurationMs: number | null
 }
 
 /**
@@ -6716,6 +6739,35 @@ export type ScanProgressEvent = {
   // For activity indication.
   currentPath: string | null
 }
+
+/**
+ *  What kind of run a scan is, decided by the backend at the scan-start funnel
+ *  and shipped to the frontend so the UI never has to guess from the calibration
+ *  numbers (which answer a different question and disagree on a partial index).
+ *
+ *  The user-visible difference is what happens to folder sizes: a walk that
+ *  truncates blanks them for its whole run, while a change check keeps the
+ *  last-good sizes on screen, marked stale.
+ */
+export type ScanRunKind =
+  /**
+   *  The volume's first index build: nothing usable on disk to keep, so the
+   *  walk starts from an empty index and folder sizes appear at the end.
+   */
+  | 'first_scan'
+  /**
+   *  A full rebuild of an existing index: the entries are truncated and
+   *  re-walked, so folder sizes go blank until the run finishes. Taken when a
+   *  rescan can't reconcile in place (for example a previous scan that never
+   *  completed).
+   */
+  | 'full_rebuild'
+  /**
+   *  A rescan in place: every directory is diffed against the index and only
+   *  the changes are written, so the last-good folder sizes stay visible
+   *  (stale) for the whole run. Far slower per entry, far kinder to look at.
+   */
+  | 'change_check'
 
 /**
  *  Whether the journal holds every leaf of the operation (search honesty,

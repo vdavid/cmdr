@@ -37,7 +37,7 @@ import {
 import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import type { MessageKey } from '$lib/intl/keys.gen'
-import type { ScanKind } from './indexing-steps'
+import type { ScanRunKind } from '$lib/ipc/bindings'
 
 /** The local volume's id (mirrors `DEFAULT_VOLUME_ID` in `tauri-commands/storage`).
  *  Exported so the checklist can tell a local scan (all four steps) from a
@@ -157,15 +157,15 @@ const aggregation = new SvelteMap<string, AggregationActivity>()
 // Reactive: reading it re-renders the consumer.
 const phase = new SvelteMap<string, ActivityPhase>()
 
-// Per-volume scan kind (first index build vs full rescan), keyed by volume id.
-// Set at `index-scan-started` from the calibration payload (a prior scan's totals
-// exist ⇒ rescan) and kept through the WHOLE pipeline — the run-kind header must
-// stay truthful during aggregation and reconcile, when the live scan entry (and
-// its `priorTotalEntries`) is already gone. Cleared on the terminal `live`/`idle`
-// phase transitions and on a scan abort, mirroring the `phase` map. A volume
-// seeded by a progress tick alone (mid-scan reload) gets NO entry: the header is
+// Per-volume scan run kind (first build / full rebuild / change check), keyed by
+// volume id. Set at `index-scan-started` from the BACKEND's own answer, and kept
+// through the WHOLE pipeline — the run-kind header and the per-step copy must
+// stay truthful during aggregation and reconcile, when the live scan entry is
+// already gone. Cleared on the terminal `live`/`idle` phase transitions and on a
+// scan abort, mirroring the `phase` map. A volume seeded by a progress tick alone
+// (mid-scan reload the status backfill didn't cover) gets NO entry: the header is
 // omitted rather than guessed.
-const scanKind = new SvelteMap<string, ScanKind>()
+const scanRunKind = new SvelteMap<string, ScanRunKind>()
 
 // Monotonic counter bumped by every scan/replay event. Prevents the
 // `get_index_status` IPC response (which can arrive late) from overwriting state
@@ -211,12 +211,13 @@ export function getVolumePhase(volumeId: string): ActivityPhase | undefined {
   return phase.get(volumeId)
 }
 
-/** This volume's scan kind (`first` index build vs full `rescan`), or `undefined`
- *  when unknown (not scanning, or a mid-scan reload missed the started event).
- *  Reactive. Drives the checklist's run-kind header; survives past the live scan
- *  entry so the header holds through aggregation and reconcile. */
-export function getVolumeScanKind(volumeId: string): ScanKind | undefined {
-  return scanKind.get(volumeId)
+/** What kind of run this volume is doing (`first_scan` / `full_rebuild` /
+ *  `change_check`), or `undefined` when unknown (not scanning, or a mid-scan
+ *  reload the status backfill didn't cover). Reactive. Drives the checklist's
+ *  run-kind header and its per-step copy; survives past the live scan entry so
+ *  both hold through aggregation and reconcile. */
+export function getVolumeScanRunKind(volumeId: string): ScanRunKind | undefined {
+  return scanRunKind.get(volumeId)
 }
 
 /** Every volume currently aggregating, in insertion order. Reactive. Lets the
@@ -288,9 +289,9 @@ export async function initIndexState(): Promise<void> {
     a.priorScanDurationMs = payload.priorScanDurationMs
     a.volumeUsedBytes = payload.volumeUsedBytes
     activity.set(payload.volumeId, a)
-    // A prior completed scan's totals exist ⇒ this walk is a full rescan; no
-    // prior ⇒ the volume's first index build. Stashed for the run-kind header.
-    scanKind.set(payload.volumeId, scanKindFromPrior(payload.priorTotalEntries))
+    // The backend's own classification of this run, stashed for the run-kind
+    // header and the per-step copy.
+    scanRunKind.set(payload.volumeId, payload.scanRunKind)
   })
   unlistenHandles.push(unlistenStarted)
 
@@ -333,7 +334,7 @@ export async function initIndexState(): Promise<void> {
     // The cancel/fail abort arm fires no phase event, so clear the phase here too,
     // or a stale mid-pipeline phase would linger for the aborted volume.
     phase.delete(payload.volumeId)
-    scanKind.delete(payload.volumeId)
+    scanRunKind.delete(payload.volumeId)
   })
   unlistenHandles.push(unlistenAborted)
 
@@ -345,7 +346,7 @@ export async function initIndexState(): Promise<void> {
     if (payload.phase === 'live' || payload.phase === 'idle') {
       phase.delete(payload.volumeId)
       // The pipeline ended, so the run-kind header's fact expires with it.
-      scanKind.delete(payload.volumeId)
+      scanRunKind.delete(payload.volumeId)
     } else {
       phase.set(payload.volumeId, payload.phase)
     }
@@ -416,26 +417,24 @@ export async function initIndexState(): Promise<void> {
       a.bytesScanned = res.data.bytesScanned
       // The tier-2 denominator rides the top-level response (stashed calibration).
       a.volumeUsedBytes = res.data.volumeUsedBytes
-      // The tier-1 calibration lives in the nested meta-backed `indexStatus`. Its
-      // values are the PREVIOUS completed scan's totals (the completion handler is
-      // the only writer), which is exactly the tier-1 denominator — not the live
-      // counters above. Meta values are TEXT, so `Number()`-parse and guard NaN → null.
+      // The tier-1 calibration the RUNNING scan is using, off the top-level
+      // response: those are the PER-KIND numbers (a change check timed off the last
+      // change check). The nested meta-backed `indexStatus` is the fallback for a
+      // volume still initializing, where nothing is stashed yet; its unsuffixed keys
+      // are the last completed scan of EITHER kind, so prefer the top-level pair.
+      // Meta values are TEXT, so `Number()`-parse and guard NaN → null.
       const indexStatus = res.data.indexStatus
-      a.priorTotalEntries = parseMetaNumber(indexStatus?.totalEntries)
-      a.priorScanDurationMs = parseMetaNumber(indexStatus?.scanDurationMs)
+      a.priorTotalEntries = res.data.priorTotalEntries ?? parseMetaNumber(indexStatus?.totalEntries)
+      a.priorScanDurationMs = res.data.priorScanDurationMs ?? parseMetaNumber(indexStatus?.scanDurationMs)
       activity.set(ROOT_VOLUME_ID, a)
-      // The backfilled prior totals carry the same first-vs-rescan fact the
-      // started event would have, so the run-kind header recovers on reload too.
-      scanKind.set(ROOT_VOLUME_ID, scanKindFromPrior(a.priorTotalEntries))
+      // The response carries the running scan's kind from the same stashed
+      // calibration the started event used, so the run-kind header and the
+      // per-step copy recover on reload too.
+      if (res.data.scanRunKind != null) scanRunKind.set(ROOT_VOLUME_ID, res.data.scanRunKind)
     }
   } catch {
     // Indexing not initialized or unavailable: no-op
   }
-}
-
-/** A prior completed scan's entry total ⇒ `rescan`; none ⇒ the first index build. */
-function scanKindFromPrior(priorTotalEntries: number | null): ScanKind {
-  return priorTotalEntries != null && priorTotalEntries > 0 ? 'rescan' : 'first'
 }
 
 /** Parse a TEXT meta value (e.g. `IndexStatus.totalEntries`) to a number, or `null` when
@@ -455,5 +454,5 @@ export function destroyIndexState(): void {
   activity.clear()
   aggregation.clear()
   phase.clear()
-  scanKind.clear()
+  scanRunKind.clear()
 }
