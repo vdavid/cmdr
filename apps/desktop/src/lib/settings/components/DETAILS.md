@@ -2,6 +2,32 @@
 
 Depth and rationale for the setting-row primitives. `CLAUDE.md` holds the must-knows that prevent silent breakage.
 
+## Picking a control
+
+Every row is a `SettingRow` (label + description + control + reset pip + restart-required badge; it also carries
+`split` and `searchQuery`, and its description text spans the full width regardless of `split`). Pick the inner control
+by shape:
+
+- `SettingSwitch`: the primary boolean, wrapping `lib/ui/Switch`.
+- `SettingCheckbox`: a secondary boolean, for one hanging off a switch or in a denser layout.
+- `SettingSelect`: enum dropdown, wrapping `lib/ui/Select`. It owns the `allowCustom` inline-number flow and its
+  `__custom__` sentinel, which `ui/Select` never sees.
+- `SettingToggleGroup`: segmented control for a short enum list.
+- `SettingRadioGroup`: vertical radio for a longer list, an option needing a `customContent` snippet, or an option
+  carrying a control on its own line (`itemTrailing`, as Brief mode's "Limit to" does).
+- `SettingSlider` vs `SettingNumberInput`: see the next section. A `duration` setting on the number input edits in
+  `constraints.unit` while the store stays in ms (`durationValueToMs` / `msToDurationValue`).
+- `SettingPasswordInput`: masked input with a reveal toggle; two modes, below.
+- `SettingColorSwatchPicker`: circle trigger plus a 4×4 swatch popover for pane tints. `swatch-keyboard.ts` is its pure
+  key-index resolver, unit-testable without a DOM.
+
+Every `.svelte` here ships a `*.a11y.test.ts` (axe tier-3); the swatch picker and `swatch-keyboard` also have functional
+`*.test.ts`.
+
+One setting rendered in two UI locations follows the parent's mirror pattern (`../CLAUDE.md`). The card-group frame
+guard has a worked reference in `../sections/DETAILS.md`, under the Notifications section
+(`behavior.fileSystemWatching.*`).
+
 ## Slider vs number input
 
 A registry `component: 'slider'` row is a COARSE choice: `SettingSlider` renders `lib/ui/Slider` with a readout label
