@@ -2,7 +2,7 @@
 
 Playwright E2E for Cmdr in Tauri mode: commands inject into the real Tauri webview over a Unix socket. The same specs
 run on macOS (native) and Linux (Docker); platform differences (Ctrl vs Meta) ride the `CTRL_OR_META` constant in
-`helpers.ts`. Architecture, per-spec table, run recipes, and decisions: `DETAILS.md`.
+`helpers.ts`. Architecture, run recipes, sharding, and decisions: `DETAILS.md`.
 
 ## Module map
 
@@ -10,7 +10,8 @@ run on macOS (native) and Linux (Docker); platform differences (Ctrl vs Meta) ri
   fixture-tree lifecycle.
 - `helpers.ts` re-exports `helpers/` (`core`, `app-lifecycle`, `cursor`, `overlays-and-dialogs`, `windows`,
   `navigation`); specs import `from './helpers.js'`.
-- `*.spec.ts`: the suites (per-spec table in DETAILS.md).
+- `*.spec.ts`: the suites. A filename matching `/mtp(-[a-z-]+)?\.spec\.ts$/` runs on the sequential MTP shard;
+  `i18n-capture.spec.ts` runs on no normal lane at all. DETAILS.md § Files.
 
 ## Must-knows
 
