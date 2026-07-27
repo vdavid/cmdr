@@ -15,7 +15,7 @@ for the breadcrumb chip, status column, and the live `RepoInfo` store.
   `tree.rs`, `snapshot_dates.rs`: per-category listing + tree walks. `status.rs`: cached status walk.
   `read_blob.rs`: `GitBlobReadStream`. `watcher.rs`: per-repo notify debouncer. `friendly.rs`: `FriendlyGitError`.
   `column_meta.rs`: Modified/Size column helpers.
-- Full per-file roles, Tauri commands, the watcher path set, and the column tables are in `DETAILS.md`.
+- Tauri commands, the watcher path set, the column tables, and the decision record are in `DETAILS.md`.
 
 ## Must-knows
 
