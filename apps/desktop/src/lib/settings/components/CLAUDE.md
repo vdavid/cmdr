@@ -26,8 +26,8 @@ in the section or registry, not here. Parent: `../CLAUDE.md` (registry, store, s
 
 ## Gotchas
 
-- **Don't classify state by label / option string.** The `id` is the contract, the label is documentation: branch on
-  the value (`getSetting(id) === 'compact'`).
+- **Don't classify state by label / option string.** The `id` is the contract, the label is documentation: branch on the
+  value (`getSetting(id) === 'compact'`).
 - **`SettingSelect`'s custom-value mode focuses the inline input via `setTimeout(0)`, not `tick()`.** Ark's `Select`
   closes on a microtask, so a same-tick focus call gets eaten by the trigger's returning focus. Changing this needs the
   a11y test plus a manual keyboard run.

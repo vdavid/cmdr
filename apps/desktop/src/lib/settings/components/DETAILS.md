@@ -4,9 +4,9 @@ Depth and rationale for the setting-row primitives. `CLAUDE.md` holds the must-k
 
 ## Picking a control
 
-Every row is a `SettingRow` (label + description + control + reset pip + restart-required badge; it also carries
-`split` and `searchQuery`, and its description text spans the full width regardless of `split`). Pick the inner control
-by shape:
+Every row is a `SettingRow` (label + description + control + reset pip + restart-required badge; it also carries `split`
+and `searchQuery`, and its description text spans the full width regardless of `split`). Pick the inner control by
+shape:
 
 - `SettingSwitch`: the primary boolean, wrapping `lib/ui/Switch`.
 - `SettingCheckbox`: a secondary boolean, for one hanging off a switch or in a denser layout.

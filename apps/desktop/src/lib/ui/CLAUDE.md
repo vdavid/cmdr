@@ -37,8 +37,8 @@ simple ones.
 - **`Combobox` is a text-field-with-suggestions, not a value-bound select**: drive its text off `inputValue`, never off
   `value` / `items` (blanks the field on an empty list or a custom name).
 - **Single-component traps**, each with its DETAILS §: `StatusBadge`'s class is `feature-status-badge`, NOT
-  `status-badge` (Debug's `:global(.status-badge)` would leak onto it), status via `getBadgeStatus(featureId)`;
-  `Slider` never renders `Slider.HiddenInput` (axe nested-interactive), and its readout, ticks, and end labels stay
+  `status-badge` (Debug's `:global(.status-badge)` would leak onto it), status via `getBadgeStatus(featureId)`; `Slider`
+  never renders `Slider.HiddenInput` (axe nested-interactive), and its readout, ticks, and end labels stay
   `aria-hidden`; `containerStyle` is one-off layout sizing only, never token-worthy styling.
 
 Catalogs, prop tables, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
