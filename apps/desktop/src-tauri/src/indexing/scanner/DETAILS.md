@@ -27,6 +27,17 @@ from here) and the cost budget in `../reconcile/DETAILS.md`; `IndexPathSpace` + 
   `WalkReadError` / `WalkConfig` types, the watchdog, the progress-timeout verdict, the `SubtreeBudget` give-up budget)
   plus `bulk_read` (the `getattrlistbulk`-batched `bulk_read_dir` used in production on macOS). Tests are in
   `walker/tests.rs`, all millisecond-scale with a mock reader.
+- **The bulk read is shared with the serial reconcile walk.** `bulk_read::bulk_read_dir_unwatched` is re-exported at
+  `scanner` level (along with `RawDirEntry` / `RawFileType`) for `reconcile::reconciler::read_fs_children`, which reads
+  on its own `GuardedReader` thread and has no watchdog to publish `ReadProgress` to. The walker engine itself stays
+  private to the scanner. It returns a `BulkDirRead` (entries + an `unusable` count) rather than a bare `Vec`, because
+  the reconcile can't tolerate a silently-short listing: `diff_dir_against_db` deletes index rows the live listing
+  lacks, so it re-reads a directory with `read_dir` when `unusable > 0`. See `../reconcile/DETAILS.md`.
+- **Degrade, never drop.** `parse_entry` returns an entry with `stat: None` (the caller pays one `symlink_metadata`)
+  when an attribute it needs wasn't returned, or when the type isn't file / dir / symlink and so carries no inline size
+  — a fifo, socket, or device node. It returns `None`, counted as `unusable`, only for a record with no recoverable
+  name or type. Both branches are unreachable on the filesystems we've measured; the synthetic-record tests in
+  `bulk_read.rs` are what keep them correct.
 - **exclusions.rs** — the self-contained two-tier path-exclusion policy: `EXCLUDED_PREFIXES`, the
   `FIRMLINKED_SYSTEM_PREFIXES` allowlist, `JUNK_BASENAMES`, `PSEUDO_FS_BASENAMES`, the `ExclusionScope` /
   `ExclusionTier` types, `should_exclude`, `e2e_allowlist_path`, `is_canonicalization_alias`, and `default_exclusions`

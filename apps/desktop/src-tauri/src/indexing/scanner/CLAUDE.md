@@ -8,7 +8,8 @@ disconnected File Provider mount, plus the scope-aware exclusion policy every lo
 - **mod.rs** — the scan driver: `scan_volume` / `scan_subtree` entry points, the `InsertVisitor` (attributes children to
   their parent via the carried `dir.id`, no path→id map), the `Scan*` types, and `LOCAL_LIST_TIMEOUT` (15 s).
 - **walker/** — the hang-tolerant engine (`walk`, the watchdog, the progress-timeout verdict, the subtree give-up
-  budget) + `bulk_read` (`getattrlistbulk` batch reads on macOS).
+  budget) + `bulk_read` (`getattrlistbulk` batch reads on macOS), whose `bulk_read_dir_unwatched` + `RawDirEntry` /
+  `RawFileType` are re-exported at `scanner` level for the serial reconcile walk. The engine stays private.
 - **exclusions.rs** — the two-tier `should_exclude(path, &ExclusionScope)` policy (the single exclusion gate for scanner,
   reconcile, watch verification, and the verifier).
 
@@ -23,6 +24,9 @@ disconnected File Provider mount, plus the scope-aware exclusion policy every lo
   a successful sibling resets it). It's throttle, not exclude: a healthy provider is fully indexed, no path denylist.
 - **Honest-stale, never false-complete.** An abandoned or give-up-pruned dir is NEVER marked listed, so it stays
   `listed_epoch = 0` (unknown size, its `EntryRow` still exists); it's never zeroed and never `scan_completed_at`-marked.
+- **`bulk_read` degrades, it doesn't drop.** A missing attribute (or a type carrying no sizes: fifo, socket, device)
+  yields `stat: None` and the caller stats that one child. Only a record with no recoverable name is dropped, and
+  `BulkDirRead::unusable` counts it — ❌ never report a size the parser didn't actually read.
 - **`should_exclude` derives scope from the volume KIND, never `is_volume_root`** (the boot `/` scan is also a volume
   root). Tier (a) boot-disk absolute prefixes apply ONLY under `BootDisk`; applying them to a mount-rooted scan
   false-completes it (every `/Volumes/X/...` child excluded → zero rows → falsely Fresh).

@@ -26,9 +26,18 @@ pub(in crate::indexing) use exclusions::*;
 
 mod walker;
 use walker::{
-    DEFAULT_GIVE_UP_AFTER, DEFAULT_PER_ENTRY_ALLOWANCE, DirTask, DirVisitor, RawDirEntry, RawFileType, ReadDirFn,
-    WalkConfig, WalkReadError, default_reader, walk,
+    DEFAULT_GIVE_UP_AFTER, DEFAULT_PER_ENTRY_ALLOWANCE, DirTask, DirVisitor, ReadDirFn, WalkConfig, WalkReadError,
+    default_reader, walk,
 };
+
+// The reader's per-child vocabulary, and (on macOS) the batched `getattrlistbulk`
+// read itself, re-exported for the serial reconcile walk
+// (`reconcile::reconciler::read_fs_children`), which reads directories exactly the
+// way the fresh scan does but on its own guarded worker thread. The walker engine
+// stays private to the scanner.
+#[cfg(target_os = "macos")]
+pub(in crate::indexing) use walker::bulk_read::{BulkDirRead, bulk_read_dir_unwatched};
+pub(in crate::indexing) use walker::{RawDirEntry, RawFileType};
 
 /// How long one LOCAL directory read may go without producing anything before
 /// it's abandoned. It measures a STALL, never total duration: a disconnected File

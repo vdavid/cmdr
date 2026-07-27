@@ -1,8 +1,9 @@
 //! The LOCAL full-tree reconcile rescan for the local volume.
 //!
 //! A LOCAL rescan of an already-populated index reconciles in place instead of
-//! truncating and rebuilding: it BFS-walks the tree from the volume root over
-//! `std::fs::read_dir`, diffs each directory against the DB
+//! truncating and rebuilding: it BFS-walks the tree from the volume root
+//! ([`reconciler::read_fs_children`], the same batched read the fresh scan uses),
+//! diffs each directory against the DB
 //! ([`reconciler::diff_dir_against_db`], shared with the live `reconcile_subtree`
 //! and the network `reconcile_volume_via_trait`), and writes only the changes — so
 //! the last-good directory sizes stay visible (marked stale) throughout, and a
@@ -15,10 +16,12 @@
 //! The guarded parallel walker (`scanner::walker`) builds the fresh scan. The
 //! reconcile is a separate serial BFS used only on the rare rescan (journal gap /
 //! overflow / stale-on-launch / forced); it reuses proven per-dir diff code and a
-//! single read connection, so there are no id races. Speed of the rare walk is
-//! secondary to safety here, so it stays serial. Each directory read is capped by
-//! a [`GuardedReader`] (15 s) so a hung File Provider mount can't freeze it; see
-//! `indexing/DETAILS.md` § "The guarded local walker".
+//! single read connection, so there are no id races. Safety outranks speed on the
+//! rare walk, so it stays serial — but it does share the fresh scan's *read*: on
+//! macOS each directory comes back from one batched `getattrlistbulk` with every
+//! child's attributes attached, instead of a `readdir` plus an `lstat` per entry.
+//! Each read is capped by a [`GuardedReader`] (15 s) so a hung File Provider mount
+//! can't freeze it; see `indexing/DETAILS.md` § "The guarded local walker".
 //!
 //! ## Two limits, two different questions
 //!
@@ -57,15 +60,14 @@ use latency_probe::LatencyProbe;
 
 use crate::indexing::DEBUG_STATS;
 use crate::indexing::IndexPathSpace;
-use crate::indexing::metadata::extract_metadata;
-use crate::indexing::reconcile::reconciler::{self, LiveChild};
+use crate::indexing::reconcile::reconciler::{self, FsChild, LiveChild};
 use crate::indexing::scanner::{LOCAL_LIST_TIMEOUT, ScanError, ScanHandle, ScanProgress, ScanSummary};
 use crate::indexing::store::IndexStore;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 
-/// One directory's normalized filesystem children (name, metadata, is_symlink), or
-/// `None` when the directory can't be listed.
-type FsChildrenResult = Option<Vec<(String, std::fs::Metadata, bool)>>;
+/// One directory's normalized filesystem children, or `None` when the directory
+/// can't be listed.
+type FsChildrenResult = Option<Vec<FsChild>>;
 
 /// The read closure a [`GuardedReader`] runs on its worker thread.
 type ReadFn = Arc<dyn Fn(&Path) -> FsChildrenResult + Send + Sync>;
@@ -293,7 +295,7 @@ fn panic_message(payload: &(dyn std::any::Any + Send)) -> String {
 /// `Upsert(old-null, S)` + `Upsert(old-sized, None)` and the writer could null BOTH,
 /// UNDER-counting the inode. So the snapshot stays raw and only the totals dedup.
 fn build_live_children(
-    fs_children: &[(String, std::fs::Metadata, bool)],
+    fs_children: Vec<FsChild>,
     space: &IndexPathSpace,
     seen_inodes: &mut HashSet<u64>,
     total_entries: &mut u64,
@@ -302,16 +304,20 @@ fn build_live_children(
     progress: &ScanProgress,
 ) -> Vec<LiveChild> {
     let mut live = Vec::with_capacity(fs_children.len());
-    for (name, meta, is_symlink) in fs_children {
-        let is_dir = meta.is_dir();
-        let mut snap = extract_metadata(meta, is_dir, *is_symlink);
+    for child in fs_children {
+        let FsChild {
+            name,
+            is_dir,
+            is_symlink,
+            mut snap,
+        } = child;
         // Null the inode on FAT/exFAT (unstable derived inode): the stored value
         // must never let the live rename pre-pass false-match a reused inode. The
         // byte-total dedup below is inert on those formats (`nlink` is always 1).
         snap.inode = space.trust_inode(snap.inode);
         // Hardlink dedup for the byte totals, matching `run_scan`: count each inode's
         // physical bytes once. `insert` returns false on a repeat inode → contributes 0.
-        let counts_physical = if !is_dir && !*is_symlink && matches!(snap.nlink, Some(n) if n > 1) {
+        let counts_physical = if !is_dir && !is_symlink && matches!(snap.nlink, Some(n) if n > 1) {
             seen_inodes.insert(snap.inode.unwrap_or(0))
         } else {
             true
@@ -330,9 +336,9 @@ fn build_live_children(
             progress.dirs_found.fetch_add(1, Ordering::Relaxed);
         }
         live.push(LiveChild {
-            name: name.clone(),
+            name,
             is_directory: is_dir,
-            is_symlink: *is_symlink,
+            is_symlink,
             snap,
         });
     }
@@ -519,7 +525,7 @@ fn run_local_reconcile(
         let db_children =
             IndexStore::list_children_on(dir_id, &conn).map_err(|e| ScanError::WriterSend(e.to_string()))?;
         let live_children = build_live_children(
-            &fs_children,
+            fs_children,
             space,
             &mut seen_inodes,
             &mut total_entries,

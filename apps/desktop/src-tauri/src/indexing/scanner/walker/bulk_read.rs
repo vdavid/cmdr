@@ -16,12 +16,15 @@
 //! The packed attribute buffer is parsed by hand (unaligned reads at a running
 //! cursor). To make a parse mistake *safe*, every entry is validated against
 //! `ATTR_CMN_RETURNED_ATTRS`: if any attribute we rely on wasn't returned for an
-//! entry (or its type is unclassifiable), that single entry falls back to
-//! `symlink_metadata` — so a miss degrades to the slower-but-correct path, never
-//! to wrong data. The `bulk_matches_symlink_metadata` differential test asserts
-//! the parsed values equal `std::fs::symlink_metadata` field-for-field across a
-//! rich tree (files with known sizes, an empty dir, a symlink, a hardlink, a
-//! unicode name), so a parsing bug is a failing test, not a silent corruption.
+//! entry (or its type is unclassifiable), that single entry comes back with no
+//! inline stat and the caller falls back to `symlink_metadata` for it — so a miss
+//! degrades to the slower-but-correct path, never to wrong data. Only a record
+//! with no recoverable name or type is dropped, and [`BulkDirRead::unusable`]
+//! counts those so a caller that can't survive a missing child re-reads the
+//! directory. The `bulk_matches_symlink_metadata` differential test asserts the
+//! parsed values equal `std::fs::symlink_metadata` field-for-field across a rich
+//! tree (files with known sizes, an empty dir, a symlink, a hardlink, a unicode
+//! name), so a parsing bug is a failing test, not a silent corruption.
 
 use std::ffi::CString;
 use std::os::unix::ffi::OsStrExt;
@@ -75,12 +78,35 @@ struct AttrList {
 /// Read buffer per `getattrlistbulk` call. 64 KiB fits many entries per syscall.
 const ATTR_BUF_SIZE: usize = 64 * 1024;
 
+/// One directory's bulk read: the entries, plus how many records the parser
+/// couldn't get a name and type out of.
+pub(in crate::indexing) struct BulkDirRead {
+    pub entries: Vec<RawDirEntry>,
+    /// Records missing from `entries` entirely, because nothing usable could be
+    /// read out of them (see [`parse_entry`]). Zero on every filesystem we've
+    /// measured. A caller that can't survive a missing child — the reconcile diff
+    /// DELETES index rows the live listing lacks — re-reads the directory with
+    /// `read_dir` when this isn't zero.
+    pub unusable: usize,
+}
+
 /// Bulk directory reader: the production macOS [`super::ReadDirFn`]. Reads
 /// `path`'s children with their attributes via `getattrlistbulk`, falling back to
 /// `symlink_metadata` per entry when an attribute is missing. Fails (propagating
 /// the `io::Error`) only when the directory itself can't be opened — matching
 /// `std::fs::read_dir`'s contract, so the walker treats it like any unlistable dir.
 pub(super) fn bulk_read_dir(path: &Path, progress: &ReadProgress) -> std::io::Result<Vec<RawDirEntry>> {
+    Ok(bulk_read_dir_inner(path, progress)?.entries)
+}
+
+/// [`bulk_read_dir`] for a caller with no watchdog reading a [`ReadProgress`] (the
+/// serial reconcile walk, whose whole read is capped by its `GuardedReader`), and
+/// which needs the `unusable` count to decide whether it can trust the listing.
+pub(in crate::indexing) fn bulk_read_dir_unwatched(path: &Path) -> std::io::Result<BulkDirRead> {
+    bulk_read_dir_inner(path, &ReadProgress::default())
+}
+
+fn bulk_read_dir_inner(path: &Path, progress: &ReadProgress) -> std::io::Result<BulkDirRead> {
     let c_path = CString::new(path.as_os_str().as_bytes())
         .map_err(|_| std::io::Error::new(std::io::ErrorKind::InvalidInput, "path contains a NUL byte"))?;
 
@@ -106,6 +132,7 @@ pub(super) fn bulk_read_dir(path: &Path, progress: &ReadProgress) -> std::io::Re
 
     let mut buf = vec![0u8; ATTR_BUF_SIZE];
     let mut out = Vec::new();
+    let mut unusable = 0usize;
 
     loop {
         let count = loop {
@@ -146,8 +173,9 @@ pub(super) fn bulk_read_dir(path: &Path, progress: &ReadProgress) -> std::io::Re
         let mut base = 0usize;
         for _ in 0..count {
             let (entry_len, parsed) = parse_entry(&buf[base..], path);
-            if let Some(entry) = parsed {
-                out.push(entry);
+            match parsed {
+                Some(entry) => out.push(entry),
+                None => unusable += 1,
             }
             // `entry_len` is the record length the kernel wrote (first u32); advance
             // to the next record. A zero length would loop forever — guard it.
@@ -161,16 +189,24 @@ pub(super) fn bulk_read_dir(path: &Path, progress: &ReadProgress) -> std::io::Re
         }
     }
 
-    Ok(out)
+    Ok(BulkDirRead { entries: out, unusable })
 }
 
 /// Parse one packed `getattrlistbulk` record from the front of `bytes`. Returns
-/// `(record_length, entry)`. `entry` is `None` when the record can't be trusted
-/// (missing name/type, or a file missing size/link attrs), and the caller drops it.
+/// `(record_length, entry)`.
+///
+/// Two degrees of degradation, both aimed at never reporting a value we didn't
+/// read:
+/// - An entry whose SIZE attributes are missing (or whose type isn't file / dir /
+///   symlink, so it has none) still comes back, with `stat: None` — the caller
+///   stats it itself. It must stay an entry: the reconcile diff DELETES index rows
+///   the live listing lacks, so dropping it would delete the file from the index.
+/// - `None` is the last resort, for a record nothing can be recovered from (no
+///   name, no type, or a corrupt length). The caller counts these as `unusable`.
+///
 /// `FSOPT_PACK_INVAL_ATTRS` makes every requested attribute present on the
-/// filesystems we've measured, so this is the never-taken safety branch rather
-/// than a routine path — a parse mistake loses an entry instead of writing a wrong
-/// size, and `bulk_matches_symlink_metadata` is what keeps it never-taken.
+/// filesystems we've measured, so both are never-taken safety branches rather than
+/// routine paths, and `bulk_matches_symlink_metadata` is what keeps them that way.
 fn parse_entry(bytes: &[u8], dir: &Path) -> (usize, Option<RawDirEntry>) {
     // Fixed field layout after `FSOPT_PACK_INVAL_ATTRS` (every requested attr
     // present): u32 length | attribute_set_t returned (5×u32) | attrreference_t
@@ -242,37 +278,45 @@ fn parse_entry(bytes: &[u8], dir: &Path) -> (usize, Option<RawDirEntry>) {
     let inode = read_u64(bytes, OFF_FILEID);
 
     // Size/link attrs are only meaningful (and only requested-valid) for regular
-    // files; dirs/symlinks legitimately don't return them and the visitor maps
-    // their sizes to `None` anyway. For a regular file, require all three — a file
-    // missing any size attr falls back so a total is never silently wrong.
-    let (logical_size, physical_size, nlink) = if file_type == RawFileType::File {
-        // The file block must be both present in the record and flagged valid.
-        if entry_len < FILE_BLOCK_END
-            || !has_file(ATTR_FILE_DATALENGTH)
-            || !has_file(ATTR_FILE_ALLOCSIZE)
-            || !has_file(ATTR_FILE_LINKCOUNT)
-        {
-            return (entry_len, None);
+    // files; dirs and symlinks legitimately don't return them and both mappings
+    // resolve their sizes to `None` anyway, so a zero here is never read as a size.
+    // A regular file needs all three — one missing size attr sends the whole entry
+    // to a `symlink_metadata` fallback rather than reporting a total we didn't read.
+    // Anything else (fifo, socket, device node) carries no inline size at all, so it
+    // takes the same fallback instead of reporting zeros.
+    let stat = match file_type {
+        RawFileType::File => {
+            // The file block must be both present in the record and flagged valid.
+            if entry_len < FILE_BLOCK_END
+                || !has_file(ATTR_FILE_DATALENGTH)
+                || !has_file(ATTR_FILE_ALLOCSIZE)
+                || !has_file(ATTR_FILE_LINKCOUNT)
+            {
+                None
+            } else {
+                Some(InlineStat {
+                    logical_size: read_u64(bytes, OFF_DATALENGTH),
+                    physical_size: read_u64(bytes, OFF_ALLOCSIZE),
+                    modified_at,
+                    inode,
+                    nlink: u64::from(read_u32(bytes, OFF_LINKCOUNT)),
+                })
+            }
         }
-        (
-            read_u64(bytes, OFF_DATALENGTH),
-            read_u64(bytes, OFF_ALLOCSIZE),
-            u64::from(read_u32(bytes, OFF_LINKCOUNT)),
-        )
-    } else {
-        (0, 0, 0)
+        RawFileType::Dir | RawFileType::Symlink => Some(InlineStat {
+            logical_size: 0,
+            physical_size: 0,
+            modified_at,
+            inode,
+            nlink: 0,
+        }),
+        RawFileType::Other => None,
     };
 
     let entry = RawDirEntry {
         path: dir.join(name),
         file_type,
-        stat: Some(InlineStat {
-            logical_size,
-            physical_size,
-            modified_at,
-            inode,
-            nlink,
-        }),
+        stat,
     };
     (entry_len, Some(entry))
 }
@@ -390,6 +434,111 @@ mod tests {
             2,
             "hardlinked file should report nlink 2"
         );
+    }
+
+    // ── synthetic records (the fallback branches a real filesystem never takes) ──
+
+    /// Build one packed record in the exact layout `parse_entry` reads, so the
+    /// degrade-don't-drop branches can be exercised without a filesystem that
+    /// withholds attributes. `returned_common` / `returned_file` are the
+    /// `ATTR_CMN_RETURNED_ATTRS` bitmaps the kernel would report.
+    fn build_record(name: &str, objtype: u32, returned_common: u32, returned_file: u32) -> Vec<u8> {
+        const NAME_DATA_OFF: usize = 80; // right after the file block
+        let name_bytes = name.as_bytes();
+        let mut rec = vec![0u8; NAME_DATA_OFF + name_bytes.len() + 1];
+        let put_u32 = |rec: &mut Vec<u8>, off: usize, v: u32| rec[off..off + 4].copy_from_slice(&v.to_ne_bytes());
+        let put_i32 = |rec: &mut Vec<u8>, off: usize, v: i32| rec[off..off + 4].copy_from_slice(&v.to_ne_bytes());
+        let put_u64 = |rec: &mut Vec<u8>, off: usize, v: u64| rec[off..off + 8].copy_from_slice(&v.to_ne_bytes());
+        let put_i64 = |rec: &mut Vec<u8>, off: usize, v: i64| rec[off..off + 8].copy_from_slice(&v.to_ne_bytes());
+
+        let len = rec.len();
+        put_u32(&mut rec, 0, len as u32);
+        put_u32(&mut rec, 4, returned_common); // returned.commonattr
+        put_u32(&mut rec, 16, returned_file); // returned.fileattr
+        put_i32(&mut rec, 24, (NAME_DATA_OFF - 24) as i32); // attrreference_t.dataoffset
+        put_u32(&mut rec, 28, name_bytes.len() as u32 + 1); // .length, incl. NUL
+        put_u32(&mut rec, 32, objtype);
+        put_i64(&mut rec, 36, 1_700_000_000); // modtime.tv_sec
+        put_u64(&mut rec, 52, 4242); // fileid
+        put_u32(&mut rec, 60, 3); // linkcount
+        put_u64(&mut rec, 64, 8192); // allocsize
+        put_u64(&mut rec, 72, 5000); // datalength
+        rec[NAME_DATA_OFF..NAME_DATA_OFF + name_bytes.len()].copy_from_slice(name_bytes);
+        rec
+    }
+
+    const ALL_COMMON: u32 =
+        ATTR_CMN_RETURNED_ATTRS | ATTR_CMN_NAME | ATTR_CMN_OBJTYPE | ATTR_CMN_MODTIME | ATTR_CMN_FILEID;
+    const ALL_FILE: u32 = ATTR_FILE_LINKCOUNT | ATTR_FILE_ALLOCSIZE | ATTR_FILE_DATALENGTH;
+
+    /// The builder itself is trustworthy: a fully-attributed file record parses
+    /// into exactly the values written into it.
+    #[test]
+    fn a_fully_attributed_record_parses_every_field() {
+        let rec = build_record("file.txt", VREG, ALL_COMMON, ALL_FILE);
+        let (len, parsed) = parse_entry(&rec, Path::new("/dir"));
+        assert_eq!(len, rec.len(), "the record length is the first u32");
+        let entry = parsed.expect("a fully-attributed record parses");
+        assert_eq!(entry.path, Path::new("/dir/file.txt"));
+        assert_eq!(entry.file_type, RawFileType::File);
+        let stat = entry.stat.expect("a fully-attributed file carries its stat");
+        assert_eq!(stat.logical_size, 5000);
+        assert_eq!(stat.physical_size, 8192);
+        assert_eq!(stat.modified_at, Some(1_700_000_000));
+        assert_eq!(stat.inode, 4242);
+        assert_eq!(stat.nlink, 3);
+    }
+
+    /// A file whose size attributes weren't returned must still come back AS AN
+    /// ENTRY, with no inline stat, so the caller stats it itself. Dropping it
+    /// instead would make the entry invisible to the reconcile diff, which deletes
+    /// index rows a listing lacks — a missing attribute would delete the file.
+    #[test]
+    fn a_file_missing_its_size_attrs_keeps_the_entry_and_drops_only_the_stat() {
+        let rec = build_record("half.txt", VREG, ALL_COMMON, ATTR_FILE_LINKCOUNT | ATTR_FILE_ALLOCSIZE);
+        let (_, parsed) = parse_entry(&rec, Path::new("/dir"));
+        let entry = parsed.expect("the entry survives a missing size attribute");
+        assert_eq!(entry.path, Path::new("/dir/half.txt"));
+        assert_eq!(entry.file_type, RawFileType::File);
+        assert!(
+            entry.stat.is_none(),
+            "an unattributed file must fall back to a stat, never report a guessed size"
+        );
+    }
+
+    /// Anything that isn't a file, dir, or symlink (fifo, socket, device node)
+    /// carries no meaningful inline size, so it falls back to a stat rather than
+    /// reporting zeros.
+    #[test]
+    fn an_unclassifiable_type_falls_back_to_a_stat() {
+        const VFIFO: u32 = 7;
+        let rec = build_record("pipe", VFIFO, ALL_COMMON, ALL_FILE);
+        let (_, parsed) = parse_entry(&rec, Path::new("/dir"));
+        let entry = parsed.expect("an odd file type is still an entry");
+        assert_eq!(entry.file_type, RawFileType::Other);
+        assert!(entry.stat.is_none(), "an odd type reports no inline stat");
+    }
+
+    /// A record with no usable name is the one case nothing can be recovered from.
+    /// It must be *counted* as unusable, not silently skipped: the reconcile
+    /// re-reads such a directory the slow way rather than diff a short listing.
+    #[test]
+    fn a_record_without_a_name_is_unusable() {
+        let rec = build_record("ghost", VREG, ALL_COMMON & !ATTR_CMN_NAME, ALL_FILE);
+        let (_, parsed) = parse_entry(&rec, Path::new("/dir"));
+        assert!(parsed.is_none(), "a nameless record can't be turned into an entry");
+    }
+
+    /// A healthy directory parses every record, so the fallback re-read never
+    /// fires in practice.
+    #[test]
+    fn a_healthy_directory_reports_no_unusable_records() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        std::fs::write(dir.path().join("a.txt"), b"a").unwrap();
+        std::fs::create_dir(dir.path().join("sub")).unwrap();
+        let read = bulk_read_dir_unwatched(dir.path()).expect("bulk read");
+        assert_eq!(read.unusable, 0, "no record on a real volume is unusable");
+        assert_eq!(read.entries.len(), 2);
     }
 
     #[test]

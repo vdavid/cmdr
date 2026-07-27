@@ -18,8 +18,10 @@ index stays visible (stale) throughout and a mid-rescan disconnect leaves the pr
 gated before building this; the evidence is in `docs/notes/m3-reconcile-rescan-gate.md`.
 
 **The LOCAL reconcile's cost is the open question.** Measured on the boot volume: the serial reconcile walk took
-1,309 s where the parallel fresh scan of the same tree took 68.1 s, and 92.3% of that time sat inside `read_dir` +
-`lstat` (`docs/notes/reconcile-latency-spike.md`). Replacing the local rescan with a fast parallel build that swaps in
+1,309 s where the parallel fresh scan of the same tree took 68.1 s, and 92.3% of that time sat inside the directory
+read (`docs/notes/reconcile-latency-spike.md`). The `lstat` share of that read is now gone — `read_fs_children` batches
+via `getattrlistbulk` on macOS (see "The shared local read" below), which on a boot disk was 69% of read time — but the
+walk is still serial against a parallel fresh scan. Replacing the local rescan with a fast parallel build that swaps in
 atomically is under evaluation, including the traps that shape it (SQLite has no `ALTER INDEX ... RENAME`, `start_scan`
 clears `scan_completed_at` before the scan runs, and `MutationTracker::bump` can't tell which table changed):
 `docs/notes/swap-scan-feasibility.md`.
@@ -123,10 +125,47 @@ interrupted pass deleted it), so the launch re-reconciles and its finish aggrega
 interruption that leaves `scan_completed_at` in place, the cleared marker forces one `ComputeAllAggregates` on the next
 launch (~30 s on a 600k-directory index).
 
+**The shared local read (`reconciler::read_fs_children`).** Both local walks — the live `reconcile_subtree` and the
+full-tree `local_reconcile` — list a directory through this one function, which returns `Option<Vec<FsChild>>`: `None`
+means "couldn't list" (the walk skips the dir and keeps it honestly stale), `Some(vec![])` means "listed, empty". An
+`FsChild` carries a `MetadataSnapshot` rather than a `std::fs::Metadata`, which is what lets the read come from a
+batched syscall — a `Metadata` can't be synthesized.
+
+On macOS the read is the fresh scan's `getattrlistbulk` batch (`scanner::bulk_read_dir_unwatched`), which returns each
+child's name, type, sizes, mtime, inode, and link count *with* the directory entry, so the walk never stats an entry
+individually. Batching matters because a per-entry `lstat` dominates this walk's cost: over 771k directories / 6.6M
+entries on a boot disk, `readdir` costs 106.3 s while the per-entry `lstat` costs 238.4 s — 69% of read time at
+~36 µs/entry, with the process at ~10% CPU, so the walk is syscall-latency bound, not compute bound (verified on
+macOS 15 with a standalone single-threaded walk mimicking `read_fs_children`, 2026-07-27). The batching buys nothing
+else: the walk is serial, `GuardedReader` caps each read at `LOCAL_LIST_TIMEOUT`, and the exclusion gates
+(`should_exclude` then `is_canonicalization_alias`, in `child_is_indexable`) run per child, all exactly as the
+`read_dir` path does. Non-macOS targets use `read_fs_children_via_read_dir` (`read_dir` + per-entry
+`symlink_metadata`).
+
+**Decision/Why the fallbacks are preserved, at two levels.** A hand-parsed packed buffer can be wrong in ways an
+`lstat` can't, and this walk *writes what it reads*, so both failure modes are caught rather than trusted:
+
+- **A child with no inline attributes still gets stated.** `parse_entry` returns `stat: None` when an attribute wasn't
+  returned for an entry, or when the type carries no inline sizes at all (fifo, socket, device node), and
+  `read_fs_children` pays one `symlink_metadata` for that child. Reporting the parser's zeros instead would write a
+  wrong size; taking the stat costs one syscall on an entry we've never actually seen in the field.
+- **A directory that lost a record is re-read whole.** A record with no recoverable name can't be stated (there's
+  nothing to name), so it's counted in `BulkDirRead::unusable` and the whole directory is re-read with `read_dir`. It
+  must not be diffed short: `diff_dir_against_db` DELETES every DB child the live listing lacks, so one unparsed record
+  would delete a real file (and its subtree) from the index. This is the same rule as the `EmptyRoot` guard and the
+  cost-budget skip — a listing we don't fully trust is never handed to the diff.
+
+Both branches are unreachable on the filesystems we've measured (`FSOPT_PACK_INVAL_ATTRS` makes every requested
+attribute present), which is exactly why they're pinned by tests rather than by field evidence: `bulk_read.rs`'s
+synthetic-record tests build packed records with attributes withheld, and
+`reconciler/tests.rs`'s `the_reconcile_read_matches_a_per_entry_stat` asserts the batched read equals `read_dir` +
+`symlink_metadata` field-for-field over a tree of files with known sizes, an empty dir, a symlink, a broken symlink, a
+hardlink pair, a unicode name, a fifo, and an excluded basename.
+
 **The shared per-dir diff.** `reconciler::diff_dir_against_db(dir_id, live_children, db_children, writer)` is the one
 place the add/remove/modify/type-change diff lives. THREE walk sources feed it source-agnostic `LiveChild`s: the local
-live small-scope reconcile (`reconcile_subtree`, `std::fs::read_dir`), the local full-tree rescan
-(`local_reconcile::run_local_reconcile`, `std::fs::read_dir` BFS), and the network full rescan
+live small-scope reconcile (`reconcile_subtree`), the local full-tree rescan
+(`local_reconcile::run_local_reconcile`, a BFS), and the network full rescan
 (`volume_scanner::reconcile_volume_via_trait`, `Volume::list_directory` BFS). It keeps `next_id` from the shared
 `Arc<AtomicI64>` (never `MAX(id)`). The shared FINISH (stamp listed dirs → ONE `ComputeAllAggregates`) lives once in
 `reconciler::finish_reconcile`/`send_marks`, called by both full-rescan walkers so they can't drift on the
@@ -158,7 +197,7 @@ completion handler then bumps the epoch and keeps the instance + DB.
 
 **LOCAL full rescan reconciles in place (`local_reconcile.rs`).** A LOCAL rescan of an already-populated index runs the
 serial full-tree reconcile walker instead of truncate + fresh parallel rebuild (it skips ONLY the `TruncateData` step):
-a BFS from the volume root over `std::fs::read_dir` (each read guarded), `diff_dir_against_db` per dir, the shared
+a BFS from the volume root (each read guarded), `diff_dir_against_db` per dir, the shared
 `finish_reconcile`. It reuses `reconciler::read_fs_children` (which applies BOTH `should_exclude` AND
 `is_canonicalization_alias`, so `/tmp`,`/var`,`/etc` aren't re-added every pass) and a single READ connection in
 autocommit. It runs on a `std::thread` and returns the SAME `(ScanHandle, JoinHandle<Result<ScanSummary, ScanError>>)`
@@ -205,8 +244,9 @@ same empty root and re-"complete" again. The real-hardware symptom was an SMB in
 
 ## The reconcile cost budget (`local_reconcile/cost_budget.rs`)
 
-The serial rescan walk had no cost backstop: on the measured boot volume it spent 1,309 s, 92.3% of it inside `read_dir`
-+ `lstat`, with 1.7% of directories accounting for 71% of the read time (`docs/notes/reconcile-latency-spike.md`). Cost,
+The serial rescan walk had no cost backstop: on the measured boot volume it spent 1,309 s, 92.3% of it inside the
+directory read, with 1.7% of directories accounting for 71% of the read time (`docs/notes/reconcile-latency-spike.md`).
+Batching the read cut its constant cost but not that distribution, so the backstop still matters. Cost,
 not failure, is the signal: that walk hit exactly ONE read timeout in 21 minutes while an Android phone's `/proc` tree
 cost ~454 s in reads that all SUCCEEDED. So the guarded walker's "give up after 32 consecutive FAILED reads" model would
 have fired zero times. (That specific tree is now excluded by name at volume roots; the budget is the general backstop

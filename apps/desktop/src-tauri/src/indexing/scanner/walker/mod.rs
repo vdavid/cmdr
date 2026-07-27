@@ -73,7 +73,7 @@ use std::time::{Duration, Instant};
 use crate::ignore_poison::IgnorePoison;
 
 #[cfg(target_os = "macos")]
-mod bulk_read;
+pub(super) mod bulk_read;
 
 #[cfg(test)]
 mod tests;
