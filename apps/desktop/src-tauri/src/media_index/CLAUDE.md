@@ -4,48 +4,47 @@ Image-ML enrichment making images searchable by content; a read-consumer of `ind
 default, SMB opt-in, MTP never, external drives parked. A PORT of `importance/`'s patterns (`importance/CLAUDE.md`
 first).
 
-## Module map
+## Areas (routing map)
 
-- `scheduler/` runs the bus-driven coalesced pass over `backend/` (the `VisionBackend` seam), `clip/`, and `network/`
-  (SMB byte-fetch + opt-in config); `store/` holds each volume's `media.db` behind ONE writer thread
-  (`writer_registry`); `vector/` + `ann/` serve search.
-- `read/`'s `MediaIndex` is the ONLY consumer entry, `search/` included. `commands.rs` is read IPC,
-  `commands/policy.rs` coverage-changing IPC, `gate.rs` the toggle / scope / threshold atomics, and
-  `predicate.rs`'s `qualify_dir` stays PURE.
+Each area subdir has its own `CLAUDE.md` (must-knows) + `DETAILS.md` (depth). Touch a dir and its `CLAUDE.md`
+autoloads; read it before non-trivial work there.
 
-## Must-knows
+- **`scheduler/CLAUDE.md`** — the pass machinery: full, network, and live-tick passes, bus wiring, the parallel worker
+  pool, importance ordering, the reclaim prune. **`network/CLAUDE.md`** — SMB byte-fetch, the conservative fetch
+  policy, the opt-in / override / exclusion config.
+- **`backend/CLAUDE.md`** — the fakeable `VisionBackend` inference seam and the real macOS Vision impl.
+  **`clip/CLAUDE.md`** — CLIP semantic search (model install, Core ML towers, the query encode). **`ann/CLAUDE.md`** —
+  the per-volume usearch HNSW index serving it at scale.
+- **`store/CLAUDE.md`** — `media.db` schema, connections, staleness. **`read/CLAUDE.md`** — `MediaIndex`, the ONLY
+  consumer entry, `search/` included. **`vector/CLAUDE.md`** — brute-force cosine + the resident vector caches.
+
+Top-level leaves this file owns: `commands.rs` + `commands/policy.rs` (read and coverage-changing IPC), `coverage.rs`
+(the eligible/accounted caches), `gate.rs` (toggle / scope / threshold / parallelism atomics), `writer.rs` +
+`writer_registry.rs` (ONE writer thread per volume), `events.rs`, `progress.rs`, `thermal.rs`, and `predicate.rs`,
+whose `qualify_dir` stays PURE.
+
+## Subsystem-wide must-knows
 
 - **Disposable, integer-id-keyed cache.** A schema bump or corruption delete-and-recreates `media.db`; no migrations.
   Paths live ONCE in `media_file(id, path)` and every other table keys on `file_id`, so a raw `path =` query against a
   media table is the bug, and a rename is `rename_path`, one row.
-- **GC is deletion-driven and edge-triggered (data-safety).** ONLY on a `Completed` bus edge (`borrow_and_update`, never
-  a `borrow()` poll) or the Fresh sweep, never on volume-absence. Uncovered rows stay; only vanished files collect.
-  ❌ Never persist the lifecycle-bus `generation`. ❌ NEVER whole-store `gc_targets` / `enrich_and_gc` on a live tick
-  (wipes every row OUTSIDE the touched dirs). The exclusion veto reads LIVE `is_excluded`, never the pass snapshot,
-  re-checked before each upsert.
+- **Deletion is data-safety.** Exactly four paths delete a row: whole-store GC (ONLY on a `Completed` bus edge or the
+  Fresh sweep, never on volume-absence), the live tick's dir-scoped GC, the reclaim prune, and the privacy
+  retro-delete. ❌ Nothing else may run whole-store `gc_targets` / `enrich_and_gc`. Uncovered rows STAY: narrowing a
+  setting deletes nothing. The exclusion veto reads LIVE `is_excluded`, ❌ never a pass snapshot.
 - **Coverage = scope + importance.** Scope is an EXPLICIT `gate::IndexScope`, ❌ never a sentinel threshold. Resolve it
-  ONLY via `lifecycle::pass_coverage` and pass it to `coverage::stored_row_survives`, or reclaim drifts. `folder_scores`
-  `None` ⇒ override-only, ❌ NEVER enrich-all (a first-run race over-indexes permanently); `wire_volume` re-kicks once
-  scored. EXCLUDED is a hard veto. Narrowing DELETES NOTHING.
-- **Counts stream; polls never build them.** Aggregate through the `for_each_qualifying_image` sink
-  (`coverage::count_qualifying_images`, O(folders)), ❌ never over `walk_image_entries`: one path `String` per image is
-  the 50 GB launch runaway. Polls and startup use `coverage::cached` (no walk); only user-initiated settings reads use
-  `get_or_build`. `None` means "no number yet", ❌ never `0`. The per-folder `accounted` aggregate is INCREMENTAL
-  (writer ±1, seeded at spawn), never rebuilt from a walk, in its own `ACCOUNTED` cache, not `COUNTS`.
-- **Parallel enrichment is N INDEPENDENT backends** (`scheduler/pool.rs`): ❌ never feed one backend concurrently (CF
-  confinement), ❌ never fan out the single writer. Tests inject `FakeVisionBackend` via `MediaScheduler::new`, never
-  `start`.
+  ONLY via `lifecycle::pass_coverage`, and hand the SAME scope to `coverage::stored_row_survives`, or reclaim drifts
+  from what a pass keeps. EXCLUDED beats every override.
+- **Counts stream; polls never build them.** Aggregate through the `for_each_qualifying_image` sink, ❌ never over
+  `walk_image_entries`: one path `String` per image is the 50 GB launch runaway. Polls and startup read
+  `coverage::cached`; only user-initiated settings reads call `get_or_build`. `None` means "no number yet", ❌ never
+  `0`. `accounted` is INCREMENTAL (writer ±1) in its own cache, ❌ never rebuilt from a walk.
 - **Cancellation hooks the EXISTING indexing watchdog** (❌ no second one; one shared memory ceiling). The
   between-images hook is `gate::should_stop` (watchdog OR toggle OFF); ❌ don't narrow it to `is_cancelled`.
-- **ONLY a typed disconnect pauses a network pass** (rows kept, no GC, no `Failed`). Every other per-file read error is
-  `FetchError::Unreadable`: skip-and-count, ❌ never a pause.
-- **CLIP is a SEPARATE vector space from the Vision feature print** (`clip/`); ❌ never compare the two.
-  `gate::semantic_search_enabled` is the SINGLE CLIP-write seam. **`ann/`'s index files are memory-mapped**, so a
-  corrupt view SIGSEGVs. Both areas carry more invariants than fit here: read DETAILS § CLIP semantic search and
-  § ANN vector search BEFORE touching either.
+- **CLIP is a SEPARATE vector space from the Vision feature print**; ❌ never cosine-compare the two.
 - **Every pass emits `media-enrich-progress`** over the ENRICHABLE subset (❌ never `images.len()`) and
   `media-enrich-terminal` on EVERY exit path. New commands register in BOTH `ipc.rs` and `ipc_collectors.rs`, events in
   `collect_events!`.
 
-Architecture, flows, decisions, and the depth behind every line here: `DETAILS.md`. Read it before any non-trivial work:
-editing, planning, reorganizing, or advising.
+Port rationale, the GC safety argument, the scope model, the coverage caches, settings, events, and the frontend map:
+`DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

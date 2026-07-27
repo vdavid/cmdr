@@ -377,7 +377,7 @@ impl MediaScheduler {
     /// reachable volumes in `mounts` (`volume_id`, `mount_root`) — the privacy
     /// complement to the veto, invoked when the user excludes a folder. USER-EXPLICIT
     /// deletion: it derives ONLY from settings state, never scan/bus/gate state, so it
-    /// needs no completed-scan edge (unlike GC — see `DETAILS.md` § GC safety).
+    /// needs no completed-scan edge (unlike GC — see `../DETAILS.md` § The GC safety argument).
     ///
     /// Each volume maps the OS folder into its own index-path space
     /// ([`os_folder_to_index_prefix`]): the folder passes through on a local volume,

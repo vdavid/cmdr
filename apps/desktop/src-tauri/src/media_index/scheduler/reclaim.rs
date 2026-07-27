@@ -9,7 +9,7 @@
 //! reclaim commands (`commands.rs`) and the per-volume `keptCount` both call [`stored_coverage`],
 //! so the three user-facing quantities can never disagree. Full rationale (the
 //! single-source arithmetic, the partition rule, why the writer thread is the race
-//! guarantee): [`media_index/DETAILS.md`](../DETAILS.md) § Reclaim space.
+//! guarantee): [`scheduler/DETAILS.md`](DETAILS.md) § Reclaim space.
 //!
 //! [`stored_coverage`]: MediaScheduler::stored_coverage
 
@@ -221,7 +221,7 @@ impl MediaScheduler {
     /// mid-batch, and a concurrent pass only enriches ABOVE-threshold rows, a disjoint
     /// set), `VACUUM` to reclaim the pages, and drop the vector + coverage caches. A
     /// USER-EXPLICIT deletion: it derives ONLY from settings state, so like the privacy
-    /// retro-delete it needs no completed-scan edge (see `DETAILS.md` § GC safety).
+    /// retro-delete it needs no completed-scan edge (see `../DETAILS.md` § The GC safety argument).
     /// Returns the rows deleted and the freed-byte estimate; a no-op (all zeros) when
     /// the partition isn't safe or nothing is doomed.
     ///
