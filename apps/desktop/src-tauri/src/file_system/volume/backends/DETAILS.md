@@ -7,38 +7,27 @@ modifying `SmbVolume`, `MtpVolume`, `LocalPosixVolume`, the SMB watcher, or `InM
 
 ## Key files
 
-- **`local_posix.rs`**: `LocalPosixVolume`: real filesystem; delegates listing to `file_system::listing`, indexing to `indexing::scanner`, watching to `indexing::watch::watcher` (FSEvents), copy scanning via `walkdir`. Uses `libc::statvfs` FFI for space info.
-- **`mtp.rs`**: `MtpVolume`: MTP device storage; async `Volume` trait with direct async MTP calls. Uses `MtpReadStream`, which reads in bounded `GetPartialObject64` windows over a cached `MtpReadSession` (mtp-rs `WindowedDownload`; the window/offset bookkeeping lives in mtp-rs, the per-window device lock in `mtp/connection`). Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`.
-- **`smb/`**: `SmbVolume`: SMB share storage; async `Volume` trait with direct async smb2 calls. A directory module,
-  split by concern (behavior is identical to the former single `smb.rs`; the split is pure code movement):
-  - `mod.rs`: the `SmbVolume` struct (the single home of shared state) + `SmbConnectionParams`, `SmbVolume::new`,
-    `connect_smb_volume()`, the shared prelude, the submodule wiring, and the `#[cfg(test)] #[path = "../…"]` test
-    wiring. Re-exports keep every path stable at `…backends::smb::<name>`.
-  - `events.rs`: the global `AppHandle` (`set_app_handle` in `lib.rs::setup`) + `emit_state_change`. The typed
-    `tauri_specta::Event` struct `SmbConnectionChanged` still lives in the always-compiled `network/mod.rs`, not here,
-    so `collect_events!` in `ipc.rs` can reference it on every platform.
-  - `state.rs`: the `ConnectionState` enum (`AtomicU8`-backed) + the `transition_*` / `connection_state` / `diagnostics` methods.
-  - `mapping.rs`: pure smb2-type → Volume-type helpers + `map_smb_error` (zero shared state).
-  - `session.rs`: session storage split into `Arc<Mutex<Option<SmbClient>>>` + `Arc<RwLock<Option<Arc<Tree>>>>` so the
-    hot read/write paths can clone `Connection` under a brief lock and drive compound / download ops without
-    serializing on the client mutex; plus `handle_smb_result` / `with_smb_sync` / `update_state_on_smb_error` and the
-    `build_session` / `refresh_credentials_from_store` helpers.
-  - `reconnect.rs`: caches `SmbConnectionParams` (host, share, port, credentials) so `attempt_reconnect` can rebuild
-    the session in place after a transient disconnect, single-flighted via `reconnect_lock`; the watcher lifecycle
-    (`spawn_watcher` / `stop_watcher`) and the backend-autonomous `spawn_watcher_death_reconnect` loop.
-  - `streams.rs`: `SmbReadStream` / `InlineReadStream` + the `open_smb_download_stream` primitive, plus the inherent
-    `write_from_stream_impl` body that the `write_from_stream` trait method delegates to.
-  - `scan.rs`: the recursive copy-scan helper (`scan_recursive`), plus the inherent bodies for the scan family
-    (`scan_for_copy_impl`, `scan_for_copy_batch_impl`, `scan_for_conflicts_impl`) that the matching trait methods
-    delegate to.
-  - `volume_impl.rs`: path translation + the entire `impl Volume for SmbVolume` (a trait impl can't be split across
-    files, so all trait methods live here; the heavy ones lean on the inherent helpers in the modules above, with the
-    scan-family and `write_from_stream` bodies moved out to `scan.rs` / `streams.rs` as `*_impl` methods and reduced to
-    one-line delegators here).
+Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape, including the `smb/`
+submodule split: `CLAUDE.md` § Module map. What each piece DOES is in the sections below (§ "SMB auto-upgrade
+lifecycle", § "SMB live-reconnect lifecycle", § "SMB scan-connection pool", § "Per-backend decisions" for the session
+split / watcher session / `write_from_stream` shape, § Testing for the SMB suites and their `#[path = "../smb_*.rs"]`
+wiring), or in `archive/DETAILS.md` for `ArchiveVolume`. Only the layout facts that none of those carry live here:
 
-  Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`.
-- **`smb_watcher.rs`**: Background SMB change watcher (`run_smb_watcher`). Owns a dedicated smb2 session (separate TCP connection from the volume's primary client) and uses smb2 0.10's `'static` `Watcher` with pipelined CHANGE_NOTIFY (one request kept pre-issued on the wire so events arriving during consumer processing don't fall in a re-arm gap). Debounces events, feeds `notify_directory_changed`. Spawned by `connect_smb_volume()` and respawned by `attempt_reconnect`. No internal reconnect loop — bails on `next_events` errors, then kicks `spawn_watcher_death_reconnect` (which drives `do_attempt_reconnect`, the single source of truth) so recovery happens even with no pane open. See § "Backend-autonomous reconnect and index resume".
-- **`in_memory.rs`**: `InMemoryVolume`: `RwLock<HashMap>` store for tests; also used for stress tests (`with_file_count`)
+- **`smb/events.rs` deliberately does NOT own `SmbConnectionChanged`.** It holds the global `AppHandle`
+  (`set_app_handle` from `lib.rs::setup`) and `emit_state_change`, but the typed `tauri_specta::Event` struct stays in
+  the always-compiled `network/mod.rs`, so `collect_events!` in `ipc.rs` can reference it on EVERY platform. The `smb/`
+  module is `#[cfg]`-gated to macOS and Linux (as is `mtp.rs`); moving the struct in here breaks the Windows build of
+  the event collector.
+- **`smb/volume_impl.rs` holds the ENTIRE `impl Volume for SmbVolume`** because a trait impl can't be split across
+  files. The heavy bodies live as inherent `*_impl` methods in `scan.rs` / `streams.rs`, with `volume_impl.rs` reduced
+  to one-line delegators. A new trait method goes here and delegates; don't try to move a trait method out.
+- **`smb/foreground_yield.rs` answers "should a background transfer stand aside?" WITHOUT a per-device gate.** MTP has
+  an explicit holder for its single scarce USB pipe; SMB frames just interleave over one connection, so the signal here
+  is time-based instead: the share counts as busy for `TRANSFER_FOREGROUND_IDLE_THRESHOLD` after the last navigation on
+  it. Scope is PER VOLUME on purpose, so browsing a local folder never slows a NAS copy. `CheckpointStream`'s auto-yield
+  parks on these two functions and `SmbVolume`'s `Volume` foreground-yield methods delegate to them.
+- **`in_memory.rs`'s `with_file_count` builder is what makes `InMemoryVolume` usable for stress tests**, not just CRUD
+  unit tests.
 
 ## SMB auto-upgrade lifecycle
 
