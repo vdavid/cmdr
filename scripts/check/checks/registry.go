@@ -993,6 +993,17 @@ var AllChecks = []CheckDefinition{
 		Run:         RunDocsDeadLinks,
 	},
 	{
+		ID:          "docs-section-refs",
+		Nickname:    "section-refs",
+		DisplayName: "§ pointers name real headings",
+		App:         AppOther,
+		Tech:        "🔗 Links",
+		DependsOn:   nil,
+		IsFast:      true,
+		Inputs:      wholeRepoInputs, // scans every markdown doc for `path.md` § Heading pointers
+		Run:         RunDocsSectionRefs,
+	},
+	{
 		ID:          "docs-table-hygiene",
 		Nickname:    "table-hygiene",
 		DisplayName: "agent-doc table hygiene",

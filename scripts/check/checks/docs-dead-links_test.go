@@ -237,7 +237,12 @@ func TestIsRepoPathToken(t *testing.T) {
 		{"read/write", false},                           // prose pair
 		{"scripts/check", false},                        // no extension: not verified
 		{"src/lib/foo/", false},                         // directory: not verified
-		{"apps/desktop/src-tauri/src/lib.rs", false},    // only docs are verified
+		{"apps/desktop/src-tauri/src/lib.rs", true},     // source paths are verified too
+		{"lib/foo/thing.ts", true},                      // ... in every first-party language
+		{"lib/foo/Thing.svelte", true},                  //
+		{"scripts/check/checks/cache.go", true},         //
+		{"mod.rs", false},                               // single segment: a convention, not a file
+		{"src/assets/logo.png", false},                  // not a doc or a source file
 		{"~/projects-git/vdavid/smb2/AGENTS.md", false}, // another repo on this machine
 		{"/tmp/report.md", false},                       // absolute: outside the repo
 		{"file_system/.../backends/DETAILS.md", false},  // elided path

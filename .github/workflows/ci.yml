@@ -628,6 +628,9 @@ jobs:
       - name: Check no dead links in docs
         run: ./scripts/check/check --check docs-dead-links --ci
 
+      - name: Check § pointers name real headings
+        run: ./scripts/check/check --check docs-section-refs --ci
+
       - name: Check agent-doc table hygiene
         run: ./scripts/check/check --check docs-table-hygiene --ci
 
