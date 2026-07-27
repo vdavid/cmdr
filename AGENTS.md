@@ -63,17 +63,18 @@ screen readers).
 Two colocated tiers per code area, enforced by checks:
 
 - We often call `CLAUDE.md` and `DETAILS.md` `C.md` and `D.md`, `C+D.md` together.
-- **`C.md`** Auto-injected by the CC harness whenever a (sub)agent touches a dir, every session and wt.
-  ONLY must-knows: gotchas, guardrails, a 2–3 line module map, and pointer to `DETAILS.md`.
-  `claude-md-length` warns past 600, try to keep it much shorter.
-- **`D.md`** the rest. Read on demand. Architecture, data flows, decision rationale, edge-case
-  catalogs. No length limit, but try to be concise to make it token-efficient. When writing, default to `D.md`; promote to `C.md`.
+- **`C.md`** Auto-injected by the CC harness whenever a (sub)agent touches a dir, every session and wt. ONLY must-knows:
+  gotchas, guardrails, a 2–3 line module map, and pointer to `DETAILS.md`. `claude-md-length` warns past 600, try to
+  keep it much shorter.
+- **`D.md`** the rest. Read on demand. Architecture, data flows, decision rationale, edge-case catalogs. No length
+  limit, but try to be concise to make it token-efficient. When writing, default to `D.md`; promote to `C.md`.
 - `claude-md-details-sibling` enforces all `C.md` and `D.md` to exist in pairs. Never `@`-import `D.md` from a `C.md`!
-- If you cut `C.md`, do it radically: 1. make its parts sound like tweets, 2. move stuff to `D.md` needed. 3. split the module if genuinely too complex for `C.md` to fit in 600 words. Aim
-- `docs-reachable` enforces the doc graph to be linked:  (every doc reachable from this file by link-walking), `docs-dead-links`
-  and `docs-link-text` (no broken or path-shaped reference), and `resident-doc-budget` (the always-resident bundle, this
-  file plus its `@`-imports plus `.claude/rules/`, can't silently regrow). Keep this section crisp: it's the contract
-  every agent replicates.
+- If you cut `C.md`, do it radically: 1. make its parts sound like tweets, 2. move stuff to `D.md` needed. 3. split the
+  module if genuinely too complex for `C.md` to fit in 600 words. Aim
+- `docs-reachable` enforces the doc graph to be linked: (every doc reachable from this file by link-walking),
+  `docs-dead-links` and `docs-link-text` (no broken or path-shaped reference), and `resident-doc-budget` (the
+  always-resident bundle, this file plus its `@`-imports plus `.claude/rules/`, can't silently regrow). Keep this
+  section crisp: it's the contract every agent replicates.
 - How the doc system works and how to slim it (playbook, principles, why): `docs/doc-system.md`.
 
 ## Writing voice
