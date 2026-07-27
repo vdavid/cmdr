@@ -55,12 +55,13 @@ use crate::ignore_poison::IgnorePoison;
 use crate::indexing::IndexVolumeKind;
 
 mod recompute;
+mod walk;
 use recompute::{
     IncrementalInputs, RecomputeInputs, incremental_rescore, load_visits, recompute_folders, sanitize_incremental_batch,
 };
 // Re-exported for the eval corpus tool, which walks a real index the SAME way a
 // recompute does (so dumped signals match production exactly).
-pub(crate) use recompute::walk_index_folders;
+pub(crate) use walk::walk_index_folders;
 // The measurement/tuning entry point: walk a real index, score, write an
 // `importance.db` — the full-pass core without the registry or async driver.
 use crate::indexing::lifecycle::lifecycle_bus;
@@ -262,6 +263,8 @@ mod multi_volume_tests;
 mod recompute_tests;
 #[cfg(test)]
 mod test_support;
+#[cfg(test)]
+mod walk_memory_tests;
 
 impl ImportanceScheduler {
     /// Construct a scheduler with the default weights and the app's data dir.
@@ -313,12 +316,13 @@ impl ImportanceScheduler {
 
         // Walk the index ONCE; reuse the result for both the `kMDItemLastUsedDate`
         // path-set and the score (no second traversal — M2 cleanup).
-        let folders = pool
+        let mut folders = pool
             .with_conn(|conn| walk_index_folders(conn, &home))
             .map_err(|e| format!("read pool error: {e}"))??;
         if folders.is_empty() {
             return Ok(0);
         }
+        let folders_walked = folders.len();
 
         let visits = load_visits(&self.data_dir, volume_id);
 
@@ -328,8 +332,11 @@ impl ImportanceScheduler {
         // The sample is capped and runs on a dedicated OS thread (never rayon — a
         // macOS framework call). When unavailable, the map is empty and the
         // `last_used` weight redistributes.
+        // Only as many paths as the sample can use: it queries the first `SAMPLE_CAP`
+        // and drops the rest, so materializing the whole volume's paths to hand over
+        // 500 of them would cost one heap `String` per folder for nothing.
         let last_used = if available.last_used_available {
-            let paths: Vec<String> = folders.iter().map(|f| f.path.clone()).collect();
+            let paths = folders.first_paths(super::last_used::SAMPLE_CAP);
             super::last_used::sample_last_used(&paths)
         } else {
             HashMap::new()
@@ -348,7 +355,7 @@ impl ImportanceScheduler {
                 visits: &visits,
                 last_used: &last_used,
             },
-            &folders,
+            &mut folders,
         )?;
         let write_elapsed = write_started.elapsed();
 
@@ -358,7 +365,7 @@ impl ImportanceScheduler {
             target: "importance",
             "recompute of '{volume_id}' scored {} of {} folders in {:.2?} (walk+sample {:.2?}, score+write {:.2?}); floored folders omitted",
             outcome.count,
-            folders.len(),
+            folders_walked,
             read_elapsed + write_elapsed,
             read_elapsed,
             write_elapsed,
@@ -400,7 +407,7 @@ impl ImportanceScheduler {
         };
         let home = Self::home_dir();
 
-        let folders = pool
+        let mut folders = pool
             .with_conn(|conn| walk_index_folders(conn, &home))
             .map_err(|e| format!("read pool error: {e}"))??;
         if folders.is_empty() {
@@ -419,7 +426,7 @@ impl ImportanceScheduler {
                 available,
                 visits: &visits,
             },
-            &folders,
+            &mut folders,
             &changed_paths,
         )?;
 

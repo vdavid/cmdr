@@ -10,54 +10,15 @@ use super::*;
 pub(super) use super::recompute::{
     ANCESTOR_WALK_CAP, RecomputeInputs, recompute_folders, score_folders, touched_folder_set,
 };
+pub(super) use super::walk::WalkedFolders;
 pub(super) use crate::importance::signals::OptionalSignals;
 pub(super) use crate::importance::store::{ImportanceStore, importance_db_path};
 pub(super) use crate::importance::writer::WeightRow;
 pub(super) use crate::indexing::ROOT_VOLUME_ID;
 
-/// Build a synthetic `IndexFolder` for a directory path with a couple of mixed
-/// files (so an un-floored one scores above zero), computing `under_floored_ancestor`
-/// from the shared classifier over the whole path set. Lets a transition test drive
-/// `incremental_rescore` directly with a hand-built walk (no index needed).
-pub(super) fn folder_at(id: i64, path: &str, home: &str, all_paths: &[&str]) -> recompute::IndexFolder {
-    use crate::importance::classify::under_floored_paths;
-    use crate::importance::signals::ChildAggregate;
-    use crate::indexing::store::EntryRow;
-    let name = std::path::Path::new(path)
-        .file_name()
-        .map(|s| s.to_string_lossy().into_owned())
-        .unwrap_or_else(|| path.to_string());
-    let under = under_floored_paths(all_paths.iter().copied(), home).contains(path);
-    recompute::IndexFolder {
-        entry: EntryRow {
-            id,
-            parent_id: 0,
-            name,
-            is_directory: true,
-            is_symlink: false,
-            logical_size: None,
-            physical_size: None,
-            modified_at: Some(1_000_000_000),
-            inode: None,
-        },
-        path: path.to_string(),
-        children: ChildAggregate {
-            distinct_extension_count: 3,
-            file_count: 4,
-            has_direct_marker: false,
-        },
-        has_marker_below: false,
-        under_floored_ancestor: under,
-    }
-}
-
 /// Full-pass a hand-built walk, returning the writer + store path for a follow-up
 /// incremental. Shared by the two transition tests.
-pub(super) fn full_pass_walk(
-    dir: &std::path::Path,
-    home: &str,
-    folders: &[recompute::IndexFolder],
-) -> ImportanceWriter {
+pub(super) fn full_pass_walk(dir: &std::path::Path, home: &str, folders: &mut WalkedFolders) -> ImportanceWriter {
     let writer = ImportanceWriter::spawn(&importance_db_path(dir, ROOT_VOLUME_ID)).expect("writer");
     recompute_folders(
         &RecomputeInputs {

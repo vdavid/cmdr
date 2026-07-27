@@ -19,7 +19,9 @@ use std::collections::HashMap;
 /// The most folders to query per pass. A guess until measured on a real home
 /// (plan open-question 2 / agent-spec §18.4); measured cost goes in
 /// `docs/notes/`. Kept modest so a pass never spends unbounded time in MDItem.
-#[cfg(target_os = "macos")]
+///
+/// Defined on every platform (the sample itself is macOS-only) so a caller can hand
+/// [`sample_last_used`] the paths it can actually use rather than the whole volume's.
 pub const SAMPLE_CAP: usize = 500;
 
 /// Whether the Spotlight last-used signal can be produced on this platform.

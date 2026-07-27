@@ -53,22 +53,6 @@ pub(crate) fn current_phys_footprint() -> Option<u64> {
     }
 }
 
-/// The process's PEAK `phys_footprint` (the kernel ledger's high-water mark) in
-/// bytes, or `None` if the query failed or the platform has no Mach `task_info`.
-///
-/// The honest number for "how much did that pass cost", since a sampled current
-/// reading misses a transient spike between samples.
-pub(crate) fn peak_phys_footprint() -> Option<u64> {
-    #[cfg(target_os = "macos")]
-    {
-        query_task_vm_info().and_then(|vm| vm.phys_footprint_peak)
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        None
-    }
-}
-
 /// What we extract from a `task_vm_info` query. The watchdog's snapshot path
 /// wants the peak and resident size too, so this carries all three.
 #[cfg(target_os = "macos")]

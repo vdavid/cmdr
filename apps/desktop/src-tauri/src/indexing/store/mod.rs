@@ -713,7 +713,7 @@ mod meta;
 // directory rows, built from `for_each_directory`. It lives beside that query
 // because the two are designed for each other.
 mod dir_tree;
-pub(crate) use dir_tree::DirTree;
+pub(crate) use dir_tree::{ARENA_FULL, DirTree};
 
 /// Reconstruct a path from an in-memory map of `id -> (parent_id, name)`.
 /// More efficient than DB queries when reconstructing many paths.

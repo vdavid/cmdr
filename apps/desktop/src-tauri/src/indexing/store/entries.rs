@@ -113,13 +113,12 @@ impl IndexStore {
 
     /// Read every DIRECTORY entry in the index in one query (files excluded).
     ///
-    /// The memory-lean half of the importance recompute walk: on a multi-million-
-    /// entry NAS the directories are a small fraction of the rows, so materializing
-    /// only them keeps the walk O(dirs). Files stream separately through
-    /// [`for_each_file_child`](IndexStore::for_each_file_child) into per-parent
-    /// accumulators, so the whole entries table is never resident at once (which
-    /// [`all_entries`](IndexStore::all_entries) does — hundreds of MB transient on a
-    /// NAS). Ordered by id for determinism; callers index it into their own maps.
+    /// Cheaper than [`all_entries`](IndexStore::all_entries) — on a multi-million-entry
+    /// NAS the directories are a small fraction of the rows — but still ~112 bytes plus
+    /// a heap `String` per row. ❌ Not for a whole-index walk: those want
+    /// [`for_each_directory`](IndexStore::for_each_directory) and a compact structure
+    /// (`DirTree`), which holds the same folders at a third of the cost. Ordered by id
+    /// for determinism.
     pub fn all_directories(conn: &Connection) -> Result<Vec<EntryRow>, IndexStoreError> {
         let mut stmt = conn.prepare_cached(
             "SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode
@@ -141,49 +140,68 @@ impl IndexStore {
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
     }
 
-    /// Stream every DIRECTORY entry's `(id, parent_id, name)` through `f`, one row at a time,
-    /// ordered by `id`.
+    /// Stream every DIRECTORY entry's `(id, parent_id, name, modified_at)` through `f`, one row
+    /// at a time, ordered by `id`.
     ///
-    /// The path-reconstruction subset: a consumer that only rebuilds absolute paths needs
-    /// exactly these three columns, never a full [`EntryRow`] (~112 bytes plus a heap `String`
-    /// per row). Streaming them, and handing the name out as a borrowed `&str` off SQLite's own
-    /// row buffer, lets the caller fold each directory into a compact structure without the
-    /// query itself allocating anything per row. [`DirTree`](super::DirTree) does exactly that,
-    /// holding a 391,563-directory NAS index in 24.6 MB against 76.0 MB for the full-row shape
-    /// (measured 2026-07-25; see `media_index/DETAILS.md`).
+    /// The whole-index-walk subset: a consumer rebuilding absolute paths and scoring folders
+    /// needs exactly these four columns, never a full [`EntryRow`] (~112 bytes plus a heap
+    /// `String` per row). Streaming them, and handing the name out as a borrowed `&str` off
+    /// SQLite's own row buffer, lets the caller fold each directory into a compact structure
+    /// without the query itself allocating anything per row. [`DirTree`](super::DirTree) does
+    /// exactly that, holding a 391,563-directory NAS index in 24.6 MB against 76.0 MB for the
+    /// full-row shape (measured 2026-07-25; see `media_index/DETAILS.md`).
     ///
     /// Prefer this over [`all_directories`](IndexStore::all_directories) whenever the consumer
     /// wants paths rather than metadata. The `ORDER BY id` is what makes the result binary-
     /// searchable, so don't drop it.
-    pub fn for_each_directory(conn: &Connection, mut f: impl FnMut(i64, i64, &str)) -> Result<(), IndexStoreError> {
-        let mut stmt =
-            conn.prepare_cached("SELECT id, parent_id, name FROM entries WHERE is_directory = 1 ORDER BY id")?;
+    pub fn for_each_directory(
+        conn: &Connection,
+        mut f: impl FnMut(i64, i64, &str, Option<u64>),
+    ) -> Result<(), IndexStoreError> {
+        let mut stmt = conn.prepare_cached(
+            "SELECT id, parent_id, name, modified_at FROM entries WHERE is_directory = 1 ORDER BY id",
+        )?;
         let mut rows = stmt.query([])?;
         while let Some(row) = rows.next()? {
             let id: i64 = row.get(0)?;
             let parent_id: i64 = row.get(1)?;
             // `get_ref` borrows SQLite's own buffer, so no `String` is allocated per row.
             let name = row.get_ref(2)?.as_str().map_err(rusqlite::Error::from)?;
-            f(id, parent_id, name);
+            let modified_at: Option<u64> = row.get(3)?;
+            f(id, parent_id, name, modified_at);
         }
         Ok(())
     }
 
-    /// Stream every FILE entry's `(parent_id, name)` through `f`, one row at a time.
+    /// Stream every FILE entry's `(parent_id, name)` through `f`, one row at a time, with all of
+    /// one parent's files CONTIGUOUS.
     ///
-    /// The streaming half of the memory-lean importance walk: file rows are the
-    /// bulk of a NAS index, and the recompute only needs each file's parent and
-    /// name (to fold into its parent's extension set / count / marker flag), never
-    /// the whole row. Passing them through a callback means the file rows are never
-    /// all resident — the caller folds each into a small per-parent accumulator and
-    /// drops it. So a full pass holds O(dirs) memory, not O(entries).
-    pub fn for_each_file_child(conn: &Connection, mut f: impl FnMut(i64, &str)) -> Result<(), IndexStoreError> {
-        let mut stmt = conn.prepare_cached("SELECT parent_id, name FROM entries WHERE is_directory = 0")?;
+    /// The streaming half of the memory-lean importance walk: file rows are the bulk of a NAS
+    /// index, and the recompute only needs each file's parent and name (to fold into its
+    /// parent's extension set / count / marker flag), never the whole row. Passing them through
+    /// a callback means the file rows are never all resident — so a full pass holds O(dirs)
+    /// memory, not O(entries).
+    ///
+    /// **The grouping is the point, and it costs something.** Because each parent's files arrive
+    /// together, the caller folds a group through ONE reusable accumulator and closes it at the
+    /// boundary, instead of holding an open accumulator per directory for the whole scan (which
+    /// is what makes a distinct-extension set cost per-folder memory). `ORDER BY parent_id` buys
+    /// that by walking `idx_parent_name_folded` and fetching each row by rowid rather than
+    /// scanning the table in storage order: roughly 3× the query time (1.5 s → 4.7 s over 7.4M
+    /// file rows on a real root index, measured 2026-07-27). ❌ Don't drop the `ORDER BY` to win
+    /// that back without giving the caller another way to close a group.
+    pub fn for_each_file_child_by_parent(
+        conn: &Connection,
+        mut f: impl FnMut(i64, &str),
+    ) -> Result<(), IndexStoreError> {
+        let mut stmt =
+            conn.prepare_cached("SELECT parent_id, name FROM entries WHERE is_directory = 0 ORDER BY parent_id")?;
         let mut rows = stmt.query([])?;
         while let Some(row) = rows.next()? {
             let parent_id: i64 = row.get(0)?;
-            let name: String = row.get(1)?;
-            f(parent_id, &name);
+            // `get_ref` borrows SQLite's own buffer, so no `String` is allocated per row.
+            let name = row.get_ref(1)?.as_str().map_err(rusqlite::Error::from)?;
+            f(parent_id, name);
         }
         Ok(())
     }

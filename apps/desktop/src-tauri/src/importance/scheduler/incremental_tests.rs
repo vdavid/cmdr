@@ -84,7 +84,7 @@ fn incremental_rescore_rescopes_and_preserves_untouched_generation() {
     let index_path = dir.path().join("index-root.db");
     build_index_from_home(&index_path, &home);
     let pool = crate::indexing::ReadPool::new(index_path).expect("read pool");
-    let folders = pool
+    let mut folders = pool
         .with_conn(|conn| walk_index_folders(conn, &home.home))
         .expect("pool")
         .expect("walk");
@@ -104,7 +104,7 @@ fn incremental_rescore_rescopes_and_preserves_untouched_generation() {
             visits: &HashMap::new(),
             last_used: &HashMap::new(),
         },
-        &folders,
+        &mut folders,
     )
     .expect("full pass");
     writer.flush_blocking().expect("flush");
@@ -121,7 +121,7 @@ fn incremental_rescore_rescopes_and_preserves_untouched_generation() {
             available: SignalSet::listing_only(),
             visits: &HashMap::new(),
         },
-        &folders,
+        &mut folders,
         &changed,
     )
     .expect("incremental");

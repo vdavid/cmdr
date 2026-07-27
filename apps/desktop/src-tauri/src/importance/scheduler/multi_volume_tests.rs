@@ -21,12 +21,8 @@ fn incremental_deletes_rows_that_become_floored() {
     // BEFORE: `/Users/test/proj/pkg` and `/Users/test/proj/pkg/sub` are ordinary
     // (unfloored) folders with rows.
     let before_paths = ["/Users/test/proj", "/Users/test/proj/pkg", "/Users/test/proj/pkg/sub"];
-    let before: Vec<_> = before_paths
-        .iter()
-        .enumerate()
-        .map(|(i, p)| folder_at(i as i64 + 1, p, home, &before_paths))
-        .collect();
-    let writer = full_pass_walk(dir.path(), home, &before);
+    let mut before = WalkedFolders::synthetic(&before_paths, home);
+    let writer = full_pass_walk(dir.path(), home, &mut before);
 
     let store = ImportanceStore::open(&db_path).expect("open");
     assert!(
@@ -46,11 +42,7 @@ fn incremental_deletes_rows_that_become_floored() {
         "/Users/test/proj/node_modules",
         "/Users/test/proj/node_modules/sub",
     ];
-    let after: Vec<_> = after_paths
-        .iter()
-        .enumerate()
-        .map(|(i, p)| folder_at(i as i64 + 1, p, home, &after_paths))
-        .collect();
+    let mut after = WalkedFolders::synthetic(&after_paths, home);
     // The changed path is the renamed folder's parent (its listing changed) — the
     // subtree expansion then revisits everything under it.
     let changed = vec!["/Users/test/proj".to_string()];
@@ -63,7 +55,7 @@ fn incremental_deletes_rows_that_become_floored() {
             available: SignalSet::listing_only(),
             visits: &HashMap::new(),
         },
-        &after,
+        &mut after,
         &changed,
     )
     .expect("incremental");
@@ -115,12 +107,8 @@ fn incremental_scores_rows_that_stop_being_floored() {
         "/Users/test/proj/node_modules",
         "/Users/test/proj/node_modules/sub",
     ];
-    let before: Vec<_> = before_paths
-        .iter()
-        .enumerate()
-        .map(|(i, p)| folder_at(i as i64 + 1, p, home, &before_paths))
-        .collect();
-    let writer = full_pass_walk(dir.path(), home, &before);
+    let mut before = WalkedFolders::synthetic(&before_paths, home);
+    let writer = full_pass_walk(dir.path(), home, &mut before);
 
     let store = ImportanceStore::open(&db_path).expect("open");
     assert!(
@@ -134,11 +122,7 @@ fn incremental_scores_rows_that_stop_being_floored() {
     // AFTER: `node_modules` is renamed to `pkg` (ordinary). Both it and its child
     // stop flooring and should gain rows.
     let after_paths = ["/Users/test/proj", "/Users/test/proj/pkg", "/Users/test/proj/pkg/sub"];
-    let after: Vec<_> = after_paths
-        .iter()
-        .enumerate()
-        .map(|(i, p)| folder_at(i as i64 + 1, p, home, &after_paths))
-        .collect();
+    let mut after = WalkedFolders::synthetic(&after_paths, home);
     let changed = vec!["/Users/test/proj".to_string()];
     incremental_rescore(
         &IncrementalInputs {
@@ -149,7 +133,7 @@ fn incremental_scores_rows_that_stop_being_floored() {
             available: SignalSet::listing_only(),
             visits: &HashMap::new(),
         },
-        &after,
+        &mut after,
         &changed,
     )
     .expect("incremental");
@@ -188,18 +172,18 @@ fn floored_by_path_matches_the_scorer_floor_for_every_walked_folder() {
     let index_path = dir.path().join("index-root.db");
     build_index_from_home(&index_path, &home);
     let pool = crate::indexing::ReadPool::new(index_path).expect("read pool");
-    let folders = pool
+    let mut folders = pool
         .with_conn(|conn| walk_index_folders(conn, &home.home))
         .expect("pool")
         .expect("walk");
 
     let weights = Weights::default();
-    for f in &folders {
+    folders.for_each(|f, path| {
         // What the pre-compaction store would have seen: the full signals' floor.
         let signals = signals_for_dir(
-            &f.entry,
+            f.modified_at,
             f.children,
-            &f.path,
+            path,
             &home.home,
             f.has_marker_below,
             f.under_floored_ancestor,
@@ -207,13 +191,12 @@ fn floored_by_path_matches_the_scorer_floor_for_every_walked_folder() {
         );
         let scorer_floored = crate::importance::explain(&signals, &SignalSet::listing_only(), &weights, now).floored;
         // What the read side derives from the path alone (no row).
-        let path_floored = floors_by_path(&f.path, &home.home);
+        let path_floored = floors_by_path(path, &home.home);
         assert_eq!(
             path_floored, scorer_floored,
-            "derive-on-read disagreed with the scorer floor for {}: path={path_floored}, scorer={scorer_floored}",
-            f.path
+            "derive-on-read disagreed with the scorer floor for {path}: path={path_floored}, scorer={scorer_floored}"
         );
-    }
+    });
 }
 
 // ── M4: multi-volume, SMB degradation, offline reads ──────────────────────
@@ -325,7 +308,7 @@ fn smb_recompute_degrades_spotlight_and_redistributes() {
     let index_path = dir.path().join("index-smb-nas.db");
     build_index_from_home(&index_path, &home);
     let pool = crate::indexing::ReadPool::new(index_path).expect("read pool");
-    let folders = pool
+    let mut folders = pool
         .with_conn(|conn| walk_index_folders(conn, &home.home))
         .expect("pool")
         .expect("walk");
@@ -339,15 +322,20 @@ fn smb_recompute_degrades_spotlight_and_redistributes() {
 
     let weights = Weights::default();
     // Score under the SMB mask with NO last_used values (none available on SMB).
-    let smb_rows = score_folders(&folders, &home.home, &weights, &smb_available, now, |_| {
+    let smb_rows = score_folders(&mut folders, &home.home, &weights, &smb_available, now, |_| {
         OptionalSignals::default()
     });
 
     // A control: score under the SAME listing-only mask. SMB must equal this — its
     // degradation is exactly "drop Spotlight and redistribute", nothing more.
-    let listing_only = score_folders(&folders, &home.home, &weights, &SignalSet::listing_only(), now, |_| {
-        OptionalSignals::default()
-    });
+    let listing_only = score_folders(
+        &mut folders,
+        &home.home,
+        &weights,
+        &SignalSet::listing_only(),
+        now,
+        |_| OptionalSignals::default(),
+    );
     // Visit availability differs (SMB has visits available, listing_only doesn't),
     // but with NO visit values supplied the redistribution of the two available-
     // but-unsupplied vs unavailable cases can differ; so we compare the SMB result
@@ -355,7 +343,7 @@ fn smb_recompute_degrades_spotlight_and_redistributes() {
     // The load-bearing assertion is that no Spotlight term was fabricated: a folder
     // with a would-be recent last_used doesn't score higher on SMB than a mask that
     // fabricated one.
-    let all_with_fabricated = score_folders(&folders, &home.home, &weights, &SignalSet::all(), now, |_| {
+    let all_with_fabricated = score_folders(&mut folders, &home.home, &weights, &SignalSet::all(), now, |_| {
         OptionalSignals {
             visit_count: None,
             // Fabricate a "just used" Spotlight timestamp — this is what SMB must
@@ -424,7 +412,7 @@ fn offline_unmounted_read_returns_stored_weights_after_index_gone() {
     let index_path = data_dir.path().join(format!("index-{volume_id}.db"));
     build_index_from_home(&index_path, &home);
     let pool = crate::indexing::ReadPool::new(index_path.clone()).expect("read pool");
-    let folders = pool
+    let mut folders = pool
         .with_conn(|conn| walk_index_folders(conn, &home.home))
         .expect("pool")
         .expect("walk");
@@ -444,7 +432,7 @@ fn offline_unmounted_read_returns_stored_weights_after_index_gone() {
             visits: &HashMap::new(),
             last_used: &HashMap::new(),
         },
-        &folders,
+        &mut folders,
     )
     .expect("recompute");
     writer.flush_blocking().expect("flush");
@@ -515,7 +503,7 @@ fn multi_volume_recompute_scores_each_volume_into_its_own_store() {
         let index_path = data_dir.path().join(format!("index-{volume_id}.db"));
         build_index_from_home(&index_path, &home);
         let pool = crate::indexing::ReadPool::new(index_path).expect("read pool");
-        let folders = pool
+        let mut folders = pool
             .with_conn(|conn| walk_index_folders(conn, &home.home))
             .expect("pool")
             .expect("walk");
@@ -530,7 +518,7 @@ fn multi_volume_recompute_scores_each_volume_into_its_own_store() {
                 visits: &HashMap::new(),
                 last_used: &HashMap::new(),
             },
-            &folders,
+            &mut folders,
         )
         .expect("recompute");
         writer.flush_blocking().expect("flush");

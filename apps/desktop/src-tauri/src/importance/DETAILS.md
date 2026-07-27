@@ -253,18 +253,47 @@ at "never scored" forever. `store::needs_initial_full_pass` avoids this by openi
 generation via the read path before the write-path open. The store test drives this exact ordering (old-schema db with a
 stamped generation → read probe sees it → the write-path-bound probe recreates and reports "needs a full pass").
 
-### The walk is O(dirs), not O(entries) (`walk_index_folders`)
+### The walk is O(dirs) in a small constant (`scheduler/walk.rs`)
 
-The full-recompute walk materializes **directories only** (`IndexStore::all_directories`) and STREAMS file rows
-(`IndexStore::for_each_file_child`) into a small per-parent accumulator — distinct-extension set, file count, and the
-direct-marker flag — collapsed to a `ChildAggregate` per folder. So pass memory is O(dirs), a small fraction of a
-multi-million-entry NAS index, not O(entries) (an `all_entries` walk went transiently into the hundreds of MB on exactly
-the NAS-sized volumes SMB scoring now enables). Directory children still come from the directory set (a `.git`/`.hg`/`.svn`
-marker is a directory), so `has_direct_marker` folds both the streamed file children and the sibling directory children.
-`signals_for_dir` takes the `ChildAggregate`, not child rows. `has_marker_below` is one upward propagation after the walk
-(a `.git` deep in a tree raises its ancestors, plan Decision 3); `under_floored_ancestor` is its downward twin, a second
-pass over the same parent map that floors every folder below a self-flooring one (see "The floor propagates to
-descendants").
+The full-recompute walk holds **directories only**, and holds them compactly. Two structures, both in `WalkedFolders`:
+
+- the shared `indexing::store::DirTree` (one name arena plus a 24-byte `(id, parent_id, name slice)` record per
+  directory, id-ordered and binary-searched), which every path is reconstructed FROM on demand;
+- one `IndexFolder` per folder: a `Copy` record of the folder's tree-row index, its mtime, its `ChildAggregate`, and
+  the two subtree flags. Nothing owned, no path.
+
+File rows STREAM (`IndexStore::for_each_file_child_by_parent`), grouped by parent, so one reusable accumulator folds a
+directory's distinct extensions, file count, and marker flag and closes at the group boundary. Directory children still
+come from the directory set (a `.git`/`.hg`/`.svn` marker is a directory), so `has_direct_marker` folds both the streamed
+file children and the sibling directory children. `signals_for_dir` takes the `ChildAggregate` and the mtime, not child
+rows and not an `EntryRow`. `has_marker_below` is one upward propagation after the walk (a `.git` deep in a tree raises
+its ancestors, plan Decision 3); `under_floored_ancestor` is its downward twin, a second pass over the same tree that
+floors every folder below a self-flooring one (see "The floor propagates to descendants").
+
+**Every part of that shape is load-bearing, and each was measured.** Against the shape that materialized a full
+`EntryRow` plus a reconstructed path per folder plus a per-folder `HashSet<String>` of extensions, a full pass over a
+real 391,563-folder NAS index costs 84.2 MB instead of 256.4 MB, and over a 611,699-folder root index 105.3 MB instead
+of 424.8 MB. **It buys that with ~20% more walk time** (NAS 6.4 s against 5.4 s, root 5.5 s against 4.6 s, warm cache,
+five alternating runs): the grouped file query and the extra path pass the floor seed makes both cost real time, and on
+a background pass measured in seconds that's the right side of the trade. Both shapes produced identical output over
+both volumes — same row set, byte-identical `path` and `signals` for every row (scores drift only with the wall clock,
+which moves the recency signal; the same binary run twice 65 s apart differs in as many scores). Measured 2026-07-27
+with `cargo run -p index-query --bin importance-measure`, which reports the walk's `phys_footprint` growth. Concretely:
+
+- ❌ Don't reach for `IndexStore::all_directories` here (~112 B plus a heap `String` per row), and don't put an
+  `EntryRow` back in `IndexFolder` — the mtime is the only column scoring reads.
+- ❌ Don't store the reconstructed path per folder. It is the single biggest per-folder cost, and every consumer
+  (`score_folders`, `incremental_rescore`, the eval corpus dump) sees it through `WalkedFolders::for_each`, which
+  reconstructs into ONE reused buffer. The incremental path materializes paths only for the touched subset.
+- ❌ Don't drop `for_each_file_child_by_parent`'s `ORDER BY parent_id` (the store doc explains what it buys and costs).
+  Without the grouping, a distinct-extension set has to stay open per directory for the whole scan, which was ~280 B a
+  folder — 70 MB more on the NAS index.
+- The `classify` predicates run once per folder in the walk and again per folder in scoring, so they hold no allocation
+  on the ASCII path (the folded denylist is a process-wide `LazyLock`; `path_class` compares by stripping prefixes
+  rather than by formatting a candidate path per check).
+
+`scheduler/walk_memory_tests.rs` guards the shape: one test pins the bytes held per folder, the other pins the whole
+walk's allocation count (both blow through if anything goes back to being per-folder or per-file).
 
 **Signal assembly agrees with the fixtures by construction.** The categorical signals (denylist, path class, project
 marker, hidden) come from the shared [`classify`](classify.rs) module that BOTH `signals::signals_for_dir` (production)

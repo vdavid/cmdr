@@ -2,18 +2,17 @@
 //! counterpart to the test fixture's `signals_for`.
 //!
 //! The scheduler walks a volume's index tree and, for each directory, calls
-//! [`signals_for_dir`] with that directory's row, its direct children, its
+//! [`signals_for_dir`] with that directory's mtime, its aggregated children, its
 //! reconstructed path, the user's home, and the optional visit/last-used inputs.
 //! The categorical signals (denylist, path class, project marker, hidden) come
 //! from the shared [`classify`](super::classify) module, so the production path
 //! and the fixtures can't drift on what a signal means.
 //!
-//! Pure: values in (an entry row, its children, a path), a [`FolderSignals`] out.
+//! Pure: values in (an mtime, a child aggregate, a path), a [`FolderSignals`] out.
 //! No I/O — the caller reads the index; this only classifies.
 
 use super::classify::{is_denylisted, is_hidden_or_system, leaf_name, path_class};
 use super::scorer::{FolderSignals, PathClass};
-use crate::indexing::store::EntryRow;
 
 /// The optional, backend-dependent signals for a folder, resolved by the caller
 /// from `importance.db`'s visit table and (macOS-local) Spotlight sampling.
@@ -46,11 +45,12 @@ pub struct ChildAggregate {
 
 /// Build the [`FolderSignals`] for one directory.
 ///
-/// `dir` is the directory's own entry row (for its mtime); `children` is the
-/// pre-aggregated summary of its direct children (extension diversity + count +
-/// direct-marker flag — the walk folds each child into this so no child rows are
-/// held); `path` is the directory's reconstructed absolute path; `home` is the
-/// user's home dir for path classification. `has_marker_below` lets the caller
+/// `mtime_secs` is the directory's own modification time, the ONLY column this
+/// reads off its entry row (so the walk keeps that one field, not the row);
+/// `children` is the pre-aggregated summary of its direct children (extension
+/// diversity + count + direct-marker flag — the walk folds each child into this so
+/// no child rows are held); `path` is the directory's reconstructed absolute path;
+/// `home` is the user's home dir for path classification. `has_marker_below` lets the caller
 /// raise a folder whose project marker sits in a DESCENDANT (a `.git` deeper in
 /// the subtree still marks the root, plan Decision 3) — `children.has_direct_marker`
 /// handles the marker-in-this-folder case. `under_floored_ancestor` is the mirror
@@ -58,7 +58,7 @@ pub struct ChildAggregate {
 /// denylisted / hidden / system folder) sits above this one, so the whole subtree
 /// under a `node_modules` floors, not just the named folder.
 pub fn signals_for_dir(
-    dir: &EntryRow,
+    mtime_secs: Option<u64>,
     children: ChildAggregate,
     path: &str,
     home: &str,
@@ -87,7 +87,7 @@ pub fn signals_for_dir(
         under_floored_ancestor,
         distinct_extension_count: children.distinct_extension_count,
         file_count: children.file_count,
-        mtime_secs: dir.modified_at,
+        mtime_secs,
         has_project_marker,
         path_class,
         visit_count: optional.visit_count,
@@ -99,25 +99,11 @@ pub fn signals_for_dir(
 mod tests {
     use super::*;
 
-    fn dir(id: i64, name: &str, mtime: Option<u64>) -> EntryRow {
-        EntryRow {
-            id,
-            parent_id: 1,
-            name: name.to_string(),
-            is_directory: true,
-            is_symlink: false,
-            logical_size: None,
-            physical_size: None,
-            modified_at: mtime,
-            inode: None,
-        }
-    }
-
     #[test]
     fn a_node_modules_dir_is_denylisted() {
-        let d = dir(2, "node_modules", Some(100));
+        let mtime = Some(100);
         let s = signals_for_dir(
-            &d,
+            mtime,
             ChildAggregate {
                 distinct_extension_count: 1,
                 file_count: 1,
@@ -134,7 +120,7 @@ mod tests {
 
     #[test]
     fn a_direct_marker_marks_the_folder_a_project_root() {
-        let d = dir(2, "proj", Some(100));
+        let mtime = Some(100);
         // The walk found a `.git` (dir) or `Cargo.toml` (file) among the children.
         let children = ChildAggregate {
             distinct_extension_count: 1,
@@ -142,7 +128,7 @@ mod tests {
             has_direct_marker: true,
         };
         let s = signals_for_dir(
-            &d,
+            mtime,
             children,
             "/Users/me/proj",
             "/Users/me",
@@ -160,10 +146,10 @@ mod tests {
 
     #[test]
     fn a_marker_below_still_raises_the_folder() {
-        let d = dir(2, "proj", Some(100));
+        let mtime = Some(100);
         // No marker among the direct children, but the caller found one below.
         let s = signals_for_dir(
-            &d,
+            mtime,
             ChildAggregate {
                 distinct_extension_count: 1,
                 file_count: 1,
@@ -180,14 +166,14 @@ mod tests {
 
     #[test]
     fn extension_diversity_and_count_come_from_the_aggregate() {
-        let d = dir(2, "mixed", Some(100));
+        let mtime = Some(100);
         let children = ChildAggregate {
             distinct_extension_count: 3,
             file_count: 3,
             has_direct_marker: false,
         };
         let s = signals_for_dir(
-            &d,
+            mtime,
             children,
             "/Users/me/mixed",
             "/Users/me",
@@ -201,13 +187,13 @@ mod tests {
 
     #[test]
     fn optional_signals_pass_through() {
-        let d = dir(2, "docs", Some(100));
+        let mtime = Some(100);
         let opt = OptionalSignals {
             visit_count: Some(5),
             last_used_secs: Some(999),
         };
         let s = signals_for_dir(
-            &d,
+            mtime,
             ChildAggregate::default(),
             "/Users/me/Documents/docs",
             "/Users/me",

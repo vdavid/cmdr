@@ -28,11 +28,29 @@ pub fn leaf_name(path: &str) -> String {
 /// `no-string-matching` rule). Reusing `search::SYSTEM_DIR_EXCLUDES` keeps
 /// importance and search agreeing on what counts as machine output.
 pub fn is_denylisted(name: &str) -> bool {
+    // Every entry is ASCII, so for an ASCII name the ASCII fold IS the Unicode fold and
+    // the comparison needs no allocation. A non-ASCII name still takes the exact
+    // `to_lowercase` path: it can fold ONTO an ASCII name (U+212A KELVIN SIGN lowercases
+    // to `k`), so the fast path can't just answer `false`.
+    if name.is_ascii() {
+        return DENYLIST_FOLDED
+            .iter()
+            .any(|excluded| excluded.eq_ignore_ascii_case(name));
+    }
     let folded = name.to_lowercase();
+    DENYLIST_FOLDED.contains(&folded)
+}
+
+/// The denylist, folded ONCE for the process rather than per call. A full recompute
+/// classifies every folder on a volume, so folding the whole list per folder cost the
+/// walk one allocation per entry per folder — tens of millions on a NAS-sized volume,
+/// for a list that never changes.
+static DENYLIST_FOLDED: std::sync::LazyLock<Vec<String>> = std::sync::LazyLock::new(|| {
     crate::search::SYSTEM_DIR_EXCLUDES
         .iter()
-        .any(|d| d.to_lowercase() == folded)
-}
+        .map(|d| d.to_lowercase())
+        .collect()
+});
 
 /// Whether a folder is hidden or system-owned: a dotfile name, or a path that
 /// classifies as [`PathClass::SystemOrCache`]. A FLOOR override in the scorer.
@@ -135,17 +153,30 @@ pub fn is_project_marker(folded_child_name: &str) -> bool {
 /// the project-marker signal at assembly time, since it depends on directory
 /// contents, not the path alone.
 pub fn path_class(path: &str, home: &str) -> PathClass {
-    let library = format!("{home}/Library");
-    if path == library || path.starts_with(&format!("{library}/")) {
+    if is_at_or_under(path, home, "Library") {
         return PathClass::SystemOrCache;
     }
     for content in ["Downloads", "Desktop", "Documents"] {
-        let root = format!("{home}/{content}");
-        if path == root || path.starts_with(&format!("{root}/")) {
+        if is_at_or_under(path, home, content) {
             return PathClass::UserContent;
         }
     }
     PathClass::Neutral
+}
+
+/// Whether `path` IS `{home}/{folder}` or sits under it. Compares by stripping prefixes
+/// rather than building the candidate path: a full recompute classifies every folder on
+/// the volume, so a formatted string per candidate per folder is millions of throwaway
+/// allocations a pass.
+fn is_at_or_under(path: &str, home: &str, folder: &str) -> bool {
+    let Some(rest) = path
+        .strip_prefix(home)
+        .and_then(|rest| rest.strip_prefix('/'))
+        .and_then(|rest| rest.strip_prefix(folder))
+    else {
+        return false;
+    };
+    rest.is_empty() || rest.starts_with('/')
 }
 
 #[cfg(test)]

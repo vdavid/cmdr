@@ -204,30 +204,28 @@ pub fn snapshot_index_to_scenario(
 
     let conn = crate::indexing::store::IndexStore::open_read_connection(index_db_path)
         .map_err(|e| format!("couldn't open index DB read-only: {e}"))?;
-    let folders = walk_index_folders(&conn, home)?;
+    let mut folders = walk_index_folders(&conn, home)?;
 
     let synthetic_root = synthetic_root_for(&availability);
-    let scenario_folders = folders
-        .iter()
-        .map(|f| {
-            // Derive the real signals exactly as production does, then anonymize the
-            // path. The signals themselves are counts/flags/timestamps — no names —
-            // so they need no scrubbing; only the path carries names.
-            let signals = signals_for_dir(
-                &f.entry,
-                f.children,
-                &f.path,
-                home,
-                f.has_marker_below,
-                f.under_floored_ancestor,
-                OptionalSignals::default(),
-            );
-            ScenarioFolder {
-                path: anonymize_path(&f.path, home, synthetic_root),
-                signals,
-            }
-        })
-        .collect();
+    let mut scenario_folders = Vec::with_capacity(folders.len());
+    folders.for_each(|f, path| {
+        // Derive the real signals exactly as production does, then anonymize the
+        // path. The signals themselves are counts/flags/timestamps — no names —
+        // so they need no scrubbing; only the path carries names.
+        let signals = signals_for_dir(
+            f.modified_at,
+            f.children,
+            path,
+            home,
+            f.has_marker_below,
+            f.under_floored_ancestor,
+            OptionalSignals::default(),
+        );
+        scenario_folders.push(ScenarioFolder {
+            path: anonymize_path(path, home, synthetic_root),
+            signals,
+        });
+    });
 
     Ok(Scenario {
         name: name.to_string(),

@@ -33,10 +33,15 @@ struct DirRow {
 /// whose parent pointers form a cycle, where the alternative is spinning forever.
 const MAX_DEPTH: usize = 4_096;
 
+/// The message an arena that ran out of address space reports. Its own constant because
+/// [`load`](DirTree::load) and every caller building a tree row by row raise the same one.
+pub(crate) const ARENA_FULL: &str = "this index holds more folder-name bytes than the path arena can address";
+
 /// Every directory in one volume's index, in the shape path reconstruction actually needs.
 ///
-/// Build it once per walk with [`load`](DirTree::load), then ask for a folder's absolute
-/// path with [`path_into`](DirTree::path_into).
+/// Build it with [`load`](DirTree::load) (the whole directory set in one query) or row by row
+/// with [`push`](DirTree::push) when the caller's own query already streams the rows, then ask
+/// for a folder's absolute path with [`path_into`](DirTree::path_into).
 pub(crate) struct DirTree {
     /// Every directory name, concatenated back to back with no separators. One growable
     /// buffer instead of one heap `String` per directory: the same bytes, without hundreds of
@@ -53,39 +58,79 @@ pub(crate) struct DirTree {
 }
 
 impl DirTree {
+    /// An empty tree, to fill with [`push`](DirTree::push).
+    pub(crate) fn new() -> Self {
+        Self {
+            names: String::new(),
+            rows: Vec::new(),
+            chain: Vec::new(),
+        }
+    }
+
     /// Read every directory row of `conn`'s index into the compact form.
     ///
     /// Streams the rows ([`IndexStore::for_each_directory`]) rather than collecting them, so
     /// the transient peak is the compact structure itself, never a full `Vec<EntryRow>` on
     /// top of it.
     pub(crate) fn load(conn: &rusqlite::Connection) -> Result<Self, String> {
-        let mut tree = Self {
-            names: String::new(),
-            rows: Vec::new(),
-            chain: Vec::new(),
-        };
-        // The arena addresses names with a `u32`, which caps it at 4 GiB. No real index comes
-        // near that (a 13.5M-row NAS index holds 8 MB of directory names), but bail honestly
-        // rather than silently drop folders from the tree if one ever does.
+        let mut tree = Self::new();
         let mut arena_full = false;
-        IndexStore::for_each_directory(conn, |id, parent_id, name| {
-            let (Ok(name_start), Ok(name_len)) = (u32::try_from(tree.names.len()), u32::try_from(name.len())) else {
+        IndexStore::for_each_directory(conn, |id, parent_id, name, _modified_at| {
+            if !tree.push(id, parent_id, name) {
                 arena_full = true;
-                return;
-            };
-            tree.names.push_str(name);
-            tree.rows.push(DirRow {
-                id,
-                parent_id,
-                name_start,
-                name_len,
-            });
+            }
         })
         .map_err(|e| e.to_string())?;
         if arena_full {
-            return Err("this index holds more folder-name bytes than the path arena can address".to_string());
+            return Err(ARENA_FULL.to_string());
         }
         Ok(tree)
+    }
+
+    /// Append one directory, returning `false` when the name arena is full.
+    ///
+    /// Rows MUST arrive in ascending `id` order (what every directory query's `ORDER BY id`
+    /// gives): the id lookup is a binary search, so an out-of-order push silently breaks path
+    /// reconstruction rather than failing loudly.
+    ///
+    /// The arena addresses names with a `u32`, which caps it at 4 GiB. No real index comes near
+    /// that (a 13.5M-row NAS index holds 8 MB of directory names), but the caller bails honestly
+    /// on `false` rather than silently dropping folders from the tree if one ever does.
+    #[must_use]
+    pub(crate) fn push(&mut self, id: i64, parent_id: i64, name: &str) -> bool {
+        let (Ok(name_start), Ok(name_len)) = (u32::try_from(self.names.len()), u32::try_from(name.len())) else {
+            return false;
+        };
+        self.names.push_str(name);
+        self.rows.push(DirRow {
+            id,
+            parent_id,
+            name_start,
+            name_len,
+        });
+        true
+    }
+
+    /// How many directories the tree holds (the root sentinel included).
+    pub(crate) fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    /// The entry id of the directory at `index`.
+    pub(crate) fn id_at(&self, index: usize) -> i64 {
+        self.rows[index].id
+    }
+
+    /// The parent entry id of the directory at `index`.
+    pub(crate) fn parent_at(&self, index: usize) -> i64 {
+        self.rows[index].parent_id
+    }
+
+    /// The name of the directory at `index`, borrowed straight out of the arena.
+    pub(crate) fn name_at(&self, index: usize) -> &str {
+        let row = self.rows[index];
+        let start = row.name_start as usize;
+        &self.names[start..start + row.name_len as usize]
     }
 
     /// The tree index of directory `id`, or `None` for an id the tree doesn't hold (the

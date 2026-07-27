@@ -1,5 +1,5 @@
-//! The pure walk + scoring core of the importance scheduler: read a volume's
-//! index once, assemble each folder's signals, run the scorer, and write the
+//! The scoring core of the importance scheduler: take a volume's walk
+//! ([`super::walk`]), assemble each folder's signals, run the scorer, and write the
 //! rows. Split out of [`super`] (the scheduler handle + bus wiring) so the
 //! I/O-shaped-but-registry-free logic is a self-contained, directly-testable unit
 //! — a test drives these with a synthetic walk and a directly-built writer, no
@@ -12,186 +12,14 @@
 
 use std::collections::HashMap;
 
+use super::walk::{IndexFolder, WalkedFolders, walk_index_folders};
 use crate::importance::scorer::{SignalSet, Weights, explain};
-use crate::importance::signals::{ChildAggregate, OptionalSignals, signals_for_dir};
+use crate::importance::signals::{OptionalSignals, signals_for_dir};
 use crate::importance::store::importance_db_path;
 use crate::importance::writer::{ImportanceWriter, WeightRow};
-use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
+use crate::indexing::store::IndexStore;
 
 // ── Recompute (full-volume) ───────────────────────────────────────────────
-
-/// A folder discovered while walking the index, carrying everything the signal
-/// assembler needs. Built by [`walk_index_folders`]. Holds its children's
-/// pre-aggregated summary ([`ChildAggregate`]), NOT the child rows — the walk
-/// folds each file into this so no file rows stay resident (the O(dirs) memory
-/// shape).
-pub(crate) struct IndexFolder {
-    pub(crate) entry: EntryRow,
-    pub(crate) path: String,
-    pub(crate) children: ChildAggregate,
-    pub(crate) has_marker_below: bool,
-    /// `true` when a self-flooring ancestor (a denylisted, hidden, or system
-    /// folder) sits above this one — so the whole subtree under a `node_modules`
-    /// or a cache floors, not just the named folder. The downward twin of
-    /// `has_marker_below`'s upward marker propagation.
-    pub(crate) under_floored_ancestor: bool,
-}
-
-/// Walk every directory in a volume's index and build each folder's row,
-/// reconstructed path, aggregated child summary, and marker-below flag —
-/// materializing DIRECTORIES only, not the whole entries table.
-///
-/// The memory shape matters: on a multi-million-entry NAS the directories are a
-/// small fraction of the rows, so this pulls only them into memory
-/// ([`all_directories`](IndexStore::all_directories)) and STREAMS file rows
-/// ([`for_each_file_child`](IndexStore::for_each_file_child)) into small per-parent
-/// accumulators (extension set, file count, direct-marker flag), which are then
-/// collapsed to a [`ChildAggregate`] per folder. So pass memory is O(dirs), not
-/// O(entries) — the earlier `all_entries` walk went transiently into the hundreds
-/// of MB on exactly the NAS-sized volumes SMB scoring now enables.
-///
-/// Directory children still come from the directory set itself (a `.git`/`.hg`
-/// marker is a directory), so the direct-marker flag folds both the streamed file
-/// children and the sibling directory children. Paths are reconstructed from the
-/// in-memory `id → (parent_id, name)` directory map (no per-directory point
-/// query). `has_marker_below` is a single upward propagation after the walk, so a
-/// `.git` deep in a tree raises its ancestors (plan Decision 3).
-pub(crate) fn walk_index_folders(conn: &rusqlite::Connection, home: &str) -> Result<Vec<IndexFolder>, String> {
-    let dirs = IndexStore::all_directories(conn).map_err(|e| e.to_string())?;
-
-    // Index the directory rows: a lookup for path reconstruction, keyed by id.
-    let by_id: HashMap<i64, &EntryRow> = dirs.iter().map(|e| (e.id, e)).collect();
-
-    // Per-directory accumulator, folded from the streamed file children plus the
-    // sibling directory children. Kept tiny (a small extension set + two scalars)
-    // so the map is O(dirs), never O(files).
-    #[derive(Default)]
-    struct Accum {
-        extensions: std::collections::HashSet<String>,
-        file_count: u32,
-        has_direct_marker: bool,
-    }
-    let mut accum: HashMap<i64, Accum> = HashMap::new();
-
-    // Directory children first: a `.git`/`.hg`/`.svn` marker is a DIRECTORY, so
-    // fold the directory set into each parent's direct-marker flag. (Directories
-    // never contribute to the extension count or file count.)
-    for d in dirs.iter().filter(|e| e.id != ROOT_ID) {
-        if crate::importance::classify::is_project_marker(&d.name.to_lowercase()) {
-            accum.entry(d.parent_id).or_default().has_direct_marker = true;
-        }
-    }
-
-    // File children streamed one row at a time: fold each into its parent's
-    // extension set, file count, and (for a `Cargo.toml`/`package.json`/… file)
-    // marker flag. The file rows are never all resident.
-    IndexStore::for_each_file_child(conn, |parent_id, name| {
-        let entry = accum.entry(parent_id).or_default();
-        entry.file_count += 1;
-        let ext = std::path::Path::new(name)
-            .extension()
-            .map(|e| e.to_string_lossy().to_lowercase())
-            .unwrap_or_default();
-        entry.extensions.insert(ext);
-        if crate::importance::classify::is_project_marker(&name.to_lowercase()) {
-            entry.has_direct_marker = true;
-        }
-    })
-    .map_err(|e| e.to_string())?;
-
-    // One folder per directory entry (the root sentinel isn't a real folder).
-    let mut folders: Vec<IndexFolder> = Vec::new();
-    let mut dir_id_to_index: HashMap<i64, usize> = HashMap::new();
-    for entry in dirs.iter().filter(|e| e.id != ROOT_ID) {
-        let path = reconstruct_path_from_map(entry.id, &by_id);
-        let a = accum.remove(&entry.id).unwrap_or_default();
-        dir_id_to_index.insert(entry.id, folders.len());
-        folders.push(IndexFolder {
-            entry: entry.clone(),
-            path,
-            children: ChildAggregate {
-                distinct_extension_count: a.extensions.len() as u32,
-                file_count: a.file_count,
-                has_direct_marker: a.has_direct_marker,
-            },
-            has_marker_below: false,
-            under_floored_ancestor: false,
-        });
-    }
-
-    // Propagate the floor DOWN to descendants: a folder under a self-flooring
-    // ancestor (a denylisted / hidden / system folder) floors too, so a
-    // `node_modules`'s whole subtree floors, not just the folder named
-    // `node_modules` (the descendant-floor fix). The downward twin of the
-    // marker-below upward propagation above.
-    //
-    // Seed the self-flooring folders (classified from each folder's own path via
-    // the shared `classify` predicate), then mark every DESCENDANT of a seed by
-    // walking each folder's parent chain and checking whether any ancestor is a
-    // seed. Uses the same `id → parent_id` directory map path reconstruction uses,
-    // so it's robust to the entries map not being parent-before-child sorted.
-    let self_floored: std::collections::HashSet<i64> = folders
-        .iter()
-        .filter(|f| crate::importance::classify::self_floors(&f.path, &f.entry.name, home))
-        .map(|f| f.entry.id)
-        .collect();
-    for folder in &mut folders {
-        let mut cursor = by_id.get(&folder.entry.id).map(|e| e.parent_id);
-        while let Some(pid) = cursor {
-            if pid == ROOT_ID {
-                break;
-            }
-            if self_floored.contains(&pid) {
-                folder.under_floored_ancestor = true;
-                break;
-            }
-            cursor = by_id.get(&pid).map(|e| e.parent_id);
-        }
-    }
-
-    // Propagate a direct project marker up to every ancestor: a `.git` deep in a
-    // subtree marks the whole path above it as project-adjacent (plan Decision 3).
-    // Seed from each folder's own direct-marker flag, then walk parent pointers.
-    let marker_seed: Vec<i64> = folders
-        .iter()
-        .filter(|f| f.children.has_direct_marker)
-        .map(|f| f.entry.id)
-        .collect();
-    for seed in marker_seed {
-        let mut cursor = by_id.get(&seed).map(|e| e.parent_id);
-        while let Some(pid) = cursor {
-            if pid == ROOT_ID {
-                break;
-            }
-            if let Some(&idx) = dir_id_to_index.get(&pid) {
-                folders[idx].has_marker_below = true;
-            }
-            cursor = by_id.get(&pid).map(|e| e.parent_id);
-        }
-    }
-
-    Ok(folders)
-}
-
-/// Reconstruct an entry's absolute path from an in-memory `id → row` map, walking
-/// parent pointers up to the root sentinel. The in-memory twin of the store's
-/// `reconstruct_path` point query — used because a full recompute reconstructs
-/// every folder's path and the per-query cost would be O(dirs × depth). The map
-/// holds only directory rows, which is all a path walk (dir → dir → …) needs.
-fn reconstruct_path_from_map(id: i64, by_id: &HashMap<i64, &EntryRow>) -> String {
-    let mut components: Vec<&str> = Vec::new();
-    let mut cursor = Some(id);
-    while let Some(cid) = cursor {
-        if cid == ROOT_ID {
-            break;
-        }
-        let Some(entry) = by_id.get(&cid) else { break };
-        components.push(&entry.name);
-        cursor = Some(entry.parent_id);
-    }
-    components.reverse();
-    format!("/{}", components.join("/"))
-}
 
 /// Score every folder in `folders` and return the weight rows to persist —
 /// OMITTING floored folders, which get no row at all (the storage-compaction
@@ -206,40 +34,39 @@ fn reconstruct_path_from_map(id: i64, by_id: &HashMap<i64, &EntryRow>) -> String
 /// would only bloat the store — on a dev home ~76% of folders floor. Split out so a
 /// test can drive it with synthetic folders and no index.
 pub(super) fn score_folders(
-    folders: &[IndexFolder],
+    folders: &mut WalkedFolders,
     home: &str,
     weights: &Weights,
     available: &SignalSet,
     now_secs: u64,
     mut optional_for: impl FnMut(&str) -> OptionalSignals,
 ) -> Vec<WeightRow> {
-    folders
-        .iter()
-        .filter_map(|f| {
-            let optional = optional_for(&f.path);
-            let signals = signals_for_dir(
-                &f.entry,
-                f.children,
-                &f.path,
-                home,
-                f.has_marker_below,
-                f.under_floored_ancestor,
-                optional,
-            );
-            let explanation = explain(&signals, available, weights, now_secs);
-            // A floored folder gets no row: its floored-ness is re-derivable from the
-            // path at read time (`WeightLookup::Floored`), so the signal blob is waste.
-            if explanation.floored {
-                return None;
-            }
-            let signals_json = serde_json::to_string(&signals).unwrap_or_else(|_| "{}".to_string());
-            Some(WeightRow {
-                path: f.path.clone(),
-                score: explanation.score.value(),
-                signals_json,
-            })
-        })
-        .collect()
+    let mut rows = Vec::new();
+    folders.for_each(|f, path| {
+        let optional = optional_for(path);
+        let signals = signals_for_dir(
+            f.modified_at,
+            f.children,
+            path,
+            home,
+            f.has_marker_below,
+            f.under_floored_ancestor,
+            optional,
+        );
+        let explanation = explain(&signals, available, weights, now_secs);
+        // A floored folder gets no row: its floored-ness is re-derivable from the
+        // path at read time (`WeightLookup::Floored`), so the signal blob is waste.
+        if explanation.floored {
+            return;
+        }
+        let signals_json = serde_json::to_string(&signals).unwrap_or_else(|_| "{}".to_string());
+        rows.push(WeightRow {
+            path: path.to_string(),
+            score: explanation.score.value(),
+            signals_json,
+        });
+    });
+    rows
 }
 
 /// The inputs to a full-volume recompute pass, bundled so the pass signature
@@ -273,7 +100,7 @@ pub(super) struct RecomputeInputs<'a> {
 /// Decision 2/5).
 pub(super) fn recompute_folders(
     inputs: &RecomputeInputs<'_>,
-    folders: &[IndexFolder],
+    folders: &mut WalkedFolders,
 ) -> Result<RecomputeOutcome, String> {
     if folders.is_empty() {
         return Ok(RecomputeOutcome {
@@ -332,9 +159,9 @@ pub struct MeasureOutcome {
     /// it. The number to watch — the walk's output stays resident through scoring,
     /// so it sets the pass's floor.
     pub walk_footprint_bytes: Option<u64>,
-    /// The process's peak `phys_footprint` over the whole pass (walk + score +
-    /// write), from the kernel's ledger.
-    pub peak_footprint_bytes: Option<u64>,
+    /// What the WHOLE pass added to the process's `phys_footprint` (the walk's
+    /// output plus the scored rows and the writer), read at the end.
+    pub pass_footprint_bytes: Option<u64>,
 }
 
 /// Walk a real `index-{volume_id}.db` READ-ONLY, score every folder, and write the
@@ -359,13 +186,10 @@ pub fn recompute_index_to_db(
     let footprint_before = crate::process_memory::current_phys_footprint();
     let walk_started = std::time::Instant::now();
     let conn = IndexStore::open_read_connection(index_db).map_err(|e| e.to_string())?;
-    let folders = walk_index_folders(&conn, home)?;
+    let mut folders = walk_index_folders(&conn, home)?;
     // Read the footprint while the walk's output is still the only thing resident,
     // so the number is the walk's cost rather than the whole pass's.
-    let walk_footprint_bytes = match (crate::process_memory::current_phys_footprint(), footprint_before) {
-        (Some(after), Some(before)) => Some(after.saturating_sub(before)),
-        _ => None,
-    };
+    let walk_footprint_bytes = footprint_growth(footprint_before);
     if folders.is_empty() {
         return Ok(MeasureOutcome {
             rows_written: 0,
@@ -373,10 +197,11 @@ pub fn recompute_index_to_db(
             walk_and_score: walk_started.elapsed(),
             write_and_flush: std::time::Duration::ZERO,
             walk_footprint_bytes,
-            peak_footprint_bytes: crate::process_memory::peak_phys_footprint(),
+            pass_footprint_bytes: walk_footprint_bytes,
         });
     }
-    let rows = score_folders(&folders, home, &Weights::default(), &available, now_secs, |_| {
+    let folders_walked = folders.len();
+    let rows = score_folders(&mut folders, home, &Weights::default(), &available, now_secs, |_| {
         OptionalSignals::default()
     });
     let walk_and_score = walk_started.elapsed();
@@ -393,12 +218,21 @@ pub fn recompute_index_to_db(
 
     Ok(MeasureOutcome {
         rows_written,
-        folders_walked: folders.len(),
+        folders_walked,
         walk_and_score,
         write_and_flush,
         walk_footprint_bytes,
-        peak_footprint_bytes: crate::process_memory::peak_phys_footprint(),
+        pass_footprint_bytes: footprint_growth(footprint_before),
     })
+}
+
+/// How much the process's `phys_footprint` has grown since `before`, or `None` when
+/// either reading failed (or the platform has no Mach `task_info`).
+fn footprint_growth(before: Option<u64>) -> Option<u64> {
+    match (crate::process_memory::current_phys_footprint(), before) {
+        (Some(now), Some(before)) => Some(now.saturating_sub(before)),
+        _ => None,
+    }
 }
 
 /// Read the visit table into a path→count map for the recompute pass. A missing
@@ -453,27 +287,35 @@ pub(super) struct IncrementalInputs<'a> {
 /// `kMDItemLastUsedDate` only for the touched subset (bounded work).
 pub(super) fn incremental_rescore(
     inputs: &IncrementalInputs<'_>,
-    folders: &[IndexFolder],
+    folders: &mut WalkedFolders,
     changed_paths: &[String],
 ) -> Result<usize, String> {
     // The set of folders to (re)insert: each changed path's capped ancestor chain
     // (upward propagation) plus every walked folder in a changed path's subtree
     // (downward floor propagation). The ancestor cap bounds the upward walk; the
-    // downward side is bounded by the subtree that actually changed.
+    // downward side is bounded by the subtree that actually changed. Only THIS
+    // subset materializes a path, so the memory stays proportional to what changed.
     let touched = touched_folder_set(changed_paths);
-    let subset: Vec<&IndexFolder> = folders
-        .iter()
-        .filter(|f| touched.contains(&f.path) || is_in_changed_subtree(&f.path, changed_paths))
-        .collect();
+    let mut subset: Vec<(IndexFolder, String)> = Vec::new();
+    folders.for_each(|f, path| {
+        if touched.contains(path) || is_in_changed_subtree(path, changed_paths) {
+            subset.push((*f, path.to_string()));
+        }
+    });
     if subset.is_empty() && changed_paths.is_empty() {
         return Ok(0);
     }
 
     // Sample Spotlight only when the kind's mask allows it (SMB has none, and
     // sampling would touch the mount). When unavailable the map is empty and the
-    // `last_used` weight redistributes.
+    // `last_used` weight redistributes. Hand over only as many paths as the sample
+    // can use — it queries the first `SAMPLE_CAP` and drops the rest.
     let last_used = if inputs.available.last_used_available {
-        let subset_paths: Vec<String> = subset.iter().map(|f| f.path.clone()).collect();
+        let subset_paths: Vec<String> = subset
+            .iter()
+            .take(crate::importance::last_used::SAMPLE_CAP)
+            .map(|(_, path)| path.clone())
+            .collect();
         crate::importance::last_used::sample_last_used(&subset_paths)
     } else {
         HashMap::new()
@@ -483,15 +325,15 @@ pub(super) fn incremental_rescore(
     // (floored folders are cleared by the subtree delete and never re-inserted).
     let rows: Vec<WeightRow> = subset
         .iter()
-        .filter_map(|f| {
+        .filter_map(|(f, path)| {
             let optional = OptionalSignals {
-                visit_count: inputs.visits.get(&f.path).copied(),
-                last_used_secs: last_used.get(&f.path).copied(),
+                visit_count: inputs.visits.get(path).copied(),
+                last_used_secs: last_used.get(path).copied(),
             };
             let signals = signals_for_dir(
-                &f.entry,
+                f.modified_at,
                 f.children,
-                &f.path,
+                path,
                 inputs.home,
                 f.has_marker_below,
                 f.under_floored_ancestor,
@@ -503,7 +345,7 @@ pub(super) fn incremental_rescore(
             }
             let signals_json = serde_json::to_string(&signals).unwrap_or_else(|_| "{}".to_string());
             Some(WeightRow {
-                path: f.path.clone(),
+                path: path.clone(),
                 score: explanation.score.value(),
                 signals_json,
             })

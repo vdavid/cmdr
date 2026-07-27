@@ -30,7 +30,7 @@ fn full_recompute_ranks_meaningful_folders_above_machine_output() {
     // listing-only here so the ranking doesn't depend on Spotlight (unavailable in
     // the test env) or visits (none) — the redistribution keeps the listing
     // signals summing to the full weight.
-    let folders = pool
+    let mut folders = pool
         .with_conn(|conn| walk_index_folders(conn, &home.home))
         .expect("pool")
         .expect("walk");
@@ -46,7 +46,7 @@ fn full_recompute_ranks_meaningful_folders_above_machine_output() {
             visits: &HashMap::new(),
             last_used: &HashMap::new(),
         },
-        &folders,
+        &mut folders,
     )
     .expect("recompute");
     writer.flush_blocking().expect("flush");
@@ -132,16 +132,16 @@ fn odirs_walk_aggregates_children_like_a_whole_tree_walk() {
     build_index_from_home(&index_path, &home);
     let pool = crate::indexing::ReadPool::new(index_path).expect("read pool");
 
-    let folders = pool
+    let mut folders = pool
         .with_conn(|conn| walk_index_folders(conn, &home.home))
         .expect("pool")
         .expect("walk");
     assert!(!folders.is_empty(), "the walk found folders");
 
-    for f in &folders {
+    folders.for_each(|f, path| {
         // Re-derive the expected aggregate straight from the fixture's OWN listing
         // — an oracle independent of the walk under test.
-        let children: Vec<_> = home.direct_children(&f.path).collect();
+        let children: Vec<_> = home.direct_children(path).collect();
         let files: Vec<&str> = children
             .iter()
             .filter(|c| !c.is_directory)
@@ -160,10 +160,9 @@ fn odirs_walk_aggregates_children_like_a_whole_tree_walk() {
                 file_count: files.len() as u32,
                 has_direct_marker: has_marker,
             },
-            "the O(dirs) walk's aggregate for {} must match the fixture's own listing",
-            f.path
+            "the O(dirs) walk's aggregate for {path} must match the fixture's own listing"
         );
-    }
+    });
 }
 
 // ── Descendant-floor: a floored ancestor floors its whole subtree ─────────
@@ -273,24 +272,25 @@ fn descendants_of_a_floored_folder_floor_too() {
     }
 
     let pool = crate::indexing::ReadPool::new(index_path).expect("read pool");
-    let folders = pool
+    let mut folders = pool
         .with_conn(|conn| walk_index_folders(conn, home))
         .expect("pool")
         .expect("walk");
 
-    let by_path = |p: &str| {
-        folders
-            .iter()
-            .find(|f| f.path == p)
-            .unwrap_or_else(|| panic!("missing {p}"))
+    // Every folder under node_modules is under-floored, including the vendored repo;
+    // the project root above them is not.
+    let under_floored: HashMap<String, bool> = {
+        let mut map = HashMap::new();
+        folders.for_each(|f, path| {
+            map.insert(path.to_string(), f.under_floored_ancestor);
+        });
+        map
     };
-
-    // The project root itself is NOT under-floored.
+    let is_under_floored = |p: &str| *under_floored.get(p).unwrap_or_else(|| panic!("missing {p}"));
     assert!(
-        !by_path("/Users/test/proj").under_floored_ancestor,
+        !is_under_floored("/Users/test/proj"),
         "the project root itself is not floored"
     );
-    // Every folder under node_modules is under-floored, including the vendored repo.
     for p in [
         "/Users/test/proj/node_modules/react",
         "/Users/test/proj/node_modules/react/dist",
@@ -298,7 +298,7 @@ fn descendants_of_a_floored_folder_floor_too() {
         "/Users/test/proj/node_modules/vendored/.git",
     ] {
         assert!(
-            by_path(p).under_floored_ancestor,
+            is_under_floored(p),
             // allowed-pluralize-noun: `{p}` is a path, not a count.
             "expected under-floored (lives under node_modules): {p}"
         );
@@ -317,7 +317,7 @@ fn descendants_of_a_floored_folder_floor_too() {
             visits: &HashMap::new(),
             last_used: &HashMap::new(),
         },
-        &folders,
+        &mut folders,
     )
     .expect("recompute");
     writer.flush_blocking().expect("flush");

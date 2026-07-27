@@ -76,7 +76,7 @@ fn main() {
         None => "unavailable on this platform".to_string(),
     };
     println!("walk memory (phys_footprint growth): {}", mb(outcome.walk_footprint_bytes));
-    println!("whole-pass peak phys_footprint: {}", mb(outcome.peak_footprint_bytes));
+    println!("whole-pass memory (phys_footprint growth): {}", mb(outcome.pass_footprint_bytes));
     println!("importance.db size: {main_bytes} bytes ({:.1} MB)", main_bytes as f64 / 1e6);
     println!("  wal remaining: {wal_bytes} bytes");
     println!(

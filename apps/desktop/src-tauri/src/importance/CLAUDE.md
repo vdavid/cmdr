@@ -9,8 +9,8 @@ read-consumer of `indexing/`, sibling to `search/`. Design + depth for every mus
 - `scorer/` — the PURE formula (`score` + `explain`), `types.rs`, `weights.rs`.
 - `store/` — per-volume `importance.db`, its single writer, the writer registry.
 - `read.rs` — `ImportanceIndex`, the consumer read API + recompute subscription.
-- `scheduler/` — bus-driven full + incremental recompute (coalesced per volume); `signals.rs`, `classify.rs`,
-  `last_used.rs`, `commands.rs`.
+- `scheduler/` — bus-driven full + incremental recompute (coalesced per volume); `walk.rs` (the index walk),
+  `recompute.rs` (score + write), `signals.rs`, `classify.rs`, `last_used.rs`, `commands.rs`.
 - `fixtures.rs` (`cfg(test)`) — `SyntheticHome`. `evals/` — ranking-quality suite + weight-tuning corpus.
 
 ## Must-knows
@@ -34,8 +34,10 @@ Storage + scheduler:
   REPLACES the whole table + bumps the generation in ONE transaction; each row carries its as-of generation.
 - **Floored folders get NO row** — the read side derives `Floored`; don't reintroduce a `0.0` row. **`FolderSignals`
   serde shape is load-bearing** (camelCase, `specta::Type`, per-field `skip_serializing_if`).
-- **Full walk is O(dirs), not O(entries)**: materialize dirs, STREAM file rows into a per-parent `ChildAggregate`; no
-  `all_entries` walk (hundreds of MB on NAS).
+- **The full walk (`scheduler/walk.rs`) is O(dirs) in a SMALL CONSTANT.** Dirs live in the shared `DirTree` (arena + 24
+  B/dir); each folder is one `Copy` record (tree index, mtime, `ChildAggregate`, two flags). ❌ No `EntryRow`, ❌ no
+  stored path (`for_each` reconstructs into one reused buffer), ❌ no per-folder extension set (file rows stream GROUPED
+  by parent). 84 MB not 244 MB on a 391k-folder NAS; `walk_memory_tests.rs` guards it.
 - **Categorical signals live in `classify.rs`**, shared by prod + fixtures/evals — don't re-derive.
 - **Drive full recompute off the bus `ScanCompleted` + sweep, NEVER phase events** (network never emits them). Coalesce
   per volume. A volume Fresh at launch never re-fires `ScanCompleted`, so the sweep ALSO runs
