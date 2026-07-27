@@ -4,41 +4,27 @@ Depth and rationale for the app orchestrator. `CLAUDE.md` holds the must-knows; 
 
 ## File map
 
-- **`+layout.svelte`**: main-window layout (updater, settings applier, AI state init, MCP shortcuts/settings bridges,
-  toast container, crash + MTP + error-report dialogs).
-- **`+page.svelte`**: app shell: mounts `DualPaneExplorer`, owns top-level dialog visibility (`$state`) and the
-  `explorerRef` handle, owns the keydown / context-menu handlers and onboarding / licensing gating, and orchestrates the
-  extracted listener setup (`setupTauriEventListeners` calls into `listener-setup.ts`, then wires MCP + the event
-  bridges). It also mounts Ask Cmdr's bulk-rename review beside the rail; the rail owns its user decisions and proposal
-  lifetime.
-- **`listener-setup.ts`**: the menu, MCP-dialog, and window-focus Tauri listener wiring, extracted out of the component
-  to keep it focused on reactive `$state`. A plain `.ts` (no runes), so it can't hold `$state` directly: state crosses
-  the boundary through `ListenerSetupContext` (getter functions for reads, setter callbacks for writes), which keeps the
-  moved closures reading LIVE reactive values instead of a stale capture. Exports `setupMenuListeners`,
-  `setupDialogListeners`, `setupWindowFocusListener`, and `makeListenTauri` (the cleanup-array-bound `listenTauri` the
-  component also passes into `setupMcpListeners`). Every registered unlisten is pushed onto the component-owned
-  `unlistenFns` array (folded `unlistenExecuteCommand` / `unlistenWindowFocus` into it too), so the `onDestroy` loop
-  tears them all down — important for HMR, which otherwise stacks duplicate listeners on reload. The keydown handler,
-  licensing init, and onboarding gating stay in the component because they read/write `$state` directly.
-- **`command-dispatch.ts`**: `handleCommandExecute<K extends CommandId>(commandId, ctx, ...args)`, the dispatch core.
-  Referenced from `$lib/commands` and many tests.
-- **`command-dispatch-context.ts`**: `CommandDispatchContext` + `CommandDispatchDialogs`: the per-call context (the
-  `getExplorer()` getter, dialog-visibility callbacks, `dispatch`). A leaf so handler modules and the core import it
-  without a cycle; re-exported from `command-dispatch.ts`.
-- **`command-handlers/`**: family-grouped handler modules (`app-dialog`, `view`, `pane`, `tab`, `nav`, `sort`, `file`,
-  `clipboard`, `selection`, `misc`) plus `types.ts` (the `CommandHandler` / `CommandHandlerRecord` / `DispatchExemptId`
-  seam) and `index.ts` (assembles the one `commandHandlers` record).
-- **`dispatch-dedup.ts`**: cross-source double-fire guard. `markDispatchSource('keyboard' | 'menu')` tags a dispatch;
-  the core drops the same command arriving from the OTHER source within 300 ms (the macOS menu-accelerator +
-  webview-keydown double fire). Same-source repeats and untagged dispatches (palette, MCP) always pass. Unit-tested with
-  injectable time.
-- **`mouse-nav.ts`**: `navCommandForMouseButton(button)`, the pure map from a pointer's X1/X2 side buttons to `nav.back`
-  / `nav.forward`. Unit-tested; see § Mouse back / forward buttons for the wiring.
-- **`explorer-api.ts`**: `ExplorerAPI`, the contract `DualPaneExplorer` exposes upward; shared by `+page.svelte`,
-  `command-dispatch.ts`, and `mcp-listeners.ts` so none import the component directly.
-- **`mcp-listeners.ts`**: `setupMcpListeners(ctx)`, the transport adapter onto the command bus.
-- **`show-main-when-painted.ts`**: `showMainWhenPainted()`, called fire-and-forget from `+page.svelte`'s `onMount`. See
-  § Startup: paint-gated window show.
+Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
+map, plus `command-handlers/CLAUDE.md` for the handler families. What each piece DOES is in the sections below
+(§ "Startup: paint-gated window show", § "Dispatch core", § "The exempt families", § "Capability guard", § "MCP
+transport", § "Mouse back / forward buttons", § "Native-menu and input-focus interactions", § "Off-bus test and debug
+hooks"). Only the layout facts that none of those carry live here:
+
+- **`listener-setup.ts` is a plain `.ts` with NO runes**, so it can't hold `$state`. State crosses the boundary through
+  a `ListenerSetupContext` of getter functions (reads) and setter callbacks (writes), which is what keeps the moved
+  closures reading LIVE reactive values instead of a stale capture. Every registered unlisten goes onto the
+  component-owned `unlistenFns` array so the one `onDestroy` loop tears them all down: without that, HMR stacks
+  duplicate listeners on every reload. The keydown handler, licensing init, and onboarding gating stay in
+  `+page.svelte` precisely because they read and write `$state` directly.
+- **`command-dispatch-context.ts` is deliberately a LEAF**, importing nothing from the core or the handlers, so handler
+  modules and `command-dispatch.ts` can both import the context types without a cycle. It's re-exported from
+  `command-dispatch.ts` for callers.
+- **`dispatch-dedup.ts` guards a CROSS-source double fire only.** `markDispatchSource('keyboard' | 'menu')` tags a
+  dispatch and the core drops the same command arriving from the OTHER source within 300 ms, which is the macOS
+  menu-accelerator + webview-keydown double fire. Same-source repeats (a user pressing a key twice) and untagged
+  dispatches (palette, MCP, mouse) always pass. Unit-tested with injectable time.
+- **`+page.svelte` mounts Ask Cmdr's bulk-rename review beside the rail, but doesn't own it**: the rail owns its user
+  decisions and the proposal's lifetime.
 
 ## Startup: paint-gated window show
 
