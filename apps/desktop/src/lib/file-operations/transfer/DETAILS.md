@@ -5,59 +5,26 @@ and gotchas live in `CLAUDE.md`.
 
 ## File map
 
-- **`TransferDialog.svelte`**: segmented Copy / Move / Compress toggle over two `ui/SectionCard` groups, `From` (the
-  full source path) and `To` (destination volume + path box), plus the pre-flight dry-run scan and the upfront
-  conflict-policy radios. Thin shell over the two `*.svelte.ts` factories below + `transfer-dialog-logic.ts`; owns the
-  markup, the volume selector / path-input state, and the confirm/cancel wiring
-- **`transfer-scan-state.svelte.ts`**: `createTransferScanState(deps)`: deep scan-preview orchestration (Size bar +
-  file/dir/byte tallies). Owns the four scan-progress listeners, `start()` / `cancelPreview()` / `freeAndCleanup()` /
-  `cleanup()` lifecycle, the awaitable `scanStarted` promise, and the Copy/Move toggle `$effect` that (re)starts or
-  cancels the preview around a same-volume move. Deps are getter callbacks (source paths, sort info, source volume id,
-  `isSameVolumeMove`, `confirmed`, `destroyed`); state via getters
-- **`transfer-conflict-check.svelte.ts`**: `createTransferConflictCheck(deps)`: cheap top-level conflict-check state
-  machine (conflict counts, merge-folder count, type-mismatch flag, bulk-skip names). One `check()` runs on mount in
-  parallel with the deep scan and stays decoupled from it. Deps are getter callbacks + a logger; state via getters
-- **`transfer-dialog-logic.ts`**: Pure helpers lifted from the dialog: `getPathValidationError()` (subfolder /
-  already-here checks) and `formatSpaceInfo()` (free-of-total line, byte formatter injected). No reactivity, no IPC
-- **`TransferProgressDialog.svelte`**: Execution shell: dual progress bars, progress stages, scan-phase body, the
-  direction header, action buttons (cancel/rollback, pause/resume, queue), and the dialog title. Thin over
-  `transfer-progress-state.svelte.ts` (the state machine) + `TransferConflictDialog.svelte` (the conflict UI); owns only
-  display-derived values (labels, stage chips, `isSameVolumeMove`), the focus-trap `keydown`, and the
-  `onMount`/`onDestroy` → `start()`/`destroy()` wiring
-- **`transfer-progress-state.svelte.ts`**: `createTransferProgressState(config)`: the execution state machine, headless
-  and testable. Owns the six write-event listeners + the `operations-changed` stream, the `operationId`-scoped event
-  buffering/replay, the phase machine (scanning → active → flushing, plus rolling_back), the cancel/settle close-out
-  (`MIN_DISPLAY_MS` floor, slow-label + last-resort fallback timers), pause/resume, background-to-queue (incl.
-  auto-queue behind a busy lane), the conflict prompt, and the scan-wait path (`waitForScanThenStart`). Takes static
-  per-operation config + the outcome callbacks (`onComplete`/`onCancelled`/`onError`/`onQueue`); exposes `start()`,
-  `destroy()`, the handler methods, and state via getters. `backgrounded` and `destroyed` are plain `let`s (read live
-  during disposal), NOT `$state` — see the module header for why
-- **`TransferConflictDialog.svelte`**: Self-contained conflict-resolution UI (the comparison grid + the 4×2 button grid
-  plus the bottom rollback/cancel row). Props: the `conflictEvent`, operation-type flags (`isCopy`/`isMove`/
-  `isSameVolumeMove`), the `isCancelling`/`isResolvingConflict` disable gates, and `onResolve`/`onCancel` callbacks.
-  Owns its own size-color helper, the file-over-folder warning, and all conflict CSS
-- **`TransferErrorDialog.svelte`**: Modal that renders entirely from the typed `WriteOperationError`, category-colored
-  container, optional Retry button
-- **`FallbackErrorContent.svelte`**: Renders the FE-derived message (`getUserFriendlyMessage`) for the typed
-  `WriteOperationError`
-- **`ArchivePasswordDialog.svelte`**: Masked password prompt shown when a copy/move source is inside an encrypted
-  archive, in place of the generic error dialog. Props: `archiveName`, `wrongAttempt` (distinct re-prompt copy),
-  `onSubmit(password)`, `onCancel`. See § "Archive-password prompt"
-- **`ScanPhaseBody.svelte`**: Scan-phase tallies (files/dirs/bytes), throughput readout, current directory, spinner.
-  Shared by both scan-phase code paths
-- **`DirectionIndicator.svelte`**: Arrow graphic for source → destination, used by `TransferProgressDialog` only (the
-  confirm dialog shows its `From` card instead). Optional `sourceLabel` / `destinationLabel` props override the
-  path-basename label, so a volume root renders the volume display name rather than a raw machine id (an MTP storage id
-  like `65538`)
-- **`transfer-dialog-utils.ts`**: `generateTitle()`, `deriveTransferLabel()` (volume-root-aware direction-header label),
-  `toBackendIndices()` / `toBackendCursorIndex()` ".." offset helpers, `toVolumeRelativePath()`
-- **`transfer-error-messages.ts`**: Operation-specific error strings used by `FallbackErrorContent`
-- **`transfer-complete-toast.ts`**: Pure `composeTransferCompleteToast({...})`: "Moved 1 file and 3 folders" — splits
-  the top-level items by type (never interior counts); omits zero parts; skip suffix is file-only (folders always
-  merge); falls back to flattened file-count wording only when the split is unknown (a top-level kind probe came back
-  partial). F5/F6 supply the split from real selection stats; drag-and-drop and clipboard paste supply it from a batched
-  `stat_paths_kinds` / `read_clipboard_files` kind probe
-- **`*.test.ts` / `*.a11y.test.ts`**: Vitest unit tests (utility + component) and a11y assertions
+Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
+map. What the pieces DO is in the sections below: the two dialogs and both state factories in § "How transfer flows",
+the compress components (level slider, estimate line, name helper, dest-exists check) in § "Compress mode", the
+password prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion for `..` entry", and pause /
+queue / `backgrounded` in § "Pause, Queue, and auto-queue". Only the layout facts that none of those carry live here:
+
+- **In `transfer-progress-state.svelte.ts`, `backgrounded` and `destroyed` are plain `let`s, NOT `$state`.** They're
+  read inside `destroy()` during synchronous reactive-scope disposal, where a `$state` rune read returns a STALE value
+  and the safety-net-cancel guard would wrongly fire on a just-queued transfer. Full why in the module header; don't
+  "modernize" them into runes.
+- **`DirectionIndicator.svelte` is the progress dialog's alone** (the confirm dialog shows its `From` card instead). Its
+  optional `sourceLabel` / `destinationLabel` props override the path-basename label so a volume root renders the volume
+  display name, not a raw machine id (an MTP storage id like `65538`).
+- **`ScanPhaseBody.svelte` is shared by BOTH scan-phase code paths** (`waitingForScan` and `phase === 'scanning'`), so a
+  change to it lands in both.
+- **`transfer-complete-toast.ts::composeTransferCompleteToast` splits TOP-LEVEL items by type only** ("Moved 1 file and
+  3 folders"), never interior counts. It omits zero parts, and the skip suffix is file-only because folders always
+  merge. When a top-level kind probe comes back partial it falls back to flattened file-count wording. F5/F6 feed it the
+  split from real selection stats; drag-and-drop and clipboard paste feed it from a batched `stat_paths_kinds` /
+  `read_clipboard_files` probe.
 
 ## How transfer flows
 
