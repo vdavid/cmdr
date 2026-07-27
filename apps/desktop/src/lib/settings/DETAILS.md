@@ -503,5 +503,5 @@ When adding a new self-closing webview (escape, close button, etc.), defer the `
 bug-fix and the subsequent settings-escape-flake hunt for the macOS-throttle follow-up.
 
 The rAF-throttling half of this gotcha is a repo-wide rule with its own recurrence history (three sightings: settings
-close, viewer close, viewer readiness marker): `docs/testing.md` § "rAF in unfocused windows". Check there before gating
-anything test-observable on `requestAnimationFrame`.
+close, viewer close, viewer readiness marker): `docs/testing.md` § "`requestAnimationFrame` in unfocused windows". Check
+there before gating anything test-observable on `requestAnimationFrame`.

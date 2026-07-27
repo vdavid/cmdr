@@ -57,7 +57,7 @@ dispatch. Because MCP events ride the same bus, they get the same telemetry, a d
 
 Twenty ids are registered (for the rebinding UI) with NO dispatch handler: native-menu-owned, per-keystroke P2, and
 component-scoped. The `DispatchExemptId` union in `command-handlers/types.ts` is the single maintained list, documented
-per family in `command-handlers/CLAUDE.md` § "The exempt families". The core silently no-ops these after the preamble.
+per family in `command-handlers/DETAILS.md` § "The exempt families". The core silently no-ops these after the preamble.
 
 ## Capability guard
 

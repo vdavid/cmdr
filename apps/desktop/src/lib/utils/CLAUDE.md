@@ -54,6 +54,7 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
   guarantees a trailing call. Both are hand-rolled (<35 lines each) deliberately, not lodash.
 - **`useShortenMiddle` action takes `tooltipWhenTruncated?` (default `false`)**: when set, the native `title` applies
   only when truncation actually trimmed the string. `VITE_CMDR_FORCE_OLD_WEBKIT=1 pnpm dev` forces the old-WebKit
-  fallback path on modern WebKit (see DETAILS.md and `docs/guides/releasing.md` § old-macOS smoke test).
+  fallback path on modern WebKit (see DETAILS.md and `docs/guides/releasing.md` § "Pre-release smoke test on old
+  macOS").
 
 Full details (full export catalogs, validator/decision rationale, the old-WebKit dev override mechanism): `DETAILS.md`.

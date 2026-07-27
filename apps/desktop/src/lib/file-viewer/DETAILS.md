@@ -28,7 +28,7 @@ Depth and rationale for the frontend file viewer. `CLAUDE.md` holds the must-kno
   ~2.3k lines. While it runs, the viewer falls back to averaged heights, so there's zero regression. A width change
   re-measures via `reflow()`, debounced to the resize-settle. A generation counter discards superseded passes. Canvas
   `measureText` (`@chenglou/pretext`) was tried and drifts badly on binary/control-char content because its advances
-  diverge from WebKit's layout; see the viewer route `DETAILS.md` § "Variable-height word wrap".
+  diverge from WebKit's layout; see `../../routes/viewer/DETAILS.md` § "Variable-height word wrap".
 - **Word wrap uses averaged line height as fallback for ByteSeek/LineIndex files and while the measure pass runs.**
   Measuring every wrapped line would require rendering the whole file. Instead, the viewer measures the average height
   of currently-visible lines and uses that for the scroll spacer. This is slightly inaccurate (scroll thumb drifts) but

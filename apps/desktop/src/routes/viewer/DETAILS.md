@@ -222,9 +222,9 @@ glyphs (the a11y labels and tooltips carry the real copy). The runtime works in 
   - Trap: webkit2gtk 2.50.4 (Ubuntu 24.04) has a bug where `caretRangeFromPoint` returns `offset: 0` for every x-coord
     inside `user-select: none` text, which breaks the pointer → caret path in `viewer-pointer.ts:resolveCaret`.
     webkit2gtk 2.52.3 (Ubuntu 25.10+) doesn't have it. The Docker E2E image is pinned to `ubuntu:26.04` to avoid this;
-    see `apps/desktop/test/e2e-linux/CLAUDE.md` § Gotchas. If you ever need to support a webview version that still has
-    the bug (e.g. an older Linux distro target), replace this code path with a `Range.getClientRects()`-based binary
-    search that doesn't depend on the browser caret API.
+    see `apps/desktop/test/e2e-linux/DETAILS.md` § "webkit2gtk caret bug". If you ever need to support a webview version
+    that still has the bug (e.g. an older Linux distro target), replace this code path with a
+    `Range.getClientRects()`-based binary search that doesn't depend on the browser caret API.
 - **Selection offsets are UTF-16 code units, not bytes or grapheme clusters.** When you add features that compute
   offsets from a click position (caret math in `viewer-pointer.ts`) or accept them across the IPC boundary
   (`viewer_read_range`), preserve the UTF-16 convention. The backend handles the conversion to UTF-8 bytes, clamping
@@ -289,4 +289,4 @@ glyphs (the a11y labels and tooltips carry the real copy). The runtime works in 
   **The same trap applies to `windowReady`** (the `data-window-ready` attribute every viewer E2E spec waits on): it's
   set via `setTimeout(0)` after session open, NOT rAF — an rAF there starved in unfocused E2E windows and timed out the
   whole viewer suite whenever a human was using the machine. Canonical rule + recurrence history: `docs/testing.md` §
-  "rAF in unfocused windows". </content> </invoke>
+  "`requestAnimationFrame` in unfocused windows".
