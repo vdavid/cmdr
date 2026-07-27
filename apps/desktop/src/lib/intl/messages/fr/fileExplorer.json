@@ -600,11 +600,11 @@
   "@fileExplorer.networkMount.back": {
     "sourceHash": "76900f1"
   },
-  "fileExplorer.smbReauth.savedPasswordFailed": "Votre mot de passe enregistré n’a pas fonctionné. Identifiez-vous pour vous reconnecter.",
+  "fileExplorer.smbReauth.savedPasswordFailed": "Votre mot de passe enregistré n''a pas fonctionné. Identifiez-vous pour vous reconnecter.",
   "@fileExplorer.smbReauth.savedPasswordFailed": {
     "sourceHash": "4561fa9"
   },
-  "fileExplorer.smbReauth.passwordFailed": "Cela n’a pas fonctionné. Vérifiez votre mot de passe et réessayez.",
+  "fileExplorer.smbReauth.passwordFailed": "Cela n''a pas fonctionné. Vérifiez votre mot de passe et réessayez.",
   "@fileExplorer.smbReauth.passwordFailed": {
     "sourceHash": "5e11a2f"
   },
@@ -1373,15 +1373,15 @@
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
     "sourceHash": "e9adbcc"
   },
-  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "L'indexation du disque est désactivée dans les Réglages, donc {name} reste non indexé. Activez-la dans Indexation > Indexation du disque.",
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "L''indexation est désactivée dans les Réglages, donc Cmdr n''indexe pas {name}. Activez-la dans Indexation > Indexation du disque.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
     "sourceHash": "ce0d45c"
   },
-  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "L'indexation du disque est désactivée dans les Réglages, donc aucun disque n'est indexé pour le moment.",
+  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "L''indexation est désactivée dans les Réglages, donc aucun disque n''est indexé pour le moment.",
   "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
     "sourceHash": "6ebf6f4"
   },
-  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "L'indexation du disque est désactivée dans les Réglages. Activez-la dans Indexation > Indexation du disque, et ce disque reprendra où il s'était arrêté.",
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "L''indexation est désactivée dans les Réglages. Activez-la dans Indexation > Indexation du disque, et ce disque reprendra là où il s''était arrêté.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
   }

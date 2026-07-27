@@ -1369,7 +1369,7 @@
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
     "sourceHash": "ce0d45c"
   },
-  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "Lập chỉ mục ổ đĩa đang tắt trong Cài đặt, nên hiện chưa ổ đĩa nào được lập chỉ mục.",
+  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "Lập chỉ mục ổ đĩa đang tắt trong Cài đặt, nên hiện không có ổ đĩa nào được lập chỉ mục.",
   "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
     "sourceHash": "6ebf6f4"
   },

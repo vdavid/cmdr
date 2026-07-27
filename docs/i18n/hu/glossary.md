@@ -941,3 +941,36 @@ copy/move/compress dialog groups the source path and the destination volume+path
   own controls already carry (`destVolumeAria` = `Célkötet`, `destPathAria` = `Célútvonal`), so heading and contents
   agree. Hungarian has no standalone from/to prepositions: the deictic `Innen` / `Ide` is what macOS uses INSIDE a verb
   phrase (`Move To:` = `Áthelyezés ide:`) and dangles as a bare heading, so the source/target nouns win here · high
+
+Settled in the REVIEW pass over the five drive-indexing-override keys
+(`fileExplorer.navigation.driveIndex.*IndexingOff*`
+
+- `settings.indexing.masterOffNote`/`.overriddenBadge`, 2026-07-27):
+
+* **"drive indexing" (the feature/master switch) → `(a) meghajtó indexelése`, NEVER the compound `meghajtó-indexelés`**
+  · in-catalog frequency is decisive: the possessive phrase already ships 6× as the concept's name
+  (`settings.indexing.enabled.label`, `settings.section.driveIndexing`, `settings.summary.driveIndexing`,
+  `onboarding.stepOptional.indexing.title`, and in running prose `onboarding…descIntro` = "A meghajtó indexelése
+  kifejezetten klassz!", plus `reEnableNotifications.description` = "…minden meghajtó indexelésére"), while
+  `meghajtó-indexelés` had exactly 4 hits, all of them these new keys · high. The hyphen is also unsourced: Microsoft
+  terminology writes two-part index compounds SOLID (`indexfájl`, `listaindex`, `színindex`, `indexpartíció`,
+  `tartalomindexelés`, `mélyindexelési`), hyphenating only proper-name-headed ones (`Csomagerőforrás-indexelő`). So if a
+  compound is ever wanted it is `meghajtóindexelés`, not `meghajtó-indexelés`.
+  - Register split, both correct and already settled: the FULL form `(a) meghajtó indexelése` names the global
+    feature/switch (and is what a `Indexelés > Meghajtó indexelése` navigation path must quote verbatim); the bare
+    `indexelés` is the anaphoric short form inside per-drive controls and badges (`driveIndex.tooltipDisabled` = "Az
+    indexelés ki van kapcsolva ehhez a meghajtóhoz.", `driveIndex.menuEnable`, `indexing.firstConnect.enable` =
+    "Indexelés bekapcsolása"). The noun "drive index" (the data) stays the solid `meghajtóindex`
+    (`queryUi.results.indexUnavailable`) or the possessive `a meghajtó indexe`.
+* **"stays unindexed" → `továbbra sem lesz indexelve`, not the coined adjective `indexeletlen`** · Total Commander hu
+  ships the state participle directly (`2050="A mappa mérete nincs indexelve…"`), and the catalog already uses it
+  (`fileExplorer.imageIndex.*` = `Még nincs indexelve`, `Indexelve`). `indexeletlen` had a single catalog hit and no
+  pile support · high.
+* **"picks up where it left off" → `ott folytatja majd, ahol abbahagyta`** · `ott … ahol` is the correct Hungarian
+  correlative pair for this idiom (`onnan` pairs with `ahonnan`, so `onnan … ahol` is ungrammatical); `majd` carries the
+  English future sense of "turn it on, and it picks up" once the clause stands on its own · high.
+* **`settings.indexing.overriddenBadge` "Off with drive indexing" → `Az indexeléssel együtt ki`** (kept) · badge brevity
+  is a hard constraint (25 chars vs the English 23), so it uses the settled anaphoric short form `indexelés` plus
+  `együtt`, which forces the comitative "along with" reading instead of the instrumental "by means of" one that a bare
+  `Az indexeléssel kikapcsolva` would allow. `Ki` as an off-state word is catalog-settled
+  (`settings.ai.provider.opt.off` = `Ki`) · high.

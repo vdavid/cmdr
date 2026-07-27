@@ -743,11 +743,11 @@
   "@settings.indexing.staleNotify.description": {
     "sourceHash": "c4216d8"
   },
-  "settings.indexing.masterOffNote": "L'indexation du disque est désactivée, donc aucun disque n'est indexé et les tailles de dossier restent masquées. Chaque disque garde son propre choix activé ou désactivé, prêt pour le moment où vous réactiverez ceci.",
+  "settings.indexing.masterOffNote": "L''indexation est désactivée, donc aucun disque n''est indexé et les tailles des dossiers restent masquées. Chaque disque garde son propre choix, activé ou désactivé, prêt pour le moment où vous la réactiverez.",
   "@settings.indexing.masterOffNote": {
     "sourceHash": "311f02a"
   },
-  "settings.indexing.overriddenBadge": "Désactivé avec l'indexation",
+  "settings.indexing.overriddenBadge": "Désactivé avec l''indexation",
   "@settings.indexing.overriddenBadge": {
     "sourceHash": "89db71f"
   },
@@ -1561,11 +1561,11 @@
   "@settings.navigationAndFileOps.card.operationLog": {
     "sourceHash": "2c97965"
   },
-  "settings.operationLog.intro": "Cmdr enregistre vos opérations sur les fichiers pour que vous puissiez consulter votre historique et annuler des actions. Choisissez combien de temps le journal est conservé et l'espace disque qu'il peut utiliser.",
+  "settings.operationLog.intro": "Cmdr enregistre vos opérations sur les fichiers pour que vous puissiez consulter votre historique et annuler des actions. Choisissez combien de temps le journal est conservé et l''espace disque qu''il peut utiliser.",
   "@settings.operationLog.intro": {
     "sourceHash": "0c62f4f"
   },
-  "settings.operationLog.maxAge.label": "Conserver l'historique pendant",
+  "settings.operationLog.maxAge.label": "Conserver l''historique pendant",
   "@settings.operationLog.maxAge.label": {
     "sourceHash": "ca05015"
   },
@@ -1593,7 +1593,7 @@
   "@settings.operationLog.maxSize.label": {
     "sourceHash": "5a9f1ff"
   },
-  "settings.operationLog.maxSize.description": "L'espace disque maximal que le journal des opérations peut utiliser. Une fois plein, Cmdr supprime d'abord les opérations les plus anciennes.",
+  "settings.operationLog.maxSize.description": "L''espace disque maximal que le journal des opérations peut utiliser. Une fois plein, Cmdr supprime d''abord les opérations les plus anciennes.",
   "@settings.operationLog.maxSize.description": {
     "sourceHash": "ad5152a"
   },

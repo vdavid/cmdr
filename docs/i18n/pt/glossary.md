@@ -613,3 +613,40 @@ per-file badge.
   the same copy/move dialog; sentence case here per the style guide. The settled nouns origem / destino stay for the
   destination CONTROLS ("Volume de destino", "Caminho de destino"); the headings take the light prepositional pair the
   English uses · high
+
+### Master drive-indexing switch terms (`fileExplorer.navigation.driveIndex.refusedIndexingOff`/`tooltipIndexingOff`/`menuIndexingOffNote` + `settings.indexing.masterOffNote`/`overriddenBadge`, 2026-07-25)
+
+- drive (the storage device, ALL senses) · **disco** · macOS pt-BR Finder is unambiguous: "Discos rígidos", "Discos
+  externos", and ~40 more `disco` values; the bare English "drive" appears there only inside brand names (iCloud Drive),
+  and "unidade" only for the physical mechanism ("unidade de disco"). Microsoft pt-BR says `drive` → "unidade", but
+  term-choice principle 2 puts Finder first · confirmed. Catalog frequency backs it: **disco 158 hits vs drive 38**, and
+  every one of those 38 is a brand name (Google/Proton/iCloud Drive), an `errors.json` "drive de rede / externo /
+  interno" collocation, or the `driveIndex.*` family. ❌ Never "unidade" for a disk in Cmdr.
+- ⚠️ **`errors.json` still says "drive de rede / drive externo / drive interno" in 10 explanation/suggestion strings.**
+  That's the last unreconciled pocket, and it contradicts the settled `disco de rede` from the network-image-indexing
+  row. Left alone here (out of that batch's scope); worth a dedicated `errors.json` pass.
+- Feature on/off, the ADJECTIVE · **ativado** / **desativado** · the whole catalog's settled pair
+  (`settings.askCmdr. status.on/off`, `ai.translateError.off.title`, `settings.ai.provider.opt.off` = "Desativado",
+  `fileExplorer.imageIndex.drive.off`, `shortcuts.list.disabledTooltip`) · confirmed. **ligado / desligado is reserved
+  for physical power** in this catalog (`errors.listing.devicePoweredOff` "Dispositivo desligado", "o host está ligado",
+  a cable "desligado") and must never label a software toggle. "on or off choice" → "escolha de ativado ou desativado";
+  "turn this back on" → **reativar** (matches the `settings.indexing.reEnableNotifications.button` "Reativar").
+- "Off with drive indexing" (the small overridden-row badge, `settings.indexing.overriddenBadge`) · **Desativado com a
+  indexação** · badge brevity is a hard constraint, so the head noun stays the short "a indexação": the badge only ever
+  renders inside the "Indexação de disco" page, directly under that toggle, so the full "de disco" is redundant · high.
+- Settings-path fragments quote the catalog verbatim: "Indexing > Drive indexing" → **Indexação > Indexação de disco**
+  (`settings.section.indexing` + `settings.indexing.enabled.label`, both unchanged). "in Settings" → **nos Ajustes**
+  (glossary Settings row); the imperative takes the enclitic object, **Ative-a em …**, agreeing with the feminine "a
+  indexação de disco" (matches the sibling `tooltipDisabled` "Ative-a para ver…").
+- "picks up where it left off" · **continua de onde parou** · standard pt-BR idiom; the reassurance that per-drive
+  progress survives the master switch · high.
+- No `sameAsSourceJustification` needed: all five values differ from English.
+
+### pt-PT leak found and fixed (2026-07-25)
+
+`settings.archives.compressionLevel.description` shipped European Portuguese ("ficheiro"/"ficheiros", plus the pt-PT
+"demoram mais tempo **a** comprimir"). Root cause is recorded above in the Compress row: it cites "pt Double Commander /
+Thunar / Nautilus" and notes "pt pile has no Total Commander" — that is the **bare `_ignored/i18n/pt/` folder, which is
+EUROPEAN**. The Brazilian set is `_ignored/i18n/pt-BR/`, and it _does_ have `total-commander/`. Now reads "geram um
+arquivo menor, mas demoram mais para comprimir. Vale para o comando Comprimir e para a cópia ou movimentação de arquivos
+para um zip." Re-check any other row whose sources name the bare `pt` pile.

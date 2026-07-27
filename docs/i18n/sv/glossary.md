@@ -800,3 +800,35 @@ No `sameAsSourceJustification` needed: all 12 values differ from English.
   Commander sv ships this exact label pair in its copy/move dialog (`662="Från: "`, `663="Till: "`); macOS "Flytta till"
   confirms `till` for a destination. The settled `mål` target noun stays for the destination CONTROLS (`Målvolym`,
   `Målsökväg`); the headings take the light prepositional pair the English uses. `high`.
+
+## Drive-indexing master-switch pass (2026-07-27; the 5 `driveIndex.*IndexingOff` / `settings.indexing.masterOffNote`/`.overriddenBadge` keys)
+
+Review of the strings that explain the GLOBAL drive-indexing switch being off. The pass settled the term itself, which
+the catalog had been naming two ways.
+
+- **drive indexing: `enhetsindexering`** (index noun `enhetsindex`, definite `enhetsindexet`) · Swedish forms
+  `<X> indexing` as a compound, never as `indexering av <X>`: KDE Dolphin sv renders the exactly parallel label "File
+  Indexing" → **"Filindexering"** (and "the file indexing service" → "filindexeringstjänsten"); MS terminology has
+  `innehållsindexering`, `djupindexeringsjobb`, `indexeringsroll`. The pile has **zero** `indexering av …` phrases. The
+  catalog already leaned compound (`Enhetsindexering` onboarding title, `Status för enhetsindexering`, `Enhetsindex(et)`
+  in `queryUi`, `externt enhetsindex`, and the sibling section `Bildindexering`). `Indexering av enhet` was also mildly
+  ungrammatical: a bare indefinite singular count noun after `av` needs an article or the plural (`av enheten` /
+  `av enheter`). So the three phrase-form keys were re-termed to the compound: `settings.indexing.enabled.label`,
+  `settings.section.driveIndexing`, `settings.summary.driveIndexing`. `high`.
+- **"is off" (a feature switched off): `är avstängd`, not `är av`** · matches the sibling
+  `fileExplorer.navigation.driveIndex.tooltipDisabled` ("Indexering är avstängd för den här enheten") and
+  `fileExplorer.imageIndex.drive.off`; the participle agrees with the en-word `enhetsindexering`. Turn-on/off verbs stay
+  `slå på` / `stänga av` (macOS "Slå på Wi-Fi/AirDrop/fildelning", "Stäng av iCloud"). `high`.
+- **"Off with drive indexing" (the overridden-row badge): `Kräver enhetsindexering`** · ❌ NOT
+  `Av med enhetsindexering`: `av med` is lexicalized in Swedish as _rid of_ / the exclamative "off with it!"
+  (`bli av med`, "av med mössan"), so a grey badge reading `Av med enhetsindexering` parses as a command, exactly the
+  imperative-badge trap style.md warns about. The badge sits on a visibly disabled row, so the useful half is the CAUSE;
+  `Kräver X` is the catalog's settled pattern for it (`Kräver Apple Silicon`, `Kräver Fullständig åtkomst till skivan`,
+  `Kräver en internetanslutning`) and stays badge-short (23 chars vs the English 21). The faithful-but-longer
+  alternative if a native reviewer wants literal parity is `Av tillsammans med indexeringen`. `high` for the term,
+  `tentative` for the state→requirement reframing (flagged for David).
+- **"stays unindexed" → `indexeras inte`** · chose the attested negation (`Inte indexerad än`, Dolphin "inte indexerad")
+  over coining `oindexerad`, which no source has. `high`.
+- **"picks up where it left off" → `fortsätter där den slutade`** · natural Swedish; no pile hit for the idiom. `high`.
+
+No `sameAsSourceJustification` needed: all five values differ from English.

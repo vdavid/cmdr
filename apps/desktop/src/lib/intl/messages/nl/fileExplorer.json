@@ -1297,7 +1297,7 @@
   "@fileExplorer.navigation.driveIndex.ariaLabel": {
     "sourceHash": "ff831be"
   },
-  "fileExplorer.navigation.driveIndex.tooltipDisabled": "Indexeren staat uit voor deze schijf. Zet het aan om hier mapgroottes te zien en te zoeken.",
+  "fileExplorer.navigation.driveIndex.tooltipDisabled": "Het indexeren staat uit voor deze schijf. Zet het aan om hier mapgroottes te zien en te zoeken.",
   "@fileExplorer.navigation.driveIndex.tooltipDisabled": {
     "sourceHash": "61d11e9"
   },
@@ -1375,15 +1375,15 @@
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
     "sourceHash": "e9adbcc"
   },
-  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Schijf indexeren staat uit in Instellingen, dus {name} blijft ongeïndexeerd. Zet het aan bij Indexeren > Schijf indexeren.",
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Het indexeren van schijven staat uit in Instellingen, dus {name} wordt niet geïndexeerd. Zet het aan bij Indexeren > Schijf indexeren.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
     "sourceHash": "ce0d45c"
   },
-  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "Schijf indexeren staat uit in Instellingen, dus er wordt op dit moment geen schijf geïndexeerd.",
+  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "Het indexeren van schijven staat uit in Instellingen, dus er wordt nu geen schijf geïndexeerd.",
   "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
     "sourceHash": "6ebf6f4"
   },
-  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Schijf indexeren staat uit in Instellingen. Zet het aan bij Indexeren > Schijf indexeren, dan pakt deze schijf de draad weer op.",
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Het indexeren van schijven staat uit in Instellingen. Zet het aan bij Indexeren > Schijf indexeren, dan pakt deze schijf de draad weer op.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
   }

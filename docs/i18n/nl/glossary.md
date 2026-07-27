@@ -930,3 +930,50 @@ path and the destination volume+path under "From" and "To" headings.
   destination. The settled nouns bron / bestemming stay for the destination CONTROLS; the headings take the light
   prepositional pair the English uses. "Naar" doubles as the trash-switch preposition, but the two live in different
   dialogs, so there's no in-screen clash · high
+
+From the drive-indexing master-switch review (5 keys: `fileExplorer.navigation.driveIndex.refusedIndexingOff` /
+`.tooltipIndexingOff` / `.menuIndexingOffNote`, `settings.indexing.masterOffNote` / `.overriddenBadge`; re-mined
+`_ignored/i18n/nl/`, 2026-07-27):
+
+- **"drive indexing" as a SUBJECT or object in running prose → `het indexeren van schijven`**, NOT the bare toggle label
+  `Schijf indexeren` · the catalog's own settled shape for a feature named inside a sentence:
+  `fileExplorer.imageIndex.drive.off` = "Het doorzoeken van afbeeldingen staat uit voor deze schijf.",
+  `indexing.enrich.queued` / `settings.mediaIndex.importanceThreshold.waitingForImportance` = "Het indexeren van
+  afbeeldingen begint …", `search.imageResults.networkOff` = "Schakel het indexeren van afbeeldingen … in via
+  Instellingen". KDE Dolphin nl corroborates the construction ("File Indexing"→"Indexeren van bestanden") · high. A bare
+  `Schijf indexeren staat uit …` garden-paths as an imperative ("index the drive!") and drops the article Dutch wants on
+  a nominalized infinitive. The plural `schijven` also carries the global reading the master-switch strings need, which
+  the singular label does not.
+- **The navigation path still quotes the label verbatim**: `Zet het aan bij Indexeren > Schijf indexeren.`
+  (`settings.section.indexing` = "Indexeren", `settings.indexing.enabled.label` / `settings.section.driveIndexing` =
+  "Schijf indexeren"). Separator `>` mirrors EN per key · high
+- **`het indexeren …` also fixes pronoun agreement**: the nominalized infinitive is a het-word, so the follow-up "Zet
+  het aan" now has a real antecedent (with `Schijf indexeren` as subject, "het" pointed at nothing) · high
+- **Register split for this concept** (same split the image family already uses): user-facing prose takes the verb
+  phrase `het indexeren van X`; terse slots (badges, aria labels, internal descriptions) take the compound noun
+  `schijfindexering` / `beeldindexering` / `achtergrondindexering`. `indexing.status.ariaLabel` = "Status van
+  schijfindexering" is the in-catalog precedent; Microsoft terminology confirms the compound pattern ("content
+  indexing"→"inhoudsindexering") · high
+- "Off with drive indexing" (`overriddenBadge`, a badge on a row the master switch overrode) →
+  `Uit met schijfindexering` · comitative `met`, mirroring EN's shape and length (24 chars vs 23); the compound noun
+  keeps it badge-short where "Uit met het indexeren van schijven" would not fit · high
+- "stays unindexed" → `wordt niet geïndexeerd` · plainer than the coinage "blijft ongeïndexeerd" and matches the
+  in-catalog negation style ("Kon niet worden geïndexeerd", "nog niet geïndexeerd") · high
+- "keeps its own on or off choice" → `onthoudt of hij aan of uit staat` · `schijf` is a de-word, so the pronoun is
+  `hij`; replaces the coined compound "aan- of uitkeuze", which does not form in Dutch · high
+- "picks up where it left off" → `pakt … de draad weer op` · the standard Dutch idiom · high
+- No `sameAsSourceJustification` needed: all five values differ from English.
+
+REVIEW FLAGS (drive-indexing master-switch review):
+
+- `settings.indexing.overriddenBadge` "Uit met schijfindexering": Dutch `met` can read instrumentally ("off BY MEANS OF
+  drive indexing") as well as comitatively ("off ALONG WITH drive indexing"), the sense intended. In the badge's slot
+  (beside a visibly dimmed row) the comitative wins, but a native reviewer should confirm. Unambiguous alternatives are
+  longer or lose the "off": "Mee uit met schijfindexering" (28 chars), "Volgt schijfindexering".
+- **Pre-existing string changed for consistency**: `fileExplorer.navigation.driveIndex.tooltipDisabled` "Indexeren staat
+  uit voor deze schijf." → "Het indexeren staat uit voor deze schijf." One word, to match the article the sibling
+  `imageIndex.drive.off` already carries and to keep the two tooltips that alternate on the SAME dot (per-drive off vs
+  master off) grammatically parallel.
+- **Not changed, flagged**: `onboarding.stepOptional.indexing.descIntro` = "Schijf indexeren is supergaaf!" is the one
+  remaining place the bare toggle label acts as a sentence subject. It sits directly under the identical heading, so the
+  echo is deliberate there, but a locale-wide ruling would move it to "Het indexeren van schijven is supergaaf!".

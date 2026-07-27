@@ -1377,7 +1377,7 @@
   "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
     "sourceHash": "6ebf6f4"
   },
-  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "La indexación de unidades está desactivada en Ajustes. Actívala en Indexación > Indexación de unidades y esta unidad seguirá donde lo dejó.",
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "La indexación de unidades está desactivada en Ajustes. Actívala en Indexación > Indexación de unidades, y esta unidad continuará donde lo dejó.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
   }

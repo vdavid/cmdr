@@ -804,3 +804,26 @@ term used instead), Microsoft zh-Hans TBX cross-check. Three settings-card title
   the group's own controls already carry (`destVolumeAria` = `目标宗卷`, `destPathAria` = `目标路径`), so heading and
   contents agree. TC/DC's other rendering (`从:` / `到:`) rejected: `从` and `到` are coverbs that need a following
   object, so they read as fragments once the path sits BELOW the heading instead of after a colon · `high`
+
+### Drive-indexing master-switch strings (`driveIndex.*IndexingOff*`, `settings.indexing.masterOffNote`/`overriddenBadge`, review pass 2026-07-27)
+
+- **Settings-path references inside a sentence: wrap the WHOLE path in full-width quotes, `>` with ASCII spaces** ·
+  `在“索引 > 驱动器索引”中开启` · the locale-wide settled shape, attested nine times before this batch
+  (`在“设置 > AI”中`, `在“设置 > 更新”中更改`, `在“设置 > 更新与隐私”中重新开启`,
+  `<settingsLink>设置 > 键盘快捷键</settingsLink>`). Never leave the path bare: `可在 索引 > 驱动器索引 中开启` puts
+  ASCII spaces between Han characters, which style.md forbids. (macOS zh-CN quotes each element separately,
+  `选取“文件”>“显示简介”`; Cmdr's own one-pair form wins for catalog consistency.) · `high`
+- **"Off with drive indexing" (badge on a settings row the master switch overrode)** · `已随驱动器索引关闭` · a badge is
+  a STATE label, so it takes the perfective `已…` like the catalog's other badges (`已存档`, `已索引`, `已暂停`); bare
+  `随驱动器索引关闭` can read as an instruction. `随…关闭` = "off along with…" · `high`
+- **index (drive indexing, this whole family)** · `建立索引` (verb) / `索引` (noun) / `已索引` (perfective) · already
+  settled at 34 / 138 / 14 hits. `编入索引` (Total Commander) is NOT this catalog's form; the one leftover in
+  `search.imageResults.notIndexed` was reconciled to `尚未建立索引`. Terse status labels may compress to `尚未索引`
+  (`settings.mediaIndex.networkVolumes.notIndexedYet`); running prose uses `建立索引` · `high`
+- **"turn it on" pointing at a Settings toggle** · `开启` · ~25 catalog hits, all Settings-toggle sense
+  (`在“设置 > 更新与隐私”中重新开启`). The per-drive index menu keeps its own `打开索引` (`为此驱动器打开索引`); the two
+  are not interchangeable, pick by which switch the string points at · `high`
+- **"this drive" in the `driveIndex.*` family** · `此驱动器` · the family is uniformly `此驱动器` (`为此驱动器打开索引`,
+  `忘记此驱动器的索引`, the tooltips), which is exactly the terse-label carve-out style.md grants `此`; elsewhere the
+  spoken `这个驱动器` still wins · `high`
+- No `sameAsSourceJustification` needed: every value differs from English; only `{name}` stays verbatim.

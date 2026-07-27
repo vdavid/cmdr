@@ -1374,7 +1374,7 @@
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
     "sourceHash": "e9adbcc"
   },
-  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Die Laufwerksindizierung ist in den Einstellungen aus, deshalb bleibt {name} unindiziert. Schalte sie unter Indizierung > Laufwerksindizierung ein.",
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Die Laufwerksindizierung ist in den Einstellungen aus, deshalb wird {name} nicht indiziert. Schalte sie unter Indizierung > Laufwerksindizierung ein.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
     "sourceHash": "ce0d45c"
   },

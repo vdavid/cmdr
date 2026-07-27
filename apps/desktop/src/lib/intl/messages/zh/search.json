@@ -59,7 +59,7 @@
   "@search.imageResults.indexing": {
     "sourceHash": "20841d8"
   },
-  "search.imageResults.notIndexed": "此驱动器上的图像尚未编入索引。索引运行后即可搜索。",
+  "search.imageResults.notIndexed": "此驱动器上的图像尚未建立索引。索引运行后即可搜索。",
   "@search.imageResults.notIndexed": {
     "sourceHash": "287b58e"
   },

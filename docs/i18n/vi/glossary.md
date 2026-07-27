@@ -798,3 +798,31 @@ destination volume+path under "From" and "To" headings.
   "Move To" = `Di chuyển đến` confirms `đến` for a destination. The settled nouns `nguồn` / `đích` stay for the
   destination CONTROLS (`Ổ đĩa đích`, `Đường dẫn đích`); the headings take the light prepositional pair the English
   uses. `high`.
+
+Reviewed during the master-drive-indexing-switch pass (2026-07-27): the five keys that explain why the per-drive index
+controls are overridden while the master switch is off (`fileExplorer.navigation.driveIndex.refusedIndexingOff` /
+`.tooltipIndexingOff` / `.menuIndexingOffNote`, `settings.indexing.masterOffNote` / `.overriddenBadge`). Reuses the
+settled head terms (index/indexing → `chỉ mục`/`lập chỉ mục`, indexed → `được lập chỉ mục`, drive → `ổ đĩa`, Settings →
+`Cài đặt`, off → `đang tắt`). Settled here:
+
+- **"no drive is indexed" (a flat present state, not an unfulfilled expectation):
+  `không có ổ đĩa nào được lập chỉ mục`** · use `không` (not), never `chưa` (not yet), when the English states what IS
+  the case right now; `chưa` belongs only where the sentence really means "not yet" (`refusedIndexingOff` keeps
+  `vẫn chưa được lập chỉ mục` for "stays unindexed", where the drive is expected to get indexed once the switch is back
+  on). The existential `có` is required: the catalog's own passive-negative shape is `không có + N + nào + được + V`
+  (`operationLog` "không có mục nào được ghi lại", plus six more `không có … nào` lines), and `hiện không` is the
+  settled "right now" adverb pair (`hiện không khả dụng`, `hiện không có quyền truy cập toàn bộ đĩa`). GNOME Nautilus
+  attests the bare variant ("Nếu không thư mục nào được chọn"), so both parse, but the catalog's `có` form is the one
+  this app ships. `high` (catalog-consistent).
+- **"off with X" (a control the master switch overrides): `Tắt theo X`** · `theo` in its follows-another-setting sense,
+  as in the catalog's `settings.theme.mode.description` ("hoặc theo hệ thống" = or follow the system). Badge
+  `settings.indexing.overriddenBadge` → `Tắt theo lập chỉ mục ổ đĩa` (25 chars, same glance weight as the English).
+  `high`.
+- **"turn this back on" (referring to a settings toggle, not a file): `bật lại mục này`** · the catalog already renders
+  "if you turn this off" as `nếu tắt mục này` (`settings.indexing.staleNotify.description`), so `mục này` is the
+  established stand-in for the setting itself. `high` (catalog-consistent).
+- **folder sizes in the indexing pane: `kích thước thư mục`** (kept) · `settings.json` uses `kích thước` throughout (16
+  hits, including the master toggle's own description `để có ngay kích thước thư mục`), while `fileExplorer.json` uses
+  `kích cỡ` (10 hits, per the 2026-07-21 decision). `masterOffNote` sits in the settings pane, so it matches its own
+  file. The cross-file split is pre-existing; unifying it is a full-catalog migration, not a one-key edit.
+- No `sameAsSourceJustification` needed: all five values differ from English.

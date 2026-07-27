@@ -701,3 +701,31 @@ destination volume+path under "From" and "To" headings.
   de ("Von:"/"Nach:") both ship this label pair in the same copy/move dialog, and "von X nach Y" is the German transfer
   idiom. The settled nouns `Quelle` / `Ziel` stay for the destination CONTROLS (`Zielvolume`, `Zielpfad`); the headings
   take the light prepositional pair the English uses · high
+
+## Master-switch-off strings for drive indexing (review, 2026-07-25)
+
+Terms settled while reviewing the five strings the master-toggle feature added
+(`fileExplorer.navigation.driveIndex.refusedIndexingOff` / `.tooltipIndexingOff` / `.menuIndexingOffNote`,
+`settings.indexing.masterOffNote`, `settings.indexing.overriddenBadge`).
+
+- drive indexing (the master switch and the feature) → `Laufwerksindizierung` · the settled catalog term
+  (`settings.indexing.enabled.label`, `settings.section.driveIndexing`, `settings.summary.driveIndexing`,
+  `indexing.status.ariaLabel`, `onboarding.stepOptional.indexing.title`) · high. The navigation-path fragment quotes the
+  live labels verbatim: `unter Indizierung > Laufwerksindizierung` (`settings.section.indexing` = `Indizierung`,
+  `settings.indexing.enabled.label` = `Laufwerksindizierung`). Change one and all three `fileExplorer` strings must
+  follow.
+- "stays unindexed" → `wird … nicht indiziert` · ❌ NOT the coinage `unindiziert`: German doesn't form a `un-` +
+  participle here, and the catalog's own frame is the passive `wird … indiziert` (`tooltipIndexingOff` "wird gerade kein
+  Laufwerk indiziert") · high. Keeping `{name}` the nominative subject of a passive also means an arbitrary drive name
+  needs no article or case ending.
+- "(folder sizes) stay hidden" → `bleiben ausgeblendet` · the catalog's hide-from-view word is `ausgeblendet` (8 uses;
+  `settings.ai.tooltipOff` "sind dann einfach ausgeblendet"), Microsoft terminology (hidden → ausgeblendet) · high. ❌
+  Not `verborgen`: it's literary here, and the glossary reserves `verborgen` for the dotfile sense (hidden files →
+  verborgene Dateien).
+- "keeps its own on or off choice" → `behält seine eigene Einstellung` · high. The literal `Ein-/Aus-Wahl` is a coinage
+  no source has; German carries the on/off sense inside `Einstellung` in this slot.
+- "Off with drive indexing" (the small override badge) → `Mit der Laufwerksindizierung aus` · high. ❌ Never
+  `Aus mit der Laufwerksindizierung`: `Aus mit X!` is a fixed German exclamation ("Aus mit der Gemütlichkeit!") meaning
+  "X is over", so it reads as a slogan, not a state. Badge length is the German cost here: `Laufwerksindizierung` alone
+  is 20 characters, so a faithful badge can't reach the English's 22.
+- No `sameAsSourceJustification` needed: every value differs from English.

@@ -741,11 +741,11 @@
   "@settings.indexing.staleNotify.description": {
     "sourceHash": "c4216d8"
   },
-  "settings.indexing.masterOffNote": "驱动器索引已关闭，因此没有驱动器在建立索引，文件夹大小也不会显示。每个驱动器都保留自己的开关选择，等你重新开启时即可沿用。",
+  "settings.indexing.masterOffNote": "驱动器索引已关闭，因此没有驱动器在建立索引，文件夹大小也不会显示。每个驱动器都会记住自己的开关选择，等你重新开启时就会再次生效。",
   "@settings.indexing.masterOffNote": {
     "sourceHash": "311f02a"
   },
-  "settings.indexing.overriddenBadge": "随驱动器索引关闭",
+  "settings.indexing.overriddenBadge": "已随驱动器索引关闭",
   "@settings.indexing.overriddenBadge": {
     "sourceHash": "89db71f"
   },

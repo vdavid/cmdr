@@ -789,3 +789,34 @@ sessions, attachments, consent screen, cost footer, settings section; macOS AppK
   es (`662="DE:  "`, `663="EN: "`) rejected: uppercase, and "EN" is a locative, not a destination. The settled nouns
   origen / destino stay for the destination CONTROLS ("Volumen de destino", "Ruta de destino"); the headings take the
   light prepositional pair the English uses · high
+
+### Settled during the master-switch-off review pass (`fileExplorer.navigation.driveIndex.{refusedIndexingOff,tooltipIndexingOff,menuIndexingOffNote}` + `settings.indexing.{masterOffNote,overriddenBadge}`; the copy shown while the MASTER drive-indexing switch is off; MS terminology + catalog-consistency, 2026-07-27)
+
+- **drive indexing (the master switch / the concept) → la indexación de unidades** · REAFFIRMS the settled
+  index/indexing→índice/indexación entry + drive→unidad. It also quotes the catalog verbatim:
+  `settings.section.indexing` = "Indexación", `settings.section.driveIndexing` = `settings.indexing.enabled.label` =
+  "Indexación de unidades", so the navigation path in the new strings reads "Indexación > Indexación de unidades"
+  exactly as the sidebar does. MS terminology backs the root ("content indexing" → "indexación de contenido" id
+  361626/2026484; "Indexing Service" → "servicio de indexación" id 65942/2141628; "index" noun → "índice"). Never
+  "indización" (1 pile hit vs 9 for "indexación") · high (consistency-settled)
+- **"stays unindexed" → sigue sin indexar** · the `sin + infinitive` passive-adjectival ("el problema sigue sin
+  resolver") matches the settled negative state `Imágenes sin indexar` / `Aún sin indexar`, and it carries NO gender or
+  number agreement, so it survives any `{name}` a drive can have · high
+- **"picks up where it left off" → continuará donde lo dejó** · NOT "seguirá donde lo dejó": bare `seguir` + a place
+  adverbial reads as "stay put" ("seguirá donde estaba"), which garden-paths a resumption promise. `continuar` carries
+  the resumption sense unambiguously. Kept distinct from the settled resume→`reanudar` (macOS Tier 1), which names the
+  pause/resume ACTION on a transfer, not an implicit "carry on from the saved progress" · high
+- **A settings path followed by an `y` clause takes a comma** · "…en Indexación > Indexación de unidades, y esta
+  unidad…". Without it, "unidades y esta unidad" reads as a two-item list. Spanish normally drops the comma before `y`,
+  but the source has one and the ambiguity here earns it · high
+- **"Each drive keeps its own on or off choice" → Cada unidad recuerda si estaba activada o desactivada** · a literal
+  "su propia elección de activada o desactivada" is unidiomatic (the `de` + participle pair has nothing to agree with).
+  A subordinate `si`-clause lets `activada`/`desactivada` agree with fem. `unidad` naturally. The trailing "ready for
+  when…" stays an appositive that also agrees: "lista para cuando vuelvas a activar la indexación" (naming
+  `la indexación` rather than a bare `esto`/`la`, whose nearest antecedent would wrongly be `unidad`) · high
+- **`overriddenBadge` "Off with drive indexing" → Desactivado con la indexación** · kept: masc. `Desactivado` matches
+  the catalog's off-state labels (`settings.ai.provider.opt.off`), and the badge only renders inside the
+  `Indexación de unidades` page, so the short `la indexación` is unambiguous there. "de unidades" is dropped for length
+  (badges are inline chips next to a row label; 29 chars vs the source's 23) · high (kept), tentative (the comitative
+  `con`, which mirrors what fr/pt/nl/sv all chose)
+- No `sameAsSourceJustification` needed: all five values differ from English.

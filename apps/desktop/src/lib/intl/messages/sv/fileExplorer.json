@@ -1287,7 +1287,7 @@
   "@fileExplorer.navigation.refreshVolumeList": {
     "sourceHash": "f668a8c"
   },
-  "fileExplorer.navigation.driveIndex.ariaLabel": "Indexeringsstatus för enhet",
+  "fileExplorer.navigation.driveIndex.ariaLabel": "Status för enhetsindexet",
   "@fileExplorer.navigation.driveIndex.ariaLabel": {
     "sourceHash": "ff831be"
   },
@@ -1369,15 +1369,15 @@
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
     "sourceHash": "e9adbcc"
   },
-  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Indexering av enhet är av i Inställningar, så {name} förblir oindexerad. Slå på den under Indexering > Indexering av enhet.",
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Enhetsindexering är avstängd i Inställningar, så {name} indexeras inte. Slå på den under Indexering > Enhetsindexering.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
     "sourceHash": "ce0d45c"
   },
-  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "Indexering av enhet är av i Inställningar, så ingen enhet indexeras just nu.",
+  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "Enhetsindexering är avstängd i Inställningar, så ingen enhet indexeras just nu.",
   "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
     "sourceHash": "6ebf6f4"
   },
-  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Indexering av enhet är av i Inställningar. Slå på den under Indexering > Indexering av enhet, så fortsätter den här enheten där den slutade.",
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Enhetsindexering är avstängd i Inställningar. Slå på den under Indexering > Enhetsindexering, så fortsätter den här enheten där den slutade.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
   }

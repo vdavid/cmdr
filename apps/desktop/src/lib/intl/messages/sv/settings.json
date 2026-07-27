@@ -435,7 +435,7 @@
   "@settings.archives.compressionLevel.smaller": {
     "sourceHash": "0041719"
   },
-  "settings.indexing.enabled.label": "Indexering av enhet",
+  "settings.indexing.enabled.label": "Enhetsindexering",
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"
   },
@@ -743,11 +743,11 @@
   "@settings.indexing.staleNotify.description": {
     "sourceHash": "c4216d8"
   },
-  "settings.indexing.masterOffNote": "Indexering av enhet är av, så ingen enhet indexeras och mappstorlekar förblir dolda. Varje enhet behåller sitt eget på- eller av-val, redo för när du slår på det här igen.",
+  "settings.indexing.masterOffNote": "Enhetsindexering är avstängd, så ingen enhet indexeras och mappstorlekar förblir dolda. Varje enhet behåller sitt eget val, på eller av, så att allt är redo när du slår på det här igen.",
   "@settings.indexing.masterOffNote": {
     "sourceHash": "311f02a"
   },
-  "settings.indexing.overriddenBadge": "Av med enhetsindexering",
+  "settings.indexing.overriddenBadge": "Kräver enhetsindexering",
   "@settings.indexing.overriddenBadge": {
     "sourceHash": "89db71f"
   },
@@ -1446,7 +1446,7 @@
   "@settings.section.indexing": {
     "sourceHash": "cc24d96"
   },
-  "settings.section.driveIndexing": "Indexering av enhet",
+  "settings.section.driveIndexing": "Enhetsindexering",
   "@settings.section.driveIndexing": {
     "sourceHash": "38d916b"
   },
@@ -1699,7 +1699,7 @@
   "@settings.summary.askCmdr": {
     "sourceHash": "67eef6a"
   },
-  "settings.summary.driveIndexing": "Indexering av enhet i bakgrunden så att sökningen hittar dina filer snabbt.",
+  "settings.summary.driveIndexing": "Enhetsindexering i bakgrunden så att sökningen hittar dina filer snabbt.",
   "@settings.summary.driveIndexing": {
     "sourceHash": "ef8be32"
   },

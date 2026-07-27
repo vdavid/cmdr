@@ -744,11 +744,11 @@
   "@settings.indexing.staleNotify.description": {
     "sourceHash": "c4216d8"
   },
-  "settings.indexing.masterOffNote": "Schijf indexeren staat uit, dus er wordt geen schijf geïndexeerd en mapgroottes blijven verborgen. Elke schijf houdt zijn eigen aan- of uitkeuze, klaar voor wanneer je dit weer aanzet.",
+  "settings.indexing.masterOffNote": "Het indexeren van schijven staat uit, dus er wordt geen schijf geïndexeerd en mapgroottes blijven verborgen. Elke schijf onthoudt of hij aan of uit staat, zodat alles klaarstaat wanneer je dit weer aanzet.",
   "@settings.indexing.masterOffNote": {
     "sourceHash": "311f02a"
   },
-  "settings.indexing.overriddenBadge": "Uit met schijf indexeren",
+  "settings.indexing.overriddenBadge": "Uit met schijfindexering",
   "@settings.indexing.overriddenBadge": {
     "sourceHash": "89db71f"
   },

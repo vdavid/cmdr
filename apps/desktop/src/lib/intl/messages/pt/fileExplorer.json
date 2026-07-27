@@ -1290,11 +1290,11 @@
   "@fileExplorer.navigation.refreshVolumeList": {
     "sourceHash": "f668a8c"
   },
-  "fileExplorer.navigation.driveIndex.ariaLabel": "Status do índice do drive",
+  "fileExplorer.navigation.driveIndex.ariaLabel": "Status do índice do disco",
   "@fileExplorer.navigation.driveIndex.ariaLabel": {
     "sourceHash": "ff831be"
   },
-  "fileExplorer.navigation.driveIndex.tooltipDisabled": "A indexação está desativada para este drive. Ative-a para ver os tamanhos das pastas e fazer buscas aqui.",
+  "fileExplorer.navigation.driveIndex.tooltipDisabled": "A indexação está desativada para este disco. Ative-a para ver os tamanhos das pastas e fazer buscas aqui.",
   "@fileExplorer.navigation.driveIndex.tooltipDisabled": {
     "sourceHash": "61d11e9"
   },
@@ -1306,11 +1306,11 @@
   "@fileExplorer.navigation.driveIndex.tooltipFreshNoScan": {
     "sourceHash": "fedc5ae"
   },
-  "fileExplorer.navigation.driveIndex.tooltipStale": "Este drive pode ter mudado enquanto estava desconectado. Os tamanhos e a busca podem estar um pouco desatualizados. Faça uma nova varredura para atualizar.",
+  "fileExplorer.navigation.driveIndex.tooltipStale": "Este disco pode ter mudado enquanto estava desconectado. Os tamanhos e a busca podem estar um pouco desatualizados. Faça uma nova varredura para atualizar.",
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
     "sourceHash": "0d85b0b"
   },
-  "fileExplorer.navigation.driveIndex.tooltipFailed": "A indexação parou por causa de um problema ao salvar o índice deste drive. Refaça a varredura para reconstruí-lo.",
+  "fileExplorer.navigation.driveIndex.tooltipFailed": "A indexação parou por causa de um problema ao salvar o índice deste disco. Refaça a varredura para reconstruí-lo.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7386b54"
   },
@@ -1322,7 +1322,7 @@
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"
   },
-  "fileExplorer.navigation.driveIndex.menuEnable": "Ativar indexação para este drive",
+  "fileExplorer.navigation.driveIndex.menuEnable": "Ativar indexação para este disco",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"
   },
@@ -1330,7 +1330,7 @@
   "@fileExplorer.navigation.driveIndex.menuRescan": {
     "sourceHash": "c07d16a"
   },
-  "fileExplorer.navigation.driveIndex.menuDisable": "Desativar indexação para este drive",
+  "fileExplorer.navigation.driveIndex.menuDisable": "Desativar indexação para este disco",
   "@fileExplorer.navigation.driveIndex.menuDisable": {
     "sourceHash": "d14cf11"
   },
@@ -1364,7 +1364,7 @@
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
     "sourceHash": "0cf83a1"
   },
-  "fileExplorer.navigation.driveIndex.refusedGeneric": "O Cmdr não pode indexar {name} agora. Reconecte o drive e tente novamente.",
+  "fileExplorer.navigation.driveIndex.refusedGeneric": "O Cmdr não pode indexar {name} agora. Reconecte o disco e tente novamente.",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "ac46209"
   },
@@ -1372,15 +1372,15 @@
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
     "sourceHash": "e9adbcc"
   },
-  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "A indexação de disco está desativada nos Ajustes, então {name} continua sem índice. Ative em Indexação > Indexação de disco.",
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "A indexação de disco está desativada nos Ajustes, então {name} continua sem índice. Ative-a em Indexação > Indexação de disco.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
     "sourceHash": "ce0d45c"
   },
-  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "A indexação de disco está desativada nos Ajustes, então nenhum disco está sendo indexado agora.",
+  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "A indexação de disco está desativada nos Ajustes, então nenhum disco é indexado no momento.",
   "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
     "sourceHash": "6ebf6f4"
   },
-  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "A indexação de disco está desativada nos Ajustes. Ative em Indexação > Indexação de disco, e este disco continua de onde parou.",
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "A indexação de disco está desativada nos Ajustes. Ative-a em Indexação > Indexação de disco, e este disco continua de onde parou.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
   }

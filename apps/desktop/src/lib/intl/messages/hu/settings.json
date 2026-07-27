@@ -741,7 +741,7 @@
   "@settings.indexing.staleNotify.description": {
     "sourceHash": "c4216d8"
   },
-  "settings.indexing.masterOffNote": "A meghajtó-indexelés ki van kapcsolva, ezért egyetlen meghajtó sincs indexelve, és a mappaméretek rejtve maradnak. Minden meghajtó megőrzi a saját be- vagy kikapcsolt választását, arra az esetre, amikor ezt újra bekapcsolod.",
+  "settings.indexing.masterOffNote": "A meghajtó indexelése ki van kapcsolva, ezért egyetlen meghajtó sincs indexelve, és a mappaméretek rejtve maradnak. Minden meghajtó megjegyzi a saját be- vagy kikapcsolt állapotát, arra az esetre, amikor ezt újra bekapcsolod.",
   "@settings.indexing.masterOffNote": {
     "sourceHash": "311f02a"
   },

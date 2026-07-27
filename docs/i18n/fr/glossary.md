@@ -926,3 +926,45 @@ path and the destination volume+path under "From" and "To" headings.
   pair. macOS's `Déplacer vers :` ("Move To:") is verb-bound, so it settles the destination PREPOSITION inside a verb
   phrase, not the standalone heading; bare "Vers" was weighed on that basis and set aside for the pile-attested,
   symmetrical pair. No space before a colon applies here: the headings carry no colon · high
+
+Settled during the review of the five master-drive-indexing-off keys
+(`fileExplorer.navigation.driveIndex.{refusedIndexingOff,tooltipIndexingOff,menuIndexingOffNote}`,
+`settings.indexing.{masterOffNote,overriddenBadge}`). ICU values, so apostrophes are doubled in the catalog:
+
+- **"Drive indexing" (the master switch), in PROSE → `l''indexation` (bare), NOT `l''indexation du disque`.** The
+  catalog already renders the concept bare everywhere it speaks about it (`driveIndex.tooltipDisabled` "L''indexation
+  est désactivée pour ce disque.", `menuEnable`/`menuDisable`/`menuStop` "… l''indexation …"), and the scope marker
+  carries the global-vs-per-drive distinction the English marks with "Drive indexing" vs "Indexing": `… pour ce disque`
+  (this one drive) vs `… dans les Réglages` + `aucun disque` (the master switch) · high. Writing
+  `l''indexation du disque` in running prose reads as "the indexing of THE drive", which is exactly the per-drive
+  meaning these three strings exist to rule out; worse, `menuIndexingOffNote` then puts "du disque" and "ce disque" one
+  clause apart. `settings.indexing.enabled.label` stays "Indexation du disque" and is quoted VERBATIM in the navigation
+  path ("Activez-la dans Indexation > Indexation du disque"), so the pointer to the actual control survives.
+- "stays unindexed" (with the uncontrolled `{name}`) → `Cmdr n''indexe pas {name}` · rendered ACTIVE with Cmdr as the
+  subject so no participle agrees with `{name}`, whose gender is unknown at runtime (the archive-password pass's gender
+  rule). Mirrors the sibling `refusedGeneric` "Cmdr ne peut pas indexer {name} pour le moment." · high.
+- "picks up where it left off" → `reprendra là où il s''était arrêté` · settled `resume → reprendre`; French wants the
+  `là où` correlative, not a bare `où` · high.
+- "folder sizes stay hidden" → `les tailles des dossiers restent masquées` · reuses `driveIndex.tooltipDisabled`''s
+  "voir les tailles des dossiers"; the plural `des dossiers` is the catalog form (a bare "tailles de dossier" was drift)
+  · high.
+- "Off with drive indexing" (short override badge) → `Désactivé avec l''indexation` · a STATE label, masculine agreeing
+  with the implied `réglage`; kept to three words for the badge slot, dropping "du disque" since the badge already sits
+  inside the Indexation section · high.
+- "ready for when you turn this back on" → `prêt pour le moment où vous la réactiverez` · the pronoun `la` points back
+  to the feminine `l''indexation` that opens the note (the only feminine singular antecedent); the deictic "ceci" was
+  vaguer than French tolerates here · high.
+
+Phrasing notes for this pass:
+
+- All five values had shipped with LONE apostrophes (`L'indexation`, `n'est`, `s'était`) while every `driveIndex.*`
+  neighbour doubles them. Now doubled. None of them sat before `{`/`}`/`#`, so nothing rendered wrong and no check
+  fired: it is exactly the silent consistency break the ICU rule exists to prevent.
+- Same sweep fixed five PRE-EXISTING apostrophe defects elsewhere in `fr`:
+  `settings.operationLog.{intro,maxAge.label, maxSize.description}` carried lone apostrophes, and
+  `fileExplorer.smbReauth.{savedPasswordFailed,passwordFailed}` carried the curly U+2019 the earlier pass parked. The
+  whole `fr` set is now uniformly ASCII-and-doubled outside `errors.*` (the only remaining lone `'` are the deliberate
+  ICU escapes in `fileExplorer.dirSize.{noPerms, dirPlaceholder}`, `'<'`).
+- No `:` `?` `!` `%` `»` in any of the five values, so the settled ASCII-space-before-punctuation rule doesn''t apply
+  here. Register is `vous` throughout ("Activez-la", "vous la réactiverez"); no "erreur"/"échec".
+- No `sameAsSourceJustification` needed: every value differs from English.

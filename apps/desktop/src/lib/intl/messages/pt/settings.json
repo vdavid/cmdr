@@ -422,7 +422,7 @@
   "@settings.archives.compressionLevel.label": {
     "sourceHash": "9889378"
   },
-  "settings.archives.compressionLevel.description": "Quanto o Cmdr comprime ao criar um zip. Níveis mais altos geram um ficheiro menor, mas demoram mais tempo a comprimir. Aplica-se ao comando Comprimir e à cópia ou movimentação de ficheiros para um zip.",
+  "settings.archives.compressionLevel.description": "Quanto o Cmdr comprime ao criar um zip. Níveis mais altos geram um arquivo menor, mas demoram mais para comprimir. Vale para o comando Comprimir e para a cópia ou movimentação de arquivos para um zip.",
   "@settings.archives.compressionLevel.description": {
     "sourceHash": "0ebedaf"
   },
@@ -742,11 +742,11 @@
   "@settings.indexing.staleNotify.description": {
     "sourceHash": "c4216d8"
   },
-  "settings.indexing.masterOffNote": "A indexação de disco está desativada, então nenhum disco é indexado e os tamanhos de pasta ficam ocultos. Cada disco mantém a própria escolha de ligado ou desligado, pronta para quando você ativar isto de novo.",
+  "settings.indexing.masterOffNote": "A indexação de disco está desativada, então nenhum disco é indexado e os tamanhos das pastas ficam ocultos. Cada disco mantém a própria escolha de ativado ou desativado, pronta para quando você reativar isto.",
   "@settings.indexing.masterOffNote": {
     "sourceHash": "311f02a"
   },
-  "settings.indexing.overriddenBadge": "Desligado com a indexação",
+  "settings.indexing.overriddenBadge": "Desativado com a indexação",
   "@settings.indexing.overriddenBadge": {
     "sourceHash": "89db71f"
   },
