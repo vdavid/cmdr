@@ -36,13 +36,12 @@ pnpm check desktop-e2e-playwright
 
 The checker runs the suite as **N parallel shards**: one dedicated MTP lane (sequential, every spec whose filename
 matches `playwright.config.ts`'s `/mtp(-[a-z-]+)?\.spec\.ts$/`) plus 2 non-MTP lanes split by Playwright's
-`--shard X/2`. Each shard gets its own Tauri
-instance with a distinct `CMDR_DATA_DIR`, MCP port (9429 + offset), Unix socket path, and `CMDR_INSTANCE_ID` of the form
-`e2e-<short>-<pid>` (for example, `e2e-mtp-12345`, `e2e-nonmtp1-12345`). The instance ID drives the macOS Keychain
-`SERVICE_NAME` suffix so two parallel shards can never collide on credentials, and reshapes the Dock label to
-`Cmdr (E2E <short>)` for easy `pgrep` cleanup. The MTP shard runs alone because the virtual MTP backing dir
-(`/tmp/cmdr-mtp-e2e-fixtures`) is shared by every Tauri instance. Running MTP specs from two shards at once would
-corrupt it. Per-shard logs go to `/tmp/cmdr-e2e-playwright-<shard>-<timestamp>.log`.
+`--shard X/2`. Each shard gets its own Tauri instance with a distinct `CMDR_DATA_DIR`, MCP port (9429 + offset), Unix
+socket path, and `CMDR_INSTANCE_ID` of the form `e2e-<short>-<pid>` (for example, `e2e-mtp-12345`, `e2e-nonmtp1-12345`).
+The instance ID drives the macOS Keychain `SERVICE_NAME` suffix so two parallel shards can never collide on credentials,
+and reshapes the Dock label to `Cmdr (E2E <short>)` for easy `pgrep` cleanup. The MTP shard runs alone because the
+virtual MTP backing dir (`/tmp/cmdr-mtp-e2e-fixtures`) is shared by every Tauri instance. Running MTP specs from two
+shards at once would corrupt it. Per-shard logs go to `/tmp/cmdr-e2e-playwright-<shard>-<timestamp>.log`.
 
 The socket path is overridable via the `CMDR_PLAYWRIGHT_SOCKET` env var (read in `src-tauri/src/lib.rs` and passed to
 `tauri_plugin_playwright::init_with_config`). When unset, the plugin falls back to `/tmp/tauri-playwright.sock` so
@@ -156,15 +155,15 @@ decisions". Only the layout facts that none of those carry live here:
 - **A spec's FILENAME picks its shard**, through `playwright.config.ts`'s `/mtp(-[a-z-]+)?\.spec\.ts$/`: anything
   matching runs on the dedicated sequential MTP lane, everything else on the parallel `--shard X/2` non-MTP lanes. So
   naming a new MTP-touching spec `mtp-<something>.spec.ts` is what keeps it off a parallel lane (and mis-naming a
-  non-MTP spec that way needlessly serializes it). `i18n-capture.spec.ts` is excluded from every normal lane
-  (`all` / `mtp` / `non-mtp`) and runs only under its own `i18n-capture` shard kind via `pnpm i18n:capture`: it's a
-  screenshot driver, not a pass/fail suite.
+  non-MTP spec that way needlessly serializes it). `i18n-capture.spec.ts` is excluded from every normal lane (`all` /
+  `mtp` / `non-mtp`) and runs only under its own `i18n-capture` shard kind via `pnpm i18n:capture`: it's a screenshot
+  driver, not a pass/fail suite.
 - **Cargo features gate whole groups.** Every spec needs `playwright-e2e` (it's what grants the plugin's IPC
   permissions); the `mtp*` specs additionally need `virtual-mtp`; `smb.spec.ts` needs `smb-e2e` plus Docker (smb2's
   consumer containers).
-- **`helpers/` submodules may depend on `core.ts`, never on each other.** The single exception is
-  `app-lifecycle` → `navigation`. `helpers.ts` is the flat re-export specs import from (`from './helpers.js'`), so a
-  spec never reaches into `helpers/` directly.
+- **`helpers/` submodules may depend on `core.ts`, never on each other.** The single exception is `app-lifecycle` →
+  `navigation`. `helpers.ts` is the flat re-export specs import from (`from './helpers.js'`), so a spec never reaches
+  into `helpers/` directly.
 - **`global-setup.ts` creates or refreshes the ~170 MB fixture tree**, and `global-teardown.ts` removes it only when
   globalSetup created it. Per-instance roots and the hardlink strategy live in `../e2e-shared/DETAILS.md`.
 - **`viewer-tail.spec.ts` carries `test.describe.configure({ timeout: 30000 })`** to absorb the FSEvents debounce plus

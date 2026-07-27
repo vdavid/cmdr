@@ -12,8 +12,8 @@ recipe for adding one is § "Adding a new check". Only the layout rules live her
 
 - **One file per check, `{app}-{name}.go`, with its test as `{app}-{name}_test.go` beside it**: `desktop-rust-*`,
   `desktop-svelte-*`, `website-*`, `api-server-*`, `scripts-go-*`. `registry.go` holds the single canonical ordered
-  `AllChecks` list plus the filter/validation helpers; `common.go` holds the core types and command plumbing every
-  check builds on; `inputs.go` holds the shared `Inputs` path sets.
+  `AllChecks` list plus the filter/validation helpers; `common.go` holds the core types and command plumbing every check
+  builds on; `inputs.go` holds the shared `Inputs` path sets.
 - **An allowlist is a sibling JSON named `<check>-allowlist.json`**, and it's NEVER hand-edited: the owning check
   shrink-wraps it on local runs, so you run the check and commit its rewrite (`.claude/rules/file-length-allowlist.md`).
   The shared staleness policy, and why it lives inside each check rather than a meta-check, is § "Allowlist

@@ -9,8 +9,8 @@ natural-language queries into structured filters. First consumer of the shared Q
 - `SearchDialog.svelte`: thin wrapper that builds a `QueryDialogConfig` and mounts `lib/query-ui/QueryDialog.svelte`.
   Owns index lifecycle, AI filter writes, snapshot promotion, recent-search add/remove. Zero orchestration.
 - `search-state.svelte.ts` (façade over core `query-filter-state` + `search-extras-state`), plus `snapshot-store`,
-  `searchable-folder`, `SearchResultsView.svelte` (which lives in `lib/file-explorer/pane/`), and helpers. Footer buttons render from the
-  shared `QueryDialog`'s `config.*Action`.
+  `searchable-folder`, `SearchResultsView.svelte` (which lives in `lib/file-explorer/pane/`), and helpers. Footer
+  buttons render from the shared `QueryDialog`'s `config.*Action`.
 - `ImageSearchResults.svelte` + `ocr-snippet.ts`: the "text in images" OCR grid, rendered below filename results via
   QueryDialog's `config.resultsExtra` slot (Search-only). Backend: `media_index`; `active-media-volume.ts` resolves the
   target volume.

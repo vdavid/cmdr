@@ -21,8 +21,8 @@ pre-measured column width agree: don't re-inline the decision in any of them.
 
 - An unknown size collapses to `'dir'` / `'scanning'` and shows the familiar `<dir>` placeholder rather than a
   settled-looking value. "Unknown" covers both not-yet-enriched and an incomplete subtree with nothing known below it
-  (`complete === false` and `recursiveSize === 0`), kept distinct from a genuinely-empty `0 bytes`
-  (`complete === true`, `recursiveSize === 0` → `'size'`).
+  (`complete === false` and `recursiveSize === 0`), kept distinct from a genuinely-empty `0 bytes` (`complete === true`,
+  `recursiveSize === 0` → `'size'`).
 - The lower-bound prefix is `LOWER_BOUND_GLYPH` (`≥`), a symbol rather than copy.
 - **The in-flux hourglass is ORTHOGONAL to the content state**, not a sixth value: `isDirSizeUpdating` is the global
   `indexing` flag (a full scan or aggregation, every size in flux) OR the row's own `recursiveSizePending` (a live
@@ -43,8 +43,8 @@ rendered.
 **`FullList`'s `staticEntries?: FileEntry[]` prop bypasses the backend-listing path entirely.** The array is mirrored
 into `cachedEntries` and the cache-fetch / soft-refresh / cache-generation paths short-circuit. The search-results
 virtual volume is the user: it feeds full paths as the entries' `name` field, so the name cell mid-truncates via
-`useShortenMiddle` (snapping to `/` when the name carries one, `.` otherwise). Unset, FullList renders identically:
-same grid template, same fetch loop, same DOM.
+`useShortenMiddle` (snapping to `/` when the name carries one, `.` otherwise). Unset, FullList renders identically: same
+grid template, same fetch loop, same DOM.
 
 ### Data flow
 

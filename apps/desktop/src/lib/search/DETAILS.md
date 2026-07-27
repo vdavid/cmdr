@@ -41,11 +41,11 @@ results table, empty state, and the `recent-items/` family) lives in `../query-u
 - **`capabilities.ts` owns only the `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` string.** The capabilities themselves come from
   the per-kind table in `lib/file-explorer/pane/volume-capabilities.ts`; there is deliberately no Search-specific
   capability shim, so don't add one.
-- **`snapshot-store.svelte.ts` carries the `.svelte.ts` extension for ONE `$state` cell**, `mutationTick`. The
-  snapshot map itself is deliberately plain module state, because consumers read snapshots imperatively at render time
-  and nothing should re-render when the map changes; the tick exists only so a rendered snapshot can subscribe to a
-  cross-snapshot delete. Keep new reactivity out of the map: wrap `getSnapshot` results in a `$derived` at the call
-  site instead.
+- **`snapshot-store.svelte.ts` carries the `.svelte.ts` extension for ONE `$state` cell**, `mutationTick`. The snapshot
+  map itself is deliberately plain module state, because consumers read snapshots imperatively at render time and
+  nothing should re-render when the map changes; the tick exists only so a rendered snapshot can subscribe to a
+  cross-snapshot delete. Keep new reactivity out of the map: wrap `getSnapshot` results in a `$derived` at the call site
+  instead.
 
 ## Search wrapper
 

@@ -7,9 +7,9 @@ and gotchas live in `CLAUDE.md`.
 
 Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
 map. What the pieces DO is in the sections below: the two dialogs and both state factories in § "How transfer flows",
-the compress components (level slider, estimate line, name helper, dest-exists check) in § "Compress mode", the
-password prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion for `..` entry", and pause /
-queue / `backgrounded` in § "Pause, Queue, and auto-queue". Only the layout facts that none of those carry live here:
+the compress components (level slider, estimate line, name helper, dest-exists check) in § "Compress mode", the password
+prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion for `..` entry", and pause / queue /
+`backgrounded` in § "Pause, Queue, and auto-queue". Only the layout facts that none of those carry live here:
 
 - **In `transfer-progress-state.svelte.ts`, `backgrounded` and `destroyed` are plain `let`s, NOT `$state`.** They're
   read inside `destroy()` during synchronous reactive-scope disposal, where a `$state` rune read returns a STALE value

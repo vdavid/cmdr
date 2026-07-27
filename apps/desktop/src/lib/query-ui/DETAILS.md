@@ -117,8 +117,8 @@ the Search wrapper.
 Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
 map. What the pieces DO is in the sections below: the orchestrator and its ownership contracts in § "QueryDialog
 orchestrator", the ToggleGroup wrapper in § "Mode chips", the pill fitting algorithm in § "PathPills measurement", the
-state factory in § "State shape contract", the ⏎ swap in § "Keyboard shortcuts", and the orchestrator's test split in
-§ "Test coverage". `filter-chips/` documents itself (`filter-chips/CLAUDE.md`), and the chip + popover primitives it
+state factory in § "State shape contract", the ⏎ swap in § "Keyboard shortcuts", and the orchestrator's test split in §
+"Test coverage". `filter-chips/` documents itself (`filter-chips/CLAUDE.md`), and the chip + popover primitives it
 builds on live in `$lib/ui/`. Only the layout facts that none of those carry live here:
 
 - **The two consumers render different subsets from the same components.** Search shows all four mode chips; Selection
@@ -126,9 +126,9 @@ builds on live in `$lib/ui/`. Only the layout facts that none of those carry liv
   `indexEntryCount === 0` hides `EmptyState`'s "Index ready · …" line. So a change to a shared component has to be
   checked against BOTH dialogs, not just Search.
 - **`recent-items/` is generic over the entry type `<E>`.** The footer and popover know nothing about search or
-  selection entries: the consumer supplies a `RecentItemAdapter<E>` plus a `keyFn`, and `createRecentItemsState({
-  getRecent })` supplies the store. Reach for the adapter before adding a consumer-specific branch inside the
-  components.
+  selection entries: the consumer supplies a `RecentItemAdapter<E>` plus a `keyFn`, and
+  `createRecentItemsState({ getRecent })` supplies the store. Reach for the adapter before adding a consumer-specific
+  branch inside the components.
 - **`SearchRowMenu`'s `…` button is always visible on EVERY row**, not hover-only or cursor-only, and it routes to the
   parent's NATIVE context menu through `onOpen` rather than rendering a menu of its own.
 - **`EmptyState`'s example chips come from `config.emptyState.examples`** (forwarded by `QueryResults`), falling back to

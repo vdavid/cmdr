@@ -5,17 +5,17 @@ Depth and rationale for the app orchestrator. `CLAUDE.md` holds the must-knows; 
 ## File map
 
 Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
-map, plus `command-handlers/CLAUDE.md` for the handler families. What each piece DOES is in the sections below
-(§ "Startup: paint-gated window show", § "Dispatch core", § "The exempt families", § "Capability guard", § "MCP
-transport", § "Mouse back / forward buttons", § "Native-menu and input-focus interactions", § "Off-bus test and debug
-hooks"). Only the layout facts that none of those carry live here:
+map, plus `command-handlers/CLAUDE.md` for the handler families. What each piece DOES is in the sections below (§
+"Startup: paint-gated window show", § "Dispatch core", § "The exempt families", § "Capability guard", § "MCP transport",
+§ "Mouse back / forward buttons", § "Native-menu and input-focus interactions", § "Off-bus test and debug hooks"). Only
+the layout facts that none of those carry live here:
 
 - **`listener-setup.ts` is a plain `.ts` with NO runes**, so it can't hold `$state`. State crosses the boundary through
   a `ListenerSetupContext` of getter functions (reads) and setter callbacks (writes), which is what keeps the moved
   closures reading LIVE reactive values instead of a stale capture. Every registered unlisten goes onto the
   component-owned `unlistenFns` array so the one `onDestroy` loop tears them all down: without that, HMR stacks
-  duplicate listeners on every reload. The keydown handler, licensing init, and onboarding gating stay in
-  `+page.svelte` precisely because they read and write `$state` directly.
+  duplicate listeners on every reload. The keydown handler, licensing init, and onboarding gating stay in `+page.svelte`
+  precisely because they read and write `$state` directly.
 - **`command-dispatch-context.ts` is deliberately a LEAF**, importing nothing from the core or the handlers, so handler
   modules and `command-dispatch.ts` can both import the context types without a cycle. It's re-exported from
   `command-dispatch.ts` for callers.

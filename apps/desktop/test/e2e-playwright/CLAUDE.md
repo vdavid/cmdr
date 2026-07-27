@@ -10,8 +10,7 @@ run on macOS (native) and Linux (Docker); platform differences (Ctrl vs Meta) ri
   fixture-tree lifecycle.
 - `helpers.ts` re-exports `helpers/` (`core`, `app-lifecycle`, `cursor`, `overlays-and-dialogs`, `windows`,
   `navigation`); specs import `from './helpers.js'`.
-- `*.spec.ts`: the suites. A filename matching `/mtp(-[a-z-]+)?\.spec\.ts$/` runs on the sequential MTP shard;
-  `i18n-capture.spec.ts` runs on no normal lane at all. DETAILS.md § Files.
+- `*.spec.ts`: the suites; a spec's filename picks its shard (DETAILS.md § Files).
 
 ## Must-knows
 
