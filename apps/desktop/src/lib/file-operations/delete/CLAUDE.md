@@ -40,8 +40,8 @@ progress. Backend counterpart: `apps/desktop/src-tauri/src/file_system/write_ope
 
 ## Backend touchpoints
 
-`write_operations/trash.rs` (`move_to_trash_sync`, `trash_files_with_progress`) and `write_operations/delete/walker.rs`
-(`delete_files_with_progress`). `WriteOperationType::Trash` is a distinct variant in event payloads. MCP `delete` tool
-opens this confirmation dialog (`delete-confirmation` dialog type).
+`write_operations/delete/trash.rs` (`move_to_trash_sync`, `trash_files_with_progress`) and
+`write_operations/delete/walker.rs` (`delete_files_with_progress`). `WriteOperationType::Trash` is a distinct variant in
+event payloads. MCP `delete` tool opens this confirmation dialog (`delete-confirmation` dialog type).
 
 Full details (the full F8→completion flow, partial-failure and locked-file handling): `DETAILS.md`.

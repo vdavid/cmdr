@@ -159,6 +159,6 @@ Clicking × clears the pattern only; the AI transparency strip stays put.
 
 ## Dependencies
 
-- `../query-filter-state.svelte` — `QueryFilterState`, `SizeFilter`, `SizeUnit`, `DateFilter` types and setters
+- `../query-filter-state.svelte.ts` — `QueryFilterState`, `SizeFilter`, `SizeUnit`, `DateFilter` types and setters
 - `$lib/settings/reactive-settings.svelte` — `getFileSizeFormat()` for the `kB/KB` cell label
 - `$lib/tooltip/tooltip` — chip tooltips

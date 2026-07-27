@@ -7,7 +7,7 @@ consumer is a sibling subsystem at `src-tauri/src/font_metrics/mod.rs` (not nest
 
 - **`measure.ts`**: Canvas-based measurement over explicit Unicode ranges, returns `Record<codePoint, pixelWidth>`.
 - **`index.ts`**: Caching check, idle-time scheduling, IPC to Rust. Exports `ensureFontMetricsLoaded()` (entry point;
-  `lib/text-size.ts` calls it on a 1 s debounce after each scale change) and `getCurrentFontId()`.
+  `lib/text-size.svelte.ts` calls it on a 1 s debounce after each scale change) and `getCurrentFontId()`.
 
 ## Must-knows
 

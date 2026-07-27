@@ -37,7 +37,7 @@ value directly).
 The barrel exports the lifecycle + the cross-module reads: `isVolumeScanning` / `getEntriesScanned` / `ROOT_VOLUME_ID`
 (SearchDialog), `getVolumeActivity` / `getVolumeAggregation` (the breadcrumb badge's scanning tooltip, in
 `navigation/`), `getVolumePhase` (the per-volume step checklist), plus `initIndexState` / `destroyIndexState` /
-`initIndexEvents`. The indicator (same dir) imports the rest directly from `./index-state.svelte`:
+`initIndexEvents`. The indicator (same dir) imports the rest directly from `./index-state.svelte.ts`:
 
 ```ts
 // Multi-drive API (the indicator):

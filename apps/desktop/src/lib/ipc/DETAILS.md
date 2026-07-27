@@ -220,8 +220,8 @@ Two patterns specta rc.24 can't handle. New code must avoid them; existing exclu
   not `displayName`. Always pair the enum attribute with `rename_all_fields = "camelCase"` so field names follow the
   convention too. Symptom when missed: TS code reading `info.displayName` gets `undefined`; single-word fields (`share`,
   `port`) silently work, multi-word fields don't. There's a guardrail check
-  (`scripts/check/checks/ipc-enum-camelcase.go`) that flags any `#[serde(tag = ..., rename_all = "camelCase")]` enum
-  with struct variants that's missing `rename_all_fields`.
+  (`scripts/check/checks/desktop-rust-ipc-enum-camelcase.go`) that flags any
+  `#[serde(tag = ..., rename_all = "camelCase")]` enum with struct variants that's missing `rename_all_fields`.
 
 ## Excluded commands
 

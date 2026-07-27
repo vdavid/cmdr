@@ -250,8 +250,9 @@ down.
 
 **A1/A2-vs-tab-manager scope boundary.** The private-state + one-mutator rules govern the store's **own** fields only.
 The tab managers are _values the store holds_, not store fields: they keep their existing setter-based API
-(`createTabManager`) and are mutated via the free functions in `tabs/tab-state-manager.svelte` / `tab-operations`. The
-store holds the holder reference and swaps it via `setTabMgr`; it never wraps tab-manager setters behind store intents.
+(`createTabManager`) and are mutated via the free functions in `tabs/tab-state-manager.svelte.ts` / `tab-operations`.
+The store holds the holder reference and swaps it via `setTabMgr`; it never wraps tab-manager setters behind store
+intents.
 
 **Live-reference getters.** `getTabMgr(pane)` returns the live `$state<TabManager>` holder, never a copy or a
 `$state.snapshot` — a `$derived` reading `getActiveTab(getTabMgr(p))` keeps tracking both when the holder is swapped and

@@ -166,8 +166,8 @@ When a new setting needs to be readable or persistable from the viewer, extend t
 ### Text size (`appearance.textSize`)
 
 `appearance.textSize` (slider 50–200%, default 100%) compounds with the macOS Accessibility > Display > Text Size value
-to produce the effective scale that `lib/text-size.ts` writes to `--font-scale` on `:root`. **Compounding lives in
-exactly one place**: `text-size.ts`'s `computeAndApply()`. The CSS
+to produce the effective scale that `lib/text-size.svelte.ts` writes to `--font-scale` on `:root`. **Compounding lives
+in exactly one place**: `text-size.svelte.ts`'s `computeAndApply()`. The CSS
 `html { font-size: calc(16px * var(--font-scale, 1)) }` plus rem-based `--font-size-*` tokens in `app.css` cover
 typography; `applyDensity()` in `settings-applier.ts` multiplies row-height/icon-size/density-spacing by the same
 `--font-scale` so layout grows with text. After each scale change, `text-size.ts` re-triggers
@@ -266,8 +266,8 @@ split-layout rule, and the `SettingPasswordInput` store-driven vs controlled mod
   writer all go through this one handler.
 - **ai-config.ts**: AI configuration plumbing shared by Settings, the onboarding wizard, and the applier listener.
   Exports `pushConfigToBackend()` (read-fresh push of the current AI config to Rust) and `migrateApiKeysFromSettings()`
-  (one-time lift of pre-launch `apiKey` strings from `settings.json` into the OS secret store). Relocated here from
-  `sections/ai-settings-utils.ts` so the function isn't tied to a UI subcomponent path.
+  (one-time lift of pre-launch `apiKey` strings from `settings.json` into the OS secret store). Lives here rather than
+  under `sections/` so it isn't tied to a UI subcomponent path.
 - **network-settings.ts**: Network-specific setting helpers (proxy config, SMB auth defaults)
 - **settings-window.ts**: Logic for opening/focusing/closing the settings window (Tauri window management). Accepts an
   optional `section` array (e.g. `['File systems', 'SMB/Network shares']`) to deep-link a specific section. Two delivery
