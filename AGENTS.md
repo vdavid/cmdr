@@ -62,19 +62,15 @@ screen readers).
 
 Two colocated tiers per code area, enforced by checks:
 
-- **`CLAUDE.md`** (push tier): auto-injected whenever a (sub)agent touches a dir, in every such session and worktree.
-  Holds ONLY must-knows: invariants, gotchas, "don't do X because Y" guardrails, a 2–3 line module map, and a pointer to
-  `DETAILS.md`. The litmus: "would editing a file here get something wrong or silently break sg, without this line?" If
-  not, it's not a must-know. Hard ceiling is 600 words, but try to keep it at far less. Only the essentials.
-  `claude-md-length` warns past 600.
-- **`DETAILS.md`** (pull tier): everything else, read on demand. Architecture, data flows, decision rationale, edge-case
-  catalogs. Unlimited length.
-- We abbreviate these to `C.md`, `D.md`, and `C+D.md` together.
-- **Every area `C.md` has a sibling `D.md` and links it** (enforced by `claude-md-details-sibling`). Default new content
-  to `D.md`; promote to `C.md` only if it clears the must-know bar. Never `@`-import `D.md` from a `C.md`.
-- If you need to cut `C.md`, do it radically: make its parts sound like tweets, and move stuff to `D.md` as-needed. Aim
-  for 3–400 words. OR consider splitting the dir if it's genuinely too complex to describe in 600 words!
-- The doc graph is enforced: `docs-reachable` (every doc reachable from this file by link-walking), `docs-dead-links`
+- We often call `CLAUDE.md` and `DETAILS.md` `C.md` and `D.md`, `C+D.md` together.
+- **`C.md`** Auto-injected by the CC harness whenever a (sub)agent touches a dir, every session and wt.
+  ONLY must-knows: gotchas, guardrails, a 2–3 line module map, and pointer to `DETAILS.md`.
+  `claude-md-length` warns past 600, try to keep it much shorter.
+- **`D.md`** the rest. Read on demand. Architecture, data flows, decision rationale, edge-case
+  catalogs. No length limit, but try to be concise to make it token-efficient. When writing, default to `D.md`; promote to `C.md`.
+- `claude-md-details-sibling` enforces all `C.md` and `D.md` to exist in pairs. Never `@`-import `D.md` from a `C.md`!
+- If you cut `C.md`, do it radically: 1. make its parts sound like tweets, 2. move stuff to `D.md` needed. 3. split the module if genuinely too complex for `C.md` to fit in 600 words. Aim
+- `docs-reachable` enforces the doc graph to be linked:  (every doc reachable from this file by link-walking), `docs-dead-links`
   and `docs-link-text` (no broken or path-shaped reference), and `resident-doc-budget` (the always-resident bundle, this
   file plus its `@`-imports plus `.claude/rules/`, can't silently regrow). Keep this section crisp: it's the contract
   every agent replicates.
