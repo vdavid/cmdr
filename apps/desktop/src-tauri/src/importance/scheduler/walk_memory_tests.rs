@@ -2,7 +2,7 @@
 //!
 //! The walk runs over multi-million-row NAS indexes, where what it keeps PER FOLDER is
 //! the whole cost: a full entry row plus a materialized path plus a per-folder
-//! extension set is what made a real 391,563-folder pass cost 244 MB. These tests pin
+//! extension set is what made a real 391,563-folder pass cost 256.4 MB. These tests pin
 //! the SHAPE (a small fixed record per folder, allocations amortised over the walk
 //! rather than one per folder or per file) with bounds generous enough to survive
 //! allocator and buffer-growth changes, and tight enough that a per-item regression
