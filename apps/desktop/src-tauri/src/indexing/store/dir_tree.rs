@@ -13,8 +13,8 @@
 //! Both whole-index walks build on it: `media_index`'s image walk and `importance`'s
 //! recompute walk, the latter hanging its own per-folder record off the row indices here.
 //!
-//! Depth, measurements, and the alternatives weighed: `media_index/DETAILS.md` § Covered-count
-//! preview.
+//! Depth, measurements, and the alternatives weighed: `media_index/scheduler/DETAILS.md` § The
+//! walk and its memory floor.
 
 use crate::indexing::store::{IndexStore, ROOT_ID};
 
