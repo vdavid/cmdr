@@ -12,9 +12,9 @@ The IPC commands that wrap these entry points live in `../commands.rs` (`../DETA
 - `images_with_tag(label, min_score)` → `TagHit`s, the structured tag-score filter over `media_tags`.
 - `find_similar(source_path, k)` → the source embedding's `top_k` over the resident feature-print cache, source
   excluded; `dedup_clusters(threshold)` → near-duplicate clusters.
-- `search_semantic(query_vec, k)` → CLIP top-k. It takes the ALREADY-ENCODED query vector, so it's a pure vector query
-  testable with deterministic vectors; the command owns the tokenize + encode (`../clip/DETAILS.md` § The query path).
-  It routes between the exact resident scan and the ANN index by corpus size (`../ann/DETAILS.md`).
+- `search_semantic(query_vec, k)` → CLIP top-k. It takes the ALREADY-ENCODED query vector; the command owns the
+  tokenize + encode, and why the seam sits there is `../clip/DETAILS.md` § The query path. It routes between the exact
+  resident scan and the ANN index by corpus size (`../ann/DETAILS.md`).
 - `enriched_count()` → the `COUNT(*)` behind the per-volume coverage signal.
 
 ## The lookup direction (`facts_for_paths`)

@@ -13,9 +13,9 @@ Subsystem-wide invariants (deletion doctrine, the scope model, `should_stop`) ar
 
 ## Must-knows
 
-- **Consume the lifecycle bus by EDGE.** `borrow_and_update` / `has_changed`, ❌ never a `borrow()` poll: the `watch`
-  retains the last `Completed` across a new scan's truncate window, and a poll would GC live rows mid-truncate.
-  ❌ NEVER persist the bus `generation` (it's a transient in-memory wake counter).
+- **Consume the lifecycle bus by EDGE**: `borrow_and_update` / `has_changed`, ❌ never a `borrow()` poll, which would GC
+  live rows mid-truncate (the why is `../DETAILS.md` § The GC safety argument). ❌ NEVER persist the bus `generation`
+  (it's a transient in-memory wake counter).
 - **GC scope is a PARAMETER, and getting it wrong wipes the store.** `GcScope::WholeStore` is for the full pass / Fresh
   sweep only; a live tick MUST use `GcScope::TouchedDirs`, which collects only rows under the dirs it re-walked.
   Whole-store `gc_targets` on a scoped walk deletes every row OUTSIDE the touched dirs.

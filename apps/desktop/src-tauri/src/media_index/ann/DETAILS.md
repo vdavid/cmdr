@@ -77,9 +77,9 @@ corpus size (`expansion_search_for`: 128 ≤ 300k, 256 ≤ 700k, 512 beyond — 
 component — OS-drift re-embeds flow through writer upserts row by row), so a model bump or index-format change reads as
 `MetaIncompatible` and rebuilds. The index is versioned independently of `SCHEMA_VERSION`, and the disposable-cache
 paths all take it along: `MediaStore::delete_and_recreate` (schema wipe), `PruneAllClip` (delete model), `PurgeVolume`,
-and the crashed-session wipe. `cache` holds the query-side route + warm view per volume, invalidated through
-`vector::cache::invalidate` — the ONE choke point for "this volume's derived query caches changed" — and dropped by the
-memory-watchdog stop hook with the resident caches.
+and the crashed-session wipe. `cache` holds the query-side route + warm view per volume, invalidated and dropped
+through `vector::cache`'s `invalidate` / `clear_all` rather than its own seams (`../vector/DETAILS.md`), so every
+existing invalidation site stays correct without naming this layer.
 
 ## Testing
 
