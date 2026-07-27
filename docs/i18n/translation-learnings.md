@@ -34,9 +34,9 @@ go HERE or in the guide. When a learning becomes a hard rule, promote it into th
 
 ## Source-quality traps
 
-The full, durable list lives in `reference-pile/how-to-mine.md` § Source-quality traps (sibling/variant splits, no-macOS
-languages, English-valued Siri-intent files in macOS bundles, Microsoft's wrong-sense first hit, per-language formality,
-catalog-tag ≠ pile-folder). Read that section before mining any language.
+The full, durable list lives in `reference-pile/how-to-mine.md` § "Source-quality traps" (sibling/variant splits,
+no-macOS languages, English-valued Siri-intent files in macOS bundles, Microsoft's wrong-sense first hit, per-language
+formality, catalog-tag ≠ pile-folder). Read that section before mining any language.
 
 ## Reviewing keys a feature added in passing
 

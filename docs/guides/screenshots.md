@@ -105,6 +105,6 @@ Do it once per theme:
 - **README**: nothing to edit. It points at `brand/screenshots/app-main-{dark,light}.png`, so replacing the files is
   enough. Commit the new PNGs.
 - **Website hero**: regenerate the composited WebP layers from the new masters. Follow
-  `apps/website/public/hero/CLAUDE.md` § "Regenerate the layers".
+  `apps/website/public/hero/DETAILS.md` § "Regenerate the layers".
 - **AlternativeTo**: re-upload `app-main-{dark,light}.png` manually on the listing. (Add the settings/search shots here
   when you have them.)

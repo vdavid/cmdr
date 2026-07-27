@@ -347,7 +347,8 @@ of the per-resource derivation paths. Future regressions are caught by re-runnin
 ## Related docs
 
 - `mcp.md`: MCP server overview, port discovery for external clients, action-tool ack contract.
-- `AGENTS.md` § Debugging / § MCP / § Worktrees: repo-wide cross-references.
+- `AGENTS.md` § "Where to look" (debugging and logs) and `AGENTS.md` § "Workflow" (worktrees): repo-wide
+  cross-references.
 - `apps/desktop/CLAUDE.md`: desktop app overview, `--worktree` flag.
 - `apps/desktop/src-tauri/src/mcp/CLAUDE.md`: server lifecycle and port-file protocol.
 - `apps/desktop/src-tauri/src/secrets/CLAUDE.md`: Keychain service-name suffix.

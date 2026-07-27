@@ -147,7 +147,8 @@ if (!(await pollUntil(tauriPage, async () => isReady(tauriPage), 3000))) {
 Enforced by the `bare-poll` Go check (fast lane, ~9 ms warm; scans `apps/desktop/test/`). Opt out for genuine
 best-effort cleanups (dismissing an overlay that might or might not be there) with `// allowed-bare-poll: <reason>` on
 the line above or as a trailing comment on the same line. The full design rationale is in
-`apps/desktop/test/e2e-playwright/DETAILS.md` § "Polling helpers" and `scripts/check/checks/DETAILS.md` § `bare-poll`.
+`apps/desktop/test/e2e-playwright/DETAILS.md` § "`pollUntil` is silent on timeout" and `scripts/check/checks/DETAILS.md`
+§ `bare-poll`.
 
 ### ❌ Synthesized F-key dispatches for tests that care about the resulting dialog
 

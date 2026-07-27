@@ -83,7 +83,7 @@ picker UI) and again in each `+page.server.ts` (for that page's fetch); both cal
 agree. A valid `?day=YYYY-MM-DD` forces `range: 'day'`. The funnel row click on `/` navigates to `/?day=<date>`, which
 filters the Acquisition sections to that day and highlights the row. Cache keys include the day (`selectionCacheKey`) so
 two picked days never collide. The whole rationale (why a `DashboardSelection` not a bare `TimeRange`, the coarse-window
-mapping for worker/PostHog sources) is in `CLAUDE.md` § "Key decisions".
+mapping for worker/PostHog sources) is in § "Key decisions" below.
 
 ## Componentization
 

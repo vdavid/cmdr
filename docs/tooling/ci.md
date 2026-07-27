@@ -97,7 +97,7 @@ silent** (a warning, not a red job):
   Docker run fixes it (warm e2e build ~10 min vs ~16-17 cold). If e2e ever starts building cold again, check that the
   save isn't warning "Permission denied" again.
 - **`desktop-e2e-linux` base image**: the E2E Docker base image (apt packages + Node + Rust; see
-  `apps/desktop/test/e2e-linux/CLAUDE.md` § Build caching) cached as a `docker save` tar, keyed on
+  `apps/desktop/test/e2e-linux/DETAILS.md` § "Build caching") cached as a `docker save` tar, keyed on
   `hashFiles(Dockerfile.base)` with **no restore-keys** (a stale tar's image carries a different content-hash tag, so
   `e2e-linux.sh` would rebuild anyway). Saves the cold ~4-min image build per run. **Load-bearing companions: the "Free
   disk space" step and the "Export E2E base image" step.** The job briefly holds the loaded image (~3.5 GB) plus, on a

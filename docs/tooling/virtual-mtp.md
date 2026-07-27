@@ -73,7 +73,7 @@ Two pieces, both already in the repo for E2E:
   launched with none of those vars behaves like a plain build, so the dev opt-in never changes what E2E sees.
 
 This is the same device the Playwright MTP specs drive (see `apps/desktop/test/e2e-playwright/CLAUDE.md` and
-`apps/desktop/src-tauri/src/mtp/CLAUDE.md` § "Virtual MTP device"). The fixture tree matches
+`apps/desktop/src-tauri/src/mtp/DETAILS.md` § "Virtual MTP device"). The fixture tree matches
 `apps/desktop/test/e2e-shared/mtp-fixtures.ts`.
 
 ## Limitations
