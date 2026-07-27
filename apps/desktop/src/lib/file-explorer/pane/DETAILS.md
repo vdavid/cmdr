@@ -14,125 +14,37 @@ list).
 
 ## File map
 
-### Components
+Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
+map. What the mechanisms DO is in § Conventions and § Gotchas below: the focus contract, type-to-jump, the snapshot
+pane, volume capabilities, `PaneAccess` and the command-body factories, the explorer store, `FunctionKeyBar`, self-drag
+identity, dialog lifecycle, live disk space, the `navigate()` transaction and `Location`, the listing loader's token
+model, nav-state persistence, the five edge flows, and the `..` parent offset. Only the layout facts that none of those
+carry live here:
 
-- **`DualPaneExplorer.svelte`**: Root: two panes + resizer + dialog manager + key/command dispatch + MCP wiring
-- **`FilePane.svelte`**: One pane: listing, cursor, selection, view mode, breadcrumb, alt-view switching. Its `.content`
-  div is the single wrapper every view kind mounts inside (Full, Brief, Network, search results, error and SMB panes)
-  and owns the pane's single background layer (`--color-pane-bg`). NOT the side gutter, though: each list view owns
-  that, because the column header has to keep spanning edge to edge while the rows inset — see `views/DETAILS.md`
-- **`DialogManager.svelte`**: Renders every modal dialog (transfer, delete, rename, new-folder, alert, error)
-- **`FunctionKeyBar.svelte`**: F1–F10 bar at the bottom of the window
-- **`PaneResizer.svelte`**: Drag handle between the two panes
-- **`ErrorPane.svelte`**: Friendly-error display for listing failures (see parent § "Error display")
-- **`VolumeUnreachableBanner.svelte`**: Volume resolution timed out OR SMB give-up state; retry + open home / disconnect
-- **`SmbReconnectingView.svelte`**: Spinner + progress bar while `smb-reconnect-manager` runs its backoff cycle
-- **`SmbReauthView.svelte`**: Sign-in prompt when an SMB reconnect gave up on auth (`needs-auth`); wraps
-  `NetworkLoginForm`
-- **`MtpConnectionView.svelte`**: Placeholder pane for MTP connection states
-- **`NetworkMountView.svelte`**: Network browser host/share list + login form
-- **`SearchResultsView.svelte`**: Snapshot view for `volumeId === 'search-results'` (see parent § "Search-results")
-- **`TypeToJumpIndicator.svelte`**: Bottom-right "Jump: …" chip
+- **`FilePane.svelte`'s `.content` div is the single wrapper every view kind mounts inside** (Full, Brief, Network,
+  search results, error, and SMB panes) and owns the pane's one background layer (`--color-pane-bg`). It does NOT own
+  the side gutter: each list view owns that, because the column header has to keep spanning edge to edge while the rows
+  inset. See `views/DETAILS.md`.
+- **`listing-diff-sync.svelte.ts` runs the `directory-diff` handler at two rates.** Cursor/selection reconciliation
+  fires IMMEDIATELY (it has to stay exact), while the visible-listing refetch (soft-refresh tick, `totalCount`, stats,
+  brief column widths) is coalesced by a leading + trailing `createThrottle` at
+  `INDEX_LISTING_UPDATE_MIN_INTERVAL_MS` (250 ms, ≤4/sec). Under heavy churn the backend `diff_emitter` only collapses
+  to ~50 ms (~20/sec), and each unthrottled refetch re-renders the range into fresh WebKit compositor surfaces (1+ GB
+  GPU under a storm), so the throttle is the demand-side cap. The index-SIZE refresh path (`index-dir-updated` →
+  `refreshIndexSizes`) is a separate source, already leading-throttled at 2 s per pane in `index-events.ts`, which also
+  resolves the well-known macOS `/private/` symlinks before matching paths.
+- **`git-browser-sync.svelte.ts::cleanup()` has to drop the SETTING listeners too**, not just the repo subscription, or
+  they leak per pane.
+- **Two independent MCP mirrors, so a change to one doesn't cover the other**: `pane-mcp-sync.svelte.ts` mirrors pane
+  state and deliberately skips network + search-results panes (`NetworkBrowser` owns the MCP push for the network view
+  and would get clobbered; a snapshot is local dialog state, not a directory agents query), while
+  `tab-mcp-sync.svelte.ts` debounce-mirrors each pane's tab structure via `updatePaneTabs`.
+- **`debug-emitters.svelte.ts` is dev-only**: its `$effect`s no-op outside DEV and in tests.
+- **`pane-background-dblclick.ts` is scoped to list views by construction.** `isFileListBackgroundClick` requires a
+  `[role="listbox"]` ancestor and a non-`.file-entry` target, so error / network / search panes (no listbox) can never
+  fire the double-click-to-parent gesture.
 
-### Reactive state (`*.svelte.ts`)
-
-- **`explorer-state.svelte.ts`**: Explorer store: `focusedPane`, `showHiddenFiles`, layout split, the two tab-mgr
-  holders
-- **`dialog-state.svelte.ts`**: Dialog props + handlers (transfer, delete, mkdir, alert, error); factory
-- **`selection-state.svelte.ts`**: `SvelteSet<number>` of indices + range anchor/end + `applyIndices` helpers
-- **`rename-flow.svelte.ts`**: Rename validation, conflict + extension dialogs, save / cancel
-- **`type-to-jump-state.svelte.ts`**: Buffer + indicator + reset/hide timers + generation counter (race protection)
-- **`type-to-jump-controller.svelte.ts`**: Wraps `type-to-jump-state` with the IPC fuzzy-match runner
-  (generation-guarded)
-  - the MCP last-matched-name mirror. FilePane keeps handleJumpKeystroke / isJumpActive / clearJumpState delegates
-- **`git-browser-sync.svelte.ts`**: Breadcrumb repo-chip + git-status-column: the two setting mirrors, the lazy repo
-  lookup/subscribe lifecycle, the path-change `$effect`, and `cleanup()` (drops the setting listeners too — the pre-
-  extraction FilePane leaked them)
-- **`smb-view-state.svelte.ts`**: SMB reconnect view deriveds (reconnecting / gave-up / needs-auth) + the reconnect-
-  manager subscription `$effect` + the cancel/disconnect/connect-directly handlers. Takes `currentVolumeInfo` (shared
-  with tint/eject) as a dep
-- **`volume-space.svelte.ts`**: Live per-pane disk space: the reactive readout, the fetch (disk-image skip), the backend
-  live-update listener, and watch/unwatch keyed by pane id. FilePane keeps a `refreshVolumeSpace` delegate
-- **`volume-tint.svelte.ts`**: `color-mix(...)` or sRGB hex by volume kind; pure `volumeKindFor` classifier
-- **`enter-menu.svelte.ts`**: `createEnterMenu` — the Enter-behavior popup's open/anchor/highlight state + choice
-  dispatch (browse / open / deep-link to Settings); see § "Enter-behavior policy"
-- **`pane-mcp-sync.svelte.ts`**: Mirrors pane state into the MCP `PaneState` store; skips network/search panes
-- **`persistence-subscriber.svelte.ts`**: The single nav-state persistence subscriber (A5): reactive `$effect`s →
-  `app-status.json`
-- **`listing-diff-sync.svelte.ts`**: File-watcher listeners + `reconcileCursorAndSelection` (pure, off-by-one core). The
-  `directory-diff` handler splits into two rates: cursor/selection reconciliation runs immediately (must stay exact),
-  while the visible-listing refetch (soft-refresh tick + `totalCount` + stats + brief column widths) is coalesced by a
-  leading + trailing `createThrottle` at `INDEX_LISTING_UPDATE_MIN_INTERVAL_MS` (250 ms, ≤4/sec). Under heavy churn the
-  backend `diff_emitter` only collapses to ~50 ms (~20/sec), and each unthrottled refetch re-renders the range into
-  fresh WebKit compositor surfaces (1+ GB GPU under a storm); the throttle is the demand-side cap. The index-SIZE
-  refresh path (`index-dir-updated` → `refreshIndexSizes`) is a separate source, already leading-throttled at 2 s/pane
-  in `index-events.ts`.
-- **`drag-drop-controller.svelte.ts`**: Native drag band: drop-target state, drag handlers, auto-scroll loop, Tauri
-  listeners
-- **`tab-mcp-sync.svelte.ts`**: Debounced mirror of each pane's tab structure into the MCP backend store
-  (`updatePaneTabs`) via a reactive `$effect`; sibling of `pane-mcp-sync` (which mirrors pane state, not the tab set)
-- **`quick-look-follow.svelte.ts`**: Quick Look cursor-follow (debounced `quickLookSetPath`) + the error-state
-  auto-close, two reactive `$effect`s + the debounce/generation state
-- **`debug-emitters.svelte.ts`**: Dev-only reactive `$effect`s that mirror per-pane history + closed-tab stacks to the
-  debug window (no-op outside DEV / in tests)
-
-### Pure utilities (`*.ts`)
-
-- **`types.ts`**: `FilePaneAPI`, `SwapState`, `ListViewAPI`, `*BrowserAPI`, `NetworkCursorEntry`
-- **`pane-access.ts`**: `PaneAccess`: live-reference read API over pane nav + chrome state for factories
-- **`focused-pane-reads.ts`**: Store-backed focused-pane reads (path / volume id / searchable folder) for externals
-- **`clipboard-operations.ts`**: System-clipboard copy/cut/paste factory (MTP refusal, snapshot, cut-vs-copy)
-- **`file-operation-commands.ts`**: Rename / new-folder / new-file / viewer / transfer / delete openers factory
-- **`pane-commands.ts`**: MCP/palette read-only + delegating command bodies (selection, key-route, MTP val)
-- **`sort-operations.ts`**: Sort orchestration factory: column-click cycle, order toggle, atomic MCP `setSort`,
-  re-sort-both-panes hook (over the pure `sorting-handlers` helpers)
-- **`swap-panes.ts`**: Full left/right pane swap (nav-state trade + listing adoption) + the `canSwapPanes` gate
-- **`volume-selection.ts`**: MCP/palette volume selection by index / name, folding onto `navigate({ selectVolume })`
-- **`edge-flow-handlers.ts`**: The five recovery nav edge-flows (cancel-loading, MTP-fatal, retry-unreachable,
-  open-home, volume-unmount), each folding onto `navigate({ source: 'fallback' | 'cancel' })`
-- **`pane-mirror.ts`**: "Copy path from → to pane" — mirror location + network state without shifting focus
-- **`key-dispatch.ts`**: Container-level keyboard + focus routing (`handleKeyDown` / `handleKeyUp` / `handleFocusGuard`,
-  the volume-chooser swallow, escape-during-loading, type-to-jump intercept)
-- **`mcp-tab-action.ts`**: The MCP `tab` tool's per-pane dispatch (new/close/close_others/reopen/activate/set_pinned)
-- **`type-to-jump-keys.ts`**: Pure `isTypeToJumpChar` / `isTypeToJumpResetKey` shared by both jump intercepts
-- **`initialization.ts`**: Load persisted tabs + status + settings; resolve volumes; apply E2E overrides
-- **`tab-operations.ts`**: Tab CRUD + context menu + persistence wired to `tabs/tab-state-manager`
-- **`transfer-operations.ts`**: Build `TransferDialogPropsData` (and snapshot/dropped variants) from a focused pane
-- **`transfer-entry.ts`**: Shared transfer entry seam: `checkTransferDestinationGuard` + `resolveSourceVolumeId`
-- **`sorting-handlers.ts`**: `getNewSortOrder` (column click cycle), `toFrontendIndices` (`..` offset)
-- **`index-events.ts`**: Throttled `index-dir-updated` handler with `/private/` symlink resolution
-- **`listing-loader.ts`**: The streaming directory-load pipeline + the pane-local generation/listingId drop-foreign-
-  listings token model (see § "The listing loader" below). `createListingLoader` owns `loadDirectory` /
-  `handleListingComplete` / `resetLoadingState`, the six streaming listeners, the `pendingLoad` promise machinery,
-  `navigateToFallback` / `navigateToParent` / `navigateToPath` / `handleCancelLoading` / `whenLoadSettles`, and the swap
-  pair (`getSwapState` / `adoptListing`). FilePane keeps the lifecycle `$state` + thin FilePaneAPI delegates.
-- **`listing-token.ts`**: `isEventForCurrentLoad(payloadListingId, captured, liveGeneration)` — the pure drop-foreign
-  predicate every streaming listener's synchronous entry checks
-- **`navigate.ts`**: `navigate(intent, deps)` transaction: the single coordinator-level pane-nav entry. `Location` is
-  navigation's currency (`{ goTo }` self-routes by volume; `{ selectVolume }` always switches) — its module doc is the
-  canonical home for the destination shapes and the four edge resolvers.
-- **`has-parent.ts`**: `computeHasParent({ hasParentRow, currentPath, effectiveVolumeRoot })`
-- **`first-selected-index.ts`**: `firstSelectedIndex(idxs, hasParent)` (post-select cursor-jump target, skips the `..`
-  row)
-- **`volume-capabilities.ts`**: `VolumeKind` + frozen per-kind `VolumeCapabilities` table + `volumeKindOf` /
-  `capabilitiesFor`
-- **`archive-enter-policy.ts`**: pure `resolveEnterPolicy(entry, overrides)` (Enter → browse/open/ask) + the format
-  registry + `parseEnterBehaviorOverrides` (see § "Enter-behavior policy")
-- **`enter-menu.ts`**: builds the Enter popup's items and resolves its cursor-row anchor point
-- **`search-results-keys.ts`**: Pure key→action dispatch for the flat snapshot pane
-- **`search-pane-keys.ts`**: The side-effect wiring over `search-results-keys` (view/edit-file, toggle, move + shift-
-  extend); snapshot-pane semantics (`hasParent = false`)
-- **`cursor-nav-keys.ts`**: Brief/Full list cursor movement (arrows, Page/Home/End, Shift-extend) over
-  `handleNavigationShortcut`; `applyNavigation` also feeds `toggleSelectionAndMoveDownAtCursor`
-- **`selection-dialog-keys.ts`**: Classify `+` / `-` keypresses → open Selection dialog (Total Commander parity)
-- **`function-key-commands.ts`**: `fnKeyToCommand`: the F-key bar's 9 button → command-id map (typed; unit-tested)
-- **`error-pane-utils.ts`**: Tiny helper for `ErrorPane`'s technical-details rendering
-- **`pane-background-dblclick.ts`**: `isFileListBackgroundClick(target)`: true only for a double-click on the empty
-  file-list background (inside a `[role="listbox"]`, not on a `.file-entry` row). Gates the double-click-to-parent
-  gesture, scoped to list views (error / network / search panes have no listbox, so they never trigger it).
-- **`integration-test-utils.ts`**: Shared test scaffolding for pane integration tests
-
-#### Easy-navigation gestures (GitHub #33)
+### Easy-navigation gestures (GitHub #33)
 
 Two mouse conveniences, both routed through the normal pane navigation (so Back/Forward history and the error pipeline
 come for free):
@@ -150,14 +62,20 @@ come for free):
 
 ### Tests
 
-Colocated with the code they pin. Notable cross-cutting suites: `DualPaneExplorer.test.ts`,
-`selection-consistency.test.ts` (selection survives diffs / cancel / source-item-done), `listing-diff-sync.test.ts`
-(pure `reconcileCursorAndSelection` off-by-one coverage), `file-pane-keyboard.test.ts`, `volume-breadcrumb.test.ts`,
-`volume-tint.svelte.test.ts` (+ `volume-tint.svelte.fallback.test.ts` for the old-WebKit branch), `*.a11y.test.ts` (axe
-sweeps per alt-view component). The drag-drop controller suite is split in two: `drag-drop-controller.svelte.test.ts`
-(handler contracts incl. the self-drag-identity scenarios) and `drag-drop-controller.listeners.svelte.test.ts` (Tauri
-listener registration + the enter→over→drop cycle), sharing volume constants and builders from
-`drag-drop-controller.test-fixtures.ts` (the `vi.mock` blocks stay duplicated per file — vitest hoists them per module).
+Colocated with the code they pin (`codegraph_files` lists them; every alt-view component carries an `*.a11y.test.ts` axe
+sweep). Three splits the layout doesn't explain for itself:
+
+- **The drag-drop controller suite is split in two on purpose**: `drag-drop-controller.svelte.test.ts` (handler
+  contracts, including the self-drag-identity scenarios) and `drag-drop-controller.listeners.svelte.test.ts` (Tauri
+  listener registration + the enter→over→drop cycle), sharing volume constants and builders from
+  `drag-drop-controller.test-fixtures.ts`. The `vi.mock` blocks stay DUPLICATED per file: vitest hoists them per module,
+  so they can't move into the shared fixtures.
+- **`volume-tint.svelte.fallback.test.ts` sits beside `volume-tint.svelte.test.ts`** because the two force opposite
+  `hasColorMix` branches: the main file pins it `true` to assert the `color-mix(...)` string, the fallback file forces
+  the JS sRGB-mix branch and asserts hex (stubbing `getComputedStyle`, since jsdom doesn't resolve CSS custom
+  properties).
+- **`integration-test-utils.ts` and `drag-drop-controller.test-fixtures.ts` are scaffolding, not suites** — they carry
+  no tests of their own.
 
 The drag-drop controller owns native drag auto-scroll lifecycle because it sees every terminal drag path (`drop`,
 `leave`, `cleanup`). `FilePane.autoScrollDuringDrag` forwards one animation-frame scroll request to the active list; the
