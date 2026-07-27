@@ -6,57 +6,25 @@ remote execution), see `../CLAUDE.md`.
 
 ## Key files
 
-- **`common.go`**: Core types (`CheckDefinition`, `CheckResult`, `CheckContext`, `CheckFunc`), shared utils
-  (`RunCommand`, `EnsureGoTool`, `CommandExists`, `runPrettierCheck`, `runESLintCheck`, `indentOutput`,
-  `trimBuildNoise`)
-- **`registry.go`**: `AllChecks`: canonical ordered list of all check definitions. Lookup and validation functions
-  (`FilterSlowChecks`, `FilterCIOnlyChecks`, `FilterFastChecks`, `ValidateCheckNames`).
-- **`registry_test.go`**: Collision detection, `CLIName()` tests
-- **`desktop-rust-*.go`**: One file per Rust check
-- **`desktop-svelte-*.go`**: One file per Svelte/TS check
-- **`website-*.go`, `api-server-*.go`, `scripts-go-*.go`**: One file per check
-- **`file-length.go`**: Informational file-length scanner (warn-only, never fails). Supports an allowlist and
-  shrink-wraps it on local runs.
-- **`file-length-allowlist.json`**: Allowlist for file-length check:
-  `{ "exempt": { "path": reason }, "files": { "path": lineCount } }`. See § File-length allowlist.
-- **`claude-md-length.go`**: Warn-only push-tier scanner: warns when a `CLAUDE.md` exceeds 600 words (`DETAILS.md` is
-  the unlimited pull tier, not scanned). Allowlist with the same shrink-wrap semantics as file-length. See § CLAUDE.md
-  length.
-- **`claude-md-length-allowlist.json`**: Allowlist for claude-md-length: `{ "files": { "path": wordCount } }`. Same
-  ratchet/consent rules as file-length.
-- **`docs_graph.go`**: Shared doc-discoverability graph: reachability from the repo-root `CLAUDE.md` over references
-  between docs. Powers both the `docs-reachable` check and the `--docs-graph` renderer. See § Docs reachable.
-- **`docs-reachable.go`**: Errors (not warn-only) when any `CLAUDE.md` / `DETAILS.md` / `docs/` file can't be reached
-  from the root `CLAUDE.md`. Allowlist with the same shrink-wrap/consent semantics as file-length. See § Docs reachable.
-- **`docs-reachable-allowlist.json`**: Allowlist for docs-reachable: `{ "files": { "path": reason } }` of docs
-  intentionally unreachable. Goal is empty. Shrink-wraps gone/now-reachable entries; adding one needs David's OK.
-- **`docs-dead-links.go`**: Errors (not warn-only) when any Markdown doc has a relative link whose target file or
-  directory doesn't exist. Companion to docs-reachable (orphan vs broken link). No allowlist. See § Docs dead links.
-- **`claude-md-details-sibling.go`**: Errors (not warn-only) when any non-root `CLAUDE.md` lacks a sibling `DETAILS.md`
-  in its directory or doesn't reference a `DETAILS.md`. Mandates the C/D pair so the "should this area have a
-  `DETAILS.md`?" decision never recurs. No allowlist. See § CLAUDE.md / DETAILS.md sibling.
-- **`resident-doc-budget.go`**: Warn-only metric capping the unconditionally-resident agent-doc bundle (the repo-root
-  `CLAUDE.md`, its transitive `@`-imports, and `.claude/rules/*.md`). The cap is a hardcoded constant that ratchets down
-  only. See § Resident doc budget.
-- **`e2e-durations.go`**: E2E test duration flagger (warn-only): parses the Playwright JSON reports after each E2E run
-  and flags tests over the 2 s budget. Embedded in both E2E checks, not a registry check. See § E2E test duration
-  flagger.
-- **`e2e-duration-allowlist.json`**: Per-platform (`macos` / `linux`) allowlist for the duration flagger. Each value is
-  either a bare reason string (legacy: suppressed at any duration over the 2 s budget — for inherently-unbounded costs
-  like axe audits or the virtual MTP protocol) or an object `{ "maxMs": N, "reason": "..." }` that raises that one
-  test's budget to N ms (suppressed at or under N, warns again past N as a regression beyond its agreed headroom). Use
-  the capped form to grant contention headroom (e.g. 3000) while still catching real blow-ups. Entries need a reason;
-  adding an entry or raising a cap needs David's OK.
-- **`website-bundle-size.go`**: Warn-only website `dist/` size budget: warns when the total grows >10% over the
-  committed baseline. Self-skips without `dist/`. See § Website bundle-size baseline.
-- **`website-bundle-size-baseline.json`**: Committed baseline for `website-bundle-size`: total bytes + hash-normalized
-  top assets. Ratchets down automatically; raising it is manual (delete + regenerate) with David's OK.
-- **`allowlist.go`**: Shared allowlist shrink-wrap plumbing: `writeJSONAllowlist` (stable JSON rewrite),
-  `reformatWithOxfmt`, `fileExists`. Verdict logic stays per-check.
-- **`directives.go`**: `directiveTracker`: records `allowed-*` opt-out comment sites per file and which excused a
-  violation; unused ones are reported as orphans (the "unused eslint-disable" equivalent).
-- **`changelog-commit-links.go`**: Validates every `https://github.com/vdavid/cmdr/commit/<sha>` URL in `CHANGELOG.md`
-  resolves, via a single `git cat-file --batch-check` process.
+Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
+map. Each scanner's own semantics (thresholds, verdicts, allowlist shapes, consent rules) live in its § below, and the
+recipe for adding one is § "Adding a new check". Only the layout rules live here:
+
+- **One file per check, `{app}-{name}.go`, with its test as `{app}-{name}_test.go` beside it**: `desktop-rust-*`,
+  `desktop-svelte-*`, `website-*`, `api-server-*`, `scripts-go-*`. `registry.go` holds the single canonical ordered
+  `AllChecks` list plus the filter/validation helpers; `common.go` holds the core types and command plumbing every
+  check builds on; `inputs.go` holds the shared `Inputs` path sets.
+- **An allowlist is a sibling JSON named `<check>-allowlist.json`**, and it's NEVER hand-edited: the owning check
+  shrink-wraps it on local runs, so you run the check and commit its rewrite (`.claude/rules/file-length-allowlist.md`).
+  The shared staleness policy, and why it lives inside each check rather than a meta-check, is § "Allowlist
+  shrink-wrap". Seven exist today; `a11y-coverage-allowlist.json` and `ui-primitive-coverage-allowlist.json` are the two
+  with no § of their own (both are exempt-with-reason lists whose checks FAIL on a dead or redundant entry rather than
+  auto-removing it).
+- **Not every scanner is a registry check.** `e2e-durations.go` is embedded in the two E2E checks (§ "E2E test duration
+  flagger" has the why), and `docs_graph.go` is a shared library behind both `docs-reachable` and the `--docs-graph`
+  renderer in `../docs_graph_render.go`. Neither appears in `AllChecks`.
+- **`changelog-commit-links.go` resolves every `…/commit/<sha>` URL in `CHANGELOG.md` through ONE
+  `git cat-file --batch-check` process**, not a process per link.
 
 ## Check definition shape
 
