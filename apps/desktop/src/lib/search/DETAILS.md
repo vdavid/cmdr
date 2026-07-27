@@ -27,38 +27,25 @@ to 80vw on smaller windows, and the results region absorbs whatever vertical roo
 
 ## Files
 
-- **`SearchDialog.svelte`**: Thin Search-specific wrapper: builds a `QueryDialogConfig` and mounts
-  `lib/query-ui/QueryDialog.svelte`. Owns index lifecycle, AI translation filter writes, snapshot promotion,
-  recent-search add/remove, and the system-dir exclude tooltip. Zero orchestration code
-- **`SearchResultsView.svelte`**: Pane view for `search-results://` snapshot panes (lives in `lib/file-explorer/pane/`,
-  but conceptually a Search consumer)
-- **`recent-searches-state.svelte.ts`**: Thin instantiation of the `lib/query-ui/recent-items/recent-items-state`
-  factory wired to `getRecentSearches`. Exposes the legacy named API the rest of Search expects
-- **`search-state.svelte.ts`**: Façade composing `lib/query-ui/query-filter-state` (core) + `search-extras-state`
-  (Search-only). Exposes the legacy named API for `SearchDialog.svelte`
-- **`search-state.test.ts`**: Vitest tests against the Search façade
-- **`search-extras-state.svelte.ts`**: Factory `createSearchExtrasState()` for Search-only fields (`scope`,
-  `excludeSystemDirs`, AI label/pattern/kind, index flags)
-- **`search-extras-state.test.ts`**: Pins the extras shape and the AI-write split contract
-- **`build-search-query.ts`**: Pure helper layering `excludeSystemDirs` onto the core's `buildBaseSearchQuery()` for the
-  `searchFiles` IPC payload
-- **`searchable-folder.ts`**: Pure helper: walks pane history backward for the most recent real folder when the focused
-  pane is on `search-results://`. Drives D12 "Use current folder" smart fallback
-- **`searchable-folder.test.ts`**: Pins the walk-back rule
-- **`snapshot-store.svelte.ts`**: Frontend-only in-memory map of search-result snapshots, refcounted. Pure module state,
-  no Svelte reactivity. Exports `resolveSnapshotPaths` for source-side ops on the snapshot pane
-- **`snapshot-store.svelte.ts.test.ts`**: Create/read/no-overwrite, refcount inc/dec/delete, last-attempt slot swaps,
-  entries-cap truncation, debug stats, `resolveSnapshotPaths`
-- **`snapshot-label.ts`**: Pure helper: `buildSnapshotLabel({ mode, query, aiPrompt? })` for breadcrumb + tab title
-- **`snapshot-label.test.ts`**: Filename/regex/AI label shapes, AI prompt priority, truncation cap, fallbacks
-- **`capabilities.ts`**: Owns the `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` shortcut toast string. Capabilities themselves
-  come from the per-kind table (`lib/file-explorer/pane/volume-capabilities.ts`); there's no Search-specific shim
-- **`capabilities.test.ts`**: Pins the toast string
+Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
+map. What each piece DOES is in the sections below: the wrapper in § "Search wrapper", the two state factories and the
+façade in § "Where the state actually lives", the snapshot store and its refcounting in § "Snapshot store",
+`searchable-folder` in § "'Use current folder' smart fallback", and the capability flags in § "Capability flags".
+Everything shared with the Selection dialog (the query bar, mode chips, AI strip, filter chips, path pills, row menu,
+results table, empty state, and the `recent-items/` family) lives in `../query-ui/CLAUDE.md`, over the app-wide
+`$lib/ui/Chip` / `Popover` / `FilterPopover` primitives. Only the layout facts that none of those carry live here:
 
-Shared components, helpers, and tests live in `../query-ui/CLAUDE.md` — Search and Selection both import the unified
-components (`QueryBar`, `ModeChips`, `AiPromptStrip`, `FilterChips`, `PathPills`, `SearchRowMenu`, `QueryResults`,
-`EmptyState`, the `recent-items/` family, and the `filter-chip-state` / `filter-popover-helpers` / `path-pills-layout`
-helpers). The chip + popover primitives are the app-wide `$lib/ui/Chip` / `$lib/ui/Popover` / `$lib/ui/FilterPopover`.
+- **`SearchResultsView.svelte` does NOT live in this directory.** It sits in `lib/file-explorer/pane/` with the other
+  pane views even though it's conceptually a Search consumer, because it renders as a pane for `search-results://`
+  snapshot panes.
+- **`capabilities.ts` owns only the `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` string.** The capabilities themselves come from
+  the per-kind table in `lib/file-explorer/pane/volume-capabilities.ts`; there is deliberately no Search-specific
+  capability shim, so don't add one.
+- **`snapshot-store.svelte.ts` carries the `.svelte.ts` extension for ONE `$state` cell**, `mutationTick`. The
+  snapshot map itself is deliberately plain module state, because consumers read snapshots imperatively at render time
+  and nothing should re-render when the map changes; the tick exists only so a rendered snapshot can subscribe to a
+  cross-snapshot delete. Keep new reactivity out of the map: wrap `getSnapshot` results in a `$derived` at the call
+  site instead.
 
 ## Search wrapper
 
