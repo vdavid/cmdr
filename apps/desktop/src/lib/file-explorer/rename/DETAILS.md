@@ -55,6 +55,40 @@ renamed to a dot-prefixed name while hidden files are off, show "Your file disap
 aren't shown." The `moveCursorToNewFolder()` pattern: subscribe to `directory-diff`, wait 50 ms after the event for the
 listing cache to update, query `findFileIndex()`, clean up the listener after a 3 s timeout.
 
+## Ending a rename session
+
+Four ways in, each with a different meaning:
+
+- **Enter** (`onSubmit` → `handleRenameSubmit`): save. An invalid name shakes, toasts, and KEEPS the editor open and
+  focused, because the user is still there to fix it.
+- **Escape / Tab** (`onCancel` → `handleRenameCancel`): discard.
+- **A mouse press outside the editor** (`onClickAway` → `handleRenameClickAway`): save, the way Finder does.
+- **Losing focus with no click behind it** (`onblur` → `handleRenameCancel`): discard. This is the structural case: the
+  row scrolls out of the virtual window and the input unmounts.
+
+The click-away path keys off a document-level `mousedown` (capture phase, registered by `InlineRenameEditor` for its own
+lifetime), NOT off blur. Blur can't tell "the user clicked elsewhere" from "the list scrolled", and committing on the
+second would silently rename a file because the user scrolled. Capture phase so it lands before the row and pane
+handlers move focus.
+
+Three guards keep the two paths from colliding, all in `rename-flow.svelte.ts`:
+
+- `pendingCommit`: the click's own blur arrives right after the save was sent, and must not cancel the session the save
+  still owns (`handleRenameResult` still needs `rename.target` to open a dialog).
+- The dialog-state check in `handleRenameClickAway`: the editor stays mounted under the extension/conflict dialogs, so
+  pressing a dialog button reaches the click-away handler too.
+- `suppressBlurCancel = !commitFromClickAway`: a dialog opening normally blurs the editor, and that blur must not
+  cancel. After a click-away the blur was already spent, so arming the one-shot flag would eat the user's next Escape
+  instead.
+
+`commitFromClickAway` also gates `restoreFocus()`: the click already decided where focus goes (another row, the other
+pane, the breadcrumb), so a save finishing afterwards must not yank it back. Same reason a backend problem reported
+after a click-away ends the session instead of shaking: there's no focused field left to fix the name in.
+
+An invalid name plus a click away discards the edit and toasts `fileExplorer.rename.keptOriginalName` (the validation
+message plus "Kept the original name."). Trapping the click until the name is valid is the other defensible option, and
+what Finder does with a modal alert; Cmdr doesn't trap, and says why instead of failing silently.
+
 ## Decisions
 
 - **The inline editor mounts BY PATH, not by index** (`shouldMountRenameEditor(target, row)` in `rename-mount.ts`,

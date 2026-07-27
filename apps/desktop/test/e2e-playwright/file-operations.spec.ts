@@ -210,6 +210,81 @@ test.describe('Rename round-trip', () => {
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'renamed-file.txt'))).toBe(true)
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-a.txt'))).toBe(false)
   })
+
+  test('clicking inside the editor moves the caret instead of ending the rename', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+
+    expect(await moveCursorToFile(tauriPage, 'file-a.txt')).toBe(true)
+    await tauriPage.keyboard.press('F2')
+    await tauriPage.waitForSelector('.rename-input', 3000)
+
+    // A real press + click on the input, exactly as the pane sees it. The click
+    // bubbles to `.file-pane`, whose handler used to focus the pane container and
+    // blur the editor out of existence.
+    await tauriPage.evaluate(`(function() {
+            var input = document.querySelector('.rename-input');
+            input.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+            input.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+            input.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+            input.setSelectionRange(2, 2);
+        })()`)
+
+    // The field survives, still focused, with the caret where the click put it.
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<boolean>(`(function() {
+                    var input = document.querySelector('.rename-input');
+                    return !!input && document.activeElement === input && input.selectionStart === 2;
+                })()`),
+        { timeout: 2000 },
+      )
+      .toBeTruthy()
+
+    // Escape leaves the fixture tree untouched for the next test.
+    await tauriPage.press('.rename-input', 'Escape')
+    await expect.poll(async () => !(await tauriPage.isVisible('.rename-input')), { timeout: 5000 }).toBeTruthy()
+  })
+
+  test('clicking another row saves the typed name', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+
+    expect(await moveCursorToFile(tauriPage, 'file-a.txt')).toBe(true)
+    await tauriPage.keyboard.press('F2')
+    await tauriPage.waitForSelector('.rename-input', 3000)
+
+    await tauriPage.evaluate(`(function() {
+            var input = document.querySelector('.rename-input');
+            input.focus();
+            var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+            desc.set.call(input, 'clicked-away.txt');
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        })()`)
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<boolean>(`document.querySelector('.rename-input')?.value === 'clicked-away.txt'`),
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
+
+    // Press on a different row: the click-away commits, the way Finder does.
+    await tauriPage.evaluate(`(function() {
+            var rows = document.querySelectorAll('.file-pane .file-entry');
+            for (var i = 0; i < rows.length; i++) {
+                if (rows[i].querySelector('.rename-input')) continue;
+                rows[i].dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+                return;
+            }
+        })()`)
+
+    await expect.poll(async () => !(await tauriPage.isVisible('.rename-input')), { timeout: 5000 }).toBeTruthy()
+    await expect
+      .poll(() => fs.existsSync(path.join(fixtureRoot, 'left', 'clicked-away.txt')), { timeout: 5000 })
+      .toBeTruthy()
+    expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-a.txt'))).toBe(false)
+  })
 })
 
 test.describe('MCP rename', () => {

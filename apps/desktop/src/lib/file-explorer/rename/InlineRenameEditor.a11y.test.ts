@@ -26,6 +26,7 @@ describe('InlineRenameEditor a11y', () => {
         onInput: noop,
         onSubmit: noop,
         onCancel: noop,
+        onClickAway: noop,
         onShakeEnd: noop,
       },
     })
@@ -48,6 +49,7 @@ describe('InlineRenameEditor a11y', () => {
         onInput: noop,
         onSubmit: noop,
         onCancel: noop,
+        onClickAway: noop,
         onShakeEnd: noop,
       },
     })
@@ -69,6 +71,7 @@ describe('InlineRenameEditor a11y', () => {
         onInput: noop,
         onSubmit: noop,
         onCancel: noop,
+        onClickAway: noop,
         onShakeEnd: noop,
       },
     })
@@ -90,6 +93,7 @@ describe('InlineRenameEditor a11y', () => {
         onInput: noop,
         onSubmit: noop,
         onCancel: noop,
+        onClickAway: noop,
         onShakeEnd: noop,
       },
     })

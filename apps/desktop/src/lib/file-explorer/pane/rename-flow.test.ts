@@ -51,6 +51,7 @@ const PASTED: Entry = { name: 'pasted.txt', path: '/dir/pasted.txt', isDirectory
 
 function buildFlow(getEntry: () => Entry | undefined = () => PASTED) {
   const rename = createRenameState()
+  const onRequestFocus = vi.fn()
   const flow = createRenameFlow({
     rename,
     paneId: 'left',
@@ -61,10 +62,21 @@ function buildFlow(getEntry: () => Entry | undefined = () => PASTED) {
     getShowHiddenFiles: () => true,
     getVolumeId: () => 'root',
     getEntryUnderCursor: () => getEntry() as never,
-    onRequestFocus: () => {},
+    onRequestFocus,
   })
-  return { rename, flow }
+  return { rename, flow, onRequestFocus }
 }
+
+/** A promise the test resolves by hand, to hold a save "in flight". */
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((r) => {
+    resolve = r
+  })
+  return { promise, resolve }
+}
+
+const ERROR_VALIDATION = { severity: 'error', message: 'Filename can\'t contain "/" or null characters' }
 
 /** Drives a rename to submit, renaming `pasted.txt` → `notes.md` (an extension change). */
 async function renameToMd(
@@ -199,5 +211,223 @@ describe('startRename expectedName guard (auto-rename must land on the new file,
 
     expect(rename.active).toBe(true)
     expect(rename.target?.originalName).toBe('anything.txt')
+  })
+})
+
+describe('Enter (submit) ends the session the way the user asked', () => {
+  it('a changed valid name saves', async () => {
+    const { rename, flow } = buildFlow()
+
+    flow.startRename()
+    flow.handleRenameInput('notes.md')
+    flow.handleRenameSubmit()
+
+    await vi.waitFor(() => {
+      expect(executeRenameSaveSpy).toHaveBeenCalled()
+    })
+    expect(executeRenameSaveSpy.mock.calls[0][1]).toBe('notes.md')
+    await vi.waitFor(() => {
+      expect(rename.active).toBe(false)
+    })
+  })
+
+  it('an unchanged name ends the rename without touching the disk', () => {
+    const { rename, flow } = buildFlow()
+
+    flow.startRename()
+    flow.handleRenameInput('pasted.txt') // same as the original
+    flow.handleRenameSubmit()
+
+    expect(executeRenameSaveSpy).not.toHaveBeenCalled()
+    expect(rename.active).toBe(false)
+  })
+
+  it('an invalid name shakes and KEEPS the editor open, so the user can fix it', () => {
+    const { rename, flow } = buildFlow()
+    validateFilenameSpy.mockReturnValue(ERROR_VALIDATION)
+
+    flow.startRename()
+    flow.handleRenameInput('bad/name.txt')
+    flow.handleRenameSubmit()
+
+    expect(executeRenameSaveSpy).not.toHaveBeenCalled()
+    expect(rename.active).toBe(true) // still editing
+    expect(rename.shaking).toBe(true)
+    expect(addToastSpy).toHaveBeenCalled()
+  })
+})
+
+describe('cancel (Escape, Tab, editor unmount)', () => {
+  it('discards the edit and hands focus back to the pane', () => {
+    const { rename, flow, onRequestFocus } = buildFlow()
+
+    flow.startRename()
+    flow.handleRenameInput('notes.md')
+    flow.handleRenameCancel()
+
+    expect(executeRenameSaveSpy).not.toHaveBeenCalled()
+    expect(rename.active).toBe(false)
+    expect(onRequestFocus).toHaveBeenCalled()
+  })
+
+  it('the blur from an opening dialog does NOT discard the rename', async () => {
+    const { rename, flow } = buildFlow()
+    executeRenameSaveSpy.mockResolvedValue({
+      type: 'conflict',
+      validity: { conflict: { name: 'notes.md' } },
+    })
+
+    flow.startRename()
+    flow.handleRenameInput('notes.md')
+    flow.handleRenameSubmit()
+    await vi.waitFor(() => {
+      expect(flow.conflictDialogState).not.toBeNull()
+    })
+
+    flow.handleRenameCancel() // the dialog stealing focus blurred the editor
+    expect(rename.active).toBe(true)
+
+    // One-shot: the next cancel (a real Escape) still ends the session.
+    flow.handleRenameCancel()
+    expect(rename.active).toBe(false)
+  })
+})
+
+describe('clicking outside the editor commits (Finder-style), never discards silently', () => {
+  it('a changed valid name saves', async () => {
+    const { rename, flow } = buildFlow()
+
+    flow.startRename()
+    flow.handleRenameInput('notes.md')
+    flow.handleRenameClickAway()
+
+    await vi.waitFor(() => {
+      expect(executeRenameSaveSpy).toHaveBeenCalled()
+    })
+    expect(executeRenameSaveSpy.mock.calls[0][1]).toBe('notes.md')
+    await vi.waitFor(() => {
+      expect(rename.active).toBe(false)
+    })
+  })
+
+  it('the click decides where focus lands, so the flow does not yank it back to the pane', async () => {
+    const { flow, onRequestFocus } = buildFlow()
+
+    flow.startRename()
+    flow.handleRenameInput('notes.md')
+    flow.handleRenameClickAway()
+
+    await vi.waitFor(() => {
+      expect(executeRenameSaveSpy).toHaveBeenCalled()
+    })
+    await vi.waitFor(() => {
+      expect(onRequestFocus).not.toHaveBeenCalled()
+    })
+  })
+
+  it('the blur that follows the click does NOT cancel the in-flight save', async () => {
+    const { rename, flow } = buildFlow()
+    const save = deferred<unknown>()
+    executeRenameSaveSpy.mockReturnValue(save.promise)
+
+    flow.startRename()
+    flow.handleRenameInput('notes.md')
+    flow.handleRenameClickAway()
+
+    // The browser moves focus right after the click; the editor blurs.
+    flow.handleRenameCancel()
+    expect(rename.active).toBe(true) // the save owns the session now
+
+    save.resolve({ type: 'success', newName: 'notes.md' })
+    await vi.waitFor(() => {
+      expect(rename.active).toBe(false)
+    })
+  })
+
+  it('an unchanged name ends the rename quietly (no save, no toast)', () => {
+    const { rename, flow } = buildFlow()
+
+    flow.startRename()
+    flow.handleRenameClickAway()
+
+    expect(executeRenameSaveSpy).not.toHaveBeenCalled()
+    expect(addToastSpy).not.toHaveBeenCalled()
+    expect(rename.active).toBe(false)
+  })
+
+  it('an invalid name keeps the original name and says why (never traps the click)', () => {
+    const { rename, flow } = buildFlow()
+    validateFilenameSpy.mockReturnValue(ERROR_VALIDATION)
+
+    flow.startRename()
+    flow.handleRenameInput('bad/name.txt')
+    flow.handleRenameClickAway()
+
+    expect(executeRenameSaveSpy).not.toHaveBeenCalled()
+    expect(rename.active).toBe(false) // the click goes through; no stranded editor
+    expect(addToastSpy.mock.calls[0][1]).toContain('keptOriginalName')
+  })
+
+  it('a save that comes back with a problem ends the session (nothing left to shake)', async () => {
+    const { rename, flow } = buildFlow()
+    executeRenameSaveSpy.mockResolvedValue({ type: 'error', message: 'The disk is read-only' })
+
+    flow.startRename()
+    flow.handleRenameInput('notes.md')
+    flow.handleRenameClickAway()
+
+    await vi.waitFor(() => {
+      expect(rename.active).toBe(false)
+    })
+    expect(addToastSpy).toHaveBeenCalled()
+  })
+
+  it('a dialog opened by a click-away commit leaves Escape working', async () => {
+    // The editor already blurred when the click landed, so the dialog opening
+    // costs no second blur — arming the suppression would eat the user's Escape.
+    const { rename, flow } = buildFlow()
+    executeRenameSaveSpy.mockResolvedValue({
+      type: 'conflict',
+      validity: { conflict: { name: 'notes.md' } },
+    })
+
+    flow.startRename()
+    flow.handleRenameInput('notes.md')
+    flow.handleRenameClickAway()
+    await vi.waitFor(() => {
+      expect(flow.conflictDialogState).not.toBeNull()
+    })
+
+    flow.handleRenameCancel()
+    expect(rename.active).toBe(false)
+  })
+
+  it('ignores clicks while a dialog is up: the dialog owns that decision', async () => {
+    const { flow } = buildFlow()
+    executeRenameSaveSpy.mockResolvedValue({
+      type: 'conflict',
+      validity: { conflict: { name: 'notes.md' } },
+    })
+
+    flow.startRename()
+    flow.handleRenameInput('notes.md')
+    flow.handleRenameSubmit()
+    await vi.waitFor(() => {
+      expect(flow.conflictDialogState).not.toBeNull()
+    })
+    executeRenameSaveSpy.mockClear()
+
+    flow.handleRenameClickAway() // the user pressing a dialog button
+
+    expect(executeRenameSaveSpy).not.toHaveBeenCalled()
+    expect(flow.conflictDialogState).not.toBeNull()
+  })
+
+  it('is a no-op when no rename is running', () => {
+    const { flow } = buildFlow()
+
+    flow.handleRenameClickAway()
+
+    expect(executeRenameSaveSpy).not.toHaveBeenCalled()
   })
 })

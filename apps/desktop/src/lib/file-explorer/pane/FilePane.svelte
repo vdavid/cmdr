@@ -1029,6 +1029,7 @@
         handleRenameInput,
         handleRenameSubmit,
         handleRenameCancel,
+        handleRenameClickAway,
         handleRenameShakeEnd,
         handleExtensionKeepOld,
         handleExtensionUseNew,
@@ -1618,7 +1619,12 @@
         onGoToLocation?.(location)
     }
 
-    function handlePaneClick() {
+    function handlePaneClick(event: MouseEvent) {
+        // Clicks inside the inline rename editor are the user placing the caret or
+        // selecting text. Focusing the pane here would blur the input and end the
+        // rename, making the field unusable with the mouse.
+        const target = event.target
+        if (target instanceof Element && target.closest('.rename-input')) return
         onRequestFocus?.()
     }
 
@@ -2477,6 +2483,7 @@
                 onRenameInput={handleRenameInput}
                 onRenameSubmit={handleRenameSubmit}
                 onRenameCancel={handleRenameCancel}
+                onRenameClickAway={handleRenameClickAway}
                 onRenameShakeEnd={handleRenameShakeEnd}
                 onStartRename={startRename}
                 onDragInitiate={clearJumpState}
@@ -2513,6 +2520,7 @@
                 onRenameInput={handleRenameInput}
                 onRenameSubmit={handleRenameSubmit}
                 onRenameCancel={handleRenameCancel}
+                onRenameClickAway={handleRenameClickAway}
                 onRenameShakeEnd={handleRenameShakeEnd}
                 onStartRename={startRename}
                 onSortChange={onSortChange

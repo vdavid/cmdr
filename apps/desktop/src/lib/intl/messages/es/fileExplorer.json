@@ -768,6 +768,10 @@
   "@fileExplorer.rename.hiddenAfterRename": {
     "sourceHash": "445d02a"
   },
+  "fileExplorer.rename.keptOriginalName": "{reason}. Se mantuvo el nombre original.",
+  "@fileExplorer.rename.keptOriginalName": {
+    "sourceHash": "27acd0a"
+  },
   "fileExplorer.columns.name": "Nombre",
   "@fileExplorer.columns.name": {
     "sourceHash": "dcd1d52"

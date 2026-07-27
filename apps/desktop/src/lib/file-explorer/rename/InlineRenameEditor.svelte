@@ -23,6 +23,8 @@
         onSubmit: () => void
         /** Called when Escape is pressed or focus leaves */
         onCancel: () => void
+        /** Called when the user presses the mouse anywhere outside the input */
+        onClickAway: () => void
         /** Called when shake animation ends */
         onShakeEnd: () => void
     }
@@ -38,6 +40,7 @@
         onInput,
         onSubmit,
         onCancel,
+        onClickAway,
         onShakeEnd,
     }: Props = $props()
 
@@ -97,6 +100,20 @@
         onCancel()
     }
 
+    /**
+     * A mouse press outside the input means "I'm done here" → save.
+     *
+     * Keyed off the press, not off blur: blur also fires when the row scrolls out
+     * of the virtual window and the input unmounts, and that must keep discarding
+     * (a scroll is not a decision to rename). Capture phase, so it lands before
+     * the row and pane handlers move focus and blur us.
+     */
+    function handleDocumentMouseDown(e: MouseEvent) {
+        const target = e.target
+        if (target instanceof Element && target.closest('.rename-input')) return
+        onClickAway()
+    }
+
     function handleAnimationEnd(e: AnimationEvent) {
         if (e.animationName === 'rename-shake') {
             onShakeEnd()
@@ -106,6 +123,14 @@
     onMount(async () => {
         await tick()
         focusAndSelect()
+    })
+
+    // Separate from the async onMount above: an async one can't return a cleanup.
+    onMount(() => {
+        document.addEventListener('mousedown', handleDocumentMouseDown, true)
+        return () => {
+            document.removeEventListener('mousedown', handleDocumentMouseDown, true)
+        }
     })
 
     // Re-focus when focusTrigger increments (after a dialog closes and returns to editing)

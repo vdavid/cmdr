@@ -51,6 +51,22 @@ export function createRenameFlow(deps: RenameFlowDeps) {
   // When true, suppress the blur-cancel (a dialog is about to open)
   let suppressBlurCancel = false
 
+  // A save already sent to the backend. While one is in flight the session belongs
+  // to it: the blur that follows a click-away must not cancel out from under it,
+  // and `handleRenameResult` still needs `rename.target` to open a dialog.
+  let pendingCommit: Promise<void> | null = null
+
+  // True while a click OUTSIDE the editor drives the flow. That click already
+  // decides where focus goes (another row, the other pane, the breadcrumb), so
+  // the flow must not yank focus back to this pane when it finishes.
+  let commitFromClickAway = false
+
+  /** Hands focus back to the pane, unless a click already claimed it. */
+  function restoreFocus() {
+    if (commitFromClickAway) return
+    onRequestFocus()
+  }
+
   // When true, treat the extension-change policy as 'yes' for the current rename
   // session (no warning/dialog). Set by an auto-started rename (paste-clipboard-
   // as-file) and reset when the session ends. F2/user renames leave it false.
@@ -116,7 +132,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
         if (errorMsg && rename.active && rename.target?.path === entry.path) {
           rename.cancel()
           addToast(errorMsg, { level: 'error' })
-          onRequestFocus()
+          restoreFocus()
         }
       })
     }
@@ -149,27 +165,34 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     switch (result.type) {
       case 'noop':
         rename.cancel()
-        onRequestFocus()
+        restoreFocus()
         break
       case 'error':
-        rename.triggerShake()
         addToast(result.message, { level: 'error' })
+        // After a click-away the editor is already blurred, so there's nothing to
+        // shake and no focused field to fix the name in: end the session instead
+        // of stranding an input the user has to hunt back to.
+        if (commitFromClickAway) rename.cancel()
+        else rename.triggerShake()
         break
       case 'timeout':
         rename.cancel()
-        onRequestFocus()
+        restoreFocus()
         addToast(result.message, { level: 'warn', dismissal: 'persistent' })
         void refreshListing(deps.getListingId())
         break
       case 'extension-ask':
-        suppressBlurCancel = true
+        // The dialog steals focus and blurs the editor; that blur must not cancel.
+        // A click-away already spent the blur, so arming it would eat the NEXT
+        // cancel (the user's Escape) instead.
+        suppressBlurCancel = !commitFromClickAway
         extensionDialogState = {
           oldExtension: result.oldExtension,
           newExtension: result.newExtension,
         }
         break
       case 'conflict':
-        suppressBlurCancel = true
+        suppressBlurCancel = !commitFromClickAway
         conflictDialogState = { validity: result.validity, trimmedName }
         break
       case 'success':
@@ -186,7 +209,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     extensionDialogState = null
     conflictDialogState = null
     suppressExtensionWarningOnce = false
-    onRequestFocus()
+    restoreFocus()
 
     pendingCursorName = newName
 
@@ -268,7 +291,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       extensionDialogState = null
       conflictDialogState = null
       suppressExtensionWarningOnce = false
-      onRequestFocus()
+      restoreFocus()
     },
 
     handleRenameInput(value: string) {
@@ -293,10 +316,43 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       }
       if (!rename.hasChanged()) {
         rename.cancel()
-        onRequestFocus()
+        restoreFocus()
         return
       }
       void executeFlow()
+    },
+
+    /**
+     * The user clicked somewhere outside the editor: save, the way Finder does.
+     *
+     * Keyed off a real click, NEVER off blur — the editor also blurs when its row
+     * scrolls out of the virtual window, and renaming a file because the list
+     * scrolled would be a nasty surprise. That path still discards.
+     */
+    handleRenameClickAway() {
+      if (!rename.active || pendingCommit) return
+      // The editor stays mounted under the extension/conflict dialogs, so clicking
+      // a dialog button reaches here too. The dialog owns the decision.
+      if (extensionDialogState || conflictDialogState) return
+
+      if (rename.severity === 'error') {
+        // Don't trap the click and don't swallow the reason: drop the edit and say
+        // why the name didn't stick.
+        const reason = rename.validation.message
+        rename.cancel()
+        addToast(tString('fileExplorer.rename.keptOriginalName', { reason }), { level: 'warn' })
+        return
+      }
+      if (!rename.hasChanged()) {
+        rename.cancel()
+        return
+      }
+
+      commitFromClickAway = true
+      pendingCommit = executeFlow().finally(() => {
+        pendingCommit = null
+        commitFromClickAway = false
+      })
     },
 
     handleExtensionKeepOld() {
@@ -325,7 +381,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
 
       if (!target || !trimmedName) {
         rename.cancel()
-        onRequestFocus()
+        restoreFocus()
         return
       }
 
@@ -350,7 +406,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
                 addToast(getIpcErrorMessage(e), { level: 'error' })
               }
               rename.cancel()
-              onRequestFocus()
+              restoreFocus()
             })
           break
         }
@@ -361,7 +417,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
           break
         case 'cancel':
           rename.cancel()
-          onRequestFocus()
+          restoreFocus()
           break
         case 'continue':
           rename.requestRefocus()
@@ -374,8 +430,11 @@ export function createRenameFlow(deps: RenameFlowDeps) {
         suppressBlurCancel = false
         return
       }
+      // A click-away already sent the save; the blur it caused arrives right after
+      // and must not cancel the session the save still owns.
+      if (pendingCommit) return
       rename.cancel()
-      onRequestFocus()
+      restoreFocus()
     },
 
     handleRenameShakeEnd() {

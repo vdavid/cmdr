@@ -1168,6 +1168,13 @@
   "@fileExplorer.rename.hiddenAfterRename": {
     "description": "Info toast after renaming a file to a name starting with a dot, which hides it because hidden files aren''t currently shown. Reassures the user the file still exists."
   },
+  "fileExplorer.rename.keptOriginalName": "{reason}. Kept the original name.",
+  "@fileExplorer.rename.keptOriginalName": {
+    "description": "Warning toast shown when the user clicks away from the inline rename editor while the typed name is unusable. Clicking away normally saves, so this explains why nothing changed. {reason} is the validation message, a full sentence without a closing period (for example \"Filename can''t contain \"/\" or null characters\").",
+    "placeholders": {
+      "reason": "the validation message explaining what is wrong with the typed name"
+    }
+  },
 
   "fileExplorer.columns.name": "Name",
   "@fileExplorer.columns.name": {

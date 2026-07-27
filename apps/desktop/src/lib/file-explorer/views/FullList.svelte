@@ -128,6 +128,8 @@
         onRenameSubmit?: () => void
         /** Called when rename is cancelled */
         onRenameCancel?: () => void
+        /** Called when the user clicks outside the rename editor (which saves) */
+        onRenameClickAway?: () => void
         /** Called when shake animation ends */
         onRenameShakeEnd?: () => void
         /** Called when click-to-rename timer fires (user held click on cursor entry) */
@@ -180,6 +182,7 @@
         onRenameInput,
         onRenameSubmit,
         onRenameCancel,
+        onRenameClickAway,
         onRenameShakeEnd,
         onStartRename,
         onDragInitiate,
@@ -975,6 +978,7 @@
                                     onInput={(v: string) => onRenameInput?.(v)}
                                     onSubmit={() => onRenameSubmit?.()}
                                     onCancel={() => onRenameCancel?.()}
+                                    onClickAway={() => onRenameClickAway?.()}
                                     onShakeEnd={() => onRenameShakeEnd?.()}
                                 />
                             </div>

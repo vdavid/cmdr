@@ -32,12 +32,19 @@ Full details (the three-stage save flow, permission/validation tiers, post-renam
 - **Thread `volumeId` through `renameFile` / `checkRenameValidity` / `checkRenamePermission`.** Validity (conflict)
   checks work for all volumes via the Volume trait, but permission checks are skipped for MTP (Unix `access()` doesn't
   work on MTP virtual paths).
-- **Cancel triggers**: Escape, click elsewhere, Tab, drag start, and sort/hidden toggle all discard the rename. So does
-  the editor losing focus for any reason: scrolling the renamed row out of the virtual window UNMOUNTS the input, whose
-  `onblur` cancels (there's no scroll-distance threshold). The editor mounts BY PATH (`shouldMountRenameEditor`), so a
-  watcher diff that shifts OTHER rows makes it follow its file instead of cancelling; only a diff that removes the
-  renamed file itself cancels (`listing-diff-sync`). Watcher events otherwise do NOT cancel (the backend catches issues
-  on save).
+- **Clicking outside the editor SAVES; blur alone discards.** The commit hangs off a document `mousedown` (capture) that
+  `InlineRenameEditor` owns, never off blur: blur can't tell a click from the row scrolling out of the virtual window,
+  and committing on a scroll would rename a file the user never decided to rename. Enter saves too; Escape, Tab, drag
+  start, sort/hidden toggle, and any other focus loss discard. Guards (`pendingCommit`, the dialog check, the
+  `suppressBlurCancel` flip) and the invalid-name toast: `DETAILS.md` § Ending a rename session.
+- **Clicks INSIDE the editor must reach the input.** `FilePane.handlePaneClick` and both views' row `mousedown` skip
+  targets under `.rename-input`; without that the pane grabs focus and the rename dies mid-caret-placement, making the
+  field unusable with a mouse. Pinned by E2E in `file-operations.spec.ts`.
+- **Cancel triggers**: the editor losing focus discards for any reason: scrolling the renamed row out of the virtual
+  window UNMOUNTS the input, whose `onblur` cancels (there's no scroll-distance threshold). The editor mounts BY PATH
+  (`shouldMountRenameEditor`), so a watcher diff that shifts OTHER rows makes it follow its file instead of cancelling;
+  only a diff that removes the renamed file itself cancels (`listing-diff-sync`). Watcher events otherwise do NOT cancel
+  (the backend catches issues on save).
 - **Double-click on the name area must open the file/folder, not activate rename.** The click-to-rename timer cancels on
   a double-click event.
 - **While rename is active, Cmd+C/A/Z/X/V act as text-editing shortcuts, not app commands** (same flag mechanism as

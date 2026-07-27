@@ -97,9 +97,6 @@
     "file-explorer/rename/ExtensionChangeDialog.svelte": {
       "reason": "UI modal, logic tested in rename-dialogs.test.ts"
     },
-    "file-explorer/rename/InlineRenameEditor.svelte": {
-      "reason": "UI component, depends on DOM focus/selection APIs"
-    },
     "file-explorer/rename/rename-activation.ts": {
       "reason": "Depends on document event listeners and timers"
     },
