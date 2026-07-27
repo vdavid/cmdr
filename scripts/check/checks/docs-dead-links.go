@@ -35,28 +35,56 @@ var backtickPathRe = regexp.MustCompile("`{1,2}([^`\n]+)`{1,2}")
 // space or prose punctuation isn't a path.
 var repoPathTokenRe = regexp.MustCompile(`^[@A-Za-z0-9._/()+-]+$`)
 
-// isRepoPathToken reports whether an inline-code span names an in-repo doc worth
-// verifying: a multi-segment path ending in .md or .mdx.
+// docFileExts are the doc-to-doc reference extensions: the edges that carry the
+// doc graph.
+var docFileExts = []string{".md", ".mdx"}
+
+// codeFileExts are the first-party source extensions a doc names when it points at
+// the code it describes. These rot the fastest — a rename moves the file and leaves
+// the prose behind — and a doc naming a file that no longer exists sends the next
+// agent looking for it. Kept to the four languages in this repo; a path ending in
+// one of these, with a directory in it, is a source file with very little of the
+// ambiguity that keeps other shapes out (below).
+var codeFileExts = []string{".rs", ".go", ".ts", ".svelte"}
+
+func hasAnySuffix(tok string, exts []string) bool {
+	for _, ext := range exts {
+		if strings.HasSuffix(tok, ext) {
+			return true
+		}
+	}
+	return false
+}
+
+// isCodePathToken reports whether a verifiable token names source rather than a doc.
+func isCodePathToken(tok string) bool {
+	return hasAnySuffix(tok, codeFileExts)
+}
+
+// isRepoPathToken reports whether an inline-code span names an in-repo file worth
+// verifying: a multi-segment path ending in a doc (.md/.mdx) or source
+// (.rs/.go/.ts/.svelte) extension.
 //
 // The scope is deliberately narrow. A bare backtick path in prose is ambiguous in
 // a way a Markdown link never is: docs legitimately spell out paths that aren't
 // repo files at all, including Cmdr's virtual git filesystem (`.git/branches/`),
 // example user paths (`/Documents/notes.txt`), build output, and files in sibling
-// repos. Doc-to-doc references have none of that ambiguity, and they're the ones
-// that carry the doc graph, so they're where verification pays.
+// repos. Extension-gating removes that ambiguity: none of those shapes end in `.rs`
+// or `.md`.
 //
 // Excluded on purpose: absolute and `~`-prefixed paths (another machine, another
 // repo, nothing here to check them against), node_modules (untracked), and elided
-// paths written with a `...` segment. docs/specs/ is excluded at the call site.
+// paths written with a `...` segment. docs/specs/ is excluded at the call site, and
+// so is a source path named from docs/notes/ (see isHistoricalCodeRef).
 func isRepoPathToken(tok string) bool {
 	if tok == "" || !repoPathTokenRe.MatchString(tok) {
 		return false
 	}
-	if !strings.HasSuffix(tok, ".md") && !strings.HasSuffix(tok, ".mdx") {
+	if !hasAnySuffix(tok, docFileExts) && !hasAnySuffix(tok, codeFileExts) {
 		return false
 	}
 	if !strings.Contains(tok, "/") {
-		return false // single-segment `DETAILS.md`: too easy to confuse with prose like `C.md`
+		return false // single-segment `DETAILS.md` / `mod.rs`: names a convention, not a file
 	}
 	if strings.HasPrefix(tok, "~") || strings.HasPrefix(tok, "/") {
 		return false
@@ -115,6 +143,18 @@ const specsDir = "docs/specs/"
 // something to click, so it has to resolve either way.
 func isSpecScratchPath(srcDoc, tok string) bool {
 	return strings.HasPrefix(tok, specsDir) || strings.HasPrefix(srcDoc, specsDir)
+}
+
+// notesDir holds dated benchmarks and analysis (AGENTS.md § File structure).
+const notesDir = "docs/notes/"
+
+// isHistoricalCodeRef reports whether a SOURCE path should be left alone because the
+// doc naming it is a dated record. A note from 2026-07-21 that says it probed
+// `scratchpad/probe/main.go` is accurate about the past; renaming the file later
+// doesn't make the note wrong, and rewriting it would falsify the record. Doc-to-doc
+// references from a note are still verified: those are navigation, not history.
+func isHistoricalCodeRef(srcDoc, tok string) bool {
+	return strings.HasPrefix(srcDoc, notesDir) && isCodePathToken(tok)
 }
 
 // barePathResolves reports whether a backtick path names something real. It tries
@@ -272,7 +312,7 @@ func scanDocForDeadRefs(rootDir, doc, content string, suffixes map[string]bool) 
 	// this pass most of the doc corpus would go unverified.
 	for _, m := range backtickPathRe.FindAllStringSubmatch(unfenced, -1) {
 		tok := strings.TrimSpace(m[1])
-		if !isRepoPathToken(tok) || seen[tok] || isSpecScratchPath(doc, tok) {
+		if !isRepoPathToken(tok) || seen[tok] || isSpecScratchPath(doc, tok) || isHistoricalCodeRef(doc, tok) {
 			continue
 		}
 		seen[tok] = true

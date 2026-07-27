@@ -296,3 +296,53 @@ func TestRunDocsDeadLinks_BareBacktickProsePairsIgnored(t *testing.T) {
 		t.Fatalf("prose pairs and out-of-repo paths are not references: %v", err)
 	}
 }
+
+func TestRunDocsDeadLinks_SourcePathMissing(t *testing.T) {
+	tmp := t.TempDir()
+	writeDeadLinkFile(t, tmp, "lib/CLAUDE.md", "Reads `lib/gone.rs`, `lib/gone.ts`, `lib/Gone.svelte`, and `lib/gone.go`.")
+
+	_, err := RunDocsDeadLinks(&CheckContext{RootDir: tmp})
+	if err == nil {
+		t.Fatal("expected an error for backtick paths naming source files that don't exist")
+	}
+	for _, want := range []string{"lib/gone.rs", "lib/gone.ts", "lib/Gone.svelte", "lib/gone.go"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("expected %q in the error, got: %v", want, err)
+		}
+	}
+}
+
+func TestRunDocsDeadLinks_SourcePathResolves(t *testing.T) {
+	tmp := t.TempDir()
+	// Repo-rooted and doc-relative forms both count, same as for docs. (The
+	// path-suffix tier needs `git ls-files`, so it isn't exercised in a bare tempdir.)
+	writeDeadLinkFile(t, tmp, "lib/foo/CLAUDE.md", "See `lib/foo/here.rs` and `../bar/there.ts`.")
+	writeDeadLinkFile(t, tmp, "lib/foo/here.rs", "fn main() {}")
+	writeDeadLinkFile(t, tmp, "lib/bar/there.ts", "export {}")
+
+	if _, err := RunDocsDeadLinks(&CheckContext{RootDir: tmp}); err != nil {
+		t.Fatalf("source paths resolve, expected success: %v", err)
+	}
+}
+
+func TestRunDocsDeadLinks_SourcePathInNotesIgnored(t *testing.T) {
+	tmp := t.TempDir()
+	// docs/notes/ holds dated analysis: it legitimately names files that existed when
+	// the note was written, the same reasoning that exempts docs/specs/.
+	writeDeadLinkFile(t, tmp, "docs/notes/bench-2026-01-01.md", "Probed `scratch/probe/main.go` and `src/old_walker.rs`.")
+
+	if _, err := RunDocsDeadLinks(&CheckContext{RootDir: tmp}); err != nil {
+		t.Fatalf("source paths in dated notes are historical, expected success: %v", err)
+	}
+}
+
+func TestRunDocsDeadLinks_SingleSegmentSourceNameIgnored(t *testing.T) {
+	tmp := t.TempDir()
+	// A bare `mod.rs` in prose names a convention, not a specific file, exactly like
+	// the existing single-segment `DETAILS.md` carve-out.
+	writeDeadLinkFile(t, tmp, "CLAUDE.md", "Every module has a `mod.rs` and a `types.ts`.")
+
+	if _, err := RunDocsDeadLinks(&CheckContext{RootDir: tmp}); err != nil {
+		t.Fatalf("single-segment source names are not references: %v", err)
+	}
+}
