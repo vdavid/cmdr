@@ -156,17 +156,28 @@ fn explain_round_trips_the_stored_signals_and_sums_to_score() {
     assert!(!explanation.floored, "a UserContent folder isn't floored");
 }
 
-/// `all_nonzero_weights` returns the bulk path→score map the search ranker loads,
-/// OMITTING zero-scored (floored) folders so the map holds only ranking signal.
+/// Collect the streamed `path → score` rows, for the tests below to assert against.
+fn streamed_weights(index: &ImportanceIndex) -> HashMap<String, f64> {
+    let mut map = HashMap::new();
+    index
+        .for_each_nonzero_weight(|path, score| {
+            map.insert(path.to_string(), score);
+        })
+        .expect("bulk read");
+    map
+}
+
+/// `for_each_nonzero_weight` streams the path→score rows the search ranker folds into
+/// its weight map, OMITTING zero-scored (floored) folders so only ranking signal flows.
 #[test]
-fn all_nonzero_weights_omits_zero_scores() {
+fn for_each_nonzero_weight_omits_zero_scores() {
     let (index, _dir) = populated_index(&[
         ("/Users/me/Documents", 0.72, PathClass::UserContent),
         ("/Users/me/proj", 0.88, PathClass::ProjectRoot),
         // A floored folder (node_modules subtree, cache, etc.) scores exactly 0.0.
         ("/Users/me/proj/node_modules", 0.0, PathClass::SystemOrCache),
     ]);
-    let map = index.all_nonzero_weights().expect("bulk read");
+    let map = streamed_weights(&index);
     assert_eq!(map.len(), 2, "the two non-zero folders, the floored one omitted");
     assert_eq!(map.get("/Users/me/Documents").copied(), Some(0.72));
     assert_eq!(map.get("/Users/me/proj").copied(), Some(0.88));
@@ -177,14 +188,13 @@ fn all_nonzero_weights_omits_zero_scores() {
     );
 }
 
-/// An `all_nonzero_weights` on a never-scored volume (no `importance.db`) is an
-/// empty map, not an error — the search degradation contract's data source.
+/// A `for_each_nonzero_weight` on a never-scored volume (no `importance.db`) visits
+/// nothing and is not an error — the search degradation contract's data source.
 #[test]
-fn all_nonzero_weights_missing_db_is_empty() {
+fn for_each_nonzero_weight_missing_db_visits_nothing() {
     let dir = tempfile::tempdir().expect("temp dir");
     let index = ImportanceIndex::open(dir.path(), "never-scored", SignalSet::all());
-    let map = index.all_nonzero_weights().expect("bulk read on missing db is Ok");
-    assert!(map.is_empty(), "no db ⇒ empty weight map");
+    assert!(streamed_weights(&index).is_empty(), "no db ⇒ no weights");
 }
 
 /// THE typed-lookup target: a stored row reads `Scored`; a path with no row that

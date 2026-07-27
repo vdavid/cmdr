@@ -182,9 +182,9 @@ engine also takes an empty-map fast path (skipping the per-result parent-path re
 
 ### The weight-map lifecycle (`volumes.rs`)
 
-Per-volume weight maps live in the `WEIGHTS` map (`volume_id → Arc<ImportanceWeights>`) in `volumes.rs`, built ONCE
-from [`ImportanceIndex::all_nonzero_weights`](../importance/read/mod.rs) and never queried per result (a search ranks
-tens of thousands of candidates):
+Per-volume weight maps live in the `WEIGHTS` map (`volume_id → Arc<ImportanceWeights>`) in `volumes.rs`, built ONCE by
+streaming [`ImportanceIndex::for_each_nonzero_weight`](../importance/read/mod.rs) and never queried per result (a search
+ranks tens of thousands of candidates):
 
 - **Loaded with the arena, cloned per search.** `ensure_volume` loads a volume's weights alongside its arena;
   `run_blocking` clones the cheap `Arc` per target and ranks against a stable snapshot even if a reload swaps the map
@@ -196,12 +196,19 @@ tens of thousands of candidates):
   drops on idle and reloads next session, and its importance rarely recomputes mid-session. A volume with no
   `importance-{id}.db` degrades to match-quality + recency (empty map).
 - **Only non-zero weights enter the map.** Floored folders have NO row in `importance.db` (the store's compaction — see
-  `../importance/DETAILS.md` storage model), and `all_nonzero_weights` also filters `score > 0`,
-  so the ~312k folders under `node_modules` on a 646k-folder home never enter the map (their lookup defaults to `0.0`
-  anyway). Footprint is a `HashMap<String, f64>` over the non-floored folders: absolute-path keys plus an `f64`, order
-  tens of MB on a large home. If it ever grows heavy, switch to folder-id or hashed-path keys.
-- **A missing DB is empty, not an error.** `all_nonzero_weights` short-circuits to an empty map when the file is absent
-  (a read-only open would fail `CannotOpen`), so an unscored volume degrades cleanly.
+  `../importance/DETAILS.md` storage model), and `for_each_nonzero_weight` also filters `score > 0`, so the ~312k
+  folders under `node_modules` on a 646k-folder home never enter the map (their lookup defaults to `0.0` anyway).
+- **The map stores a hash of the path, not the path.** Nothing enumerates it and `weight_for` only does exact lookups,
+  so `ImportanceWeights` keys on `hash_path(folder_path)` and each folder costs one 17-byte table slot: measured
+  8.9 MB for 368,043 scored folders on the NAS and 4.5 MB for 158,457 on the home, down from 58 MB and 27 MB with
+  path keys (2026-07-27, `heap_bytes_held` over the real `importance-*.db` files). Rationale, the collision argument,
+  and why an `f32` weight would buy nothing: the `ImportanceWeights` doc comment in `ranking.rs`. `memory_tests.rs`
+  guards the per-folder cost.
+- **Rows stream straight into the compact map**, so the wide `path → weight` form never exists. That matters most for
+  root, which reloads on EVERY recompute while the old map is still live: the reload's transient is now a second copy
+  of ~4.5 MB rather than a ~27 MB intermediate on top of it.
+- **A missing DB is empty, not an error.** `for_each_nonzero_weight` short-circuits to visiting nothing when the file is
+  absent (a read-only open would fail `CannotOpen`), so an unscored volume degrades cleanly.
 
-The blend coefficient and weight-map footprint are unvalidated starting points (the importance weights themselves are
-too — see `../importance/scorer/weights.rs`).
+The blend coefficient is an unvalidated starting point (the importance weights themselves are too — see
+`../importance/scorer/weights.rs`).

@@ -277,24 +277,31 @@ impl ImportanceIndex {
         self.with_conn(|conn| read_ordered(conn, Some(n), Some(threshold)))
     }
 
-    /// Every scored folder's `(path, score)` with a NON-ZERO score, as a bulk
-    /// path→weight map. The search ranker's entry point: it loads one snapshot per
-    /// volume and blends the weights into result ordering. Zero-scored folders
-    /// (floored: `node_modules`, caches, hidden/system, and their subtrees) are
-    /// OMITTED — a `0.0` weight is the neutral default a consumer's lookup already
-    /// returns, so storing those rows would only bloat the map (on a 646k-folder
-    /// home, the ~312k folders under `node_modules` alone all floor to `0.0`).
-    /// This keeps the map to the folders that actually carry a ranking signal.
-    pub fn all_nonzero_weights(&self) -> Result<HashMap<String, f64>, ImportanceStoreError> {
+    /// Stream every scored folder's `(path, score)` with a NON-ZERO score to `visit`.
+    /// The search ranker's entry point: it folds one snapshot per volume into its own
+    /// compact representation and blends the weights into result ordering.
+    ///
+    /// Streams rather than returning a map because the caller's representation is far
+    /// smaller than a `path → score` map would be (a measured 368,043 scored folders
+    /// cost 58 MB as one), and materializing the wide form first would make the load
+    /// spike to many times the resident cost. Each `path` borrows SQLite's row buffer,
+    /// so a row costs no allocation at all.
+    ///
+    /// Zero-scored folders (floored: `node_modules`, caches, hidden/system, and their
+    /// subtrees) are OMITTED — a `0.0` weight is the neutral default a consumer's
+    /// lookup already returns, so visiting those rows would only add cost (on a
+    /// 646k-folder home, the ~312k folders under `node_modules` alone all floor to
+    /// `0.0`). This keeps the stream to the folders that carry a ranking signal.
+    pub fn for_each_nonzero_weight(&self, visit: impl FnMut(&str, f64)) -> Result<(), ImportanceStoreError> {
         // A never-scored volume has no `importance.db` at all (fresh install,
         // offline volume, purged cache). That's the neutral "no weights" state, not
         // an error the ranker must decode — a read-only open of a missing file would
-        // fail `CannotOpen`, so short-circuit to an empty map. A present-but-empty DB
-        // still opens and returns an empty map through the normal path.
+        // fail `CannotOpen`, so short-circuit to visiting nothing. A present-but-empty
+        // DB still opens and streams zero rows through the normal path.
         if !self.db_path.exists() {
-            return Ok(HashMap::new());
+            return Ok(());
         }
-        self.with_conn(read_nonzero_weight_map)
+        self.with_conn(|conn| stream_nonzero_weights(conn, visit))
     }
 
     /// The stored raw signal vector for one folder, or `None` if unscored. For a
@@ -432,15 +439,19 @@ fn read_folder_count(conn: &rusqlite::Connection) -> Result<u64, ImportanceStore
 /// per-row deserialization (the search ranker needs only the scalar, not the
 /// signal vector), and the `score > 0.0` filter drops the floored folders so the
 /// map holds only folders that carry a ranking signal.
-fn read_nonzero_weight_map(conn: &rusqlite::Connection) -> Result<HashMap<String, f64>, ImportanceStoreError> {
+fn stream_nonzero_weights(
+    conn: &rusqlite::Connection,
+    mut visit: impl FnMut(&str, f64),
+) -> Result<(), ImportanceStoreError> {
     let mut stmt = conn.prepare_cached("SELECT path, score FROM weights WHERE score > 0.0")?;
-    let rows = stmt.query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, f64>(1)?)))?;
-    let mut map = HashMap::new();
-    for row in rows {
-        let (path, score) = row?;
-        map.insert(path, score);
+    let mut rows = stmt.query([])?;
+    while let Some(row) = rows.next()? {
+        // `get_ref` borrows the row buffer, so a path costs no allocation here — the
+        // consumer decides whether it needs an owned copy.
+        let path = row.get_ref(0)?.as_str().map_err(rusqlite::Error::from)?;
+        visit(path, row.get(1)?);
     }
-    Ok(map)
+    Ok(())
 }
 
 /// Map a `(path, score, signals, as_of_generation)` row to a [`ScoredWeight`],

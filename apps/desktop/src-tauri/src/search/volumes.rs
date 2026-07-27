@@ -115,15 +115,22 @@ fn store_weights(volume_id: &str, weights: ImportanceWeights) {
 /// Load a volume's importance weights from its `importance-{volume_id}.db`. A
 /// missing/empty DB yields an empty map — ranking then degrades cleanly. Runs on a
 /// blocking thread (a SQLite read); never on the IPC thread.
+///
+/// Rows stream straight into the compact map, so the wide `path → weight` form never
+/// exists: on a big volume that's the difference between a load that transiently costs
+/// tens of MB and one that only ever holds what it keeps. It matters most for root,
+/// whose map reloads on EVERY recompute (the subscriber below) while the old one is
+/// still live.
 fn load_weights(data_dir: &Path, volume_id: &str) -> ImportanceWeights {
     use crate::importance::{ImportanceIndex, SignalSet};
     // `SignalSet::all()` matters only for `explain`, which the bulk weight read
     // ignores; it's the correct default regardless.
     let index = ImportanceIndex::open(data_dir, volume_id, SignalSet::all());
-    match index.all_nonzero_weights() {
-        Ok(map) => {
-            log::debug!(target: "search", "importance weights loaded for '{volume_id}': {} scored folders", map.len());
-            ImportanceWeights::from_map(map)
+    let mut weights = ImportanceWeights::empty();
+    match index.for_each_nonzero_weight(|path, score| weights.insert(path, score)) {
+        Ok(()) => {
+            log::debug!(target: "search", "importance weights loaded for '{volume_id}': {} scored folders", weights.len());
+            weights
         }
         Err(e) => {
             log::debug!(target: "search", "importance weights not loaded for '{volume_id}': {e}");

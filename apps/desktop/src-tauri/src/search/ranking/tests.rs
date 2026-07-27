@@ -408,3 +408,89 @@ fn equal_keys_break_by_id_deterministically() {
     let ids: Vec<i64> = matching.iter().map(|&i| index.entries[i].id).collect();
     assert_eq!(ids, vec![20, 30, 40], "equal keys sort by id ascending");
 }
+
+// ── The hashed weight map ─────────────────────────────────────────────────
+
+/// The map keys on a hash instead of the path, so the lookup contract is what has to
+/// hold: a stored folder reads its own weight back, and every other path reads the
+/// neutral `0.0`. Paths that differ only in a segment, in case, or by a trailing
+/// component are the ones a weak hash would confuse.
+#[test]
+fn a_stored_folder_reads_back_its_own_weight_and_nothing_else_does() {
+    let mut weights = ImportanceWeights::empty();
+    weights.insert("/Users/me/projects/cmdr", 0.75);
+    weights.insert("/Users/me/projects/cmdr/docs", 0.25);
+
+    assert_eq!(weights.weight_for("/Users/me/projects/cmdr"), 0.75);
+    assert_eq!(weights.weight_for("/Users/me/projects/cmdr/docs"), 0.25);
+    for other in [
+        "/Users/me/projects/cmdrx",
+        "/Users/me/projects/Cmdr",
+        "/Users/me/projects",
+        "/Users/me/projects/cmdr/",
+        "/Users/me/projects/cmdr/src",
+        "",
+    ] {
+        assert_eq!(weights.weight_for(other), 0.0, "'{other}' is not a stored folder");
+    }
+}
+
+/// `is_empty` gates the engine's fast path (skip parent-path reconstruction entirely),
+/// so it has to stay honest about whether any weight was recorded.
+#[test]
+fn is_empty_tracks_whether_any_weight_was_recorded() {
+    let mut weights = ImportanceWeights::empty();
+    assert!(weights.is_empty(), "a fresh map is empty");
+    assert_eq!(weights.len(), 0);
+    weights.insert("/Users/me", 0.1);
+    assert!(!weights.is_empty(), "one weight makes it non-empty");
+    assert_eq!(weights.len(), 1);
+}
+
+/// The hash is fixed, not `RandomState`: the same path hashes to the same value every
+/// time, in this run and in any other. Distinct paths (including near-identical ones)
+/// hash apart. A pinned value documents that the function is a stated constant rather
+/// than an implementation detail that can drift under the map.
+#[test]
+fn hash_path_is_deterministic_and_separates_similar_paths() {
+    assert_eq!(
+        hash_path("/Users/me/projects/cmdr"),
+        hash_path("/Users/me/projects/cmdr")
+    );
+    assert_eq!(
+        hash_path("/Users/me/projects/cmdr"),
+        0xfc85_ae89_3f25_ed17,
+        "the hash is a fixed function; update this only when changing it deliberately"
+    );
+
+    let similar = [
+        "/Users/me/projects/cmdr",
+        "/Users/me/projects/cmds",
+        "/Users/me/projects/cmdr/",
+        "/Users/me/projects/Cmdr",
+        "/users/me/projects/cmdr",
+        "",
+        "/",
+    ];
+    let distinct: std::collections::HashSet<u64> = similar.iter().copied().map(hash_path).collect();
+    assert_eq!(distinct.len(), similar.len(), "similar paths must not share a hash");
+}
+
+/// The finalizer earns its place: paths sharing a long prefix AND differing only late
+/// must land in different low bits, because that's where hashbrown takes its bucket
+/// index. Raw FNV-1a barely moves its low bits, so a bucket-index collision rate here
+/// is what catches dropping the mix.
+#[test]
+fn hash_path_spreads_sibling_paths_across_buckets() {
+    const SIBLINGS: usize = 4096;
+    let low_bits: std::collections::HashSet<u64> = (0..SIBLINGS)
+        .map(|i| hash_path(&format!("/Users/me/Library/Application Support/vendor/cache/entry-{i}")) & 0xfff)
+        .collect();
+    // 4,096 hashes into 4,096 buckets fills ~63 % of them when the bits are random;
+    // a hash that barely mixes its low bits collapses far below this.
+    assert!(
+        low_bits.len() > SIBLINGS / 2,
+        "sibling paths filled only {} of {SIBLINGS} low-bit buckets",
+        low_bits.len()
+    );
+}

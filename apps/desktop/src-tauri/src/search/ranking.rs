@@ -124,14 +124,41 @@ pub(crate) fn classify_match(name: &str, stem: &str, case_insensitive: bool) -> 
 /// A file takes its parent folder's weight; a folder takes its own. Absent
 /// importance data the map is empty and every lookup returns `0.0` — neutral,
 /// never a penalty (the degradation contract). Built per-volume in
-/// `commands/search.rs` from [`ImportanceIndex`](crate::importance::ImportanceIndex);
+/// [`volumes`](super::volumes) from [`ImportanceIndex`](crate::importance::ImportanceIndex);
 /// the engine only ever sees this read-only view, so it stays pure.
+///
+/// ## Why the paths aren't stored
+///
+/// Root's map is permanently resident and real volumes are big (a measured 158,457
+/// scored folders on a home, 368,043 on a NAS, absolute paths averaging 113 bytes), so
+/// every byte per folder is steady-state cost. Nothing ever ENUMERATES this map —
+/// [`weight_for`](Self::weight_for) does exact lookups and nothing else — so the paths
+/// themselves are dead weight once they've been hashed. Storing
+/// [`hash_path`](self::hash_path) in their place leaves a 17-byte table slot (a
+/// `(u64, f64)` entry plus its control byte) as the entire per-folder cost:
+/// 58 MB → 8.9 MB on that NAS, 27 MB → 4.5 MB on that home. Guarded by
+/// `memory_tests.rs`.
+///
+/// **Don't narrow the weight to an `f32` for size.** `(u64, f32)` and `(u64, f64)` are
+/// both 16 bytes: the key's 8-byte alignment pads the `f32` straight back, so the
+/// narrower value buys zero bytes and only costs precision. The `u64` key is what makes
+/// the entry small, and it sets the floor.
+///
+/// ## Collisions
+///
+/// Two different folders whose paths hash to the same `u64` share one entry, so one of
+/// them reads the other's weight. At 368,043 keys against 64 bits that's a ~3.7e-9
+/// chance of ANY collision on a volume that size. The failure mode is soft by
+/// construction: a weight is never a penalty and importance only ever reorders WITHIN a
+/// match-quality band, so a collision at worst gives one unrelated folder's files a
+/// spurious nudge among equally-good matches. It cannot corrupt a result, drop one, or
+/// lift a weaker match above a stronger one.
 #[derive(Debug, Default)]
 pub(crate) struct ImportanceWeights {
-    /// Folder absolute path → importance scalar (`0.0..=1.0`). Keyed by the SAME
-    /// absolute-path shape the search index reconstructs (`/Users/…`, no `~`), so a
-    /// lookup with a reconstructed parent path hits the right row.
-    map: std::collections::HashMap<String, f64>,
+    /// `hash_path(folder absolute path)` → importance scalar (`0.0..=1.0`). Keyed off
+    /// the SAME absolute-path shape the search index reconstructs (`/Users/…`, no `~`),
+    /// so a lookup with a reconstructed parent path hits the right row.
+    map: std::collections::HashMap<u64, f64, PrehashedState>,
 }
 
 impl ImportanceWeights {
@@ -141,16 +168,34 @@ impl ImportanceWeights {
         Self::default()
     }
 
-    /// Build from a path→weight map (the per-volume snapshot loaded from the read
-    /// API).
+    /// Record one folder's weight. The path is hashed and dropped; only the hash and
+    /// the weight are kept. The per-volume load streams rows through here so the full
+    /// `path → weight` map never exists in memory at all.
+    pub(crate) fn insert(&mut self, folder_path: &str, weight: f64) {
+        self.map.insert(hash_path(folder_path), weight);
+    }
+
+    /// Build from a path→weight map. A test convenience; production streams rows
+    /// through [`insert`](Self::insert) instead of materializing this map.
+    #[cfg(test)]
     pub(crate) fn from_map(map: std::collections::HashMap<String, f64>) -> Self {
-        Self { map }
+        let mut weights = Self::empty();
+        for (path, weight) in map {
+            weights.insert(&path, weight);
+        }
+        weights
     }
 
     /// The weight for a folder path, or `0.0` when unscored/absent. `0.0` is
     /// neutral in the blend (multiplier `1.0`), never a penalty.
     pub(crate) fn weight_for(&self, folder_path: &str) -> f64 {
-        self.map.get(folder_path).copied().unwrap_or(0.0)
+        self.map.get(&hash_path(folder_path)).copied().unwrap_or(0.0)
+    }
+
+    /// How many scored folders the map holds. For the load-time log line, which is how
+    /// a volume's real scored-folder count gets measured.
+    pub(crate) fn len(&self) -> usize {
+        self.map.len()
     }
 
     /// Whether any weights are present. When empty, the engine can skip the whole
@@ -158,6 +203,76 @@ impl ImportanceWeights {
     /// also guarantees byte-for-byte-today behavior).
     pub(crate) fn is_empty(&self) -> bool {
         self.map.is_empty()
+    }
+}
+
+/// The FNV-1a 64-bit offset basis and prime.
+const FNV_OFFSET_BASIS: u64 = 0xcbf2_9ce4_8422_2325;
+const FNV_PRIME: u64 = 0x0000_0100_0000_01b3;
+
+/// Hash a folder path to the 64-bit key [`ImportanceWeights`] stores in place of the
+/// path.
+///
+/// FNV-1a over the bytes, then a splitmix64 finalizer. The finalizer is not optional:
+/// raw FNV-1a barely mixes its LOW bits, and that's exactly where hashbrown takes its
+/// bucket index, so paths sharing a suffix would pile into the same buckets.
+///
+/// Fixed and fully specified on purpose, rather than `RandomState` or any hasher whose
+/// output can move under us: a given path hashes to the same value in every run and
+/// every build, so the mapping is a testable property instead of an implementation
+/// detail. Nothing persists a hash, so this is free to change — a different function
+/// just yields a different, equally consistent mapping.
+pub(crate) fn hash_path(path: &str) -> u64 {
+    let mut hash = FNV_OFFSET_BASIS;
+    for byte in path.as_bytes() {
+        hash ^= *byte as u64;
+        hash = hash.wrapping_mul(FNV_PRIME);
+    }
+    // splitmix64's finalizer: avalanches every input bit across all 64 output bits.
+    hash ^= hash >> 30;
+    hash = hash.wrapping_mul(0xbf58_476d_1ce4_e5b9);
+    hash ^= hash >> 27;
+    hash = hash.wrapping_mul(0x94d0_49bb_1331_11eb);
+    hash ^ (hash >> 31)
+}
+
+/// The `BuildHasher` for a map whose keys are ALREADY well-mixed 64-bit hashes: it
+/// passes the key straight through instead of hashing it a second time.
+///
+/// Sound only because every key comes from [`hash_path`], which finalizes its output —
+/// feeding a raw or weakly-mixed `u64` through this would cluster hashbrown's buckets.
+#[derive(Debug, Default, Clone, Copy)]
+pub(crate) struct PrehashedState;
+
+impl std::hash::BuildHasher for PrehashedState {
+    type Hasher = PrehashedHasher;
+
+    fn build_hasher(&self) -> PrehashedHasher {
+        PrehashedHasher(FNV_OFFSET_BASIS)
+    }
+}
+
+/// See [`PrehashedState`].
+#[derive(Debug)]
+pub(crate) struct PrehashedHasher(u64);
+
+impl std::hash::Hasher for PrehashedHasher {
+    fn write_u64(&mut self, value: u64) {
+        self.0 = value;
+    }
+
+    /// Never reached in practice (the key is a `u64`, which hashes via `write_u64`),
+    /// but a `Hasher` has to handle any input, so fall back to FNV-1a rather than
+    /// silently collapsing every byte string to one hash.
+    fn write(&mut self, bytes: &[u8]) {
+        for byte in bytes {
+            self.0 ^= *byte as u64;
+            self.0 = self.0.wrapping_mul(FNV_PRIME);
+        }
+    }
+
+    fn finish(&self) -> u64 {
+        self.0
     }
 }
 
@@ -276,5 +391,7 @@ pub(crate) fn rank_decorated(
     decorated
 }
 
+#[cfg(test)]
+mod memory_tests;
 #[cfg(test)]
 mod tests;

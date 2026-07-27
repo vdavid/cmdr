@@ -36,6 +36,9 @@ fans out across every volume with a persisted `index-{volumeId}.db` and merges. 
 - **Filenames are arena-allocated**: `SearchEntry` holds `name_offset: u32` + `name_len: u16`, borrowing from SQLite's
   buffer during load (zero per-row heap alloc). Don't switch to owned `String`s (roughly doubles resident memory).
   `name_folded` is NOT stored: the pattern is NFD-normalized at query time (APFS filenames are already NFD).
+- **`ImportanceWeights` keys on `hash_path(path)`, not the path** (17 B a folder; root's map is resident, volumes
+  reach 368k scored folders). ❌ No path keys, no enumeration API: `weight_for` does exact lookups, and the load
+  streams rows in. `ranking/memory_tests.rs` guards it.
 - **`expand_tilde` is imported from `crate::commands::file_system` in `ai/query_builder.rs`**: business logic reaching
   into the IPC layer, kept because moving it touches 20+ call sites. Backwards but intentional; a separate cleanup, not
   a silent "fix" here.

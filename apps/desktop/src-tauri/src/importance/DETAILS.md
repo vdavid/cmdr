@@ -163,8 +163,8 @@ Two decisions keep the store small (an older DB just recreates fresh on the next
     when a row exists, else `Floored` (carrying WHY, derived live) when the path floors by the shared classifiers
     (`classify::floors_by_path`), else `Unscored`.
     The scalar helpers stay compatible (`weight_for` reads `None` for a floored path, `WeightLookup::score()` flattens
-    floored/unscored to `0.0`), but the typed `lookup` is the documented surface. `all_nonzero_weights` already omitted
-    zeros, so search ranking is unaffected — the map just has fewer rows.
+    floored/unscored to `0.0`), but the typed `lookup` is the documented surface. `for_each_nonzero_weight` already
+    omitted zeros, so search ranking is unaffected — the stream just carries fewer rows.
   - `explain` on a floored path reports a floored breakdown DERIVED LIVE from the path (score `0.0`, `floored == true`,
     the flag reflecting which classifier fired), not the stored "would-have-contributed" additive terms — a floored folder
     no longer stores those. Acceptable and documented: tuning cares about the non-floored ranking.
@@ -339,13 +339,16 @@ importance — the agent and media-ML plans point here rather than restating (si
   truncation). The agent's summary gate and media-ML's enrich-important-first.
 - `scored_folder_count()` — the `weights` row count (a `COUNT(*)`, no deserialization), for the overview surface.
 - `signals_for(path)` — the stored raw vector, for a consumer applying its own weighting profile (plan Decision 2).
-- `all_nonzero_weights()` — the bulk `path → score` map (non-zero scores only; floored folders omitted), for a consumer
-  that loads one snapshot and ranks many candidates in memory rather than querying per item.
+- `for_each_nonzero_weight(visit)` — STREAMS every `(path, score)` with a non-zero score (floored folders omitted), for
+  a consumer that folds one snapshot into its own in-memory form and ranks many candidates against it rather than
+  querying per item. It streams rather than returning a map because a `path → score` map is far wider than what the
+  consumer keeps (58 MB for a measured 368,043-folder NAS), and each `path` borrows the row buffer, so a row allocates
+  nothing.
 - `explain(path, now)` — the per-signal breakdown, **recomputed from the STORED signals via the pure scorer**
   ([`explain`](scorer/mod.rs)), so there's ONE formula and the breakdown can't drift from the stored scalar.
 
 **First consumer: search ranking.** `search/` blends these weights into result ordering (a file takes its parent
-folder's weight), loading one `all_nonzero_weights` snapshot per recompute via `subscribe`. Match quality dominates;
+folder's weight), streaming one `for_each_nonzero_weight` snapshot per recompute via `subscribe`. Match quality dominates;
 importance is a within-band boost. The blend design, weight-map lifecycle, and degradation contract live in
 `../search/DETAILS.md` § Importance ranking (single-source).
 
