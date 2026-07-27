@@ -26,13 +26,14 @@ E2E fake path (`CMDR_E2E_ASK_CMDR_FAKE`) is likewise silent.
 
 ## Capture fidelity: why `request_struct`, not wire
 
-The plan's research said genai `=0.6.0-beta.19` "publicly exposes"
+genai publicly exposes
 `AdapterDispatcher::to_web_request_data(target, service_type, chat_req, options_set) -> WebRequestData`, the same
 function `exec_chat`/`exec_chat_stream` call internally, so reproducing it would yield the byte-identical wire payload
 with no network call. The function is `pub`, but the types it needs — `AdapterDispatcher`, `WebRequestData`,
-`ServiceType`, and `ChatOptionsSet` — are all re-exported at `pub(crate)` in `genai/src/adapter/mod.rs` and
-`chat_options.rs`, so they are **unreachable from Cmdr** as an external crate. (`pub fn` inside a `pub(crate)` path is
-externally uncallable.) Verified against the vendored source at that exact pin.
+`ServiceType`, and `ChatOptionsSet` — are all `pub(crate)` in genai's `adapter` and `chat::chat_options` modules, so
+they are **unreachable from Cmdr** as an external crate. (`pub fn` inside a `pub(crate)` path is externally
+uncallable.) Verified against the vendored source of the `genai = "=0.6.5"` pin in `Cargo.toml` by reading the
+crate's `adapter` module re-exports, 2026-07-27; re-check when the pin moves.
 
 So v1 logs the plan's documented fallback: the serialized genai `ChatRequest`, marked `fidelity: "request_struct"`. It
 still carries the full assembled prompt — system, tools (with schemas), full message history, and the context envelope

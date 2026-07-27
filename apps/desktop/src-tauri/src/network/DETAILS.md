@@ -179,7 +179,7 @@ All credential storage backends now live in `crate::secrets` (see `secrets/CLAUD
 
 ### "Sneaky mount" for SmbVolume
 
-When the user mounts an SMB share, we establish a parallel smb2 connection alongside the OS mount. The OS mount provides Finder/Terminal/drag-drop compatibility, while Cmdr's file operations use the smb2 session for better performance and fail-fast behavior. The `SmbVolume` is registered in `VolumeManager` before the FSEvents watcher fires, using `register` (overwrite). When the watcher fires, `register_if_absent` is a no-op since the SmbVolume is already registered. See `file_system/volume/smb.rs` for the implementation.
+When the user mounts an SMB share, we establish a parallel smb2 connection alongside the OS mount. The OS mount provides Finder/Terminal/drag-drop compatibility, while Cmdr's file operations use the smb2 session for better performance and fail-fast behavior. The `SmbVolume` is registered in `VolumeManager` before the FSEvents watcher fires, using `register` (overwrite). When the watcher fires, `register_if_absent` is a no-op since the SmbVolume is already registered. See `file_system/volume/backends/smb/mod.rs` for the implementation.
 
 ### `register_replacing_predecessor` cleans up the displaced volume before replacing it
 

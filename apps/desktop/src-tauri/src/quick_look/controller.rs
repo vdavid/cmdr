@@ -110,7 +110,7 @@ impl QuickLookController {
     /// Open (or re-target) the panel for `path`. Must be called on the main thread.
     ///
     /// `NSOpenPanel` / `NSSavePanel` co-existence behavior is documented in
-    /// `quick_look/CLAUDE.md` § "Coexistence with NSOpenPanel".
+    /// `quick_look/DETAILS.md` § "Coexistence with NSOpenPanel".
     ///
     /// `app` is used by the delegate to emit `quick-look-key` /
     /// `quick-look-closed` events later, and by the close-notification

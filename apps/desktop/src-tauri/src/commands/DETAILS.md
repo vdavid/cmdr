@@ -161,7 +161,7 @@ empty/none result ("no volumes mounted" vs "timed out before listing volumes"). 
 data gets wrapped in JSON anyway, negating size benefits and adding decode overhead. See
 [benchmark data](../../../../../docs/notes/json-ipc-benchmarks.md).
 
-**No `commands/ai.rs` and no `commands/space_poller.rs`.** Both subsystems have their own complex lifecycle (model
+**No `ai` or `space_poller` module under `commands/`.** Both subsystems have their own complex lifecycle (model
 loading / suggestion pipelines / secret-store keys; poller init/start/watch). A thin wrapper would be pure boilerplate
 forwarding, so they register directly from their own modules, keeping the command surface co-located with the
 frequently-changing implementation. Space-poller commands: `watch_volume_space`, `unwatch_volume_space`,

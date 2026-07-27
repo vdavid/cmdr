@@ -9,7 +9,7 @@ module.
 One file per domain (`network.rs`, `mtp.rs`, `clipboard.rs`, etc.), plus `mod.rs` (re-exports + platform gates),
 `util.rs` (timeout helpers, see Must-knows), and `file_system/` (listing, path queries, create/copy/move/delete, scan
 preview, conflict resolution, drag, stat probe). AI and space-poller commands register DIRECTLY from their own modules
-(`ai::*`, `space_poller.rs`): there is intentionally no `commands/ai.rs` or `commands/space_poller.rs`. Per-file
+(`ai::*`, `space_poller.rs`): there's intentionally no `ai` or `space_poller` module here. Per-file
 inventory and decision rationale: `DETAILS.md`.
 
 ## Must-knows

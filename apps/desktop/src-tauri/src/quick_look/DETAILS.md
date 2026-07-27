@@ -27,7 +27,7 @@ Architecture and decisions for the native macOS Quick Look integration. `CLAUDE.
 ## Coexistence with NSOpenPanel
 
 `QLPreviewPanel` and `NSOpenPanel` are both AppKit panels that take main-thread key focus. Cmdr opens `NSOpenPanel` for
-"Open with… Other" (`commands/open_with.rs`) and for save dialogs via Tauri's file plugin. Empirically, with no native
+"Open with… Other" (`file_system/open_with.rs`) and for save dialogs via Tauri's file plugin. Empirically, with no native
 UI driving in test, AppKit serializes:
 
 - While `NSOpenPanel` is the modal key window, our `makeKeyAndOrderFront:` on `QLPreviewPanel` runs but the panel
@@ -71,4 +71,4 @@ The state-machine refactor in step 1 is the load-bearing one; the IPC and fronte
 ## Dependencies
 
 External: `objc2`, `objc2-app-kit`, `objc2-foundation`, `objc2-quick-look-ui` (all macOS-only). Internal:
-`tauri::AppHandle`, `crate::file_system::get_volume_manager` (volume gate, via the IPC layer in `commands/ui.rs`).
+`tauri::AppHandle`, `crate::file_system::get_volume_manager` (volume gate, via the IPC layer in `commands/quick_look.rs`).
