@@ -14,8 +14,7 @@ mechanics, deep-link wiring, and the smoke-test guide.
   shortcut hints (in-app `⌘J` and global `⌃⌥⌘J`, each a literal `ShortcutChip`), `GlobalShortcutAnimation` for the
   default global combo, and a button row (secondary "Stop showing these" + primary "Jump to file"). Collapsible;
   auto-hides at 10s; `widthPx: 432` (wider than the 360 default so the animation reads). Carries
-  `toastGroup: 'downloads'` so a burst evicts its own oldest transient first; the toast store's global cap shows at
-  most 5.
+  `toastGroup: 'downloads'` with `maxInGroup: 1` (see § One toast at a time).
 - **`downloads-toast-collapsed.ts`**: getter/setter for the hidden `behavior.fileSystemWatching.downloadsToastCollapsed`
   setting. No Settings UI.
 - **`download-toast-shortcuts.ts`**: pure `buildShortcutSummary(shortcutHint, globalBinding)` → `{ inApp, global }`
@@ -49,6 +48,59 @@ The action button row is identical in both states. The bridge passes `getDownloa
 `initialCollapsed`; the component holds the live toggle in local `$state` (seeded from it), and the chevron's `onclick`
 calls `setDownloadsToastCollapsed(...)` to persist for the next toast. The `ToastItem` host forwards a `props` field
 only to component-content toasts that opt in.
+
+## One toast at a time
+
+`dispatchToast` passes `maxInGroup: 1` alongside `toastGroup: 'downloads'`, so the toast store evicts the previous
+downloads toast when a new detection arrives (`ui/DETAILS.md` § Toast system covers the group-cap mechanics). The
+visible toast is therefore always the newest file, with a fresh 10s timer.
+
+**Decision/Why**: the default group cap is 5, and a browser saving several files at once produced a stack of five
+near-identical ~430px teaching toasts covering the pane. Only the newest matters: the toast teaches a shortcut, and the
+teaching text is identical across a burst.
+
+What the eviction costs, and why it's acceptable:
+
+- **The evicted toast's jump target is lost.** Each toast jumps to the file IT advertised (`goToDownload`, not
+  `goToLatestDownload`), so an evicted toast's file is no longer one click away. `⌘J` still reaches the newest file, and
+  during a burst the user hadn't acted on the older toast anyway.
+- **A hovered toast can be replaced.** The store's hover-pause keeps a toast alive past its timer, but a new detection
+  still evicts it. Deliberate: "always the newest" wins over "never interrupt reading".
+- **The collapse state survives.** It lives in the `behavior.fileSystemWatching.downloadsToastCollapsed` setting, not in
+  the toast, so the replacement re-opens in the same state.
+- **Rapid bursts mount and unmount intermediate toasts.** `ToastContainer` has no enter/leave transitions, so it's a
+  frame-level swap, not visible churn. If that ever reads as flicker, coalesce in `dispatchToast` (hold the newest event
+  for a few hundred ms) rather than raising the cap.
+
+The macOS notification surface has NO equivalent dedup: `sendNotification` fires per event and the banners stack in
+Notification Center. Not fixable through the plugin (see § macOS notifications can't be deduped).
+
+## macOS notifications can't be deduped
+
+In `'macos'` / `'both'` mode a burst produces one banner per file, and they stack in Notification Center. There is no
+way to make a new one REPLACE the previous through our current stack, so don't go looking for a flag.
+
+(Verified 2026-07-27 by reading the pinned crate sources in `~/.cargo/registry`.)
+
+- `@tauri-apps/plugin-notification`'s `Options` has `id?: number` ("the notification identifier to reference this object
+  later") and `group?: string` (documented against Apple's `threadIdentifier`), which reads like it should work.
+- It doesn't: those fields are MOBILE-only. `tauri-plugin-notification` 2.3.3's desktop `NotificationBuilder::show`
+  forwards exactly four fields to `notify_rust`: title, body, icon, sound. `id`, `group`, `extra`, and the rest are
+  dropped before they reach the OS.
+- The layer below can't do it either: `notify-rust` 4.18.0 on macOS goes through `mac-notification-sys` 0.6.15, whose
+  builder exposes title / subtitle / message / buttons / app icon / content image / delivery date / sound /
+  asynchronous, and nothing resembling an identifier or a replace.
+- Upstream direction, if this ever becomes worth it: `notify-rust` has an experimental `preview-macos-un` feature
+  (`mac-usernotifications`) that carries a real `NotificationId` on the modern `UNUserNotificationCenter` API, where
+  re-adding a request with the same identifier replaces the delivered banner. Reaching it needs the Tauri plugin to both
+  enable that feature and plumb `id` through the desktop path, so it's an upstream PR, not a config change.
+
+The reachable workaround is on our side: coalesce in `dispatchMacosNotification` (hold a burst for a few hundred ms and
+send one banner for the newest file, or one summarizing the count). Not implemented; the in-app toast is the surface
+that was actually hurting.
+
+Related dev-mode quirk: the plugin calls `notify_rust::set_application("com.apple.Terminal")` under `tauri::is_dev()`,
+so notifications from a dev build are attributed to Terminal, not Cmdr. Test this surface in a release build.
 
 ## Global go-to-latest hotkey
 

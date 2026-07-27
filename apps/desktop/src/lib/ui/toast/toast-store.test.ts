@@ -332,6 +332,29 @@ describe('toastGroup eviction', () => {
     expect(toasts.find((t) => t.id === 'a6')).toBeDefined()
   })
 
+  it('maxInGroup 1 keeps only the newest toast in the group', () => {
+    // The downloads toast uses this: a burst of detections must leave exactly
+    // one toast on screen, showing the most recent file.
+    addToast(dummyContent, { id: 'd1', toastGroup: 'downloads', maxInGroup: 1 })
+    addToast(dummyContent, { id: 'd2', toastGroup: 'downloads', maxInGroup: 1 })
+    addToast(dummyContent, { id: 'd3', toastGroup: 'downloads', maxInGroup: 1 })
+
+    const toasts = getToasts()
+    expect(toasts.filter((t) => t.toastGroup === 'downloads')).toHaveLength(1)
+    expect(toasts.find((t) => t.id === 'd3')).toBeDefined()
+  })
+
+  it('maxInGroup 1 evicts only its own group, leaving other toasts alone', () => {
+    addToast(dummyContent, { id: 'x1' })
+    addToast(dummyContent, { id: 'd1', toastGroup: 'downloads', maxInGroup: 1 })
+    addToast(dummyContent, { id: 'd2', toastGroup: 'downloads', maxInGroup: 1 })
+
+    const toasts = getToasts()
+    expect(toasts).toHaveLength(2)
+    expect(toasts.find((t) => t.id === 'x1')).toBeDefined()
+    expect(toasts.find((t) => t.id === 'd2')).toBeDefined()
+  })
+
   it('persistent toast in a group blocks group eviction (new transient dropped)', () => {
     addToast(dummyContent, { id: 'p1', toastGroup: 'A', dismissal: 'persistent' })
     addToast(dummyContent, { id: 'p2', toastGroup: 'A', dismissal: 'persistent' })

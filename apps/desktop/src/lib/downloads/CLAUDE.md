@@ -1,7 +1,7 @@
 # Downloads (frontend)
 
-Frontend half of the downloads-watcher feature. Wires the backend `download-detected` Tauri event to the right surface
-(in-app toast, macOS notification, both, or neither) and owns the go-to-latest navigation. Backend counterpart:
+Frontend half of the downloads watcher. Wires the backend `download-detected` event to the right surface (toast, macOS
+notification, both, neither) and owns go-to-latest navigation. Backend counterpart:
 `apps/desktop/src-tauri/src/downloads/CLAUDE.md`.
 
 ## Module map
@@ -17,17 +17,16 @@ Frontend half of the downloads-watcher feature. Wires the backend `download-dete
 
 ## Settings-gated dispatch
 
-`startDownloadsEventBridge` reads `getDownloadsNotificationsMode()` per event: `'in-app'` → toast only, `'macos'` →
-`sendNotification` only, `'both'` → both, `'neither'` → no-op. The macOS path asks permission via the shared
+`startDownloadsEventBridge` reads `getDownloadsNotificationsMode()` per event: `'in-app'` → toast, `'macos'` →
+`sendNotification`, `'both'` → both, `'neither'` → no-op. The macOS path asks permission via
 `$lib/notifications/macos-notification-permission.ts` (session-cached, one INFO toast with a stable dedup id on denial,
 no retries, and we DON'T flip the user's setting).
 
 ## Must-knows
 
 - **Snapshot-at-creation**: both shortcut values are captured when the toast is created and passed as props; a remap
-  between a toast appearing and the user clicking does NOT change what's shown (a stale hint would mismatch what the
-  user pressed). The chips are literal mode, not `commandId` mode, precisely to preserve this. The one deliberate live
-  `$state` is the collapse toggle (`initialCollapsed` only seeds it).
+  while a toast is up does NOT change what it shows (a stale hint would mismatch what the user pressed). Hence literal
+  chips, not `commandId` mode. The one deliberate live `$state` is the collapse toggle.
 - **Skip-the-whole-toast edge case**: when NEITHER shortcut is teachable (in-app `⌘J` unbound AND global off/unbound),
   `dispatchToast` skips the in-app toast even when the mode isn't `'neither'`. The toast's reason to exist is teaching
   these shortcuts. A `'both'`-mode macOS notification still fires (separate surface, never carried a hint).
@@ -38,13 +37,14 @@ no retries, and we DON'T flip the user's setting).
 - **FDA defense-in-depth**: the watcher won't emit `download-detected` when the FDA gate is closed
   (`runtime::refresh_runtime`), but the bridge re-checks `commands.downloadsWatcherStatus()` per event before surfacing
   anything, guarding against a stale event during a gate flip. `goToLatestDownload` mirrors this.
+- **One toast at a time**: the bridge passes `maxInGroup: 1`, so a new detection evicts the previous one; the visible
+  toast is always the newest file. Don't raise it: a burst otherwise stacks five ~430px toasts.
 - **`goToLatestDownload` vs `goToDownload`**: latest consults the watcher ring (Downloads-scan fallback when empty); the
-  per-toast jump reveals the file THAT toast advertised, even after a newer download lands. The split matters for
-  download bursts: each toast must reveal its own file.
+  per-toast jump reveals the file THAT toast advertised, which can differ from the ring's latest (a detection whose
+  toast was skipped for having no shortcut to teach still updates the ring).
 - **Pane reuse**: all jump entry points reveal through `revealFileInBestPane` / `navigateToDirInBestPane`
   (`file-explorer/navigation/navigate-and-select.ts`), NOT `navigateToFileInPane`, so an already-open Downloads view
-  isn't duplicated (the helpers move the cursor or shift focus instead). "Go to path" (⌘G) deliberately keeps
-  always-navigate and does NOT reuse panes.
+  isn't duplicated. "Go to path" (⌘G) deliberately does NOT reuse panes.
 - **Global hotkey binding mapping**: `global-shortcut-binding.ts` translates the stored macOS-symbol form (`'⌃⌥⌘J'`) to
   the plugin accelerator (`'Control+Alt+Super+J'`). ⌘ maps to `Super` (global-hotkey rejects `Meta`). Registration
   lifecycle is backend; the FE owns the trigger handler.
@@ -54,8 +54,7 @@ no retries, and we DON'T flip the user's setting).
   `behavior.fileSystemWatching.globalGoToLatestShortcut.binding`, `hidden`), NOT `shortcuts.json`: the Rust startup/
   focus refresh reads it from disk before any window loads, and `shortcuts.json` isn't reachable from that path.
 - **The toast body is mouse-only click-to-jump, NOT keyboard-focusable** (the two buttons own keyboard activation). Both
-  buttons and both collapse chevrons call `event.stopPropagation()` so the body jump doesn't also fire underneath (else
-  "Stop showing these" would navigate before Settings opens).
+  buttons and both chevrons `stopPropagation()`, else "Stop showing these" would navigate before Settings opens.
 
 Full details (per-file rundown, collapsible-toast states, first-trigger warn toast, deep-link target, settings-registry
 note, and the smoke-test guide): `DETAILS.md`.

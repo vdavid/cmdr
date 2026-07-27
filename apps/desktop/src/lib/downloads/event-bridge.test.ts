@@ -164,6 +164,10 @@ describe('startDownloadsEventBridge', () => {
     ]
     expect(options).toMatchObject({
       toastGroup: 'downloads',
+      // Only one downloads toast at a time: a new detection evicts the previous
+      // one via the store's group cap, so the visible toast is always the newest
+      // file.
+      maxInGroup: 1,
       level: 'info',
       // Transient: auto-hides on a 10s timer, and wider than the default to fit
       // the keyboard animation.

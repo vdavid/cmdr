@@ -46,6 +46,19 @@ const log = getAppLogger('downloads')
 const GO_TO_LATEST_COMMAND_ID = 'downloads.goToLatest'
 const TOAST_GROUP = 'downloads'
 /**
+ * One downloads toast on screen at a time. A burst (a browser saving several
+ * files at once) would otherwise stack up to five near-identical teaching
+ * toasts, each ~430px wide, burying the pane. The store's group cap evicts the
+ * previous downloads toast when a new one arrives, so what's visible is always
+ * the newest file, with a fresh 10s timer.
+ *
+ * A toast jumps to the file IT advertised (`goToDownload`, not
+ * `goToLatestDownload`), so eviction does drop that one-click target. During a
+ * burst the user hasn't acted on it yet, and `⌘J` still reaches the newest
+ * file. Costs and alternatives: `DETAILS.md` § One toast at a time.
+ */
+const MAX_DOWNLOAD_TOASTS = 1
+/**
  * The downloads toast is wider than the default (360) to give the keyboard
  * animation room to read. Capped by the toast container's own max-width.
  */
@@ -129,11 +142,12 @@ function dispatchToast(payload: DownloadDetectedEvent, explorer: ExplorerAPI | u
   addToast(DownloadToastContent, {
     level: 'info',
     // Transient: the toast teaches a shortcut but doesn't need a decision, so it
-    // auto-hides after 10s (pausing while hovered). Max 5 visible at once via the
-    // toast store's global cap. Wider than the default so the keyboard animation
+    // auto-hides after 10s (pausing while hovered). Only one is visible at a
+    // time (`maxInGroup`). Wider than the default so the keyboard animation
     // reads (`widthPx`).
     timeoutMs: TOAST_TIMEOUT_MS,
     toastGroup: TOAST_GROUP,
+    maxInGroup: MAX_DOWNLOAD_TOASTS,
     widthPx: TOAST_WIDTH_PX,
     props: {
       explorer,
