@@ -7,9 +7,8 @@
 //! folder count) with bounds generous enough to survive allocator and buffer-growth
 //! changes, and tight enough that a per-row regression blows straight through them.
 
-use super::dir_tree::DirTree;
 use super::enrich::for_each_qualifying_image;
-use crate::indexing::store::{IndexStore, ROOT_ID};
+use crate::indexing::store::{DirTree, IndexStore, ROOT_ID};
 use crate::test_support::{count_allocations, heap_bytes_held};
 
 /// Branch folders directly under the root, each holding [`LEAVES_PER_BRANCH`] childless

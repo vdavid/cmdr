@@ -148,9 +148,9 @@ impl IndexStore {
     /// exactly these three columns, never a full [`EntryRow`] (~112 bytes plus a heap `String`
     /// per row). Streaming them, and handing the name out as a borrowed `&str` off SQLite's own
     /// row buffer, lets the caller fold each directory into a compact structure without the
-    /// query itself allocating anything per row. The media walk's `DirTree` does exactly that,
+    /// query itself allocating anything per row. [`DirTree`](super::DirTree) does exactly that,
     /// holding a 391,563-directory NAS index in 24.6 MB against 76.0 MB for the full-row shape
-    /// (measured 2026-07-25; see `media_index/scheduler/dir_tree.rs` and its `DETAILS.md`).
+    /// (measured 2026-07-25; see `media_index/DETAILS.md`).
     ///
     /// Prefer this over [`all_directories`](IndexStore::all_directories) whenever the consumer
     /// wants paths rather than metadata. The `ORDER BY id` is what makes the result binary-

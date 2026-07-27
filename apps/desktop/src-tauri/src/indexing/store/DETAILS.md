@@ -27,6 +27,10 @@ pulling shared items via `use super::*`):
   streaming one unless the consumer genuinely wants the metadata. `delete_descendants_by_id` descends in bounded chunks
   rather than issuing one recursive-CTE `DELETE` (which materialized 10.9M ids into a single ephemeral table and
   transaction on a real index), and deletes POST-ORDER (see below).
+- `dir_tree.rs`: `DirTree`, the compact in-memory projection of the directory rows that `for_each_directory`
+  exists to feed — one name arena plus a 24-byte `(id, parent_id, name slice)` record per folder, id-ordered and
+  binary-searched. The shape every whole-index walk (`media_index`'s image walk, `importance`'s recompute walk)
+  reconstructs paths from; measurements and the alternatives weighed live in `media_index/DETAILS.md`.
 - `dir_stats.rs`: `dir_stats` reads and writes plus `recompute_min_subtree_epoch`.
 - `meta.rs`: meta-table + epoch helpers, `mark_dirs_listed`, `get_all_directory_paths`, `clear_all`, and the
   aggregates-are-known-good marker (`ledger_heal_done` / `mark_ledger_heal_done` / `clear_ledger_heal_done`, keyed on

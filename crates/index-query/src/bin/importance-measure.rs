@@ -71,6 +71,12 @@ fn main() {
         "rows written (floored omitted): {} of {} folders walked",
         outcome.rows_written, outcome.folders_walked
     );
+    let mb = |bytes: Option<u64>| match bytes {
+        Some(b) => format!("{:.1} MB", b as f64 / 1e6),
+        None => "unavailable on this platform".to_string(),
+    };
+    println!("walk memory (phys_footprint growth): {}", mb(outcome.walk_footprint_bytes));
+    println!("whole-pass peak phys_footprint: {}", mb(outcome.peak_footprint_bytes));
     println!("importance.db size: {main_bytes} bytes ({:.1} MB)", main_bytes as f64 / 1e6);
     println!("  wal remaining: {wal_bytes} bytes");
     println!(

@@ -8,8 +8,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use super::dir_tree::DirTree;
-use crate::indexing::store::{IndexStore, resolve_path};
+use crate::indexing::store::{DirTree, IndexStore, resolve_path};
 use crate::media_index::backend::{Analysis, MediaAnalysis, VisionBackend};
 use crate::media_index::predicate::{MediaKind, Qualification, qualify_dir};
 use crate::media_index::progress::EnrichProgressSink;

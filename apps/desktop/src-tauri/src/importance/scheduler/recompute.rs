@@ -315,8 +315,9 @@ pub(super) struct RecomputeOutcome {
     pub(super) generation: u64,
 }
 
-/// The result of a measurement recompute: rows written plus the phase wall-clock
-/// split (walk-and-score vs write-and-flush), for the `importance-measure` dev bin.
+/// The result of a measurement recompute: rows written, the phase wall-clock
+/// split (walk-and-score vs write-and-flush), and the memory the pass cost, for
+/// the `importance-measure` dev bin.
 pub struct MeasureOutcome {
     /// Weight rows written (floored folders omitted).
     pub rows_written: usize,
@@ -326,6 +327,14 @@ pub struct MeasureOutcome {
     pub walk_and_score: std::time::Duration,
     /// Writing the rows through the writer and flushing to disk.
     pub write_and_flush: std::time::Duration,
+    /// What the WALK alone added to the process's `phys_footprint`: the reading
+    /// taken right after `walk_index_folders` returns, minus the one taken before
+    /// it. The number to watch — the walk's output stays resident through scoring,
+    /// so it sets the pass's floor.
+    pub walk_footprint_bytes: Option<u64>,
+    /// The process's peak `phys_footprint` over the whole pass (walk + score +
+    /// write), from the kernel's ledger.
+    pub peak_footprint_bytes: Option<u64>,
 }
 
 /// Walk a real `index-{volume_id}.db` READ-ONLY, score every folder, and write the
@@ -347,15 +356,24 @@ pub fn recompute_index_to_db(
     now_secs: u64,
 ) -> Result<MeasureOutcome, String> {
     // Walk + score (the read/compute phase).
+    let footprint_before = crate::process_memory::current_phys_footprint();
     let walk_started = std::time::Instant::now();
     let conn = IndexStore::open_read_connection(index_db).map_err(|e| e.to_string())?;
     let folders = walk_index_folders(&conn, home)?;
+    // Read the footprint while the walk's output is still the only thing resident,
+    // so the number is the walk's cost rather than the whole pass's.
+    let walk_footprint_bytes = match (crate::process_memory::current_phys_footprint(), footprint_before) {
+        (Some(after), Some(before)) => Some(after.saturating_sub(before)),
+        _ => None,
+    };
     if folders.is_empty() {
         return Ok(MeasureOutcome {
             rows_written: 0,
             folders_walked: 0,
             walk_and_score: walk_started.elapsed(),
             write_and_flush: std::time::Duration::ZERO,
+            walk_footprint_bytes,
+            peak_footprint_bytes: crate::process_memory::peak_phys_footprint(),
         });
     }
     let rows = score_folders(&folders, home, &Weights::default(), &available, now_secs, |_| {
@@ -378,6 +396,8 @@ pub fn recompute_index_to_db(
         folders_walked: folders.len(),
         walk_and_score,
         write_and_flush,
+        walk_footprint_bytes,
+        peak_footprint_bytes: crate::process_memory::peak_phys_footprint(),
     })
 }
 

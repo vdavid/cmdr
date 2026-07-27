@@ -752,8 +752,9 @@ single-lever A/B and a `malloc_history` stack).
 
 **The walk's floor is its FOLDER side, held compactly.** File rows stream by, but the directories have to stay resident
 for the whole walk: rebuilding a folder's absolute path follows parent pointers upward, in any order. So
-`scheduler/dir_tree.rs` holds them as one name arena plus a 24-byte `(id, parent_id, name slice)` record per folder,
-sorted by id and binary-searched, fed by `IndexStore::for_each_directory` (three columns, streamed, names borrowed off
+`indexing/store/dir_tree.rs`'s `DirTree` holds them as one name arena plus a 24-byte
+`(id, parent_id, name slice)` record per folder, sorted by id and binary-searched, fed by
+`IndexStore::for_each_directory` (three columns, streamed, names borrowed off
 SQLite's row buffer so the query allocates nothing per row). Reading the same folders as `EntryRow`s and indexing them
 by id costs ~3× that and one heap `String` per folder: on the 13.5M-row NAS index, 76.0 MB against 24.6 MB, and 3.40 s
 against 1.22 s to load (measured 2026-07-25 over 391,563 directories, `test_support::heap_bytes_held` in a throwaway

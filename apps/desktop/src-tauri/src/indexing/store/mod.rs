@@ -709,6 +709,12 @@ mod dir_stats;
 mod entries;
 mod meta;
 
+// Not part of the `impl IndexStore` split: a compact in-memory PROJECTION of the
+// directory rows, built from `for_each_directory`. It lives beside that query
+// because the two are designed for each other.
+mod dir_tree;
+pub(crate) use dir_tree::DirTree;
+
 /// Reconstruct a path from an in-memory map of `id -> (parent_id, name)`.
 /// More efficient than DB queries when reconstructing many paths.
 #[cfg(test)]

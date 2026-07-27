@@ -47,7 +47,6 @@ use super::network::fetch::FsByteFetcher;
 use super::network::policy::ConservativeFetchPolicy;
 use crate::ignore_poison::IgnorePoison;
 
-mod dir_tree;
 pub(crate) mod enrich;
 use enrich::{EnrichGates, GcScope, load_statuses, walk_image_entries};
 

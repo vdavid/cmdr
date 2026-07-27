@@ -1,4 +1,4 @@
-//! The compact directory tree the whole-index walk reconstructs folder paths from.
+//! The compact directory tree a whole-index walk reconstructs folder paths from.
 //!
 //! A volume's file rows stream by (they're the bulk of an index and are never all resident),
 //! but the DIRECTORIES have to be held for the whole walk: rebuilding a folder's absolute
@@ -10,7 +10,11 @@
 //! sorted by id and binary-searched. No per-directory heap allocation, no hash map, and
 //! none of the metadata (sizes, times, inode, flags) that path reconstruction never reads.
 //!
-//! Depth, measurements, and the alternatives weighed: `../DETAILS.md` § Covered-count preview.
+//! Both whole-index walks build on it: `media_index`'s image walk and `importance`'s
+//! recompute walk, the latter hanging its own per-folder record off the row indices here.
+//!
+//! Depth, measurements, and the alternatives weighed: `media_index/DETAILS.md` § Covered-count
+//! preview.
 
 use crate::indexing::store::{IndexStore, ROOT_ID};
 
@@ -84,6 +88,15 @@ impl DirTree {
         Ok(tree)
     }
 
+    /// The tree index of directory `id`, or `None` for an id the tree doesn't hold (the
+    /// root's parent, or a file's parent that vanished between queries).
+    ///
+    /// A binary search over the id-ordered rows: no hash map, and far more cache-friendly
+    /// than one at this size.
+    pub(crate) fn index_of(&self, id: i64) -> Option<usize> {
+        self.rows.binary_search_by_key(&id, |row| row.id).ok()
+    }
+
     /// Write the absolute path of directory `id` into `out`, replacing whatever it held.
     ///
     /// The root is `"/"`, and so is an id the tree doesn't know (a directory that vanished
@@ -93,15 +106,28 @@ impl DirTree {
     /// Takes `&mut self` for the reusable chain buffer, not to mutate the tree: a whole walk
     /// reconstructs one path per folder-with-files, and each of those would otherwise allocate.
     pub(crate) fn path_into(&mut self, id: i64, out: &mut String) {
+        match self.index_of(id) {
+            Some(index) => self.path_at_into(index, out),
+            None => {
+                out.clear();
+                out.push('/');
+            }
+        }
+    }
+
+    /// [`path_into`](DirTree::path_into) for a caller that already holds the row index —
+    /// a whole-tree walk, which visits every row in order and would otherwise pay a
+    /// binary search to find what it just iterated past.
+    pub(crate) fn path_at_into(&mut self, index: usize, out: &mut String) {
         out.clear();
         self.chain.clear();
-        let mut cursor = id;
-        while cursor != ROOT_ID && self.chain.len() < MAX_DEPTH {
-            let Ok(index) = self.rows.binary_search_by_key(&cursor, |row| row.id) else {
+        let mut cursor = Some(index);
+        while let Some(index) = cursor {
+            if self.rows[index].id == ROOT_ID || self.chain.len() >= MAX_DEPTH {
                 break;
-            };
+            }
             self.chain.push(index as u32);
-            cursor = self.rows[index].parent_id;
+            cursor = self.index_of(self.rows[index].parent_id);
         }
         if self.chain.is_empty() {
             out.push('/');

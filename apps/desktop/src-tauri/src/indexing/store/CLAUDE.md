@@ -2,7 +2,8 @@
 
 The `IndexStore` read/write handle and the per-volume SQLite schema for the drive indexer. Split by concern: `mod.rs`
 (schema + `platform_case` collation + `IndexStore` + data types), `connection.rs` (open/recreate + connection
-factories), `entries.rs` (entry-tree CRUD), `dir_stats.rs`, `meta.rs`; tests in `tests.rs`. Parent pipeline:
+factories), `entries.rs` (entry-tree CRUD), `dir_tree.rs` (`DirTree`, the compact directory projection whole-index
+walks reconstruct paths from), `dir_stats.rs`, `meta.rs`; tests in `tests.rs`. Parent pipeline:
 `../CLAUDE.md`.
 
 ## Must-knows
