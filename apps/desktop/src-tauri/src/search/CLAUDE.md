@@ -10,7 +10,8 @@ query fans out across every volume with a persisted `index-{volumeId}.db`. Flat 
 - `volumes.rs`: per-volume registry + dialog/idle/backstop timers (drop ALL arenas at once). `ensure_volume(id)` lazily
   loads a volume's arena, mount root, and weights; a non-root volume opens read-only from `index-{id}.db` on disk, NOT
   via `INDEX_REGISTRY`.
-- `execute.rs`: `run_blocking(query)`, the multi-volume orchestrator (route → load → per-volume engine → merge).
+- `execute.rs`: `run_blocking(query, policy)`, the multi-volume orchestrator (route → load → per-volume engine →
+  merge), plus `ColdVolumePolicy` (who waits for a cold arena) and `RunOutcome` (result + `deferred_volumes`).
 - `engine.rs`: `search_ranked()` PURE (no I/O): compiles glob/regex, rayon-filters, ranks, reconstructs
   mount-root-prefixed paths. Scope via `include_path_ids` / `exclude_dir_names`.
 - `types.rs`: pure data, no logic. `query.rs`: operations on the types (`parse_scope`, `resolve_include_scope`,
@@ -38,6 +39,15 @@ query fans out across every volume with a persisted `index-{volumeId}.db`. Flat 
   keys, no enumeration API; `ranking/memory_tests.rs` guards it.
 - **A stale root arena is SERVED, not rebuilt in front of the search**: `get_loaded` kicks a background refresh (≤1 per
   30 s). Root's generation ticks several times a second, so reload-on-mismatch cost 2.6 s per search. Don't restore it.
+- **A cold volume never blocks the DIALOG's search** (`ColdVolumePolicy::DeferColdVolumes`): it's dropped from the run,
+  warmed behind the reply, and `search-index-ready` makes the dialog re-run so its matches fold in. Root and
+  explicitly-scoped volumes still wait, and MCP passes `Wait` (one shot, no re-run). Whatever a run DOES wait for loads
+  in PARALLEL. Arena loads are single-flighted per volume (a per-volume gate), so a search arriving during the dialog's
+  pre-load joins it instead of reading the same DB twice.
+- **One index per mounted LOCATION, not per volume id** (`distinct_mount_roots_in`): an SMB id is keyed on the address
+  the share was mounted from, so one NAS over Tailscale and over the LAN has two 525 MB indexes both claiming
+  `/Volumes/naspi`. Search keeps the live-registered one (else the newest scan) and skips the other; nothing on disk is
+  touched.
 - **Ranking runs per MATCH** (a 1-letter query matches millions), so it's top-k + allocation-light: folder→weight memo,
   `hash_path_from_index` (never builds the path), ASCII-fast `classify_match`, `select_nth_unstable_by`. Keep it so;
   `bench.rs` measures it.

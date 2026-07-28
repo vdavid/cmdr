@@ -209,6 +209,58 @@ fn unscoped_targets_are_not_from_scope() {
     );
 }
 
+// ── Cold-volume policy ───────────────────────────────────────────────
+
+fn target(volume_id: &str, from_scope: bool) -> Target {
+    Target {
+        volume_id: volume_id.to_string(),
+        include_paths: if from_scope {
+            vec!["/Volumes/nas/sub".to_string()]
+        } else {
+            Vec::new()
+        },
+        from_scope,
+    }
+}
+
+#[test]
+fn deferring_skips_only_cold_unscoped_extra_volumes() {
+    // The costly case: an unscoped search fans out to a NAS whose 500 MB arena isn't
+    // loaded. That volume is handed to a background warm-up instead of freezing the
+    // search for seconds; everything ready still answers now.
+    let targets = vec![
+        target(ROOT_VOLUME_ID, false),
+        target("smb-warm", false),
+        target("smb-cold", false),
+    ];
+    let (now, deferred) = partition_by_readiness(targets, ColdVolumePolicy::DeferColdVolumes, |id| id != "smb-cold");
+
+    let searched: Vec<&str> = now.iter().map(|t| t.volume_id.as_str()).collect();
+    assert_eq!(searched, vec![ROOT_VOLUME_ID, "smb-warm"]);
+    assert_eq!(deferred, vec!["smb-cold".to_string()]);
+}
+
+#[test]
+fn deferring_never_skips_root_or_an_explicitly_scoped_volume() {
+    // Answering "nothing found" for the one place the user asked about would be a lie,
+    // and the dialog's readiness (and entry count) is root's, so both always wait.
+    let targets = vec![target(ROOT_VOLUME_ID, false), target("smb-scoped", true)];
+    let (now, deferred) = partition_by_readiness(targets, ColdVolumePolicy::DeferColdVolumes, |_| false);
+
+    let searched: Vec<&str> = now.iter().map(|t| t.volume_id.as_str()).collect();
+    assert_eq!(searched, vec![ROOT_VOLUME_ID, "smb-scoped"]);
+    assert!(deferred.is_empty());
+}
+
+#[test]
+fn waiting_policy_defers_nothing() {
+    // MCP tools get one shot at an answer, so they wait for every volume.
+    let targets = vec![target(ROOT_VOLUME_ID, false), target("smb-cold", false)];
+    let (now, deferred) = partition_by_readiness(targets, ColdVolumePolicy::Wait, |_| false);
+    assert_eq!(now.len(), 2);
+    assert!(deferred.is_empty());
+}
+
 // ── Count-only across volumes ────────────────────────────────────────
 
 #[test]

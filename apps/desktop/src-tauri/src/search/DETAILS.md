@@ -61,7 +61,75 @@ orchestration; `engine.rs` stays per-index and pure.
 - **Scoped** (`include_paths` non-empty): each path routes to its owning volume via
   [`volume_id_for_local_path`](../indexing/paths/routing.rs) (SMB mount → `smb_volume_id`, `mtp://` → `{device}:{storage}`,
   registered external mount → its id, everything else → `root`). Paths group by volume; each target is `from_scope`.
-- **Unscoped**: `volumes::all_indexed_volume_ids` enumerates every `index-*.db` in the data dir (root first). Whole-volume each.
+- **Unscoped**: `volumes::all_indexed_volume_ids` enumerates every `index-*.db` in the data dir (root first), collapsed
+  to one index per mounted location (below). Whole-volume each.
+
+### One index per mounted location
+
+`volumes::distinct_mount_roots_in` drops any index whose mount root another index already covers. It has to, because an
+SMB volume id is `smb_volume_id(server, port, share)` — keyed on the ADDRESS the share happened to be mounted from. One
+NAS reached over Tailscale and over the LAN therefore gets two ids, two full index DBs (David's box: 2.6 M entries and
+~525 MB EACH, both stamping `volume_path = /Volumes/naspi`), and an unscoped search that scanned both, merged duplicate
+hits, doubled the reported match count, and held two arenas resident.
+
+The rule is about PLACES, not boxes: a mount root is a unique path, only one volume can be mounted there at a time, and
+search reports ABSOLUTE paths, so two indexes claiming the same root necessarily describe the same paths. At most one of
+them is what's actually there, so reporting both is never right. The keeper is the volume currently registered in
+`VolumeManager` (that IS what's mounted there); failing that, the highest `scan_completed_at`, the more recent picture.
+An index with NO known mount root (root itself, or an offline DB predating the `volume_path` meta) never enters a group,
+so it's always kept — an unknown location can't be shown to collide.
+
+Mount roots are read via `peek_index_identity`: a warm arena's cached value, else a read-only open of `index-{id}.db`
+plus two `meta` lookups. That's a file open and two b-tree hits (sub-millisecond), NOT an arena load.
+
+Nothing on disk is deleted or rewritten — this is a read-time choice, so the skipped DB wins straight back the moment
+it's the one mounted, and no user index is ever lost. Fixing the ROOT cause (keying the index on a stable server
+identity instead of `host:port`) was deliberately NOT attempted: see "Why the index isn't keyed on a stable server
+identity" below.
+
+### Who waits for a cold arena
+
+Loading a volume's arena is a multi-second, multi-hundred-MB read (2.4 s warm page cache for a 2.6 M-entry NAS index,
+10.9 s observed cold in prod). `ColdVolumePolicy` decides who pays:
+
+- **`DeferColdVolumes`** (the search dialog): a cold, unscoped, non-root target is dropped from this run and returned in
+  `RunOutcome::deferred_volumes`. `commands::search::search_files` warms each one via `volumes::warm_in_background` and
+  emits `SearchIndexReadyEvent` as it lands; the dialog's existing ready listener re-runs the query, so the volume's
+  matches fold into results that already came back. Converges: once warm, nothing defers and nothing re-emits.
+- **`Wait`** (MCP `search` / `ai_search`): a tool call gets ONE shot at an answer with no dialog to re-run it, so it
+  waits for everything and stays complete.
+
+Root and any `from_scope` target are never deferred under either policy: answering "nothing found" for the one place the
+user asked about would be a lie, not a fast path, and the dialog's readiness and entry count are root's.
+
+Whatever a run does wait for loads in PARALLEL (`into_par_iter` over the targets), because each target is a separate DB
+file and they don't contend. And every arena load is SINGLE-FLIGHTED per volume through `LOAD_GATES`: a second caller
+waits for the first's arena instead of reading the same DB again, which used to cost both a duplicate multi-second load
+and a transient second copy of the arena whenever a search arrived while the dialog's root pre-load was still running.
+`cancel_active_loads` bumps `CANCEL_EPOCH` alongside the per-load cancel flags, so cancelling doesn't just hand the load
+to the next thread queued on the gate.
+
+Measurements: `docs/notes/search-latency-2026-07-28.md`.
+
+### Why the index isn't keyed on a stable server identity
+
+Keying an SMB index on something stable (so one NAS is one index regardless of the address it's reached at) was
+investigated and rejected, not overlooked:
+
+- **The id must exist before any SMB session does.** `volume_id_for_mount` derives it from `statfs`'s `f_mntfromname` at
+  mount-detection time, for an OS mount with no smb2 client attached. The SMB2 server GUID Cmdr already parses
+  (`smb2::NegotiatedParams::server_guid`, surfaced in the debug SMB diagnostics) exists only for a DIRECT session, so it
+  can't be the primary key — at best a later reconciliation step.
+- **No share-level serial is available.** The smb2 crate implements `FILE_FS_FULL_SIZE_INFORMATION` only; there's no
+  `FileFsVolumeInformation` (volume serial) or object-id query, and `statfs`'s `f_fsid` / DiskArbitration's volume UUID
+  aren't populated for smbfs mounts.
+- **A server GUID identifies the BOX, not the share**, so it would still need pairing with the share name.
+- **Re-keying orphans every existing SMB index**, and there is no rename/merge machinery for index DBs (a schema
+  mismatch deletes and rebuilds — see `../indexing/CLAUDE.md` § Rebuild, don't migrate). On a real NAS that's a multi-
+  hour rescan for a problem the read-time dedupe already removes the symptoms of.
+
+If it's ever worth doing: reconcile AFTER the fact (on a direct SMB session, record the server GUID in the index's
+`meta` and alias the address-keyed ids to it), rather than changing the primary derivation.
 
 ### Per-volume load (`volumes.rs`)
 

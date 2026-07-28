@@ -7,8 +7,10 @@
 //! dialog (`commands/search.rs`) and the MCP `search`/`ai_search` tools funnel
 //! through, so routing, the honesty signal, and merge live once.
 
+use rayon::prelude::*;
+
 use crate::indexing::store::IndexStore;
-use crate::indexing::{ReadPool, volume_id_for_local_path};
+use crate::indexing::{ROOT_VOLUME_ID, ReadPool, volume_id_for_local_path};
 
 use super::engine::{self, RankedEntry};
 use super::query;
@@ -23,6 +25,56 @@ struct Target {
     volume_id: String,
     include_paths: Vec<String>,
     from_scope: bool,
+}
+
+/// What a search does when a target volume's arena isn't in memory yet. Loading one
+/// is a multi-second, multi-hundred-MB read (10.9 s for a 13.5 M-entry NAS index on
+/// David's machine), so who pays for it is a real choice.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ColdVolumePolicy {
+    /// Load every target before answering: the answer is complete the first time.
+    /// For one-shot callers (MCP tools) that get no second chance.
+    Wait,
+    /// Answer from the volumes that are ready and hand the cold ones to a background
+    /// load; the caller re-runs when they land. For the search dialog, where a frozen
+    /// 11-second first keystroke is far worse than results that fill in.
+    ///
+    /// Only applies to UNSCOPED extra volumes. Root and any volume the user explicitly
+    /// scoped to are always waited for: answering "nothing found" for the one place
+    /// someone asked about would be a lie, not a fast path.
+    DeferColdVolumes,
+}
+
+/// A search's result plus the volumes it didn't wait for.
+pub(crate) struct RunOutcome {
+    pub(crate) result: SearchResult,
+    /// Volumes skipped because their arena was cold under [`ColdVolumePolicy::DeferColdVolumes`].
+    /// The caller warms them and re-runs, so their matches fold in a beat later.
+    pub(crate) deferred_volumes: Vec<String>,
+}
+
+/// Split targets into the ones this run searches and the ones it defers to a
+/// background warm-up. A target is deferrable only when it's cold, unscoped, and not
+/// root — see [`ColdVolumePolicy::DeferColdVolumes`].
+fn partition_by_readiness(
+    targets: Vec<Target>,
+    policy: ColdVolumePolicy,
+    is_warm: impl Fn(&str) -> bool,
+) -> (Vec<Target>, Vec<String>) {
+    if policy == ColdVolumePolicy::Wait {
+        return (targets, Vec::new());
+    }
+    let mut search_now = Vec::with_capacity(targets.len());
+    let mut deferred = Vec::new();
+    for target in targets {
+        let deferrable = !target.from_scope && target.volume_id != ROOT_VOLUME_ID && !is_warm(&target.volume_id);
+        if deferrable {
+            deferred.push(target.volume_id);
+        } else {
+            search_now.push(target);
+        }
+    }
+    (search_now, deferred)
 }
 
 /// Resolve a query's scope into the set of volumes to search.
@@ -66,22 +118,43 @@ fn resolve_targets(query: &SearchQuery) -> Vec<Target> {
 /// Returns `Err` only for a query the engine rejects outright (invalid regex, too
 /// broad). Coverage gaps (a scope on an unindexed volume) are NOT errors: they ride
 /// back in `SearchResult::uncovered_scopes` alongside whatever the covered volumes
-/// matched.
-pub(crate) fn run_blocking(query: SearchQuery) -> Result<SearchResult, String> {
+/// matched. Volumes the run declined to wait for ride back in
+/// `RunOutcome::deferred_volumes` (see [`ColdVolumePolicy`]).
+pub(crate) fn run_blocking(query: SearchQuery, policy: ColdVolumePolicy) -> Result<RunOutcome, String> {
     // Record activity so the backstop timer doesn't evict a warm arena mid-use;
     // this covers the MCP path too (it has no dialog to touch activity for it).
     volumes::touch_activity();
 
-    let targets = resolve_targets(&query);
+    let (targets, deferred_volumes) = partition_by_readiness(resolve_targets(&query), policy, volumes::is_warm);
     let base_limit = query.limit.min(1000) as usize;
+
+    // Load every cold target AT ONCE rather than one after another: each is a
+    // multi-second read of a different DB file, and they don't contend.
+    let loads: Vec<(Target, VolumeLoad)> = if targets.len() > 1 {
+        targets
+            .into_par_iter()
+            .map(|t| {
+                let load = volumes::ensure_volume(&t.volume_id);
+                (t, load)
+            })
+            .collect()
+    } else {
+        targets
+            .into_iter()
+            .map(|t| {
+                let load = volumes::ensure_volume(&t.volume_id);
+                (t, load)
+            })
+            .collect()
+    };
 
     let mut merged: Vec<RankedEntry> = Vec::new();
     let mut total: u64 = 0;
     let mut uncovered_scopes: Vec<String> = Vec::new();
     let mut unresolved_scopes: Vec<String> = Vec::new();
 
-    for target in targets {
-        let loaded = match volumes::ensure_volume(&target.volume_id) {
+    for (target, load) in loads {
+        let loaded = match load {
             VolumeLoad::Loaded(v) => v,
             VolumeLoad::NotIndexed => {
                 // A scope pointing here can't be searched — surface it honestly. An
@@ -152,11 +225,14 @@ pub(crate) fn run_blocking(query: SearchQuery) -> Result<SearchResult, String> {
     merged.sort_by(|a, b| a.key.cmp_best_first(&b.key));
     merged.truncate(base_limit);
 
-    Ok(SearchResult {
-        entries: merged.into_iter().map(|r| r.entry).collect(),
-        total_count: total.min(u32::MAX as u64) as u32,
-        uncovered_scopes,
-        unresolved_scopes,
+    Ok(RunOutcome {
+        result: SearchResult {
+            entries: merged.into_iter().map(|r| r.entry).collect(),
+            total_count: total.min(u32::MAX as u64) as u32,
+            uncovered_scopes,
+            unresolved_scopes,
+        },
+        deferred_volumes,
     })
 }
 

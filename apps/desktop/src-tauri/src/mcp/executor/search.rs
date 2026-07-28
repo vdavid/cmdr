@@ -133,10 +133,14 @@ fn coverage_note(result: &SearchResult) -> Option<String> {
 
 /// Run a routed multi-volume search on a blocking thread (route → load → scan →
 /// merge). Shared by both `search` and `ai_search`.
+/// A tool call gets one shot at an answer (no dialog to re-run it), so it WAITS for
+/// every target volume's index rather than deferring the cold ones the way the search
+/// dialog does.
 async fn run_search(query: SearchQuery) -> Result<SearchResult, ToolError> {
-    tokio::task::spawn_blocking(move || search::run_blocking(query))
+    tokio::task::spawn_blocking(move || search::run_blocking(query, search::ColdVolumePolicy::Wait))
         .await
         .map_err(|e| ToolError::internal(format!("Search failed: {e}")))?
+        .map(|outcome| outcome.result)
         .map_err(ToolError::internal)
 }
 

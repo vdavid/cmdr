@@ -29,11 +29,11 @@ pub use index::{SearchEntry, SearchIndex};
 // volumes.rs (per-volume registry + dialog lifecycle)
 pub(crate) use volumes::{
     DIALOG_OPEN, VolumeLoad, cancel_active_loads, cancel_idle_timer, ensure_volume, get_loaded, reset_backstop_timer,
-    start_idle_timer, start_importance_weight_subscriber, touch_activity,
+    start_idle_timer, start_importance_weight_subscriber, touch_activity, warm_in_background,
 };
 
 // execute.rs (multi-volume orchestration)
-pub(crate) use execute::run_blocking;
+pub(crate) use execute::{ColdVolumePolicy, run_blocking};
 
 // query.rs
 pub use query::SYSTEM_DIR_EXCLUDES;

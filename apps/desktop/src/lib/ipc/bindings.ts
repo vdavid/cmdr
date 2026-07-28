@@ -2117,6 +2117,11 @@ export const commands = {
   /**
    *  Search across the scoped volume(s), or every indexed volume when unscoped.
    *  Returns empty (no coverage gaps) when nothing is indexed yet.
+   *
+   *  An unscoped search answers from the volumes whose arenas are already in memory and
+   *  warms the rest behind the reply, emitting `search-index-ready` as each lands so the
+   *  dialog re-runs and their matches fold in. Root and any explicitly-scoped volume are
+   *  still waited for.
    */
   searchFiles: (query: SearchQuery) => typedError<SearchResult, string>(__TAURI_INVOKE('search_files', { query })),
   /**
@@ -6794,8 +6799,15 @@ export type SearchCoverageReason =
   | 'searchRowIncomplete'
 
 /**
- *  Emitted once the in-memory search index finishes loading, so the dialog can
- *  flip from "loading" to ready and show the indexed entry count.
+ *  Emitted once an in-memory search index finishes loading, so the dialog can flip
+ *  from "loading" to ready, show the indexed entry count, and re-run whatever the
+ *  user has typed.
+ *
+ *  Fires for ROOT's pre-load, and again for each extra volume an unscoped search
+ *  deferred to a background warm-up: the re-run is how a NAS's matches fold into
+ *  results that already came back from the volumes that were ready. `entryCount`
+ *  always reports ROOT's arena (the count the dialog shows), not the volume that
+ *  just landed.
  */
 export type SearchIndexReadyEvent = {
   entryCount: number
