@@ -199,9 +199,13 @@
   "@queryUi.results.resultCount": {
     "sourceHash": "8725496"
   },
-  "queryUi.results.countOnly.label": "{count, plural, one {Ergebnis} other {Ergebnisse}}",
-  "@queryUi.results.countOnly.label": {
-    "sourceHash": "8a25a98"
+  "queryUi.results.countOnly.sentence": "{count, plural, one {Diese Suche liefert <total>{countText}</total> Ergebnis} other {Diese Suche liefert <total>{countText}</total> Ergebnisse}}",
+  "@queryUi.results.countOnly.sentence": {
+    "sourceHash": "b265ac5"
+  },
+  "queryUi.results.countOnly.showResults": "Ergebnisse anzeigen",
+  "@queryUi.results.countOnly.showResults": {
+    "sourceHash": "90efa19"
   },
   "queryUi.results.criteria.query": "Anfrage: {query}",
   "@queryUi.results.criteria.query": {
@@ -380,6 +384,14 @@
   "queryUi.dialog.aiTranslateFailedToast": "Die KI-Suche konnte gerade nicht ausgeführt werden. Erneut versuchen?",
   "@queryUi.dialog.aiTranslateFailedToast": {
     "sourceHash": "6856c79"
+  },
+  "queryUi.dialog.runQueryToast": "Diese Suche ließ sich nicht abschließen. {message}",
+  "@queryUi.dialog.runQueryToast": {
+    "sourceHash": "02a3bba"
+  },
+  "queryUi.dialog.runQueryUnknownReason": "Der Grund ist unklar. Vielleicht die Suche eingrenzen?",
+  "@queryUi.dialog.runQueryUnknownReason": {
+    "sourceHash": "4f79b0f"
   },
   "queryUi.filters.toolbarAria": "Suchfilter",
   "@queryUi.filters.toolbarAria": {

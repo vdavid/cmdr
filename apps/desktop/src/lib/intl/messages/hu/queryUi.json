@@ -198,9 +198,13 @@
   "@queryUi.results.resultCount": {
     "sourceHash": "8725496"
   },
-  "queryUi.results.countOnly.label": "{count, plural, one {találat} other {találat}}",
-  "@queryUi.results.countOnly.label": {
-    "sourceHash": "8a25a98"
+  "queryUi.results.countOnly.sentence": "{count, plural, one {Ez a keresés <total>{countText}</total> találatot ad} other {Ez a keresés <total>{countText}</total> találatot ad}}",
+  "@queryUi.results.countOnly.sentence": {
+    "sourceHash": "b265ac5"
+  },
+  "queryUi.results.countOnly.showResults": "Találatok megjelenítése",
+  "@queryUi.results.countOnly.showResults": {
+    "sourceHash": "90efa19"
   },
   "queryUi.results.criteria.query": "Lekérdezés: {query}",
   "@queryUi.results.criteria.query": {
@@ -380,6 +384,14 @@
   "queryUi.dialog.aiTranslateFailedToast": "Most nem sikerült lefuttatni az AI-keresést. Megpróbálod újra?",
   "@queryUi.dialog.aiTranslateFailedToast": {
     "sourceHash": "6856c79"
+  },
+  "queryUi.dialog.runQueryToast": "Ez a keresés nem futott le. {message}",
+  "@queryUi.dialog.runQueryToast": {
+    "sourceHash": "02a3bba"
+  },
+  "queryUi.dialog.runQueryUnknownReason": "Az ok nem világos. Próbálsz egy szűkebb keresést?",
+  "@queryUi.dialog.runQueryUnknownReason": {
+    "sourceHash": "4f79b0f"
   },
   "queryUi.filters.toolbarAria": "Keresési szűrők",
   "@queryUi.filters.toolbarAria": {

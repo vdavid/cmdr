@@ -200,9 +200,13 @@
   "@queryUi.results.resultCount": {
     "sourceHash": "8725496"
   },
-  "queryUi.results.countOnly.label": "{count, plural, one {résultat} many {résultats} other {résultats}}",
-  "@queryUi.results.countOnly.label": {
-    "sourceHash": "8a25a98"
+  "queryUi.results.countOnly.sentence": "{count, plural, one {Cette recherche donne <total>{countText}</total> résultat} many {Cette recherche donne <total>{countText}</total> résultats} other {Cette recherche donne <total>{countText}</total> résultats}}",
+  "@queryUi.results.countOnly.sentence": {
+    "sourceHash": "b265ac5"
+  },
+  "queryUi.results.countOnly.showResults": "Afficher les résultats",
+  "@queryUi.results.countOnly.showResults": {
+    "sourceHash": "90efa19"
   },
   "queryUi.results.criteria.query": "Requête : {query}",
   "@queryUi.results.criteria.query": {
@@ -381,6 +385,14 @@
   "queryUi.dialog.aiTranslateFailedToast": "Impossible de lancer la recherche IA pour le moment. Réessayer ?",
   "@queryUi.dialog.aiTranslateFailedToast": {
     "sourceHash": "6856c79"
+  },
+  "queryUi.dialog.runQueryToast": "Cette recherche n''a pas pu aboutir. {message}",
+  "@queryUi.dialog.runQueryToast": {
+    "sourceHash": "02a3bba"
+  },
+  "queryUi.dialog.runQueryUnknownReason": "La raison n''est pas claire. Essayez une recherche plus ciblée ?",
+  "@queryUi.dialog.runQueryUnknownReason": {
+    "sourceHash": "4f79b0f"
   },
   "queryUi.filters.toolbarAria": "Filtres de recherche",
   "@queryUi.filters.toolbarAria": {

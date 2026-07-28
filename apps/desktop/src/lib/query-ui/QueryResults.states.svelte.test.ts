@@ -43,6 +43,7 @@ const baseProps = {
   totalCount: 0,
   indexEntryCount: 1000,
   countOnly: false,
+  onShowResults: undefined as (() => void) | undefined,
   iconCacheVersion: 0,
   aiEnabled: false,
   onResultClick: () => {},
@@ -255,7 +256,7 @@ describe('SearchResults row rendering (font-bump sizing)', () => {
 })
 
 describe('SearchResults count-only mode', () => {
-  it('shows the grouped total plus a pluralized label instead of rows', async () => {
+  it('reads as one sentence with only the grouped total in bold', async () => {
     const target = mountWith({
       countOnly: true,
       hasSearched: true,
@@ -265,8 +266,9 @@ describe('SearchResults count-only mode', () => {
     await tick()
     const summary = target.querySelector('.count-only-summary')
     expect(summary).toBeTruthy()
-    expect(summary?.querySelector('.count-only-number')?.textContent).toBe('12,345')
-    expect(summary?.textContent).toContain('results')
+    // The number is bold and thousands-separated; the rest is a normal sentence around it.
+    expect(summary?.querySelector('strong.count-only-number')?.textContent).toBe('12,345')
+    expect(summary?.querySelector('.count-only-sentence')?.textContent).toBe('This search yields 12,345 results')
     // No rows and no listbox role in count-only mode.
     expect(target.querySelectorAll('.result-row').length).toBe(0)
     expect(target.querySelector('[role="listbox"]')).toBeFalsy()
@@ -275,22 +277,77 @@ describe('SearchResults count-only mode', () => {
   it('renders a zero-match count (not the no-results criteria list)', async () => {
     const target = mountWith({ countOnly: true, hasSearched: true, query: 'nomatch', totalCount: 0 })
     await tick()
-    expect(target.querySelector('.count-only-summary')?.querySelector('.count-only-number')?.textContent).toBe('0')
+    expect(target.querySelector('.count-only-summary strong.count-only-number')?.textContent).toBe('0')
     expect(target.querySelector('.no-results')).toBeFalsy()
   })
 
-  it('uses the singular label for a count of one', async () => {
+  it('uses the singular sentence for a count of one', async () => {
     const target = mountWith({ countOnly: true, hasSearched: true, query: 'unique', totalCount: 1 })
     await tick()
-    const summary = target.querySelector('.count-only-summary')
-    expect(summary?.querySelector('.count-only-number')?.textContent).toBe('1')
-    expect(summary?.textContent).toContain('result')
-    expect(summary?.textContent).not.toContain('results')
+    const sentence = target.querySelector('.count-only-sentence')
+    expect(sentence?.textContent).toBe('This search yields 1 result')
   })
 
   it('falls through to the empty state before any search runs', async () => {
     const target = mountWith({ countOnly: true, hasSearched: false, query: '' })
     await tick()
     expect(target.querySelector('.count-only-summary')).toBeFalsy()
+  })
+
+  it('offers "Show results" only when the consumer wires onShowResults', async () => {
+    const withoutHandler = mountWith({ countOnly: true, hasSearched: true, query: '*.jpg', totalCount: 3 })
+    await tick()
+    expect(withoutHandler.querySelector('.count-only-summary button')).toBeFalsy()
+
+    const onShowResults = vi.fn()
+    const withHandler = mountWith({
+      countOnly: true,
+      hasSearched: true,
+      query: '*.jpg',
+      totalCount: 3,
+      onShowResults,
+    })
+    await tick()
+    const button = withHandler.querySelector<HTMLButtonElement>('.count-only-summary button')
+    expect(button?.textContent.trim()).toBe('Show results')
+    button?.click()
+    expect(onShowResults).toHaveBeenCalledOnce()
+  })
+})
+
+// Column labels over a spinner, a criteria list, the empty state, or a bare total describe a
+// table that isn't rendered — and they're the loudest thing in an otherwise quiet area. The
+// header now tracks the rows exactly.
+describe('SearchResults column header visibility', () => {
+  const oneRow: SearchResultEntry[] = [
+    {
+      path: '/a.jpg',
+      name: 'a.jpg',
+      parentPath: '/',
+      isDirectory: false,
+      size: 1,
+      modifiedAt: 0,
+      iconId: 'ext:jpg',
+    },
+  ]
+
+  it('renders the header when rows render', async () => {
+    const target = mountWith({ results: oneRow, hasSearched: true, query: '*.jpg', totalCount: 1 })
+    await tick()
+    expect(target.querySelector('.column-header')).toBeTruthy()
+  })
+
+  const headerlessStates: [string, Partial<typeof baseProps>][] = [
+    ['count-only', { countOnly: true, hasSearched: true, query: '*.jpg', totalCount: 9 }],
+    ['searching', { isSearching: true, hasSearched: true, query: '*.jpg', results: oneRow }],
+    ['no results', { hasSearched: true, query: '*.nope', results: [], totalCount: 0 }],
+    ['empty state', { hasSearched: false, query: '' }],
+    ['index unavailable', { isIndexAvailable: false, isIndexReady: false }],
+  ]
+
+  it.each(headerlessStates)('hides the header in the %s state', async (_name, props) => {
+    const target = mountWith(props)
+    await tick()
+    expect(target.querySelector('.column-header')).toBeFalsy()
   })
 })

@@ -198,9 +198,13 @@
   "@queryUi.results.resultCount": {
     "sourceHash": "8725496"
   },
-  "queryUi.results.countOnly.label": "{count, plural, one {resultat} other {resultat}}",
-  "@queryUi.results.countOnly.label": {
-    "sourceHash": "8a25a98"
+  "queryUi.results.countOnly.sentence": "{count, plural, one {Den här sökningen ger <total>{countText}</total> resultat} other {Den här sökningen ger <total>{countText}</total> resultat}}",
+  "@queryUi.results.countOnly.sentence": {
+    "sourceHash": "b265ac5"
+  },
+  "queryUi.results.countOnly.showResults": "Visa resultat",
+  "@queryUi.results.countOnly.showResults": {
+    "sourceHash": "90efa19"
   },
   "queryUi.results.criteria.query": "Sökfråga: {query}",
   "@queryUi.results.criteria.query": {
@@ -380,6 +384,14 @@
   "queryUi.dialog.aiTranslateFailedToast": "Det gick inte att köra AI-sökningen just nu. Försök igen?",
   "@queryUi.dialog.aiTranslateFailedToast": {
     "sourceHash": "6856c79"
+  },
+  "queryUi.dialog.runQueryToast": "Den här sökningen kunde inte slutföras. {message}",
+  "@queryUi.dialog.runQueryToast": {
+    "sourceHash": "02a3bba"
+  },
+  "queryUi.dialog.runQueryUnknownReason": "Orsaken är oklar. Prova en snävare sökning?",
+  "@queryUi.dialog.runQueryUnknownReason": {
+    "sourceHash": "4f79b0f"
   },
   "queryUi.filters.toolbarAria": "Sökfilter",
   "@queryUi.filters.toolbarAria": {

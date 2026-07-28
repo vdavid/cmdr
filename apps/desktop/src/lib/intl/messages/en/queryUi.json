@@ -236,12 +236,19 @@
       "totalText": "the total number of matches found, already formatted for display (for example 1,234)"
     }
   },
-  "queryUi.results.countOnly.label": "{count, plural, one {result} other {results}}",
-  "@queryUi.results.countOnly.label": {
-    "description": "The word shown beneath the big match total in count-only search mode (the total itself is rendered separately, already formatted). Just the noun: for example the whole area reads '12,345' on one line and 'results' beneath it. Pick the plural form your language uses for the given count.",
+  "queryUi.results.countOnly.sentence": "{count, plural, one {This search yields <total>{countText}</total> result} other {This search yields <total>{countText}</total> results}}",
+  "@queryUi.results.countOnly.sentence": {
+    "description": "The whole message shown in place of the results list in count-only search mode, where the app reports how many files match without listing them. One normal sentence; the <total> tag wraps the number and renders it in bold, so put the tag where your language wants the number. Pick the plural form your language uses for the given count.",
     "placeholders": {
-      "count": "the number of matches, passed only to choose the singular or plural word"
-    }
+      "count": "the number of matches, passed only to choose the plural form",
+      "countText": "the same number, already formatted with the locale's digit grouping (for example 12,345)"
+    },
+    "screenshot": "search-dialog.png"
+  },
+  "queryUi.results.countOnly.showResults": "Show results",
+  "@queryUi.results.countOnly.showResults": {
+    "description": "Button under the count-only total. Pressing it turns count-only mode off and runs the search again, so the matching files appear as a list.",
+    "screenshot": "search-dialog.png"
   },
   "queryUi.results.criteria.query": "Query: {query}",
   "@queryUi.results.criteria.query": {
@@ -497,6 +504,17 @@
   "queryUi.dialog.aiTranslateFailedToast": "Couldn''t run the AI search just now. Try again?",
   "@queryUi.dialog.aiTranslateFailedToast": {
     "description": "Toast shown when an AI search couldn't be translated for an unknown reason. Reassuring and actionable, inviting a retry. Per app style, avoid the words 'error' and 'failed'."
+  },
+  "queryUi.dialog.runQueryToast": "Couldn''t finish that search. {message}",
+  "@queryUi.dialog.runQueryToast": {
+    "description": "Toast shown when a search or selection run is refused, wrapping the reason the app got back (for example 'Query too broad. Add a filename pattern, size, date, or type filter'). Keep the wrapper short; the reason carries the detail. Per app style, avoid the words 'error' and 'failed'.",
+    "placeholders": {
+      "message": "the reason the run stopped, in the app's own words, shown verbatim"
+    }
+  },
+  "queryUi.dialog.runQueryUnknownReason": "The reason isn''t clear. Try a narrower query?",
+  "@queryUi.dialog.runQueryUnknownReason": {
+    "description": "Stand-in reason inside the 'Couldn't finish that search' toast when the app got no explanation back. Suggests the most likely fix."
   },
 
   "queryUi.filters.toolbarAria": "Search filters",

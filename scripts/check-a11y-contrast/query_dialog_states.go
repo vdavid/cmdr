@@ -60,8 +60,8 @@ var queryDialogScenarios = []ancestorBgScenario{
 		BgVar:    "color-accent",
 	},
 	// Under-cursor result row (`.result-row.is-under-cursor`) in `QueryResults`:
-	// the row bg flips to `--color-accent-subtle`, composited over the dialog
-	// body (`--color-bg-secondary`). The muted columns (path / size / modified)
+	// the row bg flips to `--color-accent-subtle`, composited over the results
+	// surface (`--color-bg-primary`). The muted columns (path / size / modified)
 	// set their color on separate `.result-*` selectors, so the walker never
 	// pairs them with the cursor bg. Under the cursor all three render at
 	// `--color-text-primary` (the tertiary / secondary tokens don't clear AA on
@@ -69,11 +69,11 @@ var queryDialogScenarios = []ancestorBgScenario{
 	{
 		Selector: ".result-row.is-under-cursor .result-path/size/modified",
 		FgVar:    "color-text-primary",
-		// `--color-accent-subtle` is a 15%-alpha accent tint; the dialog body
-		// behind the row is `--color-bg-secondary`. Compositing that tint over
-		// the body is `mix(accent 15%, bg-secondary)` (an opaque, still
+		// `--color-accent-subtle` is a 15%-alpha accent tint; the results
+		// surface behind the row is `--color-bg-primary`. Compositing that tint
+		// over it is `mix(accent 15%, bg-primary)` (an opaque, still
 		// accent-dependent color, so the matrix sweep applies).
-		BgExpr: "color-mix(in srgb, var(--color-accent) 15%, var(--color-bg-secondary))",
+		BgExpr: "color-mix(in srgb, var(--color-accent) 15%, var(--color-bg-primary))",
 	},
 	// The footer action buttons' shortcut hints render through the standard `ShortcutChip`
 	// (a neutral pill, contrast-audited by the chip's own catalog a11y test), not bespoke

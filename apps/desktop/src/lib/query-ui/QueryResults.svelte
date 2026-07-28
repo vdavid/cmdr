@@ -20,6 +20,8 @@
     import Icon from '$lib/ui/Icon.svelte'
     import { formatInteger } from '$lib/intl/number-format'
     import { tString } from '$lib/intl/messages.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
+    import Button from '$lib/ui/Button.svelte'
     import type { SearchResultEntry } from '$lib/tauri-commands'
     import Size from '$lib/ui/Size.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
@@ -50,6 +52,13 @@
          * the results list with a prominent count. Defaults to `false` (Selection never sets it).
          */
         countOnly?: boolean
+        /**
+         * Turns count-only off and re-runs, wired to the "Show results" button under the
+         * count. Optional: Selection has no count-only mode, so it omits this and the
+         * button never renders. Flipping the flag alone would leave a stale count on
+         * screen (the count-only run returned no rows), so the handler MUST re-run too.
+         */
+        onShowResults?: () => void
         iconCacheVersion: number
         /** True when AI mode is available (provider on + index ready). Drives the empty-state chip set. */
         aiEnabled: boolean
@@ -101,6 +110,7 @@
         totalCount,
         indexEntryCount,
         countOnly = false,
+        onShowResults,
         iconCacheVersion: _iconVersionProp,
         aiEnabled,
         showPathColumn = true,
@@ -205,17 +215,31 @@
     }
 </script>
 
+<!-- The bolded match total inside the count-only sentence. `children` carries the
+     already-formatted number from the message, so the locale decides where it sits. -->
+{#snippet countTotal(children: import('svelte').Snippet)}<strong class="count-only-number"
+        >{@render children()}</strong
+    >{/snippet}
+
 <!-- Column headers. Path is the flex column (1fr); Size + Modified shrink-wrap.
      The Actions column on the right matches the row's `…` button slot. Header
-     cells use the same grid template as the rows so columns line up. -->
-<div class="column-header" class:no-path={!showPathColumn}>
-    <span class="col-label col-icon" aria-hidden="true"></span>
-    <span class="col-label">{tString('queryUi.results.col.name')}</span>
-    {#if showPathColumn}<span class="col-label">{tString('queryUi.results.col.path')}</span>{/if}
-    <span class="col-label col-right">{tString('queryUi.results.col.size')}</span>
-    <span class="col-label col-right">{tString('queryUi.results.col.modified')}</span>
-    <span class="col-label col-actions">{tString('queryUi.results.col.actions')}</span>
-</div>
+     cells use the same grid template as the rows so columns line up.
+
+     Rendered ONLY when rows are (the `showingRows` predicate). Column labels over a
+     spinner, a "no files match" list, the empty state, or a count-only total describe a
+     table that isn't there, and they're the loudest thing in an otherwise quiet area.
+     The seam they used to draw between the chip strip and the results is now the chip
+     strip's own bottom hairline plus the surface flip. -->
+{#if showingRows}
+    <div class="column-header" class:no-path={!showPathColumn}>
+        <span class="col-label col-icon" aria-hidden="true"></span>
+        <span class="col-label">{tString('queryUi.results.col.name')}</span>
+        {#if showPathColumn}<span class="col-label">{tString('queryUi.results.col.path')}</span>{/if}
+        <span class="col-label col-right">{tString('queryUi.results.col.size')}</span>
+        <span class="col-label col-right">{tString('queryUi.results.col.modified')}</span>
+        <span class="col-label col-actions">{tString('queryUi.results.col.actions')}</span>
+    </div>
+{/if}
 
 <!-- Results list. `role="listbox"` only applies when option rows are rendered; empty/loading/
      unavailable states are bare text containers so axe doesn't flag aria-required-children. -->
@@ -255,13 +279,22 @@
             <div class="loading-label">{tString('queryUi.results.searching')}</div>
         </div>
     {:else if showingCount}
-        <!-- Count-only: the search ran but the backend returned no rows, just a total. Show it
-             prominently, thousands-separated, with a pluralized label. -->
+        <!-- Count-only: the search ran but the backend returned no rows, just a total. One
+             normal-size sentence with only the number in bold, and a way back to the list.
+             The `<total>` tag lets each locale put the number where its grammar wants it. -->
         <div class="count-only-summary" aria-live="polite">
-            <span class="count-only-number">{formatInteger(totalCount)}</span>
-            <span class="count-only-label">
-                {tString('queryUi.results.countOnly.label', { count: totalCount })}
-            </span>
+            <p class="count-only-sentence">
+                <Trans
+                    key="queryUi.results.countOnly.sentence"
+                    params={{ count: totalCount, countText: formatInteger(totalCount) }}
+                    snippets={{ total: countTotal }}
+                />
+            </p>
+            {#if onShowResults}
+                <Button variant="secondary" onclick={onShowResults}>
+                    {tString('queryUi.results.countOnly.showResults')}
+                </Button>
+            {/if}
         </div>
     {:else if results.length === 0 && hasSearched && !isSearching && (query.trim() || sizeFilter !== 'any' || dateFilter !== 'any')}
         <!-- D4: structured no-results state. Heading + bulleted criteria list. -->
@@ -383,11 +416,13 @@
             32px;
     }
 
-    /* Column headers sit on the dialog's secondary surface (matching the FullList header in the
-       main pane), with a hairline below to land cleanly onto the results surface. */
+    /* The results zone (header + list + status bar) sits on `--color-bg-primary`, one
+       step lighter than the filter band above it. That surface flip IS the separation
+       between "how do I narrow this" and "here's what I found"; the hairlines only
+       sharpen it. See `QueryDialog.svelte` § Layout for the three zones. */
     .column-header {
         padding: var(--spacing-xs) var(--spacing-lg);
-        background: var(--color-bg-secondary);
+        background: var(--color-bg-primary);
         border-bottom: 1px solid var(--color-border-subtle);
         user-select: none;
     }
@@ -413,11 +448,13 @@
         min-width: 28px;
     }
 
-    /* Results list */
+    /* Results list. The only `flex: 1 1 auto` child in the dialog body, so it absorbs
+       every bit of room the strips above and below leave. */
     .results-container {
         flex: 1 1 auto;
         min-height: 0;
         overflow-y: auto;
+        background: var(--color-bg-primary);
     }
 
     /* Vertical stack so the spinner sits above the label, matching the rest of
@@ -456,8 +493,10 @@
         color: var(--color-text-primary);
     }
 
-    /* Count-only summary: a big centered total with a quiet label beneath it. Fills the
-       results area (which would otherwise hold rows) so the number is unmissable. */
+    /* Count-only summary: one body-size sentence with the total in bold, and a button
+       back to the list. Centered in the results area, which holds nothing else here.
+       Deliberately NOT a display-scale number: a lone huge digit reads as a dashboard
+       stat, not as an answer to the question the user asked. */
     .count-only-summary {
         flex: 1 1 auto;
         min-height: 0;
@@ -465,23 +504,21 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: var(--spacing-xs);
+        gap: var(--spacing-md);
         padding: var(--spacing-xl) var(--spacing-lg);
         text-align: center;
     }
 
-    .count-only-number {
-        /* Display-scale number: no matching --font-size-* token, so a raw px value is intentional. */
-        font-size: 40px;
-        font-weight: 600;
-        line-height: 1.1;
-        color: var(--color-text-primary);
-        font-variant-numeric: tabular-nums;
-    }
-
-    .count-only-label {
+    .count-only-sentence {
+        margin: 0;
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
+    }
+
+    .count-only-number {
+        font-weight: 600;
+        color: var(--color-text-primary);
+        font-variant-numeric: tabular-nums;
     }
 
     .no-results-criteria {
@@ -586,11 +623,11 @@
         min-width: 28px;
     }
 
-    /* Status bar uses the dialog's secondary surface; the surface change against the results
-       list is the separator. A hairline border-top reinforces the seam without shouting. */
+    /* Status bar closes the results zone: same surface as the list, separated by a
+       hairline rather than a surface change (it reports ON the list, it isn't chrome). */
     .status-bar {
         padding: var(--spacing-xs) var(--spacing-lg);
-        background: var(--color-bg-secondary);
+        background: var(--color-bg-primary);
         border-top: 1px solid var(--color-border-subtle);
         font-size: var(--font-size-md);
         color: var(--color-text-tertiary);

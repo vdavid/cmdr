@@ -198,9 +198,13 @@
   "@queryUi.results.resultCount": {
     "sourceHash": "8725496"
   },
-  "queryUi.results.countOnly.label": "{count, plural, one {resultado} many {resultados} other {resultados}}",
-  "@queryUi.results.countOnly.label": {
-    "sourceHash": "8a25a98"
+  "queryUi.results.countOnly.sentence": "{count, plural, one {Esta búsqueda arroja <total>{countText}</total> resultado} many {Esta búsqueda arroja <total>{countText}</total> resultados} other {Esta búsqueda arroja <total>{countText}</total> resultados}}",
+  "@queryUi.results.countOnly.sentence": {
+    "sourceHash": "b265ac5"
+  },
+  "queryUi.results.countOnly.showResults": "Mostrar resultados",
+  "@queryUi.results.countOnly.showResults": {
+    "sourceHash": "90efa19"
   },
   "queryUi.results.criteria.query": "Consulta: {query}",
   "@queryUi.results.criteria.query": {
@@ -379,6 +383,14 @@
   "queryUi.dialog.aiTranslateFailedToast": "No se pudo ejecutar la búsqueda con IA ahora mismo. ¿Lo intentas de nuevo?",
   "@queryUi.dialog.aiTranslateFailedToast": {
     "sourceHash": "6856c79"
+  },
+  "queryUi.dialog.runQueryToast": "No se pudo completar esa búsqueda. {message}",
+  "@queryUi.dialog.runQueryToast": {
+    "sourceHash": "02a3bba"
+  },
+  "queryUi.dialog.runQueryUnknownReason": "No está claro el motivo. ¿Pruebas con una búsqueda más concreta?",
+  "@queryUi.dialog.runQueryUnknownReason": {
+    "sourceHash": "4f79b0f"
   },
   "queryUi.filters.toolbarAria": "Filtros de búsqueda",
   "@queryUi.filters.toolbarAria": {
