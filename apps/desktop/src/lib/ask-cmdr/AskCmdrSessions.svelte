@@ -7,6 +7,7 @@
 <script lang="ts">
     import { tick } from 'svelte'
     import Icon from '$lib/ui/Icon.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import {
@@ -25,7 +26,7 @@
 
     let editingId = $state<number | null>(null)
     let editTitle = $state('')
-    let editInput = $state<HTMLInputElement | null>(null)
+    let editInput = $state<HTMLInputElement | undefined>()
 
     async function startRename(id: number, title: string): Promise<void> {
         editingId = id
@@ -72,20 +73,30 @@
     </header>
 
     <div class="search-row">
-        <Icon name="search" size={14} aria-hidden="true" />
-        <input
-            type="text"
-            class="search-input"
+        <TextInput
+            type="search"
+            radius="md"
+            leadingIcon="search"
             value={sessionsState.query}
             placeholder={tString('askCmdr.sessions.searchPlaceholder')}
-            aria-label={tString('askCmdr.sessions.searchLabel')}
-            oninput={(e) => { setSearchQuery(e.currentTarget.value); }}
-        />
-        {#if sessionsState.query.length > 0}
-            <button type="button" class="icon-button small" onclick={clearSearch} aria-label={tString('askCmdr.close')}>
-                <Icon name="x" size={14} aria-hidden="true" />
-            </button>
-        {/if}
+            ariaLabel={tString('askCmdr.sessions.searchLabel')}
+            oninput={(e: Event) => {
+                if (e.currentTarget instanceof HTMLInputElement) setSearchQuery(e.currentTarget.value)
+            }}
+        >
+            {#snippet trailing()}
+                {#if sessionsState.query.length > 0}
+                    <button
+                        type="button"
+                        class="icon-button small"
+                        onclick={clearSearch}
+                        aria-label={tString('askCmdr.close')}
+                    >
+                        <Icon name="x" size={14} aria-hidden="true" />
+                    </button>
+                {/if}
+            {/snippet}
+        </TextInput>
     </div>
 
     {#if !isSearching()}
@@ -132,12 +143,12 @@
                 {#each sessionsState.conversations as conversation (conversation.id)}
                     <li class="conversation">
                         {#if editingId === conversation.id}
-                            <input
-                                bind:this={editInput}
+                            <TextInput
+                                bind:inputElement={editInput}
                                 bind:value={editTitle}
-                                type="text"
-                                class="rename-input"
-                                aria-label={tString('askCmdr.sessions.renameLabel')}
+                                radius="sm"
+                                containerStyle="flex: 1; min-width: 0; margin: var(--spacing-xxs) 0"
+                                ariaLabel={tString('askCmdr.sessions.renameLabel')}
                                 onkeydown={onRenameKeydown}
                                 onblur={() => void commitRename()}
                             />
@@ -247,20 +258,6 @@
         border-radius: var(--radius-md);
     }
 
-    .search-input {
-        flex: 1;
-        min-width: 0;
-        border: none;
-        background: none;
-        font: inherit;
-        font-size: var(--font-size-sm);
-        color: var(--color-text-primary);
-    }
-
-    .search-input:focus-visible {
-        outline: none;
-    }
-
     .archived-toggle {
         display: flex;
         align-items: center;
@@ -358,19 +355,6 @@
         display: flex;
         gap: var(--spacing-xxs);
         padding-right: var(--spacing-xxs);
-    }
-
-    .rename-input {
-        flex: 1;
-        min-width: 0;
-        margin: var(--spacing-xxs) 0;
-        padding: var(--spacing-xs) var(--spacing-sm);
-        font: inherit;
-        font-size: var(--font-size-sm);
-        color: var(--color-text-primary);
-        background: var(--color-bg-primary);
-        border: 1px solid var(--color-accent);
-        border-radius: var(--radius-sm);
     }
 
     .load-more {

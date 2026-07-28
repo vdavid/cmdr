@@ -3,6 +3,7 @@
     import OnboardingStepShell from './OnboardingStepShell.svelte'
     import SettingSwitch from '$lib/settings/components/SettingSwitch.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { setFooterOverride, nextStep, requestWizardComplete } from './onboarding-state.svelte'
@@ -243,16 +244,16 @@
 
     <section class="email-block" aria-labelledby="beta-email-title">
         <h3 id="beta-email-title" class="toggle-title">{tString('onboarding.stepBeta.emailTitle')}</h3>
-        <input
+        <TextInput
             type="email"
-            class="email-input"
+            containerStyle="margin-top: var(--spacing-sm)"
             placeholder={tString('onboarding.stepBeta.emailPlaceholder')}
             value={email}
             oninput={handleEmailInput}
             onblur={handleEmailCommit}
             onkeydown={handleEmailKeydown}
             disabled={signupInFlight}
-            aria-label={tString('onboarding.stepBeta.emailTitle')}
+            ariaLabel={tString('onboarding.stepBeta.emailTitle')}
         />
         {#if signupFeedback?.kind === 'success'}
             <p class="signup-feedback success" role="status">{tString('onboarding.stepBeta.signup.success')}</p>
@@ -368,27 +369,6 @@
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
         background: var(--color-bg-primary);
-    }
-
-    .email-input {
-        width: 100%;
-        margin-top: var(--spacing-sm);
-        padding: var(--spacing-xs) var(--spacing-sm);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-primary);
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-    }
-
-    .email-input:focus {
-        outline: none;
-        border-color: var(--color-accent);
-        box-shadow: var(--shadow-focus);
-    }
-
-    .email-input:disabled {
-        opacity: 0.6;
     }
 
     .signup-feedback {

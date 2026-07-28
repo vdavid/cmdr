@@ -4,6 +4,7 @@
     import SettingsSection from '../components/SettingsSection.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import {
         getEffectiveShortcuts,
         isShortcutModified,
@@ -39,7 +40,7 @@
     const controller = createKeyboardShortcutsController(() => searchQuery)
 
     // Purely-UI DOM ref for the key-filter input.
-    let keyFilterInput: HTMLInputElement | null = $state(null)
+    let keyFilterInput: HTMLInputElement | undefined = $state()
 
     // Subscribe to shortcut changes; bumping the controller's counter re-runs its
     // derivations and re-keys the rows in the `{#each}` below.
@@ -98,32 +99,33 @@
 <SettingsSection title={tString('shortcuts.section.title')}>
     <div class="shortcuts-header">
         <div class="search-fields">
-            <input
-                type="text"
-                class="search-input"
+            <TextInput
+                type="search"
+                containerStyle="flex: 1"
+                ariaLabel={tString('shortcuts.section.searchByNamePlaceholder')}
                 placeholder={tString('shortcuts.section.searchByNamePlaceholder')}
                 value={searchQuery.trim() ? searchQuery : controller.localNameSearchQuery}
-                oninput={(e) => {
+                oninput={(e: Event) => {
                     const target = e.target
                     if (target instanceof HTMLInputElement) controller.localNameSearchQuery = target.value
                 }}
                 disabled={!!searchQuery.trim()}
                 autocomplete="off"
                 autocapitalize="off"
-                spellcheck="false"
+                spellcheck={false}
             />
             <div class="key-search-wrapper">
-                <input
-                    type="text"
-                    class="search-input key-search"
+                <TextInput
+                    type="search"
+                    ariaLabel={tString('shortcuts.section.filterByKeysPlaceholder')}
                     placeholder={tString('shortcuts.section.filterByKeysPlaceholder')}
                     bind:value={controller.keySearchQuery}
-                    bind:this={keyFilterInput}
+                    bind:inputElement={keyFilterInput}
                     onkeydown={controller.handleKeyFilterKeyDown}
                     onkeyup={controller.handleKeyFilterKeyUp}
                     autocomplete="off"
                     autocapitalize="off"
-                    spellcheck="false"
+                    spellcheck={false}
                 />
                 <span class="key-search-hint" class:visible={!!controller.keySearchQuery}
                     >{tString('shortcuts.section.pressEscToClear')}</span
@@ -397,29 +399,9 @@
         gap: var(--spacing-sm);
     }
 
-    .search-input {
-        flex: 1;
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-primary);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
-    }
-
-    .search-input:focus {
-        outline: none;
-        border-color: var(--color-accent);
-        box-shadow: var(--shadow-focus);
-    }
-
     .key-search-wrapper {
         flex: 0.5;
         position: relative;
-    }
-
-    .key-search {
-        width: 100%;
     }
 
     .key-search-hint {

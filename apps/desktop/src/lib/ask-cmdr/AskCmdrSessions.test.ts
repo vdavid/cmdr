@@ -79,7 +79,7 @@ describe('AskCmdrSessions interactions', () => {
   it('typing in the search box sets the query', async () => {
     const target = mountPanel()
     await tick()
-    const input = target.querySelector<HTMLInputElement>('.search-input')
+    const input = target.querySelector<HTMLInputElement>('input[type="search"]')
     if (!input) throw new Error('expected a search input')
     input.value = 'budget'
     input.dispatchEvent(new Event('input', { bubbles: true }))
@@ -113,7 +113,7 @@ describe('AskCmdrSessions interactions', () => {
     await tick()
     target.querySelector<HTMLButtonElement>('[aria-label="Rename"]')?.click()
     await tick()
-    const input = target.querySelector<HTMLInputElement>('.rename-input')
+    const input = target.querySelector<HTMLInputElement>('input[type="text"]')
     if (!input) throw new Error('expected a rename input')
     input.value = 'Taxes 2024'
     input.dispatchEvent(new Event('input', { bubbles: true }))
@@ -127,12 +127,12 @@ describe('AskCmdrSessions interactions', () => {
     await tick()
     target.querySelector<HTMLButtonElement>('[aria-label="Rename"]')?.click()
     await tick()
-    const input = target.querySelector<HTMLInputElement>('.rename-input')
+    const input = target.querySelector<HTMLInputElement>('input[type="text"]')
     if (!input) throw new Error('expected a rename input')
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await tick()
     expect(spies.renameConversation).not.toHaveBeenCalled()
-    expect(target.querySelector('.rename-input')).toBeNull()
+    expect(target.querySelector('input[type="text"]')).toBeNull()
   })
 
   it('the back button closes the panel', async () => {

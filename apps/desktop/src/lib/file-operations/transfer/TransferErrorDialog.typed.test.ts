@@ -107,7 +107,7 @@ describe('TransferErrorDialog: typed-error rendering', () => {
     toggle?.click()
     await tick()
 
-    const textarea = target.querySelector<HTMLTextAreaElement>('.details-text')
+    const textarea = target.querySelector<HTMLTextAreaElement>('textarea')
     expect(textarea?.value).toContain('Path: /some/path')
     expect(textarea?.value).toContain('Error: boom')
     expect(textarea?.value).toContain('Error type: io_error')

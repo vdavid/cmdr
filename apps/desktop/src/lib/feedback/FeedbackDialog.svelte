@@ -10,6 +10,7 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Checkbox from '$lib/ui/Checkbox.svelte'
+    import TextArea from '$lib/ui/TextArea.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import { addToast } from '$lib/ui/toast'
     import { sendFeedback, openExternalUrl } from '$lib/tauri-commands'
@@ -145,15 +146,16 @@
                 </span>
             {/if}
         </label>
-        <textarea
+        <TextArea
             id="feedback-text"
-            bind:this={textareaRef}
+            bind:textareaElement={textareaRef}
             bind:value={feedbackText}
-            class="feedback-textarea"
-            class:invalid={overLimit}
+            invalid={overLimit}
+            radius="md"
+            rows={5}
+            containerStyle="margin-bottom: var(--spacing-md)"
             placeholder={tString('feedback.dialog.placeholder')}
-            rows="5"
-        ></textarea>
+        />
         {#if overLimit}
             <p class="helper-text">
                 {t('feedback.dialog.tooLong', { maxText: formatInteger(MAX_FEEDBACK_CHARS) })}
@@ -208,23 +210,6 @@
 
     .counter.over {
         color: var(--color-error);
-    }
-
-    .feedback-textarea {
-        width: 100%;
-        font-family: var(--font-system);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-primary);
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-sm) var(--spacing-md);
-        resize: vertical;
-        margin-bottom: var(--spacing-md);
-    }
-
-    .feedback-textarea.invalid {
-        border-color: var(--color-error);
     }
 
     .helper-text {

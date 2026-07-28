@@ -1,5 +1,6 @@
 <script lang="ts">
     import Icon from '$lib/ui/Icon.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import { buildSectionTree, type SettingsSection } from '$lib/settings'
     import { sectionHasMatches } from '$lib/settings/settings-search'
     import { tString } from '$lib/intl/messages.svelte'
@@ -15,7 +16,7 @@
 
     const { searchQuery, matchingSections, selectedSection, onSearch, onSectionSelect }: Props = $props()
 
-    let searchInput: HTMLInputElement | null = $state(null)
+    let searchInput: HTMLInputElement | undefined = $state()
     let debounceTimer: ReturnType<typeof setTimeout> | null = null
     const sectionTree = buildSectionTree()
 
@@ -179,24 +180,33 @@
 
 <aside class="settings-sidebar">
     <div class="search-container">
-        <span class="search-icon" aria-hidden="true"><Icon name="search" size={16} aria-hidden="true" /></span>
-        <input
-            bind:this={searchInput}
-            type="text"
-            class="search-input"
+        <TextInput
+            bind:inputElement={searchInput}
+            type="search"
+            radius="full"
+            leadingIcon="search"
             placeholder={tString('settings.sidebar.searchPlaceholder')}
+            ariaLabel={tString('settings.sidebar.searchPlaceholder')}
             value={searchQuery}
             oninput={handleSearchInput}
             onkeydown={handleSearchKeydown}
             autocomplete="off"
             autocapitalize="off"
-            spellcheck="false"
-        />
-        {#if searchQuery}
-            <button class="search-clear" onclick={clearSearch} aria-label={tString('settings.sidebar.clearSearch')}>
-                ×
-            </button>
-        {/if}
+            spellcheck={false}
+        >
+            {#snippet trailing()}
+                {#if searchQuery}
+                    <button
+                        class="search-clear"
+                        type="button"
+                        onclick={clearSearch}
+                        aria-label={tString('settings.sidebar.clearSearch')}
+                    >
+                        <Icon name="x" size={14} aria-hidden="true" />
+                    </button>
+                {/if}
+            {/snippet}
+        </TextInput>
     </div>
 
     <div
@@ -291,61 +301,25 @@
 
     .search-container {
         padding: var(--spacing-sm) var(--spacing-sm);
-        position: relative;
     }
 
-    .search-icon {
-        position: absolute;
-        /* Sits roughly centered in the input's left padded zone (input-x ≈ 20,
-           where container-x = 8 input-left + 12 = 20). The icon glyph is
-           16 px wide so its right edge lands at input-x ≈ 28, with the
-           text starting at input-x ≈ 36 (= 32 + 4 from the input's
-           padding-left). */
-        left: calc(var(--spacing-sm) + var(--spacing-md));
-        top: 50%;
-        transform: translateY(-50%);
+    /* Compact icon button sized to the field's text line, so the trailing control
+       doesn't stretch the pill taller than the rest of the fields. */
+    .search-clear {
         display: flex;
         align-items: center;
-        color: var(--color-text-tertiary);
-        pointer-events: none;
-        font-size: var(--font-size-sm);
-    }
-
-    .search-input {
-        width: 100%;
-        /* ~Double the previous padding for a chunkier, System-Settings-style
-           pill. Vertical: xs → sm (4 → 8). Horizontal: 20 / 24 → 36 / 32. */
-        padding: var(--spacing-sm) var(--spacing-2xl) var(--spacing-sm) calc(var(--spacing-2xl) + var(--spacing-xs));
-        border: 1px solid transparent;
-        /* Full pill — System Settings-style. */
-        border-radius: var(--radius-full);
-        background: var(--color-bg-secondary);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
-        outline: none;
-    }
-
-    .search-input:focus {
-        border-color: var(--color-accent);
-        box-shadow: var(--shadow-focus);
-    }
-
-    .search-input::placeholder {
-        color: var(--color-text-tertiary);
-    }
-
-    .search-clear {
-        position: absolute;
-        right: calc(var(--spacing-sm) + var(--spacing-xs));
-        top: 50%;
-        transform: translateY(-50%);
-        background: none;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
         border: none;
+        border-radius: var(--radius-full);
+        background: transparent;
         color: var(--color-text-tertiary);
-        cursor: default;
-        font-size: var(--font-size-lg);
-        padding: var(--spacing-xxs) var(--spacing-xs);
-        line-height: 1;
+    }
+
+    .search-clear:hover {
+        color: var(--color-text-primary);
+        background: var(--color-bg-tertiary);
     }
 
     .section-tree {

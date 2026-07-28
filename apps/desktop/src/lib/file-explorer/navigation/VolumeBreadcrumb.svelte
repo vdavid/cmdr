@@ -936,6 +936,7 @@
                             <span class="volume-icon-placeholder"><Icon name="folder" size={16} aria-hidden="true" /></span>
                         {/if}
                         {#if fav.renamingFavoriteId === volume.id}
+                            <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Dense inline editor inside a volume dropdown row: it inherits the row's font and sits at row height with 2px side padding, which the framed `TextInput`'s padding would blow past, and it carries a resting accent border to read as "editing" rather than one that appears on focus. -->
                             <input
                                 class="favorite-rename-input"
                                 bind:this={renameInputRef}

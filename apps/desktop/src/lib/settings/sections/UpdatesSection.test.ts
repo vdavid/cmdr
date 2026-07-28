@@ -141,7 +141,7 @@ describe('UpdatesSection', () => {
   })
 
   function getEmailInput(target: HTMLElement): HTMLInputElement {
-    const input = target.querySelector<HTMLInputElement>('input.email-input')
+    const input = target.querySelector<HTMLInputElement>('input[type="email"]')
     if (!input) throw new Error('Email input missing')
     return input
   }

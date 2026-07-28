@@ -15,6 +15,7 @@
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
     import { trapFocus } from '$lib/ui/focus-trap'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import { tString } from '$lib/intl/messages.svelte'
 
     /** How many shortcut chips a palette row shows (power users discover alternates). */
@@ -196,23 +197,24 @@
     use:trapFocus={{ onEscape: onClose }}
 >
     <div class="palette-modal">
-        <input
-            bind:this={inputElement}
-            type="text"
-            class="search-input"
-            placeholder={tString('commandPalette.searchPlaceholder')}
-            bind:value={query}
-            aria-label={tString('commandPalette.searchAriaLabel')}
-            id="palette-title"
-            spellcheck="false"
-            autocomplete="off"
-            autocapitalize="off"
-            role="combobox"
-            aria-controls="palette-listbox"
-            aria-expanded={results.length > 0}
-            aria-autocomplete="list"
-            aria-activedescendant={activeDescendantId}
-        />
+        <div class="search-row">
+            <TextInput
+                bind:inputElement
+                variant="chromeless"
+                placeholder={tString('commandPalette.searchPlaceholder')}
+                bind:value={query}
+                ariaLabel={tString('commandPalette.searchAriaLabel')}
+                id="palette-title"
+                spellcheck={false}
+                autocomplete="off"
+                autocapitalize="off"
+                role="combobox"
+                aria-controls="palette-listbox"
+                aria-expanded={results.length > 0}
+                aria-autocomplete="list"
+                aria-activedescendant={activeDescendantId}
+            />
+        </div>
 
         {#if results.length === 0 && query.trim()}
             <div class="no-results">{tString('commandPalette.noResults')}</div>
@@ -315,24 +317,19 @@
         overflow: hidden;
     }
 
-    .search-input {
+    /* The palette's query line is a full-bleed Spotlight-style row, so the FRAME
+       lives here (padding + a single bottom rule) and the field itself is
+       `chromeless`; the type scale comes from this host too. */
+    .search-row {
         padding: var(--spacing-md) var(--spacing-lg);
         font-size: var(--font-size-lg);
-        border: none;
         border-bottom: 1px solid var(--color-border-strong);
         background: var(--color-bg-primary);
-        color: var(--color-text-primary);
-        outline: none;
         flex-shrink: 0;
     }
 
-    .search-input:focus {
+    .search-row:focus-within {
         border-bottom-color: var(--color-accent);
-        box-shadow: var(--shadow-focus);
-    }
-
-    .search-input::placeholder {
-        color: var(--color-text-tertiary);
     }
 
     .results-container {

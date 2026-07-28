@@ -654,7 +654,7 @@ describe('TransferDialog data-scan-state marker', () => {
 /* ------------------------------------------------------------------------- */
 
 function pathInput(target: HTMLElement): HTMLInputElement {
-  const input = target.querySelector<HTMLInputElement>('.path-input')
+  const input = target.querySelector<HTMLInputElement>('input[aria-label="Destination path"]')
   if (!input) throw new Error('path input not found')
   return input
 }
@@ -691,7 +691,7 @@ describe('TransferDialog destination path', () => {
     expect(warning?.textContent).toContain('will create it during the copy')
     // No red error alongside the yellow warning.
     expect(target.querySelector('.path-error')).toBeNull()
-    expect(pathInput(target).classList.contains('has-warning')).toBe(true)
+    expect(pathInput(target).closest('.text-field')?.classList.contains('text-field-warning')).toBe(true)
   })
 
   it('uses the move-specific copy for the create warning when moving', async () => {
@@ -726,7 +726,7 @@ describe('TransferDialog destination path', () => {
     await settleExistsCheck()
 
     expect(target.querySelector('.path-warning')).toBeNull()
-    expect(pathInput(target).classList.contains('has-warning')).toBe(false)
+    expect(pathInput(target).closest('.text-field')?.classList.contains('text-field-warning')).toBe(false)
   })
 
   it('stays quiet when the existence check times out (inconclusive)', async () => {
@@ -754,7 +754,7 @@ describe('TransferDialog destination path', () => {
 
 describe('TransferDialog compress mode', () => {
   function pathInput(target: HTMLElement): HTMLInputElement {
-    const input = target.querySelector<HTMLInputElement>('.path-input')
+    const input = target.querySelector<HTMLInputElement>('input[aria-label="Destination path"]')
     if (!input) throw new Error('path input not rendered')
     return input
   }

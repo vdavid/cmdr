@@ -137,7 +137,7 @@ function render(): void {
 describe('KeyboardShortcutsSection name search', () => {
   it('finds non-palette commands the section renders ("palette" → Open command palette)', () => {
     render()
-    const searchInput = target.querySelector<HTMLInputElement>('.search-input')
+    const searchInput = target.querySelector<HTMLInputElement>('input[type="search"]')
     if (!searchInput) throw new Error('name search input not found')
     searchInput.value = 'palette'
     searchInput.dispatchEvent(new Event('input', { bubbles: true }))
@@ -155,7 +155,7 @@ function cardLabels(): string[] {
 }
 
 function typeNameSearch(value: string): void {
-  const searchInput = target.querySelector<HTMLInputElement>('.search-input')
+  const searchInput = target.querySelector<HTMLInputElement>('input[type="search"]')
   if (!searchInput) throw new Error('name search input not found')
   searchInput.value = value
   searchInput.dispatchEvent(new Event('input', { bubbles: true }))

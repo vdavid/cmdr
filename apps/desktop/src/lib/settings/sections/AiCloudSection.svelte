@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onDestroy, onMount } from 'svelte'
     import SettingRow from '../components/SettingRow.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import SettingPasswordInput from '../components/SettingPasswordInput.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
@@ -388,9 +389,8 @@
         {searchQuery}
     >
         {#if showEditableBaseUrl}
-            <input
-                class="text-input"
-                type="text"
+            <TextInput
+                type="url"
                 value={currentBaseUrl}
                 oninput={(e: Event) => {
                     const target = e.target as HTMLInputElement
@@ -398,18 +398,16 @@
                     saveCloudProviderField('baseUrl', target.value)
                 }}
                 placeholder={tString('ai.cloud.endpointPlaceholder')}
-                aria-label={tString('ai.cloud.endpointAria')}
+                ariaLabel={tString('ai.cloud.endpointAria')}
                 autocomplete="off"
-                spellcheck="false"
+                spellcheck={false}
             />
         {:else}
-            <input
-                class="text-input text-input-readonly"
-                type="text"
+            <TextInput
                 value={resolvedBaseUrl}
                 readonly
-                aria-label={tString('ai.cloud.endpointAria')}
-                tabindex="-1"
+                ariaLabel={tString('ai.cloud.endpointAria')}
+                tabindex={-1}
             />
         {/if}
     </SettingRow>
@@ -535,38 +533,6 @@
     }
 
     /* Text input (same style as other setting inputs) */
-    .text-input {
-        width: 100%;
-        padding: var(--spacing-sm) var(--spacing-md);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-primary);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-md);
-        line-height: 1.4;
-        transition: border-color var(--transition-base);
-    }
-
-    .text-input:focus {
-        outline: none;
-        border-color: var(--color-accent);
-        box-shadow: var(--shadow-focus);
-    }
-
-    .text-input::placeholder {
-        color: var(--color-text-tertiary);
-    }
-
-    .text-input-readonly {
-        opacity: 0.7;
-        cursor: default;
-    }
-
-    .text-input-readonly:focus {
-        border-color: var(--color-border);
-        box-shadow: none;
-    }
-
     /* Connection status */
     .connection-status {
         display: flex;

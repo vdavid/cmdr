@@ -9,6 +9,7 @@
     import CompressLevelControl from './CompressLevelControl.svelte'
     import CompressEstimateLine from './CompressEstimateLine.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Select, { type SelectItem } from '$lib/ui/Select.svelte'
     import RadioGroup, { type RadioItem } from '$lib/ui/RadioGroup.svelte'
@@ -558,21 +559,18 @@
                     {/if}
 
                     <div class="path-input-group">
-                        <input
-                            bind:this={pathInputRef}
+                        <TextInput
+                            bind:inputElement={pathInputRef}
                             bind:value={editedPath}
-                            type="text"
-                            class="path-input"
-                            class:has-error={!!pathError}
-                            class:has-warning={targetWarning}
-                            aria-label={tString('fileOperations.transferDialog.destPathAria')}
+                            invalid={!!pathError}
+                            warning={!!targetWarning}
+                            ariaLabel={tString('fileOperations.transferDialog.destPathAria')}
                             aria-describedby={pathError
                                 ? 'transfer-path-error'
                                 : targetWarning
                                   ? 'transfer-path-warning'
                                   : undefined}
-                            aria-invalid={!!pathError}
-                            spellcheck="false"
+                            spellcheck={false}
                             autocomplete="off"
                             onkeydown={handleInputKeydown}
                         />
@@ -764,54 +762,16 @@
         min-width: 0;
     }
 
-    .path-input {
-        width: 100%;
-        padding: var(--spacing-md) var(--spacing-md);
-        font-size: var(--font-size-md);
-        font-family: var(--font-system) sans-serif;
-        background: var(--color-bg-primary);
-        border: 2px solid var(--color-accent);
-        border-radius: var(--radius-md);
-        color: var(--color-text-primary);
-        box-sizing: border-box;
-    }
-
-    .path-input::placeholder {
-        color: var(--color-text-tertiary);
-    }
-
-    .path-input:focus {
-        outline: none;
-        box-shadow: var(--shadow-focus);
-    }
-
-    .path-input.has-error {
-        border-color: var(--color-error);
-    }
-
-    .path-input.has-error:focus {
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error), transparent 85%);
-    }
-
     .path-error {
         margin: var(--spacing-sm) 0 0;
         font-size: var(--font-size-sm);
         color: var(--color-error);
     }
 
-    /* Yellow "folder will be created" warning: mirrors the red error treatment
-       (outlined input + message line) in the warning color. The error state takes
-       precedence, so the two never show at once. `--color-warning-text` is the
-       AA-safe text token (the brand `--color-warning` is reserved for the border
-       and fills). */
-    .path-input.has-warning {
-        border-color: var(--color-warning);
-    }
-
-    .path-input.has-warning:focus {
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-warning), transparent 85%);
-    }
-
+    /* Yellow "folder will be created" warning: the field's own `warning` state
+       (see `TextInput`) plus this message line. The error state takes precedence,
+       so the two never show at once. `--color-warning-text` is the AA-safe text
+       token (the brand `--color-warning` is reserved for borders and fills). */
     .path-warning {
         margin: var(--spacing-sm) 0 0;
         font-size: var(--font-size-sm);

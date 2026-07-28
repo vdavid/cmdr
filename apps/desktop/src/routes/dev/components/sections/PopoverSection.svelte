@@ -1,6 +1,7 @@
 <script lang="ts">
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import Popover from '$lib/ui/Popover.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
 
     let anchorEl: HTMLButtonElement | undefined = $state()
     let open = $state(false)
@@ -32,7 +33,7 @@
             >
                 <div class="demo-content">
                     <p>Any content goes here.</p>
-                    <input type="text" aria-label="Demo field" placeholder="Type here" />
+                    <TextInput ariaLabel="Demo field" placeholder="Type here" />
                 </div>
             </Popover>
         {/if}
@@ -60,14 +61,5 @@
         flex-direction: column;
         gap: var(--spacing-sm);
         min-width: 200px;
-    }
-
-    .demo-content input {
-        padding: var(--spacing-xs) var(--spacing-sm);
-        font-size: var(--font-size-sm);
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        color: var(--color-text-primary);
     }
 </style>

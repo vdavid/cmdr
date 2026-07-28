@@ -11,6 +11,7 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Checkbox from '$lib/ui/Checkbox.svelte'
+    import TextArea from '$lib/ui/TextArea.svelte'
     import { formatInteger } from '$lib/intl/number-format'
     import Size from '$lib/ui/Size.svelte'
     import { addToast } from '$lib/ui/toast'
@@ -212,15 +213,16 @@
                 </span>
             {/if}
         </label>
-        <textarea
+        <TextArea
             id="error-report-note"
-            bind:this={noteTextareaRef}
+            bind:textareaElement={noteTextareaRef}
             bind:value={userNote}
-            class="note-textarea"
-            class:invalid={noteOverLimit}
+            invalid={noteOverLimit}
+            radius="md"
+            rows={4}
+            containerStyle="margin-bottom: var(--spacing-md)"
             placeholder={tString('errorReporter.dialog.notePlaceholder')}
-            rows="4"
-        ></textarea>
+        />
         {#if noteOverLimit}
             <p class="helper-text">
                 {t('errorReporter.dialog.noteTooLong', { maxText: formatInteger(MAX_NOTE_CHARS) })}
@@ -361,23 +363,6 @@
 
     .note-counter.over {
         color: var(--color-error);
-    }
-
-    .note-textarea {
-        width: 100%;
-        font-family: var(--font-system);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-primary);
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-sm) var(--spacing-md);
-        resize: vertical;
-        margin-bottom: var(--spacing-md);
-    }
-
-    .note-textarea.invalid {
-        border-color: var(--color-error);
     }
 
     .helper-text {

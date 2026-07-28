@@ -7,6 +7,7 @@
     import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import { updateState, checkForUpdates } from '$lib/updates/updater.svelte'
     import { formatUpdateStatus } from '$lib/updates/update-status-text'
     import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
@@ -159,16 +160,15 @@
                     split
                     {searchQuery}
                 >
-                    <input
+                    <TextInput
                         type="email"
-                        class="email-input"
                         placeholder={tString('settings.updates.emailPlaceholder')}
                         value={email}
                         oninput={handleEmailInput}
                         onblur={handleEmailCommit}
                         onkeydown={handleEmailKeydown}
                         disabled={signupInFlight}
-                        aria-label={emailDef.label}
+                        ariaLabel={emailDef.label}
                     />
                 </SettingRow>
                 {#if signupFeedback?.kind === 'success'}
@@ -247,26 +247,6 @@
 
     .link-button:hover {
         color: var(--color-text-secondary);
-    }
-
-    .email-input {
-        width: 100%;
-        padding: var(--spacing-xs) var(--spacing-sm);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-primary);
-        background: var(--color-bg-primary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-    }
-
-    .email-input:focus {
-        outline: none;
-        border-color: var(--color-accent);
-        box-shadow: var(--shadow-focus);
-    }
-
-    .email-input:disabled {
-        opacity: 0.6;
     }
 
     .signup-feedback {

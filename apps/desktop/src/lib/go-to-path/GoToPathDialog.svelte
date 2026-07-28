@@ -16,6 +16,7 @@
      */
     import { onMount, onDestroy, tick } from 'svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
@@ -200,15 +201,14 @@
 
     <div class="dialog-body">
         <div class="input-group">
-            <input
-                bind:this={inputRef}
+            <TextInput
+                bind:inputElement={inputRef}
                 bind:value={inputValue}
-                type="text"
-                class="path-input"
-                class:has-warning={!!ancestorHint}
-                aria-label={tString('goToPath.dialog.inputAriaLabel')}
+                mono
+                warning={!!ancestorHint}
+                ariaLabel={tString('goToPath.dialog.inputAriaLabel')}
                 aria-describedby={ancestorHint ? 'go-to-path-warning' : undefined}
-                spellcheck="false"
+                spellcheck={false}
                 autocomplete="off"
                 autocapitalize="off"
                 placeholder={tString('goToPath.dialog.inputPlaceholder')}
@@ -271,32 +271,6 @@
 <style>
     .input-group {
         margin-bottom: var(--spacing-md);
-    }
-
-    .path-input {
-        width: 100%;
-        padding: var(--spacing-md) var(--spacing-md);
-        font-size: var(--font-size-md);
-        font-family: var(--font-mono);
-        background: var(--color-bg-primary);
-        border: 2px solid var(--color-accent);
-        border-radius: var(--radius-md);
-        color: var(--color-text-primary);
-        box-sizing: border-box;
-    }
-
-    .path-input.has-warning {
-        border-color: var(--color-warning);
-    }
-
-    .path-input::placeholder {
-        color: var(--color-text-tertiary);
-        font-family: var(--font-system) sans-serif;
-    }
-
-    .path-input:focus {
-        outline: none;
-        box-shadow: var(--shadow-focus);
     }
 
     .warning {

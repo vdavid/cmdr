@@ -16,6 +16,7 @@
     } from '$lib/tauri-commands'
     import SettingPasswordInput from '$lib/settings/components/SettingPasswordInput.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import Combobox, { type ComboboxItem } from '$lib/ui/Combobox.svelte'
     import { describeSecretError, type SecretErrorMessage } from '$lib/settings/sections/ai-secret-error'
     import { getAppLogger } from '$lib/logging/logger'
@@ -402,10 +403,9 @@
                         <label class="step-label" for="onboarding-cloud-base-url"
                             >{tString('onboarding.cloudSetup.step.endpoint')}</label
                         >
-                        <input
+                        <TextInput
                             id="onboarding-cloud-base-url"
-                            class="text-input"
-                            type="text"
+                            type="url"
                             value={currentBaseUrl}
                             oninput={(event: Event) => {
                                 const target = event.currentTarget as HTMLInputElement
@@ -413,7 +413,7 @@
                             }}
                             placeholder={tString('onboarding.cloudSetup.step.endpointPlaceholder')}
                             autocomplete="off"
-                            spellcheck="false"
+                            spellcheck={false}
                         />
                     </div>
                 </li>
@@ -570,28 +570,6 @@
         font-size: var(--font-size-md);
         color: var(--color-text-primary);
         line-height: 1.4;
-    }
-
-    .text-input {
-        width: 100%;
-        padding: var(--spacing-sm) var(--spacing-md);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-primary);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-md);
-        line-height: 1.4;
-        transition: border-color var(--transition-base);
-    }
-
-    .text-input:focus {
-        outline: none;
-        border-color: var(--color-accent);
-        box-shadow: var(--shadow-focus);
-    }
-
-    .text-input::placeholder {
-        color: var(--color-text-tertiary);
     }
 
     .status {

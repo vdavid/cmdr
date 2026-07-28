@@ -9,6 +9,7 @@
     import Spinner from '$lib/ui/Spinner.svelte'
     import RadioGroup, { type RadioItem } from '$lib/ui/RadioGroup.svelte'
     import Checkbox from '$lib/ui/Checkbox.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import type { AuthMode, ConnectionMode, KnownNetworkShare, NetworkHost } from '../types'
     import { getUsernameHints, getKnownShareByName } from '$lib/tauri-commands'
     import { tString } from '$lib/intl/messages.svelte'
@@ -187,25 +188,22 @@
             <div class="credentials-fields" class:disabled={connectionMode === 'guest'}>
                 <div class="field">
                     <label for="username" class="field-label">{tString('fileExplorer.network.login.username')}</label>
-                    <input
+                    <TextInput
                         id="username"
-                        type="text"
-                        class="field-input"
                         bind:value={username}
                         disabled={connectionMode === 'guest' || isConnecting}
                         placeholder={usernameHint ?? tString('fileExplorer.network.login.usernamePlaceholderDefault')}
                         autocomplete="username"
                         autocapitalize="off"
-                        spellcheck="false"
+                        spellcheck={false}
                     />
                 </div>
 
                 <div class="field">
                     <label for="password" class="field-label">{tString('fileExplorer.network.login.password')}</label>
-                    <input
+                    <TextInput
                         id="password"
                         type="password"
-                        class="field-input"
                         bind:value={password}
                         disabled={connectionMode === 'guest' || isConnecting}
                         placeholder={tString('fileExplorer.network.login.passwordPlaceholder')}
@@ -335,34 +333,6 @@
         font-size: var(--font-size-sm);
         font-weight: 500;
         color: var(--color-text-secondary);
-    }
-
-    .field-input {
-        width: 100%;
-        padding: var(--spacing-md) var(--spacing-md);
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-md);
-        background-color: var(--color-bg-primary);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
-        transition:
-            border-color var(--transition-base),
-            box-shadow var(--transition-base);
-    }
-
-    .field-input:focus {
-        outline: none;
-        border-color: var(--color-accent);
-        box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 25%, transparent);
-    }
-
-    .field-input::placeholder {
-        color: var(--color-text-tertiary);
-    }
-
-    .field-input:disabled {
-        background-color: var(--color-bg-tertiary);
-        cursor: not-allowed;
     }
 
     .remember-row {

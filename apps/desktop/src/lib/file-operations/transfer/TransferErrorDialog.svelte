@@ -5,6 +5,7 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
+    import TextArea from '$lib/ui/TextArea.svelte'
     import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
@@ -92,12 +93,15 @@
         </button>
         {#if showDetails}
             <div class="details-content">
-                <textarea
-                    class="details-text"
+                <TextArea
+                    value={technicalDetails}
                     readonly
+                    mono
+                    resizable={false}
+                    radius="md"
                     rows={technicalDetails.split('\n').length}
-                    aria-label={tString('fileOperations.errorDialog.technicalDetailsAria')}>{technicalDetails}</textarea
-                >
+                    ariaLabel={tString('fileOperations.errorDialog.technicalDetailsAria')}
+                />
             </div>
         {/if}
     </div>
@@ -182,24 +186,4 @@
         margin-top: var(--spacing-sm);
     }
 
-    .details-text {
-        width: 100%;
-        padding: var(--spacing-sm) var(--spacing-md);
-        font-size: var(--font-size-sm);
-        font-family: var(--font-mono);
-        color: var(--color-text-secondary);
-        background: var(--color-bg-tertiary);
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-md);
-        resize: none;
-        user-select: text;
-        -webkit-user-select: text;
-        cursor: text;
-        line-height: 1.4;
-    }
-
-    .details-text:focus {
-        outline: none;
-        border-color: var(--color-accent);
-    }
 </style>

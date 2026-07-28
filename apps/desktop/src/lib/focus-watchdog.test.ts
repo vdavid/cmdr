@@ -80,7 +80,7 @@ describe('focus watchdog', () => {
     const rail = document.createElement('aside')
     rail.className = 'ask-cmdr-rail'
     const composer = document.createElement('textarea')
-    composer.className = 'composer-input'
+    composer.className = 'text-field-control'
     rail.appendChild(composer)
     document.body.appendChild(rail)
     composer.focus()
@@ -98,7 +98,7 @@ describe('focus watchdog', () => {
     const rail = document.createElement('aside')
     rail.className = 'ask-cmdr-rail'
     const composer = document.createElement('textarea')
-    composer.className = 'composer-input'
+    composer.className = 'text-field-control'
     rail.appendChild(composer)
     document.body.appendChild(rail)
 

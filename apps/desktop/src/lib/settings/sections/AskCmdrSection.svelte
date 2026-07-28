@@ -9,6 +9,7 @@
     import SettingRow from '../components/SettingRow.svelte'
     import Button from '$lib/ui/Button.svelte'
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import { getBadgeStatus } from '$lib/feature-status'
     import { getSetting, setSetting, onSpecificSettingChange, getSettingDefinition, type AiProvider } from '$lib/settings'
     import { createShouldShow } from '$lib/settings/settings-search'
@@ -154,11 +155,10 @@
             split
             {searchQuery}
         >
-            <input
-                type="text"
-                class="model-input"
+            <TextInput
                 value={model}
                 placeholder={tString('settings.askCmdr.interactiveModel.placeholder')}
+                ariaLabel={modelDef.label}
                 oninput={onModelInput}
             />
         </SettingRow>
@@ -262,17 +262,6 @@
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
         line-height: 1.5;
-    }
-
-    .model-input {
-        width: 100%;
-        padding: var(--spacing-xs) var(--spacing-sm);
-        font: inherit;
-        font-size: var(--font-size-sm);
-        color: var(--color-text-primary);
-        background: var(--color-bg-primary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
     }
 
     .spend-list {

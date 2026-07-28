@@ -144,6 +144,7 @@
     })
 </script>
 
+<!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- The inline rename field can't be a `TextInput`: it sizes to the file row (height 100%, `font: inherit`, 2px padding), draws a severity-colored 2px border with a live glow and a shake animation on the element itself, and its `.rename-input` class is a load-bearing hit-test hook (`FilePane`, both views, and the E2E suite all query `.closest('.rename-input')`). The framed primitive's padding alone would break row height. -->
 <input
     bind:this={inputElement}
     type="text"

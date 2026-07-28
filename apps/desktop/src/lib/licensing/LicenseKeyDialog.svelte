@@ -21,6 +21,7 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import Trans from '$lib/intl/Trans.svelte'
     import { tString } from '$lib/intl/messages.svelte'
@@ -413,14 +414,13 @@
             </p>
 
             <div class="input-group">
-                <input
-                    bind:this={inputElement}
+                <TextInput
+                    bind:inputElement
                     bind:value={licenseKey}
-                    type="text"
-                    class="license-input"
-                    class:has-error={error}
+                    invalid={!!error}
+                    ariaLabel={tString('licensing.dialog.inputPlaceholder')}
                     placeholder={tString('licensing.dialog.inputPlaceholder')}
-                    spellcheck="false"
+                    spellcheck={false}
                     autocomplete="off"
                     autocapitalize="off"
                     disabled={isActivating}
@@ -572,37 +572,6 @@
 
     .input-group {
         margin-bottom: var(--spacing-lg);
-    }
-
-    .license-input {
-        width: 100%;
-        padding: var(--spacing-md);
-        font-size: var(--font-size-md);
-        font-family: var(--font-system), sans-serif;
-        background: var(--color-bg-primary);
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-lg);
-        color: var(--color-text-primary);
-        box-sizing: border-box;
-    }
-
-    .license-input::placeholder {
-        color: var(--color-text-tertiary);
-    }
-
-    .license-input:focus {
-        outline: none;
-        border-color: var(--color-accent);
-        box-shadow: var(--shadow-focus);
-    }
-
-    .license-input.has-error {
-        border-color: var(--color-error);
-    }
-
-    .license-input:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
     }
 
     .error-message {

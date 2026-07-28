@@ -10,6 +10,7 @@
     import type { EnumOption } from '$lib/settings/types'
     import Select, { type SelectItem } from '$lib/ui/Select.svelte'
     import Icon from '$lib/ui/Icon.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { onMount } from 'svelte'
     import { tString } from '$lib/intl/messages.svelte'
@@ -144,16 +145,17 @@
 <div class="select-wrapper" bind:this={wrapperRef}>
     {#if showCustomInput}
         <div class="custom-input-wrapper">
-            <input
-                bind:this={customInputRef}
+            <TextInput
+                bind:inputElement={customInputRef}
                 type="number"
-                class="custom-input"
+                containerStyle="width: 100px"
                 bind:value={customValue}
                 onblur={handleCustomSubmit}
-                onkeydown={(e) => {
+                onkeydown={(e: KeyboardEvent) => {
                     if (e.key === 'Enter') handleCustomSubmit()
                 }}
                 placeholder={tString('settings.control.customValuePlaceholder')}
+                ariaLabel={tString('settings.control.customValuePlaceholder')}
                 min={definition?.constraints?.customMin}
                 max={definition?.constraints?.customMax}
                 {disabled}
@@ -191,34 +193,6 @@
     .custom-input-wrapper {
         display: flex;
         gap: var(--spacing-xs);
-    }
-
-    .custom-input {
-        width: 100px;
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-primary);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
-    }
-
-    /* Hide native spinners: users can use keyboard up/down arrows. */
-    .custom-input::-webkit-inner-spin-button,
-    .custom-input::-webkit-outer-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-    }
-
-    .custom-input[type='number'] {
-        appearance: textfield;
-        -moz-appearance: textfield;
-    }
-
-    .custom-input:focus {
-        outline: none;
-        border-color: var(--color-accent);
-        box-shadow: var(--shadow-focus);
     }
 
     .back-to-select {

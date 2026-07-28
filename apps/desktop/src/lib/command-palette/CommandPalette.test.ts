@@ -471,7 +471,7 @@ describe('CommandPalette', () => {
     })
     await tick()
 
-    const input = target.querySelector<HTMLInputElement>('input.search-input')
+    const input = target.querySelector<HTMLInputElement>('input[role="combobox"]')
     expect(input?.getAttribute('role')).toBe('combobox')
     expect(input?.getAttribute('aria-controls')).toBe('palette-listbox')
     expect(input?.getAttribute('aria-autocomplete')).toBe('list')

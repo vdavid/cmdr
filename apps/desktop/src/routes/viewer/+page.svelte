@@ -43,6 +43,7 @@
     } from './selection.svelte'
     import { createViewerCopy, createViewerCopyOrchestrator } from './viewer-copy.svelte'
     import { createViewerPointerDrag } from './viewer-pointer-drag.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import ViewerContextMenu from './ViewerContextMenu.svelte'
     import ViewerToolbar from './ViewerToolbar.svelte'
     import ViewerStatusBar from './ViewerStatusBar.svelte'
@@ -940,16 +941,17 @@
     {/if}
     {#if search.searchVisible}
         <div class="search-bar" role="search">
-            <input
-                bind:this={search.searchInputRef}
+            <TextInput
+                bind:inputElement={search.searchInputRef}
                 bind:value={search.searchQuery}
-                type="text"
+                type="search"
+                radius="sm"
+                containerStyle="flex: 1; max-width: 300px"
                 placeholder={tString('viewer.search.placeholder')}
-                aria-label={tString('viewer.search.ariaLabel')}
-                class="search-input"
+                ariaLabel={tString('viewer.search.ariaLabel')}
                 autocomplete="off"
                 autocapitalize="off"
-                spellcheck="false"
+                spellcheck={false}
             />
             <button
                 type="button"
@@ -1223,23 +1225,6 @@
         outline: 2px solid var(--color-accent);
         outline-offset: 1px;
         box-shadow: var(--shadow-focus-contrast);
-    }
-
-    .search-input {
-        flex: 1;
-        max-width: 300px;
-        padding: var(--spacing-xxs) var(--spacing-sm);
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-primary);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
-        font-family: var(--font-system) sans-serif;
-    }
-
-    .search-input:focus {
-        border-color: var(--color-accent);
-        outline: none;
     }
 
     .match-count {

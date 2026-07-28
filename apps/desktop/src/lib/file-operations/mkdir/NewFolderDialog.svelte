@@ -15,6 +15,7 @@
     } from '$lib/tauri-commands'
     import { validateDisallowedChars, validateNameLength, validatePathLength } from '$lib/utils/filename-validation'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Trans from '$lib/intl/Trans.svelte'
     import { tString } from '$lib/intl/messages.svelte'
@@ -244,16 +245,13 @@
         </p>
 
         <div class="input-group">
-            <input
-                bind:this={nameInputRef}
+            <TextInput
+                bind:inputElement={nameInputRef}
                 bind:value={folderName}
-                type="text"
-                class="name-input"
-                class:has-error={!!errorMessage}
-                aria-label={tString('fileOperations.mkdir.nameAria')}
+                invalid={!!errorMessage}
+                ariaLabel={tString('fileOperations.mkdir.nameAria')}
                 aria-describedby={errorMessage ? 'new-folder-error' : undefined}
-                aria-invalid={!!errorMessage}
-                spellcheck="false"
+                spellcheck={false}
                 autocomplete="off"
                 placeholder={tString('fileOperations.mkdir.placeholder')}
                 onkeydown={handleInputKeydown}
@@ -335,35 +333,6 @@
 
     .input-group {
         margin-bottom: var(--spacing-lg);
-    }
-
-    .name-input {
-        width: 100%;
-        padding: var(--spacing-md) var(--spacing-md);
-        font-size: var(--font-size-md);
-        font-family: var(--font-system) sans-serif;
-        background: var(--color-bg-primary);
-        border: 2px solid var(--color-accent);
-        border-radius: var(--radius-md);
-        color: var(--color-text-primary);
-        box-sizing: border-box;
-    }
-
-    .name-input.has-error {
-        border-color: var(--color-error);
-    }
-
-    .name-input::placeholder {
-        color: var(--color-text-tertiary);
-    }
-
-    .name-input:focus {
-        outline: none;
-        box-shadow: var(--shadow-focus);
-    }
-
-    .name-input.has-error:focus {
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error), transparent 85%);
     }
 
     .error-message {

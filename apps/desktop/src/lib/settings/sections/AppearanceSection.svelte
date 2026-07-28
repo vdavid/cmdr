@@ -9,6 +9,7 @@
     import SettingColorSwatchPicker from '../components/SettingColorSwatchPicker.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import { getSettingDefinition, getSetting, setSetting, onSpecificSettingChange } from '$lib/settings'
     import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
     import { openAppearanceSettings } from '$lib/tauri-commands'
@@ -239,12 +240,13 @@
                     {#snippet customContent(value)}
                         {#if value === 'custom'}
                             <div class="custom-format">
-                                <input
-                                    type="text"
-                                    class="format-input"
+                                <TextInput
+                                    mono
+                                    containerStyle="width: 180px"
                                     value={customFormat}
                                     oninput={handleCustomFormatChange}
                                     placeholder={DATE_FORMAT_PLACEHOLDER}
+                                    ariaLabel={tString('settings.appearance.dateTimeFormat.label')}
                                 />
                                 <div class="format-preview">
                                     {tString('settings.appearance.datePreviewLabel')}
@@ -392,23 +394,6 @@
         display: flex;
         flex-direction: column;
         gap: var(--spacing-xs);
-    }
-
-    .format-input {
-        width: 180px;
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-primary);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
-        font-family: var(--font-mono);
-    }
-
-    .format-input:focus {
-        outline: none;
-        border-color: var(--color-accent);
-        box-shadow: var(--shadow-focus);
     }
 
     .format-preview {

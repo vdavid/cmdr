@@ -10,6 +10,7 @@
 <script lang="ts">
     import { onMount } from 'svelte'
     import Icon from '$lib/ui/Icon.svelte'
+    import TextArea from '$lib/ui/TextArea.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { getSetting, onSpecificSettingChange, type AiProvider } from '$lib/settings'
     import { askCmdrSelectionAttachments, askCmdrFakeActive } from '$lib/tauri-commands'
@@ -29,7 +30,7 @@
     const log = getAppLogger('askCmdr')
 
     let text = $state('')
-    let textarea = $state<HTMLTextAreaElement | null>(null)
+    let textarea = $state<HTMLTextAreaElement | undefined>()
     let composerEl = $state<HTMLDivElement | null>(null)
     let composing = $state(false)
     let dragOver = $state(false)
@@ -111,18 +112,20 @@
         >
             <Icon name="paperclip" size={16} aria-hidden="true" />
         </button>
-        <textarea
-            bind:this={textarea}
+        <TextArea
+            bind:textareaElement={textarea}
             bind:value={text}
-            class="composer-input"
-            rows="2"
+            rows={2}
+            resizable={false}
+            radius="md"
+            containerStyle="flex: 1; min-width: 0; max-height: 8lh"
             placeholder={tString('askCmdr.composer.placeholder')}
-            aria-label={tString('askCmdr.composer.placeholder')}
+            ariaLabel={tString('askCmdr.composer.placeholder')}
             onkeydown={onKeydown}
             onfocus={markRailFocused}
             oncompositionstart={() => (composing = true)}
             oncompositionend={() => (composing = false)}
-        ></textarea>
+        />
         {#if streaming}
             <button type="button" class="composer-button stop" onclick={stopStreaming} aria-label={tString('askCmdr.composer.stop')}>
                 <Icon name="square" size={16} aria-hidden="true" />
@@ -175,25 +178,6 @@
         display: flex;
         align-items: flex-end;
         gap: var(--spacing-xs);
-    }
-
-    .composer-input {
-        flex: 1;
-        min-width: 0;
-        resize: none;
-        max-height: 8lh;
-        padding: var(--spacing-xs) var(--spacing-sm);
-        font: inherit;
-        font-size: var(--font-size-sm);
-        color: var(--color-text-primary);
-        background: var(--color-bg-primary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-    }
-
-    .composer-input:focus-visible {
-        outline: 2px solid var(--color-accent);
-        outline-offset: -1px;
     }
 
     .composer-button {

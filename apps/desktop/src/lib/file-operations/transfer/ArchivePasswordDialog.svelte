@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount, tick } from 'svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Trans from '$lib/intl/Trans.svelte'
     import { tString } from '$lib/intl/messages.svelte'
@@ -63,13 +64,12 @@
         </p>
 
         <div class="input-group">
-            <input
-                bind:this={passwordInputRef}
+            <TextInput
+                bind:inputElement={passwordInputRef}
                 bind:value={password}
                 type="password"
-                class="password-input"
-                aria-label={tString('fileOperations.archivePassword.inputAria')}
-                spellcheck="false"
+                ariaLabel={tString('fileOperations.archivePassword.inputAria')}
+                spellcheck={false}
                 autocomplete="off"
                 autocapitalize="off"
                 autocorrect="off"
@@ -105,26 +105,5 @@
 
     .input-group {
         margin-bottom: var(--spacing-lg);
-    }
-
-    .password-input {
-        width: 100%;
-        padding: var(--spacing-md) var(--spacing-md);
-        font-size: var(--font-size-md);
-        font-family: var(--font-system) sans-serif;
-        background: var(--color-bg-primary);
-        border: 2px solid var(--color-accent);
-        border-radius: var(--radius-md);
-        color: var(--color-text-primary);
-        box-sizing: border-box;
-    }
-
-    .password-input::placeholder {
-        color: var(--color-text-tertiary);
-    }
-
-    .password-input:focus {
-        outline: none;
-        box-shadow: var(--shadow-focus);
     }
 </style>

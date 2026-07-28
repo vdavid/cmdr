@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount, tick } from 'svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import { connectToServer } from '$lib/tauri-commands'
@@ -69,16 +70,13 @@
 
     <div class="dialog-body">
         <div class="input-group">
-            <input
-                bind:this={inputRef}
+            <TextInput
+                bind:inputElement={inputRef}
                 bind:value={address}
-                type="text"
-                class="address-input"
-                class:has-error={dialogState === 'error'}
-                aria-label={tString('fileExplorer.network.connectDialog.addressAriaLabel')}
+                invalid={dialogState === 'error'}
+                ariaLabel={tString('fileExplorer.network.connectDialog.addressAriaLabel')}
                 aria-describedby={errorMessage ? 'connect-error' : 'connect-help'}
-                aria-invalid={dialogState === 'error'}
-                spellcheck="false"
+                spellcheck={false}
                 autocomplete="off"
                 placeholder={tString('fileExplorer.network.connectDialog.addressPlaceholder')}
                 disabled={dialogState === 'connecting'}
@@ -107,39 +105,6 @@
 <style>
     .input-group {
         margin-bottom: var(--spacing-lg);
-    }
-
-    .address-input {
-        width: 100%;
-        padding: var(--spacing-md);
-        font-size: var(--font-size-md);
-        font-family: var(--font-system), sans-serif;
-        background: var(--color-bg-primary);
-        border: 2px solid var(--color-accent);
-        border-radius: var(--radius-md);
-        color: var(--color-text-primary);
-        box-sizing: border-box;
-    }
-
-    .address-input.has-error {
-        border-color: var(--color-error);
-    }
-
-    .address-input::placeholder {
-        color: var(--color-text-tertiary);
-    }
-
-    .address-input:focus {
-        outline: none;
-        box-shadow: var(--shadow-focus);
-    }
-
-    .address-input.has-error:focus {
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error), transparent 85%);
-    }
-
-    .address-input:disabled {
-        opacity: 0.6;
     }
 
     .help-text {
