@@ -112,31 +112,14 @@ beforeEach(() => {
   })
 })
 
-describe('SearchFilterChips: count-only toggle (Search-only)', () => {
-  it('renders no count-only switch when onToggleCountOnly is absent (Selection)', async () => {
+// The count-only switch used to live at the trailing end of this strip. It moved up into
+// QueryDialog's zone 1, beside the mode chips: it changes what the search RETURNS, it isn't
+// one more way to narrow the matches. Its tests moved with it to `QueryDialog.svelte.test.ts`.
+describe('SearchFilterChips: strip contents', () => {
+  it('renders no switch of any kind (the count-only toggle lives in the dialog now)', async () => {
     const { target, cleanup } = mountChips(baseProps())
     await tick()
     expect(target.querySelector('[role="switch"]')).toBeNull()
-    cleanup()
-  })
-
-  it('renders the switch when wired, reflecting the countOnly state via aria-checked', async () => {
-    const { target, cleanup } = mountChips(baseProps({ countOnly: true, onToggleCountOnly: () => {} }))
-    await tick()
-    const sw = target.querySelector('[role="switch"]')
-    expect(sw).not.toBeNull()
-    expect(sw?.getAttribute('aria-checked')).toBe('true')
-    cleanup()
-  })
-
-  it('clicking the switch toggles count-only and re-runs the search', async () => {
-    const onToggleCountOnly = vi.fn()
-    const scheduleSearch = vi.fn()
-    const { target, cleanup } = mountChips(baseProps({ countOnly: false, onToggleCountOnly, scheduleSearch }))
-    await tick()
-    target.querySelector<HTMLButtonElement>('[role="switch"]')?.click()
-    expect(onToggleCountOnly).toHaveBeenCalledOnce()
-    expect(scheduleSearch).toHaveBeenCalledOnce()
     cleanup()
   })
 })
@@ -314,9 +297,7 @@ describe('SearchFilterChips: type toggle', () => {
     const { target, cleanup } = mountChips(baseProps())
     await tick()
     const group = target.querySelector('[aria-label="Filter by type"]')
-    const labels = Array.from(group?.querySelectorAll<HTMLElement>('.tg-item') ?? []).map((el) =>
-      el.textContent.trim(),
-    )
+    const labels = Array.from(group?.querySelectorAll<HTMLElement>('.tg-item') ?? []).map((el) => el.textContent.trim())
     expect(labels).toEqual(['Files', 'Folders', 'Both'])
     cleanup()
   })
@@ -376,7 +357,8 @@ describe('SearchFilterChips: scope popover behavior', () => {
     const scopeChip = findChip(target, 'Search in')
     scopeChip?.click()
     await tick()
-    const textarea = document.querySelector<HTMLTextAreaElement>('.popover-textarea')
+    // The scope field is the house `TextArea`, so it renders the shared `.text-field-control`.
+    const textarea = document.querySelector<HTMLTextAreaElement>('#popover-scope')
     expect(textarea).not.toBeNull()
     if (textarea) {
       textarea.value = '~/Documents, !node_modules, !.git'

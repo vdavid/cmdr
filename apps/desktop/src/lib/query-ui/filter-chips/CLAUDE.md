@@ -25,6 +25,8 @@ Search and Selection. See `../CLAUDE.md` for the orchestrator and cross-consumer
   loses the user's place. Pinned in `FilterChips.svelte.test.ts`.
 - **The type filter is a `ToggleGroup`, not a chip.** It binds the core `typeFilter` state directly (cross-consumer, so
   both dialogs show it) and maps to the existing IPC `isDirectory`. Don't reshape it into a chip+popover.
+- **The strip holds filters ONLY.** The Count-only switch lives up in `QueryDialog`'s zone 1, beside the mode chips: it
+  changes what the search RETURNS, it isn't one more way to narrow the matches. Don't move it back in.
 - **`=` (the `eq` size comparator) is a UI/chip-summary concern ONLY, never reaching the matcher's `SizePredicate` or
   any Rust type.** Below the chip it's `between` with `sizeMin == sizeMax`: `applySizeQuery` pins both bounds,
   `readSizeFilters` emits `{ sizeMin: x, sizeMax: x }`, and `applyHistoryFilters` rehydrates a stored

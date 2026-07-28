@@ -9,6 +9,7 @@
      * stays in the parent so the dialog-level keymap lives next to the popovers it targets.
      */
     import Checkbox from '$lib/ui/Checkbox.svelte'
+    import TextArea from '$lib/ui/TextArea.svelte'
     import FilterPopover from '$lib/ui/FilterPopover.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
@@ -81,18 +82,18 @@
     ariaLabel={tString('queryUi.scope.popover.aria')}
     sectionClass="scope-popover"
 >
-        <textarea
+        <TextArea
             id="popover-scope"
-            class="popover-textarea"
+            radius="sm"
             placeholder={tString('queryUi.scope.placeholder')}
             value={scope}
             oninput={onInput(onSetScope)}
-            aria-label={tString('queryUi.scope.textareaAria')}
+            ariaLabel={tString('queryUi.scope.textareaAria')}
             spellcheck="false"
             autocomplete="off"
             autocapitalize="off"
-            rows="3"
-        ></textarea>
+            rows={3}
+        />
         <div class="scope-hint">
             <Trans
                 key="queryUi.scope.hint"
@@ -163,25 +164,6 @@
     /* ===== Scope popover ===== */
     /* `.scope-popover` (the section min-width) lives in the shared `filter-popover.css` because
        the wrapper element is rendered by `FilterPopover`, not by this component's own markup. */
-
-    .popover-textarea {
-        width: 100%;
-        font-size: var(--font-size-sm);
-        font-family: var(--font-system);
-        padding: 6px var(--spacing-sm);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-primary);
-        color: var(--color-text-primary);
-        outline: none;
-        resize: vertical;
-        line-height: 1.4;
-    }
-
-    .popover-textarea:focus {
-        border-color: var(--color-accent);
-        box-shadow: var(--shadow-focus);
-    }
 
     .scope-hint {
         font-size: var(--font-size-xs);
