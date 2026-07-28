@@ -144,6 +144,9 @@
         width: 100%;
     }
 
+    /* Same visual contract as `TextInput` (`app.css` § Text fields): Ark renders its
+       own input here, so the frame can't delegate to the primitive — it reads the
+       same tokens instead, and every field in the app stays identical. */
     :global(.combobox-control) {
         position: relative;
         display: flex;
@@ -151,24 +154,27 @@
         gap: var(--spacing-xs);
         width: 100%;
         border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
+        border-radius: var(--radius-input);
         background: var(--color-bg-primary);
+        transition:
+            border-color var(--transition-base),
+            box-shadow var(--transition-base);
     }
 
     :global(.combobox-control:focus-within) {
-        outline: 2px solid var(--color-accent);
-        outline-offset: -2px;
-        box-shadow: var(--shadow-focus);
+        border-color: var(--color-accent);
+        box-shadow: var(--shadow-focus-solid);
     }
 
     :global(.combobox-input) {
         flex: 1;
         min-width: 0;
-        padding: var(--spacing-xs) var(--spacing-sm);
+        padding: var(--spacing-input);
         border: none;
         background: transparent;
         color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-size-input);
+        line-height: 1.2;
     }
 
     :global(.combobox-input:focus) {

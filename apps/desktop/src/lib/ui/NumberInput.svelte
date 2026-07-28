@@ -61,17 +61,22 @@
         gap: var(--spacing-xs);
     }
 
+    /* Same visual contract as `TextInput` (`app.css` § Text fields): Ark renders its
+       own input here, so the frame can't delegate to the primitive — it reads the
+       same tokens instead, and every field in the app stays identical. */
     :global(.ni-control) {
         display: flex;
-        align-items: center;
+        align-items: stretch;
         border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
+        border-radius: var(--radius-input);
         overflow: hidden;
+        transition:
+            border-color var(--transition-base),
+            box-shadow var(--transition-base);
     }
 
     :global(.ni-btn) {
-        width: 28px;
-        height: 28px;
+        width: 32px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -90,13 +95,14 @@
 
     :global(.ni-input) {
         width: 70px;
-        padding: var(--spacing-xs);
+        padding: var(--spacing-input);
         border: none;
         border-left: 1px solid var(--color-border);
         border-right: 1px solid var(--color-border);
         background: var(--color-bg-primary);
         color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-size-input);
+        line-height: 1.2;
         text-align: center;
     }
 
@@ -105,9 +111,8 @@
     }
 
     :global(.ni-control:focus-within) {
-        outline: 2px solid var(--color-accent);
-        outline-offset: -2px;
-        box-shadow: var(--shadow-focus);
+        border-color: var(--color-accent);
+        box-shadow: var(--shadow-focus-solid);
     }
 
     :global(.ni-btn:focus-visible) {
