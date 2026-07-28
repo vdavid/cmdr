@@ -12,6 +12,12 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       real-world state (the real `~/Downloads`), leaked watchers (nextest reports "leaky"), real-clock dependence, and
       wall-clock assertions that slipped past the `test-sleep` check. Includes the offender list, the per-test numbers,
       and a measure-first approach. NOT STARTED.
+- [ ] 2026-07-28 `rename-chaining-arrow-keys.md` - ArrowDown/ArrowUp in the inline rename editor commits the current
+      edit and instantly starts renaming the file below/above, so renaming a run of files is one keyboard flow. Fire and
+      forget (fast on SMB/MTP), neighbour captured by path BEFORE the rename re-sorts the listing, unusable names and
+      conflicts discarded, extension changes committed without a dialog. Carries the data-safety invariants (session
+      ids, superseded-session effects, `pendingCursorName` suppression) that keep a save in flight for file N from
+      corrupting the editor already on N+1. SPECCED, not started.
 - [ ] 2026-07-25 `index-crate-extraction-plan.md` - Extract `indexing/` + `media_index/` + `importance/` (89.5k lines,
       28% of `src-tauri/src`) into a Tauri-free `cmdr-index` workspace crate over a `cmdr-fs` foundation, with a
       designed public API: an owned `Index` handle, typed errors, no user-facing strings, one cancellation primitive,
