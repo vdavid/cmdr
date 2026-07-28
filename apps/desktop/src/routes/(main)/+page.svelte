@@ -46,7 +46,7 @@
         getWindowTitle,
         registerKnownDialogs,
     } from '$lib/tauri-commands'
-    import { showMainWhenPainted } from './show-main-when-painted'
+    import { showMainOnMount } from './show-main-on-mount'
     import {
         type ListenerSetupContext,
         makeListenTauri,
@@ -463,7 +463,7 @@
         void maybeRunWhatsNew()
 
         // Show the window once the webview has actually painted (avoids a blank-window race); fire-and-forget.
-        void showMainWhenPainted()
+        void showMainOnMount()
 
         // Initialize centralized shortcut dispatch and global keyboard/context menu
         // handlers. These must be registered BEFORE setupTauriEventListeners() because

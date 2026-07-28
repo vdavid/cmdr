@@ -26,24 +26,30 @@ the layout facts that none of those carry live here:
 - **`+page.svelte` mounts Ask Cmdr's bulk-rename review beside the rail, but doesn't own it**: the rail owns its user
   decisions and the proposal's lifetime.
 
-## Startup: paint-gated window show
+## Startup: showing the main window
 
-The main window launches `visible: false`; the frontend calls `show()` when ready to avoid a white flash. This is the
-ONLY path that shows the main window: the backend restores saved size and position during setup
-(`src-tauri/src/window_state/`, which runs while the window is still hidden) but deliberately never shows it.
-`showMainWhenPainted()` gates that `show()` on a confirmed first paint (`waitForNextPaint`, a double
-`requestAnimationFrame`) instead of firing the instant `onMount` reaches the call.
+The main window launches `visible: false`; `showMainOnMount()` shows it from `onMount`. This is the ONLY path that
+shows the main window: the backend restores saved size and position during setup (`src-tauri/src/window_state/`, which
+runs while the window is still hidden) but deliberately never shows it.
 
-Decision / why: showing the moment JS execution reaches the call can still land `show()` (`makeKeyAndOrderFront`) before
-the compositor presents the first frame. If nothing invalidates the view afterward, the window sits blank until the next
-repaint, and only a resize or a full relaunch clears it (observed once on a cold prod launch during a heavy full-root
-reindex). Waiting for a presented frame first closes that race.
+**Show first, check after.** There used to be a paint gate *before* the show, awaiting `waitForNextPaint` (a double
+`requestAnimationFrame`). That's gone: it cost a fixed second of startup and produced no usable signal. The check now
+runs after the show, where the window is visible and rAF isn't throttled, so its answer means something. If no frame
+lands within 1 s we re-show, because `makeKeyAndOrderFront:` re-invalidates the view.
 
-The `waitForNextPaint` timeout is load-bearing: if the frontend main thread is frozen at startup (e.g. Vite's cold-start
-dep re-optimization in dev), rAF never fires and the wait would hang, so it falls back to showing anyway and logs a
-`warn` on the `FE:startup` category. `requestAnimationFrame` DOES tick while the window is hidden, so the common path
-resolves fast: first paint confirmed in ~25 ms on a warm launch (verified on macOS 15 / WKWebView, dev build, two clean
-`pnpm dev` cold starts, 2026-07-23); the 1 s fallback only triggered on the Vite-frozen first boot.
+The risk it guards is real but unreproduced: `show()` can land before the compositor presents a frame, and if nothing
+invalidates the view afterward the window sits blank until the user resizes it (observed once on a cold prod launch
+during a heavy full-root reindex). Showing from `onMount` narrows that window a lot compared to when the incident
+happened, since the frontend has hydrated and built the DOM by then.
+
+**Gotcha, and a retracted measurement.** This file used to state that rAF ticks while the window is hidden, citing
+"first paint confirmed in ~25 ms" (2026-07-23). That measurement was taken while `tauri-plugin-window-state` was still
+showing the window at window-ready, i.e. *before* the frontend ran, so it measured a window that was already visible.
+The gate was a no-op re-show and had never once run in the hidden configuration it was written for. Removing the plugin
+is what surfaced this. A single later observation with a genuinely hidden window did hit the 1 s timeout, which points
+at rAF being throttled while hidden, but that machine was at load average 79, so starvation isn't excluded. The
+show-first shape makes the question moot for startup speed either way; don't reintroduce a pre-show gate on the strength
+of either data point.
 
 ## Dispatch core
 
