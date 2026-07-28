@@ -46,7 +46,7 @@ natural-language queries into structured filters. First consumer of the shared Q
 - **Two volume scopes: filename search covers EVERY indexed volume; the image grid follows the active pane.** The
   backend fans out (`src-tauri/src/search/CLAUDE.md`); `SearchDialog` keys lifecycle + scanning indicator on
   `ROOT_VOLUME_ID` because root is what it WAITS for, not the coverage. The grid follows `imageSearchVolume`, the
-  focused pane's volume (a NAS search finds NAS photos), whose id IS the media-index id. DETAILS § Which volume.
+  focused pane's volume (a NAS search finds NAS photos), whose id IS the media-index id. DETAILS § Which volumes.
 - **`ImageSearchResults` OWNS every `cmdr-media://` thumbnail token it mints** (no viewer-session close): drop the prior
   set before minting the next, and all on unmount (`mediaIndexDropThumbnailTokens`), or the backend token map leaks.
   With `mediaIndex.enabled` OFF the section renders nothing, fires no IPC; ON, it voices coverage and renders the
