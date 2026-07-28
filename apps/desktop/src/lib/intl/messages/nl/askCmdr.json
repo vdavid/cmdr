@@ -189,6 +189,10 @@
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
+  "askCmdr.event.contextTrimmed": "{count, plural, one {# eerdere opzoeking} other {# eerdere opzoekingen}} weggelaten om binnen de context van het model te blijven.",
+  "@askCmdr.event.contextTrimmed": {
+    "sourceHash": "baf10e5"
+  },
   "askCmdr.event.modelChanged": "Overgeschakeld naar {model}",
   "@askCmdr.event.modelChanged": {
     "sourceHash": "dd0a934"

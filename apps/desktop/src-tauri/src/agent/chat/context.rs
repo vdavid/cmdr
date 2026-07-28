@@ -14,15 +14,21 @@
 //!   tool loop, so the model's ground truth can't shift mid-turn.
 //!
 //! History compaction is **elide-only** (spec §2, §5): assistant prose always survives
-//! verbatim; tool results from older turns collapse to a typed stub carrying an
-//! approximate token-size hint. Summarize-on-overflow is deferred; when even full
-//! elision can't fit the budget, the runtime shows the soft-cap nudge.
+//! verbatim; tool results from OLDER turns collapse to a typed stub carrying an
+//! approximate token-size hint. The current turn's results are never elided
+//! ([`MIN_ELISION_TURNS_BACK`]). Summarize-on-overflow is deferred; when even full elision
+//! can't fit the budget, the runtime shows the soft-cap nudge.
+//!
+//! **Every cut is reported, never silent.** [`assemble_prompt`] returns [`ElisionFacts`]
+//! alongside the messages, so the runtime (which owns the clock, the log, and the event
+//! sink) can say a drop happened out loud while this module stays pure.
 
 use chrono::{DateTime, FixedOffset, Utc};
 use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::time::Duration;
 
+use super::budget::{estimate_tokens_of_value, estimate_tokens_str};
 use crate::agent::llm::types::{AgentMessage, AgentPart, AgentRole, AgentToolResult, ToolDeclaration};
 
 // ── Named constants (§10). Initial values; tune with use. ─────────────────────
@@ -36,23 +42,20 @@ pub const MAX_TOOL_TURNS: usize = 8;
 /// tune with use.
 pub const MAX_WALL_TIME: Duration = Duration::from_secs(120);
 
-/// Target assembled-prompt size per call, in estimated tokens (spec's 6-10k band).
-/// Assembly elides older tool results until it fits, never touching assistant prose.
-/// Initial value; tune with use.
-pub const CONTEXT_TOKEN_BUDGET: usize = 8_000;
-
 /// Tool results this many turns back (or more) collapse to a typed stub; assistant
 /// prose always survives verbatim. Initial value; tune with use.
 pub const ELIDE_TOOL_RESULTS_AFTER_TURNS: usize = 3;
 
+/// The floor under every elision threshold: a tool result from the CURRENT turn is never
+/// elided, however tight the budget. It is the model's only view of what it just looked at,
+/// so replacing it with a stub while the user's instruction still stands ("name these files
+/// by their content") leaves invention as the only way to answer. Budget pressure elides
+/// history; it must never reach the turn in flight.
+pub const MIN_ELISION_TURNS_BACK: usize = 1;
+
 /// Past this many messages a thread shows the honest "this chat is getting long -
 /// start a fresh one?" nudge, no hard cut. Initial value; tune with use.
 pub const THREAD_SOFT_CAP_MESSAGES: usize = 40;
-
-/// Rough characters-per-token divisor for the size estimates that drive elision and
-/// the stub's token hint. A heuristic, not a real tokenizer. Initial value; tune with
-/// use.
-pub const CHARS_PER_TOKEN_ESTIMATE: usize = 4;
 
 /// Header that introduces the user's `CMDR.md` inside the system prompt when present.
 const CMDR_MD_HEADER: &str = "The user's CMDR.md (their notes for you; read-only):";
@@ -167,12 +170,49 @@ pub struct PrefixInputs<'a> {
 
 /// The fully-assembled prompt for one `respond` call: the cached prefix (`system` +
 /// `tools`) and the compacted message history with the envelope on the latest user
-/// turn.
+/// turn, plus what the compaction cost.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AssembledPrompt {
     pub system: String,
     pub tools: Vec<ToolDeclaration>,
     pub messages: Vec<AgentMessage>,
+    /// What this assembly had to leave out, as DATA. This module stays pure; the runtime
+    /// turns these facts into a log line and a user-visible notice.
+    pub elision: ElisionFacts,
+}
+
+/// What one assembly elided, and how it ended up against its budget. Returned rather than
+/// logged so [`assemble_prompt`] stays a pure function; a silent context drop is what let
+/// fabricated answers look like a normal reply.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct ElisionFacts {
+    /// How many tool results collapsed to a stub in this assembly.
+    pub elided_results: usize,
+    /// Roughly how many tokens those stubs replaced.
+    pub elided_tokens: usize,
+    /// The turns-back threshold the assembly settled on. Below
+    /// [`ELIDE_TOOL_RESULTS_AFTER_TURNS`] means the BUDGET forced the elision, not age.
+    pub threshold: usize,
+    /// The assembled prompt's estimated size.
+    pub estimated_tokens: usize,
+    /// The budget it was assembled against.
+    pub budget: usize,
+}
+
+impl ElisionFacts {
+    /// True when the budget (not plain age) is what dropped history: the assembly had to
+    /// tighten past the normal threshold. This is the case worth telling the user about —
+    /// something they might still be relying on left the conversation.
+    pub fn budget_forced(&self) -> bool {
+        self.elided_results > 0 && self.threshold < ELIDE_TOOL_RESULTS_AFTER_TURNS
+    }
+
+    /// True when even the tightest elision left the prompt over budget (prose alone is too
+    /// big, or the current turn's own results are). Nothing more can be dropped safely, so
+    /// this is the soft-cap's territory — but it must not pass unnoticed.
+    pub fn over_budget(&self) -> bool {
+        self.estimated_tokens > self.budget
+    }
 }
 
 /// Build the `system` string: the system prompt, plus the user's `CMDR.md` appended
@@ -189,7 +229,8 @@ pub fn build_system(system_prompt: &str, cmdr_md: Option<&str>) -> String {
 /// `transcript` (history + the latest user turn + any in-flight turn messages), with
 /// the `envelope` rendered onto the latest user turn only and historical user turns
 /// carrying just their timestamp. `offset` is the local UTC offset captured at send,
-/// applied to every rendered timestamp.
+/// applied to every rendered timestamp. `budget` is the resolved model's prompt budget
+/// (`super::budget`), which the caller looks up once per turn.
 ///
 /// Deterministic: same inputs → identical output (byte-identical prefix; identical
 /// messages). Changing only the envelope changes only the latest user turn, never the
@@ -199,24 +240,57 @@ pub fn assemble_prompt(
     transcript: &[AgentMessage],
     envelope: &ContextEnvelope,
     offset: FixedOffset,
+    budget: usize,
 ) -> AssembledPrompt {
     let system = build_system(prefix.system_prompt, prefix.cmdr_md);
     let tools = prefix.tools.to_vec();
 
     // Elide older tool results, tightening the threshold until the estimate fits the
-    // budget (assistant prose is never touched — that's the soft-cap's job).
+    // budget. Assistant prose is never touched (that's the soft-cap's job), and the floor
+    // is MIN_ELISION_TURNS_BACK: the turn in flight keeps its own results even if that
+    // leaves the prompt over budget. Better an honest overrun the runtime reports than a
+    // model answering about evidence it can no longer see.
     let mut threshold = ELIDE_TOOL_RESULTS_AFTER_TURNS;
     let mut messages = build_messages(transcript, envelope, offset, threshold);
-    while threshold > 0 && estimate_prompt_tokens(&system, &tools, &messages) > CONTEXT_TOKEN_BUDGET {
+    while threshold > MIN_ELISION_TURNS_BACK && estimate_prompt_tokens(&system, &tools, &messages) > budget {
         threshold -= 1;
         messages = build_messages(transcript, envelope, offset, threshold);
     }
 
+    let elision = elision_facts(&system, &tools, &messages, threshold, budget);
     AssembledPrompt {
         system,
         tools,
         messages,
+        elision,
     }
+}
+
+/// Read back what the finished assembly left out: how many stubs it contains and the
+/// approximate size they stand in for (the stub's own `approx_tokens` hint, so the number
+/// the model sees and the number we log are the same one).
+fn elision_facts(
+    system: &str,
+    tools: &[ToolDeclaration],
+    messages: &[AgentMessage],
+    threshold: usize,
+    budget: usize,
+) -> ElisionFacts {
+    let mut facts = ElisionFacts {
+        threshold,
+        budget,
+        estimated_tokens: estimate_prompt_tokens(system, tools, messages),
+        ..ElisionFacts::default()
+    };
+    for part in messages.iter().flat_map(|message| message.parts.iter()) {
+        if let AgentPart::ToolResult(result) = part
+            && result.content.get(ELIDED_MARKER_KEY) == Some(&Value::Bool(true))
+        {
+            facts.elided_results += 1;
+            facts.elided_tokens += result.content[APPROX_TOKENS_KEY].as_u64().unwrap_or(0) as usize;
+        }
+    }
+    facts
 }
 
 /// Render the envelope as its tagged block (the exact §9 field set). Public so the
@@ -307,7 +381,11 @@ fn build_messages(
                     prepend_text(message, render_envelope(envelope, offset))
                 }
                 AgentRole::User => prepend_text(message, render_history_timestamp(message.at, offset)),
-                AgentRole::Tool if turns_back >= threshold => elide_tool_results(message, &tool_names),
+                // The `max` is the load-bearing floor: whatever threshold the budget loop
+                // settled on, the current turn's results (`turns_back == 0`) survive.
+                AgentRole::Tool if turns_back >= threshold.max(MIN_ELISION_TURNS_BACK) => {
+                    elide_tool_results(message, &tool_names)
+                }
                 _ => message.clone(),
             }
         })
@@ -346,15 +424,21 @@ fn elide_tool_results(message: &AgentMessage, tool_names: &HashMap<String, Strin
     }
 }
 
+/// The stub's marker key ("this stands in for a result that was dropped") and its size
+/// hint. Named because the assembly reads them back to report what it elided; they are OUR
+/// OWN payload keys, not another system's wording (no `no-string-matching` conflict).
+const ELIDED_MARKER_KEY: &str = "elided_tool_result";
+const APPROX_TOKENS_KEY: &str = "approx_tokens";
+
 /// The typed elision stub for one tool result: a small object the model can read,
 /// naming the tool and the approximate token size the full result would have cost.
 fn stub_for(result: &AgentToolResult, tool_name: Option<&str>) -> AgentToolResult {
     AgentToolResult {
         call_id: result.call_id.clone(),
         content: json!({
-            "elided_tool_result": true,
+            ELIDED_MARKER_KEY: true,
             "tool": tool_name,
-            "approx_tokens": estimate_tokens_of_value(&result.content),
+            APPROX_TOKENS_KEY: estimate_tokens_of_value(&result.content),
         }),
         elided: true,
     }
@@ -377,21 +461,13 @@ fn tool_names_by_call_id(transcript: &[AgentMessage]) -> HashMap<String, String>
 // ── Token estimation (heuristic, drives elision + the stub hint) ──────────────
 
 /// Estimate the assembled prompt's token size: the system string, the serialized tool
-/// declarations, and every message part. A rough heuristic (chars / 4), not a real
-/// tokenizer — enough to keep assembly inside the budget band.
+/// declarations, and every message part. A rough heuristic (`super::budget`'s single
+/// chars-per-token divisor), not a real tokenizer — enough to keep assembly in the band.
 pub fn estimate_prompt_tokens(system: &str, tools: &[ToolDeclaration], messages: &[AgentMessage]) -> usize {
     let system_tokens = estimate_tokens_str(system);
     let tool_tokens: usize = tools.iter().map(estimate_tokens_of_tool).sum();
     let message_tokens: usize = messages.iter().map(estimate_tokens_of_message).sum();
     system_tokens + tool_tokens + message_tokens
-}
-
-fn estimate_tokens_str(text: &str) -> usize {
-    text.len().div_ceil(CHARS_PER_TOKEN_ESTIMATE)
-}
-
-fn estimate_tokens_of_value(value: &Value) -> usize {
-    estimate_tokens_str(&value.to_string())
 }
 
 fn estimate_tokens_of_tool(tool: &ToolDeclaration) -> usize {

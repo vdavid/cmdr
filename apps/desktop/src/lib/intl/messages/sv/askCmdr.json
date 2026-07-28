@@ -188,6 +188,10 @@
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
+  "askCmdr.event.contextTrimmed": "{count, plural, one {# tidigare sökning} other {# tidigare sökningar}} togs bort för att passa modellens kontext.",
+  "@askCmdr.event.contextTrimmed": {
+    "sourceHash": "baf10e5"
+  },
   "askCmdr.event.modelChanged": "Bytte till {model}",
   "@askCmdr.event.modelChanged": {
     "sourceHash": "dd0a934"

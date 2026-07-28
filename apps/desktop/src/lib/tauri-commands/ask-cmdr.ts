@@ -100,6 +100,9 @@ export type AskCmdrStreamEvent =
   /** The thread's effective model changed since its previous turn; the persisted event
    * row's identity rides along. Render the line BEFORE this turn's user bubble. */
   | { type: 'modelChanged'; messageId: number; seq: number; model: string }
+  /** The prompt budget pushed earlier tool results out of this turn's context, so the reply
+   * was written with less than the whole thread in view. At most one per turn. */
+  | { type: 'contextTrimmed'; elidedResults: number; approxTokens: number }
 
 /**
  * Send one message and stream the answer. `conversationId` is `null` to start a fresh

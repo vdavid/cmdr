@@ -188,6 +188,10 @@
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
+  "askCmdr.event.contextTrimmed": "{count, plural, one {# consultation antérieure supprimée} many {# consultations antérieures supprimées} other {# consultations antérieures supprimées}} pour tenir dans le contexte du modèle.",
+  "@askCmdr.event.contextTrimmed": {
+    "sourceHash": "baf10e5"
+  },
   "askCmdr.event.modelChanged": "Passage à {model}",
   "@askCmdr.event.modelChanged": {
     "sourceHash": "dd0a934"

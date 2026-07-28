@@ -5,9 +5,18 @@ use chrono::{FixedOffset, TimeZone};
 use serde_json::json;
 
 use super::*;
+use crate::agent::chat::budget::{CHARS_PER_TOKEN_ESTIMATE, DEFAULT_PROMPT_TOKEN_BUDGET};
 use crate::agent::llm::types::{AgentMessage, AgentPart, AgentRole, AgentToolCall, AgentToolResult, ToolId};
 
 const SYSTEM: &str = "SYSTEM PROMPT BODY";
+
+/// The budget most tests assemble against: the conservative default, so a test that isn't
+/// about budget pressure never accidentally trips it.
+const BUDGET: usize = DEFAULT_PROMPT_TOKEN_BUDGET;
+
+/// A deliberately tight budget for the pressure tests, matching the one the interactive
+/// slot ran under when a 12-file batch overflowed it.
+const TIGHT_BUDGET: usize = 8_000;
 
 fn offset() -> FixedOffset {
     FixedOffset::east_opt(2 * 3600).expect("valid offset")
@@ -109,8 +118,8 @@ fn prefix_is_byte_identical_across_calls() {
     let transcript = [user("what is big?", 1_000)];
     let env = envelope_at(1_000);
 
-    let first = assemble_prompt(&prefix(None, &tools), &transcript, &env, offset());
-    let second = assemble_prompt(&prefix(None, &tools), &transcript, &env, offset());
+    let first = assemble_prompt(&prefix(None, &tools), &transcript, &env, offset(), BUDGET);
+    let second = assemble_prompt(&prefix(None, &tools), &transcript, &env, offset(), BUDGET);
 
     assert_eq!(first.system, second.system, "system prefix must be byte-identical");
     assert_eq!(first.tools, second.tools, "tool declarations must be byte-identical");
@@ -121,11 +130,17 @@ fn a_changed_envelope_does_not_touch_the_prefix() {
     let tools = [declaration(ToolId::AppState)];
     let transcript = [user("what is big?", 1_000)];
 
-    let one = assemble_prompt(&prefix(None, &tools), &transcript, &envelope_at(1_000), offset());
+    let one = assemble_prompt(
+        &prefix(None, &tools),
+        &transcript,
+        &envelope_at(1_000),
+        offset(),
+        BUDGET,
+    );
     let mut other_env = envelope_at(9_999);
     other_env.selection_count = 7;
     other_env.focused_pane_path = Some("~/Movies".to_string());
-    let two = assemble_prompt(&prefix(None, &tools), &transcript, &other_env, offset());
+    let two = assemble_prompt(&prefix(None, &tools), &transcript, &other_env, offset(), BUDGET);
 
     // The prefix is untouched by the envelope change...
     assert_eq!(one.system, two.system, "envelope must not touch the system prefix");
@@ -197,7 +212,7 @@ fn envelope_opens_only_the_latest_user_turn() {
         user("second question", 2_000),
     ];
     let env = envelope_at(2_000);
-    let assembled = assemble_prompt(&prefix(None, &[]), &transcript, &env, offset());
+    let assembled = assemble_prompt(&prefix(None, &[]), &transcript, &env, offset(), BUDGET);
 
     let full_block = render_envelope(&env, offset());
     // The latest user turn (index 2) opens with the full envelope block.
@@ -233,7 +248,7 @@ fn historical_turns_carry_their_own_timestamps() {
         user("evening question", evening),
     ];
 
-    let assembled = assemble_prompt(&prefix(None, &[]), &transcript, &envelope_at(evening), off);
+    let assembled = assemble_prompt(&prefix(None, &[]), &transcript, &envelope_at(evening), off, BUDGET);
     // Earlier turn carries ITS timestamp (09:15), not the send time.
     assert!(leading_text(&assembled.messages[0]).contains("09:15"));
 }
@@ -245,14 +260,14 @@ fn two_assemblies_within_one_turn_see_a_byte_identical_envelope() {
     // result). The envelope block on the latest user turn must be byte-identical.
     let env = envelope_at(2_000);
     let first_call = [user("what is big?", 2_000)];
-    let first = assemble_prompt(&prefix(None, &[]), &first_call, &env, offset());
+    let first = assemble_prompt(&prefix(None, &[]), &first_call, &env, offset(), BUDGET);
 
     let second_call = [
         user("what is big?", 2_000),
         assistant_tool_call("c1", ToolId::ListDir, json!({ "path": "/" }), 2_050),
         tool_result("c1", json!({ "entries": 3 }), 2_060),
     ];
-    let second = assemble_prompt(&prefix(None, &[]), &second_call, &env, offset());
+    let second = assemble_prompt(&prefix(None, &[]), &second_call, &env, offset(), BUDGET);
 
     // The latest user turn is at index 0 in both; its envelope block is identical.
     assert_eq!(
@@ -283,7 +298,7 @@ fn old_tool_result_elides_to_a_typed_stub_and_prose_survives() {
         tool_result("new", json!({ "entries": 5 }), 4_020),
     ];
 
-    let assembled = assemble_prompt(&prefix(None, &[]), &transcript, &envelope_at(4_000), offset());
+    let assembled = assemble_prompt(&prefix(None, &[]), &transcript, &envelope_at(4_000), offset(), BUDGET);
 
     // The old tool result (index 2) is now a typed stub naming its tool + size hint.
     let AgentPart::ToolResult(old) = &assembled.messages[2].parts[0] else {
@@ -315,30 +330,117 @@ fn old_tool_result_elides_to_a_typed_stub_and_prose_survives() {
     assert_eq!(new.content, json!({ "entries": 5 }));
 }
 
+/// David's two-batch rename shape, the one that fabricated 12 filenames: batch 1's
+/// `image_facts` result is history, batch 2's came back THIS turn and is far too big for
+/// the budget. Budget pressure must never reach it — a model told to name files by their
+/// content, handed a stub instead of the content, has invention as its only way to answer.
+#[test]
+fn the_current_turns_tool_result_survives_any_budget_pressure() {
+    let batch_one = json!({ "facts": [{ "path": "/shots/a.png", "text": "x".repeat(11_000) }] });
+    let batch_two =
+        json!({ "facts": [{ "path": "/shots/l.png", "text": format!("LinkedIn inbox {}", "y".repeat(33_000)) }] });
+    let transcript = [
+        user("rename these 11 screenshots by their content", 1_000),
+        assistant_tool_call("f1", ToolId::ImageFacts, json!({ "paths": ["/shots/a.png"] }), 1_010),
+        tool_result("f1", batch_one, 1_020),
+        assistant_text("Renamed the first 11.", 1_030),
+        user("now the other 12", 2_000),
+        assistant_tool_call("f2", ToolId::ImageFacts, json!({ "paths": ["/shots/l.png"] }), 2_010),
+        tool_result("f2", batch_two, 2_020),
+    ];
+
+    let assembled = assemble_prompt(
+        &prefix(None, &[]),
+        &transcript,
+        &envelope_at(2_000),
+        offset(),
+        TIGHT_BUDGET,
+    );
+
+    let AgentPart::ToolResult(latest) = &assembled.messages[6].parts[0] else {
+        panic!("expected a tool-result part");
+    };
+    assert!(
+        !latest.elided,
+        "the current turn's tool result must survive, whatever the budget says"
+    );
+    assert!(
+        latest.content.to_string().contains("LinkedIn inbox"),
+        "the payload the model was asked to name files from must still be there"
+    );
+    // The older batch DID elide (proving the test has teeth and the budget still bites).
+    let AgentPart::ToolResult(older) = &assembled.messages[2].parts[0] else {
+        panic!("expected a tool-result part");
+    };
+    assert!(older.elided, "an earlier turn's oversized result is what elides");
+    // And the drop is reported, so the runtime can say it out loud.
+    assert!(
+        assembled.elision.budget_forced(),
+        "the budget, not age, forced this elision: {:?}",
+        assembled.elision
+    );
+    assert_eq!(assembled.elision.elided_results, 1);
+    assert!(assembled.elision.elided_tokens > 0, "the report sizes what it dropped");
+}
+
 // ── Budget ────────────────────────────────────────────────────────────────────
 
 #[test]
-fn assembly_elides_down_to_the_token_budget() {
-    // A recent tool result too large to fit the budget forces elision below the normal
-    // threshold. After assembly the estimate must be within CONTEXT_TOKEN_BUDGET.
-    let huge = json!({ "blob": "x".repeat(CONTEXT_TOKEN_BUDGET * CHARS_PER_TOKEN_ESTIMATE * 2) });
+fn assembly_elides_history_down_to_the_token_budget() {
+    // An older tool result too large to fit forces elision below the normal threshold.
+    // History is what elides, and after assembly the estimate is back inside the budget.
+    let huge = json!({ "blob": "x".repeat(BUDGET * CHARS_PER_TOKEN_ESTIMATE * 2) });
     let transcript = [
-        user("recent question", 1_000),
+        user("older question", 1_000),
         assistant_tool_call("c1", ToolId::ListDir, json!({ "path": "/" }), 1_010),
         tool_result("c1", huge, 1_020),
+        assistant_text("answer", 1_030),
+        user("recent question", 2_000),
     ];
 
-    let assembled = assemble_prompt(&prefix(None, &[]), &transcript, &envelope_at(1_000), offset());
+    let assembled = assemble_prompt(&prefix(None, &[]), &transcript, &envelope_at(2_000), offset(), BUDGET);
     let tokens = estimate_prompt_tokens(&assembled.system, &assembled.tools, &assembled.messages);
-    assert!(
-        tokens <= CONTEXT_TOKEN_BUDGET,
-        "assembly must stay within the budget (got {tokens})"
-    );
+    assert!(tokens <= BUDGET, "assembly must stay within the budget (got {tokens})");
     // It fit by eliding the oversized tool result, not by dropping prose.
     let AgentPart::ToolResult(result) = &assembled.messages[2].parts[0] else {
         panic!("expected a tool-result part");
     };
     assert!(result.elided, "the oversized result was elided to fit the budget");
+    assert_eq!(
+        assembled.elision.estimated_tokens, tokens,
+        "the report's estimate is the assembled prompt's own"
+    );
+    assert!(!assembled.elision.over_budget(), "it fit, so nothing overran");
+}
+
+#[test]
+fn an_unfittable_current_turn_overruns_the_budget_and_says_so() {
+    // The turn in flight alone is over budget: nothing can be dropped without blinding the
+    // model to what it just looked at, so assembly overruns ON PURPOSE and reports it. The
+    // runtime turns `over_budget` into a warn; silence here is what made a fabricated
+    // answer read like a normal one.
+    let huge = json!({ "blob": "x".repeat(TIGHT_BUDGET * CHARS_PER_TOKEN_ESTIMATE * 2) });
+    let transcript = [
+        user("name these by content", 1_000),
+        assistant_tool_call("c1", ToolId::ImageFacts, json!({ "paths": ["/a.png"] }), 1_010),
+        tool_result("c1", huge, 1_020),
+    ];
+
+    let assembled = assemble_prompt(
+        &prefix(None, &[]),
+        &transcript,
+        &envelope_at(1_000),
+        offset(),
+        TIGHT_BUDGET,
+    );
+
+    let AgentPart::ToolResult(result) = &assembled.messages[2].parts[0] else {
+        panic!("expected a tool-result part");
+    };
+    assert!(!result.elided, "the current turn's evidence is never traded for budget");
+    assert!(assembled.elision.over_budget(), "the overrun must be reported");
+    assert_eq!(assembled.elision.elided_results, 0, "there was nothing older to drop");
+    assert_eq!(assembled.elision.budget, TIGHT_BUDGET);
 }
 
 // ── Attachments in the envelope (path + kind only; the privacy line) ────────────
@@ -396,7 +498,7 @@ fn attachments_ride_only_the_latest_user_turn_and_carry_nothing_but_path_and_kin
         path: "/Users/d/secret".to_string(),
         kind: AttachmentKind::Folder,
     }]);
-    let assembled = assemble_prompt(&prefix(None, &[]), &transcript, &env, offset());
+    let assembled = assemble_prompt(&prefix(None, &[]), &transcript, &env, offset(), BUDGET);
 
     // The earlier user turn carries only its timestamp marker, no attachment.
     let AgentPart::Text(first) = &assembled.messages[0].parts[0] else {

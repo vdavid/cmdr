@@ -188,6 +188,10 @@
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
+  "askCmdr.event.contextTrimmed": "{count, plural, one {# korábbi keresés} other {# korábbi keresés}} kimaradt, hogy elférjen a modell kontextusában.",
+  "@askCmdr.event.contextTrimmed": {
+    "sourceHash": "baf10e5"
+  },
   "askCmdr.event.modelChanged": "Váltás erre: {model}",
   "@askCmdr.event.modelChanged": {
     "sourceHash": "dd0a934"

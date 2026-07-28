@@ -50,6 +50,10 @@ pub(super) struct ManagerState {
 
 const STATE_FILENAME: &str = "ai-state.json";
 
+/// The local llama-server context size before the frontend pushes the user's setting
+/// (`ai.localContextSize`, whose own default matches this).
+const DEFAULT_CONTEXT_SIZE: u32 = 4096;
+
 /// Builds a fresh `ManagerState` for `ai_dir` with the given persisted `state` and the
 /// default in-memory config (provider `local`, default cloud endpoint). `init` mutates
 /// it further (stale-PID cleanup) before storing it in `MANAGER`.
@@ -63,7 +67,7 @@ pub(super) fn new_manager_state(ai_dir: PathBuf, state: AiState) -> ManagerState
         server_starting: false,
         start_cancel: None,
         provider: String::from("local"),
-        context_size: 4096,
+        context_size: DEFAULT_CONTEXT_SIZE,
         cloud_api_key: String::new(),
         cloud_base_url: String::from("https://api.openai.com/v1"),
         cloud_model: String::from("gpt-4o-mini"),
@@ -84,6 +88,14 @@ pub fn get_provider() -> String {
         .as_ref()
         .map(|m| m.provider.clone())
         .unwrap_or_else(|| String::from("off"))
+}
+
+/// Returns the context size the local llama-server runs with (the `ai.localContextSize`
+/// setting, pushed in by `configure_ai`), or the built-in default when the manager isn't up.
+/// The agent's prompt budget derives from it, so a prompt can't overrun the local window.
+pub fn get_local_context_size() -> u32 {
+    let manager = MANAGER.lock_ignore_poison();
+    manager.as_ref().map(|m| m.context_size).unwrap_or(DEFAULT_CONTEXT_SIZE)
 }
 
 /// Returns the cloud-AI config (api_key, base_url, model) stored in manager state.

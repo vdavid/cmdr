@@ -188,6 +188,10 @@
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
+  "askCmdr.event.contextTrimmed": "已移除 {count, plural, other {# 次早前的查询}}，以适应模型的上下文长度。",
+  "@askCmdr.event.contextTrimmed": {
+    "sourceHash": "baf10e5"
+  },
   "askCmdr.event.modelChanged": "已切换到 {model}",
   "@askCmdr.event.modelChanged": {
     "sourceHash": "dd0a934"

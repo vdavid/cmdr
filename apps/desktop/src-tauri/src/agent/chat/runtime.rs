@@ -50,7 +50,7 @@ use crate::agent::llm::types::{
 use crate::agent::store::{self, AgentStoreError, CostRecord};
 use crate::ignore_poison::IgnorePoison;
 
-use super::context::{self, ContextEnvelope, MAX_TOOL_TURNS, MAX_WALL_TIME, PrefixInputs};
+use super::context::{self, ContextEnvelope, ElisionFacts, MAX_TOOL_TURNS, MAX_WALL_TIME, PrefixInputs};
 use super::system_prompt::SYSTEM_PROMPT;
 use crate::agent::tools::propose::rename::RenameProposalSnapshot;
 
@@ -108,6 +108,15 @@ pub enum AgentChatEvent {
     /// event row was persisted (its identity rides along). The rail shows it as a small
     /// timeline line before this turn's user message.
     ModelChanged { message_id: i64, seq: i64, model: String },
+    /// The prompt budget forced earlier tool results out of this turn's context. Emitted
+    /// once per turn so the user learns that the model answered with less than the full
+    /// thread in view, instead of a quiet drop that reads like a normal reply.
+    ContextTrimmed {
+        /// How many tool results were replaced by a stub.
+        elided_results: usize,
+        /// Roughly how many tokens of detail that removed.
+        approx_tokens: usize,
+    },
 }
 
 /// The typed reasons a turn can end without an answer. A pure classification the
@@ -259,6 +268,9 @@ pub struct TurnParams<'a> {
     /// resolution happens in the command layer; the runtime just records what it was told.
     pub provider: ProviderTag,
     pub model: String,
+    /// The resolved model's assembled-prompt token budget (`super::budget`). Resolved in the
+    /// command layer alongside the model, because a local server's window is a user setting.
+    pub prompt_budget: usize,
 }
 
 /// How a turn ended, for the caller's bookkeeping. The events already told the
@@ -316,6 +328,7 @@ pub async fn run_turn(
     let started = Instant::now();
     let mut tool_turns = 0usize;
     let mut model_recorded = false;
+    let mut trim_announced = false;
 
     loop {
         // Cancellation and both budgets are checked at the top, so no `respond` fires
@@ -339,7 +352,14 @@ pub async fn run_turn(
             cmdr_md: params.cmdr_md,
             tools,
         };
-        let assembled = context::assemble_prompt(&prefix, &transcript, params.envelope, params.offset);
+        let assembled = context::assemble_prompt(
+            &prefix,
+            &transcript,
+            params.envelope,
+            params.offset,
+            params.prompt_budget,
+        );
+        announce_context_pressure(&assembled.elision, sink, &mut trim_announced);
 
         let stream = match llm
             .respond(&assembled.system, &assembled.tools, &assembled.messages, cancel.clone())
@@ -527,6 +547,47 @@ async fn consume_stream(mut stream: crate::agent::llm::AgentDeltaStream, sink: &
     }
 }
 
+/// Make a context drop LOUD. Assembly is pure, so it hands back [`ElisionFacts`]; this is
+/// where they become a log line and (once per turn) a user-visible notice.
+///
+/// Two distinct cases, on purpose:
+/// - the budget forced history out (something the user may still be relying on left the
+///   model's view) ⇒ warn + one `ContextTrimmed` event per turn;
+/// - the prompt overran the budget with nothing safe left to drop ⇒ warn only. The rail
+///   already nudges "this chat is getting long", and on a small local window this would
+///   otherwise fire on every turn.
+fn announce_context_pressure(facts: &ElisionFacts, sink: &ChatEventSink, announced: &mut bool) {
+    if facts.budget_forced() {
+        log::warn!(
+            target: LOG_TARGET,
+            "context budget dropped history: {} tool result(s) (~{} tokens) elided at threshold {}, prompt ~{} tokens against a {}-token budget",
+            facts.elided_results,
+            facts.elided_tokens,
+            facts.threshold,
+            facts.estimated_tokens,
+            facts.budget
+        );
+        if !*announced {
+            *announced = true;
+            emit(
+                sink,
+                AgentChatEvent::ContextTrimmed {
+                    elided_results: facts.elided_results,
+                    approx_tokens: facts.elided_tokens,
+                },
+            );
+        }
+    }
+    if facts.over_budget() {
+        log::warn!(
+            target: LOG_TARGET,
+            "context over budget with nothing safe left to elide: prompt ~{} tokens against a {}-token budget (the turn's own results are never dropped)",
+            facts.estimated_tokens,
+            facts.budget
+        );
+    }
+}
+
 fn persist_failed(sink: &ChatEventSink, error: AgentStoreError) -> TurnResult {
     log::warn!(target: LOG_TARGET, "persisting a chat message failed: {error}");
     emit(
@@ -678,6 +739,7 @@ impl ChatRuntime {
         llm: &dyn AgentLlm,
         provider: ProviderTag,
         model: String,
+        prompt_budget: usize,
         conversation_id: Option<i64>,
         text: String,
         envelope: ContextEnvelope,
@@ -707,6 +769,7 @@ impl ChatRuntime {
             now_secs: now,
             provider,
             model,
+            prompt_budget,
         };
         run_turn(llm, &dispatcher, &conn, &tools, &params, &sink, &cancel).await;
         Ok(conversation_id)

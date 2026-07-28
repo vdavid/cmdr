@@ -1,5 +1,7 @@
 //! The chat runtime and its pure context-assembly core.
 //!
+//! - [`budget`]: the per-model prompt budget table plus the one token-size estimator the
+//!   whole agent shares (including each tool's self-cap). Pure data + arithmetic.
 //! - [`context`]: the pure core — values in, prompt out, no I/O and no clock. The
 //!   stable byte-identical prefix, elide-only history compaction, the context envelope
 //!   on the latest user turn only, and budget enforcement. Every test here runs with
@@ -15,6 +17,7 @@
 //! cases) and `DETAILS.md` for the anatomy-of-one-call reference and the constants
 //! table.
 
+pub mod budget;
 pub mod context;
 pub mod runtime;
 pub mod system_prompt;

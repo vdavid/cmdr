@@ -30,6 +30,10 @@ use crate::test_support::wait_until_async;
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
+/// The prompt budget the turn fixtures assemble against: the conservative default, so no
+/// test trips budget pressure unless it means to.
+const TEST_PROMPT_BUDGET: usize = crate::agent::chat::budget::DEFAULT_PROMPT_TOKEN_BUDGET;
+
 fn migrated_conn() -> Connection {
     let conn = Connection::open_in_memory().expect("in-memory db");
     conn.execute_batch("PRAGMA foreign_keys = ON;").expect("pragma");
@@ -62,6 +66,7 @@ fn params<'a>(conversation_id: i64, user_text: Option<&'a str>) -> TurnParams<'a
         now_secs: 1_780_000_000,
         provider: ProviderTag::Local,
         model: "fake-model".to_string(),
+        prompt_budget: TEST_PROMPT_BUDGET,
     }
 }
 
@@ -656,6 +661,117 @@ async fn end_to_end_multi_tool_turn_dispatches_and_answers() {
     );
 }
 
+// ── A context drop is loud ─────────────────────────────────────────────────────
+
+/// Returns one oversized tool result, big enough that keeping it in history blows a tight
+/// prompt budget (the `image_facts` shape that started this).
+struct HugeDispatcher;
+
+impl ToolDispatcher for HugeDispatcher {
+    fn dispatch<'a>(&'a self, call: &'a AgentToolCall) -> BoxFuture<'a, ToolDispatchOutcome> {
+        async move {
+            ToolDispatchOutcome {
+                result: AgentToolResult {
+                    call_id: call.call_id.clone(),
+                    content: json!({ "text": "y".repeat(60_000) }),
+                    elided: false,
+                },
+                proposal: None,
+            }
+        }
+        .boxed()
+    }
+}
+
+#[tokio::test]
+async fn a_budget_forced_context_drop_is_announced_once_per_turn() {
+    // Turn 1 puts a huge tool result in history; turn 2 runs against a tight budget, so
+    // that result has to go. The user must be TOLD — an unannounced drop is exactly how a
+    // reply written without the evidence read like a normal one.
+    let conn = migrated_conn();
+    let id = conversation(&conn);
+
+    let first = ProgrammableLlm::new(vec![
+        Program::Tools {
+            calls: vec![(ToolId::ImageFacts, json!({ "paths": ["/a.png"] }))],
+            usage: AgentUsage::default(),
+        },
+        Program::Answer {
+            chunks: vec!["named them".to_string()],
+            usage: AgentUsage::default(),
+        },
+    ]);
+    let (tx1, _rx1) = unbounded_channel();
+    let params1 = params(id, Some("name these by content"));
+    run_turn(
+        &first,
+        &HugeDispatcher,
+        &conn,
+        &[],
+        &params1,
+        &tx1,
+        &CancellationToken::new(),
+    )
+    .await;
+
+    let second = ProgrammableLlm::new(vec![
+        Program::Tools {
+            calls: vec![(ToolId::ImageFacts, json!({ "paths": ["/b.png"] }))],
+            usage: AgentUsage::default(),
+        },
+        Program::Answer {
+            chunks: vec!["named those too".to_string()],
+            usage: AgentUsage::default(),
+        },
+    ]);
+    let (tx2, mut rx2) = unbounded_channel();
+    let mut params2 = params(id, Some("now the rest"));
+    params2.prompt_budget = 8_000;
+    let result = run_turn(
+        &second,
+        &HugeDispatcher,
+        &conn,
+        &[],
+        &params2,
+        &tx2,
+        &CancellationToken::new(),
+    )
+    .await;
+    assert!(matches!(result, TurnResult::Answered { .. }), "the turn still answers");
+
+    let trims: Vec<AgentChatEvent> = drain(&mut rx2)
+        .into_iter()
+        .filter(|e| matches!(e, AgentChatEvent::ContextTrimmed { .. }))
+        .collect();
+    assert_eq!(
+        trims.len(),
+        1,
+        "exactly one notice per turn, however many respond calls it took: {trims:?}"
+    );
+    let AgentChatEvent::ContextTrimmed {
+        elided_results,
+        approx_tokens,
+    } = &trims[0]
+    else {
+        unreachable!("filtered above")
+    };
+    assert_eq!(*elided_results, 1, "the older batch is what went");
+    assert!(*approx_tokens > 0, "the notice sizes what was dropped");
+}
+
+#[tokio::test]
+async fn a_turn_that_fits_its_budget_announces_nothing() {
+    let conn = migrated_conn();
+    let id = conversation(&conn);
+    let events = run_answer_turn(&conn, id, "model-one", "hello").await;
+    assert!(
+        !events
+            .iter()
+            .any(|e| matches!(e, AgentChatEvent::ContextTrimmed { .. })),
+        "no notice when nothing was dropped — it would cry wolf on every turn"
+    );
+}
+
 // ── Model-change events ───────────────────────────────────────────────────────
 
 /// Run one single-answer turn for `id` with the given model, returning the drained events.
@@ -985,6 +1101,7 @@ async fn attachments_reach_the_llm_in_the_envelope_and_nothing_more() {
         now_secs: 1_780_000_000,
         provider: ProviderTag::Local,
         model: "fake-model".to_string(),
+        prompt_budget: TEST_PROMPT_BUDGET,
     };
 
     let result = run_turn(&llm, &OkDispatcher, &conn, &[], &params, &tx, &CancellationToken::new()).await;

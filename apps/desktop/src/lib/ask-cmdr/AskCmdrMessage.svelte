@@ -78,6 +78,12 @@
     <div class="msg model-change" role="status">
         {tString('askCmdr.event.modelChanged', { model: message.model })}
     </div>
+{:else if message.kind === 'contextTrimmed'}
+    <!-- A timeline line: older lookups left the model's context so this turn fit its budget,
+         so the reply that follows saw less than the whole chat. -->
+    <div class="msg model-change" role="status">
+        {tString('askCmdr.event.contextTrimmed', { count: message.count })}
+    </div>
 {/if}
 
 <style>

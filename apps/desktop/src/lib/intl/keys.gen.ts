@@ -141,6 +141,7 @@ export type MessageKey =
   | 'askCmdr.error.timeout'
   | 'askCmdr.error.unavailable'
   | 'askCmdr.error.unfinishedReply'
+  | 'askCmdr.event.contextTrimmed'
   | 'askCmdr.event.modelChanged'
   | 'askCmdr.loadEarlier'
   | 'askCmdr.newChat'

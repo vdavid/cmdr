@@ -84,6 +84,10 @@ export type RailMessage =
     }
   /** A timeline line marking that the thread's effective model changed between turns. */
   | { kind: 'modelChange'; model: string }
+  /** A timeline line marking that older lookups left the model's context so this turn would
+   * fit its budget: the reply was written with less than the whole chat in view. Live-stream
+   * only — it describes one turn's assembly, so history doesn't replay it. */
+  | { kind: 'contextTrimmed'; count: number }
 
 export interface BulkRenameReviewRow {
   rowId: string
@@ -465,6 +469,21 @@ function handleStreamEvent(event: AskCmdrStreamEvent): void {
       return
     case 'modelChanged':
       applyModelChanged(event.model)
+      return
+    case 'contextTrimmed':
+      applyContextTrimmed(event.elidedResults)
+  }
+}
+
+/** Show that the budget pushed older lookups out of this turn's context. It goes before the
+ * streaming bubble, where the drop happened. */
+function applyContextTrimmed(elidedResults: number): void {
+  const assistant = currentAssistant()
+  const notice: RailMessage = { kind: 'contextTrimmed', count: elidedResults }
+  if (assistant) {
+    askCmdrState.messages.splice(askCmdrState.messages.indexOf(assistant), 0, notice)
+  } else {
+    askCmdrState.messages.push(notice)
   }
 }
 

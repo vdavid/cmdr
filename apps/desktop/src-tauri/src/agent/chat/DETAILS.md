@@ -14,7 +14,8 @@ Pull-tier docs for `agent/chat/`. Must-knows live in `CLAUDE.md`.
    timestamp marker (`[Fri 2026-07-11 09:15]`). Assistant prose survives verbatim; tool
    results `ELIDE_TOOL_RESULTS_AFTER_TURNS` or more turns back collapse to a typed stub
    (`{ elided_tool_result: true, tool, approx_tokens }`). Eliding prose is never done —
-   that's the soft-cap's job.
+   that's the soft-cap's job. The current turn's results never elide either (see
+   § Budget enforcement).
 4. **The envelope** opens the LATEST user turn only, as a tagged block (§9 field set):
    `[Sat 2026-07-12 21:30 · focused: <path> · cursor: <name|—> · <n> selected · volumes: <name> (<freshness>[, <connectivity>]), …]`.
 5. **The user's text**, following the envelope block in the same message.
@@ -33,31 +34,69 @@ in `context/tests.rs`.
 
 ## The pure core (`context.rs`)
 
-`assemble_prompt(prefix, transcript, envelope, offset) -> AssembledPrompt`. No clock, no
-I/O: the local UTC `offset`, the `ContextEnvelope`, and `CMDR.md` are values passed in.
-The runtime captures them; the core only formats. Timestamps render through `offset` (a
+`assemble_prompt(prefix, transcript, envelope, offset, budget) -> AssembledPrompt`. No
+clock, no I/O: the local UTC `offset`, the `ContextEnvelope`, `CMDR.md`, and the model's
+`budget` are values passed in. The runtime captures them; the core only formats. Timestamps render through `offset` (a
 single offset for the whole assembly — a DST boundary mid-thread is a hint-level
 imprecision, acceptable for v1). Token sizes are a `chars / CHARS_PER_TOKEN_ESTIMATE`
 heuristic, not a real tokenizer — enough to keep assembly in the budget band and to size
 the elision stub's hint.
 
-Budget enforcement is elide-only: `assemble_prompt` tightens the elision threshold turn by
-turn until the estimate fits `CONTEXT_TOKEN_BUDGET`, never touching prose. When even full
-elision can't fit (prose alone is over budget), it returns the best it can and the runtime
-shows the soft-cap nudge — summarize-on-overflow is deferred (spec §3).
+## Budget enforcement (elide-only, floored, and reported)
 
-## Constants table (§10; initial values, tune with use)
+`assemble_prompt` takes the resolved model's `budget` and tightens the elision threshold
+turn by turn until the estimate fits, never touching prose.
+
+**The floor: `MIN_ELISION_TURNS_BACK = 1`.** The loop stops there, and `build_messages`
+enforces it independently (`turns_back >= threshold.max(MIN_ELISION_TURNS_BACK)`), so no
+caller and no future threshold value can reach the turn in flight.
+
+**Decision: an honest budget overrun beats a blinded model.** Why: the loop used to run the
+threshold to 0, which elided the result that came back THIS turn. A user asked Ask Cmdr to
+rename 23 screenshots by their content in two batches; the second batch's `image_facts`
+result (32 KB, ~8.2k estimated tokens against an 8k budget) collapsed to
+`{ elided_tool_result: true }` while the instruction "name these by their content" still
+stood, so the model invented 12 filenames, which were approved and applied to real files.
+The stored tool result was correct; only the assembled prompt had lost it. So budget
+pressure now stops at history, and a turn whose own results don't fit goes over budget and
+says so.
+
+**Every cut is reported, never logged from here.** `AssembledPrompt::elision`
+(`ElisionFacts`: `elided_results`, `elided_tokens`, `threshold`, `estimated_tokens`,
+`budget`) crosses back as data, keeping the core pure. `runtime.rs`'s
+`announce_context_pressure` splits it in two: `budget_forced()` (history was dropped) warns
+AND emits one `AgentChatEvent::ContextTrimmed` per turn for the rail;
+`over_budget()` (nothing safe left to drop) warns only, because on a small local window it
+would otherwise fire every turn and the soft-cap nudge already covers "this chat is long".
+Summarize-on-overflow is still deferred (spec §3).
+
+## Constants table (initial values, tune with use)
+
+In `context.rs` (turn shape and compaction):
 
 - `MAX_TOOL_TURNS = 8` — per message; the loop stops before the 9th tool respond fires.
 - `MAX_WALL_TIME = 120s` — per message wall-clock ceiling across the whole loop; leaves room for reasoning-heavy
   OpenAI-compatible models while the tool-turn cap still prevents a runaway loop.
-- `CONTEXT_TOKEN_BUDGET = 8_000` — target assembled-prompt size (spec's 6–10k band).
 - `ELIDE_TOOL_RESULTS_AFTER_TURNS = 3` — tool results this many turns back (or more) elide.
+- `MIN_ELISION_TURNS_BACK = 1` — the floor above; the current turn's results never elide.
 - `THREAD_SOFT_CAP_MESSAGES = 40` — past this the UI nudges "start a fresh one?".
-- `CHARS_PER_TOKEN_ESTIMATE = 4` — the size-estimate divisor (also sizes the stub hint).
 
-They live at their definition sites in `context.rs`, each commented "initial value; tune
-with use". Bumping any is a conscious change (never a silent side effect).
+In `budget.rs` (how many tokens a prompt and a tool result may spend):
+
+- `CHARS_PER_TOKEN_ESTIMATE = 4` — the ONE size-estimate divisor (elision, the stub hint, every tool's self-cap).
+- `DEFAULT_PROMPT_TOKEN_BUDGET = 16_000` — an unrecognized model's budget. Conservative because guessing high is a hard
+  provider rejection mid-turn; still double the 8k that overflowed on a 12-file batch.
+- `LARGE_CONTEXT_PROMPT_BUDGET = 60_000` — a known ≥128k-window cloud family (`claude-`, `gpt-4o`/`gpt-4.1`/`gpt-5`,
+  `o3`/`o4-mini`, `gemini-2`). Far below the window on purpose: a prompt this size costs real money per call and dilutes
+  attention, while still holding a 200-row listing plus a full `image_facts` batch.
+- Local: `LOCAL_PROMPT_BUDGET_PERCENT = 60` of the server's configured window (`ai.localContextSize`, default 4096),
+  floored at `MIN_LOCAL_PROMPT_BUDGET = 2_000` — the reply comes out of the same window.
+- `MAX_TOOL_RESULT_TOKENS = DEFAULT_PROMPT_TOKEN_BUDGET / 2` — the most ONE tool result may spend. Derived from the
+  conservative default, not the resolved model, because a tool handler doesn't know the model (and may be answering an
+  external MCP client). Enforced via `mcp::executor::fit_to_result_budget`.
+
+Windows and prices both drift: re-verify the families at release time, like `agent::pricing`.
+Bumping any constant is a conscious change (never a silent side effect).
 
 ## The runtime (`runtime.rs`)
 

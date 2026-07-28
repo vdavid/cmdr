@@ -188,6 +188,10 @@
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
+  "askCmdr.event.contextTrimmed": "{count, plural, one {# frühere Abfrage} other {# frühere Abfragen}} entfernt, damit alles in den Kontext des Modells passt.",
+  "@askCmdr.event.contextTrimmed": {
+    "sourceHash": "baf10e5"
+  },
   "askCmdr.event.modelChanged": "Gewechselt zu {model}",
   "@askCmdr.event.modelChanged": {
     "sourceHash": "dd0a934"

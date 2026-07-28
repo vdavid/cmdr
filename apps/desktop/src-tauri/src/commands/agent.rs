@@ -45,6 +45,7 @@ use tokio::sync::mpsc::unbounded_channel;
 use tokio_util::sync::CancellationToken;
 
 use crate::agent::AgentDb;
+use crate::agent::chat::budget;
 use crate::agent::chat::context::{
     AttachmentKind, ContextEnvelope, EnvelopeAttachment, EnvelopeConnectivity, EnvelopeFreshness, EnvelopeVolume,
 };
@@ -118,6 +119,13 @@ pub enum AskCmdrStreamEvent {
     /// event row's identity rides along. The rail inserts the line BEFORE this turn's
     /// user bubble (the change happened between the turns).
     ModelChanged { message_id: i64, seq: i64, model: String },
+    /// The prompt budget pushed earlier tool results out of this turn's context, so the
+    /// reply was written with less than the full thread in view. One per turn; the rail
+    /// shows it as a timeline line.
+    ContextTrimmed {
+        elided_results: usize,
+        approx_tokens: usize,
+    },
 }
 
 /// The wire form of [`AgentErrorKind`] — the frontend renders each honestly.
@@ -230,6 +238,13 @@ fn to_wire_event(event: AgentChatEvent) -> AskCmdrStreamEvent {
         AgentChatEvent::ModelChanged { message_id, seq, model } => {
             AskCmdrStreamEvent::ModelChanged { message_id, seq, model }
         }
+        AgentChatEvent::ContextTrimmed {
+            elided_results,
+            approx_tokens,
+        } => AskCmdrStreamEvent::ContextTrimmed {
+            elided_results,
+            approx_tokens,
+        },
     }
 }
 
@@ -546,6 +561,18 @@ fn provider_and_model(model_override: Option<&str>) -> (ProviderTag, String) {
     (provider, model)
 }
 
+/// The assembled-prompt token budget for the resolved slot. A cloud model reads its family
+/// budget from the pure table; a local model's window is the user's `ai.localContextSize`
+/// setting, so only this layer (which may touch app state) can resolve it honestly.
+fn resolve_prompt_budget(provider: ProviderTag, model: &str) -> usize {
+    let budget = match provider {
+        ProviderTag::Local => budget::prompt_budget_for_local_context(crate::ai::state::get_local_context_size()),
+        _ => budget::prompt_budget(provider, model),
+    };
+    log::debug!(target: LOG_TARGET, "prompt budget for {model}: a {budget}-token ceiling");
+    budget
+}
+
 /// Capture the context envelope from live app state (snapshot-at-send). Focused pane path
 /// resolves from the focused SIDE's directory; volumes come from `snapshot_volumes`;
 /// `attachments` are the references the user attached for this turn (path + kind only).
@@ -772,11 +799,13 @@ async fn drive_turn(
             }
         }
     };
+    let prompt_budget = resolve_prompt_budget(provider, &model);
     let drive = runtime.send_message(
         &app,
         llm.as_ref(),
         provider,
         model,
+        prompt_budget,
         Some(conversation_id),
         text,
         envelope,
