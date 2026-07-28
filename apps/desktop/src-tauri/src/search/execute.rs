@@ -129,24 +129,15 @@ pub(crate) fn run_blocking(query: SearchQuery, policy: ColdVolumePolicy) -> Resu
     let base_limit = query.limit.min(1000) as usize;
 
     // Load every cold target AT ONCE rather than one after another: each is a
-    // multi-second read of a different DB file, and they don't contend.
-    let loads: Vec<(Target, VolumeLoad)> = if targets.len() > 1 {
-        targets
-            .into_par_iter()
-            .map(|t| {
-                let load = volumes::ensure_volume(&t.volume_id);
-                (t, load)
-            })
-            .collect()
-    } else {
-        targets
-            .into_iter()
-            .map(|t| {
-                let load = volumes::ensure_volume(&t.volume_id);
-                (t, load)
-            })
-            .collect()
-    };
+    // multi-second read of a DIFFERENT DB file, so they overlap cleanly. Order is
+    // preserved by `collect`, and the merge below sorts globally anyway.
+    let loads: Vec<(Target, VolumeLoad)> = targets
+        .into_par_iter()
+        .map(|target| {
+            let load = volumes::ensure_volume(&target.volume_id);
+            (target, load)
+        })
+        .collect();
 
     let mut merged: Vec<RankedEntry> = Vec::new();
     let mut total: u64 = 0;
