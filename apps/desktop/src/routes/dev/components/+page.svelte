@@ -12,6 +12,7 @@
     import ComboboxSection from './sections/ComboboxSection.svelte'
     import SliderSection from './sections/SliderSection.svelte'
     import NumberInputSection from './sections/NumberInputSection.svelte'
+    import TextInputSection from './sections/TextInputSection.svelte'
     import PopoverSection from './sections/PopoverSection.svelte'
     import MenuSection from './sections/MenuSection.svelte'
     import FilterPopoverSection from './sections/FilterPopoverSection.svelte'
@@ -53,6 +54,7 @@
         'combobox',
         'slider',
         'number-input',
+        'text-input',
         'popover',
         'menu',
         'filter-popover',
@@ -177,6 +179,7 @@
         <ComboboxSection />
         <SliderSection />
         <NumberInputSection />
+        <TextInputSection />
         <PopoverSection />
         <MenuSection />
         <FilterPopoverSection />

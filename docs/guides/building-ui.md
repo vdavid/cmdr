@@ -30,12 +30,16 @@ is in `../design-system.md` § Soft sheets.
 
 ## Form controls
 
-Never write a raw `<input type="checkbox">`, `<input type="radio">`, or `<select>`; the `cmdr/prefer-ui-primitive`
-ESLint rule rejects them. Native controls render with the OS accent and gray out when the window loses focus, which
-looks broken next to the app's accent-token chrome. The same rule also rejects hand-rolling the control instead: a
-`<button>` or `<div>` carrying `role="switch"` / `role="checkbox"` / `role="radio"` re-implements state, keyboard, and
-focus wiring the primitive already owns. Use these instead:
+Never write a raw `<input>`, `<textarea>`, or `<select>`; the `cmdr/prefer-ui-primitive` ESLint rule rejects them.
+Native controls render with the OS accent and gray out when the window loses focus, which looks broken next to the app's
+accent-token chrome, and a hand-rolled text field re-invents border, radius, padding, and focus-ring CSS that then
+drifts. The same rule also rejects hand-rolling the control instead: a `<button>` or `<div>` carrying `role="switch"` /
+`role="checkbox"` / `role="radio"` re-implements state, keyboard, and focus wiring the primitive already owns. Use these
+instead:
 
+- `TextInput`: any single-line text field (text, password, email, search, url, number). Takes a `radius`, an optional
+  leading icon, and a trailing snippet for clear buttons and reveal toggles.
+- `TextArea`: the multi-line sibling, same chrome.
 - `Checkbox`: a single on/off box.
 - `RadioGroup`: one choice from a small set of mutually exclusive options.
 - `ToggleGroup`: a segmented control (tabs, or a single-select value picker). Prefer it over `RadioGroup` when the

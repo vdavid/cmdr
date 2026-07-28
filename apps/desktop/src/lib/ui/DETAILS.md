@@ -11,6 +11,8 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 - **`Button.svelte`**: Styled button with variant and size props
 - **`Select.svelte`**: Presentational Ark `Select`: items-driven single-pick, the house dropdown (native-`<select>`
   replacement)
+- **`TextInput.svelte`** / **`TextArea.svelte`**: The house text fields (single-line / multi-line); chrome in `app.css` §
+  "Text fields", shared prop types in `text-field-types.ts`
 - **`Combobox.svelte`**: Presentational Ark `Combobox`: text-field-with-suggestions, async list, free text (model
   picker)
 - **`Popover.svelte`**: Generic positioned floater: frosted glass, auto-flip, focus trap, Esc-scoped close
@@ -334,6 +336,69 @@ a11y-contrast checker (`scripts/check-a11y-contrast/dropdown_states.go`) keys on
 `.select-item[data-highlighted] .option-description` selector + the `--color-accent` / `--color-accent-fg` tokens. The
 highlighted item colors must stay on those accent tokens or the contrast matrix breaks. No entrance animation; any
 future polish anim must gate behind `prefers-reduced-motion`.
+
+## TextInput and TextArea
+
+The house text fields. Every raw `<input type="text|password|email|search|url|number">` and `<textarea>` in the app
+renders through one of them (`cmdr/prefer-ui-primitive` enforces it), which is the whole point: a field's border,
+radius, padding, caret, selection, and focus ring are defined once and restyled once.
+
+Props, variants, and the "when to reach for what" table: `docs/design-system.md` § "Text input and text area". This
+section is the decisions behind them.
+
+**Decision: the chrome is global CSS, not scoped to a component.** The `.text-field*` classes live in `app.css` §
+"Text fields" rather than inside `TextInput.svelte`. Svelte scopes a component's `<style>` to that component, so two
+primitives can't share one — and a `TextArea` that re-declares the frame would drift from `TextInput` the first time
+either is touched. Four tokens (`--radius-input`, `--spacing-input`, `--font-size-input`, `--shadow-focus-solid`) sit
+above the classes so the Ark-backed fields can read the same contract. Precedent: `.spinner*`, `.cmdr-tooltip*`, and
+`query-ui/filter-chips/filter-popover.css` are all global for the same reason.
+
+**Decision: `TextArea` is a sibling, not a `multiline` prop.** A textarea has `rows` and `resize` and no `type` or
+leading icon, and `bind:this` has to resolve to `HTMLTextAreaElement` for the call sites that focus and select
+imperatively (`FeedbackDialog`, `ErrorReportDialog`, `AskCmdrComposer`). Folding both into one component would leave
+half the props meaningless at every call site and force a union element type on all of them. They share the stylesheet,
+which is what actually keeps them identical.
+
+**Decision: the value is one-way + `oninput`, not `bind:value`** (load-bearing, don't "fix" it). Svelte refuses
+`bind:value` next to a dynamic `type`, and `type` genuinely varies at runtime: `SettingPasswordInput` flips
+`password` ↔ `text` as the field gains and loses focus so an unfocused field can show a masked preview with the last
+four characters. A ladder of static-`type` branches would remount the input on that flip and drop the focus that
+triggered it. `value` stays `$bindable`, so `bind:value` keeps working; the semantics match Svelte's own (the field
+follows whatever the caller renders, and a caller that silently rejects a keystroke without changing `value` keeps the
+typed text — same as a raw `value={x}` + `oninput` today).
+
+**Decision: the frame is a flex row, so affixes are real siblings.** The wrapper carries the border, background, radius,
+padding, and the `:focus-within` ring; the leading icon and the trailing snippet are flex children of it. That's what
+replaced the settings sidebar's hand-tuned `left: calc(var(--spacing-2xl) + var(--spacing-xs))` icon offset, which was
+positioned against the CONTAINER rather than the input and had a comment explaining the arithmetic. Trailing buttons
+size to the text line (20 px square), not to the frame, so a clear button can't stretch the field taller than every
+other one.
+
+**`:focus-within`, not `:focus-visible`** — the ring must show for mouse focus too (`docs/design-system.md` § Focus
+indicators), and it has to fire when focus lands on the inner control while the ring is drawn on the frame.
+
+**`chromeless` inherits the host's type scale** (`font: inherit` on the control). That's what lets the command palette's
+Spotlight-style `--font-size-lg` query line and a dense inline field share one primitive: the host owns the surface AND
+the size, the primitive owns the caret, selection, placeholder, and passthrough.
+
+**Two inline editors deliberately stay raw**, each carrying an `eslint-disable-next-line cmdr/prefer-ui-primitive` with
+its reason:
+
+- `file-explorer/rename/InlineRenameEditor.svelte`: sizes to the file row (`height: 100%`, `font: inherit`, 2 px side
+  padding), paints a severity-colored 2 px border with a live glow plus a shake animation on the element itself, and its
+  `.rename-input` class is a load-bearing hit-test hook (`FilePane`, both views, and the E2E suite query
+  `.closest('.rename-input')`). The framed primitive's padding alone would break row height.
+- `file-explorer/navigation/VolumeBreadcrumb.svelte`'s favorite-rename field: a dense dropdown row that inherits the
+  row's font and carries a RESTING accent border to read as "editing", where the primitive's border turns accent only on
+  focus.
+
+The litmus for a future raw field: migrate when the primitive reads same-or-better; keep it raw (and note it here) when
+the field's geometry is dictated by a row it must fit inside.
+
+**`Combobox` and `NumberInput` don't delegate.** Both render Ark UI's own input component, not a literal `<input>`, so
+wrapping `TextInput` around them would mean giving up Ark's collection, keyboard, and ARIA wiring. They read the four
+text-field tokens instead. When the field look changes, change the tokens; if you change a `.text-field*` class in a way
+the tokens don't carry, mirror it in both.
 
 ## Combobox
 
@@ -845,8 +910,8 @@ share the width evenly regardless of label length, and `padding-block: 0.5em` so
 inline control (`em`, so the cell height tracks the label's font size). Default off, because a segmented control
 normally sizes to its labels and sits inline beside other controls. Turn it on when the group is a standalone row that
 should line up with the fields below it, as `TransferDialog`'s Copy / Move / Compress row and the query dialogs'
-`ModeChips` row do. Cells only split evenly down to their own content size (`min-width: auto` on a flex item), so a
-long option like "AI Ask anything ⌥A" keeps its width and the shorter cells give way.
+`ModeChips` row do. Cells only split evenly down to their own content size (`min-width: auto` on a flex item), so a long
+option like "AI Ask anything ⌥A" keeps its width and the shorter cells give way.
 
 The group's ends are fully rounded (`--radius-full` on `.tg-root` plus `overflow: hidden`, which clips the first and
 last cells to the pill, so no per-cell corner rounding is needed).

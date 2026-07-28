@@ -8,7 +8,8 @@ simple ones.
 - Dialogs: `ModalDialog.svelte` (overlay + drag + Escape + focus + MCP tracking), `focus-trap.ts` (`use:trapFocus`),
   `dialog-registry.ts` (`SOFT_DIALOG_REGISTRY`), `AlertDialog.svelte`.
 - Primitives: `Icon`, `Spinner`, `Button`, form controls (`ToggleGroup` is segmented, ≠ `RadioGroup`), `Select`,
-  `Combobox`, `ShortcutChip`, `toast/`, more in DETAILS § Key files. Tooltip is the sibling `../tooltip/tooltip.ts`.
+  `Combobox`, `TextInput` + `TextArea` (+ `text-field-types.ts`), `ShortcutChip`, `toast/`, more in DETAILS § Key files.
+  Tooltip is the sibling `../tooltip/tooltip.ts`.
 
 ## Must-knows
 
@@ -36,6 +37,13 @@ simple ones.
   `dropdown_states.go`'s contrast matrix depend on it. Don't rename or recolor off the accent tokens without both.
 - **`Combobox` is a text-field-with-suggestions, not a value-bound select**: drive its text off `inputValue`, never off
   `value` / `items` (blanks the field on an empty list or a custom name).
+- **Text-field chrome lives in `app.css` § "Text fields"**, not in `TextInput` / `TextArea`: both render the same
+  `.text-field*` classes, so restyling every field is ONE edit. `Combobox` / `NumberInput` can't delegate (Ark renders
+  their input) and read the same `--radius-input` / `--spacing-input` / `--font-size-input` / `--shadow-focus-solid`
+  tokens; keep all five in sync.
+- **`TextInput` is one-way `value` + `oninput`, never `bind:value` internally**: `type` is dynamic (the password field
+  flips on focus) and Svelte forbids the pair. `bind:value` still works for callers. Shared prop types live in
+  `text-field-types.ts`, NOT a `<script module>` (a type from a `.svelte` file is `any` to the lint service).
 - **Single-component traps**, each with its DETAILS §: `StatusBadge`'s class is `feature-status-badge`, NOT
   `status-badge` (Debug's `:global(.status-badge)` would leak onto it), status via `getBadgeStatus(featureId)`; `Slider`
   never renders `Slider.HiddenInput` (axe nested-interactive), and its readout, ticks, and end labels stay

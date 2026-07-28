@@ -45,6 +45,7 @@
         | 'components-combobox'
         | 'components-slider'
         | 'components-number-input'
+        | 'components-text-input'
         | 'components-popover'
         | 'components-filter-popover'
         | 'components-chip'
@@ -99,6 +100,7 @@
                 { id: 'components-combobox', label: 'Combobox' },
                 { id: 'components-slider', label: 'Slider' },
                 { id: 'components-number-input', label: 'Number input' },
+                { id: 'components-text-input', label: 'Text input' },
                 { id: 'components-popover', label: 'Popover' },
                 { id: 'components-filter-popover', label: 'Filter popover' },
                 { id: 'components-chip', label: 'Chip' },

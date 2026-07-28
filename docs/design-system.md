@@ -547,18 +547,63 @@ chrome. Only use one when the contract genuinely needs it.
 
 ### Inputs (app)
 
-```css
-padding: 8px 12px;
-border: 1px solid var(--color-border);
-border-radius: var(--radius-sm); /* 4px, tighter than buttons, matches macOS text fields */
-font-size: var(--font-size-md); /* 14px */
-line-height: 1.4;
-background: var(--color-bg-primary);
-transition: border-color var(--transition-base);
-```
+Every text-entry surface renders through `TextInput` / `TextArea` (`lib/ui/`), so this is a description of what those
+primitives already do, not a recipe to copy into a component. The chrome itself lives in exactly one place: `app.css` §
+"Text fields" (the `.text-field*` classes), keyed off four tokens.
 
-Focus: `border-color: var(--color-accent); box-shadow: var(--shadow-focus);` Error:
-`border-color: var(--color-error); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error), transparent 85%);`
+| Token                  | Value                    | Role                                                             |
+| ---------------------- | ------------------------ | ---------------------------------------------------------------- |
+| `--radius-input`       | `var(--radius-lg)` (8px) | Resting corner, ~25% of the field height: the macOS text field   |
+| `--spacing-input`      | `var(--spacing-sm)` (8px) | Equal on all four sides, so the field reads evenly weighted      |
+| `--font-size-input`    | `var(--font-size-md)`    | 14px, with `line-height: 1.2` (the frame's padding sets height)  |
+| `--shadow-focus-solid` | `0 0 0 2px accent`       | The focus ring: thicker and solid, not the translucent glow      |
+
+Resting: a 1px `--color-border` hairline on `--color-bg-primary`. Focus (`:focus-within` on the frame, so a leading icon
+or trailing button is inside the ring): `border-color: var(--color-accent)` plus `--shadow-focus-solid`, a 3px solid
+accent edge in total. Invalid swaps both for `--color-error`; the caution state swaps both for `--color-warning`.
+
+Two conventions the fields establish app-wide, both global rules in `app.css`:
+
+- **Accent caret**: `caret-color: var(--color-accent)` on every `input` / `textarea`, including the Ark-rendered ones.
+- **Accent selection**: `::selection` fills with `--color-accent-selection` (the accent at 30%, heavier than
+  `--color-accent-subtle`, which is a surface tint) and keeps `--color-text-primary` on top.
+
+`Combobox` and `NumberInput` render Ark UI's own input, so they can't delegate to `TextInput` without losing Ark's
+wiring. They read the same four tokens instead, which is what keeps every field in the app identical.
+
+### Text input and text area (app)
+
+`TextInput` and `TextArea` (`lib/ui/`) are the house text fields: every raw `<input type="text|password|email|search|url">`
+and `<textarea>` in the app renders through one of them, which is what makes the § Inputs look above restyleable in a
+single edit. Both are presentational: no validation, debouncing, or submit logic, so the caller keeps its own state and
+reaches the element through `bind:inputElement` / `bind:textareaElement` for imperative focus and select.
+
+**`TextInput`** props: `value` (bindable, or one-way alongside `oninput` for a controlled field), `type`
+(`text` | `password` | `email` | `search` | `url` | `tel` | `number`), `radius`
+(`sm` | `md` | `lg` (default) | `full`), `variant` (`default` | `chromeless`), `invalid`, `warning`, `mono`,
+`leadingIcon` (an `IconName`, decorative), a `trailing` snippet (clear buttons, reveal toggles), `ariaLabel`,
+`containerStyle` (one-off layout sizing only), and `inputElement`. Everything else — `id`, `placeholder`, `disabled`,
+`readonly`, `autocomplete`, `spellcheck`, `maxlength`, every `on*` and `aria-*` — passes straight through to the
+`<input>`.
+
+**`TextArea`** is the multi-line sibling, sharing the exact same chrome. Same props minus `type` / `leadingIcon`, plus
+`rows` and `resizable` (the vertical grip, on by default). It's a sibling rather than a `multiline` prop because the two
+have genuinely different contracts, and `bind:this` has to resolve to the right element type for the call sites that
+focus and select.
+
+**When to reach for what:**
+
+- `radius="full"` + `leadingIcon="search"` is the search pill (the Settings sidebar, the Ask Cmdr session list). The
+  primitive owns the icon's geometry as a real flex sibling, so there are no hand-tuned offsets to keep in sync.
+- `variant="chromeless"` is for a field whose host already draws a surface (the command palette's full-bleed query line).
+  It drops the frame, padding, and focus ring, and inherits the host's type scale, so the host can size the text.
+- `mono` for paths, date-format strings, and keys. The placeholder stays in the system face: it's prose, not data.
+- `readonly` quiets the fill without dimming the text, so the value stays copyable.
+
+Two inline editors stay raw on purpose, each with an `eslint-disable-next-line cmdr/prefer-ui-primitive` and a reason:
+`InlineRenameEditor` (row-height, severity-colored 2px border, glow and shake animations, and a `.rename-input` class
+that's a load-bearing hit-test hook) and `VolumeBreadcrumb`'s favorite-rename field (dense dropdown row, inherits the
+row's font, resting accent border).
 
 ### Checkbox and radio group (app)
 
