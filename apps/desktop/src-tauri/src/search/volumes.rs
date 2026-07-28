@@ -518,11 +518,22 @@ pub(crate) fn is_warm(volume_id: &str) -> bool {
 /// background instead of waiting seconds for it (see `execute.rs`'s cold policy).
 /// Single-flighted like every other load, so a warm-up already in progress is joined,
 /// not duplicated.
+///
+/// Declines once the dialog has closed: nobody is waiting on the result, and pulling
+/// in hundreds of MB the idle timer would immediately drop is exactly the resource
+/// waste the timers exist to prevent. (A load already in flight is stopped instead by
+/// `cancel_active_loads`; this covers the one that hadn't started yet.)
 pub(crate) fn warm_in_background(volume_id: String, on_loaded: impl FnOnce(u64) + Send + 'static) {
-    tauri::async_runtime::spawn_blocking(move || match ensure_volume(&volume_id) {
-        VolumeLoad::Loaded(v) => on_loaded(v.index.entries.len() as u64),
-        VolumeLoad::NotIndexed => log::debug!(target: "search", "background warm: '{volume_id}' has no index"),
-        VolumeLoad::Failed(e) => log::debug!(target: "search", "background warm of '{volume_id}' stopped: {e}"),
+    tauri::async_runtime::spawn_blocking(move || {
+        if !DIALOG_OPEN.load(Ordering::Relaxed) {
+            log::debug!(target: "search", "background warm of '{volume_id}' skipped, the dialog closed");
+            return;
+        }
+        match ensure_volume(&volume_id) {
+            VolumeLoad::Loaded(v) => on_loaded(v.index.entries.len() as u64),
+            VolumeLoad::NotIndexed => log::debug!(target: "search", "background warm: '{volume_id}' has no index"),
+            VolumeLoad::Failed(e) => log::debug!(target: "search", "background warm of '{volume_id}' stopped: {e}"),
+        }
     });
 }
 

@@ -95,7 +95,9 @@ Loading a volume's arena is a multi-second, multi-hundred-MB read (2.4 s warm pa
 - **`DeferColdVolumes`** (the search dialog): a cold, unscoped, non-root target is dropped from this run and returned in
   `RunOutcome::deferred_volumes`. `commands::search::search_files` warms each one via `volumes::warm_in_background` and
   emits `SearchIndexReadyEvent` as it lands; the dialog's existing ready listener re-runs the query, so the volume's
-  matches fold into results that already came back. Converges: once warm, nothing defers and nothing re-emits.
+  matches fold into results that already came back. Converges: once warm, nothing defers and nothing re-emits. A warm-up
+  that hasn't started when the dialog closes declines (nobody's waiting, and the idle timer would drop the arena
+  straight away); one already in flight is stopped by `cancel_active_loads`.
 - **`Wait`** (MCP `search` / `ai_search`): a tool call gets ONE shot at an answer with no dialog to re-run it, so it
   waits for everything and stays complete.
 
