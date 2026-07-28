@@ -7,21 +7,16 @@
  */
 
 import { test, expect } from './fixtures.js'
-import {
-  ensureAppReady,
-  pressKey,
-  pollUntil,
-  dispatchMenuCommand,
-  LOCAL_VOLUME_NAME,
-  getFixtureRoot,
-} from './helpers.js'
+import { ensureAppReady, pollUntil, dispatchMenuCommand, LOCAL_VOLUME_NAME, getFixtureRoot } from './helpers.js'
 import { ensureMcpClient, mcpReadResource } from '../e2e-shared/mcp-client.js'
-import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
+import { SEARCH_OVERLAY, SEARCH_INPUT, openSearchDialog, type PageLike } from './search-helpers.js'
 
-type PageLike = TauriPage | BrowserPageAdapter
-
-const SEARCH_OVERLAY = '.search-overlay'
-const SEARCH_INPUT = '.search-overlay input'
+/**
+ * The query bar's Run button (`QueryBar.svelte` renders the house `Button`, so `.btn`).
+ * The chevron beside it is `.recent-trigger`, which carries no `.btn`, so this matches
+ * the Run button alone.
+ */
+const RUN_BUTTON = '.search-overlay .query-bar button.btn'
 // The "Show all in main window" footer button promotes the result set to a snapshot
 // pane. The "footer buttons always visible" rule keeps the button in the DOM even when
 // there are no results (disabled); `:not([disabled])` is the "actually clickable"
@@ -39,11 +34,6 @@ const OPEN_IN_PANE_BUTTON = '.search-overlay [aria-label="Show all in main windo
  * snapshot pane — the Name column shows the full path instead.
  */
 const SNAPSHOT_PANE_PATH_HEADER = '[aria-label="Right file pane"] .full-list .header-row'
-
-async function openSearchDialog(tauriPage: PageLike): Promise<void> {
-  await dispatchMenuCommand(tauriPage, 'search.open')
-  await tauriPage.waitForSelector(SEARCH_OVERLAY, 3000)
-}
 
 /**
  * Reads the right pane's active-tab path from the MCP `cmdr://state` resource.
@@ -213,17 +203,19 @@ async function resetRightPaneToLocalIfNeeded(
 
 /**
  * Types into the search input and waits for results to land. The dialog
- * auto-applies on a 1 s debounce in filename / regex modes; pressing Enter is
- * the synchronous path that bypasses the debounce, which is what we want for
- * a deterministic test.
+ * auto-applies on a 1 s debounce in filename / regex modes; the Run button is
+ * the synchronous path that bypasses the debounce, which is what we want for a
+ * deterministic test.
  *
- * We set `.value` directly and fire `input` so the bound query state
- * updates, then `pressKey('Enter')` dispatches a real keydown event on the
- * focused input. The dialog's overlay-level handler reads
- * `document.activeElement === queryInputElement` to decide whether to run
- * `executeSearch`, so the input MUST be the active element. The dialog
- * focuses its input on mount, but reopens during the same session can race
- * with onMount focus; we click the input first to be deterministic.
+ * ❌ Don't press Enter here. `⏎` ownership swaps (`deriveEnterAction`): once
+ * results exist AND the last dialog event is `results-arrived` / `cursor-moved`,
+ * bare Enter means "go to file", which closes the dialog and navigates the pane.
+ * Reopening the dialog in a session that already ran a query re-runs it on mount,
+ * so those results can land AFTER this helper's `input` event and flip ownership
+ * out from under the keypress; the run then never happens and the wait below
+ * times out on a dialog that just closed. `runFromButton` has no such ambiguity.
+ * (`⏎` ownership itself is pinned by `enter-action.test.ts` and the QueryDialog
+ * Vitest suite, so nothing is lost by not exercising it here.)
  */
 async function typeAndRunSearch(tauriPage: PageLike, query: string): Promise<void> {
   await tauriPage.evaluate(`(function(){
@@ -233,8 +225,8 @@ async function typeAndRunSearch(tauriPage: PageLike, query: string): Promise<voi
         el.value = ${JSON.stringify(query)};
         el.dispatchEvent(new Event('input', { bubbles: true }));
     })()`)
-  await pressKey(tauriPage, 'Enter')
-  // The footer's "Open in pane" only renders once `resultCount > 0`. Waiting
+  await tauriPage.click(RUN_BUTTON)
+  // The footer's "Open in pane" only enables once `resultCount > 0`. Waiting
   // for the button is the observable signal that the search ran and landed
   // results, no magic timer.
   await tauriPage.waitForSelector(OPEN_IN_PANE_BUTTON, 5000)
