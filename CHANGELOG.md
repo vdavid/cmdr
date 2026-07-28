@@ -5,6 +5,64 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.36.2] - 2026-07-28
+
+The highlights:
+
+- A 5x drive reindexing speedup!
+- Very significant RAM use optimizations, incl. a 85% decrease for search.
+- Also some convenience fixes in the renaming flow.
+
+### Changed
+
+- Make checking a drive for changes dramatically faster on macOS (it used to take ~20 minutes on a boot disk)
+  ([cbde9d89](https://github.com/vdavid/cmdr/commit/cbde9d89))
+- Cut search's resident folder-ranking memory by 85% on a NAS-sized drive, 58 MB down to 9 MB
+  ([68237a9b](https://github.com/vdavid/cmdr/commit/68237a9b))
+- Cut background folder scoring's memory by two thirds on a NAS-sized drive, 256 MB down to 84 MB
+  ([0c5296dd](https://github.com/vdavid/cmdr/commit/0c5296dd),
+  [5b91dadc](https://github.com/vdavid/cmdr/commit/5b91dadc))
+- Say "Checking for changes" when Cmdr is checking a drive rather than rebuilding its index, and time each kind of scan
+  separately so the estimate is right ([022a6160](https://github.com/vdavid/cmdr/commit/022a6160))
+- Show one download toast and one macOS notification per burst, always naming the newest file
+  ([6a8bf70e](https://github.com/vdavid/cmdr/commit/6a8bf70e),
+  [81d69c64](https://github.com/vdavid/cmdr/commit/81d69c64))
+- Rewrite the drive-indexing settings copy in all nine languages so it reads natively
+  ([b3ab11f8](https://github.com/vdavid/cmdr/commit/b3ab11f8))
+
+### Fixed
+
+- Fix clicking or dragging inside the rename field cancelling the rename, and make clicking away save, like Finder
+  ([d8dcb89c](https://github.com/vdavid/cmdr/commit/d8dcb89c))
+- Show the server's own reason when an error report fails to send
+  ([08183074](https://github.com/vdavid/cmdr/commit/08183074))
+
+### Non-app
+
+- Add doc checks that catch pointers at headings and source files that no longer exist, then repair the 75 they found
+  ([c66b02e1](https://github.com/vdavid/cmdr/commit/c66b02e1),
+  [8cb06924](https://github.com/vdavid/cmdr/commit/8cb06924),
+  [d2e8b0f2](https://github.com/vdavid/cmdr/commit/d2e8b0f2),
+  [06b3e504](https://github.com/vdavid/cmdr/commit/06b3e504),
+  [5944cb36](https://github.com/vdavid/cmdr/commit/5944cb36))
+- Split the folder-importance and image-index docs so each area carries its own guardrails instead of one shared ceiling
+  ([0b5f15fc](https://github.com/vdavid/cmdr/commit/0b5f15fc),
+  [5d6ca822](https://github.com/vdavid/cmdr/commit/5d6ca822),
+  [79720e7d](https://github.com/vdavid/cmdr/commit/79720e7d))
+- Replace rotting file inventories across a dozen module docs with the layout facts codegraph can't answer
+  ([b2e7abeb](https://github.com/vdavid/cmdr/commit/b2e7abeb),
+  [1f5eef34](https://github.com/vdavid/cmdr/commit/1f5eef34),
+  [28b61d5e](https://github.com/vdavid/cmdr/commit/28b61d5e),
+  [fd2d6ab6](https://github.com/vdavid/cmdr/commit/fd2d6ab6))
+- Plan the index-crate extraction, giving the hardest 28% of the Rust a real boundary
+  ([dd98eb57](https://github.com/vdavid/cmdr/commit/dd98eb57),
+  [f76cae0d](https://github.com/vdavid/cmdr/commit/f76cae0d),
+  [5ef7c4e3](https://github.com/vdavid/cmdr/commit/5ef7c4e3))
+- Catalog the 19 flaky tests that make a red `rust-tests` run meaningless
+  ([fd479988](https://github.com/vdavid/cmdr/commit/fd479988))
+- Fix the Linux build breaking on a macOS-only dependency that wasn't declared as one
+  ([aabc4cb1](https://github.com/vdavid/cmdr/commit/aabc4cb1))
+
 ## [0.36.1] - 2026-07-25
 
 Cmdr could balloon to tens of gigabytes of memory within minutes of launching; that's fixed. Network drives stop
