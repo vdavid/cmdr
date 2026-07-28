@@ -6,10 +6,11 @@
      * `lib/ui/ToggleGroup.svelte` primitive with `semantics="tabs"` so the row exposes
      * `role="tablist"` ARIA (the active option drives a UI mode, not a stored value).
      *
-     * Search renders the full set:
+     * Both dialogs render the same set:
      *     [AI Ask anything ⌥A] [Filename ⌥F] [Content (disabled)] [Regex ⌥R]
-     * When AI is disabled, the AI chip is hidden. Selection renders the same set minus
-     * the disabled Content chip.
+     * When AI is disabled, the AI chip is hidden and the row is three cells wide.
+     * The row spans the dialog's full width (`fullWidth`) so it lines up with the query
+     * bar above it; cells split the width evenly down to their content size.
      *
      * The Content chip stays visible-disabled with a "Coming soon" tooltip. It has no
      * keyboard shortcut. Hostile-disabled controls (shortcut that no-ops) are worse than
@@ -77,7 +78,8 @@
 </script>
 
 <!-- ToggleGroup's `.tg-root` carries the visual chrome shared with Settings's segmented
-     controls. The wrapper adds the chip-row's outer padding + background. -->
+     controls. The wrapper adds the chip-row's outer padding + background, and the group
+     stretches across it. -->
 <div class="mode-chips-wrap">
     <ToggleGroup
         semantics="tabs"
@@ -86,6 +88,7 @@
         onChange={handleChange}
         ariaLabel={tString('queryUi.mode.groupAria')}
         {disabled}
+        fullWidth
     />
 </div>
 
@@ -93,10 +96,8 @@
     .mode-chips-wrap {
         display: flex;
         align-items: center;
-        gap: var(--spacing-xs);
         padding: var(--spacing-sm) var(--spacing-lg);
         background: var(--color-bg-primary);
-        flex-wrap: wrap;
     }
 
     /* The query dialogs run one font-size step larger than Settings (the dialog is the

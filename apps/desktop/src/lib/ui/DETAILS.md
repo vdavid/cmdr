@@ -844,8 +844,9 @@ Props:
 share the width evenly regardless of label length, and `padding-block: 0.5em` so a standalone row reads lighter than an
 inline control (`em`, so the cell height tracks the label's font size). Default off, because a segmented control
 normally sizes to its labels and sits inline beside other controls. Turn it on when the group is a standalone row that
-should line up with the fields below it, as `TransferDialog`'s Copy / Move / Compress row does (the only consumer
-today).
+should line up with the fields below it, as `TransferDialog`'s Copy / Move / Compress row and the query dialogs'
+`ModeChips` row do. Cells only split evenly down to their own content size (`min-width: auto` on a flex item), so a
+long option like "AI Ask anything ⌥A" keeps its width and the shorter cells give way.
 
 The group's ends are fully rounded (`--radius-full` on `.tg-root` plus `overflow: hidden`, which clips the first and
 last cells to the pill, so no per-cell corner rounding is needed).
