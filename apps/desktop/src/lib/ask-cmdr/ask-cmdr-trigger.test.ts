@@ -244,6 +244,17 @@ describe('sendMessage + streaming', () => {
     expect(askCmdrState.messages.map((m) => m.kind)).toEqual(['modelChange', 'user', 'assistant'])
     expect(askCmdrState.messages[0]).toEqual({ kind: 'modelChange', model: 'model-two' })
   })
+
+  it('a contextTrimmed event tells the user the reply saw less than the whole chat', () => {
+    // The backend drops older tool results when the prompt budget is tight. That must be
+    // visible: an unannounced drop is what let a reply written without the evidence read
+    // like a normal one.
+    sendMessage('now the other 12')
+    fire({ type: 'assistantStarted' })
+    fire({ type: 'contextTrimmed', elidedResults: 2, approxTokens: 5_400 })
+    expect(askCmdrState.messages.map((m) => m.kind)).toEqual(['user', 'contextTrimmed', 'assistant'])
+    expect(askCmdrState.messages[1]).toEqual({ kind: 'contextTrimmed', count: 2 })
+  })
 })
 
 describe('rename review listing updates', () => {

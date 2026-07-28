@@ -37,6 +37,11 @@ stays simple:
   UI branches on `errorKind`, never on `detail`.
 - `modelChanged` → insert a `{ kind: 'modelChange' }` timeline line BEFORE the current user bubble (the switch happened
   between the turns; the backend already persisted the event row).
+- `contextTrimmed` → insert a `{ kind: 'contextTrimmed' }` timeline line before the streaming bubble: the prompt budget
+  pushed older tool results out of this turn, so the reply that follows saw less than the whole chat. At most one per
+  turn (the backend dedupes). Live-stream only, deliberately NOT persisted: it describes one assembly, not thread
+  content, so reloading the thread doesn't replay it. Rationale (why the drop must be loud at all):
+  `src-tauri/src/agent/chat/DETAILS.md` § Budget enforcement.
 
 Every terminal path uses the same assistant finalizer. It clears thinking/stalled state and removes tool rows that never
 received `toolCallFinished`, while retaining completed tool history. This also covers local cancellation, the

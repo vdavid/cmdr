@@ -45,7 +45,7 @@ pub fn operations_list_schema() -> Value {
             },
             "limit": {
                 "type": "integer",
-                "description": "Max operations to return. Default 50, max 1000."
+                "description": "Max operations to return. Default 50, max 1000. One response also has a size ceiling, so a big page may come back with fewer rows plus returned, total, and truncated; use offset for the rest."
             },
             "offset": {
                 "type": "integer",
@@ -66,7 +66,7 @@ pub fn operations_get_schema() -> Value {
             },
             "limit": {
                 "type": "integer",
-                "description": "Max item rows to return. Default 200, max 1000."
+                "description": "Max item rows to return. Default 200, max 1000. One response also has a size ceiling, so a big page may come back with fewer rows plus returned, total, and truncated; use offset for the rest."
             },
             "offset": {
                 "type": "integer",

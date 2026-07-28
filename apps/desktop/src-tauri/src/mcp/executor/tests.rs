@@ -388,3 +388,52 @@ fn parse_operation_start_response_ignores_other_requests_and_junk() {
     );
     assert_eq!(parse_operation_start_response("not json", "r-1"), None);
 }
+
+// ── Fitting a result to the caller's context ──────────────────────────────────
+
+#[test]
+fn fit_to_result_budget_keeps_everything_that_fits() {
+    let small: Vec<String> = (0..20).map(|i| format!("row-{i}")).collect();
+    let fitted = fit_to_result_budget(small);
+    assert_eq!(fitted.items.len(), 20);
+    assert_eq!(fitted.total, 20);
+    assert!(!fitted.truncated, "a small page is never cut");
+}
+
+#[test]
+fn fit_to_result_budget_cuts_at_the_ceiling_and_reports_the_counts() {
+    use crate::agent::chat::budget::CHARS_PER_TOKEN_ESTIMATE;
+
+    // Rows of ~1k estimated tokens each: a handful fit, the rest must be reported as cut
+    // rather than shipped and pushed out of the model's context downstream.
+    let row_chars = 1_000 * CHARS_PER_TOKEN_ESTIMATE;
+    let rows: Vec<String> = (0..50).map(|_| "x".repeat(row_chars)).collect();
+    let fitted = fit_to_result_budget(rows);
+
+    assert_eq!(fitted.total, 50);
+    assert!(fitted.truncated, "the page must say it was cut");
+    assert!(!fitted.items.is_empty(), "it always returns something");
+    assert!(fitted.items.len() < 50, "and not everything");
+    let spent: usize = fitted
+        .items
+        .iter()
+        .map(estimate_serialized_tokens)
+        .sum();
+    assert!(
+        spent <= MAX_TOOL_RESULT_TOKENS,
+        "what it keeps must fit the ceiling (spent {spent})"
+    );
+}
+
+#[test]
+fn fit_to_result_budget_never_returns_an_empty_page() {
+    use crate::agent::chat::budget::CHARS_PER_TOKEN_ESTIMATE;
+
+    // One row bigger than the whole ceiling: keep it (truncated to one) rather than answer
+    // with nothing, which would tell the model neither what it found nor that it exists.
+    let huge = "y".repeat(MAX_TOOL_RESULT_TOKENS * CHARS_PER_TOKEN_ESTIMATE * 2);
+    let fitted = fit_to_result_budget(vec![huge, "second".to_string()]);
+    assert_eq!(fitted.items.len(), 1);
+    assert_eq!(fitted.total, 2);
+    assert!(fitted.truncated);
+}

@@ -125,10 +125,26 @@ pub struct ListDirResult {
     pub size: Option<SizeStats>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub children: Option<Vec<ChildEntry>>,
+    /// How many children the folder holds, before any size cut. Absent when the path isn't
+    /// in the index (`children: None`) — never a wrong zero.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total: Option<usize>,
+    /// How many children `children` actually carries.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub returned: Option<usize>,
+    /// `true` when the listing carries only the first `returned` of `total` children,
+    /// because the whole folder wouldn't fit one tool result.
+    #[serde(skip_serializing_if = "crate::agent::tools::read::is_false")]
+    pub truncated: bool,
 }
 
 /// Shape one directory's listing. Pure over the resolved inputs, so the coverage
 /// flags are testable without a live index.
+///
+/// A huge folder is PAGED, not shipped whole: a 20k-entry listing dwarfs any prompt budget,
+/// so the children are cut to what one tool result may carry and the counts say so
+/// (`total` / `returned` / `truncated`). The index's own child order is preserved, so "the
+/// first `returned`" is a stable, resumable window.
 pub(crate) fn build_list_dir(
     path: &str,
     children: Option<Vec<ChildEntry>>,
@@ -136,11 +152,16 @@ pub(crate) fn build_list_dir(
     enabled: bool,
     freshness: Option<Freshness>,
 ) -> ListDirResult {
+    let indexed = children.is_some();
+    let fitted = children.map(crate::mcp::fit_to_result_budget);
     ListDirResult {
         path: path.to_string(),
-        coverage: coverage(enabled, freshness, children.is_some()),
+        coverage: coverage(enabled, freshness, indexed),
         size: stats.map(SizeStats::from_dir_stats),
-        children,
+        total: fitted.as_ref().map(|f| f.total),
+        returned: fitted.as_ref().map(|f| f.items.len()),
+        truncated: fitted.as_ref().is_some_and(|f| f.truncated),
+        children: fitted.map(|f| f.items),
     }
 }
 
@@ -184,11 +205,20 @@ pub struct LargestDirsResult {
     pub coverage: Coverage,
     /// The subdirectories ranked by recursive size, largest first.
     pub directories: Vec<LargestDir>,
+    /// How many subdirectories the index could rank at all.
+    pub total: usize,
+    /// How many `directories` carries (the caller's `limit`, or fewer if the rows wouldn't
+    /// fit one tool result).
+    pub returned: usize,
+    /// `true` when there are more ranked subdirectories than this answer carries.
+    pub truncated: bool,
 }
 
 /// Rank the candidate subdirectories by recursive size (largest first), dropping
-/// those with no stats, and cap to `n`. Pure over the resolved `(path, stats)`
-/// pairs. `indexed` mirrors `list_dir`'s coverage meaning.
+/// those with no stats, and cap to `n` (then to what one tool result may carry). Pure over
+/// the resolved `(path, stats)` pairs. `indexed` mirrors `list_dir`'s coverage meaning.
+/// `total` counts everything rankable, so "the top `returned` of `total`" is honest even
+/// when the caller's `limit` was the binding cut.
 pub(crate) fn build_largest_dirs(
     path: &str,
     candidates: Vec<(String, String, Option<DirStats>)>,
@@ -213,11 +243,16 @@ pub(crate) fn build_largest_dirs(
             .cmp(&a.size.recursive_size)
             .then_with(|| a.path.cmp(&b.path))
     });
+    let total = dirs.len();
     dirs.truncate(n);
+    let fitted = crate::mcp::fit_to_result_budget(dirs);
     LargestDirsResult {
         path: path.to_string(),
         coverage: coverage(enabled, freshness, indexed),
-        directories: dirs,
+        returned: fitted.items.len(),
+        directories: fitted.items,
+        truncated: fitted.total < total || fitted.truncated,
+        total,
     }
 }
 
@@ -323,6 +358,47 @@ mod tests {
         assert!(cov.note.is_some());
     }
 
+    fn child(index: usize) -> ChildEntry {
+        ChildEntry {
+            name: format!("some-reasonably-long-file-name-{index}.jpeg"),
+            is_directory: false,
+            is_symlink: false,
+            size: Some(1_234_567),
+            modified: Some(1_700_000_000),
+        }
+    }
+
+    #[test]
+    fn a_huge_folder_listing_is_paged_not_shipped_whole() {
+        use crate::agent::chat::budget::{MAX_TOOL_RESULT_TOKENS, estimate_serialized_tokens};
+
+        // A Downloads folder with 20k entries would serialize to hundreds of thousands of
+        // tokens. The answer must carry what fits plus honest counts, so the model can say
+        // what it saw and ask for more.
+        let children: Vec<ChildEntry> = (0..20_000).map(child).collect();
+        let result = build_list_dir("/downloads", Some(children), None, true, Some(Freshness::Fresh));
+
+        let rows = result.children.as_ref().expect("an indexed listing");
+        assert_eq!(result.total, Some(20_000), "the honest denominator survives");
+        assert_eq!(result.returned, Some(rows.len()));
+        assert!(result.truncated, "the cut must be visible to the model");
+        assert!(rows.len() < 20_000);
+        let spent: usize = rows.iter().map(estimate_serialized_tokens).sum();
+        assert!(
+            spent <= MAX_TOOL_RESULT_TOKENS,
+            "the listing must fit the tool-result ceiling (spent {spent})"
+        );
+    }
+
+    #[test]
+    fn a_normal_folder_listing_is_returned_whole() {
+        let children: Vec<ChildEntry> = (0..30).map(child).collect();
+        let result = build_list_dir("/photos", Some(children), None, true, Some(Freshness::Fresh));
+        assert_eq!(result.total, Some(30));
+        assert_eq!(result.returned, Some(30));
+        assert!(!result.truncated);
+    }
+
     #[test]
     fn unindexed_volume_returns_typed_no_index_not_a_wrong_zero() {
         // children None + not enabled ⇒ "off" + a "not indexed" note, never an
@@ -396,6 +472,38 @@ mod tests {
         assert_eq!(result.directories[0].name, "b");
         assert_eq!(result.directories[0].size.recursive_size, 300);
         assert_eq!(result.directories[1].name, "d");
+        // Three were rankable, two came back: the model can say "the top 2 of 3".
+        assert_eq!((result.total, result.returned), (3, 2));
+        assert!(result.truncated);
+    }
+
+    #[test]
+    fn largest_dirs_stays_inside_one_tool_result() {
+        use crate::agent::chat::budget::{MAX_TOOL_RESULT_TOKENS, estimate_serialized_tokens};
+
+        // The `limit: 200` ceiling times a row with full size stats is more than one result
+        // may carry, so the ranking pages and says so.
+        let candidates: Vec<_> = (0..MAX_LARGEST_N)
+            .map(|i| {
+                (
+                    format!("/p/subdirectory-with-a-long-name-{i}"),
+                    format!("subdirectory-with-a-long-name-{i}"),
+                    Some(dir_stats(1_000_000 + i as u64, true, false, false)),
+                )
+            })
+            .collect();
+        let result = build_largest_dirs("/p", candidates, MAX_LARGEST_N, true, Some(Freshness::Fresh), true);
+
+        assert_eq!(result.total, MAX_LARGEST_N);
+        assert_eq!(result.returned, result.directories.len());
+        let spent: usize = result.directories.iter().map(estimate_serialized_tokens).sum();
+        assert!(
+            spent <= MAX_TOOL_RESULT_TOKENS,
+            "the ranking must fit the tool-result ceiling (spent {spent})"
+        );
+        if result.returned < MAX_LARGEST_N {
+            assert!(result.truncated, "a cut is always flagged");
+        }
     }
 
     #[test]

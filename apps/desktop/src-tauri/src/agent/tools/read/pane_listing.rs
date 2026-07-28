@@ -11,6 +11,8 @@ use crate::file_system::listing::{FileEntry, get_cached_listing};
 use crate::mcp::pane_state::PaneState;
 use crate::mcp::{PaneStateStore, ToolError, ToolResult};
 
+/// The most rows one listing returns, before the size cut in [`build_pane_listing`]. Both
+/// cuts report through `total` / `returned` / `truncated`, never silently.
 const MAX_PANE_FILES: usize = 200;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -111,6 +113,9 @@ pub(crate) fn build_pane_listing(
             modified: entry.modified,
         })
         .collect();
+    // Second cut, by SIZE: 200 rows of long names can still outgrow one tool result, and a
+    // result the model can't be shown is worse than a short one.
+    let entries = crate::mcp::fit_to_result_budget(entries).items;
     let returned = entries.len();
     Ok(PaneListingResult {
         pane,
@@ -197,6 +202,45 @@ mod tests {
         assert_eq!(result.returned, 200);
         assert!(result.truncated);
         assert_eq!(result.entries[0].name, "shot-0.png");
+    }
+
+    #[test]
+    fn a_pane_of_very_long_names_still_fits_one_tool_result() {
+        use crate::agent::chat::budget::{MAX_TOOL_RESULT_TOKENS, estimate_serialized_tokens};
+
+        // 200 rows is the row cap, not a size cap: names this long blow the tool-result
+        // ceiling, so the size cut takes over and the counts stay honest.
+        let long_name = |index: usize| format!("{}-{index}.png", "screenshot-of-something-quite-specific".repeat(4));
+        let state = PaneState {
+            path: "/shots".to_string(),
+            volume_id: Some("root".to_string()),
+            files: (0..300)
+                .map(|i| PaneFileEntry {
+                    name: long_name(i),
+                    path: format!("/shots/{}", long_name(i)),
+                    ..pane_file(i)
+                })
+                .collect(),
+            total_files: 300,
+            ..Default::default()
+        };
+        let sources: Vec<PaneListingSource> = (0..300)
+            .map(|i| PaneListingSource {
+                path: format!("/shots/{}", long_name(i)),
+                name: long_name(i),
+                ..source(i)
+            })
+            .collect();
+
+        let result = build_pane_listing("left".to_string(), &state, sources).unwrap();
+        assert_eq!(result.total, 300, "the honest denominator is every file in scope");
+        assert_eq!(result.returned, result.entries.len());
+        assert!(result.truncated);
+        let spent: usize = result.entries.iter().map(estimate_serialized_tokens).sum();
+        assert!(
+            spent <= MAX_TOOL_RESULT_TOKENS,
+            "the listing must fit the tool-result ceiling (spent {spent})"
+        );
     }
 
     #[test]

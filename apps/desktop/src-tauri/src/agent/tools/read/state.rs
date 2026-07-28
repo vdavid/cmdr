@@ -5,6 +5,10 @@
 //! (not the private `build_state_yaml`), so the tool returns typed data, not
 //! parsed YAML. `get_focused_pane` returns the pane SIDE (`"left"`/`"right"`); the
 //! path comes from that side's pane state.
+//!
+//! The exact selection is all-or-nothing: incomplete or too big to fit one result ⇒ absent
+//! with a typed [`SelectionOmitted`] reason, never a partial list the model would read as
+//! the whole selection.
 
 use serde::Serialize;
 use serde_json::Value;
@@ -35,10 +39,14 @@ pub struct PaneSnapshot {
     /// How many items are selected right now.
     pub selected_count: usize,
     /// The exact selected entries when every selected index is in the cached pane
-    /// window. `None` means a selected row is outside that window, so a tool must
-    /// refuse a scoped proposal instead of silently dropping that row.
+    /// window AND listing them fits one tool result. `None` means a tool must refuse a
+    /// scoped proposal instead of silently dropping rows; `selected_entries_omitted` says
+    /// which case it was.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub selected_entries: Option<Vec<SelectedEntrySnapshot>>,
+    /// Why `selected_entries` is absent. Absent itself when the entries are present.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub selected_entries_omitted: Option<SelectionOmitted>,
     /// Total items in the folder (may exceed the loaded window on a huge dir).
     pub total_files: usize,
     pub view_mode: String,
@@ -47,6 +55,19 @@ pub struct PaneSnapshot {
     #[serde(skip_serializing_if = "String::is_empty")]
     pub sort_order: String,
     pub show_hidden: bool,
+}
+
+/// Why the exact selection couldn't be listed. Typed, so the model reads a token rather
+/// than inferring from an absent field, and never reads "no names" as "nothing selected"
+/// (`selected_count` is always honest).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SelectionOmitted {
+    /// A selected row sits outside the cached pane window, so the list would be incomplete.
+    OutsideWindow,
+    /// Naming every selected file wouldn't fit one tool result. `list_pane_files` pages the
+    /// same selection, so ask it instead of guessing from the count.
+    TooMany,
 }
 
 /// The subset of a selected pane entry that a proposal needs. It intentionally
@@ -84,6 +105,21 @@ pub(crate) fn pane_snapshot(state: &PaneState) -> PaneSnapshot {
             })
         })
         .collect::<Option<Vec<_>>>();
+    // A selection of thousands of files would serialize to more than any prompt budget, and
+    // a partial list here would read as the whole selection (a scoped proposal built on it
+    // would silently drop rows). So drop it entirely and say why: `list_pane_files` is the
+    // tool that pages a selection honestly.
+    let (selected_entries, selected_entries_omitted) = match selected_entries {
+        None => (None, Some(SelectionOmitted::OutsideWindow)),
+        Some(entries) => {
+            let fitted = crate::mcp::fit_to_result_budget(entries);
+            if fitted.truncated {
+                (None, Some(SelectionOmitted::TooMany))
+            } else {
+                (Some(fitted.items), None)
+            }
+        }
+    };
     PaneSnapshot {
         path: state.path.clone(),
         volume_id: state.volume_id.clone(),
@@ -91,6 +127,7 @@ pub(crate) fn pane_snapshot(state: &PaneState) -> PaneSnapshot {
         cursor_item: state.files.get(state.cursor_index).map(|f| f.name.clone()),
         selected_count: state.selected_indices.len(),
         selected_entries,
+        selected_entries_omitted,
         total_files: state.total_files,
         view_mode: state.view_mode.clone(),
         sort_field: state.sort_field.clone(),
@@ -184,6 +221,43 @@ mod tests {
         let snapshot = pane_snapshot(&state);
         assert_eq!(snapshot.selected_count, 2);
         assert_eq!(snapshot.selected_entries, None);
+        assert_eq!(snapshot.selected_entries_omitted, Some(SelectionOmitted::OutsideWindow));
+    }
+
+    #[test]
+    fn a_selection_too_big_to_list_is_omitted_with_a_reason_not_half_listed() {
+        // 20k selected files would serialize to far more than any prompt budget. Half a list
+        // would read as the whole selection, so the snapshot drops it and says why; the
+        // count stays honest and `list_pane_files` pages the names.
+        let files: Vec<PaneFileEntry> = (0..20_000)
+            .map(|i| file(&format!("some-reasonably-long-file-name-{i}.jpeg")))
+            .collect();
+        let state = PaneState {
+            path: "/shots".to_string(),
+            selected_indices: (0..20_000).collect(),
+            total_files: files.len(),
+            files,
+            ..Default::default()
+        };
+
+        let snapshot = pane_snapshot(&state);
+        assert_eq!(snapshot.selected_count, 20_000, "the count is never wrong");
+        assert_eq!(snapshot.selected_entries, None, "no half list");
+        assert_eq!(snapshot.selected_entries_omitted, Some(SelectionOmitted::TooMany));
+    }
+
+    #[test]
+    fn a_selection_that_fits_is_listed_with_no_omission_reason() {
+        let state = PaneState {
+            path: "/shots".to_string(),
+            files: vec![file("a"), file("b")],
+            selected_indices: vec![0, 1],
+            total_files: 2,
+            ..Default::default()
+        };
+        let snapshot = pane_snapshot(&state);
+        assert_eq!(snapshot.selected_entries.as_ref().map(Vec::len), Some(2));
+        assert_eq!(snapshot.selected_entries_omitted, None);
     }
 
     #[test]

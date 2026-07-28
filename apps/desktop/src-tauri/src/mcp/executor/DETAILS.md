@@ -19,7 +19,9 @@ Depth for the MCP tool-execution layer. `CLAUDE.md` holds the must-knows.
 - **`operation_log.rs`**: `operations_list`, `operations_get` (short-lived read-only connection over the query API,
   the `commands/operation_log.rs` pattern), `operations_rollback` (dispatches the rollback engine via
   `write_operations::rollback::dispatch_rollback`; returns after dispatch — see `mcp/DETAILS.md` § dispatch-then-poll).
-  The pure filter/param parsers and the typed-refusal shape are unit-tested in `operation_log/tests.rs`.
+  The pure filter/param parsers and the typed-refusal shape are unit-tested in `operation_log/tests.rs`. Both read
+  responses go through `fit_to_result_budget` and carry `returned` / `total` / `truncated` (`operations_list` keeps its
+  original `count`, equal to `returned`), so a page cut for size is visible and resumable with `offset`.
 - **`photos.rs`**: `search_photos` (shared `[AiClient, Agent]` read). Shapes the `media_index` read API
   (`search_semantic` / `search_ocr` / `images_with_tag`) into a TEXT-ONLY DTO (no image bytes), resolves the mode like
   the search UI (Auto composes semantic + OCR, degrades to OCR with no CLIP model), reuses `media_index::commands::volume_state`

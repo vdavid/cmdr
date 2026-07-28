@@ -57,6 +57,10 @@ const MIN_LOCAL_PROMPT_BUDGET: usize = 2_000;
 /// `truncated: true`, never a silent cut — see `mcp::executor::fit_to_result_budget`.
 pub const MAX_TOOL_RESULT_TOKENS: usize = DEFAULT_PROMPT_TOKEN_BUDGET / 2;
 
+/// A single tool result must leave the conversation around it room to fit. Checked at
+/// COMPILE time, so a future edit to either number can't quietly invert the relationship.
+const _: () = assert!(MAX_TOOL_RESULT_TOKENS < DEFAULT_PROMPT_TOKEN_BUDGET);
+
 /// One family's prompt budget, matched by model-id prefix (longest first, like
 /// `agent::pricing`'s table, so a more specific id wins over the family it shares a stem
 /// with).
@@ -197,14 +201,6 @@ mod tests {
         assert_eq!(
             prompt_budget(ProviderTag::Local, "claude-sonnet-4-5"),
             MIN_LOCAL_PROMPT_BUDGET
-        );
-    }
-
-    #[test]
-    fn one_tool_result_can_never_claim_a_whole_budget() {
-        assert!(
-            MAX_TOOL_RESULT_TOKENS < DEFAULT_PROMPT_TOKEN_BUDGET,
-            "a single result must leave the conversation around it room to fit"
         );
     }
 

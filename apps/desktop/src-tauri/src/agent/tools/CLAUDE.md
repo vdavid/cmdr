@@ -21,6 +21,10 @@ list): `DETAILS.md`.
 - **Reuse the shipped core; never re-derive.** Each handler calls a deterministic core (the `indexing::read::queries`, the
   `importance` read API / the `cmdr://importance` `snapshot_*` functions, `snapshot_volumes`) and only SHAPES the result.
   Don't reimplement listing, scoring, or volume enumeration — a second copy rots against the first.
+- **A result that carries a list must fit ONE tool result.** Page it with
+  `mcp::executor::fit_to_result_budget` (ceiling: `agent::chat::budget::MAX_TOOL_RESULT_TOKENS`) and report
+  `total`/`returned`/`truncated`. A row cap alone doesn't bound a payload, and an oversized result pushes the rest of the
+  turn out of the prompt — that's how a rename turn lost its own evidence. Depth: `DETAILS.md` § The size contract.
 - **Every result voices its coverage honestly (spec §2.4 — load-bearing).** A read that's a lower bound or stale MUST
   say so in its typed result: index `Coverage` (`fresh`/`scanning`/`stale`/`off`, only `fresh` authoritative), `DirStats`
   size flags (`sizeIsLowerBound`/`sizeIsStale`/`sizeIsUpdating`), importance `stale` (asOf vs recompute generation). An

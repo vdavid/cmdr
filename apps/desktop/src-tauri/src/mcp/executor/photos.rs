@@ -96,6 +96,13 @@ pub enum SearchPhotosResult {
         /// The effective mode used: `semantic`, `ocr`, `tag`, or `semantic+ocr`.
         mode: String,
         hits: Vec<PhotoHit>,
+        /// How many hits the search found, before any size cut.
+        total: usize,
+        /// How many `hits` carries.
+        returned: usize,
+        /// `true` when only the first `returned` of `total` hits fit one tool result. Ask
+        /// with a smaller `limit`, or a narrower query, for the rest.
+        truncated: bool,
         coverage: Vec<VolumeCoverage>,
         /// A coverage caveat the model should relay, when one applies (degraded to OCR
         /// because no model is installed, or a searched volume is still indexing).
@@ -309,7 +316,7 @@ pub fn search_photos_schema() -> Value {
             "query": { "type": "string", "description": "What to look for. In semantic mode, a natural description of the scene ('two people on a beach at sunset'); in ocr mode, words expected to appear IN the image (a receipt total, a sign, a passport field); in tag mode, a single object/scene label ('dog', 'sky')." },
             "volumeId": { "type": "string", "description": "Restrict to one volume id (see list_volumes / cmdr://state). Omit to search every local and SMB volume that's indexed." },
             "mode": { "type": "string", "enum": ["semantic", "ocr", "tag"], "description": "How to match. semantic: by visual description (needs the on-device model). ocr: by text recognized inside the image. tag: by a Vision object/scene tag. Omit to combine semantic + ocr (semantic leads), which is best for most 'find the photo of…' questions." },
-            "limit": { "type": "integer", "description": "Max hits to return (default 30, capped at 200)." }
+            "limit": { "type": "integer", "description": "Max hits to return (default 30, capped at 200). One answer also has a size ceiling, so a big page may come back with fewer hits plus returned, total, and truncated." }
         },
         "required": ["query"],
         "additionalProperties": false
@@ -368,12 +375,28 @@ pub async fn execute_search_photos<R: Runtime>(app: &AppHandle<R>, params: &Valu
         .map_err(|e| ToolError::internal(format!("photo search task panicked: {e}")))?;
 
     let note = build_note(degraded_to_ocr, &coverage);
-    shape(&SearchPhotosResult::Ok {
-        mode: mode.wire().to_string(),
-        hits,
+    shape(&shape_ok(mode.wire().to_string(), hits, coverage, note))
+}
+
+/// Build the `Ok` answer, cut to what one tool result may carry: OCR snippets make a
+/// 200-hit page far bigger than a prompt budget, so the hits page and the counts say so.
+/// Pure, so the paging is unit-tested. Hits stay in rank order, best first.
+fn shape_ok(
+    mode: String,
+    hits: Vec<PhotoHit>,
+    coverage: Vec<VolumeCoverage>,
+    note: Option<String>,
+) -> SearchPhotosResult {
+    let fitted = super::fit_to_result_budget(hits);
+    SearchPhotosResult::Ok {
+        mode,
+        returned: fitted.items.len(),
+        hits: fitted.items,
+        total: fitted.total,
+        truncated: fitted.truncated,
         coverage,
         note,
-    })
+    }
 }
 
 /// Serialize a result DTO to the tool's JSON value.
@@ -677,16 +700,51 @@ mod tests {
         let missing = serde_json::to_value(SearchPhotosResult::SemanticModelNotInstalled { note: "n".into() }).unwrap();
         assert_eq!(missing["status"], "semanticModelNotInstalled");
 
-        let ok = serde_json::to_value(SearchPhotosResult::Ok {
-            mode: "semantic+ocr".into(),
-            hits: vec![],
-            coverage: vec![],
-            note: None,
-        })
-        .unwrap();
+        let ok = serde_json::to_value(shape_ok("semantic+ocr".into(), vec![], vec![], None)).unwrap();
         assert_eq!(ok["status"], "ok");
         // An absent note doesn't clutter the payload.
         assert!(ok.get("note").is_none());
+    }
+
+    #[test]
+    fn a_wall_of_ocr_hits_pages_instead_of_blowing_the_context() {
+        use crate::agent::chat::budget::{MAX_TOOL_RESULT_TOKENS, estimate_serialized_tokens};
+
+        // `limit: 200` OCR hits, each carrying a snippet, is far more than one tool result
+        // may hold. The answer keeps the best-ranked hits and says how many it left.
+        let hits: Vec<PhotoHit> = (0..MAX_LIMIT)
+            .map(|i| PhotoHit {
+                path: format!("/photos/some/quite/deep/folder/receipt-{i}.jpg"),
+                volume: "root".into(),
+                match_kind: "text".into(),
+                score: None,
+                match_text: Some(format!(
+                    "[total] 42.00 EUR — line {i} of a dense receipt {}",
+                    "x".repeat(300)
+                )),
+            })
+            .collect();
+
+        let SearchPhotosResult::Ok {
+            hits,
+            total,
+            returned,
+            truncated,
+            ..
+        } = shape_ok("ocr".into(), hits, vec![], None)
+        else {
+            panic!("expected an ok result");
+        };
+        assert_eq!(total, MAX_LIMIT);
+        assert_eq!(returned, hits.len());
+        assert!(truncated, "the cut must be visible to the model");
+        assert!(returned < MAX_LIMIT);
+        assert!(hits[0].path.ends_with("receipt-0.jpg"), "rank order survives");
+        let spent: usize = hits.iter().map(estimate_serialized_tokens).sum();
+        assert!(
+            spent <= MAX_TOOL_RESULT_TOKENS,
+            "the hits must fit the tool-result ceiling (spent {spent})"
+        );
     }
 
     /// The load-bearing privacy property: a hit is TEXT-ONLY, so the tool structurally

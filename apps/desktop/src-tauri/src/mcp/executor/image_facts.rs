@@ -29,12 +29,18 @@ use crate::media_index::read::{ImageFacts, ImageTag, MediaIndex};
 
 /// The most paths one call accepts. Over this is a hard `INVALID_PARAMS` rather than a
 /// silent truncation: a caller that asked about 500 files must not believe it got 200
-/// answers for all of them. It also bounds the response the calling model has to read.
+/// answers for all of them.
+///
+/// It does NOT bound the response — [`MAX_TEXT_CHARS`] × 200 rows is far more than any
+/// model's prompt budget. The answer is bounded by size instead
+/// ([`crate::agent::chat::budget::MAX_TOOL_RESULT_TOKENS`], applied in [`shape_ok`]), which
+/// adapts to how much text the images actually hold; a fixed path cap can't.
 const MAX_PATHS: usize = 200;
 
 /// The per-file cap on returned OCR text, in characters. Enough to name a file by its
-/// contents; short enough that 200 dense receipts can't blow the model's context. A cut is
-/// always flagged (`textTruncated`), never silent.
+/// contents, and small enough that a dozen dense receipts still fit one answer (~500
+/// estimated tokens per row against the tool-result ceiling). A cut is always flagged
+/// (`textTruncated`), never silent.
 const MAX_TEXT_CHARS: usize = 2_000;
 
 /// Honest note when image indexing is off entirely.
@@ -90,9 +96,18 @@ pub struct FileFacts {
 pub enum ImageFactsResult {
     /// Image indexing is off, so nothing is stored for any image.
     ImageIndexingOff { note: String },
-    /// A normal answer: one row per requested path, plus per-volume coverage.
+    /// A normal answer: one row per requested path that fits the answer's size ceiling,
+    /// plus per-volume coverage.
     Ok {
         facts: Vec<FileFacts>,
+        /// How many paths were asked about.
+        total: usize,
+        /// How many rows this answer carries. Fewer than `total` when the batch was too
+        /// big for one result.
+        returned: usize,
+        /// `true` when this answer covers only the FIRST `returned` of `total` paths, in
+        /// request order. Ask about the rest in a follow-up call.
+        truncated: bool,
         coverage: Vec<VolumeCoverage>,
         /// A coverage caveat to relay, when a searched volume is still indexing.
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -192,7 +207,7 @@ pub fn image_facts_schema() -> Value {
             "paths": {
                 "type": "array",
                 "items": { "type": "string" },
-                "description": "The absolute paths of the images to look up (at most 200 per call). Use this when you already know the files, for example everything in the folder the user is looking at."
+                "description": "The absolute paths of the images to look up (at most 200 per call). Use this when you already know the files, for example everything in the folder the user is looking at. One answer holds only as many files as fit your context: check returned, total, and truncated, and ask about the remaining paths in a follow-up call."
             },
             "volumeId": { "type": "string", "description": "Restrict the lookup to one volume id (see list_volumes / cmdr://state). Omit to check every local and SMB volume that's indexed." }
         },
@@ -231,7 +246,23 @@ pub async fn execute_image_facts<R: Runtime>(app: &AppHandle<R>, params: &Value)
         .map_err(|e| ToolError::internal(format!("image facts task panicked: {e}")))?;
 
     let note = build_note(false, &coverage);
-    shape(&ImageFactsResult::Ok { facts, coverage, note })
+    shape(&shape_ok(facts, coverage, note))
+}
+
+/// Build the `Ok` answer, cut to what one tool result may carry. Pure, so the paging is
+/// unit-tested: a batch whose OCR text won't fit returns the FIRST rows plus
+/// `returned`/`total`/`truncated`, and the model asks about the rest in another call. Rows
+/// stay in request order, so "the first N" is unambiguous to the caller.
+fn shape_ok(facts: Vec<FileFacts>, coverage: Vec<VolumeCoverage>, note: Option<String>) -> ImageFactsResult {
+    let fitted = super::fit_to_result_budget(facts);
+    ImageFactsResult::Ok {
+        returned: fitted.items.len(),
+        facts: fitted.items,
+        total: fitted.total,
+        truncated: fitted.truncated,
+        coverage,
+        note,
+    }
 }
 
 /// Serialize a result DTO to the tool's JSON value.
@@ -368,14 +399,79 @@ mod tests {
         let off = serde_json::to_value(ImageFactsResult::ImageIndexingOff { note: "n".into() }).unwrap();
         assert_eq!(off["status"], "imageIndexingOff");
 
-        let ok = serde_json::to_value(ImageFactsResult::Ok {
-            facts: vec![],
-            coverage: vec![],
-            note: None,
-        })
-        .unwrap();
+        let ok = serde_json::to_value(shape_ok(vec![], vec![], None)).unwrap();
         assert_eq!(ok["status"], "ok");
         assert!(ok.get("note").is_none(), "an absent note doesn't clutter the payload");
+        assert_eq!(ok["total"], 0);
+        assert_eq!(ok["returned"], 0);
+        assert_eq!(ok["truncated"], false);
+    }
+
+    /// One indexed row carrying the full per-file text cap — the shape a screenshot folder
+    /// produces.
+    fn dense_row(index: usize) -> FileFacts {
+        let mut out = not_indexed_slots(&[format!("/shots/shot-{index}.png")]);
+        merge_volume(
+            &mut out,
+            "root",
+            vec![facts(
+                &format!("/shots/shot-{index}.png"),
+                true,
+                Some(&"a".repeat(MAX_TEXT_CHARS)),
+                vec![("screenshot", 0.9)],
+            )],
+            MAX_TEXT_CHARS,
+        );
+        out.remove(0)
+    }
+
+    #[test]
+    fn a_batch_too_dense_for_one_answer_pages_instead_of_blowing_the_context() {
+        use crate::agent::chat::budget::{MAX_TOOL_RESULT_TOKENS, estimate_serialized_tokens};
+
+        // 200 paths × MAX_TEXT_CHARS is ~100k estimated tokens, many times any prompt
+        // budget. The answer must carry the first rows in full plus honest counts, never
+        // the whole pile (which used to push the turn's own evidence out of context).
+        let rows: Vec<FileFacts> = (0..MAX_PATHS).map(dense_row).collect();
+        let result = shape_ok(rows, vec![], None);
+
+        let ImageFactsResult::Ok {
+            facts,
+            total,
+            returned,
+            truncated,
+            ..
+        } = &result
+        else {
+            panic!("expected an ok result");
+        };
+        assert_eq!(*total, MAX_PATHS, "the count asked about is reported in full");
+        assert_eq!(*returned, facts.len());
+        assert!(*truncated, "the cut must be visible to the model");
+        assert!(*returned < MAX_PATHS, "it can't have answered them all");
+        assert!(*returned >= 12, "a real screenshot batch must still fit in one call");
+        assert_eq!(facts[0].path, "/shots/shot-0.png", "rows stay in request order");
+        let spent: usize = facts.iter().map(estimate_serialized_tokens).sum();
+        assert!(
+            spent <= MAX_TOOL_RESULT_TOKENS,
+            "the answer must fit the tool-result ceiling (spent {spent})"
+        );
+    }
+
+    #[test]
+    fn a_batch_that_fits_is_answered_whole() {
+        // The common case: a dozen screenshots, all answered, nothing flagged.
+        let rows: Vec<FileFacts> = (0..12).map(dense_row).collect();
+        let ImageFactsResult::Ok {
+            total,
+            returned,
+            truncated,
+            ..
+        } = shape_ok(rows, vec![], None)
+        else {
+            panic!("expected an ok result");
+        };
+        assert_eq!((total, returned, truncated), (12, 12, false));
     }
 
     /// The privacy property, mirroring `photos.rs`: a result row is TEXT-ONLY by

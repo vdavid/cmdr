@@ -1043,7 +1043,7 @@
             "type": "string"
           },
           "limit": {
-            "description": "Max operations to return. Default 50, max 1000.",
+            "description": "Max operations to return. Default 50, max 1000. One response also has a size ceiling, so a big page may come back with fewer rows plus returned, total, and truncated; use offset for the rest.",
             "type": "integer"
           },
           "name": {
@@ -1092,7 +1092,7 @@
       "inputSchema": {
         "properties": {
           "limit": {
-            "description": "Max item rows to return. Default 200, max 1000.",
+            "description": "Max item rows to return. Default 200, max 1000. One response also has a size ceiling, so a big page may come back with fewer rows plus returned, total, and truncated; use offset for the rest.",
             "type": "integer"
           },
           "offset": {
@@ -1137,7 +1137,7 @@
         "additionalProperties": false,
         "properties": {
           "limit": {
-            "description": "Max hits to return (default 30, capped at 200).",
+            "description": "Max hits to return (default 30, capped at 200). One answer also has a size ceiling, so a big page may come back with fewer hits plus returned, total, and truncated.",
             "type": "integer"
           },
           "mode": {
@@ -1171,7 +1171,7 @@
         "additionalProperties": false,
         "properties": {
           "paths": {
-            "description": "The absolute paths of the images to look up (at most 200 per call). Use this when you already know the files, for example everything in the folder the user is looking at.",
+            "description": "The absolute paths of the images to look up (at most 200 per call). Use this when you already know the files, for example everything in the folder the user is looking at. One answer holds only as many files as fit your context: check returned, total, and truncated, and ask about the remaining paths in a follow-up call.",
             "items": {
               "type": "string"
             },

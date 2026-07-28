@@ -26,7 +26,10 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
 
 - **`app_state`** (`read/state.rs`) — both panes (path, cursor item, selection count, view/sort) plus the volume list.
   Built from `PaneStateStore` (`get_focused_pane` returns the SIDE; the path comes from that side's state) +
-  `snapshot_volumes`. Not the private `build_state_yaml` — typed data, not parsed YAML.
+  `snapshot_volumes`. Not the private `build_state_yaml` — typed data, not parsed YAML. `selectedEntries` lists the exact
+  selection only when it's complete AND fits one result; otherwise it's absent with a typed
+  `selectedEntriesOmitted` (`outsideWindow` / `tooMany`), never a half list that would read as the whole selection.
+  `selectedCount` is always honest, and `list_pane_files` pages the names.
 - **`list_pane_files`** (`read/pane_listing.rs`) — up to 200 compact rows from the focused pane's existing Rust
   listing cache. It uses the current selection when present, otherwise the whole folder, and returns the exact volume
   ID plus one shared parent path for `propose_rename_plan`. It never queries the index or starts a filesystem listing.
@@ -53,8 +56,9 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
   installed. Privacy: the OCR snippet + tags it returns are image-derived text that egresses to the provider — named in
   the Ask Cmdr consent copy (see `mcp/executor/photos.rs` and `docs/security.md`).
 - **`image_facts`** (`mcp/executor/image_facts.rs`, shared `[AiClient, Agent]`) — the lookup direction of the same
-  index: given paths the agent already has, the FULL stored OCR text (capped at 2,000 characters, a cut flagged) plus
-  the Vision tags for each. Backs naming/describing files the user is looking at. Same text-only DTO, same coverage
+  index: given paths the agent already has, the FULL stored OCR text (capped at 2,000 characters per file, a cut
+  flagged) plus the Vision tags for each. It accepts up to 200 paths but answers as many as fit one result (see § The
+  size contract), reporting `total` / `returned` / `truncated` so the caller batches the rest. Backs naming/describing files the user is looking at. Same text-only DTO, same coverage
   honesty (it reuses `photos.rs`'s helpers), and a typed per-path `indexed` / `notIndexed` so a not-yet-enriched file
   is never read as an empty one. Privacy: this is the widest derived-content egress the agent has (full recognized
   text, not a snippet) — same consent gate, same copy.
@@ -66,6 +70,24 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
 authoritative or the path isn't indexed. `SizeStats::from_dir_stats` carries the exact-vs-lower-bound / stale / updating
 / has-symlinks flags verbatim from `DirStats`. Importance staleness is `asOfGeneration < recomputeGeneration`. These are
 the flags spec §2.4 makes load-bearing; the system prompt requires the model to voice them.
+
+## The size contract: a result never outgrows the caller's context
+
+Every result that carries a LIST is cut to `agent::chat::budget::MAX_TOOL_RESULT_TOKENS` through
+`mcp::executor::fit_to_result_budget`, and reports `total` / `returned` / `truncated` so the model can say what it saw
+and ask for the rest. It applies to `list_dir` (children), `largest_dirs` (ranked rows), `list_pane_files` (entries, on
+top of its 200-row cap), `image_facts` (per-path rows, on top of the 2,000-char per-file text cap),
+`search_photos` (hits), and the `operations_*` pages.
+
+**Why a size cut on top of the row caps:** a row cap can't bound a payload. `image_facts` at 200 paths × 2,000
+characters is ~100k estimated tokens, and a `list_dir` on a 20k-entry folder had no cap at all. A result that doesn't
+fit doesn't just get itself dropped — it pushes the rest of the turn out of the prompt, which is how a bulk-rename turn
+lost the very evidence it was reasoning from (`agent/chat/DETAILS.md` § Budget enforcement). The ceiling is derived from
+the CONSERVATIVE default prompt budget, not the resolved model, because a handler doesn't know the model and may be
+answering an external MCP client.
+
+The cut is never silent (`image_facts`'s founding principle, now the rule for every tool): the counts cross the wire,
+and the system prompt requires the model to disclose "returned of total" whenever `truncated: true`.
 
 ## The dispatch gate
 

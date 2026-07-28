@@ -20,6 +20,9 @@ which calls these handlers by path; action-tool handlers wait on a typed ack bef
   nav uses `NAV_ACK_TIMEOUT` = 5 s): snapshot precondition, emit/run, wait; on timeout return `ToolError::internal`
   naming the missing signal + budget. Never return `OK` without waiting. The budget is a backend floor, bumped per-call
   via the `Duration` arg. Variants + mapping: DETAILS.md § Ack contract.
+- **A result that carries a list gets `fit_to_result_budget`** (`mod.rs`) and reports `total`/`returned`/`truncated`. A
+  row cap doesn't bound a payload (`image_facts` at 200 paths was ~100k tokens), and an oversized result pushes the rest
+  of the caller's turn out of context. Never cut silently. Depth: `../../agent/tools/DETAILS.md` § The size contract.
 - **`GenerationAdvanced` isn't a per-action proof** (it shows the FE pushed pane state after dispatch, not that it
   handled our event; unrelated pushes are rare false positives). If a real one surfaces, switch the tool to
   `mcp_round_trip` with a `requestId`.

@@ -36,6 +36,8 @@ use std::sync::Mutex;
 use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Listener, Manager, Runtime};
 
+use crate::agent::chat::budget::{MAX_TOOL_RESULT_TOKENS, estimate_serialized_tokens};
+
 use super::pane_state::{PaneState, PaneStateStore};
 use super::protocol::{INTERNAL_ERROR, INVALID_PARAMS};
 use crate::ignore_poison::IgnorePoison;
@@ -222,6 +224,47 @@ pub(super) fn resolve_pane_target_paths(state: &PaneState, names: Option<&[Strin
 /// (`mtp://…`, direct-SMB) never start with `~`, so they pass through untouched.
 fn expand_user_path(path: &str) -> String {
     crate::commands::file_system::expand_tilde(path)
+}
+
+// ── Fitting a result to the caller's context ──────────────────────────────────
+
+/// A page of items cut to fit the tool-result ceiling, with the honest counts beside it.
+/// Shape every capped result with `returned` / `total` / `truncated` (the way
+/// `list_pane_files` does), so the model can say what it saw and ask for the rest.
+pub(crate) struct FittedItems<T> {
+    pub items: Vec<T>,
+    /// How many there were before the cut.
+    pub total: usize,
+    pub truncated: bool,
+}
+
+/// Take as many leading `items` as fit [`MAX_TOOL_RESULT_TOKENS`], measured with the agent's
+/// one size estimator. Always keeps at least one item, so a caller always learns something
+/// concrete about the first row even when that row is enormous.
+///
+/// Why a ceiling at all: a tool result the model can't be shown is worse than a short one.
+/// An `image_facts` call over 200 paths could serialize to ~100k tokens against a prompt
+/// budget a fraction of that, which used to push the whole thing (and everything else in the
+/// turn) out of context. A visible cut lets the model ask for the next batch instead.
+pub(crate) fn fit_to_result_budget<T: serde::Serialize>(items: Vec<T>) -> FittedItems<T> {
+    let total = items.len();
+    let mut spent = 0usize;
+    // Capacity for a plausible page, not for the whole input: the caller may hand us a
+    // 20k-row listing we'll cut to a few dozen.
+    let mut kept: Vec<T> = Vec::with_capacity(total.min(64));
+    for item in items {
+        let cost = estimate_serialized_tokens(&item);
+        if !kept.is_empty() && spent + cost > MAX_TOOL_RESULT_TOKENS {
+            break;
+        }
+        spent += cost;
+        kept.push(item);
+    }
+    FittedItems {
+        truncated: kept.len() < total,
+        items: kept,
+        total,
+    }
 }
 
 /// Extracts a required path parameter, expanding a leading `~` via `expand_user_path`.

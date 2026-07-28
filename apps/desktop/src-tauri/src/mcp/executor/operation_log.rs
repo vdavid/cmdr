@@ -47,9 +47,19 @@ pub async fn execute_operations_list<R: Runtime>(app: &AppHandle<R>, params: &Va
         }
     })
     .await?;
-    let count = rows.len();
-    let operations = serde_json::to_value(&rows).map_err(|e| ToolError::internal(e.to_string()))?;
-    Ok(json!({ "operations": operations, "count": count }))
+    // Cut the page to what one tool result may carry (a 1000-row journal page dwarfs an
+    // agent's prompt budget) and report both numbers, so the caller can page with `offset`
+    // instead of losing rows silently.
+    let fitted = super::fit_to_result_budget(rows);
+    let (total, returned, truncated) = (fitted.total, fitted.items.len(), fitted.truncated);
+    let operations = serde_json::to_value(&fitted.items).map_err(|e| ToolError::internal(e.to_string()))?;
+    Ok(json!({
+        "operations": operations,
+        "count": returned,
+        "total": total,
+        "returned": returned,
+        "truncated": truncated,
+    }))
 }
 
 /// One operation's header plus a page of its item rows (full paths, per-item
@@ -65,7 +75,20 @@ pub async fn execute_operations_get<R: Runtime>(app: &AppHandle<R>, params: &Val
     })
     .await?;
     match detail {
-        Some(detail) => serde_json::to_value(&detail).map_err(|e| ToolError::internal(e.to_string())),
+        Some(mut detail) => {
+            // Item rows carry full source + destination paths, so a 200-item page can
+            // outgrow one tool result. Cut by size and report it; `totalItems` stays the
+            // honest denominator and `offset` fetches the rest.
+            let total = detail.total_items as usize;
+            let fitted = super::fit_to_result_budget(std::mem::take(&mut detail.items));
+            let returned = fitted.items.len();
+            detail.items = fitted.items;
+            let mut value = serde_json::to_value(&detail).map_err(|e| ToolError::internal(e.to_string()))?;
+            value["total"] = total.into();
+            value["returned"] = returned.into();
+            value["truncated"] = (returned < total).into();
+            Ok(value)
+        }
         None => Err(ToolError::invalid_params(format!("No operation found with id {op_id}"))),
     }
 }
