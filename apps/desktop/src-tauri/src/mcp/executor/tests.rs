@@ -414,11 +414,7 @@ fn fit_to_result_budget_cuts_at_the_ceiling_and_reports_the_counts() {
     assert!(fitted.truncated, "the page must say it was cut");
     assert!(!fitted.items.is_empty(), "it always returns something");
     assert!(fitted.items.len() < 50, "and not everything");
-    let spent: usize = fitted
-        .items
-        .iter()
-        .map(estimate_serialized_tokens)
-        .sum();
+    let spent: usize = fitted.items.iter().map(estimate_serialized_tokens).sum();
     assert!(
         spent <= MAX_TOOL_RESULT_TOKENS,
         "what it keeps must fit the ceiling (spent {spent})"
