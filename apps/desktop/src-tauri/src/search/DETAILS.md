@@ -76,9 +76,18 @@ registration — no rescan). Lifecycle is dialog-scoped, not per-volume: opening
 root and arms the timers; a search lazily loads its scope's volumes; idle/backstop drops ALL arenas at once (RAM
 reclaim). A long root pre-load is cancelable (`cancel_active_loads` on dialog close).
 
-**Staleness.** Only the root writer bumps the global `WRITER_GENERATION`, so `get_loaded` reloads root when it moved
-past the stamp; a non-root volume stamps `0` and simply reloads next dialog session. That's acceptable: a NAS/MTP index
-is far less volatile than the boot disk, and every arena drops on idle regardless.
+**Staleness: serve warm, refresh behind.** Only the root writer bumps the global `WRITER_GENERATION`, so only root can
+fall behind its stamp; a non-root volume stamps `0` and simply reloads next dialog session (a NAS/MTP index is far less
+volatile, and every arena drops on idle regardless).
+
+A behind-the-writer root arena still ANSWERS the search, and `get_loaded` kicks a background rebuild that swaps in when
+it lands (skipping the swap if the arena was dropped meanwhile — re-inserting would resurrect hundreds of MB nobody
+asked for). `claim_load_slot` paces those rebuilds to one per `REFRESH_MIN_INTERVAL` (30 s) and declines while one is in
+flight. Why: the arena is a SNAPSHOT by construction, and root's DB moves under it several times a second on a
+live-watched boot disk (measured ~5.7 `WRITER_GENERATION` bumps/s idle, 2026-07-28 prod logs). Rebuilding on any
+mismatch therefore put a full 2.6 s / 6.3 M-row pass (warm page cache; 6–18 s cold) in front of nearly every dialog open
+and every auto-applied keystroke search — paying seconds to shrink staleness from seconds to milliseconds, on data the
+indexer itself lags by seconds. Evidence: `docs/notes/search-latency-2026-07-28.md`.
 
 ### Mount-relative path spaces (the load-bearing gotcha)
 

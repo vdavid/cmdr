@@ -36,6 +36,8 @@ query fans out across every volume with a persisted `index-{volumeId}.db`. Flat 
   the pattern is NFD-normalized at query time (APFS filenames are already NFD).
 - **`ImportanceWeights` keys on `hash_path(path)`, not the path** (17 B a folder; root's map is resident). ❌ No path
   keys, no enumeration API; `ranking/memory_tests.rs` guards it.
+- **A stale root arena is SERVED, not rebuilt in front of the search**: `get_loaded` kicks a background refresh (≤1 per
+  30 s). Root's generation ticks several times a second, so reload-on-mismatch cost 2.6 s per search. Don't restore it.
 - **Ranking runs per MATCH** (a 1-letter query matches millions), so it's top-k + allocation-light: folder→weight memo,
   `hash_path_from_index` (never builds the path), ASCII-fast `classify_match`, `select_nth_unstable_by`. Keep it so;
   `bench.rs` measures it.

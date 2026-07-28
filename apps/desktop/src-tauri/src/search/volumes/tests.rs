@@ -240,6 +240,56 @@ fn mount_root_falls_back_to_the_volume_registry() {
     manager.unregister(vid);
 }
 
+// ── Staleness + refresh pacing ───────────────────────────────────────
+
+/// Only ROOT can go stale: its writer bumps the global generation. A non-root
+/// volume stamps `0` and must stay usable for the session no matter how far the
+/// ROOT writer has moved — otherwise every root mutation would trigger a rebuild of
+/// a NAS arena it doesn't feed.
+#[test]
+fn only_root_goes_stale_against_the_writer_generation() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    make_index_db(dir.path(), "smb-staleness", "/Volumes/s");
+    let cancel = AtomicBool::new(false);
+    let loaded = match load_volume_blocking("smb-staleness", dir.path(), &cancel) {
+        VolumeLoad::Loaded(v) => v,
+        other => panic!("expected Loaded, got {}", describe(&other)),
+    };
+
+    assert!(!is_stale("smb-staleness", &loaded), "a non-root volume is never stale");
+    assert!(
+        is_stale(ROOT_VOLUME_ID, &loaded),
+        "a root arena stamped behind the writer generation is stale (it stamped 0 here)"
+    );
+}
+
+/// The refresh floor is what keeps a stale-but-warm arena from rebuilding
+/// back-to-back: the generation moves again seconds after any rebuild lands, so
+/// without the floor every search would kick another multi-second pass.
+#[test]
+fn refresh_pacing_allows_one_claim_per_interval() {
+    let vid = "test-pacing-volume";
+    let interval = std::time::Duration::from_secs(3600);
+
+    assert!(claim_load_slot(vid, interval), "the first claim goes through");
+    assert!(!claim_load_slot(vid, interval), "a second claim inside the interval is declined");
+    assert!(
+        claim_load_slot(vid, std::time::Duration::ZERO),
+        "a zero interval always allows a claim"
+    );
+
+    // A load already in flight declines regardless of the interval.
+    LOADING
+        .lock_ignore_poison()
+        .insert(vid.to_string(), Arc::new(AtomicBool::new(false)));
+    assert!(
+        !claim_load_slot(vid, std::time::Duration::ZERO),
+        "no second load while one is in flight"
+    );
+    LOADING.lock_ignore_poison().remove(vid);
+    LAST_LOAD_STARTED.lock_ignore_poison().remove(vid);
+}
+
 fn describe(load: &VolumeLoad) -> String {
     match load {
         VolumeLoad::Loaded(_) => "Loaded".to_string(),

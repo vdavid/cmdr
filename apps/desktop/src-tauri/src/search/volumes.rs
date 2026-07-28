@@ -59,9 +59,10 @@ pub(crate) struct LoadedVolume {
     /// absolute paths).
     pub(crate) mount_root: Option<String>,
     /// `WRITER_GENERATION` stamped at load. Only the root writer bumps that global
-    /// counter, so this drives root's staleness check; a non-root volume stamps 0
-    /// and simply reloads on the next dialog session (its index is far less
-    /// volatile, and it drops on idle anyway).
+    /// counter, so this drives root's staleness check (which triggers a BACKGROUND
+    /// refresh, never a reload in front of a search — see [`get_loaded`]); a non-root
+    /// volume stamps 0 and simply reloads on the next dialog session (its index is far
+    /// less volatile, and it drops on idle anyway).
     generation: u64,
 }
 
@@ -213,15 +214,88 @@ fn get_loaded_raw(volume_id: &str) -> Option<Arc<LoadedVolume>> {
     SEARCH_INDICES.lock_ignore_poison().get(volume_id).cloned()
 }
 
-/// A cheap handle to a volume's loaded state if it's warm and fresh. Root reloads
-/// when the global writer generation moved past its stamp; a non-root volume is
-/// always considered fresh for the session (its writer doesn't bump the counter).
+/// Whether a volume's arena has fallen behind its DB. Only root can: the global
+/// writer generation moves on every root mutation, while a non-root volume stamps
+/// `0` and simply reloads next dialog session.
+fn is_stale(volume_id: &str, v: &LoadedVolume) -> bool {
+    volume_id == ROOT_VOLUME_ID && v.generation != WRITER_GENERATION.load(Ordering::Relaxed)
+}
+
+/// A cheap handle to a volume's warm arena, refreshing it in the BACKGROUND when it
+/// has fallen behind the writer.
+///
+/// The arena is a snapshot by construction, and root's DB moves under it constantly:
+/// a live-watched boot disk bumps `WRITER_GENERATION` several times a SECOND (measured
+/// ~5.7/s idle on a dev machine, 2026-07-28 logs), so "the writer moved ⇒ rebuild
+/// before answering" put a multi-second full reload (2.6 s for 6.3 M entries, warm
+/// page cache) in front of nearly every dialog open and every auto-applied keystroke
+/// search. Serving the warm arena and refreshing behind it trades at most
+/// [`REFRESH_MIN_INTERVAL`] of extra staleness — on top of the seconds the indexer
+/// itself lags disk — for an instant answer, and bounds the rebuild cost to one pass
+/// per interval instead of one per search.
 pub(crate) fn get_loaded(volume_id: &str) -> Option<Arc<LoadedVolume>> {
     let v = get_loaded_raw(volume_id)?;
-    if volume_id == ROOT_VOLUME_ID && v.generation != WRITER_GENERATION.load(Ordering::Relaxed) {
-        return None;
+    if is_stale(volume_id, &v) {
+        spawn_background_refresh(volume_id);
     }
     Some(v)
+}
+
+/// The floor on how often a stale-but-warm arena is rebuilt in the background. A
+/// rebuild costs seconds of CPU and a transient second copy of the arena, and the
+/// generation moves again within moments of one finishing, so without a floor the
+/// refreshes would run back-to-back for as long as the dialog stays open.
+const REFRESH_MIN_INTERVAL: std::time::Duration = std::time::Duration::from_secs(30);
+
+/// When each volume's arena last STARTED a (re)load, for the [`REFRESH_MIN_INTERVAL`]
+/// floor.
+static LAST_LOAD_STARTED: LazyLock<Mutex<HashMap<String, std::time::Instant>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// Whether a fresh (re)load may start now, recording the attempt when it may. Also
+/// declines while a load for this volume is already in flight.
+fn claim_load_slot(volume_id: &str, min_interval: std::time::Duration) -> bool {
+    if LOADING.lock_ignore_poison().contains_key(volume_id) {
+        return false;
+    }
+    let mut last = LAST_LOAD_STARTED.lock_ignore_poison();
+    match last.get(volume_id) {
+        Some(at) if at.elapsed() < min_interval => false,
+        _ => {
+            last.insert(volume_id.to_string(), std::time::Instant::now());
+            true
+        }
+    }
+}
+
+/// Rebuild a warm volume's arena off the IPC path, then swap it in.
+///
+/// Skips the swap when the arena was dropped meanwhile (idle timeout, dialog closed):
+/// re-inserting there would resurrect hundreds of MB nobody asked for.
+fn spawn_background_refresh(volume_id: &str) {
+    if !claim_load_slot(volume_id, REFRESH_MIN_INTERVAL) {
+        return;
+    }
+    let volume_id = volume_id.to_string();
+    tauri::async_runtime::spawn_blocking(move || {
+        let Some(data_dir) = data_dir() else { return };
+        let cancel = Arc::new(AtomicBool::new(false));
+        LOADING.lock_ignore_poison().insert(volume_id.clone(), cancel.clone());
+        let outcome = load_volume_blocking(&volume_id, &data_dir, &cancel);
+        LOADING.lock_ignore_poison().remove(&volume_id);
+
+        match outcome {
+            VolumeLoad::Loaded(v) => {
+                let mut indices = SEARCH_INDICES.lock_ignore_poison();
+                if indices.contains_key(&volume_id) {
+                    indices.insert(volume_id.clone(), v);
+                    log::debug!("Search index refreshed in the background for '{volume_id}'");
+                }
+            }
+            VolumeLoad::NotIndexed => {}
+            VolumeLoad::Failed(e) => log::debug!("Search index background refresh for '{volume_id}' stopped: {e}"),
+        }
+    });
 }
 
 /// A non-root volume's mount root, needed to prefix its mount-relative index paths.
@@ -291,10 +365,11 @@ fn load_volume_blocking(volume_id: &str, data_dir: &Path, cancel: &AtomicBool) -
     }))
 }
 
-/// Ensure a volume's index is loaded and return it (cache-aware). A warm, fresh
-/// entry returns immediately; otherwise it loads synchronously (open the DB + read
-/// the arena — call inside `spawn_blocking`), caches it, and arms the backstop
-/// timer. The load is cancelable via `release_search_index`.
+/// Ensure a volume's index is loaded and return it (cache-aware). A warm entry
+/// returns immediately (refreshing in the background if it has fallen behind — see
+/// [`get_loaded`]); a COLD one loads synchronously (open the DB + read the arena —
+/// call inside `spawn_blocking`), caches it, and arms the backstop timer. The load is
+/// cancelable via `release_search_index`.
 pub(crate) fn ensure_volume(volume_id: &str) -> VolumeLoad {
     if let Some(v) = get_loaded(volume_id) {
         return VolumeLoad::Loaded(v);
@@ -304,6 +379,9 @@ pub(crate) fn ensure_volume(volume_id: &str) -> VolumeLoad {
         return VolumeLoad::Failed("search data dir not initialized".to_string());
     };
 
+    LAST_LOAD_STARTED
+        .lock_ignore_poison()
+        .insert(volume_id.to_string(), std::time::Instant::now());
     let cancel = Arc::new(AtomicBool::new(false));
     LOADING
         .lock_ignore_poison()
@@ -359,8 +437,11 @@ pub(crate) fn cancel_active_loads() {
     }
 }
 
-/// Drop every loaded arena, reclaiming their RAM, and clear the timers.
+/// Drop every loaded arena, reclaiming their RAM, and clear the timers. Cancels any
+/// in-flight load first, so a background refresh can't finish afterwards and pull the
+/// RAM straight back (it also declines to re-insert a dropped volume, belt and braces).
 pub(crate) fn drop_all_indices() {
+    cancel_active_loads();
     SEARCH_INDICES.lock_ignore_poison().clear();
     let mut timers = TIMERS.lock_ignore_poison();
     if let Some(h) = timers.idle.take() {
