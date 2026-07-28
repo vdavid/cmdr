@@ -52,6 +52,14 @@
   "@downloads.notification.title": {
     "sourceHash": "a2b74bc"
   },
+  "downloads.notification.titleMultiple": "{count, plural, one {{countText} Datei} other {{countText} Dateien}} geladen",
+  "@downloads.notification.titleMultiple": {
+    "sourceHash": "f52e460"
+  },
+  "downloads.notification.mostRecent": "Zuletzt: {fileName}",
+  "@downloads.notification.mostRecent": {
+    "sourceHash": "4aa3b6e"
+  },
   "downloads.empty.message": "Dein Downloads-Ordner ist leer. Trotzdem dorthin?",
   "@downloads.empty.message": {
     "sourceHash": "83e7e07"

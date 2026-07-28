@@ -51,6 +51,14 @@
   "@downloads.notification.title": {
     "sourceHash": "a2b74bc"
   },
+  "downloads.notification.titleMultiple": "已下载 {count, plural, other {{countText} 个文件}}",
+  "@downloads.notification.titleMultiple": {
+    "sourceHash": "f52e460"
+  },
+  "downloads.notification.mostRecent": "最新：{fileName}",
+  "@downloads.notification.mostRecent": {
+    "sourceHash": "4aa3b6e"
+  },
   "downloads.empty.message": "你的“下载”文件夹是空的。仍要前往吗？",
   "@downloads.empty.message": {
     "sourceHash": "83e7e07"

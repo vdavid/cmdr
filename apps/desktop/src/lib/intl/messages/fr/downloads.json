@@ -51,6 +51,14 @@
   "@downloads.notification.title": {
     "sourceHash": "a2b74bc"
   },
+  "downloads.notification.titleMultiple": "{count, plural, one {{countText} fichier téléchargé} many {{countText} fichiers téléchargés} other {{countText} fichiers téléchargés}}",
+  "@downloads.notification.titleMultiple": {
+    "sourceHash": "f52e460"
+  },
+  "downloads.notification.mostRecent": "Le plus récent : {fileName}",
+  "@downloads.notification.mostRecent": {
+    "sourceHash": "4aa3b6e"
+  },
   "downloads.empty.message": "Votre dossier Téléchargements est vide. Y aller quand même ?",
   "@downloads.empty.message": {
     "sourceHash": "83e7e07"

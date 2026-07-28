@@ -9,7 +9,7 @@ mechanics, deep-link wiring, and the smoke-test guide.
   `goToDownload(explorer, dir, name)` jumps to a specific file.
 - **`go-to-latest-ids.ts`**: dedup ids for the go-to-latest INFO toasts.
 - **`event-bridge.svelte.ts`**: one `download-detected` subscription (`startDownloadsEventBridge`), dispatches per the
-  settings enum, re-checks the FDA gate per event.
+  settings enum, re-checks the FDA gate per event, and coalesces the macOS banner (see § One toast at a time).
 - **`DownloadToastContent.svelte`**: in-app toast: title with filename + size, optional subdir line, two snapshotted
   shortcut hints (in-app `⌘J` and global `⌃⌥⌘J`, each a literal `ShortcutChip`), `GlobalShortcutAnimation` for the
   default global combo, and a button row (secondary "Stop showing these" + primary "Jump to file"). Collapsible;
@@ -44,6 +44,10 @@ Two states, toggled by a chevron button:
 - **Collapsed**: same title, one compact summary (`Jump with ⌘J in-app, ⌃⌥⌘J globally.`, dynamic on which shortcuts are
   set, keys as literal `ShortcutChip`s, from the pure `buildShortcutSummary`), and a down-chevron.
 
+`GlobalShortcutAnimation` renders ONLY when `globalBinding === DEFAULT_GLOBAL_GO_TO_LATEST_BINDING`: the SVG lights up
+the literal default key caps, so a remapped combo would animate the wrong keys. A remapped combo therefore keeps the
+text chip and drops the animation.
+
 The action button row is identical in both states. The bridge passes `getDownloadsToastCollapsed()` as
 `initialCollapsed`; the component holds the live toggle in local `$state` (seeded from it), and the chevron's `onclick`
 calls `setDownloadsToastCollapsed(...)` to persist for the next toast. The `ToastItem` host forwards a `props` field
@@ -72,32 +76,51 @@ What the eviction costs, and why it's acceptable:
   frame-level swap, not visible churn. If that ever reads as flicker, coalesce in `dispatchToast` (hold the newest event
   for a few hundred ms) rather than raising the cap.
 
-The macOS notification surface has NO equivalent dedup: `sendNotification` fires per event and the banners stack in
-Notification Center. Not fixable through the plugin (see § macOS notifications can't be deduped).
+The macOS surface reaches the same "one at a time" outcome a different way, because it can't replace a delivered banner
+(see § macOS notifications can't be deduped). It coalesces instead: `queueMacosNotification` folds detections into a
+burst and `flushMacosBurst` sends ONE banner when the window closes.
+
+- **`MACOS_COALESCE_MS` is 400.** Long enough for a browser saving several files in one go, short enough that a lone
+  download doesn't feel delayed.
+- **It's a fixed window opened by the first event, not a debounce that restarts on each one.** A restarting debounce
+  would let a sustained stream (a torrent client unpacking) push the deadline out forever and never notify. A stream
+  instead gets one banner per window: a bound rather than silence.
+- **The permission prompt moved behind the window.** A burst the user gets no banner for shouldn't cost them a prompt.
+- **The toast is NOT coalesced.** It dispatches per event and relies on the store's group cap, so it still appears
+  instantly. Only the OS banner waits.
+- **Teardown cancels a pending burst** (the unlisten returned by `startDownloadsEventBridge` wraps
+  `cancelPendingMacosBurst`), so a window that outlives the layout can't fire.
+
+Wording, in `describeMacosBurst`: one file keeps the original phrasing (name in the title, folder in the body); a
+coalesced burst uses `downloads.notification.titleMultiple` ("Downloaded 3 files") with
+`downloads.notification.mostRecent` naming the newest. The subdir line is dropped for a burst on purpose: its files can
+come from different folders, so naming one would be a claim about the others that isn't true.
 
 ## macOS notifications can't be deduped
 
-In `'macos'` / `'both'` mode a burst produces one banner per file, and they stack in Notification Center. There is no
-way to make a new one REPLACE the previous through our current stack, so don't go looking for a flag.
+There is no way to make a new banner REPLACE a delivered one through our current stack, so don't go looking for a flag.
+(This is why the macOS path coalesces; see § One toast at a time.)
 
-(Verified 2026-07-27 by reading the pinned crate sources in `~/.cargo/registry`.)
+(Verified 2026-07-28 by reading the pinned crate sources in `~/.cargo/registry` and the upstream repos, plus a bundled
+Swift spike for the OS behavior.)
+
+The blocker is the plumbing between us and the OS, NOT macOS:
 
 - `@tauri-apps/plugin-notification`'s `Options` has `id?: number` ("the notification identifier to reference this object
   later") and `group?: string` (documented against Apple's `threadIdentifier`), which reads like it should work.
 - It doesn't: those fields are MOBILE-only. `tauri-plugin-notification` 2.3.3's desktop `NotificationBuilder::show`
   forwards exactly four fields to `notify_rust`: title, body, icon, sound. `id`, `group`, `extra`, and the rest are
   dropped before they reach the OS.
-- The layer below can't do it either: `notify-rust` 4.18.0 on macOS goes through `mac-notification-sys` 0.6.15, whose
-  builder exposes title / subtitle / message / buttons / app icon / content image / delivery date / sound /
-  asynchronous, and nothing resembling an identifier or a replace.
-- Upstream direction, if this ever becomes worth it: `notify-rust` has an experimental `preview-macos-un` feature
-  (`mac-usernotifications`) that carries a real `NotificationId` on the modern `UNUserNotificationCenter` API, where
-  re-adding a request with the same identifier replaces the delivered banner. Reaching it needs the Tauri plugin to both
-  enable that feature and plumb `id` through the desktop path, so it's an upstream PR, not a config change.
+- `notify-rust` 4.18.0's legacy macOS backend ignores `notification.id` too (its doc comment claims "XDG, Windows, and
+  legacy macOS"; only XDG actually reads it, as the D-Bus `replaces_id`).
+- `mac-notification-sys` 0.6.15 DOES set `NSUserNotification.identifier` — from a random UUID it generates per send for
+  response correlation. Right mechanism, not caller-controllable.
 
-The reachable workaround is on our side: coalesce in `dispatchMacosNotification` (hold a burst for a few hundred ms and
-send one banner for the newest file, or one summarizing the count). Not implemented; the in-app toast is the surface
-that was actually hurting.
+macOS itself is fine with this: delivering an `NSUserNotification` whose `identifier` matches an already-delivered one
+REPLACES it (`deliveredNotifications` stays at one entry, content updates), while a different identifier stacks.
+Verified on Darwin 25.5.0 with a minimal bundled Swift app, 2026-07-28. So the deprecated API Tauri already uses would
+carry this if the three layers passed an identifier through; the `preview-macos-un` / `UNUserNotificationCenter` route
+isn't needed. Fixing it means PRs to three repos, which we decided against.
 
 Related dev-mode quirk: the plugin calls `notify_rust::set_application("com.apple.Terminal")` under `tauri::is_dev()`,
 so notifications from a dev build are attributed to Terminal, not Cmdr. Test this surface in a release build.

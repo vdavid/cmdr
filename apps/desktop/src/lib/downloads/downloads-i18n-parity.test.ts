@@ -77,6 +77,14 @@ describe('downloads catalog parity (en)', () => {
     expect(tString('downloads.notification.title', { fileName: 'report.pdf' })).toBe('Downloaded report.pdf')
   })
 
+  it('resolves the coalesced-burst notification copy', () => {
+    expect(tString('downloads.notification.titleMultiple', { count: 3, countText: '3' })).toBe('Downloaded 3 files')
+    // The plural arm exists for locales that need it; en never renders it here
+    // (the single-file title covers count 1), but ICU still has to resolve it.
+    expect(tString('downloads.notification.titleMultiple', { count: 1, countText: '1' })).toBe('Downloaded 1 file')
+    expect(tString('downloads.notification.mostRecent', { fileName: 'report.pdf' })).toBe('Most recent: report.pdf')
+  })
+
   it('resolves the empty-downloads toast', () => {
     expect(tString('downloads.empty.message')).toBe('Your Downloads folder is empty. Go there anyway?')
     expect(tString('downloads.empty.dismiss')).toBe('Dismiss')

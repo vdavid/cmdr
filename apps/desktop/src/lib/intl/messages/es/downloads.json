@@ -51,6 +51,14 @@
   "@downloads.notification.title": {
     "sourceHash": "a2b74bc"
   },
+  "downloads.notification.titleMultiple": "{count, plural, one {Se descargó {countText} archivo} many {Se descargaron {countText} archivos} other {Se descargaron {countText} archivos}}",
+  "@downloads.notification.titleMultiple": {
+    "sourceHash": "f52e460"
+  },
+  "downloads.notification.mostRecent": "Más reciente: {fileName}",
+  "@downloads.notification.mostRecent": {
+    "sourceHash": "4aa3b6e"
+  },
   "downloads.empty.message": "Tu carpeta Descargas está vacía. ¿Ir igualmente?",
   "@downloads.empty.message": {
     "sourceHash": "83e7e07"

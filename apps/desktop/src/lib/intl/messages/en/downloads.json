@@ -100,6 +100,23 @@
     }
   },
 
+  "downloads.notification.titleMultiple": "Downloaded {count, plural, one {{countText} file} other {{countText} files}}",
+  "@downloads.notification.titleMultiple": {
+    "description": "Title of the macOS system notification when several downloads land at once and Cmdr sends one notification for the batch, e.g. 'Downloaded 3 files'. Only used for two or more; a single download uses downloads.notification.title with the file's name.",
+    "placeholders": {
+      "count": "how many downloads landed together (drives the singular/plural form)",
+      "countText": "the same number, already formatted for the locale (e.g. 3)"
+    }
+  },
+
+  "downloads.notification.mostRecent": "Most recent: {fileName}",
+  "@downloads.notification.mostRecent": {
+    "description": "Body of the macOS system notification when several downloads land at once, naming the newest of them under the 'Downloaded 3 files' title.",
+    "placeholders": {
+      "fileName": "the newest downloaded file's name (e.g. report.pdf)"
+    }
+  },
+
   "downloads.empty.message": "Your Downloads folder is empty. Go there anyway?",
   "@downloads.empty.message": {
     "description": "Info toast shown when the user asks to jump to their latest download but no eligible download was found. Offers to open the Downloads folder anyway."

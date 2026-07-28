@@ -51,6 +51,14 @@
   "@downloads.notification.title": {
     "sourceHash": "a2b74bc"
   },
+  "downloads.notification.titleMultiple": "Đã tải xuống {count, plural, other {{countText} tệp}}",
+  "@downloads.notification.titleMultiple": {
+    "sourceHash": "f52e460"
+  },
+  "downloads.notification.mostRecent": "Mới nhất: {fileName}",
+  "@downloads.notification.mostRecent": {
+    "sourceHash": "4aa3b6e"
+  },
   "downloads.empty.message": "Thư mục Tải về của bạn trống. Vẫn đến đó chứ?",
   "@downloads.empty.message": {
     "sourceHash": "83e7e07"

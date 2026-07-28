@@ -19,8 +19,8 @@ notification, both, neither) and owns go-to-latest navigation. Backend counterpa
 
 `startDownloadsEventBridge` reads `getDownloadsNotificationsMode()` per event: `'in-app'` → toast, `'macos'` →
 `sendNotification`, `'both'` → both, `'neither'` → no-op. The macOS path asks permission via
-`$lib/notifications/macos-notification-permission.ts` (session-cached, one INFO toast with a stable dedup id on denial,
-no retries, and we DON'T flip the user's setting).
+`$lib/notifications/macos-notification-permission.ts` (session-cached, one deduped INFO toast on denial, no retries, and
+we DON'T flip the user's setting).
 
 ## Must-knows
 
@@ -28,17 +28,18 @@ no retries, and we DON'T flip the user's setting).
   while a toast is up does NOT change what it shows (a stale hint would mismatch what the user pressed). Hence literal
   chips, not `commandId` mode. The one deliberate live `$state` is the collapse toggle.
 - **Skip-the-whole-toast edge case**: when NEITHER shortcut is teachable (in-app `⌘J` unbound AND global off/unbound),
-  `dispatchToast` skips the in-app toast even when the mode isn't `'neither'`. The toast's reason to exist is teaching
-  these shortcuts. A `'both'`-mode macOS notification still fires (separate surface, never carried a hint).
+  `dispatchToast` skips the toast even when the mode isn't `'neither'` — teaching them is its reason to exist. A
+  `'both'`-mode macOS notification still fires (separate surface, never carried a hint).
 - **Two shortcut hints**: in-app `⌘J` (`getEffectiveShortcuts('downloads.goToLatest')[0]`, `''` when unbound) and global
-  `⌃⌥⌘J` (passed only when the hotkey is BOTH enabled and bound, else `''`). `GlobalShortcutAnimation` renders ONLY when
-  `globalBinding === DEFAULT_GLOBAL_GO_TO_LATEST_BINDING` (the SVG lights up the literal default keys, so a remapped
-  combo would teach the wrong ones); a remapped combo keeps the text chip but drops the animation.
-- **FDA defense-in-depth**: the watcher won't emit `download-detected` when the FDA gate is closed
-  (`runtime::refresh_runtime`), but the bridge re-checks `commands.downloadsWatcherStatus()` per event before surfacing
-  anything, guarding against a stale event during a gate flip. `goToLatestDownload` mirrors this.
+  `⌃⌥⌘J` (`''` unless the hotkey is BOTH enabled and bound). `GlobalShortcutAnimation` renders ONLY for the default
+  global combo, because the SVG lights up literal keys.
+- **FDA defense-in-depth**: the watcher won't emit when the FDA gate is closed (`runtime::refresh_runtime`), but the
+  bridge re-checks `commands.downloadsWatcherStatus()` per event anyway, guarding a stale event during a gate flip.
+  `goToLatestDownload` mirrors this.
 - **One toast at a time**: the bridge passes `maxInGroup: 1`, so a new detection evicts the previous one; the visible
   toast is always the newest file. Don't raise it: a burst otherwise stacks five ~430px toasts.
+- **The macOS banner coalesces instead** (`MACOS_COALESCE_MS`: a fixed 400ms window → one banner, count in the title):
+  nothing we send reaches the OS as a replaceable identifier. The toast is NOT coalesced.
 - **`goToLatestDownload` vs `goToDownload`**: latest consults the watcher ring (Downloads-scan fallback when empty); the
   per-toast jump reveals the file THAT toast advertised, which can differ from the ring's latest (a detection whose
   toast was skipped for having no shortcut to teach still updates the ring).

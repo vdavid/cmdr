@@ -51,6 +51,14 @@
   "@downloads.notification.title": {
     "sourceHash": "a2b74bc"
   },
+  "downloads.notification.titleMultiple": "Letöltve: {count, plural, one {{countText} fájl} other {{countText} fájl}}",
+  "@downloads.notification.titleMultiple": {
+    "sourceHash": "f52e460"
+  },
+  "downloads.notification.mostRecent": "Legutóbbi: {fileName}",
+  "@downloads.notification.mostRecent": {
+    "sourceHash": "4aa3b6e"
+  },
   "downloads.empty.message": "A Letöltések mappád üres. Megnyitod azért mégis?",
   "@downloads.empty.message": {
     "sourceHash": "83e7e07"

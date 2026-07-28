@@ -105,6 +105,18 @@ async function flushAsync(): Promise<void> {
   }
 }
 
+/**
+ * Settle the macOS notification path: the bridge holds a burst for
+ * `MACOS_COALESCE_MS` before sending one banner, so a test asserting on
+ * `sendNotification` has to let that window elapse. Real timers, so the wait is
+ * the actual window plus slack; the in-app toast path is synchronous and needs
+ * only `flushAsync`.
+ */
+async function flushMacosBurst(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 600))
+  await flushAsync()
+}
+
 function payload(overrides: Partial<DownloadDetectedPayload> = {}): DownloadDetectedPayload {
   return {
     path: '/Users/me/Downloads/report.pdf',
@@ -185,7 +197,7 @@ describe('startDownloadsEventBridge', () => {
     getDownloadsNotificationsModeMock.mockReturnValue('macos')
     const listener = await startBridgeAndCaptureListener()
     listener({ payload: payload({ inSubdir: false }) })
-    await flushAsync()
+    await flushMacosBurst()
 
     expect(addToastMock).not.toHaveBeenCalled()
     expect(sendNotificationMock).toHaveBeenCalledTimes(1)
@@ -199,7 +211,7 @@ describe('startDownloadsEventBridge', () => {
     getDownloadsNotificationsModeMock.mockReturnValue('both')
     const listener = await startBridgeAndCaptureListener()
     listener({ payload: payload() })
-    await flushAsync()
+    await flushMacosBurst()
 
     expect(addToastMock).toHaveBeenCalledTimes(1)
     expect(sendNotificationMock).toHaveBeenCalledTimes(1)
@@ -209,7 +221,7 @@ describe('startDownloadsEventBridge', () => {
     getDownloadsNotificationsModeMock.mockReturnValue('neither')
     const listener = await startBridgeAndCaptureListener()
     listener({ payload: payload() })
-    await flushAsync()
+    await flushMacosBurst()
 
     expect(addToastMock).not.toHaveBeenCalled()
     expect(sendNotificationMock).not.toHaveBeenCalled()
@@ -226,7 +238,7 @@ describe('startDownloadsEventBridge', () => {
         inSubdir: true,
       }),
     })
-    await flushAsync()
+    await flushMacosBurst()
 
     const [arg] = sendNotificationMock.mock.calls[0] as unknown as [{ title: string; body?: string }]
     expect(arg.body).toContain('Chrome')
@@ -290,9 +302,66 @@ describe('startDownloadsEventBridge', () => {
     getGlobalGoToLatestEnabledMock.mockReturnValue(false)
     const listener = await startBridgeAndCaptureListener()
     listener({ payload: payload() })
-    await flushAsync()
+    await flushMacosBurst()
 
     expect(addToastMock).not.toHaveBeenCalled()
+    expect(sendNotificationMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('coalesces a burst into ONE macOS notification naming the newest file', async () => {
+    // The OS surface can't dedup its own banners (no identifier reaches macOS
+    // through the plugin), so the bridge holds a burst and sends one.
+    getDownloadsNotificationsModeMock.mockReturnValue('macos')
+    const listener = await startBridgeAndCaptureListener()
+    listener({ payload: payload({ fileName: 'first.pdf' }) })
+    listener({ payload: payload({ fileName: 'second.pdf' }) })
+    listener({ payload: payload({ fileName: 'third.pdf' }) })
+    await flushMacosBurst()
+
+    expect(sendNotificationMock).toHaveBeenCalledTimes(1)
+    const [arg] = sendNotificationMock.mock.calls[0] as unknown as [{ title: string; body?: string }]
+    // The newest file is the one the user is told about.
+    expect(arg.body).toContain('third.pdf')
+    expect(arg.body).not.toContain('first.pdf')
+    // ...and the count of what else landed is not swallowed.
+    expect(arg.title).toContain('3')
+  })
+
+  it('a lone detection keeps the single-file wording (no count, no "most recent")', async () => {
+    getDownloadsNotificationsModeMock.mockReturnValue('macos')
+    const listener = await startBridgeAndCaptureListener()
+    listener({ payload: payload({ fileName: 'only.pdf' }) })
+    await flushMacosBurst()
+
+    expect(sendNotificationMock).toHaveBeenCalledTimes(1)
+    const [arg] = sendNotificationMock.mock.calls[0] as unknown as [{ title: string; body?: string }]
+    expect(arg.title).toBe('Downloaded only.pdf')
+  })
+
+  it('a later burst gets its own notification (the window does not swallow it)', async () => {
+    getDownloadsNotificationsModeMock.mockReturnValue('macos')
+    const listener = await startBridgeAndCaptureListener()
+    listener({ payload: payload({ fileName: 'first.pdf' }) })
+    await flushMacosBurst()
+    listener({ payload: payload({ fileName: 'later.pdf' }) })
+    await flushMacosBurst()
+
+    expect(sendNotificationMock).toHaveBeenCalledTimes(2)
+    const [second] = sendNotificationMock.mock.calls[1] as unknown as [{ title: string }]
+    expect(second.title).toBe('Downloaded later.pdf')
+  })
+
+  it('coalescing does NOT throttle the in-app toast: every detection still gets one', async () => {
+    // The toast has its own one-at-a-time rule (the store's group cap); it must
+    // not also inherit the macOS burst window, or a toast would arrive late.
+    getDownloadsNotificationsModeMock.mockReturnValue('both')
+    const listener = await startBridgeAndCaptureListener()
+    listener({ payload: payload({ fileName: 'first.pdf' }) })
+    listener({ payload: payload({ fileName: 'second.pdf' }) })
+    await flushAsync()
+
+    expect(addToastMock).toHaveBeenCalledTimes(2)
+    await flushMacosBurst()
     expect(sendNotificationMock).toHaveBeenCalledTimes(1)
   })
 
@@ -307,7 +376,7 @@ describe('startDownloadsEventBridge', () => {
     getDownloadsNotificationsModeMock.mockReturnValue('both')
     const listener = await startBridgeAndCaptureListener()
     listener({ payload: payload() })
-    await flushAsync()
+    await flushMacosBurst()
 
     expect(addToastMock).not.toHaveBeenCalled()
     expect(sendNotificationMock).not.toHaveBeenCalled()
@@ -339,9 +408,7 @@ describe('startDownloadsEventBridge — permission flow', () => {
 
     const listener = await startBridgeAndCaptureListener()
     listener({ payload: { ...payload() } })
-    // Two microtask flushes for the chained awaits.
-    await flushAsync()
-    await Promise.resolve()
+    await flushMacosBurst()
 
     expect(requestPermissionMock).toHaveBeenCalledTimes(1)
     expect(sendNotificationMock).toHaveBeenCalledTimes(1)
@@ -353,8 +420,7 @@ describe('startDownloadsEventBridge — permission flow', () => {
 
     const listener = await startBridgeAndCaptureListener()
     listener({ payload: { ...payload() } })
-    await flushAsync()
-    await Promise.resolve()
+    await flushMacosBurst()
 
     expect(sendNotificationMock).not.toHaveBeenCalled()
     // One INFO toast surfaces with the dedup id.

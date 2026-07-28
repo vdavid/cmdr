@@ -24,6 +24,14 @@
  * but we re-check the gate per event before surfacing anything. This
  * guards against any stale event slipping through during a gate flip and
  * mirrors the same defensive shape `goToLatestDownload` uses.
+ *
+ * ## Two surfaces, two ways of staying at one
+ *
+ * The in-app toast dispatches immediately and lets the toast store's group cap
+ * evict the previous one. The macOS notification can't do that (nothing we send
+ * reaches the OS as a replaceable identifier), so it coalesces instead: a burst
+ * is held for `MACOS_COALESCE_MS` and becomes ONE banner. See `DETAILS.md`
+ * § macOS notifications can't be deduped.
  */
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
@@ -35,6 +43,7 @@ import { getEffectiveShortcuts } from '$lib/shortcuts'
 import { getAppLogger } from '$lib/logging/logger'
 import { ensureMacosNotificationPermission } from '$lib/notifications/macos-notification-permission'
 import { tString } from '$lib/intl/messages.svelte'
+import { formatInteger } from '$lib/intl/number-format'
 import { getDownloadsNotificationsMode, type DownloadsNotificationsMode } from './notifications-mode'
 import { getGlobalGoToLatestEnabled, getGlobalGoToLatestBinding } from './global-shortcut-setting'
 import { getDownloadsToastCollapsed } from './downloads-toast-collapsed'
@@ -70,6 +79,25 @@ const TOAST_WIDTH_PX = 432
  * can also collapse it to a compact form that the next toast remembers.
  */
 const TOAST_TIMEOUT_MS = 10_000
+/**
+ * How long the macOS notification path holds a burst before sending one banner
+ * for it. Long enough to catch a browser saving several files in one go, short
+ * enough that a lone download doesn't feel delayed.
+ *
+ * It's a FIXED window opened by the first event of a burst, not a debounce that
+ * restarts on each one: a sustained stream (a torrent client unpacking) would
+ * otherwise keep pushing the deadline out and never notify at all. A stream
+ * instead gets one banner per window, which is a bound rather than silence.
+ */
+const MACOS_COALESCE_MS = 400
+
+/**
+ * The burst being accumulated for the macOS surface, or `null` between bursts.
+ * `latest` is what the banner will name; `count` is how many detections it
+ * stands for.
+ */
+let macosBurst: { latest: DownloadDetectedEvent; count: number } | null = null
+let macosBurstTimer: ReturnType<typeof setTimeout> | null = null
 
 /**
  * Mount the listener. Returns an unsubscribe function — call it from the
@@ -84,7 +112,20 @@ export async function startDownloadsEventBridge(explorer: ExplorerAPI | undefine
     void handleDownloadDetected(payload, explorer)
   })
   log.debug('Downloads event bridge mounted')
-  return unlisten
+  return () => {
+    // Drop a burst still waiting out its window, so a teardown can't fire a
+    // notification for a window nobody is listening to any more.
+    cancelPendingMacosBurst()
+    unlisten()
+  }
+}
+
+function cancelPendingMacosBurst(): void {
+  if (macosBurstTimer !== null) {
+    clearTimeout(macosBurstTimer)
+    macosBurstTimer = null
+  }
+  macosBurst = null
 }
 
 async function handleDownloadDetected(
@@ -113,7 +154,7 @@ async function handleDownloadDetected(
     dispatchToast(payload, explorer)
   }
   if (mode === 'macos' || mode === 'both') {
-    await dispatchMacosNotification(payload)
+    queueMacosNotification(payload)
   }
 }
 
@@ -160,18 +201,58 @@ function dispatchToast(payload: DownloadDetectedEvent, explorer: ExplorerAPI | u
   })
 }
 
-async function dispatchMacosNotification(payload: DownloadDetectedEvent): Promise<void> {
+/**
+ * Fold a detection into the current burst, opening a window if there isn't one.
+ * Returns immediately: the banner goes out when the window closes.
+ */
+function queueMacosNotification(payload: DownloadDetectedEvent): void {
+  if (macosBurst !== null) {
+    macosBurst.latest = payload
+    macosBurst.count += 1
+    return
+  }
+  macosBurst = { latest: payload, count: 1 }
+  macosBurstTimer = setTimeout(() => {
+    void flushMacosBurst()
+  }, MACOS_COALESCE_MS)
+}
+
+async function flushMacosBurst(): Promise<void> {
+  const burst = macosBurst
+  macosBurstTimer = null
+  macosBurst = null
+  if (burst === null) return
+
+  // Ask for permission only once the window has closed: a burst that the user
+  // never gets a banner for shouldn't cost them a permission prompt either.
   const ok = await ensureMacosNotificationPermission()
   if (!ok) return
 
-  const title = tString('downloads.notification.title', { fileName: payload.fileName })
-  const body = payload.inSubdir
-    ? tString('downloads.toast.inSubdir', { subdir: relativeSubdir(payload.parentDir) })
-    : ''
+  const { title, body } = describeMacosBurst(burst.latest, burst.count)
   try {
     sendNotification({ title, body })
   } catch (err) {
     log.warn('Failed to send macOS notification: {err}', { err: String(err) })
+  }
+}
+
+/**
+ * The banner's wording. A lone download keeps the single-file phrasing it has
+ * always had (name in the title, folder in the body); a coalesced burst leads
+ * with how many landed and names the newest in the body. The subdir line is
+ * dropped for a burst on purpose: its files can come from different folders,
+ * so one folder name would be a claim about the others that isn't true.
+ */
+function describeMacosBurst(latest: DownloadDetectedEvent, count: number): { title: string; body: string } {
+  if (count === 1) {
+    return {
+      title: tString('downloads.notification.title', { fileName: latest.fileName }),
+      body: latest.inSubdir ? tString('downloads.toast.inSubdir', { subdir: relativeSubdir(latest.parentDir) }) : '',
+    }
+  }
+  return {
+    title: tString('downloads.notification.titleMultiple', { count, countText: formatInteger(count) }),
+    body: tString('downloads.notification.mostRecent', { fileName: latest.fileName }),
   }
 }
 
