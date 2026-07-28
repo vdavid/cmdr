@@ -507,14 +507,14 @@ footerless dialog gets the same inset as bottom padding on the body instead. The
 - `resizable`: lets the user drag the bottom-right corner to resize the dialog (default off). Turn it on for dialogs
   that host resizable content like review lists; the body region grows and scrolls, and the caller still passes the
   initial size via `containerStyle`. The dialog can't grow past the viewport or shrink below a usable minimum.
-- `fillBody`: a fixed-height frame instead of one that grows with its content. The panel becomes a flex column, the
-  body absorbs the vertical slack (as a column, so its own child can take `flex: 1 1 auto` and scroll), and the panel
-  clips to its radius. Cap the height via `containerStyle`. `resizable` brings its own version of this; don't combine.
+- `fillBody`: a fixed-height frame instead of one that grows with its content. The panel becomes a flex column, the body
+  absorbs the vertical slack (as a column, so its own child can take `flex: 1 1 auto` and scroll), and the panel clips
+  to its radius. Cap the height via `containerStyle`. `resizable` brings its own version of this; don't combine.
 - `align="top"`: drops the dialog 10vh from the top instead of centering it, the Spotlight placement for a dialog the
   user types into and reads a long list from. The query dialogs are the only users.
-- `ownsKeyboard`: hands the whole keydown contract to the consumer. `ModalDialog` still stops propagation, then
-  forwards every key — including Escape and Enter on a focused button, which it otherwise handles itself. For dialogs
-  with dynamic Enter semantics or an Escape that must defer to a nested popover.
+- `ownsKeyboard`: hands the whole keydown contract to the consumer. `ModalDialog` still stops propagation, then forwards
+  every key — including Escape and Enter on a focused button, which it otherwise handles itself. For dialogs with
+  dynamic Enter semantics or an Escape that must defer to a nested popover.
 - `closeOnOverlayClick`: clicking the scrim dismisses. Off by default, because macOS panels don't.
 - `overlayClass`: an extra class on the overlay, for a SHARED dialog that needs one stable structural hook across
   several `dialogId`s (`QueryDialog` renders as `.search-overlay` for all three of its ids). Not a styling hook.
