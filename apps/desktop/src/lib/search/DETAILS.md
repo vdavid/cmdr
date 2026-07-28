@@ -51,8 +51,8 @@ results table, empty state, and the `recent-items/` family) lives in `../query-u
 
 `SearchDialog.svelte` no longer carries the dialog orchestration. The overlay, keyboard contract, IME guard, auto-apply
 gates, `lastDialogEvent` writes, the `⏎` ownership swap, the title bar, the chip strip, the AI prompt strip, the results
-table, the recent-items dropdown, and the empty state all live in `../query-ui/QueryDialog.svelte`. The Search
-wrapper builds a [`QueryDialogConfig`](../query-ui/query-dialog-config.ts) for Search and mounts QueryDialog with it.
+table, the recent-items dropdown, and the empty state all live in `../query-ui/QueryDialog.svelte`. The Search wrapper
+builds a [`QueryDialogConfig`](../query-ui/query-dialog-config.ts) for Search and mounts QueryDialog with it.
 
 What the wrapper still owns (Search-specific glue):
 

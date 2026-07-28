@@ -801,9 +801,10 @@ exported `shortcutAnchorId(commandId)` in `lib/settings/settings-window.ts` so i
 
 **Where literal chips render the fixed interaction keys (Class B).** Beyond the live `commandId` sites, literal-mode
 chips give the uniform key look to fixed (non-customizable) interaction keys: the search dialog's empty-state tip (`⌘N`
-/ `⌘H` / `⌘Enter`), the run button's `⏎`, the scope popover's `⌥C` / `⌥V`, the recent-items dropdown's `↑↓` / `Enter`, the viewer's binary-warning `⇧Space` / `Enter`, `LoadingIcon`'s `Esc` cancel hint, the
-`PtpcameradDialog` `Ctrl+C`, and the network browser's `⌘R` refresh hint. These keys are static by nature (no registry
-command, never clickable); the chip only unifies their appearance.
+/ `⌘H` / `⌘Enter`), the run button's `⏎`, the scope popover's `⌥C` / `⌥V`, the recent-items dropdown's `↑↓` / `Enter`,
+the viewer's binary-warning `⇧Space` / `Enter`, `LoadingIcon`'s `Esc` cancel hint, the `PtpcameradDialog` `Ctrl+C`, and
+the network browser's `⌘R` refresh hint. These keys are static by nature (no registry command, never clickable); the
+chip only unifies their appearance.
 
 **Class B sites kept un-migrated (deliberate exceptions):**
 

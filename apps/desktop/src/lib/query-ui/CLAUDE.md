@@ -18,20 +18,20 @@ internals: `filter-chips/CLAUDE.md`. Consumer decisions: `../search/CLAUDE.md`, 
   `{ entries, totalCount }` / `{ caveat, highlightedFields }`.
 - **AI translation errors surface once, in QueryDialog.** `translateAi` must let the typed `AiTranslateError` throw (a
   `null` return is a benign empty translation); don't re-add a per-consumer catch.
-- **`createQueryFilterState()` owns ONLY cross-consumer fields.** Adding one, ask "would Selection care?" Yes → core;
-  no → the consumer's extras (`lastAiLabel` is the textbook "no"). `recordAiTranslation` (core) writes ONLY
+- **`createQueryFilterState()` owns ONLY cross-consumer fields.** Adding one, ask "would Selection care?" Yes → core; no
+  → the consumer's extras (`lastAiLabel` is the textbook "no"). `recordAiTranslation` (core) writes ONLY
   `handTyped[mode]`; the label/pattern slots are the extras'.
 - **`stopPropagation()` on every dialog `keydown`** (else keys reach the explorer and trigger quick-search/nav).
   `use:trapFocus` listeners run in the capture phase, so this can't starve the trap.
 - **All chrome is `ModalDialog`'s; never re-add it here.** Opt-ins: `align="top"`, `fillBody`, `padded={false}`,
-  `ownsKeyboard` (Enter + the popover-aware Escape), `closeOnOverlayClick`, `overlayClass="search-overlay"`. Every
-  strip pads itself, at `--spacing-dialog`, matching the title bar.
+  `ownsKeyboard` (Enter + the popover-aware Escape), `closeOnOverlayClick`, `overlayClass="search-overlay"`. Every strip
+  pads itself, at `--spacing-dialog`, matching the title bar.
 - **Two silent-failure traps.** Turning count-only OFF must re-run (`runFromButton()`, never `scheduleSearch()`) or a
   stale count stays; and never swallow a `runQuery` rejection (`executeQuery` toasts the backend's message, else a
   refusal reads as "nothing matched").
 - **Don't wipe state from any lifecycle hook.** State survives unmount by design; `⌘N` is the ONLY sanctioned reset.
-- **Reopen re-derives results, not the empty state.** A restored NON-AI session sets `runOnMount` to re-run; AI must
-  NOT (cloud cost). Don't loosen the `mode !== 'ai'` gate.
+- **Reopen re-derives results, not the empty state.** A restored NON-AI session sets `runOnMount` to re-run; AI must NOT
+  (cloud cost). Don't loosen the `mode !== 'ai'` gate.
 - **The query field is a hand-assembled combobox over recent items, NOT a house/Ark `Combobox`** (that model uses the
   control's own input as the filter; this needs two). In `RecentItemsPopover`: no wrap, `↑` at the top exits to the
   field, every claimed key `stopPropagation()`s or the dialog also moves the results cursor, and `↓` in the field opens

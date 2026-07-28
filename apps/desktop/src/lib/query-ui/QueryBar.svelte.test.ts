@@ -12,9 +12,7 @@ import { mount, tick } from 'svelte'
 import QueryBar from './QueryBar.svelte'
 import type { SearchMode } from './query-filter-state.svelte'
 
-function mountBar(
-  overrides: Partial<{ query: string; mode: SearchMode; showRunHint: boolean; recentOpen: boolean }>,
-): {
+function mountBar(overrides: Partial<{ query: string; mode: SearchMode; showRunHint: boolean; recentOpen: boolean }>): {
   target: HTMLDivElement
   input: HTMLInputElement
   onInput: ReturnType<typeof vi.fn>

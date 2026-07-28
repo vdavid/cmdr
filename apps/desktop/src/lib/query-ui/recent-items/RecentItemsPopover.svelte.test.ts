@@ -232,9 +232,7 @@ describe('RecentSearchesPopover', () => {
   }
 
   function cursorIndex(): number {
-    return Array.from(document.querySelectorAll('.result-row')).findIndex((r) =>
-      r.classList.contains('is-cursor'),
-    )
+    return Array.from(document.querySelectorAll('.result-row')).findIndex((r) => r.classList.contains('is-cursor'))
   }
 
   it('Enter selects the cursor row and closes, and never reaches the host dialog', async () => {
