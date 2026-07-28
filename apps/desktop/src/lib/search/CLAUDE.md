@@ -43,13 +43,10 @@ natural-language queries into structured filters. First consumer of the shared Q
   OPPOSITE pane is a snapshot. Source ops (Cmd+C/X, F5/F6, drag-out) run (`canBeSource: true`).
 - **AI mode never auto-applies** (cost); only Enter / `⌘Enter` / the ⏎ button / example chips fire it. Don't add a
   per-consumer catch that swallows AI errors: QueryDialog surfaces them once for both.
-- **Two volume scopes: an unscoped filename search covers EVERY indexed volume; the image grid follows the active
-  pane.** The backend fans out across root plus each indexed NAS/MTP volume (`src-tauri/src/search/DETAILS.md` §
-  Multi-volume search), answering from what's loaded and folding the rest in as `search-index-ready` fires per volume.
-  The dialog still keys its lifecycle + entry count + scanning indicator on `ROOT_VOLUME_ID` — root is the one volume it
-  waits for, not the whole search's coverage. The image grid targets the focused pane's volume via `imageSearchVolume`
-  (a NAS search finds NAS photos). The pane's volume id IS the media-index id (`root` / `smb-…`). DETAILS § Which
-  volume.
+- **Two volume scopes: filename search covers EVERY indexed volume; the image grid follows the active pane.** The
+  backend fans out (`src-tauri/src/search/CLAUDE.md`); `SearchDialog` keys lifecycle + scanning indicator on
+  `ROOT_VOLUME_ID` because root is what it WAITS for, not the coverage. The grid follows `imageSearchVolume`, the
+  focused pane's volume (a NAS search finds NAS photos), whose id IS the media-index id. DETAILS § Which volume.
 - **`ImageSearchResults` OWNS every `cmdr-media://` thumbnail token it mints** (no viewer-session close): drop the prior
   set before minting the next, and all on unmount (`mediaIndexDropThumbnailTokens`), or the backend token map leaks.
   With `mediaIndex.enabled` OFF the section renders nothing, fires no IPC; ON, it voices coverage and renders the
