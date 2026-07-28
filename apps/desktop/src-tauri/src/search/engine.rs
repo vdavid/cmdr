@@ -396,7 +396,9 @@ pub(crate) fn search_ranked(
                 .filter(|&idx| index.entries[idx].is_directory)
                 .collect();
             let stem = ranking::stem_for(query);
-            ranking::rank_decorated(index, &dir_indices, &stem, case_insensitive, weights)
+            // `usize::MAX`: the caller subtracts the out-of-range directories from the
+            // volume total, so it needs every matching directory, not a top-k slice.
+            ranking::rank_decorated(index, &dir_indices, &stem, case_insensitive, weights, usize::MAX)
                 .into_iter()
                 .map(|(key, idx)| build_ranked_entry(index, key, idx, path_prefix, home_dir.as_deref()))
                 .collect()
@@ -412,23 +414,22 @@ pub(crate) fn search_ranked(
         return Ok((entries, total_count));
     }
 
-    // Rank by match-quality band first, then importance-boosted recency within a
-    // band (empty weights ⇒ pure recency, today's order). See `ranking.rs`. Keep the
-    // keys: the multi-volume merge k-way-merges each volume's slice on them.
-    let stem = ranking::stem_for(query);
-    let mut ranked = ranking::rank_decorated(index, &matching_indices, &stem, case_insensitive, weights);
-
-    // Take first `limit` entries. When size filters are active and directories
-    // are included, collect extra candidates because some directories may be
-    // filtered out later in fill_directory_sizes (directory sizes come from
-    // dir_stats, not the entries table).
+    // Keep only `limit` entries. When size filters are active and directories are
+    // included, keep extra candidates because some directories may be filtered out
+    // later in fill_directory_sizes (directory sizes come from dir_stats, not the
+    // entries table).
     let base_limit = query.limit.min(1000) as usize;
     let limit = if has_size_filter && dirs_included {
         (base_limit * 3).max(base_limit + 100)
     } else {
         base_limit
     };
-    ranked.truncate(limit);
+
+    // Rank by match-quality band first, then importance-boosted recency within a
+    // band (empty weights ⇒ pure recency, today's order). See `ranking.rs`. Keep the
+    // keys: the multi-volume merge k-way-merges each volume's slice on them.
+    let stem = ranking::stem_for(query);
+    let ranked = ranking::rank_decorated(index, &matching_indices, &stem, case_insensitive, weights, limit);
 
     // Reconstruct paths and build result entries (prefixed into the volume's mount
     // space, so a non-root volume's mount-relative index paths become absolute).
@@ -544,6 +545,56 @@ pub(crate) fn reconstruct_path_from_index(index: &SearchIndex, entry_id: i64) ->
 
     components.reverse();
     format!("/{}", components.join("/"))
+}
+
+/// The [`hash_path`](ranking::hash_path) of an entry's full path, without ever
+/// building that path.
+///
+/// The ranking blend needs a folder's importance weight, and a weight lookup is a
+/// hash lookup — the path `String` [`reconstruct_path_from_index`] would build exists
+/// only to be hashed and dropped. A broad query ranks millions of candidates, so this
+/// walks the same parent chain and streams the bytes into a [`PathHasher`] instead.
+/// Byte-identical to hashing the reconstructed path (pinned by
+/// `streamed_hash_matches_whole_path_hash`).
+pub(crate) fn hash_path_from_index(index: &SearchIndex, entry_id: i64) -> u64 {
+    let mut hasher = ranking::PathHasher::new();
+    if entry_id == ROOT_ID {
+        hasher.write(b"/");
+        return hasher.finish();
+    }
+
+    // The chain yields components leaf-first; the path needs them root-first, so
+    // collect the (borrowed, non-allocating) names before hashing.
+    let mut components: Vec<&str> = Vec::new();
+    let mut current_id = entry_id;
+    loop {
+        if current_id == ROOT_ID || current_id == 0 {
+            break;
+        }
+        match index.id_to_index.get(&current_id) {
+            Some(&idx) => {
+                let entry = &index.entries[idx];
+                let name = index.name(entry);
+                if name.is_empty() {
+                    break; // root sentinel
+                }
+                components.push(name);
+                current_id = entry.parent_id;
+            }
+            None => break, // orphan or missing parent
+        }
+    }
+
+    if components.is_empty() {
+        // `format!("/{}", "")` — the reconstructed path for an empty chain.
+        hasher.write(b"/");
+        return hasher.finish();
+    }
+    for name in components.iter().rev() {
+        hasher.write(b"/");
+        hasher.write(name.as_bytes());
+    }
+    hasher.finish()
 }
 
 /// Derive an icon ID from filename and directory flag.

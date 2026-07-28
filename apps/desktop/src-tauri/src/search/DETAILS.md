@@ -180,6 +180,31 @@ within-band multiplier is `1.0` and the sort is pure recency within each band �
 ordering. Pinned by `empty_weights_within_band_is_pure_recency` and `empty_weights_and_no_stem_is_pure_recency`. The
 engine also takes an empty-map fast path (skipping the per-result parent-path reconstruction entirely).
 
+### Ranking cost: the top-k pass (`rank_decorated`)
+
+Ranking runs once per MATCHED entry, and a one-letter query matches millions (4.6 M of 6.96 M on a real
+home dir), so this pass — not the rayon scan — was the search's dominant cost: 11.9 s for that query,
+~75% of it the importance blend. Four things keep it bounded, all order-preserving:
+
+- **A per-thread `folder_id → weight` memo.** Matches cluster hard by folder, and a weight lookup means
+  walking the folder's parent chain.
+- **The folder path is HASHED, never built.** `engine::hash_path_from_index` streams the parent chain's
+  components into `ranking::PathHasher` (incremental FNV-1a + the same splitmix finalizer), so the
+  `String` that existed only to be hashed and dropped is gone. It's byte-identical to
+  `hash_path(reconstruct_path_from_index(..))`, pinned by `streamed_hash_matches_whole_path_hash` — a
+  drift there would silently read the wrong weight, with no symptom beyond subtly worse ranking.
+- **`classify_match` allocates nothing** for a case-sensitive compare or an ASCII name+stem (nearly
+  every real filename). Non-ASCII case-insensitive names still take the `to_lowercase()` path, so
+  Unicode folding (final sigma and friends) is unchanged.
+- **Top-k, not a full sort.** `select_nth_unstable_by` partitions to the caller's limit, then only that
+  prefix is sorted. Safe because `RankKey::cmp_best_first` is a TOTAL order (the final tiebreak is the
+  unique entry id), so the top-k set and its order are unique — an unstable partition returns exactly
+  what the full stable sort did. The count-only directory pass passes `usize::MAX`: it needs every
+  matching directory, since the caller subtracts the out-of-range ones from the volume total.
+
+Measurements and the before/after table: `docs/notes/search-latency-2026-07-28.md`. The harness is
+`bench.rs` (`#[ignore]`d; it can run against a real `index-*.db`).
+
 ### The weight-map lifecycle (`volumes.rs`)
 
 Per-volume weight maps live in the `WEIGHTS` map (`volume_id → Arc<ImportanceWeights>`) in `volumes.rs`, built ONCE by

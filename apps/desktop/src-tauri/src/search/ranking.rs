@@ -29,6 +29,8 @@
 //! — byte-for-byte today's behavior. That's the degradation contract: absent
 //! importance, ranking equals what it was before this feature.
 
+use rayon::prelude::*;
+
 use super::index::SearchIndex;
 use super::types::{PatternType, SearchQuery};
 
@@ -105,14 +107,29 @@ pub(crate) fn classify_match(name: &str, stem: &str, case_insensitive: bool) -> 
     if stem.is_empty() {
         return MatchQuality::Other;
     }
-    let (name_cmp, stem_cmp) = if case_insensitive {
-        (name.to_lowercase(), stem.to_lowercase())
-    } else {
-        (name.to_string(), stem.to_string())
-    };
-    if name_cmp == stem_cmp {
+    // Allocation-free for the two cases that cover essentially every real filename;
+    // this runs once per MATCHED entry, and a broad query matches millions, so the
+    // two `to_lowercase()` Strings the general path needs are the difference between
+    // a ranked result set and a stall. The general path stays exactly as it was, so
+    // Unicode case folding (final-sigma and friends) is unchanged where it matters.
+    if !case_insensitive {
+        return band_of(name == stem, name.starts_with(stem));
+    }
+    if name.is_ascii() && stem.is_ascii() {
+        return band_of(
+            name.eq_ignore_ascii_case(stem),
+            name.len() >= stem.len() && name[..stem.len()].eq_ignore_ascii_case(stem),
+        );
+    }
+    let (name_cmp, stem_cmp) = (name.to_lowercase(), stem.to_lowercase());
+    band_of(name_cmp == stem_cmp, name_cmp.starts_with(&stem_cmp))
+}
+
+/// The band for an already-computed (equal, starts-with) pair.
+fn band_of(exact: bool, prefix: bool) -> MatchQuality {
+    if exact {
         MatchQuality::Exact
-    } else if name_cmp.starts_with(&stem_cmp) {
+    } else if prefix {
         MatchQuality::Prefix
     } else {
         MatchQuality::Other
@@ -189,7 +206,15 @@ impl ImportanceWeights {
     /// The weight for a folder path, or `0.0` when unscored/absent. `0.0` is
     /// neutral in the blend (multiplier `1.0`), never a penalty.
     pub(crate) fn weight_for(&self, folder_path: &str) -> f64 {
-        self.map.get(&hash_path(folder_path)).copied().unwrap_or(0.0)
+        self.weight_for_hash(hash_path(folder_path))
+    }
+
+    /// [`weight_for`](Self::weight_for) for a caller that already has the path's
+    /// [`hash_path`] value. The ranking hot path hashes a folder's path straight off
+    /// the index's parent chain ([`PathHasher`]) instead of materializing the `String`
+    /// only to hash and drop it.
+    pub(crate) fn weight_for_hash(&self, path_hash: u64) -> f64 {
+        self.map.get(&path_hash).copied().unwrap_or(0.0)
     }
 
     /// How many scored folders the map holds. For the load-time log line, which is how
@@ -223,17 +248,45 @@ const FNV_PRIME: u64 = 0x0000_0100_0000_01b3;
 /// detail. Nothing persists a hash, so this is free to change — a different function
 /// just yields a different, equally consistent mapping.
 pub(crate) fn hash_path(path: &str) -> u64 {
-    let mut hash = FNV_OFFSET_BASIS;
-    for byte in path.as_bytes() {
-        hash ^= *byte as u64;
-        hash = hash.wrapping_mul(FNV_PRIME);
+    let mut hasher = PathHasher::new();
+    hasher.write(path.as_bytes());
+    hasher.finish()
+}
+
+/// [`hash_path`] fed one piece at a time, so a caller that can produce a path's bytes
+/// in order without owning the whole string doesn't have to build one.
+///
+/// The ranking hot path walks the index's parent chain to get a folder's path, and the
+/// only thing it does with that path is hash it. Feeding the components straight in
+/// keeps a broad query (millions of matches) from allocating a `String` per candidate.
+/// Byte-for-byte identical to `hash_path` of the joined path — pinned by
+/// `streamed_hash_matches_whole_path_hash`.
+pub(crate) struct PathHasher(u64);
+
+impl PathHasher {
+    pub(crate) fn new() -> Self {
+        Self(FNV_OFFSET_BASIS)
     }
-    // splitmix64's finalizer: avalanches every input bit across all 64 output bits.
-    hash ^= hash >> 30;
-    hash = hash.wrapping_mul(0xbf58_476d_1ce4_e5b9);
-    hash ^= hash >> 27;
-    hash = hash.wrapping_mul(0x94d0_49bb_1331_11eb);
-    hash ^ (hash >> 31)
+
+    /// Fold the next chunk of the path's bytes in (FNV-1a).
+    pub(crate) fn write(&mut self, bytes: &[u8]) {
+        for byte in bytes {
+            self.0 ^= *byte as u64;
+            self.0 = self.0.wrapping_mul(FNV_PRIME);
+        }
+    }
+
+    /// The finished key. splitmix64's finalizer: avalanches every input bit across all
+    /// 64 output bits. Not optional — raw FNV-1a barely mixes its LOW bits, which is
+    /// exactly where hashbrown takes its bucket index.
+    pub(crate) fn finish(self) -> u64 {
+        let mut hash = self.0;
+        hash ^= hash >> 30;
+        hash = hash.wrapping_mul(0xbf58_476d_1ce4_e5b9);
+        hash ^= hash >> 27;
+        hash = hash.wrapping_mul(0x94d0_49bb_1331_11eb);
+        hash ^ (hash >> 31)
+    }
 }
 
 /// The `BuildHasher` for a map whose keys are ALREADY well-mixed 64-bit hashes: it
@@ -334,60 +387,86 @@ pub(crate) fn rank(
     case_insensitive: bool,
     weights: &ImportanceWeights,
 ) {
-    let decorated = rank_decorated(index, matching, stem, case_insensitive, weights);
+    let decorated = rank_decorated(index, matching, stem, case_insensitive, weights, usize::MAX);
     for (slot, (_, idx)) in matching.iter_mut().zip(decorated.iter()) {
         *slot = *idx;
     }
 }
 
-/// Rank matched entry indices and return each with its [`RankKey`], best-first.
+/// Rank matched entry indices and return the best `keep` of them with their
+/// [`RankKey`]s, best-first.
 ///
 /// The same policy as [`rank`], but it hands back the sort keys so a multi-volume
 /// search can k-way-merge each volume's ranked slice into one global order
 /// (`RankKey::cmp_best_first`) without recomputing bands or reconstructing paths.
 /// Single-volume callers use [`rank`]; the engine calls this and drops the keys
-/// after truncating, except on the multi-volume path where the keys travel with the
-/// results up to the merge.
+/// after the merge, except on the multi-volume path where the keys travel with the
+/// results up to it.
 ///
-/// Pure: no I/O. Decorate-sort-undecorate computes each entry's key EXACTLY ONCE
-/// (a naive `sort_by` recomputes it per comparison, and each key with weights does
-/// an O(depth) parent-path reconstruction). The empty-map fast path skips the
-/// per-entry path reconstruction entirely, preserving today's pure-recency order
-/// (the degradation contract).
+/// `keep` is how many results the caller can actually use (`usize::MAX` for "all of
+/// them", which the count-only directory pass needs). Everything below it is
+/// partitioned away instead of sorted, because a search matching millions of entries
+/// still shows 30: a full `sort` of every match is work thrown away by the truncate
+/// that follows. The comparator is a TOTAL order (the final tiebreak is the unique
+/// entry id), so the top-`keep` set and its order are unique — an unstable partition
+/// gives exactly what the full sort did.
+///
+/// Pure: no I/O. Decorate-sort-undecorate computes each entry's key EXACTLY ONCE (a
+/// naive `sort_by` recomputes it per comparison). The decorate pass is the expensive
+/// half when importance weights are present, so it runs in parallel with a per-thread
+/// folder→weight memo: matches cluster heavily by folder, and hashing a folder's path
+/// means walking its parent chain. The empty-map fast path skips that entirely,
+/// preserving today's pure-recency order (the degradation contract).
 pub(crate) fn rank_decorated(
     index: &SearchIndex,
     matching: &[usize],
     stem: &str,
     case_insensitive: bool,
     weights: &ImportanceWeights,
+    keep: usize,
 ) -> Vec<(RankKey, usize)> {
     let no_weights = weights.is_empty();
-    let mut decorated: Vec<(RankKey, usize)> = matching
-        .iter()
-        .map(|&idx| {
-            let entry = &index.entries[idx];
-            let band = classify_match(index.name(entry), stem, case_insensitive);
-            let recency = entry.modified_at.unwrap_or(0);
-            let boosted_recency = if no_weights {
-                recency as f64
-            } else {
-                // A file takes its parent folder's weight; a folder takes its own.
-                let folder_id = if entry.is_directory { entry.id } else { entry.parent_id };
-                let folder_path = super::engine::reconstruct_path_from_index(index, folder_id);
-                boosted_recency_key(recency, weights.weight_for(&folder_path))
-            };
-            (
-                RankKey {
-                    band,
-                    boosted_recency,
-                    id: entry.id,
-                },
-                idx,
-            )
-        })
-        .collect();
+    let key_for = |memo: &mut std::collections::HashMap<i64, f64>, idx: usize| {
+        let entry = &index.entries[idx];
+        let band = classify_match(index.name(entry), stem, case_insensitive);
+        let recency = entry.modified_at.unwrap_or(0);
+        let boosted_recency = if no_weights {
+            recency as f64
+        } else {
+            // A file takes its parent folder's weight; a folder takes its own.
+            let folder_id = if entry.is_directory { entry.id } else { entry.parent_id };
+            let weight = *memo
+                .entry(folder_id)
+                .or_insert_with(|| weights.weight_for_hash(super::engine::hash_path_from_index(index, folder_id)));
+            boosted_recency_key(recency, weight)
+        };
+        (
+            RankKey {
+                band,
+                boosted_recency,
+                id: entry.id,
+            },
+            idx,
+        )
+    };
 
-    decorated.sort_by(|a, b| a.0.cmp_best_first(&b.0));
+    let mut decorated: Vec<(RankKey, usize)> = if no_weights {
+        // No weight lookups ⇒ no memo to keep warm and a cheap body; the sequential
+        // pass avoids rayon's split overhead.
+        let mut memo = std::collections::HashMap::new();
+        matching.iter().map(|&idx| key_for(&mut memo, idx)).collect()
+    } else {
+        matching
+            .par_iter()
+            .map_init(std::collections::HashMap::new, |memo, &idx| key_for(memo, idx))
+            .collect()
+    };
+
+    if keep < decorated.len() {
+        decorated.select_nth_unstable_by(keep, |a, b| a.0.cmp_best_first(&b.0));
+        decorated.truncate(keep);
+    }
+    decorated.sort_unstable_by(|a, b| a.0.cmp_best_first(&b.0));
     decorated
 }
 

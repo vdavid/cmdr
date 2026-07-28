@@ -23,6 +23,33 @@ fn path_reconstruction_top_level_dir() {
     assert_eq!(path, "/Users");
 }
 
+/// The streamed hash is the ranking hot path's substitute for
+/// `hash_path(reconstruct_path_from_index(..))`, so it has to agree with it for
+/// EVERY entry — a drifted hash silently reads the wrong (or no) importance weight,
+/// with no visible failure beyond subtly worse ranking. Covers the root sentinel, a
+/// top-level dir, a nested dir, and files.
+#[test]
+fn streamed_hash_matches_whole_path_hash() {
+    use crate::search::ranking::hash_path;
+
+    let index = make_test_index();
+    for entry in &index.entries {
+        let path = reconstruct_path_from_index(&index, entry.id);
+        assert_eq!(
+            hash_path_from_index(&index, entry.id),
+            hash_path(&path),
+            "streamed hash differs for id {} ({path})",
+            entry.id
+        );
+    }
+
+    // An id absent from the index (an orphan) resolves to "/" both ways.
+    assert_eq!(
+        hash_path_from_index(&index, 9999),
+        hash_path(&reconstruct_path_from_index(&index, 9999))
+    );
+}
+
 // ── Icon ID derivation ───────────────────────────────────────────
 
 #[test]
