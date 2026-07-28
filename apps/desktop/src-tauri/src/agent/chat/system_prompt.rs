@@ -8,11 +8,14 @@
 //! is no `no-string-matching` conflict (that rule is about branching on other
 //! systems' wording).
 //!
-//! Three things it must always carry (the tests pin them):
+//! Four things it must always carry (the tests pin them):
 //! - the read-only self-description (Ask Cmdr can look and speak, never act or read
 //!   file contents) — the privacy line, stated to the model,
 //! - the coverage-honesty rule (relay the `coverage`/stale/lower-bound caveats the
 //!   tools attach, never answer confidently past them — spec §2.4, load-bearing),
+//! - the no-invention rule: when the content a name would describe is missing or cut,
+//!   keep a neutral name and say which files went unseen. Guessing there is how a batch
+//!   of screenshots got 12 fabricated names,
 //! - a short style note so replies match the app's friendly, concise voice.
 
 /// The identity + rules block. Stable across calls; cached as part of the prefix.
@@ -30,10 +33,13 @@ to change something, explain that only they can approve a prepared rename plan, 
 For a natural-language rename request, call list_pane_files first. It returns the focused \
 selection when one exists, otherwise the focused folder, plus the exact volume ID for the plan. Treat \
 that pane listing as ready to use: do not wait for a drive scan or image indexing to finish. The \
-propose_rename_plan tool is always available. Use image_facts only when image contents would \
-improve the names; if it is unavailable or incomplete, continue with names, dates, and other \
-available metadata. If list_pane_files returns truncated: true, your reply must say you looked at only \
-returned of total files, using those numbers, and must never imply you covered the full selection or folder. \
+propose_rename_plan tool is always available. Use image_facts when image contents would \
+improve the names. Never invent what an image contains: if a file's facts are missing, not indexed, or cut short, \
+give that file a neutral name from its own metadata (its existing name, its date) and say in your reply which files \
+you could not see. A name that describes contents you were not shown is worse than a plain one. \
+If a tool result says truncated: true, your reply must say you looked at only \
+returned of total items, using those numbers, and must never imply you covered the full selection or folder; \
+ask about the remaining paths in another call when you need them. \
 Preserve each file extension unless the user explicitly asks otherwise. Submit \
 the final plan with propose_rename_plan; never claim a rename happened before the user reviews it.
 
@@ -88,12 +94,28 @@ mod tests {
     }
 
     #[test]
-    fn prompt_requires_exact_pane_listing_truncation_disclosure() {
+    fn prompt_requires_exact_truncation_disclosure() {
         assert!(
             SYSTEM_PROMPT.contains("truncated: true")
                 && SYSTEM_PROMPT.contains("returned of total")
                 && SYSTEM_PROMPT.contains("must never imply you covered the full"),
-            "a capped pane listing must be disclosed with exact returned and total counts"
+            "a capped tool result must be disclosed with exact returned and total counts"
+        );
+    }
+
+    /// The prompt-side half of the fabricated-rename fix: budget pressure or a paged tool
+    /// result can leave the model without the content it was asked to name files by, and the
+    /// old wording ("continue with names, dates, and other available metadata") read as a
+    /// licence to fill the gap from imagination.
+    #[test]
+    fn prompt_forbids_inventing_image_contents() {
+        assert!(
+            SYSTEM_PROMPT.contains("Never invent what an image contains"),
+            "missing content must never be filled in by guessing"
+        );
+        assert!(
+            SYSTEM_PROMPT.contains("which files you could not see"),
+            "the reply must name the files it couldn't see"
         );
     }
 
