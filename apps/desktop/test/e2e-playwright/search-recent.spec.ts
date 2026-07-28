@@ -3,10 +3,11 @@
  *
  * Per plan §3.5, only "Open in pane" adds to the history (auto-applies and
  * Enter-runs don't). The dialog's `openInPane` handler calls `addRecentSearch`
- * as a fire-and-forget IPC, then closes the dialog. The footer's in-memory
- * cache is loaded once per session (`loadRecentSearches` idempotent), so the
- * fresh entry shows up next session — or, in the same session, only after a
- * forced refetch via the `getRecentSearches` IPC.
+ * as a fire-and-forget IPC, then closes the dialog. The query field's
+ * recent-items dropdown reads an in-memory cache loaded once per session
+ * (`loadRecentSearches` is idempotent), so the fresh entry shows up next
+ * session — or, in the same session, only after a forced refetch via the
+ * `getRecentSearches` IPC.
  *
  * This test exercises the persistence half (the contract that "Open in pane
  * adds to the backend"): after clicking the button, we force-refetch via
@@ -21,7 +22,7 @@ import { test, expect } from './fixtures.js'
 import { ensureAppReady, pollUntil } from './helpers.js'
 import { ensureMcpClient, mcpCall } from '../e2e-shared/mcp-client.js'
 
-// The footer button is labelled "Show all in main window" and is always in the DOM,
+// The footer action button is labelled "Show all in main window" and is always in the DOM,
 // disabled until results land. `:not([disabled])` matters — without it, the selector
 // matches the disabled state and the test clicks a no-op.
 const OPEN_IN_PANE_BUTTON = '.search-overlay [aria-label="Show all in main window"]:not([disabled])'
@@ -53,7 +54,7 @@ test.describe('Search dialog: recent searches', () => {
     const seededQuery = 'file'
     await mcpCall('open_search_dialog', { query: seededQuery, mode: 'filename', autoRun: true })
 
-    // The footer's "Open in pane" only renders once `resultCount > 0`. Waiting
+    // The footer's "Open in pane" only enables once `resultCount > 0`. Waiting
     // for the button is the observable signal that the search ran and landed
     // results.
     await tauriPage.waitForSelector(OPEN_IN_PANE_BUTTON, 5000)

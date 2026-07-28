@@ -2,7 +2,7 @@
  * Tier-3 a11y tests for `RecentSearchesPopover.svelte`.
  *
  * The popover hosts a filter input plus a `role="listbox"` of result rows
- * (`role="option"` each). It mounts only when `open` is true, and roots itself
+ * (`role="option"` each, carrying a mode badge, the label, and a meta line). It mounts only when `open` is true, and roots itself
  * onto a `FilterChipPopover` wrapper anchored to a trigger element. Covered
  * states: closed (no DOM), open with entries, open with empty fuzzy match.
  */
@@ -13,7 +13,7 @@ import RecentSearchesPopoverRaw from './RecentItemsPopover.svelte'
 import type { HistoryEntry } from '$lib/tauri-commands'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import type { RecentItemAdapter, RecentItemKey } from './recent-items-types'
-import { chipTooltip, modeName, formatAge } from './recent-items-utils'
+import { chipTooltip, modeName, formatAge, rowMeta } from './recent-items-utils'
 
 // Svelte 5 generics+mount type roundtrip: cast through unknown to avoid unsafe-argument errors.
 // See `RecentItemsPopover.svelte.test.ts` for the full explanation.
@@ -24,7 +24,7 @@ const searchAdapter: RecentItemAdapter<HistoryEntry> = (e) => ({
   tooltip: chipTooltip(e),
   mode: e.mode,
   ageLabel: formatAge(e.timestamp),
-  metaLabel: '',
+  metaLabel: rowMeta(e),
   ariaLabel: `Run recent ${modeName(e.mode)} search: ${e.query}`,
 })
 const searchKey: RecentItemKey<HistoryEntry> = (e) => e.id
