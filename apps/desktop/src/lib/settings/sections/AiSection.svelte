@@ -115,6 +115,7 @@
                     {searchQuery}
                 >
                     <div class="provider-toggle" role="radiogroup" aria-label={tString('settings.ai.providerAria')}>
+                        <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke provider segmented row: options carry per-option tooltips and a disabled "local" state a plain RadioGroup option list can't express; the enclosing role="radiogroup" carries the a11y contract. -->
                         <button
                             class="provider-option"
                             class:selected={provider === 'off'}
@@ -127,6 +128,7 @@
                         >
                             {tString('settings.ai.provider.opt.off')}
                         </button>
+                        <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke provider segmented row: options carry per-option tooltips and a disabled "local" state a plain RadioGroup option list can't express; the enclosing role="radiogroup" carries the a11y contract. -->
                         <button
                             class="provider-option"
                             class:selected={provider === 'cloud'}
@@ -139,6 +141,7 @@
                         >
                             {tString('settings.ai.provider.opt.cloud')}
                         </button>
+                        <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke provider segmented row: options carry per-option tooltips and a disabled "local" state a plain RadioGroup option list can't express; the enclosing role="radiogroup" carries the a11y contract. -->
                         <button
                             class="provider-option"
                             class:selected={provider === 'local'}

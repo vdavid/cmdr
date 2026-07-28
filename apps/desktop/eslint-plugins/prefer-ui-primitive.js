@@ -20,7 +20,7 @@
  *
  * ## What this rule catches
  *
- * A raw native control element that has a house-primitive replacement:
+ * 1. A raw native control element that has a house-primitive replacement:
  *
  *   - `<input type="checkbox">`  → `Checkbox`
  *   - `<input type="radio">`     → `RadioGroup`
@@ -31,11 +31,28 @@
  * The mapping is a plain table (`MAPPINGS` below); add a row to cover a new
  * primitive.
  *
+ * 2. A hand-rolled control: a plain `<button>` or `<div>` wearing the ARIA role
+ *    of a control a primitive already owns:
+ *
+ *   - `role="switch"`   → `Switch`
+ *   - `role="checkbox"` → `Checkbox`
+ *   - `role="radio"`    → `RadioGroup`
+ *
+ * These don't gray out on blur (they're not native), but they re-implement the
+ * state, keyboard, and focus wiring the primitive already owns and tests, and
+ * they drift from its tokens and geometry. That table is `ROLE_MAPPINGS`.
+ *
  * ## What it deliberately does NOT catch
  *
- * - Dynamic `<input type={x}>`: the control kind can't be resolved statically,
- *   so we skip it (mirrors how `dialog-needs-focus-trap` skips dynamic roles).
- *   A typeless `<input>` (defaults to text) is likewise out of scope.
+ * - Dynamic `<input type={x}>` / `<button role={r}>`: the control kind can't be
+ *   resolved statically, so we skip it (mirrors how `dialog-needs-focus-trap`
+ *   skips dynamic roles). A typeless `<input>` (defaults to text) is likewise
+ *   out of scope.
+ * - Container roles (`role="radiogroup"`, `role="tablist"`) and roles with no
+ *   house primitive (`role="tab"`, `role="option"`). Only the leaf control
+ *   roles in `ROLE_MAPPINGS` are flagged.
+ * - Roles on a component (`<Switch.HiddenInput role="switch">`): components are
+ *   `kind !== 'html'`, so the primitives' own internals never self-flag.
  * - Controls rendered by the primitives themselves. `Checkbox` / `RadioGroup`
  *   render Ark UI's `HiddenInput` (a component, not a literal `<input>`), so
  *   the primitives contain no literal raw control and need no exception here.
@@ -70,16 +87,29 @@ const MAPPINGS = [
   { element: 'progress', control: '<progress>', primitive: 'ProgressBar', path: '$lib/ui/ProgressBar.svelte' },
 ]
 
+// Elements that can host a hand-rolled control role. A role on anything else
+// (a `<span role="switch">`, say) is rare enough that we'd rather not guess.
+const ROLE_HOSTS = ['button', 'div']
+
+// Leaf ARIA control role → the primitive that already implements it. Container
+// roles (`radiogroup`, `tablist`) and roles with no primitive (`tab`, `option`)
+// stay out. Extend by adding a row.
+const ROLE_MAPPINGS = [
+  { role: 'switch', primitive: 'Switch', path: '$lib/ui/Switch.svelte' },
+  { role: 'checkbox', primitive: 'Checkbox', path: '$lib/ui/Checkbox.svelte' },
+  { role: 'radio', primitive: 'RadioGroup', path: '$lib/ui/RadioGroup.svelte' },
+]
+
 /**
- * Resolve a Svelte element's static `type` attribute to its literal string, or
- * `undefined` when there's no `type` attribute or it's dynamic (`type={x}`).
+ * Resolve a Svelte element's named static attribute to its literal string, or
+ * `undefined` when the attribute is absent or dynamic (`type={x}`).
  */
-function staticTypeOf(node) {
-  const typeAttribute = node.startTag.attributes.find(
-    (attribute) => attribute.type === 'SvelteAttribute' && attribute.key.name === 'type',
+function staticAttributeOf(node, name) {
+  const attribute = node.startTag.attributes.find(
+    (candidate) => candidate.type === 'SvelteAttribute' && candidate.key.name === name,
   )
-  if (!typeAttribute) return undefined
-  const value = typeAttribute.value
+  if (!attribute) return undefined
+  const value = attribute.value
   // A single static text chunk counts; `{type}` / `type={x}` are dynamic.
   return value.length === 1 && value[0].type === 'SvelteLiteral' ? value[0].value : undefined
 }
@@ -99,6 +129,12 @@ export default {
         'already owns. Browse the primitives in Debug > Components and see `docs/design-system.md`. If a bespoke ' +
         'raw control is genuinely needed, opt out per-element: ' +
         '`<!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- <reason> -->`.',
+      preferPrimitiveForRole:
+        'Use the house `{{ primitive }}` primitive (`{{ path }}`) instead of a hand-rolled ' +
+        '`<{{ element }} role="{{ role }}">`. The primitive already owns and tests the state, keyboard, and focus ' +
+        'wiring this role promises, and keeps the tokens and geometry consistent. Browse the primitives in ' +
+        'Debug > Components and see `docs/design-system.md`. If a bespoke control is genuinely needed, opt out ' +
+        'per-element: `<!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- <reason> -->`.',
     },
     schema: [],
   },
@@ -109,13 +145,27 @@ export default {
         const elementName = node.name?.name
         if (!elementName) return
 
+        // A `<button>` / `<div>` wearing a leaf control role is a hand-rolled
+        // control, reported against the role table rather than the element one.
+        if (ROLE_HOSTS.includes(elementName)) {
+          const role = ROLE_MAPPINGS.find((mapping) => mapping.role === staticAttributeOf(node, 'role'))
+          if (role) {
+            context.report({
+              node: node.startTag,
+              messageId: 'preferPrimitiveForRole',
+              data: { element: elementName, role: role.role, primitive: role.primitive, path: role.path },
+            })
+            return
+          }
+        }
+
         const candidates = MAPPINGS.filter((mapping) => mapping.element === elementName)
         if (candidates.length === 0) return
 
         // Rows with a `type` predicate need the element's static `type`. If the
         // type is dynamic (or absent), we can't classify the control: skip.
         const needsType = candidates.some((mapping) => mapping.type !== undefined)
-        const staticType = needsType ? staticTypeOf(node) : undefined
+        const staticType = needsType ? staticAttributeOf(node, 'type') : undefined
         if (needsType && staticType === undefined) return
 
         const match = candidates.find((mapping) => mapping.type === undefined || mapping.type === staticType)

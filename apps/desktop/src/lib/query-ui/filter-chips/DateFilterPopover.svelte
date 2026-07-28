@@ -151,6 +151,7 @@
             <!-- Col 1: comparator -->
             <div class="list-col" role="radiogroup" aria-label={tString('queryUi.date.aria.comparator')}>
                 {#each DATE_COMPARATORS as opt (opt.value)}
+                    <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Grid-style popover cell: each column is a dense list of preset cells (the Custom one even hosts an inline input), which a RadioGroup option list can't express; the enclosing role="radiogroup" carries the a11y contract. -->
                     <button
                         type="button"
                         class="list-cell"
@@ -176,6 +177,7 @@
                  `dateIsCustomLower` in sync. -->
             <div class="list-col" role="radiogroup" aria-label={tString('queryUi.date.aria.value')}>
                 {#each datePresets as preset (preset.key)}
+                    <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Grid-style popover cell: each column is a dense list of preset cells (the Custom one even hosts an inline input), which a RadioGroup option list can't express; the enclosing role="radiogroup" carries the a11y contract. -->
                     <button
                         type="button"
                         class="list-cell"
@@ -226,6 +228,7 @@
                 <!-- Col 3: upper-bound preset (same shape as col 2). -->
                 <div class="list-col" role="radiogroup" aria-label={tString('queryUi.date.aria.maxValue')}>
                     {#each datePresets as preset (preset.key)}
+                        <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Grid-style popover cell: each column is a dense list of preset cells (the Custom one even hosts an inline input), which a RadioGroup option list can't express; the enclosing role="radiogroup" carries the a11y contract. -->
                         <button
                             type="button"
                             class="list-cell"

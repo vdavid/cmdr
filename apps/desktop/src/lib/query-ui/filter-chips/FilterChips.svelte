@@ -402,6 +402,7 @@
         <!-- Count-only toggle: a `role="switch"` so a bare count has clear on/off semantics
              (Search-only; Selection omits `onToggleCountOnly`). Sits at the trailing end of
              the strip, set apart from the filter chips it modifies the OUTPUT of, not a filter. -->
+        <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke inline toggle sized to sit among the filter chips, where the Switch primitive's fixed 36x20 track reads too heavy. -->
         <button
             type="button"
             class="count-only-toggle"

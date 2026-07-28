@@ -150,6 +150,7 @@
             <!-- Col 1: comparator -->
             <div class="list-col" role="radiogroup" aria-label={tString('queryUi.size.aria.comparator')}>
                 {#each SIZE_COMPARATORS as opt (opt.value)}
+                    <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Grid-style popover cell: each column is a dense list of preset cells (the Custom one even hosts an inline input), which a RadioGroup option list can't express; the enclosing role="radiogroup" carries the a11y contract. -->
                     <button
                         type="button"
                         class="list-cell"
@@ -173,6 +174,7 @@
                  it AND focuses the input. -->
             <div class="list-col" role="radiogroup" aria-label={tString('queryUi.size.aria.minValue')}>
                 {#each SIZE_PRESETS as preset (preset)}
+                    <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Grid-style popover cell: each column is a dense list of preset cells (the Custom one even hosts an inline input), which a RadioGroup option list can't express; the enclosing role="radiogroup" carries the a11y contract. -->
                     <button
                         type="button"
                         class="list-cell"
@@ -232,6 +234,7 @@
 
             <!-- Col 3: lower-bound unit -->
             <div class="list-col" role="radiogroup" aria-label={tString('queryUi.size.aria.minUnit')}>
+                <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Grid-style popover cell: each column is a dense list of preset cells (the Custom one even hosts an inline input), which a RadioGroup option list can't express; the enclosing role="radiogroup" carries the a11y contract. -->
                 <button
                     type="button"
                     class="list-cell"
@@ -245,6 +248,7 @@
                 >
                     {byteUnitLabel(sizeValue)}
                 </button>
+                <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Grid-style popover cell: each column is a dense list of preset cells (the Custom one even hosts an inline input), which a RadioGroup option list can't express; the enclosing role="radiogroup" carries the a11y contract. -->
                 <button
                     type="button"
                     class="list-cell"
@@ -259,6 +263,7 @@
                     {kiloByteLabel(getFileSizeFormat())}
                 </button>
                 {#each ['MB', 'GB'] as larger (larger)}
+                    <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Grid-style popover cell: each column is a dense list of preset cells (the Custom one even hosts an inline input), which a RadioGroup option list can't express; the enclosing role="radiogroup" carries the a11y contract. -->
                     <button
                         type="button"
                         class="list-cell"
@@ -279,6 +284,7 @@
                 <!-- Col 4: upper-bound value. Custom input is inline. -->
                 <div class="list-col" role="radiogroup" aria-label={tString('queryUi.size.aria.maxValue')}>
                     {#each SIZE_PRESETS as preset (preset)}
+                        <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Grid-style popover cell: each column is a dense list of preset cells (the Custom one even hosts an inline input), which a RadioGroup option list can't express; the enclosing role="radiogroup" carries the a11y contract. -->
                         <button
                             type="button"
                             class="list-cell"
@@ -331,6 +337,7 @@
 
                 <!-- Col 5: upper-bound unit -->
                 <div class="list-col" role="radiogroup" aria-label={tString('queryUi.size.aria.maxUnit')}>
+                    <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Grid-style popover cell: each column is a dense list of preset cells (the Custom one even hosts an inline input), which a RadioGroup option list can't express; the enclosing role="radiogroup" carries the a11y contract. -->
                     <button
                         type="button"
                         class="list-cell"
@@ -344,6 +351,7 @@
                     >
                         {byteUnitLabel(sizeValueMax)}
                     </button>
+                    <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Grid-style popover cell: each column is a dense list of preset cells (the Custom one even hosts an inline input), which a RadioGroup option list can't express; the enclosing role="radiogroup" carries the a11y contract. -->
                     <button
                         type="button"
                         class="list-cell"
@@ -358,6 +366,7 @@
                         {kiloByteLabel(getFileSizeFormat())}
                     </button>
                     {#each ['MB', 'GB'] as larger (larger)}
+                        <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Grid-style popover cell: each column is a dense list of preset cells (the Custom one even hosts an inline input), which a RadioGroup option list can't express; the enclosing role="radiogroup" carries the a11y contract. -->
                         <button
                             type="button"
                             class="list-cell"

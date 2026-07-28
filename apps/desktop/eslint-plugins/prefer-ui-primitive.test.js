@@ -53,6 +53,32 @@ ruleTester.run('prefer-ui-primitive', rule, {
       code: `<button type="button">go</button>`,
       filename: 'src/lib/whatever/Row.svelte',
     },
+    // Container roles and roles with no house primitive stay out of scope.
+    {
+      code: `<div role="radiogroup" aria-label="Type"><span>x</span></div>`,
+      filename: 'src/lib/whatever/Row.svelte',
+    },
+    {
+      code: `<button role="tab" aria-selected={on}>Filename</button>`,
+      filename: 'src/lib/whatever/Row.svelte',
+    },
+    // A dynamic role can't be classified statically, so we don't guess.
+    {
+      code: `<button role={kind} aria-checked={on}>x</button>`,
+      filename: 'src/lib/whatever/Row.svelte',
+    },
+    // A control role on a component is the primitive's own internals
+    // (`<Switch.HiddenInput role="switch">`), never a hand-rolled control.
+    {
+      code: `<Switch.HiddenInput role="switch" aria-label="Tail" />`,
+      filename: 'src/lib/ui/Switch.svelte',
+    },
+    // We only look at `<button>` / `<div>` hosts; a role elsewhere is too rare
+    // to guess at.
+    {
+      code: `<span role="switch" aria-checked={on}>x</span>`,
+      filename: 'src/lib/whatever/Row.svelte',
+    },
     // (The per-element opt-out comment is exercised end-to-end by the real
     // eslint config against the bespoke source sites, not here: RuleTester
     // registers the rule under a `rule-to-test/*` id, so a `cmdr/*` disable
@@ -122,6 +148,67 @@ ruleTester.run('prefer-ui-primitive', rule, {
         {
           messageId: 'preferPrimitive',
           data: { control: '<progress>', primitive: 'ProgressBar', path: '$lib/ui/ProgressBar.svelte' },
+        },
+      ],
+    },
+    // Hand-rolled switch → Switch. This is the shape the rule couldn't see
+    // before: no native control anywhere, just a button wearing the role.
+    {
+      code: `<button type="button" role="switch" aria-checked={on}>Count only</button>`,
+      filename: 'src/lib/whatever/Row.svelte',
+      errors: [
+        {
+          messageId: 'preferPrimitiveForRole',
+          data: { element: 'button', role: 'switch', primitive: 'Switch', path: '$lib/ui/Switch.svelte' },
+        },
+      ],
+    },
+    // A `<div>` host counts too.
+    {
+      code: `<div role="checkbox" aria-checked={on}>x</div>`,
+      filename: 'src/lib/whatever/Row.svelte',
+      errors: [
+        {
+          messageId: 'preferPrimitiveForRole',
+          data: { element: 'div', role: 'checkbox', primitive: 'Checkbox', path: '$lib/ui/Checkbox.svelte' },
+        },
+      ],
+    },
+    // Hand-rolled radio → RadioGroup.
+    {
+      code: `<button type="button" role="radio" aria-checked={on}>Files</button>`,
+      filename: 'src/lib/whatever/Row.svelte',
+      errors: [
+        {
+          messageId: 'preferPrimitiveForRole',
+          data: { element: 'button', role: 'radio', primitive: 'RadioGroup', path: '$lib/ui/RadioGroup.svelte' },
+        },
+      ],
+    },
+    // Single-quoted static role is still a static literal.
+    {
+      code: `<button type="button" role='switch' aria-checked={on}>x</button>`,
+      filename: 'src/lib/whatever/Row.svelte',
+      errors: [
+        {
+          messageId: 'preferPrimitiveForRole',
+          data: { element: 'button', role: 'switch', primitive: 'Switch', path: '$lib/ui/Switch.svelte' },
+        },
+      ],
+    },
+    // The role check wins over the element table when both could match: a
+    // `<div role="radio">` is a hand-rolled radio, not a native control.
+    {
+      code: `<div role="radio" aria-checked={on}><input type="checkbox" /></div>`,
+      filename: 'src/lib/whatever/Row.svelte',
+      errors: [
+        {
+          messageId: 'preferPrimitiveForRole',
+          data: { element: 'div', role: 'radio', primitive: 'RadioGroup', path: '$lib/ui/RadioGroup.svelte' },
+        },
+        {
+          messageId: 'preferPrimitive',
+          data: { control: '<input type="checkbox">', primitive: 'Checkbox', path: '$lib/ui/Checkbox.svelte' },
         },
       ],
     },

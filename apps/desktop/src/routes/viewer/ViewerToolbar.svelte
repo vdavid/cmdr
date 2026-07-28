@@ -85,6 +85,7 @@
             disabled={isMedia || isIndexing}
             onChange={onEncodingChange}
         />
+        <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke toolbar toggle: reads as a labelled toolbar button next to its siblings, where the Switch primitive's track-and-thumb would look out of place; aria-checked carries the on/off semantics. -->
         <button
             type="button"
             class="viewer-toolbar-toggle"
