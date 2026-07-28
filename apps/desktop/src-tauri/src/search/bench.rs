@@ -9,6 +9,10 @@
 //! CMDR_SEARCH_BENCH_DB="$HOME/Library/Application Support/com.veszelovszki.cmdr/index-root.db" \
 //! CMDR_SEARCH_BENCH_IMPORTANCE_DB="$HOME/Library/Application Support/com.veszelovszki.cmdr/importance-root.db" \
 //!   cargo test -p cmdr --lib search::bench::bench_real_index -- --ignored --nocapture
+//!
+//! # The unscoped fan-out: several volumes' arenas, one after another vs all at once.
+//! CMDR_SEARCH_BENCH_DBS="/path/index-root.db,/path/index-smb-a.db,/path/index-smb-b.db" \
+//!   cargo test -p cmdr --lib search::bench::bench_volume_fanout -- --ignored --nocapture
 //! ```
 //!
 //! Phases are isolated by differencing whole `search_ranked` runs rather than by
@@ -291,6 +295,57 @@ fn bench_real_index() {
     measure("extension glob", &index, &weights, "*.pdf", PatternType::Glob);
     measure("one letter", &index, &weights, "e", PatternType::Glob);
     eprintln!();
+}
+
+/// Time the unscoped fan-out's LOAD phase: every listed volume's arena one after
+/// another (what a serial `ensure_volume` loop costs) versus all at once.
+///
+/// Runs a warm-up pass first so both variants see the same page-cache state; the
+/// warm-up's own timings print too, as the closest thing here to a cold read.
+#[test]
+#[ignore = "benchmark; needs CMDR_SEARCH_BENCH_DBS listing real index-*.db paths"]
+#[allow(
+    clippy::print_stderr,
+    reason = "an ignored measurement harness prints its table to stderr for `--nocapture`; it never runs in the app or CI"
+)]
+fn bench_volume_fanout() {
+    let Ok(list) = std::env::var("CMDR_SEARCH_BENCH_DBS") else {
+        eprintln!("CMDR_SEARCH_BENCH_DBS not set; skipping");
+        return;
+    };
+    let paths: Vec<String> = list.split(',').map(|s| s.trim().to_string()).collect();
+
+    let load_one = |path: &str| -> (usize, std::time::Duration) {
+        let t = Instant::now();
+        let pool = ReadPool::new(path.into()).expect("open index DB");
+        let index = load_search_index(&pool, &AtomicBool::new(false)).expect("load index");
+        (index.entries.len(), t.elapsed())
+    };
+
+    eprintln!("\nfirst pass (page cache as found):");
+    for path in &paths {
+        let (n, took) = load_one(path);
+        eprintln!("  {path}\n    {n} entries in {took:.2?}");
+    }
+
+    let t = Instant::now();
+    let mut serial_total = 0usize;
+    for path in &paths {
+        serial_total += load_one(path).0;
+    }
+    let serial = t.elapsed();
+
+    let t = Instant::now();
+    let parallel_total: usize = std::thread::scope(|scope| {
+        let handles: Vec<_> = paths.iter().map(|p| scope.spawn(|| load_one(p).0)).collect();
+        handles.into_iter().map(|h| h.join().unwrap_or(0)).sum()
+    });
+    let parallel = t.elapsed();
+
+    eprintln!(
+        "\n{} volumes, {serial_total} entries\n  serial   {serial:.2?}\n  parallel {parallel:.2?} (parallel_total {parallel_total})\n",
+        paths.len(),
+    );
 }
 
 /// Load an importance weight map straight from an `importance-*.db` file (the
