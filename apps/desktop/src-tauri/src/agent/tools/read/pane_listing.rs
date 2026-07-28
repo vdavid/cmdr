@@ -84,10 +84,18 @@ pub(crate) fn build_pane_listing(
     let (scope, entries) = if state.selected_indices.is_empty() {
         (PaneListingScope::Folder, cached_entries)
     } else {
+        // `selected_indices` are GLOBAL listing indices; `files` is the loaded window from
+        // `loaded_start`. Convert before indexing (as `mcp::executor` does) or a scrolled
+        // pane resolves to the wrong rows, and a rename plan gets built on them.
         let selected_paths = state
             .selected_indices
             .iter()
-            .map(|&index| state.files.get(index).map(|entry| entry.path.as_str()))
+            .map(|&index| {
+                index
+                    .checked_sub(state.loaded_start)
+                    .and_then(|i| state.files.get(i))
+                    .map(|entry| entry.path.as_str())
+            })
             .collect::<Option<HashSet<_>>>()
             .ok_or_else(|| ToolError::internal("Some selected rows aren't available in the pane cache"))?;
         let entries: Vec<_> = cached_entries
@@ -261,6 +269,34 @@ mod tests {
                 .map(|entry| entry.name.as_str())
                 .collect::<Vec<_>>(),
             ["shot-1.png", "shot-3.png"]
+        );
+    }
+
+    /// `selected_indices` are GLOBAL listing indices; `files` is only the loaded window from
+    /// `loaded_start` (see `PaneState` and `mcp::executor`'s `checked_sub(loaded_start)`).
+    /// Reading the window with a global index hands a rename plan the wrong files.
+    #[test]
+    fn a_scrolled_pane_selects_the_rows_the_user_picked() {
+        let state = PaneState {
+            path: "/shots".to_string(),
+            volume_id: Some("root".to_string()),
+            // Global rows 100..104 are loaded; the user selected 101 and 103.
+            files: (100..104).map(pane_file).collect(),
+            loaded_start: 100,
+            loaded_end: 104,
+            selected_indices: vec![101, 103],
+            total_files: 5_000,
+            ..Default::default()
+        };
+        let result = build_pane_listing("left".to_string(), &state, (100..104).map(source).collect()).unwrap();
+        assert_eq!(result.scope, PaneListingScope::Selection);
+        assert_eq!(
+            result
+                .entries
+                .iter()
+                .map(|entry| entry.name.as_str())
+                .collect::<Vec<_>>(),
+            ["shot-101.png", "shot-103.png"]
         );
     }
 

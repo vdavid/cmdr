@@ -94,11 +94,16 @@ pub struct AppStateSnapshot {
 /// Flatten one pane's live state. Pure, so cursor/selection reporting is testable
 /// without an app handle.
 pub(crate) fn pane_snapshot(state: &PaneState) -> PaneSnapshot {
+    // `selected_indices` and `cursor_index` are GLOBAL listing indices while `files` holds
+    // only the loaded window from `loaded_start`, so every lookup converts first (the same
+    // `checked_sub` conversion `mcp::executor` uses). Reading the window with a global index
+    // hands back the row sitting at that offset inside the window: silently the wrong file.
+    let window_row = |index: usize| index.checked_sub(state.loaded_start).and_then(|i| state.files.get(i));
     let selected_entries = state
         .selected_indices
         .iter()
         .map(|&index| {
-            state.files.get(index).map(|entry| SelectedEntrySnapshot {
+            window_row(index).map(|entry| SelectedEntrySnapshot {
                 name: entry.name.clone(),
                 path: entry.path.clone(),
                 is_directory: entry.is_directory,
@@ -124,7 +129,7 @@ pub(crate) fn pane_snapshot(state: &PaneState) -> PaneSnapshot {
         path: state.path.clone(),
         volume_id: state.volume_id.clone(),
         volume_name: state.volume_name.clone(),
-        cursor_item: state.files.get(state.cursor_index).map(|f| f.name.clone()),
+        cursor_item: window_row(state.cursor_index).map(|f| f.name.clone()),
         selected_count: state.selected_indices.len(),
         selected_entries,
         selected_entries_omitted,
@@ -258,6 +263,38 @@ mod tests {
         let snapshot = pane_snapshot(&state);
         assert_eq!(snapshot.selected_entries.as_ref().map(Vec::len), Some(2));
         assert_eq!(snapshot.selected_entries_omitted, None);
+    }
+
+    /// `selected_indices` and `cursor_index` are GLOBAL listing indices, while `files` is
+    /// only the loaded window starting at `loaded_start` (see `PaneState`, and the
+    /// `checked_sub(loaded_start)` conversions in `mcp::executor`). A scrolled pane must
+    /// therefore report the rows the user actually picked, not the ones sitting at the same
+    /// offset inside the window.
+    #[test]
+    fn a_scrolled_pane_reports_the_rows_the_user_picked() {
+        let state = PaneState {
+            path: "/big".to_string(),
+            // Rows 10..14 are loaded; the user selected global rows 11 and 13 and parked the
+            // cursor on 12.
+            files: vec![file("row-10"), file("row-11"), file("row-12"), file("row-13")],
+            loaded_start: 10,
+            loaded_end: 14,
+            cursor_index: 12,
+            selected_indices: vec![11, 13],
+            total_files: 5_000,
+            ..Default::default()
+        };
+
+        let snapshot = pane_snapshot(&state);
+        assert_eq!(snapshot.cursor_item.as_deref(), Some("row-12"));
+        let names: Vec<&str> = snapshot
+            .selected_entries
+            .as_deref()
+            .expect("both selected rows are in the window")
+            .iter()
+            .map(|entry| entry.name.as_str())
+            .collect();
+        assert_eq!(names, ["row-11", "row-13"]);
     }
 
     #[test]
