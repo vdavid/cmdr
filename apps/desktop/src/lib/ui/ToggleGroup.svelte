@@ -8,7 +8,9 @@
      *   inherits the cell's `currentColor`, so it stays legible in both the resting and accent-filled
      *   active states.
      * `badge` renders a small uppercase pill before the label (for example `AI` on the search mode chip).
-     * `hint` renders inline tertiary mono text after the label (for example `⌥A` to surface a keyboard hint).
+     *   On the active cell it drops its tint and takes the cell's `--color-accent-fg`.
+     * `hint` renders inline mono text after the label (for example `⌥A` to surface a keyboard hint):
+     *   tertiary on a resting cell, `--color-accent-fg` on the accent-filled active one.
      * `disabled` blocks activation. Combined with `tooltip`, this is the "visible-disabled with tooltip"
      *   pattern used for "Coming soon" affordances: the option stays interactive enough that the tooltip
      *   still fires on hover / focus.
@@ -322,10 +324,10 @@
         line-height: 1;
     }
 
-    /* Mono tertiary hint (for example `⌥A`). Visible only in the resting state so it doesn't
-       compete with the accent-filled active cell. No `opacity` dimming: `--color-text-tertiary`
-       already reads quieter than the primary label, and at `opacity: 0.7` the composited gray
-       dropped to ~3:1 against the cell bg (below WCAG AA). The contrast checker models this pair
+    /* Mono tertiary hint (for example `⌥A`), rendered in every cell including the active one.
+       No `opacity` dimming: `--color-text-tertiary` already reads quieter than the primary
+       label, and at `opacity: 0.7` the composited gray dropped to ~3:1 against the cell bg
+       (below WCAG AA). The contrast checker models this pair
        (`scripts/check-a11y-contrast/query_dialog_states.go`); mirror any opacity change there. */
     :global(.tg-root .tg-hint) {
         margin-left: var(--spacing-xxs);
@@ -333,5 +335,31 @@
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
         line-height: 1;
+    }
+
+    /* On the accent-filled active cell the tertiary gray all but vanishes (down to ~1:1 on some
+       runtime accents), so the hint takes the cell's own foreground. `--color-accent-fg` is
+       rewritten to black-or-white per accent by `lib/accent-color.ts`, so it tracks whatever
+       system accent the user picked. Pinned in
+       `scripts/check-a11y-contrast/query_dialog_states.go`. */
+    :global(.tg-root .tg-item.is-active .tg-hint),
+    :global(.tg-root .tg-item[data-state='on'] .tg-hint) {
+        color: var(--color-accent-fg);
+    }
+
+    /* Same for the badge, which additionally loses its pill on the active cell: its
+       `--color-accent-subtle` fill is a 15%-alpha accent, so over an accent cell it composites
+       straight back to the cell color. Restating the cell color here (instead of leaving the
+       tint to composite implicitly) keeps the badge matching the cell through hover as well,
+       and lets the contrast checker's same-element walker see the pair that really renders. */
+    :global(.tg-root .tg-item.is-active .tg-badge),
+    :global(.tg-root .tg-item[data-state='on'] .tg-badge) {
+        background: var(--color-accent);
+        color: var(--color-accent-fg);
+    }
+
+    :global(.tg-root .tg-item.is-active:hover .tg-badge),
+    :global(.tg-root .tg-item[data-state='on']:hover .tg-badge) {
+        background: var(--color-accent-hover);
     }
 </style>

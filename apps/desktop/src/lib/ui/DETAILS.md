@@ -717,9 +717,10 @@ command, never clickable); the chip only unifies their appearance.
 
 **Class B sites kept un-migrated (deliberate exceptions):**
 
-- **`ModeChips` / `ToggleGroup` `.tg-hint` glyphs** (`⌥A` / `⌥F` / `⌥R`): these are whisper-quiet tertiary mono text
-  baked into a segmented-control cell. A boxed chip reads heavier than the surrounding cell label and fights the
-  control's calm rhythm, so the hint style stays. (Pre-decided in the plan.)
+- **`ModeChips` / `ToggleGroup` `.tg-hint` glyphs** (`⌥A` / `⌥F` / `⌥R`): these are quiet mono text baked into a
+  segmented-control cell (tertiary on a resting cell, `--color-accent-fg` on the active one). A boxed chip reads heavier
+  than the surrounding cell label and fights the control's calm rhythm, so the hint style stays. (Pre-decided in the
+  plan.)
 - **The `QueryDialog` footer action-button hints** (`.shortcut-hint` / `.shortcut-on-primary`, e.g. `Go to file ⏎`,
   `Show all in main window ⏎`): the key reads as a suffix fused into the button's own label ("Go to file" + "⏎" is one
   phrase). Boxing it fragments the label from the key and the neutral pill clashes on the accent primary button. Kept as
@@ -818,6 +819,15 @@ Pick the shape from the user's perspective, not the visual:
 Both shapes share visual chrome (`.tg-root`, `.tg-item`, `.tg-badge`, `.tg-label`, `.tg-hint`) so they render
 identically.
 
+**Badge and hint recolor on the active cell.** A resting cell paints the hint `--color-text-tertiary` and the badge
+`--color-text-primary` on a `--color-accent-subtle` pill. The active cell fills with `--color-accent`, where tertiary
+gray drops to as little as 1.04:1 across the runtime accents, so both take `--color-accent-fg` there (4.91:1 worst case,
+Apple Purple; 7.3:1 light / 10.8:1 dark on the static gold fallback). The badge additionally restates the cell fill
+(`--color-accent`, `--color-accent-hover` on hover) rather than letting its 15%-alpha tint composite invisibly, so it
+loses the pill look on the active cell and the contrast checker's same-element walker can see the pair that renders.
+Both pairs are also pinned by hand in `scripts/check-a11y-contrast/query_dialog_states.go`, which sweeps all nine
+accents; the generic walker can't pair a descendant's color with an ancestor's background on its own.
+
 Props:
 
 | Prop        | Type                      | Notes                                                                      |
@@ -847,7 +857,7 @@ last cells to the pill, so no per-cell corner rounding is needed).
 | `value`     | `string`   | Identity                                                                                        |
 | `label`     | `string`   | Visible text                                                                                    |
 | `badge`     | `string?`  | Small uppercase pill rendered before the label (for example `AI`)                               |
-| `hint`      | `string?`  | Mono tertiary text after the label (for example `⌥A`); `aria-hidden`                            |
+| `hint`      | `string?`  | Mono text after the label (for example `⌥A`); `aria-hidden`                                     |
 | `disabled`  | `boolean?` | Per-option disable. Combine with `tooltip` for "visible-disabled" affordances                   |
 | `tooltip`   | `string?`  | Tooltip text; stays active on hover/focus even when `disabled` is set (the "Coming soon" idiom) |
 | `ariaLabel` | `string?`  | Override the accessible name when the visible label alone isn't enough                          |

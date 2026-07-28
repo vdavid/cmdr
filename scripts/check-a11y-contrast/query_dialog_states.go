@@ -29,6 +29,16 @@ var queryDialogScenarios = []ancestorBgScenario{
 		BgVar:    "color-accent-subtle",
 	},
 	{
+		// `ToggleGroup` "AI" badge on the ACTIVE cell: the cell bg flips to
+		// `--color-accent`, and the badge's own `--color-accent-subtle` bg is a
+		// 15%-alpha accent tint, so compositing it over the accent cell lands
+		// back on `--color-accent`. The badge recolors to `--color-accent-fg`
+		// on the active cell so it tracks the cell's own foreground.
+		Selector: ".tg-item.is-active .tg-badge (AI) on --color-accent",
+		FgVar:    "color-accent-fg",
+		BgVar:    "color-accent",
+	},
+	{
 		// `ToggleGroup` shortcut hint (`.tg-hint`, for example `⌥A`): tertiary
 		// mono text on the resting `.tg-item` bg (`--color-bg-primary`). The
 		// hint carries no `opacity` crutch (it failed AA at 0.7); the visible
@@ -38,6 +48,16 @@ var queryDialogScenarios = []ancestorBgScenario{
 		Selector: ".tg-hint shortcut on --color-bg-primary",
 		FgVar:    "color-text-tertiary",
 		BgVar:    "color-bg-primary",
+	},
+	{
+		// Same hint on the ACTIVE cell, whose bg is `--color-accent`. Tertiary
+		// gray there is invisible (down to ~1:1 on dark gold), so the hint
+		// inherits the cell's own `--color-accent-fg` in the active state.
+		// Keep this pair modeled: the hint is always on screen (the mode-chip
+		// row always has exactly one active cell).
+		Selector: ".tg-item.is-active .tg-hint shortcut on --color-accent",
+		FgVar:    "color-accent-fg",
+		BgVar:    "color-accent",
 	},
 	// Under-cursor result row (`.result-row.is-under-cursor`) in `QueryResults`:
 	// the row bg flips to `--color-accent-subtle`, composited over the dialog
