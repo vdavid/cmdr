@@ -14,10 +14,10 @@ the Price field and the note to the review team instead.
 - **App name**: `Cmdr`
 - **Developer name**: `David Veszelovszki`
 - **Download URL**: `https://getcmdr.com/download/latest/universal?ref=macupdate.com`
-  - Always points at the current release, so it never needs a resubmission, and it attributes the download to MacUpdate
-    in the dashboard. Plain fallback if they reject redirects:
-    `https://github.com/vdavid/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_universal.dmg` (version-pinned, so it would
-    need bumping per release).
+    - Always points at the current release, so it never needs a resubmission, and it attributes the download to MacUpdate
+      in the dashboard. Plain fallback if they reject redirects:
+      `https://github.com/vdavid/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_universal.dmg` (version-pinned, so it would
+      need bumping per release).
 - **Product page URL**: `https://getcmdr.com`
 - **Purchase URL**: `https://getcmdr.com/pricing`
 - **Developer support URL**: `https://github.com/vdavid/cmdr/issues`
@@ -39,13 +39,10 @@ A blazing-fast, keyboard-driven two-pane file manager for macOS, with fully opti
 
 ```html
 <p>
-  <strong>Cmdr</strong> is a keyboard-driven two-pane file manager for macOS, written in Rust. It's built for people who
-  miss Total Commander since switching to a Mac: two folders side by side, familiar function keys (F5 to copy, F6 to
-  move, F8 to delete), all remappable.
+  <strong>Cmdr</strong> is a keyboard-driven two-pane file manager for macOS, written in Rust. It's built for people who miss Total Commander since switching to a Mac: two folders side by side, familiar function keys (F5 to copy, F6 to move, F8 to delete), all remappable.
 </p>
 <p>
-  Cmdr is in open beta. There might be sharp edges, but the core is stable software used every day by a small group of
-  testers, and feedback goes straight to the developer.
+  Cmdr is in open beta. There might be sharp edges, but the core is stable software used every day by a group of testers. Feedback goes straight to the developer!
 </p>
 <h5>Features</h5>
 <ul>
@@ -54,10 +51,10 @@ A blazing-fast, keyboard-driven two-pane file manager for macOS, with fully opti
   <li>
     Lists 50,000 files near-instantly, and the built-in viewer opens a 10 GB file near-instantly with fast search.
   </li>
-  <li>Live folder sizes everywhere, not only for the file under the cursor.</li>
-  <li>A full-disk index built in minutes that stays current across restarts, so search answers immediately.</li>
-  <li>Network drives over SMB through custom code, roughly four times faster than the macOS client.</li>
-  <li>Android phones, Kindles, and cameras over MTP and PTP, up to four times faster than Android File Transfer.</li>
+  <li>Live folder sizes everywhere. (!)</li>
+  <li>A full-disk index built in 3–4 minutes <em>once</em> that stays current across restarts, so search answers immediately.</li>
+  <li>Network drives over SMB through custom code, roughly 4x faster than the macOS client.</li>
+  <li>Android phones, Kindles, and cameras over MTP and PTP, up to 4x faster than Android File Transfer, no hacks needed, works out of the box.</li>
   <li>Git history, branches, worktrees, and stashes browsable like normal folders.</li>
   <li>Real dark and light modes, native macOS behavior, and text colors verified against WCAG 2.2 AA and APCA.</li>
 </ul>
