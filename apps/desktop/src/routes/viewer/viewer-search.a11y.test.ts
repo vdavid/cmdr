@@ -24,7 +24,7 @@ function renderToolbarFixture(opts: {
         type="text"
         placeholder="Find in file..."
         aria-label="Search text"
-        class="search-input"
+        class="text-field-control"
       />
       <button
         type="button"

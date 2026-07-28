@@ -551,12 +551,12 @@ Every text-entry surface renders through `TextInput` / `TextArea` (`lib/ui/`), s
 primitives already do, not a recipe to copy into a component. The chrome itself lives in exactly one place: `app.css` §
 "Text fields" (the `.text-field*` classes), keyed off four tokens.
 
-| Token                  | Value                    | Role                                                             |
-| ---------------------- | ------------------------ | ---------------------------------------------------------------- |
-| `--radius-input`       | `var(--radius-lg)` (8px) | Resting corner, ~25% of the field height: the macOS text field   |
-| `--spacing-input`      | `var(--spacing-sm)` (8px) | Equal on all four sides, so the field reads evenly weighted      |
-| `--font-size-input`    | `var(--font-size-md)`    | 14px, with `line-height: 1.2` (the frame's padding sets height)  |
-| `--shadow-focus-solid` | `0 0 0 2px accent`       | The focus ring: thicker and solid, not the translucent glow      |
+| Token                  | Value                     | Role                                                            |
+| ---------------------- | ------------------------- | --------------------------------------------------------------- |
+| `--radius-input`       | `var(--radius-lg)` (8px)  | Resting corner, ~25% of the field height: the macOS text field  |
+| `--spacing-input`      | `var(--spacing-sm)` (8px) | Equal on all four sides, so the field reads evenly weighted     |
+| `--font-size-input`    | `var(--font-size-md)`     | 14px, with `line-height: 1.2` (the frame's padding sets height) |
+| `--shadow-focus-solid` | `0 0 0 2px accent`        | The focus ring: thicker and solid, not the translucent glow     |
 
 Resting: a 1px `--color-border` hairline on `--color-bg-primary`. Focus (`:focus-within` on the frame, so a leading icon
 or trailing button is inside the ring): `border-color: var(--color-accent)` plus `--shadow-focus-solid`, a 3px solid
@@ -573,18 +573,18 @@ wiring. They read the same four tokens instead, which is what keeps every field 
 
 ### Text input and text area (app)
 
-`TextInput` and `TextArea` (`lib/ui/`) are the house text fields: every raw `<input type="text|password|email|search|url">`
-and `<textarea>` in the app renders through one of them, which is what makes the § Inputs look above restyleable in a
-single edit. Both are presentational: no validation, debouncing, or submit logic, so the caller keeps its own state and
-reaches the element through `bind:inputElement` / `bind:textareaElement` for imperative focus and select.
+`TextInput` and `TextArea` (`lib/ui/`) are the house text fields: every raw
+`<input type="text|password|email|search|url">` and `<textarea>` in the app renders through one of them, which is what
+makes the § Inputs look above restyleable in a single edit. Both are presentational: no validation, debouncing, or
+submit logic, so the caller keeps its own state and reaches the element through `bind:inputElement` /
+`bind:textareaElement` for imperative focus and select.
 
-**`TextInput`** props: `value` (bindable, or one-way alongside `oninput` for a controlled field), `type`
-(`text` | `password` | `email` | `search` | `url` | `tel` | `number`), `radius`
-(`sm` | `md` | `lg` (default) | `full`), `variant` (`default` | `chromeless`), `invalid`, `warning`, `mono`,
-`leadingIcon` (an `IconName`, decorative), a `trailing` snippet (clear buttons, reveal toggles), `ariaLabel`,
-`containerStyle` (one-off layout sizing only), and `inputElement`. Everything else — `id`, `placeholder`, `disabled`,
-`readonly`, `autocomplete`, `spellcheck`, `maxlength`, every `on*` and `aria-*` — passes straight through to the
-`<input>`.
+**`TextInput`** props: `value` (bindable, or one-way alongside `oninput` for a controlled field), `type` (`text` |
+`password` | `email` | `search` | `url` | `tel` | `number`), `radius` (`sm` | `md` | `lg` (default) | `full`), `variant`
+(`default` | `chromeless`), `invalid`, `warning`, `mono`, `leadingIcon` (an `IconName`, decorative), a `trailing`
+snippet (clear buttons, reveal toggles), `ariaLabel`, `containerStyle` (one-off layout sizing only), and `inputElement`.
+Everything else (`id`, `placeholder`, `disabled`, `readonly`, `autocomplete`, `spellcheck`, `maxlength`, every `on*`
+and `aria-*`) passes straight through to the `<input>`.
 
 **`TextArea`** is the multi-line sibling, sharing the exact same chrome. Same props minus `type` / `leadingIcon`, plus
 `rows` and `resizable` (the vertical grip, on by default). It's a sibling rather than a `multiline` prop because the two
@@ -595,8 +595,8 @@ focus and select.
 
 - `radius="full"` + `leadingIcon="search"` is the search pill (the Settings sidebar, the Ask Cmdr session list). The
   primitive owns the icon's geometry as a real flex sibling, so there are no hand-tuned offsets to keep in sync.
-- `variant="chromeless"` is for a field whose host already draws a surface (the command palette's full-bleed query line).
-  It drops the frame, padding, and focus ring, and inherits the host's type scale, so the host can size the text.
+- `variant="chromeless"` is for a field whose host already draws a surface (the command palette's full-bleed query
+  line). It drops the frame, padding, and focus ring, and inherits the host's type scale, so the host can size the text.
 - `mono` for paths, date-format strings, and keys. The placeholder stays in the system face: it's prose, not data.
 - `readonly` quiets the fill without dimming the text, so the value stays copyable.
 

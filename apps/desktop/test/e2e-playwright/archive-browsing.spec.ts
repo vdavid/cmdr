@@ -338,8 +338,8 @@ test.describe('Archive browsing', () => {
     const folderName = `zip-folder-${String(Date.now())}`
     await tauriPage.keyboard.press('F7')
     await tauriPage.waitForSelector(MKDIR_DIALOG, 5000)
-    await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
-    await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, folderName)
+    await tauriPage.waitForSelector(`${MKDIR_DIALOG} input.text-field-control`, 3000)
+    await tauriPage.fill(`${MKDIR_DIALOG} input.text-field-control`, folderName)
     await expect.poll(async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), { timeout: 2000 }).toBeTruthy()
     await tauriPage.click(`${MKDIR_DIALOG} .btn-primary`)
     await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()

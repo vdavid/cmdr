@@ -93,7 +93,7 @@ test.describe('File viewer horizontal scroll-to-match', () => {
     await viewer.keyboard.press('Control+f')
     await viewer.waitForSelector('.search-bar', 5000)
 
-    await viewer.fill('.search-input', TOKEN_LONG)
+    await viewer.fill('.search-bar input.text-field-control', TOKEN_LONG)
     await expect
       .poll(async () => ((await viewer.textContent('.match-count')) ?? '').includes('1 of 1'), { timeout: 5000 })
       .toBeTruthy()
@@ -139,7 +139,7 @@ test.describe('File viewer horizontal scroll-to-match', () => {
     await viewer.keyboard.press('Control+f')
     await viewer.waitForSelector('.search-bar', 5000)
 
-    await viewer.fill('.search-input', TOKEN_LONG)
+    await viewer.fill('.search-bar input.text-field-control', TOKEN_LONG)
     await expect
       .poll(async () => ((await viewer.textContent('.match-count')) ?? '').includes('1 of 1'), { timeout: 5000 })
       .toBeTruthy()
@@ -178,7 +178,7 @@ test.describe('File viewer horizontal scroll-to-match', () => {
 
     await viewer.keyboard.press('Control+f')
     await viewer.waitForSelector('.search-bar', 5000)
-    await viewer.fill('.search-input', TOKEN_LONG)
+    await viewer.fill('.search-bar input.text-field-control', TOKEN_LONG)
     await expect
       .poll(async () => ((await viewer.textContent('.match-count')) ?? '').includes('1 of 1'), { timeout: 5000 })
       .toBeTruthy()
@@ -233,7 +233,7 @@ test.describe('File viewer horizontal scroll-to-match', () => {
 
     await viewer.keyboard.press('Control+f')
     await viewer.waitForSelector('.search-bar', 5000)
-    await viewer.fill('.search-input', PREFIX)
+    await viewer.fill('.search-bar input.text-field-control', PREFIX)
     await expect
       .poll(async () => ((await viewer.textContent('.match-count')) ?? '').includes('1 of 2'), { timeout: 5000 })
       .toBeTruthy()

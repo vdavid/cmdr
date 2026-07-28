@@ -83,7 +83,7 @@ test.describe('File viewer regex search', () => {
 
     // Type the regex query and wait for results. The fixture has three groups
     // of digits, so we expect three matches.
-    await viewer.fill('.search-input', String.raw`\d+`)
+    await viewer.fill('.search-bar input.text-field-control', String.raw`\d+`)
 
     await expect
       .poll(

@@ -612,8 +612,8 @@ test.describe('MTP file operations', () => {
     // Create folder via MCP: mkdir opens the dialog, then we type the name and confirm
     await mcpCall('mkdir', {})
     await tauriPage.waitForSelector(MKDIR_DIALOG, 5000)
-    await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
-    await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, 'NewFolder')
+    await tauriPage.waitForSelector(`${MKDIR_DIALOG} input.text-field-control`, 3000)
+    await tauriPage.fill(`${MKDIR_DIALOG} input.text-field-control`, 'NewFolder')
     // Wait for the OK button to enable in response to the typed name.
     await expect.poll(async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), { timeout: 2000 }).toBeTruthy()
     await tauriPage.click(`${MKDIR_DIALOG} .btn-primary`)
@@ -942,8 +942,8 @@ test.describe('MTP read-only enforcement', () => {
       await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
     } else if (hasMkdir) {
       // Dialog opened. Type a name and confirm, expect backend error.
-      await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
-      await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, 'TestFolder')
+      await tauriPage.waitForSelector(`${MKDIR_DIALOG} input.text-field-control`, 3000)
+      await tauriPage.fill(`${MKDIR_DIALOG} input.text-field-control`, 'TestFolder')
       await expect.poll(async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), { timeout: 2000 }).toBeTruthy()
       await tauriPage.click(`${MKDIR_DIALOG} .btn-primary`)
 

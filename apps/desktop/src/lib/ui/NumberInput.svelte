@@ -62,7 +62,7 @@
     }
 
     /* Same visual contract as `TextInput` (`app.css` § Text fields): Ark renders its
-       own input here, so the frame can't delegate to the primitive — it reads the
+       own input here, so the frame can't delegate to the primitive; it reads the
        same tokens instead, and every field in the app stays identical. */
     :global(.ni-control) {
         display: flex;

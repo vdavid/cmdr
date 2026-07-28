@@ -40,7 +40,8 @@ simple ones.
 - **Text-field chrome lives in `app.css` § "Text fields"**, not in `TextInput` / `TextArea`: both render the same
   `.text-field*` classes, so restyling every field is ONE edit. `Combobox` / `NumberInput` can't delegate (Ark renders
   their input) and read the same `--radius-input` / `--spacing-input` / `--font-size-input` / `--shadow-focus-solid`
-  tokens; keep all five in sync.
+  tokens; keep all five in sync. `.text-field` / `.text-field-control` are a stable selector contract (E2E + the
+  settings focus-restore); don't rename.
 - **`TextInput` is one-way `value` + `oninput`, never `bind:value` internally**: `type` is dynamic (the password field
   flips on focus) and Svelte forbids the pair. `bind:value` still works for callers. Shared prop types live in
   `text-field-types.ts`, NOT a `<script module>` (a type from a `.svelte` file is `any` to the lint service).

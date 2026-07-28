@@ -250,7 +250,7 @@ test.describe('Ask Cmdr rail', () => {
 
     // Search for the first thread's distinctive word; only it matches.
     await page.evaluate(`(() => {
-      const input = document.querySelector('.ask-cmdr-rail .sessions .search-input');
+      const input = document.querySelector('.ask-cmdr-rail .sessions input.text-field-control');
       input.focus();
       input.value = ${JSON.stringify(`${nonce} budget`)};
       input.dispatchEvent(new Event('input', { bubbles: true }));

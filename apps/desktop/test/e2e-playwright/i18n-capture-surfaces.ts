@@ -232,7 +232,7 @@ export async function captureMainOverlays(
   await mainOverlay('new-file-dialog', async () => {
     await skipParentEntry(main)
     await dispatchMenuCommand(main, 'file.newFile')
-    return '[data-dialog-id="new-file-confirmation"] .name-input'
+    return '[data-dialog-id="new-file-confirmation"] input.text-field-control'
   })
 
   // Delete confirmation (F8 → `file.delete`): the recycle/trash-style confirm.
@@ -324,7 +324,7 @@ export async function captureMainOverlays(
     // Stable class, NOT the `aria-label` text: the overflow pass pseudolocalizes
     // every label, so an English `aria-label="Path to go to"` selector never
     // matches under en-XA.
-    return '[data-dialog-id="go-to-path"] .path-input'
+    return '[data-dialog-id="go-to-path"] input.text-field-control'
   })
 
   // Copy/move transfer dialog (F5 → `file.copy`): the source→dest picker with the
@@ -344,7 +344,7 @@ export async function captureMainOverlays(
   // Command palette (`app.commandPalette`).
   await mainOverlay('command-palette', async () => {
     await dispatchMenuCommand(main, 'app.commandPalette')
-    return '.palette-overlay .search-input'
+    return '.palette-overlay input.text-field-control'
   })
 
   // Search dialog (`search.open`). Shares the `.search-overlay` markup with the

@@ -32,7 +32,7 @@ export async function executeViaCommandPalette(tauriPage: PageLike, query: strin
         key: 'p', ctrlKey: ${String(CTRL_OR_META === 'Control')}, metaKey: ${String(CTRL_OR_META === 'Meta')}, shiftKey: true, bubbles: true
     }))`)
   await tauriPage.waitForSelector('.palette-overlay', 5000)
-  await tauriPage.fill('.palette-overlay .search-input', query)
+  await tauriPage.fill('.palette-overlay input.text-field-control', query)
   // Wait for filtered results to appear
   await tauriPage.waitForSelector('.palette-overlay .result-item', 3000)
   await tauriPage.evaluate(`(function() {

@@ -325,7 +325,7 @@ Two niceties on top:
   check so they run against the absolute path.
 - **Yellow "this folder will be created" warning.** A debounced (`createDebounce`, 300 ms) `pathExistsChecked` probe of
   the resolved destination flips `targetMissing`. When the path is structurally valid (no red `pathError`) but the
-  folder doesn't exist, the box gets a yellow outline (`.path-input.has-warning`) and a yellow message line
+  folder doesn't exist, the field takes `TextInput`'s `warning` state (a yellow border and ring) and a yellow message line
   (`.path-warning`, keys `targetWillBeCreated{Copy,Move}`). The red error always wins — the two never show at once. A
   timeout is inconclusive (hung mount), so it stays quiet rather than over-promising. A monotonic `existsCheckSeq` drops
   a stale probe that lands after a newer keystroke.

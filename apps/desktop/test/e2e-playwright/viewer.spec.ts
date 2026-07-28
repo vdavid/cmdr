@@ -150,8 +150,8 @@ test.describe('File viewer search', () => {
       await viewer.keyboard.press('Control+f')
       await viewer.waitForSelector('.search-bar', 5000)
     }
-    await viewer.waitForSelector('.search-input', 5000)
-    await viewer.fill('.search-input', 'AAA')
+    await viewer.waitForSelector('.search-bar input.text-field-control', 5000)
+    await viewer.fill('.search-bar input.text-field-control', 'AAA')
 
     // Wait for search results (debounced search + backend poll)
     await expect
@@ -189,8 +189,8 @@ test.describe('File viewer search', () => {
       await viewer.waitForSelector('.search-bar', 5000)
     }
 
-    await viewer.waitForSelector('.search-input', 5000)
-    await viewer.fill('.search-input', 'Z'.repeat(40))
+    await viewer.waitForSelector('.search-bar input.text-field-control', 5000)
+    await viewer.fill('.search-bar input.text-field-control', 'Z'.repeat(40))
 
     // file-a.txt is 1024 'A' chars, so 'Z' x 40 cannot match.
     await expect
@@ -204,7 +204,7 @@ test.describe('File viewer search', () => {
       .toBeTruthy()
 
     // Cleanup: clear the query.
-    await viewer.fill('.search-input', '')
+    await viewer.fill('.search-bar input.text-field-control', '')
   })
 })
 

@@ -76,7 +76,7 @@ async function setArchiveBrowse(): Promise<void> {
 
 /** Reads the Compress dialog's path-input value (the editable `.zip` target). */
 async function readPathInput(tauriPage: PageLike): Promise<string> {
-  return tauriPage.evaluate<string>(`(document.querySelector('${TRANSFER_DIALOG} .path-input')?.value || '')`)
+  return tauriPage.evaluate<string>(`(document.querySelector('${TRANSFER_DIALOG} input.text-field-control')?.value || '')`)
 }
 
 test.beforeEach(() => {

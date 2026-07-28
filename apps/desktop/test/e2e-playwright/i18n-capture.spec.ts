@@ -284,7 +284,7 @@ test.describe('i18n screenshot capture', () => {
     await captureSurface('new-folder-dialog', report, failed, async () => {
       await dispatchMenuCommand(main, 'file.newFolder')
       await main.waitForSelector(MKDIR_DIALOG, 5000)
-      await main.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
+      await main.waitForSelector(`${MKDIR_DIALOG} input.text-field-control`, 3000)
       return { page: main }
     })
     // `captureSurface` already isolated any staging failure (and recorded it in

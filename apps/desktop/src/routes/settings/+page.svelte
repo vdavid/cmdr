@@ -285,7 +285,7 @@
         // Check if focus is going to body (or null)
         setTimeout(() => {
             if (document.activeElement === document.body || !document.activeElement) {
-                const searchInput = document.querySelector('.search-input')
+                const searchInput = document.querySelector('.search-container input.text-field-control')
                 if (searchInput instanceof HTMLElement) {
                     searchInput.focus()
                 }
@@ -353,7 +353,7 @@
             }
 
             // Focus the search input on open so users can start typing immediately.
-            const searchInput = document.querySelector('.search-input')
+            const searchInput = document.querySelector('.search-container input.text-field-control')
             if (searchInput instanceof HTMLElement) {
                 searchInput.focus()
             }
@@ -366,7 +366,7 @@
                 // without it, macOS restores focus to the main window.
                 setTimeout(() => {
                     void getCurrentWindow().setFocus()
-                    const input = document.querySelector('.search-input')
+                    const input = document.querySelector('.search-container input.text-field-control')
                     if (input instanceof HTMLElement) input.focus()
                 }, 0)
             })

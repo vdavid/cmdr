@@ -1107,8 +1107,8 @@ textarea::selection {
    command palette's query line, a search row inside a bordered pill). Keeps the
    caret, selection, and placeholder treatment; drops the frame entirely,
    including the focus ring, because the host draws its own. The type scale comes
-   from the host too — that's what lets the palette's big query line and a dense
-   inline editor share one primitive. */
+   from the host too, which is what lets the palette's big query line and a
+   dense inline editor share one primitive. */
 .text-field-chromeless,
 .text-field-chromeless:focus-within {
   padding: 0;

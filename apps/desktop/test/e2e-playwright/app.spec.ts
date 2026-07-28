@@ -513,7 +513,7 @@ test.describe('New folder dialog', () => {
     expect(subtitleText).toContain('Create folder in')
 
     // Verify dialog has a name input
-    expect(await tauriPage.isVisible(`${MKDIR_DIALOG} .name-input`)).toBe(true)
+    expect(await tauriPage.isVisible(`${MKDIR_DIALOG} input.text-field-control`)).toBe(true)
 
     // Verify OK and Cancel buttons
     expect(await tauriPage.isVisible(`${MKDIR_DIALOG} .btn-primary`)).toBe(true)
@@ -532,8 +532,8 @@ test.describe('New folder dialog', () => {
     await tauriPage.waitForSelector(MKDIR_DIALOG, 5000)
 
     const folderName = `test-folder-${String(Date.now())}`
-    await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
-    await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, folderName)
+    await tauriPage.waitForSelector(`${MKDIR_DIALOG} input.text-field-control`, 3000)
+    await tauriPage.fill(`${MKDIR_DIALOG} input.text-field-control`, folderName)
     // Wait for the OK button to enable in response to the typed name
     await expect.poll(async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), { timeout: 2000 }).toBeTruthy()
 
@@ -561,7 +561,7 @@ test.describe('Transfer dialogs', () => {
     const titleText = await tauriPage.textContent(`${TRANSFER_DIALOG} h2`)
     expect(titleText).toContain('Copy')
 
-    expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} .path-input`)).toBe(true)
+    expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} input.text-field-control`)).toBe(true)
 
     const copyBtnText = await tauriPage.textContent(`${TRANSFER_DIALOG} .btn-primary`)
     expect(copyBtnText).toBe('Copy')
@@ -583,7 +583,7 @@ test.describe('Transfer dialogs', () => {
     expect(titleText).toContain('Move')
     expect(titleText).not.toContain('Copy')
 
-    expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} .path-input`)).toBe(true)
+    expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} input.text-field-control`)).toBe(true)
 
     const moveBtnText = await tauriPage.textContent(`${TRANSFER_DIALOG} .btn-primary`)
     expect(moveBtnText).toBe('Move')
@@ -601,7 +601,7 @@ test.describe('Transfer dialogs', () => {
     await tauriPage.keyboard.press('F7')
     await tauriPage.waitForSelector(MKDIR_DIALOG, 5000)
 
-    await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, 'unused-cancel-folder')
+    await tauriPage.fill(`${MKDIR_DIALOG} input.text-field-control`, 'unused-cancel-folder')
 
     // Cancel is always enabled; click directly. No fixed wait needed.
     await tauriPage.click(`${MKDIR_DIALOG} .btn-secondary`)

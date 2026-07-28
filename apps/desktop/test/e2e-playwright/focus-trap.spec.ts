@@ -16,7 +16,7 @@ import { test, expect } from './fixtures.js'
 import { ensureAppReady, dismissOverlay, CTRL_OR_META, MKDIR_DIALOG, type PageLike } from './helpers.js'
 
 const PALETTE = '.palette-overlay'
-const PALETTE_INPUT = '.palette-overlay .search-input'
+const PALETTE_INPUT = '.palette-overlay input.text-field-control'
 // Mirrors FOCUSABLE_SELECTOR in `src/lib/ui/focus-trap.ts`. Single-quote-free so it
 // can sit inside single-quoted JS strings passed to `evaluate()`.
 const TABBABLE = '[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'

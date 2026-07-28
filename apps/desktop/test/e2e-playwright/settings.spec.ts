@@ -221,7 +221,7 @@ test.describe('Settings page', () => {
     expect(baselineCount).toBeGreaterThan(2)
 
     // Filter to a narrow query (only Appearance-tied options should match).
-    await settings.fill('.search-input', 'accent')
+    await settings.fill('.search-container input.text-field-control', 'accent')
 
     // Sidebar updates on a 200 ms debounce: wait for the count to drop.
     await expect
@@ -244,7 +244,7 @@ test.describe('Settings page', () => {
       .poll(
         async () => {
           const count = await settings.count('.section-item')
-          const value = await settings.inputValue('.search-input')
+          const value = await settings.inputValue('.search-container input.text-field-control')
           return count === baselineCount && value === ''
         },
         { timeout: 3000 },
@@ -254,7 +254,7 @@ test.describe('Settings page', () => {
 
   test('search shows an empty sidebar for queries with no matches', async () => {
     await settings.waitForSelector('.section-item', 5000)
-    await settings.fill('.search-input', 'zzzyyyxxxnomatch')
+    await settings.fill('.search-container input.text-field-control', 'zzzyyyxxxnomatch')
 
     // Sidebar updates on a 200 ms debounce: wait for all sections to vanish.
     await expect.poll(async () => (await settings.count('.section-item')) === 0, { timeout: 3000 }).toBeTruthy()
@@ -274,7 +274,7 @@ test.describe('Settings page', () => {
     // Reset any leftover search state from prior tests so the full sidebar is
     // rendered and the currently selected section is visible.
     await settings.evaluate(`(function() {
-            var input = document.querySelector('.search-input');
+            var input = document.querySelector('.search-container input.text-field-control');
             if (!input) return;
             var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
             if (desc && desc.set) desc.set.call(input, '');
@@ -312,12 +312,12 @@ test.describe('Settings page', () => {
     // Focus the search input then press Arrow Down: handler must forward to
     // the section list and advance the selection (no separate focus state).
     await settings.evaluate(`(function() {
-            var input = document.querySelector('.search-input');
+            var input = document.querySelector('.search-container input.text-field-control');
             if (input) input.focus();
         })()`)
 
     await settings.evaluate(`(function() {
-            var input = document.querySelector('.search-input');
+            var input = document.querySelector('.search-container input.text-field-control');
             input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
         })()`)
 

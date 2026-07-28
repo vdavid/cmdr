@@ -11,8 +11,8 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 - **`Button.svelte`**: Styled button with variant and size props
 - **`Select.svelte`**: Presentational Ark `Select`: items-driven single-pick, the house dropdown (native-`<select>`
   replacement)
-- **`TextInput.svelte`** / **`TextArea.svelte`**: The house text fields (single-line / multi-line); chrome in `app.css` §
-  "Text fields", shared prop types in `text-field-types.ts`
+- **`TextInput.svelte`** / **`TextArea.svelte`**: The house text fields (single-line / multi-line); chrome in `app.css`
+  § "Text fields", shared prop types in `text-field-types.ts`
 - **`Combobox.svelte`**: Presentational Ark `Combobox`: text-field-with-suggestions, async list, free text (model
   picker)
 - **`Popover.svelte`**: Generic positioned floater: frosted glass, auto-flip, focus trap, Esc-scoped close
@@ -346,9 +346,9 @@ radius, padding, caret, selection, and focus ring are defined once and restyled 
 Props, variants, and the "when to reach for what" table: `docs/design-system.md` § "Text input and text area". This
 section is the decisions behind them.
 
-**Decision: the chrome is global CSS, not scoped to a component.** The `.text-field*` classes live in `app.css` §
-"Text fields" rather than inside `TextInput.svelte`. Svelte scopes a component's `<style>` to that component, so two
-primitives can't share one — and a `TextArea` that re-declares the frame would drift from `TextInput` the first time
+**Decision: the chrome is global CSS, not scoped to a component.** The `.text-field*` classes live in `app.css` § "Text
+fields" rather than inside `TextInput.svelte`. Svelte scopes a component's `<style>` to that component, so two
+primitives can't share one, and a `TextArea` that re-declares the frame would drift from `TextInput` the first time
 either is touched. Four tokens (`--radius-input`, `--spacing-input`, `--font-size-input`, `--shadow-focus-solid`) sit
 above the classes so the Ark-backed fields can read the same contract. Precedent: `.spinner*`, `.cmdr-tooltip*`, and
 `query-ui/filter-chips/filter-popover.css` are all global for the same reason.
@@ -360,12 +360,12 @@ half the props meaningless at every call site and force a union element type on 
 which is what actually keeps them identical.
 
 **Decision: the value is one-way + `oninput`, not `bind:value`** (load-bearing, don't "fix" it). Svelte refuses
-`bind:value` next to a dynamic `type`, and `type` genuinely varies at runtime: `SettingPasswordInput` flips
-`password` ↔ `text` as the field gains and loses focus so an unfocused field can show a masked preview with the last
-four characters. A ladder of static-`type` branches would remount the input on that flip and drop the focus that
-triggered it. `value` stays `$bindable`, so `bind:value` keeps working; the semantics match Svelte's own (the field
-follows whatever the caller renders, and a caller that silently rejects a keystroke without changing `value` keeps the
-typed text — same as a raw `value={x}` + `oninput` today).
+`bind:value` next to a dynamic `type`, and `type` genuinely varies at runtime: `SettingPasswordInput` flips `password` ↔
+`text` as the field gains and loses focus so an unfocused field can show a masked preview with the last four characters.
+A ladder of static-`type` branches would remount the input on that flip and drop the focus that triggered it. `value`
+stays `$bindable`, so `bind:value` keeps working; the semantics match Svelte's own (the field follows whatever the
+caller renders, and a caller that silently rejects a keystroke without changing `value` keeps the typed text, same as a
+raw `value={x}` + `oninput` today).
 
 **Decision: the frame is a flex row, so affixes are real siblings.** The wrapper carries the border, background, radius,
 padding, and the `:focus-within` ring; the leading icon and the trailing snippet are flex children of it. That's what
@@ -374,7 +374,7 @@ positioned against the CONTAINER rather than the input and had a comment explain
 size to the text line (20 px square), not to the frame, so a clear button can't stretch the field taller than every
 other one.
 
-**`:focus-within`, not `:focus-visible`** — the ring must show for mouse focus too (`docs/design-system.md` § Focus
+**`:focus-within`, not `:focus-visible`**: the ring must show for mouse focus too (`docs/design-system.md` § Focus
 indicators), and it has to fire when focus lands on the inner control while the ring is drawn on the frame.
 
 **`chromeless` inherits the host's type scale** (`font: inherit` on the control). That's what lets the command palette's
@@ -394,6 +394,13 @@ its reason:
 
 The litmus for a future raw field: migrate when the primitive reads same-or-better; keep it raw (and note it here) when
 the field's geometry is dictated by a row it must fit inside.
+
+**Stable class contract (load-bearing, don't rename):** `.text-field` (the frame) and `.text-field-control` (the
+`<input>` / `<textarea>` inside it). The Playwright suite selects fields by `input.text-field-control` scoped to a
+dialog or region, and the settings window's focus-restore (`routes/settings/+page.svelte`) reaches its sidebar search
+through `.search-container input.text-field-control`. The state classes (`-invalid`, `-warning`, `-readonly`,
+`-disabled`, `-chromeless`, `-radius-*`) land on the FRAME, not the control, so a test asserting one walks
+`input.closest('.text-field')`.
 
 **`Combobox` and `NumberInput` don't delegate.** Both render Ark UI's own input component, not a literal `<input>`, so
 wrapping `TextInput` around them would mean giving up Ark's collection, keyboard, and ARIA wiring. They read the four

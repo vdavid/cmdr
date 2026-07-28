@@ -140,7 +140,7 @@ export async function captureViewerSubsurfaces(
   }
 
   // Find bar: ⌘F / Ctrl+F opens the in-file search. Renders `viewer.search.*`.
-  await viewerSurface('viewer-search', textFixture, '.search-bar .search-input', async (v) => {
+  await viewerSurface('viewer-search', textFixture, '.search-bar input.text-field-control', async (v) => {
     await v.evaluate(`(function(){
       var el = document.querySelector('.file-content') || document.body;
       el.dispatchEvent(new KeyboardEvent('keydown', {

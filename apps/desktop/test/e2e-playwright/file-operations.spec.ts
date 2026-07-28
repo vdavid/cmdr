@@ -421,8 +421,8 @@ test.describe('Create folder round-trip', () => {
     await tauriPage.keyboard.press('F7')
     await tauriPage.waitForSelector(MKDIR_DIALOG, 5000)
 
-    await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
-    await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, folderName)
+    await tauriPage.waitForSelector(`${MKDIR_DIALOG} input.text-field-control`, 3000)
+    await tauriPage.fill(`${MKDIR_DIALOG} input.text-field-control`, folderName)
     // Wait for the OK button to enable in response to the typed name
     await expect.poll(async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), { timeout: 2000 }).toBeTruthy()
 
@@ -455,8 +455,8 @@ test.describe('Create folder round-trip', () => {
 
     await tauriPage.keyboard.press('F7')
     await tauriPage.waitForSelector(MKDIR_DIALOG, 5000)
-    await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
-    await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, folderName)
+    await tauriPage.waitForSelector(`${MKDIR_DIALOG} input.text-field-control`, 3000)
+    await tauriPage.fill(`${MKDIR_DIALOG} input.text-field-control`, folderName)
     await expect.poll(async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), { timeout: 2000 }).toBeTruthy()
     await tauriPage.click(`${MKDIR_DIALOG} .btn-primary`)
 
@@ -498,8 +498,8 @@ test.describe('New file round-trip', () => {
     await dispatchMenuCommand(tauriPage, 'file.newFile')
     await tauriPage.waitForSelector(NEW_FILE_DIALOG, 5000)
 
-    await tauriPage.waitForSelector(`${NEW_FILE_DIALOG} .name-input`, 3000)
-    await tauriPage.fill(`${NEW_FILE_DIALOG} .name-input`, fileName)
+    await tauriPage.waitForSelector(`${NEW_FILE_DIALOG} input.text-field-control`, 3000)
+    await tauriPage.fill(`${NEW_FILE_DIALOG} input.text-field-control`, fileName)
     // The OK button enables once the typed name validates (async conflict check).
     await expect
       .poll(async () => tauriPage.isEnabled(`${NEW_FILE_DIALOG} .btn-primary`), { timeout: 2000 })
@@ -614,13 +614,13 @@ test.describe('Command palette', () => {
     await tauriPage.waitForSelector('.palette-overlay', 5000)
 
     // Verify the search input exists
-    expect(await tauriPage.isVisible('.palette-overlay .search-input')).toBe(true)
+    expect(await tauriPage.isVisible('.palette-overlay input.text-field-control')).toBe(true)
 
     // Verify results container
     expect(await tauriPage.isVisible('.palette-overlay .results-container')).toBe(true)
 
     // Type a query to filter results
-    await tauriPage.fill('.palette-overlay .search-input', 'sort')
+    await tauriPage.fill('.palette-overlay input.text-field-control', 'sort')
 
     // Wait for filtered results
     await expect
