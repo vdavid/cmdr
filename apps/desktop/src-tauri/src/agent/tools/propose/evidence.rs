@@ -197,10 +197,11 @@ impl ImageFactsLedger {
     /// Check one item's evidence. Content claims are checked against what was delivered;
     /// the other sources only have to be a usable note.
     pub fn check(&self, source_path: &str, evidence: &RenameEvidence) -> Result<(), EvidenceProblem> {
-        let detail = normalize_detail(&evidence.detail);
+        // Length first, so an oversized detail is rejected before it's worth normalizing.
         if evidence.detail.chars().count() > MAX_DETAIL_CHARS {
             return Err(EvidenceProblem::DetailTooLong);
         }
+        let detail = normalize_detail(&evidence.detail);
         if detail.chars().count() < MIN_DETAIL_CHARS {
             return Err(EvidenceProblem::DetailTooShort);
         }
@@ -486,7 +487,10 @@ mod tests {
     /// output directly, rather than only round-tripping a check, is what pins that.
     #[test]
     fn detail_folding_is_platform_independent() {
-        assert_eq!(normalize_detail("  LinkedIn\n Messaging   3 New "), "linkedin messaging 3 new");
+        assert_eq!(
+            normalize_detail("  LinkedIn\n Messaging   3 New "),
+            "linkedin messaging 3 new"
+        );
         assert_eq!(normalize_detail("'quoted'"), "quoted");
         // NFD is what makes a precomposed quote match decomposed OCR text (and vice versa),
         // so the two spellings of the same word must fold to one string.
