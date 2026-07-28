@@ -57,24 +57,25 @@ Two macOS behaviors that follow from the same reading: `Moved` is **deduped** ag
 move emits nothing), and `windowDidResize` emits **both** `Resized` and `Moved`, so an ordinary edge-drag resize churns
 `prev_x`/`prev_y` too. Upstream behaves the same way.
 
-### The restoring flag, and its hole
+### No "currently restoring" flag, by design
 
-`restoring` suppresses the events `restore()` causes. It only covers the synchronous window, which on macOS usually
-isn't enough: tao dispatches `set_position` / `set_size` / `maximize` to the main queue, so they execute on a later
-turn than the `restore()` call that already cleared the flag, and their events arrive unguarded. Upstream's
-`RestoringWindowState` `try_lock` has the identical hole, so this is not a regression.
+Upstream guards its handlers with a `RestoringWindowState` mutex so the events `restore_state` causes don't overwrite
+the state being restored. **That guard cannot work**, and we deliberately don't have an equivalent: tao dispatches
+`set_position` / `set_size` / `maximize` to the main queue, so they execute on a later turn than the synchronous
+`restore()` call that would have cleared the flag, and their `Moved` / `Resized` events arrive unguarded. Any fix
+phrased in terms of *when* to clear the flag is a guess about main-queue ordering.
 
-What it costs, traced:
+Instead the guard is unnecessary, because `apply_move` is a no-op for exactly the values restore applied:
 
-- **Non-maximized restore**: the `Moved` sets `prev_* = x,y` and leaves `x,y` correct. `prev_*` is only read when
-  maximized, so this is harmless.
-- **Maximized restore**: the sequence self-heals, because `maximize()` then emits `Moved(corner)` which pushes the real
-  pre-maximize position back into `prev_*`. But macOS animates `zoom:`, `windowDidResize` fires repeatedly, and each
-  emits a `Moved`, so `prev_*` can end up holding an intermediate animation frame. The visible effect is a
-  restored-maximized window landing slightly off its old spot when un-maximized.
+- **Non-maximized restore**: `set_position(x, y)` comes back as `Moved(x, y)`; recording it writes the same numbers.
+- **Maximized restore**: `restore_position` aims at `prev_*` and our state already says `maximized`, so `prev_*` is
+  frozen. The subsequent `maximize()` events, including every intermediate frame of the macOS `zoom:` animation, are
+  frozen out too.
 
-Not worth a timing hack to close (any fix is a guess about main-queue ordering), but don't trust the flag for anything
-stronger than it claims.
+Upstream's one-step-of-history shuffle is what made this fragile: each animation frame shifted `prev_*` along, so a
+restored-maximized window could land on an arbitrary intermediate spot when un-maximized. Tracking "last non-maximized
+position" instead is both simpler and immune to how many events arrive. Covered by
+`the_zoom_animations_intermediate_moves_cannot_poison_prev` and the two `restore_feedback_*` tests.
 
 ### Why main-thread getters are safe at all
 
@@ -101,39 +102,23 @@ Order matters, and it's the order upstream used:
 2. **Size**, skipped for a zero dimension.
 3. **Maximize**, then **fullscreen**.
 
-The plugin had a fourth step, **show + focus**, and we deliberately dropped it. Cmdr already shows the main window from
-the frontend, gated on a confirmed first paint (`routes/(main)/show-main-when-painted.ts` → `show_main_window`), and
-that path must stay the only one:
-
-- Showing before the compositor presents a frame can leave the window blank until something forces a repaint. That was
-  observed on a cold prod launch during a heavy reindex, which is why the paint gate exists.
-- `show_main_window` orders the window to the *back* in E2E mode so test runs don't pop in front of the developer. An
-  unconditional `show()` from Rust would make every E2E run steal focus.
+The plugin had a fourth step, **show + focus**, and we deliberately dropped it. Cmdr shows the main window from the
+frontend's `onMount` (`routes/(main)/show-main-on-mount.ts` → `show_main_window`), and that path must stay the only
+one: `show_main_window` orders the window to the *back* in E2E mode so test runs don't pop in front of the developer,
+so an unconditional `show()` from Rust would make every E2E run steal focus.
 
 Because nothing here acts on it, the saved `visible` flag is recorded but never applied. It stays in the schema so
 plugin-written files round-trip unchanged.
 
-### Known consequence: the paint gate now always times out
+### Consequence for startup: the frontend now owns when the window appears
 
-Dropping the backend show changed which branch of `showMainWhenPainted()` runs, and it's worth knowing before someone
-"fixes" the resulting log line.
+The plugin used to show the window at window-ready, before the frontend ran, which made the frontend's own paint-gated
+show a no-op re-show. With the plugin gone the window really is hidden until `showMainOnMount()` shows it, so the
+frontend's startup path became load-bearing for the first time.
 
-The plugin used to show the window at window-ready, i.e. before the frontend ran. The window was therefore already
-visible by the time `showMainWhenPainted()` executed, `requestAnimationFrame` fired normally, paint was confirmed in a
-few ms, and its `show()` was a no-op re-show. The paint gate was, in practice, gating a call that no longer mattered.
-
-Now the window really is hidden until the frontend asks for it, and **WebKit throttles `requestAnimationFrame` in a
-hidden window**, so the paint can never be confirmed. Every launch takes the `FIRST_PAINT_TIMEOUT_MS` (1000 ms)
-fallback and logs:
-
-```
-WARN FE:startup  First paint not confirmed within 1000ms; showing the main window anyway (it may briefly appear blank)
-```
-
-Verified on macOS 15, dev build, 2026-07-28. That warning was written to flag a rare event, so it's now misleading, and
-the window appears ~1s later than it strictly needs to. The gate can't do its job while the window is hidden, so the
-options are to show on mount without the rAF gate, or keep a much shorter timeout and demote the log to `debug`. That's
-a startup-UX call, deliberately left to David rather than changed as a side effect of removing the plugin.
+That path was reshaped to match (see `src/routes/(main)/DETAILS.md` § Startup): the pre-show paint gate is gone, the
+window is shown straight from `onMount`, and the paint check moved after the show where it can actually observe
+something. Don't reintroduce a pre-show gate here or there.
 
 If no monitor overlaps (the display was unplugged, or the resolution shrank), we leave placement to the OS rather than
 restoring a position the user can't reach.
@@ -143,10 +128,13 @@ edits a sane base rather than `(0, 0)`.
 
 ### `prev_x` / `prev_y`
 
-Maximizing moves the window to the monitor corner, and that `Moved` event would otherwise destroy the only record of
-where the user actually had it. So every move shifts the old position into `prev_x` / `prev_y`, and a window saved
-while maximized restores to the *previous* position. Without this, un-maximizing after a restart strands the window in
-the corner.
+Maximizing parks the window at the monitor corner, and that `Moved` event would otherwise destroy the only record of
+where the user actually had it. So `prev_x` / `prev_y` track **the last position while not maximized**: an ordinary
+move updates them alongside `x`/`y`, and they freeze for the whole maximized period. A window saved while maximized
+restores to them. Without this, un-maximizing after a restart strands the window in the corner.
+
+This differs from upstream, which keeps one step of history (every move shifts the old `x`/`y` into `prev_*`, whether
+maximized or not). See "No 'currently restoring' flag" above for why the difference matters.
 
 Note `is_on_any_monitor` checks the position the window will actually land on (via `restore_position`), not the raw
 `x`/`y`, so a maximized window is validated against its pre-maximize spot.

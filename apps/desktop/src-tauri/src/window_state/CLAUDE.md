@@ -19,11 +19,13 @@ Persists the main window's size and position across launches, in `.window-state.
 - **Take geometry from the event payload, not from a getter.** `WindowEvent::Resized(size)` and `Moved(position)`
   already carry what you'd otherwise call `inner_size()` / `outer_position()` for. Fewer round-trips and no lock
   inversion available to get wrong.
-- **❌ Never call `show()` from here.** `restore()` does placement only. The frontend owns showing the main window,
-  gated on a confirmed first paint (`routes/(main)/show-main-when-painted.ts` → the `show_main_window` command). Showing
-  before the compositor presents a frame can leave the window blank until something forces a repaint, and
-  `show_main_window` orders the window to the *back* under E2E so test runs don't steal focus. A `show()` here defeats
-  both. The saved `visible` flag is therefore recorded but never acted on.
+- **❌ Never call `show()` from here.** `restore()` does placement only. The frontend owns showing the main window, from
+  `onMount` (`routes/(main)/show-main-on-mount.ts` → the `show_main_window` command). That command orders the window to
+  the *back* under E2E so test runs don't steal focus, so a bare `show()` here would make every E2E run steal it. The
+  saved `visible` flag is therefore recorded but never acted on.
+- **❌ Don't add a "currently restoring" flag.** It can't work: tao dispatches the geometry setters to the main queue,
+  so their events land after any synchronous flag is cleared. `geometry::apply_move` is a no-op for the values restore
+  just applied, which removes the need.
 - **Only `main` is tracked.** Settings, Debug, and viewer windows deliberately reset each launch; their in-session
   position lives in `child_window_state.rs`. `track()` no-ops for other labels.
 - **The `restoring` flag is load-bearing.** `set_position` / `set_size` come back as `Moved` / `Resized` events; without

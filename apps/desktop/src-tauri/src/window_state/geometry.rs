@@ -114,12 +114,26 @@ pub fn restore_position(geometry: &WindowGeometry) -> (i32, i32) {
     }
 }
 
-/// Records a window move, keeping the previous position for [`restore_position`].
+/// Records a window move.
+///
+/// `prev_*` tracks **the last position while not maximized**, which is what
+/// [`restore_position`] hands back. Freezing it for the whole maximized period
+/// is what makes this robust: macOS animates `zoom:`, so maximizing emits a
+/// stream of `Moved` events carrying intermediate animation frames, and
+/// anything that records one of those loses the position the user chose.
+///
+/// It also makes restore self-correcting. `set_position` during restore comes
+/// back as a `Moved` carrying the value we just applied, so re-recording it is
+/// a no-op. That's why there's no "currently restoring" flag here: such a flag
+/// can't work anyway, since tao dispatches the setters to the main queue and
+/// their events arrive after any synchronous flag would have been cleared.
 pub fn apply_move(geometry: &mut WindowGeometry, x: i32, y: i32) {
-    geometry.prev_x = geometry.x;
-    geometry.prev_y = geometry.y;
     geometry.x = x;
     geometry.y = y;
+    if !geometry.maximized {
+        geometry.prev_x = x;
+        geometry.prev_y = y;
+    }
 }
 
 /// Records a window resize. Returns `false` and leaves `geometry` untouched
@@ -167,11 +181,94 @@ mod tests {
     }
 
     #[test]
-    fn move_keeps_the_previous_position() {
+    fn an_ordinary_move_tracks_the_position_in_both_fields() {
         let mut g = geometry();
         apply_move(&mut g, 300, 400);
         assert_eq!((g.x, g.y), (300, 400));
+        assert_eq!((g.prev_x, g.prev_y), (300, 400));
+    }
+
+    #[test]
+    fn prev_position_freezes_while_maximized() {
+        // Maximizing parks the window at the monitor corner. `prev_*` must keep
+        // the position the user actually chose, or un-maximize strands it there.
+        let mut g = geometry();
+        apply_move(&mut g, 100, 200);
+        g.maximized = true;
+        apply_move(&mut g, 0, 0);
+
+        assert_eq!((g.x, g.y), (0, 0));
         assert_eq!((g.prev_x, g.prev_y), (100, 200));
+        assert_eq!(restore_position(&g), (100, 200));
+    }
+
+    #[test]
+    fn the_zoom_animations_intermediate_moves_cannot_poison_prev() {
+        // macOS animates `zoom:`, so `windowDidResize` fires repeatedly and each
+        // frame emits its own `Moved`. Pre-fix, every one of them shifted
+        // `prev_*`, leaving it holding an arbitrary animation frame.
+        let mut g = geometry();
+        apply_move(&mut g, 100, 200);
+        g.maximized = true;
+        for step in 0..5 {
+            apply_move(&mut g, 100 - step * 20, 200 - step * 40);
+        }
+        assert_eq!((g.prev_x, g.prev_y), (100, 200));
+    }
+
+    #[test]
+    fn un_maximize_then_re_maximize_keeps_the_user_position() {
+        // The full cycle: the position the user chose has to survive a round trip
+        // through maximized and back.
+        let mut g = geometry();
+        apply_move(&mut g, 100, 200);
+
+        g.maximized = true;
+        apply_move(&mut g, 0, 0);
+
+        g.maximized = false;
+        apply_move(&mut g, 100, 200);
+
+        g.maximized = true;
+        apply_move(&mut g, 0, 0);
+
+        assert_eq!(restore_position(&g), (100, 200));
+    }
+
+    #[test]
+    fn restore_feedback_events_leave_the_geometry_alone() {
+        // `set_position` during restore comes back as a `Moved` carrying the very
+        // value we applied. Re-recording it must be a no-op, which is what lets
+        // us do without a "currently restoring" flag (that flag was unfixable
+        // anyway: tao dispatches the setters asynchronously).
+        let saved = WindowGeometry { x: 100, y: 200, prev_x: 100, prev_y: 200, ..geometry() };
+
+        let mut g = saved;
+        let (x, y) = restore_position(&g);
+        apply_move(&mut g, x, y);
+        assert_eq!(g, saved);
+    }
+
+    #[test]
+    fn restore_feedback_on_a_maximized_window_preserves_the_pre_maximize_spot() {
+        let saved = WindowGeometry {
+            x: 0,
+            y: 0,
+            prev_x: 100,
+            prev_y: 200,
+            maximized: true,
+            ..geometry()
+        };
+
+        let mut g = saved;
+        // Restore aims at the pre-maximize spot, then maximizes; both events
+        // arrive while our state still says maximized.
+        let (x, y) = restore_position(&g);
+        apply_move(&mut g, x, y);
+        apply_move(&mut g, 0, 0);
+
+        assert_eq!((g.prev_x, g.prev_y), (100, 200));
+        assert_eq!(restore_position(&g), (100, 200));
     }
 
     #[test]
@@ -185,8 +282,9 @@ mod tests {
         // Maximizing moves the window to the monitor corner (0,0 here), so the
         // only record of where the user had it is prev_x/prev_y.
         let mut g = geometry();
-        apply_move(&mut g, 0, 0);
+        apply_move(&mut g, 100, 200);
         g.maximized = true;
+        apply_move(&mut g, 0, 0);
         assert_eq!(restore_position(&g), (100, 200));
     }
 

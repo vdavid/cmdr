@@ -24,7 +24,6 @@ mod geometry;
 
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -57,22 +56,16 @@ const LOG_TARGET: &str = "window_state";
 /// and the main thread takes this lock in the event handlers; holding across
 /// one is precisely the deadlock this module exists to remove. Every method
 /// here keeps its critical section to plain field access.
+///
+/// ❌ Don't add a "currently restoring" flag. Upstream has one and it can't
+/// work: tao dispatches `set_position` / `set_size` / `maximize` to the main
+/// queue, so their events arrive after any synchronous flag would already have
+/// been cleared. [`geometry::apply_move`] makes the guard unnecessary instead,
+/// by being a no-op for the values restore just applied.
 pub struct WindowStateStore {
     /// Keyed by window label. A map (rather than a bare struct) purely for
     /// on-disk compatibility with the plugin's format.
     geometries: Mutex<HashMap<String, WindowGeometry>>,
-    /// Set while [`restore`] is applying saved values, so the handlers ignore
-    /// events it causes rather than writing them back over the state being
-    /// restored.
-    ///
-    /// **Only covers the synchronous window, and on macOS that's usually not
-    /// enough.** tao dispatches `set_position` / `set_size` / `maximize` to the
-    /// main queue, so they run on a later turn than the `restore` call that
-    /// cleared this flag, and their `Moved` / `Resized` events land with it
-    /// already `false`. Upstream's `try_lock` guard has the identical hole. The
-    /// fallout is bounded: those events re-record the geometry we just applied,
-    /// so only `prev_x`/`prev_y` churn (see `DETAILS.md` § The restoring flag).
-    restoring: AtomicBool,
     /// Poked on every change; the flusher task waits on it.
     flush_requested: Arc<Notify>,
     path: PathBuf,
@@ -91,7 +84,6 @@ impl WindowStateStore {
 
         Self {
             geometries: Mutex::new(geometries),
-            restoring: AtomicBool::new(false),
             flush_requested: Arc::new(Notify::new()),
             path,
         }
@@ -136,9 +128,6 @@ impl WindowStateStore {
         }
     }
 
-    fn is_restoring(&self) -> bool {
-        self.restoring.load(Ordering::SeqCst)
-    }
 }
 
 /// Loads saved state, registers it, and starts the debounced disk writer.
@@ -180,13 +169,11 @@ fn store_of<R: Runtime>(app: &AppHandle<R>) -> Option<Arc<WindowStateStore>> {
 ///
 /// **Deliberately does not show the window**, though the plugin's
 /// `restore_state` did. The main window is created `"visible": false` and the
-/// frontend owns showing it, gated on a confirmed first paint
-/// (`routes/(main)/show-main-when-painted.ts`, via the `show_main_window`
-/// command). That has to stay the only path, for two independent reasons:
-/// showing before the compositor presents a frame can leave the window blank
-/// until something forces a repaint, and `show_main_window` orders the window
-/// to the *back* in E2E mode so test runs don't steal the developer's focus. A
-/// bare `show()` here would defeat both.
+/// frontend owns showing it, from `onMount`
+/// (`routes/(main)/show-main-on-mount.ts`, via the `show_main_window`
+/// command). That has to stay the only path: `show_main_window` orders the
+/// window to the *back* in E2E mode so test runs don't steal the developer's
+/// focus, and a bare `show()` here would defeat that.
 ///
 /// So the saved `visible` flag is recorded but never acted on. It stays in the
 /// schema so plugin-written files round-trip unchanged.
@@ -196,9 +183,7 @@ pub fn restore<R: Runtime>(window: &WebviewWindow<R>) {
     };
 
     let label = window.label().to_string();
-    store.restoring.store(true, Ordering::SeqCst);
     apply_saved_geometry(window, &store, &label);
-    store.restoring.store(false, Ordering::SeqCst);
 }
 
 fn apply_saved_geometry<R: Runtime>(window: &WebviewWindow<R>, store: &WindowStateStore, label: &str) {
@@ -317,9 +302,6 @@ fn on_moved<R: Runtime>(
     label: &str,
     position: &PhysicalPosition<i32>,
 ) {
-    if store.is_restoring() {
-        return;
-    }
     // Query before locking, always.
     if window.is_minimized().unwrap_or(false) {
         return;
@@ -329,10 +311,6 @@ fn on_moved<R: Runtime>(
 }
 
 fn on_resized<R: Runtime>(window: &WebviewWindow<R>, store: &WindowStateStore, label: &str, size: &PhysicalSize<u32>) {
-    if store.is_restoring() {
-        return;
-    }
-
     // All window queries happen up front, before the lock.
     if window.is_minimized().unwrap_or(false) {
         return;
