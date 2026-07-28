@@ -80,7 +80,7 @@ export function applyDateFromAi(state: QueryFilterState, after: string | null, b
  * files, `null` → no opinion) onto the Type toggle. Returns true only when it actually wrote.
  *
  * Leave-alone-if-null is the whole point (see the module header): when the AI returns `null`,
- * the user's current `Both | Files | Folders` choice stands. Unlike `applySizeFromAi` /
+ * the user's current `Files | Folders | Both` choice stands. Unlike `applySizeFromAi` /
  * `applyDateFromAi`, callers DON'T reset the type to `both` first.
  */
 export function applyTypeFromAi(state: QueryFilterState, isDirectory: boolean | null): boolean {

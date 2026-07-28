@@ -5,7 +5,7 @@ grid-style Size / Modified column contents, shortcut openers, chip-side behavior
 invariants and gotchas live in `CLAUDE.md`.
 
 The chip strip lives below the mode-chip row inside the shared `QueryDialog`. It leads with a one-click
-`Both | Files | Folders` type toggle, then surfaces each remaining filter dimension (Pattern, Size, Modified, Search in)
+`Files | Folders | Both` type toggle, then surfaces each remaining filter dimension (Pattern, Size, Modified, Search in)
 as a chip that opens a popover with the dense controls. All filters are always visible (there's no "+ Add filter"
 affordance). Owned by the shared query UI; consumed by both Search and Selection through the same `QueryDialog`
 orchestrator. See `../CLAUDE.md` and `../DETAILS.md` for the orchestrator, the unified bar, the results table, and the
@@ -146,7 +146,7 @@ select + value) competes with the search bar and the results. Chips are calmer (
 capture-phase guard documented in CLAUDE.md). The popover surface is the right place for the dense single-filter UI that
 doesn't deserve permanent screen real estate. All filters are always visible (so few); there's no "+ Add filter" gate.
 
-**Decision**: The type filter is a `ToggleGroup` (`Both | Files | Folders`), not a chip+popover. **Why**: size/date are
+**Decision**: The type filter is a `ToggleGroup` (`Files | Folders | Both`), not a chip+popover. **Why**: size/date are
 ranges that deserve a popover, but type is a 3-way mutually-exclusive choice where a popover is friction. One-click
 matches the keyboard-first, low-friction principle, and it leads the strip ("show [files] where size > …"). It binds the
 core `typeFilter` state directly (cross-consumer, so both dialogs show it), mapped to the existing IPC `isDirectory`. On

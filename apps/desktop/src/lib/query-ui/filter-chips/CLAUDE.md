@@ -1,7 +1,7 @@
 # Filter chips (size, modified, scope, pattern)
 
 The chip strip below the mode-chip row inside the shared `QueryDialog`. It leads with a one-click
-`Both | Files | Folders` type toggle, then surfaces Pattern, Size, Modified, and Search in as chips that open popovers
+`Files | Folders | Both` type toggle, then surfaces Pattern, Size, Modified, and Search in as chips that open popovers
 with the dense controls (all filters always visible, no "+ Add filter"). Owned by the shared query UI; consumed by both
 Search and Selection. See `../CLAUDE.md` for the orchestrator and cross-consumer state factory.
 

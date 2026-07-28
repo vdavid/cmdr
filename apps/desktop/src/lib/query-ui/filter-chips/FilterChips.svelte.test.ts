@@ -2,7 +2,7 @@
  * Behavior tests for `FilterChips.svelte`.
  *
  * Pins:
- *   - The leading type toggle (Both / Files / Folders) renders and drives `setTypeFilter`.
+ *   - The leading type toggle (Files / Folders / Both) renders and drives `setTypeFilter`.
  *   - Three chips render by default (Size, Modified, Search in); all filters are always visible.
  *   - Each chip shows its default label, not a value, when the filter is in "any" state.
  *   - A configured chip shows its summary plus an `×` clear control.
@@ -307,12 +307,17 @@ describe('SearchFilterChips: type toggle', () => {
     return items.find((el) => el.textContent.trim() === label) ?? null
   }
 
-  it('renders Both / Files / Folders options', async () => {
+  // Display order is `Files | Folders | Both`: the two concrete choices first, the
+  // catch-all last. The stored values (`file` / `folder` / `both`) are unaffected by
+  // the order, so this assertion is the only thing pinning it.
+  it('renders Files / Folders / Both options in that order', async () => {
     const { target, cleanup } = mountChips(baseProps())
     await tick()
-    expect(typeOption(target, 'Both')).not.toBeNull()
-    expect(typeOption(target, 'Files')).not.toBeNull()
-    expect(typeOption(target, 'Folders')).not.toBeNull()
+    const group = target.querySelector('[aria-label="Filter by type"]')
+    const labels = Array.from(group?.querySelectorAll<HTMLElement>('.tg-item') ?? []).map((el) =>
+      el.textContent.trim(),
+    )
+    expect(labels).toEqual(['Files', 'Folders', 'Both'])
     cleanup()
   })
 

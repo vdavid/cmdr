@@ -10,7 +10,7 @@ import type { SelectionHistoryEntry, SelectionTranslateResult } from '$lib/ipc/b
  * provider isn't `cloud` (small local models can't reliably handle a 200+-name
  * folder sample plus the structured prompt).
  *
- * `currentType` is the dialog's `Both | Files | Folders` toggle as context (`true` = folders,
+ * `currentType` is the dialog's `Files | Folders | Both` toggle as context (`true` = folders,
  * `false` = files, `null` = both). The AI may set the type or leave it; when it returns nothing,
  * the caller keeps the user's choice (see `applyTypeFromAi`).
  */

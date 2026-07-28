@@ -2,7 +2,7 @@
     /**
      * SearchFilterChips: the chip strip that replaces the old filter row + scope row.
      *
-     * Leads with a one-click `Both | Files | Folders` type toggle (a `ToggleGroup`, not a
+     * Leads with a one-click `Files | Folders | Both` type toggle (a `ToggleGroup`, not a
      * popover — type is a 3-way mutually-exclusive choice where a popover would be friction).
      * Then the Pattern chip, then Size / Modified / Search in chips: clicking a chip opens a
      * popover with the controls. All filters are always visible (so few). See
@@ -71,7 +71,7 @@
         dateFilter: DateFilter
         dateValue: string
         dateValueMax: string
-        /** Current `Both | Files | Folders` type filter (core state, both dialogs show it). */
+        /** Current `Files | Folders | Both` type filter (core state, both dialogs show it). */
         typeFilter: TypeFilter
         systemDirExcludeTooltip: string
         highlightedFields: SvelteSet<string>
@@ -164,12 +164,14 @@
     const setDateValueMax: typeof filterState.setDateValueMax = (v) => { filterState.setDateValueMax(v); }
     const setQueryFromUserInput: typeof filterState.setQueryFromUserInput = (v) => { filterState.setQueryFromUserInput(v); }
 
-    // Type toggle: one-click `Both | Files | Folders`. Lives in the core state (both
+    // Type toggle: one-click `Files | Folders | Both`. Lives in the core state (both
     // dialogs show it), leading the chip strip so it reads "show [files] where size > …".
+    // The two concrete choices come first and the catch-all last, which reads more
+    // naturally than leading with "Both". `both` stays the default value.
     const TYPE_FILTER_OPTIONS = $derived<ToggleGroupOption[]>([
-        { value: 'both', label: tString('queryUi.filters.type.both') },
         { value: 'file', label: tString('queryUi.filters.type.files') },
         { value: 'folder', label: tString('queryUi.filters.type.folders') },
+        { value: 'both', label: tString('queryUi.filters.type.both') },
     ])
     function onTypeFilterChange(value: string): void {
         filterState.setTypeFilter(value as TypeFilter)
@@ -317,7 +319,7 @@
     }
 </script>
 
-<!-- Filter chip strip. The Type toggle leads the strip (one-click `Both | Files | Folders`),
+<!-- Filter chip strip. The Type toggle leads the strip (one-click `Files | Folders | Both`),
      then the Pattern chip, then Size / Modified / Search in. The Pattern chip's value comes
      from the bar in filename / regex mode and from the AI-produced pattern in AI mode, so the
      user sees the actual pattern being applied across every mode. See `lib/query-ui/CLAUDE.md`
@@ -512,7 +514,7 @@
         transition: background 1.5s ease-out;
     }
 
-    /* Match the dialog's one-step-larger font: bump the `Both | Files | Folders` toggle cells
+    /* Match the dialog's one-step-larger font: bump the `Files | Folders | Both` toggle cells
        here only (the shared `ToggleGroup` stays `--font-size-sm` in Settings). `:global` because
        `ToggleGroup` renders its `.tg-*` nodes via `:global` (see ToggleGroup.svelte). */
     .type-toggle-flash :global(.tg-root .tg-item) {

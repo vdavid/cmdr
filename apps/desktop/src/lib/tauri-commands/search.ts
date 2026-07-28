@@ -33,7 +33,7 @@ export async function releaseSearchIndex(): Promise<void> {
 /**
  * Translates a natural language query into structured search filters using the configured LLM.
  *
- * `currentType` is the dialog's `Both | Files | Folders` toggle as context (`true` = folders,
+ * `currentType` is the dialog's `Files | Folders | Both` toggle as context (`true` = folders,
  * `false` = files, `null` = both). The AI may set the type or leave it; when it returns nothing,
  * the caller keeps the user's choice (see `applyTypeFromAi`).
  */

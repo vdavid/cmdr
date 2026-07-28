@@ -32,7 +32,7 @@ export type SizeFilter = 'any' | 'gte' | 'lte' | 'eq' | 'between'
 export type DateFilter = 'any' | 'after' | 'before' | 'between'
 
 /**
- * Three-way type filter, named after the UI's `Both | Files | Folders` toggle. Maps to the
+ * Three-way type filter, named after the UI's `Files | Folders | Both` toggle. Maps to the
  * existing IPC `SearchQuery.isDirectory: Option<bool>` in `buildBaseSearchQuery`
  * (`both → null`, `file → false`, `folder → true`); there is no separate IPC field. The
  * Selection matcher reads it directly via `getIsDirFor`. Cross-consumer, so it lives in the
