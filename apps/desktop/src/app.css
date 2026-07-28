@@ -1134,6 +1134,12 @@ textarea::selection {
   /* Tight: the field's height comes from the frame's padding, not line-height. */
   line-height: 1.2;
   outline: none;
+  /* Text entry is the one place the app opts back into selectable text and the
+     I-beam: `html, body { user-select: none; cursor: default }` would otherwise
+     make a read-only field uncopyable and every field feel non-editable. */
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
 }
 
 /* Multi-line: the frame stacks (control above any trailing row) and the control
@@ -1162,15 +1168,6 @@ textarea.text-field-control {
 .text-field-control::placeholder {
   color: var(--color-text-tertiary);
   font-family: var(--font-system), sans-serif;
-}
-
-/* Text entry is the one place the app opts back into selectable text and the
-   I-beam: `html, body { user-select: none; cursor: default }` would otherwise
-   make a read-only field uncopyable and every field feel non-editable. */
-.text-field-control {
-  user-select: text;
-  -webkit-user-select: text;
-  cursor: text;
 }
 
 .text-field-control:disabled {
