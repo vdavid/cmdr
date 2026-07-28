@@ -68,12 +68,76 @@ rejected, timed out, empty answer, …). Both Search and Selection get the same 
 a per-consumer `catch` that returns `null` silently. A consumer's `translateAi` returning `null` still means a benign
 empty translation (nothing to apply, no toast) — distinct from a throw.
 
-### Title bar
+### Chrome: it's a `ModalDialog`
 
-The top of the dialog renders the consumer's `config.title` in a 32 px strip with no close button (Escape is the only
-close path). The strip is an `<h2>` semantically (the dialog's `aria-labelledby` points at it) styled to look like a
-thin centered bar; it's NOT a `<header>` landmark, which would collide with the app's existing banner per
-`landmark-no-duplicate-banner`. Not in the Tab order: text only.
+Every bit of dialog chrome comes from `$lib/ui/ModalDialog`: the 27 px `--radius-dialog` corner, the two-hairline macOS
+panel edge, `--shadow-dialog`, the standard `<h2>` title bar with its × button and drag handle, `use:trapFocus`, the MCP
+`notifyDialogOpened` / `notifyDialogClosed` pair, the close registry entry, and focus restore on unmount. QueryDialog
+must NOT re-implement any of them; `config.dialogType` is already a `SoftDialogId`, so it maps straight onto `dialogId`.
+The title snippet renders `config.title` in its own `<span>` (the optional `StatusBadge` is a sibling), so a consumer
+test can address the words alone.
+
+Five opt-ins carry the shape this dialog needs (each documented in `$lib/ui/DETAILS.md` § ModalDialog):
+
+- `align="top"` — the Spotlight placement, 10vh from the top.
+- `fillBody` + `containerStyle="… max-height: 80vh"` — a fixed-height frame whose body is a flex column, so
+  `.results-container` (the only `flex: 1 1 auto` descendant) absorbs the slack and scrolls while every strip keeps its
+  intrinsic height.
+- `padded={false}` — every strip is full-bleed and pads itself.
+- `ownsKeyboard` — `handleKeyDown` owns the whole contract: Enter (the `⏎` ownership swap) and the capture-phase Escape
+  that defers to an open `.ui-popover`. `ModalDialog` still `stopPropagation()`s (shielding the explorer behind the
+  scrim) and still drives `onclose` from the × button, the focus-trap escape fallback, and the MCP close registry.
+- `closeOnOverlayClick` — a scrim click dismisses, as it always has here.
+- `overlayClass="search-overlay"` — the one stable structural hook across all three `dialogType`s. The E2E suite
+  (`test/e2e-playwright/search-helpers.ts`, `i18n-capture-surfaces.ts`) and the overlay-dismissal safety net key on it;
+  `data-dialog-id` can't name "the query dialog" because there are three of them.
+
+### Zones
+
+The body reads as three zones, separated by a surface flip plus a hairline (no new divider vocabulary):
+
+1. **What to look for and how** — `QueryBar`, then the `fullWidth` `ModeChips` with the Count-only switch beside them,
+   then the `AiPromptStrip` / notice banner when present. On `--color-bg-primary`.
+2. **The filters** — `FilterChips`. On `--color-bg-secondary` with a hairline above and below: the band that separates
+   "how do I narrow this" from "here's what I found".
+3. **The results** — `QueryResults` (header + rows + states + status bar). Back on `--color-bg-primary`, so the list
+   reads as its own surface rather than blending into the chip strip.
+
+The Count-only switch is a QueryDialog-level sibling of `ModeChips`, not a `ModeChips` or `FilterChips` child: it
+changes what the search RETURNS rather than what it matches, and `ModeChips` is a pure `ToggleGroup` wrapper. It's the
+house `$lib/ui/Switch`; a hand-rolled `role="switch"` is rejected by `cmdr/prefer-ui-primitive`. Flipping it re-runs via
+`scheduleSearch()` (debounced, and a no-op in AI mode, which keeps the explicit-trigger contract).
+
+Strip insets are `--spacing-lg` (16 px) while `ModalDialog`'s title bar uses `--spacing-dialog` (20 px), so the title
+sits 4 px further in than the bar below it. Moving the strips to `--spacing-dialog` needs `QueryBar`, `ModeChips`, and
+`recent-items/` to move together; do it in one pass, not piecemeal.
+
+### Count-only results
+
+Count-only is Search-only (`config.filterChipsExtras.countOnly` / `onToggleCountOnly`; Selection leaves both undefined
+and neither the switch nor the button renders). The backend returns a total and NO rows, so `QueryResults` replaces the
+list with one body-size sentence carrying the thousands-separated total in bold
+(`queryUi.results.countOnly.sentence`, a `<Trans>` message whose `<total>` tag lets each locale place the number), plus
+a "Show results" `Button`.
+
+**The trap**: turning count-only off does not repopulate the list, because there were never any rows to show. So
+`showResultsFromCount()` flips the flag AND re-runs, through `runFromButton()` — the same path the bar's `⏎` button
+takes. NOT `scheduleSearch()`, which no-ops in AI mode and whenever `search.autoApply` is off; a naive wiring leaves the
+user staring at a stale count.
+
+The column header renders only when result rows do (the `showingRows` derived). Column labels over a spinner, a criteria
+list, the empty state, or a bare total describe a table that isn't there, and they're the loudest thing in an otherwise
+quiet area. The seam they used to draw below the chip strip is now the chip strip's own bottom hairline plus the zone-2
+→ zone-3 surface flip.
+
+### Run failures surface, they don't vanish
+
+`executeQuery`'s catch toasts `queryUi.dialog.runQueryToast` wrapping the reason. The backend refuses some runs with an
+actionable message ("Query too broad. Add a filename pattern, size, date, or type filter"); the old bare `catch {}`
+turned those into an empty list that read as "nothing matched". No typed variant crosses this IPC boundary, so the
+message passes through verbatim rather than being classified by its text (`.claude/rules/no-string-matching.md`); if a
+typed error kind ever lands, switch on it the way the AI path switches on `AiTranslateError.kind`. Both consumers get
+this from the one place, same rule as the AI toast.
 
 ### Lifecycle hooks
 
@@ -301,8 +365,9 @@ Same external props as `SearchModeChips`: `mode`, `aiEnabled`, `disabled`, `onSe
 
 ## Key shared patterns
 
-**Command palette pattern**: Own fixed overlay + backdrop, not `ModalDialog`. Needs custom keyboard handling (arrow keys
-for results, Tab between filters) that would fight `ModalDialog`'s focus management.
+**Command-palette behavior on standard chrome**: the dialog keeps its palette-style keyboard model (arrow keys through
+results, Enter with dynamic ownership, popover-aware Escape) while rendering as a `ModalDialog`. `ownsKeyboard` is what
+makes that possible; see § Chrome.
 
 **Two-cursor hover model**: `cursorIndex` (keyboard) and `hoveredIndex` (mouse) are independent. Hovering a row writes
 `cursorIndex` via `onHover` so mouse + keyboard share one accent-colored cursor.
