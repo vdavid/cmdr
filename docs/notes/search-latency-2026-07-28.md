@@ -75,23 +75,25 @@ The follow-up: the search that stayed slow wasn't the scan or the rank, it was t
 every `index-*.db` to a target and loaded each arena SYNCHRONOUSLY, one after another, inside the search call.
 
 Measured with `bench_volume_fanout` (the same harness, `CMDR_SEARCH_BENCH_DBS`), over David's three real index DBs
-(root 6.99 M entries / 1.1 GB, plus the two 2.64 M-entry / 525 MB NAS indexes). The machine was under heavy multi-agent
-load (16 cores, load average ~44), so read these as an upper bound with a compressed parallel speedup, not a quiet-box
-baseline:
+(root 6.99 M entries / 1.1 GB, plus the two 2.64 M-entry / 525 MB NAS indexes), 16-core Mac at load average ~7:
 
-- cold-ish first read: root **10.6 s**, NAS **2.37 s**, NAS **2.46 s**
-- warm page cache, all three: serial **4.11 s** → parallel **2.54 s**
+- cold-ish first read: root **6.91 s**, NAS **2.18 s**, NAS **2.25 s**
+- warm page cache, all three: serial **3.95 s** → parallel **2.34 s** (1.7×; parallel lands at roughly the cost of the
+  largest single load)
+- warm, root + ONE NAS (what the mount-root dedupe below leaves): serial **3.08 s** → parallel **2.27 s**
 
-So the first unscoped query after opening the dialog waited on 4.8 s of NAS arena loading with a warm page cache, and
-the 10.9 s single load in the prod log above when cold. Three things fix it, none of which narrows what search covers:
+The same run under heavy multi-agent load (load average ~44) read 10.6 s / 2.37 s / 2.46 s cold and 4.11 s → 2.54 s
+warm, so contention inflates everything and compresses the parallel win.
+
+So the first unscoped query after opening the dialog waited on ~4.4 s of NAS arena loading cold, and the 10.9 s single
+load in the prod log above on a genuinely cold cache. Three things fix it, none of which narrows what search covers:
 
 1. **A cold volume no longer blocks the dialog's search** (`ColdVolumePolicy::DeferColdVolumes`). The run answers from
    the arenas already in memory and returns the cold volumes in `RunOutcome::deferred_volumes`; `search_files` warms
    each behind the reply and emits `search-index-ready`, which the dialog's existing listener turns into a re-run. So
-   the NAS's matches fold in ~2.4 s later instead of freezing the first keystroke for 5–11 s. MCP still passes `Wait`
+   the NAS's matches fold in ~2.2 s later instead of freezing the first keystroke for 4–11 s. MCP still passes `Wait`
    (one shot, no re-run).
-2. **Whatever a run does wait for loads in parallel** — 4.11 s → 2.54 s on the three-volume set above, and better on a
-   quiet box (parallel loses more than serial to contention).
+2. **Whatever a run does wait for loads in parallel** — 3.95 s → 2.34 s on the three-volume set above.
 3. **Loads are single-flighted per volume.** A search arriving while the dialog's root pre-load is still running used to
    start a SECOND full read of the same DB (the 3.55 s + 2.76 s pair in the prod log above is that shape); it now joins
    the in-flight load.
@@ -106,8 +108,9 @@ merged duplicate hits, doubled the match count, and held ~260 MB of arena twice.
 An SMB volume id is `smb_volume_id(server, port, share)` off `statfs`'s `f_mntfromname`, so the address is the key. The
 fix is read-time, not on-disk: `volumes::distinct_mount_roots_in` keeps one index per mount root (live-registered wins,
 else the newest `scan_completed_at`) and skips the other. Nothing is deleted, so the skipped DB wins straight back the
-moment it's the one mounted. On David's box this drops the unscoped fan-out from three volumes to two: one fewer 2.4 s
-arena load and ~260 MB less resident.
+moment it's the one mounted. On David's box this drops the unscoped fan-out from three volumes to two: one fewer arena
+load (2.2 s cold, 0.9 s warm) and ~250 MB less resident (2.64 M × 56 B of `SearchEntry` + a ~53 MB name arena + a
+~51 MB `id_to_index`).
 
 Re-keying the index on a stable server identity was investigated and rejected (the id is derived at mount-detection time
 with no SMB session, the smb2 crate exposes no volume serial, and re-keying orphans every existing SMB index for a
