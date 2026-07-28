@@ -14,10 +14,10 @@ the Price field and the note to the review team instead.
 - **App name**: `Cmdr`
 - **Developer name**: `David Veszelovszki`
 - **Download URL**: `https://getcmdr.com/download/latest/universal?ref=macupdate.com`
-    - Always points at the current release, so it never needs a resubmission, and it attributes the download to MacUpdate
-      in the dashboard. Plain fallback if they reject redirects:
-      `https://github.com/vdavid/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_universal.dmg` (version-pinned, so it would
-      need bumping per release).
+  - Always points at the current release, so it never needs a resubmission, and it attributes the download to MacUpdate
+    in the dashboard. Plain fallback if they reject redirects:
+    `https://github.com/vdavid/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_universal.dmg` (version-pinned, so it would
+    need bumping per release).
 - **Product page URL**: `https://getcmdr.com`
 - **Purchase URL**: `https://getcmdr.com/pricing`
 - **Developer support URL**: `https://github.com/vdavid/cmdr/issues`
@@ -32,42 +32,78 @@ the Price field and the note to the review team instead.
 Their hint: a brief, compelling overview of the key value proposition, without the app name.
 
 ```
-A blazing-fast, keyboard-driven two-pane file manager for macOS, with fully optional, privacy-first AI.
+A blazing-fast, keyboard-driven two-pane file manager for macOS, with fully optional, privacy-first AI built in.
 ```
 
 ### Description
 
 ```html
 <p>
-  <strong>Cmdr</strong> is a keyboard-driven two-pane file manager for macOS, written in Rust. It's built for people who miss Total Commander since switching to a Mac: two folders side by side, familiar function keys (F5 to copy, F6 to move, F8 to delete), all remappable.
+  <strong>Cmdr</strong> brings the Total Commander experience to macOS, and (optionally, only if you enable it) adds AI
+  features that genuinely help. Built with Rust, it's extremely fast and respectful toward your CPU, RAM, and disk.
 </p>
 <p>
-  Cmdr is in open beta. There might be sharp edges, but the core is stable software used every day by a group of testers. Feedback goes straight to the developer!
+  Cmdr is in open beta. There might be sharp edges in the newer features (search, archives, the operation log, and AI),
+  but the core is well-tested, stable software used every day by the author and a group of testers. Feedback goes
+  straight to the developer!
 </p>
-<h5>Features</h5>
+<h5>Core features</h5>
 <ul>
-  <li>Two panes with tabs and a command palette, so navigation never needs the mouse.</li>
-  <li>Copy, move, rename, and delete with accurate progress bars, honest ETAs, cancellation, and rollback.</li>
   <li>
-    Lists 50,000 files near-instantly, and the built-in viewer opens a 10 GB file near-instantly with fast search.
+    Two panes, tabs, command palette, keyboard-first. Common shortcuts like F5 to copy, F6 to move, F8 to delete all
+    work, and are remappable.
   </li>
-  <li>Live folder sizes everywhere. (!)</li>
-  <li>A full-disk index built in 3–4 minutes <em>once</em> that stays current across restarts, so search answers immediately.</li>
-  <li>Network drives over SMB through custom code, roughly 4x faster than the macOS client.</li>
-  <li>Android phones, Kindles, and cameras over MTP and PTP, up to 4x faster than Android File Transfer, no hacks needed, works out of the box.</li>
-  <li>Git history, branches, worktrees, and stashes browsable like normal folders.</li>
-  <li>Real dark and light modes, native macOS behavior, and text colors verified against WCAG 2.2 AA and APCA.</li>
+  <li>
+    Browse, copy, move, rename, delete, compress/decompress with accurate progress bars, honest ETAs, cancellation.
+    Optimized for data safety, speed, and transparency.
+  </li>
+  <li>
+    Queue multiple file operations, pause/resume file transfers, view a full, searchable log of past operations, with
+    rollback for anything that didn't permanently delete data.
+  </li>
+  <li>
+    Very fast: Lists 50,000 files near-instantly, and the built-in viewer opens a 10 GB file near-instantly with fast
+    search.
+  </li>
+  <li>
+    Real dark and light modes, native macOS behavior, and all text color / background contrasts verified against WCAG
+    2.2 AA and APCA.
+  </li>
 </ul>
-<h5>AI, entirely optional</h5>
+<h5>Extra features</h5>
 <ul>
-  <li>Switched off, Cmdr is a complete Total Commander-style file manager.</li>
   <li>
-    Switched on, it adds natural-language search ("that presentation about turtles from last week") and smart selection.
-    Natural-language renaming and auto-organization are on the way.
+    Full access to Android phones, Kindles, and cameras over MTP and PTP, up to 4x faster than Android File Transfer, no
+    hacks needed, works out of the box with any USB cable.
+  </li>
+  <li>Full access to network drives over a custom SMB implementation, roughly 4x faster than the macOS client.</li>
+  <li>
+    Keeps a full index of your disk (fully local and private) and uses it to display live folder sizes for
+    <em>all</em> your folders, and for near-instant full-drive search.
+  </li>
+  <li>For Git repositories, it shows a Git history, branches, worktrees, and stashes browsable like normal folders.</li>
+</ul>
+<h5>AI features (entirely optional, can be fully local and private with a built-in LLM)</h5>
+<ul>
+  <li>
+    With AI features switched off, Cmdr is a complete Total Commander-style file manager. Many people don't like AI
+    features, so they are off by default.
+  </li>
+  <li>Switched on, it adds natural-language search: "Find my tax report from last year"</li>
+  <li>Smart selection: "Select all screenshots in this folder"</li>
+  <li>Chat: "Why is my Downloads folder so big?"</li>
+  <li>
+    Image indexing (fully local and private!): "Find me all photos in this folder where a dog looks into the camera."
   </li>
   <li>
-    The model runs on your Mac by default, so files and data stay on it. You can bring your own OpenAI, Claude, or
-    Gemini key instead, or point Cmdr at any OpenAI-compatible endpoint.
+    Natural-language renaming: "Rename all these screenshots based on their content." → The agent can only
+    <em>suggest</em> write operations like renames, you are in charge of reviewing and applying them. If you change your
+    mind, you can always roll back any past operations.
+  </li>
+  <li>Auto-organization is on the way.</li>
+  <li>
+    The model runs on your Mac by default, so your files and data stay 100% private. You can choose to bring your own
+    OpenAI, Claude, Gemini, etc. key, or point Cmdr at any OpenAI-compatible endpoint to use more powerful models.
   </li>
 </ul>
 <p>Cmdr is source-available under the Business Source License 1.1: https://github.com/vdavid/cmdr</p>
@@ -141,12 +177,12 @@ macOS 12 Monterey or later, both Apple Silicon and Intel
 ## Comments for the review team
 
 ```
-Hi folks! Cmdr is a two-pane file manager for macOS, written in Rust, in open beta since 2026.
+Hi folks! Cmdr is a two-pane file manager for macOS, written in Rust, in open beta.
 
 - The download URL redirects to the signed DMG on GitHub Releases. The app is Developer ID signed and notarized by Rymdskottkärra AB (my Swedish company), and ships as a universal binary.
-- I left the price empty because Cmdr is free for personal use, with no trial timer and no nags. Work use needs a paid license ($59/year, or $199 one-time), sold at https://getcmdr.com/pricing.
+- I left the price empty because Cmdr is free for personal use, with no trial timer, no nags. Work use needs a paid license ($59/year, or $199 one-time), sold at https://getcmdr.com/pricing.
 - The source is available under BSL 1.1 at https://github.com/vdavid/cmdr.
-- Anything you need from me, write to hello@getcmdr.com and I'll answer the same day.
+- Anything you need from me, write to me at hello@getcmdr.com and I'll answer the same day.
 
 Thanks for the review!
 David
