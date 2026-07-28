@@ -250,15 +250,21 @@ fn check_tags(tags: &[String], detail: &str) -> Result<(), EvidenceProblem> {
     }
 }
 
-/// Fold text to its comparable form: unwrap a surrounding quote pair, collapse every
-/// whitespace run to one space, and lowercase. OCR text arrives with hard line breaks and
-/// odd spacing, and models like to wrap a quote in typographic quotes.
+/// Fold text to its comparable form: unwrap a surrounding quote pair, NFD-decompose,
+/// lowercase, and collapse every whitespace run to one space. OCR text arrives with hard
+/// line breaks and odd spacing, and models like to wrap a quote in typographic quotes.
+///
+/// Deliberately NOT `indexing::store::normalize_for_comparison`: that one carries PATH
+/// comparison semantics, which are platform-dependent (a no-op off macOS), so borrowing it
+/// here made a quote case-sensitive on Linux. Evidence text must compare identically
+/// everywhere; `path_key` keeps the path helper, where platform semantics are correct.
 fn normalize_detail(text: &str) -> String {
+    use unicode_normalization::UnicodeNormalization;
     let trimmed = text
         .trim()
         .trim_matches(|c| matches!(c, '"' | '\'' | '“' | '”' | '‘' | '’'));
-    let lowered = crate::indexing::store::normalize_for_comparison(trimmed);
-    lowered.split_whitespace().collect::<Vec<_>>().join(" ")
+    let folded = trimmed.nfd().collect::<String>().to_lowercase();
+    folded.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 /// The ledger's key for a path: the same normalization the rest of the rename flow uses,
@@ -472,6 +478,22 @@ mod tests {
                 Err(EvidenceProblem::DetailTooLong)
             );
         }
+    }
+
+    /// Normalization must fold identically on EVERY platform. Borrowing the path helper
+    /// (`normalize_for_comparison`) left this a no-op off macOS, so a correctly-quoted
+    /// `imageText` row was refused on Linux for nothing but its casing. Asserting the folded
+    /// output directly, rather than only round-tripping a check, is what pins that.
+    #[test]
+    fn detail_folding_is_platform_independent() {
+        assert_eq!(normalize_detail("  LinkedIn\n Messaging   3 New "), "linkedin messaging 3 new");
+        assert_eq!(normalize_detail("'quoted'"), "quoted");
+        // NFD is what makes a precomposed quote match decomposed OCR text (and vice versa),
+        // so the two spellings of the same word must fold to one string.
+        assert_eq!(
+            normalize_detail("\u{201c}Årstaviken SUNSET\u{201d}"),
+            normalize_detail("a\u{30a}rstaviken sunset")
+        );
     }
 
     #[test]
