@@ -35,6 +35,10 @@ list): `DETAILS.md`.
   `Access::Write`. A `Propose` tool stages a proposal and opens a review surface: it mutates nothing, it can't
   self-approve (no tool approves a proposal, ever), and it must cap its payload the way `image_facts` caps at 200 paths.
   Adding one also means adding its name to `EXPECTED_PROPOSE_TOOL_NAMES` by hand. Depth: `DETAILS.md`.
+- **A proposal claiming file CONTENTS must prove it.** `dispatch` feeds every non-elided `image_facts` result into
+  `propose::evidence::ImageFactsLedger`; `propose_rename_plan` refuses a whole plan citing content the ledger has no
+  delivery for. Whatever elides a tool result from an assembled prompt owes the ledger a `revoke_call(call_id)`, or it
+  vouches for content the model never read: how 12 real files got fabricated names. `propose/DETAILS.md`.
 - **Handlers read Rust-side stores, pane caches, + SQLite only — never a live `statfs`/`readdir` on a mount.** The
   existing pane listing, index, and importance DBs answer everything, so a dead NAS can't hang a tool.
 - **The registry couples `mcp` ↔ `agent`.** The `mcp_tools!` entries reference `crate::agent::tools::read::*` handler +

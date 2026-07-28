@@ -1,5 +1,49 @@
 # Rename proposal details
 
+## Evidence: why a proposed name is believable
+
+A model asked to name files by their contents will produce a confident, plausible name whether or not it ever saw the
+contents. So the tool boundary, not the model's goodwill, decides whether a content-derived name may reach the user.
+
+Each row's `evidence` is a required `{ source, detail }` pair. `EvidenceSource` splits into two classes:
+
+- **Content claims** (`imageText`, `imageTags`): checked against `ImageFactsLedger`. The path needs a live delivery, and
+  `detail` must be a real quote from the delivered text (normalized on both sides: NFD-lowercased, whitespace runs
+  collapsed, surrounding quote characters stripped) or name one of the delivered tags. Every refusal is a typed
+  `EvidenceProblem`, so nothing classifies on wording (`no-string-matching`).
+- **No claim** (`filename`, `metadata`, `userInstruction`): always accepted, because there's nothing to verify. They
+  still cross to the review dialog verbatim, where the UI labels them as reading nothing inside the file. That's the
+  other half of the guardrail: a fabricated slug filed under `metadata` is visible as a name with no content behind it,
+  rather than hidden. See `apps/desktop/src/lib/ask-cmdr/DETAILS.md` § The "Why this name" column.
+
+`detail` is bounded at both ends (4 normalized characters minimum, 160 maximum): a one-character "quote" appears in any
+text and proves nothing, and a review row can't honestly show a page of OCR output.
+
+**Decision: one unbacked row refuses the whole plan.** Staging the survivors would hand the user a partial plan they'd
+read as complete, and the model has to resend the plan either way. The refusal names every offending row
+(`evidenceRejected` + `guidance`), so no rejected row is dropped silently. The model can fix the rows or say honestly
+that it doesn't have the content.
+
+**Decision: the ledger is session-scoped with a 30-minute TTL, not per-turn.** The real flow is multi-batch (look at 23
+files, propose in two plans, refine after feedback), and a user's "now do the rest" starts a fresh turn. Per-turn scoping
+would refuse the honest second half of exactly the workflow this exists to protect. The TTL bounds it so yesterday's
+facts can't back today's name, and `MAX_LEDGER_ENTRIES` bounds memory by dropping the oldest deliveries.
+
+### The ledger's seams
+
+- **Write**: `view.rs`'s dispatch calls `note_image_facts_delivered` for every `image_facts` result whose
+  `AgentToolResult.elided` is false. That's the only write point.
+- **Revoke**: `ImageFactsLedger::revoke_call(call_id)` exists because "the tool returned it" is not "the model read it".
+  The incident this guardrail comes from was context assembly collapsing a fresh `image_facts` result to a stub: the
+  facts were fetched and then dropped from the prompt, and the model named 12 files it had never seen anything about.
+  Whatever code elides a tool result from an assembled prompt must call `revoke_call` for that `call_id`, or the ledger
+  will vouch for content the model never received.
+
+Evidence rides `RenameProposalRowSnapshot` to the frontend. Preflight and apply don't read it: the tool boundary already
+checked it, and the store's rows are immutable afterwards.
+
+## The proposal store
+
 The store is feature-local because its opaque ids and immutable rows are the authority boundary for review and apply commands. Entries expire in memory and are deliberately not persisted in chat history. A successful preflight records both the exact allowed row-id set and server-only source fingerprints; Apply atomically consumes that pair, so a dialog cannot replay an already-started plan or substitute a different subset.
 
 Proposal validation reads the `PaneStateStore` cache and index registration only. It does not call live filesystem APIs: a dead mount must not hang an agent turn, and symlinks remain links rather than targets.

@@ -258,13 +258,13 @@ describe('rename review listing updates', () => {
       proposal: {
         proposalId: 'proposal-1',
         rows: [
-            {
-              rowId: 'row-1',
-              sourceName: 'before.png',
-              destinationName: 'after.png',
-              evidence: { source: 'filename' as const, detail: 'before' },
-            },
-          ],
+          {
+            rowId: 'row-1',
+            sourceName: 'before.png',
+            destinationName: 'after.png',
+            evidence: { source: 'filename' as const, detail: 'before' },
+          },
+        ],
       },
     })
     await vi.waitFor(() => {
@@ -301,13 +301,13 @@ describe('rename review listing updates', () => {
       proposal: {
         proposalId: 'proposal-1',
         rows: [
-            {
-              rowId: 'row-1',
-              sourceName: 'before.png',
-              destinationName: 'after.png',
-              evidence: { source: 'filename' as const, detail: 'before' },
-            },
-          ],
+          {
+            rowId: 'row-1',
+            sourceName: 'before.png',
+            destinationName: 'after.png',
+            evidence: { source: 'filename' as const, detail: 'before' },
+          },
+        ],
       },
     })
     await vi.waitFor(() => {
@@ -332,13 +332,13 @@ describe('rename review listing updates', () => {
       proposal: {
         proposalId: 'proposal-1',
         rows: [
-            {
-              rowId: 'row-1',
-              sourceName: 'before.png',
-              destinationName: 'after.png',
-              evidence: { source: 'filename' as const, detail: 'before' },
-            },
-          ],
+          {
+            rowId: 'row-1',
+            sourceName: 'before.png',
+            destinationName: 'after.png',
+            evidence: { source: 'filename' as const, detail: 'before' },
+          },
+        ],
       },
     })
 

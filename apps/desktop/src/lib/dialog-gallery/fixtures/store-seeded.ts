@@ -81,7 +81,6 @@ const TIDY_ROWS = [
   { sourceName: 'DSC09246.arw', destinationName: 'Sunrise 06.arw', evidence: SHOT_AT },
 ]
 
-
 export const bulkRenameFixtures: Record<string, Patch<typeof askCmdrState>> = {
   'all-allowed': { renameReview: review(TIDY_ROWS) },
   // Every badge and both blocked reasons at once: the row states are what this

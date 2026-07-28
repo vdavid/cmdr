@@ -99,7 +99,9 @@ commands, and notable non-obvious placements.
 
 `ask-cmdr.ts` hand-mirrors the backend channel event union. `proposalReady` carries names for display only; the rename
 review's `preflightBulkRename` and `applyBulkRename` calls send opaque proposal and row ids, never reconstructed paths,
-destinations, or fingerprints.
+destinations, or fingerprints. Each row also carries `RenameEvidence` (`RenameEvidenceSource` + a `detail` string): the
+backend-verified reason for the name, mirroring Rust `RenameEvidence`. `detail` is model-authored, so render it as plain
+text only (`../ask-cmdr/DETAILS.md` § The "Why this name" column).
 
 - `formatBytes` and `formatDuration` are co-located in `write-operations.ts` with no IPC calls.
 - `listen` and `UnlistenFn` from `@tauri-apps/api/event` are re-exported through `write-operations.ts`.

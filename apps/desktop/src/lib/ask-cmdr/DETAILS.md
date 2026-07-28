@@ -163,6 +163,26 @@ external process removes the clash or restores a missing source; matching names 
 authority. `TargetExists` and `SourceMissing` rows are deselected and show specific red warnings, while the write
 engine's exclusive final rename remains the data-safety boundary.
 
+## The "Why this name" column
+
+Every row carries typed evidence from the backend (`evidence: { source, detail }`, the wire mirror of Rust
+`RenameEvidence`), rendered as the table's rightmost column. `evidenceSourceLabel` in `ask-cmdr-labels.ts` maps the
+source to its catalog string; the raw `detail` renders below it.
+
+Two properties this column exists for:
+
+- **A name with no content behind it must look like one.** `imageText` / `imageTags` are the only sources the backend
+  verified against delivered image content (`agent/tools/propose/DETAILS.md`); the other three say plainly that nothing
+  inside the file was read ("File details, not contents", "The old name", "What you asked for"). Rewording one of those
+  into something that implies content would undo the guardrail's user-facing half.
+- **`detail` is model-authored text.** Render it as plain `{text}` only, never `{@html}` (same boundary as assistant
+  prose, `CLAUDE.md` § Must-knows). Backend caps it at 160 characters.
+
+The layout: two fixed-pixel columns (allow, arrow) plus three shared text columns at 28 / 28 / 38 percent, inside a
+`min(1040px, calc(100vw - 48px))` resizable dialog. Evidence wraps (`overflow-wrap: anywhere`) and clamps at four lines,
+which the 160-character cap keeps out of reach at normal widths. The clamp defends a hand-shrunk dialog; it isn't a
+routine truncation, because hiding evidence from the reviewer is the failure this column fixes.
+
 ## The E2E fake-LLM path
 
 The stream also carries a display-only `proposalReady` rename-plan snapshot. The review dialog owns it in the next

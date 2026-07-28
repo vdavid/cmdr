@@ -86,8 +86,12 @@ without authoring a tool per variant — with zero `Propose` tools in the regist
 The negative test (`view.rs`) drives the fake `AgentLlm`'s `CallRawTool("delete", …)` and asserts the refusal end to
 end; it was proven red (gate disabled ⇒ "delete" not refused) before green.
 
-The refusal copy still says "Ask Cmdr is read-only", which is accurate while no `Propose` tool is authored. The first
-`Propose` tool has to reword it: the agent can ask, not act.
+The refusal copy says Ask Cmdr can prepare a rename plan for the user to review but can't change anything, approve a
+proposal, or read file contents: the agent can ask, not act. Keep it accurate as the `Propose` tier grows.
+
+`dispatch` also feeds `propose::evidence::ImageFactsLedger` from every non-elided `image_facts` result. That's what makes
+a rename plan's content claim checkable; the guardrail, its refusal shape, and the revocation seam are in
+`propose/DETAILS.md`.
 
 ## Cross-module symbols the toolset reuses
 
