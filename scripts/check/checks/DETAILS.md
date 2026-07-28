@@ -389,6 +389,9 @@ Checks by app and tech:
   on the English source's plural shape), i18n-coverage (warn-only; keys missing from a locale, or byte-identical to
   English), i18n-dont-translate (warn-only; a curated brand/system token English carries but the locale dropped), knip,
   type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
+- **Desktop / Docs**: pluralize-noun, third-party-notices (regenerate-and-diff `THIRD-PARTY-NOTICES.md` from
+  `Cargo.lock` + `pnpm-lock.yaml` via cargo-about and `pnpm licenses list`; the accepted-license list is derived from
+  `deny.toml` rather than duplicated, and the runner's input fingerprint is what keeps it off unrelated runs)
 - **Website / Astro**: prettier, eslint, typecheck, build, html-validate, bundle-size (warn-only), e2e
 - **Website / Docker**: docker-build
 - **API server / TS**: oxfmt, eslint, typecheck, tests

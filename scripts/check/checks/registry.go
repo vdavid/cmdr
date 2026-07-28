@@ -982,6 +982,28 @@ var AllChecks = []CheckDefinition{
 		Run:         RunDocsReachable,
 	},
 	{
+		ID:          "desktop-third-party-notices",
+		Nickname:    "third-party-notices",
+		DisplayName: "third-party notices are current",
+		// AppDesktop, not AppOther: the notices cover the desktop app's own
+		// dependency graph, and only app-scoped checks make the runner install
+		// node deps, which `pnpm licenses list` needs.
+		App:       AppDesktop,
+		Tech:      "📚 Docs",
+		CpuWeight: 4, // cargo-about walks the whole dependency graph and reads license files
+		// Only the two lockfiles decide the content, so a run where no dependency
+		// moved is a cache hit and never shells out. Deliberately NOT `IsFast`:
+		// the miss path is seconds, and a cold machine additionally pays a
+		// `cargo install cargo-about` build.
+		Inputs: []string{
+			"Cargo.lock",
+			"pnpm-lock.yaml",
+			"apps/desktop/src-tauri/deny.toml", // the accepted-license list is derived from it
+			"THIRD-PARTY-NOTICES.md",           // a hand-edit must be caught, not cached over
+		},
+		Run: RunThirdPartyNotices,
+	},
+	{
 		ID:          "docs-dead-links",
 		Nickname:    "dead-links",
 		DisplayName: "no dead links in docs",

@@ -189,6 +189,12 @@ jobs:
       - name: Run cargo-machete
         run: ./scripts/check/check --check desktop-rust-cargo-machete --ci
 
+      # Fails if THIRD-PARTY-NOTICES.md doesn't match the current lockfiles.
+      # Lives in this job for the cargo toolchain plus rust-cache, which keeps
+      # the `cargo install cargo-about` build out of every subsequent run.
+      - name: Check third-party notices
+        run: ./scripts/check/check --check desktop-third-party-notices --ci
+
       - name: Run clippy
         run: ./scripts/check/check --check desktop-rust-clippy --ci
 

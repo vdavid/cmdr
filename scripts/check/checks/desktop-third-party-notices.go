@@ -1,0 +1,378 @@
+package checks
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"sort"
+	"strings"
+)
+
+// Pinned, like every other tool install here. `cargo-about`'s binary sits
+// behind the `cli` feature, so the plain `cargo install` silently builds a
+// library and installs nothing.
+const cargoAboutVersion = "0.9.1"
+
+// NoticesFileName is the generated attribution file at the repo root.
+const NoticesFileName = "THIRD-PARTY-NOTICES.md"
+
+// RunThirdPartyNotices regenerates `THIRD-PARTY-NOTICES.md` from the two
+// lockfiles and fails in CI if the committed copy is stale.
+//
+// Cmdr ships hundreds of MIT / Apache-2.0 / BSD dependencies compiled into one
+// binary. Those licenses require the copyright and permission notices to travel
+// with the distribution, which a lockfile alone doesn't satisfy. This check
+// produces the artifact that does, and the in-app Acknowledgements dialog reads
+// the same data.
+//
+// **Cost is amortized by the runner's fingerprint cache, not by hand.** The
+// `Inputs` list is the two lockfiles plus this check's own inputs, so on a run
+// where no dependency moved the check is skipped before it ever shells out.
+// That's why there's no bespoke staleness marker (contrast
+// `desktop-bindings-fresh.go`, which predates leaning on the cache): declaring
+// inputs is the supported way to say "only run when these change".
+//
+// Local runs rewrite the file, matching the auto-fix UX of oxfmt and clippy
+// `--fix`. `--ci` never touches the working tree and fails on any drift.
+func RunThirdPartyNotices(ctx *CheckContext) (CheckResult, error) {
+	noticesPath := filepath.Join(ctx.RootDir, NoticesFileName)
+
+	// Missing is a legitimate first-run state, not an error.
+	original, _ := os.ReadFile(noticesPath)
+
+	if !CommandExists("cargo-about") {
+		installCmd := exec.Command("cargo", "install", "cargo-about",
+			"--version", cargoAboutVersion, "--locked", "--features", "cli")
+		if output, err := RunCommand(installCmd, true); err != nil {
+			return CheckResult{}, fmt.Errorf("failed to install cargo-about\n%s", indentOutput(output))
+		}
+	}
+
+	rust, err := collectRustCrates(ctx)
+	if err != nil {
+		return CheckResult{}, err
+	}
+	npm, err := collectNpmPackages(ctx)
+	if err != nil {
+		return CheckResult{}, err
+	}
+
+	generated := renderNotices(rust, npm)
+	changed := !bytes.Equal(generated, original)
+
+	summary := fmt.Sprintf("%d Rust crates, %d npm packages, %d license texts",
+		len(rust.packages), len(npm), len(rust.texts))
+
+	if ctx.CI && changed {
+		return CheckResult{}, fmt.Errorf(
+			"%s is stale (%s). Run `pnpm check third-party-notices` and commit the result",
+			NoticesFileName, summary)
+	}
+	if changed {
+		if err := os.WriteFile(noticesPath, generated, 0o644); err != nil {
+			return CheckResult{}, fmt.Errorf("couldn't write %s: %w", NoticesFileName, err)
+		}
+		return SuccessWithChanges(fmt.Sprintf("%s regenerated (%s)", NoticesFileName, summary)), nil
+	}
+	return Success(fmt.Sprintf("%s in sync (%s)", NoticesFileName, summary)), nil
+}
+
+// attributedPackage is one shipped dependency, in the form the notices file
+// and the in-app dialog both want.
+type attributedPackage struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
+	License string `json:"license"`
+	URL     string `json:"url"`
+}
+
+// licenseText is one distinct license text plus who it covers. Distinct means
+// by content: 253 of the MIT texts differ only in their copyright line, and
+// reproducing each is the entire point of the file.
+type licenseText struct {
+	ID      string
+	Text    string
+	UsedBy  []string
+	sortKey string
+}
+
+type rustCollection struct {
+	packages []attributedPackage
+	texts    []licenseText
+}
+
+// --- cargo-about ---
+
+type aboutPackage struct {
+	Name       string `json:"name"`
+	Version    string `json:"version"`
+	License    string `json:"license"`
+	Repository string `json:"repository"`
+	Homepage   string `json:"homepage"`
+}
+
+type aboutOutput struct {
+	Licenses []struct {
+		ID     string `json:"id"`
+		Text   string `json:"text"`
+		UsedBy []struct {
+			Crate aboutPackage `json:"crate"`
+		} `json:"used_by"`
+	} `json:"licenses"`
+	Crates []struct {
+		Package aboutPackage `json:"package"`
+		License string       `json:"license"`
+	} `json:"crates"`
+}
+
+func collectRustCrates(ctx *CheckContext) (rustCollection, error) {
+	tauriDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri")
+
+	configPath, err := writeAboutConfig(tauriDir)
+	if err != nil {
+		return rustCollection{}, err
+	}
+	defer func() { _ = os.Remove(configPath) }()
+
+	outPath := filepath.Join(os.TempDir(), "cmdr-about.json")
+	defer func() { _ = os.Remove(outPath) }()
+
+	cmd := exec.Command("cargo", "about", "generate", "-c", configPath, "--format", "json", "-o", outPath)
+	cmd.Dir = tauriDir
+	if output, err := RunCommand(cmd, true); err != nil {
+		return rustCollection{}, fmt.Errorf(
+			"`cargo about generate` failed. A dependency may carry a license that isn't in `deny.toml`'s allow list;"+
+				" that needs a human decision, not an automatic addition.\n%s", indentOutput(output))
+	}
+
+	raw, err := os.ReadFile(outPath)
+	if err != nil {
+		return rustCollection{}, fmt.Errorf("couldn't read cargo-about output: %w", err)
+	}
+	var parsed aboutOutput
+	if err := json.Unmarshal(raw, &parsed); err != nil {
+		return rustCollection{}, fmt.Errorf("couldn't parse cargo-about output: %w", err)
+	}
+
+	collection := rustCollection{}
+	for _, crate := range parsed.Crates {
+		collection.packages = append(collection.packages, attributedPackage{
+			Name:    crate.Package.Name,
+			Version: crate.Package.Version,
+			License: crate.License,
+			URL:     firstNonEmpty(crate.Package.Repository, crate.Package.Homepage),
+		})
+	}
+	for _, license := range parsed.Licenses {
+		users := make([]string, 0, len(license.UsedBy))
+		for _, used := range license.UsedBy {
+			users = append(users, fmt.Sprintf("%s %s", used.Crate.Name, used.Crate.Version))
+		}
+		sort.Strings(users)
+		collection.texts = append(collection.texts, licenseText{
+			ID: license.ID,
+			// Normalize line endings. Some upstream license files ship CRLF, and
+			// git would rewrite them to LF on checkout: the committed file would
+			// then never match a fresh regeneration, so the check would report
+			// drift forever on any clean clone.
+			Text:    normalizeNewlines(license.Text),
+			UsedBy:  users,
+			sortKey: license.ID + "\x00" + strings.Join(users, ","),
+		})
+	}
+
+	sortPackages(collection.packages)
+	sort.Slice(collection.texts, func(i, j int) bool {
+		return collection.texts[i].sortKey < collection.texts[j].sortKey
+	})
+	return collection, nil
+}
+
+// writeAboutConfig derives cargo-about's accepted-license list from
+// `deny.toml`.
+//
+// Single-sourced on purpose: `deny.toml` already decides which licenses Cmdr
+// may depend on, and it shrink-wraps itself (`unused-allowed-license = "deny"`),
+// so it can't drift. A second hand-maintained list here would answer the same
+// question with a different answer sooner or later.
+func writeAboutConfig(tauriDir string) (string, error) {
+	denyPath := filepath.Join(tauriDir, "deny.toml")
+	denyRaw, err := os.ReadFile(denyPath)
+	if err != nil {
+		return "", fmt.Errorf("couldn't read %s: %w", denyPath, err)
+	}
+
+	accepted := parseDenyAllowList(string(denyRaw))
+	if len(accepted) == 0 {
+		return "", fmt.Errorf("no `allow = [...]` licenses found in %s", denyPath)
+	}
+
+	quoted := make([]string, 0, len(accepted))
+	for _, id := range accepted {
+		// Our own crate is excluded by `[private] ignore`, so its BSL entry
+		// would only ever be dead weight in cargo-about's list.
+		if strings.HasPrefix(id, "LicenseRef-") {
+			continue
+		}
+		quoted = append(quoted, fmt.Sprintf("%q", id))
+	}
+
+	config := fmt.Sprintf(`# Generated by the `+"`third-party-notices`"+` check. Do not edit; see third-party-notices.go.
+accepted = [%s]
+targets = ["aarch64-apple-darwin", "x86_64-apple-darwin"]
+ignore-dev-dependencies = true
+workarounds = ["ring"]
+
+[private]
+ignore = true
+`, strings.Join(quoted, ", "))
+
+	configPath := filepath.Join(os.TempDir(), "cmdr-about-config.toml")
+	if err := os.WriteFile(configPath, []byte(config), 0o644); err != nil {
+		return "", fmt.Errorf("couldn't write cargo-about config: %w", err)
+	}
+	return configPath, nil
+}
+
+// parseDenyAllowList pulls the SPDX ids out of deny.toml's `[licenses] allow`
+// array. Kept to a line scan rather than a TOML dependency: the array is one
+// quoted id per line with optional trailing comments, and a scanner that
+// returns nothing fails loudly at the call site.
+func parseDenyAllowList(contents string) []string {
+	var ids []string
+	inAllow := false
+	for _, line := range strings.Split(contents, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if !inAllow {
+			if strings.HasPrefix(trimmed, "allow") && strings.Contains(trimmed, "[") {
+				inAllow = true
+			}
+			continue
+		}
+		if strings.HasPrefix(trimmed, "]") {
+			break
+		}
+		if start := strings.Index(trimmed, `"`); start >= 0 {
+			if end := strings.Index(trimmed[start+1:], `"`); end >= 0 {
+				ids = append(ids, trimmed[start+1:start+1+end])
+			}
+		}
+	}
+	return ids
+}
+
+// --- pnpm ---
+
+type pnpmPackage struct {
+	Name     string   `json:"name"`
+	Versions []string `json:"versions"`
+	License  string   `json:"license"`
+	Homepage string   `json:"homepage"`
+}
+
+func collectNpmPackages(ctx *CheckContext) ([]attributedPackage, error) {
+	cmd := exec.Command("pnpm", "licenses", "list", "--json", "--prod", "--filter", "@cmdr/desktop")
+	cmd.Dir = ctx.RootDir
+	output, err := RunCommand(cmd, true)
+	if err != nil {
+		return nil, fmt.Errorf("`pnpm licenses list` failed\n%s", indentOutput(output))
+	}
+
+	// pnpm prints the JSON object last; anything before it is progress noise.
+	start := strings.Index(output, "{")
+	if start < 0 {
+		return nil, fmt.Errorf("`pnpm licenses list` produced no JSON\n%s", indentOutput(output))
+	}
+
+	byLicense := map[string][]pnpmPackage{}
+	if err := json.Unmarshal([]byte(output[start:]), &byLicense); err != nil {
+		return nil, fmt.Errorf("couldn't parse `pnpm licenses list` output: %w", err)
+	}
+
+	var packages []attributedPackage
+	for license, entries := range byLicense {
+		for _, entry := range entries {
+			for _, version := range entry.Versions {
+				packages = append(packages, attributedPackage{
+					Name:    entry.Name,
+					Version: version,
+					License: firstNonEmpty(entry.License, license),
+					URL:     entry.Homepage,
+				})
+			}
+		}
+	}
+	sortPackages(packages)
+	return packages, nil
+}
+
+// --- rendering ---
+
+func renderNotices(rust rustCollection, npm []attributedPackage) []byte {
+	var b strings.Builder
+
+	b.WriteString("# Third-party notices\n\n")
+	b.WriteString("Cmdr is built on open-source software. This file lists every third-party package that ships inside\n")
+	b.WriteString("the app, with its license, and reproduces the license texts in full.\n\n")
+	b.WriteString("Generated from `Cargo.lock` and `pnpm-lock.yaml` by `pnpm check third-party-notices`. Don't edit it\n")
+	b.WriteString("by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices.go` instead.\n\n")
+
+	fmt.Fprintf(&b, "- Rust crates: %d\n", len(rust.packages))
+	fmt.Fprintf(&b, "- npm packages: %d\n", len(npm))
+	fmt.Fprintf(&b, "- Distinct license texts: %d\n\n", len(rust.texts))
+
+	writePackageSection(&b, "Rust crates", rust.packages)
+	writePackageSection(&b, "npm packages", npm)
+
+	b.WriteString("## License texts\n\n")
+	b.WriteString("Each distinct text is reproduced once, with the packages it covers. Many differ only in their\n")
+	b.WriteString("copyright line, which is exactly what these licenses require to be carried along.\n\n")
+	for _, text := range rust.texts {
+		fmt.Fprintf(&b, "### %s\n\n", text.ID)
+		fmt.Fprintf(&b, "Covers: %s\n\n", strings.Join(text.UsedBy, ", "))
+		b.WriteString("```text\n")
+		b.WriteString(strings.TrimRight(text.Text, "\n"))
+		b.WriteString("\n```\n\n")
+	}
+
+	return []byte(b.String())
+}
+
+func writePackageSection(b *strings.Builder, title string, packages []attributedPackage) {
+	fmt.Fprintf(b, "## %s\n\n", title)
+	for _, pkg := range packages {
+		fmt.Fprintf(b, "- **%s** %s, %s", pkg.Name, pkg.Version, pkg.License)
+		if pkg.URL != "" {
+			fmt.Fprintf(b, ", <%s>", pkg.URL)
+		}
+		b.WriteString("\n")
+	}
+	b.WriteString("\n")
+}
+
+func sortPackages(packages []attributedPackage) {
+	sort.Slice(packages, func(i, j int) bool {
+		if packages[i].Name != packages[j].Name {
+			return strings.ToLower(packages[i].Name) < strings.ToLower(packages[j].Name)
+		}
+		return packages[i].Version < packages[j].Version
+	})
+}
+
+// normalizeNewlines makes the generated file LF-only, so what git stores and
+// what a regeneration produces can't disagree.
+func normalizeNewlines(text string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(text, "\r\n", "\n"), "\r", "\n")
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
+}

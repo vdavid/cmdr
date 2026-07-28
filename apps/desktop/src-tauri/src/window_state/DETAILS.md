@@ -149,7 +149,7 @@ Note `is_on_any_monitor` checks the position the window will actually land on (v
   value could only ever break the title bar. Serde ignores the field when reading a plugin-written file and drops it on
   the next write.
 - **No IPC command, no frontend module.** The plugin exposed `save_window_state` to JS, and we drove it from a debounced
-  `onResized` listener in `src/lib/window-state.ts`. Both are gone: persistence is entirely backend-side now, which is
+  `onResized` listener in a since-deleted `window-state.ts`. Both are gone: persistence is entirely backend-side now, which is
   also what the "smart backend / thin frontend" principle asks for. That removed the `window-state:default` permission
   and with it the whole `capabilities/desktop.json` file, whose only content it was.
 - **Path resolution via `config::resolved_app_data_dir`** (honors `CMDR_DATA_DIR`) rather than `app_config_dir()`. On
