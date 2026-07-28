@@ -8,6 +8,7 @@
     import { onMount } from 'svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
+    import { evidenceSourceLabel } from './ask-cmdr-labels'
     import {
         applyRenameReview,
         allowAllRenameRows,
@@ -38,7 +39,7 @@
         titleId="bulk-rename-review-title"
         dialogId="bulk-rename-review"
         resizable
-        containerStyle="width: min(640px, calc(100vw - 48px))"
+        containerStyle="width: min(1040px, calc(100vw - 48px))"
         onclose={cancelRenameReview}
     >
         {#snippet title()}{tString('askCmdr.renameReview.title')}{/snippet}
@@ -64,9 +65,10 @@
                         <thead>
                             <tr>
                                 <th scope="col" class="allow-col">{tString('askCmdr.renameReview.allow')}</th>
-                                <th scope="col">{tString('askCmdr.renameReview.originalName')}</th>
+                                <th scope="col" class="name-col">{tString('askCmdr.renameReview.originalName')}</th>
                                 <th scope="col" class="arrow-col" aria-hidden="true"></th>
-                                <th scope="col">{tString('askCmdr.renameReview.newName')}</th>
+                                <th scope="col" class="name-col">{tString('askCmdr.renameReview.newName')}</th>
+                                <th scope="col" class="why-col">{tString('askCmdr.renameReview.whyThisName')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -136,6 +138,12 @@
                                         {#if row.blockedReason}
                                             <small>{tString('askCmdr.renameReview.blocked')}</small>
                                         {/if}
+                                    </td>
+                                    <!-- Evidence is model-authored text, so it renders as
+                                         plain text (Svelte escapes it), never `{@html}`. -->
+                                    <td class="why" data-evidence-source={row.evidence.source}>
+                                        <span class="evidence-source">{evidenceSourceLabel(row.evidence.source)}</span>
+                                        <span class="evidence-detail">{row.evidence.detail}</span>
                                     </td>
                                 </tr>
                             {/each}
@@ -231,6 +239,9 @@
         border-bottom: none;
     }
 
+    /* Two fixed-width columns take their pixels first; the three text columns share what's
+       left in these proportions, so evidence gets the most room and both names still fit at
+       the dialog's default width. */
     .allow-col,
     .allow-cell {
         width: 56px;
@@ -246,6 +257,14 @@
         width: 32px;
         text-align: center;
         color: var(--color-text-tertiary);
+    }
+
+    .name-col {
+        width: 28%;
+    }
+
+    .why-col {
+        width: 38%;
     }
 
     .arrow :global(svg) {
@@ -264,6 +283,35 @@
     }
 
     tr.blocked .name {
+        color: var(--color-text-secondary);
+    }
+
+    /* Why this name: a quiet caption naming the source, then the quote or note under it.
+       The caption is what keeps a metadata-only name from reading as content-derived. */
+    .why {
+        vertical-align: top;
+    }
+
+    .evidence-source {
+        display: block;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+    }
+
+    /* A long quote wraps rather than stretching the column, and an unbroken string can't
+       push out of the table. The backend caps the detail, so the four-line clamp is a floor
+       against a squeezed column, not a routine truncation. */
+    .evidence-detail {
+        display: -webkit-box;
+        margin-top: var(--spacing-xxs);
+        overflow: hidden;
+        overflow-wrap: anywhere;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 4;
+        line-clamp: 4;
+    }
+
+    tr.blocked .why {
         color: var(--color-text-secondary);
     }
 

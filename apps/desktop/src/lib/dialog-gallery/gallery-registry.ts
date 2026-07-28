@@ -293,6 +293,11 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
         note: 'Both blocked reasons plus both warning badges at once; a real proposal rarely shows them together.',
       },
       { id: 'long-names', label: 'Long and non-ASCII names' },
+      {
+        id: 'why-this-name',
+        label: 'Every evidence source',
+        note: 'All five sources at once, including a quote long enough to wrap. The three non-image labels are the honest ones: nothing was read inside those files.',
+      },
       { id: 'expired', label: 'Proposal expired' },
     ],
   },

@@ -346,6 +346,8 @@ export type {
   AskCmdrConsentStatus,
   ConversationCost,
   CostSummary,
+  RenameEvidence,
+  RenameEvidenceSource,
 } from './ask-cmdr'
 
 // Crash reporter

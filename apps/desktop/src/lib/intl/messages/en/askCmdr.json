@@ -331,8 +331,12 @@
   "@askCmdr.cost.tokens": {
     "description": "The token count in the chat's cost footer. countText is the preformatted number (with thousands separators); count is the raw integer that selects singular or plural.",
     "placeholders": {
-      "countText": { "content": "The token count, already formatted with thousands separators, like 1,234." },
-      "count": { "content": "The raw token count as an integer, used only to pick the singular or plural word." }
+      "countText": {
+        "content": "The token count, already formatted with thousands separators, like 1,234."
+      },
+      "count": {
+        "content": "The raw token count as an integer, used only to pick the singular or plural word."
+      }
     }
   },
   "askCmdr.cost.free": "free, on-device",
@@ -343,7 +347,9 @@
   "@askCmdr.cost.estimate": {
     "description": "Estimated cost of a chat with a known cloud model. amount is a preformatted currency string like $0.0023. Lowercase 'about' signals it's an estimate, not an exact bill.",
     "placeholders": {
-      "amount": { "content": "The estimated cost, already formatted as a currency amount, like $0.0023." }
+      "amount": {
+        "content": "The estimated cost, already formatted as a currency amount, like $0.0023."
+      }
     }
   },
   "askCmdr.cost.unknown": "cost unknown",
@@ -370,6 +376,30 @@
   "@askCmdr.renameReview.newName": {
     "description": "Column heading for the proposed file name in the bulk rename review table."
   },
+  "askCmdr.renameReview.whyThisName": "Why this name",
+  "@askCmdr.renameReview.whyThisName": {
+    "description": "Column heading for the rightmost bulk rename review column, which shows what each proposed name is based on."
+  },
+  "askCmdr.renameReview.evidence.imageText": "Text in the image",
+  "@askCmdr.renameReview.evidence.imageText": {
+    "description": "Label above a quote of the text Cmdr recognized inside the image, shown as the reason for a proposed name."
+  },
+  "askCmdr.renameReview.evidence.imageTags": "What Cmdr sees in the image",
+  "@askCmdr.renameReview.evidence.imageTags": {
+    "description": "Label above the image tags Cmdr recognized, shown as the reason for a proposed name."
+  },
+  "askCmdr.renameReview.evidence.filename": "The old name",
+  "@askCmdr.renameReview.evidence.filename": {
+    "description": "Label shown when a proposed name comes from the file's existing name, with nothing read from inside the file."
+  },
+  "askCmdr.renameReview.evidence.metadata": "File details, not contents",
+  "@askCmdr.renameReview.evidence.metadata": {
+    "description": "Label shown when a proposed name comes only from metadata like the date or size. It must read as an honest limit: nothing inside the file was read."
+  },
+  "askCmdr.renameReview.evidence.userInstruction": "What you asked for",
+  "@askCmdr.renameReview.evidence.userInstruction": {
+    "description": "Label shown when a proposed name follows a naming rule the user stated in the chat."
+  },
   "askCmdr.renameReview.allow": "Allow",
   "@askCmdr.renameReview.allow": {
     "description": "Button that lets one proposed file rename proceed."
@@ -393,7 +423,11 @@
   "askCmdr.renameReview.rename": "Rename {count, plural, one {# file} other {# files}}",
   "@askCmdr.renameReview.rename": {
     "description": "Disabled-until-apply primary action label in the bulk rename review. count is the number of allowed rows.",
-    "placeholders": { "count": { "content": "The number of allowed rename rows." } }
+    "placeholders": {
+      "count": {
+        "content": "The number of allowed rename rows."
+      }
+    }
   },
   "askCmdr.renameReview.blocked": "This rename needs attention before it can continue.",
   "@askCmdr.renameReview.blocked": {
@@ -439,8 +473,12 @@
   "@askCmdr.renameReview.status": {
     "description": "Screen-reader status summary for the bulk rename review list. allowed and blocked are raw counts.",
     "placeholders": {
-      "allowed": { "content": "The number of currently allowed rows." },
-      "blocked": { "content": "The number of rows blocked by preflight." }
+      "allowed": {
+        "content": "The number of currently allowed rows."
+      },
+      "blocked": {
+        "content": "The number of rows blocked by preflight."
+      }
     }
   }
 }

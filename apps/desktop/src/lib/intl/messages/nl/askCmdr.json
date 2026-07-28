@@ -368,6 +368,30 @@
   "@askCmdr.renameReview.newName": {
     "sourceHash": "04eea2a"
   },
+  "askCmdr.renameReview.whyThisName": "Waarom deze naam",
+  "@askCmdr.renameReview.whyThisName": {
+    "sourceHash": "23f0b4f"
+  },
+  "askCmdr.renameReview.evidence.imageText": "Tekst in de afbeelding",
+  "@askCmdr.renameReview.evidence.imageText": {
+    "sourceHash": "520b47b"
+  },
+  "askCmdr.renameReview.evidence.imageTags": "Wat Cmdr in de afbeelding ziet",
+  "@askCmdr.renameReview.evidence.imageTags": {
+    "sourceHash": "9adc5f7"
+  },
+  "askCmdr.renameReview.evidence.filename": "De oude naam",
+  "@askCmdr.renameReview.evidence.filename": {
+    "sourceHash": "3930e00"
+  },
+  "askCmdr.renameReview.evidence.metadata": "Bestandsgegevens, niet de inhoud",
+  "@askCmdr.renameReview.evidence.metadata": {
+    "sourceHash": "8c7b303"
+  },
+  "askCmdr.renameReview.evidence.userInstruction": "Wat je hebt gevraagd",
+  "@askCmdr.renameReview.evidence.userInstruction": {
+    "sourceHash": "c8e3674"
+  },
   "askCmdr.renameReview.allow": "Sta toe",
   "@askCmdr.renameReview.allow": {
     "sourceHash": "e213c16"

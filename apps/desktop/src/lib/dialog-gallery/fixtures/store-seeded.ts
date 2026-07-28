@@ -18,7 +18,7 @@ import { errorReportFlow } from '$lib/error-reporter/error-report-flow.svelte'
 import { feedbackFlow } from '$lib/feedback/feedback-flow.svelte'
 import { operationLogState } from '$lib/operation-log/operation-log-trigger.svelte'
 import { whatsNewState } from '$lib/whats-new/whats-new-trigger.svelte'
-import type { OperationRow } from '$lib/tauri-commands'
+import type { OperationRow, RenameEvidence } from '$lib/tauri-commands'
 import { storeSeed, type StoreSeed } from '../store-seeding'
 import { daysAgo, hoursAgo } from './relative-time'
 
@@ -39,6 +39,7 @@ function review(
   rows: Array<{
     sourceName: string
     destinationName: string
+    evidence?: RenameEvidence
     allowed?: boolean
     blockedReason?: 'targetExists' | 'sourceMissing' | null
     warnings?: Array<'extensionChanged' | 'cycle'>
@@ -51,6 +52,7 @@ function review(
       rowId: `gallery-row-${String(index)}`,
       sourceName: row.sourceName,
       destinationName: row.destinationName,
+      evidence: row.evidence ?? { source: 'filename' as const, detail: row.sourceName },
       allowed: row.allowed ?? row.blockedReason == null,
       blockedReason: row.blockedReason ?? null,
       warnings: row.warnings ?? [],
@@ -61,6 +63,9 @@ function review(
   }
 }
 
+/** A raw-file batch has no recognized text, so every row names its honest limit. */
+const SHOT_AT: RenameEvidence = { source: 'metadata', detail: 'Shot 2026-07-14, 05:12' }
+
 /**
  * Names short enough to render in full at the dialog's default width. The point
  * of this state is a calm, all-allowed list where the six rows read as six
@@ -68,13 +73,14 @@ function review(
  * middle-ellipsis is the thing being reviewed.
  */
 const TIDY_ROWS = [
-  { sourceName: 'DSC09241.arw', destinationName: 'Sunrise 01.arw' },
-  { sourceName: 'DSC09242.arw', destinationName: 'Sunrise 02.arw' },
-  { sourceName: 'DSC09243.arw', destinationName: 'Sunrise 03.arw' },
-  { sourceName: 'DSC09244.arw', destinationName: 'Sunrise 04.arw' },
-  { sourceName: 'DSC09245.arw', destinationName: 'Sunrise 05.arw' },
-  { sourceName: 'DSC09246.arw', destinationName: 'Sunrise 06.arw' },
+  { sourceName: 'DSC09241.arw', destinationName: 'Sunrise 01.arw', evidence: SHOT_AT },
+  { sourceName: 'DSC09242.arw', destinationName: 'Sunrise 02.arw', evidence: SHOT_AT },
+  { sourceName: 'DSC09243.arw', destinationName: 'Sunrise 03.arw', evidence: SHOT_AT },
+  { sourceName: 'DSC09244.arw', destinationName: 'Sunrise 04.arw', evidence: SHOT_AT },
+  { sourceName: 'DSC09245.arw', destinationName: 'Sunrise 05.arw', evidence: SHOT_AT },
+  { sourceName: 'DSC09246.arw', destinationName: 'Sunrise 06.arw', evidence: SHOT_AT },
 ]
+
 
 export const bulkRenameFixtures: Record<string, Patch<typeof askCmdrState>> = {
   'all-allowed': { renameReview: review(TIDY_ROWS) },
@@ -114,6 +120,46 @@ export const bulkRenameFixtures: Record<string, Patch<typeof askCmdrState>> = {
       {
         sourceName: 'この写真のファイル名はとても長いです_2026年7月_ストックホルム_夕日.jpg',
         destinationName: 'ストックホルムの夕日 2026-07-14 — 01.jpg',
+      },
+    ]),
+  },
+  // The evidence column is the point of this one: all five sources side by side, so the
+  // honest "nothing was read inside the file" labels can be compared against a real quote.
+  'why-this-name': {
+    renameReview: review([
+      {
+        sourceName: 'Screenshot 2026-07-24 at 11.03.18.png',
+        destinationName: 'LinkedIn inbox 2026-07-24.png',
+        evidence: { source: 'imageText', detail: 'LinkedIn · Messaging · 3 new messages' },
+      },
+      {
+        sourceName: 'IMG_4417.jpeg',
+        destinationName: 'Sunset over Årstaviken.jpeg',
+        evidence: { source: 'imageTags', detail: 'sunset, water, city skyline' },
+      },
+      {
+        sourceName: 'scan0007.pdf',
+        destinationName: 'Scan 2026-05-02.pdf',
+        evidence: { source: 'metadata', detail: 'Created 2026-05-02, 1.2 MB' },
+      },
+      {
+        sourceName: 'kvitto-ica.png',
+        destinationName: 'ICA receipt.png',
+        evidence: { source: 'filename', detail: 'kvitto-ica' },
+      },
+      {
+        sourceName: 'DSC00812.arw',
+        destinationName: '2026-07-14 - 01.arw',
+        evidence: { source: 'userInstruction', detail: 'you asked for a YYYY-MM-DD prefix and a counter' },
+      },
+      {
+        sourceName: 'Screenshot 2026-07-24 at 11.09.51.png',
+        destinationName: 'Cargo build warnings.png',
+        evidence: {
+          source: 'imageText',
+          detail:
+            'warning: unused import: `EvidenceProblem` --> src/agent/tools/propose/rename.rs:899 warning: `cmdr` generated 1 warning',
+        },
       },
     ]),
   },

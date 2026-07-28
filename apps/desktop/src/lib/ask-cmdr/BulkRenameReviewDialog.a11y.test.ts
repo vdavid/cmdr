@@ -17,6 +17,7 @@ const { state, actions, watcher } = vi.hoisted(() => ({
         rowId: string
         sourceName: string
         destinationName: string
+        evidence: { source: 'imageText' | 'imageTags' | 'filename' | 'metadata' | 'userInstruction'; detail: string }
         allowed: boolean
         blockedReason: string | null
         warnings: Array<'extensionChanged' | 'cycle'>
@@ -82,6 +83,7 @@ function review(
         rowId: 'opaque-row-one',
         sourceName: 'before-one.png',
         destinationName: 'after-one.png',
+        evidence: { source: 'imageText', detail: 'Invoice 4021 total 250 SEK' },
         allowed: true,
         blockedReason: null,
         warnings: ['extensionChanged'],
@@ -90,6 +92,7 @@ function review(
         rowId: 'opaque-row-two',
         sourceName: 'before-two.png',
         destinationName: 'after-two.png',
+        evidence: { source: 'metadata', detail: 'Taken 2026-07-20' },
         allowed: true,
         blockedReason: null,
         warnings: ['cycle'],
@@ -98,6 +101,7 @@ function review(
         rowId: 'opaque-row-blocked',
         sourceName: 'occupied.png',
         destinationName: 'after-three.png',
+        evidence: { source: 'imageTags', detail: 'receipt, document' },
         allowed: false,
         blockedReason: 'targetExists',
         warnings: [],
@@ -106,6 +110,7 @@ function review(
         rowId: 'opaque-row-missing',
         sourceName: 'imagined.png',
         destinationName: 'after-four.png',
+        evidence: { source: 'userInstruction', detail: 'you asked for YYYY-MM-DD prefixes' },
         allowed: false,
         blockedReason: 'sourceMissing',
         warnings: [],
@@ -117,6 +122,9 @@ function review(
     ...overrides,
   }
 }
+
+/** Markup a model could smuggle into `detail`; the column must show it, not run it. */
+const MARKUP_DETAIL = '<img src=x onerror="boom">'
 
 function mountDialog(): HTMLElement {
   const target = document.createElement('div')
@@ -185,6 +193,50 @@ describe('BulkRenameReviewDialog', () => {
     expect(cycleBadge.textContent).toBe('(cycle)')
     expect(cycleBadge.getAttribute('aria-label')).toContain('one temporary name')
     await expectNoA11yViolations(target)
+  })
+
+  /**
+   * The reviewer has to be able to SEE what each name is based on: old name → new name
+   * alone is what let 12 fabricated names get approved. A source that read nothing inside
+   * the file must say so, so a metadata-only name can't pass as content-derived.
+   */
+  it('shows why each name was chosen, naming the source honestly', async () => {
+    const target = mountDialog()
+    await tick()
+
+    const headers = [...target.querySelectorAll('th')].map((th) => th.textContent)
+    expect(headers).toContain('Why this name')
+
+    const cells = [...target.querySelectorAll<HTMLElement>('td.why')]
+    expect(cells).toHaveLength(4)
+    expect(cells[0]?.textContent).toContain('Text in the image')
+    expect(cells[0]?.textContent).toContain('Invoice 4021 total 250 SEK')
+    expect(cells[1]?.textContent).toContain('File details, not contents')
+    expect(cells[1]?.textContent).toContain('Taken 2026-07-20')
+    expect(cells[2]?.textContent).toContain('What Cmdr sees in the image')
+    expect(cells[3]?.textContent).toContain('What you asked for')
+    expect(cells.map((cell) => cell.dataset.evidenceSource)).toEqual([
+      'imageText',
+      'metadata',
+      'imageTags',
+      'userInstruction',
+    ])
+    await expectNoA11yViolations(target)
+  })
+
+  /** Model-authored text reaches this column, so it must never be interpreted as markup. */
+  it('renders evidence detail as plain text, never as markup', async () => {
+    state.renameReview = review({
+      rows: review()
+        .rows.slice(0, 1)
+        .map((row) => ({ ...row, evidence: { source: 'imageText' as const, detail: MARKUP_DETAIL } })),
+    })
+    const target = mountDialog()
+    await tick()
+
+    const cell = requiredElement(target, 'td.why')
+    expect(cell.querySelector('img')).toBeNull()
+    expect(cell.textContent).toContain(MARKUP_DETAIL)
   })
 
   it('sends only user decisions to the trigger callbacks', async () => {

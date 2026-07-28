@@ -366,6 +366,30 @@
   "@askCmdr.renameReview.newName": {
     "sourceHash": "04eea2a"
   },
+  "askCmdr.renameReview.whyThisName": "Warum dieser Name",
+  "@askCmdr.renameReview.whyThisName": {
+    "sourceHash": "23f0b4f"
+  },
+  "askCmdr.renameReview.evidence.imageText": "Text im Bild",
+  "@askCmdr.renameReview.evidence.imageText": {
+    "sourceHash": "520b47b"
+  },
+  "askCmdr.renameReview.evidence.imageTags": "Was Cmdr im Bild sieht",
+  "@askCmdr.renameReview.evidence.imageTags": {
+    "sourceHash": "9adc5f7"
+  },
+  "askCmdr.renameReview.evidence.filename": "Der alte Name",
+  "@askCmdr.renameReview.evidence.filename": {
+    "sourceHash": "3930e00"
+  },
+  "askCmdr.renameReview.evidence.metadata": "Dateiangaben, nicht der Inhalt",
+  "@askCmdr.renameReview.evidence.metadata": {
+    "sourceHash": "8c7b303"
+  },
+  "askCmdr.renameReview.evidence.userInstruction": "Worum du gebeten hast",
+  "@askCmdr.renameReview.evidence.userInstruction": {
+    "sourceHash": "c8e3674"
+  },
   "askCmdr.renameReview.allow": "Erlauben",
   "@askCmdr.renameReview.allow": {
     "sourceHash": "e213c16"

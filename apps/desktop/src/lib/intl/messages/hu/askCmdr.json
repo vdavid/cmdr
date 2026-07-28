@@ -364,6 +364,30 @@
   "@askCmdr.renameReview.newName": {
     "sourceHash": "04eea2a"
   },
+  "askCmdr.renameReview.whyThisName": "Miért ez a név",
+  "@askCmdr.renameReview.whyThisName": {
+    "sourceHash": "23f0b4f"
+  },
+  "askCmdr.renameReview.evidence.imageText": "A képen lévő szöveg",
+  "@askCmdr.renameReview.evidence.imageText": {
+    "sourceHash": "520b47b"
+  },
+  "askCmdr.renameReview.evidence.imageTags": "Amit a Cmdr a képen lát",
+  "@askCmdr.renameReview.evidence.imageTags": {
+    "sourceHash": "9adc5f7"
+  },
+  "askCmdr.renameReview.evidence.filename": "A régi név",
+  "@askCmdr.renameReview.evidence.filename": {
+    "sourceHash": "3930e00"
+  },
+  "askCmdr.renameReview.evidence.metadata": "Fájladatok, nem a tartalom",
+  "@askCmdr.renameReview.evidence.metadata": {
+    "sourceHash": "8c7b303"
+  },
+  "askCmdr.renameReview.evidence.userInstruction": "Amit kértél",
+  "@askCmdr.renameReview.evidence.userInstruction": {
+    "sourceHash": "c8e3674"
+  },
   "askCmdr.renameReview.allow": "Engedélyezés",
   "@askCmdr.renameReview.allow": {
     "sourceHash": "e213c16"

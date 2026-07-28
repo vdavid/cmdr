@@ -365,6 +365,30 @@
   "@askCmdr.renameReview.newName": {
     "sourceHash": "04eea2a"
   },
+  "askCmdr.renameReview.whyThisName": "Varför det här namnet",
+  "@askCmdr.renameReview.whyThisName": {
+    "sourceHash": "23f0b4f"
+  },
+  "askCmdr.renameReview.evidence.imageText": "Text i bilden",
+  "@askCmdr.renameReview.evidence.imageText": {
+    "sourceHash": "520b47b"
+  },
+  "askCmdr.renameReview.evidence.imageTags": "Det Cmdr ser i bilden",
+  "@askCmdr.renameReview.evidence.imageTags": {
+    "sourceHash": "9adc5f7"
+  },
+  "askCmdr.renameReview.evidence.filename": "Det gamla namnet",
+  "@askCmdr.renameReview.evidence.filename": {
+    "sourceHash": "3930e00"
+  },
+  "askCmdr.renameReview.evidence.metadata": "Filuppgifter, inte innehållet",
+  "@askCmdr.renameReview.evidence.metadata": {
+    "sourceHash": "8c7b303"
+  },
+  "askCmdr.renameReview.evidence.userInstruction": "Det du bad om",
+  "@askCmdr.renameReview.evidence.userInstruction": {
+    "sourceHash": "c8e3674"
+  },
   "askCmdr.renameReview.allow": "Tillåt",
   "@askCmdr.renameReview.allow": {
     "sourceHash": "e213c16"

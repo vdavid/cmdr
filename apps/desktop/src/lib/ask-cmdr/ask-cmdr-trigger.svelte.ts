@@ -32,6 +32,7 @@ import {
   type AttachmentRef,
   type ConversationDetailView,
   type MessageView,
+  type RenameEvidence,
 } from '$lib/tauri-commands'
 
 const log = getAppLogger('askCmdr')
@@ -88,6 +89,9 @@ export interface BulkRenameReviewRow {
   rowId: string
   sourceName: string
   destinationName: string
+  /** What the backend verified this name is based on. Display only; `detail` is
+   * model-authored text, so it renders as plain text and is never branched on. */
+  evidence: RenameEvidence
   allowed: boolean
   blockedReason: string | null
   warnings: Array<'extensionChanged' | 'cycle'>

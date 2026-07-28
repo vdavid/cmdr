@@ -5,7 +5,7 @@
  */
 
 import { tString } from '$lib/intl/messages.svelte'
-import type { AskCmdrErrorKind } from '$lib/tauri-commands'
+import type { AskCmdrErrorKind, RenameEvidenceSource } from '$lib/tauri-commands'
 import type { MessageKey } from '$lib/intl/keys.gen'
 
 /** Present-tense (running) and past-tense (done) label keys per read-only tool. */
@@ -54,4 +54,21 @@ const ERROR_KEYS: Record<AskCmdrErrorKind, MessageKey> = {
 /** The friendly, honest message for a typed turn failure (never the words error/failed). */
 export function errorMessage(kind: AskCmdrErrorKind): string {
   return tString(ERROR_KEYS[kind])
+}
+
+const EVIDENCE_KEYS: Record<RenameEvidenceSource, MessageKey> = {
+  imageText: 'askCmdr.renameReview.evidence.imageText',
+  imageTags: 'askCmdr.renameReview.evidence.imageTags',
+  filename: 'askCmdr.renameReview.evidence.filename',
+  metadata: 'askCmdr.renameReview.evidence.metadata',
+  userInstruction: 'askCmdr.renameReview.evidence.userInstruction',
+}
+
+/**
+ * What a proposed rename name is based on, named honestly. The two image sources say the
+ * contents were read; the other three say plainly that they weren't, so a name with no
+ * content behind it can't look content-derived in the review dialog.
+ */
+export function evidenceSourceLabel(source: RenameEvidenceSource): string {
+  return tString(EVIDENCE_KEYS[source])
 }

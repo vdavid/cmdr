@@ -58,6 +58,22 @@ export type AskCmdrErrorKind =
   | 'provider'
 
 /**
+ * Where a proposed rename name came from (mirrors Rust `EvidenceSource`). The two image
+ * sources are the only ones claiming the file's contents were read, and the backend refuses
+ * a plan that claims them without `image_facts` having delivered that content.
+ */
+export type RenameEvidenceSource = 'imageText' | 'imageTags' | 'filename' | 'metadata' | 'userInstruction'
+
+/**
+ * One proposed name's backing (mirrors Rust `RenameEvidence`). `detail` is MODEL-AUTHORED
+ * text, so render it as plain text, never `{@html}`; the backend caps its length.
+ */
+export interface RenameEvidence {
+  source: RenameEvidenceSource
+  detail: string
+}
+
+/**
  * A streamed progress event for the rail. Hand-mirrors the Rust `AskCmdrStreamEvent`
  * (a `Channel`-only enum). Never carries a reasoning blob or provider state.
  */
@@ -72,7 +88,10 @@ export type AskCmdrStreamEvent =
   | { type: 'toolCallFinished'; callId: string; ok: boolean }
   | {
       type: 'proposalReady'
-      proposal: { proposalId: string; rows: Array<{ rowId: string; sourceName: string; destinationName: string }> }
+      proposal: {
+        proposalId: string
+        rows: Array<{ rowId: string; sourceName: string; destinationName: string; evidence: RenameEvidence }>
+      }
     }
   | { type: 'done'; messageId: number; seq: number; stop: StopReason; usage: AskCmdrUsage }
   /** `detail` is the source error's own wording for display under the typed headline
