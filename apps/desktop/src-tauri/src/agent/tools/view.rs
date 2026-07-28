@@ -86,6 +86,12 @@ pub async fn dispatch<R: Runtime>(app: &AppHandle<R>, call: &AgentToolCall) -> D
             elided: false,
         },
     };
+    // Image facts are the only tool result a later rename plan may cite as evidence, so
+    // the ledger records what this call actually handed the model. See
+    // `propose/evidence.rs` for the guardrail and its revocation seam.
+    if call.tool == ToolId::ImageFacts {
+        crate::agent::tools::propose::rename::note_image_facts_delivered(app, &result);
+    }
     DispatchOutcome { result, proposal: None }
 }
 

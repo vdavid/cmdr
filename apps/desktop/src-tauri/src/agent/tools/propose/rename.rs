@@ -1,5 +1,11 @@
 //! The `propose_rename_plan` tool. It stages a bounded, cache-validated rename
 //! proposal without touching the filesystem.
+//!
+//! Every row carries typed [`RenameEvidence`] for where its name came from, and a row
+//! claiming image content is checked against [`ImageFactsLedger`] before anything is
+//! staged. A plan with even one unbacked claim stages NOTHING and comes back to the model
+//! as a typed refusal, so the user is never shown a name whose evidence didn't check out.
+//! See `evidence.rs` for the guardrail itself.
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -13,6 +19,7 @@ use tauri::{AppHandle, Manager, Runtime};
 use uuid::Uuid;
 
 use crate::agent::llm::types::AgentToolResult;
+use crate::agent::tools::propose::evidence::{EvidenceRejection, ImageFactsLedger, RenameEvidence};
 use crate::file_system::validation::validate_filename;
 use crate::ignore_poison::IgnorePoison;
 use crate::mcp::pane_state::{PaneFileEntry, PaneState, PaneStateStore};
@@ -33,6 +40,10 @@ struct RenameInput {
     source_path: String,
     volume_id: String,
     destination_name: String,
+    /// Required: what this name is based on. A row can't be staged without it, so a
+    /// content-derived name always carries something the backend can check and the user
+    /// can read.
+    evidence: RenameEvidence,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -47,6 +58,7 @@ pub struct RenameProposalRow {
     pub source_path: String,
     pub volume_id: String,
     pub destination_name: String,
+    pub evidence: RenameEvidence,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -62,6 +74,10 @@ pub struct RenameProposalRowSnapshot {
     pub row_id: String,
     pub source_name: String,
     pub destination_name: String,
+    /// Why this name, for the review dialog's rightmost column. The frontend maps `source`
+    /// to a localized label and renders `detail` as PLAIN TEXT (it's model-authored, so
+    /// never `{@html}`); its length is bounded by the evidence check.
+    pub evidence: RenameEvidence,
 }
 
 impl RenameProposal {
@@ -79,6 +95,7 @@ impl RenameProposal {
                         .unwrap_or(&row.source_path)
                         .to_string(),
                     destination_name: row.destination_name.clone(),
+                    evidence: row.evidence.clone(),
                 })
                 .collect(),
         }
@@ -264,10 +281,53 @@ pub fn propose_rename_plan_schema() -> Value {
     serde_json::json!({
         "type": "object",
         "properties": { "renames": { "type": "array", "items": { "type": "object", "properties": {
-            "sourcePath": { "type": "string" }, "volumeId": { "type": "string" }, "destinationName": { "type": "string" }
-        }, "required": ["sourcePath", "volumeId", "destinationName"], "additionalProperties": false }, "maxItems": MAX_RENAMES } },
+            "sourcePath": { "type": "string" }, "volumeId": { "type": "string" }, "destinationName": { "type": "string" },
+            "evidence": {
+                "type": "object",
+                "description": "What this name is based on. The user sees it beside the name while reviewing, and a content claim is checked against what image_facts actually returned to you.",
+                "properties": {
+                    "source": {
+                        "type": "string",
+                        "enum": ["imageText", "imageTags", "filename", "metadata", "userInstruction"],
+                        "description": "imageText or imageTags only when image_facts returned that content to you for this exact path in this conversation. Otherwise: filename (the old name), metadata (dates, size), or userInstruction (a naming rule the user gave)."
+                    },
+                    "detail": {
+                        "type": "string",
+                        "description": "Up to 160 characters. For imageText a SHORT VERBATIM QUOTE from the text image_facts returned for this path; for imageTags at least one tag it returned; otherwise the concrete detail you used, for example 'Taken 2026-07-20' or 'user asked for YYYY-MM-DD prefixes'."
+                    }
+                },
+                "required": ["source", "detail"], "additionalProperties": false
+            }
+        }, "required": ["sourcePath", "volumeId", "destinationName", "evidence"], "additionalProperties": false }, "maxItems": MAX_RENAMES } },
         "required": ["renames"], "additionalProperties": false
     })
+}
+
+/// Why a proposal call didn't stage anything: an ordinary param/scope problem, or evidence
+/// that didn't check out. Kept apart so the model gets the typed per-item verdict for the
+/// second case instead of one flattened sentence.
+enum ProposalRefusal {
+    Problem(ToolError),
+    Evidence(Vec<EvidenceRejection>),
+}
+
+impl From<ToolError> for ProposalRefusal {
+    fn from(error: ToolError) -> Self {
+        ProposalRefusal::Problem(error)
+    }
+}
+
+/// What the model reads when a plan is refused. Typed variants, actionable wording, and
+/// every offending item listed — a refused item is never silently dropped.
+fn refusal_content(refusal: &ProposalRefusal) -> Value {
+    match refusal {
+        ProposalRefusal::Problem(error) => serde_json::json!({ "readyForReview": false, "problem": error.message }),
+        ProposalRefusal::Evidence(rejections) => serde_json::json!({
+            "readyForReview": false,
+            "evidenceRejected": rejections,
+            "guidance": "Nothing was staged, so fix these rows and send the whole plan again. A name based on what's inside an image needs image_facts to have returned that content for that exact path, and the detail must quote it. If you don't have the content, say so and name the file from its old name, its dates, or what the user asked for.",
+        }),
+    }
 }
 
 pub async fn dispatch<R: Runtime>(app: &AppHandle<R>, call_id: &str, params: &Value) -> RenameDispatchOutcome {
@@ -283,10 +343,10 @@ pub async fn dispatch<R: Runtime>(app: &AppHandle<R>, call_id: &str, params: &Va
                 proposal: Some(snapshot),
             }
         }
-        Err(error) => RenameDispatchOutcome {
+        Err(refusal) => RenameDispatchOutcome {
             result: AgentToolResult {
                 call_id: call_id.to_string(),
-                content: serde_json::json!({ "problem": error.message }),
+                content: refusal_content(&refusal),
                 elided: false,
             },
             proposal: None,
@@ -297,6 +357,18 @@ pub async fn dispatch<R: Runtime>(app: &AppHandle<R>, call_id: &str, params: &Va
 pub async fn execute_propose_rename_plan<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
     let outcome = dispatch(app, "registry", params).await;
     Ok(outcome.result.content)
+}
+
+/// Record what an `image_facts` result delivered, so a later plan can cite it. Called by
+/// the agent dispatcher; a result the runtime already marked elided never lands, because
+/// the model didn't read it.
+pub fn note_image_facts_delivered<R: Runtime>(app: &AppHandle<R>, result: &AgentToolResult) {
+    if result.elided {
+        return;
+    }
+    if let Some(ledger) = app.try_state::<ImageFactsLedger>() {
+        ledger.record_delivered(&result.call_id, &result.content);
+    }
 }
 
 /// Revalidates the server-owned subset a user currently allows. The caller may
@@ -672,17 +744,23 @@ fn local_fingerprint(row_id: &str, metadata: &std::fs::Metadata) -> RenameSource
     }
 }
 
-fn build_proposal<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Result<RenameProposal, ToolError> {
+/// A plain param refusal, pre-wrapped so the boundary's `return Err(...)` sites stay
+/// readable next to the typed evidence refusal.
+fn invalid_params(message: impl Into<String>) -> ProposalRefusal {
+    ProposalRefusal::Problem(ToolError::invalid_params(message))
+}
+
+fn build_proposal<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Result<RenameProposal, ProposalRefusal> {
     let input: RenamePlanInput = serde_json::from_value(params.clone()).map_err(|_| {
-        ToolError::invalid_params("Provide a rename plan with sourcePath, volumeId, and destinationName for every row.")
+        ToolError::invalid_params(
+            "Provide a rename plan with sourcePath, volumeId, destinationName, and evidence for every row.",
+        )
     })?;
     if input.renames.is_empty() {
-        return Err(ToolError::invalid_params("A rename plan needs at least one row."));
+        return Err(invalid_params("A rename plan needs at least one row."));
     }
     if input.renames.len() > MAX_RENAMES {
-        return Err(ToolError::invalid_params(
-            "A rename plan can contain up to 200 items.".to_string(),
-        ));
+        return Err(invalid_params("A rename plan can contain up to 200 items.".to_string()));
     }
     let store = app
         .try_state::<PaneStateStore>()
@@ -693,56 +771,76 @@ fn build_proposal<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Result<Rena
         .clone()
         .ok_or_else(|| ToolError::invalid_params("The focused pane has no volume id yet."))?;
     let scope = scoped_files(&state)?;
+    // An empty ledger IS the fail-closed ledger, so a missing registration refuses every
+    // content claim rather than waving it through.
+    let no_facts = ImageFactsLedger::default();
+    let registered = app.try_state::<ImageFactsLedger>();
+    let ledger = registered.as_deref().unwrap_or(&no_facts);
     let mut source_paths = HashSet::new();
     let mut destination_names = HashSet::new();
     let mut rows = Vec::with_capacity(input.renames.len());
     for rename in input.renames {
         if rename.volume_id != volume_id {
-            return Err(ToolError::invalid_params(
-                "Every rename must use the focused pane's volume id.",
-            ));
+            return Err(invalid_params("Every rename must use the focused pane's volume id."));
         }
         if !source_paths.insert(rename.source_path.clone()) {
-            return Err(ToolError::invalid_params(
-                "A source file can appear only once in a rename plan.",
-            ));
+            return Err(invalid_params("A source file can appear only once in a rename plan."));
         }
         validate_destination_name(&rename.destination_name)?;
         let destination_key = crate::indexing::store::normalize_for_comparison(&rename.destination_name);
         if !destination_names.insert(destination_key) {
-            return Err(ToolError::invalid_params(
-                "Destination names must be unique on this volume.",
-            ));
+            return Err(invalid_params("Destination names must be unique on this volume."));
         }
         if let Some(entry) = scope.get(rename.source_path.as_str()) {
             if entry.is_directory {
-                return Err(ToolError::invalid_params(
-                    "Rename plans can contain files, not folders.",
-                ));
+                return Err(invalid_params("Rename plans can contain files, not folders."));
             }
         } else if !missing_local_child(&state, &volume_id, &rename.source_path) {
-            return Err(ToolError::invalid_params(
+            return Err(invalid_params(
                 "Every source must be in the focused pane's effective scope.",
             ));
         }
         if crate::file_system::volume::backends::archive::archive_boundary_candidate(Path::new(&rename.source_path))
             .is_some()
         {
-            return Err(ToolError::invalid_params(
-                "Rename plans can't include files inside an archive.",
-            ));
+            return Err(invalid_params("Rename plans can't include files inside an archive."));
         }
         rows.push(RenameProposalRow {
             row_id: Uuid::new_v4().to_string(),
             source_path: rename.source_path,
             volume_id: volume_id.clone(),
             destination_name: rename.destination_name,
+            evidence: rename.evidence,
         });
+    }
+    // One unbacked claim refuses the WHOLE plan: staging the rest would show the user a
+    // partial plan they'd read as complete, and the model needs to resend it anyway.
+    let rejections = collect_evidence_rejections(ledger, &rows);
+    if !rejections.is_empty() {
+        return Err(ProposalRefusal::Evidence(rejections));
     }
     Ok(RenameProposal {
         proposal_id: Uuid::new_v4().to_string(),
         rows,
     })
+}
+
+/// Every row whose evidence didn't check out, in plan order. Pure over the ledger, so the
+/// guardrail is testable without a Tauri app.
+fn collect_evidence_rejections(ledger: &ImageFactsLedger, rows: &[RenameProposalRow]) -> Vec<EvidenceRejection> {
+    rows.iter()
+        .filter_map(|row| {
+            ledger
+                .check(&row.source_path, &row.evidence)
+                .err()
+                .map(|problem| EvidenceRejection {
+                    source_path: row.source_path.clone(),
+                    proposed_name: row.destination_name.clone(),
+                    evidence_source: row.evidence.source,
+                    problem,
+                })
+        })
+        .collect()
 }
 
 /// A model may invent a filename that is not in the pane cache. Keep that row
@@ -795,6 +893,7 @@ fn validate_destination_name(name: &str) -> Result<(), ToolError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::agent::tools::propose::evidence::{EvidenceProblem, EvidenceSource};
 
     #[test]
     fn cycle_warnings_mark_only_closed_dependency_components() {
@@ -819,12 +918,19 @@ mod tests {
         assert_eq!(statuses["cycle-b"].warnings, vec![BulkRenameWarning::Cycle]);
     }
 
+    /// A staged row with the evidence a real one always carries. Preflight and the store
+    /// don't read evidence (the tool boundary already checked it), so a filename source
+    /// keeps these fixtures about the thing under test.
     fn proposal_row(row_id: &str, source_path: &str, destination_name: &str) -> RenameProposalRow {
         RenameProposalRow {
             row_id: row_id.into(),
             source_path: source_path.into(),
             volume_id: "root".into(),
             destination_name: destination_name.into(),
+            evidence: RenameEvidence {
+                source: EvidenceSource::Filename,
+                detail: "the old name".into(),
+            },
         }
     }
 
@@ -927,12 +1033,7 @@ mod tests {
         let store = RenameProposalStore::default();
         let proposal = RenameProposal {
             proposal_id: "proposal".into(),
-            rows: vec![RenameProposalRow {
-                row_id: "row".into(),
-                source_path: "/x/a.png".into(),
-                volume_id: "root".into(),
-                destination_name: "b.png".into(),
-            }],
+            rows: vec![proposal_row("row", "/x/a.png", "b.png")],
         };
         let snapshot = store.stage(proposal);
         assert_eq!(snapshot.rows[0].source_name, "a.png");
@@ -963,18 +1064,8 @@ mod tests {
 
     #[test]
     fn duplicate_final_targets_block_every_row_in_the_group() {
-        let first = RenameProposalRow {
-            row_id: "first".into(),
-            source_path: "/ignored/a.png".into(),
-            volume_id: "root".into(),
-            destination_name: "same.png".into(),
-        };
-        let second = RenameProposalRow {
-            row_id: "second".into(),
-            source_path: "/ignored/b.png".into(),
-            volume_id: "root".into(),
-            destination_name: "same.png".into(),
-        };
+        let first = proposal_row("first", "/ignored/a.png", "same.png");
+        let second = proposal_row("second", "/ignored/b.png", "same.png");
         let mut statuses = initial_rows(
             &RenameProposal {
                 proposal_id: "proposal".into(),
@@ -988,6 +1079,115 @@ mod tests {
                 .values()
                 .all(|row| row.reason == Some(BulkRenameBlockReason::DuplicateDestination))
         );
+    }
+
+    /// The incident's shape at the plan boundary: one row cites image text nobody
+    /// delivered, its neighbours are fine. Every offending row comes back named, and the
+    /// caller refuses the WHOLE plan rather than staging a partial one the user would read
+    /// as complete.
+    #[test]
+    fn one_unbacked_content_claim_rejects_that_row_and_refuses_the_whole_plan() {
+        let ledger = ImageFactsLedger::default();
+        ledger.record_delivered(
+            "call-1",
+            &serde_json::json!({ "status": "ok", "facts": [
+                { "path": "/shots/one.png", "state": "indexed", "text": "Invoice 4021 total 250 SEK" }
+            ] }),
+        );
+        let rows = vec![
+            evidence_row(
+                "backed",
+                "/shots/one.png",
+                "Invoice 4021.png",
+                EvidenceSource::ImageText,
+                "Invoice 4021",
+            ),
+            evidence_row(
+                "fabricated",
+                "/shots/two.png",
+                "hello-world-output.png",
+                EvidenceSource::ImageText,
+                "hello world output",
+            ),
+            evidence_row(
+                "dated",
+                "/shots/three.png",
+                "2026-07-20.png",
+                EvidenceSource::Metadata,
+                "Taken 2026-07-20",
+            ),
+        ];
+
+        let rejections = collect_evidence_rejections(&ledger, &rows);
+
+        assert_eq!(rejections.len(), 1, "only the unbacked row is rejected");
+        assert_eq!(rejections[0].source_path, "/shots/two.png");
+        assert_eq!(rejections[0].proposed_name, "hello-world-output.png");
+        assert_eq!(rejections[0].problem, EvidenceProblem::FactsNotDelivered);
+
+        // A rejected row is never silently dropped: the model gets the typed verdict, and
+        // nothing was staged, so the user sees no plan at all.
+        let content = refusal_content(&ProposalRefusal::Evidence(rejections));
+        assert_eq!(content["readyForReview"], false);
+        assert_eq!(content["evidenceRejected"][0]["problem"], "factsNotDelivered");
+        assert_eq!(content["evidenceRejected"][0]["evidenceSource"], "imageText");
+        assert!(
+            content["guidance"].is_string(),
+            "the model gets something it can act on"
+        );
+    }
+
+    /// Evidence rides the snapshot into the review dialog, so the reviewer can see what
+    /// each name is based on rather than only old-name → new-name.
+    #[test]
+    fn the_review_snapshot_carries_each_rows_evidence() {
+        let store = RenameProposalStore::default();
+        let snapshot = store.stage(RenameProposal {
+            proposal_id: "proposal".into(),
+            rows: vec![evidence_row(
+                "row",
+                "/shots/one.png",
+                "Invoice 4021.png",
+                EvidenceSource::ImageText,
+                "Invoice 4021",
+            )],
+        });
+
+        assert_eq!(snapshot.rows[0].evidence.source, EvidenceSource::ImageText);
+        assert_eq!(snapshot.rows[0].evidence.detail, "Invoice 4021");
+        let wire = serde_json::to_value(&snapshot).expect("serializes");
+        assert_eq!(wire["rows"][0]["evidence"]["source"], "imageText");
+        assert_eq!(wire["rows"][0]["evidence"]["detail"], "Invoice 4021");
+    }
+
+    /// The tool can't be called without evidence at all: an old-shaped plan is a param
+    /// refusal, not a plan with an empty justification.
+    #[test]
+    fn a_rename_row_without_evidence_does_not_parse() {
+        let without = serde_json::json!({ "sourcePath": "/x/a.png", "volumeId": "root", "destinationName": "b.png" });
+        assert!(serde_json::from_value::<RenameInput>(without).is_err());
+
+        let with = serde_json::json!({
+            "sourcePath": "/x/a.png", "volumeId": "root", "destinationName": "b.png",
+            "evidence": { "source": "filename", "detail": "the old name" }
+        });
+        assert!(serde_json::from_value::<RenameInput>(with).is_ok());
+    }
+
+    fn evidence_row(
+        row_id: &str,
+        source_path: &str,
+        destination_name: &str,
+        source: EvidenceSource,
+        detail: &str,
+    ) -> RenameProposalRow {
+        RenameProposalRow {
+            evidence: RenameEvidence {
+                source,
+                detail: detail.into(),
+            },
+            ..proposal_row(row_id, source_path, destination_name)
+        }
     }
 
     #[test]

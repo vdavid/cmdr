@@ -254,7 +254,9 @@ fn check_tags(tags: &[String], detail: &str) -> Result<(), EvidenceProblem> {
 /// whitespace run to one space, and lowercase. OCR text arrives with hard line breaks and
 /// odd spacing, and models like to wrap a quote in typographic quotes.
 fn normalize_detail(text: &str) -> String {
-    let trimmed = text.trim().trim_matches(|c| matches!(c, '"' | '\'' | '“' | '”' | '‘' | '’'));
+    let trimmed = text
+        .trim()
+        .trim_matches(|c| matches!(c, '"' | '\'' | '“' | '”' | '‘' | '’'));
     let lowered = crate::indexing::store::normalize_for_comparison(trimmed);
     lowered.split_whitespace().collect::<Vec<_>>().join(" ")
 }
@@ -282,7 +284,11 @@ mod tests {
             row["text"] = json!(text);
         }
         if !tags.is_empty() {
-            row["tags"] = json!(tags.iter().map(|t| json!({ "label": t, "score": 0.9 })).collect::<Vec<_>>());
+            row["tags"] = json!(
+                tags.iter()
+                    .map(|t| json!({ "label": t, "score": 0.9 }))
+                    .collect::<Vec<_>>()
+            );
         }
         row
     }
@@ -350,7 +356,10 @@ mod tests {
             "\u{201c}LinkedIn\u{201d}",
         ] {
             assert_eq!(
-                ledger.check("/Users/x/Screenshots/shot-2.png", &evidence(EvidenceSource::ImageText, detail)),
+                ledger.check(
+                    "/Users/x/Screenshots/shot-2.png",
+                    &evidence(EvidenceSource::ImageText, detail)
+                ),
                 Ok(()),
                 "{detail:?} is in the delivered text"
             );
@@ -413,8 +422,14 @@ mod tests {
     #[test]
     fn revoking_a_call_drops_exactly_that_calls_facts() {
         let ledger = ImageFactsLedger::default();
-        ledger.record_delivered("call-1", &image_facts_result(vec![indexed("/x/a.png", Some("alpha text"), &[])]));
-        ledger.record_delivered("call-2", &image_facts_result(vec![indexed("/x/b.png", Some("beta text"), &[])]));
+        ledger.record_delivered(
+            "call-1",
+            &image_facts_result(vec![indexed("/x/a.png", Some("alpha text"), &[])]),
+        );
+        ledger.record_delivered(
+            "call-2",
+            &image_facts_result(vec![indexed("/x/b.png", Some("beta text"), &[])]),
+        );
 
         ledger.revoke_call("call-1");
 
