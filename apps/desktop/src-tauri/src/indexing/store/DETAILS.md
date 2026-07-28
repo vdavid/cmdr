@@ -139,3 +139,33 @@ the two schema-mismatch tests keep the recreate paths intact.
 `has_sized_entry_for_inode()` checks whether another entry with the same inode already has non-NULL sizes;
 `find_entry_by_inode()` returns the first row with a given inode (the live event loop's rename pre-pass). Both path-keyed
 (backward compat) and integer-keyed APIs exist.
+
+## Decision: read connections get an 8x smaller page cache than the write connection
+
+`apply_pragmas` takes a `readonly` flag and delegates the page-cache budget to `crate::sqlite_util::apply_page_cache`,
+which every store's `apply_pragmas` shares: `WRITE_PAGE_CACHE_KIB` (16 MiB) for a write connection,
+`READ_PAGE_CACHE_KIB` (2 MiB) for a read-only one. It's one helper rather than five copies of a literal precisely
+because the failure mode is silent: a store that keeps its own number drifts back up and nothing complains.
+
+**Why the write budget is 16 MiB.** It's coupled to `wal_autocheckpoint = 4000` (~16 MiB of 4 KiB pages, set in the
+same function): the cache is sized to hold what a whole autocheckpoint window dirties, so a big write batch commits
+without evicting pages it's about to touch again. Change one and reconsider the other. There is at most ONE write
+connection per DB (the single writer thread), so this budget is paid a handful of times process-wide.
+
+**Why reads need far less.** Read connections are the many. They're thread-local and live as long as their thread
+(`../read/enrichment.rs`'s `THREAD_CONN`, `importance/read/mod.rs`'s `READ_CONN`), so the count tracks tokio's
+blocking-thread pool rather than anything semantic. A profiled prod session (v0.36.2, ~10 h uptime, macOS 26.5.2,
+`lsof` + `footprint -s`, 2026-07-28) had **156 open connections** across 69 blocking threads (57 × `importance-root.db`,
+53 × `index-root.db`, 30 + 10 on the NAS volume, 6 × `media-root.db`), holding ~1.15 GB of a 2.5 GB ceiling. At 2 MiB
+the same 156 connections cap at ~310 MB.
+
+2 MiB is SQLite's own default. It comfortably holds the upper interior levels of the hot b-trees, which is what the
+enrichment path actually needs: point lookups on `(parent_id, name_folded)` and one directory's worth of range scan. A
+whole-index working set never fit at 16 MiB either (a 6.9M-row index runs ~170 k leaf pages), so the big budget was
+buying leaf-page retention that the OS file cache already backs. Reads never commit or checkpoint, so nothing here
+touches the WAL. **The fix is a ceiling, not a cure** — the connections still accumulate; bounding what each one costs
+is what M1 buys.
+
+**Test coverage**: `read_connections_get_a_smaller_page_cache_than_write_connections`, one per store (`tests.rs` here
+and in `importance/store`, `media_index/store`, `agent/store`, `operation_log/store`), asserts the exact KiB each role
+opens with, so a future edit can't quietly re-inflate reads.

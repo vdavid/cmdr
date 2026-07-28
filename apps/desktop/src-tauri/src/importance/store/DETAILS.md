@@ -91,6 +91,15 @@ generation and skip the pass, after which the recreate wipes it. The full trap a
 `../scheduler/DETAILS.md` § The initial full pass. The store test drives the exact ordering (an old-schema DB with a
 stamped generation → the read probe sees it → the write-path-bound probe recreates and reports "needs a full pass").
 
+## Connection pragmas
+
+`connection.rs`'s `apply_pragmas` mirrors the index store's, page-cache budget included: it delegates to
+`crate::sqlite_util::apply_page_cache`, so a read connection gets 2 MiB and the writer 16 MiB. That split matters most
+here — `ImportanceIndex` holds a thread-local read connection per blocking thread (`../read/mod.rs`'s `READ_CONN`), and
+`importance-root.db` was the single biggest contributor to the 156 connections a profiled prod session accumulated. ❌
+Don't set `cache_size` locally. Rationale and measurements: `indexing/store/DETAILS.md` § "read connections get an 8x
+smaller page cache".
+
 ## Errors
 
 `ImportanceStoreError` mirrors `IndexStoreError`'s shape: a schema mismatch is a distinct, non-failure variant that

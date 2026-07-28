@@ -14,8 +14,9 @@ use super::{CREATE_TABLES, MediaStoreError};
 use crate::indexing::store::register_platform_case_collation;
 
 /// Apply pragmas. Write connections enable WAL + incremental auto-vacuum; both read
-/// and write get the busy-timeout and cache tuning. Matches the index and
-/// importance stores so all three behave identically under contention.
+/// and write get the busy-timeout and a role-sized page cache
+/// ([`crate::sqlite_util::apply_page_cache`]). Matches the index and importance
+/// stores so all three behave identically under contention.
 fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), MediaStoreError> {
     if !readonly {
         conn.execute_batch(
@@ -25,9 +26,9 @@ fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), MediaStoreErro
     }
     conn.execute_batch(
         "PRAGMA busy_timeout = 5000;
-         PRAGMA synchronous = NORMAL;
-         PRAGMA cache_size = -16384;",
+         PRAGMA synchronous = NORMAL;",
     )?;
+    crate::sqlite_util::apply_page_cache(conn, readonly)?;
     Ok(())
 }
 

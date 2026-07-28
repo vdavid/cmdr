@@ -20,7 +20,7 @@ use super::migrations::{MIGRATIONS, run_migrations};
 /// Apply pragmas. Write connections enable WAL + incremental auto-vacuum (the auto-vacuum
 /// mode must be set before the first table is created, so it runs before the migration
 /// ladder). Both read and write get the busy-timeout, `synchronous = NORMAL`, foreign
-/// keys, and cache tuning.
+/// keys, and a role-sized page cache ([`crate::sqlite_util::apply_page_cache`]).
 fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), AgentStoreError> {
     if !readonly {
         conn.execute_batch(
@@ -31,9 +31,9 @@ fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), AgentStoreErro
     conn.execute_batch(
         "PRAGMA busy_timeout = 5000;
          PRAGMA synchronous = NORMAL;
-         PRAGMA foreign_keys = ON;
-         PRAGMA cache_size = -16384;",
+         PRAGMA foreign_keys = ON;",
     )?;
+    crate::sqlite_util::apply_page_cache(conn, readonly)?;
     Ok(())
 }
 

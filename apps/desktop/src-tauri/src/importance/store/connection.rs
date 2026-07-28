@@ -15,8 +15,10 @@ use super::{CREATE_TABLES, ImportanceStoreError};
 use crate::indexing::store::register_platform_case_collation;
 
 /// Apply pragmas. Write connections enable WAL + incremental auto-vacuum; both
-/// read and write get the busy-timeout and cache tuning. Mirrors the index store's
-/// `apply_pragmas` so the two DBs behave identically under contention.
+/// read and write get the busy-timeout and a role-sized page cache. Mirrors the
+/// index store's `apply_pragmas` so the two DBs behave identically under
+/// contention, page-cache budget included
+/// ([`crate::sqlite_util::apply_page_cache`]).
 fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), ImportanceStoreError> {
     if !readonly {
         conn.execute_batch(
@@ -26,9 +28,9 @@ fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), ImportanceStor
     }
     conn.execute_batch(
         "PRAGMA busy_timeout = 5000;
-         PRAGMA synchronous = NORMAL;
-         PRAGMA cache_size = -16384;",
+         PRAGMA synchronous = NORMAL;",
     )?;
+    crate::sqlite_util::apply_page_cache(conn, readonly)?;
     Ok(())
 }
 

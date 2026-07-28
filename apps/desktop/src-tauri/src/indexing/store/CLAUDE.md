@@ -31,6 +31,11 @@ walks reconstruct paths from), `dir_stats.rs`, `meta.rs`; tests in `tests.rs`. P
   code) returns an error. Never widen `indicates_corruption()`; rebuilding a real index costs tens of minutes. Bump
   `SCHEMA_VERSION` (in `mod.rs`) for any schema change; there's no migration path by design.
 
+- **Page cache is role-sized in ONE place: `crate::sqlite_util::apply_page_cache`** (reads 2 MiB, writes 16 MiB). ❌
+  Don't hardcode `cache_size` per store, and ❌ don't raise the read budget: read connections are thread-local and
+  100+ pile up (156 held ~1.15 GB in prod). The write 16 MiB is coupled to `wal_autocheckpoint = 4000`. DETAILS §
+  "read connections get an 8x smaller page cache".
+
 - **Scan calibration lives in PER-WALK-KIND `meta` buckets, never one slot.** A truncating full walk and a
   rescan-in-place change check differ ~5x in wall clock, so sharing `scan_duration_ms` / `total_entries` makes each run
   predict the other's time. Every completion writes the suffixed keys (`ScanCalibrationKind::meta_key`) AND the

@@ -293,3 +293,18 @@ fn conversation_cost_sums_and_flags_unpriced() {
     assert!(empty.fully_priced);
     assert!(empty.providers.is_empty());
 }
+
+/// Read-only connections open with the small page cache, write connections with
+/// the big one. Shared budgets and the rationale: `crate::sqlite_util`.
+#[test]
+fn read_connections_get_a_smaller_page_cache_than_write_connections() {
+    use crate::sqlite_util::{READ_PAGE_CACHE_KIB, WRITE_PAGE_CACHE_KIB, page_cache_kib};
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let path = main_db_path(dir.path());
+    let write = open_write_connection(&path).expect("write conn");
+    let read = open_read_connection(&path).expect("read conn");
+
+    assert_eq!(page_cache_kib(&write), WRITE_PAGE_CACHE_KIB);
+    assert_eq!(page_cache_kib(&read), READ_PAGE_CACHE_KIB);
+}

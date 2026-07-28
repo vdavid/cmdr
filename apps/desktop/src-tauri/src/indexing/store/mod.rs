@@ -566,6 +566,9 @@ fn ensure_root_sentinel(conn: &Connection) -> Result<(), IndexStoreError> {
 }
 
 /// Apply WAL-mode pragmas for performance.
+///
+/// The page-cache budget is role-dependent and shared with every other store; see
+/// [`crate::sqlite_util::apply_page_cache`].
 fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), IndexStoreError> {
     // busy_timeout: when another connection holds the write lock, retry for up
     // to 5s instead of returning SQLITE_BUSY immediately. Applies to every open
@@ -580,9 +583,9 @@ fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), IndexStoreErro
     // can't back them off.
     conn.execute_batch(
         "PRAGMA busy_timeout = 5000;
-         PRAGMA synchronous = NORMAL;
-         PRAGMA cache_size = -16384;",
+         PRAGMA synchronous = NORMAL;",
     )?;
+    crate::sqlite_util::apply_page_cache(conn, readonly)?;
     if !readonly {
         conn.execute_batch(
             "PRAGMA auto_vacuum = INCREMENTAL;
@@ -602,9 +605,13 @@ fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), IndexStoreErro
         // `SQLITE_IOERR` the root index hit mid-scan and never recovered from; the
         // confirm path is the primary+extended SQLite code now logged when a fatal
         // storage error trips `IndexPhase::Failed`. Raise the threshold to 4 000
-        // pages (~16 MiB, matching the `-16384` page cache) so implicit checkpoints
+        // pages (~16 MiB, matching the write connection's
+        // `sqlite_util::WRITE_PAGE_CACHE_KIB` page cache) so implicit checkpoints
         // fire ~4x less often (fewer fsync barriers) while the WAL between them
-        // stays small enough to keep reads fast.
+        // stays small enough to keep reads fast. That pairing is why the write
+        // budget is 16 MiB: change one and reconsider the other. It's write-side
+        // only — read connections never commit or checkpoint, which is exactly why
+        // they can run the far smaller `READ_PAGE_CACHE_KIB`.
         //
         // `journal_size_limit` caps the on-disk `-wal` file after a checkpoint
         // resets it: a backstop for the window between the 30 s

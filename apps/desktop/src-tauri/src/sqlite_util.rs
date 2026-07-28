@@ -1,4 +1,71 @@
-//! Small SQLite helpers shared by the writer threads (indexing, operation log).
+//! Small SQLite helpers shared by every store: the page-cache budget applied to
+//! all connections, and freelist reclamation for the writer threads.
+
+// ── Page cache budget ────────────────────────────────────────────────
+
+/// Page cache for a WRITE connection, in KiB (16 MiB), applied as the negative
+/// `PRAGMA cache_size` form.
+///
+/// Coupled to `wal_autocheckpoint = 4000` (~16 MiB of 4 KiB pages, set in
+/// `indexing::store::apply_pragmas`): the cache is sized to hold the pages a
+/// whole autocheckpoint window dirties, so a big write batch commits without
+/// evicting pages it's about to touch again. Change one, reconsider the other.
+///
+/// There is at most ONE write connection per DB (a single writer thread), so this
+/// budget is paid a handful of times process-wide.
+pub const WRITE_PAGE_CACHE_KIB: i64 = 16_384;
+
+/// Page cache for a READ-ONLY connection, in KiB (2 MiB), applied as the negative
+/// `PRAGMA cache_size` form. Deliberately 8x smaller than
+/// [`WRITE_PAGE_CACHE_KIB`], because read connections are MANY and long-lived.
+///
+/// Read connections are thread-local and live as long as their thread
+/// (`indexing::read::enrichment`'s `THREAD_CONN`, `ImportanceIndex`'s
+/// `READ_CONN`), so the count tracks tokio's blocking-thread pool rather than
+/// anything semantic: 156 were open in a profiled prod session (2026-07-28,
+/// v0.36.2, ~10 h uptime, `lsof` + `footprint -s`), holding ~1.15 GB against a
+/// 2.5 GB ceiling. At this budget the same 156 connections cap at ~310 MB.
+///
+/// 2 MiB is SQLite's own default and comfortably holds the upper interior levels
+/// of the hot b-trees, so the enrichment path's point lookups and per-directory
+/// range scans still resolve without walking to disk; whole-table working sets
+/// were never going to fit at 16 MiB either, and the OS file cache backs those.
+/// Reads never commit or checkpoint, so nothing here interacts with the WAL.
+pub const READ_PAGE_CACHE_KIB: i64 = 2_048;
+
+const _: () = assert!(
+    READ_PAGE_CACHE_KIB < WRITE_PAGE_CACHE_KIB,
+    "read connections must stay cheaper than the single write connection"
+);
+
+/// Apply the page-cache budget for this connection's role: [`READ_PAGE_CACHE_KIB`]
+/// when `readonly`, [`WRITE_PAGE_CACHE_KIB`] otherwise.
+///
+/// Every store's `apply_pragmas` calls this, so the split is set in ONE place and
+/// a new store can't quietly hand read connections the writer's budget.
+pub fn apply_page_cache(conn: &rusqlite::Connection, readonly: bool) -> rusqlite::Result<()> {
+    let kib = if readonly {
+        READ_PAGE_CACHE_KIB
+    } else {
+        WRITE_PAGE_CACHE_KIB
+    };
+    // Negative = KiB of memory; positive would mean a page COUNT, which varies
+    // with `page_size` and is not what any of these budgets mean.
+    conn.execute_batch(&format!("PRAGMA cache_size = -{kib};"))
+}
+
+/// The connection's page-cache budget in KiB. `PRAGMA cache_size` echoes back the
+/// negative KiB form [`apply_page_cache`] sets, so flip the sign.
+#[cfg(test)]
+pub fn page_cache_kib(conn: &rusqlite::Connection) -> i64 {
+    let raw: i64 = conn
+        .pragma_query_value(None, "cache_size", |row| row.get(0))
+        .expect("read cache_size");
+    assert!(raw < 0, "cache_size should be set in negative-KiB form, got {raw}");
+    -raw
+}
+
+// ── Freelist reclamation ─────────────────────────────────────────────
 
 /// Reclaim freed pages via `PRAGMA incremental_vacuum`, stepping until the pragma
 /// is exhausted.

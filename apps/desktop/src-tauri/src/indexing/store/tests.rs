@@ -2136,3 +2136,23 @@ fn a_failed_savepoint_call_leaves_the_connection_in_autocommit() {
         "a failed savepoint must not park the connection in an open transaction"
     );
 }
+
+// ── Page-cache budget ────────────────────────────────────────────────
+
+/// A read-only connection must open with the SMALL page cache and the write
+/// connection with the big one. Read connections are thread-local and outlive
+/// every query (`read/enrichment.rs`'s `THREAD_CONN`), so 100+ pile up in a long
+/// session; handing each the writer's budget is what put a 2.5 GB ceiling on the
+/// process. `open` itself is a write path, so its `read_conn` field is NOT the
+/// small-cache one.
+#[test]
+fn read_connections_get_a_smaller_page_cache_than_write_connections() {
+    use crate::sqlite_util::{READ_PAGE_CACHE_KIB, WRITE_PAGE_CACHE_KIB, page_cache_kib};
+
+    let (store, _dir) = open_temp_store();
+    let write = IndexStore::open_write_connection(store.db_path()).expect("write conn");
+    let read = IndexStore::open_read_connection(store.db_path()).expect("read conn");
+
+    assert_eq!(page_cache_kib(&write), WRITE_PAGE_CACHE_KIB);
+    assert_eq!(page_cache_kib(&read), READ_PAGE_CACHE_KIB);
+}

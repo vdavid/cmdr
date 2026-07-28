@@ -489,3 +489,20 @@ fn needs_initial_full_pass_is_false_for_an_already_scored_store() {
         "a generation-stamped store is already scored ⇒ no initial full pass"
     );
 }
+
+/// Read-only connections open with the small page cache, write connections with
+/// the big one. `ImportanceIndex` holds a thread-local read connection per
+/// blocking thread (`../read/mod.rs`'s `READ_CONN`), so these are the many;
+/// the writer is the one. Shared budgets: `crate::sqlite_util`.
+#[test]
+fn read_connections_get_a_smaller_page_cache_than_write_connections() {
+    use crate::sqlite_util::{READ_PAGE_CACHE_KIB, WRITE_PAGE_CACHE_KIB, page_cache_kib};
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let path = importance_db_path(dir.path(), "root");
+    let write = open_write_connection(&path).expect("write conn");
+    let read = open_read_connection(&path).expect("read conn");
+
+    assert_eq!(page_cache_kib(&write), WRITE_PAGE_CACHE_KIB);
+    assert_eq!(page_cache_kib(&read), READ_PAGE_CACHE_KIB);
+}

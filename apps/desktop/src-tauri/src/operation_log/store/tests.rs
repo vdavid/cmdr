@@ -212,3 +212,18 @@ fn intern_dir_folds_case_on_macos() {
     let lower = intern_dir(&conn, "vol-1", "/users/me/project").expect("intern lower");
     assert_eq!(mixed, lower, "case-variant paths intern to the same dir");
 }
+
+/// Read-only connections open with the small page cache, write connections with
+/// the big one. Shared budgets and the rationale: `crate::sqlite_util`.
+#[test]
+fn read_connections_get_a_smaller_page_cache_than_write_connections() {
+    use crate::sqlite_util::{READ_PAGE_CACHE_KIB, WRITE_PAGE_CACHE_KIB, page_cache_kib};
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let path = operation_log_db_path(dir.path());
+    let write = open_write_connection(&path).expect("write conn");
+    let read = open_read_connection(&path).expect("read conn");
+
+    assert_eq!(page_cache_kib(&write), WRITE_PAGE_CACHE_KIB);
+    assert_eq!(page_cache_kib(&read), READ_PAGE_CACHE_KIB);
+}
