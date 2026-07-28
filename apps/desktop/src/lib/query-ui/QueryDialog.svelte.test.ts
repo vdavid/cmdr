@@ -390,6 +390,32 @@ describe('QueryDialog recent-items dropdown', () => {
     cleanup()
   })
 
+  it('ArrowUp on the top row closes the dropdown and hands focus back to the field, text intact', async () => {
+    const { overlay, calls, state, cleanup } = mountQueryDialog({
+      recentEntries: [RECENT_ENTRY],
+      initialQuery: 'half-typed',
+    })
+    await settle()
+    const runsBefore = calls.runQuery
+
+    dispatchKey(overlay, 'h', { meta: true })
+    await tick()
+    const popover = document.body.querySelector('.recent-popover')
+    expect(popover).not.toBeNull()
+
+    // The cursor opens on the top row, so the first ArrowUp is the exit.
+    dispatchKey(popover as Element, 'ArrowUp')
+    await settle()
+
+    expect(document.body.querySelector('.recent-popover')).toBeNull()
+    // Exiting is navigation, not selection: nothing loaded, nothing run, text untouched.
+    expect(calls.activateRecent).toEqual([])
+    expect(calls.runQuery).toBe(runsBefore)
+    expect(state.getQuery()).toBe('half-typed')
+    expect(document.activeElement).toBe(overlay.querySelector('.query-bar input.text-field-control'))
+    cleanup()
+  })
+
   it('picking a row loads the entry, closes the dropdown, and does NOT run the query', async () => {
     const { overlay, calls, state, cleanup } = mountQueryDialog({ recentEntries: [RECENT_ENTRY] })
     await settle()
