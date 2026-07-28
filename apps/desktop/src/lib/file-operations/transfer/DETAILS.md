@@ -325,10 +325,10 @@ Two niceties on top:
   check so they run against the absolute path.
 - **Yellow "this folder will be created" warning.** A debounced (`createDebounce`, 300 ms) `pathExistsChecked` probe of
   the resolved destination flips `targetMissing`. When the path is structurally valid (no red `pathError`) but the
-  folder doesn't exist, the field takes `TextInput`'s `warning` state (a yellow border and ring) and a yellow message line
-  (`.path-warning`, keys `targetWillBeCreated{Copy,Move}`). The red error always wins — the two never show at once. A
-  timeout is inconclusive (hung mount), so it stays quiet rather than over-promising. A monotonic `existsCheckSeq` drops
-  a stale probe that lands after a newer keystroke.
+  folder doesn't exist, the field takes `TextInput`'s `warning` state (a yellow border and ring) and a yellow message
+  line (`.path-warning`, keys `targetWillBeCreated{Copy,Move}`). The red error always wins — the two never show at once.
+  A timeout is inconclusive (hung mount), so it stays quiet rather than over-promising. A monotonic `existsCheckSeq`
+  drops a stale probe that lands after a newer keystroke.
 
 Backend counterpart: every transfer path creates a missing destination (and ancestors) before transferring — the local
 copy/move paths via `ensure_destination_dir` (`write_operations/validation.rs`), and the cross-volume +
