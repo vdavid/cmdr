@@ -371,6 +371,17 @@ pub fn note_image_facts_delivered<R: Runtime>(app: &AppHandle<R>, result: &Agent
     }
 }
 
+/// Withdraw what the named `image_facts` calls delivered: prompt assembly dropped those
+/// results, so the model never read them and no plan may cite their contents. The mirror of
+/// [`note_image_facts_delivered`], called by the runtime's dispatch seam.
+pub fn revoke_image_facts_evidence<R: Runtime>(app: &AppHandle<R>, call_ids: &[String]) {
+    if let Some(ledger) = app.try_state::<ImageFactsLedger>() {
+        for call_id in call_ids {
+            ledger.revoke_call(call_id);
+        }
+    }
+}
+
 /// Revalidates the server-owned subset a user currently allows. The caller may
 /// send opaque row ids only; paths and destination names remain in the proposal
 /// store. This performs no mutation and records fingerprints only when every
@@ -864,14 +875,24 @@ fn focused_state(store: &PaneStateStore) -> PaneState {
 }
 
 fn scoped_files(state: &PaneState) -> Result<HashMap<&str, &PaneFileEntry>, ToolError> {
-    let indexes: Vec<usize> = if state.selected_indices.is_empty() {
-        (0..state.files.len()).collect()
+    // `selected_indices` are GLOBAL listing indices, while `files` is only the loaded window
+    // from `loaded_start`; convert before indexing (as `read::pane_listing` and
+    // `mcp::executor` do) or a scrolled pane scopes the plan to the wrong files. Folder
+    // scope needs no conversion: those indices are already window-local.
+    let indexes: Vec<Option<usize>> = if state.selected_indices.is_empty() {
+        (0..state.files.len()).map(Some).collect()
     } else {
-        state.selected_indices.clone()
+        state
+            .selected_indices
+            .iter()
+            // `checked_sub`, never `saturating_sub`: a row scrolled out below the window must
+            // stay unresolvable rather than collapse onto the window's first entry.
+            .map(|index| index.checked_sub(state.loaded_start))
+            .collect()
     };
     let mut files = HashMap::with_capacity(indexes.len());
     for index in indexes {
-        let entry = state.files.get(index).ok_or_else(|| {
+        let entry = index.and_then(|index| state.files.get(index)).ok_or_else(|| {
             ToolError::invalid_params(
                 "The selected files are not fully loaded. Ask the user to narrow or reload the selection.",
             )
@@ -1060,6 +1081,70 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(scoped_files(&state).expect("current entries are usable").len(), 1);
+    }
+
+    /// `selected_indices` are GLOBAL listing indices; `files` holds only the loaded window
+    /// from `loaded_start`. Reading the window with a global index scopes the plan to the
+    /// wrong files, so a rename the user reviewed as "these two" would land on two others.
+    /// Same conversion as `read::pane_listing` and `mcp::executor`.
+    #[test]
+    fn a_scrolled_pane_scopes_the_plan_to_the_rows_the_user_picked() {
+        let entry = |global: usize| PaneFileEntry {
+            name: format!("shot-{global}.png"),
+            path: format!("/shots/shot-{global}.png"),
+            is_directory: false,
+            size: None,
+            recursive_size: None,
+            modified: None,
+            recursive_size_pending: None,
+            tags: vec![],
+        };
+        let state = PaneState {
+            path: "/shots".into(),
+            // Global rows 100..104 are loaded; the user selected 101 and 103.
+            files: (100..104).map(entry).collect(),
+            loaded_start: 100,
+            loaded_end: 104,
+            selected_indices: vec![101, 103],
+            total_files: 5_000,
+            ..Default::default()
+        };
+
+        let scoped = scoped_files(&state).expect("the selected rows are inside the loaded window");
+
+        let mut names: Vec<&str> = scoped.values().map(|entry| entry.name.as_str()).collect();
+        names.sort_unstable();
+        assert_eq!(names, ["shot-101.png", "shot-103.png"]);
+    }
+
+    /// A row scrolled out BELOW the window must stay unresolvable. With `saturating_sub` it
+    /// would collapse onto the window's first entry, renaming a file the user never picked
+    /// while the plan still looked complete.
+    #[test]
+    fn a_selected_row_outside_the_loaded_window_refuses_the_scope() {
+        let state = PaneState {
+            path: "/shots".into(),
+            files: vec![PaneFileEntry {
+                name: "shot-100.png".into(),
+                path: "/shots/shot-100.png".into(),
+                is_directory: false,
+                size: None,
+                recursive_size: None,
+                modified: None,
+                recursive_size_pending: None,
+                tags: vec![],
+            }],
+            loaded_start: 100,
+            loaded_end: 101,
+            selected_indices: vec![7],
+            total_files: 5_000,
+            ..Default::default()
+        };
+
+        assert!(
+            scoped_files(&state).is_err(),
+            "an out-of-window row must refuse, never resolve to a neighbour"
+        );
     }
 
     #[test]

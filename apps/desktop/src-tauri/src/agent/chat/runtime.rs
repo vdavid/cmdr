@@ -212,16 +212,15 @@ impl<R: Runtime> ToolDispatcher for AppHandleDispatcher<R> {
     }
 
     fn revoke_evidence(&self, call_ids: &[String]) {
-        // MERGE POINT (`david/rename-evidence-ui`): that branch's `ImageFactsLedger`
-        // (`agent/tools/propose/evidence.rs`, registered in state by `agent::start`) records
-        // delivery from `agent::tools::view::dispatch`. This is the one place that has to
-        // undo it — for each id here, call the ledger's `revoke_call(call_id)` through the
-        // app handle. Until then the ledger would vouch for content the model never read.
+        if call_ids.is_empty() {
+            return;
+        }
         log::debug!(
             target: LOG_TARGET,
             "revoking evidence for {} dropped tool result(s): {call_ids:?}",
             call_ids.len()
         );
+        crate::agent::tools::propose::rename::revoke_image_facts_evidence(&self.app, call_ids);
     }
 }
 
