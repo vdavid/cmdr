@@ -14,7 +14,7 @@ One master pair feeds three consumers, so they never drift:
 - **README**: referenced directly via a `<picture>` element (dark/light by the viewer's GitHub theme).
 - **Website hero**: the compositing in `hero/CLAUDE.md` reads these masters and splits them into animated frame + pane
   layers.
-- **AlternativeTo**: uploaded as-is on each refresh.
+- **App directories** (AlternativeTo, MacUpdate): uploaded as-is on each refresh, one file per site in `brand/listings`.
 
 Settings and Search shots (AlternativeTo-only extras) aren't part of this pass yet. Add `settings-{dark,light}.png` when
 you next refresh AlternativeTo; hold Search until it's presentable.
