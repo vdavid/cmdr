@@ -35,8 +35,9 @@ code under here.
   `cmdr/no-raw-ark-import`, whose allowlist is exactly `lib/ui/`).
 - ❌ Before hand-rolling a control or dialog/window chrome, reach for the `lib/ui` primitive (`ModalDialog`, `Checkbox`,
   `RadioGroup`, `ToggleGroup`, `Select`, `Combobox`, `Chip`, …) and check Debug > Components; never a raw
-  `<input type=checkbox|radio>` / `<select>` (`cmdr/prefer-ui-primitive`). A new primitive must be recorded and
-  documented (see `docs/guides/building-ui.md`).
+  `<input type=checkbox|radio>` / `<select>`, and never a `<button>` / `<div>` wearing `role=switch|checkbox|radio`
+  (`cmdr/prefer-ui-primitive`; opt out per-element with a reason when a control is genuinely bespoke). A new primitive
+  must be recorded and documented (see `docs/guides/building-ui.md`).
 - When adding code that loads remote content (`fetch`, `iframe`), ask whether to disable it in dev mode:
   `withGlobalTauri: true` is on in dev, which makes remote content a security risk.
 

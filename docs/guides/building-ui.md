@@ -32,7 +32,9 @@ is in `../design-system.md` § Soft sheets.
 
 Never write a raw `<input type="checkbox">`, `<input type="radio">`, or `<select>`; the `cmdr/prefer-ui-primitive`
 ESLint rule rejects them. Native controls render with the OS accent and gray out when the window loses focus, which
-looks broken next to the app's accent-token chrome. Use these instead:
+looks broken next to the app's accent-token chrome. The same rule also rejects hand-rolling the control instead: a
+`<button>` or `<div>` carrying `role="switch"` / `role="checkbox"` / `role="radio"` re-implements state, keyboard, and
+focus wiring the primitive already owns. Use these instead:
 
 - `Checkbox`: a single on/off box.
 - `RadioGroup`: one choice from a small set of mutually exclusive options.
