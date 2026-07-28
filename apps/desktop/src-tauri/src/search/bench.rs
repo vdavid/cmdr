@@ -31,6 +31,7 @@ use std::time::Instant;
 
 use crate::indexing::ReadPool;
 use crate::indexing::store::ROOT_ID;
+use crate::pluralize::{pluralize, pluralize_with};
 
 use super::engine::search_ranked;
 use super::index::{SearchEntry, SearchIndex, load_search_index};
@@ -325,7 +326,10 @@ fn bench_volume_fanout() {
     eprintln!("\nfirst pass (page cache as found):");
     for path in &paths {
         let (n, took) = load_one(path);
-        eprintln!("  {path}\n    {n} entries in {took:.2?}");
+        eprintln!(
+            "  {path}\n    {} in {took:.2?}",
+            pluralize_with(n as u64, "entry", "entries")
+        );
     }
 
     let t = Instant::now();
@@ -343,8 +347,9 @@ fn bench_volume_fanout() {
     let parallel = t.elapsed();
 
     eprintln!(
-        "\n{} volumes, {serial_total} entries\n  serial   {serial:.2?}\n  parallel {parallel:.2?} (parallel_total {parallel_total})\n",
-        paths.len(),
+        "\n{}, {}\n  serial   {serial:.2?}\n  parallel {parallel:.2?} (parallel_total {parallel_total})\n",
+        pluralize(paths.len() as u64, "volume"),
+        pluralize_with(serial_total as u64, "entry", "entries"),
     );
 }
 
