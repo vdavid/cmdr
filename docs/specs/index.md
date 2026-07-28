@@ -6,6 +6,12 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
+- [ ] 2026-07-28 `flaky-test-eradication.md` - Make a red `rust-tests` run mean a real regression again. Measured on an
+      idle machine, clean `main` fails 2 of 3 full runs, a different `downloads::watcher` test each time; 19 distinct
+      offenders, every one a watcher/debounce/lock test, `downloads::` being 7 of them. Root causes to check: shared
+      real-world state (the real `~/Downloads`), leaked watchers (nextest reports "leaky"), real-clock dependence, and
+      wall-clock assertions that slipped past the `test-sleep` check. Includes the offender list, the per-test numbers,
+      and a measure-first approach. NOT STARTED.
 - [ ] 2026-07-25 `index-crate-extraction-plan.md` - Extract `indexing/` + `media_index/` + `importance/` (89.5k lines,
       28% of `src-tauri/src`) into a Tauri-free `cmdr-index` workspace crate over a `cmdr-fs` foundation, with a
       designed public API: an owned `Index` handle, typed errors, no user-facing strings, one cancellation primitive,
