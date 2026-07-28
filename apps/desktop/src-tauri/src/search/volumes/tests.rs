@@ -272,7 +272,10 @@ fn refresh_pacing_allows_one_claim_per_interval() {
     let interval = std::time::Duration::from_secs(3600);
 
     assert!(claim_load_slot(vid, interval), "the first claim goes through");
-    assert!(!claim_load_slot(vid, interval), "a second claim inside the interval is declined");
+    assert!(
+        !claim_load_slot(vid, interval),
+        "a second claim inside the interval is declined"
+    );
     assert!(
         claim_load_slot(vid, std::time::Duration::ZERO),
         "a zero interval always allows a claim"

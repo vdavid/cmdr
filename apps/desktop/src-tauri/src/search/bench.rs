@@ -180,6 +180,10 @@ fn query(pattern: &str, pattern_type: PatternType, count_only: bool) -> SearchQu
 }
 
 /// Run one pattern through the three phase-isolating variants and print a row.
+#[allow(
+    clippy::print_stderr,
+    reason = "an ignored measurement harness prints its table to stderr for `--nocapture`; it never runs in the app or CI"
+)]
 fn measure(label: &str, index: &SearchIndex, weights: &ImportanceWeights, pattern: &str, pattern_type: PatternType) {
     let empty = ImportanceWeights::empty();
 
@@ -197,7 +201,7 @@ fn measure(label: &str, index: &SearchIndex, weights: &ImportanceWeights, patter
     let _ = search_ranked(index, &query(pattern, pattern_type, false), weights, "").expect("search should succeed");
     let weighted = t.elapsed();
 
-    println!(
+    eprintln!(
         "  {label:<28} matches {total:>9}  scan {scan:>10.2?}  +rank {:>10.2?}  +importance {:>10.2?}  = {weighted:.2?}",
         unweighted.saturating_sub(scan),
         weighted.saturating_sub(unweighted),
@@ -208,6 +212,10 @@ fn measure(label: &str, index: &SearchIndex, weights: &ImportanceWeights, patter
 
 #[test]
 #[ignore = "benchmark; run explicitly to collect numbers"]
+#[allow(
+    clippy::print_stderr,
+    reason = "an ignored measurement harness prints its table to stderr for `--nocapture`; it never runs in the app or CI"
+)]
 fn bench_synthetic() {
     let n: usize = std::env::var("CMDR_SEARCH_BENCH_ENTRIES")
         .ok()
@@ -216,14 +224,14 @@ fn bench_synthetic() {
 
     let t = Instant::now();
     let index = build_synthetic_index(n);
-    println!(
+    eprintln!(
         "\nsynthetic index: {} entries, built in {:.2?}",
         index.entries.len(),
         t.elapsed()
     );
     let t = Instant::now();
     let weights = synthetic_weights(&index);
-    println!(
+    eprintln!(
         "importance map: {} folders, built in {:.2?}\n",
         weights.len(),
         t.elapsed()
@@ -233,14 +241,18 @@ fn bench_synthetic() {
     measure("common word", &index, &weights, "report", PatternType::Glob);
     measure("extension glob", &index, &weights, "*.pdf", PatternType::Glob);
     measure("one letter", &index, &weights, "e", PatternType::Glob);
-    println!();
+    eprintln!();
 }
 
 #[test]
 #[ignore = "benchmark; needs CMDR_SEARCH_BENCH_DB pointing at a real index-*.db"]
+#[allow(
+    clippy::print_stderr,
+    reason = "an ignored measurement harness prints its table to stderr for `--nocapture`; it never runs in the app or CI"
+)]
 fn bench_real_index() {
     let Ok(db) = std::env::var("CMDR_SEARCH_BENCH_DB") else {
-        println!("CMDR_SEARCH_BENCH_DB not set; skipping");
+        eprintln!("CMDR_SEARCH_BENCH_DB not set; skipping");
         return;
     };
     let pool = ReadPool::new(db.clone().into()).expect("open index DB");
@@ -248,18 +260,18 @@ fn bench_real_index() {
     let t = Instant::now();
     let index = load_search_index(&pool, &AtomicBool::new(false)).expect("load index");
     let load = t.elapsed();
-    println!("\n{db}\n  arena load: {} entries in {load:.2?}", index.entries.len());
+    eprintln!("\n{db}\n  arena load: {} entries in {load:.2?}", index.entries.len());
 
     let weights = match std::env::var("CMDR_SEARCH_BENCH_IMPORTANCE_DB") {
         Ok(path) => {
             let t = Instant::now();
             let w = load_weights_from(&path);
-            println!("  importance map: {} folders in {:.2?}", w.len(), t.elapsed());
+            eprintln!("  importance map: {} folders in {:.2?}", w.len(), t.elapsed());
             w
         }
         Err(_) => ImportanceWeights::empty(),
     };
-    println!();
+    eprintln!();
 
     let pattern = std::env::var("CMDR_SEARCH_BENCH_PATTERN").unwrap_or_else(|_| "report".to_string());
     measure(
@@ -278,7 +290,7 @@ fn bench_real_index() {
     );
     measure("extension glob", &index, &weights, "*.pdf", PatternType::Glob);
     measure("one letter", &index, &weights, "e", PatternType::Glob);
-    println!();
+    eprintln!();
 }
 
 /// Load an importance weight map straight from an `importance-*.db` file (the

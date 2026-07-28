@@ -204,15 +204,18 @@ impl ImportanceWeights {
     }
 
     /// The weight for a folder path, or `0.0` when unscored/absent. `0.0` is
-    /// neutral in the blend (multiplier `1.0`), never a penalty.
+    /// neutral in the blend (multiplier `1.0`), never a penalty. Production ranks via
+    /// [`weight_for_hash`](Self::weight_for_hash) (it never builds the path); this
+    /// path-taking form is what the tests assert against, hence `#[cfg(test)]`.
+    #[cfg(test)]
     pub(crate) fn weight_for(&self, folder_path: &str) -> f64 {
         self.weight_for_hash(hash_path(folder_path))
     }
 
-    /// [`weight_for`](Self::weight_for) for a caller that already has the path's
-    /// [`hash_path`] value. The ranking hot path hashes a folder's path straight off
-    /// the index's parent chain ([`PathHasher`]) instead of materializing the `String`
-    /// only to hash and drop it.
+    /// The weight for a folder whose path the caller has already hashed with
+    /// [`hash_path`]. The ranking hot path hashes a folder's path straight off the
+    /// index's parent chain ([`PathHasher`]) instead of materializing a `String` only
+    /// to hash it and drop it.
     pub(crate) fn weight_for_hash(&self, path_hash: u64) -> f64 {
         self.map.get(&path_hash).copied().unwrap_or(0.0)
     }
