@@ -374,10 +374,18 @@ pub(super) fn incremental_rescore(
 /// expansion for incremental rescoring. A folder whose ancestor's listing changed
 /// may have flipped floored-ness (a `node_modules` renamed, or a plain folder
 /// renamed to one), so its whole subtree must be revisited. Pure path math.
-fn is_in_changed_subtree(path: &str, changed_paths: &[String]) -> bool {
-    changed_paths
-        .iter()
-        .any(|changed| path == changed || path.starts_with(&format!("{changed}/")))
+///
+/// **Allocation-free, deliberately.** This runs once per walked folder per changed
+/// path inside [`incremental_rescore`]'s loop over the WHOLE volume, every 60 s —
+/// ~161 k folders per pass on a dev machine. Building the `{changed}/` needle with
+/// `format!` here was a top allocation site (`docs/notes/memory-runaway-rust-heap-2026-07-25.md`);
+/// ❌ don't reintroduce one. The `rest` must be empty or start with `/`: a bare
+/// `starts_with(changed)` wrongly matches `/a/bc` against changed `/a/b`.
+pub(super) fn is_in_changed_subtree(path: &str, changed_paths: &[String]) -> bool {
+    changed_paths.iter().any(|changed| {
+        path.strip_prefix(changed.as_str())
+            .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
+    })
 }
 
 /// The maximum number of ancestor levels an incremental rescore walks up from a

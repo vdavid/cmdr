@@ -140,6 +140,14 @@ raise every ancestor to the root and rescope half the volume (plan open-question
 subtree that actually changed. The pass walks the index once, filters to the touched subset, clears each changed
 subtree, and re-inserts only its non-floored folders. Spotlight is sampled only for the touched subset (bounded work).
 
+Both predicates run once per WALKED folder (the filter sees the whole volume, not just the touched subset), so they
+inherit the walk's no-per-folder-allocation discipline above: `is_in_changed_subtree` does `strip_prefix` plus a
+separator check rather than building a `{changed}/` needle, and the touched set is a `HashSet<String>` probed by `&str`.
+❌ Don't reintroduce a `format!` in either — at ~161 k folders every 60 s it was a top allocation site
+(`docs/notes/memory-runaway-rust-heap-2026-07-25.md`). The separator check is load-bearing for correctness too, not only
+cost: a bare prefix test matches `/a/bc` against changed `/a/b` and drags a sibling's whole subtree into every rescore
+(`changed_subtree_matches_on_separator_boundaries`).
+
 ### Transition semantics
 
 Clearing each changed subtree and then re-inserting handles every floor transition in one

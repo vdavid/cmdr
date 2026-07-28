@@ -61,6 +61,62 @@ fn touched_set_includes_ancestors_and_is_capped() {
     assert!(!touched.contains("/"), "the root sentinel isn't a scored folder");
 }
 
+/// The downward subtree expansion matches on SEPARATOR BOUNDARIES, not on raw
+/// string prefixes: `/a/bc` is a sibling of `/a/b`, not a descendant, and a careless
+/// `starts_with(changed)` silently drags it (and its whole subtree) into every
+/// rescore. Also pins the exact-match case and the empty batch.
+#[test]
+fn changed_subtree_matches_on_separator_boundaries() {
+    let changed = vec!["/a/b".to_string()];
+
+    assert!(is_in_changed_subtree("/a/b", &changed), "the changed folder itself");
+    assert!(is_in_changed_subtree("/a/b/c", &changed), "a direct child");
+    assert!(is_in_changed_subtree("/a/b/c/d/e", &changed), "a deep descendant");
+
+    // THE trap: a prefix without a separator boundary is a sibling, not a child.
+    assert!(
+        !is_in_changed_subtree("/a/bc", &changed),
+        "/a/bc is a sibling of /a/b, not a descendant"
+    );
+    assert!(
+        !is_in_changed_subtree("/a/bc/d", &changed),
+        "nor is anything under that sibling"
+    );
+    assert!(
+        !is_in_changed_subtree("/a", &changed),
+        "an ancestor is not in the subtree"
+    );
+    assert!(!is_in_changed_subtree("/x/y", &changed), "an unrelated path");
+    assert!(!is_in_changed_subtree("/a/b", &[]), "an empty batch matches nothing");
+}
+
+/// Any one of several changed paths is enough, and the odd inputs a live batch
+/// could carry behave as before: a trailing-slash entry only matches itself (it's
+/// not a folder path the walk produces), and the bare root `/` claims no subtree
+/// (`sanitize_incremental_batch` drops it upstream anyway, so this pins that the
+/// predicate isn't a second line of defense that changed shape).
+#[test]
+fn changed_subtree_handles_multiple_and_odd_paths() {
+    let changed = vec!["/a".to_string(), "/x/y".to_string()];
+    assert!(is_in_changed_subtree("/x/y/z", &changed), "matches the second entry");
+    assert!(is_in_changed_subtree("/a/q", &changed), "matches the first entry");
+    assert!(!is_in_changed_subtree("/ab", &changed), "/ab is not under /a");
+
+    let trailing = vec!["/a/".to_string()];
+    assert!(is_in_changed_subtree("/a/", &trailing), "exact match still holds");
+    assert!(
+        !is_in_changed_subtree("/a/b", &trailing),
+        "a trailing-slash entry needs `//` to match a child, so it claims no subtree"
+    );
+
+    let root = vec!["/".to_string()];
+    assert!(is_in_changed_subtree("/", &root), "the root matches itself");
+    assert!(
+        !is_in_changed_subtree("/a", &root),
+        "the bare root claims no subtree here; sanitize_incremental_batch drops it upstream"
+    );
+}
+
 /// A two-changed-path set unions both chains without duplication.
 #[test]
 fn touched_set_unions_multiple_changed_paths() {
