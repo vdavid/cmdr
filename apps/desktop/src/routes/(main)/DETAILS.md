@@ -28,7 +28,9 @@ the layout facts that none of those carry live here:
 
 ## Startup: paint-gated window show
 
-The main window launches `visible: false`; the frontend calls `show()` when ready to avoid a white flash.
+The main window launches `visible: false`; the frontend calls `show()` when ready to avoid a white flash. This is the
+ONLY path that shows the main window: the backend restores saved size and position during setup
+(`src-tauri/src/window_state/`, which runs while the window is still hidden) but deliberately never shows it.
 `showMainWhenPainted()` gates that `show()` on a confirmed first paint (`waitForNextPaint`, a double
 `requestAnimationFrame`) instead of firing the instant `onMount` reaches the call.
 

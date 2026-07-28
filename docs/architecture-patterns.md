@@ -156,7 +156,7 @@ zero-permission entries with fallback metadata.
 - **Settings** (`settings.json`): preferences (hidden files, density, date format). Registry-validated.
 - **Shortcuts** (`shortcuts.json`): delta-only; only customizations stored, defaults in code
 - **License** (`license.json`): activation state, timestamps
-- **Window state**: `@tauri-apps/plugin-window-state` for size/position per window label
+- **Window state** (`.window-state.json`): main-window size/position, owned by `apps/desktop/src-tauri/src/window_state`
 
 Philosophy: status is "where you are" (ephemeral), settings are "how you like it" (preferences).
 

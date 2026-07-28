@@ -169,6 +169,7 @@ mod volumes;
 mod volumes_linux;
 mod whats_new;
 mod window_events;
+mod window_state;
 
 // Non-macOS stubs (Linux has real implementations for everything;
 // other platforms use stubs for all platform-specific features)
@@ -214,17 +215,6 @@ pub fn run() {
         |_ctx, request, responder| {
             file_viewer::media_protocol::handle_request(request, responder);
         },
-    );
-
-    // Window state plugin is only available on desktop platforms. The filter
-    // restricts persistence to the main window: Settings, Debug, and viewer
-    // windows are deliberately reset on every launch. Within a session they
-    // remember position via `child_window_state` (in-memory only).
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
-    let builder = builder.plugin(
-        tauri_plugin_window_state::Builder::new()
-            .with_filter(|label| label == "main")
-            .build(),
     );
 
     // MCP Bridge plugin is only available in debug builds for security.
@@ -897,6 +887,24 @@ pub fn run() {
             // DB current.
             agent::start(app.handle());
 
+            // Restore the main window's saved position and size. Placement
+            // only: the window is still hidden here, and `+page.svelte` shows
+            // it once the webview confirms a first paint. Only the main window
+            // persists across launches; Settings, Debug, and viewer windows
+            // deliberately start fresh (in-session position lives in
+            // `child_window_state`). See `window_state/`.
+            window_state::init(app.handle());
+            if let Some(window) = app.get_webview_window("main") {
+                // Track BEFORE restoring: `restore` moves and resizes the
+                // window, which comes back as `Moved`/`Resized` events. With
+                // the handlers already live, the module's `restoring` flag
+                // suppresses them instead of letting them overwrite the state
+                // being restored. Registering afterwards would leave that flag
+                // guarding nothing.
+                window_state::track(&window);
+                window_state::restore(&window);
+            }
+
             Ok(())
         })
         .on_menu_event(menu::handle_menu_event)
@@ -962,6 +970,10 @@ pub fn run() {
                     drag_image_detection::install(_app.clone());
                 }
                 tauri::RunEvent::Exit => {
+                    // Flush window geometry synchronously: the debounced writer
+                    // may have a pending change the process won't outlive.
+                    window_state::save_on_exit(_app);
+
                     // Restore ptpcamerad before exit so we don't leave the system
                     // with the daemon disabled after Cmdr closes
                     #[cfg(target_os = "macos")]

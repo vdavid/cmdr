@@ -140,8 +140,8 @@ Opening the rail grows the MAIN window by the rail's width instead of squeezing 
   only the rail's own contribution is removed. With no record (rail open at startup, so hydration never grew it — see
   below), close falls back to removing one rail width so a persisted-open window still shrinks.
 - **Hydration must NOT grow.** `hydrateRail` calls `openRail({ resizeWindow: false })`: the window is restored by
-  `tauri-plugin-window-state` at its persisted (rail-inclusive) size, so growing again would double it. Re-opens (after
-  consenting) also skip growth via the `!wasOpen` guard in `openRail`.
+  `apps/desktop/src-tauri/src/window_state` at its persisted (rail-inclusive) size, so growing again would double it.
+  Re-opens (after consenting) also skip growth via the `!wasOpen` guard in `openRail`.
 - The left-edge drag handle resizes (double-click resets to 340). Focus: an `$effect` focuses the composer on mount (the
   rail mounts on open); `markRailFocused` on composer focus; Escape → `returnFocusToPane`
   (`.dual-pane-explorer.focus()`).

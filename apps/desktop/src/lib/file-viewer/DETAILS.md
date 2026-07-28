@@ -41,10 +41,10 @@ Depth and rationale for the frontend file viewer. `CLAUDE.md` holds the must-kno
 
 ## Gotchas
 
-- **Window position isn't remembered across sessions.** `tauri-plugin-window-state` persists size/position per window
-  label, but each viewer label is unique (timestamp-based), so there's no stable identifier to key on (the same file can
-  be opened multiple times). Within a session, viewers cascade from the main window's top-left (+24px per opened viewer,
-  wrapping at 8) via `lib/window-positioning.ts` so successive opens don't pile up.
+- **Window position isn't remembered across sessions.** `apps/desktop/src-tauri/src/window_state` persists the main
+  window only, and each viewer label is unique (timestamp-based) anyway, so there's no stable identifier to key on (the
+  same file can be opened multiple times). Within a session, viewers cascade from the main window's top-left (+24px per
+  opened viewer, wrapping at 8) via `lib/window-positioning.ts` so successive opens don't pile up.
 - **Binary files shown with lossy UTF-8** (replacement chars for invalid bytes, no binary mode). The viewer is designed
   for text/log files; a hex/binary mode would need a completely different rendering pipeline. Lossy display is good
   enough for quick inspection.

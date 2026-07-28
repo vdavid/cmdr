@@ -10,13 +10,6 @@ code and native APIs. The main window needs filesystem access, drag-and-drop, cl
 window only needs event dispatch and theme control. The viewer only needs window management. Splitting by window means a
 compromised viewer webview can't invoke filesystem operations.
 
-## `desktop.json` separate from `default.json`
-
-`desktop.json` holds desktop-platform-specific permissions (`window-state:default` for remembering window
-size/position), scoped to `["macOS", "windows", "linux"]`. Keeping it separate from `default.json` keeps the
-platform-specific vs. universal split clear and avoids accidentally applying desktop-only permissions to future
-non-desktop targets. It legitimately shares `main` + `debug`.
-
 ## Debug window draws solely from `debug.json`
 
 `default.json` is the most powerful capability in the app. The debug window must not inherit it: listing `"debug"` in

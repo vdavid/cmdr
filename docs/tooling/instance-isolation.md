@@ -88,9 +88,12 @@ data dir.
 
 Authoritative files: `apps/desktop/src-tauri/src/commands/settings.rs`, `apps/desktop/src/lib/settings/store-path.ts`.
 
-### `tauri-plugin-window-state`
+### Window state
 
-Same identifier-driven redirect as `tauri-plugin-store`, in the same authoritative files.
+`.window-state.json` resolves through `config::resolved_app_data_dir`, so it follows `CMDR_DATA_DIR` directly rather
+than relying on the identifier-driven redirect. That makes it isolated per worktree session too, not just per instance.
+
+Authoritative file: `apps/desktop/src-tauri/src/window_state/mod.rs`.
 
 ### macOS Keychain
 
@@ -199,8 +202,8 @@ pnpm dev --worktree b
 
 Each session gets:
 
-- A unique bundle identifier (`com.veszelovszki.cmdr-dev-a` vs `-dev-b`), so `tauri-plugin-store` and
-  `tauri-plugin-window-state` land in `~/Library/Application Support/com.veszelovszki.cmdr-dev-{a,b}/`.
+- A unique bundle identifier (`com.veszelovszki.cmdr-dev-a` vs `-dev-b`), so `tauri-plugin-store` lands in
+  `~/Library/Application Support/com.veszelovszki.cmdr-dev-{a,b}/`.
 - A unique Dock label (`Cmdr (dev-a)` vs `Cmdr (dev-b)`).
 - An ephemeral Vite port (no `EADDRINUSE` on `1420`).
 - Ephemeral Cmdr MCP and Tauri MCP bridge ports, discovered via `<data_dir>/mcp.port` and `<data_dir>/tauri-mcp.port`.

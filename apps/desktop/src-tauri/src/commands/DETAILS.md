@@ -83,8 +83,10 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 - **`file_actions.rs`**: direct file actions from the palette / menus — `show_in_finder`, `get_info`, `open_in_editor`,
   `copy_to_clipboard`, and `cloud_make_available_offline` / `cloud_remove_download` (iCloud Drive download/eviction via
   `FileManager` ubiquity APIs; see `file_system/cloud_actions.rs`).
-- **`child_window_state.rs`**: `get_child_window_rect` / `set_child_window_rect(label, rect)` persist per-label
-  child-window (viewer, settings) geometry via `State<ChildWindowRectStore>`.
+- **`child_window_state.rs`**: `get_child_window_rect` / `set_child_window_rect(label, rect)` cache per-label
+  child-window geometry via `State<ChildWindowRectStore>`. In-memory and session-only, never on disk; used by Settings
+  and Debug. Viewers don't use it (they cascade, see `lib/window-positioning.ts`). Only the main window persists across
+  launches, via `window_state/`.
 - **`settings.rs`**: port availability check, watcher debounce, menu accelerator updates, live-apply setters for
   `network.directSmbConnection`, `advanced.filterSafeSaveArtifacts`, `network.smbConcurrency`, and the restricted-window
   pair `get_restricted_window_settings` / `persist_restricted_window_setting` (the viewer's typed settings surface; see

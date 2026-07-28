@@ -180,6 +180,8 @@ All under `apps/desktop/src-tauri/src/`.
 - `go_to_path/`: "Go to path" backend: pure path resolution + fixed-cap recent-paths store. IPC in
   `commands/go_to_path.rs`
 - `font_metrics/`: Binary font metrics cache, per-directory width calculation
+- `window_state/`: Main-window size/position persistence across launches (`.window-state.json`). Replaces
+  `tauri-plugin-window-state`. Placement only; the frontend owns showing the window
 - `text_size.rs`: macOS Accessibility text-size watcher (undocumented Apple APIs, risk notes in source). Emits
   `system-text-size-changed`
 - `system_strings.rs`: Localized macOS pane labels from `.loctable` system bundles (loctable catalog + risks in source)

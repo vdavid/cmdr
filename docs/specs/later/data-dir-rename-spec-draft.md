@@ -44,10 +44,10 @@ the identifier" change, not an identifier change.
    `docs/tooling/instance-isolation.md`). Whether this mechanism (or another) can cleanly repoint a PROD build's data
    dir without touching the identifier is **the core go/no-go investigation**. HOLE: the author does not know Tauri's
    current capabilities here.
-2. **Plugins write to `app_data_dir()` on their own.** At least `tauri-plugin-store` (settings) and the window-state
-   plugin. If they can't be redirected cleanly (config, API, or acceptable fork), the choice is between a split-brain
-   layout (some files in the old dir, ugly, defeats the point) and abandoning the rename. This is the second half of the
-   go/no-go investigation. HOLE: not verified.
+2. **Plugins write to `app_data_dir()` on their own.** `tauri-plugin-store` (settings) still does; window state no
+   longer does (it's ours, and honors `CMDR_DATA_DIR`). If the remaining ones can't be redirected cleanly (config, API,
+   or acceptable fork), the choice is between a split-brain layout (some files in the old dir, ugly, defeats the point)
+   and abandoning the rename. This is the second half of the go/no-go investigation. HOLE: not verified.
 3. **Migration for existing installs.** Rename-on-startup (same volume, near-atomic), with partial-failure handling, and
    possibly a transitional symlink old → new kept for a release or two for external readers. Edge cases to design for: a
    second instance running during migration (HOLE: single-instance enforcement status unknown to the author), a crash
@@ -76,7 +76,7 @@ the identifier" change, not an identifier change.
 1. Central path resolution: one Rust module owns every app path (data, logs, caches), with the plain-name targets;
    nothing derives paths from the identifier directly anymore. (Much of this may already exist via `CMDR_DATA_DIR`;
    verify.)
-2. Plugin redirection for store and window-state to the new dir.
+2. Plugin redirection for the store to the new dir (window state already follows `CMDR_DATA_DIR`).
 3. Migration-on-startup module with tests: detect old dir, move, leave breadcrumb or symlink, handle partial failure
    idempotently.
 4. Update external readers and docs (the §3.4 list, completed by grep).
@@ -86,7 +86,8 @@ the identifier" change, not an identifier change.
 ## 6. Open questions (all of them, since this is a draft)
 
 1. Can a prod Tauri build's `app_data_dir()` be repointed without changing the identifier, and how? (Core go/no-go.)
-2. Can `tauri-plugin-store` and window-state be redirected? (Core go/no-go.)
+2. Can `tauri-plugin-store` be redirected? (Core go/no-go.) Window state is no longer a question: it's ours now
+   (`apps/desktop/src-tauri/src/window_state/`) and already resolves through `config::resolved_app_data_dir`.
 3. What does Linux use today, and does the rename apply there?
 4. Is there single-instance enforcement that makes migration-on-startup safe?
 5. Full inventory of path references (grep for the bundle id across the repo, scripts, docs, CI).

@@ -1,9 +1,8 @@
 //! In-session position+size cache for child windows (Settings, Debug).
 //!
-//! The window-state plugin persists only the main window across launches
-//! (`with_filter(|label| label == "main")` in `lib.rs`). Child windows
-//! intentionally start fresh each app launch — they're modal-feeling and
-//! should reappear centered on the main window, not in a stale spot from
+//! `crate::window_state` persists only the main window across launches. Child
+//! windows intentionally start fresh each app launch: they're modal-feeling
+//! and should reappear centered on the main window, not in a stale spot from
 //! days ago.
 //!
 //! Within a single session, though, reopening Settings after closing it

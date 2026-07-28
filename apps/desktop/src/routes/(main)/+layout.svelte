@@ -4,7 +4,6 @@
      * Only used for the main file manager window.
      */
     import { onMount, onDestroy } from 'svelte'
-    import { initWindowStateListener } from '$lib/window-state'
     import { startUpdateChecker } from '$lib/updates/updater.svelte'
     import { initSettingsApplier, cleanupSettingsApplier } from '$lib/settings/settings-applier'
     import { initReactiveSettings, cleanupReactiveSettings } from '$lib/settings/reactive-settings.svelte'
@@ -249,10 +248,6 @@
             // Set up the restricted-settings bridge (persists viewer-originated
             // setting changes; the viewer window has no store capability)
             await setupRestrictedSettingsBridge()
-
-            // Initialize window state persistence on resize
-            // This ensures window size/position survives hot reloads
-            void initWindowStateListener()
 
             // Listen for MTP connection errors
             mtpExclusiveUnlistenPromise = onMtpExclusiveAccessError(handleMtpExclusiveAccessError)
