@@ -11,19 +11,27 @@ const ruleTester = new RuleTester({
 
 ruleTester.run('prefer-ui-primitive', rule, {
   valid: [
-    // A text input has no primitive replacement.
-    {
-      code: `<input type="text" bind:value={name} />`,
-      filename: 'src/lib/whatever/Form.svelte',
-    },
-    // A typeless input defaults to text: out of scope.
-    {
-      code: `<input bind:value={name} />`,
-      filename: 'src/lib/whatever/Form.svelte',
-    },
     // Dynamic type can't be resolved statically, so we don't flag it.
     {
       code: `<input type={kind} bind:value={val} />`,
+      filename: 'src/lib/whatever/Form.svelte',
+    },
+    // An input type with no house primitive stays out of scope.
+    {
+      code: `<input type="number" bind:value={count} />`,
+      filename: 'src/lib/whatever/Form.svelte',
+    },
+    {
+      code: `<input type="color" bind:value={swatch} />`,
+      filename: 'src/lib/whatever/Form.svelte',
+    },
+    // Rendering the text primitives is the intended path.
+    {
+      code: `<TextInput bind:value={name} ariaLabel="Name" />`,
+      filename: 'src/lib/whatever/Form.svelte',
+    },
+    {
+      code: `<TextArea bind:value={notes} ariaLabel="Notes" />`,
       filename: 'src/lib/whatever/Form.svelte',
     },
     // Rendering the house primitives (components, kind !== 'html') is the
@@ -85,6 +93,61 @@ ruleTester.run('prefer-ui-primitive', rule, {
     // directive can't match inside the harness.)
   ],
   invalid: [
+    // Raw text input → TextInput.
+    {
+      code: `<input type="text" bind:value={name} />`,
+      filename: 'src/lib/whatever/Form.svelte',
+      errors: [
+        {
+          messageId: 'preferPrimitive',
+          data: { control: '<input type="text">', primitive: 'TextInput', path: '$lib/ui/TextInput.svelte' },
+        },
+      ],
+    },
+    // A TYPELESS input defaults to `text`, so the control kind IS known: flag it.
+    // (This is the case the old `undefined`-for-both `staticTypeOf` couldn't see.)
+    {
+      code: `<input bind:value={name} />`,
+      filename: 'src/lib/whatever/Form.svelte',
+      errors: [
+        {
+          messageId: 'preferPrimitive',
+          data: { control: '<input>', primitive: 'TextInput', path: '$lib/ui/TextInput.svelte' },
+        },
+      ],
+    },
+    // The other text-ish types route to the same primitive.
+    {
+      code: `<input type="password" bind:value={secret} />`,
+      filename: 'src/lib/whatever/Form.svelte',
+      errors: [
+        {
+          messageId: 'preferPrimitive',
+          data: { control: '<input type="password">', primitive: 'TextInput', path: '$lib/ui/TextInput.svelte' },
+        },
+      ],
+    },
+    {
+      code: `<input type="search" bind:value={query} />`,
+      filename: 'src/lib/whatever/Form.svelte',
+      errors: [
+        {
+          messageId: 'preferPrimitive',
+          data: { control: '<input type="search">', primitive: 'TextInput', path: '$lib/ui/TextInput.svelte' },
+        },
+      ],
+    },
+    // Raw textarea → TextArea.
+    {
+      code: `<textarea bind:value={notes}></textarea>`,
+      filename: 'src/lib/whatever/Form.svelte',
+      errors: [
+        {
+          messageId: 'preferPrimitive',
+          data: { control: '<textarea>', primitive: 'TextArea', path: '$lib/ui/TextArea.svelte' },
+        },
+      ],
+    },
     // Raw checkbox → Checkbox.
     {
       code: `<input type="checkbox" bind:checked={on} />`,

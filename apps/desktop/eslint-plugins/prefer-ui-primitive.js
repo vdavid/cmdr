@@ -24,6 +24,8 @@
  *
  *   - `<input type="checkbox">`  → `Checkbox`
  *   - `<input type="radio">`     → `RadioGroup`
+ *   - `<input>` with a text-ish type, or no type at all → `TextInput`
+ *   - `<textarea>`               → `TextArea`
  *   - `<select>`                 → `Select`
  *   - `<dialog>`                 → `ModalDialog`
  *   - `<progress>`               → `ProgressBar`
@@ -46,8 +48,10 @@
  *
  * - Dynamic `<input type={x}>` / `<button role={r}>`: the control kind can't be
  *   resolved statically, so we skip it (mirrors how `dialog-needs-focus-trap`
- *   skips dynamic roles). A typeless `<input>` (defaults to text) is likewise
- *   out of scope.
+ *   skips dynamic roles). A TYPELESS `<input>` is the opposite case and IS
+ *   flagged: HTML defaults it to `text`, so the control kind is known.
+ * - Input types with no house primitive (`number`, `color`, `file`, `range`,
+ *   `date`, …): they simply have no `MAPPINGS` row.
  * - Container roles (`role="radiogroup"`, `role="tablist"`) and roles with no
  *   house primitive (`role="tab"`, `role="option"`). Only the leaf control
  *   roles in `ROLE_MAPPINGS` are flagged.
@@ -55,7 +59,8 @@
  *   `kind !== 'html'`, so the primitives' own internals never self-flag.
  * - Controls rendered by the primitives themselves. `Checkbox` / `RadioGroup`
  *   render Ark UI's `HiddenInput` (a component, not a literal `<input>`), so
- *   the primitives contain no literal raw control and need no exception here.
+ *   they need no exception. `TextInput` / `TextArea` DO render the literal
+ *   element they replace, so they carry a file-level opt-out in `eslint.config.js`.
  *
  * Opt out per-element for a genuinely bespoke raw control (for example the
  * onboarding radio-cards and the appearance color-swatch picker, whose
@@ -82,6 +87,16 @@ const MAPPINGS = [
     primitive: 'RadioGroup',
     path: '$lib/ui/RadioGroup.svelte',
   },
+  // Text-ish inputs, including a typeless one (HTML defaults it to `text`).
+  // `null` is the "no `type` attribute" marker; see `staticAttributeOf`.
+  ...[null, 'text', 'password', 'email', 'search', 'url', 'tel'].map((type) => ({
+    element: 'input',
+    type,
+    control: type === null ? '<input>' : `<input type="${type}">`,
+    primitive: 'TextInput',
+    path: '$lib/ui/TextInput.svelte',
+  })),
+  { element: 'textarea', control: '<textarea>', primitive: 'TextArea', path: '$lib/ui/TextArea.svelte' },
   { element: 'select', control: '<select>', primitive: 'Select', path: '$lib/ui/Select.svelte' },
   { element: 'dialog', control: '<dialog>', primitive: 'ModalDialog', path: '$lib/ui/ModalDialog.svelte' },
   { element: 'progress', control: '<progress>', primitive: 'ProgressBar', path: '$lib/ui/ProgressBar.svelte' },
@@ -101,14 +116,19 @@ const ROLE_MAPPINGS = [
 ]
 
 /**
- * Resolve a Svelte element's named static attribute to its literal string, or
- * `undefined` when the attribute is absent or dynamic (`type={x}`).
+ * Resolve a Svelte element's named static attribute. Three outcomes, and keeping
+ * them apart is what lets a typeless `<input>` be flagged while a dynamic
+ * `<input type={x}>` is skipped:
+ *
+ *   - the literal string, for a static attribute;
+ *   - `null`, when the attribute is ABSENT (so the element's default applies);
+ *   - `undefined`, when it's DYNAMIC (`type={x}`) and can't be resolved.
  */
 function staticAttributeOf(node, name) {
   const attribute = node.startTag.attributes.find(
     (candidate) => candidate.type === 'SvelteAttribute' && candidate.key.name === name,
   )
-  if (!attribute) return undefined
+  if (!attribute) return null
   const value = attribute.value
   // A single static text chunk counts; `{type}` / `type={x}` are dynamic.
   return value.length === 1 && value[0].type === 'SvelteLiteral' ? value[0].value : undefined
@@ -162,8 +182,9 @@ export default {
         const candidates = MAPPINGS.filter((mapping) => mapping.element === elementName)
         if (candidates.length === 0) return
 
-        // Rows with a `type` predicate need the element's static `type`. If the
-        // type is dynamic (or absent), we can't classify the control: skip.
+        // Rows with a `type` predicate need the element's `type`. `undefined`
+        // means DYNAMIC (`type={x}`), which we can't classify: skip. `null`
+        // means ABSENT, which matches the typeless row (defaults to text).
         const needsType = candidates.some((mapping) => mapping.type !== undefined)
         const staticType = needsType ? staticAttributeOf(node, 'type') : undefined
         if (needsType && staticType === undefined) return
