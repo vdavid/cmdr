@@ -13,6 +13,11 @@ import { dispatchMenuCommand, pollUntil, pressKey } from './helpers.js'
 
 export type PageLike = TauriPage | BrowserPageAdapter
 
+/**
+ * The query dialog's overlay. `QueryDialog` is a `ModalDialog` that adds this class via
+ * `overlayClass`, so the element is BOTH `.modal-overlay` and `.search-overlay`; this one
+ * names "a query dialog" across all three of its dialog ids, which `data-dialog-id` can't.
+ */
 export const SEARCH_OVERLAY = '.search-overlay'
 export const SEARCH_INPUT = '.search-overlay input.query-input'
 /**

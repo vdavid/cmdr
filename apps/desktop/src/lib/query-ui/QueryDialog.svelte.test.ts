@@ -15,6 +15,7 @@ import QueryDialog from './QueryDialog.svelte'
 import { createQueryFilterState, type QueryFilterState } from './query-filter-state.svelte'
 import { createRecentItemsState } from './recent-items/recent-items-state.svelte'
 import type { QueryDialogConfig, AiTranslateResult } from './query-dialog-config'
+import { getToasts, clearAllToasts } from '$lib/ui/toast/toast-store.svelte'
 import type { SearchResultEntry } from '$lib/tauri-commands'
 import type { HistoryEntry } from '$lib/tauri-commands'
 
@@ -54,10 +55,14 @@ interface MountedDialog {
 interface MountOptions {
   badge?: 'alpha' | 'beta'
   runQueryResult?: { entries: SearchResultEntry[]; totalCount: number }
+  runQueryError?: Error
   translateAi?: (prompt: string) => Promise<AiTranslateResult | null>
   initialQuery?: string
   initialMode?: 'ai' | 'filename' | 'regex'
   recentEntries?: HistoryEntry[]
+  /** Wires the Search-only count-only mode (Selection leaves both undefined). */
+  countOnly?: boolean
+  onToggleCountOnly?: () => void
 }
 
 function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
@@ -115,6 +120,8 @@ function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
       onToggleExcludeSystemDirs: () => {},
       onSetScope: () => {},
       onClearAiPattern: () => {},
+      countOnly: opts.countOnly,
+      onToggleCountOnly: opts.onToggleCountOnly,
     },
     scanning: false,
     entriesScanned: 0,
@@ -123,6 +130,7 @@ function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
     isIndexReady: true,
     runQuery: () => {
       calls.runQuery += 1
+      if (opts.runQueryError !== undefined) return Promise.reject(opts.runQueryError)
       return Promise.resolve(opts.runQueryResult ?? { entries: [], totalCount: 0 })
     },
     translateAi: opts.translateAi
@@ -412,6 +420,137 @@ describe('QueryDialog lastDialogEvent ownership', () => {
     input.dispatchEvent(new Event('input', { bubbles: true }))
     await tick()
     expect(state.getLastDialogEvent()).toBe('query-edited')
+    cleanup()
+  })
+})
+
+describe('QueryDialog count-only switch', () => {
+  it('renders no switch when the consumer omits onToggleCountOnly (Selection)', async () => {
+    const { overlay, cleanup } = mountQueryDialog()
+    await tick()
+    expect(overlay.querySelector('.mode-row [role="switch"]')).toBeNull()
+    cleanup()
+  })
+
+  it('renders it beside the mode chips, reflecting the state (Search)', async () => {
+    const { overlay, cleanup } = mountQueryDialog({ countOnly: true, onToggleCountOnly: () => {} })
+    await tick()
+    const sw = overlay.querySelector('.mode-row [role="switch"]')
+    expect(sw).not.toBeNull()
+    expect((sw as HTMLInputElement).checked).toBe(true)
+    cleanup()
+  })
+
+  it('flipping it toggles count-only and re-runs, without an AI call', async () => {
+    const onToggleCountOnly = vi.fn()
+    const { overlay, calls, cleanup } = mountQueryDialog({ countOnly: false, onToggleCountOnly })
+    await tick()
+    await Promise.resolve()
+    await tick()
+
+    vi.useFakeTimers()
+    try {
+      overlay.querySelector<HTMLInputElement>('.mode-row [role="switch"]')?.click()
+      expect(onToggleCountOnly).toHaveBeenCalledOnce()
+      // Debounced (`scheduleSearch`), which is what keeps AI mode's explicit-trigger contract.
+      vi.advanceTimersByTime(1_000)
+      await Promise.resolve()
+      expect(calls.runQuery).toBe(1)
+    } finally {
+      vi.useRealTimers()
+    }
+    cleanup()
+  })
+})
+
+describe('QueryDialog "Show results" under a count-only total', () => {
+  // The count-only run returned no rows, so flipping the flag alone leaves a stale number on
+  // screen. The re-run must also NOT go through the debounce, which no-ops when auto-apply is off.
+  it('turns count-only off and re-runs immediately', async () => {
+    let countOnly = true
+    const { overlay, state, calls, cleanup } = mountQueryDialog({
+      countOnly,
+      onToggleCountOnly: () => {
+        countOnly = !countOnly
+      },
+    })
+    await tick()
+    await Promise.resolve()
+    await tick()
+    // Land in the count-only content state: a run has happened and there's a query.
+    state.setQuery('*.jpg')
+    dispatchKey(overlay, 'Enter')
+    await tick()
+    await Promise.resolve()
+    await tick()
+    const runsBefore = calls.runQuery
+
+    const button = overlay.querySelector<HTMLButtonElement>('.count-only-summary button')
+    expect(button?.textContent.trim()).toBe('Show results')
+    button?.click()
+    await tick()
+    await Promise.resolve()
+
+    expect(countOnly).toBe(false)
+    // No timers advanced: the re-run fired straight away.
+    expect(calls.runQuery).toBe(runsBefore + 1)
+    cleanup()
+  })
+})
+
+describe('QueryDialog run failures', () => {
+  it('surfaces the reason a run was refused instead of showing an empty list', async () => {
+    clearAllToasts()
+    const { overlay, state, cleanup } = mountQueryDialog({
+      runQueryError: new Error('Query too broad. Add a filename pattern, size, date, or type filter'),
+    })
+    await tick()
+    await Promise.resolve()
+    await tick()
+    state.setQuery('*')
+    dispatchKey(overlay, 'Enter')
+    await tick()
+    await Promise.resolve()
+    await tick()
+
+    const messages = getToasts().map((t) => String(t.content))
+    // Pre-fix the catch was bare, so a refused run read as "nothing matched".
+    expect(messages.some((m) => m.includes('Query too broad'))).toBe(true)
+    clearAllToasts()
+    cleanup()
+  })
+})
+
+describe('QueryDialog chrome', () => {
+  it('is a ModalDialog: standard panel, close button, and the .search-overlay hook', async () => {
+    const { overlay, calls, cleanup } = mountQueryDialog()
+    await tick()
+    // The E2E suite and the overlay-dismissal safety net key on `.search-overlay`.
+    expect(overlay.classList.contains('modal-overlay')).toBe(true)
+    expect(overlay.querySelector('.modal-dialog')).not.toBeNull()
+    const close = overlay.querySelector<HTMLButtonElement>('.modal-close-button')
+    expect(close).not.toBeNull()
+    close?.click()
+    expect(calls.close).toBe(1)
+    cleanup()
+  })
+
+  it('keeps Escape and Enter for itself (ownsKeyboard)', async () => {
+    const { overlay, state, calls, cleanup } = mountQueryDialog()
+    await tick()
+    await Promise.resolve()
+    await tick()
+    // Enter runs the query rather than being swallowed by ModalDialog's button short-circuit.
+    state.setQuery('*.pdf')
+    dispatchKey(overlay, 'Enter')
+    await tick()
+    await Promise.resolve()
+    expect(calls.runQuery).toBe(1)
+
+    dispatchKey(overlay, 'Escape')
+    await tick()
+    // Exactly once: the dialog's capture-phase handler closes, ModalDialog's doesn't double-fire.
+    expect(calls.close).toBe(1)
     cleanup()
   })
 })

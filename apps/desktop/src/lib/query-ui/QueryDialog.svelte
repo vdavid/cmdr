@@ -18,20 +18,23 @@
      *   3. `state.results` / `state.totalCount` / `state.cursorIndex` are written ONLY
      *      here, after `config.runQuery` resolves.
      *
-     * Layout (top → bottom):
-     *   1. Title bar (32px, centered, no close button per § Title bar).
-     *   2. QueryBar (unified input drives every mode).
-     *   3. ModeChips (AI / Filename / Content (disabled) / Regex; consumer-driven).
-     *   4. AiPromptStrip (when `state.lastAiPrompt` is non-null).
-     *   5. Optional notice banner (Selection uses this on snapshot panes).
-     *   6. FilterChips (Pattern / Size / Modified / Search in; visibility per config).
-     *   7. QueryResults (column headers + results + states + status bar).
-     *   8. Footer: recent-items strip on the left, primary/secondary action buttons on the right.
+     * Chrome comes from `ModalDialog` (standard radius, two-hairline panel edge, shadow,
+     * title bar + × button, focus trap, MCP registry, focus restore). This component opts
+     * into `align="top"`, `fillBody`, `padded={false}`, `ownsKeyboard`, and
+     * `closeOnOverlayClick`; see DETAILS.md § Chrome.
+     *
+     * Layout (top → bottom), three zones separated by surface + hairline:
+     *   Zone 1 "what to look for": QueryBar, then ModeChips + the Count-only switch,
+     *          then the AiPromptStrip / notice banner when present. On `--color-bg-primary`.
+     *   Zone 2 "the filters": FilterChips (Type / Pattern / Size / Modified / Search in).
+     *          On `--color-bg-secondary`, hairline top and bottom: the band that separates
+     *          "how do I narrow this" from "here's what I found".
+     *   Zone 3 "the results": QueryResults (column headers + rows + states + status bar).
+     *          Back on `--color-bg-primary`, so the list reads as its own surface.
+     *   Then the footer: recent-items strip on the left, action buttons on the right.
      */
     import { onMount, onDestroy, tick } from 'svelte'
     import { SvelteSet } from 'svelte/reactivity'
-    import { notifyDialogOpened, notifyDialogClosed } from '$lib/tauri-commands'
-    import { registerDialogClose, unregisterDialogClose } from '$lib/ui/dialog-close-registry'
     import type { SearchResultEntry } from '$lib/tauri-commands'
     import { iconCacheVersion } from '$lib/icon-cache'
     import QueryBar from './QueryBar.svelte'
@@ -46,7 +49,8 @@
     import { deriveEnterAction, SEARCH_AUTO_APPLY_DEBOUNCE_MS, type SearchMode } from './query-filter-state.svelte'
     import type { QueryDialogConfig } from './query-dialog-config'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
-    import { trapFocus } from '$lib/ui/focus-trap'
+    import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import Switch from '$lib/ui/Switch.svelte'
     import Button from '$lib/ui/Button.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
@@ -261,9 +265,6 @@
         queryInputElement?.focus()
     }
 
-    /** Element that had focus when the dialog opened (the pane container). Restored on close. */
-    let previousActiveElement: HTMLElement | null = null
-
     function openRecentPopover(): void {
         recentPopoverOpen = true
     }
@@ -273,13 +274,8 @@
     }
 
     onMount(async () => {
-        // Capture synchronously, before the awaits below and before focusInput() moves focus.
-        previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null
-        notifyDialogOpened(config.dialogType).catch(() => {})
-        // Register the close primitive so the MCP `dialog` tool's generic close can
-        // dismiss this dialog by id (search, selection-add, selection-remove).
-        // QueryDialog isn't a `ModalDialog`, so it registers itself.
-        registerDialogClose(config.dialogType, config.onClose)
+        // MCP open/close notification, the close registry, the focus trap, and focus
+        // restore all belong to `ModalDialog` (we pass it `dialogId` + `onclose`).
         window.addEventListener('keydown', handleEscapeCapture, true)
         // D8: mark the dialog as freshly opened so ⏎ owns "run-search" by default
         // until the user edits the query/filters or results arrive.
@@ -330,8 +326,6 @@
     })
 
     onDestroy(() => {
-        notifyDialogClosed(config.dialogType).catch(() => {})
-        unregisterDialogClose(config.dialogType, config.onClose)
         if (config.onDestroy) {
             try {
                 config.onDestroy()
@@ -342,13 +336,6 @@
         unlistenAutoApply?.()
         window.removeEventListener('keydown', handleEscapeCapture, true)
         if (debounceTimer) clearTimeout(debounceTimer)
-        // Restore focus to whatever had it before we opened (the pane container), if it's
-        // still in the DOM. Without this, focus falls to <body> after close: arrow keys stop
-        // moving the pane cursor and natively scroll the pane instead, until the user clicks
-        // back in. Same pattern as CommandPalette and ModalDialog.
-        if (previousActiveElement?.isConnected) {
-            previousActiveElement.focus()
-        }
         // State is intentionally NOT cleared. Close + reopen preserves the user's
         // query/filters/results/cursor. The only reset path is ⌘N inside the dialog.
     })
@@ -412,11 +399,27 @@
                 config.state.setLastAiPrompt(null)
                 config.state.setLastAiCaveat(null)
             }
-        } catch {
-            // IPC error: silent. Consumer is responsible for logging.
+        } catch (err) {
+            // Surface WHY nothing came back. The backend refuses some runs with an
+            // actionable message ("Query too broad. Add a filename pattern, size, date,
+            // or type filter"); swallowing it left the user staring at an empty list that
+            // reads as "nothing matched". Same one-place-for-both-consumers rule as the AI
+            // path above. No typed variant crosses this IPC boundary, so we pass the
+            // message through verbatim instead of classifying it by its text
+            // (`.claude/rules/no-string-matching.md`).
+            addToast(tString('queryUi.dialog.runQueryToast', { message: describeRunFailure(err) }), {
+                level: 'warn',
+                dismissal: 'transient',
+            })
         } finally {
             config.state.setIsSearching(false)
         }
+    }
+
+    /** The backend's own message when there is one; a generic fallback otherwise. */
+    function describeRunFailure(err: unknown): string {
+        const message = err instanceof Error ? err.message : typeof err === 'string' ? err : ''
+        return message.trim() || tString('queryUi.dialog.runQueryUnknownReason')
     }
 
     /**
@@ -491,6 +494,29 @@
         } else {
             void executeQuery()
         }
+    }
+
+    /**
+     * Count-only switch (zone 1, beside the mode chips). Flipping it changes what the
+     * backend returns, so re-run: `scheduleSearch` keeps AI mode's explicit-trigger
+     * contract intact (it no-ops there, and the AI run costs money).
+     */
+    function toggleCountOnly(): void {
+        if (config.inputsDisabled) return
+        config.filterChipsExtras.onToggleCountOnly?.()
+        scheduleSearch()
+    }
+
+    /**
+     * "Show results" under the count-only total: turn count-only off AND re-run.
+     * The re-run is NOT optional — a count-only run returned no rows, so flipping the
+     * flag alone leaves the user staring at a stale number. It goes through
+     * `runFromButton` (the same path as the bar's ⏎ button), not `scheduleSearch`,
+     * which no-ops in AI mode and whenever `search.autoApply` is off.
+     */
+    function showResultsFromCount(): void {
+        config.filterChipsExtras.onToggleCountOnly?.()
+        runFromButton()
     }
 
     function runAiFromQuery(): void {
@@ -749,10 +775,6 @@
         if (config.primaryAction) void config.primaryAction.handler(r)
     }
 
-    function handleOverlayClick(e: MouseEvent): void {
-        if (e.target === e.currentTarget) config.onClose()
-    }
-
     function openRowMenu(entry: SearchResultEntry): void {
         config.onRowMenu(entry)
     }
@@ -773,30 +795,37 @@
     const recentEntries = $derived(config.historyStore.getList())
 </script>
 
-<div
-    class="search-overlay"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="query-dialog-title"
-    tabindex="-1"
-    onclick={handleOverlayClick}
+<!--
+  The dialog chrome (radius, panel edge, shadow, title bar, ×, focus trap, MCP
+  registry, focus restore) is `ModalDialog`'s. We opt into:
+    - `align="top"`      the Spotlight-style placement this dialog has always had.
+    - `fillBody`         fixed-height frame; `.results-container` absorbs the slack.
+    - `padded={false}`   every strip is full-bleed and pads itself.
+    - `ownsKeyboard`     `handleKeyDown` owns Enter (the ⏎ ownership swap) and the
+                         window-capture Escape that defers to an open popover.
+    - `closeOnOverlayClick`  clicking the scrim dismisses, as it always has.
+-->
+<ModalDialog
+    titleId="query-dialog-title"
+    dialogId={config.dialogType}
+    overlayClass="search-overlay"
+    align="top"
+    fillBody
+    padded={false}
+    ownsKeyboard
+    closeOnOverlayClick
+    containerStyle="width: 100%; max-width: {config.maxWidth}; max-height: 80vh;"
     onkeydown={handleKeyDown}
-    use:trapFocus={{ onEscape: config.onClose }}
+    onclose={config.onClose}
 >
-    <div class="search-dialog" bind:this={dialogElement} style="max-width: {config.maxWidth};">
-        <!--
-          Title bar: a heading-shaped element (not a banner). `<header>` would be a
-          landmark and duplicate the app's existing banner; `<h2>` is the right semantic
-          choice for "dialog title" and pairs cleanly with the dialog's
-          `aria-labelledby`. Visually styled as the title strip per § "Title bar".
-        -->
-        <h2 class="query-dialog__title" id="query-dialog-title">
-            <span>{config.title}</span>
-            {#if config.badge}
-                <StatusBadge status={config.badge} />
-            {/if}
-        </h2>
+    <!-- The title text keeps its own `<span>`: the badge is a sibling, so consumers'
+         tests (and anyone styling the two apart) can address the words alone. -->
+    {#snippet title()}
+        <span>{config.title}</span>{#if config.badge}<StatusBadge status={config.badge} />{/if}
+    {/snippet}
 
+    <div class="query-dialog-body" bind:this={dialogElement}>
+        <!-- Zone 1: what to look for and how. -->
         <QueryBar
             bind:inputElement={queryInputElement}
             {query}
@@ -811,7 +840,31 @@
             onCompositionEnd={handleCompositionEnd}
         />
 
-        <ModeChips {mode} aiEnabled={config.aiEnabled} disabled={config.inputsDisabled} onSelect={handleModeChange} />
+        <!-- The mode chips span the dialog (`fullWidth`), so the Count-only switch rides
+             beside them rather than inside the group. It belongs in zone 1: it changes
+             what the search RETURNS, it isn't one more way to narrow the matches.
+             Search wires `onToggleCountOnly`; Selection omits it and the switch is absent. -->
+        <div class="mode-row">
+            <div class="mode-row__chips">
+                <ModeChips
+                    {mode}
+                    aiEnabled={config.aiEnabled}
+                    disabled={config.inputsDisabled}
+                    onSelect={handleModeChange}
+                />
+            </div>
+            {#if config.filterChipsExtras.onToggleCountOnly}
+                <div class="mode-row__count-only" use:tooltip={tString('queryUi.filters.countOnly.tooltip')}>
+                    <Switch
+                        checked={config.filterChipsExtras.countOnly ?? false}
+                        disabled={config.inputsDisabled}
+                        onCheckedChange={toggleCountOnly}
+                    >
+                        {tString('queryUi.filters.countOnly.label')}
+                    </Switch>
+                </div>
+            {/if}
+        </div>
 
         {#if lastAiPrompt}
             <AiPromptStrip aiPrompt={lastAiPrompt} caveat={lastAiCaveat ?? ''} summary={aiSummary} />
@@ -821,6 +874,7 @@
             <div class="query-dialog__notice" role="note">{config.noticeBanner}</div>
         {/if}
 
+        <!-- Zone 2: the filters. `FilterChips` owns its own band surface + hairlines. -->
         <FilterChips
             filterState={config.state}
             caseSensitive={config.filterChipsExtras.caseSensitive}
@@ -844,8 +898,6 @@
             aiPattern={config.filterChipsExtras.aiPattern}
             scopeChipVisible={config.visibleChips.scope}
             patternChipVisible={config.visibleChips.pattern}
-            countOnly={config.filterChipsExtras.countOnly ?? false}
-            onToggleCountOnly={config.filterChipsExtras.onToggleCountOnly}
             onInput={inputHandler}
             onToggleCaseSensitive={config.filterChipsExtras.onToggleCaseSensitive}
             onToggleExcludeSystemDirs={config.filterChipsExtras.onToggleExcludeSystemDirs}
@@ -855,6 +907,8 @@
             onFocusBar={focusInput}
         />
 
+        <!-- Zone 3: the results. `.results-container` inside is the only `flex: 1 1 auto`
+             child of the body, so it absorbs whatever room the strips leave. -->
         <QueryResults
             bind:this={queryResultsComponent}
             {results}
@@ -871,6 +925,7 @@
             {totalCount}
             indexEntryCount={config.indexEntryCount}
             countOnly={config.filterChipsExtras.countOnly ?? false}
+            onShowResults={config.filterChipsExtras.onToggleCountOnly ? showResultsFromCount : undefined}
             iconCacheVersion={iconVersion}
             aiEnabled={config.aiEnabled}
             showPathColumn={config.showPathColumn}
@@ -959,54 +1014,42 @@
             />
         {/if}
     </div>
-</div>
+</ModalDialog>
 
 <style>
-    .search-overlay {
-        position: fixed;
-        /* Start below the title bar so the scrim never covers the OS window-drag
-           region: the user can still drag the window while a dialog is open.
-           `--titlebar-height` is per-window (see app.css § Window chrome). */
-        inset: var(--titlebar-height) 0 0 0;
-        background: var(--color-overlay-light);
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        padding-top: 10vh;
-        z-index: var(--z-modal);
-    }
-
-    /* Dialog dimensions: width is consumer-driven via `config.maxWidth` (inline style
-       on .search-dialog). The height never exceeds 80vh; the results region absorbs
-       whatever room is left after the title + bar + chips + filters + footer. */
-    .search-dialog {
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-subtle);
-        border-radius: var(--radius-lg);
-        width: 100%;
-        max-height: 80vh;
+    /* The body's own column. `ModalDialog`'s `fillBody` gives us a flex-column
+       `.modal-body` with a definite height, so this stack can hand all the slack to
+       `.results-container` (the only `flex: 1 1 auto` descendant) and keep every strip
+       at its intrinsic height. */
+    .query-dialog-body {
         display: flex;
         flex-direction: column;
-        box-shadow: var(--shadow-lg);
-        overflow: hidden;
+        flex: 1 1 auto;
+        min-height: 0;
     }
 
-    /* Title bar: 32px tall, centered. No close button (Escape is the only close path).
-       Not in the Tab order — text only. Rendered as <h2> for semantics; we reset the
-       default heading typography. */
-    .query-dialog__title {
-        margin: 0;
-        height: 32px;
-        gap: var(--spacing-xs);
-        padding: 0 var(--spacing-lg);
-        border-bottom: 1px solid var(--color-border-subtle);
-        font-size: var(--font-size-md);
-        font-weight: 500;
-        color: var(--color-text-secondary);
+    /* Zone-1 mode row: the `fullWidth` mode chips take the room, the Count-only switch
+       rides at the trailing end. `ModeChips` brings its own `--spacing-lg` inset, so the
+       switch only pays for the right one. */
+    .mode-row {
         display: flex;
         align-items: center;
-        justify-content: center;
+        background: var(--color-bg-primary);
         flex-shrink: 0;
+    }
+
+    .mode-row__chips {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .mode-row__count-only {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        padding-right: var(--spacing-lg);
+        color: var(--color-text-secondary);
+        white-space: nowrap;
     }
 
     /* Optional notice banner row. Selection's snapshot-pane mode uses this to

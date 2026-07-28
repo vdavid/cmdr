@@ -343,7 +343,9 @@ kinds.
 **`dismissOverlay(tauriPage)`** (helpers.ts) does exactly that: finds the topmost open overlay in priority order
 (`.ui-popover` > `.palette-overlay` > `.search-overlay` > `.modal-overlay` > `.volume-dropdown`), dispatches synthetic
 Escape on it, then `expect.poll`s that it actually closed. Throws if no overlay is open (catches tests that forgot to
-wait for the dialog to appear, or that mistakenly call dismiss twice).
+wait for the dialog to appear, or that mistakenly call dismiss twice). `.search-overlay` and `.modal-overlay` land on
+the SAME element for the query dialogs (`QueryDialog` is a `ModalDialog` that adds `.search-overlay` as its stable hook
+across its three dialog ids), which is why the query-dialog selector is listed first.
 
 ```ts
 import { dismissOverlay, expectAndDismissToast } from './helpers.js'
