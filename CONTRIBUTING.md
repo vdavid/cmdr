@@ -137,6 +137,8 @@ pnpm lint --fix                   # to lint frontend code
 pnpm test                         # to run frontend tests
 ```
 
+`tccutil reset SystemPolicyAllFiles com.veszelovszki.cmdr` is a helpful command for resetting the FDE and other perms.
+
 ## Linux testing (Ubuntu VM)
 
 The Linux E2E tests run against the real Tauri app with WebKitGTK. Since macOS doesn't have a WebDriver for WKWebView,
