@@ -184,12 +184,17 @@ pub struct AssembledPrompt {
 /// What one assembly elided, and how it ended up against its budget. Returned rather than
 /// logged so [`assemble_prompt`] stays a pure function; a silent context drop is what let
 /// fabricated answers look like a normal reply.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ElisionFacts {
     /// How many tool results collapsed to a stub in this assembly.
     pub elided_results: usize,
     /// Roughly how many tokens those stubs replaced.
     pub elided_tokens: usize,
+    /// The `call_id` of every tool result this assembly replaced with a stub, in transcript
+    /// order. The model did NOT read these, so whatever vouches for a result's contents
+    /// downstream (the rename-evidence ledger) has to revoke them — the runtime does that,
+    /// since revoking is I/O and this module is pure.
+    pub elided_call_ids: Vec<String>,
     /// The turns-back threshold the assembly settled on. Below
     /// [`ELIDE_TOOL_RESULTS_AFTER_TURNS`] means the BUDGET forced the elision, not age.
     pub threshold: usize,
@@ -288,6 +293,7 @@ fn elision_facts(
         {
             facts.elided_results += 1;
             facts.elided_tokens += result.content[APPROX_TOKENS_KEY].as_u64().unwrap_or(0) as usize;
+            facts.elided_call_ids.push(result.call_id.clone());
         }
     }
     facts

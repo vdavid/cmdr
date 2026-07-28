@@ -683,6 +683,103 @@ impl ToolDispatcher for HugeDispatcher {
     }
 }
 
+/// Returns one oversized result AND records every evidence revocation the runtime asks for,
+/// so a test can assert that a dropped result loses its standing as evidence.
+#[derive(Default)]
+struct RevokeRecordingDispatcher {
+    revoked: Mutex<Vec<String>>,
+}
+
+impl RevokeRecordingDispatcher {
+    fn revoked(&self) -> Vec<String> {
+        self.revoked.lock().expect("lock").clone()
+    }
+}
+
+impl ToolDispatcher for RevokeRecordingDispatcher {
+    fn dispatch<'a>(&'a self, call: &'a AgentToolCall) -> BoxFuture<'a, ToolDispatchOutcome> {
+        async move {
+            ToolDispatchOutcome {
+                result: AgentToolResult {
+                    call_id: call.call_id.clone(),
+                    content: json!({ "text": "y".repeat(60_000) }),
+                    elided: false,
+                },
+                proposal: None,
+            }
+        }
+        .boxed()
+    }
+
+    fn revoke_evidence(&self, call_ids: &[String]) {
+        self.revoked.lock().expect("lock").extend_from_slice(call_ids);
+    }
+}
+
+#[tokio::test]
+async fn a_dropped_tool_result_loses_its_standing_as_evidence() {
+    // The ledger backing rename evidence vouches for `image_facts` results that were
+    // DISPATCHED; assembly decides which ones the model actually reads. So every result the
+    // prompt drops must be revoked, or a plan could cite content the model never saw — the
+    // original bug wearing a badge.
+    let conn = migrated_conn();
+    let id = conversation(&conn);
+    let dispatcher = RevokeRecordingDispatcher::default();
+
+    let first = ProgrammableLlm::new(vec![
+        Program::Tools {
+            calls: vec![(ToolId::ImageFacts, json!({ "paths": ["/a.png"] }))],
+            usage: AgentUsage::default(),
+        },
+        Program::Answer {
+            chunks: vec!["named them".to_string()],
+            usage: AgentUsage::default(),
+        },
+    ]);
+    let (tx1, _rx1) = unbounded_channel();
+    run_turn(
+        &first,
+        &dispatcher,
+        &conn,
+        &[],
+        &params(id, Some("name these by content")),
+        &tx1,
+        &CancellationToken::new(),
+    )
+    .await;
+    assert!(
+        dispatcher.revoked().is_empty(),
+        "the turn that fetched the facts read them: nothing to revoke"
+    );
+
+    // A second turn on a tight budget: turn 1's result is history now, so it goes.
+    let second = ProgrammableLlm::new(vec![Program::Answer {
+        chunks: vec!["and the rest".to_string()],
+        usage: AgentUsage::default(),
+    }]);
+    let (tx2, _rx2) = unbounded_channel();
+    let mut tight = params(id, Some("now the rest"));
+    tight.prompt_budget = 8_000;
+    let result = run_turn(
+        &second,
+        &dispatcher,
+        &conn,
+        &[],
+        &tight,
+        &tx2,
+        &CancellationToken::new(),
+    )
+    .await;
+    assert!(matches!(result, TurnResult::Answered { .. }), "the turn still answers");
+
+    let revoked = dispatcher.revoked();
+    assert_eq!(revoked.len(), 1, "exactly the dropped result is revoked: {revoked:?}");
+    assert!(
+        !revoked[0].is_empty(),
+        "the revocation carries the call id the result answered"
+    );
+}
+
 #[tokio::test]
 async fn a_budget_forced_context_drop_is_announced_once_per_turn() {
     // Turn 1 puts a huge tool result in history; turn 2 runs against a tight budget, so

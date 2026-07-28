@@ -169,6 +169,17 @@ fn emit(sink: &ChatEventSink, event: AgentChatEvent) {
 /// so [`run_turn`] needs no Tauri app.
 pub trait ToolDispatcher: Send + Sync {
     fn dispatch<'a>(&'a self, call: &'a AgentToolCall) -> BoxFuture<'a, ToolDispatchOutcome>;
+
+    /// Withdraw the named tool results' standing as evidence: assembly dropped them, so the
+    /// model never read them, and nothing downstream may cite their contents.
+    ///
+    /// It rides the DISPATCH seam on purpose — the same seam that delivered those results is
+    /// the one that owns app state, and the symmetry (deliver here, revoke here) is what
+    /// keeps the two halves from drifting. Default is a no-op, so the seam costs a test
+    /// double nothing; the real work is in [`AppHandleDispatcher`].
+    fn revoke_evidence(&self, call_ids: &[String]) {
+        let _ = call_ids;
+    }
 }
 
 pub struct ToolDispatchOutcome {
@@ -198,6 +209,19 @@ impl<R: Runtime> ToolDispatcher for AppHandleDispatcher<R> {
             }
         }
         .boxed()
+    }
+
+    fn revoke_evidence(&self, call_ids: &[String]) {
+        // MERGE POINT (`david/rename-evidence-ui`): that branch's `ImageFactsLedger`
+        // (`agent/tools/propose/evidence.rs`, registered in state by `agent::start`) records
+        // delivery from `agent::tools::view::dispatch`. This is the one place that has to
+        // undo it — for each id here, call the ledger's `revoke_call(call_id)` through the
+        // app handle. Until then the ledger would vouch for content the model never read.
+        log::debug!(
+            target: LOG_TARGET,
+            "revoking evidence for {} dropped tool result(s): {call_ids:?}",
+            call_ids.len()
+        );
     }
 }
 
@@ -360,6 +384,11 @@ pub async fn run_turn(
             params.prompt_budget,
         );
         announce_context_pressure(&assembled.elision, sink, &mut trim_announced);
+        // A result the prompt dropped is a result the model never read: withdraw it as
+        // evidence before the call goes out, so nothing downstream can cite its contents.
+        if !assembled.elision.elided_call_ids.is_empty() {
+            dispatcher.revoke_evidence(&assembled.elision.elided_call_ids);
+        }
 
         let stream = match llm
             .respond(&assembled.system, &assembled.tools, &assembled.messages, cancel.clone())

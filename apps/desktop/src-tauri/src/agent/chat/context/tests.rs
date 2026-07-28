@@ -381,6 +381,55 @@ fn the_current_turns_tool_result_survives_any_budget_pressure() {
     );
     assert_eq!(assembled.elision.elided_results, 1);
     assert!(assembled.elision.elided_tokens > 0, "the report sizes what it dropped");
+    // And it NAMES the call whose result went, so the runtime can revoke that result's
+    // standing as evidence: nothing may vouch for content the model never read.
+    assert_eq!(assembled.elision.elided_call_ids, vec!["f1".to_string()]);
+}
+
+#[test]
+fn the_report_names_every_call_whose_result_was_dropped() {
+    // Two older results elide, the current turn's survives: the report must name exactly the
+    // two that left, in transcript order, and never the one still in the prompt.
+    let bulky = json!({ "text": "z".repeat(20_000) });
+    let transcript = [
+        user("turn 0", 1_000),
+        assistant_tool_call("old-a", ToolId::ImageFacts, json!({ "paths": ["/a.png"] }), 1_010),
+        tool_result("old-a", bulky.clone(), 1_020),
+        user("turn 1", 2_000),
+        assistant_tool_call("old-b", ToolId::ImageFacts, json!({ "paths": ["/b.png"] }), 2_010),
+        tool_result("old-b", bulky.clone(), 2_020),
+        user("turn 2 (latest)", 3_000),
+        assistant_tool_call("fresh", ToolId::ImageFacts, json!({ "paths": ["/c.png"] }), 3_010),
+        tool_result("fresh", bulky, 3_020),
+    ];
+
+    let assembled = assemble_prompt(
+        &prefix(None, &[]),
+        &transcript,
+        &envelope_at(3_000),
+        offset(),
+        TIGHT_BUDGET,
+    );
+
+    assert_eq!(
+        assembled.elision.elided_call_ids,
+        vec!["old-a".to_string(), "old-b".to_string()]
+    );
+    assert_eq!(assembled.elision.elided_results, 2);
+}
+
+#[test]
+fn an_assembly_that_drops_nothing_names_no_calls() {
+    let transcript = [
+        user("what is in these?", 1_000),
+        assistant_tool_call("c1", ToolId::ImageFacts, json!({ "paths": ["/a.png"] }), 1_010),
+        tool_result("c1", json!({ "facts": [] }), 1_020),
+    ];
+    let assembled = assemble_prompt(&prefix(None, &[]), &transcript, &envelope_at(1_000), offset(), BUDGET);
+    assert!(
+        assembled.elision.elided_call_ids.is_empty(),
+        "nothing dropped ⇒ nothing to revoke"
+    );
 }
 
 // ── Budget ────────────────────────────────────────────────────────────────────

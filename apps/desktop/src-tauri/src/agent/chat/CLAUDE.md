@@ -33,9 +33,11 @@ cases, decision rationale): `DETAILS.md`.
   floors every elision threshold). A model told to name files by their content, handed a stub
   instead of the content, invents — that shipped and renamed 12 real files to fiction. The
   prompt overruns its budget instead, honestly. Don't drop the floor to "make it fit".
-- **A context drop is never silent.** `assemble_prompt` returns `ElisionFacts` as DATA (the
-  core can't log); `runtime.rs`'s `announce_context_pressure` warns and emits ONE
-  `ContextTrimmed` event per turn for the rail. New compaction path ⇒ report it the same way.
+- **A context drop is never silent, and it revokes the dropped result's evidence.**
+  `assemble_prompt` returns `ElisionFacts` as DATA (the core can't log), naming every dropped
+  `call_id`; `runtime.rs` warns, emits ONE `ContextTrimmed` event per turn, and calls
+  `ToolDispatcher::revoke_evidence` for those ids — a result the model never read must not
+  back a rename claim. New compaction path ⇒ do all three.
 - **The prompt budget is per-model, resolved in the command layer** (`budget::prompt_budget`,
   or `prompt_budget_for_local_context` for a local server's window) and passed in through
   `TurnParams::prompt_budget`. `context.rs` has no business knowing the model.

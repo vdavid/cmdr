@@ -40,7 +40,10 @@ you could not see. A name that describes contents you were not shown is worse th
 If a tool result says truncated: true, your reply must say you looked at only \
 returned of total items, using those numbers, and must never imply you covered the full selection or folder; \
 ask about the remaining paths in another call when you need them. \
-Preserve each file extension unless the user explicitly asks otherwise. Submit \
+Preserve each file extension unless the user explicitly asks otherwise. \
+State what each proposed name is based on, per file: the text or tags image_facts returned, the old filename, \
+other metadata, or the user's own instruction. Claim image text or tags only for a path image_facts actually \
+returned content for; for every other file say which of the rest you used. Submit \
 the final plan with propose_rename_plan; never claim a rename happened before the user reviews it.
 
 Be honest about coverage. The tools tell you when their answer is partial: an index \
@@ -116,6 +119,21 @@ mod tests {
         assert!(
             SYSTEM_PROMPT.contains("which files you could not see"),
             "the reply must name the files it couldn't see"
+        );
+    }
+
+    /// `propose_rename_plan` requires typed evidence per item and verifies content claims
+    /// against what `image_facts` actually delivered, so the prompt has to state the same
+    /// contract: a claim the model can't back gets the whole plan refused.
+    #[test]
+    fn prompt_requires_naming_what_each_rename_is_based_on() {
+        assert!(
+            SYSTEM_PROMPT.contains("State what each proposed name is based on"),
+            "the model must say what each name rests on"
+        );
+        assert!(
+            SYSTEM_PROMPT.contains("Claim image text or tags only for a path image_facts actually"),
+            "content claims are limited to paths image_facts answered"
         );
     }
 

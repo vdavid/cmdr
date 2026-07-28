@@ -62,13 +62,30 @@ pressure now stops at history, and a turn whose own results don't fit goes over 
 says so.
 
 **Every cut is reported, never logged from here.** `AssembledPrompt::elision`
-(`ElisionFacts`: `elided_results`, `elided_tokens`, `threshold`, `estimated_tokens`,
-`budget`) crosses back as data, keeping the core pure. `runtime.rs`'s
+(`ElisionFacts`: `elided_results`, `elided_tokens`, `elided_call_ids`, `threshold`,
+`estimated_tokens`, `budget`) crosses back as data, keeping the core pure. `runtime.rs`'s
 `announce_context_pressure` splits it in two: `budget_forced()` (history was dropped) warns
 AND emits one `AgentChatEvent::ContextTrimmed` per turn for the rail;
 `over_budget()` (nothing safe left to drop) warns only, because on a small local window it
 would otherwise fire every turn and the soft-cap nudge already covers "this chat is long".
 Summarize-on-overflow is still deferred (spec §3).
+
+### A dropped result loses its standing as evidence
+
+`propose_rename_plan` items carry typed evidence, and a content claim (`imageText` /
+`imageTags`) is verified against what `image_facts` actually delivered (the `ImageFactsLedger`
+under `agent/tools/propose/`). Delivery is recorded at DISPATCH, but only assembly knows what
+the model ends up reading, so `run_turn` calls
+`ToolDispatcher::revoke_evidence(&elision.elided_call_ids)` right after each assembly, before
+the `respond` goes out.
+
+**Why the dispatch seam and not a direct ledger call:** `context.rs` must stay pure, and
+`run_turn` holds no `AppHandle` — the dispatcher is the one seam with app state, and it is
+already the half that recorded delivery. Deliver and revoke through one seam, and the two
+halves can't drift. The trait's default is a no-op so test doubles ignore it;
+`AppHandleDispatcher::revoke_evidence` is the single production site. After
+`MIN_ELISION_TURNS_BACK` this fires only for genuinely aged-out results, which is defence in
+depth, not the main line.
 
 ## Constants table (initial values, tune with use)
 
