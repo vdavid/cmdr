@@ -70,6 +70,11 @@ Props:
 | `containerStyle` | `string`                      | Inline style appended to the dialog element (for sizing, colors)      |
 | `role`           | `'dialog'` \| `'alertdialog'` | Default `'dialog'`                                                    |
 | `growDownward`   | `boolean`                     | Default `false`. Pins the top edge so a growing body extends downward |
+| `align`          | `'center'` \| `'top'`         | Default `'center'`. `'top'` drops the panel 10vh from the overlay top |
+| `fillBody`       | `boolean`                     | Default `false`. Fixed-height frame; the body absorbs the slack      |
+| `ownsKeyboard`   | `boolean`                     | Default `false`. Forwards EVERY key to `onkeydown`, Escape included  |
+| `overlayClass`   | `string`                      | Extra class on the overlay, for a shared dialog's stable test hook   |
+| `closeOnOverlayClick` | `boolean`                | Default `false`. Scrim click dismisses                               |
 
 **Layout convention (macOS-style).** Title and body text are LEFT-aligned; action buttons are RIGHT-aligned with the
 primary action last (rightmost). Pass buttons via the `footer` snippet — `ModalDialog` renders them in a `.modal-footer`
@@ -86,6 +91,21 @@ this on, `ModalDialog` measures where centering put the dialog at mount and pins
 `align-self: flex-start` + `margin-top`; a `ResizeObserver` then only pulls the dialog UP when growth would run it past
 the overlay's bottom, and a window resize re-centers on the current height. Pair it with a transition on whatever
 expands (`TransferDialog` slides its compress-only block) so the growth reads as a reveal rather than a jump.
+
+**`fillBody` + `align` + `ownsKeyboard` are the query-dialog shape.** `QueryDialog` (search and the two selection
+dialogs) is a full-bleed, top-anchored, fixed-height panel whose results region scrolls while every other strip keeps its
+intrinsic height, and it owns Enter (its `⏎` ownership swap) plus a capture-phase Escape that defers to an open filter
+popover. Those three props exist so it gets the standard chrome without forking it:
+
+- `fillBody` makes the panel a flex column with `overflow: hidden` (so full-bleed bands clip to the 27px radius) and the
+  body a flex column that takes the slack; the caller caps the height via `containerStyle`. `resizable` covers the same
+  ground for a body that scrolls as a whole; the two aren't meant to be combined.
+- `ownsKeyboard` skips this component's Escape-closes and Enter-on-a-focused-button rules and forwards the event, after
+  still calling `stopPropagation()` (which shields the file explorer behind the scrim). `onclose` keeps driving the ×
+  button, the focus-trap escape fallback, and the MCP close registry, so nothing about closing changes.
+- `overlayClass` exists because that one component renders under three different `dialogId`s: a selector keyed on
+  `data-dialog-id` can't name "the query dialog", and the E2E suite plus the overlay-dismissal safety net need one that
+  can. It's a structural hook, not a styling escape hatch.
 
 **`footerLeading`** puts a control on the SAME line as the action buttons, pinned left (`margin-right: auto` on the
 wrapper, so the buttons stay hard right at any leading width). Use it for a modifier on the primary action, the way
@@ -162,8 +182,8 @@ rows are display-only; the frontend returns opaque proposal and row ids to the b
 ### Generic close (`dialog-close-registry.ts`)
 
 The MCP `dialog` tool's generic `close` action closes any registered soft dialog by id. `dialog-close-registry.ts` holds
-a `Map<SoftDialogId, () => void>` that `ModalDialog` (when it has an `onclose`) and `QueryDialog` (search and the two
-selection dialogs — not a `ModalDialog`, so it registers itself) populate on mount and clear on destroy. The backend
+a `Map<SoftDialogId, () => void>` that `ModalDialog` populates on mount and clears on destroy whenever it has an
+`onclose` (every soft dialog goes through it, `QueryDialog`'s three ids included). The backend
 emits `mcp-close-dialog { id }`; the main-window router (`listener-setup.ts`) calls `closeDialogById(id)`, which runs
 the dialog's own close, unmounting it (→ `notifyDialogClosed` → the backend `SoftDialogTracker` → the tool's
 `SoftDialogDisappeared` ack). A dialog rendered without an `onclose` isn't in the map, so `closeDialogById` returns

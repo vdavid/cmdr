@@ -319,9 +319,6 @@
     "ui/CommandBox.svelte": {
       "reason": "Simple UI component, clipboard + 2s timeout"
     },
-    "ui/ModalDialog.svelte": {
-      "reason": "Shared modal dialog wrapper, depends on DOM APIs and Tauri commands"
-    },
     "ui/toast/ToastContainer.svelte": {
       "reason": "UI component, renders from toast store"
     },

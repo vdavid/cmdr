@@ -52,6 +52,42 @@
          * run past the bottom. For dialogs whose height changes while open.
          */
         growDownward?: boolean
+        /**
+         * Where the dialog sits in the overlay. `'center'` is the default macOS
+         * placement; `'top'` drops it 10vh from the top, the Spotlight-style
+         * placement for a dialog the user types into and reads a long list from
+         * (the query dialogs).
+         */
+        align?: 'center' | 'top'
+        /**
+         * Makes the panel a fixed-height frame: it becomes a flex column, the body
+         * absorbs the vertical slack, and the whole panel clips to its radius. The
+         * caller caps the height via `containerStyle` (`max-height: 80vh`). Use it
+         * when a child region (a results list) should scroll while the title bar and
+         * footer stay put. The body is a flex column too, so its own child can take
+         * `flex: 1 1 auto` and own the scrolling. `resizable` brings its own version
+         * of this (with a scrolling body); don't combine the two.
+         */
+        fillBody?: boolean
+        /**
+         * Hands the WHOLE keydown contract to the consumer: this component still
+         * stops propagation (shielding the app behind the scrim), then forwards every
+         * key to `onkeydown` — including Escape and Enter on a focused button, which
+         * it otherwise handles itself. For dialogs that own dynamic Enter semantics or
+         * an Escape that must defer to a nested popover (the query dialogs). `onclose`
+         * still drives the × button, the focus-trap escape fallback, and the MCP close
+         * registry.
+         */
+        ownsKeyboard?: boolean
+        /**
+         * Extra class on the overlay element. For a SHARED dialog that needs one
+         * stable structural hook across several `dialogId`s (`QueryDialog` renders as
+         * `.search-overlay` for all three of its ids; the E2E suite and the
+         * overlay-dismissal safety net key on it). Not a styling hook.
+         */
+        overlayClass?: string
+        /** Clicking the scrim closes the dialog. Off by default (macOS panels don't dismiss on backdrop). */
+        closeOnOverlayClick?: boolean
         /** Renders × button and handles Escape key */
         onclose?: () => void
     }
@@ -72,6 +108,11 @@
         padded = true,
         resizable = false,
         growDownward = false,
+        align = 'center',
+        fillBody = false,
+        ownsKeyboard = false,
+        overlayClass = '',
+        closeOnOverlayClick = false,
         onclose,
     }: Props = $props()
 
@@ -154,6 +195,11 @@
 
     function handleOverlayKeydown(event: KeyboardEvent) {
         event.stopPropagation()
+        // The consumer owns Escape and Enter (see `ownsKeyboard`); forward untouched.
+        if (ownsKeyboard) {
+            onkeydown?.(event)
+            return
+        }
         if (event.key === 'Escape' && onclose) {
             onclose()
             return
@@ -166,6 +212,13 @@
             return
         }
         onkeydown?.(event)
+    }
+
+    /** Scrim click (never a click that bubbled up from the panel) closes, when opted in. */
+    function handleOverlayClick(event: MouseEvent) {
+        if (!closeOnOverlayClick || !onclose) return
+        if (event.target !== event.currentTarget) return
+        onclose()
     }
 
     onMount(async () => {
@@ -208,8 +261,9 @@
 
 <div
     bind:this={overlayElement}
-    class="modal-overlay"
+    class="modal-overlay {overlayClass}"
     class:blur
+    class:align-top={align === 'top'}
     {role}
     aria-modal="true"
     aria-labelledby={titleId}
@@ -217,6 +271,7 @@
     data-dialog-id={dialogId}
     tabindex="-1"
     onkeydown={handleOverlayKeydown}
+    onclick={handleOverlayClick}
     use:trapFocus={{ onEscape: onclose }}
 >
     <div
@@ -224,6 +279,7 @@
         class="modal-dialog"
         class:dragging={isDragging}
         class:resizable
+        class:fill-body={fillBody}
         style={dialogStyle}
     >
         {#if onclose}
@@ -265,6 +321,13 @@
         align-items: center;
         justify-content: center;
         z-index: var(--z-modal);
+    }
+
+    /* `align="top"`: the Spotlight placement. 10vh reads as "near the top" at any
+       window height, and leaves room for an 80vh panel below it. */
+    .modal-overlay.align-top {
+        align-items: flex-start;
+        padding-top: 10vh;
     }
 
     .modal-overlay.blur {
@@ -315,6 +378,23 @@
         flex: 1 1 auto;
         min-height: 0;
         overflow: auto;
+    }
+
+    /* `fillBody`: a fixed-height frame (the caller caps it via `containerStyle`).
+       Same flex column as `resizable`, and `overflow: hidden` so full-bleed bands
+       clip to the dialog's radius — but the body does NOT scroll here: it's a
+       column whose own child takes the slack and owns the scrolling. */
+    .modal-dialog.fill-body {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .modal-dialog.fill-body .modal-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
     }
 
     /* Fixed square + `--radius-full` so the hover fill is a circle around the glyph,
