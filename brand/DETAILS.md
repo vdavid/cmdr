@@ -20,7 +20,8 @@ Conventions:
 
 - Note at the top whether the listing is submitted or still a draft, which version it describes, and any format the site
   imposes (MacUpdate's description and changelog fields take HTML and ban pricing text, for example).
-- Version-pinned download URLs go through `api.getcmdr.com/download/<version>/<arch>?ref=<site>` so the analytics
-  dashboard attributes downloads to the directory. Bump the version on every resubmission.
+- Download URLs go through `getcmdr.com/download/latest/<arch>?ref=<site>`: always the current release (so a listing
+  never goes stale on a release), and the `ref` attributes the downloads to that directory in the analytics dashboard.
+  Mechanism: `apps/api-server/DETAILS.md` § Download tracking.
 - Record open decisions (price field, developer name) as the value actually submitted, not as a question. The discussion
   belongs in the commit message.

@@ -13,11 +13,11 @@ the Price field and the note to the review team instead.
 
 - **App name**: `Cmdr`
 - **Developer name**: `David Veszelovszki`
-- **Download URL**: `https://api.getcmdr.com/download/0.36.2/universal?ref=macupdate.com`
-  - Redirects to the universal DMG on GitHub Releases and attributes the download to MacUpdate in the dashboard. Plain
-    fallback if they reject redirects:
-    `https://github.com/vdavid/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_universal.dmg`
-  - Version-pinned, so bump it on every resubmission. Swap in the always-latest URL once that route exists.
+- **Download URL**: `https://getcmdr.com/download/latest/universal?ref=macupdate.com`
+  - Always points at the current release, so it never needs a resubmission, and it attributes the download to MacUpdate
+    in the dashboard. Plain fallback if they reject redirects:
+    `https://github.com/vdavid/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_universal.dmg` (version-pinned, so it would
+    need bumping per release).
 - **Product page URL**: `https://getcmdr.com`
 - **Purchase URL**: `https://getcmdr.com/pricing`
 - **Developer support URL**: `https://github.com/vdavid/cmdr/issues`
@@ -35,19 +35,13 @@ Their hint: a brief, compelling overview of the key value proposition, without t
 A blazing-fast, keyboard-driven two-pane file manager for macOS, with fully optional, privacy-first AI.
 ```
 
-Shorter variant if the field is tight:
-
-```
-A blazing-fast, keyboard-driven two-pane file manager for macOS.
-```
-
 ### Description
 
 ```html
 <p>
   <strong>Cmdr</strong> is a keyboard-driven two-pane file manager for macOS, written in Rust. It's built for people who
-  miss Total Commander since switching to a Mac: two folders side by side, every operation on a key, and the familiar
-  function keys (F5 to copy, F6 to move, F8 to delete), all remappable.
+  miss Total Commander since switching to a Mac: two folders side by side, familiar function keys (F5 to copy, F6 to
+  move, F8 to delete), all remappable.
 </p>
 <p>
   Cmdr is in open beta. There might be sharp edges, but the core is stable software used every day by a small group of

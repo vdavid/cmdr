@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, type Mock } from 'vitest'
+import { afterEach, describe, expect, it, vi, type Mock } from 'vitest'
 import { app } from './index'
 
 function createMockAnalyticsEngine(): AnalyticsEngineDataset {
@@ -266,6 +266,122 @@ describe('GET /download/:version/:arch', () => {
   it('returns 400 for invalid architecture', async () => {
     const bindings = createBindings()
     const res = await app.request('/download/1.2.3/windows', { headers: browserUa }, bindings)
+    expect(res.status).toBe(400)
+  })
+})
+
+describe('GET /download/latest/:arch', () => {
+  /** A stubbed release source: the JSON body it answers with, `'fail'` to reject, or absent for a 404. */
+  type ReleaseSource = Record<string, unknown> | 'fail' | undefined
+
+  function requestUrl(input: RequestInfo | URL): string {
+    if (typeof input === 'string') return input
+    return input instanceof URL ? input.href : input.url
+  }
+
+  /** Stub `fetch` so each release source either answers or fails, per test. */
+  function stubReleaseSources(options: { latestJson?: ReleaseSource; githubApi?: ReleaseSource }) {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const source = requestUrl(input).includes('api.github.com') ? options.githubApi : options.latestJson
+      if (source === undefined) return Promise.resolve(new Response(null, { status: 404 }))
+      if (source === 'fail') return Promise.reject(new Error('network down'))
+      return Promise.resolve(new Response(JSON.stringify(source), { status: 200 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    return fetchMock
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('resolves the current version from latest.json and redirects to its DMG', async () => {
+    stubReleaseSources({ latestJson: { version: '0.36.2' } })
+    const bindings = createBindings()
+
+    const res = await app.request('/download/latest/universal', { headers: browserUa }, bindings)
+
+    expect(res.status).toBe(302)
+    expect(res.headers.get('location')).toBe(
+      'https://github.com/vdavid/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_universal.dmg',
+    )
+  })
+
+  it('maps x86_64 to the x64-named DMG of the resolved version', async () => {
+    stubReleaseSources({ latestJson: { version: '0.36.2' } })
+    const bindings = createBindings()
+
+    const res = await app.request('/download/latest/x86_64', { headers: browserUa }, bindings)
+
+    expect(res.headers.get('location')).toBe(
+      'https://github.com/vdavid/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_x64.dmg',
+    )
+  })
+
+  it('records the resolved version in D1, never the literal "latest"', async () => {
+    stubReleaseSources({ latestJson: { version: '0.36.2' } })
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    await app.request('/download/latest/universal?ref=macupdate.com', { headers: browserUa }, bindings)
+
+    const bindArgs = bindMock.mock.calls[0]
+    expect(bindArgs[0]).toBe('0.36.2')
+    expect(bindArgs[6]).toBe('macupdate.com') // ref still attributed
+  })
+
+  it('falls back to the GitHub releases API when latest.json is unreachable', async () => {
+    stubReleaseSources({ latestJson: 'fail', githubApi: { tag_name: 'v0.36.2' } })
+    const bindings = createBindings()
+
+    const res = await app.request('/download/latest/universal', { headers: browserUa }, bindings)
+
+    expect(res.headers.get('location')).toBe(
+      'https://github.com/vdavid/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_universal.dmg',
+    )
+  })
+
+  it('ignores a malformed version in latest.json and falls back', async () => {
+    stubReleaseSources({ latestJson: { version: 'not-a-version' }, githubApi: { tag_name: 'v0.36.2' } })
+    const bindings = createBindings()
+
+    const res = await app.request('/download/latest/universal', { headers: browserUa }, bindings)
+
+    expect(res.headers.get('location')).toBe(
+      'https://github.com/vdavid/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_universal.dmg',
+    )
+  })
+
+  it('sends the visitor to the releases page and logs nothing when neither source resolves', async () => {
+    stubReleaseSources({ latestJson: 'fail', githubApi: 'fail' })
+    const { db, prepareMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const res = await app.request('/download/latest/universal', { headers: browserUa }, bindings)
+
+    expect(res.status).toBe(302)
+    expect(res.headers.get('location')).toBe('https://github.com/vdavid/cmdr/releases/latest')
+    expect(prepareMock).not.toHaveBeenCalled()
+  })
+
+  it('still resolves for bot User-Agents, without the D1 write', async () => {
+    stubReleaseSources({ latestJson: { version: '0.36.2' } })
+    const { db, prepareMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const res = await app.request('/download/latest/universal', { headers: { 'user-agent': 'Slackbot 1.0' } }, bindings)
+
+    expect(res.headers.get('location')).toBe(
+      'https://github.com/vdavid/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_universal.dmg',
+    )
+    expect(prepareMock).not.toHaveBeenCalled()
+  })
+
+  it('returns 400 for an invalid architecture even with the latest token', async () => {
+    stubReleaseSources({ latestJson: { version: '0.36.2' } })
+    const bindings = createBindings()
+
+    const res = await app.request('/download/latest/windows', { headers: browserUa }, bindings)
     expect(res.status).toBe(400)
   })
 })

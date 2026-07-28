@@ -117,6 +117,15 @@ in `public/fonts/`.
   post from the `[download](cmdr:download)` marker. That plugin must run after `rehype-external-links` (so its GitHub
   links don't get `target="_blank"`) and reads `public/latest.json` directly, mirroring `src/lib/release.ts`'s
   GitHub-fallback URL/size logic.
+- **Always-latest download links**: `getcmdr.com/download/latest/<arch>` (and bare `/download/latest`, which hands out
+  the universal build) is an nginx `return 302` to the API server's `/download/latest/<arch>`, query string preserved so
+  `?ref=` and `?src=` survive. It lives in `nginx.conf`, not Astro, because a static build can only emit a meta-refresh
+  page, which a directory's link checker may not follow, and because the target has to stay correct between deploys. The
+  API server resolves `latest` to the current version and logs the download (`apps/api-server/DETAILS.md` § Download
+  tracking). Only the production container serves it: `pnpm dev` and the Playwright E2E run against Astro's dev server,
+  which knows nothing about `nginx.conf`. Use it for links published where we can't edit the URL per release (app
+  directories, the README, blog posts); the site's own download button keeps its version-pinned URL, which carries the
+  `?src=website` tag and the file size.
 - **RSS autodiscovery**: `<link>` tag in `Layout.astro`
 - **Agent-facing endpoints**: `src/pages/llms.txt.ts` (concise) and `llms-full.txt.ts` (detailed) describe Cmdr for AI
   agents; each blog post also has a Markdown mirror at `/blog/{slug}/index.md`. Keep the llms files in sync when product

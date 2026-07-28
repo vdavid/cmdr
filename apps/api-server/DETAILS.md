@@ -48,34 +48,34 @@ live in `CLAUDE.md`.
 
 ## Routes
 
-| Method  | Path                       | Auth          | Purpose                                                                                             |
-| ------- | -------------------------- | ------------- | --------------------------------------------------------------------------------------------------- |
-| GET     | `/`                        | none          | Health check                                                                                        |
-| POST    | `/webhook/paddle`          | HMAC sig      | Purchase completed → generate & email key(s)                                                        |
-| POST    | `/activate`                | none          | Exchange short code → full cryptographic key                                                        |
-| POST    | `/validate`                | none          | Check subscription status via Paddle API                                                            |
-| POST    | `/admin/generate`          | Bearer token  | Manual key generation (customer service / testing)                                                  |
-| GET     | `/admin/stats`             | Bearer token  | Activation count + device count (for analytics dashboard)                                           |
-| GET     | `/admin/downloads`         | Bearer token  | Aggregated downloads by day/version/arch/country/source, with raw `count` + deduped `uniqueCount`   |
-| GET     | `/admin/active-users`      | Bearer token  | Aggregated daily active users by version/arch                                                       |
-| GET     | `/admin/update-activity`   | Bearer token  | Per-day distinct update-enabled installs by version (retained aggregate ∪ today's raw)              |
-| GET     | `/admin/crashes`           | Bearer token  | Aggregated crash data by day/crash site/signal                                                      |
-| GET     | `/admin/heartbeat-dau`     | Bearer token  | Per-day DAU (distinct `anal_id`) + beats from `heartbeat`                                           |
-| GET     | `/admin/funnel`            | Bearer token  | Per-UTC-day acquisition funnel for the last N days (downloads, installs, DAU, D7, signups)          |
-| GET     | `/admin/feedback`          | Bearer token  | In-app feedback rows from D1 (full text + reply-to email), newest first                             |
-| GET     | `/admin/error-reports`     | Bearer token  | Per-bundle error-report metadata from the R2 prod prefix (`list` + custom metadata), newest first   |
-| GET     | `/download/:version/:arch` | none          | Log download to D1 (bots skipped, source + first-touch `ref` tagged, IP daily-hashed), 302 → GitHub |
-| POST    | `/crash-report`            | none          | Ingest crash report to D1                                                                           |
-| POST    | `/heartbeat`               | IP rate-limit | Ingest a usage heartbeat (anonymous `anal_id`) to D1                                                |
-| POST    | `/error-report`            | none          | Multipart upload (zip + meta) → R2, Discord notify                                                  |
-| POST    | `/beta-signup`             | IP rate-limit | Subscribe a contact email to the Listmonk beta list (NO install id)                                 |
-| POST    | `/feedback`                | IP rate-limit | Ingest in-app feedback to D1, Discord notify                                                        |
-| GET     | `/update-check/:version`   | none          | Log update check to D1 (deduped), 302 → latest.json                                                 |
-| GET     | `/r-codes.json`            | none          | Public `?r=<code>` → UTM map (note stripped), edge-cached 5 min, `Access-Control-Allow-Origin: *`   |
-| OPTIONS | `/r-codes.json`            | none          | CORS preflight (204)                                                                                |
-| GET     | `/admin/r-codes`           | Bearer token  | Full code map including admin `note`                                                                |
-| PUT     | `/admin/r-codes/:code`     | Bearer token  | Upsert a code: `{ utm_source, utm_medium?, note? }` (utm values sanitized; code charset validated)  |
-| DELETE  | `/admin/r-codes/:code`     | Bearer token  | Remove a code from the map                                                                          |
+| Method  | Path                       | Auth          | Purpose                                                                                            |
+| ------- | -------------------------- | ------------- | -------------------------------------------------------------------------------------------------- |
+| GET     | `/`                        | none          | Health check                                                                                       |
+| POST    | `/webhook/paddle`          | HMAC sig      | Purchase completed → generate & email key(s)                                                       |
+| POST    | `/activate`                | none          | Exchange short code → full cryptographic key                                                       |
+| POST    | `/validate`                | none          | Check subscription status via Paddle API                                                           |
+| POST    | `/admin/generate`          | Bearer token  | Manual key generation (customer service / testing)                                                 |
+| GET     | `/admin/stats`             | Bearer token  | Activation count + device count (for analytics dashboard)                                          |
+| GET     | `/admin/downloads`         | Bearer token  | Aggregated downloads by day/version/arch/country/source, with raw `count` + deduped `uniqueCount`  |
+| GET     | `/admin/active-users`      | Bearer token  | Aggregated daily active users by version/arch                                                      |
+| GET     | `/admin/update-activity`   | Bearer token  | Per-day distinct update-enabled installs by version (retained aggregate ∪ today's raw)             |
+| GET     | `/admin/crashes`           | Bearer token  | Aggregated crash data by day/crash site/signal                                                     |
+| GET     | `/admin/heartbeat-dau`     | Bearer token  | Per-day DAU (distinct `anal_id`) + beats from `heartbeat`                                          |
+| GET     | `/admin/funnel`            | Bearer token  | Per-UTC-day acquisition funnel for the last N days (downloads, installs, DAU, D7, signups)         |
+| GET     | `/admin/feedback`          | Bearer token  | In-app feedback rows from D1 (full text + reply-to email), newest first                            |
+| GET     | `/admin/error-reports`     | Bearer token  | Per-bundle error-report metadata from the R2 prod prefix (`list` + custom metadata), newest first  |
+| GET     | `/download/:version/:arch` | none          | Log download to D1 (bots skipped, source + `ref` tagged), 302 → GitHub; `:version` takes `latest`  |
+| POST    | `/crash-report`            | none          | Ingest crash report to D1                                                                          |
+| POST    | `/heartbeat`               | IP rate-limit | Ingest a usage heartbeat (anonymous `anal_id`) to D1                                               |
+| POST    | `/error-report`            | none          | Multipart upload (zip + meta) → R2, Discord notify                                                 |
+| POST    | `/beta-signup`             | IP rate-limit | Subscribe a contact email to the Listmonk beta list (NO install id)                                |
+| POST    | `/feedback`                | IP rate-limit | Ingest in-app feedback to D1, Discord notify                                                       |
+| GET     | `/update-check/:version`   | none          | Log update check to D1 (deduped), 302 → latest.json                                                |
+| GET     | `/r-codes.json`            | none          | Public `?r=<code>` → UTM map (note stripped), edge-cached 5 min, `Access-Control-Allow-Origin: *`  |
+| OPTIONS | `/r-codes.json`            | none          | CORS preflight (204)                                                                               |
+| GET     | `/admin/r-codes`           | Bearer token  | Full code map including admin `note`                                                               |
+| PUT     | `/admin/r-codes/:code`     | Bearer token  | Upsert a code: `{ utm_source, utm_medium?, note? }` (utm values sanitized; code charset validated) |
+| DELETE  | `/admin/r-codes/:code`     | Bearer token  | Remove a code from the map                                                                         |
 
 ## Environments
 
@@ -318,6 +318,15 @@ status on transient Paddle outages instead of overwriting a valid "active" cache
 fire-and-forget via `waitUntil` + `.catch(() => {})`. Three things make the count meaningful as an install signal
 (migration `0008`):
 
+- **`latest` is a valid `:version`,** for links we can't edit per release (app directories, the README, blog posts, a
+  chat message from last year). `resolveLatestVersion` reads `getcmdr.com/latest.json` (the same manifest the in-app
+  updater reads, so `latest` can never name a version the updater doesn't know), falling back to GitHub's
+  `releases/latest` API for the window where the website is down or mid-deploy. Both answers are validated against
+  `versionPattern` before they reach a redirect URL or a D1 row, and both fetches are edge-cached for five minutes, so a
+  download burst costs one origin fetch. D1 stores the RESOLVED version, never `latest`, which keeps the per-version
+  breakdown intact. When neither source answers, the handler 302s to the GitHub releases page (a human can pick a build
+  there) and writes NO row: a guessed version would corrupt the counts. `getcmdr.com/download/latest/<arch>` is the
+  public face of this, an nginx redirect in `apps/website/nginx.conf`.
 - **Bot/unfurler hits are dropped:** link-preview bots (Discord, Slack, etc.) and crawlers fetch the URL and would
   inflate the count, so a User-Agent denylist skips the D1 write (the 302 is still served). A missing UA is treated as a
   bot too. Homebrew downloads via curl, which would match the `curl` rule, so Homebrew is explicitly exempted.

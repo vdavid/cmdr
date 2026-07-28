@@ -492,11 +492,74 @@ function cappedUserAgent(userAgent: string | undefined): string | null {
   return userAgent.slice(0, maxUserAgentLength)
 }
 
-telemetry.get('/download/:version/:arch', async (c) => {
-  const { version, arch } = c.req.param()
+const latestManifestUrl = 'https://getcmdr.com/latest.json'
+const githubLatestReleaseUrl = 'https://api.github.com/repos/vdavid/cmdr/releases/latest'
+const releasesPageUrl = 'https://github.com/vdavid/cmdr/releases/latest'
 
-  if (!versionPattern.test(version) || !validArchitectures.has(arch)) {
+/** Five minutes of edge caching: a download burst costs one origin fetch, and a release goes live fast. */
+const latestVersionCacheSeconds = 300
+
+/**
+ * Resolve the `latest` version token to a concrete version number, or `null` when both sources fail.
+ *
+ * Primary is our own release manifest, the same file the in-app updater reads, so `latest` can never
+ * name a version the updater doesn't know. GitHub's release API is the fallback for the window where
+ * the website is down or mid-deploy; it's rate-limited unauthenticated, which is fine for a fallback.
+ * Both answers are validated against `versionPattern` before use: this string goes into a redirect URL
+ * and a D1 row.
+ */
+async function resolveLatestVersion(): Promise<string | null> {
+  try {
+    const res = await fetch(latestManifestUrl, {
+      cf: { cacheTtl: latestVersionCacheSeconds, cacheEverything: true },
+    })
+    if (res.ok) {
+      const manifest = await res.json<{ version?: unknown }>()
+      if (typeof manifest.version === 'string' && versionPattern.test(manifest.version)) {
+        return manifest.version
+      }
+    }
+  } catch {
+    // Website unreachable; fall through to GitHub.
+  }
+
+  try {
+    const res = await fetch(githubLatestReleaseUrl, {
+      // GitHub 403s an API request without a User-Agent.
+      headers: { 'user-agent': 'cmdr-api-server', accept: 'application/vnd.github+json' },
+      cf: { cacheTtl: latestVersionCacheSeconds, cacheEverything: true },
+    })
+    if (res.ok) {
+      const release = await res.json<{ tag_name?: unknown }>()
+      if (typeof release.tag_name === 'string') {
+        const tagged = release.tag_name.replace(/^v/, '')
+        if (versionPattern.test(tagged)) return tagged
+      }
+    }
+  } catch {
+    // Both sources down.
+  }
+
+  return null
+}
+
+telemetry.get('/download/:version/:arch', async (c) => {
+  const { version: requestedVersion, arch } = c.req.param()
+  const wantsLatest = requestedVersion === 'latest'
+
+  if ((!wantsLatest && !versionPattern.test(requestedVersion)) || !validArchitectures.has(arch)) {
     return c.json({ error: 'Invalid version or architecture' }, 400)
+  }
+
+  // `latest` keeps published links (app directories, the README, blog posts, anything we can't edit
+  // per release) pointing at the current DMG. It resolves to a concrete version here, so the redirect
+  // names a real asset and D1 keeps its per-version breakdown instead of a `latest` bucket.
+  const version = wantsLatest ? await resolveLatestVersion() : requestedVersion
+  if (!version) {
+    // Neither release source answered. Send the visitor to the releases page, where they can pick a
+    // build by hand, rather than to a URL we know is dead. Nothing to log: there's no version to
+    // attribute the download to, and a guessed one would corrupt the per-version counts.
+    return c.redirect(releasesPageUrl, 302)
   }
 
   // tauri-action names the Intel DMG `_x64.dmg`, not `_x86_64.dmg`. Map at the boundary;
