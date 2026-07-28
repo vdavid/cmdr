@@ -13,6 +13,7 @@ import { openShortcutsWindow } from '$lib/shortcuts/shortcuts-window'
 import { openQueueWindow } from '$lib/file-operations/queue/queue-window'
 import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
 import { openFeedbackDialog } from '$lib/feedback/feedback-flow.svelte'
+import { openAcknowledgements } from '$lib/licensing/acknowledgements-trigger.svelte'
 import { openWhatsNew } from '$lib/whats-new/whats-new-trigger.svelte'
 import { openOperationLog } from '$lib/operation-log/operation-log-trigger.svelte'
 import { toggleRail } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
@@ -60,6 +61,10 @@ export const appDialogHandlers = {
 
   'feedback.send': () => {
     openFeedbackDialog()
+  },
+
+  'app.acknowledgements': () => {
+    openAcknowledgements()
   },
 
   'help.whatsNew': () => {

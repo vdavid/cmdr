@@ -28,11 +28,11 @@ the layout facts that none of those carry live here:
 
 ## Startup: showing the main window
 
-The main window launches `visible: false`; `showMainOnMount()` shows it from `onMount`. This is the ONLY path that
-shows the main window: the backend restores saved size and position during setup (`src-tauri/src/window_state/`, which
-runs while the window is still hidden) but deliberately never shows it.
+The main window launches `visible: false`; `showMainOnMount()` shows it from `onMount`. This is the ONLY path that shows
+the main window: the backend restores saved size and position during setup (`src-tauri/src/window_state/`, which runs
+while the window is still hidden) but deliberately never shows it.
 
-**Show first, check after.** There used to be a paint gate *before* the show, awaiting `waitForNextPaint` (a double
+**Show first, check after.** There used to be a paint gate _before_ the show, awaiting `waitForNextPaint` (a double
 `requestAnimationFrame`). That's gone: it cost a fixed second of startup and produced no usable signal. The check now
 runs after the show, where the window is visible and rAF isn't throttled, so its answer means something. If no frame
 lands within 1 s we re-show, because `makeKeyAndOrderFront:` re-invalidates the view.
@@ -44,7 +44,7 @@ happened, since the frontend has hydrated and built the DOM by then.
 
 **Gotcha, and a retracted measurement.** This file used to state that rAF ticks while the window is hidden, citing
 "first paint confirmed in ~25 ms" (2026-07-23). That measurement was taken while `tauri-plugin-window-state` was still
-showing the window at window-ready, i.e. *before* the frontend ran, so it measured a window that was already visible.
+showing the window at window-ready, i.e. _before_ the frontend ran, so it measured a window that was already visible.
 The gate was a no-op re-show and had never once run in the hidden configuration it was written for. Removing the plugin
 is what surfaced this. A single later observation with a genuinely hidden window did hit the 1 s timeout, which points
 at rAF being throttled while hidden, but that machine was at load average 79, so starvation isn't excluded. The

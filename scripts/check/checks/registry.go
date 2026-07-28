@@ -999,7 +999,9 @@ var AllChecks = []CheckDefinition{
 			"Cargo.lock",
 			"pnpm-lock.yaml",
 			"apps/desktop/src-tauri/deny.toml", // the accepted-license list is derived from it
-			"THIRD-PARTY-NOTICES.md",           // a hand-edit must be caught, not cached over
+			// Both generated outputs: a hand-edit must be caught, not cached over.
+			"THIRD-PARTY-NOTICES.md",
+			"apps/desktop/src/lib/licensing/third-party-packages.gen.json",
 		},
 		Run: RunThirdPartyNotices,
 	},

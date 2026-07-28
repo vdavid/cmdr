@@ -390,5 +390,38 @@
   "licensing.section.statusActive": "Aktív",
   "@licensing.section.statusActive": {
     "sourceHash": "9234069"
+  },
+  "licensing.acknowledgements.srTitle": "Köszönetnyilvánítás",
+  "@licensing.acknowledgements.srTitle": {
+    "sourceHash": "c9015d5"
+  },
+  "licensing.acknowledgements.note": "Nézd, milyen hosszú ez a lista! Nagyon hálás vagyok mindazok munkájáért, akik létrehozták és karbantartják azokat a libeket, amikre a Cmdr épül.",
+  "@licensing.acknowledgements.note": {
+    "sourceHash": "7d0542d"
+  },
+  "licensing.acknowledgements.thanks": "Köszönöm mindannyiótoknak, amit az OSS világáért tesztek! ❤️",
+  "@licensing.acknowledgements.thanks": {
+    "sourceHash": "302273d"
+  },
+  "licensing.acknowledgements.signature": "David",
+  "@licensing.acknowledgements.signature": {
+    "sourceHash": "a6b54c2",
+    "sameAsSourceJustification": "A personal first name; the same in every locale."
+  },
+  "licensing.acknowledgements.rustHeading": "Rust crate-ek ({count, number})",
+  "@licensing.acknowledgements.rustHeading": {
+    "sourceHash": "b2f91ff"
+  },
+  "licensing.acknowledgements.npmHeading": "npm csomagok ({count, number})",
+  "@licensing.acknowledgements.npmHeading": {
+    "sourceHash": "44bdf59"
+  },
+  "licensing.acknowledgements.fullTexts": "A teljes licencszövegeket a Cmdr a THIRD-PARTY-NOTICES.md fájlban tartalmazza.",
+  "@licensing.acknowledgements.fullTexts": {
+    "sourceHash": "62b74a3"
+  },
+  "licensing.acknowledgements.loading": "Lista betöltése…",
+  "@licensing.acknowledgements.loading": {
+    "sourceHash": "0b6efaa"
   }
 }

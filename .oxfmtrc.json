@@ -25,6 +25,8 @@
     "**/test-results/",
     "**/coverage/",
     "apps/desktop/test/smb-servers/.compose/",
-    "apps/website/src/pages/pricing.astro"
+    "apps/website/src/pages/pricing.astro",
+    "THIRD-PARTY-NOTICES.md",
+    "apps/desktop/src/lib/licensing/third-party-packages.gen.json"
   ]
 }

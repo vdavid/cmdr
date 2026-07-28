@@ -20,6 +20,7 @@ import { DISPATCH_EXEMPT_IDS } from '../../routes/(main)/command-handlers/types'
  */
 const EXPECTED_PALETTE_IDS: readonly CommandId[] = [
   'app.about',
+  'app.acknowledgements',
   'app.licenseKey',
   'app.settings',
   'app.checkForUpdates',

@@ -357,6 +357,14 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
 
   // ── Licensing and app lifecycle ───────────────────────────────────────────
   {
+    dialogId: 'acknowledgements',
+    label: 'Acknowledgements',
+    hostWindow: 'main',
+    status: 'ready',
+    note: 'Loads the generated dependency list on open, so the two long lists reflect what actually ships right now. Regenerate with `pnpm check third-party-notices`.',
+    states: [{ id: 'default', label: 'Open' }],
+  },
+  {
     dialogId: 'about',
     label: 'About Cmdr',
     hostWindow: 'main',

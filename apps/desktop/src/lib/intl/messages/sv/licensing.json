@@ -391,5 +391,38 @@
   "licensing.section.statusActive": "Aktiv",
   "@licensing.section.statusActive": {
     "sourceHash": "9234069"
+  },
+  "licensing.acknowledgements.srTitle": "Tack till",
+  "@licensing.acknowledgements.srTitle": {
+    "sourceHash": "c9015d5"
+  },
+  "licensing.acknowledgements.note": "Titta så lång den här listan är! Jag uppskattar verkligen arbetet från alla som skapar och underhåller alla dessa libs som Cmdr bygger på.",
+  "@licensing.acknowledgements.note": {
+    "sourceHash": "7d0542d"
+  },
+  "licensing.acknowledgements.thanks": "Tack till er alla för era bidrag till OSS-världen! ❤️",
+  "@licensing.acknowledgements.thanks": {
+    "sourceHash": "302273d"
+  },
+  "licensing.acknowledgements.signature": "David",
+  "@licensing.acknowledgements.signature": {
+    "sourceHash": "a6b54c2",
+    "sameAsSourceJustification": "A personal first name; the same in every locale."
+  },
+  "licensing.acknowledgements.rustHeading": "Rust-crates ({count, number})",
+  "@licensing.acknowledgements.rustHeading": {
+    "sourceHash": "b2f91ff"
+  },
+  "licensing.acknowledgements.npmHeading": "npm-paket ({count, number})",
+  "@licensing.acknowledgements.npmHeading": {
+    "sourceHash": "44bdf59"
+  },
+  "licensing.acknowledgements.fullTexts": "De fullständiga licenstexterna följer med Cmdr i THIRD-PARTY-NOTICES.md.",
+  "@licensing.acknowledgements.fullTexts": {
+    "sourceHash": "62b74a3"
+  },
+  "licensing.acknowledgements.loading": "Läser in listan…",
+  "@licensing.acknowledgements.loading": {
+    "sourceHash": "0b6efaa"
   }
 }

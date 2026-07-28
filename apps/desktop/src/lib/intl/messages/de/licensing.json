@@ -392,5 +392,38 @@
   "licensing.section.statusActive": "Aktiv",
   "@licensing.section.statusActive": {
     "sourceHash": "9234069"
+  },
+  "licensing.acknowledgements.srTitle": "Danksagungen",
+  "@licensing.acknowledgements.srTitle": {
+    "sourceHash": "c9015d5"
+  },
+  "licensing.acknowledgements.note": "Schau mal, wie lang diese Liste ist! Ich schätze die Arbeit der Entwicklerinnen und Entwickler und der Maintainer all dieser Libs, auf denen Cmdr aufbaut, sehr.",
+  "@licensing.acknowledgements.note": {
+    "sourceHash": "7d0542d"
+  },
+  "licensing.acknowledgements.thanks": "Vielen Dank euch allen für eure Beiträge zur OSS-Welt! ❤️",
+  "@licensing.acknowledgements.thanks": {
+    "sourceHash": "302273d"
+  },
+  "licensing.acknowledgements.signature": "David",
+  "@licensing.acknowledgements.signature": {
+    "sourceHash": "a6b54c2",
+    "sameAsSourceJustification": "A personal first name; the same in every locale."
+  },
+  "licensing.acknowledgements.rustHeading": "Rust-Crates ({count, number})",
+  "@licensing.acknowledgements.rustHeading": {
+    "sourceHash": "b2f91ff"
+  },
+  "licensing.acknowledgements.npmHeading": "npm-Pakete ({count, number})",
+  "@licensing.acknowledgements.npmHeading": {
+    "sourceHash": "44bdf59"
+  },
+  "licensing.acknowledgements.fullTexts": "Die vollständigen Lizenztexte liegen Cmdr in THIRD-PARTY-NOTICES.md bei.",
+  "@licensing.acknowledgements.fullTexts": {
+    "sourceHash": "62b74a3"
+  },
+  "licensing.acknowledgements.loading": "Liste wird geladen…",
+  "@licensing.acknowledgements.loading": {
+    "sourceHash": "0b6efaa"
   }
 }

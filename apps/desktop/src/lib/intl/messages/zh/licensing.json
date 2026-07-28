@@ -390,5 +390,38 @@
   "licensing.section.statusActive": "有效",
   "@licensing.section.statusActive": {
     "sourceHash": "9234069"
+  },
+  "licensing.acknowledgements.srTitle": "致谢",
+  "@licensing.acknowledgements.srTitle": {
+    "sourceHash": "c9015d5"
+  },
+  "licensing.acknowledgements.note": "看看这个列表有多长！我由衷感谢所有这些 Cmdr 所依赖的库的创作者和维护者的付出。",
+  "@licensing.acknowledgements.note": {
+    "sourceHash": "7d0542d"
+  },
+  "licensing.acknowledgements.thanks": "感谢大家为 OSS 世界所做的贡献！❤️",
+  "@licensing.acknowledgements.thanks": {
+    "sourceHash": "302273d"
+  },
+  "licensing.acknowledgements.signature": "David",
+  "@licensing.acknowledgements.signature": {
+    "sourceHash": "a6b54c2",
+    "sameAsSourceJustification": "A personal first name; the same in every locale."
+  },
+  "licensing.acknowledgements.rustHeading": "Rust crates（{count, number}）",
+  "@licensing.acknowledgements.rustHeading": {
+    "sourceHash": "b2f91ff"
+  },
+  "licensing.acknowledgements.npmHeading": "npm 包（{count, number}）",
+  "@licensing.acknowledgements.npmHeading": {
+    "sourceHash": "44bdf59"
+  },
+  "licensing.acknowledgements.fullTexts": "完整的许可证文本随 Cmdr 一起提供，位于 THIRD-PARTY-NOTICES.md。",
+  "@licensing.acknowledgements.fullTexts": {
+    "sourceHash": "62b74a3"
+  },
+  "licensing.acknowledgements.loading": "正在加载列表…",
+  "@licensing.acknowledgements.loading": {
+    "sourceHash": "0b6efaa"
   }
 }

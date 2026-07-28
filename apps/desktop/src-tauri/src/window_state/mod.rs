@@ -127,7 +127,6 @@ impl WindowStateStore {
             log::warn!(target: LOG_TARGET, "Couldn't write {STATE_FILE_NAME}: {e}");
         }
     }
-
 }
 
 /// Loads saved state, registers it, and starts the debounced disk writer.

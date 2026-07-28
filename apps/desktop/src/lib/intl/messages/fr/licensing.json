@@ -392,5 +392,38 @@
   "@licensing.section.statusActive": {
     "sourceHash": "9234069",
     "sameAsSourceJustification": "'Active' is identical in French (feminine of 'actif', agreeing with 'licence'); per the glossary, license status stays 'Active'."
+  },
+  "licensing.acknowledgements.srTitle": "Remerciements",
+  "@licensing.acknowledgements.srTitle": {
+    "sourceHash": "c9015d5"
+  },
+  "licensing.acknowledgements.note": "Regardez la longueur de cette liste ! J''apprécie profondément le travail des créateurs et des mainteneurs de toutes ces libs sur lesquelles Cmdr s''appuie.",
+  "@licensing.acknowledgements.note": {
+    "sourceHash": "7d0542d"
+  },
+  "licensing.acknowledgements.thanks": "Merci à toutes et à tous pour vos contributions au monde de l''OSS ! ❤️",
+  "@licensing.acknowledgements.thanks": {
+    "sourceHash": "302273d"
+  },
+  "licensing.acknowledgements.signature": "David",
+  "@licensing.acknowledgements.signature": {
+    "sourceHash": "a6b54c2",
+    "sameAsSourceJustification": "A personal first name; the same in every locale."
+  },
+  "licensing.acknowledgements.rustHeading": "Crates Rust ({count, number})",
+  "@licensing.acknowledgements.rustHeading": {
+    "sourceHash": "b2f91ff"
+  },
+  "licensing.acknowledgements.npmHeading": "Paquets npm ({count, number})",
+  "@licensing.acknowledgements.npmHeading": {
+    "sourceHash": "44bdf59"
+  },
+  "licensing.acknowledgements.fullTexts": "Les textes complets des licences sont fournis avec Cmdr dans THIRD-PARTY-NOTICES.md.",
+  "@licensing.acknowledgements.fullTexts": {
+    "sourceHash": "62b74a3"
+  },
+  "licensing.acknowledgements.loading": "Chargement de la liste…",
+  "@licensing.acknowledgements.loading": {
+    "sourceHash": "0b6efaa"
   }
 }

@@ -159,6 +159,9 @@ pub const FAVORITE_REMOVE_ID: &str = "favorite_remove";
 /// Menu item ID for About window.
 pub const ABOUT_ID: &str = "about";
 
+/// Menu item ID for the Acknowledgements dialog (third-party credits).
+pub const ACKNOWLEDGEMENTS_ID: &str = "acknowledgements";
+
 /// Menu item ID for Enter License Key.
 pub const ENTER_LICENSE_KEY_ID: &str = "enter_license_key";
 
@@ -211,6 +214,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
     match menu_id {
         // App-level commands (always emit)
         ABOUT_ID => Some(("app.about", CommandScope::App)),
+        ACKNOWLEDGEMENTS_ID => Some(("app.acknowledgements", CommandScope::App)),
         ENTER_LICENSE_KEY_ID => Some(("app.licenseKey", CommandScope::App)),
         SETTINGS_ID => Some(("app.settings", CommandScope::App)),
         COMMAND_PALETTE_ID => Some(("app.commandPalette", CommandScope::FileScoped)),
@@ -318,6 +322,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
 pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
     match command_id {
         "app.about" => Some(ABOUT_ID),
+        "app.acknowledgements" => Some(ACKNOWLEDGEMENTS_ID),
         "app.licenseKey" => Some(ENTER_LICENSE_KEY_ID),
         "app.settings" => Some(SETTINGS_ID),
         "app.commandPalette" => Some(COMMAND_PALETTE_ID),
@@ -492,6 +497,7 @@ mod tests {
         // Every entry in command_id_to_menu_id should map back correctly via menu_id_to_command
         let command_ids = [
             "app.about",
+            "app.acknowledgements",
             "app.licenseKey",
             "app.settings",
             "app.commandPalette",

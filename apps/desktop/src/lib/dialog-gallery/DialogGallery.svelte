@@ -41,6 +41,7 @@
     import type { CrashReport } from '$lib/tauri-commands'
     import AlertDialog from '$lib/ui/AlertDialog.svelte'
     import AboutWindow from '$lib/licensing/AboutWindow.svelte'
+    import AcknowledgementsDialog from '$lib/licensing/AcknowledgementsDialog.svelte'
     import CommercialReminderModal from '$lib/licensing/CommercialReminderModal.svelte'
     import ExpirationModal from '$lib/licensing/ExpirationModal.svelte'
     import LicenseKeyDialog from '$lib/licensing/LicenseKeyDialog.svelte'
@@ -83,6 +84,7 @@
     type RenderPlan =
         | { kind: 'alert'; props: AlertFixture }
         | { kind: 'about' }
+        | { kind: 'acknowledgements' }
         | { kind: 'commercial-reminder' }
         | { kind: 'expiration'; props: ExpirationFixture }
         | { kind: 'license' }
@@ -214,6 +216,7 @@
             withDiskFixture(fixtureRecords['go-to-path'][id], disk, (props) => ({ kind: 'go-to-path', props })),
 
         about: () => ({ kind: 'about' }),
+        acknowledgements: () => ({ kind: 'acknowledgements' }),
         'commercial-reminder': () => ({ kind: 'commercial-reminder' }),
         license: () => ({ kind: 'license' }),
         'connect-to-server': () => ({ kind: 'connect-to-server' }),
@@ -284,6 +287,8 @@
         <AlertDialog {...plan.props} onClose={closeGalleryDialog} />
     {:else if plan?.kind === 'about'}
         <AboutWindow onClose={closeGalleryDialog} />
+    {:else if plan?.kind === 'acknowledgements'}
+        <AcknowledgementsDialog onClose={closeGalleryDialog} />
     {:else if plan?.kind === 'commercial-reminder'}
         <CommercialReminderModal onClose={closeGalleryDialog} />
     {:else if plan?.kind === 'expiration'}

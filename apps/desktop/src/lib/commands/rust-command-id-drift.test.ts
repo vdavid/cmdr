@@ -116,6 +116,8 @@ describe('menuCommands ↔ command_id_to_menu_id drift', () => {
   // reason; remove it here the day the item is registered.
   const UNREGISTERED_MENU_ITEMS: Record<string, string> = {
     'app.about': 'cmdr app-menu item, never registered in MenuState.items; no default shortcut to sync',
+    'app.acknowledgements':
+      'cmdr app-menu item (Help on Linux), never registered in MenuState.items; no default shortcut to sync',
     'app.licenseKey': 'cmdr app-menu item, never registered in MenuState.items; no default shortcut to sync',
     'help.openShortcuts': 'Help-menu item; no default keyboard shortcut to sync',
     'queue.show': 'Help-menu item that opens the transfer-queue window; no default keyboard shortcut to sync',

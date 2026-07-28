@@ -10,9 +10,9 @@ use super::menu_items::{
     show_in_file_manager_accelerator, show_in_file_manager_label,
 };
 use super::{
-    ABOUT_ID, ASK_CMDR_ID, CHANGELOG_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID,
-    COPY_FILENAME_ID, COPY_PATH_ID, DESELECT_ALL_ID, DESELECT_FILES_ID, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID,
-    EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FAVORITES_ADD_ID, FILE_COMPRESS_ID, FILE_COPY_ID,
+    ABOUT_ID, ACKNOWLEDGEMENTS_ID, ASK_CMDR_ID, CHANGELOG_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID,
+    COMMAND_PALETTE_ID, COPY_FILENAME_ID, COPY_PATH_ID, DESELECT_ALL_ID, DESELECT_FILES_ID, EDIT_COPY_ID, EDIT_CUT_ID,
+    EDIT_ID, EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FAVORITES_ADD_ID, FILE_COMPRESS_ID, FILE_COPY_ID,
     FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID,
     GO_BACK_ID, GO_FORWARD_ID, GO_LATEST_DOWNLOAD_ID, GO_PARENT_ID, GO_TO_PATH_ID, HELP_SEND_ERROR_REPORT_ID,
     HELP_SEND_FEEDBACK_ID, HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID,
@@ -344,6 +344,15 @@ pub(crate) fn build_menu_linux<R: Runtime>(
 
     // --- Help menu ---
     let about_item = MenuItem::with_id(app, ABOUT_ID, "&About cmdr", true, None::<&str>)?;
+    // Linux has no app menu, so the third-party credits sit under Help next to
+    // About. `k` is the free mnemonic (A, K, t, W, f, S are taken).
+    let acknowledgements_item = MenuItem::with_id(
+        app,
+        ACKNOWLEDGEMENTS_ID,
+        "Ac&knowledgements\u{2026}",
+        true,
+        None::<&str>,
+    )?;
     let shortcuts_item = MenuItem::with_id(app, HELP_SHORTCUTS_ID, "&Keyboard shortcuts", true, None::<&str>)?;
     let queue_show_item = MenuItem::with_id(app, QUEUE_SHOW_ID, "Show &transfer queue", true, None::<&str>)?;
     let whats_new_item = MenuItem::with_id(app, HELP_WHATS_NEW_ID, "&What's new", true, None::<&str>)?;
@@ -362,6 +371,7 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         true,
         &[
             &about_item,
+            &acknowledgements_item,
             &PredefinedMenuItem::separator(app)?,
             &shortcuts_item,
             &queue_show_item,
@@ -472,18 +482,19 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     register_item(&mut items, PREV_TAB_ID, &prev_tab_item, &tab_menu, 5);
     register_item(&mut items, CLOSE_OTHER_TABS_ID, &close_other_tabs_item, &tab_menu, 8);
 
-    // Help menu: about(0), separator(1), shortcuts(2), queue_show(3), whats_new(4), send_feedback(5), send_error_report(6)
+    // Help menu: about(0), acknowledgements(1), separator(2), shortcuts(3),
+    // queue_show(4), whats_new(5), send_feedback(6), send_error_report(7)
     register_item(&mut items, ABOUT_ID, &about_item, &help_menu, 0);
-    register_item(&mut items, HELP_SHORTCUTS_ID, &shortcuts_item, &help_menu, 2);
-    register_item(&mut items, QUEUE_SHOW_ID, &queue_show_item, &help_menu, 3);
-    register_item(&mut items, HELP_WHATS_NEW_ID, &whats_new_item, &help_menu, 4);
-    register_item(&mut items, HELP_SEND_FEEDBACK_ID, &send_feedback_item, &help_menu, 5);
+    register_item(&mut items, HELP_SHORTCUTS_ID, &shortcuts_item, &help_menu, 3);
+    register_item(&mut items, QUEUE_SHOW_ID, &queue_show_item, &help_menu, 4);
+    register_item(&mut items, HELP_WHATS_NEW_ID, &whats_new_item, &help_menu, 5);
+    register_item(&mut items, HELP_SEND_FEEDBACK_ID, &send_feedback_item, &help_menu, 6);
     register_item(
         &mut items,
         HELP_SEND_ERROR_REPORT_ID,
         &send_error_report_item,
         &help_menu,
-        6,
+        7,
     );
 
     Ok(MenuItems {

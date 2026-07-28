@@ -24,6 +24,7 @@ const EXPECTED_NAMES: Record<string, string> = {
   'app.hideOthers': 'Hide others',
   'app.showAll': 'Show all',
   'app.about': 'About Cmdr',
+  'app.acknowledgements': 'Acknowledgements\u2026',
   // 'app.licenseKey' is state-dependent; pinned separately below.
   'app.commandPalette': 'Open command palette',
   'app.settings': 'Open settings',

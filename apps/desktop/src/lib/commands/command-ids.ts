@@ -35,6 +35,7 @@ export const COMMAND_IDS = [
   'app.hideOthers',
   'app.showAll',
   'app.about',
+  'app.acknowledgements',
   'app.licenseKey',
   'app.commandPalette',
   'app.settings',

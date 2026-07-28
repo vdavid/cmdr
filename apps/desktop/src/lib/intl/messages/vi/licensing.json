@@ -390,5 +390,39 @@
   "licensing.section.statusActive": "Đang hoạt động",
   "@licensing.section.statusActive": {
     "sourceHash": "9234069"
+  },
+  "licensing.acknowledgements.srTitle": "Lời cảm ơn",
+  "@licensing.acknowledgements.srTitle": {
+    "sourceHash": "c9015d5"
+  },
+  "licensing.acknowledgements.note": "Nhìn xem danh sách này dài thế nào! Tôi vô cùng trân trọng công sức của những người tạo ra và duy trì tất cả các libs mà Cmdr được xây dựng trên đó.",
+  "@licensing.acknowledgements.note": {
+    "sourceHash": "7d0542d"
+  },
+  "licensing.acknowledgements.thanks": "Cảm ơn tất cả các bạn vì những đóng góp cho thế giới OSS! ❤️",
+  "@licensing.acknowledgements.thanks": {
+    "sourceHash": "302273d"
+  },
+  "licensing.acknowledgements.signature": "David",
+  "@licensing.acknowledgements.signature": {
+    "sourceHash": "a6b54c2",
+    "sameAsSourceJustification": "A personal first name; the same in every locale."
+  },
+  "licensing.acknowledgements.rustHeading": "Rust crates ({count, number})",
+  "@licensing.acknowledgements.rustHeading": {
+    "sourceHash": "b2f91ff",
+    "sameAsSourceJustification": "A personal first name; the same in every locale."
+  },
+  "licensing.acknowledgements.npmHeading": "Gói npm ({count, number})",
+  "@licensing.acknowledgements.npmHeading": {
+    "sourceHash": "44bdf59"
+  },
+  "licensing.acknowledgements.fullTexts": "Toàn bộ nội dung giấy phép được kèm theo Cmdr trong THIRD-PARTY-NOTICES.md.",
+  "@licensing.acknowledgements.fullTexts": {
+    "sourceHash": "62b74a3"
+  },
+  "licensing.acknowledgements.loading": "Đang tải danh sách…",
+  "@licensing.acknowledgements.loading": {
+    "sourceHash": "0b6efaa"
   }
 }

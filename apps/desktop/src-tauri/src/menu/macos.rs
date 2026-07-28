@@ -13,9 +13,9 @@ use super::menu_items::{
     show_in_file_manager_accelerator, show_in_file_manager_label,
 };
 use super::{
-    ABOUT_ID, ASK_CMDR_ID, CHANGELOG_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID,
-    COPY_FILENAME_ID, COPY_PATH_ID, DESELECT_ALL_ID, DESELECT_FILES_ID, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID,
-    EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FAVORITES_ADD_ID, FILE_COMPRESS_ID, FILE_COPY_ID,
+    ABOUT_ID, ACKNOWLEDGEMENTS_ID, ASK_CMDR_ID, CHANGELOG_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID,
+    COMMAND_PALETTE_ID, COPY_FILENAME_ID, COPY_PATH_ID, DESELECT_ALL_ID, DESELECT_FILES_ID, EDIT_COPY_ID, EDIT_CUT_ID,
+    EDIT_ID, EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FAVORITES_ADD_ID, FILE_COMPRESS_ID, FILE_COPY_ID,
     FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID,
     GO_BACK_ID, GO_FORWARD_ID, GO_LATEST_DOWNLOAD_ID, GO_PARENT_ID, GO_TO_PATH_ID, HELP_SEND_ERROR_REPORT_ID,
     HELP_SEND_FEEDBACK_ID, HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID,
@@ -36,6 +36,11 @@ pub(crate) fn build_menu_macos<R: Runtime>(
 
     // --- cmdr app menu ---
     let about_item = MenuItem::with_id(app, ABOUT_ID, "About cmdr", true, None::<&str>)?;
+    // Credits the open-source libraries Cmdr ships. Sits next to About and the
+    // license: it's app metadata, not a help topic, which is also where macOS
+    // apps that ship one put it.
+    let acknowledgements_item =
+        MenuItem::with_id(app, ACKNOWLEDGEMENTS_ID, "Acknowledgements\u{2026}", true, None::<&str>)?;
     let license_label = if has_existing_license {
         "See license details..."
     } else {
@@ -63,6 +68,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         true,
         &[
             &about_item,
+            &acknowledgements_item,
             &license_item,
             &check_for_updates_item,
             &changelog_item,
@@ -514,12 +520,13 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         5,
     );
 
-    // cmdr menu positions: about(0), license(1), check_for_updates(2), changelog(3),
-    // open_onboarding(4), sep(5), settings(6), sep(7), services(8), sep(9), hide(10),
-    // hide_others(11), show_all(12), sep(13), quit(14)
-    register_item(&mut items, CHECK_FOR_UPDATES_ID, &check_for_updates_item, &app_menu, 2);
-    register_item(&mut items, CHANGELOG_ID, &changelog_item, &app_menu, 3);
-    register_item(&mut items, OPEN_ONBOARDING_ID, &open_onboarding_item, &app_menu, 4);
+    // cmdr menu positions: about(0), acknowledgements(1), license(2),
+    // check_for_updates(3), changelog(4), open_onboarding(5), sep(6), settings(7),
+    // sep(8), services(9), sep(10), hide(11), hide_others(12), show_all(13),
+    // sep(14), quit(15)
+    register_item(&mut items, CHECK_FOR_UPDATES_ID, &check_for_updates_item, &app_menu, 3);
+    register_item(&mut items, CHANGELOG_ID, &changelog_item, &app_menu, 4);
+    register_item(&mut items, OPEN_ONBOARDING_ID, &open_onboarding_item, &app_menu, 5);
 
     Ok(MenuItems {
         menu,

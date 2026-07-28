@@ -47,6 +47,13 @@ export const appCommands: CommandSource[] = [
     nativeShortcut: true,
   },
   { id: 'app.about', nameKey: 'commands.appAbout.label', scope: 'App', showInPalette: true, shortcuts: [] },
+  {
+    id: 'app.acknowledgements',
+    nameKey: 'commands.appAcknowledgements.label',
+    scope: 'App',
+    showInPalette: true,
+    shortcuts: [],
+  },
   // `app.licenseKey` resolves its name from one of two keys via the license-state
   // getter below (see `resolveCommand`), so it carries no `nameKey` here.
   {

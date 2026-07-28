@@ -14,6 +14,11 @@
     import SelectionDialog from '$lib/selection-dialog/SelectionDialog.svelte'
     import GoToPathDialog from '$lib/go-to-path/GoToPathDialog.svelte'
     import WhatsNewDialog from '$lib/whats-new/WhatsNewDialog.svelte'
+    import AcknowledgementsDialog from '$lib/licensing/AcknowledgementsDialog.svelte'
+    import {
+        acknowledgementsState,
+        closeAcknowledgements,
+    } from '$lib/licensing/acknowledgements-trigger.svelte'
     import { whatsNewState, runWhatsNewStartupTrigger } from '$lib/whats-new/whats-new-trigger.svelte'
     import OperationLogDialog from '$lib/operation-log/OperationLogDialog.svelte'
     import { operationLogState } from '$lib/operation-log/operation-log-trigger.svelte'
@@ -197,6 +202,7 @@
             showExpiredModal ||
             showCommercialReminder ||
             whatsNewState.open ||
+            acknowledgementsState.open ||
             operationLogState.open ||
             isGalleryDialogOpen() || // Dev-only in practice; ❌ don't add a build-time DEV guard (breaks knip, see dialog-gallery/DETAILS.md)
             isExplorerOverlayOpen()
@@ -832,6 +838,10 @@
 
         {#if whatsNewState.open}
             <WhatsNewDialog />
+        {/if}
+
+        {#if acknowledgementsState.open}
+            <AcknowledgementsDialog onClose={closeAcknowledgements} />
         {/if}
 
         {#if operationLogState.open}

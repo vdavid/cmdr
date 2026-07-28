@@ -241,7 +241,13 @@ mod tests {
         // value we applied. Re-recording it must be a no-op, which is what lets
         // us do without a "currently restoring" flag (that flag was unfixable
         // anyway: tao dispatches the setters asynchronously).
-        let saved = WindowGeometry { x: 100, y: 200, prev_x: 100, prev_y: 200, ..geometry() };
+        let saved = WindowGeometry {
+            x: 100,
+            y: 200,
+            prev_x: 100,
+            prev_y: 200,
+            ..geometry()
+        };
 
         let mut g = saved;
         let (x, y) = restore_position(&g);

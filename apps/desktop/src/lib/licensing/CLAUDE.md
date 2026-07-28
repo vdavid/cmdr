@@ -11,6 +11,8 @@ values via IPC.
 - `CommercialReminderModal.svelte`: 30-day reminder for personal users.
 - `ExpirationModal.svelte`: shown when a commercial license expires.
 - `AboutWindow.svelte`: displays current license status.
+- `AcknowledgementsDialog.svelte` + `acknowledgements-trigger.svelte.ts`: credits the open-source libraries Cmdr ships.
+  ❌ Never hand-edit `third-party-packages.gen.json`; see `DETAILS.md`.
 
 ## License types
 

@@ -683,5 +683,9 @@
   "commands.handler.zoomDecreased": "Zoom reducido al {size}%. {hint}",
   "@commands.handler.zoomDecreased": {
     "sourceHash": "71404cb"
+  },
+  "commands.appAcknowledgements.label": "Agradecimientos…",
+  "@commands.appAcknowledgements.label": {
+    "sourceHash": "7d0e506"
   }
 }

@@ -4,55 +4,50 @@
     "description": "Command name for quitting the app. Appears in the macOS app menu and the keyboard-shortcuts list. \"Cmdr\" is the brand name, do not translate it.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.appHide.label": "Hide Cmdr",
   "@commands.appHide.label": {
     "description": "Command name for hiding the app's windows. Appears in the macOS app menu and the keyboard-shortcuts list. \"Cmdr\" is the brand name, do not translate it.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.appHideOthers.label": "Hide others",
   "@commands.appHideOthers.label": {
     "description": "Command name for hiding every OTHER app's windows (a standard macOS app-menu action). Appears in the macOS app menu and the keyboard-shortcuts list.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.appShowAll.label": "Show all",
   "@commands.appShowAll.label": {
     "description": "Command name for un-hiding all apps' windows (a standard macOS app-menu action). Appears in the macOS app menu and the keyboard-shortcuts list.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.appAbout.label": "About Cmdr",
   "@commands.appAbout.label": {
     "description": "Command name that opens the About window. Appears in the command palette and the macOS app menu. \"Cmdr\" is the brand name, do not translate it.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
+  "commands.appAcknowledgements.label": "Acknowledgements…",
+  "@commands.appAcknowledgements.label": {
+    "description": "Command palette and Cmdr-menu label for the dialog crediting the open-source libraries Cmdr is built on. The trailing ellipsis is the macOS convention for an item that opens a dialog."
+  },
   "commands.appLicenseKey.seeDetails.label": "See license details",
   "@commands.appLicenseKey.seeDetails.label": {
     "description": "Command name shown when the user already has a license: opens the license details. Appears in the command palette. Paired with commands.appLicenseKey.enterKey.label, which is shown instead when no license exists.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.appLicenseKey.enterKey.label": "Enter license key",
   "@commands.appLicenseKey.enterKey.label": {
     "description": "Command name shown when the user has no license yet: opens the dialog to enter a license key. Appears in the command palette. Paired with commands.appLicenseKey.seeDetails.label, shown instead once a license exists.",
     "screenshot": "command-palette.png"
   },
-
   "commands.appCommandPalette.label": "Open command palette",
   "@commands.appCommandPalette.label": {
     "description": "Command name that opens the command palette (the searchable list of all commands). \"Command palette\" is the established name of this UI; match the term used elsewhere in the app.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.appSettings.label": "Open settings",
   "@commands.appSettings.label": {
     "description": "Command name that opens the Settings window. Appears in the command palette and the macOS app menu.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.appCheckForUpdates.label": "Check for updates…",
   "@commands.appCheckForUpdates.label": {
     "description": "Command name that checks for a newer version of the app. The trailing ellipsis (…) signals it opens a flow rather than acting immediately; keep it.",
@@ -62,7 +57,6 @@
   "@commands.appCheckForUpdates.description": {
     "description": "Longer help text for the \"Check for updates…\" command, shown as a secondary line in the command palette. \"Cmdr\" is the brand name, do not translate it."
   },
-
   "commands.cmdrOpenOnboarding.label": "Onboarding…",
   "@commands.cmdrOpenOnboarding.label": {
     "description": "Command name that reopens the first-launch onboarding wizard. \"Onboarding\" refers to the guided first-time setup. The trailing ellipsis (…) signals it opens a wizard; keep it.",
@@ -72,7 +66,6 @@
   "@commands.cmdrOpenOnboarding.description": {
     "description": "Longer help text for the \"Onboarding…\" command, shown as a secondary line in the command palette."
   },
-
   "commands.helpOpenShortcuts.label": "Keyboard shortcuts",
   "@commands.helpOpenShortcuts.label": {
     "description": "Command name that opens a window listing every keyboard shortcut. Appears in the command palette and the Help menu.",
@@ -82,7 +75,6 @@
   "@commands.helpOpenShortcuts.description": {
     "description": "Longer help text for the \"Keyboard shortcuts\" command, shown as a secondary line in the command palette."
   },
-
   "commands.helpSendErrorReport.label": "Send error report…",
   "@commands.helpSendErrorReport.label": {
     "description": "Command name that sends app logs to the team to help fix a problem. The trailing ellipsis (…) signals it opens a flow; keep it. \"Error report\" names the bundle of logs sent.",
@@ -92,7 +84,6 @@
   "@commands.helpSendErrorReport.description": {
     "description": "Longer help text for the \"Send error report…\" command, shown as a secondary line in the command palette. \"Cmdr\" is the brand name, do not translate it."
   },
-
   "commands.queueShow.label": "Show transfer queue",
   "@commands.queueShow.label": {
     "description": "Command name that opens the transfer queue window, which lists every running and waiting copy, move, and delete operation. Appears in the command palette and the Help menu.",
@@ -102,7 +93,6 @@
   "@commands.queueShow.description": {
     "description": "Longer help text for the \"Show transfer queue\" command, shown as a secondary line in the command palette."
   },
-
   "commands.helpWhatsNew.label": "What''s new",
   "@commands.helpWhatsNew.label": {
     "description": "Command name that shows what changed in recent releases. Appears in the command palette and the Help menu.",
@@ -112,7 +102,6 @@
   "@commands.helpWhatsNew.description": {
     "description": "Longer help text for the \"What's new\" command, shown as a secondary line in the command palette. \"Cmdr\" is the brand name, do not translate it."
   },
-
   "commands.logOperationLog.label": "Operation log",
   "@commands.logOperationLog.label": {
     "description": "Command name that opens the Operation log dialog, a history of file operations. Appears in the command palette and the View menu.",
@@ -130,7 +119,6 @@
   "@commands.askCmdrToggle.description": {
     "description": "Longer help text for the \"Ask Cmdr\" command, shown as a secondary line in the command palette."
   },
-
   "commands.feedbackSend.label": "Send feedback",
   "@commands.feedbackSend.label": {
     "description": "Command name that opens a form to send feedback to the app's maker. Appears in the command palette and the Help menu.",
@@ -140,13 +128,11 @@
   "@commands.feedbackSend.description": {
     "description": "Longer help text for the \"Send feedback\" command, shown as a secondary line in the command palette. \"Cmdr\" is the brand name, do not translate it. The tone is warm and inviting."
   },
-
   "commands.searchOpen.label": "Search files",
   "@commands.searchOpen.label": {
     "description": "Command name that opens the file search. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.navGoToPath.label": "Go to path…",
   "@commands.navGoToPath.label": {
     "description": "Command name that opens a dialog to jump to a typed path. The trailing ellipsis (…) signals it opens a dialog; keep it. \"Path\" means a filesystem location like ~/Documents.",
@@ -156,7 +142,6 @@
   "@commands.navGoToPath.description": {
     "description": "Longer help text for the \"Go to path…\" command, shown as a secondary line in the command palette. \"Pane\" is one of the app's two side-by-side file lists."
   },
-
   "commands.favoritesAdd.label": "Add to favorites",
   "@commands.favoritesAdd.label": {
     "description": "Command name that adds the current folder to the Favorites list. Appears in the command palette. \"Favorites\" is the named list of bookmarked folders; match the term used in the volume switcher UI.",
@@ -166,7 +151,6 @@
   "@commands.favoritesAdd.description": {
     "description": "Longer help text for the \"Add to favorites\" command, shown as a secondary line in the command palette. \"Pane\" is one of the two side-by-side file lists; \"switcher\" is the volume/location switcher; \"Favorites\" is its bookmarked-folders list."
   },
-
   "commands.downloadsGoToLatest.label": "Go to latest download",
   "@commands.downloadsGoToLatest.label": {
     "description": "Command name that opens the Downloads folder with the newest file selected. Appears in the command palette.",
@@ -176,145 +160,121 @@
   "@commands.downloadsGoToLatest.description": {
     "description": "Longer help text for the \"Go to latest download\" command, shown as a secondary line in the command palette. \"~/Downloads\" is a filesystem path; keep it literally."
   },
-
   "commands.viewShowHidden.label": "Toggle hidden files",
   "@commands.viewShowHidden.label": {
     "description": "Command name that shows or hides hidden files (those normally not displayed, like dotfiles). Appears in the command palette and the View menu.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.viewBriefMode.label": "Switch to Brief view",
   "@commands.viewBriefMode.label": {
     "description": "Command name that switches the file list to Brief view (a compact, multi-column layout). \"Brief\" is the view's proper name; match the term used in the View menu.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.viewFullMode.label": "Switch to Full view",
   "@commands.viewFullMode.label": {
     "description": "Command name that switches the file list to Full view (a detailed single-column layout with columns). \"Full\" is the view's proper name; match the term used in the View menu.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.viewSetMode.label": "Set pane view mode",
   "@commands.viewSetMode.label": {
     "description": "Internal command name for setting a specific pane's view mode, shown only in the keyboard-shortcuts list (not the palette). \"Pane\" is one of the two side-by-side file lists.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.viewZoomSet75.label": "Zoom to 75%",
   "@commands.viewZoomSet75.label": {
     "description": "Command name that sets the UI text size to 75%. Appears in the command palette. Keep \"75%\" as-is.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.viewZoomSet100.label": "Zoom to 100%",
   "@commands.viewZoomSet100.label": {
     "description": "Command name that sets the UI text size to 100% (the default). Appears in the command palette. Keep \"100%\" as-is.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.viewZoomSet125.label": "Zoom to 125%",
   "@commands.viewZoomSet125.label": {
     "description": "Command name that sets the UI text size to 125%. Appears in the command palette. Keep \"125%\" as-is.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.viewZoomSet150.label": "Zoom to 150%",
   "@commands.viewZoomSet150.label": {
     "description": "Command name that sets the UI text size to 150%. Appears in the command palette. Keep \"150%\" as-is.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.viewZoomIn.label": "Zoom in",
   "@commands.viewZoomIn.label": {
     "description": "Command name that increases the UI text size by one step. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.viewZoomOut.label": "Zoom out",
   "@commands.viewZoomOut.label": {
     "description": "Command name that decreases the UI text size by one step. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.sortByName.label": "Sort by name",
   "@commands.sortByName.label": {
     "description": "Command name that sorts the file list by file name. Appears in the command palette.",
     "screenshot": "main-window.png"
   },
-
   "commands.sortByExtension.label": "Sort by extension",
   "@commands.sortByExtension.label": {
     "description": "Command name that sorts the file list by file extension (the part after the last dot, like .txt). Appears in the command palette.",
     "screenshot": "main-window.png"
   },
-
   "commands.sortByModified.label": "Sort by date modified",
   "@commands.sortByModified.label": {
     "description": "Command name that sorts the file list by last-modified date. Appears in the command palette.",
     "screenshot": "main-window.png"
   },
-
   "commands.sortBySize.label": "Sort by size",
   "@commands.sortBySize.label": {
     "description": "Command name that sorts the file list by file size. Appears in the command palette.",
     "screenshot": "main-window.png"
   },
-
   "commands.sortByCreated.label": "Sort by date created",
   "@commands.sortByCreated.label": {
     "description": "Command name that sorts the file list by creation date. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.sortAscending.label": "Sort ascending",
   "@commands.sortAscending.label": {
     "description": "Command name that sets the sort order to ascending (A to Z, smallest first). Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.sortDescending.label": "Sort descending",
   "@commands.sortDescending.label": {
     "description": "Command name that sets the sort order to descending (Z to A, largest first). Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.sortToggleOrder.label": "Toggle sort order",
   "@commands.sortToggleOrder.label": {
     "description": "Command name that flips between ascending and descending sort. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.sortSet.label": "Set pane sort",
   "@commands.sortSet.label": {
     "description": "Internal command name for setting a specific pane's sort, shown only in the keyboard-shortcuts list (not the palette). \"Pane\" is one of the two side-by-side file lists.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.paneSwitch.label": "Switch pane",
   "@commands.paneSwitch.label": {
     "description": "Command name that moves focus to the other pane. \"Pane\" is one of the two side-by-side file lists. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.paneSwap.label": "Swap panes",
   "@commands.paneSwap.label": {
     "description": "Command name that swaps the contents of the left and right panes. \"Panes\" are the two side-by-side file lists. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.paneLeftVolumeChooser.label": "Open left volume chooser",
   "@commands.paneLeftVolumeChooser.label": {
     "description": "Command name that opens the volume/location chooser for the LEFT pane. \"Volume\" is a disk or mounted location. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.paneRightVolumeChooser.label": "Open right volume chooser",
   "@commands.paneRightVolumeChooser.label": {
     "description": "Command name that opens the volume/location chooser for the RIGHT pane. \"Volume\" is a disk or mounted location. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.paneCopyPathLeftToRight.label": "Copy path from left to right pane",
   "@commands.paneCopyPathLeftToRight.label": {
     "description": "Command name that opens the left pane's location in the right pane. \"Path\" is the folder location; \"pane\" is one of the two file lists. Appears in the command palette.",
@@ -324,7 +284,6 @@
   "@commands.paneCopyPathLeftToRight.description": {
     "description": "Longer help text for the \"Copy path from left to right pane\" command, shown as a secondary line in the command palette. \"Cursor\" is the highlighted row in the file list."
   },
-
   "commands.paneCopyPathRightToLeft.label": "Copy path from right to left pane",
   "@commands.paneCopyPathRightToLeft.label": {
     "description": "Command name that opens the right pane's location in the left pane. \"Path\" is the folder location; \"pane\" is one of the two file lists. Appears in the command palette.",
@@ -334,199 +293,166 @@
   "@commands.paneCopyPathRightToLeft.description": {
     "description": "Longer help text for the \"Copy path from right to left pane\" command, shown as a secondary line in the command palette. \"Cursor\" is the highlighted row in the file list."
   },
-
   "commands.paneRefresh.label": "Refresh pane",
   "@commands.paneRefresh.label": {
     "description": "Internal command name for re-reading the focused pane's folder, shown only in the keyboard-shortcuts list (not the palette). \"Pane\" is one of the two side-by-side file lists.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.tabNew.label": "New tab",
   "@commands.tabNew.label": {
     "description": "Command name that opens a new tab in the focused pane. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.tabClose.label": "Close tab",
   "@commands.tabClose.label": {
     "description": "Command name that closes the current tab. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.tabReopen.label": "Reopen closed tab",
   "@commands.tabReopen.label": {
     "description": "Command name that reopens the most recently closed tab. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.tabNext.label": "Next tab",
   "@commands.tabNext.label": {
     "description": "Command name that moves to the next tab. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.tabPrev.label": "Previous tab",
   "@commands.tabPrev.label": {
     "description": "Command name that moves to the previous tab. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.tabTogglePin.label": "Toggle pin tab",
   "@commands.tabTogglePin.label": {
     "description": "Command name that pins or unpins the current tab (a pinned tab stays open). Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.tabCloseOthers.label": "Close other tabs",
   "@commands.tabCloseOthers.label": {
     "description": "Command name that closes every tab except the current one. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.tabMcpAction.label": "Pane tab action",
   "@commands.tabMcpAction.label": {
     "description": "Internal command name for a tab action driven by the automation interface, shown only in the keyboard-shortcuts list (not the palette). \"Pane\" is one of the two side-by-side file lists.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.navUp.label": "Select previous file",
   "@commands.navUp.label": {
     "description": "Command name for moving the cursor up one row in the file list. Shown only in the keyboard-shortcuts list (not the palette).",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.navDown.label": "Select next file",
   "@commands.navDown.label": {
     "description": "Command name for moving the cursor down one row in the file list. Shown only in the keyboard-shortcuts list (not the palette).",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.navOpen.label": "Open file or folder",
   "@commands.navOpen.label": {
     "description": "Command name that opens the file or folder under the cursor. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.navParent.label": "Go to parent folder",
   "@commands.navParent.label": {
     "description": "Command name that navigates up to the parent folder. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.navHome.label": "Go to first file",
   "@commands.navHome.label": {
     "description": "Command name that moves the cursor to the first item in the file list. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.navEnd.label": "Go to last file",
   "@commands.navEnd.label": {
     "description": "Command name that moves the cursor to the last item in the file list. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.navPageUp.label": "Page up",
   "@commands.navPageUp.label": {
     "description": "Command name that scrolls the file list up by one page. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.navPageDown.label": "Page down",
   "@commands.navPageDown.label": {
     "description": "Command name that scrolls the file list down by one page. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.navBack.label": "Go back",
   "@commands.navBack.label": {
     "description": "Command name that navigates back to the previous location in history. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.navForward.label": "Go forward",
   "@commands.navForward.label": {
     "description": "Command name that navigates forward in history. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.navOpenUnderCursor.label": "Open item under cursor",
   "@commands.navOpenUnderCursor.label": {
     "description": "Internal command name for opening the item under the cursor, driven by the automation interface; shown only in the keyboard-shortcuts list (not the palette).",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.cursorMoveTo.label": "Move pane cursor",
   "@commands.cursorMoveTo.label": {
     "description": "Internal command name for moving the cursor to a position, driven by the automation interface; shown only in the keyboard-shortcuts list (not the palette). \"Pane\" is one of the two file lists.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.cursorScrollTo.label": "Scroll pane to index",
   "@commands.cursorScrollTo.label": {
     "description": "Internal command name for scrolling a pane to a given row, driven by the automation interface; shown only in the keyboard-shortcuts list (not the palette). \"Pane\" is one of the two file lists.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.navLeft.label": "Move to left column",
   "@commands.navLeft.label": {
     "description": "Command name for moving the cursor to the column on the left in Brief view (the multi-column layout). Shown only in the keyboard-shortcuts list (not the palette).",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.navRight.label": "Move to right column",
   "@commands.navRight.label": {
     "description": "Command name for moving the cursor to the column on the right in Brief view (the multi-column layout). Shown only in the keyboard-shortcuts list (not the palette).",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.navFirstInFull.label": "Jump to first file",
   "@commands.navFirstInFull.label": {
     "description": "Command name for jumping to the first item in Full view (the detailed single-column layout). Shown only in the keyboard-shortcuts list (not the palette).",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.navLastInFull.label": "Jump to last file",
   "@commands.navLastInFull.label": {
     "description": "Command name for jumping to the last item in Full view (the detailed single-column layout). Shown only in the keyboard-shortcuts list (not the palette).",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.fileRename.label": "Rename",
   "@commands.fileRename.label": {
     "description": "Command name that renames the selected file or folder. Appears in the command palette. A terse control label.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.fileView.label": "View",
   "@commands.fileView.label": {
     "description": "Command name that opens the built-in viewer for the selected file. Appears in the command palette. A terse control label.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.fileEdit.label": "Edit in default editor",
   "@commands.fileEdit.label": {
     "description": "Command name that opens the selected file in the user's default editor app. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.fileCopy.label": "Copy",
   "@commands.fileCopy.label": {
     "description": "Command name for the F5 copy-to-other-pane operation. Appears in the command palette. A terse control label. Distinct from \"Copy to clipboard\".",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.fileMove.label": "Move",
   "@commands.fileMove.label": {
     "description": "Command name for the F6 move-to-other-pane operation. Appears in the command palette. A terse control label. Distinct from \"Cut to clipboard\".",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.fileCompress.label": "Compress",
   "@commands.fileCompress.label": {
     "description": "Command name for the ⌥F5 compress operation that packs the cursor item or selection into a new zip archive in the other pane. Appears in the command palette. A terse control label.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.editCopy.label": "Copy to clipboard",
   "@commands.editCopy.label": {
     "description": "Command name that copies the selected files to the system clipboard (for pasting). Appears in the command palette. Distinct from the F5 \"Copy\" operation.",
@@ -536,7 +462,6 @@
   "@commands.editCopy.description": {
     "description": "Longer help text for the \"Copy to clipboard\" command, shown as a secondary line in the command palette."
   },
-
   "commands.editCut.label": "Cut to clipboard",
   "@commands.editCut.label": {
     "description": "Command name that cuts the selected files to the system clipboard (pasting will move them). Appears in the command palette.",
@@ -546,7 +471,6 @@
   "@commands.editCut.description": {
     "description": "Longer help text for the \"Cut to clipboard\" command, shown as a secondary line in the command palette."
   },
-
   "commands.editPaste.label": "Paste",
   "@commands.editPaste.label": {
     "description": "Command name that pastes clipboard files into the current folder. Appears in the command palette. A terse control label.",
@@ -556,7 +480,6 @@
   "@commands.editPaste.description": {
     "description": "Longer help text for the \"Paste\" command, shown as a secondary line in the command palette."
   },
-
   "commands.editPasteAsMove.label": "Move here",
   "@commands.editPasteAsMove.label": {
     "description": "Command name that pastes clipboard files as a move (rather than a copy). Appears in the command palette.",
@@ -566,88 +489,73 @@
   "@commands.editPasteAsMove.description": {
     "description": "Longer help text for the \"Move here\" command, shown as a secondary line in the command palette."
   },
-
   "commands.fileNewFolder.label": "New folder",
   "@commands.fileNewFolder.label": {
     "description": "Command name that creates a new folder. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.fileNewFile.label": "Create new file",
   "@commands.fileNewFile.label": {
     "description": "Command name that creates a new empty file. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.fileDelete.label": "Delete",
   "@commands.fileDelete.label": {
     "description": "Command name that deletes the selected files (to the system trash). Appears in the command palette. A terse control label.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.fileDeletePermanently.label": "Delete permanently",
   "@commands.fileDeletePermanently.label": {
     "description": "Command name that deletes the selected files permanently, bypassing the trash. Appears in the command palette. The word \"permanently\" carries the warning that this can't be undone.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.dialogConfirm.label": "Confirm open dialog",
   "@commands.dialogConfirm.label": {
     "description": "Internal command name for confirming an open dialog, driven by the automation interface; shown only in the keyboard-shortcuts list (not the palette).",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.fileShowInFinder.mac.label": "Show in Finder",
   "@commands.fileShowInFinder.mac.label": {
     "description": "Command name (macOS) that reveals the selected file in Finder, the macOS file manager. \"Finder\" is the macOS app name; do not translate it. Appears in the command palette. Paired with commands.fileShowInFinder.other.label for other platforms.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.fileShowInFinder.other.label": "Show in file manager",
   "@commands.fileShowInFinder.other.label": {
     "description": "Command name (non-macOS) that reveals the selected file in the system file manager. Appears in the command palette. Paired with commands.fileShowInFinder.mac.label, used on macOS."
   },
-
   "commands.fileCopyPath.label": "Copy path to clipboard",
   "@commands.fileCopyPath.label": {
     "description": "Command name that copies the selected file's full path to the clipboard. \"Path\" is the file's filesystem location. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.fileCopyCurrentDirectoryPath.label": "Copy current directory path",
   "@commands.fileCopyCurrentDirectoryPath.label": {
     "description": "Command name that copies the current folder's full path to the clipboard. \"Directory\" and \"path\" are filesystem terms. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.fileCopyFilename.label": "Copy filename",
   "@commands.fileCopyFilename.label": {
     "description": "Command name that copies the selected file's name (without the folder path) to the clipboard. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.fileGetInfo.mac.label": "Get info",
   "@commands.fileGetInfo.mac.label": {
     "description": "Command name (macOS) that opens the file's info panel. \"Get info\" matches the macOS Finder term; reuse the localized macOS wording for that menu item. Appears in the command palette. Paired with commands.fileGetInfo.other.label for other platforms.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.fileGetInfo.other.label": "File properties",
   "@commands.fileGetInfo.other.label": {
     "description": "Command name (non-macOS) that opens the file's properties panel. Appears in the command palette. Paired with commands.fileGetInfo.mac.label, used on macOS."
   },
-
   "commands.fileQuickLook.mac.label": "Quick look",
   "@commands.fileQuickLook.mac.label": {
     "description": "Command name (macOS) that previews the selected file with Quick Look. \"Quick Look\" is the macOS feature name; reuse the localized macOS wording. Appears in the command palette. Paired with commands.fileQuickLook.other.label for other platforms.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.fileQuickLook.other.label": "Preview",
   "@commands.fileQuickLook.other.label": {
     "description": "Command name (non-macOS) that previews the selected file. Appears in the command palette. Paired with commands.fileQuickLook.mac.label, used on macOS."
   },
-
   "commands.fileContextMenu.label": "Open context menu",
   "@commands.fileContextMenu.label": {
     "description": "Command name that opens the right-click context menu for the file under the cursor. Appears in the command palette.",
@@ -657,7 +565,6 @@
   "@commands.fileContextMenu.description": {
     "description": "Longer help text for the \"Open context menu\" command, shown as a secondary line in the command palette. \"Cursor\" is the highlighted row in the file list."
   },
-
   "commands.cloudMakeOffline.label": "Make available offline",
   "@commands.cloudMakeOffline.label": {
     "description": "Command name that downloads a cloud-stored file so it stays available without internet. Appears in the command palette.",
@@ -667,7 +574,6 @@
   "@commands.cloudMakeOffline.description": {
     "description": "Longer help text for the \"Make available offline\" command, shown as a secondary line in the command palette."
   },
-
   "commands.cloudRemoveDownload.label": "Remove download",
   "@commands.cloudRemoveDownload.label": {
     "description": "Command name that removes the local copy of a cloud file, leaving it online-only. Appears in the command palette.",
@@ -677,7 +583,6 @@
   "@commands.cloudRemoveDownload.description": {
     "description": "Longer help text for the \"Remove download\" command, shown as a secondary line in the command palette."
   },
-
   "commands.tagsToggleGrey.label": "Toggle gray tag",
   "@commands.tagsToggleGrey.label": {
     "description": "Command name that adds or removes the gray macOS Finder color tag on the selected files. \"Gray\" is the macOS system color-tag name; keep it matching what Finder calls this color in the user''s language. Appears in the command palette and the keyboard-shortcuts settings.",
@@ -687,7 +592,6 @@
   "@commands.tagsToggleGrey.description": {
     "description": "Longer help text for the \"Toggle gray tag\" command, shown as a secondary line in the command palette."
   },
-
   "commands.tagsToggleGreen.label": "Toggle green tag",
   "@commands.tagsToggleGreen.label": {
     "description": "Command name that adds or removes the green macOS Finder color tag on the selected files. \"Green\" is the macOS system color-tag name; keep it matching what Finder calls this color in the user''s language. Appears in the command palette and the keyboard-shortcuts settings.",
@@ -697,7 +601,6 @@
   "@commands.tagsToggleGreen.description": {
     "description": "Longer help text for the \"Toggle green tag\" command, shown as a secondary line in the command palette."
   },
-
   "commands.tagsTogglePurple.label": "Toggle purple tag",
   "@commands.tagsTogglePurple.label": {
     "description": "Command name that adds or removes the purple macOS Finder color tag on the selected files. \"Purple\" is the macOS system color-tag name; keep it matching what Finder calls this color in the user''s language. Appears in the command palette and the keyboard-shortcuts settings.",
@@ -707,7 +610,6 @@
   "@commands.tagsTogglePurple.description": {
     "description": "Longer help text for the \"Toggle purple tag\" command, shown as a secondary line in the command palette."
   },
-
   "commands.tagsToggleBlue.label": "Toggle blue tag",
   "@commands.tagsToggleBlue.label": {
     "description": "Command name that adds or removes the blue macOS Finder color tag on the selected files. \"Blue\" is the macOS system color-tag name; keep it matching what Finder calls this color in the user''s language. Appears in the command palette and the keyboard-shortcuts settings.",
@@ -717,7 +619,6 @@
   "@commands.tagsToggleBlue.description": {
     "description": "Longer help text for the \"Toggle blue tag\" command, shown as a secondary line in the command palette."
   },
-
   "commands.tagsToggleYellow.label": "Toggle yellow tag",
   "@commands.tagsToggleYellow.label": {
     "description": "Command name that adds or removes the yellow macOS Finder color tag on the selected files. \"Yellow\" is the macOS system color-tag name; keep it matching what Finder calls this color in the user''s language. Appears in the command palette and the keyboard-shortcuts settings.",
@@ -727,7 +628,6 @@
   "@commands.tagsToggleYellow.description": {
     "description": "Longer help text for the \"Toggle yellow tag\" command, shown as a secondary line in the command palette."
   },
-
   "commands.tagsToggleRed.label": "Toggle red tag",
   "@commands.tagsToggleRed.label": {
     "description": "Command name that adds or removes the red macOS Finder color tag on the selected files. \"Red\" is the macOS system color-tag name; keep it matching what Finder calls this color in the user''s language. Appears in the command palette and the keyboard-shortcuts settings.",
@@ -737,7 +637,6 @@
   "@commands.tagsToggleRed.description": {
     "description": "Longer help text for the \"Toggle red tag\" command, shown as a secondary line in the command palette."
   },
-
   "commands.tagsToggleOrange.label": "Toggle orange tag",
   "@commands.tagsToggleOrange.label": {
     "description": "Command name that adds or removes the orange macOS Finder color tag on the selected files. \"Orange\" is the macOS system color-tag name; keep it matching what Finder calls this color in the user''s language. Appears in the command palette and the keyboard-shortcuts settings.",
@@ -747,13 +646,11 @@
   "@commands.tagsToggleOrange.description": {
     "description": "Longer help text for the \"Toggle orange tag\" command, shown as a secondary line in the command palette."
   },
-
   "commands.selectionToggle.label": "Toggle selection",
   "@commands.selectionToggle.label": {
     "description": "Command name that selects or deselects the file under the cursor. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.selectionToggleAndDown.label": "Toggle selection and move down",
   "@commands.selectionToggleAndDown.label": {
     "description": "Command name that selects/deselects the file under the cursor, then moves down one row. Appears in the command palette.",
@@ -763,19 +660,16 @@
   "@commands.selectionToggleAndDown.description": {
     "description": "Longer help text for the \"Toggle selection and move down\" command, shown as a secondary line in the command palette. \"Total Commander\" is a well-known file manager app name; do not translate it."
   },
-
   "commands.selectionSelectAll.label": "Select all",
   "@commands.selectionSelectAll.label": {
     "description": "Command name that selects every file in the list. Appears in the command palette. A terse control label.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.selectionDeselectAll.label": "Deselect all",
   "@commands.selectionDeselectAll.label": {
     "description": "Command name that clears the selection. Appears in the command palette. A terse control label.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.selectionSelectFiles.label": "Select files…",
   "@commands.selectionSelectFiles.label": {
     "description": "Command name that opens a dialog to select files matching a pattern. The trailing ellipsis (…) signals it opens a dialog; keep it. Appears in the command palette.",
@@ -785,7 +679,6 @@
   "@commands.selectionSelectFiles.description": {
     "description": "Longer help text for the \"Select files…\" command, shown as a secondary line in the command palette. \"Select files\" names the dialog it opens."
   },
-
   "commands.selectionDeselectFiles.label": "Deselect files…",
   "@commands.selectionDeselectFiles.label": {
     "description": "Command name that opens a dialog to deselect files matching a pattern. The trailing ellipsis (…) signals it opens a dialog; keep it. Appears in the command palette.",
@@ -795,103 +688,86 @@
   "@commands.selectionDeselectFiles.description": {
     "description": "Longer help text for the \"Deselect files…\" command, shown as a secondary line in the command palette. \"Deselect files\" names the dialog it opens."
   },
-
   "commands.selectionMcpSelect.label": "Select range in pane",
   "@commands.selectionMcpSelect.label": {
     "description": "Internal command name for selecting a range of files, driven by the automation interface; shown only in the keyboard-shortcuts list (not the palette). \"Pane\" is one of the two file lists.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.selectionMcpSelectByNames.label": "Select files by name in pane",
   "@commands.selectionMcpSelectByNames.label": {
     "description": "Internal command name for selecting files by name, driven by the automation interface; shown only in the keyboard-shortcuts list (not the palette). \"Pane\" is one of the two file lists.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.networkSelectHost.label": "Select network host",
   "@commands.networkSelectHost.label": {
     "description": "Command name that opens the selected network host (server) in the network browser. \"Host\" is a server on the network. Shown only in the keyboard-shortcuts list (not the palette).",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.networkRefresh.label": "Refresh network hosts",
   "@commands.networkRefresh.label": {
     "description": "Command name that re-scans the network for hosts (servers). Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.shareBack.label": "Back to host list",
   "@commands.shareBack.label": {
     "description": "Command name that goes back from a server's shares to the list of network hosts (servers). Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.shareSelectShare.label": "Connect to share",
   "@commands.shareSelectShare.label": {
     "description": "Command name that connects to the selected network share (a shared folder on a server). Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.volumeSelect.label": "Select volume",
   "@commands.volumeSelect.label": {
     "description": "Command name that opens the selected volume (disk or mounted location) in the volume chooser. Shown only in the keyboard-shortcuts list (not the palette).",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.volumeClose.label": "Close volume chooser",
   "@commands.volumeClose.label": {
     "description": "Command name that closes the volume chooser. Shown only in the keyboard-shortcuts list (not the palette).",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.volumeSelectByName.label": "Select pane volume by name",
   "@commands.volumeSelectByName.label": {
     "description": "Internal command name for selecting a pane's volume by name, driven by the automation interface; shown only in the keyboard-shortcuts list (not the palette). \"Pane\" is one of the two file lists; \"volume\" is a disk or mounted location.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.aboutOpenWebsite.label": "Open website",
   "@commands.aboutOpenWebsite.label": {
     "description": "Command name (in the About window) that opens the app's website in a browser. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.aboutOpenUpgrade.label": "Open upgrade page",
   "@commands.aboutOpenUpgrade.label": {
     "description": "Command name (in the About window) that opens the upgrade/purchase page in a browser. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.aboutClose.label": "Close About window",
   "@commands.aboutClose.label": {
     "description": "Command name that closes the About window. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.paletteUp.label": "Previous result",
   "@commands.paletteUp.label": {
     "description": "Command name for moving up one row in the command palette's result list. Shown only in the keyboard-shortcuts list (not the palette itself).",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.paletteDown.label": "Next result",
   "@commands.paletteDown.label": {
     "description": "Command name for moving down one row in the command palette's result list. Shown only in the keyboard-shortcuts list (not the palette itself).",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.paletteExecute.label": "Execute command",
   "@commands.paletteExecute.label": {
     "description": "Command name for running the highlighted command in the command palette. Shown only in the keyboard-shortcuts list (not the palette itself).",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.paletteClose.label": "Close palette",
   "@commands.paletteClose.label": {
     "description": "Command name for closing the command palette. Shown only in the keyboard-shortcuts list (not the palette itself).",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-
   "commands.handler.favoriteAdded": "Added \"{name}\" to favorites",
   "@commands.handler.favoriteAdded": {
     "description": "Success toast after adding the current folder to favorites (via the command palette, menu, or shortcut). The folder name is shown in straight double quotes.",
@@ -900,23 +776,19 @@
     },
     "screenshot": "toast-favorite.png"
   },
-
   "commands.handler.favoriteAddFailed": "Couldn't add that folder to favorites. Try again?",
   "@commands.handler.favoriteAddFailed": {
     "description": "Error toast shown when adding a folder to favorites didn't go through. Friendly and reassuring; ends with an offer to retry. Uses a contraction (\"Couldn't\")."
   },
-
   "commands.handler.tabLimitReached": "Tab limit reached",
   "@commands.handler.tabLimitReached": {
     "description": "Warning toast shown when the user tries to open or reopen a tab but the per-pane tab limit is already reached. Terse. Shown for both new-tab and reopen-tab attempts."
   },
-
   "commands.handler.noRecentlyClosedTabs": "No recently closed tabs in this pane.",
   "@commands.handler.noRecentlyClosedTabs": {
     "description": "Warning toast shown when the user tries to reopen a recently closed tab but the pane has no closed-tab history.",
     "screenshot": "toast-tab.png"
   },
-
   "commands.handler.cloudDownloadFailed": "Couldn't download from cloud. {detail}",
   "@commands.handler.cloudDownloadFailed": {
     "description": "Error toast when making a cloud file available offline (downloading it) didn't go through. Uses a contraction (\"Couldn't\").",
@@ -924,7 +796,6 @@
       "detail": "the raw underlying error text appended after the sentence (a technical message, often in English)"
     }
   },
-
   "commands.handler.cloudRemoveDownloadFailed": "Couldn't remove the download. {detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
     "description": "Error toast when removing a cloud file's local download (freeing space) didn't go through. Uses a contraction (\"Couldn't\").",
@@ -932,7 +803,6 @@
       "detail": "the raw underlying error text appended after the sentence (a technical message, often in English)"
     }
   },
-
   "commands.handler.zoomResetHintShortcut": "You can reset the zoom level to 100% by {shortcut}.",
   "@commands.handler.zoomResetHintShortcut": {
     "description": "Trailing hint appended to the zoom-changed toast, telling the user how to reset zoom when a reset shortcut is bound. \"100%\" is literal.",
@@ -941,18 +811,15 @@
     },
     "screenshot": "toast-zoom-in.png"
   },
-
   "commands.handler.zoomResetHintMenu": "You can reset the zoom level to 100% at View > Zoom > 100%.",
   "@commands.handler.zoomResetHintMenu": {
     "description": "Trailing hint appended to the zoom-changed toast when no reset shortcut is bound, pointing at the menu path instead. \"View > Zoom > 100%\" is a literal menu path; \"View\" and \"Zoom\" are menu names that match the app's menu bar; \"100%\" is literal."
   },
-
   "commands.handler.zoomReset": "Zoom reset to 100%.",
   "@commands.handler.zoomReset": {
     "description": "Info toast shown when the user sets the zoom level back to 100%. \"100%\" is literal.",
     "screenshot": "toast-zoom-reset.png"
   },
-
   "commands.handler.zoomIncreased": "Zoom increased to {size}%. {hint}",
   "@commands.handler.zoomIncreased": {
     "description": "Info toast shown when the user increases the zoom level. Ends with a reset hint.",
@@ -962,7 +829,6 @@
     },
     "screenshot": "toast-zoom-in.png"
   },
-
   "commands.handler.zoomDecreased": "Zoom decreased to {size}%. {hint}",
   "@commands.handler.zoomDecreased": {
     "description": "Info toast shown when the user decreases the zoom level. Ends with a reset hint.",

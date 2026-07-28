@@ -7,6 +7,7 @@
  */
 export const SOFT_DIALOG_REGISTRY = [
   { id: 'about' },
+  { id: 'acknowledgements', description: 'Credits the open-source libraries Cmdr is built on' },
   { id: 'alert' },
   { id: 'commercial-reminder', description: 'Periodic reminder for commercial licensing' },
   { id: 'transfer-confirmation', description: 'Opened by the copy/move tool, not directly' },
