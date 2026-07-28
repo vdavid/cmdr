@@ -7,6 +7,8 @@
 //! volume with a persisted index and merges the ranked results.
 
 pub mod ai;
+#[cfg(test)]
+mod bench;
 pub(crate) mod engine;
 pub(crate) mod execute;
 pub mod history;
