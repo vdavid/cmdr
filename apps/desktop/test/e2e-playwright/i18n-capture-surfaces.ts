@@ -352,7 +352,7 @@ export async function captureMainOverlays(
   // selection dialog below only claims its remaining unique keys.
   await mainOverlay('search-dialog', async () => {
     await dispatchMenuCommand(main, 'search.open')
-    return '.search-overlay .query-input'
+    return '.search-overlay .query-bar input.text-field-control'
   })
 
   // Filter-chip popover: open the Search dialog, then the Size filter chip's
@@ -378,7 +378,7 @@ export async function captureMainOverlays(
   // `search-dialog`; this claims the selection-only ones.
   await mainOverlay('select-dialog', async () => {
     await dispatchMenuCommand(main, 'selection.selectFiles')
-    return '.search-overlay .query-input'
+    return '.search-overlay .query-bar input.text-field-control'
   })
 
   // Connect-to-server dialog: reachable from the Network volume's browser via the

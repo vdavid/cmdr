@@ -6,8 +6,8 @@
      * per consumer comes in via `QueryDialogConfig`; everything else lives here as the
      * one source of truth for both consumers' polish (keyboard contract, IME guard,
      * auto-apply gates, `deriveEnterAction` ownership swap, `lastDialogEvent` lifecycle,
-     * the title bar, the chip strip, the results table, the recent-items footer +
-     * popover, the empty state, the notice banner).
+     * the title bar, the chip strip, the results table, the recent-items dropdown, the
+     * empty state, the notice banner).
      *
      * Ownership contracts (see `query-dialog-config.ts` for the long version):
      *   1. `state.lastDialogEvent` is written ONLY here (opened / query-edited /
@@ -31,7 +31,12 @@
      *          "how do I narrow this" from "here's what I found".
      *   Zone 3 "the results": QueryResults (column headers + rows + states + status bar).
      *          Back on `--color-bg-primary`, so the list reads as its own surface.
-     *   Then the footer: recent-items strip on the left, action buttons on the right.
+     *   Then the footer: the primary / secondary action buttons, right-aligned.
+     *
+     * Recent items are the query field's own dropdown (`RecentItemsPopover` anchored to the
+     * pill), not a footer strip. Openers: the field's chevron, `⌘H`, and ArrowDown in the
+     * field when there's no result list to walk. Picking a row LOADS the entry and closes;
+     * it doesn't run it (the user presses Enter when they're ready).
      */
     import { onMount, onDestroy, tick } from 'svelte'
     import { SvelteSet } from 'svelte/reactivity'
@@ -44,7 +49,6 @@
     import AiPromptStrip from './AiPromptStrip.svelte'
     import { buildAiSummary } from './ai-summary'
     import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
-    import RecentItemsFooter from './recent-items/RecentItemsFooter.svelte'
     import RecentItemsPopover from './recent-items/RecentItemsPopover.svelte'
     import { deriveEnterAction, SEARCH_AUTO_APPLY_DEBOUNCE_MS, type SearchMode } from './query-filter-state.svelte'
     import type { QueryDialogConfig } from './query-dialog-config'
@@ -76,7 +80,8 @@
     let queryInputElement: HTMLInputElement | undefined = $state()
     let dialogElement: HTMLDivElement | undefined = $state()
     let queryResultsComponent: QueryResultsAPI | undefined = $state()
-    let footerRef: HTMLDivElement | undefined = $state()
+    /** The query field's pill frame; the recent-items dropdown anchors to it. */
+    let queryFieldElement: HTMLElement | undefined = $state()
     let recentPopoverOpen = $state(false)
     let debounceTimer: ReturnType<typeof setTimeout> | undefined
     let unlistenAutoApply: (() => void) | undefined
@@ -269,8 +274,50 @@
         recentPopoverOpen = true
     }
 
+    /**
+     * Closes the dropdown and makes sure focus lands back in the query field rather than
+     * on the anchor or the body.
+     *
+     * `Popover`'s Escape path calls `onClose()` and then `anchor.focus()`; the anchor is the
+     * pill frame (a `<div>`), which isn't focusable, so without this the focus would fall to
+     * the document. Click-outside must NOT be stolen though, so the refocus is deferred one
+     * frame and only fires when nothing else has claimed focus by then.
+     */
     function closeRecentPopover(): void {
         recentPopoverOpen = false
+        requestAnimationFrame(() => {
+            const active = document.activeElement
+            if (active === null || active === document.body || active === queryFieldElement) focusInput()
+        })
+    }
+
+    /**
+     * Closes the dropdown and puts the caret straight back in the field (keyboard paths).
+     * The focus call waits a tick: while the popover is still mounted its own focus trap
+     * would pull focus straight back.
+     */
+    function closeRecentPopoverAndFocus(): void {
+        recentPopoverOpen = false
+        void tick().then(() => {
+            focusInput()
+        })
+    }
+
+    function toggleRecentPopover(): void {
+        if (recentPopoverOpen) closeRecentPopoverAndFocus()
+        else openRecentPopover()
+    }
+
+    /**
+     * A recent entry was picked: the consumer loads it into state, and we hand ⏎ back to
+     * "run-search" so the very next Enter runs it. Picking never runs the query itself —
+     * a recent search is a starting point to edit, and for AI mode a silent run would spend
+     * the user's money on a keystroke they meant as navigation.
+     */
+    function pickRecent(entry: E): void {
+        config.onActivateRecent(entry)
+        config.state.setLastDialogEvent('query-edited')
+        closeRecentPopoverAndFocus()
     }
 
     onMount(async () => {
@@ -665,8 +712,7 @@
         if (handleEnterCombinations(e)) return true
         if (matchKey(e, 'h', 'meta')) {
             e.preventDefault()
-            if (recentPopoverOpen) closeRecentPopover()
-            else openRecentPopover()
+            toggleRecentPopover()
             return true
         }
         if (handleModeShortcut(e)) return true
@@ -691,10 +737,21 @@
 
     /**
      * Up / Down navigation through results. Loops top<->bottom.
+     *
+     * With no result list to walk, ArrowDown opens the recent-items dropdown instead — the
+     * combobox gesture, landing on a key that was otherwise dead. Results win when they
+     * exist: walking them is the more valuable use of ↓, and the chevron + `⌘H` open the
+     * dropdown unconditionally.
      */
     function handleArrowNav(e: KeyboardEvent): void {
         const len = config.state.getResults().length
-        if (len === 0) return
+        if (len === 0) {
+            if (e.key === 'ArrowDown' && !recentPopoverOpen && recentEntries.length > 0) {
+                e.preventDefault()
+                openRecentPopover()
+            }
+            return
+        }
         e.preventDefault()
         const cur = config.state.getCursorIndex()
         const next = e.key === 'ArrowDown' ? (cur + 1) % len : (cur - 1 + len) % len
@@ -828,14 +885,19 @@
         <!-- Zone 1: what to look for and how. -->
         <QueryBar
             bind:inputElement={queryInputElement}
+            bind:fieldElement={queryFieldElement}
             {query}
             {mode}
             disabled={config.inputsDisabled}
             aiHighlight={highlightedFields.has('query')}
             {showRunHint}
             showEnterHint={enterAction === 'run-search'}
+            recentOpen={recentPopoverOpen}
             onInput={handleQueryInput}
             onRun={runFromButton}
+            onToggleRecent={toggleRecentPopover}
+            recentTriggerLabel={config.recentItems.triggerAriaLabel ?? tString('queryUi.recent.allButtonAria')}
+            recentTriggerTooltip={config.recentItems.triggerTooltip ?? tString('queryUi.recent.trailingTooltip')}
             onCompositionStart={handleCompositionStart}
             onCompositionEnd={handleCompositionEnd}
         />
@@ -941,24 +1003,7 @@
             {@render config.resultsExtra()}
         {/if}
 
-        <div class="dialog-footer" bind:this={footerRef}>
-            <div class="footer-left">
-                <RecentItemsFooter
-                    entries={recentEntries}
-                    adapter={config.recentItems.adapter}
-                    keyFn={config.recentItems.keyFn}
-                    disabled={config.inputsDisabled}
-                    onPick={config.onActivateRecent}
-                    onRemove={config.onRemoveRecent}
-                    onOpenAll={openRecentPopover}
-                    leadingLabel={config.recentItems.leadingLabel}
-                    trailingLabel={config.recentItems.trailingLabel}
-                    trailingTooltipText={config.recentItems.trailingTooltipText}
-                    trailingShortcut={config.recentItems.trailingShortcut}
-                    ariaRegionLabel={config.recentItems.ariaRegionLabel}
-                    ariaAllButtonLabel={config.recentItems.ariaAllButtonLabel}
-                />
-            </div>
+        <div class="dialog-footer">
             <div class="footer-right">
                 {#if config.secondaryAction || config.primaryAction}
                     <div class="query-dialog__actions" role="group" aria-label={tString('queryUi.dialog.actionsAria')}>
@@ -997,16 +1042,19 @@
             </div>
         </div>
 
-        {#if footerRef}
+        <!-- The recent-items dropdown hangs off the query field, so it reads as the field's
+             own list rather than a second surface elsewhere in the dialog. -->
+        {#if queryFieldElement}
             <RecentItemsPopover
-                anchor={footerRef}
+                anchor={queryFieldElement}
                 open={recentPopoverOpen}
                 entries={recentEntries}
                 adapter={config.recentItems.adapter}
                 keyFn={config.recentItems.keyFn}
                 onClose={closeRecentPopover}
-                onPick={config.onActivateRecent}
+                onPick={pickRecent}
                 onRemove={config.onRemoveRecent}
+                onExitTop={closeRecentPopoverAndFocus}
                 filterPlaceholder={config.recentItems.filterPlaceholder}
                 emptyMessage={config.recentItems.emptyMessage}
                 ariaLabel={config.recentItems.popoverAriaLabel}
@@ -1047,7 +1095,7 @@
         flex: 0 0 auto;
         display: flex;
         align-items: center;
-        padding-right: var(--spacing-lg);
+        padding-right: var(--spacing-dialog);
         color: var(--color-text-secondary);
         white-space: nowrap;
     }
@@ -1056,7 +1104,7 @@
        surface "Matching what's shown in the list (the full path)"; Search passes
        undefined and the row doesn't render. */
     .query-dialog__notice {
-        padding: var(--spacing-xs) var(--spacing-lg);
+        padding: var(--spacing-xs) var(--spacing-dialog);
         background: var(--color-bg-primary);
         border-bottom: 1px solid var(--color-border-subtle);
         color: var(--color-text-tertiary);
@@ -1064,20 +1112,14 @@
         flex-shrink: 0;
     }
 
+    /* The footer is the action row now: recent items live in the query field's dropdown. */
     .dialog-footer {
         display: flex;
         align-items: stretch;
-        justify-content: space-between;
-        gap: var(--spacing-sm);
+        justify-content: flex-end;
         background: var(--color-bg-primary);
         border-top: 1px solid var(--color-border-subtle);
         flex-shrink: 0;
-    }
-
-    .footer-left {
-        flex: 1 1 auto;
-        min-width: 0;
-        overflow: hidden;
     }
 
     .footer-right {
@@ -1088,7 +1130,7 @@
         display: inline-flex;
         align-items: center;
         gap: var(--spacing-sm);
-        padding: var(--spacing-sm) var(--spacing-lg);
+        padding: var(--spacing-sm) var(--spacing-dialog);
     }
 
     /* The action verb leads; the shortcut hint rides a standard `ShortcutChip` to its right. */

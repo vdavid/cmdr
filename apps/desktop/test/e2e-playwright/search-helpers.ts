@@ -19,7 +19,7 @@ export type PageLike = TauriPage | BrowserPageAdapter
  * names "a query dialog" across all three of its dialog ids, which `data-dialog-id` can't.
  */
 export const SEARCH_OVERLAY = '.search-overlay'
-export const SEARCH_INPUT = '.search-overlay input.query-input'
+export const SEARCH_INPUT = '.search-overlay .query-bar input.text-field-control'
 /**
  * Active mode chip in the dialog's `role="tablist"`. `ModeChips.svelte` is backed by
  * `lib/ui/ToggleGroup.svelte` (semantics='tabs'), which renders `.tg-item` cells with

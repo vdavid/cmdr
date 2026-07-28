@@ -49,6 +49,7 @@ interface MountedDialog {
     translateAi: string[]
     clearState: number
     close: number
+    activateRecent: HistoryEntry[]
   }
 }
 
@@ -77,6 +78,7 @@ function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
     translateAi: [] as string[],
     clearState: 0,
     close: 0,
+    activateRecent: [] as HistoryEntry[],
   }
 
   const historyStore = createRecentItemsState<HistoryEntry>({
@@ -103,6 +105,7 @@ function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
         tooltip: e.query,
         mode: e.mode,
         ageLabel: 'now',
+        metaLabel: '12 results',
         ariaLabel: e.query,
       }),
       keyFn: (e) => e.id,
@@ -159,7 +162,9 @@ function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
     onPickPath: () => {},
     onPickExample: () => {},
     onRowMenu: () => {},
-    onActivateRecent: () => {},
+    onActivateRecent: (entry) => {
+      calls.activateRecent.push(entry)
+    },
     onRemoveRecent: () => {},
     onClose: () => {
       calls.close += 1
@@ -210,6 +215,25 @@ function dispatchKey(
   })
   target.dispatchEvent(event)
   return event
+}
+
+const RECENT_ENTRY: HistoryEntry = {
+  id: 'h1',
+  timestamp: Date.now(),
+  mode: 'filename',
+  query: '*.pdf',
+  filters: { sizeMin: null, sizeMax: null, modifiedAfter: null, modifiedBefore: null },
+  scope: '',
+  caseSensitive: false,
+  excludeSystemDirs: true,
+  resultCount: 0,
+}
+
+/** Mount does async work (history load, consumer onMount, focus); let it drain. */
+async function settle(): Promise<void> {
+  await tick()
+  await Promise.resolve()
+  await tick()
 }
 
 const SAMPLE_RESULT: SearchResultEntry = {
@@ -303,35 +327,89 @@ describe('QueryDialog ⌘N and ⌘H', () => {
     cleanup()
   })
 
-  it('⌘H toggles the recent-items popover open', async () => {
-    const entry: HistoryEntry = {
-      id: 'h1',
-      timestamp: Date.now(),
-      mode: 'filename',
-      query: '*.pdf',
-      filters: { sizeMin: null, sizeMax: null, modifiedAfter: null, modifiedBefore: null },
-      scope: '',
-      caseSensitive: false,
-      excludeSystemDirs: true,
-      resultCount: 0,
-    }
-    const { overlay, cleanup } = mountQueryDialog({ recentEntries: [entry] })
-    await tick()
-    await Promise.resolve()
-    await tick()
+  it('⌘H opens the recent-items dropdown, and toggles it shut again', async () => {
+    const { overlay, cleanup } = mountQueryDialog({ recentEntries: [RECENT_ENTRY] })
+    await settle()
 
-    expect(document.body.querySelector('.recent-items-popover, .recent-searches-popover')).toBeNull()
+    expect(document.body.querySelector('.recent-popover')).toBeNull()
 
     dispatchKey(overlay, 'h', { meta: true })
     await tick()
+    expect(document.body.querySelector('.recent-popover')).not.toBeNull()
 
-    // The popover mounts via FilterChipPopover; either marker class would work,
-    // but the wrapper exposes the `[data-recent-items-popover]` hook below.
-    const popoverAfterOpen = document.body.querySelector(
-      '[data-recent-items-popover], .recent-searches-popover, .ui-popover',
-    )
-    expect(popoverAfterOpen).not.toBeNull()
+    dispatchKey(overlay, 'h', { meta: true })
+    await tick()
+    expect(document.body.querySelector('.recent-popover')).toBeNull()
 
+    cleanup()
+  })
+})
+
+/**
+ * The query field is a combobox over the recent-items history: the chevron, `⌘H`, and
+ * `ArrowDown` (when there's no result list to walk) all open the same dropdown, and picking
+ * a row LOADS the entry without running it.
+ */
+describe('QueryDialog recent-items dropdown', () => {
+  it('ArrowDown opens the dropdown when there are no results to walk', async () => {
+    const { overlay, cleanup } = mountQueryDialog({ recentEntries: [RECENT_ENTRY] })
+    await settle()
+
+    dispatchKey(overlay, 'ArrowDown')
+    await tick()
+    expect(document.body.querySelector('.recent-popover')).not.toBeNull()
+    cleanup()
+  })
+
+  it('ArrowDown keeps walking the results when there are some', async () => {
+    const { overlay, state, cleanup } = mountQueryDialog({
+      recentEntries: [RECENT_ENTRY],
+      runQueryResult: { entries: [SAMPLE_RESULT, { ...SAMPLE_RESULT, path: '/b', name: 'b.jpg' }], totalCount: 2 },
+    })
+    await settle()
+    dispatchKey(overlay, 'Enter')
+    await settle()
+    expect(state.getResults().length).toBe(2)
+
+    dispatchKey(overlay, 'ArrowDown')
+    await tick()
+    expect(document.body.querySelector('.recent-popover')).toBeNull()
+    expect(state.getCursorIndex()).toBe(1)
+    cleanup()
+  })
+
+  it('the field chevron opens the dropdown', async () => {
+    const { overlay, cleanup } = mountQueryDialog({ recentEntries: [RECENT_ENTRY] })
+    await settle()
+
+    const trigger = overlay.querySelector('.query-bar .recent-trigger') as HTMLButtonElement
+    expect(trigger).not.toBeNull()
+    trigger.click()
+    await tick()
+    expect(document.body.querySelector('.recent-popover')).not.toBeNull()
+    cleanup()
+  })
+
+  it('picking a row loads the entry, closes the dropdown, and does NOT run the query', async () => {
+    const { overlay, calls, state, cleanup } = mountQueryDialog({ recentEntries: [RECENT_ENTRY] })
+    await settle()
+    const runsBefore = calls.runQuery
+
+    dispatchKey(overlay, 'h', { meta: true })
+    await tick()
+    const row = document.body.querySelector('.recent-popover .result-row') as HTMLButtonElement
+    expect(row).not.toBeNull()
+    row.click()
+    await tick()
+
+    expect(calls.activateRecent).toEqual([RECENT_ENTRY])
+    // Selecting never runs: a recent search is a starting point, and an AI entry that
+    // re-translated itself would bill the user for a keystroke.
+    expect(calls.runQuery).toBe(runsBefore)
+    expect(state.getRunOnMount()).toBe(false)
+    expect(document.body.querySelector('.recent-popover')).toBeNull()
+    // ⏎ goes back to owning "run-search" so the very next Enter runs what was picked.
+    expect(state.getLastDialogEvent()).toBe('query-edited')
     cleanup()
   })
 })
@@ -345,7 +423,7 @@ describe('QueryDialog IME composition guard', () => {
 
     vi.useFakeTimers()
     try {
-      const input = document.body.querySelector('input.query-input') as HTMLInputElement
+      const input = document.body.querySelector('.query-bar input.text-field-control') as HTMLInputElement
       expect(input).not.toBeNull()
 
       input.dispatchEvent(new CompositionEvent('compositionstart'))
@@ -414,7 +492,7 @@ describe('QueryDialog lastDialogEvent ownership', () => {
     await tick()
     await Promise.resolve()
     await tick()
-    const input = document.body.querySelector('input.query-input') as HTMLInputElement
+    const input = document.body.querySelector('.query-bar input.text-field-control') as HTMLInputElement
     expect(input).not.toBeNull()
     input.value = 'p'
     input.dispatchEvent(new Event('input', { bubbles: true }))

@@ -208,8 +208,8 @@ export function buildHistoryFilters(): HistoryFilters {
 }
 
 /**
- * Loads a persisted history entry into the dialog's live state. Used by the
- * recent-searches footer and popover.
+ * Loads a persisted history entry into the dialog's live state. Used by the query field's
+ * recent-searches dropdown. Loading only: the caller does NOT run the entry.
  */
 export function applyHistoryEntry(entry: HistoryEntry): void {
   core.setQuery(entry.query)

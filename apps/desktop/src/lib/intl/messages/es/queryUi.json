@@ -250,21 +250,9 @@
   "@queryUi.pathPills.hiddenAria": {
     "sourceHash": "f62e273"
   },
-  "queryUi.recent.leadingLabel": "Búsquedas recientes:",
-  "@queryUi.recent.leadingLabel": {
-    "sourceHash": "dd53364"
-  },
-  "queryUi.recent.trailingLabel": "Todas las búsquedas…",
-  "@queryUi.recent.trailingLabel": {
-    "sourceHash": "820b77b"
-  },
   "queryUi.recent.trailingTooltip": "Mostrar todas las búsquedas recientes",
   "@queryUi.recent.trailingTooltip": {
     "sourceHash": "e0de323"
-  },
-  "queryUi.recent.regionAria": "Búsquedas recientes",
-  "@queryUi.recent.regionAria": {
-    "sourceHash": "228c84b"
   },
   "queryUi.recent.allButtonAria": "Todas las búsquedas recientes",
   "@queryUi.recent.allButtonAria": {
@@ -286,9 +274,9 @@
   "@queryUi.recent.listboxAria": {
     "sourceHash": "228c84b"
   },
-  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> para moverte · <runKey>Enter</runKey> para ejecutar · clic derecho para quitar",
+  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> para moverte · <selectKey>Enter</selectKey> rellena el campo · clic derecho para quitar",
   "@queryUi.recent.popoverHint": {
-    "sourceHash": "11e1b46"
+    "sourceHash": "a7ccaef"
   },
   "queryUi.recent.mode.ai": "IA",
   "@queryUi.recent.mode.ai": {
@@ -346,6 +334,10 @@
   "queryUi.recent.resultCount": "{countText} resultados la última vez",
   "@queryUi.recent.resultCount": {
     "sourceHash": "d048174"
+  },
+  "queryUi.recent.rowResultCount": "{countText} {count, plural, one {resultado} many {resultados} other {resultados}}",
+  "@queryUi.recent.rowResultCount": {
+    "sourceHash": "e8c3318"
   },
   "queryUi.recent.sizeRange": "tamaño {minText}–{maxText}",
   "@queryUi.recent.sizeRange": {

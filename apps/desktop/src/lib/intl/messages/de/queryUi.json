@@ -251,21 +251,9 @@
   "@queryUi.pathPills.hiddenAria": {
     "sourceHash": "f62e273"
   },
-  "queryUi.recent.leadingLabel": "Letzte Suchen:",
-  "@queryUi.recent.leadingLabel": {
-    "sourceHash": "dd53364"
-  },
-  "queryUi.recent.trailingLabel": "Alle Suchen…",
-  "@queryUi.recent.trailingLabel": {
-    "sourceHash": "820b77b"
-  },
   "queryUi.recent.trailingTooltip": "Alle letzten Suchen anzeigen",
   "@queryUi.recent.trailingTooltip": {
     "sourceHash": "e0de323"
-  },
-  "queryUi.recent.regionAria": "Letzte Suchen",
-  "@queryUi.recent.regionAria": {
-    "sourceHash": "228c84b"
   },
   "queryUi.recent.allButtonAria": "Alle letzten Suchen",
   "@queryUi.recent.allButtonAria": {
@@ -287,9 +275,9 @@
   "@queryUi.recent.listboxAria": {
     "sourceHash": "228c84b"
   },
-  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> zum Bewegen · <runKey>Enter</runKey> zum Ausführen · Rechtsklick zum Entfernen",
+  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> zum Bewegen · <selectKey>Enter</selectKey> füllt das Feld · Rechtsklick zum Entfernen",
   "@queryUi.recent.popoverHint": {
-    "sourceHash": "11e1b46"
+    "sourceHash": "a7ccaef"
   },
   "queryUi.recent.mode.ai": "KI",
   "@queryUi.recent.mode.ai": {
@@ -347,6 +335,10 @@
   "queryUi.recent.resultCount": "{countText} Ergebnisse beim letzten Mal",
   "@queryUi.recent.resultCount": {
     "sourceHash": "d048174"
+  },
+  "queryUi.recent.rowResultCount": "{countText} {count, plural, one {Ergebnis} other {Ergebnisse}}",
+  "@queryUi.recent.rowResultCount": {
+    "sourceHash": "e8c3318"
   },
   "queryUi.recent.sizeRange": "Größe {minText}–{maxText}",
   "@queryUi.recent.sizeRange": {

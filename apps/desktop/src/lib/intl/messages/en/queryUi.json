@@ -305,29 +305,14 @@
     }
   },
 
-  "queryUi.recent.leadingLabel": "Recent searches:",
-  "@queryUi.recent.leadingLabel": {
-    "description": "Label at the left of the recent-searches strip at the bottom of the search dialog, before the recent-search chips. Ends with a colon.",
-    "screenshot": "search-dialog.png"
-  },
-  "queryUi.recent.trailingLabel": "All searches…",
-  "@queryUi.recent.trailingLabel": {
-    "description": "Label on the trailing button of the recent-searches strip; opens a popover listing the full search history. A keyboard-shortcut glyph appears next to it. Ends with an ellipsis.",
-    "screenshot": "search-dialog.png"
-  },
   "queryUi.recent.trailingTooltip": "Show all recent searches",
   "@queryUi.recent.trailingTooltip": {
-    "description": "Tooltip on the 'All searches…' button at the right of the recent-searches strip.",
-    "screenshot": "search-dialog.png"
-  },
-  "queryUi.recent.regionAria": "Recent searches",
-  "@queryUi.recent.regionAria": {
-    "description": "Accessibility label for the recent-searches strip region, read by screen readers.",
+    "description": "Tooltip on the small chevron button inside the search dialog's query field, which opens the recent-searches dropdown. A keyboard-shortcut glyph appears next to it.",
     "screenshot": "search-dialog.png"
   },
   "queryUi.recent.allButtonAria": "All recent searches",
   "@queryUi.recent.allButtonAria": {
-    "description": "Accessibility label for the 'All searches…' button, read by screen readers.",
+    "description": "Accessibility label for the chevron button inside the search dialog's query field that opens the recent-searches dropdown, read by screen readers.",
     "screenshot": "search-dialog.png"
   },
   "queryUi.recent.filterPlaceholder": "Filter recent searches",
@@ -351,9 +336,9 @@
     "screenshot": "search-dialog.png"
   },
 
-  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> to move · <runKey>Enter</runKey> to run · right-click to remove",
+  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> to move · <selectKey>Enter</selectKey> to fill the field · right-click to remove",
   "@queryUi.recent.popoverHint": {
-    "description": "Footer hint at the bottom of the recent-searches popover, explaining the keyboard and mouse controls. The <moveKey> and <runKey> tags wrap keyboard-shortcut glyphs (rendered as small key badges); keep them around the shortcut text. The '·' are middle-dot separators. '↑↓' and 'Enter' are key names; keep them as-is."
+    "description": "Footer hint at the bottom of the recent-searches dropdown, explaining the keyboard and mouse controls. Enter loads the picked search back into the query field without running it, so the user can edit it first. The <moveKey> and <selectKey> tags wrap keyboard-shortcut glyphs (rendered as small key badges); keep them around the shortcut text. The '·' are middle-dot separators. '↑↓' and 'Enter' are key names; keep them as-is."
   },
 
   "queryUi.recent.mode.ai": "AI",
@@ -438,6 +423,15 @@
     "description": "Last line of a recent-search chip's hover tooltip. Reminds the user how many matches that past search returned when it last ran. This line only renders when the count is at least 1, but it reads 'results' regardless of count.",
     "placeholders": {
       "countText": "the number of results, shown as a plain integer (no grouping)"
+    },
+    "screenshot": "search-dialog.png"
+  },
+  "queryUi.recent.rowResultCount": "{countText} {count, plural, one {result} other {results}}",
+  "@queryUi.recent.rowResultCount": {
+    "description": "Part of the meta line under a row in the recent-searches dropdown: how many matches that past search returned when it last ran. Sits after the age and before the filter summary, joined by middle dots. Lowercase.",
+    "placeholders": {
+      "countText": "the number of results, already formatted for display (for example 1,203)",
+      "count": "the same number of results (drives the singular/plural form of the noun)"
     },
     "screenshot": "search-dialog.png"
   },

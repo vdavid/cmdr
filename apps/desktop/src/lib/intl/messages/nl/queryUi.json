@@ -251,21 +251,9 @@
   "@queryUi.pathPills.hiddenAria": {
     "sourceHash": "f62e273"
   },
-  "queryUi.recent.leadingLabel": "Recente zoekopdrachten:",
-  "@queryUi.recent.leadingLabel": {
-    "sourceHash": "dd53364"
-  },
-  "queryUi.recent.trailingLabel": "Alle zoekopdrachten…",
-  "@queryUi.recent.trailingLabel": {
-    "sourceHash": "820b77b"
-  },
   "queryUi.recent.trailingTooltip": "Toon alle recente zoekopdrachten",
   "@queryUi.recent.trailingTooltip": {
     "sourceHash": "e0de323"
-  },
-  "queryUi.recent.regionAria": "Recente zoekopdrachten",
-  "@queryUi.recent.regionAria": {
-    "sourceHash": "228c84b"
   },
   "queryUi.recent.allButtonAria": "Alle recente zoekopdrachten",
   "@queryUi.recent.allButtonAria": {
@@ -287,9 +275,9 @@
   "@queryUi.recent.listboxAria": {
     "sourceHash": "228c84b"
   },
-  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> om te verplaatsen · <runKey>Enter</runKey> om uit te voeren · rechtsklik om te verwijderen",
+  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> om te verplaatsen · <selectKey>Enter</selectKey> vult het veld · rechtsklik om te verwijderen",
   "@queryUi.recent.popoverHint": {
-    "sourceHash": "11e1b46"
+    "sourceHash": "a7ccaef"
   },
   "queryUi.recent.mode.ai": "AI",
   "@queryUi.recent.mode.ai": {
@@ -348,6 +336,10 @@
   "queryUi.recent.resultCount": "{countText} resultaten vorige keer",
   "@queryUi.recent.resultCount": {
     "sourceHash": "d048174"
+  },
+  "queryUi.recent.rowResultCount": "{countText} {count, plural, one {resultaat} other {resultaten}}",
+  "@queryUi.recent.rowResultCount": {
+    "sourceHash": "e8c3318"
   },
   "queryUi.recent.sizeRange": "grootte {minText}–{maxText}",
   "@queryUi.recent.sizeRange": {

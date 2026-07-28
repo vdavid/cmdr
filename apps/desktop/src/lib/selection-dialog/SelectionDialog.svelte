@@ -13,7 +13,7 @@
      *
      * QueryDialog owns everything else: overlay, keyboard contract, IME guard, auto-apply,
      * `lastDialogEvent` lifecycle, title bar, chip strip, AI prompt strip, results table,
-     * recent-items footer + popover, and the empty state.
+     * the recent-items dropdown, and the empty state.
      *
      * Apply-on-commit semantics: the matcher runs against the SNAPSHOT taken at dialog
      * open (current pane listing). Pressing ⏎ runs the matcher fresh against that
@@ -46,6 +46,7 @@
         chipTooltip,
         modeName,
         formatAge,
+        rowMeta,
     } from '$lib/query-ui/recent-items/recent-items-utils'
     import type {
         RecentItemAdapter,
@@ -377,7 +378,7 @@
         }
         try {
             await addRecentSelectionIpc(entry)
-            // Refresh the in-memory list so the footer sees the new entry.
+            // Refresh the in-memory list so the dropdown sees the new entry.
             const fresh = await fetchRecentSelections()
             setRecentSelectionsList(fresh)
         } catch {
@@ -385,12 +386,14 @@
         }
     }
 
-    /** Activates a recent-selection: load it into state and trigger a fresh run on next tick. */
+    /**
+     * Recent-selection pick: loads the entry into state and stops there. Deliberately no
+     * `runOnMount` — picking is navigation, so the user lands back in the field with the
+     * filter ready to tweak, and an AI entry never re-translates on a keystroke. QueryDialog
+     * closes the dropdown and hands `⏎` back to "run-search".
+     */
     function activateHistoryEntry(entry: SelectionHistoryEntry): void {
         applySelectionHistoryEntry(selectionQueryState, entry)
-        // The dialog's `runOnMount` $effect picks this up and dispatches to AI / non-AI
-        // based on the restored mode.
-        selectionQueryState.setRunOnMount(true)
     }
 
     /** Removes a recent-selection entry. Optimistic update; refetches after the IPC. */
@@ -429,9 +432,9 @@
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Per-chip view: Selection's entry shape lacks `scope` and `excludeSystemDirs`
-     * so we reuse Search's helpers by adapting up to the wider shape. The chip
-     * itself never reads the missing fields (they're noise in the tooltip).
+     * Per-row view: Selection's entry shape lacks `scope` and `excludeSystemDirs`
+     * so we reuse Search's helpers by adapting up to the wider shape. The row
+     * itself never reads the missing fields (they're noise in the meta line).
      */
     const recentAdapter: RecentItemAdapter<SelectionHistoryEntry> = (entry) => {
         const widened = {
@@ -445,6 +448,7 @@
             tooltip: chipTooltip(widened),
             mode: entry.mode,
             ageLabel: formatAge(entry.timestamp),
+            metaLabel: rowMeta(widened),
             ariaLabel: `Apply recent ${modeName(entry.mode)} selection: ${entry.query}`,
         }
     }
@@ -514,12 +518,8 @@
         recentItems: {
             adapter: recentAdapter,
             keyFn: recentKey,
-            leadingLabel: 'Recent selections:',
-            trailingLabel: 'All selections…',
-            trailingTooltipText: 'Open the recent-selections popover',
-            trailingShortcut: '⌘H',
-            ariaRegionLabel: 'Recent selections',
-            ariaAllButtonLabel: 'Open all recent selections',
+            triggerAriaLabel: 'All recent selections',
+            triggerTooltip: 'Show all recent selections',
             filterPlaceholder: 'Filter recent selections',
             emptyMessage: 'No matching recent selections',
             popoverAriaLabel: 'Recent selections',

@@ -250,21 +250,9 @@
   "@queryUi.pathPills.hiddenAria": {
     "sourceHash": "f62e273"
   },
-  "queryUi.recent.leadingLabel": "Senaste sökningar:",
-  "@queryUi.recent.leadingLabel": {
-    "sourceHash": "dd53364"
-  },
-  "queryUi.recent.trailingLabel": "Alla sökningar…",
-  "@queryUi.recent.trailingLabel": {
-    "sourceHash": "820b77b"
-  },
   "queryUi.recent.trailingTooltip": "Visa alla senaste sökningar",
   "@queryUi.recent.trailingTooltip": {
     "sourceHash": "e0de323"
-  },
-  "queryUi.recent.regionAria": "Senaste sökningar",
-  "@queryUi.recent.regionAria": {
-    "sourceHash": "228c84b"
   },
   "queryUi.recent.allButtonAria": "Alla senaste sökningar",
   "@queryUi.recent.allButtonAria": {
@@ -286,9 +274,9 @@
   "@queryUi.recent.listboxAria": {
     "sourceHash": "228c84b"
   },
-  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> för att flytta · <runKey>Enter</runKey> för att köra · högerklicka för att ta bort",
+  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> för att flytta · <selectKey>Enter</selectKey> fyller i fältet · högerklicka för att ta bort",
   "@queryUi.recent.popoverHint": {
-    "sourceHash": "11e1b46"
+    "sourceHash": "a7ccaef"
   },
   "queryUi.recent.mode.ai": "AI",
   "@queryUi.recent.mode.ai": {
@@ -347,6 +335,10 @@
   "queryUi.recent.resultCount": "{countText} resultat förra gången",
   "@queryUi.recent.resultCount": {
     "sourceHash": "d048174"
+  },
+  "queryUi.recent.rowResultCount": "{countText} {count, plural, one {resultat} other {resultat}}",
+  "@queryUi.recent.rowResultCount": {
+    "sourceHash": "e8c3318"
   },
   "queryUi.recent.sizeRange": "storlek {minText}–{maxText}",
   "@queryUi.recent.sizeRange": {

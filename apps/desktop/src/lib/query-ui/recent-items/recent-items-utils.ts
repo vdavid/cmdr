@@ -1,10 +1,11 @@
 /**
- * Pure helpers for the recent-searches footer and popover. Kept side-effect-free so the
- * tests can hit them directly.
+ * Pure helpers for the recent-items dropdown. Kept side-effect-free so the tests can hit
+ * them directly.
  */
 
 import type { HistoryEntry, HistoryMode } from '$lib/tauri-commands'
 import { tString } from '$lib/intl/messages.svelte'
+import { formatInteger } from '$lib/intl/number-format'
 
 /** Short badge shown on each chip to signal the search mode. */
 export function modeBadge(mode: HistoryMode): string {
@@ -99,7 +100,28 @@ function formatBytes(b: number): string {
 }
 
 /**
- * Build a multi-line plain-text tooltip for a recent-search chip. Plain text (not HTML) so
+ * The recent-items row's meta line, minus the age (the row renders that separately): the
+ * result count first, because "the search that found 1,203 files" is the strongest recall
+ * cue, then the filter summary. Empty string when the entry has neither, in which case the
+ * row shows the age alone. The full picture stays in `chipTooltip`.
+ */
+export function rowMeta(entry: HistoryEntry): string {
+  const parts: string[] = []
+  if (entry.resultCount > 0) {
+    parts.push(
+      tString('queryUi.recent.rowResultCount', {
+        countText: formatInteger(entry.resultCount),
+        count: entry.resultCount,
+      }),
+    )
+  }
+  const summary = filterSummary(entry)
+  if (summary) parts.push(summary)
+  return parts.join(' · ')
+}
+
+/**
+ * Build a multi-line plain-text tooltip for a recent-items row. Plain text (not HTML) so
  * the existing `tooltip` action can render it safely.
  */
 export function chipTooltip(entry: HistoryEntry, nowMs: number = Date.now()): string {

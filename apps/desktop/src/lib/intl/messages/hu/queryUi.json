@@ -250,21 +250,9 @@
   "@queryUi.pathPills.hiddenAria": {
     "sourceHash": "f62e273"
   },
-  "queryUi.recent.leadingLabel": "Legutóbbi keresések:",
-  "@queryUi.recent.leadingLabel": {
-    "sourceHash": "dd53364"
-  },
-  "queryUi.recent.trailingLabel": "Összes keresés…",
-  "@queryUi.recent.trailingLabel": {
-    "sourceHash": "820b77b"
-  },
   "queryUi.recent.trailingTooltip": "Az összes legutóbbi keresés megjelenítése",
   "@queryUi.recent.trailingTooltip": {
     "sourceHash": "e0de323"
-  },
-  "queryUi.recent.regionAria": "Legutóbbi keresések",
-  "@queryUi.recent.regionAria": {
-    "sourceHash": "228c84b"
   },
   "queryUi.recent.allButtonAria": "Összes legutóbbi keresés",
   "@queryUi.recent.allButtonAria": {
@@ -286,9 +274,9 @@
   "@queryUi.recent.listboxAria": {
     "sourceHash": "228c84b"
   },
-  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> a mozgáshoz · <runKey>Enter</runKey> a futtatáshoz · jobb klikk az eltávolításhoz",
+  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> a mozgáshoz · <selectKey>Enter</selectKey> beírja a mezőbe · jobb klikk az eltávolításhoz",
   "@queryUi.recent.popoverHint": {
-    "sourceHash": "11e1b46"
+    "sourceHash": "a7ccaef"
   },
   "queryUi.recent.mode.ai": "AI",
   "@queryUi.recent.mode.ai": {
@@ -347,6 +335,10 @@
   "queryUi.recent.resultCount": "{countText} találat legutóbb",
   "@queryUi.recent.resultCount": {
     "sourceHash": "d048174"
+  },
+  "queryUi.recent.rowResultCount": "{countText} {count, plural, one {találat} other {találat}}",
+  "@queryUi.recent.rowResultCount": {
+    "sourceHash": "e8c3318"
   },
   "queryUi.recent.sizeRange": "méret {minText}–{maxText}",
   "@queryUi.recent.sizeRange": {

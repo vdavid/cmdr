@@ -1,8 +1,9 @@
 /**
  * Tier-3 a11y tests for `SearchBar.svelte`.
  *
- * The bar's a11y surface is small: a single `<input>` with a per-mode `aria-label` and a
- * decorative SVG inside the wrapper. Covered states: each mode plus the disabled state.
+ * The bar's a11y surface: the house `TextInput` pill (per-mode `aria-label`, decorative
+ * magnifier), the dropdown-trigger chevron, and the run `Button`. Covered states: each mode
+ * plus the disabled state.
  */
 
 import { describe, it } from 'vitest'
@@ -20,8 +21,12 @@ function baseProps(overrides: Partial<Props> = {}): Props {
     disabled: false,
     aiHighlight: false,
     showRunHint: false,
+    recentOpen: false,
     onInput: () => {},
     onRun: () => {},
+    onToggleRecent: () => {},
+    recentTriggerLabel: 'All recent searches',
+    recentTriggerTooltip: 'Show all recent searches',
     onCompositionStart: () => {},
     onCompositionEnd: () => {},
     ...overrides,

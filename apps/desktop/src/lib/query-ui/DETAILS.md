@@ -16,8 +16,8 @@ slash-wrap are typography, not copy, and stay literal. Parity net: `queryui-i18n
 
 Home for primitives shared between the Search dialog (`lib/search/`) and the Selection dialog (`lib/selection-dialog/`).
 Owns the unified query bar, mode chips, AI prompt strip, filter chips strip (size, modified, scope, pattern),
-virtualized results table with path pills and per-row menus, recent-items footer + popover, and the cross-consumer
-filter state factory.
+virtualized results table with path pills and per-row menus, the query field's recent-items dropdown, and the
+cross-consumer filter state factory.
 
 See `../search/CLAUDE.md` for Search-specific decisions (snapshot store, virtual volume, MCP open path, "Open in pane",
 index lifecycle, "Use current folder" smart fallback) and `../selection-dialog/CLAUDE.md` for Selection-specific
@@ -30,7 +30,7 @@ Modified popovers, shortcut openers, and chip-specific decisions) live in `filte
 
 `QueryDialog.svelte` is the shared overlay every consumer mounts. It owns the overlay chrome, the keyboard contract, IME
 guard, auto-apply gates, the `⏎` ownership swap, the `lastDialogEvent` lifecycle, the title bar, the chip strip, the AI
-prompt strip, the results table, the recent-items footer + popover, the empty state, and the optional notice banner.
+prompt strip, the results table, the recent-items dropdown, the empty state, and the optional notice banner.
 Consumers wire everything Search-or-Selection-specific through a single [`QueryDialogConfig`](query-dialog-config.ts)
 prop.
 
@@ -108,17 +108,62 @@ changes what the search RETURNS rather than what it matches, and `ModeChips` is 
 house `$lib/ui/Switch`; a hand-rolled `role="switch"` is rejected by `cmdr/prefer-ui-primitive`. Flipping it re-runs via
 `scheduleSearch()` (debounced, and a no-op in AI mode, which keeps the explicit-trigger contract).
 
-Strip insets are `--spacing-lg` (16 px) while `ModalDialog`'s title bar uses `--spacing-dialog` (20 px), so the title
-sits 4 px further in than the bar below it. Moving the strips to `--spacing-dialog` needs `QueryBar`, `ModeChips`, and
-`recent-items/` to move together; do it in one pass, not piecemeal.
+Every strip insets at `--spacing-dialog` (20 px), the same as `ModalDialog`'s title bar, so the title, the query
+field, the chips, the result rows, the status bar, and the footer actions all share one left edge. The strips own that
+padding individually (`padded={false}`), so a new strip has to opt in or the column goes ragged; the centered state
+blocks inside `QueryResults` (loading / no-results / empty) are content padding, not strip inset, and stay on the
+generic scale.
+
+### Recent-items dropdown
+
+The query field is a combobox over the recent-items history. The field itself is the house `TextInput`
+(`radius="full"` + the magnifier `leadingIcon`, the same search pill as the Settings sidebar) with a chevron in its
+trailing slot; the list is `RecentItemsPopover` anchored to the pill frame, so the dropdown lines up under the whole
+field rather than under the chevron.
+
+**Why not the house `Combobox`** (or Ark's directly): Ark's model uses the control's own input AS the filter. This
+design needs TWO independent text fields — the query the user is composing and the dropdown's own fuzzy filter — which
+fights Ark's focus routing and would put a focusable input among `role="option"` children. So the pieces are assembled
+here instead, and `Popover` keeps supplying the `.ui-popover` Escape-deference contract that QueryDialog's
+capture-phase Escape depends on.
+
+**Openers**: the chevron, `⌘H` (toggles), and `ArrowDown` in the field. `ArrowDown` opens ONLY when there are no
+results to walk: with a result list, `↓` keeps moving the cursor, which is the more valuable use of the key. So the
+gesture lands on a key that was otherwise dead (`handleArrowNav` returned early on an empty list), and it never steals
+result navigation. The chevron and `⌘H` work regardless.
+
+**Keyboard contract inside the dropdown** (`RecentItemsPopover.handleKeydown`):
+
+- `↑` / `↓` move the cursor and NEITHER wraps. Wrapping past the end while the user holds a key reads as teleporting.
+- `↑` on the TOP row EXITS: it fires `onExitTop`, which closes the dropdown and returns focus to the query field with
+  its text untouched (nothing was picked, so there's nothing to undo).
+- `Enter` (and a click) SELECTS: the entry loads into the dialog and the dropdown closes. It does not run. QueryDialog's
+  `pickRecent` then sets `lastDialogEvent = 'query-edited'`, so `⏎` owns "run-search" and the next Enter runs it.
+- Everything else is left alone, so `⌘C` / `⌘V` / `⌘X`, `←` / `→` (with or without modifiers), and `Home` / `End`
+  behave like they do in any text field. Typing goes to the dropdown's filter field because `Popover` focuses the first
+  focusable child on open.
+- **Every key the dropdown claims also `stopPropagation()`s.** The popover renders inside the dialog, which has its own
+  `onkeydown`; without this, `↑` / `↓` also move the results cursor underneath and `Enter` also fires the dialog's Enter
+  handler. Pinned by `RecentItemsPopover.svelte.test.ts` against a stand-in host listener.
+
+**Focus return.** `Popover`'s Escape path calls `onClose()` then `anchor.focus()`, and the anchor is the pill `<div>`,
+which isn't focusable. `closeRecentPopover` therefore re-focuses the query input on the next frame, but only when
+nothing else has claimed focus by then — otherwise a click-outside would yank focus off whatever the user clicked. The
+keyboard paths (Enter-select, `↑`-at-top, `⌘H`) use `closeRecentPopoverAndFocus`, which focuses after a `tick()` so the
+still-mounted popover's focus trap can't pull it back.
+
+**Row content.** Each row is a mode badge, the label with fuzzy-match highlighting, and a quiet meta line: the age,
+then `metaLabel` (result count, then the filter summary). Both come pre-formatted from the consumer's adapter
+(`formatAge` / `rowMeta` in `recent-items-utils.ts`), so the component never reads an entry field. The full picture
+(mode name, every filter, the count) stays in the row's `title` tooltip — the meta line is for recognition at a glance,
+not for reading.
 
 ### Count-only results
 
 Count-only is Search-only (`config.filterChipsExtras.countOnly` / `onToggleCountOnly`; Selection leaves both undefined
 and neither the switch nor the button renders). The backend returns a total and NO rows, so `QueryResults` replaces the
-list with one body-size sentence carrying the thousands-separated total in bold
-(`queryUi.results.countOnly.sentence`, a `<Trans>` message whose `<total>` tag lets each locale place the number), plus
-a "Show results" `Button`.
+list with one body-size sentence carrying the thousands-separated total in bold (`queryUi.results.countOnly.sentence`, a
+`<Trans>` message whose `<total>` tag lets each locale place the number), plus a "Show results" `Button`.
 
 **The trap**: turning count-only off does not repopulate the list, because there were never any rows to show. So
 `showResultsFromCount()` flips the flag AND re-runs, through `runFromButton()` — the same path the bar's `⏎` button
@@ -189,10 +234,11 @@ builds on live in `$lib/ui/`. Only the layout facts that none of those carry liv
   drops Content. Search gets the path column (`showPathColumn` defaults `true`); Selection passes `false`. Selection's
   `indexEntryCount === 0` hides `EmptyState`'s "Index ready · …" line. So a change to a shared component has to be
   checked against BOTH dialogs, not just Search.
-- **`recent-items/` is generic over the entry type `<E>`.** The footer and popover know nothing about search or
-  selection entries: the consumer supplies a `RecentItemAdapter<E>` plus a `keyFn`, and
-  `createRecentItemsState({ getRecent })` supplies the store. Reach for the adapter before adding a consumer-specific
-  branch inside the components.
+- **`recent-items/` is generic over the entry type `<E>`.** The dropdown knows nothing about search or selection
+  entries: the consumer supplies a `RecentItemAdapter<E>` plus a `keyFn`, and `createRecentItemsState({ getRecent })`
+  supplies the store. Reach for the adapter before adding a consumer-specific branch inside the component. The adapter
+  also pre-formats the row's meta line (`ageLabel` + `metaLabel`, the latter from `rowMeta()`), so the component never
+  reads an entry field.
 - **`SearchRowMenu`'s `…` button is always visible on EVERY row**, not hover-only or cursor-only, and it routes to the
   parent's NATIVE context menu through `onOpen` rather than rendering a menu of its own.
 - **`EmptyState`'s example chips come from `config.emptyState.examples`** (forwarded by `QueryResults`), falling back to
@@ -275,19 +321,14 @@ the non-overwrite guard, and the probe-wins precedence).
 
 Small contracts that apply to every consumer of the query UI:
 
-- `QueryBar.svelte`'s run button has the `⏎` shortcut at the suffix slot at `--spacing-xs` from the "Search" label so
-  the rhythm matches "Go to file ⏎" and "All searches… ⌘H" elsewhere.
-- `RecentItemsFooter.svelte` + `recent-chips-layout.ts` use a greedy-fit layout: leading label ("Recent searches:" or
-  "Recent selections:") and trailing button ("All searches…" + a `⌘H` `ShortcutChip`, or equivalent) are always
-  rendered; the middle slot packs as many chips as fit, dropping the rest silently. No horizontal scrolling, no ellipsis
-  chip. The pills are `$lib/ui/Chip` (`variant="recent"`, mode badge in its `leading` slot), and the trailing control is
-  a standard `$lib/ui/Button` (`variant="secondary"`); the layout helper measures `.chip-recent` and `.all-recent`.
-- Each chip's tooltip leads with the full text so a CSS-ellipsis-truncated chip stays readable on hover.
+- `QueryBar.svelte`'s run button is the house `Button` (`variant="secondary"`, same family as the footer actions) with
+  the `⏎` `ShortcutChip` at `--spacing-xs` from the "Search" label, so the rhythm matches "Go to file ⏎" in the footer.
+- Each row's `title` tooltip leads with the full text so a CSS-ellipsis-truncated row stays readable on hover.
 - Path column font is `--font-size-sm` (matching the filename column) with `--spacing-xxs` row vertical padding so the
   row height stays compact.
 - **Fixed interaction keys render as literal `ShortcutChip`s** (`size="sm"` in dense slots): the run button's `⏎`, the
   empty-state tip (`⌘N` / `⌘H` / `⌘Enter`, in `EmptyState.svelte`), the scope popover's `⌥C` / `⌥V`, and the
-  recent-items footer's `⌘H` and popover's `↑↓` / `Enter`. These are dialog-internal keys with no registry command, so
+  recent-items dropdown's `↑↓` / `Enter`. These are dialog-internal keys with no registry command, so
   the chip only unifies their look — never clickable, never dynamic. The mode-chip `.tg-hint` glyphs (`⌥A` / `⌥F` /
   `⌥R`) and the footer action-button hints (`Go to file ⏎`, `Show all in main window ⏎`) deliberately stay un-boxed; see
   `lib/ui/CLAUDE.md` § ShortcutChip for the rationale.
@@ -310,7 +351,7 @@ Both Search and Selection inherit these. ⏎ has dynamic ownership (see D8 below
 - **`⌘Enter`**: No-op. Bare Enter is the only path that runs a search or opens the cursor row.
 - **`⇧Enter`**: No-op. Same rule as ⌘Enter.
 - **`⌘N`**: Clear all dialog state ("new search" / "new selection")
-- **`⌘H`**: Toggle the recent-items popover (fuzzy over the full history)
+- **`⌘H`**: Toggle the query field's recent-items dropdown (fuzzy over the full history)
 - **`⌘1`**: Switch to AI (AI on) or Filename (AI off)
 - **`⌘2`**: Switch to Filename (AI on) or Regex (AI off)
 - **`⌘3`**: Switch to Regex (AI on); no-op when AI is off
@@ -318,7 +359,8 @@ Both Search and Selection inherit these. ⏎ has dynamic ownership (see D8 below
 - **`⌥A`**: Mode chip: AI (global inside the dialog; only when AI is enabled)
 - **`⌥F`**: Mode chip: Filename (global)
 - **`⌥R`**: Mode chip: Regex (global)
-- **`↑` / `↓`**: Move the cursor through the results list (loops top<->bottom)
+- **`↑` / `↓`**: Move the cursor through the results list (loops top<->bottom). With NO results, `↓` opens the
+  recent-items dropdown instead (see § Recent-items dropdown)
 - **`←` / `→`**: When focus is on a mode chip: move between chips (skip Content)
 - **`Tab`**: Trapped within the dialog (shared `use:trapFocus` on the overlay); cycles through interactive elements
 - **`Escape`**: Close the dialog
@@ -447,15 +489,15 @@ search-results) uniformly. 100 is enough for power users who navigate deeply and
 below would start to hurt them. The cap is enforced inside `navigation-history.ts::push()`, which returns the dropped
 entries so callers (the tab-state manager) can release per-entry resources in one step.
 
-**Decision**: AI mode example chips re-run on click. **Why**: AI mode's "explicit user trigger" rule counts a click as a
-trigger. The same applies to recent-search AI entries (footer chip click + popover Enter both run). Anything the user
-deliberately picks from the dialog is the same kind of "yes, please" as pressing Enter.
+**Decision**: AI mode example chips re-run on click, but recent-items picks do NOT. **Why**: an empty-state example
+chip has one meaning ("run this"), so the click IS the explicit AI trigger. A recent entry is different: the user is
+usually reaching for a past search to adjust it, so picking one loads it and stops, leaving `⏎` to run. That also keeps
+an AI entry from re-billing the user for what they meant as navigation. See § Recent-items dropdown.
 
 **Decision**: `RecentItemsPopover` reuses `$lib/ui/Popover` for positioning + focus trap + Esc-scoped close. **Why**:
-The plan calls for a sub-overlay-of-an-overlay with the same auto-flip, focus-trap, and "Esc closes only the popover"
-semantics as the filter chips. Reimplementing those risks drift; reusing the primitive guarantees the contract covers
-both popover kinds via the single `.ui-popover` DOM selector (the same selector the filter popovers render through
-`FilterPopover`).
+it's a sub-overlay-of-an-overlay with the same auto-flip, focus-trap, and "Esc closes only the popover" semantics as the
+filter chips. Reimplementing those risks drift; reusing the primitive guarantees the contract covers both popover kinds
+via the single `.ui-popover` DOM selector (the same selector the filter popovers render through `FilterPopover`).
 
 **Decision**: Path pills inside result rows are mouse-only and not in the keyboard Tab order, with no keyboard
 equivalent. **Why**: Making the pills tabbable inside virtualized rows would break the row's arrow-down keyboard flow:
@@ -467,7 +509,8 @@ re-add an `⌥`+arrow folder-nav here; if a keyboard affordance is wanted later,
 (for example `⌘↑` / `⌘↓`, Finder's enclosing/open keys). Axe's `nested-interactive` rule still flags the structural
 nesting on the populated-results audit; we disable that one rule explicitly with a comment pointing here.
 
-**Decision**: AI mode never auto-applies; only Enter / `⌘Enter` / the ⏎ button / chip clicks fire it. **Why**: AI calls
+**Decision**: AI mode never auto-applies; only Enter / `⌘Enter` / the ⏎ button / example-chip clicks fire it (a
+recent-items pick loads without running). **Why**: AI calls
 cost money (cloud) or RAM + latency (local). Even a fast model has a per-call cost the user should opt into. Filename
 and regex modes auto-apply behind the `search.autoApply` setting (default on, 1,000 ms debounce). The split lives in
 `scheduleSearch()`'s early-return chain (mode, setting, IME composition).

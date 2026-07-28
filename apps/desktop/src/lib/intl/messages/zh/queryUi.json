@@ -248,21 +248,9 @@
   "@queryUi.pathPills.hiddenAria": {
     "sourceHash": "f62e273"
   },
-  "queryUi.recent.leadingLabel": "最近的搜索：",
-  "@queryUi.recent.leadingLabel": {
-    "sourceHash": "dd53364"
-  },
-  "queryUi.recent.trailingLabel": "所有搜索…",
-  "@queryUi.recent.trailingLabel": {
-    "sourceHash": "820b77b"
-  },
   "queryUi.recent.trailingTooltip": "显示所有最近的搜索",
   "@queryUi.recent.trailingTooltip": {
     "sourceHash": "e0de323"
-  },
-  "queryUi.recent.regionAria": "最近的搜索",
-  "@queryUi.recent.regionAria": {
-    "sourceHash": "228c84b"
   },
   "queryUi.recent.allButtonAria": "所有最近的搜索",
   "@queryUi.recent.allButtonAria": {
@@ -284,9 +272,9 @@
   "@queryUi.recent.listboxAria": {
     "sourceHash": "228c84b"
   },
-  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> 移动 · <runKey>Enter</runKey> 运行 · 右键点击移除",
+  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> 移动 · <selectKey>Enter</selectKey> 填入搜索框 · 右键点击移除",
   "@queryUi.recent.popoverHint": {
-    "sourceHash": "11e1b46"
+    "sourceHash": "a7ccaef"
   },
   "queryUi.recent.mode.ai": "AI",
   "@queryUi.recent.mode.ai": {
@@ -344,6 +332,10 @@
   "queryUi.recent.resultCount": "上次有 {countText} 个结果",
   "@queryUi.recent.resultCount": {
     "sourceHash": "d048174"
+  },
+  "queryUi.recent.rowResultCount": "{countText} {count, plural, other {个结果}}",
+  "@queryUi.recent.rowResultCount": {
+    "sourceHash": "e8c3318"
   },
   "queryUi.recent.sizeRange": "大小 {minText}–{maxText}",
   "@queryUi.recent.sizeRange": {

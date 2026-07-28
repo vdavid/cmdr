@@ -16,7 +16,7 @@ import type { RecentItemAdapter, RecentItemKey } from './recent-items-types'
 import { chipTooltip, modeName, formatAge } from './recent-items-utils'
 
 // Svelte 5 generics+mount type roundtrip: cast through unknown to avoid unsafe-argument errors.
-// See `RecentItemsFooter.svelte.test.ts` for the full explanation.
+// See `RecentItemsPopover.svelte.test.ts` for the full explanation.
 const RecentSearchesPopover = RecentSearchesPopoverRaw as unknown as Component<Record<string, unknown>>
 
 const searchAdapter: RecentItemAdapter<HistoryEntry> = (e) => ({
@@ -24,6 +24,7 @@ const searchAdapter: RecentItemAdapter<HistoryEntry> = (e) => ({
   tooltip: chipTooltip(e),
   mode: e.mode,
   ageLabel: formatAge(e.timestamp),
+  metaLabel: '',
   ariaLabel: `Run recent ${modeName(e.mode)} search: ${e.query}`,
 })
 const searchKey: RecentItemKey<HistoryEntry> = (e) => e.id
@@ -66,6 +67,7 @@ describe('RecentSearchesPopover a11y', () => {
         onClose: () => {},
         onPick: () => {},
         onRemove: () => {},
+        onExitTop: () => {},
       },
     })
     await tick()
@@ -94,6 +96,7 @@ describe('RecentSearchesPopover a11y', () => {
         onClose: () => {},
         onPick: () => {},
         onRemove: () => {},
+        onExitTop: () => {},
       },
     })
     await tick()

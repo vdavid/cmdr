@@ -96,7 +96,7 @@
     .mode-chips-wrap {
         display: flex;
         align-items: center;
-        padding: var(--spacing-sm) var(--spacing-lg);
+        padding: var(--spacing-sm) var(--spacing-dialog);
         background: var(--color-bg-primary);
     }
 

@@ -8,8 +8,8 @@
  * Everything that diverges per consumer lives here; everything else (overlay layout,
  * keyboard dispatch, IME guard, auto-apply debounce, `lastDialogEvent` ownership,
  * Enter ownership swap via `deriveEnterAction`, title bar, mode chips, filter chips,
- * results list, recent-items footer + popover, empty state, notice banner) lives in
- * `QueryDialog.svelte` and is the same code for every consumer.
+ * results list, the query field's recent-items dropdown, empty state, notice banner) lives
+ * in `QueryDialog.svelte` and is the same code for every consumer.
  *
  * Ownership contracts the consumer MUST NOT violate:
  *
@@ -136,31 +136,23 @@ export interface QueryDialogSecondaryAction extends QueryDialogAction {
   handler: (entry: SearchResultEntry) => void | Promise<void>
 }
 
-/** Generic history entry the recent-items footer / popover renders. */
+/** Generic history entry the query field's recent-items dropdown renders. */
 export interface QueryDialogRecentItems<E> {
   /** Adapts a history entry into the row UI's shape. */
   adapter: RecentItemAdapter<E>
   /** Stable identity for keying. */
   keyFn: RecentItemKey<E>
-  /** Strip-leading label (default Search-flavoured: "Recent searches:"). */
-  leadingLabel?: string
-  /** Trailing button label (default "All searches…"). */
-  trailingLabel?: string
-  /** Trailing button tooltip. */
-  trailingTooltipText?: string
-  /** Inline shortcut on the trailing button. */
-  trailingShortcut?: string
-  /** ARIA region label on the footer strip. */
-  ariaRegionLabel?: string
-  /** ARIA label on the "All …" button. */
-  ariaAllButtonLabel?: string
-  /** Filter input placeholder in the popover. */
+  /** ARIA label on the query field's dropdown-trigger chevron (default "All recent searches"). */
+  triggerAriaLabel?: string
+  /** Tooltip on the dropdown-trigger chevron (default "Show all recent searches"). */
+  triggerTooltip?: string
+  /** Filter input placeholder in the dropdown. */
   filterPlaceholder?: string
-  /** Empty-message in the popover when the filter has no matches. */
+  /** Empty-message in the dropdown when the filter has no matches. */
   emptyMessage?: string
-  /** ARIA label for the popover wrapper. */
+  /** ARIA label for the dropdown wrapper. */
   popoverAriaLabel?: string
-  /** ARIA label for the listbox inside the popover. */
+  /** ARIA label for the listbox inside the dropdown. */
   listboxAriaLabel?: string
 }
 
@@ -206,7 +198,7 @@ export interface QueryDialogConfig<E = unknown> {
 
   /** Recent-items store. */
   historyStore: RecentItemsStore<E>
-  /** Recent-items adapter + copy. */
+  /** Recent-items dropdown adapter + copy. */
   recentItems: QueryDialogRecentItems<E>
   /** Loads up the history list on mount. Idempotent. */
   onLoadHistory?: () => void | Promise<void>
@@ -273,9 +265,15 @@ export interface QueryDialogConfig<E = unknown> {
   onPickExample: (chip: { mode: SearchMode; query: string }) => void
   /** Called when the user opens the row's `…` menu (or right-clicks the row). */
   onRowMenu: (entry: SearchResultEntry) => void
-  /** Called when the user activates a recent entry (chip click or popover Enter). */
+  /**
+   * Called when the user picks a recent entry from the dropdown (Enter or click). LOADS the
+   * entry into the consumer's state and nothing more: QueryDialog closes the dropdown, hands
+   * `⏎` back to "run-search", and returns focus to the query field. Do NOT set `runOnMount`
+   * from here — picking a past search is navigation, not a run, and an AI entry that ran
+   * itself would spend the user's money on a keystroke.
+   */
   onActivateRecent: (entry: E) => void
-  /** Called when the user removes a recent entry (chip right-click or popover right-click). */
+  /** Called when the user removes a recent entry (right-click on a dropdown row). */
   onRemoveRecent: (entry: E) => void
 
   /** Called on overlay click or Escape. */

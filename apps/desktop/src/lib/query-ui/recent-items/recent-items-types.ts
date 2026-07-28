@@ -1,33 +1,37 @@
-// Shared types for the generic recent-items footer + popover. Both components are generic
-// over the consumer's entry shape `E`; the adapter is the only seam where consumer-specific
-// fields (Search's `excludeSystemDirs`, Selection's narrower entry, etc.) leak in.
+// Shared types for the generic recent-items dropdown. The popover is generic over the
+// consumer's entry shape `E`; the adapter is the only seam where consumer-specific fields
+// (Search's `excludeSystemDirs`, Selection's narrower entry, etc.) leak in.
 //
-// Search wires the adapter to its `HistoryEntry`; Selection wires its own. The
-// `recent-chips-layout.ts` packer only sees the adapted `{ label, tooltip }`, so packing is
-// identical across consumers.
+// Search wires the adapter to its `HistoryEntry`; Selection wires its own.
 
 import type { HistoryMode } from '$lib/tauri-commands'
 
 /**
- * Shape produced by the consumer's adapter and consumed by the chip / row UI. Kept narrow
- * on purpose so the components themselves never depend on the entry's internals.
+ * Shape produced by the consumer's adapter and consumed by the row UI. Kept narrow on
+ * purpose so the component itself never depends on the entry's internals.
  */
 export interface RecentItemView {
-  /** Primary chip text (typically the query, possibly truncated for the cell). */
+  /** Primary row text: the query as the user typed it. */
   label: string
   /** Multi-line plain-text tooltip shown on hover. */
   tooltip: string
-  /** Drives the mode badge (`AI` / `Aa` / `.*`) on the chip. */
+  /** Drives the mode badge (`AI` / `Aa` / `.*`) on the row. */
   mode: HistoryMode
-  /** Short relative age string (`just now`, `5m ago`); shown in row layouts. */
+  /** Short relative age string (`just now`, `5m ago`); leads the row's meta line. */
   ageLabel: string
+  /**
+   * The rest of the row's meta line, already joined: result count then filter summary
+   * (`12 results · size > 1 MB, case-sensitive`). Empty string when there's nothing to say,
+   * in which case the row shows the age alone. Built by `rowMeta()`.
+   */
+  metaLabel: string
   /** Full accessible name for AT (typically prefixed with "Run recent search: …"). */
   ariaLabel: string
 }
 
 /**
  * Adapter callback turning a consumer-specific entry into the view shape. Pure; called per
- * render. Keep it cheap: the components call it once per visible chip per render pass.
+ * render. Keep it cheap: the popover calls it once per entry per `entries` change.
  */
 export type RecentItemAdapter<E> = (entry: E) => RecentItemView
 

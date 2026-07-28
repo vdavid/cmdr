@@ -1,33 +1,47 @@
 <script lang="ts">
     /**
-     * SearchBar: the unified search input.
+     * QueryBar: the unified query field, shaped as a combobox.
      *
-     * One input drives all three modes (AI, filename, regex). The placeholder updates per mode
+     * One field drives all three modes (AI, filename, regex). The placeholder updates per mode
      * so the user can see at a glance what kind of input the bar expects. Switching mode preserves
      * the typed query; this component is presentational, the parent owns `query` and `mode`.
      *
-     * The right gutter shows two things, both managed by the parent dialog:
+     * The field is the house `TextInput` in its search-pill shape (`radius="full"` + the magnifier
+     * `leadingIcon`), matching the Settings sidebar's search field. Its trailing slot holds the
+     * recent-items dropdown trigger: a small chevron that opens the recent-items popover. The
+     * popover itself lives in `QueryDialog`; this component only owns the trigger and hands the
+     * pill element back through `bind:fieldElement` so the popover can anchor to the whole field.
+     *
+     * To the right of the pill:
      *   - A subtle "Press Enter to search" hint when auto-apply is off (or AI mode) and the query
      *     has changed since the last run. Visible state, not interactive.
-     *   - A small ⏎ run button. Always present; clicking it is equivalent to pressing Enter.
+     *   - The house `Button` that runs the query. Always present; clicking it is equivalent to
+     *     pressing Enter.
      *
      * IME composition is also surfaced: `oncompositionstart` and `oncompositionend` let the parent
      * suppress auto-apply mid-composition and fire exactly once on completion.
      *
      * Keyboard contract (handled by the parent dialog, not here):
-     *   - Enter runs the search in the active mode.
-     *   - ⌘Enter runs an AI search regardless (only when AI is enabled).
+     *   - Enter runs the query in the active mode.
+     *   - ArrowDown with no results opens the recent-items dropdown.
      *   - ⌘1/⌘2/⌘3 switch modes (numbering changes when AI is off).
      */
     import { tooltip } from '$lib/tooltip/tooltip'
     import { tString } from '$lib/intl/messages.svelte'
     import Icon from '$lib/ui/Icon.svelte'
+    import Button from '$lib/ui/Button.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import type { SearchMode } from './query-filter-state.svelte'
 
     interface Props {
         /** Bindable ref to the input element so the parent can manage focus. */
         inputElement: HTMLInputElement | undefined
+        /**
+         * Bindable ref to the pill frame. The parent anchors the recent-items popover to it, so
+         * the dropdown lines up with the whole field rather than with the chevron.
+         */
+        fieldElement?: HTMLElement
         query: string
         mode: SearchMode
         disabled: boolean
@@ -35,14 +49,21 @@
         /** True when the bar should show the "Press Enter to search" hint. Owned by the parent. */
         showRunHint?: boolean
         /**
-         * D8: when true, the Search button surfaces the `⏎` shortcut hint. The dialog
+         * D8: when true, the run button surfaces the `⏎` shortcut hint. The dialog
          * owns the ⏎ ownership swap; when this is false, the hint moves to the
          * footer's "Go to file" button.
          */
         showEnterHint?: boolean
+        /** True while the recent-items dropdown is open. Drives the trigger's `aria-expanded`. */
+        recentOpen?: boolean
         onInput: (value: string) => void
-        /** Click handler for the ⏎ run button. Equivalent to pressing Enter in the input. */
+        /** Click handler for the run button. Equivalent to pressing Enter in the input. */
         onRun: () => void
+        /** Click handler for the dropdown trigger. Toggles the recent-items popover. */
+        onToggleRecent: () => void
+        /** Accessible name + tooltip for the dropdown trigger. Consumer copy ("All recent searches"). */
+        recentTriggerLabel: string
+        recentTriggerTooltip: string
         /** IME composition entry: parent suppresses auto-apply between start and end. */
         onCompositionStart?: () => void
         /** IME composition exit: parent fires exactly one debounced search after this. */
@@ -52,14 +73,19 @@
     /* eslint-disable prefer-const -- $bindable() requires `let` destructuring */
     let {
         inputElement = $bindable(),
+        fieldElement = $bindable(),
         query,
         mode,
         disabled,
         aiHighlight,
         showRunHint = false,
         showEnterHint = true,
+        recentOpen = false,
         onInput,
         onRun,
+        onToggleRecent,
+        recentTriggerLabel,
+        recentTriggerTooltip,
         onCompositionStart,
         onCompositionEnd,
     }: Props = $props()
@@ -82,89 +108,118 @@
     const runTitle = $derived(mode === 'ai' ? tString('queryUi.bar.runTitle.ai') : tString('queryUi.bar.runTitle.default'))
 </script>
 
-<div class="search-bar" class:is-disabled={disabled}>
-    <span class="search-icon"><Icon name="search" size={16} aria-hidden="true" /></span>
-    <input
-        bind:this={inputElement}
-        type="text"
-        class="query-input"
-        class:ai-highlight={aiHighlight}
-        {placeholder}
-        value={query}
-        oninput={(e: Event) => {
-            onInput((e.target as HTMLInputElement).value)
-        }}
-        oncompositionstart={() => {
-            onCompositionStart?.()
-        }}
-        oncompositionend={() => {
-            onCompositionEnd?.()
-        }}
-        {disabled}
-        aria-label={ariaLabel}
-        spellcheck="false"
-        autocomplete="off"
-        autocapitalize="off"
-    />
+<div class="query-bar" class:is-disabled={disabled}>
+    <!-- The AI flash rides the wrapper as an accent ring rather than the field's own fill: the
+         pill's background is opaque, so tinting behind it would never show. -->
+    <div class="query-field" class:ai-highlight={aiHighlight} bind:this={fieldElement}>
+        <TextInput
+            bind:inputElement
+            type="text"
+            radius="full"
+            leadingIcon="search"
+            containerStyle="flex: 1 1 auto; min-width: 0;"
+            {placeholder}
+            value={query}
+            {disabled}
+            {ariaLabel}
+            spellcheck={false}
+            autocomplete="off"
+            autocapitalize="off"
+            oninput={(e: Event) => {
+                onInput((e.target as HTMLInputElement).value)
+            }}
+            oncompositionstart={() => {
+                onCompositionStart?.()
+            }}
+            oncompositionend={() => {
+                onCompositionEnd?.()
+            }}
+        >
+            {#snippet trailing()}
+                <button
+                    type="button"
+                    class="recent-trigger"
+                    {disabled}
+                    aria-label={recentTriggerLabel}
+                    aria-haspopup="dialog"
+                    aria-expanded={recentOpen}
+                    onclick={onToggleRecent}
+                    use:tooltip={{ text: recentTriggerTooltip, shortcut: '⌘H' }}
+                >
+                    <Icon name="chevron-down" size={14} aria-hidden="true" />
+                </button>
+            {/snippet}
+        </TextInput>
+    </div>
     {#if showRunHint}
         <span class="run-hint" aria-hidden="true">{tString('queryUi.bar.runHint')}</span>
     {/if}
     <!-- Button reads "Search ⏎" when ⏎ owns the run action; just "Search" when the
-         footer's Go-to-file owns ⏎. Exactly one of the two surfaces the hint. The
-         shortcut belongs in the suffix slot (matching "Go to file ⏎" and "All
-         searches… ⌘H"); no leading icon. -->
-    <button
-        type="button"
-        class="run-button"
-        {disabled}
-        onclick={onRun}
-        use:tooltip={{ text: runTitle, shortcut: '⏎' }}
-        aria-label={runTitle}
-    >
-        <span class="run-label">{tString('queryUi.bar.runLabel')}</span>
-        {#if showEnterHint}<ShortcutChip key="⏎" size="sm" />{/if}
-    </button>
+         footer's Go-to-file owns ⏎. Exactly one of the two surfaces the hint. It's the
+         house `Button` in the same secondary family as the footer's actions, so the
+         dialog has exactly one button style. -->
+    <div class="run-action">
+        <Button variant="secondary" {disabled} onclick={onRun} aria-label={runTitle}>
+            <span class="run-label" use:tooltip={{ text: runTitle, shortcut: '⏎' }}>
+                {tString('queryUi.bar.runLabel')}{#if showEnterHint}<ShortcutChip key="⏎" size="sm" />{/if}
+            </span>
+        </Button>
+    </div>
 </div>
 
 <style>
-    .search-bar {
+    .query-bar {
         display: flex;
         align-items: center;
-        padding: var(--spacing-lg);
+        /* Horizontal inset matches `ModalDialog`'s title bar (`--spacing-dialog`), so the
+           title and the field share one left edge. Every other strip in the dialog does
+           the same; they move together or the column goes ragged. */
+        padding: var(--spacing-lg) var(--spacing-dialog);
         background: var(--color-bg-primary);
         gap: var(--spacing-sm);
     }
 
-    .search-icon {
-        display: inline-flex;
-        flex-shrink: 0;
-        color: var(--color-text-tertiary);
-    }
-
-    .query-input {
-        flex: 1;
-        font-size: var(--font-size-xl);
-        border: 1px solid transparent;
-        background: transparent;
-        color: var(--color-text-primary);
-        outline: none;
+    /* The pill's own wrapper. Carries the AI flash ring and hands the parent one element
+       to anchor the recent-items dropdown to. */
+    .query-field {
+        display: flex;
+        flex: 1 1 auto;
         min-width: 0;
+        border-radius: var(--radius-full);
+        transition: box-shadow 1.5s ease-out;
     }
 
-    .query-input:focus {
-        border-color: var(--color-accent);
-        box-shadow: var(--shadow-focus);
+    .query-field.ai-highlight {
+        box-shadow: 0 0 0 4px var(--color-accent-subtle);
     }
 
-    .query-input::placeholder {
+    /* The dropdown trigger inside the pill's trailing slot. Quiet by default; it's an
+       affordance, not a call to action. */
+    .recent-trigger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: var(--spacing-xxs);
+        background: transparent;
+        border: none;
+        border-radius: var(--radius-xs);
         color: var(--color-text-tertiary);
-        opacity: 1; /* Override browser default dimming for a11y contrast */
+        cursor: default;
+        line-height: 1;
     }
 
-    .query-input.ai-highlight {
-        background: var(--color-accent-subtle);
-        border-radius: var(--radius-sm);
-        transition: background 1.5s ease-out;
+    .recent-trigger:hover:not(:disabled) {
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
+    }
+
+    .recent-trigger:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 1px;
+    }
+
+    .recent-trigger:disabled {
+        opacity: 0.5;
     }
 
     .run-hint {
@@ -174,40 +229,16 @@
         white-space: nowrap;
     }
 
-    .run-button {
+    .run-action {
         flex-shrink: 0;
+    }
+
+    /* --spacing-xs gap between "Search" and "⏎" matches the visual rhythm of the
+       footer's "Go to file ⏎". */
+    .run-label {
         display: inline-flex;
         align-items: center;
-        /* --spacing-xs gap between "Search" and "⏎" matches the visual rhythm of
-           "All searches… ⌘H" and "Go to file ⏎" elsewhere in the dialog. */
         gap: var(--spacing-xs);
-        justify-content: center;
-        padding: var(--spacing-xxs) var(--spacing-sm);
-        background: transparent;
-        border: 1px solid var(--color-border-subtle);
-        border-radius: var(--radius-sm);
-        color: var(--color-text-secondary);
-        cursor: default;
         line-height: 1;
-        font-size: var(--font-size-md);
-    }
-
-    .run-label {
-        line-height: 1;
-    }
-
-    .run-button:hover:not(:disabled) {
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-primary);
-    }
-
-    .run-button:focus-visible {
-        outline: 2px solid var(--color-accent);
-        outline-offset: 1px;
-    }
-
-    .run-button:disabled {
-        opacity: 0.5;
-        cursor: default;
     }
 </style>

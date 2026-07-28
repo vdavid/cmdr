@@ -56,25 +56,25 @@ Reach for a sheet when you have a multi-step flow the user must commit to. Reach
 
 Props:
 
-| Prop             | Type                          | Notes                                                                 |
-| ---------------- | ----------------------------- | --------------------------------------------------------------------- |
-| `titleId`        | `string`                      | Used for `aria-labelledby`                                            |
-| `title`          | Snippet                       | Rendered as `<h2>` in the title bar (left-aligned)                    |
-| `children`       | Snippet                       | Dialog body                                                           |
-| `footer`         | Snippet?                      | Action buttons, rendered in a right-aligned `.modal-footer`           |
-| `footerLeading`  | Snippet?                      | Content pinned left on the footer row; buttons stay right-aligned     |
-| `dialogId`       | `SoftDialogId?`               | Auto-calls `notifyDialogOpened`/`notifyDialogClosed` on mount/destroy |
-| `onclose`        | `() => void`?                 | Renders × button; also called on Escape                               |
-| `draggable`      | `boolean`                     | Default `true`. Title bar drag moves the dialog.                      |
-| `blur`           | `boolean`                     | `true` → 0.6 opacity + `backdrop-filter: blur(4px)` overlay           |
-| `containerStyle` | `string`                      | Inline style appended to the dialog element (for sizing, colors)      |
-| `role`           | `'dialog'` \| `'alertdialog'` | Default `'dialog'`                                                    |
-| `growDownward`   | `boolean`                     | Default `false`. Pins the top edge so a growing body extends downward |
-| `align`          | `'center'` \| `'top'`         | Default `'center'`. `'top'` drops the panel 10vh from the overlay top |
-| `fillBody`       | `boolean`                     | Default `false`. Fixed-height frame; the body absorbs the slack      |
-| `ownsKeyboard`   | `boolean`                     | Default `false`. Forwards EVERY key to `onkeydown`, Escape included  |
-| `overlayClass`   | `string`                      | Extra class on the overlay, for a shared dialog's stable test hook   |
-| `closeOnOverlayClick` | `boolean`                | Default `false`. Scrim click dismisses                               |
+| Prop                  | Type                          | Notes                                                                 |
+| --------------------- | ----------------------------- | --------------------------------------------------------------------- |
+| `titleId`             | `string`                      | Used for `aria-labelledby`                                            |
+| `title`               | Snippet                       | Rendered as `<h2>` in the title bar (left-aligned)                    |
+| `children`            | Snippet                       | Dialog body                                                           |
+| `footer`              | Snippet?                      | Action buttons, rendered in a right-aligned `.modal-footer`           |
+| `footerLeading`       | Snippet?                      | Content pinned left on the footer row; buttons stay right-aligned     |
+| `dialogId`            | `SoftDialogId?`               | Auto-calls `notifyDialogOpened`/`notifyDialogClosed` on mount/destroy |
+| `onclose`             | `() => void`?                 | Renders × button; also called on Escape                               |
+| `draggable`           | `boolean`                     | Default `true`. Title bar drag moves the dialog.                      |
+| `blur`                | `boolean`                     | `true` → 0.6 opacity + `backdrop-filter: blur(4px)` overlay           |
+| `containerStyle`      | `string`                      | Inline style appended to the dialog element (for sizing, colors)      |
+| `role`                | `'dialog'` \| `'alertdialog'` | Default `'dialog'`                                                    |
+| `growDownward`        | `boolean`                     | Default `false`. Pins the top edge so a growing body extends downward |
+| `align`               | `'center'` \| `'top'`         | Default `'center'`. `'top'` drops the panel 10vh from the overlay top |
+| `fillBody`            | `boolean`                     | Default `false`. Fixed-height frame; the body absorbs the slack       |
+| `ownsKeyboard`        | `boolean`                     | Default `false`. Forwards EVERY key to `onkeydown`, Escape included   |
+| `overlayClass`        | `string`                      | Extra class on the overlay, for a shared dialog's stable test hook    |
+| `closeOnOverlayClick` | `boolean`                     | Default `false`. Scrim click dismisses                                |
 
 **Layout convention (macOS-style).** Title and body text are LEFT-aligned; action buttons are RIGHT-aligned with the
 primary action last (rightmost). Pass buttons via the `footer` snippet — `ModalDialog` renders them in a `.modal-footer`
@@ -93,9 +93,9 @@ the overlay's bottom, and a window resize re-centers on the current height. Pair
 expands (`TransferDialog` slides its compress-only block) so the growth reads as a reveal rather than a jump.
 
 **`fillBody` + `align` + `ownsKeyboard` are the query-dialog shape.** `QueryDialog` (search and the two selection
-dialogs) is a full-bleed, top-anchored, fixed-height panel whose results region scrolls while every other strip keeps its
-intrinsic height, and it owns Enter (its `⏎` ownership swap) plus a capture-phase Escape that defers to an open filter
-popover. Those three props exist so it gets the standard chrome without forking it:
+dialogs) is a full-bleed, top-anchored, fixed-height panel whose results region scrolls while every other strip keeps
+its intrinsic height, and it owns Enter (its `⏎` ownership swap) plus a capture-phase Escape that defers to an open
+filter popover. Those three props exist so it gets the standard chrome without forking it:
 
 - `fillBody` makes the panel a flex column with `overflow: hidden` (so full-bleed bands clip to the 27px radius) and the
   body a flex column that takes the slack; the caller caps the height via `containerStyle`. `resizable` covers the same
@@ -183,9 +183,9 @@ rows are display-only; the frontend returns opaque proposal and row ids to the b
 
 The MCP `dialog` tool's generic `close` action closes any registered soft dialog by id. `dialog-close-registry.ts` holds
 a `Map<SoftDialogId, () => void>` that `ModalDialog` populates on mount and clears on destroy whenever it has an
-`onclose` (every soft dialog goes through it, `QueryDialog`'s three ids included). The backend
-emits `mcp-close-dialog { id }`; the main-window router (`listener-setup.ts`) calls `closeDialogById(id)`, which runs
-the dialog's own close, unmounting it (→ `notifyDialogClosed` → the backend `SoftDialogTracker` → the tool's
+`onclose` (every soft dialog goes through it, `QueryDialog`'s three ids included). The backend emits
+`mcp-close-dialog { id }`; the main-window router (`listener-setup.ts`) calls `closeDialogById(id)`, which runs the
+dialog's own close, unmounting it (→ `notifyDialogClosed` → the backend `SoftDialogTracker` → the tool's
 `SoftDialogDisappeared` ack). A dialog rendered without an `onclose` isn't in the map, so `closeDialogById` returns
 `false` and the tool reports an honest failure rather than silently closing nothing. `unregisterDialogClose` only clears
 an entry that's still its own registration, so a rapid remount can't have the outgoing instance evict the incoming one.
@@ -531,8 +531,7 @@ Props: `variant?`, `label` (required), `value?`, `configured?`, `isOpen?`, `disa
 (required), `onClear?`, `onContextMenu?`, `ariaLabel?`, `tooltipContent?` (a `TooltipParam`), `leading?` (Snippet),
 `chipElement?` (bindable button ref). The two variants render through `class:chip-filter` / `class:chip-recent`
 directives (not a `chip--{variant}` interpolation, which the `css-unused` checker can't resolve, and the `--` form trips
-its var-definition regex against `:not(...)`). `chip-recent` is also the layout-measurement hook in
-`RecentItemsFooter.svelte`.
+its var-definition regex against `:not(...)`).
 
 ## LinkButton
 
@@ -802,8 +801,7 @@ exported `shortcutAnchorId(commandId)` in `lib/settings/settings-window.ts` so i
 
 **Where literal chips render the fixed interaction keys (Class B).** Beyond the live `commandId` sites, literal-mode
 chips give the uniform key look to fixed (non-customizable) interaction keys: the search dialog's empty-state tip (`⌘N`
-/ `⌘H` / `⌘Enter`), the run button's `⏎`, the scope popover's `⌥C` / `⌥V`, the recent-items footer's `⌘H` and popover's
-`↑↓` / `Enter`, the viewer's binary-warning `⇧Space` / `Enter`, `LoadingIcon`'s `Esc` cancel hint, the
+/ `⌘H` / `⌘Enter`), the run button's `⏎`, the scope popover's `⌥C` / `⌥V`, the recent-items dropdown's `↑↓` / `Enter`, the viewer's binary-warning `⇧Space` / `Enter`, `LoadingIcon`'s `Esc` cancel hint, the
 `PtpcameradDialog` `Ctrl+C`, and the network browser's `⌘R` refresh hint. These keys are static by nature (no registry
 command, never clickable); the chip only unifies their appearance.
 

@@ -41,7 +41,7 @@ natural-language queries into structured filters. First consumer of the shared Q
 - **Destination write ops are blocked on `search-results` panes** (`SEARCH_RESULTS_NOT_A_FOLDER_TOAST`) via three sites:
   F-bar disablement, menu-item omission, `blockedByCapabilities`. `openTransferDialog` also blocks F5/F6 when the
   OPPOSITE pane is a snapshot. Source ops (Cmd+C/X, F5/F6, drag-out) run (`canBeSource: true`).
-- **AI mode never auto-applies** (cost); only Enter / `⌘Enter` / the ⏎ button / chip clicks fire it. Don't add a
+- **AI mode never auto-applies** (cost); only Enter / `⌘Enter` / the ⏎ button / example chips fire it. Don't add a
   per-consumer catch that swallows AI errors: QueryDialog surfaces them once for both.
 - **Two volume scopes: an unscoped filename search covers EVERY indexed volume; the image grid follows the active
   pane.** The backend fans out across root plus each indexed NAS/MTP volume (`src-tauri/src/search/DETAILS.md` §

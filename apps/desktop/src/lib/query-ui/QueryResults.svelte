@@ -421,7 +421,7 @@
        between "how do I narrow this" and "here's what I found"; the hairlines only
        sharpen it. See `QueryDialog.svelte` § Layout for the three zones. */
     .column-header {
-        padding: var(--spacing-xs) var(--spacing-lg);
+        padding: var(--spacing-xs) var(--spacing-dialog);
         background: var(--color-bg-primary);
         border-bottom: 1px solid var(--color-border-subtle);
         user-select: none;
@@ -540,7 +540,7 @@
            so the look stays clean with the tighter padding. Rows aren't virtualized
            (search caps at 30, Selection lists one folder), so the height is content-
            driven: no row-height constant to keep in sync with the font. */
-        padding: var(--spacing-xxs) var(--spacing-lg);
+        padding: var(--spacing-xxs) var(--spacing-dialog);
         font-size: var(--font-size-md);
         color: var(--color-text-primary);
     }
@@ -626,7 +626,7 @@
     /* Status bar closes the results zone: same surface as the list, separated by a
        hairline rather than a surface change (it reports ON the list, it isn't chrome). */
     .status-bar {
-        padding: var(--spacing-xs) var(--spacing-lg);
+        padding: var(--spacing-xs) var(--spacing-dialog);
         background: var(--color-bg-primary);
         border-top: 1px solid var(--color-border-subtle);
         font-size: var(--font-size-md);

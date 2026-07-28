@@ -250,21 +250,9 @@
   "@queryUi.pathPills.hiddenAria": {
     "sourceHash": "f62e273"
   },
-  "queryUi.recent.leadingLabel": "Tìm kiếm gần đây:",
-  "@queryUi.recent.leadingLabel": {
-    "sourceHash": "dd53364"
-  },
-  "queryUi.recent.trailingLabel": "Tất cả tìm kiếm…",
-  "@queryUi.recent.trailingLabel": {
-    "sourceHash": "820b77b"
-  },
   "queryUi.recent.trailingTooltip": "Hiện tất cả tìm kiếm gần đây",
   "@queryUi.recent.trailingTooltip": {
     "sourceHash": "e0de323"
-  },
-  "queryUi.recent.regionAria": "Tìm kiếm gần đây",
-  "@queryUi.recent.regionAria": {
-    "sourceHash": "228c84b"
   },
   "queryUi.recent.allButtonAria": "Tất cả tìm kiếm gần đây",
   "@queryUi.recent.allButtonAria": {
@@ -286,9 +274,9 @@
   "@queryUi.recent.listboxAria": {
     "sourceHash": "228c84b"
   },
-  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> để di chuyển · <runKey>Enter</runKey> để chạy · nhấp chuột phải để xóa",
+  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> để di chuyển · <selectKey>Enter</selectKey> điền vào ô · nhấp chuột phải để xóa",
   "@queryUi.recent.popoverHint": {
-    "sourceHash": "11e1b46"
+    "sourceHash": "a7ccaef"
   },
   "queryUi.recent.mode.ai": "AI",
   "@queryUi.recent.mode.ai": {
@@ -347,6 +335,10 @@
   "queryUi.recent.resultCount": "{countText} kết quả lần trước",
   "@queryUi.recent.resultCount": {
     "sourceHash": "d048174"
+  },
+  "queryUi.recent.rowResultCount": "{countText} {count, plural, other {kết quả}}",
+  "@queryUi.recent.rowResultCount": {
+    "sourceHash": "e8c3318"
   },
   "queryUi.recent.sizeRange": "kích thước {minText}–{maxText}",
   "@queryUi.recent.sizeRange": {

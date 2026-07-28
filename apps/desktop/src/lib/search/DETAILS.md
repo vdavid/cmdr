@@ -16,7 +16,7 @@ Backend: `src-tauri/src/search/` (index, engine, query, AI pipeline), `src-tauri
 wrappers).
 
 This dialog is the first consumer of the shared Query UI primitives in `../query-ui/CLAUDE.md`: unified query bar, mode
-chips, AI prompt strip, filter chips strip, virtualized results table, recent-items footer + popover, the
+chips, AI prompt strip, filter chips strip, virtualized results table, the query field's recent-items dropdown, the
 `createQueryFilterState()` factory that owns cross-consumer fields, and the in-dialog keyboard contract. Search-specific
 concerns (snapshot store, virtual volume, MCP open path, "Open in pane", index lifecycle, scope smart fallback) stay
 here. Selection (see `lib/selection-dialog/`) is the second consumer; both wrap `QueryDialog` and share the same
@@ -51,7 +51,7 @@ results table, empty state, and the `recent-items/` family) lives in `../query-u
 
 `SearchDialog.svelte` no longer carries the dialog orchestration. The overlay, keyboard contract, IME guard, auto-apply
 gates, `lastDialogEvent` writes, the `⏎` ownership swap, the title bar, the chip strip, the AI prompt strip, the results
-table, the recent-items footer + popover, and the empty state all live in `../query-ui/QueryDialog.svelte`. The Search
+table, the recent-items dropdown, and the empty state all live in `../query-ui/QueryDialog.svelte`. The Search
 wrapper builds a [`QueryDialogConfig`](../query-ui/query-dialog-config.ts) for Search and mounts QueryDialog with it.
 
 What the wrapper still owns (Search-specific glue):

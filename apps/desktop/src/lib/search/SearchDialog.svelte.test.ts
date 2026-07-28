@@ -743,7 +743,7 @@ describe('SearchDialog auto-apply', () => {
 
       // The dialog's `handleQueryInput` calls `setQuery` + `scheduleSearch`. We simulate a few
       // keystrokes back to back, each resetting the debounce timer.
-      const input = document.body.querySelector('input.query-input') as HTMLInputElement
+      const input = document.body.querySelector('.query-bar input.text-field-control') as HTMLInputElement
       input.value = 'p'
       input.dispatchEvent(new Event('input', { bubbles: true }))
       input.value = 'ph'
@@ -769,7 +769,7 @@ describe('SearchDialog auto-apply', () => {
     vi.useFakeTimers()
     try {
       searchFilesMock.mockClear()
-      const input = document.body.querySelector('input.query-input') as HTMLInputElement
+      const input = document.body.querySelector('.query-bar input.text-field-control') as HTMLInputElement
       input.value = '*.pdf'
       input.dispatchEvent(new Event('input', { bubbles: true }))
 
@@ -788,7 +788,7 @@ describe('SearchDialog auto-apply', () => {
     vi.useFakeTimers()
     try {
       searchFilesMock.mockClear()
-      const input = document.body.querySelector('input.query-input') as HTMLInputElement
+      const input = document.body.querySelector('.query-bar input.text-field-control') as HTMLInputElement
 
       // 1) Auto-apply on: type, advance 1 s, search fires.
       input.value = '*.pdf'
@@ -828,7 +828,7 @@ describe('SearchDialog auto-apply', () => {
       translateSearchQueryMock.mockClear()
       setMode('ai')
 
-      const input = document.body.querySelector('input.query-input') as HTMLInputElement
+      const input = document.body.querySelector('.query-bar input.text-field-control') as HTMLInputElement
       input.value = 'big screenshots'
       input.dispatchEvent(new Event('input', { bubbles: true }))
 
@@ -847,7 +847,7 @@ describe('SearchDialog auto-apply', () => {
     vi.useFakeTimers()
     try {
       searchFilesMock.mockClear()
-      const input = document.body.querySelector('input.query-input') as HTMLInputElement
+      const input = document.body.querySelector('.query-bar input.text-field-control') as HTMLInputElement
 
       // Start a composition. Each `input` during composition is one keystroke; we mustn't fire.
       input.dispatchEvent(new CompositionEvent('compositionstart'))
@@ -881,7 +881,7 @@ describe('SearchDialog auto-apply', () => {
     setQuery('*.pdf')
     await tick()
 
-    const runButton = document.body.querySelector('button.run-button') as HTMLButtonElement
+    const runButton = document.body.querySelector('.query-bar button.btn') as HTMLButtonElement
     expect(runButton).not.toBeNull()
     runButton.click()
     await tick()
@@ -904,7 +904,7 @@ describe('SearchDialog auto-apply', () => {
     setQuery('large screenshots')
     await tick()
 
-    const runButton = document.body.querySelector('button.run-button') as HTMLButtonElement
+    const runButton = document.body.querySelector('.query-bar button.btn') as HTMLButtonElement
     runButton.click()
     await tick()
     await new Promise((r) => setTimeout(r, 0))

@@ -1,11 +1,12 @@
 <script lang="ts" generics="E">
     /**
-     * RecentItemsPopover: fuzzy-searchable list over the full recent-items history.
+     * RecentItemsPopover: the query field's dropdown over the full recent-items history.
      *
-     * Opens via `⌘H` or the "All …" footer button. Reuses the generic `Popover` for positioning,
-     * focus trap, and Esc-only-closes-the-popover behavior — same contract as the filter
-     * chips (so the dialog's capture-phase Escape never closes the whole dialog while this
-     * is open).
+     * Opens from the chevron in the query field, from `ArrowDown` in the query field (when
+     * there are no results to walk), or from `⌘H`. Reuses the generic `Popover` for
+     * positioning, focus trap, and Esc-only-closes-the-popover behavior — the same contract
+     * as the filter chips, so the dialog's capture-phase Escape never closes the whole dialog
+     * while this is open.
      *
      * Generic over the entry shape `E`. Search instantiates it with `E = HistoryEntry`;
      * Selection instantiates it with its own narrower entry. The adapter is the only
@@ -15,13 +16,25 @@
      * uses. The haystack is `"{mode-badge} {label}"` per entry (label comes from the adapter),
      * so users can also filter by mode (`"AI screenshots"`, `".*temp"`).
      *
-     * Keyboard: ↑/↓ moves the cursor, Enter activates, Esc closes (via the popover wrapper).
+     * Keyboard contract (the dropdown is the primary navigation surface while open, so every
+     * key it claims also `stopPropagation()`s — otherwise the host dialog's own handler moves
+     * the results cursor underneath and Enter double-fires):
+     *   - ↑ / ↓ move the cursor. Neither wraps.
+     *   - ↑ on the TOP row exits: `onExitTop()` closes the dropdown and returns focus to the
+     *     query field with its text untouched (nothing was picked).
+     *   - Enter SELECTS the cursor row: it loads the entry into the dialog and closes the
+     *     dropdown. It does NOT run the query; the user presses Enter again in the field
+     *     when they're ready. Same for a click.
+     *   - Everything else (typing, ⌘C / ⌘V / ⌘X, ←/→ with or without modifiers, Home/End)
+     *     is left alone, so the filter field behaves like any other text field.
+     *   - Esc closes, via the `Popover` wrapper.
      */
     import uFuzzy from '@leeoniya/ufuzzy'
     import { tString } from '$lib/intl/messages.svelte'
     import Trans from '$lib/intl/Trans.svelte'
     import Popover from '$lib/ui/Popover.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
+    import TextInput from '$lib/ui/TextInput.svelte'
     import { modeBadge } from './recent-items-utils'
     import type { RecentItemAdapter, RecentItemKey, RecentItemView } from './recent-items-types'
 
@@ -34,8 +47,11 @@
         /** Stable identity for keying. */
         keyFn: RecentItemKey<E>
         onClose: () => void
+        /** Loads the entry into the dialog. Never runs it; the caller closes the dropdown. */
         onPick: (entry: E) => void
         onRemove: (entry: E) => void
+        /** ↑ on the topmost row: close and hand focus back to the query field, unchanged. */
+        onExitTop: () => void
         /** Header / filter-input / empty-state copy. Defaults match Search. */
         filterPlaceholder?: string
         emptyMessage?: string
@@ -52,6 +68,7 @@
         onClose,
         onPick,
         onRemove,
+        onExitTop,
         filterPlaceholder = tString('queryUi.recent.filterPlaceholder'),
         emptyMessage = tString('queryUi.recent.emptyMessage'),
         ariaLabel = tString('queryUi.recent.popoverAria'),
@@ -63,7 +80,6 @@
 
     let query = $state('')
     let cursor = $state(0)
-    let inputEl: HTMLInputElement | undefined = $state()
 
     // Reset state every time the popover re-opens so users land on a clean view.
     $effect(() => {
@@ -125,22 +141,35 @@
         return Array.from(text).map((ch, i) => ({ ch, matched: set.has(i) }))
     }
 
+    /** Selects the cursor row without running it, then closes. */
+    function pickCursorRow(): void {
+        const m = matches[cursor]
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for empty matches
+        if (!m) return
+        onPick(m.entry)
+        onClose()
+    }
+
     function handleKeydown(e: KeyboardEvent): void {
         if (e.key === 'ArrowDown') {
+            // No wrap at the bottom: the list has an end, and wrapping past it while the
+            // user holds ↓ reads as the cursor teleporting.
             e.preventDefault()
+            e.stopPropagation()
             cursor = Math.min(cursor + 1, Math.max(0, matches.length - 1))
         } else if (e.key === 'ArrowUp') {
             e.preventDefault()
-            cursor = Math.max(0, cursor - 1)
+            e.stopPropagation()
+            if (cursor === 0) {
+                // Past the top is the way out: back to the query field, text untouched.
+                onExitTop()
+                return
+            }
+            cursor -= 1
         } else if (e.key === 'Enter') {
             e.preventDefault()
-            // `cursor` is clamped against `matches.length` above; runtime bounds
-            // guard for the empty-matches case (no row to activate).
-            const m = matches[cursor]
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for empty matches
-            if (m) {
-                onPick(m.entry)
-            }
+            e.stopPropagation()
+            pickCursorRow()
         }
     }
 
@@ -157,17 +186,19 @@
   translators see it in context. `children` is intentionally ignored.
 -->
 {#snippet moveChip()}<ShortcutChip key="↑↓" size="sm" />{/snippet}
-{#snippet runChip()}<ShortcutChip key="Enter" size="sm" />{/snippet}
+{#snippet selectChip()}<ShortcutChip key="Enter" size="sm" />{/snippet}
 
 <Popover {anchor} {open} {onClose} {ariaLabel}>
     <div class="recent-popover" onkeydown={handleKeydown} role="search">
-        <input
-            bind:this={inputEl}
+        <TextInput
             type="text"
-            class="search-field"
+            radius="sm"
             placeholder={filterPlaceholder}
             bind:value={query}
-            aria-label={filterPlaceholder}
+            ariaLabel={filterPlaceholder}
+            spellcheck={false}
+            autocomplete="off"
+            autocapitalize="off"
         />
         <div class="results" role="listbox" aria-label={ariaListboxLabel}>
             {#if matches.length === 0}
@@ -184,7 +215,8 @@
                         aria-selected={index === cursor}
                         title={match.view.tooltip}
                         onclick={() => {
-                            onPick(match.entry)
+                            cursor = index
+                            pickCursorRow()
                         }}
                         oncontextmenu={(e) => {
                             handleContextMenu(e, match.entry)
@@ -194,21 +226,32 @@
                         }}
                     >
                         <span class="row-mode">{badge}</span>
-                        <span class="row-query">
-                            {#each renderHighlights(match.haystackText.slice(badgeLen), match.indices.filter((i) => i >= badgeLen).map((i) => i - badgeLen)) as part, i (i)}
-                                {#if part.matched}
-                                    <strong>{part.ch}</strong>
-                                {:else}
-                                    {part.ch}
-                                {/if}
-                            {/each}
+                        <span class="row-body">
+                            <span class="row-query">
+                                {#each renderHighlights(match.haystackText.slice(badgeLen), match.indices.filter((i) => i >= badgeLen).map((i) => i - badgeLen)) as part, i (i)}
+                                    {#if part.matched}
+                                        <strong>{part.ch}</strong>
+                                    {:else}
+                                        {part.ch}
+                                    {/if}
+                                {/each}
+                            </span>
+                            <!-- The recall line: when it ran, how much it found, what it was
+                                 narrowed by. The full tooltip still carries everything; this
+                                 surfaces the two facts that actually identify a past search. -->
+                            <span class="row-meta">
+                                <span class="row-age">{match.view.ageLabel}</span>
+                                {#if match.view.metaLabel}<span class="row-sep" aria-hidden="true">·</span><span
+                                        class="row-detail">{match.view.metaLabel}</span
+                                    >{/if}
+                            </span>
                         </span>
                     </button>
                 {/each}
             {/if}
         </div>
         <div class="hint">
-            <Trans key="queryUi.recent.popoverHint" snippets={{ moveKey: moveChip, runKey: runChip }} />
+            <Trans key="queryUi.recent.popoverHint" snippets={{ moveKey: moveChip, selectKey: selectChip }} />
         </div>
     </div>
 </Popover>
@@ -220,20 +263,6 @@
         gap: var(--spacing-sm);
         width: 480px;
         max-width: 90vw;
-    }
-
-    .search-field {
-        padding: var(--spacing-xs) var(--spacing-sm);
-        font-size: var(--font-size-sm);
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        color: var(--color-text-primary);
-    }
-
-    .search-field:focus {
-        outline: 2px solid var(--color-accent);
-        outline-offset: -2px;
     }
 
     .results {
@@ -253,7 +282,7 @@
 
     .result-row {
         display: flex;
-        align-items: center;
+        align-items: baseline;
         gap: var(--spacing-sm);
         padding: var(--spacing-xs) var(--spacing-sm);
         background: transparent;
@@ -277,8 +306,15 @@
         width: 24px;
     }
 
-    .row-query {
+    .row-body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xxs);
         flex: 1;
+        min-width: 0;
+    }
+
+    .row-query {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -289,6 +325,30 @@
         color: var(--color-text-primary);
         background: var(--color-accent-subtle);
         border-radius: var(--radius-xs);
+    }
+
+    /* The meta line stays one quiet row: it's for recognition at a glance, not reading. */
+    .row-meta {
+        display: flex;
+        align-items: baseline;
+        gap: var(--spacing-xxs);
+        min-width: 0;
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-xs);
+    }
+
+    .row-age {
+        flex-shrink: 0;
+    }
+
+    .row-sep {
+        flex-shrink: 0;
+    }
+
+    .row-detail {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .hint {

@@ -73,6 +73,7 @@ function buildConfig(opts: BuildOpts, state: QueryFilterState): QueryDialogConfi
           tooltip: entry.query,
           mode: entry.mode,
           ageLabel: 'now',
+          metaLabel: '12 results',
           ariaLabel: entry.query,
         }
       },

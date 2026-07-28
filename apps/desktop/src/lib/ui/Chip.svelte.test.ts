@@ -2,7 +2,7 @@
  * Behavior tests for `Chip.svelte`.
  *
  * The chip's in-context behavior is also exercised through `FilterChips.svelte.test.ts` (filter
- * variant) and `RecentItemsFooter.svelte.test.ts` (recent variant). This file pins the chip's own
+ * variant). This file pins the chip's own
  * contract: activate, clear (× + Backspace), the popover ARIA flags, and the recent variant's
  * context menu.
  */

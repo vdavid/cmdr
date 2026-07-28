@@ -15,13 +15,13 @@
      *     snapshot store, pinning the last-attempt ref, persisting to recent searches,
      *     handing the id to the host.
      *   - Loads the system-dir exclude tooltip.
-     *   - Provides recent-searches activate + remove handlers, including the IPC
-     *     write-back on removal.
+     *   - Provides recent-searches pick + remove handlers, including the IPC write-back on
+     *     removal.
      *
      * QueryDialog owns everything else: overlay, keyboard contract, IME guard, auto-apply
      * gates, `deriveEnterAction` ownership, `lastDialogEvent` lifecycle, title bar, the
-     * chip strip, the AI prompt strip, the results table, the recent-items footer +
-     * popover, and the empty state.
+     * chip strip, the AI prompt strip, the results table, the recent-items dropdown, and
+     * the empty state.
      */
     import { onMount, onDestroy } from 'svelte'
     import { SvelteSet } from 'svelte/reactivity'
@@ -100,6 +100,7 @@
         chipTooltip,
         modeName,
         formatAge,
+        rowMeta,
     } from '$lib/query-ui/recent-items/recent-items-utils'
     import type {
         RecentItemAdapter,
@@ -182,9 +183,9 @@
 
     /**
      * Adapter from Search's `HistoryEntry` shape into the generic `RecentItemView` the
-     * `RecentItemsFooter` / `RecentItemsPopover` consume. The adapter is the only seam where
-     * Search-specific fields (`scope`, `excludeSystemDirs`, `caseSensitive`, etc.) leak into
-     * the chip's tooltip. Selection's wrapper passes its own adapter against its narrower
+     * recent-items dropdown consumes. The adapter is the only seam where Search-specific
+     * fields (`scope`, `excludeSystemDirs`, `caseSensitive`, etc.) leak into the row's meta
+     * line and tooltip. Selection's wrapper passes its own adapter against its narrower
      * entry shape.
      */
     const searchRecentAdapter: RecentItemAdapter<HistoryEntry> = (entry) => ({
@@ -192,6 +193,7 @@
         tooltip: chipTooltip(entry),
         mode: entry.mode,
         ageLabel: formatAge(entry.timestamp),
+        metaLabel: rowMeta(entry),
         ariaLabel: tString('search.recent.runAria', { mode: modeName(entry.mode), query: entry.query }),
     })
     const searchRecentKey: RecentItemKey<HistoryEntry> = (entry) => entry.id
@@ -436,16 +438,14 @@
     }
 
     /**
-     * Recent-search activation: applies the history entry's state into the live dialog,
-     * then triggers a run. AI entries count the click as the explicit-trigger so they
-     * re-translate.
+     * Recent-search pick: loads the history entry's query, mode, and filters into the live
+     * dialog and stops there. It deliberately does NOT set `runOnMount` — picking is
+     * navigation, so the user lands back in the field with the search ready to tweak, and
+     * an AI entry never re-translates (and re-bills) on a keystroke. QueryDialog closes the
+     * dropdown, refocuses the field, and hands `⏎` back to "run-search".
      */
     function activateHistoryEntry(entry: HistoryEntry): void {
         applyHistoryEntry(entry)
-        // QueryDialog drives the run via the `runOnMount` consumer in its $effect.
-        // To trigger a fresh run from history, set runOnMount; QueryDialog will pick
-        // it up and dispatch to AI or non-AI based on mode.
-        searchQueryState.setRunOnMount(true)
     }
 
     /** Removes a recent search entry; backend write is async, we update the cache eagerly. */

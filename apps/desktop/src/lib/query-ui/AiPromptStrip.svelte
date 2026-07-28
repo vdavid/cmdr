@@ -86,7 +86,7 @@
         display: flex;
         align-items: flex-start;
         gap: var(--spacing-md);
-        padding: var(--spacing-sm) var(--spacing-lg);
+        padding: var(--spacing-sm) var(--spacing-dialog);
         background: var(--color-bg-primary);
     }
 

@@ -464,7 +464,7 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-xs);
-        padding: var(--spacing-sm) var(--spacing-lg);
+        padding: var(--spacing-sm) var(--spacing-dialog);
         background: var(--color-bg-secondary);
         border-top: 1px solid var(--color-border-subtle);
         border-bottom: 1px solid var(--color-border-subtle);
