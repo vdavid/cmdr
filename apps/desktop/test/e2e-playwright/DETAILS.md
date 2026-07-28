@@ -312,6 +312,14 @@ The same trap applies to every `Promise<boolean>` poll helper here: `pollFs`, `p
 TauriKeyboard dispatches key names as-is (sends `key: "Space"`), but the DOM spec uses `key: " "` for the space bar. The
 `pressKey()` helper maps Playwright key names to their DOM-correct values.
 
+**Decision**: In the Search / Selection dialog, run a query by clicking the query bar's Run button
+(`.search-overlay .query-bar button.btn`), never by pressing Enter. **Why**: `⏎` ownership swaps at runtime
+(`lib/query-ui/enter-action.ts`): the moment results exist and the last dialog event is `results-arrived` or
+`cursor-moved`, bare Enter means "go to file", which closes the dialog and navigates the pane. Reopening the dialog in a
+session that already ran a query re-runs it on mount, so results can land between a spec's `input` event and its
+keypress and flip the meaning mid-test. The failure reads as a timeout waiting for a footer button, on an overlay that
+has already closed. `search-open-in-pane.spec.ts` § `typeAndRunSearch` carries the full note.
+
 **Decision**: `build.rs` conditionally generates `capabilities/playwright.json`. **Why**: The plugin's IPC permissions
 (`playwright:default`) are only available when the `playwright-e2e` Cargo feature is enabled. Adding it to
 `default.json` breaks non-feature builds. So `build.rs` generates the capability file when the feature is active and
