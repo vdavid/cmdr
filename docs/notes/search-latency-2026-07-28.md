@@ -74,8 +74,8 @@ Phase split before the fix, on the one-letter query against the real index: scan
 The follow-up: the search that stayed slow wasn't the scan or the rank, it was the LOAD. An unscoped search resolved
 every `index-*.db` to a target and loaded each arena SYNCHRONOUSLY, one after another, inside the search call.
 
-Measured with `bench_volume_fanout` (the same harness, `CMDR_SEARCH_BENCH_DBS`), over David's three real index DBs
-(root 6.99 M entries / 1.1 GB, plus the two 2.64 M-entry / 525 MB NAS indexes), 16-core Mac at load average ~7:
+Measured with `bench_volume_fanout` (the same harness, `CMDR_SEARCH_BENCH_DBS`), over David's three real index DBs (root
+6.99 M entries / 1.1 GB, plus the two 2.64 M-entry / 525 MB NAS indexes), 16-core Mac at load average ~7:
 
 - cold-ish first read: root **6.91 s**, NAS **2.18 s**, NAS **2.25 s**
 - warm page cache, all three: serial **3.95 s** → parallel **2.34 s** (1.7×; parallel lands at roughly the cost of the
@@ -109,8 +109,8 @@ An SMB volume id is `smb_volume_id(server, port, share)` off `statfs`'s `f_mntfr
 fix is read-time, not on-disk: `volumes::distinct_mount_roots_in` keeps one index per mount root (live-registered wins,
 else the newest `scan_completed_at`) and skips the other. Nothing is deleted, so the skipped DB wins straight back the
 moment it's the one mounted. On David's box this drops the unscoped fan-out from three volumes to two: one fewer arena
-load (2.2 s cold, 0.9 s warm) and ~250 MB less resident (2.64 M × 56 B of `SearchEntry` + a ~53 MB name arena + a
-~51 MB `id_to_index`).
+load (2.2 s cold, 0.9 s warm) and ~250 MB less resident (2.64 M × 56 B of `SearchEntry` + a ~53 MB name arena + a ~51 MB
+`id_to_index`).
 
 Re-keying the index on a stable server identity was investigated and rejected (the id is derived at mount-detection time
 with no SMB session, the smb2 crate exposes no volume serial, and re-keying orphans every existing SMB index for a
@@ -125,8 +125,8 @@ stable server identity.
 - **Cold arena load is 6–18 s** from a cold page cache for a 1.1 GB index DB (2.6 s warm). Nothing reloads it now, and
   nothing blocks a search on a cold NON-root volume, but the first dialog open of a session still waits on root's.
 - **No resident-memory budget across arenas.** An unscoped search still ends up holding every indexed volume's arena
-  until the idle timer fires (root ~690 MB + ~260 MB per NAS on David's box). The mount-root dedupe removed one copy;
-  an LRU cap over the total would be the next step if it bites.
+  until the idle timer fires (root ~690 MB + ~260 MB per NAS on David's box). The mount-root dedupe removed one copy; an
+  LRU cap over the total would be the next step if it bites.
 - **Nothing tells the user a volume is still warming.** The deferred results self-heal via the re-run, but for those
   couple of seconds the count is understated with no visible signal. A "still loading N volumes" note would need a new
   typed field alongside `uncovered_scopes` / `unresolved_scopes` plus frontend work.
