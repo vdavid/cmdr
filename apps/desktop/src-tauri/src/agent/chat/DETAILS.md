@@ -103,7 +103,7 @@ In `budget.rs` (how many tokens a prompt and a tool result may spend):
 - `CHARS_PER_TOKEN_ESTIMATE = 4` — the ONE size-estimate divisor (elision, the stub hint, every tool's self-cap).
 - `DEFAULT_PROMPT_TOKEN_BUDGET = 16_000` — an unrecognized model's budget. Conservative because guessing high is a hard
   provider rejection mid-turn; still double the 8k that overflowed on a 12-file batch.
-- `LARGE_CONTEXT_PROMPT_BUDGET = 60_000` — a known ≥128k-window cloud family (`claude-`, `gpt-4o`/`gpt-4.1`/`gpt-5`,
+- `PROMPT_BUDGET_60K = 60_000` — a known ≥128k-window cloud family (`claude-`, `gpt-4o`/`gpt-4.1`/`gpt-5`,
   `o3`/`o4-mini`, `gemini-2`). Far below the window on purpose: a prompt this size costs real money per call and dilutes
   attention, while still holding a 200-row listing plus a full `image_facts` batch.
 - Local: `LOCAL_PROMPT_BUDGET_PERCENT = 60` of the server's configured window (`ai.localContextSize`, default 4096),
@@ -114,6 +114,20 @@ In `budget.rs` (how many tokens a prompt and a tool result may spend):
 
 Windows and prices both drift: re-verify the families at release time, like `agent::pricing`.
 Bumping any constant is a conscious change (never a silent side effect).
+
+### What the budgets buy, measured
+
+Estimated tokens, from the shipped assets and `estimate_prompt_tokens` (measured 2026-07-29, `context/tests.rs`):
+
+- **Fixed overhead: ~3,100 tokens** on every single call — ~740 for `SYSTEM_PROMPT` and ~2,370 for the 12 tool
+  declarations. It's why the old flat 8k left only ~4.9k for the actual work, so an 11-file `image_facts` batch (~2.8k)
+  fit and a 12-file one (~5.4k) did not.
+- **A 100-file content-based rename: ~39,700 tokens** for the whole turn, pinned by
+  `a_hundred_file_rename_turn_needs_more_than_the_default_budget`. Dominated by the facts themselves (~26k at 900 chars
+  of OCR per file, arriving over several `MAX_TOOL_RESULT_TOKENS` pages that all stay in the turn), then the plan call's
+  100 rows (~5.4k) and the pane listing (~2.1k).
+- So **60k does 100 files, 16k does roughly 30**, and a 4k local window does a handful. A model's window must exceed the
+  whole turn, not one page of it: every page of facts is evidence the plan cites, so none of it may elide.
 
 ## The runtime (`runtime.rs`)
 

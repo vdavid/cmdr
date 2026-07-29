@@ -34,11 +34,11 @@ pub const CHARS_PER_TOKEN_ESTIMATE: usize = 4;
 /// guessing high turns into a hard provider rejection mid-turn.
 pub const DEFAULT_PROMPT_TOKEN_BUDGET: usize = 16_000;
 
-/// The budget for a known cloud family with a large window (128k and up). Far below the
-/// window: a prompt this size costs real money per call and dilutes the model's attention.
-/// It still holds a 200-row folder listing plus a full `image_facts` batch with room to
-/// spare, which is what the interactive slot actually needs.
-pub const LARGE_CONTEXT_PROMPT_BUDGET: usize = 60_000;
+/// The 60k budget: what a known cloud family whose window is 128k or more gets. Far below
+/// that window on purpose, since a prompt this size costs real money per call and dilutes the
+/// model's attention. It still holds a 200-row folder listing plus a full `image_facts` batch
+/// with room to spare, which is what the interactive slot actually needs.
+pub const PROMPT_BUDGET_60K: usize = 60_000;
 
 /// The share of a local server's configured context window one prompt may claim, in
 /// percent. The rest is headroom for the reply, which comes out of the same window.
@@ -72,39 +72,39 @@ struct FamilyBudget {
 /// Claude families all carry 200k-token windows or more.
 const ANTHROPIC_BUDGETS: &[FamilyBudget] = &[FamilyBudget {
     prefix: "claude-",
-    prompt_budget: LARGE_CONTEXT_PROMPT_BUDGET,
+    prompt_budget: PROMPT_BUDGET_60K,
 }];
 
-/// The large-window OpenAI families (`gpt-4o` 128k, `gpt-4.1` and `gpt-5` far more, the
+/// The OpenAI families that qualify for 60k (`gpt-4o` 128k, `gpt-4.1` and `gpt-5` far more, the
 /// `o*` reasoning models 200k). Anything older and smaller (`gpt-3.5-turbo`) is absent on
 /// purpose and takes the conservative default.
 const OPENAI_BUDGETS: &[FamilyBudget] = &[
     FamilyBudget {
         prefix: "gpt-5",
-        prompt_budget: LARGE_CONTEXT_PROMPT_BUDGET,
+        prompt_budget: PROMPT_BUDGET_60K,
     },
     FamilyBudget {
         prefix: "gpt-4.1",
-        prompt_budget: LARGE_CONTEXT_PROMPT_BUDGET,
+        prompt_budget: PROMPT_BUDGET_60K,
     },
     FamilyBudget {
         prefix: "gpt-4o",
-        prompt_budget: LARGE_CONTEXT_PROMPT_BUDGET,
+        prompt_budget: PROMPT_BUDGET_60K,
     },
     FamilyBudget {
         prefix: "o3",
-        prompt_budget: LARGE_CONTEXT_PROMPT_BUDGET,
+        prompt_budget: PROMPT_BUDGET_60K,
     },
     FamilyBudget {
         prefix: "o4-mini",
-        prompt_budget: LARGE_CONTEXT_PROMPT_BUDGET,
+        prompt_budget: PROMPT_BUDGET_60K,
     },
 ];
 
 /// Gemini 2.x carries a 1M-token window across flash and pro.
 const GEMINI_BUDGETS: &[FamilyBudget] = &[FamilyBudget {
     prefix: "gemini-2",
-    prompt_budget: LARGE_CONTEXT_PROMPT_BUDGET,
+    prompt_budget: PROMPT_BUDGET_60K,
 }];
 
 /// The assembled-prompt token budget for one provider + model. A known cloud family gets
@@ -170,8 +170,8 @@ mod tests {
         ] {
             assert_eq!(
                 prompt_budget(provider, model),
-                LARGE_CONTEXT_PROMPT_BUDGET,
-                "{model} is a large-window family"
+                PROMPT_BUDGET_60K,
+                "the 60k budget covers {model}"
             );
         }
     }
