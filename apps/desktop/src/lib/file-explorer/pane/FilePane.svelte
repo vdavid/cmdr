@@ -4,10 +4,8 @@
     import {
         findFileIndex,
         getFileRange,
-        pathExistsChecked,
         getFileAt,
         getTotalCount,
-        onMtpDeviceDisconnected,
         refreshListingIndexSizes,
         type Location,
         updateMenuContext,
@@ -39,7 +37,6 @@
     import { createListingLoader } from './listing-loader'
     import { createSmbViewState } from './smb-view-state.svelte'
     import { createVolumeSpace } from './volume-space.svelte'
-    import { isVirtualGitPath } from '../git/path-detection'
     import ErrorPane from './ErrorPane.svelte'
     import VolumeUnreachableBanner from './VolumeUnreachableBanner.svelte'
     import SmbReauthView from './SmbReauthView.svelte'
@@ -73,7 +70,6 @@
     import { capabilitiesForPane } from './volume-capabilities'
     import { createEnterMenu } from './enter-menu.svelte'
     import Menu from '$lib/ui/Menu.svelte'
-    import { resolveValidPath } from '../navigation/path-resolution'
     import { homeDir } from '@tauri-apps/api/path'
     import { type CanonicalPath, parentOf, toCanonical } from '$lib/path/canonical'
     import { getVolumes as getStoreVolumes } from '$lib/stores/volume-store.svelte'
@@ -86,6 +82,8 @@
     import { createEntryActivation } from './entry-activation'
     import { createPanePointer } from './pane-pointer'
     import { breadcrumbDisplayPath, createBreadcrumbHandlers } from './breadcrumb-bar'
+    import { createDeletedDirPoll } from './deleted-dir-poll'
+    import { createMtpDisconnectWatch } from './mtp-disconnect-watch.svelte'
     import { createParentEntry } from './parent-entry'
     import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
 
@@ -422,6 +420,18 @@
         getVolumeId: () => volumeId,
         getListingId: () => listingId,
         getIsLocalPane: () => caps.kind === 'local',
+    })
+
+    // The deleted-directory fallback poll: two confirmed misses before walking up,
+    // with the SMB/timeout and virtual-git-path skips (`deleted-dir-poll.ts`).
+    const deletedDirPoll = createDeletedDirPoll({
+        getListingId: () => listingId,
+        getLoading: () => loading,
+        getHasBackendListing: () => caps.hasBackendListing,
+        getIsMtpView: () => isMtpView,
+        getCurrentPath: () => currentPath,
+        getVolumePath: () => volumePath,
+        navigateToFallback: loader.navigateToFallback,
     })
 
     // ── Git browser ─────────────────────────────────────────────────────
@@ -1072,11 +1082,6 @@
     // Finalizing state (read_dir done, now sorting/caching)
     let finalizingCount = $state<number | undefined>(undefined)
 
-    // Poll to detect when the current directory is deleted externally (FSEvents doesn't notify)
-    const dirExistsPollMs = 2000
-    let dirExistsPollInterval: ReturnType<typeof setInterval>
-    let dirNotExistsCount = 0 // Consecutive "not exists" results: require 2 before navigating away
-
     // Derive includeHidden from showHiddenFiles prop
     const includeHidden = $derived(showHiddenFiles)
 
@@ -1557,48 +1562,12 @@
         navigateToFallback: loader.navigateToFallback,
     })
 
-    // Listen for MTP device removal events
-    // When the device is disconnected, trigger fallback to previous volume
-    //
-    // IMPORTANT: We capture reactive values (volumeId, isMtpView) in the effect body
-    // so Svelte tracks them as dependencies. This ensures the listener is re-created
-    // when volumeId changes, avoiding stale closures in the callback.
-    $effect(() => {
-        // Capture current values - this makes Svelte track volumeId as a dependency
-        const currentVolumeId = volumeId
-        const currentIsMtpView = isMtpView
-
-        // Extract device ID from volume ID (like "mtp-2097152:65537" -> "mtp-2097152").
-        // Split on the LAST colon: the storage id is the trailing numeric segment,
-        // and a serial-based device id can itself contain a colon (mirrors the Rust
-        // `mtp::identity::device_id_of_volume`).
-        const deviceIdFromVolume =
-            currentIsMtpView && currentVolumeId.includes(':')
-                ? currentVolumeId.slice(0, currentVolumeId.lastIndexOf(':'))
-                : null
-
-        // Only set up listener if we're viewing an MTP volume with a storage ID
-        if (!currentIsMtpView || !deviceIdFromVolume) {
-            return
-        }
-
-        const listenerPromise = onMtpDeviceDisconnected((event) => {
-            // Check if the disconnected device matches our current MTP volume
-            if (event.deviceId === deviceIdFromVolume) {
-                log.warn('MTP device disconnected while viewing: {deviceId}, triggering fallback', {
-                    deviceId: event.deviceId,
-                })
-                onMtpFatalError?.('Device disconnected')
-            }
-        })
-
-        return () => {
-            void listenerPromise
-                .then((unsub) => {
-                    unsub()
-                })
-                .catch(() => {})
-        }
+    // The pane's MTP device being unplugged: the listener re-registers itself on
+    // every volume switch, so it can't fire on a stale device id.
+    // (`mtp-disconnect-watch.svelte.ts`.)
+    createMtpDisconnectWatch({
+        getVolumeId: () => volumeId,
+        onFatal: (message) => onMtpFatalError?.(message),
     })
 
     // NOTE: MTP file watching now uses the unified directory-diff event system
@@ -1646,71 +1615,16 @@
         // Start the idle sync-status poll and the image-index enrichment listeners.
         overlays.start()
 
-        // Poll to detect externally deleted directories (macOS FSEvents doesn't notify)
-        dirExistsPollInterval = setInterval(() => {
-            // Network / search-results panes have no real `currentPath` on disk
-            // to poll — that folds into `!caps.hasBackendListing`. `isMtpView`
-            // STAYS: MTP has a backend listing (`hasBackendListing: true`) but no
-            // real on-disk path for `pathExists` to stat, so it's an
-            // MTP-path-specific skip, not a capability question.
-            if (!listingId || loading || !caps.hasBackendListing || isMtpView) return
-            // Virtual `.git/<category>/...` paths don't exist on disk, so
-            // `pathExists` always returns false and the poll would evict
-            // the user back to `.git/`. The git watcher keeps these
-            // listings fresh via `git-state-changed` and the
-            // `directory-diff` events from `invalidate_virtual_listings`.
-            if (isVirtualGitPath(currentPath)) return
-            void pathExistsChecked(currentPath).then(({ data: exists, timedOut }) => {
-                // `timedOut` covers both a 2s syscall timeout and an SMB volume in
-                // `Disconnected` state: in both cases we don't know whether the path
-                // exists. Reset the counter and wait for the connection to recover.
-                if (timedOut) {
-                    dirNotExistsCount = 0
-                    return
-                }
-                if (exists) {
-                    dirNotExistsCount = 0
-                    return
-                }
-
-                // Require 2 consecutive confirmed "not exists" before navigating away.
-                dirNotExistsCount++
-                if (dirNotExistsCount < 2) return
-
-                // If on an external volume, check whether the volume root itself is gone.
-                // If so, skip: the volume unmount handler will manage the transition.
-                if (volumePath !== '/') {
-                    void pathExistsChecked(volumePath).then(
-                        ({ data: volumeExists, timedOut: volumeTimedOut }) => {
-                            // If we couldn't tell whether the volume is there, don't walk up.
-                            if (volumeTimedOut) return
-                            if (!volumeExists) return
-                            log.info(
-                                'Directory {dir} no longer exists, navigating to nearest valid parent under {volume}',
-                                { dir: currentPath, volume: volumePath },
-                            )
-                            void resolveValidPath(currentPath, { volumeRoot: volumePath }).then((validPath) => {
-                                loader.navigateToFallback(validPath)
-                            })
-                        },
-                    )
-                } else {
-                    log.info('Directory {dir} no longer exists, navigating to nearest valid parent', {
-                        dir: currentPath,
-                    })
-                    void resolveValidPath(currentPath, { volumeRoot: volumePath }).then((validPath) => {
-                        loader.navigateToFallback(validPath)
-                    })
-                }
-            })
-        }, dirExistsPollMs)
+        // Detect a directory deleted behind our back and walk up to the nearest
+        // surviving parent (`deleted-dir-poll.ts`).
+        deletedDirPoll.start()
     })
 
     onDestroy(() => {
         // Stop the background Finder-tag sweep, cancel the active listing, drop its
         // per-path icons, and unlisten the six streaming listeners. All loader-owned.
         loader.cleanup()
-        clearInterval(dirExistsPollInterval)
+        deletedDirPoll.stop()
         // Drop the badge feeds' poll, retry timer, enrichment listeners, and pending refresh.
         overlays.cleanup()
         selectionInfo.cleanup()
