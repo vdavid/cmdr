@@ -144,6 +144,12 @@ doesn't open.
 fixture proposal has no counterpart there, so the attempt logs a warning and the review stays up. Cancel and Escape are
 unaffected (`cancel_bulk_rename_proposal` is infallible: it consumes the id if it exists). The row says so.
 
+**Its thumbnails are always the placeholder**, also by design: fixture rows carry a `/gallery-fixture/…` path, so no
+token mints and every row shows the neutral no-preview glyph. That's the degraded state on purpose — the gallery reviews
+layout and copy, and pointing fixtures at real images would make each state depend on what's on the machine. The quote's
+coverage IS fixture data, so the `why-this-name` state deliberately pairs a decisive quote (121 of 3,140 characters)
+with a sliver (14 of the same 3,140) to review the two treatments side by side.
+
 ## `onboarding` isn't store-seeded
 
 `OnboardingWizard` is a hand-rolled `role="dialog"` overlay, not a `ModalDialog` (it reports itself to the tracker with
