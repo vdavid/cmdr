@@ -358,7 +358,12 @@ export const LOWER_BOUND_GLYPH = '≥'
  *   (hourglass on top).
  * - `'lower-bound'`: subtree incomplete but a partial total is known → `≥1.2 GB`.
  * - `'size'`: exact and fresh → `1.2 GB` (or a genuinely-empty `0 bytes`).
- * - `'size-stale'`: exact but computed at an older epoch → `1.2 GB`, muted.
+ * - `'size-stale'`: exact but computed at an older epoch → `1.2 GB`, rendered
+ *   exactly like `'size'`. Staleness is voiced by the per-drive freshness badge
+ *   and the tooltip's stale line, NOT by the size text: a reconnected volume
+ *   bumps its epoch, so every indexed folder goes stale at once and any muting
+ *   would drop the whole column below AA contrast. The state stays distinct
+ *   because it's a real content truth a future treatment can key on.
  *
  * Crux: an incomplete subtree at size 0 is UNKNOWN (the `<dir>` placeholder),
  * distinct from a complete subtree at size 0 (a genuinely-empty `0 bytes`).

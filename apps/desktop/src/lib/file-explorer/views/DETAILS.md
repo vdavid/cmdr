@@ -28,10 +28,12 @@ pre-measured column width agree: don't re-inline the decision in any of them.
   `indexing` flag (a full scan or aggregation, every size in flux) OR the row's own `recursiveSizePending` (a live
   delete/copy for that dir with no scan running), so it rides on TOP of a size, a `≥` lower bound, or the placeholder.
   The `'scanning'` tooltip is "Sizes appear as the scan progresses", so a fresh install reads as quietly working rather
-  than `Scanning...` on every row. Freshness-stale (`'size-stale'`) is a separate muted treatment on an exact-but-older
-  size, with no glyph. `measure-column-widths.ts` reserves `SIZE_ICON_WIDTH` whenever `isDirSizeUpdating`, or the
-  shrink-wrapped column clips the glyph. The per-dir flag rides `DirStats.recursiveSizePending`, copied onto entries by
-  `updateIndexSizesInPlace` / `createParentEntry` (backend: `indexing/read/pending_sizes.rs`).
+  than `Scanning...` on every row. Freshness-stale (`'size-stale'`) renders exactly like `'size'`: no glyph, no muting,
+  with the staleness voiced by the per-drive freshness badge and the tooltip's stale line (see
+  `$lib/indexing/DETAILS.md` § Honest size rendering). `measure-column-widths.ts` reserves `SIZE_ICON_WIDTH` whenever
+  `isDirSizeUpdating`, or the shrink-wrapped column clips the glyph. The per-dir flag rides
+  `DirStats.recursiveSizePending`, copied onto entries by `updateIndexSizesInPlace` / `createParentEntry` (backend:
+  `indexing/read/pending_sizes.rs`).
 
 **A file's size cell is dual-valued (logical vs physical on disk).** `full-list-utils.ts::getDisplaySize()` picks
 between them per the `listing.sizeDisplay` setting (logical / physical / smart), `hasSizeMismatch()` decides whether the

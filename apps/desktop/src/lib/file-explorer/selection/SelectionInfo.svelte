@@ -276,12 +276,10 @@
                     </span>
                 {/if}
             {:else if sizeDisplay}
-                <span class:size-freshness-stale={dirSizeState === 'size-stale'}>
-                    {#if dirSizeState === 'lower-bound'}<span class="size-lower-bound-prefix">{LOWER_BOUND_GLYPH}</span>{/if}
-                    {#each sizeDisplay as triad, i (i)}
-                        <span class={triad.tierClass}>{triad.value}</span>
-                    {/each}
-                </span>
+                {#if dirSizeState === 'lower-bound'}<span class="size-lower-bound-prefix">{LOWER_BOUND_GLYPH}</span>{/if}
+                {#each sizeDisplay as triad, i (i)}
+                    <span class={triad.tierClass}>{triad.value}</span>
+                {/each}
                 {#if dirActive}
                     <span
                         class="stale-indicator stale-icon"
@@ -420,13 +418,6 @@
         align-items: center;
         vertical-align: middle;
         cursor: help;
-    }
-
-    /* Freshness-stale: an exact size from an older epoch, muted to match the
-       yellow=stale freshness badge. Mirrors FullList's treatment so
-       Brief's status bar matches Full's size column. */
-    .size-freshness-stale {
-        opacity: 0.6;
     }
 
     /* `≥` lower-bound prefix: secondary color so it reads as a qualifier. */

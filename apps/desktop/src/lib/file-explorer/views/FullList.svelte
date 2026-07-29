@@ -1063,7 +1063,7 @@
                                         >
                                     {/if}
                                 {:else if dirDisplaySize != null}
-                                    <span class="size-text" class:size-freshness-stale={dirSizeState === 'size-stale'}
+                                    <span class="size-text"
                                         >{#if dirSizeState === 'lower-bound'}<span class="size-lower-bound-prefix">{LOWER_BOUND_GLYPH}</span
                                             >{/if}{#each formatSizeForDisplay(dirDisplaySize, sizeFormatOpts) as triad, i (i)}<span
                                                 class={triad.tierClass}>{triad.value}</span
@@ -1479,20 +1479,11 @@
     }
 
     /* In-flux hourglass wrapper (orthogonal to content state): the index has
-       unsettled writes for this dir (`isDirSizeUpdating`). Named for the
-       concept, freeing "stale" for the freshness treatment above. */
+       unsettled writes for this dir (`isDirSizeUpdating`). */
     .size-updating {
         display: inline-flex;
         align-items: center;
         cursor: help;
-    }
-
-    /* Freshness-stale: an exact size computed at an older epoch (drive not
-       re-scanned since reconnecting). Muted to match the yellow=stale
-       freshness language of the per-drive badge; the tooltip explains why.
-       Tunable (the stale treatment is a deliberate, easily-changed choice). */
-    .size-text.size-freshness-stale {
-        opacity: 0.6;
     }
 
     /* `≥` lower-bound prefix: secondary color so it reads as a qualifier on the

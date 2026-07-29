@@ -386,8 +386,12 @@ pure function and the single source of truth:
   placeholder (the same render as a not-yet-scanned dir), never a settled-looking value. The crux: distinct from a
   genuinely-empty `0 bytes`. (A size we don't yet know shows the placeholder it always showed, not a `—`.)
 - `complete === false && size > 0` → `'lower-bound'` → `≥` (`LOWER_BOUND_GLYPH`) prefix + the formatted size.
-- `complete === true && stale === true` → `'size-stale'` → the formatted size, muted (reduced opacity, matching the
-  yellow=stale freshness badge; tunable).
+- `complete === true && stale === true` → `'size-stale'` → the formatted size, rendered exactly like `'size'`. Staleness
+  is voiced by the per-drive freshness badge and by `buildDirSizeTooltip`'s stale line (which reads the raw `stale`
+  flag, not the display state), never by the size text itself. **Don't reintroduce a muted/dimmed size for this state**:
+  reconnecting a volume bumps its epoch, so every already-indexed folder flips stale at once and the whole Size column
+  dims; stacked on the size-tier colors (already a `color-mix` against the tier hue) that lands below AA contrast. The
+  state stays a distinct variant because it's a real content truth.
 - otherwise → `'size'` → the plain formatted size (incl. a genuinely-empty `0 bytes`).
 - Absent `complete`/`stale` (a dir enriched before the flags, or a fixture) ⇒ treated as exact + fresh.
 
