@@ -5,6 +5,8 @@ Virtual-scrolling file list components for rendering 100k+ file directories with
 ## Module map
 
 - `BriefList.svelte` / `FullList.svelte`: the two virtual-scroll views (horizontal columns / vertical rows).
+- `FullListHeader.svelte`, `full-list-cache.svelte.ts` (prefetch buffer + refresh policy),
+  `full-list-git-column.svelte.ts`, `full-list-mouse.ts` (mousedown plan + drag payload): `FullList`'s siblings.
 - `virtual-scroll.ts`: pure window math (uniform for Full, variable + prefix-sum for Brief).
 - `file-list-utils.ts`, `brief-list-utils.ts`, `full-list-utils.ts`: shared + mode-specific rendering helpers.
 - `measure-column-widths.ts`: pixel-accurate Ext / Size / Modified widths via `@chenglou/pretext` (no DOM reflow).
@@ -21,6 +23,9 @@ Virtual-scrolling file list components for rendering 100k+ file directories with
   transform uses the GPU compositor for 60fps).
 - **`hasParent = true` makes UI indices 1-based**: index 0 is the `..` entry (not in backend cache). Real files start at
   1, so `cache_index = ui_index - 1`. Forgetting it lands the cursor one row off.
+- **`FullList`'s cache deps are one getter per prop, not one bag.** A bag read whole subscribes every host `$effect` to
+  every prop: the `..`-row stats refetch on each `directory-diff` tick. See `DETAILS.md` § FullList's siblings, which
+  also says why the ROW styles must stay in `FullList.svelte` (or move as one whole).
 - **Don't reintroduce a `scrollTop - headerHeight` shift with a `Math.max(0, …)` clamp** in `FullList`. The sticky
   header lives inside the scroll container, so `scrollTop` and the spacer offset are the same number. A clamp collapses
   `scrollTop ∈ [0, headerHeight]` to one state and hides row 0 (including the `..` cursor) under the header. Pinned by
@@ -39,14 +44,10 @@ Virtual-scrolling file list components for rendering 100k+ file directories with
 - **Index-size refresh (`refresh_listing_index_sizes`) refetches column widths through the existing `cacheGeneration`
   reset path, not a separate trigger.** Adding one double-fetches.
 - **`listing.showExtensionInName` must stay in lockstep across the renderer and the measurer.** When on, the Name column
-  shows the full filename (`getNameColumnText` returns `name`, not `getDisplayName`) and there's no separate Ext DATA
-  column; `FullList`'s `gridTemplate` drops the Ext track and `computeFullListColumnWidths({ showExtensionInName })`
-  returns `ext: 0`. If you change one side (render the cell but keep reserving Ext width, or vice versa), the columns
-  drift. The HEADER still offers sort-by-extension: when on, the single Name-column header splits into two
-  `SortableHeader` triggers inside a `.header-name-ext` flex row (Name fills, Ext right-aligned, shrink-to-label), both
-  clickable, each showing its caret when active. The split lives inside the `1fr` Name track, so the Ext trigger costs
-  the pane no column width and the measurer reserves none for it. Don't "clean up" that trigger: without it, clicking is
-  gone and `sort.byExtension` (command/shortcut) is the only route left.
+  carries the full filename and there's no Ext DATA column: `gridTemplate` drops the Ext track and
+  `computeFullListColumnWidths({ showExtensionInName })` returns `ext: 0`. Change one side and every column drifts.
+  ❌ Don't "clean up" the split header (`FullListHeader`'s `.header-name-ext`): it's the only way left to CLICK
+  sort-by-extension in that mode. Full contract: `DETAILS.md`.
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

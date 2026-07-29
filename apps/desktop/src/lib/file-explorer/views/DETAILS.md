@@ -43,10 +43,36 @@ the pair out on hover. `measure-column-widths.ts` takes the SAME options, so the
 rendered.
 
 **`FullList`'s `staticEntries?: FileEntry[]` prop bypasses the backend-listing path entirely.** The array is mirrored
-into `cachedEntries` and the cache-fetch / soft-refresh / cache-generation paths short-circuit. The search-results
+into the cache and the cache-fetch / soft-refresh / cache-generation paths short-circuit. The search-results
 virtual volume is the user: it feeds full paths as the entries' `name` field, so the name cell mid-truncates via
 `useShortenMiddle` (snapping to `/` when the name carries one, `.` otherwise). Unset, FullList renders identically: same
 grid template, same fetch loop, same DOM.
+
+### FullList's siblings
+
+`FullList.svelte` keeps what needs the component (the props contract, the reactive readers, the `$effect`s, the DOM refs,
+and the row template). Four siblings hold the rest, each with its own suite:
+
+- **`full-list-cache.svelte.ts`** — the prefetch buffer plus the reset / soft-refresh / static-entries policy.
+  `syncToProps(ready)` returns `'reset' | 'refresh' | 'none' | 'idle'`; the component reacts to `'reset'` only, by
+  suppressing the width transition for one paint. **Each dep is its own getter, deliberately.** Collapsing them into one
+  `props()` bag read whole makes every method subscribe to every prop, and the host's `$effect`s inherit that: the
+  `..`-row stats would refetch on every `directory-diff` tick and the static-entries mirror would rewrite on any prop
+  change at all.
+- **`full-list-git-column.svelte.ts`** — the repo-relative status map and its watcher subscription. `watch()` returns a
+  teardown, so the host's `$effect` cancels an in-flight load when the directory changes.
+- **`full-list-mouse.ts`** — the pure mousedown plan (ignore / select / drag) and the drag payload, including the
+  paths-by-value flavour a static-entries pane needs.
+- **`FullListHeader.svelte`** — the sticky column header. It owns `.header-row` / `.header-icon` / `.header-name-ext` /
+  `.header-git` (all self-contained: no rule reaches outside the header's own sub-tree), and reports its measured height
+  back through `bind:height` because the virtual-scroll math subtracts it from the container.
+
+The ROW styles stay in `FullList.svelte` on purpose. Roughly 250 lines of the `<style>` block are the selection / cursor
+/ striping cascade, and a chunk of it is keyed off `.full-list-container.is-focused` / `.is-compact` — ancestors that
+live in `FullList`'s own markup. Moving those rules into a row component means rewriting each as
+`:global(.full-list-container.is-focused) .file-entry…`, which changes their specificity by one class relative to
+`app.css`'s tinted-pane fallback. Don't do it piecemeal: either the whole row (markup + every row rule) moves together,
+or none of it does.
 
 ### Data flow
 
@@ -60,6 +86,9 @@ FilePane (parent)
         ├── cachedRange: {start, end}    (cached region)
         └── visibleFiles: FileEntry[]    ($derived from virtual window)
 ```
+
+`BriefList` holds those three inline; `FullList` holds the same shape in `full-list-cache.svelte.ts`
+(`cache.entries` / `cache.range` / `cache.windowRows()`).
 
 **Key**: Data lives in Rust `LISTING_CACHE`. Frontend fetches visible ranges on-demand via
 `getFileRange(listingId, start, count, includeHidden)`.
@@ -203,11 +232,17 @@ verbatim (via `getNameColumnText`), and the Ext column header + cells aren't ren
 width-measurer are one contract: `FullList`'s `gridTemplate` drops the Ext track and `computeFullListColumnWidths`
 returns `ext: 0` in this mode, so the grid has no orphaned track and the Name column (`1fr`) absorbs the freed space.
 The shared `getNameColumnText(name, isDirectory, showExtensionInName)` in `full-list-utils.ts` is the single name-text
-decision both the cell and (implicitly, since name is `1fr` and unmeasured) the layout agree on. Sort-by-extension isn't
-stranded by hiding the header: the `sort.byExtension` command stays in the command palette and is shortcut-bindable, so
-the only loss is the click-the-header affordance. Brief view is unaffected (it already renders `file.name` whole). The
-inline rename editor's column span shrinks in this mode (`.col-rename.no-ext-col`) so it doesn't bleed into the Size
-column now that the Ext track is gone.
+decision both the cell and (implicitly, since name is `1fr` and unmeasured) the layout agree on.
+
+Sort-by-extension keeps its CLICK affordance in this mode: `FullListHeader` splits the single Name-column header into
+two `SortableHeader` triggers inside a `.header-name-ext` flex row (Name fills, Ext right-aligned and shrink-to-label),
+both clickable, each showing its caret when active. The split lives INSIDE the `1fr` Name track, so the Ext trigger
+costs the pane no column width and the measurer reserves none for it. ❌ Don't remove it: without it, `sort.byExtension`
+(palette / shortcut) is the only route left. Pinned by `FullList.ext-in-name-header.test.ts` and
+`FullListHeader.test.ts`.
+
+Brief view is unaffected (it already renders `file.name` whole). The inline rename editor's column span shrinks in this
+mode (`.col-rename.no-ext-col`) so it doesn't bleed into the Size column now that the Ext track is gone.
 
 ## Gotchas
 

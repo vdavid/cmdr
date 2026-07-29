@@ -72,7 +72,7 @@
     "apps/desktop/src/lib/file-explorer/pane/file-operation-commands.test.ts": 846,
     "apps/desktop/src/lib/file-explorer/pane/volume-breadcrumb.test.ts": 802,
     "apps/desktop/src/lib/file-explorer/views/BriefList.svelte": 1111,
-    "apps/desktop/src/lib/file-explorer/views/FullList.svelte": 1423,
+    "apps/desktop/src/lib/file-explorer/views/FullList.svelte": 1215,
     "apps/desktop/src/lib/file-operations/transfer/TransferDialog.svelte": 976,
     "apps/desktop/src/lib/file-operations/transfer/TransferDialog.test.ts": 861,
     "apps/desktop/src/lib/file-operations/transfer/transfer-progress-state.svelte.ts": 1122,

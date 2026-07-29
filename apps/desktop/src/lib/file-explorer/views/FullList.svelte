@@ -1,38 +1,25 @@
 <script lang="ts">
     import Icon from '$lib/ui/Icon.svelte'
-    import { type UnlistenFn } from '@tauri-apps/api/event'
-    import { onGitStateChanged } from '$lib/tauri-commands'
     import type { FileEntry, SortColumn, SortOrder, SyncStatus } from '../types'
     import type { FileIndexState, FolderCoverage } from '$lib/tauri-commands'
     import { calculateVirtualWindow, getScrollToPosition } from './virtual-scroll'
-    import { startSelectionDragTracking, type DragFileInfo } from '../drag/drag-drop'
+    import { startSelectionDragTracking } from '../drag/drag-drop'
     import {
         computeDragAutoScrollStep,
         type DragAutoScrollFrameResult,
         type DragAutoScrollPointer,
     } from '../drag/drag-auto-scroll'
     import { startClickToRename, cancelClickToRename } from '../rename/rename-activation'
-    import SortableHeader from '../selection/SortableHeader.svelte'
+    import FullListHeader from './FullListHeader.svelte'
     import FileIcon from '../selection/FileIcon.svelte'
     import TagDots from '../selection/TagDots.svelte'
     import InlineRenameEditor from '../rename/InlineRenameEditor.svelte'
     import { shouldMountRenameEditor } from '../rename/rename-mount'
-    import { fetchStatusMap, glyphFor, labelFor, type EntryStatusCode } from '../git/status-column'
-    import {
-        getSyncIconPath,
-        getImageIndexBadge,
-        getFolderCoverageBadge,
-        createParentEntry,
-        getEntryAt as getEntryAtUtil,
-        fetchVisibleRange as fetchVisibleRangeUtil,
-        calculateFetchRange,
-        isRangeCached,
-        shouldResetCache,
-        refetchIconsForEntries,
-        updateIndexSizesInPlace,
-        type DirStats,
-    } from './file-list-utils'
-    import { getDirStatsBatch } from '$lib/tauri-commands'
+    import { glyphFor, labelFor } from '../git/status-column'
+    import { getSyncIconPath, getImageIndexBadge, getFolderCoverageBadge } from './file-list-utils'
+    import { createFullListCache } from './full-list-cache.svelte'
+    import { createGitStatusColumn } from './full-list-git-column.svelte'
+    import { planRowMouseDown } from './full-list-mouse'
     import { formatSizeForDisplay, formatNumber } from '../selection/selection-info-utils'
     import { isVolumeScanning, isVolumeAggregating } from '$lib/indexing/index-state.svelte'
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
@@ -191,19 +178,31 @@
 
     /**
      * True when the host pane has supplied a static entries array (search-results
-     * virtual volume). In that branch we bypass the backend listing cache entirely:
-     * `cachedEntries` is mirrored from the prop, fetches no-op, soft-refresh /
-     * cacheGeneration bumps are ignored. Normal panes leave the prop unset and
-     * the original cache path runs unchanged.
+     * virtual volume). In that branch the backend listing cache is bypassed
+     * entirely; see `full-list-cache.svelte.ts` for what goes inert.
      */
     const usingStaticEntries = $derived(staticEntries !== undefined)
 
-    // ==== Cached entries (prefetch buffer) ====
-    let cachedEntries = $state<FileEntry[]>([])
-    let cachedRange = $state({ start: 0, end: 0 })
-    let isFetching = $state(false)
-    // Recursive stats for the CURRENT directory (shown on the ".." row so that space isn't wasted).
-    let parentDirStats = $state<DirStats | null>(null)
+    /**
+     * The prefetch buffer: which entries are in hand, and every rule for keeping
+     * them in step with the backend listing (`full-list-cache.svelte.ts`). Props
+     * cross as one getter EACH, so each of the effects below subscribes to exactly
+     * the props that method reads and nothing more.
+     */
+    const cache = createFullListCache({
+        listingId: () => listingId,
+        totalCount: () => totalCount,
+        includeHidden: () => includeHidden,
+        hasParent: () => hasParent,
+        parentPath: () => parentPath,
+        currentPath: () => currentPath,
+        cacheGeneration: () => cacheGeneration,
+        softRefreshTick: () => softRefreshTick,
+        staticEntries: () => staticEntries,
+        onSyncStatusRequest: () => onSyncStatusRequest,
+        onIndexStatusRequest: () => onIndexStatusRequest,
+        onFolderCoverageRequest: () => onFolderCoverageRequest,
+    })
 
     // ==== Virtual scrolling constants ====
     // Row height is reactive based on UI density setting
@@ -276,8 +275,13 @@
      */
     const gitColumnVisible = $derived(showGitColumn && !!gitRepoRoot)
 
-    /** Reactive map from path-relative-to-repo → status code. `null` while loading. */
-    let gitStatusMap = $state<Map<string, EntryStatusCode> | null>(null)
+    /** The Git column's status map + per-row lookup (`full-list-git-column.svelte.ts`). */
+    const gitColumn = createGitStatusColumn()
+    $effect(() => {
+        // Tracking `cacheGeneration` makes an explicit refresh reload the map.
+        void cacheGeneration
+        return gitColumn.watch(gitColumnVisible ? gitRepoRoot : null, currentPath)
+    })
 
     /**
      * Single-glyph cell width. The header reads "Git" (3 chars at 12px ≈ 18px);
@@ -306,11 +310,10 @@
     // the effective row area is shorter than the container by that much. The
     // spacer is the header's next-sibling in natural flow, so `scrollTop` maps
     // to the spacer's offset with NO `- headerHeight` shift (only the gutter
-    // correction below).
-    // (The previous model shifted then clamped at 0, which collapsed
-    // `scrollTop ∈ [0, headerHeight]` to a single spacer state and let the
-    // "top of list" canonical scrollTop land at `headerHeight`, hiding row 0
-    // under the sticky header.)
+    // correction below). ❌ Don't reintroduce a shift-then-clamp-at-0 model:
+    // it collapses `scrollTop ∈ [0, headerHeight]` to one spacer state and
+    // hides row 0 (the `..` cursor) under the header. Pinned by
+    // `test/e2e-playwright/full-cursor-page-nav.spec.ts`.
     let headerHeight = $state(0)
     const rowAreaHeight = $derived(Math.max(0, containerHeight - headerHeight))
     /**
@@ -363,14 +366,16 @@
         const firstBackend = Math.max(0, first - parentOffset)
         const lastBackend = last - parentOffset
 
+        const entries = cache.entries
+        const range = cache.range
         const visible: FileEntry[] = []
         for (let i = firstBackend; i <= lastBackend; i++) {
-            if (i >= cachedRange.start && i < cachedRange.end) {
-                visible.push(cachedEntries[i - cachedRange.start])
+            if (i >= range.start && i < range.end) {
+                visible.push(entries[i - range.start])
             }
         }
 
-        const parentStats = isParentRowVisible ? parentDirStats : null
+        const parentStats = isParentRowVisible ? cache.parentDirStats : null
         if (visible.length === 0 && !parentStats) return
         // Reading getEffectiveScale() here makes the effect re-run when the
         // compounded scale changes (system multiplier resolves at startup, OS
@@ -394,220 +399,81 @@
         })
     })
 
-    // Get entry at global index (handling ".." entry)
+    /** The entry at a UI index (`..` included). Called by the host pane. */
     export function getEntryAt(globalIndex: number): FileEntry | undefined {
-        return getEntryAtUtil(
-            globalIndex,
-            hasParent,
-            parentPath,
-            cachedEntries,
-            cachedRange,
-            parentDirStats ?? undefined,
-        )
+        return cache.getEntryAt(globalIndex)
     }
 
     /** Updates index size fields on cached directory entries AND on the ".." row. */
     export function refreshIndexSizes(): void {
-        if (cachedEntries.length === 0 && !hasParent) return
-        void updateIndexSizesInPlace(cachedEntries, hasParent ? currentPath : undefined).then((stats) => {
-            parentDirStats = stats
-        })
+        cache.refreshIndexSizes()
     }
 
-    // Fetch entries for the visible range
-    // `force=true` skips the "already cached" short-circuit; see BriefList for the rationale.
-    async function fetchVisibleRange(force = false) {
-        // Static-entries branch (search-results pane): the array is already in
-        // memory, no IPC needed. The $effect below mirrors `staticEntries` into
-        // `cachedEntries` directly.
-        if (usingStaticEntries) return
-        if (!listingId || isFetching) return
-
-        const startItem = virtualWindow.startIndex
-        const endItem = virtualWindow.endIndex
-
-        // Check if range is already cached BEFORE setting isFetching
-        // This prevents blocking subsequent fetches when data is already available
-        const { fetchStart, fetchEnd } = calculateFetchRange({ startItem, endItem, hasParent, totalCount })
-        if (!force && isRangeCached(fetchStart, fetchEnd, cachedRange)) {
-            return // Already cached
-        }
-
-        isFetching = true
-        try {
-            const result = await fetchVisibleRangeUtil({
-                listingId,
-                startItem,
-                endItem,
-                hasParent,
-                totalCount,
-                includeHidden,
-                cachedRange,
-                onSyncStatusRequest,
-                onIndexStatusRequest,
-                onFolderCoverageRequest,
-                force,
-            })
-            if (result) {
-                cachedEntries = result.entries
-                cachedRange = result.range
-            }
-        } catch {
-            // Silently ignore fetch errors
-        } finally {
-            isFetching = false
-        }
+    /** Fetches the entries the current virtual window needs. */
+    function fetchVisibleRange(force = false): void {
+        void cache.fetch(virtualWindow.startIndex, virtualWindow.endIndex, force)
     }
 
-    // Get visible files for rendering
-    // Note: We read cachedEntries/cachedRange here to establish reactive dependency
-    const visibleFiles = $derived.by(() => {
-        // MUST read reactive state to establish dependency tracking
-        // Create local copies so the derived re-runs when these change
-        const entries = [...cachedEntries] // Spread to read all elements
-        const rangeStart = cachedRange.start
-        const rangeEnd = cachedRange.end
-
-        const files: { file: FileEntry; globalIndex: number }[] = []
-        for (let i = virtualWindow.startIndex; i < virtualWindow.endIndex; i++) {
-            // Inline getEntryAt logic to use local variables
-            let entry: FileEntry | undefined
-            if (hasParent && i === 0) {
-                entry = createParentEntry(parentPath, parentDirStats ?? undefined)
-            } else {
-                const backendIndex = hasParent ? i - 1 : i
-                if (backendIndex >= rangeStart && backendIndex < rangeEnd) {
-                    entry = entries[backendIndex - rangeStart]
-                }
-            }
-            if (entry) {
-                files.push({ file: entry, globalIndex: i })
-            }
-        }
-        return files
-    })
+    const visibleFiles = $derived.by(() => cache.windowRows(virtualWindow.startIndex, virtualWindow.endIndex))
 
     function handleScroll(e: Event) {
         cancelClickToRename()
         const target = e.target as HTMLDivElement
         scrollTop = target.scrollTop
-        void fetchVisibleRange()
+        fetchVisibleRange()
     }
 
-    // Click-to-rename: if clicking the entry already under the cursor (no modifiers),
-    // start a timer that activates rename after 800ms. Drag tracking still runs in
-    // `handleMouseDown` so the cursor item remains draggable; crossing the drag
-    // threshold cancels the rename timer.
-    function maybeStartClickToRename(event: MouseEvent, index: number) {
-        if (index === cursorIndex && !event.shiftKey && !event.metaKey && !renameState?.active && onStartRename) {
-            startClickToRename(event, onStartRename)
-        } else {
-            // Clicking a different entry cancels any pending click-to-rename timer
-            cancelClickToRename()
-        }
-    }
-
-    // Handle file mousedown - selects and initiates drag tracking
+    // Selects and initiates drag tracking. `planRowMouseDown` (full-list-mouse.ts)
+    // owns the decision and the drag payload; this only performs it.
     function handleMouseDown(event: MouseEvent, index: number) {
-        if (event.button !== 0) return
+        const plan = planRowMouseDown({
+            event,
+            index,
+            cursorIndex,
+            selectedIndices,
+            getEntryAt: cache.getEntryAt,
+            listingId,
+            volumeId,
+            includeHidden,
+            hasParent,
+            usingStaticEntries,
+            isRenaming: renameState?.active ?? false,
+            canStartRename: onStartRename !== undefined,
+        })
 
-        // Let clicks inside the inline rename input pass through without
-        // triggering selection/drag; the input handles its own focus.
-        const target = event.target as HTMLElement
-        if (target.closest('.rename-input')) return
-
-        const entry = getEntryAt(index)
-        if (!entry) return
-
-        // ".." entry: just move cursor, no drag tracking
-        if (entry.name === '..') {
+        if (plan.kind === 'ignore') return
+        if (plan.kind === 'select') {
             onSelect(index, event.shiftKey, event.metaKey)
             return
         }
 
-        maybeStartClickToRename(event, index)
+        if (plan.startClickToRename && onStartRename) startClickToRename(event, onStartRename)
+        else cancelClickToRename()
 
-        const hasSelection = selectedIndices.size > 0
-
-        if (!hasSelection) {
-            // No selection: defer selection until drag threshold is crossed
-            const fileInfo: DragFileInfo = { name: entry.name, isDirectory: entry.isDirectory, iconId: entry.iconId }
-            startSelectionDragTracking(
-                event,
-                { type: 'single', path: entry.path, iconId: entry.iconId, index, sourceVolumeId: volumeId, fileInfo },
-                {
-                    onDragStart: () => {
-                        onSelect(index, event.shiftKey, event.metaKey)
-                    },
-                    onDragCancel: () => {
-                        // Just do a normal select on cancel (mouseup without drag)
-                        onSelect(index, event.shiftKey, event.metaKey)
-                    },
-                    onDragInitiate,
-                },
-            )
-        } else {
-            // Has selection: move cursor immediately (Shift+click ranges, Cmd+click toggles)
+        if (plan.selectNow) {
+            // Shift+click ranges, Cmd+click toggles; the drag then carries the
+            // whole selection regardless of which row was pressed.
             onSelect(index, event.shiftKey, event.metaKey)
-
-            // Always drag the selection (regardless of which file clicked)
-            // Find the first selected file's icon for the drag preview
-            const firstSelectedIndex = Math.min(...selectedIndices)
-            const firstSelectedEntry = getEntryAt(firstSelectedIndex)
-            const iconId = firstSelectedEntry?.iconId ?? entry.iconId
-
-            // Collect file info for the drag image (only from cached/visible entries)
-            const fileInfos: DragFileInfo[] = []
-            for (const idx of selectedIndices) {
-                const e = getEntryAt(idx)
-                if (e) fileInfos.push({ name: e.name, isDirectory: e.isDirectory, iconId: e.iconId })
-            }
-
-            // Search-results / static-entries panes have no backend listing,
-            // so `start_selection_drag` (which resolves indices against
-            // LISTING_CACHE) would fail. The entries already carry absolute
-            // paths, so we route through the paths-by-value drag flavour.
-            // M8d.
-            if (usingStaticEntries) {
-                const paths: string[] = []
-                for (const idx of selectedIndices) {
-                    const e = getEntryAt(idx)
-                    if (e) paths.push(e.path)
-                }
-                startSelectionDragTracking(
-                    event,
-                    {
-                        type: 'paths',
-                        paths,
-                        sourceVolumeId: volumeId,
-                        iconId,
-                        fileInfos,
-                    },
-                    { onDragInitiate },
-                )
-                return
-            }
-
-            startSelectionDragTracking(
-                event,
-                {
-                    type: 'selection',
-                    listingId,
-                    indices: [...selectedIndices],
-                    includeHidden,
-                    hasParent,
-                    sourceVolumeId: volumeId,
-                    iconId,
-                    fileInfos,
-                },
-                { onDragInitiate },
-            )
+            startSelectionDragTracking(event, plan.context, { onDragInitiate })
+            return
         }
+
+        // No selection yet: hold the selection back until the drag threshold
+        // decides whether this was a drag or a plain click.
+        startSelectionDragTracking(event, plan.context, {
+            onDragStart: () => {
+                onSelect(index, event.shiftKey, event.metaKey)
+            },
+            onDragCancel: () => {
+                onSelect(index, event.shiftKey, event.metaKey)
+            },
+            onDragInitiate,
+        })
     }
 
     function handleDoubleClick(actualIndex: number) {
         cancelClickToRename()
-        const entry = getEntryAt(actualIndex)
+        const entry = cache.getEntryAt(actualIndex)
         if (entry) onNavigate(entry)
     }
 
@@ -627,7 +493,7 @@
             // (scroll events may be batched or delayed by the browser)
             scrollTop = newScrollTop
             // Fetch entries for the new visible range
-            void fetchVisibleRange()
+            fetchVisibleRange()
         }
     }
 
@@ -647,71 +513,33 @@
         if (step.scrolled) {
             scrollContainer.scrollTop = step.nextScrollOffset
             scrollTop = step.nextScrollOffset
-            void fetchVisibleRange()
+            fetchVisibleRange()
         }
         return { active: step.active, scrolled: step.scrolled }
     }
 
-    // Track previous values to detect actual changes
-    let prevCacheProps = { listingId: '', includeHidden: false, cacheGeneration: 0 }
-    let prevTotalCount = 0
-    let prevSoftTick = 0
-
-    // Static-entries sync: when the host pane supplies `staticEntries` (the
-    // search-results virtual volume), mirror the array into `cachedEntries` so
-    // the same rendering pipeline downstream works without backend round-trips.
-    // We treat the full prop array as the cache; virtual-scroll math then
-    // slices the visible window from it.
+    // Static-entries sync: mirror the host pane's array into the cache so the same
+    // rendering pipeline downstream works without backend round-trips.
     $effect(() => {
-        if (!usingStaticEntries) return
-        const src = staticEntries ?? []
-        cachedEntries = src
-        cachedRange = { start: 0, end: src.length }
+        cache.syncStaticEntries()
     })
 
-    // Hard reset on cold context changes (nav, sort, hidden toggle): wipe
-    // entries, refetch from scratch.
-    // Soft refresh on totalCount or softRefreshTick changes (`directory-diff`
-    // bursts, in-place renames): refetch in background and atomically replace,
-    // keeping existing rows visible — no empty-pane flicker mid-bulk-op.
+    // Hard reset on cold context changes, soft refresh on diff bursts; the cache
+    // owns the decision. A reset suppresses the grid-template-columns transition
+    // for the first paint after a dir switch, else the header (which persists
+    // across navs) slides from the previous dir's widths to the new ones.
     $effect(() => {
-        // Static-entries branch handles its own sync above. Skip the cache /
-        // diff machinery here entirely so a search-results pane never tries to
-        // call backend fetches (which would no-op anyway but log a $effect
-        // dependency churn).
-        if (usingStaticEntries) return
-        const currentProps = { listingId, includeHidden, cacheGeneration }
-        const currentTotal = totalCount
-        const currentTick = softRefreshTick
-        if (!listingId || containerHeight <= 0) return
-
-        if (shouldResetCache(currentProps, prevCacheProps)) {
-            cachedEntries = []
-            cachedRange = { start: 0, end: 0 }
-            prevCacheProps = currentProps
-            prevTotalCount = currentTotal
-            prevSoftTick = currentTick
-            // Suppress the grid-template-columns transition for the first paint after
-            // a dir switch; otherwise the header (which persists across navs) slides
-            // from the previous dir's widths to the new ones.
+        const sync = cache.syncToProps(containerHeight > 0)
+        if (sync === 'idle') return
+        if (sync === 'reset') {
             skipTransition = true
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     skipTransition = false
                 })
             })
-            void fetchVisibleRange()
-            return
         }
-
-        if (currentTotal !== prevTotalCount || currentTick !== prevSoftTick) {
-            prevTotalCount = currentTotal
-            prevSoftTick = currentTick
-            void fetchVisibleRange(true)
-            return
-        }
-
-        void fetchVisibleRange()
+        fetchVisibleRange(sync === 'refresh')
     })
 
     // Returns the number of visible items (for Page Up/Down navigation)
@@ -722,34 +550,16 @@
     // Re-fetch icons when the icon cache is cleared (settings or theme change)
     $effect(() => {
         void $iconCacheCleared // Track the store value
-        // Re-fetch icons for all cached entries
-        if (cachedEntries.length > 0) {
-            refetchIconsForEntries(cachedEntries)
-        }
+        cache.refetchIcons()
     })
 
     // Fetch the current folder's recursive stats so the ".." row can show the total.
     // Re-runs when the directory changes; cleared when we're at a volume root.
-    // Skipped for static-entries panes: the "directory" is synthetic (no real
-    // path to stat) and the ".." row isn't rendered for search-results anyway.
     $effect(() => {
-        if (usingStaticEntries) {
-            parentDirStats = null
-            return
-        }
-        if (!hasParent || !currentPath) {
-            parentDirStats = null
-            return
-        }
-        // Re-run when cacheGeneration bumps (sort, refresh), currentPath is already tracked above.
+        // Re-run when cacheGeneration bumps (sort, refresh). `currentPath`,
+        // `hasParent`, and `staticEntries` are subscribed inside the call.
         void cacheGeneration
-        void getDirStatsBatch([currentPath])
-            .then((results) => {
-                parentDirStats = results[0] ?? null
-            })
-            .catch(() => {
-                // Silently ignore -- indexing may not be initialized yet.
-            })
+        cache.syncParentDirStats()
     })
 
     // Report visible range to parent for MCP state sync
@@ -758,60 +568,6 @@
         const endItem = virtualWindow.endIndex
         onVisibleRangeChange?.(startItem, endItem)
     })
-
-    /**
-     * Fetches the per-path git status map for `currentPath` and refreshes it
-     * whenever the watcher emits `git-state-changed` for the active repo.
-     *
-     * The map is keyed by repo-relative path (forward slashes), which is what
-     * `get_git_status_for_paths` returns. Cells look up by computing the
-     * relative path on render (see `gitStatusFor`).
-     */
-    $effect(() => {
-        if (!gitColumnVisible || !gitRepoRoot) {
-            gitStatusMap = null
-            return
-        }
-        const repo = gitRepoRoot
-        const dir = currentPath
-        // Track cacheGeneration so an explicit refresh reloads the map.
-        void cacheGeneration
-
-        let cancelled = false
-        let unlisten: UnlistenFn | undefined
-
-        async function load() {
-            const map = await fetchStatusMap(repo, dir).catch(() => null)
-            if (!cancelled) gitStatusMap = map
-        }
-
-        void load()
-        void onGitStateChanged((payload) => {
-            if (payload.repoRoot === repo) void load()
-        }).then((fn) => {
-            if (cancelled) fn()
-            else unlisten = fn
-        })
-
-        return () => {
-            cancelled = true
-            unlisten?.()
-        }
-    })
-
-    /**
-     * Maps a row's absolute path to a status code, or `null` when the row is
-     * clean / outside the worktree. Repo-relative keys are computed against
-     * the active repo root so directories with the repo root in the middle of
-     * their path still hit.
-     */
-    function gitStatusFor(file: FileEntry): EntryStatusCode | null {
-        if (!gitStatusMap || !gitRepoRoot) return null
-        const root = gitRepoRoot.endsWith('/') ? gitRepoRoot : gitRepoRoot + '/'
-        if (!file.path.startsWith(root)) return null
-        const rel = file.path.slice(root.length)
-        return gitStatusMap.get(rel) ?? null
-    }
 </script>
 
 <div class="full-list-container" class:is-focused={isFocused} class:is-compact={isCompact}>
@@ -830,85 +586,17 @@
         onscroll={handleScroll}
         tabindex="-1"
     >
-        <!-- Role/aria intentionally omitted: the header sits inside the
-             listbox, and `role="toolbar"` would violate aria-required-children.
-             The sort buttons inside remain individually focusable. -->
-        <div
-            class="header-row"
-            class:no-transition={skipTransition}
-            style="grid-template-columns: {gridTemplate};"
-            bind:clientHeight={headerHeight}
-        >
-            <span class="header-icon"></span>
-            {#if showExtensionInName}
-                <!-- Extension rides in the Name column, so there's no Ext column and no
-                     Ext header of its own. Sort-by-extension stays clickable by splitting
-                     the single Name-column header into two triggers: "Name" fills the
-                     space on the left, "Ext" shrinks to its label on the right. Both live
-                     INSIDE the `1fr` Name track, so the Ext trigger costs the pane no
-                     width — the measurer still reserves nothing for it. The data cells
-                     below stay as the full filename in the Name column. -->
-                <span class="header-name-ext">
-                    <SortableHeader
-                        column="name"
-                        {isFocused}
-                        label={tString('fileExplorer.columns.name')}
-                        currentSortColumn={sortBy}
-                        currentSortOrder={sortOrder}
-                        onClick={onSortChange ?? (() => {})}
-                    />
-                    <SortableHeader
-                        column="extension"
-                        {isFocused}
-                        label={tString('fileExplorer.columns.ext')}
-                        align="right"
-                        currentSortColumn={sortBy}
-                        currentSortOrder={sortOrder}
-                        onClick={onSortChange ?? (() => {})}
-                    />
-                </span>
-            {:else}
-                <SortableHeader
-                    column="name"
-                    {isFocused}
-                    label={tString('fileExplorer.columns.name')}
-                    currentSortColumn={sortBy}
-                    currentSortOrder={sortOrder}
-                    onClick={onSortChange ?? (() => {})}
-                />
-            {/if}
-            {#if gitColumnVisible}
-                <span class="header-git" title={tString('fileExplorer.columns.gitTitle')}>{tString('fileExplorer.columns.git')}</span>
-            {/if}
-            {#if !showExtensionInName}
-                <SortableHeader
-                    column="extension"
-                    {isFocused}
-                    label={tString('fileExplorer.columns.ext')}
-                    currentSortColumn={sortBy}
-                    currentSortOrder={sortOrder}
-                    onClick={onSortChange ?? (() => {})}
-                />
-            {/if}
-            <SortableHeader
-                column="size"
-                {isFocused}
-                label={tString('fileExplorer.columns.size')}
-                align="right"
-                currentSortColumn={sortBy}
-                currentSortOrder={sortOrder}
-                onClick={onSortChange ?? (() => {})}
-            />
-            <SortableHeader
-                column="modified"
-                {isFocused}
-                label={tString('fileExplorer.columns.modified')}
-                align="right"
-                currentSortColumn={sortBy}
-                currentSortOrder={sortOrder}
-                onClick={onSortChange ?? (() => {})}
-            />
-        </div>
+        <FullListHeader
+            {gridTemplate}
+            {isFocused}
+            {sortBy}
+            {sortOrder}
+            {showExtensionInName}
+            {gitColumnVisible}
+            {skipTransition}
+            {onSortChange}
+            bind:height={headerHeight}
+        />
         <div
             class="listbox-region"
             role="listbox"
@@ -998,7 +686,7 @@
                                     use:tooltip={RESTRICTED_FOLDER_TOOLTIP}
                                 ><Icon name="info" size={12} /></span>{/if}{#if showTags}<TagDots tags={file.tags} />{/if}</span>
                             {#if gitColumnVisible}
-                                {@const status = gitStatusFor(file)}
+                                {@const status = gitColumn.statusFor(file)}
                                 <span
                                     class="col-git"
                                     class:has-status={status !== null}
@@ -1142,54 +830,19 @@
         outline: none;
     }
 
-    .header-row {
-        display: grid;
-        /* grid-template-columns set via inline style for shrink-wrapped column widths */
-        gap: var(--spacing-sm);
-        /* Horizontal = the rows' own padding (`--spacing-sm`) PLUS `.listbox-region`'s
-           gutter (`--spacing-xs`), so the grid columns land in the same place as the
-           rows'. The bottom padding separates the labels from the first row; the height
-           grows by the same amount so they keep their position instead of shifting up
-           inside an unchanged band. */
-        padding: var(--spacing-xxs) var(--spacing-md) var(--spacing-xs);
-        background: var(--color-bg-secondary);
-        height: calc(22px * var(--font-scale) + var(--spacing-xs));
-        flex-shrink: 0;
-        /* Sticky inside the scroll container: the header always shares the row
-           content width (auto-shrinking when a vertical scrollbar appears) so
-           columns line up with the data rows beneath. The `top: 0` pin keeps
-           the header in view during vertical scroll. */
-        position: sticky;
-        top: 0;
-        z-index: 1;
-        transition: grid-template-columns 300ms ease;
-    }
-
-    .header-icon {
-        width: var(--spacing-icon-size);
-    }
-
     .virtual-spacer {
         position: relative;
     }
 
-    /* Semantic wrapper for the listbox role; no visual styling. The class
-       exists so the role + aria-activedescendant can sit on a child of the
-       scroll container without violating aria-required-children (the sticky
-       header is a sibling, not a child of this region).
-       `min-height: calc(100% - <header height>)` makes the listbox always
-       span the rest of the pane below the sticky header, even when there
-       are fewer rows than fit on screen — so the empty area is still part
-       of the listbox (for hit testing / focus) while staying transparent
-       (file rows paint the bg, not this wrapper). The header's own height
-       is `calc(22px * var(--font-scale))`, mirrored here so subtracting it
-       lands the listbox exactly flush with the scroll container's bottom
-       at every text scale, with no spurious scrollbar. */
-    /* Semantic listbox wrapper — no background, no stacking context. The
-       pane bg lives on `.file-pane > .content` (see FilePane.svelte). */
-    /* Gutter on all four sides, keeping the cursor and selection fills off the pane
-       edges. It sits on the ROWS region, not on `.full-list` or the pane: the header row
-       is a sticky child of the same scroll container, and padding further out would
+    /* Semantic wrapper for the listbox role: no background, no stacking context. It
+       exists so the role + aria-activedescendant can sit on a child of the scroll
+       container without violating aria-required-children (the sticky header is a
+       sibling, not a child of this region). The pane bg lives on
+       `.file-pane > .content` (see FilePane.svelte).
+
+       The gutter runs on all four sides, keeping the cursor and selection fills off the
+       pane edges. It sits on the ROWS region, not on `.full-list` or the pane: the header
+       row is a sticky child of the same scroll container, and padding further out would
        inset its background too, leaving bare strips at both ends. `.header-row` doubles
        its own horizontal padding instead, so its content still lines up with the rows
        while its background runs edge to edge. The block padding shifts the spacer inside
@@ -1248,7 +901,6 @@
         vertical-align: text-bottom;
     }
 
-    .header-row.no-transition,
     .file-entry.no-transition {
         transition: none;
     }
@@ -1269,7 +921,6 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-        .header-row,
         .file-entry,
         .file-entry .col-name,
         .file-entry .col-ext,
@@ -1392,40 +1043,6 @@
         grid-column: 2 / span 2;
     }
 
-    /* Combined Name + Ext header for the `showExtensionInName` layout: occupies
-       the single Name column (`1fr`) and lays its two sort triggers in a row,
-       Name filling the space, Ext shrinking to its label on the right. The
-       inner `SortableHeader` buttons keep their own hover/active styling, so the
-       Ext trigger reads exactly like a real column header while costing the pane
-       no column width. */
-    .header-name-ext {
-        display: flex;
-        align-items: center;
-        min-width: 0;
-        gap: var(--spacing-sm);
-    }
-
-    /* The Name trigger takes all spare width; Ext stays just wide enough for
-       its label + caret. `min-width: 0` lets the Name button's label ellipsize
-       instead of pushing Ext off the edge in a very narrow pane. */
-    .header-name-ext > :global(.sortable-header:first-child) {
-        flex: 1 1 auto;
-        min-width: 0;
-    }
-
-    .header-name-ext > :global(.sortable-header:last-child) {
-        flex: 0 0 auto;
-    }
-
-    .header-git {
-        font-size: var(--font-size-xs);
-        color: var(--color-text-secondary);
-        text-align: center;
-        align-self: center;
-        white-space: nowrap;
-        cursor: default;
-    }
-
     .col-git {
         font-family: var(--font-mono);
         font-size: var(--font-size-sm);
@@ -1537,18 +1154,9 @@
         color: var(--color-selection-fg);
     }
 
-    .file-entry.is-selected .col-name {
-        color: var(--color-selection-fg);
-    }
-
-    .file-entry.is-selected .col-ext {
-        color: var(--color-selection-fg);
-    }
-
-    .file-entry.is-selected .col-date {
-        color: var(--color-selection-fg);
-    }
-
+    .file-entry.is-selected .col-name,
+    .file-entry.is-selected .col-ext,
+    .file-entry.is-selected .col-date,
     .file-entry.is-selected .size-dir {
         color: var(--color-selection-fg);
     }
@@ -1575,14 +1183,8 @@
     }
 
     /* Selection colors preserved even under cursor */
-    .full-list-container.is-focused .file-entry.is-under-cursor.is-selected .col-name {
-        color: var(--color-selection-fg);
-    }
-
-    .full-list-container.is-focused .file-entry.is-under-cursor.is-selected .col-ext {
-        color: var(--color-selection-fg);
-    }
-
+    .full-list-container.is-focused .file-entry.is-under-cursor.is-selected .col-name,
+    .full-list-container.is-focused .file-entry.is-under-cursor.is-selected .col-ext,
     .full-list-container.is-focused .file-entry.is-under-cursor.is-selected .col-date {
         color: var(--color-selection-fg);
     }
