@@ -73,6 +73,7 @@ fn every_live_loop_publishes_its_changed_dirs() {
         }
         assert!(
             src.contains("publish_dirs_changed("),
+            // allowed-pluralize-noun: "drains" is a verb here (the file drains the set), not a plural noun after a count
             "{name} drains live changed dirs but never publishes them, so importance and media \
              would silently stop following the index on that route"
         );

@@ -78,6 +78,7 @@ fn a_batch_of_only_floored_churn_is_dropped_whole() {
         assert_eq!(
             sanitize_incremental_batch(&[scoring.to_string()], home),
             vec![scoring.to_string()],
+            // allowed-pluralize-noun: "scores" is a verb here (the path scores), not a plural noun after a count
             "{scoring} scores, so it must drive a rescore"
         );
     }
@@ -260,7 +261,9 @@ fn incremental_scope_follows_the_changed_dir_not_its_ancestors() {
     assert_eq!(wide, folders.len(), "an ancestor in the batch rescores the whole tree");
     assert!(
         wide > narrow * 50,
-        "the ancestor closure costs {wide} rows against the origin's {narrow}"
+        "the ancestor closure costs {} against the origin's {}",
+        crate::pluralize::pluralize(wide as u64, "row"),
+        crate::pluralize::pluralize(narrow as u64, "row")
     );
     writer.shutdown();
 }
@@ -338,7 +341,8 @@ fn a_floor_transition_propagates_from_the_parent_origin_without_widening() {
     // Containment: the sibling half of the volume was never rewritten.
     assert!(
         count <= 4,
-        "only the origin's chain and its (now floored) subtree were touched, not {count} folders"
+        "only the origin's chain and its (now floored) subtree were touched, not {}",
+        crate::pluralize::pluralize(count as u64, "folder")
     );
     assert_eq!(
         store
