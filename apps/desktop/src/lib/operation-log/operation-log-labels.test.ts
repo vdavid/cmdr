@@ -54,6 +54,9 @@ describe('enum labels', () => {
       user: 'You',
       aiClient: 'AI client',
       agent: 'Agent',
+      // Mixed provenance: the agent proposed the batch, the user retyped a name in the review.
+      // It has to read differently from plain `agent`, or the log credits the agent either way.
+      agentEdited: 'Agent, with your edits',
     }
     for (const [value, label] of Object.entries(cases)) {
       expect(initiatorLabel(value as Initiator)).toBe(label)

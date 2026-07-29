@@ -26,6 +26,7 @@ import {
   listAskCmdrConversations,
   recordAskCmdrModelChange,
   preflightBulkRename,
+  reviseBulkRenameRow,
   sendAskCmdrMessage,
   type AskCmdrErrorKind,
   type AskCmdrStreamEvent,
@@ -107,6 +108,9 @@ export interface BulkRenameReviewRow {
   allowed: boolean
   blockedReason: string | null
   warnings: Array<'extensionChanged' | 'cycle'>
+  /** True when the last name the user typed here wasn't a usable filename, so the row kept the
+   * name it had. Display only; the backend is the authority on what a name may be. */
+  nameRejected: boolean
 }
 
 export interface BulkRenameReview {
@@ -581,7 +585,13 @@ function openRenameReview(proposal: Extract<AskCmdrStreamEvent, { type: 'proposa
   discardRenameReview()
   askCmdrState.renameReview = {
     proposalId: proposal.proposalId,
-    rows: proposal.rows.map((row) => ({ ...row, allowed: true, blockedReason: null, warnings: [] })),
+    rows: proposal.rows.map((row) => ({
+      ...row,
+      allowed: true,
+      blockedReason: null,
+      warnings: [],
+      nameRejected: false,
+    })),
     preflighting: false,
     expired: false,
     requestVersion: 0,
@@ -596,6 +606,46 @@ export function setRenameRowAllowed(rowId: string, allowed: boolean): void {
   if (!review || !row || (row.blockedReason && allowed)) return
   row.allowed = allowed
   void refreshRenamePreflight()
+}
+
+/**
+ * Replace one row's proposed name with the one the user typed, then revalidate.
+ *
+ * The backend owns everything about the new name: it validates it, swaps the row's evidence for
+ * the "you typed this" marker (the model's quote described the model's name), and invalidates the
+ * accepted preflight — so the fresh preflight below is what lets the edited name be applied at
+ * all. A name it won't take leaves the row on the name it had, said plainly on the row.
+ */
+export async function reviseRenameRow(rowId: string, destinationName: string): Promise<void> {
+  const review = askCmdrState.renameReview
+  const row = review?.rows.find((candidate) => candidate.rowId === rowId)
+  if (!review || !row || review.expired) return
+  // No IPC for a field the user left as it was (a blur after no edit, or Enter twice).
+  if (destinationName === row.destinationName) {
+    row.nameRejected = false
+    return
+  }
+  try {
+    const revised = await reviseBulkRenameRow(review.proposalId, rowId, destinationName)
+    const current = liveRenameRow(review.proposalId, rowId)
+    if (!current) return
+    current.destinationName = revised.destinationName
+    current.evidence = revised.evidence
+    current.coverage = revised.coverage
+    current.nameRejected = false
+    await refreshRenamePreflight()
+  } catch (e) {
+    log.warn('revising a proposed name failed: {error}', { error: String(e) })
+    const current = liveRenameRow(review.proposalId, rowId)
+    if (current) current.nameRejected = true
+  }
+}
+
+/** The row as it stands NOW, or `null` if the review closed or was replaced meanwhile. */
+function liveRenameRow(proposalId: string, rowId: string): BulkRenameReviewRow | null {
+  const current = askCmdrState.renameReview
+  if (!current || current.proposalId !== proposalId) return null
+  return current.rows.find((candidate) => candidate.rowId === rowId) ?? null
 }
 
 /** Allow every row the latest preflight did not block. */

@@ -18,6 +18,8 @@ const saveMock = vi.fn()
 const growWindowMock = vi.fn<(w: number) => Promise<void>>()
 const shrinkWindowMock = vi.fn<(w: number) => Promise<void>>()
 const preflightRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
+const reviseRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
+const applyRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
 
 vi.mock('$lib/tauri-commands', () => ({
   sendAskCmdrMessage: (c: number | null, t: string, a: unknown[], o: (e: AskCmdrStreamEvent) => void) =>
@@ -28,7 +30,8 @@ vi.mock('$lib/tauri-commands', () => ({
   recordAskCmdrModelChange: (id: number) => recordMock(id),
   preflightBulkRename: (...args: unknown[]) => preflightRenameMock(...args),
   cancelBulkRenameProposal: vi.fn(() => Promise.resolve()),
-  applyBulkRename: vi.fn(() => Promise.resolve()),
+  applyBulkRename: (...args: unknown[]) => applyRenameMock(...args),
+  reviseBulkRenameRow: (...args: unknown[]) => reviseRenameMock(...args),
 }))
 vi.mock('$lib/app-status-store', () => ({
   saveAppStatus: (s: unknown) => {
@@ -65,6 +68,8 @@ import {
   newChat,
   noteModelSettingChanged,
   renameReviewListingChanged,
+  reviseRenameRow,
+  applyRenameReview,
   openRail,
   pathFromArguments,
   RAIL_MAX_WIDTH,
@@ -98,6 +103,9 @@ beforeEach(() => {
   shrinkWindowMock.mockReset()
   preflightRenameMock.mockReset()
   preflightRenameMock.mockResolvedValue({ status: 'ready', rows: [] })
+  reviseRenameMock.mockReset()
+  applyRenameMock.mockReset()
+  applyRenameMock.mockResolvedValue({ operationId: 'op-1' })
   growWindowMock.mockResolvedValue()
   shrinkWindowMock.mockResolvedValue()
   listMock.mockResolvedValue([])
@@ -381,6 +389,102 @@ describe('rename review listing updates', () => {
     })
     expect(preflightRenameMock).toHaveBeenCalledWith('proposal-1', ['row-1'])
     expect(askCmdrState.renameReview?.rows[0]?.allowed).toBe(false)
+  })
+})
+
+describe('revising a proposed name', () => {
+  /** Stage a one-row review the way a real `proposalReady` event does. */
+  async function openOneRowReview(): Promise<void> {
+    sendMessage('rename it')
+    fire({
+      type: 'proposalReady',
+      proposal: {
+        proposalId: 'proposal-1',
+        rows: [
+          {
+            rowId: 'row-1',
+            sourceName: 'before.png',
+            destinationName: 'Klarna invoice.png',
+            sourcePath: '/shots/before.png',
+            volumeId: 'root',
+            evidence: { source: 'imageText' as const, detail: 'payment confirmation' },
+            coverage: {
+              matchOffset: 21,
+              matchedChars: 20,
+              deliveredChars: 61,
+              contextBefore: 'Klarna ',
+              matchedText: 'payment confirmation',
+              contextAfter: ' 1,299 SEK',
+              trimmedBefore: false,
+              trimmedAfter: false,
+            },
+          },
+        ],
+      },
+    })
+    await vi.waitFor(() => {
+      expect(preflightRenameMock).toHaveBeenCalledTimes(1)
+    })
+    preflightRenameMock.mockClear()
+  }
+
+  /**
+   * The round trip M2 exists for: the user retypes a wrong name, the row takes the SERVER's
+   * answer (the name, and evidence that no longer credits the model), a fresh preflight runs
+   * because the edit invalidated the accepted one, and Apply then sends opaque row ids only.
+   */
+  it('takes the server’s revised row, re-preflights, and applies', async () => {
+    await openOneRowReview()
+    reviseRenameMock.mockResolvedValue({
+      rowId: 'row-1',
+      sourceName: 'before.png',
+      destinationName: 'Klarna payment confirmation 2026-07-24.png',
+      sourcePath: '/shots/before.png',
+      volumeId: 'root',
+      evidence: { source: 'userEdited', detail: '' },
+      coverage: null,
+    })
+
+    await reviseRenameRow('row-1', 'Klarna payment confirmation 2026-07-24.png')
+
+    expect(reviseRenameMock).toHaveBeenCalledWith('proposal-1', 'row-1', 'Klarna payment confirmation 2026-07-24.png')
+    expect(askCmdrState.renameReview?.rows[0]).toMatchObject({
+      destinationName: 'Klarna payment confirmation 2026-07-24.png',
+      evidence: { source: 'userEdited', detail: '' },
+      coverage: null,
+      nameRejected: false,
+    })
+    // The edit cleared the backend's accepted preflight, so the review has to earn a new one.
+    expect(preflightRenameMock).toHaveBeenCalledWith('proposal-1', ['row-1'])
+
+    await applyRenameReview()
+
+    expect(applyRenameMock).toHaveBeenCalledWith('proposal-1', ['row-1'])
+    expect(askCmdrState.renameReview).toBeNull()
+  })
+
+  /** A name the server won't take leaves the row on the name it had, and says so on the row. */
+  it('keeps the row’s name when the server refuses the typed one', async () => {
+    await openOneRowReview()
+    reviseRenameMock.mockRejectedValue(new Error('Each destinationName must be one filename, not a path.'))
+
+    await reviseRenameRow('row-1', 'folder/name.png')
+
+    expect(askCmdrState.renameReview?.rows[0]).toMatchObject({
+      destinationName: 'Klarna invoice.png',
+      nameRejected: true,
+    })
+    expect(preflightRenameMock).not.toHaveBeenCalled()
+  })
+
+  /** A blur with nothing typed is not an edit: no IPC, and no evidence swapped for one. */
+  it('sends nothing when the name did not change', async () => {
+    await openOneRowReview()
+
+    await reviseRenameRow('row-1', 'Klarna invoice.png')
+
+    expect(reviseRenameMock).not.toHaveBeenCalled()
+    expect(askCmdrState.renameReview?.rows[0]?.evidence.source).toBe('imageText')
   })
 })
 

@@ -13,9 +13,14 @@ Wrappers in `../tauri-commands/ask-cmdr.ts`:
   returns the id at once and keeps streaming on a worker thread.
 - `cancelAskCmdr(id)`, `getAskCmdrConversation(id, limit, offset)`, `listAskCmdrConversations(...)` — plain specta
   commands.
+- `preflightBulkRename` / `reviseBulkRenameRow` / `applyBulkRename` / `cancelBulkRenameProposal` — the review dialog's
+  four actions. Only opaque ids cross, plus the one name the user typed.
 
-`AskCmdrStreamEvent` is hand-mirrored from the Rust `Channel`-only enum (absent from `bindings.ts`). `MessageView` /
-`MessageBlock` / `ConversationRow` / `ConversationDetailView` ARE in the generated bindings and re-exported.
+`AskCmdrStreamEvent` is hand-mirrored from the Rust `Channel`-only enum (absent from `bindings.ts`). Everything it
+carries is generated, though: `MessageView` / `MessageBlock` / `ConversationRow` / `ConversationDetailView`, and the
+review row's `RenameProposalRowSnapshot` / `RenameEvidence` / `EvidenceCoverage` (re-exported as `RenameProposalRow` /
+`RenameEvidence` / `RenameEvidenceCoverage`, the names the rail uses). ❌ Don't hand-mirror a type that has a generated
+counterpart; that's a drift seam.
 
 ## The streaming model
 
@@ -180,6 +185,34 @@ previously blocked rows. This keeps target-exists and source-missing warnings li
 external process removes the clash or restores a missing source; matching names are only an IPC filter, never filesystem
 authority. `TargetExists` and `SourceMissing` rows are deselected and show specific red warnings, while the write
 engine's exclusive final rename remains the data-safety boundary.
+
+## Editing a proposed name
+
+A row used to be allow-or-deny, so a plausible wrong name left the user two options: the model's name or the old one.
+That's the pressure that produces "approved because it looked plausible", so the proposed name is a text field, and a
+wrong name gets corrected in place.
+
+- **The field is an edit buffer; the server is the authority.** `commitName` (blur, or Enter) calls the trigger's
+  `reviseRenameRow`, which calls `revise_bulk_rename_row` and then writes the RETURNED row into state (name, evidence,
+  coverage) before re-running the preflight. It never patches `destinationName` locally: the backend validates the name,
+  swaps the row's evidence for `userEdited`, and clears the accepted preflight, so a locally-patched name would show a
+  name the backend never took. After every commit the field is set back to the row's stored name, which is what reverts
+  a refused edit. Escape abandons the edit (and stops propagating, so it doesn't close the review).
+- **Never disabled.** Not while preflighting (a watcher event mid-typing would steal focus and drop the edit) and not on
+  a blocked row — an occupied destination is fixed by typing a different name, so that's the row that needs the field
+  most. A commit during an in-flight preflight is safe: `refreshRenamePreflight`'s `requestVersion` discards the older
+  response.
+- **A refused name says so on the row** (`nameRejected` → the red line plus `aria-invalid`), in ONE localized string.
+  The backend's own wording is written for the model and stays in the log.
+- **The row's provenance state is scannable** (`rename-name-provenance.ts`, unit tested): `contentRead` (an image
+  source, so the backend verified something was read), `nothingRead`, `nameKept` (nothing read AND the name didn't
+  change), `userEdited`. The last two badges exist because M4 tells the model to keep a neutral name when it couldn't
+  read a file, and that instruction is worthless if the user can't see which rows took that path — so the copy keeps
+  saying nothing inside the file was read, and never softens into something reassuring. A case-only change is a rename,
+  not a kept name.
+- A `userEdited` row renders the label alone ("You typed this name"): its detail is empty by construction, because the
+  user's name claims nothing and must never inherit the model's quote. Provenance in the operation log follows:
+  a batch carrying one user-edited row is logged as `agentEdited`, not `agent`.
 
 ## The "Why this name" column
 

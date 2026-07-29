@@ -20,6 +20,7 @@ const { actions, watcher, media, viewer } = vi.hoisted(() => ({
     denyAll: vi.fn(),
     setAllowed: vi.fn(),
     listingChanged: vi.fn(),
+    revise: vi.fn<(rowId: string, name: string) => Promise<void>>(),
   },
   watcher: {
     handler: null as ((diff: { changes: unknown[] }) => void) | null,
@@ -59,6 +60,9 @@ vi.mock('./ask-cmdr-trigger.svelte', async () => {
     renameReviewListingChanged: (changes: unknown[]) => {
       actions.listingChanged(changes)
     },
+    reviseRenameRow: async (rowId: string, destinationName: string) => {
+      await actions.revise(rowId, destinationName)
+    },
   }
 })
 
@@ -96,6 +100,7 @@ function row(overrides: Partial<BulkRenameReviewRow> = {}): BulkRenameReviewRow 
     allowed: true,
     blockedReason: null,
     warnings: [],
+    nameRejected: false,
     ...overrides,
   }
 }
@@ -161,6 +166,20 @@ function requiredButton(target: ParentNode, selector: string): HTMLButtonElement
   return element
 }
 
+/** Type into a field the way a user does, so the dialog's own input handler runs. */
+function typeName(input: HTMLInputElement, value: string): void {
+  input.value = value
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+  flushSync()
+}
+
+/** One row's editable new-name field, by the row's opaque id. */
+function nameInput(target: ParentNode, rowId: string): HTMLInputElement {
+  const element = target.querySelector<HTMLInputElement>(`input[data-row-id="${rowId}"]`)
+  if (element === null) throw new Error(`Expected a name field for ${rowId}`)
+  return element
+}
+
 /**
  * The row checkboxes render through the `Checkbox` primitive (Ark UI). The accessible
  * name sits on the hidden `<input>` itself — putting it on the wrapping label root
@@ -187,6 +206,8 @@ beforeEach(() => {
   actions.denyAll.mockReset()
   actions.setAllowed.mockReset()
   actions.listingChanged.mockReset()
+  actions.revise.mockReset()
+  actions.revise.mockResolvedValue()
   watcher.handler = null
   document.body.replaceChildren()
 })
@@ -465,6 +486,104 @@ describe('BulkRenameReviewDialog', () => {
     watcher.handler?.({ changes })
 
     expect(actions.listingChanged).toHaveBeenCalledWith(changes)
+  })
+
+  /**
+   * The point of M2: a row used to be allow-or-deny, so a plausible wrong name left the user
+   * with the model's name or the old one, which is the pressure that produces "approved because
+   * it looked plausible". Now the name is a field, and leaving it (or pressing Enter) sends the
+   * edit to the server, which owns validation, the row's evidence, and the preflight it clears.
+   */
+  it('sends a typed name to the server on blur and on Enter', async () => {
+    const target = mountDialog()
+    await tick()
+
+    const input = nameInput(target, 'opaque-row-one')
+    expect(input.value).toBe('after-one.png')
+    expect(input.getAttribute('aria-label')).toBe('New name for before-one.png')
+
+    typeName(input, 'Klarna payment 2026-07-24.png')
+    input.dispatchEvent(new FocusEvent('blur'))
+    expect(actions.revise).toHaveBeenCalledWith('opaque-row-one', 'Klarna payment 2026-07-24.png')
+
+    typeName(input, 'Klarna payment confirmation 2026-07-24.png')
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(actions.revise).toHaveBeenLastCalledWith('opaque-row-one', 'Klarna payment confirmation 2026-07-24.png')
+    await expectNoA11yViolations(target)
+  })
+
+  /** A blocked row is exactly the one a rename most often needs: an occupied name is fixed by
+   *  typing a different one, so the field can't be disabled by the block. */
+  it('lets a blocked row be renamed out of its clash', async () => {
+    const target = mountDialog()
+    await tick()
+
+    const input = nameInput(target, 'opaque-row-blocked')
+    expect(input.disabled).toBe(false)
+    typeName(input, 'after-three (2).png')
+    input.dispatchEvent(new FocusEvent('blur'))
+
+    expect(actions.revise).toHaveBeenCalledWith('opaque-row-blocked', 'after-three (2).png')
+  })
+
+  /** Escape abandons one edit; it must not close the whole review over a typo. */
+  it('reverts the field on Escape and sends nothing', async () => {
+    const target = mountDialog()
+    await tick()
+
+    const input = nameInput(target, 'opaque-row-one')
+    typeName(input, 'half-typed')
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    flushSync()
+
+    expect(input.value).toBe('after-one.png')
+    expect(actions.revise).not.toHaveBeenCalled()
+    expect(actions.cancel).not.toHaveBeenCalled()
+  })
+
+  /** A name the server won't take leaves the row on the name it had, and says so on the row. */
+  it('says when a typed name can’t be used', async () => {
+    reviewState.renameReview = review({ rows: [row({ nameRejected: true })] })
+    const target = mountDialog()
+    await tick()
+
+    const message = requiredElement(target, '.rejected')
+    expect(message.textContent).toContain('Cmdr can’t use that name')
+    expect(nameInput(target, 'opaque-row-one').getAttribute('aria-invalid')).toBe('true')
+    await expectNoA11yViolations(target)
+  })
+
+  /**
+   * The other half of M2: M4 will tell the model to keep a neutral name when it couldn't read a
+   * file, and that instruction is worthless if the user can't see which rows took that path. The
+   * state stays on the row, and it keeps saying nothing inside the file was read.
+   */
+  it('marks the rows where nothing inside the file was read', async () => {
+    reviewState.renameReview = review({
+      rows: [
+        row({ rowId: 'kept', sourceName: 'IMG_4417.jpeg', destinationName: 'IMG_4417.jpeg',
+              evidence: { source: 'metadata', detail: 'Shot 2026-07-14' } }),
+        row({ rowId: 'nothing-read', evidence: { source: 'metadata', detail: 'Shot 2026-07-14' } }),
+        row({ rowId: 'read', evidence: { source: 'imageText', detail: 'Invoice 4021 total' } }),
+        row({ rowId: 'typed', evidence: { source: 'userEdited', detail: '' } }),
+      ],
+    })
+    const target = mountDialog()
+    await tick()
+
+    const kept = requiredElement(target, '[data-name-provenance="nameKept"]')
+    expect(kept.textContent).toBe('(name kept)')
+    expect(kept.getAttribute('aria-label')).toContain('read nothing inside this file')
+    const nothingRead = requiredElement(target, '[data-name-provenance="nothingRead"]')
+    expect(nothingRead.textContent).toBe('(nothing read)')
+    expect(nothingRead.getAttribute('aria-label')).toContain('read nothing inside this file')
+    expect(target.querySelectorAll('[data-name-provenance]')).toHaveLength(2)
+
+    // A user-typed name states whose name it is, and claims nothing beyond that.
+    const cells = [...target.querySelectorAll<HTMLElement>('td.why')]
+    expect(cells[3]?.textContent?.trim()).toBe('You typed this name')
+    expect(cells[3]?.querySelector('.evidence-detail')).toBeNull()
+    await expectNoA11yViolations(target)
   })
 
   it('disables and labels Apply when no valid row remains allowed', async () => {

@@ -44,6 +44,7 @@ function review(
     allowed?: boolean
     blockedReason?: 'targetExists' | 'sourceMissing' | null
     warnings?: Array<'extensionChanged' | 'cycle'>
+    nameRejected?: boolean
   }>,
   extra: { expired?: boolean; preflighting?: boolean } = {},
 ) {
@@ -62,6 +63,7 @@ function review(
       allowed: row.allowed ?? row.blockedReason == null,
       blockedReason: row.blockedReason ?? null,
       warnings: row.warnings ?? [],
+      nameRejected: row.nameRejected ?? false,
     })),
     preflighting: extra.preflighting ?? false,
     expired: extra.expired ?? false,
@@ -205,6 +207,34 @@ export const bulkRenameFixtures: Record<string, Patch<typeof askCmdrState>> = {
           trimmedBefore: true,
           trimmedAfter: true,
         },
+      },
+    ]),
+  },
+  // What the row states around EDITING look like side by side: a name the user typed (no
+  // evidence at all), a name Cmdr kept because it read nothing inside the file, two rows whose
+  // names rest on nothing read, and a refused name sitting on the row it couldn't replace.
+  'edited-names': {
+    renameReview: review([
+      {
+        sourceName: 'Screenshot 2026-07-24 at 11.12.07.png',
+        destinationName: 'Klarna payment confirmation 2026-07-24.png',
+        evidence: { source: 'userEdited', detail: '' },
+      },
+      {
+        sourceName: 'IMG_4417.jpeg',
+        destinationName: 'IMG_4417.jpeg',
+        evidence: { source: 'metadata', detail: 'Shot 2026-07-14, 05:12' },
+      },
+      {
+        sourceName: 'scan0007.pdf',
+        destinationName: 'Scan 2026-05-02.pdf',
+        evidence: { source: 'metadata', detail: 'Created 2026-05-02, 1.2 MB' },
+      },
+      {
+        sourceName: 'DSC00812.arw',
+        destinationName: '2026-07-14 - 01.arw',
+        evidence: { source: 'userInstruction', detail: 'you asked for a YYYY-MM-DD prefix and a counter' },
+        nameRejected: true,
       },
     ]),
   },

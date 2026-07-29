@@ -60,8 +60,40 @@ independent bounds, each answering a different question:
   Whatever code elides a tool result from an assembled prompt must call `revoke_call` for that `call_id`, or the ledger
   will vouch for content the model never received.
 
-Evidence rides `RenameProposalRowSnapshot` to the frontend. Preflight and apply don't read it: the tool boundary already
-checked it, and the store's rows are immutable afterwards.
+Evidence rides `RenameProposalRowSnapshot` to the frontend. Preflight and apply don't read it (the tool boundary already
+checked it), with one exception: apply reads the SOURCE to pick the operation log's initiator, because a batch carrying a
+user-edited row is `Initiator::AgentEdited` rather than `Agent`.
+
+**`EvidenceSource::UserEdited` is the review dialog's word, never the model's.** It means the user typed the name
+themselves, so the row carries an empty detail and no coverage. Only [the revise path](#revising-one-row) sets it; a plan
+that sends it is refused with `EvidenceProblem::SourceReservedForUser`, because "You typed this name" beside an invented
+name is the misattribution this whole module exists to stop. The plan schema's enum lists the five model-usable sources,
+so a compliant model never trips that refusal.
+
+## Revising one row
+
+The review can replace one staged row's destination name with the user's own (`revise.rs`, reached over
+`revise_bulk_rename_row`). It is deliberately NOT a re-staged plan: re-staging would re-run two gates that must not fire
+for an edit. The whole-plan evidence rule refuses all 50 rows when one `call_id` was revoked, so fixing row seven could
+destroy the review; and the pane's effective scope has moved on by review time, so every row would refuse. Revise
+consults no ledger and no pane state.
+
+What it does instead:
+
+- **Validates the name server-side.** This is the first destination name to cross IPC, so it passes the same
+  `validate_destination_name` the model's names pass. Apply still resolves every name from the stored row by opaque row
+  id, so a client-supplied name is never trusted.
+- **Replaces the evidence rather than keeping it** (invariant 10): `UserEdited`, empty detail, no coverage. The model's
+  quote described the model's name.
+- **Invalidates the accepted preflight.** This is the data-safety half. Apply skips its own re-check when the allowed row
+  ids match the acceptance, and duplicate-destination, cycle, case-only, and target-exists detection all live in
+  preflight — so edit → preflight → edit again → apply would put a name on disk that none of those checks ever saw.
+  Two independent guards: `revise_row` clears the acceptance, AND `AcceptedPreflight` records
+  `allowed_destination_names`, so a lookup whose names have moved on refuses even if some future path forgets to clear
+  it. A refusal is not a failure: apply falls back to running a fresh authoritative preflight.
+
+The names are stored, not hashed, on purpose: an exact comparison has no collision window, and the list is 200 short
+strings that never leave the process.
 
 ### Coverage: how thin the match is
 

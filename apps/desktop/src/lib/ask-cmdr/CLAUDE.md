@@ -47,6 +47,11 @@ path, layout, decisions): `DETAILS.md`.
   the file was read; an `imageText` row shows its quote inside the delivered line plus a coverage figure (thin vs solid
   is display-only, never a refusal); thumbnails own their `cmdr-media://` tokens, minted per proposal and dropped on
   close. `DETAILS.md`.
+- **A proposed name is EDITABLE, and the server owns the result.** `reviseRenameRow` sends the typed name to
+  `revise_bulk_rename_row`; the backend validates it, replaces the row's evidence with `userEdited` (never keeping the
+  model's quote), and invalidates the accepted preflight, so the row takes the backend's answer and re-preflights. ❌
+  Never patch `destinationName` locally, and never disable the field (an occupied name is fixed by typing another one).
+  `DETAILS.md` § Editing a proposed name.
 - **Attachments cross into the envelope as path + kind ONLY, never contents** (the read-only privacy line). Drag from a
   pane is a NATIVE webview drag (`onDragDropEvent`), not HTML5, so a DOM `ondrop` never fires. Message paging is
   tail-first with load-older prepend (don't reintroduce one big page). Both in `DETAILS.md`.

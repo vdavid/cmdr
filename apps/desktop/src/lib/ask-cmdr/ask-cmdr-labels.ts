@@ -62,12 +62,14 @@ const EVIDENCE_KEYS: Record<RenameEvidenceSource, MessageKey> = {
   filename: 'askCmdr.renameReview.evidence.filename',
   metadata: 'askCmdr.renameReview.evidence.metadata',
   userInstruction: 'askCmdr.renameReview.evidence.userInstruction',
+  userEdited: 'askCmdr.renameReview.evidence.userEdited',
 }
 
 /**
  * What a proposed rename name is based on, named honestly. The two image sources say the
  * contents were read; the other three say plainly that they weren't, so a name with no
- * content behind it can't look content-derived in the review dialog.
+ * content behind it can't look content-derived in the review dialog. `userEdited` is the user's
+ * own name: it claims nothing, and the row carries no evidence at all.
  */
 export function evidenceSourceLabel(source: RenameEvidenceSource): string {
   return tString(EVIDENCE_KEYS[source])

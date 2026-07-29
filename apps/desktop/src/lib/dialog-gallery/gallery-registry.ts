@@ -298,6 +298,11 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
         label: 'Every evidence source',
         note: 'All five sources at once, including a quote long enough to wrap. The three non-image labels are the honest ones: nothing was read inside those files.',
       },
+      {
+        id: 'edited-names',
+        label: 'Edited, kept, and refused names',
+        note: 'The states around editing a name: one the user typed (which claims no evidence at all), one Cmdr kept because it read nothing inside the file, and one whose typed name the backend wouldn’t take.',
+      },
       { id: 'expired', label: 'Proposal expired' },
     ],
   },

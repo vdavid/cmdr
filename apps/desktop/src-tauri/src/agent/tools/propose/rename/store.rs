@@ -1,11 +1,15 @@
 //! What a staged rename proposal is, and how long it lives.
 //!
-//! A proposal is immutable server-owned data: the tool boundary stages it, the review surface
-//! sees only a display snapshot, and the frontend hands back opaque ROW IDS and nothing else.
-//! That's the authority boundary: source fingerprints never leave this process, and every
+//! A proposal is server-owned data: the tool boundary stages it, the review surface sees only a
+//! display snapshot, and the frontend hands back opaque ROW IDS plus (on a revise) one name it
+//! typed. That's the authority boundary: source fingerprints never leave this process, and every
 //! later step (preflight, apply) resolves paths and names from the stored proposal by row id,
 //! so a client-supplied value is never trusted. The snapshot's own path is display data — the
 //! review dialog previews the file the user is being asked to rename.
+//!
+//! The rows are immutable to the AGENT: [`RenameProposalStore::revise_row`] is the one mutation,
+//! it belongs to the user, and it invalidates the accepted preflight so the new name can't reach
+//! the filesystem unchecked (see [`super::revise`]).
 
 use std::collections::HashMap;
 use std::path::Path;
