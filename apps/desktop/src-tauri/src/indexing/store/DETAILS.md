@@ -11,7 +11,7 @@ shared core: the schema (integer-keyed entries with `name_folded` on all platfor
 `dir_stats` by entry_id, `meta`), `platform_case` collation, DDL/pragmas/reset, the path helpers (`resolve_path`,
 `reconstruct_path*`), the `IndexStore` struct + `with_savepoint`, and the data types (`EntryRow`, `DirStats`,
 `DirStatsById`, `ScanContext`, `IndexStatus`, `ScanCalibration`, `IndexStoreError`); the `tests` module lives in the
-sibling `tests.rs`.
+sibling `tests/`, one themed module per concern.
 
 The `impl IndexStore` block is divided into four sibling files (each `impl IndexStore { … }` over the struct above,
 pulling shared items via `use super::*`):
@@ -52,7 +52,7 @@ fresh id); rationale and the writer side: `../writer/DETAILS.md` § "Decision: a
 transaction it opened — in place, so a single failed `upsert_dir_stats_by_id` / `insert_entries_v2_batch` /
 `mark_dirs_listed` would park the writer's connection in an open transaction holding the write lock: every other
 connection then sees `database is locked` indefinitely, and the writer's own later writes never commit. Regression:
-`store::tests::a_failed_savepoint_call_leaves_the_connection_in_autocommit`.
+`store::tests::open_and_recover::a_failed_savepoint_call_leaves_the_connection_in_autocommit`.
 
 ## Scan calibration is stored PER WALK KIND
 
@@ -79,7 +79,7 @@ per-kind key is just "no same-kind calibration yet".
 
 Which bucket a run reads and writes is decided ONCE, by `events::ScanRunKind::calibration_kind()` at the scan-start
 funnel, and threaded to the completion handler (`lifecycle/scan_completion.rs` for local,
-`lifecycle/network_scan.rs`'s completion arm for SMB/MTP). Pinned by `store::tests::calibration_for_kind_*`.
+`lifecycle/network_scan.rs`'s completion arm for SMB/MTP). Pinned by `store::tests::meta_and_calibration::calibration_for_kind_*`.
 
 ## Decision: a subtree delete is post-order, so an interruption can never strand rows
 
@@ -93,7 +93,7 @@ got to. Top-down, that severs the tree at the cut and every row below loses its 
 later descent, so nothing can ever collect it. On a copy of the author's production QNAP index one interrupted run left
 12 442 990 rows of which 9 793 362 were unreachable (910 316 of them directly parentless), and a relaunch collected
 nothing (2026-07-25). Reading children by `parent_id` is what makes the order free to choose: a deleted parent row never
-hides its children. Pinned by `tests.rs::interrupting_a_subtree_delete_never_strands_a_row`, which asserts zero orphans
+hides its children. Pinned by `tests/subtree_deletes.rs::interrupting_a_subtree_delete_never_strands_a_row`, which asserts zero orphans
 after EVERY prefix of the deletion order (via the `#[cfg(test)]` `delete_descendants_by_id_stopping_after`, whose
 mid-batch stops are a superset of the points a real crash can reach, and the `#[cfg(test)]` `find_orphan_entries`).
 
@@ -131,7 +131,7 @@ empty index; the on-disk DB is still there for the next attempt.
 and a busy handler that isn't installed yet can't back them off, so the ordering is what makes contention transient in
 the first place; the retry loop above is the second line of defense.
 
-**Test coverage** (`tests.rs`): `busy_db_is_retried_not_deleted` induces a real `SQLITE_BUSY` (a second connection holds
+**Test coverage** (`tests/open_and_recover.rs`): `busy_db_is_retried_not_deleted` induces a real `SQLITE_BUSY` (a second connection holds
 `BEGIN EXCLUSIVE` past the 5 s `busy_timeout`, hence the test's ~6 s runtime) and asserts the entries survive;
 `unwritable_db_is_not_deleted_on_open_failure` chmods the file to 0444; `corruption_recovery_deletes_and_recreates` and
 the two schema-mismatch tests keep the recreate paths intact.
@@ -166,6 +166,6 @@ buying leaf-page retention that the OS file cache already backs. Reads never com
 touches the WAL. **The fix is a ceiling, not a cure** — the connections still accumulate; bounding what each one costs
 is what M1 buys.
 
-**Test coverage**: `read_connections_get_a_smaller_page_cache_than_write_connections`, one per store (`tests.rs` here
+**Test coverage**: `read_connections_get_a_smaller_page_cache_than_write_connections`, one per store (`tests/open_and_recover.rs` here
 and in `importance/store`, `media_index/store`, `agent/store`, `operation_log/store`), asserts the exact KiB each role
 opens with, so a future edit can't quietly re-inflate reads.

@@ -507,7 +507,7 @@ impl IndexStore {
     /// descent can reach it — one interrupted bulk delete on the author's QNAP
     /// stranded 9 793 362 rows permanently. Files are leaves, so they go on the way
     /// DOWN; directory ids are recorded per level and deleted deepest level first.
-    /// Pinned by `tests.rs::interrupting_a_subtree_delete_never_strands_a_row`.
+    /// Pinned by `tests/subtree_deletes.rs::interrupting_a_subtree_delete_never_strands_a_row`.
     ///
     /// **Walks the tree in bounded chunks rather than one recursive-CTE `DELETE`.**
     /// A single CTE delete materializes every descendant id into one ephemeral

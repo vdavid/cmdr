@@ -105,4 +105,4 @@ inode nulled. Asserts are lower bounds (macOS adds AppleDouble `._*` sidecars on
 MCP against the running dev app instead.
 
 For `platform_case_compare` in `store.rs`: proptests cover the comparator algebra (reflexive / antisymmetric /
-transitive) and NFC≡NFD equivalence on macOS. Don't regress those; see `store/tests.rs` for the property statements.
+transitive) and NFC≡NFD equivalence on macOS. Don't regress those; see `store/tests/path_resolution.rs` for the property statements.

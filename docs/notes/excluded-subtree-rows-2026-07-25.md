@@ -65,9 +65,9 @@ index left 12 442 990 rows of which **9 793 362 were unreachable** from the root
 and re-running found nothing to do — severed rows are invisible to any descent. Post-order deletes files on the way down
 and directories deepest-level-first, so every stop point leaves a walkable tree. Zero orphans after interrupting a run
 1.1M deletes in, and after every prefix of the deletion order in
-`store/tests.rs::interrupting_a_subtree_delete_never_strands_a_row`. The price is 324 128 retained dir ids (2.6 MB)
-across seven levels, versus a 5 951-id peak for a single frontier, both far under the ~87 MB a recursive-CTE `DELETE`
-materializes.
+`store/tests/subtree_deletes.rs::interrupting_a_subtree_delete_never_strands_a_row`. The price is 324 128 retained dir
+ids (2.6 MB) across seven levels, versus a 5 951-id peak for a single frontier, both far under the ~87 MB a
+recursive-CTE `DELETE` materializes.
 
 **Freed pages go to the freelist, and only a stepped vacuum drains them.** Removing the 10.9M rows left 330 305 free
 pages × 4 KiB = **1 353 MB**; draining took 45 s and brought the file from **1.88 GB to 529 MB**. In the app this drains
