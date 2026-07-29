@@ -16,7 +16,7 @@ seam and the real macOS impl), `clip/DETAILS.md` (CLIP semantic search), `ann/DE
 `importance/` already solved this plan's hardest plumbing (verified against the shipped code): a per-volume disposable
 store carrying the index's cache discipline, a scheduler driven by the neutral lifecycle bus plus a startup registry
 sweep plus a coalescing coordinator, and an offline-capable consumer read API. `media_index` copies those patterns
-file-for-file in spirit (`store/`, `writer.rs`, `writer_registry.rs`, `scheduler/`'s `PassCoordinator`, `read/`), so a
+file-for-file in spirit (`store/`, `writer/`, `writer_registry.rs`, `scheduler/`'s `PassCoordinator`, `read/`), so a
 maintainer who knows `importance/` already knows this. Read `importance/DETAILS.md` for the shared rationale (one writer
 thread per DB, `platform_case` on every connection, delete-and-recreate on a schema bump, path-keyed rows, subscribe →
 sweep → wire ordering, edge-triggered bus consumption).
@@ -317,9 +317,9 @@ OCR text stops being searchable at once (privacy is a hard requirement, not "eve
   rollback pattern from `network-volume-prefs.ts`, in `src/lib/media-index/excluded-folders.ts`, wired in the main
   route's `setupMenuListeners`.
 
-## WAL checkpoint at pass completion (`writer.rs`, plan M9)
+## WAL checkpoint at pass completion (`writer/maintenance.rs`, plan M9)
 
-**Decision:** the writer runs `PRAGMA wal_checkpoint(TRUNCATE)` (`writer::run_wal_checkpoint`, driven by
+**Decision:** the writer runs `PRAGMA wal_checkpoint(TRUNCATE)` (`writer::maintenance::run_wal_checkpoint`, driven by
 `MediaWriter::checkpoint_wal`) once an enrichment pass completes and actually wrote rows — at both the local
 (`run_pass_blocking`) and network (`run_network_pass_blocking`) seams, inside the same `enriched > 0 || gc_count > 0`
 guard that drops the vector cache. It runs on the writer thread's own connection (the single-writer invariant), in

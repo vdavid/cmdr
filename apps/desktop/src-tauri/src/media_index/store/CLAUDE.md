@@ -1,7 +1,7 @@
 # Media store (`media.db`)
 
 The per-volume SQLite cache: `mod.rs` (schema + reads), `connection.rs` (opening, `platform_case` registration).
-`../writer.rs` owns every write, on ONE thread per volume. The disposable-cache and integer-id rules are in
+`../writer/` owns every write, on ONE thread per volume. The disposable-cache and integer-id rules are in
 `media_index/CLAUDE.md`.
 
 ## Must-knows

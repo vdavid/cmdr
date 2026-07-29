@@ -4,6 +4,12 @@
 //! write connection per DB, and all writes cross a bounded channel. The handle is
 //! cloneable; every clone shares the one channel and one thread.
 //!
+//! This file holds the thread itself: the message enum, the cloneable handle, and the
+//! loop that applies each message. The SQL each message runs lives beside it, one file
+//! per job: [`upsert`] (record enrichment), [`prune`] (every delete path), and
+//! [`maintenance`] (rename, `VACUUM`, purge, WAL checkpoint). [`ann_pending`] holds the
+//! ANN ops the loop buffers alongside its CLIP writes.
+//!
 //! ## Command surface
 //!
 //! - [`upsert`](MediaWriter::upsert): record one image's VISION enrichment — upsert its
@@ -35,22 +41,30 @@
 //!   ops (plan M6). The writer thread is the ONE producer of incremental ANN
 //!   mutations, mirroring each CLIP write/delete it commits; see [`super::ann`].
 
+mod ann_pending;
+mod maintenance;
+mod prune;
+mod upsert;
+
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::mpsc;
 use std::thread;
-use std::time::Duration;
 
 use rusqlite::Connection;
+
+use ann_pending::AnnPending;
+use maintenance::{apply_purge, apply_rename, apply_vacuum, run_wal_checkpoint};
+use prune::{DeletedRow, apply_gc, apply_prune_all_clip, apply_prune_paths, apply_prune_prefix};
+use upsert::{ClipWrite, apply_upsert, apply_upsert_clip};
 
 use super::ann;
 use super::backend::Tag;
 use super::coverage;
 use super::scheduler::enrich::parent_dir;
-use super::store::{EnrichmentState, MediaStatusRow, MediaStoreError, encode_embedding, open_write_connection};
+use super::store::{EnrichmentState, MediaStatusRow, MediaStoreError, open_write_connection};
 use crate::ignore_poison::IgnorePoison;
-use crate::pluralize::pluralize;
 
 /// Bounded channel capacity. Enrichment sends one `Upsert` per image; a modest
 /// bound gives backpressure without holding many messages.
@@ -335,83 +349,6 @@ impl MediaWriter {
     }
 }
 
-/// The writer thread's buffered ANN mutations (plan M6): ops accumulate beside the
-/// DB writes they mirror and land on the `.usearch` file at flush seams. The dirty
-/// marker goes on disk BEFORE the first tracked commit, so a crash with unflushed
-/// ops is detectable next session (`ann::wipe_if_crashed`).
-struct AnnPending {
-    db_path: PathBuf,
-    ops: Vec<ann::AnnOp>,
-    dirty_marked: bool,
-}
-
-impl AnnPending {
-    fn new(db_path: PathBuf) -> Self {
-        Self {
-            db_path,
-            ops: Vec::new(),
-            dirty_marked: false,
-        }
-    }
-
-    /// Put the dirty marker on disk (once per batch). MUST run before the DB write
-    /// it tracks commits — that ordering is what makes a crash between the commit
-    /// and the flush detectable rather than a silently-lagging index.
-    fn mark_dirty(&mut self) {
-        if !self.dirty_marked {
-            ann::mark_dirty(&self.db_path, ann::AnnSpace::Clip);
-            self.dirty_marked = true;
-        }
-    }
-
-    /// Buffer one op; auto-flush past the bound so a long pass can't hold an
-    /// unbounded vector buffer.
-    fn push(&mut self, op: ann::AnnOp) {
-        self.ops.push(op);
-        if self.ops.len() >= ann::ANN_PENDING_FLUSH_LIMIT {
-            self.flush();
-        }
-    }
-
-    /// Apply the buffered ops to the on-disk index (best-effort; an unusable index
-    /// is wiped for rebuild). Clears the dirty marker via `ann::flush_ops`.
-    ///
-    /// While a rebuild is IN FLIGHT the buffer is RETAINED instead (ops kept, dirty
-    /// marker kept): a flush landing mid-rebuild would lose the ops — applied to a
-    /// file the install is about to overwrite, or dropped against a missing/stale
-    /// file whose replacement was snapshotted BEFORE these rows committed. The next
-    /// seam flush replays the retained batch idempotently on top of the installed
-    /// index. The `is_in_flight` → `kick` race is benign in the other direction
-    /// too: if a rebuild starts right after this check returns false, its snapshot
-    /// includes the rows this flush just applied (their DB writes committed before
-    /// the rebuild opens its read connection). The buffer may exceed
-    /// [`ann::ANN_PENDING_FLUSH_LIMIT`] during the window — accepted, bounded by
-    /// the rebuild's duration (minutes at worst).
-    fn flush(&mut self) {
-        let space = ann::AnnSpace::Clip;
-        if ann::rebuild::is_in_flight(&self.db_path, space) {
-            log::debug!(
-                target: "media_index",
-                "ann flush deferred for {} (rebuild in flight; {} ops retained)",
-                self.db_path.display(),
-                self.ops.len()
-            );
-            return;
-        }
-        let ops = std::mem::take(&mut self.ops);
-        let outcome = ann::flush_ops(&self.db_path, space, space.current_model_id(), ops);
-        log::debug!(target: "media_index", "ann flush for {}: {outcome:?}", self.db_path.display());
-        self.dirty_marked = false;
-    }
-
-    /// The volume's ANN index files are being deleted wholesale (purge /
-    /// delete-CLIP-model): drop the buffered ops with them.
-    fn clear_after_delete(&mut self) {
-        self.ops.clear();
-        self.dirty_marked = false;
-    }
-}
-
 /// The writer thread's main loop: own the write connection, apply each message
 /// under a transaction, exit on `Shutdown` or when the channel closes.
 ///
@@ -580,337 +517,6 @@ fn note_deleted(volume_id: &str, ann_pending: &mut AnnPending, deleted: &[Delete
         ann_pending.push(ann::AnnOp::Remove {
             key: row.file_id as u64,
         });
-    }
-}
-
-/// Upsert one status row and replace its searchable text, tags, and embedding in one
-/// transaction. The prior text/tags/embedding rows are always cleared first (a
-/// re-enrichment must not leave stale rows), then re-inserted only when `analysis` is
-/// `Some` (a success). The OCR FTS row is written only for non-empty text; the folded
-/// tag FTS row + structured `media_tags` only for non-empty tags; the embedding only
-/// when present.
-///
-/// Returns whether this upsert INSERTED a new `media_status` row (no prior row for the
-/// path) vs updated an existing one — a cheap PK existence check inside the same
-/// transaction, so the caller can bump the accounted aggregate only on a genuinely-new
-/// completion (a re-enrich or `done`↔`failed` transition leaves the count unchanged).
-fn apply_upsert(
-    conn: &mut Connection,
-    row: &MediaStatusRow,
-    analysis: Option<&UpsertAnalysis>,
-) -> Result<bool, MediaStoreError> {
-    let tx = conn.transaction()?;
-    // Resolve the path to its `media_file` id, creating the identity row if it's new. A
-    // brand-new `media_file` row means a genuinely-new image (media_file ⇔ media_status
-    // 1:1: they're written together and deleted together), which the caller uses to bump
-    // the accounted aggregate only on a first completion.
-    let (file_id, inserted) = resolve_or_create_file_id(&tx, &row.path)?;
-    {
-        tx.execute(
-            "INSERT INTO media_status (file_id, mtime, size, media_kind, state, engine_version)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)
-             ON CONFLICT(file_id) DO UPDATE SET
-                mtime = ?2, size = ?3, media_kind = ?4, state = ?5, engine_version = ?6",
-            rusqlite::params![
-                file_id,
-                row.mtime.map(|v| v as i64),
-                row.size.map(|v| v as i64),
-                row.media_kind.as_token(),
-                row.state.as_token(),
-                row.engine_version,
-            ],
-        )?;
-        // Clear every prior derived row for this file (one `WHERE file_id = ?` each).
-        tx.execute("DELETE FROM media_ocr WHERE file_id = ?1", rusqlite::params![file_id])?;
-        tx.execute("DELETE FROM media_tags WHERE file_id = ?1", rusqlite::params![file_id])?;
-        tx.execute(
-            "DELETE FROM media_embedding WHERE file_id = ?1",
-            rusqlite::params![file_id],
-        )?;
-
-        if let Some(analysis) = analysis {
-            if !analysis.ocr_text.is_empty() {
-                tx.execute(
-                    "INSERT INTO media_ocr (file_id, source, text) VALUES (?1, 'ocr', ?2)",
-                    rusqlite::params![file_id, analysis.ocr_text],
-                )?;
-            }
-            if !analysis.tags.is_empty() {
-                // Fold the tag labels into the FTS as one searchable row, and store
-                // the structured (label, score) rows for tag-score filtering.
-                let labels = analysis
-                    .tags
-                    .iter()
-                    .map(|t| t.label.as_str())
-                    .collect::<Vec<_>>()
-                    .join(" ");
-                tx.execute(
-                    "INSERT INTO media_ocr (file_id, source, text) VALUES (?1, 'tag', ?2)",
-                    rusqlite::params![file_id, labels],
-                )?;
-                let mut ins_tag =
-                    tx.prepare_cached("INSERT INTO media_tags (file_id, label, score) VALUES (?1, ?2, ?3)")?;
-                for tag in &analysis.tags {
-                    ins_tag.execute(rusqlite::params![file_id, tag.label, tag.score as f64])?;
-                }
-            }
-            if let Some(vector) = &analysis.embedding {
-                tx.execute(
-                    "INSERT INTO media_embedding (file_id, dims, vector) VALUES (?1, ?2, ?3)",
-                    rusqlite::params![file_id, vector.len() as i64, encode_embedding(vector)],
-                )?;
-            }
-        }
-    }
-    tx.commit()?;
-    Ok(inserted)
-}
-
-/// Resolve `path` to its `media_file` id, inserting a new identity row when the path is not
-/// yet known. Returns `(file_id, inserted)` where `inserted` is `true` only when a fresh row
-/// was created — the "genuinely-new image" signal the accounted aggregate rides on.
-fn resolve_or_create_file_id(tx: &rusqlite::Transaction<'_>, path: &str) -> Result<(i64, bool), MediaStoreError> {
-    if let Some(id) = lookup_file_id(tx, path)? {
-        return Ok((id, false));
-    }
-    tx.execute("INSERT INTO media_file (path) VALUES (?1)", rusqlite::params![path])?;
-    Ok((tx.last_insert_rowid(), true))
-}
-
-/// Look up an existing `media_file` id for `path`, or `None` if the path is unknown.
-fn lookup_file_id(conn: &Connection, path: &str) -> Result<Option<i64>, MediaStoreError> {
-    let mut stmt = conn.prepare_cached("SELECT id FROM media_file WHERE path = ?1")?;
-    let mut rows = stmt.query_map(rusqlite::params![path], |r| r.get::<_, i64>(0))?;
-    match rows.next() {
-        Some(Ok(id)) => Ok(Some(id)),
-        Some(Err(e)) => Err(e.into()),
-        None => Ok(None),
-    }
-}
-
-/// What a CLIP upsert did — the writer buffers the matching ANN op off this (plan M6).
-enum ClipWrite {
-    /// The embedding row was replaced with a fresh vector (ANN: upsert the key).
-    Stored { file_id: i64 },
-    /// The row was stamped but the embedding cleared — a CLIP failure/skip (ANN:
-    /// remove the key so a ghost vector can't linger).
-    Cleared { file_id: i64 },
-    /// No `media_status` row for the path; nothing was written.
-    NoRow,
-}
-
-/// Stamp `path`'s `media_status.clip_stamp` and replace its `media_clip_embedding` in one
-/// transaction, touching NO Vision column or table. If no `media_status` row exists (CLIP
-/// only runs when Vision is current, so this shouldn't happen) the embedding write is
-/// skipped rather than orphaned.
-fn apply_upsert_clip(
-    conn: &mut Connection,
-    path: &str,
-    clip_stamp: &str,
-    embedding: Option<&[f32]>,
-) -> Result<ClipWrite, MediaStoreError> {
-    let tx = conn.transaction()?;
-    let mut write = ClipWrite::NoRow;
-    {
-        // CLIP is eligible only for a path Vision already covered, so its `media_file` +
-        // `media_status` rows exist. A missing row (shouldn't happen) skips the write
-        // rather than orphaning an embedding.
-        if let Some(file_id) = lookup_file_id(&tx, path)? {
-            let updated = tx.execute(
-                "UPDATE media_status SET clip_stamp = ?2 WHERE file_id = ?1",
-                rusqlite::params![file_id, clip_stamp],
-            )?;
-            tx.execute(
-                "DELETE FROM media_clip_embedding WHERE file_id = ?1",
-                rusqlite::params![file_id],
-            )?;
-            write = ClipWrite::Cleared { file_id };
-            if updated > 0
-                && let Some(vector) = embedding
-            {
-                tx.execute(
-                    "INSERT INTO media_clip_embedding (file_id, dims, vector) VALUES (?1, ?2, ?3)",
-                    rusqlite::params![file_id, vector.len() as i64, encode_embedding(vector)],
-                )?;
-                write = ClipWrite::Stored { file_id };
-            }
-        }
-    }
-    tx.commit()?;
-    Ok(write)
-}
-
-/// One row a delete actually removed: its path (the accounted decrement) and its
-/// `media_file` id (the ANN index key to remove — plan M6).
-struct DeletedRow {
-    path: String,
-    file_id: i64,
-}
-
-/// Delete the status + text + tag + embedding + clip-embedding rows for each path in one
-/// transaction. Returns the rows whose `media_status` row actually existed and was
-/// deleted, so the caller decrements the accounted aggregate once per genuinely-removed
-/// row (a GC of a path with no row moves nothing) and removes the matching ANN keys.
-fn apply_gc(conn: &mut Connection, paths: &[String]) -> Result<Vec<DeletedRow>, MediaStoreError> {
-    delete_rows_for_paths(conn, paths)
-}
-
-/// Prune the four tables for an explicit path list in one transaction (the same delete
-/// primitive GC uses, reused for the user-explicit prune). Returns the rows actually
-/// removed, so the count matches the images the user removed and the caller can
-/// decrement the accounted aggregate (and the ANN keys) per removed row.
-fn apply_prune_paths(conn: &mut Connection, paths: &[String]) -> Result<Vec<DeletedRow>, MediaStoreError> {
-    delete_rows_for_paths(conn, paths)
-}
-
-/// Delete every table's rows for each path in one transaction, returning the rows whose
-/// `media_status` row existed (so `delete_status.execute` reported a removal). Shared by
-/// GC and the explicit prune so both report the SAME "rows that actually left" set.
-fn delete_rows_for_paths(conn: &mut Connection, paths: &[String]) -> Result<Vec<DeletedRow>, MediaStoreError> {
-    let tx = conn.transaction()?;
-    let mut deleted = Vec::new();
-    {
-        let mut find = tx.prepare_cached("SELECT id FROM media_file WHERE path = ?1")?;
-        let mut del_status = tx.prepare_cached("DELETE FROM media_status WHERE file_id = ?1")?;
-        let mut del_ocr = tx.prepare_cached("DELETE FROM media_ocr WHERE file_id = ?1")?;
-        let mut del_tags = tx.prepare_cached("DELETE FROM media_tags WHERE file_id = ?1")?;
-        let mut del_emb = tx.prepare_cached("DELETE FROM media_embedding WHERE file_id = ?1")?;
-        let mut del_clip = tx.prepare_cached("DELETE FROM media_clip_embedding WHERE file_id = ?1")?;
-        let mut del_file = tx.prepare_cached("DELETE FROM media_file WHERE id = ?1")?;
-        for path in paths {
-            // A path with no `media_file` row was never enriched: nothing to remove, and
-            // it must NOT count toward the accounted decrement.
-            let Some(file_id) = find
-                .query_map(rusqlite::params![path], |r| r.get::<_, i64>(0))?
-                .next()
-                .transpose()?
-            else {
-                continue;
-            };
-            del_status.execute(rusqlite::params![file_id])?;
-            del_ocr.execute(rusqlite::params![file_id])?;
-            del_tags.execute(rusqlite::params![file_id])?;
-            del_emb.execute(rusqlite::params![file_id])?;
-            del_clip.execute(rusqlite::params![file_id])?;
-            del_file.execute(rusqlite::params![file_id])?;
-            deleted.push(DeletedRow {
-                path: path.clone(),
-                file_id,
-            });
-        }
-    }
-    tx.commit()?;
-    Ok(deleted)
-}
-
-/// Prune every row at or under a folder `prefix`. The doomed set is derived on the
-/// writer thread from the CURRENT committed `media_status` paths, filtered by the SAME
-/// trailing-slash-safe [`path_is_within`](super::network::config::path_is_within) the
-/// exclusion veto uses (so the delete set can't drift from what the veto forbids), then
-/// deleted via [`apply_prune_paths`]. An empty `prefix` matches every path (the whole
-/// volume — the user excluded the mount root). Returns the paths actually removed (for
-/// the accounted decrement + the delete count).
-fn apply_prune_prefix(conn: &mut Connection, prefix: &str) -> Result<Vec<DeletedRow>, MediaStoreError> {
-    let doomed: Vec<String> = {
-        let mut stmt = conn.prepare_cached("SELECT path FROM media_file")?;
-        let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
-        let mut out = Vec::new();
-        for path in rows {
-            let path = path?;
-            if super::network::config::path_is_within(&path, prefix) {
-                out.push(path);
-            }
-        }
-        out
-    };
-    apply_prune_paths(conn, &doomed)
-}
-
-/// Delete every `media_clip_embedding` row and reset every `media_status.clip_stamp` to
-/// empty (no model), in one transaction. Returns the embedding rows removed. Resetting the
-/// stamp is what makes a later re-install re-embed (`needs_clip` sees `'' != model_stamp`).
-/// Touches NO Vision column or table — deleting the CLIP model must not re-run OCR/tags.
-fn apply_prune_all_clip(conn: &mut Connection) -> Result<usize, MediaStoreError> {
-    let tx = conn.transaction()?;
-    let removed = tx.execute("DELETE FROM media_clip_embedding", [])?;
-    tx.execute("UPDATE media_status SET clip_stamp = '' WHERE clip_stamp != ''", [])?;
-    tx.commit()?;
-    Ok(removed)
-}
-
-/// Move a stored image's identity row from `old` to `new` in one transaction — the O(1)
-/// rename the integer-id keying buys (plan M4): a single `UPDATE media_file.path`, and every
-/// `file_id`-keyed child (status, OCR, tags, embeddings) follows untouched. Returns whether a
-/// row moved: `false` when `old` has no row, or `new` is already a distinct enriched path
-/// (the `UNIQUE(path)` constraint would reject the update, so it's a no-op, not a crash).
-fn apply_rename(conn: &mut Connection, old: &str, new: &str) -> Result<bool, MediaStoreError> {
-    let tx = conn.transaction()?;
-    // Rename only when `old` has a row AND `new` is free (a taken `new` would violate the
-    // `UNIQUE(path)` constraint, so skip it rather than error).
-    let moved = if let Some(old_id) = lookup_file_id(&tx, old)?
-        && lookup_file_id(&tx, new)?.is_none()
-    {
-        tx.execute(
-            "UPDATE media_file SET path = ?2 WHERE id = ?1",
-            rusqlite::params![old_id, new],
-        )?;
-        true
-    } else {
-        false
-    };
-    tx.commit()?;
-    Ok(moved)
-}
-
-/// `VACUUM` the DB (reclaim free pages; can't run inside a transaction, so it's its own
-/// statement).
-fn apply_vacuum(conn: &Connection) -> Result<(), MediaStoreError> {
-    conn.execute_batch("VACUUM")?;
-    Ok(())
-}
-
-/// Drop every derived row. Schema stays.
-fn apply_purge(conn: &Connection) -> Result<(), MediaStoreError> {
-    conn.execute_batch(
-        "DELETE FROM media_status; DELETE FROM media_ocr; DELETE FROM media_tags; DELETE FROM media_embedding; DELETE FROM media_clip_embedding; DELETE FROM media_file;",
-    )?;
-    Ok(())
-}
-
-/// TRUNCATE the WAL file so its high-water mark doesn't sit on disk. Mirrors
-/// `importance/writer.rs::run_wal_checkpoint` (this whole module is a port of
-/// `importance/`): SQLite's default PASSIVE `wal_autocheckpoint` copies frames back
-/// into the main DB but reuses the WAL file in place and never shrinks it; only an
-/// explicit TRUNCATE reclaims the space. An enrichment pass upserts a row per image,
-/// so without this the WAL creeps up in place (plan M9).
-///
-/// Runs on the writer thread's own connection in autocommit: every message commits its
-/// transaction before the loop reads the next, so `wal_checkpoint(TRUNCATE)` (which
-/// SQLite refuses inside a transaction) is always safe here.
-///
-/// A long-lived reader snapshot can block the truncate. We give readers a short, bounded
-/// grace (mirroring the index writer's ~250 ms cap in `indexing/writer/maintenance.rs`)
-/// then degrade to PASSIVE (`busy = 1`): the frames still checkpoint into the main DB,
-/// the file just doesn't shrink this time, and the next pass retries. No retry loop.
-fn run_wal_checkpoint(conn: &Connection) {
-    // A short busy timeout around the truncate: without it the connection's default 5 s
-    // timeout (set in `store/connection.rs`) would stall the writer thread (and every
-    // write queued behind it) waiting a reader out. Restored right after.
-    let _ = conn.busy_timeout(Duration::from_millis(250));
-    let result: rusqlite::Result<(i64, i64, i64)> = conn.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |row| {
-        Ok((row.get(0)?, row.get(1)?, row.get(2)?))
-    });
-    let _ = conn.busy_timeout(Duration::from_millis(5000));
-    match result {
-        Ok((0, log_size, checkpointed)) => {
-            log::debug!(target: "media_index", "wal_checkpoint TRUNCATE done ({checkpointed} of {})", pluralize(log_size as u64, "frame"));
-        }
-        Ok((_, log_size, checkpointed)) => {
-            log::debug!(target: "media_index", "wal_checkpoint partial ({checkpointed} of {}, blocked by readers)", pluralize(log_size as u64, "frame"));
-        }
-        Err(e) => {
-            log::warn!(target: "media_index", "wal_checkpoint failed: {e}");
-        }
     }
 }
 
