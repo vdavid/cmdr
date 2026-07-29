@@ -17,8 +17,8 @@ MALLOC_SMALL               405 MB   ┘ the system C heap — for us, ~all SQLit
 everything else            < 50 MB
 ```
 
-WebKit and the compositor were NOT involved: `WebKit malloc` was 4.6 MB, `IOAccelerator (graphics)` 1.3 MB. CPU was
-122 minutes over 10 hours.
+WebKit and the compositor were NOT involved: `WebKit malloc` was 4.6 MB, `IOAccelerator (graphics)` 1.3 MB. CPU was 122
+minutes over 10 hours.
 
 ## Cause 1 — SQLite page cache across many connections (~1.15 GB)
 
@@ -31,8 +31,8 @@ They accumulate because read connections are **thread-local and live as long as 
 blocking-thread pool (69 threads at sample time), not anything semantic.
 
 **Fixed** by splitting the budget by role in one place (`sqlite_util::apply_page_cache`): 16 MiB for the single writer
-per DB, 2 MiB for read-only opens. Same 156 connections now cap at ~310 MB. Rationale and the write budget's coupling
-to `wal_autocheckpoint`: `apps/desktop/src-tauri/src/indexing/store/DETAILS.md`.
+per DB, 2 MiB for read-only opens. Same 156 connections now cap at ~310 MB. Rationale and the write budget's coupling to
+`wal_autocheckpoint`: `apps/desktop/src-tauri/src/indexing/store/DETAILS.md`.
 
 This is a ceiling, not a cure — the connections still accumulate; only their unit cost is bounded. If connection count
 itself ever needs fixing, that's a separate change to the thread-local lifetime.
@@ -52,9 +52,9 @@ while the old map was still live. The footprint oscillated 2.6 → 3.0 GB on exa
 **Root cause: the dir-changed bus conflated two facts.** A live listing change produces both "these dirs' listings
 changed" (small) and "these dirs' recursive sizes need refreshing" (the former plus every ancestor up to `/`, because a
 file's size propagates all the way up). `process_fs_event` returned the second and published it, but both bus consumers
-expand each entry DOWNWARD — importance into the whole subtree (floor transitions), media into the dir's image
-children. So one cargo build deep under `~/projects-git/…` put `/Users` into the batch, and the rescore matched every
-folder under the home directory.
+expand each entry DOWNWARD — importance into the whole subtree (floor transitions), media into the dir's image children.
+So one cargo build deep under `~/projects-git/…` put `/Users` into the batch, and the rescore matched every folder under
+the home directory.
 
 **Fixed** in three steps:
 
@@ -64,8 +64,7 @@ folder under the home directory.
    idle gate. Machine churn (`target/`, `Library/Caches`, dot-directories) can no longer cost a pass at all.
 3. An allocation-free `is_in_changed_subtree` (it built a `format!` needle per folder per changed path).
 
-Contracts, the accepted lossiness, and the guardrails:
-`apps/desktop/src-tauri/src/importance/scheduler/DETAILS.md` and
+Contracts, the accepted lossiness, and the guardrails: `apps/desktop/src-tauri/src/importance/scheduler/DETAILS.md` and
 `apps/desktop/src-tauri/src/indexing/lifecycle/DETAILS.md`.
 
 ## A latent bug this surfaced
@@ -77,6 +76,6 @@ data went stale until the next `ScanCompleted`. Every unit test passed on that r
 
 ## What did NOT matter
 
-Worth recording so the next investigation doesn't re-test them: WebKit, the compositor, GPU surfaces, DOM churn, and
-the frontend generally. Consistent with `memory-runaway-rust-heap-2026-07-25.md` — for this process, if the number is
-big, it's the Rust heap or SQLite.
+Worth recording so the next investigation doesn't re-test them: WebKit, the compositor, GPU surfaces, DOM churn, and the
+frontend generally. Consistent with `memory-runaway-rust-heap-2026-07-25.md` — for this process, if the number is big,
+it's the Rust heap or SQLite.

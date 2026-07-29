@@ -177,8 +177,8 @@ will recognize; the pointer says where the answer now lives.
 `coverage::get_or_build` no longer materializes every image path. Counting is a sink over
 `enrich::for_each_qualifying_image` (`coverage::count_qualifying_images`, O(folders), no per-image path `String`); polls
 and startup paths read `coverage::cached`, so `volume_state` can't trigger a cold build; and concurrent cold callers
-dedupe behind a per-volume build lock. Contract and rationale: `apps/desktop/src-tauri/src/media_index/DETAILS.md`
-§ Covered-count preview.
+dedupe behind a per-volume build lock. Contract and rationale: `apps/desktop/src-tauri/src/media_index/DETAILS.md` §
+Covered-count preview.
 
 ## Still open
 
