@@ -105,7 +105,19 @@ func RunRustTestsLinux(ctx *CheckContext) (CheckResult, error) {
 	output, err := RunCommand(cmd, true)
 	if err != nil {
 		summary := trimRustTestProgress(trimBuildNoise(output))
-		return CheckResult{}, fmt.Errorf("rust tests failed on Linux (provision log: %s)\n%s", provisionLog, indentOutput(summary))
+		return CheckResult{}, fmt.Errorf("rust tests failed on Linux (provision log: %s)\n%s", provisionLog, indentOutput(withFailureDiagnosis(summary)))
+	}
+
+	// Same retry-rescued case as the macOS lane: nextest exits 0, so without this the
+	// Linux lane reports green while hiding the flake.
+	if flaky := ParseFlakyTests(output); len(flaky) > 0 {
+		return CheckResult{
+			Code:    ResultWarning,
+			Message: fmt.Sprintf("All tests passed on Linux; %s (provision log: %s)", FlakySummary(flaky), provisionLog),
+			Total:   -1,
+			Issues:  len(flaky),
+			Changes: -1,
+		}, nil
 	}
 	return Success(fmt.Sprintf("All tests passed on Linux (provision log: %s)", provisionLog)), nil
 }

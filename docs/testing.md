@@ -200,6 +200,30 @@ over. Playwright marks a retried-pass as `flaky` in its `list` reporter, so the 
 not a silenced one. The anti-pattern above still stands for masking a real race in app/IPC code — the carve-out is
 narrow: CI-only, environment flake, signal preserved.
 
+**Carve-out, Rust: named real-FSEvents tests only.** `.config/nextest.toml` grants `retries` to a filtered set of tests
+that block on a SINGLE real OS watch delivery, where a coalesced or dropped event is unrecoverable within the run (the
+override comment names them and states the exit condition: restructure them to redo the mutation, then drop the
+retries). Same three conditions as above: narrowly filtered, environment flake rather than an app race, signal
+preserved. Signal preservation is the part that's easy to lose, because nextest exits 0 on a retry-rescued run, so a
+green suite can hide the exact flake the retries exist to tolerate. `rust-tests` therefore parses nextest's `FLAKY n/m`
+lines and downgrades such a run from pass to **warn**, naming each test and the attempt that rescued it. Adding retries
+without that reporting is the anti-pattern, not retries themselves.
+
+### Reading a red `rust-tests` run
+
+Two different things produce a red run and they need opposite fixes, so `rust-tests` prints a **diagnosis** above the
+raw output that sorts every failing test into:
+
+- **Killed at the nextest cap**: nextest terminated the process at `slow-timeout`, so the test never finished and left
+  no panic. Look for a genuine hang, or starvation under load.
+- **Blew its own in-test `wait_until` deadline**: the test's own deadline expired below the cap, and the diagnosis
+  quotes the wait's description. Raising the nextest cap does nothing here; raise or load-scale the wait instead.
+- **Leak**: assertions passed, but a handle or process outlived the test.
+- **Ordinary assertion or panic.**
+
+Reach for the cap only when the first class shows up. Guessing between these is how a deflaking pass ends up tuning the
+knob that wasn't binding. The parsing lives in `scripts/check/checks/rust-test-diagnostics.go`.
+
 ### ❌ Raw `tauri::invoke('command_name', …)` outside the typed bindings
 
 Use `commands.commandName(args)` from `apps/desktop/src/lib/ipc/`. Enforced by `cmdr/no-raw-tauri-invoke` ESLint rule

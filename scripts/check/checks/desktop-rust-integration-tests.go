@@ -85,18 +85,33 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 	cmd.Dir = rustDir
 	output, err := RunCommand(cmd, true)
 	if err != nil {
-		return CheckResult{}, fmt.Errorf("SMB integration tests failed\n%s", indentOutput(output))
+		// This lane is the most deadline-dense one (real Docker Samba, kernel mounts, NetFS
+		// settle waits), so the cap-vs-in-test-deadline split matters here most.
+		return CheckResult{}, fmt.Errorf("SMB integration tests failed\n%s", indentOutput(withFailureDiagnosis(trimRustTestProgress(output))))
 	}
 
 	re := regexp.MustCompile(`(\d+) tests? run`)
 	matches := re.FindStringSubmatch(output)
+	message := "All SMB integration tests passed"
+	count := -1
 	if len(matches) > 1 {
-		count, _ := strconv.Atoi(matches[1])
-		result := Success(fmt.Sprintf("%d %s passed", count, Pluralize(count, "test", "tests")))
-		result.Total = count
-		return result, nil
+		count, _ = strconv.Atoi(matches[1])
+		message = fmt.Sprintf("%d %s passed", count, Pluralize(count, "test", "tests"))
 	}
-	return Success("All SMB integration tests passed"), nil
+
+	if flaky := ParseFlakyTests(output); len(flaky) > 0 {
+		return CheckResult{
+			Code:    ResultWarning,
+			Message: message + "; " + FlakySummary(flaky),
+			Total:   count,
+			Issues:  len(flaky),
+			Changes: -1,
+		}, nil
+	}
+
+	result := Success(message)
+	result.Total = count
+	return result, nil
 }
 
 // waitForSmbContainers polls `docker compose -p smb-consumer ps` until every

@@ -185,6 +185,11 @@ slow-timeout = { period = "20s", terminate-after = 1 }
 # real-OS event timing is tolerated. If these ever get the `observe_mutation` /
 # `drive_refresh_until` redo treatment (see the self-healing override above),
 # drop the retries. (The archive live-watch tests already made that move.)
+# The retries are NOT free and NOT silent: `rust-tests` parses nextest's `FLAKY n/m`
+# lines and downgrades a retry-rescued run from pass to WARN, naming each test and the
+# attempt that rescued it. So the budget reads as a flake-rate meter, not a hiding
+# place, and a rising rate here is visible without anyone re-measuring. Don't add
+# retries anywhere without that reporting in place (see `docs/testing.md`).
 filter = 'test(file_viewer::watcher_test::)'
 test-group = 'real-notify'
 slow-timeout = { period = "20s", terminate-after = 1 }

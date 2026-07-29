@@ -361,6 +361,39 @@ virtual-device coverage doesn't differ by platform. Revisit if Linux-specific MT
 Prerequisites these tests rely on (per-test temp backing root, watcher off, `virtual_device_test_lock()`):
 `apps/desktop/src-tauri/src/mtp/DETAILS.md` § "Rust tests that drive the device".
 
+## Rust test diagnostics: retry-passes and deadline classes
+
+`rust-test-diagnostics.go` parses cargo-nextest output for all three Rust lanes (`desktop-rust-tests`,
+`desktop-rust-tests-linux`, `desktop-rust-integration-tests`). Two jobs, both aimed at making a run's outcome
+self-explaining rather than something a reader has to re-derive.
+
+**Retry-passes become a warn, not a pass.** `.config/nextest.toml` grants `retries` to named real-FSEvents tests, and
+nextest exits 0 when a retry rescues the run. `ParseFlakyTests` reads the `FLAKY n/m` summary lines (and `TRY n PASS`,
+deduped against them) and the lane returns `ResultWarning` naming each test and the rescuing attempt. That turns the
+retry budget into a standing flake-rate meter: a rising rate shows up in ordinary runs instead of needing a dedicated
+measurement pass. Policy and the three conditions for granting retries at all: `docs/testing.md`.
+
+**Failures are sorted by which deadline blew.** `ClassifyRustFailures` splits failing tests into `ClassNextestCap` (a
+`TIMEOUT` line: nextest killed the process at `slow-timeout`, no panic exists to read), `ClassInTestDeadline` (a
+`wait_until` timeout panic below the cap, with the wait's description captured), `ClassLeak`, and `ClassOther`.
+`DiagnoseRustFailures` renders that above the raw output. The distinction is the point: the two timeout classes look
+identical in raw nextest output but need opposite fixes, and raising `slow-timeout` does nothing for an in-test
+deadline.
+
+Gotchas for anyone touching this:
+
+- **The parsers are pinned to real nextest 0.9.136 output**, captured from a probe crate rather than written from
+  memory. The fixtures in `rust-test-diagnostics_test.go` are verbatim, including the `(2/4)` progress counter and the
+  `(───)` placeholder. Keep them verbatim when the pinned nextest version moves.
+- **`TRY n FAIL` lines are not failures.** They're retried attempts; counting them double-reports every flake. The
+  `FAIL` regex is line-anchored so it can't match them.
+- **The summary block repeats every `FAIL`/`TIMEOUT` line**, so classification dedupes by (binary, test) and keeps the
+  first occurrence, which is the one carrying the panic body.
+- **`ClassInTestDeadline` recognition depends on a string Rust owns**: `timed_out()` in
+  `apps/desktop/src-tauri/src/test_support.rs`. Nothing but `TestWaitUntilPanicFormatStillMatchesTheClassifier` ties the
+  two languages together; without it, rewording the panic would silently downgrade every `wait_until` timeout to
+  `ClassOther`. Don't delete that test.
+
 ## Apps and check counts
 
 Checks by app and tech:
