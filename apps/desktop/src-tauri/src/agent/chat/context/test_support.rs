@@ -108,6 +108,14 @@ pub(crate) fn envelope_at(at: i64) -> ContextEnvelope {
     }
 }
 
+/// Pull the tool-result part a message carries, elided or not.
+pub(crate) fn tool_result_part(message: &AgentMessage) -> &AgentToolResult {
+    match &message.parts[0] {
+        AgentPart::ToolResult(result) => result,
+        _ => panic!("expected a tool-result part"),
+    }
+}
+
 /// Pull the leading text part of a message (the envelope or timestamp marker the
 /// assembly prepends).
 pub(crate) fn leading_text(message: &AgentMessage) -> &str {

@@ -14,8 +14,9 @@
 //!   tool loop, so the model's ground truth can't shift mid-turn.
 //!
 //! History compaction is **elide-only** (spec §2, §5): assistant prose always survives
-//! verbatim; tool results from OLDER turns collapse to a typed stub carrying an
-//! approximate token-size hint. The current turn's results are never elided
+//! verbatim; tool results from OLDER turns collapse to a typed stub that says which tool ran,
+//! how the call read, what it held, and how to get it back ([`stub_for`], [`digest`]). The
+//! current turn's results are never elided
 //! ([`MIN_ELISION_TURNS_BACK`]). Summarize-on-overflow is deferred; when even full elision
 //! can't fit the budget, the runtime shows the soft-cap nudge.
 //!
@@ -28,8 +29,12 @@ use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::time::Duration;
 
-use super::budget::{estimate_tokens_of_value, estimate_tokens_str};
+use super::budget::{CHARS_PER_TOKEN_ESTIMATE, estimate_tokens_of_value, estimate_tokens_str};
 use crate::agent::llm::types::{AgentMessage, AgentPart, AgentRole, AgentToolResult, ToolDeclaration};
+
+/// How an elided result describes itself. Structural and shape-agnostic, so this core keeps
+/// no per-tool knowledge.
+mod digest;
 
 // ── Named constants (§10). Initial values; tune with use. ─────────────────────
 
@@ -375,7 +380,7 @@ fn build_messages(
         .map(|(i, _)| i)
         .collect();
     let latest_user = user_positions.last().copied();
-    let tool_names = tool_names_by_call_id(transcript);
+    let calls = calls_by_call_id(transcript);
 
     transcript
         .iter()
@@ -390,7 +395,7 @@ fn build_messages(
                 // The `max` is the load-bearing floor: whatever threshold the budget loop
                 // settled on, the current turn's results (`turns_back == 0`) survive.
                 AgentRole::Tool if turns_back >= threshold.max(MIN_ELISION_TURNS_BACK) => {
-                    elide_tool_results(message, &tool_names)
+                    elide_tool_results(message, &calls)
                 }
                 _ => message.clone(),
             }
@@ -410,15 +415,15 @@ fn prepend_text(message: &AgentMessage, text: String) -> AgentMessage {
     }
 }
 
-/// Collapse every tool-result part in `message` to a typed stub carrying the tool name
-/// (from the matching call) and the elided result's approximate token size.
-fn elide_tool_results(message: &AgentMessage, tool_names: &HashMap<String, String>) -> AgentMessage {
+/// Collapse every tool-result part in `message` to a typed stub describing the call it came
+/// from (from `calls`) and the result it stands in for.
+fn elide_tool_results(message: &AgentMessage, calls: &HashMap<&str, ElidedCall<'_>>) -> AgentMessage {
     let parts = message
         .parts
         .iter()
         .map(|part| match part {
             AgentPart::ToolResult(result) if !result.elided => {
-                AgentPart::ToolResult(stub_for(result, tool_names.get(&result.call_id).map(String::as_str)))
+                AgentPart::ToolResult(stub_for(result, calls.get(result.call_id.as_str())))
             }
             other => other.clone(),
         })
@@ -430,34 +435,72 @@ fn elide_tool_results(message: &AgentMessage, tool_names: &HashMap<String, Strin
     }
 }
 
-/// The stub's marker key ("this stands in for a result that was dropped") and its size
-/// hint. Named because the assembly reads them back to report what it elided; they are OUR
-/// OWN payload keys, not another system's wording (no `no-string-matching` conflict).
+/// The stub's own payload keys. Named because the assembly reads two of them back to report
+/// what it elided; they are OUR OWN keys, not another system's wording (no
+/// `no-string-matching` conflict).
 const ELIDED_MARKER_KEY: &str = "elided_tool_result";
 const APPROX_TOKENS_KEY: &str = "approx_tokens";
+const CALL_KEY: &str = "call";
+const HELD_KEY: &str = "held";
+const REFETCH_KEY: &str = "refetch";
 
-/// The typed elision stub for one tool result: a small object the model can read,
-/// naming the tool and the approximate token size the full result would have cost.
-fn stub_for(result: &AgentToolResult, tool_name: Option<&str>) -> AgentToolResult {
+/// The most estimated tokens ONE stub may spend. A stub that costs what the result cost buys
+/// nothing, so the two digests split whatever the fixed fields leave of this.
+const STUB_TOKEN_BUDGET: usize = 80;
+
+/// The elision stub for one tool result: which tool ran, how big its result was, how the call
+/// read, what it held, and how to get it back.
+///
+/// The four descriptive fields exist because a bare tombstone told a model that something had
+/// gone missing without saying WHAT, leaving it to answer without the evidence or to guess
+/// which call to repeat. Everything here is derived structurally from the call and the result
+/// (see [`digest`]) — no string the result carried ever survives into it, so a stub can't be
+/// mistaken for the delivery it replaced (invariant 6).
+fn stub_for(result: &AgentToolResult, call: Option<&ElidedCall<'_>>) -> AgentToolResult {
+    let tool = call.map(|call| call.tool);
+    let arguments = call.map(|call| call.arguments);
+    let mut content = json!({
+        ELIDED_MARKER_KEY: true,
+        "tool": tool,
+        APPROX_TOKENS_KEY: estimate_tokens_of_value(&result.content),
+        CALL_KEY: "",
+        HELD_KEY: "",
+        REFETCH_KEY: digest::refetch_hint(tool, arguments),
+    });
+    // The two digests split whatever the fixed fields leave of the budget, measured on the
+    // real serialized stub, so neither a long tool name nor a wide re-fetch sentence can push
+    // the whole thing past STUB_TOKEN_BUDGET.
+    let share = (STUB_TOKEN_BUDGET * CHARS_PER_TOKEN_ESTIMATE).saturating_sub(content.to_string().len()) / 2;
+    content[CALL_KEY] = Value::String(digest::of_arguments(arguments, share));
+    content[HELD_KEY] = Value::String(digest::of_result(&result.content, share));
     AgentToolResult {
         call_id: result.call_id.clone(),
-        content: json!({
-            ELIDED_MARKER_KEY: true,
-            "tool": tool_name,
-            APPROX_TOKENS_KEY: estimate_tokens_of_value(&result.content),
-        }),
+        content,
         elided: true,
     }
 }
 
-/// Map each tool call's `call_id` to its wire tool name, so an elided result can name
-/// the tool it came from ("[tool result elided: list_dir, ~3.1k tokens]").
-fn tool_names_by_call_id(transcript: &[AgentMessage]) -> HashMap<String, String> {
+/// The call an elided result came from: its wire tool name and the arguments the model wrote.
+/// Borrowed from the transcript, so describing a dropped result copies nothing.
+struct ElidedCall<'a> {
+    tool: &'a str,
+    arguments: &'a Value,
+}
+
+/// Map each tool call's `call_id` to the call itself, so an elided result can say which tool
+/// ran and how it was called.
+fn calls_by_call_id(transcript: &[AgentMessage]) -> HashMap<&str, ElidedCall<'_>> {
     let mut map = HashMap::new();
     for message in transcript {
         for part in &message.parts {
             if let AgentPart::ToolCall(call) = part {
-                map.insert(call.call_id.clone(), call.tool.as_wire_name().to_string());
+                map.insert(
+                    call.call_id.as_str(),
+                    ElidedCall {
+                        tool: call.tool.as_wire_name(),
+                        arguments: &call.arguments,
+                    },
+                );
             }
         }
     }
@@ -499,6 +542,8 @@ fn estimate_tokens_of_message(message: &AgentMessage) -> usize {
 
 #[cfg(test)]
 mod cost_tests;
+#[cfg(test)]
+mod stub_tests;
 #[cfg(test)]
 pub(crate) mod test_support;
 #[cfg(test)]
