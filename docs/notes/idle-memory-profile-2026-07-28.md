@@ -37,8 +37,8 @@ blocking-thread pool (69 threads at sample time), not anything semantic.
    not a cure: the connections still accumulated, and 310 MB still scaled with a number nothing controls.
 2. Made total page memory ONE number: a 64 MiB process-wide slab handed to SQLite via
    `sqlite3_config(SQLITE_CONFIG_PAGECACHE, …)` before the first connection opens. Page memory is now independent of
-   connection count and shared dynamically, which also let the read budget go back UP (to 8 MiB per connection, an
-   upper bound out of the slab rather than a reservation).
+   connection count and shared dynamically, which also let the read budget go back UP (to 8 MiB per connection, an upper
+   bound out of the slab rather than a reservation).
 
 Rationale, the sizing, the ordering guarantee, and the alternative weighed:
 `apps/desktop/src-tauri/src/indexing/store/DETAILS.md` § "SQLite page memory is one process-wide slab".
