@@ -174,19 +174,56 @@ Every row carries typed evidence from the backend (`evidence: { source, detail }
 `RenameEvidence`), rendered as the table's rightmost column. `evidenceSourceLabel` in `ask-cmdr-labels.ts` maps the
 source to its catalog string; the raw `detail` renders below it.
 
-Two properties this column exists for:
+Three properties this column exists for:
 
 - **A name with no content behind it must look like one.** `imageText` / `imageTags` are the only sources the backend
   verified against delivered image content (`agent/tools/propose/DETAILS.md`); the other three say plainly that nothing
   inside the file was read ("File details, not contents", "The old name", "What you asked for"). Rewording one of those
   into something that implies content would undo the guardrail's user-facing half.
-- **`detail` is model-authored text.** Render it as plain `{text}` only, never `{@html}` (same boundary as assistant
-  prose, `CLAUDE.md` § Must-knows). Backend caps it at 160 characters.
+- **A thin match must LOOK thin.** A bare quote made a 14-character hit inside 3,140 characters of recognized text read
+  exactly as strong as a decisive one, which is the half of the failure no backend check can close: validation proves the
+  model READ something, never that the name is right. So an `imageText` row with a `coverage` renders the quote inside
+  the line it came from (`…before` + `<mark>` + `after…`, cut ends marked) plus "Matched 14 of 3,140 characters"
+  underneath, and REPLACES the bare detail: the delivered text with the match highlighted proves more than the model's
+  own retyping of it. Rows with no coverage (the other four sources) render `detail` as before.
+- **`detail` is model-authored text, and the excerpt is OCR output.** Render both as plain `{text}` only, never `{@html}`
+  (same boundary as assistant prose, `CLAUDE.md` § Must-knows). Backend caps `detail` at 160 characters and each side of
+  the excerpt at 60.
 
-The layout: two fixed-pixel columns (allow, arrow) plus three shared text columns at 28 / 28 / 38 percent, inside a
-`min(1040px, calc(100vw - 48px))` resizable dialog. Evidence wraps (`overflow-wrap: anywhere`) and clamps at four lines,
-which the 160-character cap keeps out of reach at normal widths. The clamp defends a hand-shrunk dialog; it isn't a
-routine truncation, because hiding evidence from the reviewer is the failure this column fixes.
+**The thin/solid split is a display judgment, and it lives in the frontend** (`rename-evidence-coverage.ts`, unit
+tested): thin is under 2 percent of the delivered text, and only once at least 200 characters were delivered (a short
+quote of a short text is normal, and the excerpt beside it already shows nearly everything). The backend supplies only
+the honest counts, because a "this evidence is weak" verdict must never become a refusal: the app can't know that the
+name is wrong, only that the user should look. A thin row takes the warning tone AND a `triangle-alert` marker
+(`role="img"`, so its label doesn't depend on text content the way the row badges' does), so it never reads by color
+alone.
+
+The layout: three fixed-pixel columns (allow 56, preview 44, arrow 32) plus three shared text columns at 25 / 25 / 42
+percent, inside a `min(1040px, calc(100vw - 48px))` resizable dialog. Evidence wraps (`overflow-wrap: anywhere`) and
+clamps at four lines. The clamp defends a hand-shrunk dialog; it isn't a routine truncation, because hiding evidence from
+the reviewer is the failure this column fixes.
+
+## The preview column
+
+The reviewer has to be able to see the file, because a plausible wrong name only looks wrong beside the picture. Every
+row shows its own 36 px thumbnail (scanning 50 rows for the odd wrong one is the actual review task, so a detail pane
+would only show the row the user already suspects), and each thumbnail is a button that opens the file in the full viewer
+with Space or Enter. ArrowDown / ArrowUp walk the buttons, so the preview follows the focused row with no mouse, and the
+focused row is highlighted.
+
+- **Thumbnails reuse the viewer's `cmdr-media://` preview scheme** through `mediaIndexThumbnailToken` + `mediaUrl`, the
+  same path `lib/search/ImageSearchResults.svelte` takes. They do NOT depend on media-index enrichment: the token is
+  minted from a magic-byte classification of the file itself, so a never-indexed image still previews.
+- **The dialog owns the token lifecycle.** The backend token map has no window-close choke point, so a missed drop leaks
+  path mappings for the session. One mint pass per proposal; every token dropped when the review closes, when another
+  proposal replaces it, or on unmount. A monotonic sequence number discards a late mint for a closed review (and drops
+  what it minted).
+- **The mint effect depends on the proposal id ALONE.** Preflight mutates rows in place on every recheck, so reading the
+  rows reactively there would re-mint 50 tokens per watcher event; the row ids and paths are read through `untrack`.
+- **No thumbnail degrades to a neutral glyph** (not an image, unreadable, on a drive that isn't mounted here): never a
+  broken image, never an empty cell, and the row stays fully reviewable.
+- `source_path` + `volume_id` ride the row snapshot for this, and they are DISPLAY data. Apply still sends opaque row ids
+  only, and the backend resolves every path from its own stored proposal.
 
 ## The E2E fake-LLM path
 

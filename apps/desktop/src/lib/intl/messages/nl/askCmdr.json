@@ -408,6 +408,14 @@
   "@askCmdr.renameReview.evidence.userInstruction": {
     "sourceHash": "c8e3674"
   },
+  "askCmdr.renameReview.coverage": "{matchedText} van {totalText} tekens komen overeen",
+  "@askCmdr.renameReview.coverage": {
+    "sourceHash": "d8845cb"
+  },
+  "askCmdr.renameReview.coverageThin": "Dat is een klein deel van de tekst die Cmdr hier heeft gelezen. Open het bestand om de naam te controleren.",
+  "@askCmdr.renameReview.coverageThin": {
+    "sourceHash": "2b8bec1"
+  },
   "askCmdr.renameReview.allow": "Sta toe",
   "@askCmdr.renameReview.allow": {
     "sourceHash": "e213c16"

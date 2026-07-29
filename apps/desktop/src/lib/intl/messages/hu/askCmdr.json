@@ -404,6 +404,14 @@
   "@askCmdr.renameReview.evidence.userInstruction": {
     "sourceHash": "c8e3674"
   },
+  "askCmdr.renameReview.coverage": "{totalText} karakterből {matchedText} egyezik",
+  "@askCmdr.renameReview.coverage": {
+    "sourceHash": "d8845cb"
+  },
+  "askCmdr.renameReview.coverageThin": "Ez csak kis része annak a szövegnek, amit a Cmdr itt elolvasott. Nyisd meg a fájlt a név ellenőrzéséhez.",
+  "@askCmdr.renameReview.coverageThin": {
+    "sourceHash": "2b8bec1"
+  },
   "askCmdr.renameReview.allow": "Engedélyezés",
   "@askCmdr.renameReview.allow": {
     "sourceHash": "e213c16"

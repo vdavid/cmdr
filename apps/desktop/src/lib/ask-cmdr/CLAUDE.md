@@ -48,7 +48,13 @@ path, layout, decisions): `DETAILS.md`.
   `hydrateRail` passes `resizeWindow: false` and `openRail` grows only on `!wasOpen`. Doubling breaks. `DETAILS.md` §
   Window growth.
 - **The rename review's "Why this name" column is a guardrail, not a nicety.** Its three non-image evidence labels must
-  keep saying nothing inside the file was read. `DETAILS.md`.
+  keep saying nothing inside the file was read, and an `imageText` row shows its quote inside the delivered line plus
+  "Matched 14 of 3,140 characters", so a sliver can't read as a decisive match. Thin/solid is a DISPLAY judgment
+  (`rename-evidence-coverage.ts`), never a refusal: the app can't know a name is wrong, only that the user should look.
+- **The review's per-row thumbnail owns its `cmdr-media://` tokens.** One mint pass per proposal (keyed on the proposal
+  id alone, or a preflight recheck re-mints 50 tokens), dropped on close / replace / unmount, or the backend token map
+  leaks path mappings. No token → a neutral glyph, never a broken image, and the row stays reviewable. Space on the
+  focused row opens the full viewer. Both in `DETAILS.md`.
 - **Attachments cross into the envelope as path + kind ONLY, never contents** (the read-only privacy line). Drag from a
   pane is a NATIVE webview drag (`onDragDropEvent`), not HTML5, so a DOM `ondrop` never fires. Message paging is
   tail-first with load-older prepend (don't reintroduce one big page). Both in `DETAILS.md`.

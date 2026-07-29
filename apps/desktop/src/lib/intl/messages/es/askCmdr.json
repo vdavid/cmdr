@@ -406,6 +406,14 @@
   "@askCmdr.renameReview.evidence.userInstruction": {
     "sourceHash": "c8e3674"
   },
+  "askCmdr.renameReview.coverage": "Coincide con {matchedText} de {totalText} caracteres",
+  "@askCmdr.renameReview.coverage": {
+    "sourceHash": "d8845cb"
+  },
+  "askCmdr.renameReview.coverageThin": "Es una parte pequeña del texto que Cmdr leyó aquí. Abre el archivo para comprobar el nombre.",
+  "@askCmdr.renameReview.coverageThin": {
+    "sourceHash": "2b8bec1"
+  },
   "askCmdr.renameReview.allow": "Permitir",
   "@askCmdr.renameReview.allow": {
     "sourceHash": "e213c16"

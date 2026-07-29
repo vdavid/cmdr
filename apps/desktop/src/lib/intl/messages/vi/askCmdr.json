@@ -404,6 +404,14 @@
   "@askCmdr.renameReview.evidence.userInstruction": {
     "sourceHash": "c8e3674"
   },
+  "askCmdr.renameReview.coverage": "Khớp {matchedText} trên {totalText} ký tự",
+  "@askCmdr.renameReview.coverage": {
+    "sourceHash": "d8845cb"
+  },
+  "askCmdr.renameReview.coverageThin": "Đó chỉ là một phần nhỏ của văn bản mà Cmdr đọc được ở đây. Hãy mở tệp để kiểm tra tên.",
+  "@askCmdr.renameReview.coverageThin": {
+    "sourceHash": "2b8bec1"
+  },
   "askCmdr.renameReview.allow": "Cho phép",
   "@askCmdr.renameReview.allow": {
     "sourceHash": "e213c16"

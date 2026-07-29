@@ -404,6 +404,14 @@
   "@askCmdr.renameReview.evidence.userInstruction": {
     "sourceHash": "c8e3674"
   },
+  "askCmdr.renameReview.coverage": "匹配 {totalText} 个字符中的 {matchedText} 个",
+  "@askCmdr.renameReview.coverage": {
+    "sourceHash": "d8845cb"
+  },
+  "askCmdr.renameReview.coverageThin": "这只是 Cmdr 在这里读到的文字中的一小部分。打开文件核对一下名称。",
+  "@askCmdr.renameReview.coverageThin": {
+    "sourceHash": "2b8bec1"
+  },
   "askCmdr.renameReview.allow": "允许",
   "@askCmdr.renameReview.allow": {
     "sourceHash": "e213c16"

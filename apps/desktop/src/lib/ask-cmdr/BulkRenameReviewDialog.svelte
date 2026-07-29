@@ -4,6 +4,7 @@
     import Icon from '$lib/ui/Icon.svelte'
     import Checkbox from '$lib/ui/Checkbox.svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import { formatInteger } from '$lib/intl/number-format'
     import { mediaIndexDropThumbnailTokens, mediaIndexThumbnailToken, onDirectoryDiff } from '$lib/tauri-commands'
     import { onDestroy, onMount, untrack } from 'svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
@@ -13,6 +14,7 @@
     // `routes/viewer/CLAUDE.md`), so a row's thumbnail reuses the exact preview origin.
     import { mediaUrl } from '../../routes/viewer/media-view'
     import { evidenceSourceLabel } from './ask-cmdr-labels'
+    import { coverageStrength } from './rename-evidence-coverage'
     import {
         applyRenameReview,
         allowAllRenameRows,
@@ -255,11 +257,44 @@
                                             <small>{tString('askCmdr.renameReview.blocked')}</small>
                                         {/if}
                                     </td>
-                                    <!-- Evidence is model-authored text, so it renders as
-                                         plain text (Svelte escapes it), never `{@html}`. -->
+                                    <!-- Evidence and the text Cmdr read in the image are both
+                                         untrusted text, so they render as plain text (Svelte
+                                         escapes it), never `{@html}`. -->
                                     <td class="why" data-evidence-source={row.evidence.source}>
                                         <span class="evidence-source">{evidenceSourceLabel(row.evidence.source)}</span>
-                                        <span class="evidence-detail">{row.evidence.detail}</span>
+                                        {#if row.coverage}
+                                            {@const coverage = row.coverage}
+                                            {@const strength = coverageStrength(coverage)}
+                                            <!-- The quote inside the line it came from: a
+                                                 bare quote made a sliver of a page of OCR
+                                                 look as strong as a decisive match. -->
+                                            <span class="evidence-detail"
+                                                >{#if coverage.trimmedBefore}…{/if}{coverage.contextBefore}<mark
+                                                    >{coverage.matchedText}</mark
+                                                >{coverage.contextAfter}{#if coverage.trimmedAfter}…{/if}</span
+                                            >
+                                            <span class="coverage" data-coverage={strength}>
+                                                {#if strength === 'thin'}
+                                                    <!-- `role="img"`: the marker's meaning IS
+                                                         the icon, so its label can't come from
+                                                         text content the way a badge's does. -->
+                                                    <span
+                                                        class="coverage-warning"
+                                                        data-coverage-warning="thin"
+                                                        role="img"
+                                                        tabindex="0"
+                                                        aria-label={tString('askCmdr.renameReview.coverageThin')}
+                                                        use:tooltip={tString('askCmdr.renameReview.coverageThin')}
+                                                    ><Icon name="triangle-alert" size={12} aria-hidden="true" /></span>
+                                                {/if}
+                                                {tString('askCmdr.renameReview.coverage', {
+                                                    matchedText: formatInteger(coverage.matchedChars),
+                                                    totalText: formatInteger(coverage.deliveredChars),
+                                                })}
+                                            </span>
+                                        {:else}
+                                            <span class="evidence-detail">{row.evidence.detail}</span>
+                                        {/if}
                                     </td>
                                 </tr>
                             {/each}
@@ -476,6 +511,40 @@
         -webkit-box-orient: vertical;
         -webkit-line-clamp: 4;
         line-clamp: 4;
+    }
+
+    /* The matched span, so the eye lands on the quote and reads the surrounding line as
+       context rather than as part of it. */
+    .evidence-detail mark {
+        background: var(--color-accent-subtle);
+        color: var(--color-text-primary);
+        border-radius: var(--radius-sm);
+        padding: 0 var(--spacing-xxs);
+    }
+
+    /* How much of the image's text the quote covers. A thin match takes the warning tone AND
+       a marker, so it doesn't rely on color alone. */
+    .coverage {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xxs);
+        margin-top: var(--spacing-xxs);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+    }
+
+    .coverage[data-coverage='thin'] {
+        color: var(--color-warning-text);
+    }
+
+    .coverage-warning {
+        display: inline-flex;
+    }
+
+    .coverage-warning:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+        border-radius: var(--radius-sm);
     }
 
     tr.blocked .why {

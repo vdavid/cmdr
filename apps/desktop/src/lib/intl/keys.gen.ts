@@ -149,6 +149,8 @@ export type MessageKey =
   | 'askCmdr.renameReview.allowAll'
   | 'askCmdr.renameReview.blocked'
   | 'askCmdr.renameReview.cancel'
+  | 'askCmdr.renameReview.coverage'
+  | 'askCmdr.renameReview.coverageThin'
   | 'askCmdr.renameReview.cycleBadge'
   | 'askCmdr.renameReview.cycleTooltip'
   | 'askCmdr.renameReview.deny'

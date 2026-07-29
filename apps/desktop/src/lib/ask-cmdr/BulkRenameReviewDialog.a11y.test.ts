@@ -248,6 +248,94 @@ describe('BulkRenameReviewDialog', () => {
   })
 
   /**
+   * A bare quote made a 7-character hit inside 3,140 characters of recognized text look
+   * exactly as strong as a decisive one. The quote now renders inside the line it came from,
+   * with a coverage figure under it, and a thin match is marked as thin.
+   */
+  it('renders a thin match and a decisive one differently', async () => {
+    reviewState.renameReview = review({
+      rows: [
+        row({
+          rowId: 'opaque-row-thin',
+          evidence: { source: 'imageText', detail: 'Total 1 299 kr' },
+          coverage: {
+            matchOffset: 2_140,
+            matchedChars: 14,
+            deliveredChars: 3_140,
+            contextBefore: 'Betalning mottagen  ',
+            matchedText: 'Total 1 299 kr',
+            contextAfter: '  Tack för ditt köp',
+            trimmedBefore: true,
+            trimmedAfter: true,
+          },
+        }),
+        row({
+          rowId: 'opaque-row-decisive',
+          sourceName: 'before-two.png',
+          sourcePath: '/shots/before-two.png',
+          evidence: { source: 'imageText', detail: 'Klarna payment confirmation' },
+          coverage: {
+            matchOffset: 0,
+            matchedChars: 27,
+            deliveredChars: 44,
+            contextBefore: '',
+            matchedText: 'Klarna payment confirmation',
+            contextAfter: ' 1,299 SEK',
+            trimmedBefore: false,
+            trimmedAfter: false,
+          },
+        }),
+      ],
+    })
+    const target = mountDialog()
+    await tick()
+
+    const cells = [...target.querySelectorAll<HTMLElement>('td.why')]
+    // The quote sits inside its surrounding line, with the cut ends marked.
+    expect(cells[0]?.textContent).toContain('…Betalning mottagen  Total 1 299 kr  Tack för ditt köp…')
+    expect(cells[0]?.querySelector('mark')?.textContent).toBe('Total 1 299 kr')
+    expect(cells[1]?.textContent).toContain('Klarna payment confirmation 1,299 SEK')
+    expect(cells[1]?.textContent).not.toContain('…')
+
+    // Same figure shape, different verdict: only the sliver is flagged.
+    expect(cells[0]?.textContent).toContain('Matched 14 of 3,140 characters')
+    expect(cells[1]?.textContent).toContain('Matched 27 of 44 characters')
+    expect(requiredElement(cells[0] ?? target, '[data-coverage]').dataset.coverage).toBe('thin')
+    expect(requiredElement(cells[1] ?? target, '[data-coverage]').dataset.coverage).toBe('solid')
+    const warning = requiredElement(cells[0] ?? target, '[data-coverage-warning="thin"]')
+    expect(warning.getAttribute('aria-label')).toContain('small part of the text')
+    expect(cells[1]?.querySelector('[data-coverage-warning]')).toBeNull()
+    await expectNoA11yViolations(target)
+  })
+
+  /** Recognized text reaches this column too, so the excerpt is plain text like the quote. */
+  it('renders the surrounding line as plain text, never as markup', async () => {
+    reviewState.renameReview = review({
+      rows: [
+        row({
+          evidence: { source: 'imageText', detail: 'Invoice 4021 total' },
+          coverage: {
+            matchOffset: 0,
+            matchedChars: 18,
+            deliveredChars: 60,
+            contextBefore: MARKUP_DETAIL,
+            matchedText: 'Invoice 4021 total',
+            contextAfter: MARKUP_DETAIL,
+            trimmedBefore: false,
+            trimmedAfter: false,
+          },
+        }),
+      ],
+    })
+    const target = mountDialog()
+    await tick()
+
+    const cell = requiredElement(target, 'td.why')
+    expect(cell.querySelector('img')).toBeNull()
+    expect(cell.textContent).toContain(MARKUP_DETAIL)
+  })
+
+  /**
    * The whole point of M1: `old name → new name → a quote` is what let 12 fabricated names
    * get approved, because the reviewer could not see the file. Every row shows its own image,
    * and the focused row's file opens in the full viewer.

@@ -405,6 +405,14 @@
   "@askCmdr.renameReview.evidence.userInstruction": {
     "sourceHash": "c8e3674"
   },
+  "askCmdr.renameReview.coverage": "Matchar {matchedText} av {totalText} tecken",
+  "@askCmdr.renameReview.coverage": {
+    "sourceHash": "d8845cb"
+  },
+  "askCmdr.renameReview.coverageThin": "Det är en liten del av texten som Cmdr läste här. Öppna filen för att kontrollera namnet.",
+  "@askCmdr.renameReview.coverageThin": {
+    "sourceHash": "2b8bec1"
+  },
   "askCmdr.renameReview.allow": "Tillåt",
   "@askCmdr.renameReview.allow": {
     "sourceHash": "e213c16"

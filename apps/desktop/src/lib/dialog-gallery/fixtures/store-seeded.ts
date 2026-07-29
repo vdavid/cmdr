@@ -18,7 +18,7 @@ import { errorReportFlow } from '$lib/error-reporter/error-report-flow.svelte'
 import { feedbackFlow } from '$lib/feedback/feedback-flow.svelte'
 import { operationLogState } from '$lib/operation-log/operation-log-trigger.svelte'
 import { whatsNewState } from '$lib/whats-new/whats-new-trigger.svelte'
-import type { OperationRow, RenameEvidence } from '$lib/tauri-commands'
+import type { OperationRow, RenameEvidence, RenameEvidenceCoverage } from '$lib/tauri-commands'
 import { storeSeed, type StoreSeed } from '../store-seeding'
 import { daysAgo, hoursAgo } from './relative-time'
 
@@ -40,6 +40,7 @@ function review(
     sourceName: string
     destinationName: string
     evidence?: RenameEvidence
+    coverage?: RenameEvidenceCoverage
     allowed?: boolean
     blockedReason?: 'targetExists' | 'sourceMissing' | null
     warnings?: Array<'extensionChanged' | 'cycle'>
@@ -57,7 +58,7 @@ function review(
       sourcePath: `/gallery-fixture/${row.sourceName}`,
       volumeId: 'root',
       evidence: row.evidence ?? { source: 'filename' as const, detail: row.sourceName },
-      coverage: null,
+      coverage: row.coverage ?? null,
       allowed: row.allowed ?? row.blockedReason == null,
       blockedReason: row.blockedReason ?? null,
       warnings: row.warnings ?? [],
@@ -128,13 +129,24 @@ export const bulkRenameFixtures: Record<string, Patch<typeof askCmdrState>> = {
     ]),
   },
   // The evidence column is the point of this one: all five sources side by side, so the
-  // honest "nothing was read inside the file" labels can be compared against a real quote.
+  // honest "nothing was read inside the file" labels can be compared against a real quote —
+  // and a decisive quote can be compared against a sliver of a page of recognized text.
   'why-this-name': {
     renameReview: review([
       {
         sourceName: 'Screenshot 2026-07-24 at 11.03.18.png',
         destinationName: 'LinkedIn inbox 2026-07-24.png',
         evidence: { source: 'imageText', detail: 'LinkedIn · Messaging · 3 new messages' },
+        coverage: {
+          matchOffset: 0,
+          matchedChars: 37,
+          deliveredChars: 96,
+          contextBefore: '',
+          matchedText: 'LinkedIn · Messaging · 3 new messages',
+          contextAfter: ' · Jobs · My Network',
+          trimmedBefore: false,
+          trimmedAfter: false,
+        },
       },
       {
         sourceName: 'IMG_4417.jpeg',
@@ -163,6 +175,35 @@ export const bulkRenameFixtures: Record<string, Patch<typeof askCmdrState>> = {
           source: 'imageText',
           detail:
             'warning: unused import: `EvidenceProblem` --> src/agent/tools/propose/rename.rs:899 warning: `cmdr` generated 1 warning',
+        },
+        coverage: {
+          matchOffset: 1_284,
+          matchedChars: 121,
+          deliveredChars: 3_140,
+          contextBefore: 'Compiling cmdr v0.36.2 ',
+          matchedText:
+            'warning: unused import: `EvidenceProblem` --> src/agent/tools/propose/rename.rs:899 warning: `cmdr` generated 1 warning',
+          contextAfter: ' Finished dev profile',
+          trimmedBefore: true,
+          trimmedAfter: true,
+        },
+      },
+      // A real quote that proves almost nothing: 14 characters of 3,140, against the row above
+      // it whose quote covers 121 of the same 3,140. This pair is what the coverage hint is
+      // for, and "invoice" for a payment confirmation is exactly the wrong name it can't catch.
+      {
+        sourceName: 'Screenshot 2026-07-24 at 11.12.07.png',
+        destinationName: 'Klarna invoice 1 299 kr.png',
+        evidence: { source: 'imageText', detail: 'Total 1 299 kr' },
+        coverage: {
+          matchOffset: 2_140,
+          matchedChars: 14,
+          deliveredChars: 3_140,
+          contextBefore: 'Betalning mottagen  ',
+          matchedText: 'Total 1 299 kr',
+          contextAfter: '  Tack för ditt köp',
+          trimmedBefore: true,
+          trimmedAfter: true,
         },
       },
     ]),

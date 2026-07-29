@@ -426,6 +426,22 @@
   "@askCmdr.renameReview.evidence.userInstruction": {
     "description": "Label shown when a proposed name follows a naming rule the user stated in the chat."
   },
+  "askCmdr.renameReview.coverage": "Matched {matchedText} of {totalText} characters",
+  "@askCmdr.renameReview.coverage": {
+    "description": "Caption under the quote in the bulk rename review's evidence column, saying how much of the text Cmdr read in the image the quote covers. Lets the user see that a short match inside a page of recognized text is weak evidence for a name. Both numbers arrive preformatted with thousands separators.",
+    "placeholders": {
+      "matchedText": {
+        "content": "How many characters the quote covers, preformatted."
+      },
+      "totalText": {
+        "content": "How many characters Cmdr read in the image, preformatted."
+      }
+    }
+  },
+  "askCmdr.renameReview.coverageThin": "That’s a small part of the text Cmdr read here. Open the file to check the name.",
+  "@askCmdr.renameReview.coverageThin": {
+    "description": "Tooltip and accessible label on the warning marker beside a thin coverage figure in the bulk rename review. Tells the user the quote covers only a sliver of the recognized text, so the name deserves a look at the file itself. Never says the name is wrong: Cmdr cannot know that. The apostrophe is a curly typographic apostrophe (U+2019)."
+  },
   "askCmdr.renameReview.allow": "Allow",
   "@askCmdr.renameReview.allow": {
     "description": "Button that lets one proposed file rename proceed."
