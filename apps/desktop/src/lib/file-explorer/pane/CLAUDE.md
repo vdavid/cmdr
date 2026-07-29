@@ -6,12 +6,11 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
 ## Module map
 
 - `DualPaneExplorer.svelte`: root, owns both panes, unified key/command dispatch, the dialog manager, the MCP surface.
-- `FilePane.svelte`: one pane, owns its listing, cursor, selection, view mode, type-to-jump, rename flow, breadcrumb,
-  and the alt-view `{#if}` chain.
-- State factories (`*.svelte.ts`): `explorer-state`, `selection-state`, `rename-flow`, `persistence-subscriber`,
-  `drag-drop-controller`, `volume-tint`, and friends (full list in DETAILS).
-- Pure utilities (`*.ts`): `navigate`, `listing-loader`, `volume-capabilities`, `has-parent`, `pane-access`,
-  `focused-pane-reads`, command/coordinator factories, and keyboard helpers (full list in DETAILS).
+- `FilePane.svelte`: one pane. Keeps its lifecycle `$state`, the `FilePaneAPI` exports, and the alt-view `{#if}` chain;
+  its controller lives in siblings (DETAILS § "The FilePane controller modules").
+- Siblings hold everything else: `*.svelte.ts` state factories (`explorer-state`, `selection-state`, `rename-flow`,
+  `row-overlays`, `selection-info-feed`, …) and `*.ts` pure helpers (`navigate`, `listing-loader`, `pane-key-router`,
+  `entry-activation`, `volume-capabilities`, …). Full list in DETAILS.
 
 ## Must-knows
 
@@ -49,7 +48,7 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   `message` strings are byte-pinned. DETAILS § "The navigate() transaction".
 - **Self-drag drop builds from recorded app state, not the pasteboard** (`handleDrop` consumes
   `consumableSelfDragIdentity`). `../drag/CLAUDE.md`.
-- **`DualPaneExplorer.svelte` (~1450 lines) and `FilePane.svelte` (~2815) are `file-length`-flagged**: don't add to them
+- **`DualPaneExplorer.svelte` (~1450 lines) and `FilePane.svelte` (~1970) are `file-length`-flagged**: don't add to them
   or carve child components (DETAILS § "Why not child components"); cross-cutting state → a `*.svelte.ts` factory, pure
   logic → a `*.ts` helper.
 - **Volume tint has an old-WebKit (Safari < 16.2) sRGB fallback** gated by `hasColorMix`. Keep the reactive `mediaTick`,

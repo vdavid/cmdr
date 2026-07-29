@@ -44,6 +44,35 @@ carry live here:
   `[role="listbox"]` ancestor and a non-`.file-entry` target, so error / network / search panes (no listbox) can never
   fire the double-click-to-parent gesture.
 
+### The FilePane controller modules
+
+`FilePane.svelte` keeps only what needs the component: the lifecycle `$state` slots many concerns read (`listingId` /
+`loading` / `totalCount` / `error` / `cursorIndex` / …), the `FilePaneAPI` exports (Svelte instance exports can't live
+anywhere else), the DOM/component refs, the factory wiring, and the template. Everything else is a sibling with its own
+suite:
+
+- `row-overlays.svelte.ts`: the cloud-sync, image-index file, and folder-coverage badge feeds (maps, fetchers, live
+  setting gates, idle poll, enrich-driven refresh).
+- `selection-info-feed.svelte.ts`: the entry under the cursor and the listing stats, with their debounce/throttle and
+  the search-results snapshot mirror. `parent-entry.ts` builds the synthetic `..` row it and `entries-snapshot.ts`
+  share.
+- `pane-key-router.ts` / `pane-pointer.ts`: keyboard routing and mouse handling for a focused pane.
+- `entry-activation.ts`: what opening an entry does (redirect, archive Enter policy, browse, viewer, OS default app).
+- `breadcrumb-bar.ts`: the displayed path plus the segment-click, context-menu, and volume-switch handlers.
+- `deleted-dir-poll.ts` / `mtp-disconnect-watch.svelte.ts`: the two "what I'm showing is gone" recoveries.
+- `path-sync.ts` / `hidden-files-resync.ts`: the prop-driven reload truth table, and the cursor follow after the
+  hidden-files toggle.
+- `entries-snapshot.ts`: the Selection dialog's entry list and the operation's selected-names snapshot.
+- `network-host-state.svelte.ts`: the open Network host and its queued auto-mount share.
+
+**Where a factory is CREATED matters when it owns `$effect`s.** Svelte runs effects in creation order, so a factory
+whose effects interact with the component's own (`selection-info-feed`, which feeds the MCP push and the menu-context
+effect) is created at the spot its effects used to occupy, not with the other factories at the top. Ones whose effects
+touch only their own state (`row-overlays`, `network-host-state`) sit wherever reads them best.
+
+**Deps are deferred closures**, so a factory can be created before the state it reads is declared. That's what lets the
+listing loader (created near the top) reach `caps`, `hasParent`, and the feeds declared hundreds of lines below.
+
 ### Easy-navigation gestures (GitHub #33)
 
 Two mouse conveniences, both routed through the normal pane navigation (so Back/Forward history and the error pipeline
@@ -495,12 +524,12 @@ subscriber. Two behaviors the fold preserves byte-for-byte:
   `edge-flow-handlers`, `pane-mirror`, `key-dispatch`, `mcp-tab-action`, `swap-panes`, `volume-selection`, …). The
   `dialog-state` / `rename-flow` / `type-to-jump-state` extractions are the pattern to follow.
 
-  **Why not child components.** The seam that works here is **state-ownership vs command-logic**, not feature-carved
-  child components. A `<DialogCoordinator>` child-component split was rejected as "a boundary without a real
-  responsibility seam": dialogs read and write pane state heavily, and a child-component boundary severs that. Every
-  closure/factory/module extraction instead landed and stuck (`dialog-state`, `tab-operations`, `initialization`,
-  `index-events`, `listing-diff-sync`, `pane-mcp-sync`, and the explorer store). So when a "clean up the 3000-line
-  component" pass tempts you, reach for a store/factory/helper, never a child component to shrink the line count.
+    **Why not child components.** The seam that works here is **state-ownership vs command-logic**, not feature-carved
+    child components. A `<DialogCoordinator>` child-component split was rejected as "a boundary without a real
+    responsibility seam": dialogs read and write pane state heavily, and a child-component boundary severs that. Every
+    closure/factory/module extraction instead landed and stuck (`dialog-state`, `tab-operations`, `initialization`,
+    `index-events`, `listing-diff-sync`, `pane-mcp-sync`, and the explorer store). So when a "clean up the 3000-line
+    component" pass tempts you, reach for a store/factory/helper, never a child component to shrink the line count.
 
 ## Archive browsing and editing (kind-from-path)
 
