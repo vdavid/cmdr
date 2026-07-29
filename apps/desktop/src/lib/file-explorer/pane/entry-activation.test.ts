@@ -129,7 +129,9 @@ describe('createEntryActivation', () => {
 
     it('launches the OS default app for `open`', async () => {
       policy.resolveEnterPolicy.mockReturnValue('open')
-      await createEntryActivation(deps).handleNavigate(entryOf({ name: 'a.app', path: '/dir/a.app', isDirectory: true }))
+      await createEntryActivation(deps).handleNavigate(
+        entryOf({ name: 'a.app', path: '/dir/a.app', isDirectory: true }),
+      )
       expect(ipc.openFile).toHaveBeenCalledWith('/dir/a.app')
       expect(calls.loadDirectory).not.toHaveBeenCalled()
     })

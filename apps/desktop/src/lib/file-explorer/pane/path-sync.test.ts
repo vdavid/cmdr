@@ -37,9 +37,10 @@ describe('resolveInitialPathAction', () => {
   })
 
   it('loads when an MTP device finishes connecting, even at the same path', () => {
-    expect(
-      resolveInitialPathAction({ ...base, prevVolumeId: 'mtp-2097152', volumeId: 'mtp-2097152:65537' }),
-    ).toEqual({ kind: 'mtp-connected', path: '/dir' })
+    expect(resolveInitialPathAction({ ...base, prevVolumeId: 'mtp-2097152', volumeId: 'mtp-2097152:65537' })).toEqual({
+      kind: 'mtp-connected',
+      path: '/dir',
+    })
   })
 
   it('lets the MTP connection win over a simultaneous path change', () => {
@@ -82,9 +83,9 @@ describe('resolveInitialPathAction', () => {
   })
 
   it('ignores an MTP id that was already connected', () => {
-    expect(
-      resolveInitialPathAction({ ...base, prevVolumeId: 'mtp-1:5', volumeId: 'mtp-1:5' }),
-    ).toEqual({ kind: 'none' })
+    expect(resolveInitialPathAction({ ...base, prevVolumeId: 'mtp-1:5', volumeId: 'mtp-1:5' })).toEqual({
+      kind: 'none',
+    })
   })
 })
 

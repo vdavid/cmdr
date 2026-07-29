@@ -126,7 +126,9 @@ describe('fetchEntriesSnapshot', () => {
 describe('fetchSelectedNames', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    ipc.getFileAt.mockImplementation((_id: string, index: number) => Promise.resolve(backendEntry(`file-${String(index)}`)))
+    ipc.getFileAt.mockImplementation((_id: string, index: number) =>
+      Promise.resolve(backendEntry(`file-${String(index)}`)),
+    )
   })
 
   it('short-circuits to `all` when everything is selected', async () => {
