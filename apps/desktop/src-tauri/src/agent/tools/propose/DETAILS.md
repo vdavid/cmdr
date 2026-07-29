@@ -19,6 +19,13 @@ Each row's `evidence` is a required `{ source, detail }` pair. `EvidenceSource` 
 `detail` is bounded at both ends (4 normalized characters minimum, 160 maximum): a one-character "quote" appears in any
 text and proves nothing, and a review row can't honestly show a page of OCR output.
 
+**Decision: a tag claim lists delivered tags and nothing else.** `check_tags` requires every comma- or
+semicolon-separated part of `detail` to equal a delivered tag. The tempting direction (does the detail CONTAIN a
+delivered tag?) is a hole: tags like `document`, `screenshot`, and `text` are near-universal in a screenshot corpus, so
+160 characters of invented prose passes on one of them, and a fabricated name reads as tag-backed. `MIN_DETAIL_CHARS`
+therefore applies only to `imageText`, where matching is by substring; membership needs no length floor and real tags
+(`sky`) are short.
+
 **Decision: one unbacked row refuses the whole plan.** Staging the survivors would hand the user a partial plan they'd
 read as complete, and the model has to resend the plan either way. The refusal names every offending row
 (`evidenceRejected` + `guidance`), so no rejected row is dropped silently. The model can fix the rows or say honestly

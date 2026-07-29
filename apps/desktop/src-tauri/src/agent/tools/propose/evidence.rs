@@ -33,8 +33,10 @@ const FACTS_TTL: Duration = Duration::from_secs(30 * 60);
 /// the model can fix by asking again.
 const MAX_LEDGER_ENTRIES: usize = 1_000;
 
-/// The shortest `detail` that can back a content claim, in normalized characters. A
-/// one-or-two-character "quote" appears in almost any text, so it proves nothing.
+/// The shortest `detail` that can back an image-TEXT claim, in normalized characters. A
+/// one-or-two-character "quote" appears in almost any text, so it proves nothing. A tag claim
+/// has no such floor: membership in the delivered tag set is the proof, and real tags like
+/// "sky" are short.
 const MIN_DETAIL_CHARS: usize = 4;
 
 /// The longest `detail` the tool accepts, in characters. It's a short quote or note for a
@@ -233,7 +235,11 @@ impl ImageFactsLedger {
             return Err(EvidenceProblem::DetailTooLong);
         }
         let detail = normalize_detail(&evidence.detail);
-        if detail.chars().count() < MIN_DETAIL_CHARS {
+        // The floor guards SUBSTRING matching (a two-character "quote" hits any text). Tag
+        // claims are checked by membership, so a short real tag must not trip it.
+        if detail.is_empty()
+            || (evidence.source != EvidenceSource::ImageTags && detail.chars().count() < MIN_DETAIL_CHARS)
+        {
             return Err(EvidenceProblem::DetailTooShort);
         }
         if !evidence.source.claims_image_content() {
@@ -269,16 +275,29 @@ fn check_quote(text: &str, detail: &str) -> Result<(), EvidenceProblem> {
     }
 }
 
-/// The note has to name at least one tag that was delivered for this path.
+/// The detail must be delivered tags and NOTHING else: a comma- or semicolon-separated list
+/// where every part names a tag this path actually got.
+///
+/// Deliberately NOT "the detail contains a delivered tag". That direction lets 160 characters
+/// of invented prose pass on one near-universal tag ("document", "screenshot", "text"), which
+/// is fabrication wearing a badge — the exact thing this ledger exists to refuse.
 fn check_tags(tags: &[String], detail: &str) -> Result<(), EvidenceProblem> {
     if tags.is_empty() {
         return Err(EvidenceProblem::NoTagsInFacts);
     }
-    let named = tags.iter().any(|tag| {
-        let tag = normalize_detail(tag);
-        !tag.is_empty() && detail.contains(&tag)
-    });
-    if named {
+    let delivered: Vec<String> = tags.iter().map(|tag| normalize_detail(tag)).collect();
+    let mut named = 0usize;
+    for part in detail.split([',', ';']) {
+        let part = normalize_detail(part);
+        if part.is_empty() {
+            continue;
+        }
+        if !delivered.iter().any(|tag| !tag.is_empty() && *tag == part) {
+            return Err(EvidenceProblem::DetailNotInTags);
+        }
+        named += 1;
+    }
+    if named > 0 {
         Ok(())
     } else {
         Err(EvidenceProblem::DetailNotInTags)
@@ -426,12 +445,26 @@ mod tests {
         );
 
         assert_eq!(
+            ledger.check(THREAD, "/x/a.png", &evidence(EvidenceSource::ImageTags, "sunset")),
+            Ok(())
+        );
+        assert_eq!(
+            ledger.check(
+                THREAD,
+                "/x/a.png",
+                &evidence(EvidenceSource::ImageTags, "sunset, beach")
+            ),
+            Ok(()),
+            "a list of delivered tags is a tag claim"
+        );
+        assert_eq!(
             ledger.check(
                 THREAD,
                 "/x/a.png",
                 &evidence(EvidenceSource::ImageTags, "sunset over water")
             ),
-            Ok(())
+            Err(EvidenceProblem::DetailNotInTags),
+            "prose wrapped around a delivered tag is not a tag claim"
         );
         assert_eq!(
             ledger.check(
@@ -571,6 +604,56 @@ mod tests {
         assert_eq!(
             normalize_detail("\u{201c}Årstaviken SUNSET\u{201d}"),
             normalize_detail("a\u{30a}rstaviken sunset")
+        );
+    }
+
+    /// The bypass this check exists to stop: 160 characters of invented prose that merely
+    /// CONTAINS a near-universal delivered tag ("document", "screenshot", "text"). Under a
+    /// substring rule that passes, so a fabricated name reads as tag-backed. A tag claim must
+    /// name delivered tags and nothing else.
+    #[test]
+    fn invented_prose_around_a_real_tag_is_refused() {
+        let ledger = ImageFactsLedger::default();
+        ledger.record_delivered(
+            THREAD,
+            "call-1",
+            &image_facts_result(vec![indexed("/x/a.png", None, &["document", "screenshot"])]),
+        );
+
+        assert_eq!(
+            ledger.check(
+                THREAD,
+                "/x/a.png",
+                &evidence(EvidenceSource::ImageTags, "Klarna invoice, 1,299 SEK, receipt document")
+            ),
+            Err(EvidenceProblem::DetailNotInTags),
+            "prose that merely contains a delivered tag is not a tag claim"
+        );
+        assert_eq!(
+            ledger.check(
+                THREAD,
+                "/x/a.png",
+                &evidence(EvidenceSource::ImageTags, "document, screenshot")
+            ),
+            Ok(()),
+            "a list of delivered tags is"
+        );
+    }
+
+    /// A short tag is still a tag. The minimum-length rule guards SUBSTRING matching against
+    /// image text; membership needs no such floor.
+    #[test]
+    fn a_short_delivered_tag_backs_a_claim() {
+        let ledger = ImageFactsLedger::default();
+        ledger.record_delivered(
+            THREAD,
+            "call-1",
+            &image_facts_result(vec![indexed("/x/a.png", None, &["sky"])]),
+        );
+
+        assert_eq!(
+            ledger.check(THREAD, "/x/a.png", &evidence(EvidenceSource::ImageTags, "sky")),
+            Ok(())
         );
     }
 
