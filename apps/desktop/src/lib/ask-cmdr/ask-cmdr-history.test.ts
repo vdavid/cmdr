@@ -30,18 +30,33 @@ describe('buildRailMessages', () => {
     const items = buildRailMessages(
       detail([
         {
-          id: 1, seq: 0, role: 'user', createdAt: 0, promptTokens: null, completionTokens: null,
+          id: 1,
+          seq: 0,
+          role: 'user',
+          createdAt: 0,
+          promptTokens: null,
+          completionTokens: null,
           blocks: [{ type: 'text', text: 'what am I looking at?' }],
         },
         {
-          id: 2, seq: 1, role: 'assistant', createdAt: 0, promptTokens: null, completionTokens: null,
+          id: 2,
+          seq: 1,
+          role: 'assistant',
+          createdAt: 0,
+          promptTokens: null,
+          completionTokens: null,
           blocks: [
             { type: 'text', text: 'Checking.' },
             { type: 'toolCall', callId: 'c1', tool: 'list_dir', arguments: '{"path":"/shots"}' },
           ],
         },
         {
-          id: 3, seq: 2, role: 'tool', createdAt: 0, promptTokens: null, completionTokens: null,
+          id: 3,
+          seq: 2,
+          role: 'tool',
+          createdAt: 0,
+          promptTokens: null,
+          completionTokens: null,
           blocks: [{ type: 'toolResult', callId: 'c1', ok: false, elided: false }],
         },
       ]),
@@ -51,9 +66,7 @@ describe('buildRailMessages', () => {
     const assistant = items[1]
     if (assistant.kind !== 'assistant') throw new Error('expected an assistant item')
     expect(assistant.text).toBe('Checking.')
-    expect(assistant.tools).toEqual([
-      { callId: 'c1', tool: 'list_dir', running: false, ok: false, path: '/shots' },
-    ])
+    expect(assistant.tools).toEqual([{ callId: 'c1', tool: 'list_dir', running: false, ok: false, path: '/shots' }])
   })
 
   /** A model change persists as an `event` row, and renders as its own timeline line. */
@@ -61,7 +74,12 @@ describe('buildRailMessages', () => {
     const items = buildRailMessages(
       detail([
         {
-          id: 1, seq: 0, role: 'event', createdAt: 0, promptTokens: null, completionTokens: null,
+          id: 1,
+          seq: 0,
+          role: 'event',
+          createdAt: 0,
+          promptTokens: null,
+          completionTokens: null,
           blocks: [{ type: 'modelChanged', model: 'claude-opus-5' }],
         },
       ]),

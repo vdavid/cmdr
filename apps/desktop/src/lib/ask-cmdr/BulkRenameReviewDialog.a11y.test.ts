@@ -561,8 +561,12 @@ describe('BulkRenameReviewDialog', () => {
   it('marks the rows where nothing inside the file was read', async () => {
     reviewState.renameReview = review({
       rows: [
-        row({ rowId: 'kept', sourceName: 'IMG_4417.jpeg', destinationName: 'IMG_4417.jpeg',
-              evidence: { source: 'metadata', detail: 'Shot 2026-07-14' } }),
+        row({
+          rowId: 'kept',
+          sourceName: 'IMG_4417.jpeg',
+          destinationName: 'IMG_4417.jpeg',
+          evidence: { source: 'metadata', detail: 'Shot 2026-07-14' },
+        }),
         row({ rowId: 'nothing-read', evidence: { source: 'metadata', detail: 'Shot 2026-07-14' } }),
         row({ rowId: 'read', evidence: { source: 'imageText', detail: 'Invoice 4021 total' } }),
         row({ rowId: 'typed', evidence: { source: 'userEdited', detail: '' } }),
