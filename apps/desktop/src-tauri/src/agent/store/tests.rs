@@ -4,7 +4,7 @@
 
 use std::collections::HashSet;
 
-use rusqlite::{Connection, Transaction};
+use rusqlite::Transaction;
 
 use super::migrations::read_schema_version;
 use super::*;
@@ -46,7 +46,7 @@ const LADDER_V2: &[Migration] = &[
 /// delete-and-recreate: the user's chat history survives a schema change.
 #[test]
 fn forward_migration_preserves_rows_and_bumps_version() {
-    let conn = Connection::open_in_memory().expect("in-memory db");
+    let conn = crate::sqlite_util::open_in_memory().expect("in-memory db");
     run_migrations(&conn, LADDER_V1).expect("migrate to v1");
     assert_eq!(read_schema_version(&conn).expect("version"), 1);
     conn.execute("INSERT INTO widget (id, a) VALUES (1, 'hi')", [])
@@ -67,7 +67,7 @@ fn forward_migration_preserves_rows_and_bumps_version() {
 /// Re-running the same ladder is a no-op: the version stays put and nothing re-applies.
 #[test]
 fn re_running_the_ladder_is_a_noop() {
-    let conn = Connection::open_in_memory().expect("in-memory db");
+    let conn = crate::sqlite_util::open_in_memory().expect("in-memory db");
     run_migrations(&conn, LADDER_V2).expect("migrate to v2");
     run_migrations(&conn, LADDER_V2).expect("second run is a no-op");
     assert_eq!(read_schema_version(&conn).expect("version"), 2);
@@ -77,7 +77,7 @@ fn re_running_the_ladder_is_a_noop() {
 /// newer DB may hold data this build can't represent.
 #[test]
 fn downgrade_is_refused_not_destroyed() {
-    let conn = Connection::open_in_memory().expect("in-memory db");
+    let conn = crate::sqlite_util::open_in_memory().expect("in-memory db");
     run_migrations(&conn, LADDER_V2).expect("migrate to v2");
     conn.execute("INSERT INTO widget (id, a) VALUES (7, 'precious')", [])
         .expect("insert");
@@ -144,7 +144,7 @@ fn fresh_open_builds_current_schema() {
 /// forward to the current version, gaining `last_model` as NULL without touching rows.
 #[test]
 fn production_v1_db_migrates_forward_gaining_last_model() {
-    let conn = rusqlite::Connection::open_in_memory().expect("in-memory db");
+    let conn = crate::sqlite_util::open_in_memory().expect("in-memory db");
     run_migrations(&conn, &MIGRATIONS[..1]).expect("run v1 only");
     conn.execute(
         "INSERT INTO conversations (id, title, created_at, updated_at) VALUES (1, 'old thread', 10, 10)",
@@ -294,8 +294,9 @@ fn conversation_cost_sums_and_flags_unpriced() {
     assert!(empty.providers.is_empty());
 }
 
-/// Read-only connections open with the small page cache, write connections with
-/// the big one. Shared budgets and the rationale: `crate::sqlite_util`.
+/// Read-only connections open with the smaller page cache, write connections
+/// with the bigger one. Both are upper bounds drawn from the process-wide slab;
+/// budgets and rationale: `crate::sqlite_util`.
 #[test]
 fn read_connections_get_a_smaller_page_cache_than_write_connections() {
     use crate::sqlite_util::{READ_PAGE_CACHE_KIB, WRITE_PAGE_CACHE_KIB, page_cache_kib};

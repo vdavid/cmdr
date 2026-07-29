@@ -39,7 +39,7 @@ fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), ImportanceStor
 /// (which also owns the schema-version check). Callers own the returned
 /// connection.
 pub(crate) fn open_write_connection(db_path: &Path) -> Result<Connection, ImportanceStoreError> {
-    let conn = Connection::open(db_path)?;
+    let conn = crate::sqlite_util::open(db_path)?;
     register_collation(&conn)?;
     apply_pragmas(&conn, false)?;
     conn.execute_batch(CREATE_TABLES)?;
@@ -51,7 +51,7 @@ pub(crate) fn open_write_connection(db_path: &Path) -> Result<Connection, Import
 /// exist (the writer/`open` path created them); a read-only connection can't
 /// create them.
 pub fn open_read_connection(db_path: &Path) -> Result<Connection, ImportanceStoreError> {
-    let conn = Connection::open_with_flags(db_path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)?;
+    let conn = crate::sqlite_util::open_read_only(db_path)?;
     register_collation(&conn)?;
     apply_pragmas(&conn, true)?;
     Ok(conn)

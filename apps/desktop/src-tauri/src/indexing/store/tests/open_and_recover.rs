@@ -356,11 +356,11 @@ fn a_failed_savepoint_call_leaves_the_connection_in_autocommit() {
 
 // ── Page-cache budget ────────────────────────────────────────────────
 
-/// A read-only connection must open with the SMALL page cache and the write
-/// connection with the big one. Read connections are thread-local and outlive
-/// every query (`read/enrichment.rs`'s `THREAD_CONN`), so 100+ pile up in a long
-/// session; handing each the writer's budget is what put a 2.5 GB ceiling on the
-/// process. `open` itself is a write path, so its `read_conn` field is NOT the
+/// A read-only connection must open with the SMALLER page cache and the write
+/// connection with the bigger one. Both are upper bounds drawn from the
+/// process-wide slab (`crate::sqlite_util`), not reservations; the writer's is
+/// larger because it holds a whole `wal_autocheckpoint` window of dirty pages.
+/// `open` itself is a write path, so its `read_conn` field is NOT the
 /// small-cache one.
 #[test]
 fn read_connections_get_a_smaller_page_cache_than_write_connections() {

@@ -357,7 +357,7 @@ fn bench_volume_fanout() {
 /// bench reads a path, while production reads a data dir + volume id).
 fn load_weights_from(path: &str) -> ImportanceWeights {
     let mut weights = ImportanceWeights::empty();
-    let Ok(conn) = rusqlite::Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY) else {
+    let Ok(conn) = crate::sqlite_util::open_read_only(std::path::Path::new(path)) else {
         return weights;
     };
     let Ok(mut stmt) = conn.prepare("SELECT path, score FROM weights WHERE score > 0") else {

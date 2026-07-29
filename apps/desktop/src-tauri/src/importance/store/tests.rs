@@ -490,10 +490,11 @@ fn needs_initial_full_pass_is_false_for_an_already_scored_store() {
     );
 }
 
-/// Read-only connections open with the small page cache, write connections with
-/// the big one. `ImportanceIndex` holds a thread-local read connection per
-/// blocking thread (`../read/mod.rs`'s `READ_CONN`), so these are the many;
-/// the writer is the one. Shared budgets: `crate::sqlite_util`.
+/// Read-only connections open with the smaller page cache, write connections
+/// with the bigger one. `ImportanceIndex` holds thread-local read connections
+/// (`../read/mod.rs`'s `READ_CONNS`), so these are the many; the writer is the
+/// one. Both budgets are upper bounds drawn from the process-wide slab in
+/// `crate::sqlite_util`.
 #[test]
 fn read_connections_get_a_smaller_page_cache_than_write_connections() {
     use crate::sqlite_util::{READ_PAGE_CACHE_KIB, WRITE_PAGE_CACHE_KIB, page_cache_kib};

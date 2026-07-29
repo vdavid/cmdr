@@ -129,6 +129,18 @@ var AllChecks = []CheckDefinition{
 		Run:               RunLogErrorMacro,
 	},
 	{
+		ID:                "desktop-rust-sqlite-open-direct",
+		Nickname:          "sqlite-open-direct",
+		DisplayName:       "sqlite-open-direct",
+		App:               AppDesktop,
+		Tech:              "🦀 Rust",
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Inputs:            rustInputs,
+		Run:               RunSqliteOpenDirect,
+	},
+	{
 		ID:                "desktop-rust-error-string-match",
 		Nickname:          "error-string-match",
 		DisplayName:       "error-string-match",

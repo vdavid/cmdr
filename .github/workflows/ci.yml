@@ -162,6 +162,9 @@ jobs:
       - name: Check log-error-macro
         run: ./scripts/check/check --check desktop-rust-log-error-macro --ci
 
+      - name: Check sqlite-open-direct
+        run: ./scripts/check/check --check desktop-rust-sqlite-open-direct --ci
+
       - name: Check error-string-match
         run: ./scripts/check/check --check desktop-rust-error-string-match --ci
 

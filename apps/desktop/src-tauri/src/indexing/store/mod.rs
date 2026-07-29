@@ -610,8 +610,8 @@ fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), IndexStoreErro
         // fire ~4x less often (fewer fsync barriers) while the WAL between them
         // stays small enough to keep reads fast. That pairing is why the write
         // budget is 16 MiB: change one and reconsider the other. It's write-side
-        // only — read connections never commit or checkpoint, which is exactly why
-        // they can run the far smaller `READ_PAGE_CACHE_KIB`.
+        // only — read connections never commit or checkpoint, which is why they
+        // hold no dirty-page window and run the smaller `READ_PAGE_CACHE_KIB`.
         //
         // `journal_size_limit` caps the on-disk `-wal` file after a checkpoint
         // resets it: a backstop for the window between the 30 s

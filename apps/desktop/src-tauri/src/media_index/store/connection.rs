@@ -36,7 +36,7 @@ fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), MediaStoreErro
 /// if missing (including the FTS5 `media_ocr` virtual table). Used by the writer
 /// thread and by `MediaStore::open` (which also owns the schema-version check).
 pub(crate) fn open_write_connection(db_path: &Path) -> Result<Connection, MediaStoreError> {
-    let conn = Connection::open(db_path)?;
+    let conn = crate::sqlite_util::open(db_path)?;
     register_collation(&conn)?;
     apply_pragmas(&conn, false)?;
     // Creating `media_ocr USING fts5` here is also the FTS5 availability guard: a
@@ -49,7 +49,7 @@ pub(crate) fn open_write_connection(db_path: &Path) -> Result<Connection, MediaS
 /// Open a read-only connection with the collation and read pragmas. Never contends
 /// with the writer thread's write lock (WAL). The tables are assumed to exist.
 pub fn open_read_connection(db_path: &Path) -> Result<Connection, MediaStoreError> {
-    let conn = Connection::open_with_flags(db_path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)?;
+    let conn = crate::sqlite_util::open_read_only(db_path)?;
     register_collation(&conn)?;
     apply_pragmas(&conn, true)?;
     Ok(conn)

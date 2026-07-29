@@ -11,7 +11,7 @@ use crate::agent::types::ConversationOrigin;
 /// An in-memory `main.db` at the current schema. FTS5 works in-memory, so this exercises
 /// the real triggers and query paths without a temp file.
 fn migrated_conn() -> Connection {
-    let conn = Connection::open_in_memory().expect("in-memory db");
+    let conn = crate::sqlite_util::open_in_memory().expect("in-memory db");
     conn.execute_batch("PRAGMA foreign_keys = ON;").expect("pragma");
     super::super::run_migrations(&conn, super::super::MIGRATIONS).expect("migrate");
     conn

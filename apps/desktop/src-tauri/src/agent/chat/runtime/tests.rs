@@ -36,7 +36,7 @@ use crate::test_support::wait_until_async;
 const TEST_PROMPT_BUDGET: usize = crate::agent::chat::budget::DEFAULT_PROMPT_TOKEN_BUDGET;
 
 fn migrated_conn() -> Connection {
-    let conn = Connection::open_in_memory().expect("in-memory db");
+    let conn = crate::sqlite_util::open_in_memory().expect("in-memory db");
     conn.execute_batch("PRAGMA foreign_keys = ON;").expect("pragma");
     store::run_migrations(&conn, store::MIGRATIONS).expect("migrate");
     conn

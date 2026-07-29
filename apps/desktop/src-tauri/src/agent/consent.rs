@@ -27,7 +27,7 @@ mod tests {
     use super::*;
 
     fn migrated_conn() -> Connection {
-        let conn = Connection::open_in_memory().expect("in-memory db");
+        let conn = crate::sqlite_util::open_in_memory().expect("in-memory db");
         store::run_migrations(&conn, store::MIGRATIONS).expect("migrate");
         conn
     }

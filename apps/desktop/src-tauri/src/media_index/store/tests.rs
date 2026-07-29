@@ -377,9 +377,10 @@ fn clip_and_vision_staleness_are_independent() {
     assert!(needs_clip(Some(&vision_current_clip_stale), Some("clip-v1")));
 }
 
-/// Read-only connections open with the small page cache, write connections with
-/// the big one. The media read path opens a fresh read connection per query, so
-/// the budget is paid on every one. Shared budgets: `crate::sqlite_util`.
+/// Read-only connections open with the smaller page cache, write connections
+/// with the bigger one. The media read path opens a fresh read connection per
+/// query, so the budget is claimed on every one. Both are upper bounds drawn
+/// from the process-wide slab in `crate::sqlite_util`.
 #[test]
 fn read_connections_get_a_smaller_page_cache_than_write_connections() {
     use crate::sqlite_util::{READ_PAGE_CACHE_KIB, WRITE_PAGE_CACHE_KIB, page_cache_kib};

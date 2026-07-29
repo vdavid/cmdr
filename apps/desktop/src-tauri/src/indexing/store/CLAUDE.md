@@ -31,10 +31,12 @@ pipeline: `../CLAUDE.md`.
   code) returns an error. Never widen `indicates_corruption()`; rebuilding a real index costs tens of minutes. Bump
   `SCHEMA_VERSION` (in `mod.rs`) for any schema change; there's no migration path by design.
 
-- **Page cache is role-sized in ONE place: `crate::sqlite_util::apply_page_cache`** (reads 2 MiB, writes 16 MiB). ❌
-  Don't hardcode `cache_size` per store, and ❌ don't raise the read budget: read connections are thread-local and
-  100+ pile up (156 held ~1.15 GB in prod). The write 16 MiB is coupled to `wal_autocheckpoint = 4000`. DETAILS §
-  "read connections get an 8x smaller page cache".
+- **Every SQLite connection in the app opens through `crate::sqlite_util::{open, open_read_only, open_in_memory}`**,
+  which install the process-wide 64 MiB page-cache slab first. ❌ Never call `rusqlite::Connection::open*` directly
+  (enforced by `desktop-rust-sqlite-open-direct`): the first open initializes SQLite and locks the slab out for good,
+  silently restoring a memory profile that scales with connection count. Page cache is role-sized in ONE place
+  (`apply_page_cache`: reads 8 MiB, writes 16 MiB, both upper bounds out of the slab); the write 16 MiB is coupled to
+  `wal_autocheckpoint = 4000`. DETAILS § "SQLite page memory is one process-wide slab".
 
 - **Scan calibration lives in PER-WALK-KIND `meta` buckets, never one slot.** A truncating full walk and a
   rescan-in-place change check differ ~5x in wall clock, so sharing `scan_duration_ms` / `total_entries` makes each run

@@ -41,7 +41,7 @@ fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), AgentStoreErro
 /// the current version (creating it on a fresh file). Callers own the returned
 /// connection.
 pub(crate) fn open_write_connection(db_path: &Path) -> Result<Connection, AgentStoreError> {
-    let conn = Connection::open(db_path)?;
+    let conn = crate::sqlite_util::open(db_path)?;
     apply_pragmas(&conn, false)?;
     run_migrations(&conn, MIGRATIONS)?;
     Ok(conn)
@@ -51,7 +51,7 @@ pub(crate) fn open_write_connection(db_path: &Path) -> Result<Connection, AgentS
 /// (WAL). The schema is assumed current (the write path migrated it); a read-only
 /// connection can neither create nor migrate tables.
 pub fn open_read_connection(db_path: &Path) -> Result<Connection, AgentStoreError> {
-    let conn = Connection::open_with_flags(db_path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)?;
+    let conn = crate::sqlite_util::open_read_only(db_path)?;
     apply_pragmas(&conn, true)?;
     Ok(conn)
 }

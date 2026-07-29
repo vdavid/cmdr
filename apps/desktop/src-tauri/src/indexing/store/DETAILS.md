@@ -140,32 +140,65 @@ the two schema-mismatch tests keep the recreate paths intact.
 `find_entry_by_inode()` returns the first row with a given inode (the live event loop's rename pre-pass). Both path-keyed
 (backward compat) and integer-keyed APIs exist.
 
-## Decision: read connections get an 8x smaller page cache than the write connection
+## Decision: SQLite page memory is one process-wide slab, not a per-connection budget
 
-`apply_pragmas` takes a `readonly` flag and delegates the page-cache budget to `crate::sqlite_util::apply_page_cache`,
-which every store's `apply_pragmas` shares: `WRITE_PAGE_CACHE_KIB` (16 MiB) for a write connection,
-`READ_PAGE_CACHE_KIB` (2 MiB) for a read-only one. It's one helper rather than five copies of a literal precisely
-because the failure mode is silent: a store that keeps its own number drifts back up and nothing complains.
+The canonical home for the whole app's SQLite memory model; the code is `crate::sqlite_util`.
+
+**The problem.** Read connections are thread-local and live as long as their thread (`../read/enrichment.rs`'s
+`THREAD_CONNS`, `importance/read/mod.rs`'s `READ_CONNS`), so their count tracks tokio's blocking-thread pool rather
+than anything semantic. A profiled prod session (v0.36.2, ~10 h uptime, macOS 26.5.2, `lsof` + `footprint -s`,
+2026-07-28) had **156 open connections** across 69 blocking threads (57 × `importance-root.db`, 53 × `index-root.db`,
+30 + 10 on the NAS volume, 6 × `media-root.db`), holding ~1.15 GB of a 2.5 GB footprint. Any per-connection
+`cache_size` is a ceiling that multiplies by a number nothing controls.
+
+**The fix.** `sqlite_util::install_shared_page_cache` hands SQLite one 64 MiB slab via
+`sqlite3_config(SQLITE_CONFIG_PAGECACHE, pBuf, sz, N)`. Total page-cache memory is then that one number no matter how
+many connections exist, and it's allocated on demand out of the slab: a connection running a real scan can take a large
+share while a hundred idle ones hold nothing. The bundled SQLite defines `SQLITE_ENABLE_MEMORY_MANAGEMENT`, so
+`pcache1` runs a UNIFIED page group (one LRU across every connection) rather than per-cache groups, which is what makes
+the sharing dynamic instead of first-come-first-served. Slot size is `4096 + sqlite3_config(SQLITE_CONFIG_PCACHE_HDRSZ)`
+rounded to 8, queried rather than guessed: a slot one byte too small is never used and every allocation silently falls
+through to the heap (verified against the bundled amalgamation's `pcache1Alloc`, libsqlite3-sys 0.38.1, 2026-07-29).
+
+**Why 64 MiB.** It holds a whole `wal_autocheckpoint` window (16 MiB) for two concurrently scanning volumes plus every
+hot DB's upper b-tree levels and a real leaf working set, and it's ~5x below the 310 MB the per-connection ceiling
+allowed at the profiled connection count. The tradeoff is honest: the slab is allocated and touched up front, so it's a
+FIXED resident cost even for a session that opens one small DB, where the old model would have held less. We take that
+trade because the failure the profile found was steady-state growth, not a peak, and a predictable 64 MiB beats an
+unpredictable 310 MB.
+
+**Ordering is the whole game.** `sqlite3_config` only works before SQLite initializes itself, and the first connection
+opened ANYWHERE in the process initializes it. So every connection opens through `sqlite_util::{open, open_read_only,
+open_in_memory}`, which force the slab first; a direct `rusqlite::Connection::open*` that won the race would
+permanently and silently restore the old profile. The `desktop-rust-sqlite-open-direct` check forbids one outside
+`sqlite_util.rs`, and `ensure_shared_page_cache()` reports `TooLate` (with a `warn!`) if it ever happens anyway.
+
+**Alternative weighed:** `sqlite3_soft_heap_limit64` also bounds the process dynamically and costs nothing at rest (the
+bundled `SQLITE_ENABLE_MEMORY_MANAGEMENT` build can reclaim page cache under it). We chose the slab because it's a hard
+bound with no reclaim heuristics, it degrades gracefully (SQLite falls back to `sqlite3Malloc` when the slab is
+exhausted, and flips a global under-pressure flag that makes every cache recycle rather than grow), and it leaves the
+heap accounting alone.
+
+### The per-connection budgets on top
+
+`apply_pragmas` takes a `readonly` flag and delegates to `crate::sqlite_util::apply_page_cache`, which every store's
+`apply_pragmas` shares: `WRITE_PAGE_CACHE_KIB` (16 MiB) for a write connection, `READ_PAGE_CACHE_KIB` (8 MiB) for a
+read-only one. With the slab installed these are UPPER BOUNDS per connection, not reservations, so they no longer
+multiply into a process-wide number. One helper rather than five copies of a literal, because the failure mode is
+silent: a store that keeps its own number drifts and nothing complains.
 
 **Why the write budget is 16 MiB.** It's coupled to `wal_autocheckpoint = 4000` (~16 MiB of 4 KiB pages, set in the
 same function): the cache is sized to hold what a whole autocheckpoint window dirties, so a big write batch commits
 without evicting pages it's about to touch again. Change one and reconsider the other. There is at most ONE write
-connection per DB (the single writer thread), so this budget is paid a handful of times process-wide.
+connection per DB (the single writer thread).
 
-**Why reads need far less.** Read connections are the many. They're thread-local and live as long as their thread
-(`../read/enrichment.rs`'s `THREAD_CONN`, `importance/read/mod.rs`'s `READ_CONN`), so the count tracks tokio's
-blocking-thread pool rather than anything semantic. A profiled prod session (v0.36.2, ~10 h uptime, macOS 26.5.2,
-`lsof` + `footprint -s`, 2026-07-28) had **156 open connections** across 69 blocking threads (57 × `importance-root.db`,
-53 × `index-root.db`, 30 + 10 on the NAS volume, 6 × `media-root.db`), holding ~1.15 GB of a 2.5 GB ceiling. At 2 MiB
-the same 156 connections cap at ~310 MB.
+**Why reads get 8 MiB.** It comfortably holds the upper interior levels of the hot b-trees plus a directory's worth of
+leaves, which is what the enrichment path needs: point lookups on `(parent_id, name_folded)` and one range scan. A
+whole-index working set never fits (a 6.9M-row index runs ~170 k leaf pages) and the OS file cache backs those anyway.
+Reads never commit or checkpoint, so nothing here touches the WAL.
 
-2 MiB is SQLite's own default. It comfortably holds the upper interior levels of the hot b-trees, which is what the
-enrichment path actually needs: point lookups on `(parent_id, name_folded)` and one directory's worth of range scan. A
-whole-index working set never fit at 16 MiB either (a 6.9M-row index runs ~170 k leaf pages), so the big budget was
-buying leaf-page retention that the OS file cache already backs. Reads never commit or checkpoint, so nothing here
-touches the WAL. **The fix is a ceiling, not a cure** — the connections still accumulate; bounding what each one costs
-is what M1 buys.
-
-**Test coverage**: `read_connections_get_a_smaller_page_cache_than_write_connections`, one per store (`tests/open_and_recover.rs` here
-and in `importance/store`, `media_index/store`, `agent/store`, `operation_log/store`), asserts the exact KiB each role
-opens with, so a future edit can't quietly re-inflate reads.
+**Test coverage**: `sqlite_util::tests` pins the slab (installed before any connection opens, budget numbers, and
+`SQLITE_STATUS_PAGECACHE_USED > 0` proving pages really come from it), and
+`read_connections_get_a_smaller_page_cache_than_write_connections`, one per store (`tests/open_and_recover.rs` here and
+in `importance/store`, `media_index/store`, `agent/store`, `operation_log/store`), asserts the exact KiB each role opens
+with.

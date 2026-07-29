@@ -30,12 +30,23 @@ They accumulate because read connections are **thread-local and live as long as 
 (`indexing/read/enrichment.rs`'s `THREAD_CONN`, `ImportanceIndex`'s `READ_CONN`), so the count tracks tokio's
 blocking-thread pool (69 threads at sample time), not anything semantic.
 
-**Fixed** by splitting the budget by role in one place (`sqlite_util::apply_page_cache`): 16 MiB for the single writer
-per DB, 2 MiB for read-only opens. Same 156 connections now cap at ~310 MB. Rationale and the write budget's coupling to
-`wal_autocheckpoint`: `apps/desktop/src-tauri/src/indexing/store/DETAILS.md`.
+**Fixed** in two steps:
 
-This is a ceiling, not a cure — the connections still accumulate; only their unit cost is bounded. If connection count
-itself ever needs fixing, that's a separate change to the thread-local lifetime.
+1. Split the per-connection budget by role in one place (`sqlite_util::apply_page_cache`): 16 MiB for the single writer
+   per DB, a small budget for read-only opens. That dropped the ceiling from 2.5 GB to ~310 MB, but it was a ceiling,
+   not a cure: the connections still accumulated, and 310 MB still scaled with a number nothing controls.
+2. Made total page memory ONE number: a 64 MiB process-wide slab handed to SQLite via
+   `sqlite3_config(SQLITE_CONFIG_PAGECACHE, …)` before the first connection opens. Page memory is now independent of
+   connection count and shared dynamically, which also let the read budget go back UP (to 8 MiB per connection, an
+   upper bound out of the slab rather than a reservation).
+
+Rationale, the sizing, the ordering guarantee, and the alternative weighed:
+`apps/desktop/src-tauri/src/indexing/store/DETAILS.md` § "SQLite page memory is one process-wide slab".
+
+The connection count itself was a separate, real cost: both read paths held a SINGLE thread-local connection, so a
+thread alternating between two volumes reopened on every alternation and threw away its `prepare_cached` statements.
+They now keep a three-slot LRU (`sqlite_util::ThreadConnCache`), affordable precisely because memory no longer tracks
+connection count.
 
 ## Cause 2 — a 60-second rescore treadmill
 

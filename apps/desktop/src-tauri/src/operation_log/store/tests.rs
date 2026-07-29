@@ -2,7 +2,7 @@
 //! TDD'd with a real red), dir interning, and case folding. The full
 //! open→write→read round-trip through the writer lives in `writer.rs` tests.
 
-use rusqlite::{Connection, Transaction};
+use rusqlite::Transaction;
 
 use super::migrations::read_schema_version;
 use super::*;
@@ -43,7 +43,7 @@ const LADDER_V2: &[Migration] = &[
 /// change.
 #[test]
 fn forward_migration_preserves_rows_and_bumps_version() {
-    let conn = Connection::open_in_memory().expect("in-memory db");
+    let conn = crate::sqlite_util::open_in_memory().expect("in-memory db");
 
     // Bring the DB to v1 and write a row.
     run_migrations(&conn, LADDER_V1).expect("migrate to v1");
@@ -69,7 +69,7 @@ fn forward_migration_preserves_rows_and_bumps_version() {
 /// re-applied (an idempotent open).
 #[test]
 fn re_running_the_ladder_is_a_noop() {
-    let conn = Connection::open_in_memory().expect("in-memory db");
+    let conn = crate::sqlite_util::open_in_memory().expect("in-memory db");
     run_migrations(&conn, LADDER_V2).expect("migrate to v2");
     // A second identical run must not try to re-create the table (which would
     // error) or bump the version.
@@ -82,7 +82,7 @@ fn re_running_the_ladder_is_a_noop() {
 /// data this build can't represent.
 #[test]
 fn downgrade_is_refused_not_destroyed() {
-    let conn = Connection::open_in_memory().expect("in-memory db");
+    let conn = crate::sqlite_util::open_in_memory().expect("in-memory db");
     run_migrations(&conn, LADDER_V2).expect("migrate to v2");
     conn.execute("INSERT INTO widget (id, a) VALUES (7, 'precious')", [])
         .expect("insert");
@@ -213,8 +213,9 @@ fn intern_dir_folds_case_on_macos() {
     assert_eq!(mixed, lower, "case-variant paths intern to the same dir");
 }
 
-/// Read-only connections open with the small page cache, write connections with
-/// the big one. Shared budgets and the rationale: `crate::sqlite_util`.
+/// Read-only connections open with the smaller page cache, write connections
+/// with the bigger one. Both are upper bounds drawn from the process-wide slab;
+/// budgets and rationale: `crate::sqlite_util`.
 #[test]
 fn read_connections_get_a_smaller_page_cache_than_write_connections() {
     use crate::sqlite_util::{READ_PAGE_CACHE_KIB, WRITE_PAGE_CACHE_KIB, page_cache_kib};

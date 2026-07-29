@@ -431,7 +431,9 @@ Gotchas:
 Checks by app and tech:
 
 - **Desktop / Rust**: rustfmt, clippy, cargo-audit, cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd,
-  log-error-macro, error-string-match, lock-poison, test-sleep (flags a fixed `thread::sleep` / `tokio::time::sleep` in
+  log-error-macro, sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide
+  shared page cache is always installed before SQLite initializes), error-string-match, lock-poison, test-sleep (flags a
+  fixed `thread::sleep` / `tokio::time::sleep` in
   test code, where a condition-based `wait_until` belongs; opt out a genuine sleep-is-the-subject site with
   `// allowed-test-sleep: <reason>`), mtp-dropping-timeout, mtp-no-transport-reset, bindings-fresh, ipc-enum-camelcase,
   tests, integration-tests (Docker SMB), tests-linux (slow)
