@@ -33,6 +33,7 @@ import noRawTauriInvoke from './eslint-plugins/no-raw-tauri-invoke.js'
 import noRawBindingsImport from './eslint-plugins/no-raw-bindings-import.js'
 import noExplorerStateWrites from './eslint-plugins/no-explorer-state-writes.js'
 import noRawCommandDispatch from './eslint-plugins/no-raw-command-dispatch.js'
+import noRawKeyMatch from './eslint-plugins/no-raw-key-match.js'
 import noRawLucideImport from './eslint-plugins/no-raw-lucide-import.js'
 import noRawArkImport from './eslint-plugins/no-raw-ark-import.js'
 import noRawLocaleFormat from './eslint-plugins/no-raw-locale-format.js'
@@ -265,6 +266,7 @@ export default tseslint.config(
           'no-raw-bindings-import': noRawBindingsImport,
           'no-explorer-state-writes': noExplorerStateWrites,
           'no-raw-command-dispatch': noRawCommandDispatch,
+          'no-raw-key-match': noRawKeyMatch,
           'no-raw-lucide-import': noRawLucideImport,
           'no-raw-ark-import': noRawArkImport,
           'no-raw-locale-format': noRawLocaleFormat,
@@ -282,6 +284,12 @@ export default tseslint.config(
       'cmdr/no-raw-bindings-import': 'error',
       'cmdr/no-explorer-state-writes': 'error',
       'cmdr/no-raw-command-dispatch': 'error',
+      // A keydown handler matches a WHOLE combo via `eventMatchesCommand`, never a
+      // hand-rolled `e.key === 'a' && e.metaKey`: that's a modifier SUPERSET, so ⌥⌘A
+      // satisfied it too and opening Ask Cmdr also selected every file. Error, not
+      // warn — the failure mode is silent (a second command fires) and the fix is
+      // mechanical. See `lib/shortcuts/CLAUDE.md`.
+      'cmdr/no-raw-key-match': 'error',
       'cmdr/no-raw-lucide-import': 'error',
       // Each `@ark-ui/svelte` primitive is wrapped once in a house component
       // under `lib/ui/` (named 1:1 after Ark); feature/section code uses those

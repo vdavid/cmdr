@@ -349,6 +349,16 @@
         setOpen(true)
     }
 
+    /**
+     * Exactly ⌥↑ / ⌥↓, no extra modifiers. The volume chooser isn't in the command
+     * registry, so this one matches locally, but it still pins the WHOLE combo:
+     * ⌥⌘↑ and ⇧⌥↑ mean other things and must not reorder a favorite too.
+     */
+    function isFavoriteReorderKey(e: KeyboardEvent): boolean {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || !e.altKey) return false
+        return e.key === 'ArrowUp' || e.key === 'ArrowDown'
+    }
+
     // Export keyboard handler for parent components to call
     export function handleKeyDown(e: KeyboardEvent): boolean {
         if (!isOpen) return false
@@ -360,10 +370,12 @@
         // commit / cancel still work.
         if (fav.renamingFavoriteId !== null) return false
 
-        // Keyboard reorder of the highlighted favorite (Alt+Up / Alt+Down). The rows
-        // aren't DOM-focused (the dropdown navigates by a virtual `highlightedIndex`),
-        // so this must run here, BEFORE `handleDropdownKey` consumes the bare arrows.
-        if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        // Keyboard reorder of the highlighted favorite (⌥↑ / ⌥↓). The rows aren't
+        // DOM-focused (the dropdown navigates by a virtual `highlightedIndex`), so
+        // this must run here, BEFORE `handleDropdownKey` consumes the bare arrows.
+        // Exactly ⌥, no extras: ⌥⌘↑ and ⇧⌥↑ are other combos and must not reorder a
+        // favorite on their way elsewhere.
+        if (isFavoriteReorderKey(e)) {
             const highlighted =
                 highlightedIndex >= 0 && highlightedIndex < allVolumes.length
                     ? allVolumes[highlightedIndex]

@@ -42,16 +42,17 @@ Background on default sort-order shortcuts: `docs/notes/sort-order-shortcut-rese
 - **`menuCommands` (in `shortcuts-store.ts`) must stay in sync with the Rust menu items.** The
   `menuCommands ↔ command_id_to_menu_id` set-equality test in `commands/rust-command-id-drift.test.ts` fails when a menu
   item is missing (stale accelerator after rebind) or excused without a documented reason.
-- **`downloads.goToLatest` binds `⌘J` deliberately, not by oversight**, deviating from Finder's "View Options".
-  User-confirmed; don't "fix" it to match Finder. Rationale: DETAILS.md.
+- **`downloads.goToLatest` binds `⌘J` deliberately**, not Finder's "View Options". User-confirmed; don't "fix" it.
+  Rationale: DETAILS.md.
 - **`handleGlobalKeyDown` bails when focus is in a text input and the combo `isTypingKeyCombo`** (central typing guard),
   so a bare-key Tier 1 binding (Tab → switch pane) doesn't fire mid-typing. No chords; modifier-only combos are
   rejected.
 - **❌ Never hand-roll a key predicate (`e.key === 'a' && e.metaKey`) in a keydown handler.** That's a modifier
   SUPERSET: `⌥⌘A` matched it, so opening Ask Cmdr also selected every file. A local handler calls
   `eventMatchesCommand(e, 'some.command')` (exact, follows a rebind, scope-correct); the document handler uses
-  `lookupCommand`. `allowShift` is only for the file list's Shift-extends-selection gesture. Class-of-key matchers
-  (type-to-jump, `+`/`-`) stay hand-rolled but still reject ⌘/⌃/⌥.
+  `lookupCommand`. `allowShift` is only for the file list's Shift-extends-selection gesture. `cmdr/no-raw-key-match`
+  fails the build on the superset shape; class-of-key matchers (type-to-jump, `+`/`-`) and fully-pinned local combos
+  (all four modifiers named) pass.
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

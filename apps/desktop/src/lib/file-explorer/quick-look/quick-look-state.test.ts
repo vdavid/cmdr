@@ -9,6 +9,15 @@ type HandlerMap = Record<string, EventHandler>
 // `no-unnecessary-type-assertion` would otherwise strip an inline
 // `as HandlerMap` cast (it doesn't see the wider scope where the cast
 // matters for the destructured `handlers`).
+// The close gesture resolves `file.quickLook` through the command registry, and that
+// command's `⇧Space` default is gated on `isMacOS()` AT MODULE LOAD (Quick Look is a
+// macOS-only feature, so the registry declares no shortcut elsewhere). happy-dom
+// reports a Linux UA, so pin macOS from a `vi.hoisted` block: a `beforeAll` spy would
+// run after `command-registry` has already read the user agent.
+vi.hoisted(() => {
+  vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' })
+})
+
 const { handlers, unlistenFns, quickLookCloseMock } = vi.hoisted(
   (): {
     handlers: HandlerMap
@@ -141,6 +150,23 @@ describe('quickLookState', () => {
     expect(quickLookState.isOpen).toBe(false)
     expect(quickLookCloseMock).toHaveBeenCalledTimes(1)
     expect(quickLookDispatchGuardJustFired()).toBe(true)
+  })
+
+  it('⌥⇧Space routes through the explorer instead of closing (modifier superset)', async () => {
+    const routePanelKey = vi.fn()
+    const fakeExplorer = { routePanelKey } as unknown as NonNullable<
+      ReturnType<Parameters<typeof initQuickLookListeners>[0]>
+    >
+    teardown = await initQuickLookListeners(() => fakeExplorer)
+    quickLookState.isOpen = true
+    // `⇧Space` is `file.quickLook`; `⌥⇧Space` is a different combo entirely. The old
+    // `payload.shiftKey && payload.key === ' '` test matched both, so any ⇧Space
+    // superset dismissed the panel on its way elsewhere.
+    handlers['quick-look-key']({
+      payload: { key: ' ', code: 'Space', shiftKey: true, metaKey: false, altKey: true, ctrlKey: false },
+    })
+    expect(quickLookCloseMock).not.toHaveBeenCalled()
+    expect(quickLookState.isOpen).toBe(true)
   })
 
   it('non-shift-space key events route through the explorer', async () => {

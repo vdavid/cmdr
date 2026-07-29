@@ -29,6 +29,7 @@
 import { type UnlistenFn } from '@tauri-apps/api/event'
 
 import { onQuickLookClosed, onQuickLookKey, quickLookClose } from '$lib/tauri-commands'
+import { eventMatchesCommand } from '$lib/shortcuts'
 
 import type { ExplorerAPI } from '../../../routes/(main)/explorer-api'
 
@@ -93,6 +94,28 @@ export function closeFromPaneError(): void {
   void quickLookClose()
 }
 
+/**
+ * Whether this panel-forwarded keypress is the Quick Look gesture (⇧Space by
+ * default). Resolved through the command registry, so it follows a rebind of
+ * `file.quickLook` AND matches the whole combo: ⌥⇧Space and ⌘⇧Space are other
+ * combos and must not dismiss the panel on their way elsewhere.
+ *
+ * The payload is a plain object from Rust, so we rebuild the `KeyboardEvent` the
+ * matcher reads. `code === 'Space'` is the layout-independent fallback for the one
+ * key whose `key` value is whitespace.
+ */
+function isQuickLookCloseKey(payload: QuickLookKeyEventPayload): boolean {
+  const event = new KeyboardEvent('keydown', {
+    key: payload.code === 'Space' ? ' ' : payload.key,
+    code: payload.code,
+    shiftKey: payload.shiftKey,
+    metaKey: payload.metaKey,
+    altKey: payload.altKey,
+    ctrlKey: payload.ctrlKey,
+  })
+  return eventMatchesCommand(event, 'file.quickLook')
+}
+
 let attached = false
 
 /**
@@ -118,7 +141,7 @@ export async function initQuickLookListeners(getExplorer: () => ExplorerAPI | un
     // Shift+Space closes — the panel is key, so the AppKit menu accelerator
     // can't be relied on. We close synchronously and let the close-event
     // listener flip `isOpen` back when the panel finishes animating out.
-    if (payload.shiftKey && (payload.key === ' ' || payload.code === 'Space')) {
+    if (isQuickLookCloseKey(payload)) {
       armQuickLookDispatchGuard()
       // Flip `isOpen` immediately so any synchronous follow-up dispatch
       // (rare AppKit menu-accelerator race) sees the closed state.

@@ -23,6 +23,10 @@ code under here.
 - A new user-facing action needs its id in `COMMAND_IDS`, an entry in `command-registry.ts`, and a handler in
   `routes/(main)/command-handlers/` (a missing handler is a compile error). Enforced by `cmdr/no-raw-command-dispatch`.
   See `lib/commands/CLAUDE.md`.
+- ❌ A keydown handler matches the WHOLE combo — `eventMatchesCommand(e, 'some.command')` from `$lib/shortcuts` — never
+  a hand-rolled `e.key === 'a' && e.metaKey`. That's a modifier SUPERSET, so `⌥⌘A` fires it too. Enforced by
+  `cmdr/no-raw-key-match`, which flags a required modifier paired with a literal key test that leaves another modifier
+  unconstrained; opt out with a reasoned `eslint-disable-next-line`. See `lib/shortcuts/CLAUDE.md`.
 - ❌ Render inline glyphs via `<Icon name size>` (`$lib/ui/Icon.svelte`) and loading spinners via `<Spinner size>`
   (`$lib/ui/Spinner.svelte`). Don't import `~icons/lucide/*` in feature code or hand-roll a spinner ring. Add a new
   glyph to `lib/ui/icons/icon-map.ts` (the one place lucide is imported, enforced by `cmdr/no-raw-lucide-import`);

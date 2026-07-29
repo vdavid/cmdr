@@ -233,6 +233,47 @@ Two file-list matchers stay hand-rolled ON PURPOSE, because they match a CLASS o
 `../file-explorer/pane/selection-dialog-keys.ts` (the physical Minus key, so `⇧-` works on any layout). Both already
 reject every command modifier, which is the property that matters.
 
+### The `cmdr/no-raw-key-match` lint rule
+
+`apps/desktop/eslint-plugins/no-raw-key-match.js` is what keeps the invariant from rotting. ESLint here has no type
+information, so it can't ask "is this a `KeyboardEvent`?"; instead it keys off the bug signature, which needs no types:
+a REQUIRED (non-negated) `.metaKey` / `.ctrlKey` / `.altKey` / `.shiftKey` read paired with a `.key` / `.code`
+comparison against a string LITERAL — in the same boolean expression, or in the body of the `if` that the modifier read
+guards — **where the test leaves at least one of the four modifiers unconstrained**.
+
+That last clause is what makes "superset" precise instead of a guess, and it's why the rule reports almost nothing that
+isn't a bug:
+
+- A test naming all four flags spells out ONE exact combo and is a superset of nothing, so it passes. That's how the
+  dialogs' `(e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key === 'Enter'`, `NetworkBrowser`'s ⌘R, the
+  settings sidebar's ⌘A, and `+page.svelte`'s ⌘⇧D / suppression tests all stay legal. They aren't rebindable, which is a
+  separate (accepted) tradeoff, but they can't fire on the wrong keypress.
+- Rejecting modifiers is the safe direction, so negated reads never count as "required".
+- A bail-out guard (`if (e.metaKey || e.ctrlKey || e.altKey) return null` ahead of the key tests) leaves no key test in
+  the guarded body, which is what keeps `type-to-jump-keys.ts` and `selection-dialog-keys.ts` clean without an opt-out.
+- Mouse, click, and drag handlers read modifier flags with no key comparison anywhere near them — the biggest
+  false-positive source, and the reason the pairing is required.
+- `key-capture.ts`, `modifier-key-tracker.svelte.ts`, and `KeyboardShortcutsSection.controller.svelte.ts` BUILD or TRACK
+  a combo rather than match one. None trips the heuristic today; they're path-exempt anyway so a future edit can't start
+  tripping it.
+
+What it deliberately misses: a guard-then-branch shape (an early `if (e.key !== 'Enter') return` followed by modifier
+branches in separate statements), a key compared to a variable, and `switch (e.key)` dispatch. A bare
+`e.key === 'Escape'` with no modifier read is a superset too, but it's the Tier 2 fixed-key vocabulary the app is built
+on, so flagging it would mean hundreds of reports and no signal. **A clean run proves nobody re-introduced the ⌥⌘A
+shape, not that every handler matches exactly.**
+
+The escape hatch is `// eslint-disable-next-line cmdr/no-raw-key-match -- <reason>`, and the reason is enforced: the
+rule scans its own suppression comments and reports a missing description ON THE COMMENT'S OWN LINE, which
+`eslint-disable-next-line` doesn't cover, so the directive can't silence the demand for a reason.
+
+Its first repo-wide run caught two live supersets, both since fixed: the favorites keyboard reorder in
+`VolumeBreadcrumb.svelte` pinned only ⌥ (so ⌥⌘↑ reordered a favorite too), and Quick Look's panel-forwarded close
+gesture pinned only ⇧ (so ⌥⇧Space dismissed the panel on its way elsewhere; it now resolves `file.quickLook` through the
+registry, so it follows a rebind).
+
+### The viewer matches locally
+
 The viewer is a separate window and the registry has no source file for it, so its shortcuts aren't customizable and
 `../../routes/viewer/viewer-keyboard.ts` matches locally — but exactly: `handleKeyDown` splits on "carries ⌘/⌃/⌥" up
 front, so a bare key can never be reached by a modified one, and `⌥⌘C` lands on the search chord instead of copy.

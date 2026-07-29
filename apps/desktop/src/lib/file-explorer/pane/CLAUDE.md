@@ -23,7 +23,7 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
 - **`getTabMgr(pane)` returns the live `$state` holder** (`$state.snapshot` severs reactivity).
 - **Guard logic branches on `VolumeCapabilities`, never on volume-id strings** (invariant A6). `volume-capabilities.ts`
   is the single FE source of truth (a `VolumeKind` union keys a frozen per-kind table); per-VOLUME runtime flags
-  (`isReadOnly`, etc.) stay on `VolumeInfo`. Residual string hits are justified (DETAILS § "A6 residue inventory").
+  (`isReadOnly`, etc.) stay on `VolumeInfo`. Residual hits: DETAILS § "A6 residue inventory".
 - **`capabilitiesFor` / `volumeKindOf` must stay TOTAL** (never `undefined`; unknown real ids fall to the `local`
   default). Keep the tint classifier `volumeKindFor` separate; never feed the `local` default into tinting.
 - **Archive panes are KIND-FROM-PATH: gate via `capabilitiesForPane(volumeId, path)`, never `VolumeInfo` alone.** A pane
@@ -31,7 +31,7 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   ops, permanent delete); tar/7z are READ-ONLY, so mkdir/mkfile/rename/paste gate off and only copy-OUT works. DETAILS §
   "Archive browsing and editing".
 - **Keydown handlers match the WHOLE combo via `eventMatchesCommand`, never `e.key` + a modifier flag**: ⌥⌘A is not ⌘A.
-  The two class-of-key matchers are the documented exception. DETAILS.
+  `cmdr/no-raw-key-match` enforces it; the two class-of-key matchers are the exception. DETAILS.
 - **`FilePane.applyIndices` jumps the cursor on SELECT only** (deselect leaves it put), via `firstSelectedIndex` (skips
   the `..` row); raw `idxs[0]` can be `..`.
 - **Snapshot pane (`volumeId === 'search-results'`) couples two points**: `computeHasParent` returns `false` (no `..`
