@@ -63,6 +63,31 @@ independent bounds, each answering a different question:
 Evidence rides `RenameProposalRowSnapshot` to the frontend. Preflight and apply don't read it: the tool boundary already
 checked it, and the store's rows are immutable afterwards.
 
+### Coverage: how thin the match is
+
+Evidence validation proves the model READ something; it can never prove the name is right. A genuine, verbatim quote can
+still support a badly wrong name (a payment confirmation named `klarna-invoice`), and the only thing that catches that is
+a human looking at the file. So an accepted `imageText` claim also carries an `EvidenceCoverage`, and the review row
+renders the quote inside its surrounding line plus "matched 20 of 3,140 characters": a sliver of a page of OCR has to
+LOOK like one.
+
+- **Derived here, from the delivery the check just matched against.** `ImageFactsLedger::check` returns it, so a row can
+  only have coverage after the ledger already accepted the row. It is Serialize-only and `RenameEvidence` is
+  `deny_unknown_fields`, so a plan that tries to send its own coverage is refused rather than believed. Coverage is
+  never a second way to pass validation, and never a delivery in its own right.
+- **Counted in characters of the DELIVERED text** (`image_facts` caps that at 2,000), because that's what the model was
+  actually handed. `matched_chars` can exceed the quote's own length: folding collapses whitespace runs, so one quoted
+  space may cover a line break plus indentation.
+- **The excerpt shows the delivered spelling**, not the folded form the matcher compares. `normalize_with_origins` folds
+  and records the source character index per folded character, so a match found in lowercased, whitespace-collapsed text
+  is reported back as a span of the text the user is looking at. Both the matcher and the display share that one folding
+  implementation on purpose: a second folding path could refuse a correct quote.
+- **The window is capped** at `CONTEXT_CHARS` each side and never crosses a line break, with `trimmed_before` /
+  `trimmed_after` telling the UI to show the cut.
+
+The frontend classifies a coverage figure as thin or solid for display (`lib/ask-cmdr/rename-evidence-coverage.ts`); the
+backend supplies only the honest counts.
+
 ## The proposal store
 
 The store is feature-local because its opaque ids and immutable rows are the authority boundary for review and apply commands. Entries expire in memory and are deliberately not persisted in chat history. A successful preflight records both the exact allowed row-id set and server-only source fingerprints; Apply atomically consumes that pair, so a dialog cannot replay an already-started plan or substitute a different subset.

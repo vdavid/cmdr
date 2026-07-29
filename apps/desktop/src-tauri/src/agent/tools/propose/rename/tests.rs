@@ -2,7 +2,7 @@
 //! the store's staging lifetime, and the preflight engine's blocks and warnings.
 
 use super::plan::{
-    ProposalRefusal, RenameInput, collect_evidence_rejections, missing_local_child, refusal_content, scoped_files,
+    ProposalRefusal, RenameInput, check_row_evidence, missing_local_child, refusal_content, scoped_files,
     validate_destination_name,
 };
 use super::preflight::{
@@ -56,6 +56,7 @@ fn proposal_row(row_id: &str, source_path: &str, destination_name: &str) -> Rena
             source: EvidenceSource::Filename,
             detail: "the old name".into(),
         },
+        coverage: None,
     }
 }
 
@@ -284,7 +285,7 @@ fn one_unbacked_content_claim_rejects_that_row_and_refuses_the_whole_plan() {
             { "path": "/shots/one.png", "state": "indexed", "text": "Invoice 4021 total 250 SEK" }
         ] }),
     );
-    let rows = vec![
+    let mut rows = vec![
         evidence_row(
             "backed",
             "/shots/one.png",
@@ -308,7 +309,7 @@ fn one_unbacked_content_claim_rejects_that_row_and_refuses_the_whole_plan() {
         ),
     ];
 
-    let rejections = collect_evidence_rejections(&ledger, THREAD, &rows);
+    let rejections = check_row_evidence(&ledger, THREAD, &mut rows).expect_err("the plan is refused");
 
     assert_eq!(rejections.len(), 1, "only the unbacked row is rejected");
     assert_eq!(rejections[0].source_path, "/shots/two.png");
@@ -348,6 +349,61 @@ fn the_review_snapshot_carries_each_rows_evidence() {
     let wire = serde_json::to_value(&snapshot).expect("serializes");
     assert_eq!(wire["rows"][0]["evidence"]["source"], "imageText");
     assert_eq!(wire["rows"][0]["evidence"]["detail"], "Invoice 4021");
+}
+
+/// The review dialog can't show how thin a match is unless the numbers get there, and it
+/// can't show the file unless the path does. Both ride the row snapshot: the offset and the
+/// delivered length turn a bare quote into "matched 20 of 61 characters", and the path is
+/// what the thumbnail and the full viewer open.
+#[test]
+fn the_review_snapshot_carries_the_matchs_coverage_and_the_previewable_path() {
+    let ledger = ImageFactsLedger::default();
+    ledger.record_delivered(
+        THREAD,
+        "call-1",
+        &serde_json::json!({ "status": "ok", "facts": [
+            { "path": "/shots/one.png", "state": "indexed",
+              "text": "Order summary\nKlarna payment confirmation 1,299 SEK\nThank you" }
+        ] }),
+    );
+    let mut rows = vec![
+        evidence_row(
+            "quoted",
+            "/shots/one.png",
+            "Klarna payment.png",
+            EvidenceSource::ImageText,
+            "payment confirmation",
+        ),
+        evidence_row(
+            "dated",
+            "/shots/two.png",
+            "2026-07-20.png",
+            EvidenceSource::Metadata,
+            "Taken 2026-07-20",
+        ),
+    ];
+
+    check_row_evidence(&ledger, THREAD, &mut rows).expect("both rows check out");
+    let store = RenameProposalStore::default();
+    let snapshot = store.stage(RenameProposal {
+        proposal_id: "proposal".into(),
+        rows,
+    });
+
+    let wire = serde_json::to_value(&snapshot).expect("serializes");
+    let quoted = &wire["rows"][0];
+    assert_eq!(quoted["sourcePath"], "/shots/one.png");
+    assert_eq!(quoted["volumeId"], "root");
+    assert_eq!(quoted["coverage"]["matchOffset"], 21);
+    assert_eq!(quoted["coverage"]["matchedChars"], 20);
+    assert_eq!(quoted["coverage"]["deliveredChars"], 61);
+    assert_eq!(quoted["coverage"]["matchedText"], "payment confirmation");
+    assert_eq!(quoted["coverage"]["contextBefore"], "Klarna ");
+    assert_eq!(quoted["coverage"]["contextAfter"], " 1,299 SEK");
+    assert!(
+        wire["rows"][1]["coverage"].is_null(),
+        "a metadata row measures no span of delivered text"
+    );
 }
 
 /// The tool can't be called without evidence at all: an old-shaped plan is a param

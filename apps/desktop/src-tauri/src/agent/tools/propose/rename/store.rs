@@ -1,8 +1,11 @@
 //! What a staged rename proposal is, and how long it lives.
 //!
-//! A proposal is immutable server-owned data: the tool boundary stages it, the review
-//! surface sees only a display snapshot, and the frontend hands back opaque row ids. Paths,
-//! destination names, and source fingerprints never leave this process.
+//! A proposal is immutable server-owned data: the tool boundary stages it, the review surface
+//! sees only a display snapshot, and the frontend hands back opaque ROW IDS and nothing else.
+//! That's the authority boundary: source fingerprints never leave this process, and every
+//! later step (preflight, apply) resolves paths and names from the stored proposal by row id,
+//! so a client-supplied value is never trusted. The snapshot's own path is display data — the
+//! review dialog previews the file the user is being asked to rename.
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -11,7 +14,7 @@ use std::time::{Duration, Instant};
 
 use serde::Serialize;
 
-use crate::agent::tools::propose::evidence::RenameEvidence;
+use crate::agent::tools::propose::evidence::{EvidenceCoverage, RenameEvidence};
 use crate::ignore_poison::IgnorePoison;
 
 const PROPOSAL_TTL: Duration = Duration::from_secs(15 * 60);
@@ -29,6 +32,10 @@ pub struct RenameProposalRow {
     pub volume_id: String,
     pub destination_name: String,
     pub evidence: RenameEvidence,
+    /// How much of the delivered text this row's quote covers, for an accepted `imageText`
+    /// claim. Filled in by the evidence check AFTER it accepted the row, so it describes a
+    /// delivery the ledger recorded; `None` for every other source.
+    pub coverage: Option<EvidenceCoverage>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -44,10 +51,20 @@ pub struct RenameProposalRowSnapshot {
     pub row_id: String,
     pub source_name: String,
     pub destination_name: String,
-    /// Why this name, for the review dialog's rightmost column. The frontend maps `source`
+    /// The file this row renames, so the dialog can show the user the thing itself: a
+    /// thumbnail per row, and the full viewer for the focused one. DISPLAY ONLY — apply
+    /// resolves the path from the stored proposal by row id and never from the client.
+    pub source_path: String,
+    /// Which volume `source_path` lives on, so the viewer can pull a file on a remote parent.
+    pub volume_id: String,
+    /// Why this name, for the review dialog's evidence column. The frontend maps `source`
     /// to a localized label and renders `detail` as PLAIN TEXT (it's model-authored, so
     /// never `{@html}`); its length is bounded by the evidence check.
     pub evidence: RenameEvidence,
+    /// How thin the match behind this name is (`imageText` rows only). The dialog renders the
+    /// quote inside its surrounding line plus a coverage figure, so a sliver of a page of OCR
+    /// can't look as strong as a decisive quote.
+    pub coverage: Option<EvidenceCoverage>,
 }
 
 impl RenameProposal {
@@ -65,7 +82,10 @@ impl RenameProposal {
                         .unwrap_or(&row.source_path)
                         .to_string(),
                     destination_name: row.destination_name.clone(),
+                    source_path: row.source_path.clone(),
+                    volume_id: row.volume_id.clone(),
                     evidence: row.evidence.clone(),
+                    coverage: row.coverage.clone(),
                 })
                 .collect(),
         }

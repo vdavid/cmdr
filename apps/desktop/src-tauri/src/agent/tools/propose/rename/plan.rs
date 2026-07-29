@@ -229,40 +229,42 @@ fn build_proposal<R: Runtime>(
             volume_id: volume_id.clone(),
             destination_name: rename.destination_name,
             evidence: rename.evidence,
+            coverage: None,
         });
     }
     // One unbacked claim refuses the WHOLE plan: staging the rest would show the user a
     // partial plan they'd read as complete, and the model needs to resend it anyway.
-    let rejections = collect_evidence_rejections(ledger, evidence_scope, &rows);
-    if !rejections.is_empty() {
-        return Err(ProposalRefusal::Evidence(rejections));
-    }
+    check_row_evidence(ledger, evidence_scope, &mut rows).map_err(ProposalRefusal::Evidence)?;
     Ok(RenameProposal {
         proposal_id: Uuid::new_v4().to_string(),
         rows,
     })
 }
 
-/// Every row whose evidence didn't check out, in plan order. Pure over the ledger, so the
+/// Check every row's evidence, recording the accepted rows' display coverage in place, or
+/// refuse with every row that didn't check out, in plan order. Pure over the ledger, so the
 /// guardrail is testable without a Tauri app.
-pub(super) fn collect_evidence_rejections(
+///
+/// Coverage lands only on a row the ledger already accepted, so it can never become a way to
+/// pass the check: it describes a delivery, after that delivery vouched for the quote.
+pub(super) fn check_row_evidence(
     ledger: &ImageFactsLedger,
     scope: EvidenceScope,
-    rows: &[RenameProposalRow],
-) -> Vec<EvidenceRejection> {
-    rows.iter()
-        .filter_map(|row| {
-            ledger
-                .check(scope, &row.source_path, &row.evidence)
-                .err()
-                .map(|problem| EvidenceRejection {
-                    source_path: row.source_path.clone(),
-                    proposed_name: row.destination_name.clone(),
-                    evidence_source: row.evidence.source,
-                    problem,
-                })
-        })
-        .collect()
+    rows: &mut [RenameProposalRow],
+) -> Result<(), Vec<EvidenceRejection>> {
+    let mut rejections = Vec::new();
+    for row in rows.iter_mut() {
+        match ledger.check(scope, &row.source_path, &row.evidence) {
+            Ok(coverage) => row.coverage = coverage,
+            Err(problem) => rejections.push(EvidenceRejection {
+                source_path: row.source_path.clone(),
+                proposed_name: row.destination_name.clone(),
+                evidence_source: row.evidence.source,
+                problem,
+            }),
+        }
+    }
+    if rejections.is_empty() { Ok(()) } else { Err(rejections) }
 }
 
 /// A model may invent a filename that is not in the pane cache. Keep that row

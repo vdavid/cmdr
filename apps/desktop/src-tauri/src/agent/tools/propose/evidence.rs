@@ -50,6 +50,10 @@ const MIN_DETAIL_CHARS: usize = 4;
 /// human reviewing a table row, not a place to paste a page of OCR text.
 const MAX_DETAIL_CHARS: usize = 160;
 
+/// How much delivered text to report on each side of a matched quote, in characters. Enough
+/// to see the line the quote came from, short enough for a table cell.
+const CONTEXT_CHARS: usize = 60;
+
 // ── The typed evidence an item carries ────────────────────────────────────────
 
 /// Where a proposed name came from. Typed, so the UI and the validator branch on a
@@ -81,11 +85,52 @@ impl EvidenceSource {
 ///
 /// `detail` is MODEL-AUTHORED TEXT that reaches the review dialog. The frontend renders it
 /// as plain text (never `{@html}`), and its length is bounded here.
+///
+/// `deny_unknown_fields` keeps the plan schema closed: the row's coverage is a fact this
+/// module derives from the ledger's own delivery, so a plan that tries to send one is refused
+/// rather than believed.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct RenameEvidence {
     pub source: EvidenceSource,
     pub detail: String,
+}
+
+/// How much of the delivered text a quote actually covers, and the line it came from.
+///
+/// Computed HERE, from the delivery the check just matched against, for one purpose: the
+/// review row must show that a 7-character hit inside 3,140 characters of OCR is thin, where
+/// a bare quote made it look exactly as strong as a decisive one (invariant 12).
+///
+/// **Serialize only, on purpose.** This is a display fact about a delivery that already
+/// validated, never an input: if a plan could send it, "how thin is this match" would become
+/// a field the model writes, and evidence has to stay a fact about what the ledger recorded
+/// (invariant 6). It is also not a second way to pass validation — a row only ever gets
+/// coverage after [`ImageFactsLedger::check`] has already accepted it.
+///
+/// Every count is in characters of the DELIVERED text (`image_facts` caps that at 2,000), so
+/// the UI's "matched 7 of 3,140 characters" describes what the model was actually handed.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EvidenceCoverage {
+    /// Where the match starts in the delivered text.
+    pub match_offset: usize,
+    /// How long the matched span is. Can exceed the quote's own length: folding collapses
+    /// whitespace runs, so one quoted space may cover a line break plus indentation.
+    pub matched_chars: usize,
+    /// How much recognized text `image_facts` delivered for this file.
+    pub delivered_chars: usize,
+    /// The delivered text just before the match, within its line and capped at
+    /// [`CONTEXT_CHARS`].
+    pub context_before: String,
+    /// The matched span as DELIVERED. The model's `detail` may differ in casing and spacing,
+    /// and what the user is asked to trust is what the image says.
+    pub matched_text: String,
+    /// The delivered text just after the match, within its line and capped.
+    pub context_after: String,
+    /// Whether the line ran on past the window, so the UI shows the cut.
+    pub trimmed_before: bool,
+    pub trimmed_after: bool,
 }
 
 // ── Why a claim didn't check out ───────────────────────────────────────────────
@@ -231,12 +276,16 @@ impl ImageFactsLedger {
 
     /// Check one item's evidence. Content claims are checked against what was delivered;
     /// the other sources only have to be a usable note.
+    ///
+    /// An accepted image-TEXT claim also reports its [`EvidenceCoverage`], so the review row
+    /// can show how much of the delivered text the quote actually covers. Every other source
+    /// reports `None`: there's no span to measure.
     pub fn check(
         &self,
         scope: EvidenceScope,
         source_path: &str,
         evidence: &RenameEvidence,
-    ) -> Result<(), EvidenceProblem> {
+    ) -> Result<Option<EvidenceCoverage>, EvidenceProblem> {
         // Length first, so an oversized detail is rejected before it's worth normalizing.
         if evidence.detail.chars().count() > MAX_DETAIL_CHARS {
             return Err(EvidenceProblem::DetailTooLong);
@@ -248,15 +297,13 @@ impl ImageFactsLedger {
         let floor = match evidence.source {
             EvidenceSource::ImageText => MIN_IMAGE_TEXT_CHARS,
             EvidenceSource::ImageTags => 1,
-            EvidenceSource::Filename | EvidenceSource::Metadata | EvidenceSource::UserInstruction => {
-                MIN_DETAIL_CHARS
-            }
+            EvidenceSource::Filename | EvidenceSource::Metadata | EvidenceSource::UserInstruction => MIN_DETAIL_CHARS,
         };
         if detail.chars().count() < floor {
             return Err(EvidenceProblem::DetailTooShort);
         }
         if !evidence.source.claims_image_content() {
-            return Ok(());
+            return Ok(None);
         }
         let entries = self.entries.lock_ignore_poison();
         let delivered = entries
@@ -267,25 +314,58 @@ impl ImageFactsLedger {
             .filter(|delivered| delivered.at.elapsed() < FACTS_TTL)
             .ok_or(EvidenceProblem::FactsNotDelivered)?;
         match evidence.source {
-            EvidenceSource::ImageText => check_quote(&delivered.text, &detail),
-            EvidenceSource::ImageTags => check_tags(&delivered.tags, &detail),
-            EvidenceSource::Filename | EvidenceSource::Metadata | EvidenceSource::UserInstruction => Ok(()),
+            EvidenceSource::ImageText => check_quote(&delivered.text, &detail).map(Some),
+            EvidenceSource::ImageTags => check_tags(&delivered.tags, &detail).map(|()| None),
+            EvidenceSource::Filename | EvidenceSource::Metadata | EvidenceSource::UserInstruction => Ok(None),
         }
     }
 }
 
-/// The quote has to appear in the text the model was handed. Normalized on both sides, so
-/// re-wrapped OCR whitespace and casing don't cause a false refusal, but an invented
-/// phrase can't pass.
-fn check_quote(text: &str, detail: &str) -> Result<(), EvidenceProblem> {
+/// The quote has to appear in the text the model was handed, and where it appears is what the
+/// review row reports. Normalized on both sides, so re-wrapped OCR whitespace and casing don't
+/// cause a false refusal, but an invented phrase can't pass.
+fn check_quote(text: &str, detail: &str) -> Result<EvidenceCoverage, EvidenceProblem> {
     if text.trim().is_empty() {
         return Err(EvidenceProblem::NoTextInFacts);
     }
-    if normalize_detail(text).contains(detail) {
-        Ok(())
-    } else {
-        Err(EvidenceProblem::DetailNotInText)
+    locate_quote(text, detail).ok_or(EvidenceProblem::DetailNotInText)
+}
+
+/// Find the folded `detail` in `text` and describe the match as a span of the ORIGINAL text:
+/// the acceptance decision and the display facts come from one search, so the row can never
+/// show coverage for a match the check didn't make.
+fn locate_quote(text: &str, detail: &str) -> Option<EvidenceCoverage> {
+    let detail_chars = detail.chars().count();
+    if detail_chars == 0 {
+        return None;
     }
+    let (folded, origins) = normalize_with_origins(text);
+    let folded_start = folded[..folded.find(detail)?].chars().count();
+    // Fold-to-source is per character, so the span's ends come from its first and last
+    // characters; everything between them belongs to the match by construction.
+    let match_start = *origins.get(folded_start)?;
+    let match_end = *origins.get(folded_start + detail_chars - 1)? + 1;
+    let chars: Vec<char> = text.chars().collect();
+    let line_start = chars[..match_start]
+        .iter()
+        .rposition(|c| *c == '\n')
+        .map_or(0, |i| i + 1);
+    let line_end = chars[match_end..]
+        .iter()
+        .position(|c| *c == '\n')
+        .map_or(chars.len(), |i| match_end + i);
+    let window_start = line_start.max(match_start.saturating_sub(CONTEXT_CHARS));
+    let window_end = line_end.min(match_end + CONTEXT_CHARS);
+    Some(EvidenceCoverage {
+        match_offset: match_start,
+        matched_chars: match_end - match_start,
+        delivered_chars: chars.len(),
+        context_before: chars[window_start..match_start].iter().collect(),
+        matched_text: chars[match_start..match_end].iter().collect(),
+        context_after: chars[match_end..window_end].iter().collect(),
+        trimmed_before: window_start > line_start,
+        trimmed_after: window_end < line_end,
+    })
 }
 
 /// The detail must be delivered tags and NOTHING else: a comma- or semicolon-separated list
@@ -326,12 +406,42 @@ fn check_tags(tags: &[String], detail: &str) -> Result<(), EvidenceProblem> {
 /// here made a quote case-sensitive on Linux. Evidence text must compare identically
 /// everywhere; `path_key` keeps the path helper, where platform semantics are correct.
 fn normalize_detail(text: &str) -> String {
-    use unicode_normalization::UnicodeNormalization;
     let trimmed = text
         .trim()
         .trim_matches(|c| matches!(c, '"' | '\'' | '“' | '”' | '‘' | '’'));
-    let folded = trimmed.nfd().collect::<String>().to_lowercase();
-    folded.split_whitespace().collect::<Vec<_>>().join(" ")
+    normalize_with_origins(trimmed).0
+}
+
+/// The folding above, plus the source character index each folded character came from. That
+/// map is what lets a match found in folded text be reported back as a span of the delivered
+/// text the user is looking at, rather than as lowercased, whitespace-collapsed output.
+///
+/// Both callers share this one implementation deliberately: a quote is matched against text
+/// folded here, so a second folding path could refuse a correct quote for nothing.
+fn normalize_with_origins(text: &str) -> (String, Vec<usize>) {
+    use unicode_normalization::UnicodeNormalization;
+    let mut folded = String::with_capacity(text.len());
+    let mut origins = Vec::with_capacity(text.len());
+    // A whitespace run becomes one space, credited to where the run started. Held back until
+    // a non-space follows, so leading and trailing runs vanish (as `split_whitespace` does).
+    let mut pending_space: Option<usize> = None;
+    for (index, source) in text.chars().enumerate() {
+        if source.is_whitespace() {
+            if !folded.is_empty() && pending_space.is_none() {
+                pending_space = Some(index);
+            }
+            continue;
+        }
+        if let Some(space_index) = pending_space.take() {
+            folded.push(' ');
+            origins.push(space_index);
+        }
+        for lowered in source.nfd().flat_map(char::to_lowercase) {
+            folded.push(lowered);
+            origins.push(index);
+        }
+    }
+    (folded, origins)
 }
 
 /// The ledger's key for a path: the same normalization the rest of the rename flow uses,
@@ -437,13 +547,14 @@ mod tests {
             // A typographic-quoted phrase spanning the delivered text's hard line break.
             "\u{201c}LinkedIn Messaging\u{201d}",
         ] {
-            assert_eq!(
-                ledger.check(
-                    THREAD,
-                    "/Users/x/Screenshots/shot-2.png",
-                    &evidence(EvidenceSource::ImageText, detail)
-                ),
-                Ok(()),
+            assert!(
+                ledger
+                    .check(
+                        THREAD,
+                        "/Users/x/Screenshots/shot-2.png",
+                        &evidence(EvidenceSource::ImageText, detail)
+                    )
+                    .is_ok(),
                 "{detail:?} is in the delivered text"
             );
         }
@@ -460,7 +571,7 @@ mod tests {
 
         assert_eq!(
             ledger.check(THREAD, "/x/a.png", &evidence(EvidenceSource::ImageTags, "sunset")),
-            Ok(())
+            Ok(None)
         );
         assert_eq!(
             ledger.check(
@@ -468,7 +579,7 @@ mod tests {
                 "/x/a.png",
                 &evidence(EvidenceSource::ImageTags, "sunset, beach")
             ),
-            Ok(()),
+            Ok(None),
             "a list of delivered tags is a tag claim"
         );
         assert_eq!(
@@ -559,12 +670,21 @@ mod tests {
         ledger.revoke_call("call-1");
 
         assert_eq!(
-            ledger.check(THREAD, "/x/a.png", &evidence(EvidenceSource::ImageText, "alpha invoice text")),
+            ledger.check(
+                THREAD,
+                "/x/a.png",
+                &evidence(EvidenceSource::ImageText, "alpha invoice text")
+            ),
             Err(EvidenceProblem::FactsNotDelivered)
         );
-        assert_eq!(
-            ledger.check(THREAD, "/x/b.png", &evidence(EvidenceSource::ImageText, "beta invoice text")),
-            Ok(())
+        assert!(
+            ledger
+                .check(
+                    THREAD,
+                    "/x/b.png",
+                    &evidence(EvidenceSource::ImageText, "beta invoice text")
+                )
+                .is_ok()
         );
     }
 
@@ -581,7 +701,7 @@ mod tests {
             assert!(!source.claims_image_content());
             assert_eq!(
                 ledger.check(THREAD, "/x/a.png", &evidence(source, "Taken 2026-07-20")),
-                Ok(())
+                Ok(None)
             );
         }
     }
@@ -649,9 +769,140 @@ mod tests {
                 "/x/a.png",
                 &evidence(EvidenceSource::ImageTags, "document, screenshot")
             ),
-            Ok(()),
+            Ok(None),
             "a list of delivered tags is"
         );
+    }
+
+    /// What the review row needs to show how thin a match is: where the quote sits in the
+    /// delivered text, how much of it the quote covers, and the line it came from. Invariant
+    /// 12 — evidence proves the model READ something, never that the name is right, so the
+    /// surface has to let the user see the difference between a sliver and a decisive quote.
+    #[test]
+    fn a_matched_quote_reports_its_offset_length_and_surrounding_line() {
+        let ledger = ImageFactsLedger::default();
+        ledger.record_delivered(
+            THREAD,
+            "call-1",
+            &image_facts_result(vec![indexed(
+                "/x/a.png",
+                Some("Order summary\nKlarna payment confirmation 1,299 SEK\nThank you"),
+                &[],
+            )]),
+        );
+
+        let coverage = ledger
+            .check(
+                THREAD,
+                "/x/a.png",
+                &evidence(EvidenceSource::ImageText, "payment confirmation"),
+            )
+            .expect("the quote is in the delivered text")
+            .expect("an image-text match reports its coverage");
+
+        assert_eq!(coverage.matched_text, "payment confirmation");
+        assert_eq!(coverage.matched_chars, 20);
+        assert_eq!(coverage.match_offset, 21, "past 'Order summary\\n' and 'Klarna '");
+        assert_eq!(coverage.delivered_chars, 61, "the whole delivered text, not the line");
+        assert_eq!(coverage.context_before, "Klarna ");
+        assert_eq!(coverage.context_after, " 1,299 SEK");
+        assert!(!coverage.trimmed_before, "the line's start is inside the window");
+        assert!(!coverage.trimmed_after);
+    }
+
+    /// The thin case this exists for: a decisive-looking quote buried in a page of OCR. The
+    /// window around it is capped, and the flags say it was cut, so the UI can show the cut
+    /// rather than implying the quote is the whole text.
+    #[test]
+    fn a_quote_inside_a_long_line_reports_a_capped_and_flagged_window() {
+        let ledger = ImageFactsLedger::default();
+        let filler = "abcdefghij ".repeat(20);
+        let text = format!("{filler}total 1,299 SEK{filler}");
+        ledger.record_delivered(
+            THREAD,
+            "call-1",
+            &image_facts_result(vec![indexed("/x/a.png", Some(&text), &[])]),
+        );
+
+        let coverage = ledger
+            .check(
+                THREAD,
+                "/x/a.png",
+                &evidence(EvidenceSource::ImageText, "total 1,299 SEK"),
+            )
+            .expect("the quote is in the delivered text")
+            .expect("coverage");
+
+        assert_eq!(coverage.matched_chars, 15);
+        assert_eq!(coverage.delivered_chars, text.chars().count());
+        assert_eq!(coverage.context_before.chars().count(), CONTEXT_CHARS);
+        assert_eq!(coverage.context_after.chars().count(), CONTEXT_CHARS);
+        assert!(coverage.trimmed_before, "the line ran on before the window");
+        assert!(coverage.trimmed_after);
+    }
+
+    /// The excerpt shows the DELIVERED spelling, not the folded one the matcher compares. The
+    /// model's own casing and spacing may differ from the image's, and what the user is being
+    /// asked to trust is what the image says.
+    #[test]
+    fn coverage_reports_the_delivered_spelling_not_the_normalized_one() {
+        let ledger = ImageFactsLedger::default();
+        ledger.record_delivered(
+            THREAD,
+            "call-1",
+            &image_facts_result(vec![indexed("/x/a.png", Some("LinkedIn\nMessaging  3 new"), &[])]),
+        );
+
+        let coverage = ledger
+            .check(
+                THREAD,
+                "/x/a.png",
+                &evidence(EvidenceSource::ImageText, "linkedin   MESSAGING"),
+            )
+            .expect("folding matches it")
+            .expect("coverage");
+
+        assert_eq!(coverage.matched_text, "LinkedIn\nMessaging");
+        assert_eq!(coverage.match_offset, 0);
+        assert_eq!(coverage.matched_chars, 18, "the span in the delivered text");
+    }
+
+    /// Coverage describes a span of delivered TEXT, so the sources that don't match a span
+    /// report none. A tag claim is membership, and the other three make no content claim.
+    #[test]
+    fn only_an_image_text_claim_reports_coverage() {
+        let ledger = ImageFactsLedger::default();
+        ledger.record_delivered(
+            THREAD,
+            "call-1",
+            &image_facts_result(vec![indexed("/x/a.png", Some("Invoice 4021 total"), &["document"])]),
+        );
+
+        assert_eq!(
+            ledger.check(THREAD, "/x/a.png", &evidence(EvidenceSource::ImageTags, "document")),
+            Ok(None)
+        );
+        assert_eq!(
+            ledger.check(
+                THREAD,
+                "/x/a.png",
+                &evidence(EvidenceSource::Metadata, "Taken 2026-07-20")
+            ),
+            Ok(None)
+        );
+    }
+
+    /// Coverage is a fact about a delivery the ledger recorded, never something a plan can
+    /// assert. If the model could send one, "how thin is this match" would become a field it
+    /// writes, which is the whole failure this guardrail exists to refuse (invariant 6).
+    #[test]
+    fn a_model_supplied_coverage_does_not_parse() {
+        let smuggled = json!({
+            "source": "imageText",
+            "detail": "Invoice 4021 total",
+            "coverage": { "matchOffset": 0, "matchedChars": 3140, "deliveredChars": 3140 },
+        });
+        assert!(serde_json::from_value::<RenameEvidence>(smuggled).is_err());
     }
 
     /// The floor a quote has to clear. Eleven characters of a real receipt ("Klarna paym")
@@ -674,21 +925,13 @@ mod tests {
         );
 
         assert_eq!(
-            ledger.check(
-                THREAD,
-                "/x/a.png",
-                &evidence(EvidenceSource::ImageText, "Klarna paym")
-            ),
+            ledger.check(THREAD, "/x/a.png", &evidence(EvidenceSource::ImageText, "Klarna paym")),
             Err(EvidenceProblem::DetailTooShort),
             "11 characters of real delivered text is still too thin to back a name"
         );
         assert!(
             ledger
-                .check(
-                    THREAD,
-                    "/x/a.png",
-                    &evidence(EvidenceSource::ImageText, "Klarna payme")
-                )
+                .check(THREAD, "/x/a.png", &evidence(EvidenceSource::ImageText, "Klarna payme"))
                 .is_ok(),
             "12 characters is the shortest quote that passes"
         );
@@ -724,7 +967,7 @@ mod tests {
 
         assert_eq!(
             ledger.check(THREAD, "/x/a.png", &evidence(EvidenceSource::ImageTags, "sky")),
-            Ok(())
+            Ok(None)
         );
     }
 
@@ -740,9 +983,10 @@ mod tests {
             &image_facts_result(vec![indexed("/x/a.png", Some("Invoice 4021 total"), &["document"])]),
         );
 
-        assert_eq!(
-            ledger.check(THREAD, "/x/a.png", &evidence(EvidenceSource::ImageText, "Invoice 4021")),
-            Ok(()),
+        assert!(
+            ledger
+                .check(THREAD, "/x/a.png", &evidence(EvidenceSource::ImageText, "Invoice 4021"))
+                .is_ok(),
             "the thread that fetched the facts can cite them"
         );
         assert_eq!(

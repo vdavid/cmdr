@@ -33,6 +33,7 @@ import {
   type ConversationDetailView,
   type MessageView,
   type RenameEvidence,
+  type RenameEvidenceCoverage,
 } from '$lib/tauri-commands'
 
 const log = getAppLogger('askCmdr')
@@ -93,9 +94,16 @@ export interface BulkRenameReviewRow {
   rowId: string
   sourceName: string
   destinationName: string
+  /** The file this row renames, for its thumbnail and the full viewer. Display only: apply
+   * sends opaque row ids, and the backend resolves paths from its own stored proposal. */
+  sourcePath: string
+  volumeId: string
   /** What the backend verified this name is based on. Display only; `detail` is
    * model-authored text, so it renders as plain text and is never branched on. */
   evidence: RenameEvidence
+  /** How much of the text Cmdr read in the image the quote covers (`imageText` rows only),
+   * so a thin match looks thin. Backend-derived, never model-authored. */
+  coverage: RenameEvidenceCoverage | null
   allowed: boolean
   blockedReason: string | null
   warnings: Array<'extensionChanged' | 'cycle'>

@@ -347,6 +347,7 @@ export type {
   ConversationCost,
   CostSummary,
   RenameEvidence,
+  RenameEvidenceCoverage,
   RenameEvidenceSource,
 } from './ask-cmdr'
 

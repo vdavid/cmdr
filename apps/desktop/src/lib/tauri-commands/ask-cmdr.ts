@@ -74,6 +74,27 @@ export interface RenameEvidence {
 }
 
 /**
+ * How much of the text Cmdr read in an image the quote behind a name actually covers
+ * (mirrors Rust `EvidenceCoverage`). Present on `imageText` rows only.
+ *
+ * Backend-derived from the delivery the evidence check matched against, never model-authored
+ * and never an input, so the review row can show that a 7-character hit inside 3,140
+ * characters is thin. Every count is in characters of the delivered text. The three text
+ * fields are OCR output: render them as plain text, never `{@html}`.
+ */
+export interface RenameEvidenceCoverage {
+  matchOffset: number
+  matchedChars: number
+  deliveredChars: number
+  contextBefore: string
+  matchedText: string
+  contextAfter: string
+  /** The line ran on past the shown window, so the UI marks the cut. */
+  trimmedBefore: boolean
+  trimmedAfter: boolean
+}
+
+/**
  * A streamed progress event for the rail. Hand-mirrors the Rust `AskCmdrStreamEvent`
  * (a `Channel`-only enum). Never carries a reasoning blob or provider state.
  */
@@ -90,7 +111,17 @@ export type AskCmdrStreamEvent =
       type: 'proposalReady'
       proposal: {
         proposalId: string
-        rows: Array<{ rowId: string; sourceName: string; destinationName: string; evidence: RenameEvidence }>
+        rows: Array<{
+          rowId: string
+          sourceName: string
+          destinationName: string
+          /** The file being renamed, for the row's thumbnail and the full viewer. Display
+           *  only: apply resolves paths server-side from the opaque row id. */
+          sourcePath: string
+          volumeId: string
+          evidence: RenameEvidence
+          coverage: RenameEvidenceCoverage | null
+        }>
       }
     }
   | { type: 'done'; messageId: number; seq: number; stop: StopReason; usage: AskCmdrUsage }
