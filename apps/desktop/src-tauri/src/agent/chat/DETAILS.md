@@ -63,7 +63,7 @@ says so.
 
 **Every cut is reported, never logged from here.** `AssembledPrompt::elision`
 (`ElisionFacts`: `elided_results`, `elided_tokens`, `elided_call_ids`, `threshold`,
-`estimated_tokens`, `budget`) crosses back as data, keeping the core pure. `runtime.rs`'s
+`estimated_tokens`, `budget`) crosses back as data, keeping the core pure. `runtime/turn.rs`'s
 `announce_context_pressure` splits it in two: `budget_forced()` (history was dropped) warns
 AND emits one `AgentChatEvent::ContextTrimmed` per turn for the rail;
 `over_budget()` (nothing safe left to drop) warns only, because on a small local window it
@@ -129,7 +129,12 @@ Estimated tokens, from the shipped assets and `estimate_prompt_tokens` (measured
 - So **60k does 100 files, 16k does roughly 30**, and a 4k local window does a handful. A model's window must exceed the
   whole turn, not one page of it: every page of facts is evidence the plan cites, so none of it may elide.
 
-## The runtime (`runtime.rs`)
+## The runtime (`runtime/`)
+
+Four files plus `ChatRuntime` in `mod.rs`: `events.rs` (the `AgentChatEvent` seam and the
+typed `AgentErrorKind`), `dispatch.rs` (the `ToolDispatcher` seam and `AppHandleDispatcher`),
+`turn.rs` (`run_turn` and everything it drives), `cost.rs` (metering one completed
+`respond`). `mod.rs` re-exports all of it, so callers keep saying `chat::runtime::X`.
 
 `run_turn` is the driver and holds all the testable logic (no Tauri app needed): it takes
 the `AgentLlm`, a `ToolDispatcher`, a write `Connection`, the tools, the `TurnParams`, an

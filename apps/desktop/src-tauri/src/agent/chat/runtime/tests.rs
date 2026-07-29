@@ -20,10 +20,11 @@ use tokio::sync::mpsc::{UnboundedReceiver, unbounded_channel};
 use tokio_util::sync::CancellationToken;
 
 use super::*;
+use crate::agent::chat::context::{ContextEnvelope, MAX_TOOL_TURNS, MAX_WALL_TIME};
 use crate::agent::llm::AgentDeltaStream;
 use crate::agent::llm::types::{
-    AgentDelta, AgentMessage, AgentPart, AgentRole, AgentStopReason, AgentToolCall, AgentToolResult, AgentUsage,
-    ProviderTag, ToolId,
+    AgentDelta, AgentLlmError, AgentMessage, AgentPart, AgentRole, AgentStopReason, AgentToolCall, AgentToolResult,
+    AgentUsage, ProviderTag, ToolDeclaration, ToolId,
 };
 use crate::agent::store;
 use crate::test_support::wait_until_async;

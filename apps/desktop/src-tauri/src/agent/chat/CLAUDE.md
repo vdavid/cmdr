@@ -12,9 +12,10 @@ cases, decision rationale): `DETAILS.md`.
 - `budget.rs`: the per-model prompt-budget table + the ONE token-size estimator the agent
   shares (elision, the stub hint, every tool's self-cap). Pure data + arithmetic.
 - `system_prompt.rs`: the stable identity + rules string (part of the cached prefix).
-- `runtime.rs`: the I/O-and-time half — `run_turn` (the driver), `ChatRuntime`
-  (single-flight wrapper, registered in state by `agent::start`), the `AgentChatEvent`
-  seam, and the `ToolDispatcher` seam.
+- `runtime/`: the I/O-and-time half — `turn.rs` (`run_turn`, the driver), `mod.rs`
+  (`ChatRuntime`, the single-flight wrapper registered in state by `agent::start`),
+  `events.rs` (the `AgentChatEvent` seam), `dispatch.rs` (the `ToolDispatcher` seam),
+  `cost.rs` (per-`respond` metering). `mod.rs` re-exports it all.
 
 ## Must-knows
 
@@ -35,7 +36,7 @@ cases, decision rationale): `DETAILS.md`.
   prompt overruns its budget instead, honestly. Don't drop the floor to "make it fit".
 - **A context drop is never silent, and it revokes the dropped result's evidence.**
   `assemble_prompt` returns `ElisionFacts` as DATA (the core can't log), naming every dropped
-  `call_id`; `runtime.rs` warns, emits ONE `ContextTrimmed` event per turn, and calls
+  `call_id`; `runtime/turn.rs` warns, emits ONE `ContextTrimmed` event per turn, and calls
   `ToolDispatcher::revoke_evidence` for those ids — a result the model never read must not
   back a rename claim. New compaction path ⇒ do all three.
 - **The prompt budget is per-model, resolved in the command layer** (`budget::prompt_budget`,
