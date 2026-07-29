@@ -52,7 +52,7 @@ Changed or added files at capture time:
 - `README.md`
 - `docs/hackathon-submission.md`
 - `apps/desktop/src-tauri/src/agent/tools/propose/DETAILS.md`
-- `apps/desktop/src-tauri/src/agent/tools/propose/rename.rs`
+- `apps/desktop/src-tauri/src/agent/tools/propose/rename/`
 - `apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md`
 - `apps/desktop/src-tauri/src/file_system/write_operations/rename/bulk.rs`
 - `apps/desktop/src-tauri/src/file_system/write_operations/rename/bulk/tests.rs`
