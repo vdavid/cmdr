@@ -12,10 +12,9 @@ Pull-tier docs for `agent/chat/`. Must-knows live in `CLAUDE.md`.
    cached.
 3. **History**: every persisted turn, each user turn prefixed with its own local
    timestamp marker (`[Fri 2026-07-11 09:15]`). Assistant prose survives verbatim; tool
-   results `ELIDE_TOOL_RESULTS_AFTER_TURNS` or more turns back collapse to a typed stub
-   (`{ elided_tool_result: true, tool, approx_tokens }`). Eliding prose is never done —
-   that's the soft-cap's job. The current turn's results never elide either (see
-   § Budget enforcement).
+   results `ELIDE_TOOL_RESULTS_AFTER_TURNS` or more turns back collapse to a self-describing
+   stub (§ The elision stub). Eliding prose is never done — that's the soft-cap's job. The
+   current turn's results never elide either (see § Budget enforcement).
 4. **The envelope** opens the LATEST user turn only, as a tagged block (§9 field set):
    `[Sat 2026-07-12 21:30 · focused: <path> · cursor: <name|—> · <n> selected · volumes: <name> (<freshness>[, <connectivity>]), …]`.
 5. **The user's text**, following the envelope block in the same message.
@@ -41,6 +40,45 @@ single offset for the whole assembly — a DST boundary mid-thread is a hint-lev
 imprecision, acceptable for v1). Token sizes are a `chars / CHARS_PER_TOKEN_ESTIMATE`
 heuristic, not a real tokenizer — enough to keep assembly in the budget band and to size
 the elision stub's hint.
+
+## The elision stub (what a dropped result says about itself)
+
+A stub is six fields, and a model that meets one can reconstruct the call it lost:
+
+```json
+{
+  "elided_tool_result": true,
+  "tool": "image_facts",
+  "approx_tokens": 5406,
+  "call": "12 paths under /Users/me/Downloads/shots, volumeId: root",
+  "held": "0 coverage, 12 facts (path, state, tags in 9, text in 11), status (2 chars)",
+  "refetch": "call image_facts again for the paths you still need"
+}
+```
+
+`context/digest.rs` derives the last three, structurally: array lengths, key names, per-field
+filled-in counts, and the folder a call's paths share. No model call is involved, so a digest
+costs nothing and can't hallucinate. The stub above is 71 estimated tokens in place of 5,406.
+
+**Bounded by construction.** `STUB_TOKEN_BUDGET = 80`. `stub_for` serializes the fixed fields
+first (marker, tool, size, re-fetch sentence), then splits what's left of `80 *
+CHARS_PER_TOKEN_ESTIMATE` bytes evenly between the two digests, so no tool name or key name can
+push a stub past its budget.
+
+**Decision: shape-agnostic rules in the core, not a per-tool `digest()` passed in.** Both were
+open (the core must stay pure, invariant 2, so per-tool knowledge may not live here). The
+generic rules — lengths, key names, filled-in counts, common path prefix — reproduce what the
+per-tool wording would have said for every shipped tool, so the seam would have had no second
+implementation to justify it. **If one tool ever needs wording these rules can't produce, add a
+`digest()` parameter and pass it in from the runtime; do NOT add a match arm per tool here.**
+`digest.rs`'s module doc says the same, at the place someone would break it.
+
+**A result's strings never survive, at any depth.** A string field reports its LENGTH (`text in
+11`, `note (17 chars)`), never its text. Call ARGUMENTS are quoted (capped): the model wrote
+them itself, and they are what makes a call re-issuable. Two reasons, the second load-bearing:
+2,000 characters of OCR has no re-fetch value, and text lifted out of a result reads as content
+the model was handed. A digest is a description of a delivery, never a delivery — `stub_tests.rs`
+pins that a plan citing one is refused, with the same quote checking out before the drop.
 
 ## Budget enforcement (elide-only, floored, and reported)
 
@@ -117,15 +155,19 @@ Bumping any constant is a conscious change (never a silent side effect).
 
 ### What the budgets buy, measured
 
-Estimated tokens, from the shipped assets and `estimate_prompt_tokens` (measured 2026-07-29, `context/tests.rs`):
+Estimated tokens from the shipped assets and `estimate_prompt_tokens`. Every figure below is pinned within a tenth by
+`context/cost_tests.rs`, whose constants block is the single copy; a failure there names both numbers and says to update
+the test and the plan's "measured ground truth" section together.
 
-- **Fixed overhead: ~3,100 tokens** on every single call — ~740 for `SYSTEM_PROMPT` and ~2,370 for the 12 tool
-  declarations. It's why the old flat 8k left only ~4.9k for the actual work, so an 11-file `image_facts` batch (~2.8k)
-  fit and a 12-file one (~5.4k) did not.
-- **A 100-file content-based rename: ~39,700 tokens** for the whole turn, pinned by
-  `a_hundred_file_rename_turn_needs_more_than_the_default_budget`. Dominated by the facts themselves (~26k at 900 chars
-  of OCR per file, arriving over several `MAX_TOOL_RESULT_TOKENS` pages that all stay in the turn), then the plan call's
-  100 rows (~5.4k) and the pane listing (~2.1k).
+- **Fixed overhead: 3,124 tokens** on every single call — 740 for `SYSTEM_PROMPT` and 2,384 for the 12 tool
+  declarations. It's why the old flat 8k left only ~4.9k for the actual work, so an 11-file `image_facts` batch fit and a
+  12-file one did not.
+- **Per file: 269 for an `image_facts` row** (at 900 chars of OCR, the corpus average, against the 2,000-char cap — a
+  text-dense corpus costs up to ~2.2× more), **59 for a plan row**, **21 for a pane-listing entry**. The facts dominate
+  by more than 3×, so a window has to be sized for them, not for the plan.
+- **A 100-file content-based rename: 39,699 tokens** for the whole turn. The parts above account for over 90% of it; the
+  rest is the paths the calls name, the envelope, the user's sentence, and JSON scaffolding. The facts arrive over
+  several `MAX_TOOL_RESULT_TOKENS` pages that all stay in the turn.
 - So **60k does 100 files, 16k does roughly 30**, and a 4k local window does a handful. A model's window must exceed the
   whole turn, not one page of it: every page of facts is evidence the plan cites, so none of it may elide.
 
@@ -238,6 +280,12 @@ pane state, per-volume freshness + SMB connectivity from `snapshot_volumes()`. M
 live types into `context`'s pure `EnvelopeFreshness` / `EnvelopeConnectivity` mirrors.
 
 ## Testing notes
+
+The context tests are four modules under `context/`, split by concern: `tests.rs` (the prefix,
+the envelope, elision, the budget), `stub_tests.rs` (what a dropped result says, and that a plan
+can't cite it), `cost_tests.rs` (what the real shapes cost), and `test_support.rs` (the
+transcript builders and budgets they share). Put a new context test in the module whose concern
+it matches rather than growing `tests.rs`.
 
 Every `context.rs` test runs with no tokio runtime (the core is pure). The runtime tests
 use a local `ProgrammableLlm` (per-turn text / tool calls / usage / a mid-stream drop with
