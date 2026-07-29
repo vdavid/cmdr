@@ -306,8 +306,14 @@ export type { SendFeedbackResult } from './feedback'
 export { getWhatsNew, whatsNewDevOverride } from './whats-new'
 export type { WhatsNewRelease, WhatsNewSection } from './whats-new'
 
-export { getRecentOperationLogEntries, getOperationLogDetail } from './operation-log'
-export type { OperationRow, OperationItemView, OperationLogDetail } from './operation-log'
+export { getRecentOperationLogEntries, getOperationLogDetail, undoOperations } from './operation-log'
+export type {
+  OperationRow,
+  OperationItemView,
+  OperationLogDetail,
+  OperationUndoOutcome,
+  UndoReport,
+} from './operation-log'
 
 // Ask Cmdr chat rail
 export {

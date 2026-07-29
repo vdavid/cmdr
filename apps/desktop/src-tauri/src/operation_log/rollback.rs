@@ -859,5 +859,12 @@ fn reconcile_one(conn: &rusqlite::Connection, op_id: &str) -> RollbackState {
     }
 }
 
+mod order;
+pub use order::undo_order;
+
+#[cfg(test)]
+mod test_support;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod undo_tests;

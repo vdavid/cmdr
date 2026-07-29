@@ -1,14 +1,21 @@
-//! IPC commands for the operation log's read side (the query API).
+//! IPC commands over the operation log: the read side (the query API), plus undo.
 //!
-//! Thin pass-throughs over [`crate::operation_log::query`]: the business logic
-//! (filtering, paging, dir-path resolution) lives in the query module; these
-//! commands only open a short-lived read-only connection off the IPC thread and
-//! forward the call. The Debug panel and alpha dialog consume them.
+//! The reads are thin pass-throughs over [`crate::operation_log::query`]: the
+//! business logic (filtering, paging, dir-path resolution) lives in the query
+//! module; these commands only open a short-lived read-only connection off the IPC
+//! thread and forward the call. The Debug panel and alpha dialog consume them.
+//!
+//! [`undo_operations`] is the write side: the frontend-facing entry to the rollback
+//! engine (the MCP `operations_rollback` tool is the other consumer). It resolves
+//! only when every operation has been reversed, so the caller gets one complete,
+//! ordered tally instead of running its own dispatch-then-poll loop.
 
 use tauri::AppHandle;
 
+use crate::file_system::write_operations::rollback::{UndoReport, undo_operations as run_undo};
 use crate::operation_log::query::{self, OperationDetail};
 use crate::operation_log::store::{OperationLogStoreError, OperationRow, open_read_connection, operation_log_db_path};
+use crate::operation_log::types::Initiator;
 
 /// Resolve the `operation-log.db` path and run `read` on a read-only connection,
 /// off the IPC thread. A missing/unopened DB (the journal failed to start) yields
@@ -61,4 +68,21 @@ pub async fn get_operation_log_detail(
         query::get_operation(conn, &operation_id, item_limit, item_offset)
     })
     .await
+}
+
+/// Undo the given operations as one action, **newest first** (a multi-batch rename
+/// run is the case this exists for; the order is data-safety-critical, see
+/// `rollback::undo_order`). Pass the ids in the order they were APPLIED.
+///
+/// Resolves once every operation has been reversed, with the full tally: what came
+/// back, what was left alone, and per operation. It can take a while — each inverse
+/// is a queued managed operation, so it also waits out anything already working the
+/// same volume. The user sees the operation queue meanwhile.
+///
+/// `Initiator::User` throughout: the agent proposed the rename, but undoing it is
+/// the user's own action.
+#[tauri::command]
+#[specta::specta]
+pub async fn undo_operations(app: AppHandle, operation_ids: Vec<String>) -> Result<UndoReport, String> {
+    Ok(run_undo(&app, &operation_ids, Initiator::User).await)
 }

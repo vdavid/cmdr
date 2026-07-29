@@ -2241,6 +2241,21 @@ export const commands = {
       string
     >(__TAURI_INVOKE('get_operation_log_detail', { operationId, itemLimit, itemOffset })),
   /**
+   *  Undo the given operations as one action, **newest first** (a multi-batch rename
+   *  run is the case this exists for; the order is data-safety-critical, see
+   *  `rollback::undo_order`). Pass the ids in the order they were APPLIED.
+   *
+   *  Resolves once every operation has been reversed, with the full tally: what came
+   *  back, what was left alone, and per operation. It can take a while — each inverse
+   *  is a queued managed operation, so it also waits out anything already working the
+   *  same volume. The user sees the operation queue meanwhile.
+   *
+   *  `Initiator::User` throughout: the agent proposed the rename, but undoing it is
+   *  the user's own action.
+   */
+  undoOperations: (operationIds: string[]) =>
+    typedError<UndoReport, string>(__TAURI_INVOKE('undo_operations', { operationIds })),
+  /**
    *  Stop the in-flight turn for a thread. Idempotent: an unknown id (already finished) is a
    *  no-op. A clean stop at the next tool boundary or stream chunk, not a hard abort.
    */
@@ -6222,6 +6237,25 @@ export type OperationSummary = {
 }
 
 /**
+ *  What one operation contributed to a multi-operation undo. `refusal` is set when
+ *  the operation never ran its inverse at all (already undone, a volume gone), in
+ *  which case both counts are zero — a refusal is never reported as a silent zero.
+ */
+export type OperationUndoOutcome = {
+  operationId: string
+  // Items restored (or already back where they belong — an idempotent re-issue).
+  restored: number
+  /**
+   *  Items left alone: they changed since, or their old name is taken. Never a
+   *  forced overwrite.
+   */
+  skipped: number
+  // The state the operation resolves to, absent on a refusal.
+  finalState: RollbackState | null
+  refusal: RollbackRefusal | null
+}
+
+/**
  *  Typed `operations-changed` Tauri event carrying the thin registry snapshot
  *  (membership + lifecycle status, NOT 200 ms progress). The struct name
  *  kebab-cases to `operations-changed`. The queue window subscribes to it for
@@ -6720,6 +6754,34 @@ export type RestrictedWindowSettings = {
   appearanceTextSize: number | null
   appearanceAppColor: string | null
 }
+
+/**
+ *  Why a rollback request is refused at the operation level (before any item
+ *  runs). Typed across IPC/MCP — never a message string (`no-string-matching`).
+ */
+export type RollbackRefusal =
+  // No operation with this id in the journal.
+  | { kind: 'unknownOperation' }
+  // The op is already being rolled back — the double-rollback guard (Finding 7).
+  | { kind: 'alreadyRollingBack' }
+  // The op was already fully reversed; there's nothing to undo.
+  | { kind: 'alreadyRolledBack' }
+  /**
+   *  The op is not rollbackable; carries the stored reason (delete, overwrote,
+   *  archive-overwrite, zip-edit-unsupported, journal-incomplete).
+   */
+  | { kind: 'notRollbackable'; detail: NotRollbackableReason }
+  /**
+   *  A volume the rollback needs isn't currently connected. Computed at rollback
+   *  time from mount state, never stored (D3); names the missing volume so the
+   *  UI/agent can say "Volume 'Backup' is not connected".
+   */
+  | {
+      kind: 'volumeUnavailable'
+      detail: {
+        volumeId: string
+      }
+    }
 
 /**
  *  Whether and how the operation can be / has been reversed (D3). Independent
@@ -7587,6 +7649,20 @@ export type TypeToJumpInfo = {
    *  `cursor_index` + `files`.
    */
   lastMatchedName?: string | null
+}
+
+/**
+ *  The whole job's undo result: a per-operation breakdown plus the totals the UI
+ *  leads with.
+ */
+export type UndoReport = {
+  /**
+   *  **In the order the operations were reversed: newest first** (see
+   *  [`undo_order`]).
+   */
+  operations: OperationUndoOutcome[]
+  restored: number
+  skipped: number
 }
 
 // Update metadata returned to the frontend when a newer version is available.

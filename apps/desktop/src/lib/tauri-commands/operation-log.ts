@@ -1,12 +1,18 @@
-// Operation-log read side: the recent-operations feed and one operation's detail.
+// Operation log: the recent-operations feed, one operation's detail, and undo.
 // Thin wrappers over the typed `commands.*` bindings, unwrapping `Result<T, string>`.
 // The alpha dialog and any future surface consume these; the Debug panel reads the
 // same backend commands directly (dev-only, bindings-import-exempt).
 
-import { commands, type OperationRow, type OperationItemView } from '$lib/ipc/bindings'
+import {
+  commands,
+  type OperationRow,
+  type OperationItemView,
+  type OperationUndoOutcome,
+  type UndoReport,
+} from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
-export type { OperationRow, OperationItemView }
+export type { OperationRow, OperationItemView, OperationUndoOutcome, UndoReport }
 
 /** One operation's header plus a page of its items, dir prefixes resolved to full paths. */
 export interface OperationLogDetail {
@@ -36,6 +42,21 @@ export async function getOperationLogDetail(
   itemOffset: number,
 ): Promise<OperationLogDetail | null> {
   const res = await commands.getOperationLogDetail(operationId, itemLimit, itemOffset)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/**
+ * Undo these operations as one action. **Pass the ids in the order they were
+ * APPLIED**: the backend reverses them newest first (a later batch can have taken a
+ * name an earlier one freed), and the apply order is what breaks a same-second tie.
+ *
+ * Resolves only once every operation has been reversed, with the full tally — so
+ * there's no polling here. It can take a while: each inverse is a queued operation
+ * and waits out anything already working the same volume.
+ */
+export async function undoOperations(operationIds: string[]): Promise<UndoReport> {
+  const res = await commands.undoOperations(operationIds)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }

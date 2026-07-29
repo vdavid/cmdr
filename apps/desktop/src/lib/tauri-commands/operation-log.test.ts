@@ -12,14 +12,16 @@ type Res<T> = { status: 'ok'; data: T } | { status: 'error'; error: string }
 
 const getRecentMock = vi.fn<(limit: number, offset: number) => Promise<Res<unknown>>>()
 const getDetailMock = vi.fn<(id: string, l: number, o: number) => Promise<Res<unknown>>>()
+const undoMock = vi.fn<(ids: string[]) => Promise<Res<unknown>>>()
 vi.mock('$lib/ipc/bindings', () => ({
   commands: {
     getRecentOperationLogEntries: (limit: number, offset: number) => getRecentMock(limit, offset),
     getOperationLogDetail: (id: string, l: number, o: number) => getDetailMock(id, l, o),
+    undoOperations: (ids: string[]) => undoMock(ids),
   },
 }))
 
-import { getRecentOperationLogEntries, getOperationLogDetail } from './operation-log'
+import { getRecentOperationLogEntries, getOperationLogDetail, undoOperations } from './operation-log'
 
 describe('getRecentOperationLogEntries', () => {
   beforeEach(() => getRecentMock.mockReset())
@@ -53,5 +55,31 @@ describe('getOperationLogDetail', () => {
   it('throws on an error result', async () => {
     getDetailMock.mockResolvedValue({ status: 'error', error: 'gone' })
     await expect(getOperationLogDetail('op-1', 200, 0)).rejects.toThrow('gone')
+  })
+})
+
+describe('undoOperations', () => {
+  beforeEach(() => undoMock.mockReset())
+
+  it('passes the ids through UNCHANGED and returns the tally', async () => {
+    const report = {
+      operations: [
+        { operationId: 'op-3', restored: 8, skipped: 0, finalState: 'rolledBack', refusal: null },
+        { operationId: 'op-1', restored: 10, skipped: 2, finalState: 'partiallyRolledBack', refusal: null },
+      ],
+      restored: 18,
+      skipped: 2,
+    }
+    undoMock.mockResolvedValue({ status: 'ok', data: report })
+
+    expect(await undoOperations(['op-1', 'op-3'])).toEqual(report)
+    // APPLY order, untouched: the backend reverses newest-first, and reordering here
+    // would silently undo oldest-first (see `rollback/order.rs`).
+    expect(undoMock).toHaveBeenCalledWith(['op-1', 'op-3'])
+  })
+
+  it('throws on an error result rather than reporting an undo of nothing', async () => {
+    undoMock.mockResolvedValue({ status: 'error', error: 'journal is locked' })
+    await expect(undoOperations(['op-1'])).rejects.toThrow('journal is locked')
   })
 })

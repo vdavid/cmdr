@@ -8,193 +8,22 @@
 //! the post-op filesystem state, run `execute_rollback`, and assert the invariant
 //! **apply-then-rollback == original state**, plus the specific data-loss traps
 //! D7 surfaced.
+//!
+//! The rig and its seeding helpers live in `test_support`, shared with `undo_tests`.
 
 use std::path::Path;
 use std::sync::Arc;
 
+use super::test_support::*;
 use super::*;
 use crate::file_system::VolumeManager;
-use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{InMemoryVolume, Volume};
-use crate::operation_log::store::{
-    OperationRow, open_read_connection, operation_log_db_path, read_inverse_op, read_operation, read_operation_items,
-};
+use crate::operation_log::store::{open_read_connection, read_inverse_op, read_operation, read_operation_items};
 use crate::operation_log::types::{
     EntryType, ExecutionStatus, Initiator, ItemOutcome, NotRollbackableReason, OpKind, RollbackState, RowRole,
     SearchCoverage,
 };
-use crate::operation_log::writer::{FinalizeOperation, JournalItem, OpenOperation, OperationLogWriter};
-
-/// A fixed mtime pinned onto seeded files so the recorded snapshot and the live
-/// entry agree (verify → Match).
-const MT: u64 = 1_700_000_000;
-
-// ── Harness ──────────────────────────────────────────────────────────────────
-
-/// A test rig: a writer over a temp-DB journal + a volume registry the engine
-/// resolves item volumes through. The temp dir is returned so it outlives the run.
-struct Rig {
-    writer: OperationLogWriter,
-    vm: VolumeManager,
-    _dir: tempfile::TempDir,
-}
-
-impl Rig {
-    fn new() -> Self {
-        let dir = tempfile::tempdir().expect("tempdir");
-        let db = operation_log_db_path(dir.path());
-        let writer = OperationLogWriter::spawn(&db).expect("spawn writer");
-        Rig {
-            writer,
-            vm: VolumeManager::new(),
-            _dir: dir,
-        }
-    }
-
-    fn register(&self, id: &str, vol: Arc<InMemoryVolume>) {
-        self.vm.register(id, vol as Arc<dyn Volume>);
-    }
-
-    fn read_op(&self, op_id: &str) -> OperationRow {
-        let conn = open_read_connection(self.writer.db_path()).expect("read conn");
-        read_operation(&conn, op_id).expect("read").expect("op present")
-    }
-
-    /// Seed an operation header + item rows + a terminal `rollback_state`, exactly
-    /// as the capture layer would after the op ran.
-    fn seed(
-        &self,
-        op_id: &str,
-        kind: OpKind,
-        src_vol: &str,
-        dst_vol: Option<&str>,
-        state: RollbackState,
-        items: Vec<JournalItem>,
-    ) {
-        self.writer
-            .open_operation(OpenOperation {
-                op_id: op_id.to_string(),
-                kind,
-                initiator: Initiator::User,
-                source_volume_id: Some(src_vol.to_string()),
-                dest_volume_id: dst_vol.map(str::to_string),
-                item_count: items.len() as u64,
-                started_at: 100,
-                rolls_back_op_id: None,
-                execution_status: ExecutionStatus::Running,
-            })
-            .expect("open");
-        let n = items.len() as u64;
-        if !items.is_empty() {
-            self.writer.record_items(op_id, items).expect("record");
-        }
-        self.writer
-            .finalize_operation(FinalizeOperation {
-                op_id: op_id.to_string(),
-                execution_status: ExecutionStatus::Done,
-                rollback_state: state,
-                not_rollbackable_reason: None,
-                archive_subkind: None,
-                search_coverage: SearchCoverage::Full,
-                search_coverage_reason: None,
-                ended_at: 200,
-                item_count: None,
-                items_done: n,
-                bytes_total: 0,
-                dev_summary: None,
-            })
-            .expect("finalize");
-        self.writer.flush_blocking().expect("flush");
-    }
-
-    async fn rollback(&self, op_id: &str) -> RollbackReport {
-        let original = self.read_op(op_id);
-        execute_rollback(&self.vm, &self.writer, &original, "inv-1", Initiator::User, &|| false).await
-    }
-}
-
-fn split(path: &str) -> (String, String) {
-    let p = Path::new(path);
-    (
-        p.parent().map(|d| d.to_string_lossy().into_owned()).unwrap_or_default(),
-        p.file_name()
-            .map(|n| n.to_string_lossy().into_owned())
-            .unwrap_or_default(),
-    )
-}
-
-/// A `rollback_unit` file row: source on `src_vol`, its landed copy/move on
-/// `dst_vol`, with a size + mtime snapshot.
-fn file_unit(seq: i64, src_vol: &str, src: &str, dst_vol: &str, dst: &str, size: i64) -> JournalItem {
-    let (sd, sn) = split(src);
-    let (dd, dn) = split(dst);
-    JournalItem {
-        seq,
-        entry_type: EntryType::File,
-        row_role: RowRole::RollbackUnit,
-        source_volume_id: src_vol.to_string(),
-        source_dir: sd,
-        source_name: sn,
-        dest_volume_id: Some(dst_vol.to_string()),
-        dest_dir: Some(dd),
-        dest_name: Some(dn),
-        size: Some(size),
-        mtime: Some(MT as i64),
-        outcome: ItemOutcome::Done,
-        overwrote: false,
-    }
-}
-
-/// A created-directory `rollback_unit` row (source == dest == the created path).
-fn dir_unit(seq: i64, vol: &str, path: &str) -> JournalItem {
-    let (d, n) = split(path);
-    JournalItem {
-        seq,
-        entry_type: EntryType::Dir,
-        row_role: RowRole::RollbackUnit,
-        source_volume_id: vol.to_string(),
-        source_dir: d.clone(),
-        source_name: n.clone(),
-        dest_volume_id: Some(vol.to_string()),
-        dest_dir: Some(d),
-        dest_name: Some(n),
-        size: None,
-        mtime: None,
-        outcome: ItemOutcome::Done,
-        overwrote: false,
-    }
-}
-
-async fn put(vol: &InMemoryVolume, path: &str, content: &[u8]) {
-    vol.create_file(Path::new(path), content).await.expect("create_file");
-    vol.set_modified_at(Path::new(path), Some(MT));
-}
-
-async fn mkdir(vol: &InMemoryVolume, path: &str) {
-    vol.create_directory(Path::new(path)).await.expect("create_directory");
-}
-
-async fn exists(vol: &InMemoryVolume, path: &str) -> bool {
-    vol.exists(Path::new(path)).await
-}
-
-async fn read(vol: &InMemoryVolume, path: &str) -> Vec<u8> {
-    let mut s = vol.open_read_stream(Path::new(path)).await.expect("open stream");
-    let mut out = Vec::new();
-    while let Some(chunk) = s.next_chunk().await {
-        out.extend_from_slice(&chunk.expect("chunk"));
-    }
-    out
-}
-
-fn entry(name: &str, inode: Option<u64>, size: Option<u64>, mtime: Option<u64>) -> FileEntry {
-    FileEntry {
-        size,
-        modified_at: mtime,
-        inode,
-        ..FileEntry::new(name.to_string(), format!("/{name}"), false, false)
-    }
-}
+use crate::operation_log::writer::{FinalizeOperation, JournalItem, OpenOperation};
 
 // ── Pure decision helpers ────────────────────────────────────────────────────
 

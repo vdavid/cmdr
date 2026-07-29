@@ -328,6 +328,30 @@ Rollback eligibility is Done-only at both boundaries: mutation code journals rol
 and `read_rollback_units_page` filters `outcome = done`. The executor also rejects any non-Done unit defensively. A
 skipped or unsuccessful planned rename must never make an untouched destination eligible for rename-back.
 
+### Undoing a job: several operations, newest first
+
+`write_operations/rollback.rs::undo_operations` is the frontend-facing entry (IPC:
+`commands/operation_log.rs::undo_operations`; the MCP `operations_rollback` tool still dispatches ONE op and polls). It
+exists for the Ask Cmdr rename rail, where one run can approve several batches.
+
+- **Order is data safety, not cosmetics** (`rollback/order.rs::undo_order`). Batch one renames `a.txt` → `b.txt`; batch
+  three then renames `c.txt` → `a.txt`. Newest-first, batch three vacates `a.txt` before batch one needs it back and both
+  restore. Oldest-first, batch one finds `a.txt` occupied by a different entry, the pinned non-destructive restore
+  correctly refuses, and that file is never restored — the only trace being a `partially_rolled_back` state. The journal's
+  clock is whole seconds, so a job's batches routinely tie; `undo_order` breaks a tie by the reverse of the caller's order,
+  and callers therefore pass ids in APPLY order.
+- **Sequencing is the driver's, not the queue's.** `dispatch_inverse_reported` hands back a `oneshot` the managed inverse
+  resolves with its `RollbackReport`, and the driver awaits each before dispatching the next. Relying on the manager's
+  oldest-first lane admission would make the ordering an emergent property of an unrelated module.
+- **Refusals are counted, never dropped.** An unknown id, an already-undone op, or a disconnected volume comes back as an
+  `OperationUndoOutcome` with a typed `refusal` and zero counts, so the caller's operation count always matches what it
+  asked for (invariant 9). Unknown ids carry no start time, so they land last in the report; they reversed nothing, so
+  their position changes no outcome.
+- **Per-item skip REASONS are not persisted.** The engine records `ItemOutcome::Skipped` on the original's items but not
+  which `SkipReason` produced it, so a report can say how many items were left alone, never which reason applied to which
+  file. The UI therefore names the reason class ("changed since the rename, or the old name is taken again"). Attributing a
+  reason per file needs a new column, hence a migration.
+
 ### The `rolling_back` state machine + startup reconcile (Finding 7 + 3)
 
 `rollback_operation` (the entry) reads the op, gates it (`check_rollbackable`: `UnknownOperation` / `AlreadyRollingBack`
