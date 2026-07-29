@@ -6,8 +6,9 @@
      * Name has a measured max width and mid-truncates
      * (`useShortenMiddle`); Path renders via `PathPills` with overflow-aware collapse;
      * Size and Modified shrink-wrap to their content and sit comfortably apart (we
-     * give them a generous gap via the grid `column-gap` declaration). The Actions
-     * column holds the per-row `…` menu and the matching header label.
+     * give them a generous gap via the grid `column-gap` declaration). There is no
+     * actions column: the row's own right-click (`oncontextmenu` → `onRowMenu`) opens
+     * the native context menu, which is the whole of what a per-row `…` button offered.
      *
      * Cursor model (single cursor): both mouse hover and keyboard arrows move the
      * same accent-colored cursor (`cursorIndex`). There is NO separate "hovered"
@@ -29,7 +30,6 @@
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import EmptyState from './EmptyState.svelte'
     import PathPills from './PathPills.svelte'
-    import SearchRowMenu from './SearchRowMenu.svelte'
     import type { SearchMode } from './query-filter-state.svelte'
 
     interface Props {
@@ -221,9 +221,8 @@
         >{@render children()}</strong
     >{/snippet}
 
-<!-- Column headers. Path is the flex column (1fr); Size + Modified shrink-wrap.
-     The Actions column on the right matches the row's `…` button slot. Header
-     cells use the same grid template as the rows so columns line up.
+<!-- Column headers. Path is the flex column (1fr); Size + Modified are fixed `ch` tracks.
+     Header cells use the same grid template as the rows so columns line up.
 
      Rendered ONLY when rows are (the `showingRows` predicate). Column labels over a
      spinner, a "no files match" list, the empty state, or a count-only total describe a
@@ -237,7 +236,6 @@
         {#if showPathColumn}<span class="col-label">{tString('queryUi.results.col.path')}</span>{/if}
         <span class="col-label col-right">{tString('queryUi.results.col.size')}</span>
         <span class="col-label col-right">{tString('queryUi.results.col.modified')}</span>
-        <span class="col-label col-actions">{tString('queryUi.results.col.actions')}</span>
     </div>
 {/if}
 
@@ -360,15 +358,6 @@
                 <span class="result-modified">
                     <DateLabel modifiedAt={entry.modifiedAt} />
                 </span>
-                <!-- Actions column: per-row `…` menu. Always visible on every row
-                     (discoverability beats visual quiet here). Header label aligns above. -->
-                <span class="result-actions">
-                    <SearchRowMenu
-                        onOpen={() => {
-                            onRowMenu(entry)
-                        }}
-                    />
-                </span>
             </div>
         {/each}
     {/if}
@@ -397,8 +386,7 @@
             minmax(80px, 22ch) /* name (mid-truncates) */
             minmax(120px, 1fr) /* path (flex) */
             10ch /* size (right-aligned, fits "999.9 MB") */
-            16ch /* modified (right-aligned, fits short and long date formats) */
-            32px; /* actions (… button footprint) */
+            16ch; /* modified (right-aligned, fits short and long date formats) */
 
         column-gap: var(--spacing-md);
         align-items: center;
@@ -412,8 +400,7 @@
             24px
             minmax(80px, 1fr)
             10ch
-            16ch
-            32px;
+            16ch;
     }
 
     /* The results zone (header + list + status bar) is the ONLY part of the dialog with
@@ -442,11 +429,6 @@
 
     .col-label.col-right {
         text-align: right;
-    }
-
-    .col-label.col-actions {
-        text-align: right;
-        min-width: 28px;
     }
 
     /* Results list. The only `flex: 1 1 auto` child in the dialog body, so it absorbs
@@ -613,15 +595,6 @@
         color: var(--color-text-tertiary);
         white-space: nowrap;
         text-align: right;
-    }
-
-    /* Actions column. The `…` button is always visible on every row (no
-       hover-only fade) — discoverability matters more than visual quiet here. */
-    .result-actions {
-        display: inline-flex;
-        align-items: center;
-        justify-content: flex-end;
-        min-width: 28px;
     }
 
     /* Status bar closes the results zone: same surface as the list, separated by a

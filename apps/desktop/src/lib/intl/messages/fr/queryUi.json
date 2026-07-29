@@ -171,11 +171,6 @@
   "@queryUi.results.col.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "queryUi.results.col.actions": "Actions",
-  "@queryUi.results.col.actions": {
-    "sourceHash": "ff8059d",
-    "sameAsSourceJustification": "'Actions' is the same word in French (Microsoft terminology FRA: 'Actions' -> 'Actions'); kept as the column header."
-  },
   "queryUi.results.listboxAria": "Résultats de recherche",
   "@queryUi.results.listboxAria": {
     "sourceHash": "e978b00"
@@ -243,10 +238,6 @@
   "queryUi.results.noMatchHeading": "Aucun fichier ne correspond à ces critères :",
   "@queryUi.results.noMatchHeading": {
     "sourceHash": "15383e2"
-  },
-  "queryUi.results.rowMenuAria": "Plus d''actions",
-  "@queryUi.results.rowMenuAria": {
-    "sourceHash": "f8d46c2"
   },
   "queryUi.pathPills.hiddenAria": "Segments de chemin masqués : {segments}",
   "@queryUi.pathPills.hiddenAria": {

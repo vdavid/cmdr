@@ -37,7 +37,6 @@ describe('query-ui static-string parity (en)', () => {
 
   it('resolves results-table headers and states', () => {
     expect(tString('queryUi.results.col.name')).toBe('Name')
-    expect(tString('queryUi.results.col.actions')).toBe('Actions')
     expect(tString('queryUi.results.searching')).toBe('Searching...')
     expect(tString('queryUi.results.noMatchHeading')).toBe('No files match these criteria:')
     expect(tString('queryUi.results.indexNotReady')).toBe(

@@ -195,11 +195,6 @@
     "description": "Column header for the last-modified-date column in the search results table. Right-aligned.",
     "screenshot": "search-dialog.png"
   },
-  "queryUi.results.col.actions": "Actions",
-  "@queryUi.results.col.actions": {
-    "description": "Column header for the per-row actions menu column in the search results table. Right-aligned.",
-    "screenshot": "search-dialog.png"
-  },
   "queryUi.results.listboxAria": "Search results",
   "@queryUi.results.listboxAria": {
     "description": "Accessibility label for the search results list, read by screen readers."
@@ -291,10 +286,6 @@
   "queryUi.results.noMatchHeading": "No files match these criteria:",
   "@queryUi.results.noMatchHeading": {
     "description": "Heading shown when a search returns no results, above a bulleted list of the active search criteria. Ends with a colon."
-  },
-  "queryUi.results.rowMenuAria": "More actions",
-  "@queryUi.results.rowMenuAria": {
-    "description": "Accessibility label and tooltip for the '…' menu button on each search result row, which opens that file's context menu."
   },
 
   "queryUi.pathPills.hiddenAria": "Hidden path segments: {segments}",

@@ -170,10 +170,6 @@
   "@queryUi.results.col.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "queryUi.results.col.actions": "Műveletek",
-  "@queryUi.results.col.actions": {
-    "sourceHash": "ff8059d"
-  },
   "queryUi.results.listboxAria": "Keresési találatok",
   "@queryUi.results.listboxAria": {
     "sourceHash": "e978b00"
@@ -241,10 +237,6 @@
   "queryUi.results.noMatchHeading": "Nincs ezeknek a feltételeknek megfelelő fájl:",
   "@queryUi.results.noMatchHeading": {
     "sourceHash": "15383e2"
-  },
-  "queryUi.results.rowMenuAria": "További műveletek",
-  "@queryUi.results.rowMenuAria": {
-    "sourceHash": "f8d46c2"
   },
   "queryUi.pathPills.hiddenAria": "Rejtett útvonalszegmensek: {segments}",
   "@queryUi.pathPills.hiddenAria": {

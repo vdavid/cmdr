@@ -173,12 +173,11 @@ describe('SearchResults a11y', () => {
     await expectNoA11yViolations(target)
   })
 
-  // Populated rows are `role="option"` AND contain interactive children
-  // (path-pill `<button>`s and the `…` row-menu `<button>`). The inner buttons
-  // are mouse-only and intentionally outside the keyboard Tab order
-  // (`tabindex="-1"`); the row itself is the keyboard target. Axe's
-  // `nested-interactive` rule flags the structural nesting anyway. We disable
-  // that one rule for this state and let every other rule run, so any
+  // Populated rows are `role="option"` AND contain interactive children (the
+  // path-pill `<button>`s). Those are mouse-only and intentionally outside the
+  // keyboard Tab order (`tabindex="-1"`); the row itself is the keyboard target.
+  // Axe's `nested-interactive` rule flags the structural nesting anyway. We
+  // disable that one rule for this state and let every other rule run, so any
   // regression in label, name, or contrast semantics still trips this test.
   // See `lib/query-ui/CLAUDE.md` § "Path pills with overflow collapse" for
   // the design rationale.

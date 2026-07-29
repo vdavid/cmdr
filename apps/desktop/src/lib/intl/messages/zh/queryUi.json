@@ -168,10 +168,6 @@
   "@queryUi.results.col.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "queryUi.results.col.actions": "操作",
-  "@queryUi.results.col.actions": {
-    "sourceHash": "ff8059d"
-  },
   "queryUi.results.listboxAria": "搜索结果",
   "@queryUi.results.listboxAria": {
     "sourceHash": "e978b00"
@@ -239,10 +235,6 @@
   "queryUi.results.noMatchHeading": "没有文件符合以下条件：",
   "@queryUi.results.noMatchHeading": {
     "sourceHash": "15383e2"
-  },
-  "queryUi.results.rowMenuAria": "更多操作",
-  "@queryUi.results.rowMenuAria": {
-    "sourceHash": "f8d46c2"
   },
   "queryUi.pathPills.hiddenAria": "隐藏的路径片段：{segments}",
   "@queryUi.pathPills.hiddenAria": {

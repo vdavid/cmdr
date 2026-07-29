@@ -264,8 +264,10 @@ builds on live in `$lib/ui/`. Only the layout facts that none of those carry liv
   supplies the store. Reach for the adapter before adding a consumer-specific branch inside the component. The adapter
   also pre-formats the row's meta line (`ageLabel` + `metaLabel`, the latter from `rowMeta()`), so the component never
   reads an entry field.
-- **`SearchRowMenu`'s `…` button is always visible on EVERY row**, not hover-only or cursor-only, and it routes to the
-  parent's NATIVE context menu through `onOpen` rather than rendering a menu of its own.
+- **Result rows carry no actions column.** Right-clicking a row (`oncontextmenu` → `onRowMenu`) opens the parent's
+  NATIVE context menu, which is the whole of what the old per-row `…` button did (it called the same `onRowMenu`, and
+  was `tabindex="-1"`, so no keyboard route was lost). Don't re-add a per-row button: the column ate width the Path
+  column needs, and its header label ellipsized to "Ac…" at the dialog's width.
 - **`EmptyState`'s example chips come from `config.emptyState.examples`** (forwarded by `QueryResults`), falling back to
   Search-flavoured defaults when a consumer omits them.
 
@@ -496,9 +498,9 @@ The pill's `onclick` calls `e.stopPropagation()` so it doesn't double-fire the r
 events at the document root, so unit tests assert against the `stopPropagation` spy rather than racing a wrapper DOM
 listener.
 
-**Per-row `…` menu**: `SearchRowMenu.svelte` renders an ellipsis button on every row, always visible. Both the button
-click and a right-click on the row call `onRowMenu(entry)` on the parent, which routes to the existing native
-`showFileContextMenu` factory. The column header above the button reads "Actions".
+**Per-row menu**: a right-click on a row calls `onRowMenu(entry)` on the parent, which routes to the existing native
+`showFileContextMenu` factory (Open, Reveal in Finder, Copy path, Copy name, …). There is no `…` button and no Actions
+column.
 
 ## Key shared decisions
 
@@ -568,10 +570,10 @@ before the IPC call) so the `AiPromptStrip` can render it. Anyone building on to
 still contains the user's natural-language input after an AI run; use `getLastAiPrompt()` instead.
 
 **Gotcha**: `nested-interactive` axe rule is explicitly disabled on the populated-results a11y test. **Why**: The row
-gains interactive children (path-pill buttons + the `…` menu button) inside the `role="option"` row. Tab order is
-suppressed via `tabindex="-1"` per spec, but axe still flags the structural nesting. Cleanly fixing it means either
-dropping the row's `role="option"` (and surfacing the cursor via a custom mechanism) or hoisting the buttons out of the
-row's grid cell — both are out of redesign scope.
+gains interactive children (the path-pill buttons) inside the `role="option"` row. Tab order is suppressed via
+`tabindex="-1"` per spec, but axe still flags the structural nesting. Cleanly fixing it means either dropping the row's
+`role="option"` (and surfacing the cursor via a custom mechanism) or hoisting the buttons out of the row's grid cell —
+both are out of redesign scope.
 
 ## Dependencies
 

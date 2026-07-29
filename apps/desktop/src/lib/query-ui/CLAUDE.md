@@ -7,9 +7,9 @@ internals: `filter-chips/CLAUDE.md`. Consumer decisions: `../search/CLAUDE.md`, 
 
 - `QueryDialog.svelte` + `query-dialog-config.ts`: the shared orchestrator (a `ModalDialog`; keyboard contract, IME
   guard, auto-apply gates, `lastDialogEvent` ownership), driven by one `QueryDialogConfig` prop per consumer.
-- UI pieces (`QueryBar`, `ModeChips`, `AiPromptStrip`, `QueryResults`, `EmptyState`, `PathPills`, `SearchRowMenu`,
-  `recent-items/*`), pure helpers, the `query-filter-state.svelte.ts` factory, `apply-ai-filters.ts`, `ai-summary.ts`
-  (the `AiPromptStrip` mirror), and `filter-chips/`. Consumer subsets + the adapter shape: DETAILS.md § Files.
+- UI pieces (`QueryBar`, `ModeChips`, `AiPromptStrip`, `QueryResults`, `EmptyState`, `PathPills`, `recent-items/*`),
+  pure helpers, the `query-filter-state.svelte.ts` factory, `apply-ai-filters.ts`, `ai-summary.ts` (the `AiPromptStrip`
+  mirror), and `filter-chips/`. Consumer subsets + the adapter shape: DETAILS.md § Files.
 
 ## Must-knows
 

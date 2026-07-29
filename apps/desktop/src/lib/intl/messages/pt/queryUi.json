@@ -170,10 +170,6 @@
   "@queryUi.results.col.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "queryUi.results.col.actions": "Ações",
-  "@queryUi.results.col.actions": {
-    "sourceHash": "ff8059d"
-  },
   "queryUi.results.listboxAria": "Resultados da busca",
   "@queryUi.results.listboxAria": {
     "sourceHash": "e978b00"
@@ -241,10 +237,6 @@
   "queryUi.results.noMatchHeading": "Nenhum arquivo corresponde a estes critérios:",
   "@queryUi.results.noMatchHeading": {
     "sourceHash": "15383e2"
-  },
-  "queryUi.results.rowMenuAria": "Mais ações",
-  "@queryUi.results.rowMenuAria": {
-    "sourceHash": "f8d46c2"
   },
   "queryUi.pathPills.hiddenAria": "Segmentos de caminho ocultos: {segments}",
   "@queryUi.pathPills.hiddenAria": {

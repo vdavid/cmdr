@@ -171,10 +171,6 @@
   "@queryUi.results.col.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "queryUi.results.col.actions": "Aktionen",
-  "@queryUi.results.col.actions": {
-    "sourceHash": "ff8059d"
-  },
   "queryUi.results.listboxAria": "Suchergebnisse",
   "@queryUi.results.listboxAria": {
     "sourceHash": "e978b00"
@@ -242,10 +238,6 @@
   "queryUi.results.noMatchHeading": "Keine Dateien entsprechen diesen Kriterien:",
   "@queryUi.results.noMatchHeading": {
     "sourceHash": "15383e2"
-  },
-  "queryUi.results.rowMenuAria": "Weitere Aktionen",
-  "@queryUi.results.rowMenuAria": {
-    "sourceHash": "f8d46c2"
   },
   "queryUi.pathPills.hiddenAria": "Verborgene Pfadsegmente: {segments}",
   "@queryUi.pathPills.hiddenAria": {

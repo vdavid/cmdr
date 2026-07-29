@@ -170,10 +170,6 @@
   "@queryUi.results.col.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "queryUi.results.col.actions": "Tác vụ",
-  "@queryUi.results.col.actions": {
-    "sourceHash": "ff8059d"
-  },
   "queryUi.results.listboxAria": "Kết quả tìm kiếm",
   "@queryUi.results.listboxAria": {
     "sourceHash": "e978b00"
@@ -241,10 +237,6 @@
   "queryUi.results.noMatchHeading": "Không có tệp nào khớp với các tiêu chí này:",
   "@queryUi.results.noMatchHeading": {
     "sourceHash": "15383e2"
-  },
-  "queryUi.results.rowMenuAria": "Thêm tác vụ",
-  "@queryUi.results.rowMenuAria": {
-    "sourceHash": "f8d46c2"
   },
   "queryUi.pathPills.hiddenAria": "Các đoạn đường dẫn bị ẩn: {segments}",
   "@queryUi.pathPills.hiddenAria": {
