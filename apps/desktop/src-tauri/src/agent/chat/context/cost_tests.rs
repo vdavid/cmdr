@@ -1,0 +1,142 @@
+//! What the real shapes cost, measured against the shipped assets rather than guessed.
+//!
+//! These are the numbers the plan's "measured ground truth" quotes and the budget table's
+//! reasoning rests on, so they are pinned here: a change that quietly doubles what a file
+//! costs fails a test instead of surprising a user mid-rename.
+
+use serde_json::json;
+
+use super::test_support::*;
+use super::*;
+use crate::agent::chat::budget::{DEFAULT_PROMPT_TOKEN_BUDGET, MAX_TOOL_RESULT_TOKENS, PROMPT_BUDGET_60K};
+use crate::agent::llm::types::ToolId;
+
+/// Average OCR text per screenshot in the real corpus the fabrication incident came from,
+/// well under `image_facts`' 2,000-char per-file cap. Every per-file number below assumes
+/// it; a text-dense corpus costs up to ~2.2× more.
+const OCR_CHARS: usize = 900;
+
+const FILES: usize = 100;
+
+const SHOTS_DIR: &str = "/Users/me/Downloads/shots";
+
+fn shot_path(index: usize) -> String {
+    format!("{SHOTS_DIR}/2026-07-21 CleanShot{index:06}@2x.png")
+}
+
+/// One `image_facts` row as the tool serializes it, at the corpus' average OCR length.
+fn facts_row(index: usize) -> Value {
+    json!({
+        "path": shot_path(index),
+        "state": "indexed",
+        "text": "x".repeat(OCR_CHARS),
+        "tags": [{ "label": "screenshot", "score": 0.9 }, { "label": "document", "score": 0.8 }],
+    })
+}
+
+/// One `list_pane_files` entry.
+fn listing_entry(index: usize) -> Value {
+    json!({ "name": format!("2026-07-21 CleanShot{index:06}@2x.png"), "size": 4_302_190, "modified": 1_785_247_668 })
+}
+
+/// One `propose_rename_plan` row: path, new name, and the evidence behind it.
+fn plan_row(index: usize) -> Value {
+    json!({
+        "sourcePath": shot_path(index),
+        "volumeId": "root",
+        "destinationName": format!("2026-07-21 19-36-00 cmdr-ai-rename-review-dialog-{index}.png"),
+        "evidence": { "source": "imageText", "detail": "Review file renames" },
+    })
+}
+
+/// The size of a 100-file content-based rename turn, measured against the REAL prefix (the
+/// shipped system prompt plus every agent tool declaration) instead of a guess. This is the
+/// flow the fabrication incident came from, at a size users plausibly ask for, so what it
+/// costs is worth pinning: the answer decides which models can do it at all.
+///
+/// Shape of one such turn, all of it inside the SAME user turn (so none of it may elide):
+/// the pane listing, then `image_facts` in as many pages as the per-result ceiling forces,
+/// then the plan call carrying 100 rows of paths, names, and evidence.
+#[test]
+fn a_hundred_file_rename_turn_needs_more_than_the_default_budget() {
+    let listing = json!({
+        "pane": "right",
+        "path": SHOTS_DIR,
+        "scope": "selection",
+        "returned": FILES,
+        "total": FILES,
+        "truncated": false,
+        "entries": (0..FILES).map(listing_entry).collect::<Vec<_>>(),
+    });
+
+    // `image_facts` pages itself to MAX_TOOL_RESULT_TOKENS, so 100 dense rows arrive over
+    // several calls — and every page stays in this turn's prompt.
+    let rows_per_page = {
+        let per_row = estimate_tokens_of_value(&facts_row(0));
+        (MAX_TOOL_RESULT_TOKENS / per_row).max(1)
+    };
+    let pages: Vec<Vec<usize>> = (0..FILES)
+        .collect::<Vec<_>>()
+        .chunks(rows_per_page)
+        .map(<[usize]>::to_vec)
+        .collect();
+
+    let mut transcript = vec![
+        user("Rename these 100 screenshots by their content, please.", 1_000),
+        assistant_tool_call("listing", ToolId::ListPaneFiles, json!({}), 1_010),
+        tool_result("listing", listing, 1_020),
+    ];
+    for (page, indexes) in pages.iter().enumerate() {
+        let call_id = format!("facts-{page}");
+        transcript.push(assistant_tool_call(
+            &call_id,
+            ToolId::ImageFacts,
+            json!({ "volumeId": "root", "paths": indexes.iter().map(|i| shot_path(*i)).collect::<Vec<_>>() }),
+            1_030 + page as i64,
+        ));
+        transcript.push(tool_result(
+            &call_id,
+            json!({ "status": "ok", "coverage": [], "facts": indexes.iter().map(|i| facts_row(*i)).collect::<Vec<_>>() }),
+            1_040 + page as i64,
+        ));
+    }
+    transcript.push(assistant_tool_call(
+        "plan",
+        ToolId::ProposeRenamePlan,
+        json!({ "renames": (0..FILES).map(plan_row).collect::<Vec<_>>() }),
+        1_100,
+    ));
+
+    let tools = crate::agent::tools::agent_tool_declarations();
+    let real_prefix = PrefixInputs {
+        system_prompt: crate::agent::chat::system_prompt::SYSTEM_PROMPT,
+        cmdr_md: None,
+        tools: &tools,
+    };
+    let assembled = assemble_prompt(
+        &real_prefix,
+        &transcript,
+        &envelope_at(1_000),
+        offset(),
+        PROMPT_BUDGET_60K,
+    );
+    let tokens = estimate_prompt_tokens(&assembled.system, &assembled.tools, &assembled.messages);
+
+    assert!(
+        tokens > DEFAULT_PROMPT_TOKEN_BUDGET,
+        "a 100-file rename does NOT fit the conservative default ({tokens} estimated tokens vs {DEFAULT_PROMPT_TOKEN_BUDGET}); \
+         if this ever flips, the numbers below are stale"
+    );
+    assert!(
+        tokens < PROMPT_BUDGET_60K,
+        "a 100-file rename must fit the 60k budget with room to spare ({tokens} estimated tokens)"
+    );
+    // Nothing from this turn may have been dropped to get there: every page of facts is the
+    // evidence the plan cites.
+    assert_eq!(
+        assembled.elision.elided_results,
+        0,
+        "the turn in flight keeps all {} of its results",
+        pages.len() + 1
+    );
+}

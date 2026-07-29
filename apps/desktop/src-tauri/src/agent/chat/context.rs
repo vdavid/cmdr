@@ -498,4 +498,8 @@ fn estimate_tokens_of_message(message: &AgentMessage) -> usize {
 }
 
 #[cfg(test)]
+mod cost_tests;
+#[cfg(test)]
+pub(crate) mod test_support;
+#[cfg(test)]
 mod tests;
