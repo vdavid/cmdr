@@ -52,6 +52,7 @@ use crate::ignore_poison::IgnorePoison;
 
 use super::context::{self, ContextEnvelope, ElisionFacts, MAX_TOOL_TURNS, MAX_WALL_TIME, PrefixInputs};
 use super::system_prompt::SYSTEM_PROMPT;
+use crate::agent::tools::propose::evidence::EvidenceScope;
 use crate::agent::tools::propose::rename::RenameProposalSnapshot;
 
 const LOG_TARGET: &str = "agent::chat";
@@ -191,18 +192,24 @@ pub struct ToolDispatchOutcome {
 /// the read-only choke point (an unknown or write name is refused before `execute_tool`).
 pub struct AppHandleDispatcher<R: Runtime> {
     app: AppHandle<R>,
+    /// The chat thread this dispatcher serves. Evidence is scoped to it, so facts delivered
+    /// here can't back a claim made in another thread.
+    scope: EvidenceScope,
 }
 
 impl<R: Runtime> AppHandleDispatcher<R> {
-    pub fn new(app: AppHandle<R>) -> Self {
-        Self { app }
+    pub fn new(app: AppHandle<R>, conversation_id: i64) -> Self {
+        Self {
+            app,
+            scope: EvidenceScope::Thread(conversation_id),
+        }
     }
 }
 
 impl<R: Runtime> ToolDispatcher for AppHandleDispatcher<R> {
     fn dispatch<'a>(&'a self, call: &'a AgentToolCall) -> BoxFuture<'a, ToolDispatchOutcome> {
         async move {
-            let outcome = crate::agent::tools::view::dispatch(&self.app, call).await;
+            let outcome = crate::agent::tools::view::dispatch(&self.app, self.scope, call).await;
             ToolDispatchOutcome {
                 result: outcome.result,
                 proposal: outcome.proposal,
@@ -787,7 +794,7 @@ impl ChatRuntime {
 
         let cmdr_md = read_cmdr_md();
         let tools = crate::agent::tools::agent_tool_declarations();
-        let dispatcher = AppHandleDispatcher::new(app.clone());
+        let dispatcher = AppHandleDispatcher::new(app.clone(), conversation_id);
         let params = TurnParams {
             conversation_id,
             user_text: Some(&text),

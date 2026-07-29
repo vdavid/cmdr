@@ -24,10 +24,18 @@ read as complete, and the model has to resend the plan either way. The refusal n
 (`evidenceRejected` + `guidance`), so no rejected row is dropped silently. The model can fix the rows or say honestly
 that it doesn't have the content.
 
-**Decision: the ledger is session-scoped with a 30-minute TTL, not per-turn.** The real flow is multi-batch (look at 23
-files, propose in two plans, refine after feedback), and a user's "now do the rest" starts a fresh turn. Per-turn scoping
-would refuse the honest second half of exactly the workflow this exists to protect. The TTL bounds it so yesterday's
-facts can't back today's name, and `MAX_LEDGER_ENTRIES` bounds memory by dropping the oldest deliveries.
+**Decision: the ledger is keyed by chat thread, and holds each delivery for 30 minutes; it is not per-turn.** Two
+independent bounds, each answering a different question:
+
+- **Per thread** (`EvidenceScope::Thread(conversation_id)`, part of the lookup key): "was this handed to the model that's
+  making the claim?" A different thread's model never read those facts, whatever its own context holds, so a delivery
+  there must not vouch here. `EvidenceScope::NoThread` covers the shared registry path an external MCP client uses:
+  nothing is ever recorded against it, so it can back no content claim.
+- **Not per turn** (the 30-minute TTL): the real flow is multi-batch (look at 23 files, propose in two plans, refine
+  after feedback), and a user's "now do the rest" starts a fresh turn. Per-turn scoping would refuse the honest second
+  half of exactly the workflow this exists to protect, while the TTL still stops yesterday's facts backing today's name.
+
+`MAX_LEDGER_ENTRIES` bounds memory by dropping the oldest deliveries across all threads.
 
 ### The ledger's seams
 

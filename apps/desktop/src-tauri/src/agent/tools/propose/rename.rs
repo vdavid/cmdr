@@ -19,7 +19,7 @@ use tauri::{AppHandle, Manager, Runtime};
 use uuid::Uuid;
 
 use crate::agent::llm::types::AgentToolResult;
-use crate::agent::tools::propose::evidence::{EvidenceRejection, ImageFactsLedger, RenameEvidence};
+use crate::agent::tools::propose::evidence::{EvidenceRejection, EvidenceScope, ImageFactsLedger, RenameEvidence};
 use crate::file_system::validation::validate_filename;
 use crate::ignore_poison::IgnorePoison;
 use crate::mcp::pane_state::{PaneFileEntry, PaneState, PaneStateStore};
@@ -330,8 +330,13 @@ fn refusal_content(refusal: &ProposalRefusal) -> Value {
     }
 }
 
-pub async fn dispatch<R: Runtime>(app: &AppHandle<R>, call_id: &str, params: &Value) -> RenameDispatchOutcome {
-    match build_proposal(app, params) {
+pub async fn dispatch<R: Runtime>(
+    app: &AppHandle<R>,
+    scope: EvidenceScope,
+    call_id: &str,
+    params: &Value,
+) -> RenameDispatchOutcome {
+    match build_proposal(app, scope, params) {
         Ok(proposal) => {
             let snapshot = app.state::<RenameProposalStore>().stage(proposal);
             RenameDispatchOutcome {
@@ -355,19 +360,20 @@ pub async fn dispatch<R: Runtime>(app: &AppHandle<R>, call_id: &str, params: &Va
 }
 
 pub async fn execute_propose_rename_plan<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
-    let outcome = dispatch(app, "registry", params).await;
+    // The shared registry path has no chat thread, so it can cite no delivered facts.
+    let outcome = dispatch(app, EvidenceScope::NoThread, "registry", params).await;
     Ok(outcome.result.content)
 }
 
 /// Record what an `image_facts` result delivered, so a later plan can cite it. Called by
 /// the agent dispatcher; a result the runtime already marked elided never lands, because
 /// the model didn't read it.
-pub fn note_image_facts_delivered<R: Runtime>(app: &AppHandle<R>, result: &AgentToolResult) {
+pub fn note_image_facts_delivered<R: Runtime>(app: &AppHandle<R>, scope: EvidenceScope, result: &AgentToolResult) {
     if result.elided {
         return;
     }
     if let Some(ledger) = app.try_state::<ImageFactsLedger>() {
-        ledger.record_delivered(&result.call_id, &result.content);
+        ledger.record_delivered(scope, &result.call_id, &result.content);
     }
 }
 
@@ -761,7 +767,11 @@ fn invalid_params(message: impl Into<String>) -> ProposalRefusal {
     ProposalRefusal::Problem(ToolError::invalid_params(message))
 }
 
-fn build_proposal<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Result<RenameProposal, ProposalRefusal> {
+fn build_proposal<R: Runtime>(
+    app: &AppHandle<R>,
+    evidence_scope: EvidenceScope,
+    params: &Value,
+) -> Result<RenameProposal, ProposalRefusal> {
     let input: RenamePlanInput = serde_json::from_value(params.clone()).map_err(|_| {
         ToolError::invalid_params(
             "Provide a rename plan with sourcePath, volumeId, destinationName, and evidence for every row.",
@@ -826,7 +836,7 @@ fn build_proposal<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Result<Rena
     }
     // One unbacked claim refuses the WHOLE plan: staging the rest would show the user a
     // partial plan they'd read as complete, and the model needs to resend it anyway.
-    let rejections = collect_evidence_rejections(ledger, &rows);
+    let rejections = collect_evidence_rejections(ledger, evidence_scope, &rows);
     if !rejections.is_empty() {
         return Err(ProposalRefusal::Evidence(rejections));
     }
@@ -838,11 +848,15 @@ fn build_proposal<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Result<Rena
 
 /// Every row whose evidence didn't check out, in plan order. Pure over the ledger, so the
 /// guardrail is testable without a Tauri app.
-fn collect_evidence_rejections(ledger: &ImageFactsLedger, rows: &[RenameProposalRow]) -> Vec<EvidenceRejection> {
+fn collect_evidence_rejections(
+    ledger: &ImageFactsLedger,
+    scope: EvidenceScope,
+    rows: &[RenameProposalRow],
+) -> Vec<EvidenceRejection> {
     rows.iter()
         .filter_map(|row| {
             ledger
-                .check(&row.source_path, &row.evidence)
+                .check(scope, &row.source_path, &row.evidence)
                 .err()
                 .map(|problem| EvidenceRejection {
                     source_path: row.source_path.clone(),
@@ -914,6 +928,9 @@ fn validate_destination_name(name: &str) -> Result<(), ToolError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The chat thread these tests deliver into and propose from.
+    const THREAD: EvidenceScope = EvidenceScope::Thread(11);
     use crate::agent::tools::propose::evidence::{EvidenceProblem, EvidenceSource};
 
     #[test]
@@ -1174,6 +1191,7 @@ mod tests {
     fn one_unbacked_content_claim_rejects_that_row_and_refuses_the_whole_plan() {
         let ledger = ImageFactsLedger::default();
         ledger.record_delivered(
+            THREAD,
             "call-1",
             &serde_json::json!({ "status": "ok", "facts": [
                 { "path": "/shots/one.png", "state": "indexed", "text": "Invoice 4021 total 250 SEK" }
@@ -1203,7 +1221,7 @@ mod tests {
             ),
         ];
 
-        let rejections = collect_evidence_rejections(&ledger, &rows);
+        let rejections = collect_evidence_rejections(&ledger, THREAD, &rows);
 
         assert_eq!(rejections.len(), 1, "only the unbacked row is rejected");
         assert_eq!(rejections[0].source_path, "/shots/two.png");

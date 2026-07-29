@@ -113,7 +113,30 @@ pub struct EvidenceRejection {
     pub problem: EvidenceProblem,
 }
 
+// ── Which thread evidence belongs to ─────────────────────────────────────────
+
+/// Whose delivery this is, and whose claim may cite it. Evidence NEVER crosses threads: a
+/// model in another chat thread never read those facts, whatever its own context holds, so
+/// vouching across threads would weaken the ledger's one claim to "what this model was
+/// handed".
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum EvidenceScope {
+    /// An Ask Cmdr chat thread, by its conversation id.
+    Thread(i64),
+    /// A caller with no chat thread: the shared registry path an external MCP client uses.
+    /// Nothing is ever recorded against it, so it can't back a content claim (fails closed).
+    NoThread,
+}
+
 // ── The ledger ────────────────────────────────────────────────────────────────
+
+/// A ledger lookup: one path, in one thread. Two threads asking about the same file are
+/// two different questions.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+struct LedgerKey {
+    scope: EvidenceScope,
+    path: String,
+}
 
 /// One path's image facts, exactly as the model received them.
 struct DeliveredFacts {
@@ -133,14 +156,14 @@ struct DeliveredFacts {
 /// that never happened, expired, or was revoked refuses the claim rather than trusting it.
 #[derive(Default)]
 pub struct ImageFactsLedger {
-    entries: Mutex<HashMap<String, DeliveredFacts>>,
+    entries: Mutex<HashMap<LedgerKey, DeliveredFacts>>,
 }
 
 impl ImageFactsLedger {
     /// Record what one `image_facts` result delivered. Only `indexed` rows land: a
     /// `notIndexed` row tells the model "nothing is stored", which is the opposite of
     /// evidence. Called by the agent dispatcher for a result that reached the model.
-    pub fn record_delivered(&self, call_id: &str, content: &Value) {
+    pub fn record_delivered(&self, scope: EvidenceScope, call_id: &str, content: &Value) {
         let Some(facts) = content.get("facts").and_then(Value::as_array) else {
             return;
         };
@@ -154,7 +177,10 @@ impl ImageFactsLedger {
                 continue;
             };
             entries.insert(
-                path_key(path),
+                LedgerKey {
+                    scope,
+                    path: path_key(path),
+                },
                 DeliveredFacts {
                     call_id: call_id.to_string(),
                     text: row.get("text").and_then(Value::as_str).unwrap_or_default().to_string(),
@@ -196,7 +222,12 @@ impl ImageFactsLedger {
 
     /// Check one item's evidence. Content claims are checked against what was delivered;
     /// the other sources only have to be a usable note.
-    pub fn check(&self, source_path: &str, evidence: &RenameEvidence) -> Result<(), EvidenceProblem> {
+    pub fn check(
+        &self,
+        scope: EvidenceScope,
+        source_path: &str,
+        evidence: &RenameEvidence,
+    ) -> Result<(), EvidenceProblem> {
         // Length first, so an oversized detail is rejected before it's worth normalizing.
         if evidence.detail.chars().count() > MAX_DETAIL_CHARS {
             return Err(EvidenceProblem::DetailTooLong);
@@ -210,7 +241,10 @@ impl ImageFactsLedger {
         }
         let entries = self.entries.lock_ignore_poison();
         let delivered = entries
-            .get(&path_key(source_path))
+            .get(&LedgerKey {
+                scope,
+                path: path_key(source_path),
+            })
             .filter(|delivered| delivered.at.elapsed() < FACTS_TTL)
             .ok_or(EvidenceProblem::FactsNotDelivered)?;
         match evidence.source {
@@ -300,6 +334,10 @@ mod tests {
         row
     }
 
+    /// The chat thread these tests deliver into, and one that never received anything.
+    const THREAD: EvidenceScope = EvidenceScope::Thread(7);
+    const OTHER_THREAD: EvidenceScope = EvidenceScope::Thread(8);
+
     fn evidence(source: EvidenceSource, detail: &str) -> RenameEvidence {
         RenameEvidence {
             source,
@@ -315,6 +353,7 @@ mod tests {
         let ledger = ImageFactsLedger::default();
 
         let refusal = ledger.check(
+            THREAD,
             "/Users/x/Screenshots/shot-2.png",
             &evidence(EvidenceSource::ImageText, "hello world output"),
         );
@@ -328,6 +367,7 @@ mod tests {
     fn a_quote_that_isnt_in_the_delivered_text_is_refused() {
         let ledger = ImageFactsLedger::default();
         ledger.record_delivered(
+            THREAD,
             "call-1",
             &image_facts_result(vec![indexed(
                 "/Users/x/Screenshots/shot-2.png",
@@ -338,6 +378,7 @@ mod tests {
 
         assert_eq!(
             ledger.check(
+                THREAD,
                 "/Users/x/Screenshots/shot-2.png",
                 &evidence(EvidenceSource::ImageText, "hello world output")
             ),
@@ -349,6 +390,7 @@ mod tests {
     fn a_quote_from_the_delivered_text_is_accepted_across_casing_and_line_breaks() {
         let ledger = ImageFactsLedger::default();
         ledger.record_delivered(
+            THREAD,
             "call-1",
             &image_facts_result(vec![indexed(
                 "/Users/x/Screenshots/shot-2.png",
@@ -364,6 +406,7 @@ mod tests {
         ] {
             assert_eq!(
                 ledger.check(
+                    THREAD,
                     "/Users/x/Screenshots/shot-2.png",
                     &evidence(EvidenceSource::ImageText, detail)
                 ),
@@ -377,16 +420,25 @@ mod tests {
     fn a_tag_claim_must_name_a_delivered_tag() {
         let ledger = ImageFactsLedger::default();
         ledger.record_delivered(
+            THREAD,
             "call-1",
             &image_facts_result(vec![indexed("/x/a.png", None, &["sunset", "beach"])]),
         );
 
         assert_eq!(
-            ledger.check("/x/a.png", &evidence(EvidenceSource::ImageTags, "sunset over water")),
+            ledger.check(
+                THREAD,
+                "/x/a.png",
+                &evidence(EvidenceSource::ImageTags, "sunset over water")
+            ),
             Ok(())
         );
         assert_eq!(
-            ledger.check("/x/a.png", &evidence(EvidenceSource::ImageTags, "invoice document")),
+            ledger.check(
+                THREAD,
+                "/x/a.png",
+                &evidence(EvidenceSource::ImageTags, "invoice document")
+            ),
             Err(EvidenceProblem::DetailNotInTags)
         );
     }
@@ -396,14 +448,26 @@ mod tests {
     #[test]
     fn indexed_but_empty_facts_refuse_a_content_claim() {
         let ledger = ImageFactsLedger::default();
-        ledger.record_delivered("call-1", &image_facts_result(vec![indexed("/x/a.png", None, &[])]));
+        ledger.record_delivered(
+            THREAD,
+            "call-1",
+            &image_facts_result(vec![indexed("/x/a.png", None, &[])]),
+        );
 
         assert_eq!(
-            ledger.check("/x/a.png", &evidence(EvidenceSource::ImageText, "some invoice total")),
+            ledger.check(
+                THREAD,
+                "/x/a.png",
+                &evidence(EvidenceSource::ImageText, "some invoice total")
+            ),
             Err(EvidenceProblem::NoTextInFacts)
         );
         assert_eq!(
-            ledger.check("/x/a.png", &evidence(EvidenceSource::ImageTags, "a beach at sunset")),
+            ledger.check(
+                THREAD,
+                "/x/a.png",
+                &evidence(EvidenceSource::ImageTags, "a beach at sunset")
+            ),
             Err(EvidenceProblem::NoTagsInFacts)
         );
     }
@@ -414,12 +478,17 @@ mod tests {
     fn a_not_indexed_row_never_enters_the_ledger() {
         let ledger = ImageFactsLedger::default();
         ledger.record_delivered(
+            THREAD,
             "call-1",
             &image_facts_result(vec![json!({ "path": "/x/a.png", "state": "notIndexed" })]),
         );
 
         assert_eq!(
-            ledger.check("/x/a.png", &evidence(EvidenceSource::ImageText, "anything at all")),
+            ledger.check(
+                THREAD,
+                "/x/a.png",
+                &evidence(EvidenceSource::ImageText, "anything at all")
+            ),
             Err(EvidenceProblem::FactsNotDelivered)
         );
     }
@@ -430,10 +499,12 @@ mod tests {
     fn revoking_a_call_drops_exactly_that_calls_facts() {
         let ledger = ImageFactsLedger::default();
         ledger.record_delivered(
+            THREAD,
             "call-1",
             &image_facts_result(vec![indexed("/x/a.png", Some("alpha text"), &[])]),
         );
         ledger.record_delivered(
+            THREAD,
             "call-2",
             &image_facts_result(vec![indexed("/x/b.png", Some("beta text"), &[])]),
         );
@@ -441,11 +512,11 @@ mod tests {
         ledger.revoke_call("call-1");
 
         assert_eq!(
-            ledger.check("/x/a.png", &evidence(EvidenceSource::ImageText, "alpha text")),
+            ledger.check(THREAD, "/x/a.png", &evidence(EvidenceSource::ImageText, "alpha text")),
             Err(EvidenceProblem::FactsNotDelivered)
         );
         assert_eq!(
-            ledger.check("/x/b.png", &evidence(EvidenceSource::ImageText, "beta text")),
+            ledger.check(THREAD, "/x/b.png", &evidence(EvidenceSource::ImageText, "beta text")),
             Ok(())
         );
     }
@@ -461,7 +532,10 @@ mod tests {
             EvidenceSource::UserInstruction,
         ] {
             assert!(!source.claims_image_content());
-            assert_eq!(ledger.check("/x/a.png", &evidence(source, "Taken 2026-07-20")), Ok(()));
+            assert_eq!(
+                ledger.check(THREAD, "/x/a.png", &evidence(source, "Taken 2026-07-20")),
+                Ok(())
+            );
         }
     }
 
@@ -471,11 +545,11 @@ mod tests {
         let long = "x".repeat(MAX_DETAIL_CHARS + 1);
         for source in [EvidenceSource::ImageText, EvidenceSource::Metadata] {
             assert_eq!(
-                ledger.check("/x/a.png", &evidence(source, "  ")),
+                ledger.check(THREAD, "/x/a.png", &evidence(source, "  ")),
                 Err(EvidenceProblem::DetailTooShort)
             );
             assert_eq!(
-                ledger.check("/x/a.png", &evidence(source, &long)),
+                ledger.check(THREAD, "/x/a.png", &evidence(source, &long)),
                 Err(EvidenceProblem::DetailTooLong)
             );
         }
@@ -497,6 +571,34 @@ mod tests {
         assert_eq!(
             normalize_detail("\u{201c}Årstaviken SUNSET\u{201d}"),
             normalize_detail("a\u{30a}rstaviken sunset")
+        );
+    }
+
+    /// Evidence is scoped to the chat thread that received it. A model in another thread
+    /// never read those facts, whatever its own context holds, so the ledger must not vouch
+    /// for them there: "what this model was handed" is the whole claim it exists to make.
+    #[test]
+    fn facts_delivered_in_one_thread_do_not_back_a_claim_in_another() {
+        let ledger = ImageFactsLedger::default();
+        ledger.record_delivered(
+            THREAD,
+            "call-1",
+            &image_facts_result(vec![indexed("/x/a.png", Some("Invoice 4021 total"), &["document"])]),
+        );
+
+        assert_eq!(
+            ledger.check(THREAD, "/x/a.png", &evidence(EvidenceSource::ImageText, "Invoice 4021")),
+            Ok(()),
+            "the thread that fetched the facts can cite them"
+        );
+        assert_eq!(
+            ledger.check(
+                OTHER_THREAD,
+                "/x/a.png",
+                &evidence(EvidenceSource::ImageText, "Invoice 4021")
+            ),
+            Err(EvidenceProblem::FactsNotDelivered),
+            "another thread never saw them"
         );
     }
 

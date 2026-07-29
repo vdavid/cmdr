@@ -16,6 +16,7 @@ use serde_json::json;
 use tauri::{AppHandle, Runtime};
 
 use crate::agent::llm::types::{AgentToolCall, AgentToolResult, ToolId};
+use crate::agent::tools::propose::evidence::EvidenceScope;
 use crate::agent::tools::propose::rename::{RenameDispatchOutcome, RenameProposalSnapshot};
 use crate::mcp::{Access, Consumer, execute_tool, tool_access};
 
@@ -62,7 +63,7 @@ pub struct DispatchOutcome {
     pub proposal: Option<RenameProposalSnapshot>,
 }
 
-pub async fn dispatch<R: Runtime>(app: &AppHandle<R>, call: &AgentToolCall) -> DispatchOutcome {
+pub async fn dispatch<R: Runtime>(app: &AppHandle<R>, scope: EvidenceScope, call: &AgentToolCall) -> DispatchOutcome {
     if let Some(refusal) = refuse_unavailable(&call.call_id, &call.tool) {
         return DispatchOutcome {
             result: refusal,
@@ -71,7 +72,7 @@ pub async fn dispatch<R: Runtime>(app: &AppHandle<R>, call: &AgentToolCall) -> D
     }
     if call.tool == ToolId::ProposeRenamePlan {
         let RenameDispatchOutcome { result, proposal } =
-            crate::agent::tools::propose::rename::dispatch(app, &call.call_id, &call.arguments).await;
+            crate::agent::tools::propose::rename::dispatch(app, scope, &call.call_id, &call.arguments).await;
         return DispatchOutcome { result, proposal };
     }
     let result = match execute_tool(app, Consumer::Agent, call.tool.as_wire_name(), &call.arguments).await {
@@ -90,7 +91,7 @@ pub async fn dispatch<R: Runtime>(app: &AppHandle<R>, call: &AgentToolCall) -> D
     // the ledger records what this call actually handed the model. See
     // `propose/evidence.rs` for the guardrail and its revocation seam.
     if call.tool == ToolId::ImageFacts {
-        crate::agent::tools::propose::rename::note_image_facts_delivered(app, &result);
+        crate::agent::tools::propose::rename::note_image_facts_delivered(app, scope, &result);
     }
     DispatchOutcome { result, proposal: None }
 }
