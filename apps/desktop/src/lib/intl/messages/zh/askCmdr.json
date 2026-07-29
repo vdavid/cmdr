@@ -507,5 +507,50 @@
   "askCmdr.renameReview.status": "{allowed, plural, other {已允许 # 项重命名}}；{blocked, plural, other {已阻止 # 项}}",
   "@askCmdr.renameReview.status": {
     "sourceHash": "9f70789"
+  },
+
+  "askCmdr.renameUndo.applied": "已重命名 {countText} {count, plural, other {个文件}}。",
+  "@askCmdr.renameUndo.applied": {
+    "sourceHash": "b06c599"
+  },
+  "askCmdr.renameUndo.undo": "撤销",
+  "@askCmdr.renameUndo.undo": {
+    "sourceHash": "a8283ad"
+  },
+  "askCmdr.renameUndo.undoLabel": "撤销 {countText} {count, plural, other {个文件}}的重命名",
+  "@askCmdr.renameUndo.undoLabel": {
+    "sourceHash": "fc1c08a"
+  },
+  "askCmdr.renameUndo.undoJob": "撤销全部 {countText} {count, plural, other {批}}",
+  "@askCmdr.renameUndo.undoJob": {
+    "sourceHash": "f84acd2"
+  },
+  "askCmdr.renameUndo.undoJobLabel": "撤销本次运行的所有重命名：{batches, plural, other {# 批}}共 {filesText} {files, plural, other {个文件}}",
+  "@askCmdr.renameUndo.undoJobLabel": {
+    "sourceHash": "9d2e84e"
+  },
+  "askCmdr.renameUndo.undoing": "正在恢复原来的名称…",
+  "@askCmdr.renameUndo.undoing": {
+    "sourceHash": "756c0fc"
+  },
+  "askCmdr.renameUndo.undone": "已恢复 {countText} {count, plural, other {个文件}}。",
+  "@askCmdr.renameUndo.undone": {
+    "sourceHash": "a76ffee"
+  },
+  "askCmdr.renameUndo.partial": "已恢复 {countText} {count, plural, other {个文件}}。",
+  "@askCmdr.renameUndo.partial": {
+    "sourceHash": "a76ffee"
+  },
+  "askCmdr.renameUndo.skipped": "保留了 {countText} {count, plural, other {个文件}}：重命名后它们有改动，或者原来的名称已被占用。",
+  "@askCmdr.renameUndo.skipped": {
+    "sourceHash": "9a04738"
+  },
+  "askCmdr.renameUndo.refusedBatches": "Cmdr 无法撤销 {countText} {count, plural, other {批}}。详情请看操作日志。",
+  "@askCmdr.renameUndo.refusedBatches": {
+    "sourceHash": "16fde72"
+  },
+  "askCmdr.renameUndo.unavailable": "没有可恢复的内容。这一批可能已经撤销，或者它所在的驱动器未连接。",
+  "@askCmdr.renameUndo.unavailable": {
+    "sourceHash": "8a95b9e"
   }
 }

@@ -186,6 +186,31 @@ external process removes the clash or restores a missing source; matching names 
 authority. `TargetExists` and `SourceMissing` rows are deselected and show specific red warnings, while the write
 engine's exclusive final rename remains the data-safety boundary.
 
+## Undo after a batch lands
+
+Apply hands back a queued operation id, and `noteRenameApplied` turns it into a `renameApplied` rail line: "Renamed 23
+files." plus an Undo. This is the only safety net that fires after the names are real, which is the only moment the user
+can tell a name is wrong.
+
+A line per batch, so a run of several reads as a run. Only the newest still-undoable line carries the job-wide "Undo all
+N batches", and its `jobOperationIds` are built from the run's own lines — never from a previous line's set, which
+already includes its predecessors (that bug shipped duplicate ids to the backend and a test caught it).
+
+**The id order is the data-safety part.** `undoOperations` receives them in APPLY order and the backend reverses
+newest-batch-first (`src-tauri/src/operation_log/rollback/order.rs`): a later batch can have renamed a file into a name
+an earlier batch freed, and oldest-first then finds that name occupied, correctly refuses to overwrite, and leaves the
+file unrestored. Apply order is also what breaks a same-second tie in the journal's whole-second clock.
+
+The call resolves only when the reversal has actually finished, so the line reports what came back rather than claiming
+success on dispatch. `rename-undo.ts` maps the report to a display state, and anything left behind outranks what
+succeeded: a skipped file or a refused batch renders `partial`, never `undone`. A refused batch is counted apart from
+skipped files because it carries no per-file numbers. Every line a job undo covered goes `unavailable`, so no line
+offers an Undo the backend would now refuse. Live-stream only: undo needs the operation id, and a reopened thread could
+otherwise offer an Undo for a batch reversed from the operation log meanwhile.
+
+Per-item skip REASONS aren't persisted (the journal records `skipped`, not which `SkipReason`), so the copy names the
+reason class — "changed since the rename, or the old name is taken again" — rather than attributing one per file.
+
 ## Editing a proposed name
 
 A row used to be allow-or-deny, so a plausible wrong name left the user two options: the model's name or the old one.
@@ -211,8 +236,8 @@ wrong name gets corrected in place.
   saying nothing inside the file was read, and never softens into something reassuring. A case-only change is a rename,
   not a kept name.
 - A `userEdited` row renders the label alone ("You typed this name"): its detail is empty by construction, because the
-  user's name claims nothing and must never inherit the model's quote. Provenance in the operation log follows:
-  a batch carrying one user-edited row is logged as `agentEdited`, not `agent`.
+  user's name claims nothing and must never inherit the model's quote. Provenance in the operation log follows: a batch
+  carrying one user-edited row is logged as `agentEdited`, not `agent`.
 
 ## The "Why this name" column
 

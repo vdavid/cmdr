@@ -509,5 +509,50 @@
   "askCmdr.renameReview.status": "{allowed, plural, one {# Umbenennung erlaubt} other {# Umbenennungen erlaubt}}; {blocked, plural, one {# blockiert} other {# blockiert}}",
   "@askCmdr.renameReview.status": {
     "sourceHash": "9f70789"
+  },
+
+  "askCmdr.renameUndo.applied": "{countText} {count, plural, one {Datei} other {Dateien}} umbenannt.",
+  "@askCmdr.renameUndo.applied": {
+    "sourceHash": "b06c599"
+  },
+  "askCmdr.renameUndo.undo": "Widerrufen",
+  "@askCmdr.renameUndo.undo": {
+    "sourceHash": "a8283ad"
+  },
+  "askCmdr.renameUndo.undoLabel": "Umbenennen von {countText} {count, plural, one {Datei} other {Dateien}} widerrufen",
+  "@askCmdr.renameUndo.undoLabel": {
+    "sourceHash": "fc1c08a"
+  },
+  "askCmdr.renameUndo.undoJob": "Alle {countText} {count, plural, one {Gruppe} other {Gruppen}} widerrufen",
+  "@askCmdr.renameUndo.undoJob": {
+    "sourceHash": "f84acd2"
+  },
+  "askCmdr.renameUndo.undoJobLabel": "Alle Umbenennungen dieses Durchlaufs widerrufen: {filesText} {files, plural, one {Datei} other {Dateien}} in {batches, plural, one {# Gruppe} other {# Gruppen}}",
+  "@askCmdr.renameUndo.undoJobLabel": {
+    "sourceHash": "9d2e84e"
+  },
+  "askCmdr.renameUndo.undoing": "Alte Namen werden zurückgesetzt…",
+  "@askCmdr.renameUndo.undoing": {
+    "sourceHash": "756c0fc"
+  },
+  "askCmdr.renameUndo.undone": "{countText} {count, plural, one {Datei} other {Dateien}} zurückgesetzt.",
+  "@askCmdr.renameUndo.undone": {
+    "sourceHash": "a76ffee"
+  },
+  "askCmdr.renameUndo.partial": "{countText} {count, plural, one {Datei} other {Dateien}} zurückgesetzt.",
+  "@askCmdr.renameUndo.partial": {
+    "sourceHash": "a76ffee"
+  },
+  "askCmdr.renameUndo.skipped": "{countText} {count, plural, one {Datei} other {Dateien}} unverändert gelassen: {count, plural, one {sie hat sich} other {sie haben sich}} seit dem Umbenennen geändert, oder der alte Name ist wieder belegt.",
+  "@askCmdr.renameUndo.skipped": {
+    "sourceHash": "9a04738"
+  },
+  "askCmdr.renameUndo.refusedBatches": "Cmdr konnte {countText} {count, plural, one {Gruppe} other {Gruppen}} nicht widerrufen. Details stehen im Aktionsprotokoll.",
+  "@askCmdr.renameUndo.refusedBatches": {
+    "sourceHash": "16fde72"
+  },
+  "askCmdr.renameUndo.unavailable": "Es gibt nichts zurückzusetzen. Diese Gruppe wurde vielleicht schon widerrufen, oder ihr Laufwerk ist nicht verbunden.",
+  "@askCmdr.renameUndo.unavailable": {
+    "sourceHash": "8a95b9e"
   }
 }

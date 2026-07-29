@@ -511,5 +511,50 @@
   "askCmdr.renameReview.status": "{allowed, plural, one {# naamwijziging toegestaan} other {# naamwijzigingen toegestaan}}; {blocked, plural, one {# geblokkeerd} other {# geblokkeerd}}",
   "@askCmdr.renameReview.status": {
     "sourceHash": "9f70789"
+  },
+
+  "askCmdr.renameUndo.applied": "{countText} {count, plural, one {bestand} other {bestanden}} hernoemd.",
+  "@askCmdr.renameUndo.applied": {
+    "sourceHash": "b06c599"
+  },
+  "askCmdr.renameUndo.undo": "Ongedaan maken",
+  "@askCmdr.renameUndo.undo": {
+    "sourceHash": "a8283ad"
+  },
+  "askCmdr.renameUndo.undoLabel": "Hernoemen van {countText} {count, plural, one {bestand} other {bestanden}} ongedaan maken",
+  "@askCmdr.renameUndo.undoLabel": {
+    "sourceHash": "fc1c08a"
+  },
+  "askCmdr.renameUndo.undoJob": "Alle {countText} {count, plural, one {groep} other {groepen}} ongedaan maken",
+  "@askCmdr.renameUndo.undoJob": {
+    "sourceHash": "f84acd2"
+  },
+  "askCmdr.renameUndo.undoJobLabel": "Elke hernoeming in deze reeks ongedaan maken: {filesText} {files, plural, one {bestand} other {bestanden}} in {batches, plural, one {# groep} other {# groepen}}",
+  "@askCmdr.renameUndo.undoJobLabel": {
+    "sourceHash": "9d2e84e"
+  },
+  "askCmdr.renameUndo.undoing": "De oude namen worden teruggezet…",
+  "@askCmdr.renameUndo.undoing": {
+    "sourceHash": "756c0fc"
+  },
+  "askCmdr.renameUndo.undone": "{countText} {count, plural, one {bestand} other {bestanden}} teruggezet.",
+  "@askCmdr.renameUndo.undone": {
+    "sourceHash": "a76ffee"
+  },
+  "askCmdr.renameUndo.partial": "{countText} {count, plural, one {bestand} other {bestanden}} teruggezet.",
+  "@askCmdr.renameUndo.partial": {
+    "sourceHash": "a76ffee"
+  },
+  "askCmdr.renameUndo.skipped": "{countText} {count, plural, one {bestand} other {bestanden}} ongemoeid gelaten: {count, plural, one {het is} other {ze zijn}} na het hernoemen gewijzigd, of de oude naam is weer in gebruik.",
+  "@askCmdr.renameUndo.skipped": {
+    "sourceHash": "9a04738"
+  },
+  "askCmdr.renameUndo.refusedBatches": "Cmdr kon {countText} {count, plural, one {groep} other {groepen}} niet ongedaan maken. Het bewerkingenlogboek heeft de details.",
+  "@askCmdr.renameUndo.refusedBatches": {
+    "sourceHash": "16fde72"
+  },
+  "askCmdr.renameUndo.unavailable": "Er is niets terug te zetten. Deze groep is misschien al ongedaan gemaakt, of de schijf is niet verbonden.",
+  "@askCmdr.renameUndo.unavailable": {
+    "sourceHash": "8a95b9e"
   }
 }

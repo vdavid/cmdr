@@ -20,6 +20,7 @@ import { consentState, refreshConsent } from './ask-cmdr-consent.svelte'
 import { buildRailMessages } from './ask-cmdr-history'
 import type { RailMessage } from './ask-cmdr-messages'
 import { growMainWindowForRail, shrinkMainWindowForRail } from './rail-window'
+import { undoStateFromReport } from './rename-undo'
 import {
   applyBulkRename,
   cancelAskCmdr,
@@ -30,6 +31,7 @@ import {
   preflightBulkRename,
   reviseBulkRenameRow,
   sendAskCmdrMessage,
+  undoOperations,
   type AskCmdrErrorKind,
   type AskCmdrStreamEvent,
   type AttachmentRef,
@@ -39,7 +41,7 @@ import {
 
 const log = getAppLogger('askCmdr')
 
-export type { RailMessage, RailToolCall } from './ask-cmdr-messages'
+export type { RailMessage, RailToolCall, RenameUndoState } from './ask-cmdr-messages'
 
 /** Past this many thread messages the rail nudges "start a fresh one?" (mirrors the Rust
  * `THREAD_SOFT_CAP_MESSAGES`; no hard cut). */
@@ -591,7 +593,8 @@ export async function applyRenameReview(): Promise<void> {
   if (allowedRowIds.length === 0) return
   review.preflighting = true
   try {
-    await applyBulkRename(review.proposalId, allowedRowIds)
+    const started = await applyBulkRename(review.proposalId, allowedRowIds)
+    noteRenameApplied(started.operationId, allowedRowIds.length)
     if (askCmdrState.renameReview?.proposalId === review.proposalId) askCmdrState.renameReview = null
   } catch (e) {
     const current = askCmdrState.renameReview
@@ -599,6 +602,83 @@ export async function applyRenameReview(): Promise<void> {
     current.preflighting = false
     log.warn('starting the rename plan failed: {error}', { error: String(e) })
     void refreshRenamePreflight()
+  }
+}
+
+/**
+ * Record a finished batch in the thread, with its undo.
+ *
+ * The line goes in the thread rather than in the (now closed) review dialog,
+ * because that's where the user is looking and because a run of batches then reads
+ * as a run. **Only the newest line carries the job-wide undo**, and only once a run
+ * has more than one batch: the previous lines hand their ids over and keep just
+ * their own Undo, so "undo everything" appears once, at the bottom.
+ */
+export function noteRenameApplied(operationId: string, fileCount: number): void {
+  const run = renameRunLines()
+  // Built from the lines themselves, never from a previous line's stored job set:
+  // that set already includes its predecessors, so folding it in would repeat ids.
+  const jobOperationIds = [...run.map((line) => line.operationId), operationId]
+  const jobFileCount = run.reduce((total, line) => total + line.fileCount, 0) + fileCount
+  // The older lines are no longer the newest, so they give up the job-wide action.
+  for (const line of run) {
+    line.jobOperationIds = []
+    line.jobFileCount = 0
+  }
+  askCmdrState.messages.push({
+    kind: 'renameApplied',
+    operationId,
+    fileCount,
+    jobOperationIds: jobOperationIds.length > 1 ? jobOperationIds : [],
+    jobFileCount: jobOperationIds.length > 1 ? jobFileCount : 0,
+    undo: { status: 'undoable' },
+  })
+}
+
+/** Every rename line in this thread that can still be undone, oldest first. */
+function renameRunLines(): Extract<RailMessage, { kind: 'renameApplied' }>[] {
+  return askCmdrState.messages.filter(
+    (message): message is Extract<RailMessage, { kind: 'renameApplied' }> =>
+      message.kind === 'renameApplied' && message.undo.status === 'undoable',
+  )
+}
+
+/**
+ * Put the old names back for one batch, or (`scope: 'job'`) for every batch of the
+ * run this line closes.
+ *
+ * The ids go over in APPLY order; the backend reverses them newest first, which is
+ * the only order that works when a later batch took a name an earlier one freed. It
+ * resolves when the reversal has actually finished, so the line can report what
+ * came back rather than claiming success on dispatch.
+ */
+export async function undoRename(
+  line: Extract<RailMessage, { kind: 'renameApplied' }>,
+  scope: 'batch' | 'job' = 'batch',
+): Promise<void> {
+  if (line.undo.status !== 'undoable') return
+  const operationIds = scope === 'job' && line.jobOperationIds.length > 0 ? line.jobOperationIds : [line.operationId]
+  const covered = renameRunLines().filter((candidate) => operationIds.includes(candidate.operationId))
+  // Remember each covered line's state so a call that never reached the backend can
+  // hand its Undo back. A plain array of pairs, since this map is local and never
+  // read reactively (`SvelteMap` would be reactivity nobody observes).
+  const previous = covered.map((candidate) => [candidate, candidate.undo] as const)
+  for (const candidate of covered) candidate.undo = { status: 'undoing' }
+  try {
+    const report = await undoOperations(operationIds)
+    const state = undoStateFromReport(report)
+    // The line the user clicked reports the whole tally; the others it covered are
+    // done with, so they stop offering an Undo that would now be refused.
+    line.undo = state
+    for (const candidate of covered) {
+      if (candidate !== line) candidate.undo = { status: 'unavailable' }
+      candidate.jobOperationIds = []
+      candidate.jobFileCount = 0
+    }
+  } catch (e) {
+    log.warn('undoing the rename failed: {error}', { error: String(e) })
+    // Nothing is known to have moved, so hand every line its Undo back.
+    for (const [candidate, state] of previous) candidate.undo = state
   }
 }
 

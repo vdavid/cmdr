@@ -46,3 +46,43 @@ export type RailMessage =
    * fit its budget: the reply was written with less than the whole chat in view. Live-stream
    * only — it describes one turn's assembly, so history doesn't replay it. */
   | { kind: 'contextTrimmed'; count: number }
+  /** A finished rename batch, with the undo that reverses it. Live-stream only: undo
+   * needs the batch's operation id, and a reopened thread would offer an Undo whose
+   * batch may since have been undone elsewhere (the operation log is where past
+   * batches are reversed from). */
+  | {
+      kind: 'renameApplied'
+      /** The batch this line reports. */
+      operationId: string
+      /** Files this batch renamed. */
+      fileCount: number
+      /** Every still-undoable batch of this run, in the order they were APPLIED
+       * (which is the order `undo_operations` needs to reverse them newest-first).
+       * Non-empty only on the NEWEST such line, and only once a run has more than
+       * one batch — so the job-wide undo appears once, at the bottom. */
+      jobOperationIds: string[]
+      /** Files across every batch in `jobOperationIds`. */
+      jobFileCount: number
+      undo: RenameUndoState
+    }
+
+/** Where a rename batch's undo stands. `partial` and `unavailable` are the honest
+ * outcomes: undo never forces, so a file that changed since (or whose old name is
+ * taken again) is left alone and said so. */
+export type RenameUndoState =
+  | { status: 'undoable' }
+  | { status: 'undoing' }
+  | { status: 'undone'; restored: number }
+  | {
+      status: 'partial'
+      restored: number
+      /** Files left alone: changed since the rename, or their old name is taken again. */
+      skipped: number
+      /** Batches that never ran an inverse at all (already undone, a volume gone).
+       * Counted separately because a refused batch reports no per-file numbers, and
+       * folding it into `skipped` would understate what was missed. */
+      refusedBatches: number
+    }
+  /** Nothing was reversed: the batch was already undone, or a volume it needs is
+   * disconnected. */
+  | { status: 'unavailable' }

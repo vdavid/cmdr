@@ -555,5 +555,117 @@
         "content": "The number of rows blocked by preflight."
       }
     }
+  },
+
+  "askCmdr.renameUndo.applied": "Renamed {countText} {count, plural, one {file} other {files}}.",
+  "@askCmdr.renameUndo.applied": {
+    "description": "A line in the Ask Cmdr chat thread, shown right after a batch of files was renamed. It reports what happened and sits beside an Undo button. Sentence case.",
+    "placeholders": {
+      "countText": {
+        "content": "How many files were renamed, ready to drop into the sentence (e.g. 1,234)."
+      },
+      "count": {
+        "content": "The same number of files (decides whether the noun is singular or plural)."
+      }
+    }
+  },
+  "askCmdr.renameUndo.undo": "Undo",
+  "@askCmdr.renameUndo.undo": {
+    "description": "Button beside the 'Renamed N files.' line in the Ask Cmdr chat thread. Puts the files' previous names back. Keep it short: it sits inline in a narrow side panel."
+  },
+  "askCmdr.renameUndo.undoLabel": "Undo renaming {countText} {count, plural, one {file} other {files}}",
+  "@askCmdr.renameUndo.undoLabel": {
+    "description": "Accessible name (aria-label) for the Undo button beside the 'Renamed N files.' line, so a screen reader announces WHAT would be undone rather than a bare 'Undo'. Never shown on screen.",
+    "placeholders": {
+      "countText": {
+        "content": "How many files this button would rename back, ready to drop into the sentence (e.g. 1,234)."
+      },
+      "count": {
+        "content": "The same number of files (decides whether the noun is singular or plural)."
+      }
+    }
+  },
+  "askCmdr.renameUndo.undoJob": "Undo all {countText} {count, plural, one {batch} other {batches}}",
+  "@askCmdr.renameUndo.undoJob": {
+    "description": "Second button, shown only when the user renamed files in several batches during one run: it undoes every batch at once. A 'batch' is one reviewed group of renames the user approved. Keep it short: it sits inline in a narrow side panel.",
+    "placeholders": {
+      "countText": {
+        "content": "How many batches would be undone, ready to drop into the sentence (e.g. 12)."
+      },
+      "count": {
+        "content": "The same number of batches (decides whether the noun is singular or plural)."
+      }
+    }
+  },
+  "askCmdr.renameUndo.undoJobLabel": "Undo every rename in this run: {filesText} {files, plural, one {file} other {files}} across {batches, plural, one {# batch} other {# batches}}",
+  "@askCmdr.renameUndo.undoJobLabel": {
+    "description": "Accessible name (aria-label) for the 'Undo all N batches' button, naming both totals so a screen reader conveys the scale of what would be undone. A 'batch' is one reviewed group of renames the user approved. Never shown on screen.",
+    "placeholders": {
+      "filesText": {
+        "content": "Total files across every batch, ready to drop into the sentence (e.g. 1,234)."
+      },
+      "files": {
+        "content": "The same number of files (decides whether the noun is singular or plural)."
+      },
+      "batches": {
+        "content": "How many batches would be undone."
+      }
+    }
+  },
+  "askCmdr.renameUndo.undoing": "Putting the old names back…",
+  "@askCmdr.renameUndo.undoing": {
+    "description": "Replaces the Undo button while the undo is running. Renaming files back can take a moment on a network drive, so this is a progress state, not a result. Sentence case; the character at the end is an ellipsis (U+2026)."
+  },
+  "askCmdr.renameUndo.undone": "Put back {countText} {count, plural, one {file} other {files}}.",
+  "@askCmdr.renameUndo.undone": {
+    "description": "Result line shown when an undo put every file's previous name back. Sentence case.",
+    "placeholders": {
+      "countText": {
+        "content": "How many files got their previous name back, ready to drop into the sentence (e.g. 1,234)."
+      },
+      "count": {
+        "content": "The same number of files (decides whether the noun is singular or plural)."
+      }
+    }
+  },
+  "askCmdr.renameUndo.partial": "Put back {countText} {count, plural, one {file} other {files}}.",
+  "@askCmdr.renameUndo.partial": {
+    "description": "First of two lines shown when an undo could only put SOME files back; the second line is askCmdr.renameUndo.skipped. Same wording as askCmdr.renameUndo.undone, kept as its own key because it is followed by the explanation line and translators may want to pair the two. Sentence case.",
+    "placeholders": {
+      "countText": {
+        "content": "How many files got their previous name back, ready to drop into the sentence (e.g. 1,234)."
+      },
+      "count": {
+        "content": "The same number of files (decides whether the noun is singular or plural)."
+      }
+    }
+  },
+  "askCmdr.renameUndo.skipped": "Left {countText} {count, plural, one {file} other {files}} alone: {count, plural, one {it changed} other {they changed}} since the rename, or the old name is taken again.",
+  "@askCmdr.renameUndo.skipped": {
+    "description": "Second line of a partial undo result: it explains why some files kept their new names. Cmdr never overwrites during an undo, so a file that changed after the rename, or whose old name now belongs to something else, is deliberately left as it is. Say this as a considered choice, not as something going wrong. Sentence case.",
+    "placeholders": {
+      "countText": {
+        "content": "How many files were left as they are, ready to drop into the sentence (e.g. 1,234)."
+      },
+      "count": {
+        "content": "The same number of files (decides whether the noun is singular or plural)."
+      }
+    }
+  },
+  "askCmdr.renameUndo.refusedBatches": "Cmdr couldn’t undo {countText} {count, plural, one {batch} other {batches}}. The operation log has the details.",
+  "@askCmdr.renameUndo.refusedBatches": {
+    "description": "Extra line of a partial undo result, shown when whole batches could not be reversed at all (already undone, or a drive they need is disconnected). 'The operation log' is Cmdr's history of file changes; use whatever your locale calls that feature. A 'batch' is one reviewed group of renames the user approved. Sentence case; the apostrophe is U+2019.",
+    "placeholders": {
+      "countText": {
+        "content": "How many batches could not be undone, ready to drop into the sentence (e.g. 3)."
+      },
+      "count": {
+        "content": "The same number of batches (decides whether the noun is singular or plural)."
+      }
+    }
+  },
+  "askCmdr.renameUndo.unavailable": "Nothing to put back. This batch may already be undone, or its drive isn’t connected.",
+  "@askCmdr.renameUndo.unavailable": {
+    "description": "Result line shown when an undo reversed nothing at all: the batch had already been undone, or a drive it needs is not connected. Says what is true without guessing which of the two it was. Sentence case; the apostrophe is U+2019."
   }
 }

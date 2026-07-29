@@ -507,5 +507,50 @@
   "askCmdr.renameReview.status": "{allowed, plural, other {# lần đổi tên được cho phép}}; {blocked, plural, other {# lần bị chặn}}",
   "@askCmdr.renameReview.status": {
     "sourceHash": "9f70789"
+  },
+
+  "askCmdr.renameUndo.applied": "Đã đổi tên {countText} {count, plural, other {tệp}}.",
+  "@askCmdr.renameUndo.applied": {
+    "sourceHash": "b06c599"
+  },
+  "askCmdr.renameUndo.undo": "Hoàn tác",
+  "@askCmdr.renameUndo.undo": {
+    "sourceHash": "a8283ad"
+  },
+  "askCmdr.renameUndo.undoLabel": "Hoàn tác việc đổi tên {countText} {count, plural, other {tệp}}",
+  "@askCmdr.renameUndo.undoLabel": {
+    "sourceHash": "fc1c08a"
+  },
+  "askCmdr.renameUndo.undoJob": "Hoàn tác cả {countText} {count, plural, other {lô}}",
+  "@askCmdr.renameUndo.undoJob": {
+    "sourceHash": "f84acd2"
+  },
+  "askCmdr.renameUndo.undoJobLabel": "Hoàn tác mọi thay đổi tên trong lần chạy này: {filesText} {files, plural, other {tệp}} trong {batches, plural, other {# lô}}",
+  "@askCmdr.renameUndo.undoJobLabel": {
+    "sourceHash": "9d2e84e"
+  },
+  "askCmdr.renameUndo.undoing": "Đang đặt lại tên cũ…",
+  "@askCmdr.renameUndo.undoing": {
+    "sourceHash": "756c0fc"
+  },
+  "askCmdr.renameUndo.undone": "Đã đặt lại {countText} {count, plural, other {tệp}}.",
+  "@askCmdr.renameUndo.undone": {
+    "sourceHash": "a76ffee"
+  },
+  "askCmdr.renameUndo.partial": "Đã đặt lại {countText} {count, plural, other {tệp}}.",
+  "@askCmdr.renameUndo.partial": {
+    "sourceHash": "a76ffee"
+  },
+  "askCmdr.renameUndo.skipped": "Giữ nguyên {countText} {count, plural, other {tệp}}: đã thay đổi sau khi đổi tên, hoặc tên cũ đã có thứ khác dùng.",
+  "@askCmdr.renameUndo.skipped": {
+    "sourceHash": "9a04738"
+  },
+  "askCmdr.renameUndo.refusedBatches": "Cmdr không hoàn tác được {countText} {count, plural, other {lô}}. Chi tiết nằm trong nhật ký thao tác.",
+  "@askCmdr.renameUndo.refusedBatches": {
+    "sourceHash": "16fde72"
+  },
+  "askCmdr.renameUndo.unavailable": "Không có gì để đặt lại. Có thể lô này đã được hoàn tác, hoặc ổ đĩa của nó chưa được kết nối.",
+  "@askCmdr.renameUndo.unavailable": {
+    "sourceHash": "8a95b9e"
   }
 }

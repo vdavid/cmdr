@@ -14,12 +14,36 @@
     import { renderAssistantMarkdown } from './ask-cmdr-markdown'
     import AskCmdrToolLine from './AskCmdrToolLine.svelte'
     import AskCmdrAttachmentChip from './AskCmdrAttachmentChip.svelte'
-    import type { RailMessage } from './ask-cmdr-trigger.svelte'
+    import { formatInteger } from '$lib/intl/number-format'
+    import { undoRename, type RailMessage } from './ask-cmdr-trigger.svelte'
 
     interface Props {
         message: RailMessage
     }
     const { message }: Props = $props()
+
+    /** A count as both the preformatted string the sentence drops in and the raw
+     *  integer that picks the plural form (the catalogs' `*Text` convention). */
+    function undoCounts(count: number): { countText: string; count: number } {
+        return { countText: formatInteger(count), count }
+    }
+
+    /** Undo's accessible name says WHAT it would reverse: "Undo" alone tells a screen
+     *  reader nothing once focus arrives without the sentence beside it. */
+    const undoLabel = $derived(
+        message.kind === 'renameApplied'
+            ? tString('askCmdr.renameUndo.undoLabel', undoCounts(message.fileCount))
+            : '',
+    )
+    const undoJobLabel = $derived(
+        message.kind === 'renameApplied'
+            ? tString('askCmdr.renameUndo.undoJobLabel', {
+                  filesText: formatInteger(message.jobFileCount),
+                  files: message.jobFileCount,
+                  batches: message.jobOperationIds.length,
+              })
+            : '',
+    )
 </script>
 
 {#if message.kind === 'user'}
@@ -84,6 +108,54 @@
     <div class="msg model-change" role="status">
         {tString('askCmdr.event.contextTrimmed', { count: message.count })}
     </div>
+{:else if message.kind === 'renameApplied'}
+    <!-- The safety net that fires AFTER the names land: the user only finds out a name
+         is wrong once they see the result. `role="status"` so a screen reader hears the
+         outcome without the focus moving. -->
+    <div class="msg rename-applied" role="status">
+        {#if message.undo.status === 'undoing'}
+            <span class="status-glyph"><Spinner size="sm" /></span>
+            <span>{tString('askCmdr.renameUndo.undoing')}</span>
+        {:else if message.undo.status === 'undone'}
+            <span>{tString('askCmdr.renameUndo.undone', undoCounts(message.undo.restored))}</span>
+        {:else if message.undo.status === 'partial'}
+            <!-- Loud about what stayed behind: undo never overwrites, so a file that
+                 changed since keeps its new name and this says so. -->
+            <div class="rename-lines">
+                <span>{tString('askCmdr.renameUndo.partial', undoCounts(message.undo.restored))}</span>
+                {#if message.undo.skipped > 0}
+                    <span class="rename-note">
+                        {tString('askCmdr.renameUndo.skipped', undoCounts(message.undo.skipped))}
+                    </span>
+                {/if}
+                {#if message.undo.refusedBatches > 0}
+                    <span class="rename-note">
+                        {tString('askCmdr.renameUndo.refusedBatches', undoCounts(message.undo.refusedBatches))}
+                    </span>
+                {/if}
+            </div>
+        {:else if message.undo.status === 'unavailable'}
+            <span class="rename-note">{tString('askCmdr.renameUndo.unavailable')}</span>
+        {:else}
+            <span>{tString('askCmdr.renameUndo.applied', undoCounts(message.fileCount))}</span>
+            <button type="button" class="undo" aria-label={undoLabel} onclick={() => void undoRename(message)}>
+                {tString('askCmdr.renameUndo.undo')}
+            </button>
+            {#if message.jobOperationIds.length > 1}
+                <!-- One run, several approved batches: undo them all. The backend reverses
+                     newest batch first, the only order that survives a batch reusing a
+                     name an earlier one freed. -->
+                <button
+                    type="button"
+                    class="undo"
+                    aria-label={undoJobLabel}
+                    onclick={() => void undoRename(message, 'job')}
+                >
+                    {tString('askCmdr.renameUndo.undoJob', undoCounts(message.jobOperationIds.length))}
+                </button>
+            {/if}
+        {/if}
+    </div>
 {/if}
 
 <style>
@@ -145,6 +217,43 @@
         flex: none;
         width: 16px;
         justify-content: center;
+    }
+
+    .rename-applied {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--spacing-xs);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        background: var(--color-bg-tertiary);
+        border-radius: var(--radius-md);
+    }
+
+    .rename-lines {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xxs);
+    }
+
+    .rename-note {
+        color: var(--color-text-tertiary);
+    }
+
+    /* A link-shaped action, not a button: it sits inside a sentence. `--color-accent-text`
+       rather than `--color-accent`, which has too little contrast as foreground. */
+    .undo {
+        padding: 0;
+        font: inherit;
+        color: var(--color-accent-text);
+        background: none;
+        border: none;
+        text-decoration: underline;
+    }
+
+    .undo:hover {
+        text-decoration-thickness: 2px;
     }
 
     .bubble,

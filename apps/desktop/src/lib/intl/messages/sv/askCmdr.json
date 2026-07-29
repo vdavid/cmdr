@@ -508,5 +508,50 @@
   "askCmdr.renameReview.status": "{allowed, plural, one {# namnbyte tillåtet} other {# namnbyten tillåtna}}; {blocked, plural, one {# blockerat} other {# blockerade}}",
   "@askCmdr.renameReview.status": {
     "sourceHash": "9f70789"
+  },
+
+  "askCmdr.renameUndo.applied": "{countText} {count, plural, one {fil} other {filer}} bytte namn.",
+  "@askCmdr.renameUndo.applied": {
+    "sourceHash": "b06c599"
+  },
+  "askCmdr.renameUndo.undo": "Ångra",
+  "@askCmdr.renameUndo.undo": {
+    "sourceHash": "a8283ad"
+  },
+  "askCmdr.renameUndo.undoLabel": "Ångra namnbytet för {countText} {count, plural, one {fil} other {filer}}",
+  "@askCmdr.renameUndo.undoLabel": {
+    "sourceHash": "fc1c08a"
+  },
+  "askCmdr.renameUndo.undoJob": "Ångra alla {countText} {count, plural, one {omgång} other {omgångar}}",
+  "@askCmdr.renameUndo.undoJob": {
+    "sourceHash": "f84acd2"
+  },
+  "askCmdr.renameUndo.undoJobLabel": "Ångra alla namnbyten i den här körningen: {filesText} {files, plural, one {fil} other {filer}} i {batches, plural, one {# omgång} other {# omgångar}}",
+  "@askCmdr.renameUndo.undoJobLabel": {
+    "sourceHash": "9d2e84e"
+  },
+  "askCmdr.renameUndo.undoing": "De gamla namnen återställs…",
+  "@askCmdr.renameUndo.undoing": {
+    "sourceHash": "756c0fc"
+  },
+  "askCmdr.renameUndo.undone": "{countText} {count, plural, one {fil} other {filer}} återställdes.",
+  "@askCmdr.renameUndo.undone": {
+    "sourceHash": "a76ffee"
+  },
+  "askCmdr.renameUndo.partial": "{countText} {count, plural, one {fil} other {filer}} återställdes.",
+  "@askCmdr.renameUndo.partial": {
+    "sourceHash": "a76ffee"
+  },
+  "askCmdr.renameUndo.skipped": "{countText} {count, plural, one {fil} other {filer}} lämnades som {count, plural, one {den är} other {de är}}: {count, plural, one {den ändrades} other {de ändrades}} efter namnbytet, eller så är det gamla namnet taget igen.",
+  "@askCmdr.renameUndo.skipped": {
+    "sourceHash": "9a04738"
+  },
+  "askCmdr.renameUndo.refusedBatches": "Cmdr kunde inte ångra {countText} {count, plural, one {omgång} other {omgångar}}. Detaljerna finns i åtgärdsloggen.",
+  "@askCmdr.renameUndo.refusedBatches": {
+    "sourceHash": "16fde72"
+  },
+  "askCmdr.renameUndo.unavailable": "Det finns inget att återställa. Omgången kan redan vara ångrad, eller så är dess enhet inte ansluten.",
+  "@askCmdr.renameUndo.unavailable": {
+    "sourceHash": "8a95b9e"
   }
 }
