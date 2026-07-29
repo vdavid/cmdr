@@ -1,7 +1,6 @@
 # Indexing lifecycle (the per-volume registry + state machine)
 
-How a per-volume index is born, lives, transitions, and dies: the registry, the `IndexPhase` machine, lock discipline,
-freshness, the Failed state, `IndexManager`, the master switch, and the bus. All invariants below hold PER volume id.
+How a per-volume index is born, lives, transitions, and dies. All invariants below hold PER volume id.
 
 ## Module map
 
@@ -25,30 +24,32 @@ freshness, the Failed state, `IndexManager`, the master switch, and the bus. All
 - **`start_indexing` is lock-first**: reserve the slot (`try_reserve_initializing_phase`) BEFORE building
   `IndexManager`, else two starts race two writer threads on one DB. A second start for a volume no-ops.
 - **Never hold `INDEX_REGISTRY` across a blocking or re-entrant manager call.** Drop the guard before the shutdown
-  drain (`stop_indexing`/`clear_index`) AND the blocking scan-start (`force_scan` / the journal-gap fallback): holding
-  froze the UI once, and re-locking under it self-deadlocked on real hardware.
+  drain (`stop_indexing`/`clear_index`) AND the blocking scan-start (`force_scan` / the journal-gap fallback): holding froze
+  the UI, and re-locking under it self-deadlocked on real hardware.
 - **A manual rescan routes by the TYPED kind** (`force_scan` → `force_rescan` → `rescan_scanner_for_kind`): SMB/MTP →
   `start_volume_scan`, local → `start_scan`. Never `start_scan` a trait-scanned volume: it walks nothing in ~2 ms and
-  falsely marks the index complete with 0 entries. Classify by kind, never an id substring.
+  falsely marks the index complete with 0 entries.
 - **`IndexVolumeKind` is a capability model**; branch on the axis, not the variant. `has_event_journal()` (only
   `Local`) gates journal replay, NOT `last_event_id.is_some()` (`LocalExternal` persists an id with no journal).
 - **Freshness has ONE total transition table** (`Freshness::on`). No journal ⇒ load Stale on launch; journaled ⇒ Fresh.
   `apply_freshness_event_on` (on the `Arc`) vs `apply_freshness_event` (under the lock) is LOCK DISCIPLINE, not style.
-- **The Failed state** (`failure.rs`): a fatal storage error STOPS + FAILS the index, never retries (one incident
-  logged 12,700 warnings in 8 min). Typed, never a message substring; terminal; recovery is rebuild.
+- **The Failed state** (`failure.rs`): a fatal storage error STOPS + FAILS the index, never retries (one incident logged
+  12,700 warnings in 8 min). Typed, terminal; recovery is rebuild.
 - **TWO switches, master wins.** `indexing.enabled` (`master.rs`) is a HARD gate: off ⇒ nothing indexes, autonomous
-  resumes included. Per-drive intent only picks WHICH drives run while it's on. Enforced in `start_indexing_for`, the
-  choke point all four transports share; never add a start path around it. Master-off stops via `stop_indexing`, which
-  must never write per-drive intent, or the switch couldn't restore the user's choices.
+  resumes included; per-drive intent only picks WHICH drives run while it's on. Enforced in `start_indexing_for`, the
+  choke point all four transports share — ❌ no start path around it. Master-off stops via `stop_indexing`, which
+  must never write per-drive intent, or the user's choices couldn't be restored.
 - **Defer `root` auto-start** (`should_auto_start_indexing`): scanning `/` stacks TCC popups, so FDA gates ONLY `root`.
   A narrow deferral, NOT the master switch; never feed it into `set_master_enabled`.
-- **The lifecycle bus is neutral and one-way** (consumer → indexing): `watch`, not `broadcast`, and `send_replace` so
-  a pre-subscribe `ScanCompleted` isn't lost.
+- **The lifecycle bus is neutral and one-way** (consumer → indexing): `watch`, not `broadcast`, `send_replace` so a
+  pre-subscribe `ScanCompleted` isn't lost.
+- **`publish_dirs_changed` takes ORIGIN dirs (whose own listings changed), ❌ never their ancestor closure.** Consumers
+  expand DOWNWARD, so one ancestor rescores its whole subtree: `/Users` in every batch cost ~90 k rescored folders a
+  minute. `reconciler::with_ancestor_closure` rebuilds the size-refresh set for the FE emit + hourglass.
 
 Owned elsewhere (each has its own `CLAUDE.md`), point don't restate: writer / `dir_stats` / epochs (`../writer/`);
 phase EVENT + progress (`../events/`); `IndexPathSpace` (`../paths/`); schema (`../store/`); walker (`../scanner/`);
 trait BFS (`../network_scanner/`); per-transport enable + watch (`../transports/`); event loop (`../watch/`); memory +
 retention (`../resources/`).
 
-The registry, the phase / freshness machines, the Failed state, lock discipline, the two indexing switches, and the
-bus: `DETAILS.md`. Read it before any non-trivial work here.
+Depth on every bullet above: `DETAILS.md`. Read it before any non-trivial work here.

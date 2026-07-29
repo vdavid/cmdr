@@ -426,6 +426,67 @@ fn escalation_anchor_stops_at_a_file_parent() {
 
 // ── Event processing with real files ────────────────────────────
 
+/// A live change reports ONLY the directory whose own listing changed — its
+/// immediate parent — never the ancestor chain up to `/`.
+///
+/// Pre-fix this returned every ancestor, and the importance scheduler (which reads
+/// the same set off the dir-changed bus and expands each entry DOWNWARD into its
+/// whole subtree) saw `/Users` in every batch and rescored ~90,000 folders a minute
+/// for a two-folder change. The recursive-size refresh set is rebuilt from these
+/// origins by `with_ancestor_closure` at the drain point instead.
+#[test]
+fn a_change_reports_only_the_dir_whose_listing_changed() {
+    let (writer, dir, conn) = setup_test_writer();
+
+    let test_dir = non_excluded_tempdir();
+    let deep = test_dir.path().join("a/b/c");
+    std::fs::create_dir_all(&deep).unwrap();
+    let file_path = deep.join("built.o");
+    std::fs::write(&file_path, "hello").unwrap();
+
+    let db_path = dir.path().join("test-reconciler.db");
+    ensure_path_in_db(&db_path, &deep.to_string_lossy(), &writer);
+
+    let space = IndexPathSpace::root();
+    let event = make_event(&file_path.to_string_lossy(), 80, created_file_flags());
+    let origins = process_fs_event(&event, &space, &conn, &writer, None, &mut None).expect("the event is processed");
+    writer.shutdown();
+
+    assert_eq!(
+        origins,
+        vec![space.absolute(&deep.to_string_lossy())],
+        "only the file's own directory changed its listing; its ancestors did not"
+    );
+}
+
+/// The recursive-size refresh set is REBUILT from the origins, so the FE emit and
+/// the "size updating" hourglass keep seeing every ancestor up to `/` — the fact
+/// they genuinely need. Splitting the two facts must not narrow this one.
+#[test]
+fn ancestor_closure_rebuilds_the_recursive_size_refresh_set() {
+    let closure = with_ancestor_closure(&["/Users/test/proj/pkg".to_string()]);
+    let mut got: Vec<&str> = closure.iter().map(String::as_str).collect();
+    got.sort_unstable();
+    assert_eq!(
+        got,
+        vec!["/", "/Users", "/Users/test", "/Users/test/proj", "/Users/test/proj/pkg"],
+        "the origin plus every ancestor up to the root"
+    );
+
+    // Two origins on the same chain fold into ONE closure, no duplicates.
+    let shared = with_ancestor_closure(&["/a/b/c".to_string(), "/a/b".to_string()]);
+    let mut got: Vec<&str> = shared.iter().map(String::as_str).collect();
+    got.sort_unstable();
+    assert_eq!(got, vec!["/", "/a", "/a/b", "/a/b/c"]);
+
+    // The root itself has no ancestors and claims nothing beyond itself.
+    assert_eq!(with_ancestor_closure(&["/".to_string()]), vec!["/".to_string()]);
+    assert!(
+        with_ancestor_closure(&[]).is_empty(),
+        "an empty batch expands to nothing"
+    );
+}
+
 #[test]
 fn process_file_creation_writes_entry() {
     let (writer, dir, conn) = setup_test_writer();

@@ -343,7 +343,7 @@ impl EventReconciler {
         scan_start_event_id: u64,
         conn: &Connection,
         writer: &IndexWriter,
-        on_dirs_affected: &mut dyn FnMut(Vec<String>),
+        on_dirs_changed: &mut dyn FnMut(Vec<String>),
     ) -> Result<u64, String> {
         // Sort by event_id to process in order
         self.buffer.sort_by_key(|e| e.event_id);
@@ -351,7 +351,7 @@ impl EventReconciler {
         let total = self.buffer.len();
         let mut processed = 0u64;
         let mut last_event_id = scan_start_event_id;
-        let mut affected_paths: Vec<String> = Vec::new();
+        let mut origin_dirs: Vec<String> = Vec::new();
 
         log::info!(
             "Reconciler: replaying {} (scan_start_event_id={scan_start_event_id})",
@@ -371,7 +371,7 @@ impl EventReconciler {
             // drains them via `kick_pending_rescans`.
             let mut escalation: Option<PathBuf> = None;
             if let Some(paths) = process_fs_event(event, &self.space, conn, writer, None, &mut escalation) {
-                affected_paths.extend(paths);
+                origin_dirs.extend(paths);
             }
             if let Some(anchor) = escalation {
                 self.pending_rescans.lock_ignore_poison().insert(anchor);
@@ -381,9 +381,11 @@ impl EventReconciler {
             processed += 1;
         }
 
-        // Notify caller of all affected paths
-        if !affected_paths.is_empty() {
-            on_dirs_affected(affected_paths);
+        // Hand the caller every ORIGIN dir the replay touched (the dirs whose own
+        // listings changed). The caller expands to the ancestor closure for the
+        // facts that need it (the FE emit, the post-replay verification set).
+        if !origin_dirs.is_empty() {
+            on_dirs_changed(origin_dirs);
         }
 
         // Store last event ID
@@ -409,15 +411,15 @@ impl EventReconciler {
 
     /// Process a single event in live mode.
     ///
-    /// Collects affected directory paths into `pending_paths` for batched
-    /// emission by the caller (1s flush interval). Returns the event ID
-    /// on success, or `None` if still buffering.
+    /// Collects the ORIGIN dirs (the dirs whose own listing changed) into
+    /// `pending_origins` for batched emission by the caller (1s flush interval).
+    /// Returns the event ID on success, or `None` if still buffering.
     pub fn process_live_event(
         &mut self,
         event: &FsChangeEvent,
         conn: &Connection,
         writer: &IndexWriter,
-        pending_paths: &mut HashSet<String>,
+        pending_origins: &mut HashSet<String>,
     ) -> Option<u64> {
         if self.buffering {
             self.buffer_event(event.clone());
@@ -439,7 +441,7 @@ impl EventReconciler {
         // the index, `process_fs_event` sets `escalation` to the rescan anchor
         // instead of dropping the credit. Live mode queues it right away.
         let mut escalation: Option<PathBuf> = None;
-        if let Some(affected_paths) = process_fs_event(
+        if let Some(origins) = process_fs_event(
             event,
             &self.space,
             conn,
@@ -447,7 +449,7 @@ impl EventReconciler {
             Some(&mut self.throttle),
             &mut escalation,
         ) {
-            pending_paths.extend(affected_paths);
+            pending_origins.extend(origins);
         }
         if let Some(anchor) = escalation {
             self.queue_must_scan_sub_dirs(anchor, writer);
@@ -461,11 +463,12 @@ impl EventReconciler {
 
     /// Flush every throttled key whose 60 s window has elapsed, applying its
     /// last-seen size (never re-statting). Called on the event loop's ~1 s
-    /// throttle-sweep tick. Returns the ancestor paths whose `dir_stats` the
-    /// flushes changed, for the caller's batched `index-dir-updated` emit.
+    /// throttle-sweep tick. Returns the ORIGIN dirs whose listings the flushes
+    /// changed, for the caller's batched `index-dir-updated` emit (which expands
+    /// them to the ancestor closure).
     pub(crate) fn sweep_throttle(&mut self, writer: &IndexWriter, now: Instant) -> Vec<String> {
         let flushes = self.throttle.sweep(now);
-        let mut affected: Vec<String> = Vec::new();
+        let mut origins: Vec<String> = Vec::new();
         for (path, upsert) in flushes {
             let _ = writer.send(WriteMessage::UpsertEntryV2 {
                 parent_id: upsert.parent_id,
@@ -478,9 +481,9 @@ impl EventReconciler {
                 inode: upsert.inode,
                 nlink: upsert.nlink,
             });
-            affected.extend(collect_ancestor_paths(&path));
+            origins.extend(origin_dir(&path));
         }
-        affected
+        origins
     }
 
     /// Whether the reconciler's event buffer overflowed during the scan.
@@ -1236,7 +1239,15 @@ fn read_fs_children_via_read_dir(dir_path: &Path, space: &IndexPathSpace) -> Opt
 
 // ── Event processing ─────────────────────────────────────────────────
 
-/// Process a single filesystem event. Returns affected parent paths for UI notification.
+/// Process a single filesystem event. Returns the ORIGIN dirs it changed: the
+/// event path's parent (whose listing changed), plus the path itself when it's a
+/// newly created directory.
+///
+/// ❌ It does NOT return the ancestor chain. The chain is a different fact — "these
+/// dirs' recursive sizes need refreshing" — that [`with_ancestor_closure`] rebuilds
+/// where it's needed. Conflating the two once made the importance scheduler, which
+/// expands each batch entry DOWNWARD into its subtree, rescore ~90,000 folders a
+/// minute for a two-folder change (`indexing/lifecycle/DETAILS.md` § The lifecycle bus).
 ///
 /// Shared between replay and live mode. Normalizes paths, checks exclusions,
 /// stats the file, resolves paths to integer entry IDs, and sends appropriate
@@ -1262,7 +1273,7 @@ pub(crate) fn process_fs_event(
     escalation: &mut Option<PathBuf>,
 ) -> Option<Vec<String>> {
     // The canonical ABSOLUTE path in this volume's world. It stays absolute through
-    // the whole function (FS stat, exclusion, ancestor/affected paths, the FE emit);
+    // the whole function (FS stat, exclusion, the origin dirs, the FE emit);
     // the mount-relative strip is applied ONLY at each `resolve_abs` argument. For
     // the boot disk this firmlink-normalizes; for a mount-rooted drive it's the raw
     // path (firmlink semantics don't apply under `/Volumes`).
@@ -1281,10 +1292,13 @@ pub(crate) fn process_fs_event(
     }
 
     let parent_path = compute_parent_path(&normalized);
-    let mut affected = collect_ancestor_paths(&normalized);
+    // The ONE directory whose own listing this event changes. The ancestor chain
+    // (which needs a recursive-size refresh, not a listing refresh) is rebuilt from
+    // this by `with_ancestor_closure` at the batch's drain point.
+    let mut origins: Vec<String> = origin_dir(&normalized).into_iter().collect();
 
     if event.flags.item_removed {
-        return handle_removal(&normalized, space, conn, event, writer, affected, throttle, escalation);
+        return handle_removal(&normalized, space, conn, event, writer, origins, throttle, escalation);
     }
 
     if event.flags.item_created || event.flags.item_modified || event.flags.item_renamed {
@@ -1295,7 +1309,7 @@ pub(crate) fn process_fs_event(
             conn,
             event,
             writer,
-            &mut affected,
+            &mut origins,
             throttle,
             escalation,
         );
@@ -1310,7 +1324,7 @@ pub(crate) fn process_fs_event(
             conn,
             event,
             writer,
-            &mut affected,
+            &mut origins,
             throttle,
             escalation,
         );
@@ -1336,7 +1350,7 @@ fn handle_removal(
     conn: &Connection,
     event: &FsChangeEvent,
     writer: &IndexWriter,
-    mut affected: Vec<String>,
+    mut origins: Vec<String>,
     throttle: Option<&mut LiveThrottle>,
     escalation: &mut Option<PathBuf>,
 ) -> Option<Vec<String>> {
@@ -1353,7 +1367,7 @@ fn handle_removal(
             conn,
             event,
             writer,
-            &mut affected,
+            &mut origins,
             throttle,
             escalation,
         );
@@ -1369,11 +1383,11 @@ fn handle_removal(
             // drift signal without flooding the file.
             log::trace!("Reconciler: removal for unknown path, skipping: {normalized}");
             skip_aggregator::UNKNOWN_PATH_SKIPS.record(normalized);
-            return Some(affected);
+            return Some(origins);
         }
         Err(e) => {
             log::warn!("Reconciler: resolve_path failed for removal {normalized}: {e}");
-            return Some(affected);
+            return Some(origins);
         }
     };
 
@@ -1383,7 +1397,7 @@ fn handle_removal(
         let _ = writer.send(WriteMessage::DeleteEntryById(entry_id));
     }
 
-    Some(affected)
+    Some(origins)
 }
 
 /// Handle file/directory creation, modification, or rename.
@@ -1393,7 +1407,7 @@ fn handle_removal(
 /// from the parent so dir_stats are updated along the ancestor chain.
 #[allow(
     clippy::too_many_arguments,
-    reason = "shares the event-processing param set (path/parent/space/conn/event/writer/affected/throttle/escalation); a struct would add indirection without clarity, matching run_scan"
+    reason = "shares the event-processing param set (path/parent/space/conn/event/writer/origins/throttle/escalation); a struct would add indirection without clarity, matching run_scan"
 )]
 fn handle_creation_or_modification(
     normalized: &str,
@@ -1402,7 +1416,7 @@ fn handle_creation_or_modification(
     conn: &Connection,
     event: &FsChangeEvent,
     writer: &IndexWriter,
-    affected: &mut Vec<String>,
+    origins: &mut Vec<String>,
     throttle: Option<&mut LiveThrottle>,
     escalation: &mut Option<PathBuf>,
 ) -> Option<Vec<String>> {
@@ -1431,7 +1445,7 @@ fn handle_creation_or_modification(
                     log::warn!("Reconciler: resolve_path failed for gone path {normalized}: {e}");
                 }
             }
-            return Some(affected.clone());
+            return Some(origins.clone());
         }
     };
 
@@ -1450,11 +1464,11 @@ fn handle_creation_or_modification(
             }
             log::trace!("Reconciler: parent path not in DB, escalating event for {normalized} (parent: {parent_path})");
             skip_aggregator::ESCALATED_MISSING_PARENTS.record(normalized);
-            return Some(affected.clone());
+            return Some(origins.clone());
         }
         Err(e) => {
             log::warn!("Reconciler: resolve_path failed for parent {parent_path}: {e}");
-            return Some(affected.clone());
+            return Some(origins.clone());
         }
     };
 
@@ -1516,12 +1530,13 @@ fn handle_creation_or_modification(
     // UpsertEntryV2 auto-propagates deltas in the writer, so no separate
     // PropagateDeltaById needed here.
 
-    // For new directories, add them to affected paths for downstream processing
+    // A newly created directory is an origin in its own right: it appeared, so its
+    // (empty, or about-to-be-scanned) subtree is new to every downstream consumer.
     if event.flags.item_created && is_dir {
-        affected.push(normalized.to_string());
+        origins.push(normalized.to_string());
     }
 
-    Some(affected.clone())
+    Some(origins.clone())
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -1543,6 +1558,48 @@ fn compute_parent_path(path: &str) -> String {
         Some(pos) => path[..pos].to_string(),
         None => String::new(),
     }
+}
+
+/// The directory whose OWN listing a change at `path` alters: its immediate
+/// parent. `None` when there is none (the root itself, or a relative path).
+///
+/// This is the "origin" half of the two facts a live change carries. The other
+/// half — every ancestor whose recursive SIZE now needs refreshing — is rebuilt
+/// from the origins by [`with_ancestor_closure`]. Keeping them apart is what stops
+/// a consumer that expands DOWNWARD (the importance scheduler's incremental
+/// rescore) from seeing `/Users` in every batch; see
+/// `indexing/lifecycle/DETAILS.md` § The lifecycle bus.
+fn origin_dir(path: &str) -> Option<String> {
+    let parent = compute_parent_path(path);
+    if parent.is_empty() || parent == path {
+        return None;
+    }
+    Some(parent)
+}
+
+/// Expand origin directories to the recursive-size refresh set: every origin plus
+/// every ancestor up to `/`, deduplicated.
+///
+/// The `index-dir-updated` emit and the "size updating" hourglass both need this
+/// wider set (a file's size change propagates to every ancestor's `dir_stats`), so
+/// it's rebuilt here, ONCE per drained batch over the deduplicated origins, rather
+/// than per event. Consumers that care about which listings changed take the
+/// origins instead.
+pub(crate) fn with_ancestor_closure(origins: &[String]) -> Vec<String> {
+    let mut out: Vec<String> = Vec::with_capacity(origins.len());
+    let mut seen: HashSet<String> = HashSet::with_capacity(origins.len());
+    let mut push = |path: String, out: &mut Vec<String>| {
+        if seen.insert(path.clone()) {
+            out.push(path);
+        }
+    };
+    for origin in origins {
+        push(origin.clone(), &mut out);
+        for ancestor in collect_ancestor_paths(origin) {
+            push(ancestor, &mut out);
+        }
+    }
+    out
 }
 
 /// Collect all ancestor paths from the immediate parent up to "/".

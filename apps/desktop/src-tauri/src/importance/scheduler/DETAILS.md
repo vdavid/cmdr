@@ -140,6 +140,25 @@ raise every ancestor to the root and rescope half the volume (plan open-question
 subtree that actually changed. The pass walks the index once, filters to the touched subset, clears each changed
 subtree, and re-inserts only its non-floored folders. Spotlight is sampled only for the touched subset (bounded work).
 
+**The downward expansion is only as bounded as the batch is.** The batch arrives on `dir-changed`, which carries the
+ORIGIN dirs — those whose OWN listings changed — and NOT their ancestor closure; that contract is canonical in
+`indexing/lifecycle/DETAILS.md` § The lifecycle bus, and it is what keeps `is_in_changed_subtree` proportional. Feed the
+same code an ancestor and it rescores that ancestor's entire subtree: `incremental_scope_follows_the_changed_dir_not_its_ancestors`
+pins both sides on one synthetic volume (5 rows from the origin, all 423 from the closure).
+
+**Clear and insert must agree, and they do because both read the SAME `changed_paths` slice.**
+`write_weights_incremental` clears each entry's subtree; the row set is `touched ∪ in_changed_subtree` over the same
+entries, so the cleared region is always a SUBSET of what gets re-inserted (the touched ancestors add rows outside the
+cleared region, which is harmless — the insert is an upsert on the folded PK). ❌ Never narrow `is_in_changed_subtree`
+(or widen the clear list) independently: a clear wider than the insert deletes rows nothing re-adds, and the weights
+vanish silently until the next full pass.
+
+**A floor transition reaches the renamed folder through its PARENT.** The live pipeline reports the parent as the
+origin, never the renamed directory itself (its new name is just an entry in the parent's listing), so the parent's
+downward expansion is the ONLY thing that revisits a folder that just became — or stopped being — a `node_modules`.
+`a_floor_transition_propagates_from_the_parent_origin_without_widening` pins the transition AND its containment (a
+sibling project keeps its untouched full-pass row).
+
 Both predicates run once per WALKED folder (the filter sees the whole volume, not just the touched subset), so they
 inherit the walk's no-per-folder-allocation discipline above: `is_in_changed_subtree` does `strip_prefix` plus a
 separator check rather than building a `{changed}/` needle, and the touched set is a `HashSet<String>` probed by `&str`.
@@ -168,12 +187,11 @@ pass advances the generation.
 
 ### The incremental never escalates on `/`
 
-Every live `dir-changed` batch carries the bare root `/`:
-`reconciler::collect_ancestor_paths` walks each change up to `/` so the frontend can refresh every ancestor's displayed
-size, so `/` sits in essentially every batch as the *universal ancestor*, not a signal that the whole volume changed.
-`sanitize_incremental_batch` drops `/` (and empty strings) at the incremental boundary before `touched_folder_set` /
-`write_weights_incremental` see it; a batch that was only `/` is a no-op. Full recomputes are `ScanCompleted`-driven
-only — the incremental path never calls `run_pass_blocking`. **Gotcha/Why:** treating `/` as a full-refresh sentinel
+`/` reaches a batch whenever something changes directly in the root directory (on macOS that is routine churn), and it
+is not a signal that the whole volume changed. `sanitize_incremental_batch` drops `/` (and empty strings) at the
+incremental boundary before `touched_folder_set` / `write_weights_incremental` see it; a batch that was only `/` is a
+no-op. Full recomputes are `ScanCompleted`-driven only — the incremental path never calls `run_pass_blocking`.
+**Gotcha/Why:** treating `/` as a full-refresh sentinel
 (escalate to a whole-volume rewrite) meant that because the root volume live-watches `/`, where macOS FSEvent churn is
 near-continuous, `/` arrived in almost every batch and full recomputes ran back-to-back forever — pegging a core and
 starving the index-DB WAL checkpoint (its `wal_checkpoint(TRUNCATE)` kept losing to importance's long read), which

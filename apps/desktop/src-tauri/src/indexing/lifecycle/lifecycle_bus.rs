@@ -54,22 +54,31 @@ pub(crate) enum ScanState {
     Completed { generation: u64 },
 }
 
-/// A batch of directories whose listings changed while the app runs (live
+/// A batch of directories whose OWN listings changed while the app runs (live
 /// FSEvents, verifier corrections), for a volume.
 ///
-/// The importance scheduler drives its INCREMENTAL recompute off this: rescore
-/// only the touched subtrees + their (capped) ancestor chains, instead of the
-/// full-volume pass a `ScanCompleted` triggers (plan Decision 5). A monotonically
-/// increasing `batch` lets a late subscriber tell the retained initial value from
-/// a real change and coalesce repeats.
+/// The importance scheduler drives its INCREMENTAL recompute off this, and the
+/// media index its scoped live tick. Both expand each entry DOWNWARD (importance
+/// into the whole subtree, for floor transitions; media into the dir's own image
+/// children), so the payload must carry ONLY the dirs that genuinely changed.
+///
+/// ❌ Never publish the ancestor closure here. The "these dirs' recursive sizes
+/// need refreshing" set is a different fact with different consumers (the FE emit,
+/// the "size updating" hourglass), rebuilt where it's needed by
+/// `reconciler::with_ancestor_closure`. Publishing it once meant every batch
+/// carried `/Users`, and a two-folder change rescored ~90,000 folders a minute
+/// forever (`indexing/lifecycle/DETAILS.md` § The lifecycle bus).
+///
+/// A monotonically increasing `batch` lets a late subscriber tell the retained
+/// initial value from a real change and coalesce repeats.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub(crate) struct DirsChanged {
     /// `0` is the retained initial value (nothing published yet); each publish
     /// bumps it so a consumer can distinguish batches.
     pub batch: u64,
-    /// The changed directory paths (absolute). A `"/"` sentinel means "refresh
-    /// everything" (a full-refresh emit); a consumer treats it as a full pass.
-    pub paths: Vec<String>,
+    /// The directories whose own listings changed (absolute paths), NOT their
+    /// ancestors.
+    pub origins: Vec<String>,
 }
 
 /// The per-volume `watch` senders. A sender is created on first
@@ -115,22 +124,23 @@ fn with_dir_sender<T>(volume_id: &str, f: impl FnOnce(&watch::Sender<DirsChanged
     f(sender)
 }
 
-/// Publish a batch of changed directory paths for a volume.
+/// Publish a batch of ORIGIN directories — those whose own listings changed — for
+/// a volume.
 ///
 /// Called from the live-change sites (`event_loop`, `verifier`) alongside the
-/// existing frontend `index-dir-updated` emit. `indexing/` publishes without
-/// knowing who listens (the one-way boundary); the importance scheduler
-/// subscribes and rescopes an incremental rescore to the touched paths. A no-op
-/// if `paths` is empty.
-pub(crate) fn publish_dirs_changed(volume_id: &str, paths: &[String]) {
-    if paths.is_empty() {
+/// existing frontend `index-dir-updated` emit, which takes the wider ancestor
+/// closure. `indexing/` publishes without knowing who listens (the one-way
+/// boundary); the importance scheduler subscribes and rescopes an incremental
+/// rescore to these paths' subtrees. A no-op if `origins` is empty.
+pub(crate) fn publish_dirs_changed(volume_id: &str, origins: &[String]) {
+    if origins.is_empty() {
         return;
     }
     with_dir_sender(volume_id, |sender| {
         let batch = sender.borrow().batch + 1;
         sender.send_replace(DirsChanged {
             batch,
-            paths: paths.to_vec(),
+            origins: origins.to_vec(),
         });
     });
 }
@@ -322,7 +332,7 @@ mod tests {
         let rx = subscribe_dirs_changed(vid);
         let state = rx.borrow();
         assert_eq!(state.batch, 1);
-        assert_eq!(state.paths, vec!["/a".to_string(), "/b".to_string()]);
+        assert_eq!(state.origins, vec!["/a".to_string(), "/b".to_string()]);
         drop(state);
 
         DIR_BUS.lock_ignore_poison().remove(vid);

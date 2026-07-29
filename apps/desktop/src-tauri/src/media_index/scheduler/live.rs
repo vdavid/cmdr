@@ -241,11 +241,13 @@ pub(crate) fn start_live_follow(scheduler: Arc<MediaScheduler>, volume_id: Strin
         // so only a real later change triggers.
         rx.borrow_and_update();
         while rx.changed().await.is_ok() {
-            let paths = rx.borrow_and_update().paths.clone();
-            if paths.is_empty() {
+            // The bus carries the ORIGIN dirs (those whose own listings changed), so a
+            // tick walks exactly the directories that gained or lost entries.
+            let origins = rx.borrow_and_update().origins.clone();
+            if origins.is_empty() {
                 continue;
             }
-            spawn_live_tick(Arc::clone(&scheduler), volume_id.clone(), paths);
+            spawn_live_tick(Arc::clone(&scheduler), volume_id.clone(), origins);
         }
     });
 }

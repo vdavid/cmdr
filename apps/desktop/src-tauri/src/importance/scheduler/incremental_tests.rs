@@ -126,6 +126,178 @@ fn touched_set_unions_multiple_changed_paths() {
     }
 }
 
+/// Build a wide, deep synthetic volume: `projects` × `subs` folders under
+/// `/Users/test/projects`, plus the chain above it. Returns every folder path.
+fn wide_tree(projects: usize, subs: usize) -> Vec<String> {
+    let mut paths = vec![
+        "/Users".to_string(),
+        "/Users/test".to_string(),
+        "/Users/test/projects".to_string(),
+    ];
+    for p in 0..projects {
+        paths.push(format!("/Users/test/projects/p{p}"));
+        for s in 0..subs {
+            paths.push(format!("/Users/test/projects/p{p}/s{s}"));
+        }
+    }
+    paths
+}
+
+/// Run one incremental rescore over `folders` for `changed`, returning how many
+/// rows it wrote.
+fn rescore(writer: &ImportanceWriter, home: &str, folders: &mut WalkedFolders, changed: &[String]) -> usize {
+    incremental_rescore(
+        &IncrementalInputs {
+            writer,
+            weights: &Weights::default(),
+            home,
+            now_secs: 1_000_000_000,
+            available: SignalSet::listing_only(),
+            visits: &HashMap::new(),
+        },
+        folders,
+        changed,
+    )
+    .expect("incremental")
+}
+
+/// THE scope contract, measured: the rescore's cost tracks the batch, and the
+/// batch is now the dirs whose OWN listings changed.
+///
+/// Fed the single ORIGIN dir the live pipeline publishes, a one-folder change
+/// rewrites 5 rows out of 423. Fed the ancestor closure the bus used to carry
+/// (`/Users` rides in every batch as the universal ancestor), the very same code
+/// rewrites all 423 — because `is_in_changed_subtree` expands each entry DOWNWARD.
+/// That is the 90,308-row-per-minute treadmill, reproduced in miniature; the fix
+/// is upstream, in what the bus carries (`indexing/lifecycle/lifecycle_bus.rs`).
+#[test]
+fn incremental_scope_follows_the_changed_dir_not_its_ancestors() {
+    let home = "/Users/test";
+    let owned = wide_tree(20, 20);
+    let paths: Vec<&str> = owned.iter().map(String::as_str).collect();
+    let mut folders = WalkedFolders::synthetic(&paths, home);
+    assert_eq!(
+        folders.len(),
+        423,
+        "20 projects × 20 subfolders, the project dirs, and the chain above"
+    );
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let writer = full_pass_walk(dir.path(), home, &mut folders);
+
+    // What the pipeline publishes today: the one directory whose listing changed.
+    let origins = vec!["/Users/test/projects/p7/s3".to_string()];
+    let narrow = rescore(&writer, home, &mut folders, &origins);
+    assert_eq!(
+        narrow, 5,
+        "the changed folder plus its four ancestors — nothing else is affected"
+    );
+
+    // What it used to publish: that dir AND its whole ancestor chain. `/Users`
+    // alone drags in every folder on the volume.
+    let with_ancestors = vec![
+        "/Users/test/projects/p7/s3".to_string(),
+        "/Users/test/projects/p7".to_string(),
+        "/Users/test/projects".to_string(),
+        "/Users/test".to_string(),
+        "/Users".to_string(),
+    ];
+    let wide = rescore(&writer, home, &mut folders, &with_ancestors);
+    assert_eq!(wide, folders.len(), "an ancestor in the batch rescores the whole tree");
+    assert!(
+        wide > narrow * 50,
+        "the ancestor closure costs {wide} rows against the origin's {narrow}"
+    );
+    writer.shutdown();
+}
+
+/// A floor transition still propagates through the narrowed scope, and stays
+/// contained.
+///
+/// The live pipeline reports the RENAMED directory's PARENT as the origin (its
+/// listing is what changed), and the downward subtree expansion from that parent is
+/// what re-floors the renamed subtree. This pins BOTH halves in one deep tree: the
+/// renamed `node_modules` and its child lose their rows, AND a sibling project's
+/// subtree is not dragged in. Narrowing the scope any further — to the origin dir
+/// alone, without its subtree — would silently leave a scored row under a fresh
+/// `node_modules`.
+#[test]
+fn a_floor_transition_propagates_from_the_parent_origin_without_widening() {
+    let home = "/Users/test";
+    let before: Vec<String> = ["/Users/test/proj/a/pkg", "/Users/test/proj/a/pkg/deep"]
+        .iter()
+        .map(|p| p.to_string())
+        .chain(wide_tree(5, 5))
+        .collect();
+    let before_refs: Vec<&str> = before.iter().map(String::as_str).collect();
+    let mut walk = WalkedFolders::synthetic(&before_refs, home);
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let db_path = importance_db_path(dir.path(), ROOT_VOLUME_ID);
+    let writer = full_pass_walk(dir.path(), home, &mut walk);
+    let store = ImportanceStore::open(&db_path).expect("open");
+    assert!(
+        store.weight_for("/Users/test/proj/a/pkg/deep").expect("read").is_some(),
+        "the pre-rename subtree is scored"
+    );
+    let sibling_before = store
+        .weight_for("/Users/test/projects/p1/s1")
+        .expect("read")
+        .expect("scored")
+        .score;
+
+    // `pkg` is renamed to `node_modules`: the new walk has the floored name.
+    let after: Vec<String> = [
+        "/Users/test/proj/a/node_modules",
+        "/Users/test/proj/a/node_modules/deep",
+    ]
+    .iter()
+    .map(|p| p.to_string())
+    .chain(wide_tree(5, 5))
+    .collect();
+    let after_refs: Vec<&str> = after.iter().map(String::as_str).collect();
+    let mut walk = WalkedFolders::synthetic(&after_refs, home);
+
+    // The batch the pipeline publishes: the renamed dir's parent, and only that.
+    let count = rescore(&writer, home, &mut walk, &["/Users/test/proj/a".to_string()]);
+    writer.flush_blocking().expect("flush");
+
+    let store = ImportanceStore::open(&db_path).expect("reopen");
+    assert!(
+        store
+            .weight_for("/Users/test/proj/a/node_modules")
+            .expect("read")
+            .is_none(),
+        "the renamed folder floors and loses its row"
+    );
+    assert!(
+        store
+            .weight_for("/Users/test/proj/a/node_modules/deep")
+            .expect("read")
+            .is_none(),
+        "so does its now-under-floored descendant, reached by the downward expansion"
+    );
+    assert!(
+        store.weight_for("/Users/test/proj/a/pkg").expect("read").is_none(),
+        "and the stale pre-rename path is cleared"
+    );
+    // Containment: the sibling half of the volume was never rewritten.
+    assert!(
+        count <= 4,
+        "only the origin's chain and its (now floored) subtree were touched, not {count} folders"
+    );
+    assert_eq!(
+        store
+            .weight_for("/Users/test/projects/p1/s1")
+            .expect("read")
+            .expect("still scored")
+            .score,
+        sibling_before,
+        "an unrelated subtree keeps its full-pass row untouched"
+    );
+    writer.shutdown();
+}
+
 /// THE incremental integration target: an incremental rescore rewrites ONLY the
 /// changed subtree + ancestors and leaves every untouched folder's as-of
 /// generation intact (and does not advance the store generation). Built over a

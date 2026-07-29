@@ -614,11 +614,14 @@ fn start_incremental(scheduler: Arc<ImportanceScheduler>, volume_id: String, ava
         // `borrow_and_update` marks it seen so the first real change triggers.
         rx.borrow_and_update();
         while rx.changed().await.is_ok() {
-            let paths = rx.borrow_and_update().paths.clone();
-            if paths.is_empty() {
+            // The bus carries the ORIGIN dirs (those whose own listings changed), not
+            // their ancestor closure, so the rescore's downward subtree expansion
+            // stays proportional to what actually changed.
+            let origins = rx.borrow_and_update().origins.clone();
+            if origins.is_empty() {
                 continue;
             }
-            spawn_incremental(Arc::clone(&scheduler), volume_id.clone(), available, paths);
+            spawn_incremental(Arc::clone(&scheduler), volume_id.clone(), available, origins);
         }
     });
 }

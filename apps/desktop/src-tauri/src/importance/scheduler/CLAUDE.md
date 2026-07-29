@@ -19,10 +19,15 @@ incremental). The volume-kind policy and the floor doctrine are in `../CLAUDE.md
   drop `for_each_file_child_by_parent`'s `ORDER BY parent_id`). 84.2 MB not 256.4 MB on a 391,563-folder NAS;
   `walk_memory_tests.rs` guards it.
 - **Incremental writes at the CURRENT generation, does NOT bump it, and NEVER escalates to a full pass.** It clears each
-  changed subtree, then re-inserts only non-floored folders. The bare root `/` rides in essentially EVERY live
-  `dir-changed` batch as the universal ancestor; `sanitize_incremental_batch` drops it — ❌ don't reintroduce a
-  `/` ⇒ full-pass escalation, which pegged a core with back-to-back recomputes. Throttled to ≤1 walk per
-  `INCREMENTAL_THROTTLE_WINDOW` (60 s), leading edge first. Ancestor rescoping is capped at `ANCESTOR_WALK_CAP` (32).
+  changed subtree, then re-inserts only non-floored folders — ❌ never narrow `is_in_changed_subtree` or widen the clear
+  list on their own, the two must stay on the SAME `changed_paths` slice or the clear deletes rows nothing re-adds.
+  `sanitize_incremental_batch` drops the bare `/` — ❌ don't reintroduce a `/` ⇒ full-pass escalation, which pegged a
+  core with back-to-back recomputes. Throttled to ≤1 walk per `INCREMENTAL_THROTTLE_WINDOW` (60 s), leading edge first.
+  Ancestor rescoping is capped at `ANCESTOR_WALK_CAP` (32).
+- **The batch's cost is set by what `dir-changed` carries: ORIGIN dirs, never their ancestors** (contract in
+  `../../indexing/lifecycle/CLAUDE.md`). One ancestor in a batch rescores its whole subtree, which is how a two-folder
+  change once rewrote ~90 k rows a minute. A floor transition reaches a renamed folder through its PARENT origin, so the
+  downward expansion stays load-bearing.
 - **Spotlight sampling runs ONLY when the mask says `last_used_available`**, and on a dedicated 8 MB-stack OS thread
   with an autoreleasepool — ❌ never rayon, ❌ never against an SMB mount.
 

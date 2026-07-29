@@ -35,9 +35,9 @@ use crate::indexing::reconcile::reconciler::{self, EventReconciler};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 use crate::pluralize::pluralize;
 
-/// Cap on `affected_paths` during replay. When exceeded, individual path
-/// tracking stops and a single "full refresh" is emitted instead.
-const MAX_AFFECTED_PATHS: usize = 50_000;
+/// Cap on the replay's ORIGIN dirs. When exceeded, individual path tracking
+/// stops and a single "full refresh" is emitted instead.
+const MAX_ORIGIN_DIRS: usize = 50_000;
 
 /// If the number of events processed during replay exceeds this threshold,
 /// abort replay and fall back to a full scan. Safety net for scenarios where
@@ -110,9 +110,9 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     let mut backlog = BacklogTracker::new();
 
     // Collect all affected parent paths during replay (deduplicated).
-    // Capped at MAX_AFFECTED_PATHS; beyond that we emit a full refresh.
-    let mut affected_paths = HashSet::<String>::new();
-    let mut affected_paths_overflow = false;
+    // Capped at MAX_ORIGIN_DIRS; beyond that we emit a full refresh.
+    let mut origin_dirs = HashSet::<String>::new();
+    let mut origins_overflow = false;
 
     // MustScanSubDirs paths to queue after replay. A `HashSet` dedups the anchor
     // churn a long gap produces (the same dir re-flagged thousands of times); the
@@ -177,8 +177,8 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                 &space,
                 &conn,
                 &writer,
-                &mut affected_paths,
-                &mut affected_paths_overflow,
+                &mut origin_dirs,
+                &mut origins_overflow,
                 &mut pending_rescans,
             ) as u64;
 
@@ -187,9 +187,9 @@ pub(in crate::indexing) async fn run_replay_event_loop(
             // live queueing during replay), same as a must_scan_sub_dirs event.
             let mut escalation: Option<std::path::PathBuf> = None;
             if let Some(paths) = reconciler::process_fs_event(&event, &space, &conn, &writer, None, &mut escalation)
-                && !affected_paths_overflow
+                && !origins_overflow
             {
-                affected_paths.extend(paths);
+                origin_dirs.extend(paths);
             }
             if let Some(anchor) = escalation {
                 defer_replay_rescan(&mut pending_rescans, anchor.to_string_lossy().to_string());
@@ -255,8 +255,8 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                 &space,
                 &conn,
                 &writer,
-                &mut affected_paths,
-                &mut affected_paths_overflow,
+                &mut origin_dirs,
+                &mut origins_overflow,
                 &mut pending_rescans,
             ) as u64;
             if last_event_id > since_event_id
@@ -339,7 +339,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
             log::info!(
                 "Replay: complete ({}, {}, {:.1}s)",
                 pluralize(event_count, "event"),
-                pluralize(affected_paths.len() as u64, "affected dir"),
+                pluralize(origin_dirs.len() as u64, "affected dir"),
                 replay_start.elapsed().as_secs_f64(),
             );
         }
@@ -364,12 +364,16 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     .emit(&app);
 
     // Emit a single batched index-dir-updated with all collected paths.
-    // If affected_paths overflowed, emit a full refresh notification with
+    // If origin_dirs overflowed, emit a full refresh notification with
     // just "/" so the frontend refreshes everything.
-    if affected_paths_overflow {
+    if origins_overflow {
         reconciler::emit_dir_updated(&app, vec!["/".to_string()]);
-    } else if !affected_paths.is_empty() {
-        reconciler::emit_dir_updated(&app, affected_paths.iter().cloned().collect());
+    } else if !origin_dirs.is_empty() {
+        // The FE refresh needs the recursive-size fact, so expand the origins to
+        // their ancestor closure here (the origins alone would leave every ancestor
+        // showing a stale size).
+        let origins: Vec<String> = origin_dirs.iter().cloned().collect();
+        reconciler::emit_dir_updated(&app, reconciler::with_ancestor_closure(&origins));
     }
 
     // Backfill dir_stats for any directories created by the replay
@@ -400,7 +404,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                 (1.0 - deduped_total as f64 / event_count.max(1) as f64) * 100.0
             ),
         ),
-        ("affected_dirs", affected_paths.len().to_string()),
+        ("affected_dirs", origin_dirs.len().to_string()),
     ]);
     set_phase_for(&app, &volume_id, ActivityPhase::Live, "post-replay");
 
@@ -413,12 +417,12 @@ pub(in crate::indexing) async fn run_replay_event_loop(
 
     // Spawn background verification: runs concurrently with live events.
     // The writer serializes all writes, so this is safe.
-    // Skip verification if affected_paths overflowed (no paths to verify).
-    if !affected_paths_overflow {
+    // Skip verification if the origin set overflowed (no paths to verify).
+    if !origins_overflow {
         let verify_writer = writer.clone();
         let verify_app = app.clone();
         tauri::async_runtime::spawn(async move {
-            run_background_verification(affected_paths, verify_writer, verify_app).await;
+            run_background_verification(origin_dirs, verify_writer, verify_app).await;
         });
     }
 
@@ -440,7 +444,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     // `run_live_event_loop`), so it needs its own observer or the whole
     // journal-replay route measures nothing.
     let mut churn = ChurnObserver::from_env(&volume_id, Instant::now());
-    let mut live_pending_paths = HashSet::<String>::new();
+    let mut live_pending_origins = HashSet::<String>::new();
     let mut live_pending_events = HashMap::<String, watcher::FsChangeEvent>::new();
     let mut flush_interval = tokio::time::interval(Duration::from_millis(LIVE_FLUSH_INTERVAL_MS));
     flush_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
@@ -479,12 +483,12 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                     None => {
                         process_live_batch(
                             &mut live_pending_events, &mut reconciler, &space, &conn,
-                            &writer, &mut live_pending_paths, churn.with_raw_total(live_count),
+                            &writer, &mut live_pending_origins, churn.with_raw_total(live_count),
                         );
-                        if !live_pending_paths.is_empty() {
-                            let changed = mark_pending_and_drain(&volume_id, &mut live_pending_paths);
-                            lifecycle_bus::publish_dirs_changed(&volume_id, &changed);
-                            reconciler::emit_dir_updated(&app, changed);
+                        if !live_pending_origins.is_empty() {
+                            let changed = mark_pending_and_drain(&volume_id, &mut live_pending_origins);
+                            lifecycle_bus::publish_dirs_changed(&volume_id, &changed.origins);
+                            reconciler::emit_dir_updated(&app, changed.with_ancestors);
                         }
                         break;
                     }
@@ -542,19 +546,18 @@ pub(in crate::indexing) async fn run_replay_event_loop(
 
                 process_live_batch(
                     &mut live_pending_events, &mut reconciler, &space, &conn,
-                    &writer, &mut live_pending_paths, churn.with_raw_total(live_count),
+                    &writer, &mut live_pending_origins, churn.with_raw_total(live_count),
                 );
-                if !live_pending_paths.is_empty() {
-                    let changed = mark_pending_and_drain(&volume_id, &mut live_pending_paths);
-                    lifecycle_bus::publish_dirs_changed(&volume_id, &changed);
-                    reconciler::emit_dir_updated(&app, changed);
+                if !live_pending_origins.is_empty() {
+                    let changed = mark_pending_and_drain(&volume_id, &mut live_pending_origins);
+                    lifecycle_bus::publish_dirs_changed(&volume_id, &changed.origins);
+                    reconciler::emit_dir_updated(&app, changed.with_ancestors);
                 }
             }
             _ = throttle_sweep_interval.tick() => {
-                // Apply any throttled files whose 60 s window elapsed; the
-                // resulting ancestor paths ride the next flush tick's emit.
-                let affected = reconciler.sweep_throttle(&writer, Instant::now());
-                live_pending_paths.extend(affected);
+                // Apply any throttled files whose 60 s window elapsed; the origin
+                // dirs they changed ride the next flush tick's emit.
+                live_pending_origins.extend(reconciler.sweep_throttle(&writer, Instant::now()));
                 // Trailing edge of the per-subtree rescan throttle: re-kick the
                 // drain so a churny subtree whose window has now elapsed re-walks.
                 reconciler.sweep_rescan_throttle(&writer);
@@ -584,7 +587,7 @@ fn defer_replay_rescan(pending_rescans: &mut HashSet<String>, path: String) {
 }
 
 /// Drain the replay dedup buffer, process each event through the
-/// reconciler, and collect affected paths. Returns the number of
+/// reconciler, and collect the ORIGIN dirs it changed. Returns the number of
 /// deduplicated events processed. Missing-parent escalations DEFER into the
 /// pending-rescan list (no live queueing during replay).
 fn flush_replay_batch(
@@ -592,24 +595,24 @@ fn flush_replay_batch(
     space: &IndexPathSpace,
     conn: &Connection,
     writer: &IndexWriter,
-    affected_paths: &mut HashSet<String>,
-    affected_paths_overflow: &mut bool,
+    origin_dirs: &mut HashSet<String>,
+    origins_overflow: &mut bool,
     pending_rescans: &mut HashSet<String>,
 ) -> usize {
     let count = pending.len();
     for (_path, event) in pending.drain() {
         let mut escalation: Option<std::path::PathBuf> = None;
         if let Some(paths) = reconciler::process_fs_event(&event, space, conn, writer, None, &mut escalation)
-            && !*affected_paths_overflow
+            && !*origins_overflow
         {
-            affected_paths.extend(paths);
-            if affected_paths.len() >= MAX_AFFECTED_PATHS {
+            origin_dirs.extend(paths);
+            if origin_dirs.len() >= MAX_ORIGIN_DIRS {
                 log::warn!(
-                    "Replay: affected paths cap reached ({MAX_AFFECTED_PATHS}). \
+                    "Replay: changed-dir cap reached ({MAX_ORIGIN_DIRS}). \
                      Will emit a full refresh notification instead of individual paths."
                 );
-                *affected_paths_overflow = true;
-                affected_paths.clear();
+                *origins_overflow = true;
+                origin_dirs.clear();
             }
         }
         if let Some(anchor) = escalation {

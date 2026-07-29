@@ -29,9 +29,16 @@ use crate::pluralize::{pluralize, pluralize_with};
 /// Called after live mode starts so the app is responsive immediately.
 /// Corrections found by verification go through the writer channel,
 /// which serializes them with live writes.
-pub(super) async fn run_background_verification(affected_paths: HashSet<String>, writer: IndexWriter, app: AppHandle) {
+pub(super) async fn run_background_verification(origin_dirs: HashSet<String>, writer: IndexWriter, app: AppHandle) {
     DEBUG_STATS.verifying.store(true, Ordering::Relaxed);
     let verify_start = Instant::now();
+
+    // Verification wants the WIDE set: journal replay coalesces events, so a change
+    // deep in a tree can surface only as "some ancestor was modified", and readdir'ing
+    // the whole chain is what catches it. So expand the replay's origin dirs to their
+    // ancestor closure here — the bus publishes the narrow origins instead.
+    let origins: Vec<String> = origin_dirs.into_iter().collect();
+    let affected_paths: HashSet<String> = reconciler::with_ancestor_closure(&origins).into_iter().collect();
     log::debug!(
         "Background verification started ({} affected dirs)",
         affected_paths.len(),
@@ -163,9 +170,11 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
         // `new_dir_paths` are not included here — they were already emitted
         // progressively above as each subtree's scan finished.
         if !affected_paths.is_empty() {
-            let changed: Vec<String> = affected_paths.into_iter().collect();
-            lifecycle_bus::publish_dirs_changed(ROOT_VOLUME_ID, &changed);
-            reconciler::emit_dir_updated(&app, changed);
+            // The bus gets the ORIGINS (the dirs whose own listings the replay
+            // changed); the FE emit gets the ancestor closure, whose recursive sizes
+            // the corrections moved.
+            lifecycle_bus::publish_dirs_changed(ROOT_VOLUME_ID, &origins);
+            reconciler::emit_dir_updated(&app, affected_paths.into_iter().collect());
         }
     }
 

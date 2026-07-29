@@ -28,13 +28,31 @@ use crate::indexing::lifecycle::manager;
 use crate::indexing::metadata;
 use crate::indexing::paths::path_prefix;
 use crate::indexing::read::pending_sizes;
-use crate::indexing::reconcile::reconciler::EventReconciler;
+use crate::indexing::reconcile::reconciler::{self, EventReconciler};
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 use crate::pluralize::pluralize;
 
-/// Mark every affected directory (and its ancestors) as having a recursive-size
-/// update in flight, then drain the set for the `index-dir-updated` emit.
+/// A drained batch of live changes, split into the two facts the pending set used
+/// to conflate.
+///
+/// Every consumer wants exactly one of them, and handing the wrong one out is
+/// expensive in both directions: give the size set to a listing consumer and it
+/// sees `/Users` in every batch, give the origins to the hourglass and ancestors
+/// never show "size updating".
+pub(super) struct ChangedDirs {
+    /// The dirs whose OWN listing changed. What a consumer that expands DOWNWARD
+    /// (the importance scheduler's incremental rescore, the media live tick) must
+    /// use.
+    pub(super) origins: Vec<String>,
+    /// `origins` plus every ancestor up to `/`: the dirs whose recursive SIZE the
+    /// writer is about to change. What the FE emit and the hourglass need.
+    pub(super) with_ancestors: Vec<String>,
+}
+
+/// Mark every directory whose recursive size is about to change (the origins plus
+/// their ancestors) as having an update in flight, then drain the pending set into
+/// both views.
 ///
 /// Marking rides the exact paths that drive the UI refresh, so the "size
 /// updating" hourglass shows on precisely the directories whose sizes are about
@@ -43,15 +61,25 @@ use crate::pluralize::pluralize;
 /// shared `process_fs_event` is deliberately not instrumented, so replay doesn't
 /// flag everything during startup (the global indexing flag covers scans).
 ///
+/// The ancestor expansion happens HERE, once per batch over the deduplicated
+/// origins, rather than per event inside `process_fs_event` — which both keeps the
+/// narrow fact available to the bus and stops each event from allocating a chain of
+/// ancestor `String`s.
+///
 /// Marks on the VOLUME's tracker (`get_pending_sizes_for`), so an external drive's
 /// hourglass shows on its own rows, not root's.
-pub(super) fn mark_pending_and_drain(volume_id: &str, pending_paths: &mut HashSet<String>) -> Vec<String> {
+pub(super) fn mark_pending_and_drain(volume_id: &str, pending_origins: &mut HashSet<String>) -> ChangedDirs {
+    let origins: Vec<String> = pending_origins.drain().collect();
+    let with_ancestors = reconciler::with_ancestor_closure(&origins);
     if let Some(tracker) = pending_sizes::get_pending_sizes_for(volume_id) {
-        for path in pending_paths.iter() {
+        for path in &with_ancestors {
             tracker.mark(path);
         }
     }
-    pending_paths.drain().collect()
+    ChangedDirs {
+        origins,
+        with_ancestors,
+    }
 }
 
 /// Process FSEvents in real time after scan + reconciliation completes.
@@ -100,7 +128,7 @@ pub(in crate::indexing) async fn run_live_event_loop(
     reconciler.kick_pending_rescans(&writer);
 
     let mut event_count = 0u64;
-    let mut pending_paths = HashSet::<String>::new();
+    let mut pending_origins = HashSet::<String>::new();
     let mut pending_events = HashMap::<String, watcher::FsChangeEvent>::new();
     let mut flush_interval = tokio::time::interval(Duration::from_millis(LIVE_FLUSH_INTERVAL_MS));
     flush_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
@@ -167,12 +195,11 @@ pub(in crate::indexing) async fn run_live_event_loop(
                         // Channel closed: process remaining events before exit
                         process_live_batch(
                             &mut pending_events, &mut reconciler, &space, &conn,
-                            &writer, &mut pending_paths, churn.with_raw_total(event_count),
+                            &writer, &mut pending_origins, churn.with_raw_total(event_count),
                         );
-                        if !pending_paths.is_empty() {
-                            let _ = writer.send(WriteMessage::EmitDirUpdated(
-                                mark_pending_and_drain(&volume_id, &mut pending_paths),
-                            ));
+                        if !pending_origins.is_empty() {
+                            let changed = mark_pending_and_drain(&volume_id, &mut pending_origins);
+                            let _ = writer.send(WriteMessage::EmitDirUpdated(changed.with_ancestors));
                         }
                         break;
                     }
@@ -249,7 +276,7 @@ pub(in crate::indexing) async fn run_live_event_loop(
                 let batch_start = Instant::now();
                 process_live_batch(
                     &mut pending_events, &mut reconciler, &space, &conn,
-                    &writer, &mut pending_paths, churn.with_raw_total(event_count),
+                    &writer, &mut pending_origins, churn.with_raw_total(event_count),
                 );
                 let batch_ms = batch_start.elapsed().as_millis();
                 batches_since_heartbeat += 1;
@@ -261,21 +288,19 @@ pub(in crate::indexing) async fn run_live_event_loop(
                         "process_live_batch_slow batch_size={batch_size} batch_ms={batch_ms}",
                     );
                 }
-                if !pending_paths.is_empty() {
+                if !pending_origins.is_empty() {
                     // Enqueue the notification as a writer message so it fires
                     // after all prior writes (deletes, upserts, deltas) commit.
                     // Without this, multi-message operations (e.g. rename =
                     // delete + insert) show intermediate dir_stats to the UI.
-                    let _ = writer.send(WriteMessage::EmitDirUpdated(
-                        mark_pending_and_drain(&volume_id, &mut pending_paths),
-                    ));
+                    let changed = mark_pending_and_drain(&volume_id, &mut pending_origins);
+                    let _ = writer.send(WriteMessage::EmitDirUpdated(changed.with_ancestors));
                 }
             }
             _ = throttle_sweep_interval.tick() => {
                 // Apply any throttled files whose 60 s window elapsed. The
-                // resulting ancestor paths ride the next flush tick's emit.
-                let affected = reconciler.sweep_throttle(&writer, Instant::now());
-                pending_paths.extend(affected);
+                // origin dirs they changed ride the next flush tick's emit.
+                pending_origins.extend(reconciler.sweep_throttle(&writer, Instant::now()));
                 // Trailing edge of the per-subtree rescan throttle: re-kick the
                 // drain so a churny subtree whose window has now elapsed re-walks.
                 reconciler.sweep_rescan_throttle(&writer);
@@ -328,7 +353,7 @@ pub(in crate::indexing) fn process_live_batch(
     space: &IndexPathSpace,
     conn: &Connection,
     writer: &IndexWriter,
-    pending_paths: &mut HashSet<String>,
+    pending_origins: &mut HashSet<String>,
     churn: &mut ChurnObserver,
 ) {
     // Churn observability, BEFORE the early return and before the drain: an
@@ -366,7 +391,7 @@ pub(in crate::indexing) fn process_live_batch(
         dir_creations.sort_by_key(|(path, _)| path.len());
         for (_path, event) in &dir_creations {
             max_event_id = max_event_id.max(event.event_id);
-            reconciler.process_live_event(event, conn, writer, pending_paths);
+            reconciler.process_live_event(event, conn, writer, pending_origins);
         }
         // Flush so the read connection can resolve the newly created directories
         // when processing child events in pass 2. Uses block_in_place because
@@ -380,8 +405,14 @@ pub(in crate::indexing) fn process_live_batch(
     // Pass 1.5: rename detection by inode. Removes matched events from
     // `other_events` and replaces the create/delete dance with a single
     // `MoveEntryV2`, preserving the entry's `dir_stats`.
-    let rename_handled =
-        detect_renames_by_inode(&mut other_events, space, conn, writer, pending_paths, &mut max_event_id);
+    let rename_handled = detect_renames_by_inode(
+        &mut other_events,
+        space,
+        conn,
+        writer,
+        pending_origins,
+        &mut max_event_id,
+    );
     if rename_handled > 0 {
         // Flush so Phase 2's `resolve_path` calls see the moved rows. Without
         // this, the OLD-path event of a matched rename could see the row at
@@ -403,7 +434,7 @@ pub(in crate::indexing) fn process_live_batch(
 
     for (_path, event) in &non_removals {
         max_event_id = max_event_id.max(event.event_id);
-        reconciler.process_live_event(event, conn, writer, pending_paths);
+        reconciler.process_live_event(event, conn, writer, pending_origins);
     }
 
     if !removals.is_empty() {
@@ -466,7 +497,7 @@ pub(in crate::indexing) fn process_live_batch(
                 });
                 flushed_dirs = true;
             }
-            reconciler.process_live_event(event, conn, writer, pending_paths);
+            reconciler.process_live_event(event, conn, writer, pending_origins);
         }
     }
 
@@ -490,7 +521,7 @@ pub(super) fn detect_renames_by_inode(
     space: &IndexPathSpace,
     conn: &Connection,
     writer: &IndexWriter,
-    pending_paths: &mut HashSet<String>,
+    pending_origins: &mut HashSet<String>,
     max_event_id: &mut u64,
 ) -> usize {
     let mut handled = 0usize;
@@ -544,7 +575,7 @@ pub(super) fn detect_renames_by_inode(
         };
 
         // `new_parent_path` is FS-event-derived (absolute); strip the mount root for
-        // a mount-rooted drive at the resolve. `pending_paths.insert` below keeps it
+        // a mount-rooted drive at the resolve. `pending_origins.insert` below keeps it
         // absolute (it drives the FE emit).
         let new_parent_id = match space.resolve_abs(conn, &new_parent_path) {
             Ok(Some(id)) => id,
@@ -583,11 +614,13 @@ pub(super) fn detect_renames_by_inode(
             "rename pre-pass: matched inode={inode} → MoveEntryV2 id={existing_id} new_parent={new_parent_id} name={new_name}",
         );
 
-        // Surface the new parent path to the UI. The old parent's dir-updated
-        // event is already covered by the OLD-path event still in
-        // `pending_events` (the reconciler emits it from `process_live_event`
-        // when its `resolve_path` no-ops, via `emit_dir_updated`).
-        pending_paths.insert(new_parent_path);
+        // The new parent's listing gained an entry, so it is an origin. The old
+        // parent is already covered by the OLD-path event still in `pending_events`
+        // (the reconciler reports it from `process_live_event` when its
+        // `resolve_path` no-ops). A consumer that expands downward reaches the moved
+        // directory itself through this parent, which is what makes a rename INTO a
+        // `node_modules` still flip its whole subtree's floor status.
+        pending_origins.insert(new_parent_path);
         *max_event_id = (*max_event_id).max(event.event_id);
         handled += 1;
         false
