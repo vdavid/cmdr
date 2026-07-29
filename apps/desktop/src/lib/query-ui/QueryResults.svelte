@@ -3,8 +3,8 @@
      * SearchResults: Column headers + results list + all states + status bar.
      *
      * The table uses CSS grid with the Path column as the single flex track (`1fr`).
-     * Name has a measured max width and mid-truncates
-     * (`useShortenMiddle`); Path renders via `PathPills` with overflow-aware collapse;
+     * Name shrink-wraps to the rows currently on screen (see § "Name column" below) and
+     * mid-truncates (`useShortenMiddle`); Path renders via `PathPills` with overflow-aware collapse;
      * Size and Modified shrink-wrap to their content and sit comfortably apart (we
      * give them a generous gap via the grid `column-gap` declaration). There is no
      * actions column: the row's own right-click (`oncontextmenu` → `onRowMenu`) opens
@@ -15,8 +15,21 @@
      * background — hovering a row writes to `cursorIndex` via `onHover`. The cursor
      * loops top<->bottom on arrow nav (handled by the parent dialog). This mirrors
      * the volume switcher's hover-syncs-cursor pattern.
+     *
+     * Name column: the track is a measured pixel width handed to BOTH grid containers
+     * (header and rows) as one inline `grid-template-columns` string, so they can never
+     * drift. The width is the widest name among the rows the viewport currently covers,
+     * clamped to [80px, 22ch] and animated, so scrolling past a long name widens the
+     * column and scrolling back narrows it, freeing the width for the Path column.
+     *
+     * Why this can't oscillate: every input to the measurement (scroll offset, viewport
+     * height, row height, the row font, the entry NAMES from the data) is independent of
+     * the width being written. Rows are `white-space: nowrap` one-liners, so their height
+     * and the container's scroll geometry cannot move when the Name track resizes; and we
+     * measure `entry.name` from the data, never the DOM text `useShortenMiddle` wrote. The
+     * effect below therefore never reads back anything it caused.
      */
-    import { tick } from 'svelte'
+    import { onDestroy, tick } from 'svelte'
     import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
     import Icon from '$lib/ui/Icon.svelte'
     import { formatInteger } from '$lib/intl/number-format'
@@ -28,6 +41,8 @@
     import Spinner from '$lib/ui/Spinner.svelte'
     import DateLabel from '$lib/ui/DateLabel.svelte'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
+    import { createPretextMeasure } from '$lib/utils/shorten-middle'
+    import { computeNameColumnWidth, visibleRowRange } from './name-column-width'
     import EmptyState from './EmptyState.svelte'
     import PathPills from './PathPills.svelte'
     import type { SearchMode } from './query-filter-state.svelte'
@@ -214,6 +229,146 @@
 
     const statusText = $derived(getStatusText())
 
+    // ── Name column shrink-wrap ────────────────────────────────────────────────
+    //
+    // See the § "Name column" note at the top of this file for the layout contract and
+    // why the measurement can't feed back into itself.
+
+    /**
+     * The Name grid track. Starts as the pre-measurement CSS fallback (identical to the
+     * fixed track this replaced), so a browser without canvas — or the tick before pretext
+     * lands — renders exactly what it used to. The effect below swaps in a pixel width.
+     */
+    let nameTrack = $state('minmax(80px, 22ch)')
+    /** Live scroll offset of `.results-container`, the first half of "which rows are visible". */
+    let scrollTop = $state(0)
+    /** Live client height of `.results-container`, the second half. */
+    let viewportHeight = $state(0)
+    /** Pixel-accurate measurer built at the ROW's font; null until pretext resolves. */
+    let measureName = $state<((text: string) => number) | null>(null)
+    /**
+     * Whether the track animates. Off for the very first measured width (the dialog would
+     * otherwise open with the column visibly sliding in from the ceiling), on afterwards so
+     * scrolling and new result sets ease between widths.
+     */
+    let animateNameTrack = $state(false)
+    /** The font the current `measureName` was built for; a change (text size) rebuilds it. */
+    let measuredFont = ''
+    let firstWidthApplied = false
+    let viewportObserver: ResizeObserver | undefined
+
+    /**
+     * Full grid template, handed to the header and every row as ONE inline string. Two
+     * separate grid containers can't be trusted to resolve the same tracks independently
+     * (`ch` already bit us once — see `.column-header`'s font-size), so they share this.
+     */
+    const gridTemplate = $derived(
+        showPathColumn
+            ? `24px ${nameTrack} minmax(120px, 1fr) 10ch 16ch`
+            : // No Path column (Selection): there's nothing to hand the freed width to, so
+              // Name absorbs it as the flex track instead of shrink-wrapping and leaving a gap.
+              '24px minmax(80px, 1fr) 10ch 16ch',
+    )
+
+    function readFont(node: HTMLElement): string {
+        const style = getComputedStyle(node)
+        return style.font || `${style.fontSize} ${style.fontFamily}`
+    }
+
+    /**
+     * Builds (or rebuilds) the measurer from a real rendered name cell's font. Keying on the
+     * computed font string means a text-size change re-measures on its own, the same job
+     * `getEffectiveScale()` does for `FullList`'s column widths.
+     */
+    async function ensureMeasure(nameEl: HTMLElement): Promise<void> {
+        const font = readFont(nameEl)
+        if (font === measuredFont) return
+        // Remember the attempt (success or failure) so we don't retry per scroll tick, and
+        // drop the old measurer: it was built for a font we're no longer rendering.
+        measuredFont = font
+        measureName = null
+        try {
+            const pretext = await import('@chenglou/pretext')
+            const candidate = createPretextMeasure(font, pretext)
+            // Probe before adopting: pretext needs Canvas 2D, which jsdom doesn't implement,
+            // and the failure only shows on the first measurement. Same guard as
+            // `views/measure-column-widths.ts`.
+            candidate('0')
+            measureName = candidate
+        } catch {
+            // No canvas, or the chunk failed to load: stay on the CSS fallback track (which
+            // is exactly the fixed one this replaced) instead of throwing on every render.
+            measureName = null
+        }
+    }
+
+    function handleResultsScroll(e: Event): void {
+        scrollTop = (e.currentTarget as HTMLElement).scrollTop
+    }
+
+    /** Keeps `viewportHeight` live. Height is width-independent here, so this can't loop. */
+    $effect(() => {
+        const el = resultsContainer
+        if (!el) return
+        viewportHeight = el.clientHeight
+        const observer = new ResizeObserver(() => {
+            viewportHeight = el.clientHeight
+        })
+        observer.observe(el)
+        viewportObserver = observer
+        return () => {
+            observer.disconnect()
+            viewportObserver = undefined
+        }
+    })
+
+    /**
+     * Re-measures the Name track. Dependencies are read up front and are ALL independent of
+     * `nameTrack`; this effect never reads `nameTrack` itself, which is what makes a
+     * measure → render → measure loop impossible.
+     */
+    $effect(() => {
+        const container = resultsContainer
+        const rows = results
+        const withPath = showPathColumn
+        const rowsShowing = showingRows
+        const top = scrollTop
+        const viewport = viewportHeight
+        const measure = measureName
+        if (!container || !withPath || !rowsShowing || rows.length === 0) return
+
+        const rowEl = container.querySelector<HTMLElement>('.result-row')
+        const nameEl = rowEl?.querySelector<HTMLElement>('.result-name')
+        if (!rowEl || !nameEl) return
+        void ensureMeasure(nameEl)
+        if (!measure) return
+
+        // Row height comes from the DOM but is driven by font + padding only: every cell is
+        // `white-space: nowrap`, so it cannot change with the width we're about to set.
+        const { start, end } = visibleRowRange(top, viewport, rowEl.getBoundingClientRect().height, rows.length)
+        const names: string[] = []
+        for (let i = start; i < end; i++) names.push(rows[i].name)
+
+        nameTrack = `${String(
+            computeNameColumnWidth({
+                names,
+                headerLabel: tString('queryUi.results.col.name'),
+                measure,
+            }),
+        )}px`
+
+        if (!firstWidthApplied) {
+            firstWidthApplied = true
+            requestAnimationFrame(() => {
+                animateNameTrack = true
+            })
+        }
+    })
+
+    onDestroy(() => {
+        viewportObserver?.disconnect()
+    })
+
     /** Scrolls the cursor row into view. Called by the parent after cursor changes. */
     export function scrollCursorIntoView(): void {
         void tick().then(() => {
@@ -238,7 +393,11 @@
      The seam they used to draw between the chip strip and the results is now the chip
      strip's own bottom hairline plus the surface flip. -->
 {#if showingRows}
-    <div class="column-header" class:no-path={!showPathColumn}>
+    <div
+        class="column-header"
+        class:animate-track={animateNameTrack}
+        style="grid-template-columns: {gridTemplate};"
+    >
         <span class="col-label col-icon" aria-hidden="true"></span>
         <span class="col-label">{tString('queryUi.results.col.name')}</span>
         {#if showPathColumn}<span class="col-label col-path">{tString('queryUi.results.col.path')}</span>{/if}
@@ -252,6 +411,7 @@
 <div
     class="results-container"
     bind:this={resultsContainer}
+    onscroll={handleResultsScroll}
     role={showingRows ? 'listbox' : undefined}
     aria-label={showingRows ? tString('queryUi.results.listboxAria') : undefined}
 >
@@ -318,8 +478,9 @@
         {#each results as entry, index (entry.path)}
             <div
                 class="result-row"
-                class:no-path={!showPathColumn}
+                class:animate-track={animateNameTrack}
                 class:is-under-cursor={index === cursorIndex}
+                style="grid-template-columns: {gridTemplate};"
                 onclick={() => {
                     onResultClick(index)
                 }}
@@ -381,38 +542,33 @@
 </div>
 
 <style>
-    /* Shared grid template. Path (1fr) absorbs the remaining width; Name has a
-       hard ceiling so very long names don't squeeze the path column to nothing.
-       Size / Modified / Actions are pinned to fixed `ch` widths so the header
-       row and data rows resolve the SAME widths, aligning the column boundary
-       perfectly across rows. Don't switch them back to `max-content`: the
-       header row's "Size" / "Modified" labels are narrower than typical row
-       data (`1.2 MB`, `Jan 12, 2026`), so each row would resolve its own
-       widths from its own data and the header text would drift left of the
-       row content. */
+    /* The `grid-template-columns` for BOTH containers comes in as one inline string from
+       the `gridTemplate` derived (icon | name | path | size | modified), so the header and
+       the rows can never resolve the same tracks differently. Size and Modified stay fixed
+       `ch` widths: don't switch them to `max-content`, or each row would resolve its own
+       width from its own data ("Size" / "Modified" are narrower than `1.2 MB` /
+       `Jan 12, 2026`) and the header would drift left of the row content.
+
+       The Name track is measured (see the § "Name column" note at the top of this file) and
+       eases between widths as the visible rows change. `.animate-track` is off for the very
+       first measured width so opening the dialog doesn't animate. */
     .column-header,
     .result-row {
         display: grid;
-        grid-template-columns:
-            24px /* icon */
-            minmax(80px, 22ch) /* name (mid-truncates) */
-            minmax(120px, 1fr) /* path (flex) */
-            10ch /* size (right-aligned, fits "999.9 MB") */
-            16ch; /* modified (right-aligned, fits short and long date formats) */
-
         column-gap: var(--spacing-md);
         align-items: center;
     }
 
-    /* Selection (or any consumer that hides the Path column) drops the path track
-       entirely; name absorbs the freed horizontal space via 1fr. */
-    .column-header.no-path,
-    .result-row.no-path {
-        grid-template-columns:
-            24px
-            minmax(80px, 1fr)
-            10ch
-            16ch;
+    .column-header.animate-track,
+    .result-row.animate-track {
+        transition: grid-template-columns var(--transition-slow);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .column-header.animate-track,
+        .result-row.animate-track {
+            transition: none;
+        }
     }
 
     /* The results zone (header + list + status bar) is the ONLY part of the dialog with

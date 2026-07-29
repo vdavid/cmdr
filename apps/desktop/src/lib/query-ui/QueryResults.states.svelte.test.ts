@@ -43,6 +43,7 @@ const baseProps = {
   totalCount: 0,
   indexEntryCount: 1000,
   countOnly: false,
+  showPathColumn: true,
   onShowResults: undefined as (() => void) | undefined,
   iconCacheVersion: 0,
   aiEnabled: false,
@@ -267,6 +268,59 @@ describe('SearchResults row rendering (font-bump sizing)', () => {
     const cursorRows = target.querySelectorAll('.result-row.is-under-cursor')
     expect(cursorRows.length).toBe(1)
     expect(cursorRows[0].textContent).toContain('file-2.txt')
+  })
+})
+
+/**
+ * The header and the rows are two independent grid containers, so the only thing keeping
+ * their columns aligned is that they're handed the SAME `grid-template-columns` string.
+ * (`ch` tracks resolving against two different font sizes is exactly how they drifted
+ * before.) These pin the shared string and the Selection variant.
+ */
+describe('SearchResults column tracks', () => {
+  const oneRow: SearchResultEntry[] = [
+    {
+      path: '/dir/a.jpg',
+      name: 'a.jpg',
+      parentPath: '/dir',
+      isDirectory: false,
+      size: 1,
+      modifiedAt: 0,
+      iconId: 'ext:jpg',
+    },
+  ]
+
+  it('hands the header and every row one identical grid template', async () => {
+    const target = mountWith({ results: oneRow, hasSearched: true, query: '*.jpg', totalCount: 1 })
+    await tick()
+    const header = target.querySelector<HTMLElement>('.column-header')
+    const row = target.querySelector<HTMLElement>('.result-row')
+    expect(header?.style.gridTemplateColumns).toBeTruthy()
+    expect(row?.style.gridTemplateColumns).toBe(header?.style.gridTemplateColumns)
+  })
+
+  it('falls back to the fixed Name track when text measurement is unavailable', async () => {
+    // jsdom has no Canvas 2D, so pretext never adopts: the pre-measurement CSS fallback
+    // (identical to the fixed track this replaced) has to render rather than a broken value.
+    const target = mountWith({ results: oneRow, hasSearched: true, query: '*.jpg', totalCount: 1 })
+    await tick()
+    const header = target.querySelector<HTMLElement>('.column-header')
+    expect(header?.style.gridTemplateColumns).toContain('minmax(80px, 22ch)')
+  })
+
+  it('gives the Name column the flex track when there is no Path column (Selection)', async () => {
+    // Nothing to hand freed width to, so Name absorbs it instead of shrink-wrapping.
+    const target = mountWith({
+      results: oneRow,
+      hasSearched: true,
+      query: '*.jpg',
+      totalCount: 1,
+      showPathColumn: false,
+    })
+    await tick()
+    const header = target.querySelector<HTMLElement>('.column-header')
+    expect(header?.style.gridTemplateColumns).toBe('24px minmax(80px, 1fr) 10ch 16ch')
+    expect(header?.querySelectorAll('.col-label').length).toBe(4)
   })
 })
 

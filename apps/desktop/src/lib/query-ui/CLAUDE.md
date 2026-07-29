@@ -1,6 +1,6 @@
 # Query UI (shared filter-and-act-on primitives)
 
-Primitives shared by Search (`lib/search/`) and Selection (`lib/selection-dialog/`). Filter-chip internals:
+Primitives shared by Search (`lib/search/`) and Selection (`lib/selection-dialog/`). Filter chips:
 `filter-chips/CLAUDE.md`. Consumer decisions: `../search/CLAUDE.md`, `../selection-dialog/CLAUDE.md`.
 
 ## Module map
@@ -8,8 +8,8 @@ Primitives shared by Search (`lib/search/`) and Selection (`lib/selection-dialog
 - `QueryDialog.svelte` + `query-dialog-config.ts`: the shared orchestrator (a `ModalDialog`; keyboard contract, IME
   guard, auto-apply gates, `lastDialogEvent` ownership), driven by one `QueryDialogConfig` prop per consumer.
 - UI pieces (`QueryBar`, `ModeChips`, `AiPromptStrip`, `QueryResults`, `EmptyState`, `PathPills`, `recent-items/*`),
-  pure helpers, the `query-filter-state.svelte.ts` factory, `apply-ai-filters.ts`, `ai-summary.ts` (the `AiPromptStrip`
-  mirror), and `filter-chips/`. Consumer subsets + the adapter shape: DETAILS.md § Files.
+  pure helpers (`name-column-width.ts`, `ai-summary.ts`, `apply-ai-filters.ts`), the `query-filter-state.svelte.ts`
+  factory, and `filter-chips/`. Consumer subsets + adapter shape: DETAILS.md § Files.
 
 ## Must-knows
 
@@ -20,30 +20,31 @@ Primitives shared by Search (`lib/search/`) and Selection (`lib/selection-dialog
   `null` return is a benign empty translation); no per-consumer catch.
 - **`createQueryFilterState()` owns ONLY cross-consumer fields.** Adding one, ask "would Selection care?" Yes → core; no
   → the consumer's extras (`lastAiLabel` is the textbook "no"). `recordAiTranslation` (core) writes ONLY
-  `handTyped[mode]`; the label/pattern slots are the extras'.
+  `handTyped[mode]`; label/pattern slots are the extras'.
 - **`stopPropagation()` on every dialog `keydown`** (else keys reach the explorer and trigger quick-search/nav).
-  `use:trapFocus` listeners run in the capture phase, so this can't starve the trap.
+  `use:trapFocus` runs in the capture phase, so this can't starve the trap.
 - **All chrome is `ModalDialog`'s; never re-add it here.** Opt-ins: `align="top"`, `fillBody`, `padded={false}`,
   `ownsKeyboard` (Enter + popover-aware Escape), `closeOnOverlayClick`, `overlayClass="search-overlay"`. Every strip
-  pads itself at `--spacing-dialog`, matching the title bar.
-- **Two silent-failure traps.** Turning count-only OFF must re-run via `runFromButton()` (not `scheduleSearch()`), else
-  a stale count stays; and never swallow a `runQuery` rejection (`executeQuery` toasts it), else a refusal reads as
-  "nothing matched".
+  pads itself at `--spacing-dialog`.
+- **Two silent-failure traps.** Count-only OFF must re-run via `runFromButton()`, not `scheduleSearch()` (else a stale
+  count stays); and never swallow a `runQuery` rejection (a refusal would read as "nothing matched").
 - **Don't wipe state from any lifecycle hook.** State survives unmount by design; `⌘N` is the ONLY sanctioned reset.
-- **Reopen re-derives results, not the empty state.** A restored NON-AI session sets `runOnMount` to re-run; AI must NOT
-  (cloud cost). Don't loosen the `mode !== 'ai'` gate.
+- **Reopen re-derives results, not the empty state.** A restored NON-AI session sets `runOnMount`; AI must NOT (cloud
+  cost). Don't loosen `mode !== 'ai'`.
 - **The query field is a hand-assembled combobox over recent items, NOT a house/Ark `Combobox`** (Ark filters on the
-  control's own input; this needs two fields). Every key `RecentItemsPopover` claims must `stopPropagation()`, and
-  picking LOADS, never runs (an AI entry would re-bill). Full contract: DETAILS.md § Recent items.
+  control's own input; this needs two). Every key `RecentItemsPopover` claims must `stopPropagation()`; picking LOADS,
+  never runs. DETAILS.md § Recent items.
 - **Path pills are mouse-only, `tabindex="-1"`**: tabbable pills break the row's arrow-down flow, and `⌥←` / `⌥→` stay
   native move-by-word. `nested-interactive` is off on the populated-results test.
-- **Two `QueryResults` render gates.** The status bar empties whenever the content area shows a state message
-  (`getStatusText()` → `''`) and then COLLAPSES via `.is-empty`; it stays in the DOM for `aria-live`, so never `{#if}`
-  it away. And `showingRows` — not `results.length > 0`, which trips axe `aria-required-children` on reopen — gates
-  both the `role="listbox"` and the column header.
+- **The Name track is MEASURED; one inline `grid-template-columns` feeds both header and rows** (two grid containers
+  won't resolve `ch` alike). Width = widest ON-SCREEN name, clamped to [80px, 22ch]. Measure `entry.name`, never the
+  cell's DOM text, and never read `nameTrack` in that effect — that rules out a measure→render→measure loop.
+  DETAILS.md § Name column.
+- **Two `QueryResults` render gates.** The status bar empties when the content area shows a state message
+  (`getStatusText()` → `''`) then COLLAPSES via `.is-empty`; it stays mounted for `aria-live`. And `showingRows` — not
+  `results.length > 0`, which trips axe `aria-required-children` — gates the `role="listbox"` and the header.
 - **AI mode never auto-applies** (cost); filename/regex do, behind `search.autoApply` (default on, 1,000 ms debounce,
-  IME-gated) in `scheduleSearch()`'s early-return chain. AI translation overwrites `query` + `mode`, so reach for
-  `getLastAiPrompt()` when you want what the user typed.
+  IME-gated). AI translation overwrites `query` + `mode`, so use `getLastAiPrompt()` for what the user typed.
 - **Nothing to run is not a run**: `hasRunnableQuery()` (query non-empty OR size/date/type off default) gates
   `executeQuery`; false → `resetToEmptyState()`, no IPC. An empty pattern WITH a filter IS runnable.
 - **The `AiPromptStrip` is a MIRROR of chip state, never the truth**; its first-person agent voice is a SANCTIONED

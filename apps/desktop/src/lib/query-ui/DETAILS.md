@@ -281,6 +281,33 @@ Component tests (`*.svelte.test.ts`) and tier-3 a11y audits (`*.a11y.test.ts`) c
 `codegraph_files` lists them. The one non-colocated suite is `queryui-i18n-parity.test.ts`, the en-locale golden net
 described in § i18n: a copy edit lands in the catalog AND in its goldens, together.
 
+## Name column shrink-wrap
+
+`QueryResults`' Name track is a measured pixel width, not the fixed `minmax(80px, 22ch)` it used to be: a list of
+`test` files reserved 22 characters and the Path column next to it mid-truncated to crumbs. Same idea as
+`file-explorer/views/measure-column-widths.ts`, which shrink-wraps `FullList`'s Ext / Size / Modified.
+
+- The math is pure and unit-tested with mocked widths: `name-column-width.ts` (`computeNameColumnWidth`,
+  `visibleRowRange`, and the `22ch` ceiling / `80px` floor / 2 px pad constants). The component owns the DOM reads.
+- **Only the rows currently on screen count.** The list isn't virtualized (Search caps at 30 rows, Selection lists one
+  folder), so there's no `visible` slice to borrow the way `FullList` does. The range comes from the scroll container's
+  `scrollTop` (an `onscroll` handler) and `clientHeight` (a `ResizeObserver`) against the first row's measured height.
+  Degenerate geometry falls back to the whole list: a slightly wide column beats clipped names.
+- **The measurement cannot oscillate**, and any change here has to keep it that way. Every input — scroll offset,
+  viewport height, row height, the row's computed font, and the entry NAMES read from the data — is independent of the
+  width being written. Rows are `white-space: nowrap` one-liners, so their height and the container's scroll geometry
+  can't move when the track resizes; and we measure `entry.name`, never the DOM text `useShortenMiddle` wrote into the
+  cell. The `$effect` reads its dependencies up front and never reads `nameTrack` itself.
+- **The measurer is keyed on the row's computed font string**, read off a real `.result-name` cell. A text-size change
+  therefore rebuilds it on its own, which is the job `getEffectiveScale()` does on the `FullList` side. It's probed
+  once (`candidate('0')`) before adoption, because pretext needs Canvas 2D and only fails on first use; without canvas
+  the component stays on the CSS fallback track, identical to the fixed one it replaced.
+- **The track eases between widths** (`--transition-slow` on `grid-template-columns`, `prefers-reduced-motion`
+  respected), except for the very first measured width, so opening the dialog doesn't animate the column in from the
+  ceiling.
+- **Selection (`showPathColumn: false`) keeps Name as the `1fr` flex track.** With no Path column there's nothing to
+  hand the freed width to, so shrink-wrapping would only open a gap between Name and Size.
+
 ## State shape contract
 
 `createQueryFilterState()` owns ONLY cross-consumer fields. Both Search and Selection share the same shape; one dialog's
