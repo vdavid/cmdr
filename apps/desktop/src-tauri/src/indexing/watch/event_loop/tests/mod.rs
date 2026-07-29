@@ -29,3 +29,59 @@ fn make_event(path: &str, event_id: u64, flags: watcher::FsEventFlags) -> watche
         flags,
     }
 }
+
+/// Every live loop must publish its ORIGIN dirs on the dir-changed bus, not just
+/// emit to the frontend.
+///
+/// The bug this pins: only the cold-start replay loop published, so a volume that
+/// took the POST-SCAN route (`run_live_event_loop`) refreshed the UI but never woke
+/// the importance rescore or the media live tick — their derived data went stale
+/// until the next `ScanCompleted`, on a route every unit test passed. The scan is
+/// the same shape as `every_live_loop_owns_a_real_churn_observer`, for the same
+/// reason: a third live loop in a new file would otherwise slip past this guard.
+#[test]
+fn every_live_loop_publishes_its_changed_dirs() {
+    fn collect(dir: &Path, prefix: &str, out: &mut Vec<(String, std::path::PathBuf)>) {
+        for entry in std::fs::read_dir(dir).expect("event_loop dir") {
+            let path = entry.expect("dir entry").path();
+            let name = path.file_name().expect("file name").to_string_lossy().to_string();
+            let rel = if prefix.is_empty() {
+                name.clone()
+            } else {
+                format!("{prefix}/{name}")
+            };
+            if path.is_dir() {
+                if name == "tests" {
+                    continue;
+                }
+                collect(&path, &rel, out);
+            } else if path.extension().is_some_and(|e| e == "rs") && !name.ends_with("tests.rs") {
+                out.push((rel, path));
+            }
+        }
+    }
+
+    let event_loop = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/indexing/watch/event_loop");
+    let mut sources: Vec<(String, std::path::PathBuf)> = Vec::new();
+    collect(&event_loop, "", &mut sources);
+
+    let mut publishers: Vec<String> = Vec::new();
+    for (name, path) in sources {
+        let src = std::fs::read_to_string(&path).expect("read source");
+        if !src.contains("mark_pending_and_drain(") {
+            continue;
+        }
+        assert!(
+            src.contains("publish_dirs_changed("),
+            "{name} drains live changed dirs but never publishes them, so importance and media \
+             would silently stop following the index on that route"
+        );
+        publishers.push(name);
+    }
+    publishers.sort();
+    assert_eq!(
+        publishers,
+        vec!["live.rs".to_string(), "replay.rs".to_string()],
+        "both live loops publish; a new one must too"
+    );
+}

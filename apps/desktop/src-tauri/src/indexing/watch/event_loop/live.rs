@@ -24,7 +24,7 @@ use super::{
 use crate::indexing::DEBUG_STATS;
 use crate::indexing::IndexPathSpace;
 use crate::indexing::events::{RescanReason, emit_rescan_notification};
-use crate::indexing::lifecycle::manager;
+use crate::indexing::lifecycle::{lifecycle_bus, manager};
 use crate::indexing::metadata;
 use crate::indexing::paths::path_prefix;
 use crate::indexing::read::pending_sizes;
@@ -199,6 +199,7 @@ pub(in crate::indexing) async fn run_live_event_loop(
                         );
                         if !pending_origins.is_empty() {
                             let changed = mark_pending_and_drain(&volume_id, &mut pending_origins);
+                            lifecycle_bus::publish_dirs_changed(&volume_id, &changed.origins);
                             let _ = writer.send(WriteMessage::EmitDirUpdated(changed.with_ancestors));
                         }
                         break;
@@ -289,11 +290,15 @@ pub(in crate::indexing) async fn run_live_event_loop(
                     );
                 }
                 if !pending_origins.is_empty() {
-                    // Enqueue the notification as a writer message so it fires
+                    let changed = mark_pending_and_drain(&volume_id, &mut pending_origins);
+                    // Both live loops publish the origins, so a volume that took the
+                    // post-scan route feeds importance and media exactly like one that
+                    // took the cold-start replay route.
+                    lifecycle_bus::publish_dirs_changed(&volume_id, &changed.origins);
+                    // Enqueue the FE notification as a writer message so it fires
                     // after all prior writes (deletes, upserts, deltas) commit.
                     // Without this, multi-message operations (e.g. rename =
                     // delete + insert) show intermediate dir_stats to the UI.
-                    let changed = mark_pending_and_drain(&volume_id, &mut pending_origins);
                     let _ = writer.send(WriteMessage::EmitDirUpdated(changed.with_ancestors));
                 }
             }
