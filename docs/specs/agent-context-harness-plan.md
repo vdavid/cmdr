@@ -33,17 +33,19 @@ not by auditing a quote chain.
 
 ## Measured ground truth
 
-Estimated tokens (`chars/4`, the one ruler), measured 2026-07-29:
+Estimated tokens (`chars/4`, the one ruler), re-measured 2026-07-30 against the shipped assets:
 
-- **Fixed overhead, every call**: **~3,100** (system prompt ~740 + 12 tool declarations ~2,370)
-- **`image_facts`, per file at 900 chars of OCR**: ~260
-- **Plan row, per file** (path + name + evidence): ~54
-- **Pane listing, per file**: ~21
-- **A 100-file rename turn, all in**: **~39,700**
+- **Fixed overhead, every call**: **3,124** (system prompt 740 + 12 tool declarations 2,384)
+- **`image_facts`, per file at 900 chars of OCR**: 269
+- **Plan row, per file** (path + name + evidence): 59
+- **Pane listing, per file**: 21
+- **A 100-file rename turn, all in**: **39,699**
 
-**Only the total is pinned by a test** (`a_hundred_file_rename_turn_needs_more_than_the_default_budget` asserts `> 16k`,
-`< 60k`, `elided_results == 0`). The breakdown was measured but is asserted nowhere, and the per-file figure assumes 900
-chars of OCR against a 2,000-char cap, so a text-dense corpus costs up to ~2.2× more. M5 adds the assertions.
+**The whole breakdown is pinned, each figure within a tenth**, by `agent/chat/context/cost_tests.rs`: the fixed overhead
+and its two halves, the three per-file costs, the total, and that the parts account for over 90% of the turn (the rest is
+the paths the calls name, the envelope, the user's sentence, and JSON scaffolding). The numbers live in one constants
+block there, and a failure says to update the test and this section together. The per-file figure assumes 900 chars of
+OCR against a 2,000-char cap, so a text-dense corpus costs up to ~2.2× more.
 
 Two consequences that change what milestones must do:
 

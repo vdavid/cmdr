@@ -18,6 +18,30 @@ const OCR_CHARS: usize = 900;
 
 const FILES: usize = 100;
 
+// ── The documented costs, in one place (the plan's "measured ground truth") ────
+//
+// Estimated tokens, `chars/4`, measured against the shipped assets. Each is pinned within a
+// tenth below, so a change that doubles what a file costs fails here instead of surprising a
+// user mid-rename. Change one on purpose ⇒ change the plan's section too.
+
+/// Every call: the system prompt plus the 12 tool declarations, before the user has said a word.
+const FIXED_OVERHEAD: usize = 3_124;
+const SYSTEM_PROMPT_TOKENS: usize = 740;
+const TOOL_DECLARATION_TOKENS: usize = 2_384;
+
+/// One `image_facts` row at [`OCR_CHARS`] of recognized text: the dominant per-file cost, and
+/// the reason a window has to be sized for the facts rather than for the plan.
+const IMAGE_FACTS_PER_FILE: usize = 269;
+
+/// One `propose_rename_plan` row: source path, new name, and the evidence behind it.
+const PLAN_ROW_PER_FILE: usize = 59;
+
+/// One `list_pane_files` entry: name, size, mtime.
+const LISTING_PER_FILE: usize = 21;
+
+/// The whole 100-file rename turn, prefix included.
+const HUNDRED_FILE_TURN: usize = 39_699;
+
 const SHOTS_DIR: &str = "/Users/me/Downloads/shots";
 
 fn shot_path(index: usize) -> String {
@@ -47,6 +71,59 @@ fn plan_row(index: usize) -> Value {
         "destinationName": format!("2026-07-21 19-36-00 cmdr-ai-rename-review-dialog-{index}.png"),
         "evidence": { "source": "imageText", "detail": "Review file renames" },
     })
+}
+
+/// Assert a measured cost sits within a tenth of the figure the plan quotes. A per-item cost
+/// that moves changes which models can do a 100-file rename at all, so it may not drift
+/// quietly: the numbers here and the plan's "measured ground truth" section are one pair.
+fn assert_near(measured: usize, documented: usize, what: &str) {
+    let slack = documented / 10;
+    assert!(
+        measured.abs_diff(documented) <= slack,
+        "{what} costs {measured} estimated tokens; the documented figure is {documented} (±{slack}). \
+         If the change is intended, update it HERE and in the plan's measured-ground-truth section."
+    );
+}
+
+/// What every single call pays before the user's question is even in the prompt. It is why a
+/// flat 8k budget left only ~4.9k for the actual work, which is how an 11-file `image_facts`
+/// batch fit and a 12-file one did not.
+#[test]
+fn every_call_pays_about_3_100_tokens_of_fixed_overhead() {
+    let tools = crate::agent::tools::agent_tool_declarations();
+    assert_eq!(tools.len(), 12, "the overhead below is the cost of THESE declarations");
+
+    let system = estimate_prompt_tokens(crate::agent::chat::system_prompt::SYSTEM_PROMPT, &[], &[]);
+    let declarations = estimate_prompt_tokens("", &tools, &[]);
+
+    assert_near(system, SYSTEM_PROMPT_TOKENS, "the system prompt");
+    assert_near(declarations, TOOL_DECLARATION_TOKENS, "the 12 tool declarations");
+    assert_near(system + declarations, FIXED_OVERHEAD, "the fixed per-call overhead");
+}
+
+/// The three per-file costs a bulk rename pays. `image_facts` dominates by an order of
+/// magnitude, which is why the facts are what a window has to be sized for.
+#[test]
+fn a_bulk_rename_pays_about_350_tokens_per_file() {
+    assert_near(
+        estimate_tokens_of_value(&facts_row(0)),
+        IMAGE_FACTS_PER_FILE,
+        "one image_facts row at 900 chars of OCR",
+    );
+    assert_near(
+        estimate_tokens_of_value(&plan_row(0)),
+        PLAN_ROW_PER_FILE,
+        "one plan row",
+    );
+    assert_near(
+        estimate_tokens_of_value(&listing_entry(0)),
+        LISTING_PER_FILE,
+        "one pane-listing entry",
+    );
+    assert!(
+        IMAGE_FACTS_PER_FILE > 3 * (PLAN_ROW_PER_FILE + LISTING_PER_FILE),
+        "the facts dominate: sizing a window for the plan rows alone is how a batch overflows"
+    );
 }
 
 /// The size of a 100-file content-based rename turn, measured against the REAL prefix (the
@@ -122,6 +199,15 @@ fn a_hundred_file_rename_turn_needs_more_than_the_default_budget() {
     );
     let tokens = estimate_prompt_tokens(&assembled.system, &assembled.tools, &assembled.messages);
 
+    assert_near(tokens, HUNDRED_FILE_TURN, "the whole 100-file turn");
+    // The per-item costs above have to explain the turn, or one of them is measuring the wrong
+    // thing. What they don't cover is the paths the calls name, the envelope, the user's own
+    // sentence, and JSON scaffolding.
+    let accounted = FIXED_OVERHEAD + FILES * (IMAGE_FACTS_PER_FILE + PLAN_ROW_PER_FILE + LISTING_PER_FILE);
+    assert!(
+        accounted < tokens && tokens - accounted < tokens / 10,
+        "the breakdown must account for the turn: the parts add to {accounted} of {tokens} estimated tokens"
+    );
     assert!(
         tokens > DEFAULT_PROMPT_TOKEN_BUDGET,
         "a 100-file rename does NOT fit the conservative default ({tokens} estimated tokens vs {DEFAULT_PROMPT_TOKEN_BUDGET}); \
