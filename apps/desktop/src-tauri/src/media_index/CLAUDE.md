@@ -18,10 +18,11 @@ autoloads; read it before non-trivial work there.
 - **`store/CLAUDE.md`** — `media.db` schema, connections, staleness. **`read/CLAUDE.md`** — `MediaIndex`, the ONLY
   consumer entry, `search/` included. **`vector/CLAUDE.md`** — brute-force cosine + the resident vector caches.
 
-Top-level leaves this file owns: `commands.rs` + `commands/policy.rs` (read and coverage-changing IPC), `coverage.rs`
-(the eligible/accounted caches), `gate.rs` (toggle / scope / threshold / parallelism atomics), `writer.rs` +
-`writer_registry.rs` (ONE writer thread per volume), `events.rs`, `progress.rs`, `thermal.rs`, and `predicate.rs`,
-whose `qualify_dir` stays PURE.
+Top-level leaves this file owns: `commands/` (the IPC surface, one module per family: `search`, `state`, `reclaim`,
+`file_status`, `clip_model`, `thumbnail`, and `policy` for the coverage-changing setters; `mod.rs` re-exports them all,
+so command paths in `ipc.rs` never move), `coverage.rs` (the eligible/accounted caches), `gate.rs` (toggle / scope /
+threshold / parallelism atomics), `writer.rs` + `writer_registry.rs` (ONE writer thread per volume), `events.rs`,
+`progress.rs`, `thermal.rs`, and `predicate.rs`, whose `qualify_dir` stays PURE.
 
 ## Subsystem-wide must-knows
 

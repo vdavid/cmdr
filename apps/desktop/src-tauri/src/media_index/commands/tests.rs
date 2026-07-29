@@ -1,10 +1,12 @@
-//! Command-layer tests. The seeded-`media.db` → `OcrHit`-with-snippet round-trip the
-//! command delegates to is covered end-to-end in `read/tests.rs`
-//! (`search_finds_the_image_by_ocr_text_and_survives_unmount`); here we cover the
-//! command-specific limit resolution.
+//! Command-layer tests, covering the pure cores the commands themselves can't be tested
+//! through (each needs an `AppHandle`): the limit resolution, the kick decisions in
+//! `policy.rs`, and the classification in `file_status.rs`. The seeded-`media.db` →
+//! `OcrHit`-with-snippet round-trip the command delegates to is covered end-to-end in
+//! `read/tests.rs` (`search_finds_the_image_by_ocr_text_and_survives_unmount`).
 
+use super::file_status::{classify_all, classify_one};
 use super::policy::{folder_override_should_kick, scope_change_should_kick, threshold_change_should_kick};
-use super::{DEFAULT_LIMIT, FileIndexState, MAX_LIMIT, classify_all, classify_one, resolve_limit};
+use super::{DEFAULT_LIMIT, FileIndexState, MAX_LIMIT, resolve_limit};
 use crate::media_index::gate::IndexScope;
 
 #[test]

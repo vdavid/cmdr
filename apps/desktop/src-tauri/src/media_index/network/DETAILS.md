@@ -161,8 +161,8 @@ a multiplier.
 ## Backend commands + typed state for the network-enrichment UI
 
 The backend provides three setters + the extended state. They live in `../commands/policy.rs` with the other
-coverage-changing commands (the scope, the threshold, the privacy exclusion), split from the read/query surface in
-`../commands.rs`: each mutates live `gate` / `network::config` state and has to decide whether the change BROADENS
+coverage-changing commands (the scope, the threshold, the privacy exclusion), split from the read/query modules beside
+them in `../commands/`: each mutates live `gate` / `network::config` state and has to decide whether the change BROADENS
 coverage and needs an immediate pass, and each of those decisions is a pure `*_should_kick` fn tested in
 `../commands/tests.rs`.
 

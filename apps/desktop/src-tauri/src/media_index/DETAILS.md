@@ -152,7 +152,7 @@ The matching importance-side fix (a fresh/recreated store actually GETS a full p
 `importance/DETAILS.md` § The initial full pass; fixing both means media's read-side check is defense in depth, not the
 only guard.
 
-## Covered-count preview + honest progress (`coverage.rs`, `commands.rs`)
+## Covered-count preview + honest progress (`coverage.rs`, `commands/state.rs`)
 
 `media_index_covered_count(threshold, volume_ids)` powers the slider's live preview: across the ENABLED volumes
 (master on AND (local, or SMB opted-in); MTP never), how many folders score `≥ threshold` and how many images they hold
@@ -206,7 +206,7 @@ and skipped: 6.4x on the root DB but ~nothing on the image-dense NAS, for a sche
 runs once per session (`docs/notes/m7-ext-index-walk-bench-2026-07-24.md`, incl. why the old 42 s baseline didn't
 reproduce). Revisit only off an in-app measurement showing tens of seconds, or a sparse-image 10M+-file corpus.
 
-## The per-folder accounted aggregate + the index-status indicators (`coverage.rs`, `commands.rs`)
+## The per-folder accounted aggregate + the index-status indicators (`coverage.rs`, `commands/file_status.rs`)
 
 The covered-count cache above is the DENOMINATOR (`eligible`: images the drive index says qualify per folder). The quiet
 per-image / per-folder / per-drive index indicators also need the NUMERATOR: how many of those are actually indexed. So
@@ -364,13 +364,20 @@ writes an empty `Done` row instead. Pinned by
 `enrich_tests::a_vanished_image_still_completes_the_pass_at_done_equals_total` and
 `enrichable_totals_excludes_deferred_and_excluded_images`.
 
-## The IPC surface (`commands.rs`, `commands/policy.rs`)
+## The IPC surface (`commands/`)
 
-`commands.rs` is the read/query surface; `commands/policy.rs` holds the coverage-CHANGING setters, each of which decides
-whether the change BROADENS coverage and needs an immediate pass through a pure `*_should_kick` fn tested in
-`commands/tests.rs`. Every command is `async` + `spawn_blocking` (a sync `#[tauri::command]` would block the IPC
-thread), offline-capable, and registered in BOTH `ipc.rs` and `ipc_collectors.rs` — regen the typed bindings with
-`pnpm bindings:regen` after any command change.
+One module per command family: `search.rs` (OCR, tag, semantic, find-similar, dedup), `state.rs` (the per-volume state +
+the covered-count preview), `reclaim.rs` (the outside-the-setting preview and prune), `file_status.rs` (the per-file
+overlay + per-folder badge), `clip_model.rs` (install state, download, delete), `thumbnail.rs` (grid tokens), and
+`policy.rs` for the coverage-CHANGING setters, each of which decides whether the change BROADENS coverage and needs an
+immediate pass through a pure `*_should_kick` fn tested in `commands/tests.rs`. `mod.rs` keeps only what several of them
+need (the hit-limit clamp, the ONE enabled-volume rule) and glob-re-exports every module, so each command keeps its
+`media_index::commands::<name>` path in `ipc.rs` — the glob is deliberate: `#[tauri::command]` also generates hidden
+`__cmd__*` / `__tauri_command_name_*` macros that `generate_handler!` resolves through the same path.
+
+Every command is `async` + `spawn_blocking` (a sync `#[tauri::command]` would block the IPC thread), offline-capable,
+and registered in BOTH `ipc.rs` and `ipc_collectors.rs` — regen the typed bindings with `pnpm bindings:regen` after any
+command change.
 
 - **`media_index_search_ocr(volume_id, query, limit?)`** — the IPC door onto `MediaIndex::search_ocr` (plan Decision 8):
   it resolves the app data dir, opens `MediaIndex` for the volume, and searches. `limit` defaults to 200, clamped to
