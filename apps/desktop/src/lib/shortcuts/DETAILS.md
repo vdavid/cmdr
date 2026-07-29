@@ -157,6 +157,15 @@ Example: `⌘N` in `Main window/File list` and `⌘N` in `Main window` conflict 
 `Main window`. Two `Main window/File list` commands sharing a combo also conflict (same scope). `←` in
 `Main window/Brief mode` and `←` in `Main window/Full mode` do NOT, because Brief and Full are siblings.
 
+`registry-conflicts.test.ts` walks the WHOLE shipped default set through `getAllConflicts` and demands the result match
+an `allowedConflicts` list that is empty today. Without it the detector only ever ran against what a user typed into
+Settings, so a new registry entry could silently shadow an existing binding for everyone (the dispatch map keeps one
+winner per combo, so the loser just stops working, with no warning anywhere). A deliberate "keep both" clash is legal —
+it goes in `allowedConflicts` with its reason, and a second test fails on a stale entry so the list can't rot. The test
+stubs a macOS user agent from a `vi.hoisted` block because several registry entries gate their `shortcuts` array on
+`isMacOS()` AT MODULE LOAD; a `beforeAll` spy would leave those combos unchecked. It also asserts the detector can still
+find a claimed combo, so a broken import or a scope typo can't turn the whole check vacuous.
+
 ### Key capture (`key-capture.ts`)
 
 `formatKeyCombo(event)` is the single writer of the shortcut vocabulary, and its output is CANONICAL: what the registry
@@ -222,6 +231,11 @@ So local handlers don't test raw key flags; they ask the registry:
   keypress against several commands (the file list's ten cursor commands) formats it once.
 - `allowShift` accepts the combo with Shift held. Only the file list needs it: Shift there means "extend the selection
   while the cursor moves", so `⇧↓` is still `nav.down`, while `⌘↓` (open) and `⌥↓` (go to end) stay separate commands.
+  The strip (`withoutShift`) is deliberately NOT anchored at the start of the string: `formatKeyCombo` emits modifiers
+  in ⌘⌃⌥⇧ order, so `⇧` leads only when it's the sole modifier, and an anchored strip would quietly do nothing for `⌘⇧A`
+  — handing the caller a false "no match", the exact silent-mismatch class the option exists to prevent. Unanchored
+  removal is safe because no key NAME contains `⇧` or `Shift+`. Pinned by the `comboMatchesCommand` cases in
+  `shortcut-dispatch.test.ts`.
 
 Callers today: `../file-explorer/pane/selection-keys.ts` (`Space` / `Insert` / `⌘A` / `⌘⇧A`),
 `FilePane.handleOpenOrParentKey` (`nav.open` / `nav.parent` — and `⌘Backspace` falls through to `file.delete` for free,

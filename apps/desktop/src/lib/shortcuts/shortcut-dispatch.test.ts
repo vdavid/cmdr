@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 // Shared test state: the mock factory closures capture these references
 const listeners = new Set<(commandId: string) => void>()
@@ -52,12 +52,26 @@ vi.mock('$lib/commands/command-registry', () => ({
       showInPalette: false,
       shortcuts: ['Escape'],
     },
+    // The ⌥⌘A regression's own command: a ⌘-carrying combo the matchers test against.
+    {
+      id: 'selection.selectAll',
+      name: 'Select all',
+      scope: 'Main window/File list',
+      showInPalette: false,
+      shortcuts: ['⌘A'],
+    },
   ],
 }))
 
 import { getEffectiveShortcuts, onShortcutChange } from './shortcuts-store'
 import { commands } from '$lib/commands/command-registry'
-import { lookupCommand, initShortcutDispatch, destroyShortcutDispatch } from './shortcut-dispatch'
+import {
+  lookupCommand,
+  initShortcutDispatch,
+  destroyShortcutDispatch,
+  comboMatchesCommand,
+  eventMatchesCommand,
+} from './shortcut-dispatch'
 
 /**
  * Wire up getEffectiveShortcuts to return registry defaults
@@ -163,6 +177,68 @@ describe('shortcut-dispatch', () => {
 
       expect(lookupCommand('⌘⇧H')).toBe('view.showHidden')
       expect(lookupCommand('⌘⇧.')).toBe('view.showHidden')
+    })
+  })
+
+  describe('comboMatchesCommand', () => {
+    it('matches the command exactly', () => {
+      expect(comboMatchesCommand('⌘A', 'selection.selectAll')).toBe(true)
+    })
+
+    it('rejects a modifier SUPERSET (the ⌥⌘A regression)', () => {
+      // Pressing ⌥⌘A opens Ask Cmdr. FilePane's old `e.key === 'a' && e.metaKey` was
+      // also true for it, so the pane selected every file on the way. Nothing that
+      // resolves through here may ever accept a longer combo.
+      expect(comboMatchesCommand('⌥⌘A', 'selection.selectAll')).toBe(false)
+      expect(comboMatchesCommand('⌘⌥A', 'selection.selectAll')).toBe(false)
+      expect(comboMatchesCommand('⌘⌃A', 'selection.selectAll')).toBe(false)
+      expect(comboMatchesCommand('⌘⇧A', 'selection.selectAll')).toBe(false)
+    })
+
+    it('rejects a Shift superset unless allowShift is passed', () => {
+      expect(comboMatchesCommand('⇧↓', 'nav.down')).toBe(false)
+      expect(comboMatchesCommand('⇧↓', 'nav.down', { allowShift: true })).toBe(true)
+    })
+
+    it('strips Shift from a combo that carries other modifiers too', () => {
+      // `formatKeyCombo` emits ⌘⌃⌥⇧ order, so `⇧` leads only when it's the ONLY
+      // modifier. A strip anchored at the start would silently do nothing here and
+      // report "no match" — the quiet failure `allowShift` exists to prevent.
+      expect(comboMatchesCommand('⌘⇧A', 'selection.selectAll', { allowShift: true })).toBe(true)
+    })
+
+    it('strips the non-mac `Shift+` form the same way', () => {
+      customOverrides.set('selection.selectAll', ['Ctrl+A'])
+      expect(comboMatchesCommand('Ctrl+Shift+A', 'selection.selectAll', { allowShift: true })).toBe(true)
+      expect(comboMatchesCommand('Ctrl+Shift+A', 'selection.selectAll')).toBe(false)
+    })
+
+    it('allowShift never widens beyond Shift', () => {
+      expect(comboMatchesCommand('⌘⌥A', 'selection.selectAll', { allowShift: true })).toBe(false)
+    })
+
+    it('follows a rebind, not the registry default', () => {
+      customOverrides.set('selection.selectAll', ['⌘E'])
+      expect(comboMatchesCommand('⌘E', 'selection.selectAll')).toBe(true)
+      expect(comboMatchesCommand('⌘A', 'selection.selectAll')).toBe(false)
+    })
+  })
+
+  describe('eventMatchesCommand', () => {
+    // `formatKeyCombo` emits ⌘-form modifiers only when `isMacOS()` is true, and
+    // happy-dom reports a Linux UA.
+    const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
+    beforeEach(() => {
+      navigatorSpy.mockReturnValue({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' } as Navigator)
+    })
+    afterEach(() => navigatorSpy.mockReset())
+
+    it('accepts the exact keypress and refuses the ⌥⌘A superset', () => {
+      const cmdA = new KeyboardEvent('keydown', { key: 'a', metaKey: true })
+      const optCmdA = new KeyboardEvent('keydown', { key: 'a', metaKey: true, altKey: true })
+
+      expect(eventMatchesCommand(cmdA, 'selection.selectAll')).toBe(true)
+      expect(eventMatchesCommand(optCmdA, 'selection.selectAll')).toBe(false)
     })
   })
 

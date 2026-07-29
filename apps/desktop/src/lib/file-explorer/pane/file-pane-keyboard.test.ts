@@ -472,6 +472,61 @@ describe('FilePane keyboard handling', () => {
     })
   })
 
+  describe('⌥⌘A opens Ask Cmdr WITHOUT also selecting every file', () => {
+    // `selection-keys.test.ts` pins the classifier; this pins the WIRING, which the
+    // unit test can't see: that FilePane routes through it at all, and that a
+    // superset falls all the way through to the document dispatcher (the old bug
+    // called `preventDefault()` but not `stopPropagation()`, so ⌥⌘A ran BOTH the
+    // select-all here and Ask Cmdr centrally).
+    async function mountPane() {
+      const component = mount(FilePane, {
+        target: getTarget(),
+        props: {
+          initialPath: '/test',
+          volumeId: 'root',
+          volumePath: '/',
+          isFocused: true,
+          showHiddenFiles: true,
+          viewMode: 'brief',
+        },
+      })
+      await waitForUpdates(150)
+      return component as unknown as {
+        handleKeyDown: (e: KeyboardEvent) => void
+        getSelectedIndices: () => number[]
+      }
+    }
+    // The listing is mocked, so assert on the CONSUMPTION signals (`preventDefault` /
+    // `stopPropagation`) rather than the resulting selection size: those are what
+    // distinguish "the pane handled this combo" from "it let the combo through", and
+    // the ⌥⌘A bug was precisely a `preventDefault()` with no `stopPropagation()`.
+
+    it('⌘A is consumed here (and stopped, so the dispatcher does not select twice)', async () => {
+      const pane = await mountPane()
+      const cmdA = new KeyboardEvent('keydown', { key: 'a', metaKey: true, bubbles: true })
+      const preventDefault = vi.spyOn(cmdA, 'preventDefault')
+      const stopProp = vi.spyOn(cmdA, 'stopPropagation')
+      pane.handleKeyDown(cmdA)
+      await waitForUpdates(50)
+
+      expect(preventDefault).toHaveBeenCalled()
+      expect(stopProp).toHaveBeenCalled()
+    })
+
+    it('⌥⌘A leaves the selection alone and falls through untouched', async () => {
+      const pane = await mountPane()
+      const optCmdA = new KeyboardEvent('keydown', { key: 'a', metaKey: true, altKey: true, bubbles: true })
+      const preventDefault = vi.spyOn(optCmdA, 'preventDefault')
+      const stopProp = vi.spyOn(optCmdA, 'stopPropagation')
+      pane.handleKeyDown(optCmdA)
+      await waitForUpdates(50)
+
+      expect(pane.getSelectedIndices()).toEqual([])
+      expect(preventDefault).not.toHaveBeenCalled()
+      expect(stopProp).not.toHaveBeenCalled()
+    })
+  })
+
   describe('Arrow keys delegation', () => {
     it('Arrow keys are handled in brief mode', async () => {
       const component = mount(FilePane, {

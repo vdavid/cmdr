@@ -80,10 +80,11 @@ export function lookupCommand(shortcutString: string): CommandId | undefined {
  * modifiers and all. Works for every command, Tier 1 or fixed-key, so a local handler
  * reads its keys from the registry instead of hardcoding them.
  *
- * `allowShift` accepts the same combo with Shift held. The file list uses Shift to
- * extend the selection while the cursor moves, so `⇧↓` still has to mean "move down" —
- * while `⌘↓` (open) and `⌥↓` (go to end) stay different commands. Only pass it where
- * Shift genuinely carries that extra meaning.
+ * `allowShift` accepts the same combo with Shift held, for ANY combo (`⌘⇧A` matches
+ * `⌘A`, not just `⇧↓` matching `↓`). The file list uses Shift to extend the selection
+ * while the cursor moves, so `⇧↓` still has to mean "move down" — while `⌘↓` (open) and
+ * `⌥↓` (go to end) stay different commands. Only pass it where Shift genuinely carries
+ * that extra meaning.
  */
 export function eventMatchesCommand(event: KeyboardEvent, commandId: CommandId, options?: MatchOptions): boolean {
   return comboMatchesCommand(formatKeyCombo(event), commandId, options)
@@ -106,7 +107,19 @@ export function comboMatchesCommand(
 ): boolean {
   const shortcuts = getEffectiveShortcuts(commandId)
   if (shortcuts.includes(combo)) return true
-  return allowShift && shortcuts.includes(combo.replace(/^⇧/, '').replace(/^Shift\+/, ''))
+  return allowShift && shortcuts.includes(withoutShift(combo))
+}
+
+/**
+ * A combo with its Shift modifier removed, wherever it sits in the prefix. Deliberately
+ * NOT anchored at the start: `formatKeyCombo` emits modifiers in ⌘⌃⌥⇧ order, so `⇧`
+ * leads only when it's the ONLY modifier. An anchored strip would quietly do nothing for
+ * `⌘⇧A` and hand the caller a false "no match" — exactly the silent-mismatch class
+ * `allowShift` exists to prevent. Unanchored removal is safe because no key NAME
+ * contains `⇧` or `Shift+`.
+ */
+function withoutShift(combo: string): string {
+  return combo.replace('⇧', '').replace('Shift+', '')
 }
 
 /** Initialize the dispatch map and subscribe to shortcut changes. */
