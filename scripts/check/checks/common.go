@@ -1,14 +1,21 @@
 package checks
 
 import (
+	"archive/tar"
 	"bytes"
+	"compress/gzip"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 )
 
 // App represents the application a check belongs to.
@@ -254,6 +261,117 @@ func ResolveDevSecret(name string) string {
 		return ""
 	}
 	return strings.TrimSpace(out)
+}
+
+// InstallPinnedBinary downloads a `.tar.gz`, verifies it against the sha256 it
+// was pinned to, and installs the executable named `binaryName` from it at
+// `destination`.
+//
+// The checksum is the pin, the way `--version` + `--locked` is the pin on a
+// `cargo install` and `@vX.Y.Z` is on a `go install` (`CLAUDE.md` § Pin every
+// tool install): a downloaded binary gets EXECUTED, so a release asset that
+// changed underneath us has to fail loudly instead of running. Callers hold the
+// expected checksum next to the version they derived the URL from, so the two
+// can't drift apart.
+//
+// Installing through a temp file plus rename keeps an interrupted download from
+// leaving a half-written executable where the next run would find and trust it.
+func InstallPinnedBinary(url, sha256Hex, binaryName, destination string) error {
+	client := &http.Client{Timeout: 2 * time.Minute}
+	response, err := client.Get(url)
+	if err != nil {
+		return fmt.Errorf("couldn't download %s: %w", binaryName, err)
+	}
+	if response == nil {
+		// Unreachable: `Get` returns a response whenever it returns no error.
+		// Stated anyway because nilaway can't see that contract through the
+		// stdlib, and a silenced warning would cost more than this line.
+		return fmt.Errorf("couldn't download %s: %s answered nothing", binaryName, url)
+	}
+	defer func() { _ = response.Body.Close() }()
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("couldn't download %s: %s answered %s", binaryName, url, response.Status)
+	}
+	archive, err := io.ReadAll(response.Body)
+	if err != nil {
+		return fmt.Errorf("couldn't read the %s download: %w", binaryName, err)
+	}
+
+	sum := sha256.Sum256(archive)
+	if actual := hex.EncodeToString(sum[:]); actual != sha256Hex {
+		return fmt.Errorf(
+			"the %s download doesn't match its pinned checksum (got %s, expected %s).\n"+
+				"The release asset changed under us: verify what's being served before updating the pin.\n"+
+				"  %s",
+			binaryName, actual, sha256Hex, url)
+	}
+
+	binary, err := extractFromTarGz(archive, binaryName)
+	if err != nil {
+		return err
+	}
+	return installExecutable(binary, destination)
+}
+
+// extractFromTarGz pulls one named executable out of a gzipped tarball,
+// wherever in the archive it sits: release tarballs usually nest it under a
+// `<tool>-<version>-<triple>/` directory beside a README and licenses.
+func extractFromTarGz(archive []byte, binaryName string) ([]byte, error) {
+	decompressed, err := gzip.NewReader(bytes.NewReader(archive))
+	if err != nil {
+		return nil, fmt.Errorf("the %s download isn't valid gzip: %w", binaryName, err)
+	}
+	defer func() { _ = decompressed.Close() }()
+
+	reader := tar.NewReader(decompressed)
+	for {
+		header, err := reader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("couldn't read the %s tarball: %w", binaryName, err)
+		}
+		if header.Typeflag != tar.TypeReg || filepath.Base(header.Name) != binaryName {
+			continue
+		}
+		binary, err := io.ReadAll(reader)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't read %s out of the tarball: %w", binaryName, err)
+		}
+		return binary, nil
+	}
+	return nil, fmt.Errorf("the downloaded tarball holds no `%s` executable", binaryName)
+}
+
+// installExecutable writes a binary where it belongs, via a temp file in the
+// same directory so the rename that publishes it is atomic.
+func installExecutable(binary []byte, destination string) error {
+	directory := filepath.Dir(destination)
+	if err := os.MkdirAll(directory, 0o755); err != nil {
+		return fmt.Errorf("couldn't create %s: %w", directory, err)
+	}
+	temp, err := os.CreateTemp(directory, "."+filepath.Base(destination)+"-*")
+	if err != nil {
+		return fmt.Errorf("couldn't stage the %s install: %w", filepath.Base(destination), err)
+	}
+	tempPath := temp.Name()
+	defer func() { _ = os.Remove(tempPath) }() // no-op once the rename succeeded
+
+	if _, err := temp.Write(binary); err != nil {
+		_ = temp.Close()
+		return fmt.Errorf("couldn't write %s: %w", tempPath, err)
+	}
+	if err := temp.Close(); err != nil {
+		return fmt.Errorf("couldn't write %s: %w", tempPath, err)
+	}
+	if err := os.Chmod(tempPath, 0o755); err != nil {
+		return fmt.Errorf("couldn't make %s executable: %w", tempPath, err)
+	}
+	if err := os.Rename(tempPath, destination); err != nil {
+		return fmt.Errorf("couldn't install %s: %w", destination, err)
+	}
+	return nil
 }
 
 // EnsureGoTool ensures a Go tool is installed and returns the path to the binary.

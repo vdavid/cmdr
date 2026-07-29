@@ -433,10 +433,9 @@ Checks by app and tech:
 - **Desktop / Rust**: rustfmt, clippy, cargo-audit, cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd,
   log-error-macro, sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide
   shared page cache is always installed before SQLite initializes), error-string-match, lock-poison, test-sleep (flags a
-  fixed `thread::sleep` / `tokio::time::sleep` in
-  test code, where a condition-based `wait_until` belongs; opt out a genuine sleep-is-the-subject site with
-  `// allowed-test-sleep: <reason>`), mtp-dropping-timeout, mtp-no-transport-reset, bindings-fresh, ipc-enum-camelcase,
-  tests, integration-tests (Docker SMB), tests-linux (slow)
+  fixed `thread::sleep` / `tokio::time::sleep` in test code, where a condition-based `wait_until` belongs; opt out a
+  genuine sleep-is-the-subject site with `// allowed-test-sleep: <reason>`), mtp-dropping-timeout,
+  mtp-no-transport-reset, bindings-fresh, ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)
 - **Desktop / Svelte**: prettier, eslint, svelte-kit-sync, eslint-typecheck-svelte, eslint-typecheck-typescript,
   stylelint, css-unused, a11y-contrast, a11y-coverage (every primitive has a tier-3 a11y test), ui-primitive-coverage
   (every top-level `lib/ui/*.svelte` primitive has a Debug > Components catalog section), dialog-gallery-coverage (every
@@ -458,7 +457,8 @@ Checks by app and tech:
   type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
 - **Desktop / Docs**: pluralize-noun, third-party-notices (regenerate-and-diff `THIRD-PARTY-NOTICES.md` from
   `Cargo.lock` + `pnpm-lock.yaml` via cargo-about and `pnpm licenses list`; the accepted-license list is derived from
-  `deny.toml` rather than duplicated, and the runner's input fingerprint is what keeps it off unrelated runs)
+  `deny.toml` rather than duplicated, the output is pinned to be identical on macOS and Linux, and the runner's input
+  fingerprint is what keeps it off unrelated runs)
 - **Website / Astro**: prettier, eslint, typecheck, build, html-validate, bundle-size (warn-only), e2e
 - **Website / Docker**: docker-build
 - **API server / TS**: oxfmt, eslint, typecheck, tests
@@ -487,6 +487,34 @@ to lock the tool's own dep tree.
 install (`cargo install cargo-audit` or `EnsureGoTool(..., "@latest")`) means each fresh checkout pulls whatever's
 latest. A wave-1-2-class compromise of any of these tool repositories would auto-propagate. Pinning is the Go-side
 equivalent of the pnpm `minimum-release-age` defense (a fresh version can't land without a deliberate bump).
+
+**Decision**: `third-party-notices` pins the license file for crates that ship more than one, and verifies the pin
+landed. **Why**: cargo-about reads whichever candidate file the filesystem enumerates first, and APFS and ext4 don't
+enumerate alike, so `libmimalloc-sys` and `miniz_oxide` produced different notices on a Mac than on the Linux runner:
+the check could not be green in both places at once, and wasn't from the day it landed. `licenseClarifications` names
+the file instead of leaving the choice to the host. The checksums cargo-about wants alongside a pin don't guard
+themselves: a stale one yields a warning, exit code 0, and a silent fall back to scanning, which is the exact behavior
+being removed. So `verifyClarifications` compares each pinned crate's resolved `source_path` against the pin and fails
+when they differ, naming the `shasum` command that fixes it. Every text also carries its `Text from:` file into the
+generated notices, so the next crate to develop this ambiguity surfaces as a diff line naming a file rather than as a
+license count that moved for no visible reason.
+
+**Gotcha**: a clarification REPLACES the crate's declared license expression, so `crateClarification.license` repeats
+that expression verbatim (`miniz_oxide` is `MIT OR Zlib OR Apache-2.0`, not the single `MIT` whose text is pinned).
+Shortening it to the pinned license silently narrows what the in-app Acknowledgements dialog reports. Pinning several
+files for one crate is normal and sometimes required: `libmimalloc-sys` ships the Rust wrapper's MIT and compiles the
+vendored mimalloc C sources' MIT into the binary, and both copyright holders have to be credited, which letting the
+filesystem pick never did.
+
+**Decision**: `cargo-about` installs from its checksum-pinned prebuilt release tarball, falling back to `cargo install`
+only on a host with no published asset. **Why**: the source build runs ~3 min and dominated this check on any machine
+without the tool, which in CI meant every single run: rust-cache's save step is
+`post-if: success() || CACHE_ON_FAILURE`, so while the check was failing the job saved no cache at all, and every run
+rebuilt the tool (and the whole Tauri tree) before failing again. CI now passes `cache-on-failure: true`, and the
+download costs ~2 s. The sha256 pins carry exactly the weight `--version --locked` carries for a `cargo install`: this
+binary gets executed, so an asset that changed underneath us must fail loudly rather than run. The installed binary's
+`--version` is verified rather than assumed from presence, because a stale local cargo-about harvests license files by
+its own rules and hands David a diff CI can't reproduce.
 
 **Decision**: `cargo-udeps` runs on a dated nightly pinned in `desktop-rust-cargo-udeps.go`, not on floating `+nightly`.
 **Why**: udeps needs nightly, but a floating one makes an unrelated upstream lint change break the scheduled "Slow

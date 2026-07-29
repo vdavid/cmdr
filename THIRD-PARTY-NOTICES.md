@@ -793,8 +793,9 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 
 ## License texts
 
-Each distinct text is reproduced once, with the packages it covers. Many differ only in their
-copyright line, which is exactly what these licenses require to be carried along.
+Each distinct text is reproduced once, with the packages it covers and the file it was read from.
+Many differ only in their copyright line, which is exactly what these licenses require to be
+carried along.
 
 ### Apache-2.0
 
@@ -879,6 +880,8 @@ limitations under the License.
 ### Apache-2.0
 
 Covers: bytesize 2.4.2
+
+Text from: `LICENSE`
 
 ```text
                                  Apache License
@@ -1088,6 +1091,8 @@ Covers: bytesize 2.4.2
 
 Covers: codespan-reporting 0.13.1, imgref 1.12.2
 
+Text from: `LICENSE`
+
 ```text
                                  Apache License
                            Version 2.0, January 2004
@@ -1295,6 +1300,8 @@ Covers: codespan-reporting 0.13.1, imgref 1.12.2
 ### Apache-2.0
 
 Covers: dpi 0.1.2, tao 0.35.3
+
+Text from: `LICENSE`
 
 ```text
 Apache License
@@ -1504,6 +1511,8 @@ Apache License
 
 Covers: gix-imara-diff 0.2.3, ring 0.17.14
 
+Text from: `LICENSE`
+
 ```text
                               Apache License
                         Version 2.0, January 2004
@@ -1711,6 +1720,8 @@ limitations under the License.
 ### Apache-2.0
 
 Covers: lzma-rust2 0.16.4, sevenz-rust2 0.21.2
+
+Text from: `LICENSE`
 
 ```text
                                  Apache License
@@ -1920,6 +1931,8 @@ Covers: lzma-rust2 0.16.4, sevenz-rust2 0.21.2
 
 Covers: moxcms 0.8.1, pxfm 0.1.29
 
+Text from: `LICENSE-APACHE.md`
+
 ```text
                                  Apache License
                            Version 2.0, January 2004
@@ -2128,6 +2141,8 @@ Covers: moxcms 0.8.1, pxfm 0.1.29
 
 Covers: unicode-bom 2.0.3
 
+Text from: `LICENSE`
+
 ```text
 Apache License
                            Version 2.0, January 2004
@@ -2335,6 +2350,8 @@ Apache License
 ### Apache-2.0
 
 Covers: zopfli 0.8.3
+
+Text from: `COPYING`
 
 ```text
                                  Apache License
@@ -2560,6 +2577,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 Covers: av1-grain 0.2.5
 
+Text from: `LICENSE`
+
 ```text
 BSD 2-Clause License
 
@@ -2591,6 +2610,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### BSD-2-Clause
 
 Covers: rav1e 0.8.1
+
+Text from: `LICENSE`
 
 ```text
 BSD 2-Clause License
@@ -2624,6 +2645,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Covers: v_frame 0.3.9
 
+Text from: `LICENSE`
+
 ```text
 BSD 2-Clause License
 
@@ -2655,6 +2678,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### BSD-3-Clause
 
 Covers: alloc-no-stdlib 2.0.4, brotli 8.0.4
+
+Text from: `LICENSE`
 
 ```text
 Copyright (c) 2016 Dropbox, Inc.
@@ -2693,6 +2718,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 Covers: avif-serialize 0.8.9
 
+Text from: `LICENSE`
+
 ```text
 BSD 3-Clause License
 
@@ -2729,6 +2756,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Covers: ed25519-dalek 2.2.0
 
+Text from: `LICENSE`
+
 ```text
 Copyright (c) 2017-2019 isis agora lovecruft. All rights reserved.
 
@@ -2764,6 +2793,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Covers: encoding_rs 0.8.35
 
+Text from: `LICENSE-WHATWG`
+
 ```text
 Copyright © WHATWG (Apple, Google, Mozilla, Microsoft).
 
@@ -2797,6 +2828,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Covers: lebe 0.5.3
 
+Text from: `LICENSE-BSD-3-Clause`
+
 ```text
 Copyright (c) 2022 Contributors to the lebe Project. All rights reserved.
 
@@ -2829,6 +2862,8 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### BSD-3-Clause
 
 Covers: matchit 0.8.4
+
+Text from: `LICENSE.httprouter`
 
 ```text
 BSD 3-Clause License
@@ -2866,6 +2901,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Covers: ravif 0.13.0
 
+Text from: `LICENSE`
+
 ```text
 BSD 3-Clause License
 
@@ -2901,6 +2938,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### BSD-3-Clause
 
 Covers: subtle 2.6.1
+
+Text from: `LICENSE`
 
 ```text
 Copyright (c) 2016-2017 Isis Agora Lovecruft, Henry de Valence. All rights reserved.
@@ -3066,6 +3105,8 @@ express Statement of Purpose.
 
 Covers: notify 8.2.0
 
+Text from: `LICENSE-CC0`
+
 ```text
 Creative Commons CC0 1.0 Universal
 
@@ -3113,6 +3154,8 @@ For these and/or other purposes and motivations, and without any expectation of 
 ### CC0-1.0
 
 Covers: ppmd-rust 1.4.0
+
+Text from: `LICENSE-CC0.md`
 
 ```text
 CC0 1.0 Universal
@@ -3255,6 +3298,8 @@ THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES WITH REGARD TO
 
 Covers: ring 0.17.14
 
+Text from: `LICENSE-other-bits`
+
 ```text
 Copyright 2015-2025 Brian Smith.
 
@@ -3274,6 +3319,8 @@ CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 ### ISC
 
 Covers: rustls-webpki 0.103.13
+
+Text from: `LICENSE`
 
 ```text
 Except as otherwise noted, this project is licensed under the following
@@ -3301,6 +3348,8 @@ third-party/chromium/LICENSE.
 
 Covers: untrusted 0.9.0
 
+Text from: `LICENSE.txt`
+
 ```text
 // Copyright 2015-2016 Brian Smith.
 //
@@ -3320,6 +3369,8 @@ Covers: untrusted 0.9.0
 ### MIT
 
 Covers: adler2 2.0.1, anyhow 1.0.103, async-trait 0.1.89, atomic-waker 1.1.2, camino 1.2.4, cargo-platform 0.1.9, cargo_metadata 0.19.2, curve25519-dalek-derive 0.1.1, cxx 1.0.198, cxx-build 1.0.198, cxxbridge-flags 1.0.198, cxxbridge-macro 1.0.198, displaydoc 0.2.6, dtoa 1.0.11, dyn-clone 1.0.20, erased-serde 0.4.10, fastrand 2.4.1, itoa 1.0.18, link-cplusplus 1.0.12, minimal-lexical 0.2.1, num_enum 0.7.6, num_enum_derive 0.7.6, nusb 0.2.4, once_cell 1.21.4, paste 1.0.15, pastey 0.1.1, pin-project-lite 0.2.17, proc-macro-crate 3.5.0, proc-macro2 1.0.106, quote 1.0.46, rustix 1.1.4, rustversion 1.0.22, scratch 1.0.9, semver 1.0.28, serde 1.0.228, serde-untagged 0.1.9, serde_core 1.0.228, serde_derive 1.0.228, serde_derive_internals 0.29.1, serde_json 1.0.150, serde_path_to_error 0.1.20, serde_repr 0.1.20, servo_arc 0.4.3, syn 2.0.118, syn 3.0.3, thiserror 1.0.69, thiserror 2.0.18, thiserror-impl 1.0.69, thiserror-impl 2.0.18, typed-path 0.12.3, typeid 1.0.3, unicode-ident 1.0.24, utf-8 0.7.6, zmij 1.0.21
+
+Text from: `LICENSE-MIT`
 
 ```text
 Permission is hereby granted, free of charge, to any
@@ -3350,6 +3401,8 @@ DEALINGS IN THE SOFTWARE.
 ### MIT
 
 Covers: aead 0.6.1
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2019-2026 The RustCrypto Project Developers
@@ -3384,6 +3437,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: aes 0.9.1
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2018-2024 The RustCrypto Project Developers
 Copyright (c) 2018 Artyom Pavlov
@@ -3417,6 +3472,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: aes-gcm 0.11.0, chacha20 0.10.1, ghash 0.6.0, polyval 0.7.1
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2019-2026 The RustCrypto Project Developers
 
@@ -3448,6 +3505,8 @@ DEALINGS IN THE SOFTWARE.
 ### MIT
 
 Covers: ahash 0.8.12
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2018 Tom Kaitchuck
@@ -3481,6 +3540,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: aho-corasick 1.1.4, byteorder 1.5.0, byteorder-lite 0.1.0, jiff 0.2.31, memchr 2.8.2, termcolor 1.4.1, walkdir 2.5.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 The MIT License (MIT)
 
@@ -3508,6 +3569,8 @@ THE SOFTWARE.
 ### MIT
 
 Covers: aligned 0.4.3, cty 0.2.2, heapless 0.8.0
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2017 Jorge Aparicio
@@ -3541,6 +3604,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: aligned-vec 0.6.4
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -3568,6 +3633,8 @@ SOFTWARE.
 ### MIT
 
 Covers: allocator-api2 0.2.21
+
+Text from: `LICENSE-MIT`
 
 ```text
 Permission is hereby granted, free of charge, to any
@@ -3599,6 +3666,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: alphanumeric-sort 1.5.8
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -3627,6 +3696,8 @@ SOFTWARE.
 
 Covers: arboard 3.6.1
 
+Text from: `LICENSE-MIT.txt`
+
 ```text
 MIT License
 
@@ -3654,6 +3725,8 @@ SOFTWARE.
 ### MIT
 
 Covers: arc-swap 1.9.2
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2017 arc-swap developers
@@ -3687,6 +3760,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: arg_enum_proc_macro 0.3.4
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -3714,6 +3789,8 @@ SOFTWARE.
 ### MIT
 
 Covers: arrayvec 0.7.8
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) Ulrik Sverdrup "bluss" 2015-2023
@@ -3747,6 +3824,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: as-slice 0.2.1, hash32 0.3.1
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2018 Jorge Aparicio
 
@@ -3779,6 +3858,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: async-compression 0.4.42, compression-codecs 0.4.38, compression-core 0.4.32
 
+Text from: `LICENSE-MIT`
+
 ```text
 The MIT License (MIT)
 
@@ -3806,6 +3887,8 @@ SOFTWARE.
 ### MIT
 
 Covers: autocfg 1.5.1
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2018 Josh Stone
@@ -3839,6 +3922,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: av-scenechange 0.14.1
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -3866,6 +3951,8 @@ SOFTWARE.
 ### MIT
 
 Covers: aws-lc-sys 0.42.0
+
+Text from: `aws-lc/third_party/fiat/LICENSE`
 
 ```text
 The MIT License (MIT)
@@ -3895,6 +3982,8 @@ SOFTWARE.
 ### MIT
 
 Covers: axum 0.8.9
+
+Text from: `LICENSE`
 
 ```text
 Copyright (c) 2019 axum Contributors
@@ -3927,6 +4016,8 @@ DEALINGS IN THE SOFTWARE.
 ### MIT
 
 Covers: axum-core 0.5.6
+
+Text from: `LICENSE`
 
 ```text
 MIT License
@@ -3962,6 +4053,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: base64 0.21.7, base64 0.22.1
 
+Text from: `LICENSE-MIT`
+
 ```text
 The MIT License (MIT)
 
@@ -3990,6 +4083,8 @@ THE SOFTWARE.
 
 Covers: bincode2 2.0.1
 
+Text from: `LICENSE.md`
+
 ```text
 The MIT License (MIT)
 
@@ -4017,6 +4112,8 @@ SOFTWARE.
 ### MIT
 
 Covers: bit-set 0.8.0, bit-vec 0.8.0
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2023 The Rust Project Developers
@@ -4050,6 +4147,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: bit_field 0.10.3
 
+Text from: `LICENSE-MIT`
+
 ```text
 The MIT License (MIT)
 
@@ -4077,6 +4176,8 @@ SOFTWARE.
 ### MIT
 
 Covers: bitflags 1.3.2, bitflags 2.13.0, glob 0.3.3, log 0.4.33, num-bigint 0.4.8, num-derive 0.4.2, num-integer 0.1.46, num-rational 0.4.2, num-traits 0.2.19, regex 1.12.4, regex-automata 0.4.14, regex-syntax 0.8.11
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2014 The Rust Project Developers
@@ -4110,6 +4211,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: bitstream-io 4.10.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2017 Brian Langenberger
 
@@ -4142,6 +4245,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: block-buffer 0.10.4
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2018-2019 The RustCrypto Project Developers
 
@@ -4173,6 +4278,8 @@ DEALINGS IN THE SOFTWARE.
 ### MIT
 
 Covers: block-buffer 0.12.1, block-padding 0.4.2, dbl 0.5.0
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2018-2025 The RustCrypto Project Developers
@@ -4231,6 +4338,8 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Covers: brotli 8.0.4
 
+Text from: `LICENSE.MIT`
+
 ```text
 Copyright (c) 2009, 2010, 2013-2016 by the Brotli Authors.
 
@@ -4256,6 +4365,8 @@ THE SOFTWARE.
 ### MIT
 
 Covers: bstr 1.12.3
+
+Text from: `LICENSE-MIT`
 
 ```text
 The MIT License (MIT)
@@ -4285,6 +4396,8 @@ THE SOFTWARE.
 
 Covers: built 0.8.1
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -4312,6 +4425,8 @@ SOFTWARE.
 ### MIT
 
 Covers: bumpalo 3.20.3
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2019 Nick Fitzgerald
@@ -4345,6 +4460,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: bytemuck 1.25.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 MIT License
 
@@ -4360,6 +4477,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ### MIT
 
 Covers: bytes 1.12.0
+
+Text from: `LICENSE`
 
 ```text
 Copyright (c) 2018 Carl Lerche
@@ -4393,6 +4512,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: bzip2 0.6.1
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2014-2025 Alex Crichton and Contributors
 
@@ -4424,6 +4545,8 @@ DEALINGS IN THE SOFTWARE.
 ### MIT
 
 Covers: cbc 0.2.1, ctr 0.10.1
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2018-2022 RustCrypto Developers
@@ -4458,6 +4581,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: cc 1.2.65, cfg-if 1.0.4, cmake 0.1.58, filetime 0.2.29, find-msvc-tools 0.1.9, futures-timer 3.0.4, jobserver 0.1.34, pkg-config 0.3.33, socket2 0.6.4
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2014 Alex Crichton
 
@@ -4489,6 +4614,8 @@ DEALINGS IN THE SOFTWARE.
 ### MIT
 
 Covers: ccm 0.6.0-rc.3
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2020 The RustCrypto Project Developers
@@ -4522,6 +4649,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: cfb 0.7.3
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -4549,6 +4678,8 @@ SOFTWARE.
 ### MIT
 
 Covers: chardetng 0.1.17, encoding_rs 0.8.35, utf8_iter 1.0.4
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright Mozilla Foundation
@@ -4582,6 +4713,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: cipher 0.5.2
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2016-2025 RustCrypto Developers
 
@@ -4614,6 +4747,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: clru 0.6.3
 
+Text from: `LICENSE`
+
 ```text
 Copyright (c) 2020 Élie ROUDNINSKI (marmeladema) <xademax@gmail.com>
 
@@ -4639,6 +4774,8 @@ SOFTWARE.
 ### MIT
 
 Covers: cmac 0.8.0, digest 0.10.7, hmac 0.13.0
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2017 Artyom Pavlov
@@ -4672,6 +4809,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: cmdr-fsevent-stream 0.3.0
 
+Text from: `crates/fsevent-stream/LICENSE`
+
 ```text
 MIT License
 
@@ -4699,6 +4838,8 @@ SOFTWARE.
 ### MIT
 
 Covers: cmov 0.5.4, hybrid-array 0.4.13
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2022-2026 The RustCrypto Project Developers
@@ -4732,6 +4873,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: color_quant 1.1.0
 
+Text from: `LICENSE`
+
 ```text
 The MIT License (MIT)
 
@@ -4759,6 +4902,8 @@ SOFTWARE.
 ### MIT
 
 Covers: const-oid 0.10.2
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2020-2026 The RustCrypto Project Developers
@@ -4792,6 +4937,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: convert_case 0.10.0
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -4819,6 +4966,8 @@ SOFTWARE.
 ### MIT
 
 Covers: cookie 0.18.1
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2017 Sergio Benitez
@@ -4853,6 +5002,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: core-foundation 0.10.1, core-foundation 0.9.4, core-foundation-sys 0.8.7, core-graphics 0.25.0, core-graphics-types 0.2.0, string_cache 0.9.0, string_cache_codegen 0.6.1
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2012-2013 Mozilla Foundation
 
@@ -4884,6 +5035,8 @@ DEALINGS IN THE SOFTWARE.
 ### MIT
 
 Covers: cpubits 0.1.1
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2023-2026 The RustCrypto Project Developers
@@ -4917,6 +5070,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: cpufeatures 0.2.17, cpufeatures 0.3.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2020-2025 The RustCrypto Project Developers
 
@@ -4949,6 +5104,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: crc 3.4.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 MIT License
 
@@ -4976,6 +5133,8 @@ SOFTWARE.
 ### MIT
 
 Covers: crc-catalog 2.5.0
+
+Text from: `LICENSES/MIT.txt`
 
 ```text
 MIT License
@@ -5005,6 +5164,8 @@ SOFTWARE.
 
 Covers: crc32fast 1.5.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 MIT License
 
@@ -5032,6 +5193,8 @@ SOFTWARE.
 ### MIT
 
 Covers: crossbeam-channel 0.5.15, crossbeam-deque 0.8.6, crossbeam-epoch 0.9.20, crossbeam-utils 0.8.21
+
+Text from: `LICENSE-MIT`
 
 ```text
 The MIT License (MIT)
@@ -5067,6 +5230,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: crypto-common 0.1.7
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2021 RustCrypto Developers
 
@@ -5098,6 +5263,8 @@ DEALINGS IN THE SOFTWARE.
 ### MIT
 
 Covers: crypto-common 0.2.2
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2021-2026 RustCrypto Developers
@@ -5131,6 +5298,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: ctor 0.8.0, ctor-proc-macro 0.0.7
 
+Text from: `LICENSE-MIT`
+
 ```text
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -5142,6 +5311,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ### MIT
 
 Covers: ctutils 0.4.2
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2025-2026 The RustCrypto Project Developers
@@ -5175,6 +5346,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: darling 0.21.3, darling 0.23.0, darling_core 0.21.3, darling_core 0.23.0, darling_macro 0.21.3, darling_macro 0.23.0
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -5203,6 +5376,8 @@ SOFTWARE.
 
 Covers: dashmap 6.2.1
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -5230,6 +5405,8 @@ SOFTWARE.
 ### MIT
 
 Covers: data-encoding 2.11.0
+
+Text from: `LICENSE`
 
 ```text
 The MIT License (MIT)
@@ -5260,6 +5437,8 @@ SOFTWARE.
 
 Covers: deranged 0.5.8
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2024 Jacob Pratt et al.
 
@@ -5285,6 +5464,8 @@ SOFTWARE.
 ### MIT
 
 Covers: derive_more 2.1.1, derive_more-impl 2.1.1
+
+Text from: `LICENSE`
 
 ```text
 The MIT License (MIT)
@@ -5313,6 +5494,8 @@ SOFTWARE.
 ### MIT
 
 Covers: digest 0.11.3
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2017-2025 RustCrypto Developers
@@ -5347,6 +5530,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: dirs 6.0.0, dirs-sys 0.5.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2018-2019 dirs-rs contributors
 
@@ -5372,6 +5557,8 @@ SOFTWARE.
 ### MIT
 
 Covers: dom_query 0.27.0
+
+Text from: `LICENSE`
 
 ```text
 MIT License
@@ -5407,6 +5594,8 @@ developed by Chen Jiaju, licensed under the MIT License and the Apache License 2
 
 Covers: ed25519 2.2.3, signature 2.2.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2018-2023 RustCrypto Developers
 
@@ -5438,6 +5627,8 @@ DEALINGS IN THE SOFTWARE.
 ### MIT
 
 Covers: either 1.16.0, itertools 0.14.0, serde_with 3.21.0, serde_with_macros 3.21.0
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2015
@@ -5471,6 +5662,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: embed-resource 3.0.11
 
+Text from: `LICENSE`
+
 ```text
 The MIT License (MIT)
 
@@ -5498,6 +5691,8 @@ SOFTWARE.
 ### MIT
 
 Covers: embed_plist 1.2.2
+
+Text from: `LICENSE-MIT`
 
 ```text
 MIT License
@@ -5527,6 +5722,8 @@ SOFTWARE.
 
 Covers: equator 0.4.2, equator-macro 0.4.2
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -5554,6 +5751,8 @@ SOFTWARE.
 ### MIT
 
 Covers: equivalent 1.0.2
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2016--2023
@@ -5587,6 +5786,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: errno 0.3.14
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2014 Chris Wong
 
@@ -5619,6 +5820,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: exacl 0.13.0
 
+Text from: `LICENSE.txt`
+
 ```text
 Copyright (c) 2020-2026 William W. Fisher
 
@@ -5644,6 +5847,8 @@ THE SOFTWARE.
 ### MIT
 
 Covers: fallible-iterator 0.3.0
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2015 The rust-openssl-verify Developers
@@ -5671,6 +5876,8 @@ SOFTWARE.
 
 Covers: fallible-streaming-iterator 0.1.9
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2016 The fallible-streaming-iterator Developers
 
@@ -5696,6 +5903,8 @@ SOFTWARE.
 ### MIT
 
 Covers: faster-hex 0.10.0
+
+Text from: `LICENSE`
 
 ```text
 MIT License
@@ -5725,6 +5934,8 @@ SOFTWARE.
 
 Covers: fax 0.2.7
 
+Text from: `LICENSE`
+
 ```text
 Copyright © 2021 The pdf-rs contributers.
 
@@ -5738,6 +5949,8 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 ### MIT
 
 Covers: fdeflate 0.3.7, image 0.25.10, image-webp 0.2.4, io-close 0.3.7
+
+Text from: `LICENSE-MIT`
 
 ```text
 MIT License
@@ -5771,6 +5984,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: fearless_simd 0.4.1
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2018 Raph Levien
 
@@ -5803,6 +6018,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: fern 0.7.1
 
+Text from: `LICENSE`
+
 ```text
 Copyright (c) 2014-2017 David Ross
 
@@ -5816,6 +6033,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ### MIT
 
 Covers: file-id 0.2.3, notify-debouncer-full 0.7.0, notify-types 2.1.0
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2023 Notify Contributors
@@ -5849,6 +6068,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: file-rotate 0.8.0
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -5876,6 +6097,8 @@ SOFTWARE.
 ### MIT
 
 Covers: flate2 1.1.9
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2014-2026 Alex Crichton
@@ -5909,6 +6132,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: flume 0.12.0, rustc-hash 2.1.3
 
+Text from: `LICENSE-MIT`
+
 ```text
 Permission is hereby granted, free of charge, to any
 person obtaining a copy of this software and associated
@@ -5938,6 +6163,8 @@ DEALINGS IN THE SOFTWARE.
 ### MIT
 
 Covers: fnv 1.0.7
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2017 Contributors
@@ -5971,6 +6198,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: foreign-types 0.5.0, foreign-types-macros 0.2.3, foreign-types-shared 0.3.1
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2017 The foreign-types Developers
 
@@ -5996,6 +6225,8 @@ SOFTWARE.
 ### MIT
 
 Covers: form_urlencoded 1.2.2
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2013-2016 The rust-url developers
@@ -6029,6 +6260,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: fs_extra 1.3.0
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -6057,6 +6290,8 @@ SOFTWARE.
 
 Covers: fsevent-sys 4.1.0
 
+Text from: `LICENSE`
+
 ```text
 The MIT License (MIT)
 
@@ -6084,6 +6319,8 @@ SOFTWARE.
 ### MIT
 
 Covers: futures 0.3.32, futures-channel 0.3.32, futures-core 0.3.32, futures-executor 0.3.32, futures-io 0.3.32, futures-macro 0.3.32, futures-sink 0.3.32, futures-task 0.3.32, futures-util 0.3.32
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2016 Alex Crichton
@@ -6118,6 +6355,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: genai 0.6.5
 
+Text from: `LICENSE-MIT`
+
 ```text
 The MIT License (MIT)
 
@@ -6146,6 +6385,8 @@ SOFTWARE.
 
 Covers: generic-array 0.14.7
 
+Text from: `LICENSE`
+
 ```text
 The MIT License (MIT)
 
@@ -6173,6 +6414,8 @@ SOFTWARE.
 ### MIT
 
 Covers: getrandom 0.2.17
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2018-2024 The rust-random Project Developers
@@ -6207,6 +6450,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: getrandom 0.3.4
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2018-2025 The rust-random Project Developers
 Copyright (c) 2014 The Rust Project Developers
@@ -6239,6 +6484,8 @@ DEALINGS IN THE SOFTWARE.
 ### MIT
 
 Covers: getrandom 0.4.3
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2018-2026 The rust-random Project Developers
@@ -6273,6 +6520,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: gif 0.14.2
 
+Text from: `LICENSE-MIT`
+
 ```text
 The MIT License (MIT)
 
@@ -6301,6 +6550,8 @@ SOFTWARE.
 
 Covers: gix 0.85.0, gix-actor 0.41.1, gix-archive 0.34.0, gix-attributes 0.33.2, gix-bitmap 0.3.2, gix-blame 0.15.0, gix-chunk 0.7.2, gix-command 0.9.1, gix-commitgraph 0.37.1, gix-config 0.58.0, gix-config-value 0.18.1, gix-credentials 0.38.2, gix-date 0.15.6, gix-diff 0.65.0, gix-dir 0.27.0, gix-discover 0.53.0, gix-error 0.2.5, gix-features 0.48.1, gix-filter 0.32.0, gix-fs 0.21.2, gix-glob 0.26.1, gix-hash 0.25.1, gix-hashtable 0.15.2, gix-ignore 0.21.1, gix-index 0.53.0, gix-lock 23.0.1, gix-mailmap 0.33.1, gix-negotiate 0.33.0, gix-object 0.62.0, gix-odb 0.82.0, gix-pack 0.72.0, gix-packetline 0.21.5, gix-path 0.12.2, gix-pathspec 0.18.1, gix-prompt 0.15.1, gix-protocol 0.63.0, gix-quote 0.7.2, gix-ref 0.65.0, gix-refspec 0.43.0, gix-revision 0.47.0, gix-revwalk 0.33.0, gix-sec 0.14.1, gix-shallow 0.12.1, gix-status 0.32.0, gix-submodule 0.32.0, gix-tempfile 23.0.2, gix-trace 0.1.20, gix-transport 0.57.2, gix-traverse 0.59.0, gix-url 0.36.2, gix-utils 0.3.3, gix-validate 0.11.2, gix-worktree 0.54.0, gix-worktree-state 0.32.0, gix-worktree-stream 0.34.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -6324,6 +6575,8 @@ SOFTWARE.
 ### MIT
 
 Covers: global-hotkey 0.8.0, muda 0.19.3
+
+Text from: `LICENSE-MIT`
 
 ```text
 MIT License
@@ -6352,6 +6605,8 @@ SOFTWARE.
 ### MIT
 
 Covers: h2 0.4.15
+
+Text from: `LICENSE`
 
 ```text
 Copyright (c) 2017 h2 authors
@@ -6385,6 +6640,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: half 2.7.1, ident_case 1.0.1
 
+Text from: `LICENSE-MIT`
+
 ```text
 MIT License
 
@@ -6410,6 +6667,8 @@ SOFTWARE.
 ### MIT
 
 Covers: hashbrown 0.12.3, hashbrown 0.14.5, hashbrown 0.16.1, hashbrown 0.17.1
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2016 Amanieu d'Antras
@@ -6442,6 +6701,8 @@ DEALINGS IN THE SOFTWARE.
 ### MIT
 
 Covers: hashlink 0.12.1
+
+Text from: `LICENSE-MIT`
 
 ```text
 This work is derived in part from the `linked-hash-map` crate, Copyright (c)
@@ -6476,6 +6737,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: hayro-jpeg2000 0.3.5
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) The Hayro Authors
 
@@ -6489,6 +6752,8 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 ### MIT
 
 Covers: heck 0.5.0, unicode-normalization 0.1.25, unicode-segmentation 1.13.3, unicode-width 0.2.2, unicode-xid 0.2.6
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2015 The Rust Project Developers
@@ -6522,6 +6787,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: html5ever 0.38.0, markup5ever 0.38.0, web_atoms 0.2.5
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2014 The html5ever Project Developers
 
@@ -6553,6 +6820,8 @@ DEALINGS IN THE SOFTWARE.
 ### MIT
 
 Covers: http 1.4.2
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2017 http-rs authors
@@ -6586,6 +6855,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: http-body 1.0.1
 
+Text from: `LICENSE`
+
 ```text
 Copyright (c) 2019-2024 Sean McArthur & Hyper Contributors
 
@@ -6617,6 +6888,8 @@ DEALINGS IN THE SOFTWARE.
 ### MIT
 
 Covers: http-body-util 0.1.3
+
+Text from: `LICENSE`
 
 ```text
 Copyright (c) 2019-2025 Sean McArthur & Hyper Contributors
@@ -6650,6 +6923,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: httparse 1.10.1
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2015-2025 Sean McArthur
 
@@ -6676,6 +6951,8 @@ THE SOFTWARE.
 
 Covers: httpdate 1.0.3
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2016 Pyfisch
 
@@ -6701,6 +6978,8 @@ THE SOFTWARE.
 ### MIT
 
 Covers: human_format 1.2.1
+
+Text from: `LICENSE`
 
 ```text
 MIT License
@@ -6730,6 +7009,8 @@ SOFTWARE.
 
 Covers: hyper 1.10.1
 
+Text from: `LICENSE`
+
 ```text
 Copyright (c) 2014-2026 Sean McArthur
 
@@ -6755,6 +7036,8 @@ THE SOFTWARE.
 ### MIT
 
 Covers: hyper-rustls 0.27.9, rustls 0.23.41
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2016 Joseph Birr-Pixton <jpixton@gmail.com>
@@ -6788,6 +7071,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: hyper-util 0.1.20
 
+Text from: `LICENSE`
+
 ```text
 Copyright (c) 2023-2025 Sean McArthur
 
@@ -6813,6 +7098,8 @@ THE SOFTWARE.
 ### MIT
 
 Covers: iana-time-zone 0.1.65
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2020 Andrew D. Straw
@@ -6846,6 +7133,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: icns 0.4.0
 
+Text from: `LICENSE`
+
 ```text
 The MIT License (MIT)
 
@@ -6874,6 +7163,8 @@ SOFTWARE.
 
 Covers: ico 0.5.0
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -6901,6 +7192,8 @@ SOFTWARE.
 ### MIT
 
 Covers: idna 1.1.0, percent-encoding 2.3.2, url 2.5.8
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2013-2025 The rust-url developers
@@ -6934,6 +7227,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: idna_adapter 1.2.2
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) The rust-url developers
 
@@ -6966,6 +7261,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: if-addrs 0.15.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright 2018 MaidSafe.net limited.
 Copyright 2020 messense
@@ -6980,6 +7277,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ### MIT
 
 Covers: indexmap 1.9.3, indexmap 2.14.0
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2016--2017
@@ -7013,6 +7312,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: infer 0.19.0
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -7040,6 +7341,8 @@ SOFTWARE.
 ### MIT
 
 Covers: inout 0.2.2
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2022-2025 The RustCrypto Project Developers
@@ -7074,6 +7377,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: io-kit-sys 0.5.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2017-2018 Junji Takakura
 
@@ -7088,6 +7393,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 Covers: ipnet 2.12.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright 2017 Juniper Networks, Inc.
 
@@ -7101,6 +7408,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ### MIT
 
 Covers: json-patch 3.0.1
+
+Text from: `LICENSE-MIT`
 
 ```text
 MIT License
@@ -7130,6 +7439,8 @@ SOFTWARE.
 
 Covers: jsonptr 0.6.3
 
+Text from: `LICENSE-MIT`
+
 ```text
 MIT License
 
@@ -7158,6 +7469,8 @@ SOFTWARE.
 
 Covers: keyboard-types 0.7.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2017 Pyfisch
 
@@ -7184,6 +7497,8 @@ THE SOFTWARE.
 
 Covers: kstring 2.0.2, serde_spanned 1.1.1, toml 0.9.12+spec-1.1.0, toml 1.1.2+spec-1.1.0, toml_datetime 0.7.5+spec-1.1.0, toml_datetime 1.1.1+spec-1.1.0, toml_edit 0.25.12+spec-1.1.0, toml_parser 1.1.2+spec-1.1.0, toml_writer 1.1.1+spec-1.1.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) Individual contributors
 
@@ -7209,6 +7524,8 @@ SOFTWARE.
 ### MIT
 
 Covers: libc 0.2.186
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) The Rust Project Developers
@@ -7242,6 +7559,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: libmimalloc-sys 0.1.49
 
+Text from: `c_src/mimalloc/v2/LICENSE`
+
 ```text
 MIT License
 
@@ -7268,7 +7587,43 @@ SOFTWARE.
 
 ### MIT
 
+Covers: libmimalloc-sys 0.1.49, mimalloc 0.1.52
+
+Text from: `LICENSE.txt`
+
+```text
+Copyright 2019 Octavian Oncescu
+
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+```
+
+### MIT
+
 Covers: libsqlite3-sys 0.38.1, rusqlite 0.40.1
+
+Text from: `LICENSE`
 
 ```text
 Copyright (c) 2014 The rusqlite developers
@@ -7295,6 +7650,8 @@ THE SOFTWARE.
 ### MIT
 
 Covers: lock_api 0.4.14, parking_lot 0.12.5, parking_lot_core 0.9.12, rustc_version 0.4.1
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2016 The Rust Project Developers
@@ -7328,6 +7685,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: loop9 0.1.5
 
+Text from: `LICENSE`
+
 ```text
 © Kornel Lesiński
 
@@ -7341,6 +7700,8 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 ### MIT
 
 Covers: lz4_flex 0.13.1
+
+Text from: `LICENSE`
 
 ```text
 The MIT License (MIT)
@@ -7369,6 +7730,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Covers: lzma-rs 0.3.0
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -7396,6 +7759,8 @@ SOFTWARE.
 ### MIT
 
 Covers: mach2 0.5.0
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2019 Nick Fitzgerald, 2021 Yuki Okushi
@@ -7429,6 +7794,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: matchit 0.8.4
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -7457,6 +7824,8 @@ SOFTWARE.
 
 Covers: maybe-async 0.2.11
 
+Text from: `LICENSE`
+
 ```text
 Copyright (c) 2020 Guoli Lyu
 
@@ -7482,6 +7851,8 @@ THE SOFTWARE.
 ### MIT
 
 Covers: maybe-rayon 0.1.1
+
+Text from: `LICENSE`
 
 ```text
 MIT License
@@ -7510,6 +7881,8 @@ SOFTWARE.
 ### MIT
 
 Covers: md-5 0.11.0, sha1 0.11.0, sha2 0.11.0
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2016-2026 The RustCrypto Project Developers
@@ -7546,6 +7919,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: md4 0.11.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2016-2026 The RustCrypto Project Developers
 Copyright (c) 2016 bacher09, Artyom Pavlov
@@ -7579,6 +7954,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: mdns-sd 0.20.2
 
+Text from: `LICENSE-MIT`
+
 ```text
 MIT License
 
@@ -7606,6 +7983,8 @@ SOFTWARE.
 ### MIT
 
 Covers: memmap2 0.9.11
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2020 Yevhenii Reizner
@@ -7638,39 +8017,9 @@ DEALINGS IN THE SOFTWARE.
 
 ### MIT
 
-Covers: mimalloc 0.1.52
-
-```text
-Copyright 2019 Octavian Oncescu
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
-### MIT
-
 Covers: mime 0.3.17
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2014 Sean McArthur
@@ -7697,6 +8046,8 @@ THE SOFTWARE.
 ### MIT
 
 Covers: mime_guess 2.0.5
+
+Text from: `LICENSE`
 
 ```text
 The MIT License (MIT)
@@ -7726,6 +8077,8 @@ SOFTWARE.
 
 Covers: miniz_oxide 0.8.9
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -7733,6 +8086,7 @@ Copyright 2013-2014 RAD Game Tools and Valve Software
 Copyright 2010-2014 Rich Geldreich and Tenacious Software LLC
 Copyright (c) 2017 Frommi
 Copyright (c) 2017-2024 oyvindln
+
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -7756,6 +8110,8 @@ SOFTWARE.
 ### MIT
 
 Covers: mio 1.2.1
+
+Text from: `LICENSE`
 
 ```text
 Copyright (c) 2014 Carl Lerche and other MIO contributors
@@ -7782,6 +8138,8 @@ THE SOFTWARE.
 ### MIT
 
 Covers: new_debug_unreachable 1.0.6
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2015 Jonathan Reem
@@ -7815,6 +8173,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: no_std_io2 0.9.4
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2020-2021  Brendan Molloy <brendan@bbqsrc.net>
 
@@ -7840,6 +8200,8 @@ SOFTWARE.
 ### MIT
 
 Covers: nom 7.1.3, nom 8.0.0
+
+Text from: `LICENSE`
 
 ```text
 Copyright (c) 2014-2019 Geoffroy Couprie
@@ -7868,6 +8230,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Covers: nonempty 0.12.0
 
+Text from: `LICENSE`
+
 ```text
 Copyright (c) 2019 Alexis Sellier
 
@@ -7893,6 +8257,8 @@ SOFTWARE.
 ### MIT
 
 Covers: noop_proc_macro 0.3.0
+
+Text from: `LICENSE`
 
 ```text
 MIT License
@@ -7922,6 +8288,8 @@ SOFTWARE.
 
 Covers: notify-rust 4.18.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 MIT License
 
@@ -7950,6 +8318,8 @@ SOFTWARE.
 
 Covers: num-conv 0.2.2
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) Jacob Pratt
 
@@ -7976,6 +8346,8 @@ SOFTWARE.
 
 Covers: oem_cp 2.1.2
 
+Text from: `LICENSE`
+
 ```text
 Copyright © 2020 Tatsunori Uchino <tats.u@live.jp>
 
@@ -7989,6 +8361,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ### MIT
 
 Covers: open 5.3.6
+
+Text from: `LICENSE.md`
 
 ```text
 The MIT License (MIT)
@@ -8022,6 +8396,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 Covers: osakit 0.3.1
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2024 Marat Dulin
 
@@ -8054,6 +8430,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: oval 2.0.0
 
+Text from: `LICENSE`
+
 ```text
 Copyright (c) 2024 Geoffroy Couprie et Amos Wenger
 
@@ -8080,6 +8458,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### MIT
 
 Covers: ownable 0.6.2, ownable-macro 0.6.3
+
+Text from: `LICENSE-MIT`
 
 ```text
 MIT License
@@ -8108,6 +8488,8 @@ SOFTWARE.
 ### MIT
 
 Covers: pbkdf2 0.13.0
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2017 Artyom Pavlov
@@ -8142,6 +8524,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: phf 0.11.3, phf 0.13.1, phf_codegen 0.13.1, phf_generator 0.13.1, phf_macros 0.13.1, phf_shared 0.11.3, phf_shared 0.13.1
 
+Text from: `LICENSE`
+
 ```text
 The MIT License (MIT)
 
@@ -8169,6 +8553,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Covers: plist 1.10.0
 
+Text from: `LICENCE`
+
 ```text
 Copyright (c) 2015 Edward Barnard
 
@@ -8194,6 +8580,8 @@ SOFTWARE.
 ### MIT
 
 Covers: png 0.17.16, png 0.18.1
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2015 nwin
@@ -8227,6 +8615,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: positioned-io 0.3.5
 
+Text from: `LICENSE-MIT`
+
 ```text
 The MIT License (MIT)
 
@@ -8255,6 +8645,8 @@ THE SOFTWARE.
 
 Covers: powerfmt 0.2.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2023 Jacob Pratt et al.
 
@@ -8280,6 +8672,8 @@ SOFTWARE.
 ### MIT
 
 Covers: ppv-lite86 0.2.21
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2019 The CryptoCorrosion Contributors
@@ -8313,6 +8707,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: precomputed-hash 0.1.1
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -8340,6 +8736,8 @@ SOFTWARE.
 ### MIT
 
 Covers: prodash 31.0.0
+
+Text from: `LICENSE.md`
 
 ```text
 The MIT License (MIT)
@@ -8373,6 +8771,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 Covers: qoi 0.4.1
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2022 Ivan Smirnov
 
@@ -8405,6 +8805,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: quick-error 2.0.1
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2015 The quick-error Developers
 
@@ -8430,6 +8832,8 @@ SOFTWARE.
 ### MIT
 
 Covers: quick-xml 0.41.0
+
+Text from: `LICENSE-MIT.md`
 
 ```text
 The MIT License (MIT)
@@ -8460,6 +8864,8 @@ THE SOFTWARE.
 ### MIT
 
 Covers: rand 0.10.2, rand 0.9.4, rand_chacha 0.9.0, rand_core 0.6.4, rand_core 0.9.5
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright 2018 Developers of the Rand project
@@ -8494,6 +8900,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: rand_core 0.10.1
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2018-2026 The Rand Project Developers
 
@@ -8526,6 +8934,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: raw-window-handle 0.6.2
 
+Text from: `LICENSE-MIT.md`
+
 ```text
 MIT License
 
@@ -8553,6 +8963,8 @@ SOFTWARE.
 ### MIT
 
 Covers: rayon 1.12.0, rayon-core 1.13.0
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2010 The Rust Project Developers
@@ -8586,6 +8998,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: reqwest 0.13.4
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2016-2026 Sean McArthur
 
@@ -8611,6 +9025,8 @@ THE SOFTWARE.
 ### MIT
 
 Covers: rfd 0.16.0
+
+Text from: `LICENSE`
 
 ```text
 MIT License
@@ -8640,6 +9056,8 @@ SOFTWARE.
 
 Covers: rgb 0.8.53
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -8667,6 +9085,8 @@ SOFTWARE.
 ### MIT
 
 Covers: rustls-pki-types 1.15.0
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2023 Dirkjan Ochtman <dirkjan@ochtman.nl>
@@ -8700,6 +9120,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: rustls-platform-verifier 0.7.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 MIT License
 
@@ -8727,6 +9149,8 @@ SOFTWARE.
 ### MIT
 
 Covers: ruzstd 0.8.3
+
+Text from: `LICENSE`
 
 ```text
 MIT License
@@ -8756,6 +9180,8 @@ SOFTWARE.
 
 Covers: same-file 1.0.6
 
+Text from: `LICENSE-MIT`
+
 ```text
 The MIT License (MIT)
 
@@ -8784,6 +9210,8 @@ THE SOFTWARE.
 
 Covers: schemars 0.8.22, schemars_derive 0.8.22
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -8811,6 +9239,8 @@ SOFTWARE.
 ### MIT
 
 Covers: scopeguard 1.2.0
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2016-2019 Ulrik Sverdrup "bluss" and scopeguard developers
@@ -8844,6 +9274,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: security-framework 3.7.0, security-framework-sys 2.17.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 The MIT License (MIT)
 
@@ -8870,6 +9302,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### MIT
 
 Covers: serde_urlencoded 0.7.1
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2016 Anthony Ramine
@@ -8903,6 +9337,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: serialize-to-javascript 0.1.2, serialize-to-javascript-impl 0.1.2
 
+Text from: `LICENSE-MIT`
+
 ```text
 MIT License
 
@@ -8930,6 +9366,8 @@ SOFTWARE.
 ### MIT
 
 Covers: sha1 0.10.6, sha2 0.10.9
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2006-2009 Graydon Hoare
@@ -8965,6 +9403,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: sha1-checked 0.10.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2024 The RustCrypto Project Developers
 
@@ -8996,6 +9436,8 @@ DEALINGS IN THE SOFTWARE.
 ### MIT
 
 Covers: shell-words 1.1.1
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2016 Tomasz Miąsko
@@ -9029,6 +9471,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: shlex 2.0.1
 
+Text from: `LICENSE-MIT`
+
 ```text
 The MIT License (MIT)
 
@@ -9056,6 +9500,8 @@ THE SOFTWARE.
 ### MIT
 
 Covers: signal-hook 0.4.4, signal-hook-registry 1.4.8
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2017 tokio-jsonrpc developers
@@ -9089,6 +9535,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: simd-adler32 0.3.9
 
+Text from: `LICENSE.md`
+
 ```text
 MIT License
 
@@ -9116,6 +9564,8 @@ SOFTWARE.
 ### MIT
 
 Covers: slab 0.4.12
+
+Text from: `LICENSE`
 
 ```text
 Copyright (c) 2019 Carl Lerche
@@ -9149,6 +9599,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: smallvec 1.15.2
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2018 The Servo Project Developers
 
@@ -9181,6 +9633,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: smb2 0.13.1
 
+Text from: `LICENSE-MIT`
+
 ```text
 MIT License
 
@@ -9208,6 +9662,8 @@ SOFTWARE.
 ### MIT
 
 Covers: socket-pktinfo 0.4.0
+
+Text from: `LICENSE`
 
 ```text
 MIT License
@@ -9237,6 +9693,8 @@ SOFTWARE.
 
 Covers: spin 0.9.9
 
+Text from: `LICENSE`
+
 ```text
 The MIT License (MIT)
 
@@ -9264,6 +9722,8 @@ SOFTWARE.
 ### MIT
 
 Covers: stable_deref_trait 1.2.1
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2017 Robert Grosse
@@ -9297,6 +9757,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: static_assertions 1.1.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 MIT License
 
@@ -9324,6 +9786,8 @@ SOFTWARE.
 ### MIT
 
 Covers: strsim 0.11.1
+
+Text from: `LICENSE`
 
 ```text
 The MIT License (MIT)
@@ -9355,6 +9819,8 @@ SOFTWARE.
 
 Covers: strum 0.28.0, strum_macros 0.28.0
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -9383,6 +9849,8 @@ SOFTWARE.
 
 Covers: swift-rs 1.0.7
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2023 The swift-rs Developers
 
@@ -9409,6 +9877,8 @@ SOFTWARE.
 
 Covers: synstructure 0.13.2
 
+Text from: `LICENSE`
+
 ```text
 Copyright 2016 Nika Layzell
 
@@ -9422,6 +9892,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ### MIT
 
 Covers: sysinfo 0.39.6
+
+Text from: `LICENSE`
 
 ```text
 The MIT License (MIT)
@@ -9450,6 +9922,8 @@ SOFTWARE.
 ### MIT
 
 Covers: system-configuration 0.7.0, system-configuration-sys 0.6.0
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2024 Mullvad VPN AB
@@ -9483,6 +9957,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: tar 0.4.46
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) The tar-rs Project Contributors
 
@@ -9515,6 +9991,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: tauri-plugin-mcp-bridge 0.12.0
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -9542,6 +10020,8 @@ SOFTWARE.
 ### MIT
 
 Covers: tauri-winres 0.3.6
+
+Text from: `LICENSE`
 
 ```text
 The MIT License (MIT)
@@ -9578,6 +10058,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: tempfile 3.27.0, xattr 1.6.1
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2015 Steven Allen
 
@@ -9609,6 +10091,8 @@ DEALINGS IN THE SOFTWARE.
 ### MIT
 
 Covers: tendril 0.5.0
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2015 Keegan McAllister
@@ -9642,6 +10126,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: tiff 0.11.3
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -9670,6 +10156,8 @@ SOFTWARE.
 
 Covers: time 0.3.53, time-core 0.1.9, time-macros 0.2.31
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) Jacob Pratt et al.
 
@@ -9696,6 +10184,8 @@ SOFTWARE.
 
 Covers: tinyvec 1.11.0
 
+Text from: `LICENSE-MIT.md`
+
 ```text
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -9707,6 +10197,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ### MIT
 
 Covers: tinyvec_macros 0.1.1
+
+Text from: `LICENSE-MIT.md`
 
 ```text
 MIT License
@@ -9736,6 +10228,8 @@ SOFTWARE.
 
 Covers: tokio 1.52.3, tokio-stream 0.1.18, tokio-util 0.7.18
 
+Text from: `LICENSE`
+
 ```text
 MIT License
 
@@ -9763,6 +10257,8 @@ SOFTWARE.
 ### MIT
 
 Covers: tokio-macros 2.7.0
+
+Text from: `LICENSE`
 
 ```text
 MIT License
@@ -9792,6 +10288,8 @@ SOFTWARE.
 ### MIT
 
 Covers: tokio-rustls 0.26.4
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2017 quininer kel
@@ -9825,6 +10323,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: tokio-tungstenite 0.28.0
 
+Text from: `LICENSE`
+
 ```text
 Copyright (c) 2017 Daniel Abramov
 Copyright (c) 2017 Alexey Galakhov
@@ -9851,6 +10351,8 @@ THE SOFTWARE.
 ### MIT
 
 Covers: tower 0.5.3, tower-layer 0.3.3, tower-service 0.3.3
+
+Text from: `LICENSE`
 
 ```text
 Copyright (c) 2019 Tower Contributors
@@ -9884,6 +10386,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: tower-http 0.6.11, tower-http 0.7.0
 
+Text from: `LICENSE`
+
 ```text
 Copyright (c) 2019-2021 Tower Contributors
 
@@ -9915,6 +10419,8 @@ DEALINGS IN THE SOFTWARE.
 ### MIT
 
 Covers: tracing 0.1.44, tracing-attributes 0.1.31, tracing-core 0.1.36
+
+Text from: `LICENSE`
 
 ```text
 Copyright (c) 2019 Tokio Contributors
@@ -9948,6 +10454,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: try-lock 0.2.5
 
+Text from: `LICENSE`
+
 ```text
 Copyright (c) 2018-2023 Sean McArthur
 Copyright (c) 2016 Alex Crichton
@@ -9975,6 +10483,8 @@ THE SOFTWARE.
 
 Covers: tungstenite 0.28.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2017 Alexey Galakhov
 Copyright (c) 2016 Jason Housley
@@ -10001,6 +10511,8 @@ THE SOFTWARE.
 ### MIT
 
 Covers: twox-hash 2.1.2
+
+Text from: `LICENSE.txt`
 
 ```text
 The MIT License (MIT)
@@ -10030,6 +10542,8 @@ SOFTWARE.
 
 Covers: typenum 1.20.1
 
+Text from: `LICENSE-MIT`
+
 ```text
 The MIT License (MIT)
 
@@ -10058,6 +10572,8 @@ SOFTWARE.
 
 Covers: unicase 2.9.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2014-2026 Sean McArthur
 
@@ -10083,6 +10599,8 @@ THE SOFTWARE.
 ### MIT
 
 Covers: universal-hash 0.6.1
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2019-2025 RustCrypto Developers
@@ -10116,6 +10634,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: urlencoding 2.1.3
 
+Text from: `LICENSE`
+
 ```text
 © 2016 Bertram Truong
 © 2021 Kornel Lesiński
@@ -10142,6 +10662,8 @@ THE SOFTWARE.
 ### MIT
 
 Covers: urlpattern 0.3.0
+
+Text from: `LICENSE`
 
 ```text
 MIT License
@@ -10170,6 +10692,8 @@ SOFTWARE.
 ### MIT
 
 Covers: uuid 1.23.4
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2014 The Rust Project Developers
@@ -10204,6 +10728,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: uzers 0.12.2
 
+Text from: `LICENCE`
+
 ```text
 MIT License
 
@@ -10233,6 +10759,8 @@ SOFTWARE.
 
 Covers: value-ext 0.1.5
 
+Text from: `LICENSE-MIT`
+
 ```text
 The MIT License (MIT)
 
@@ -10260,6 +10788,8 @@ SOFTWARE.
 ### MIT
 
 Covers: vcpkg 0.2.15
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2017 Jim McGrath
@@ -10293,6 +10823,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: version_check 0.9.5
 
+Text from: `LICENSE-MIT`
+
 ```text
 The MIT License (MIT)
 Copyright (c) 2017-2018 Sergio Benitez
@@ -10319,6 +10851,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Covers: want 0.3.1
 
+Text from: `LICENSE`
+
 ```text
 Copyright (c) 2018-2019 Sean McArthur
 
@@ -10344,6 +10878,8 @@ THE SOFTWARE.
 ### MIT
 
 Covers: weezl 0.1.12
+
+Text from: `LICENSE-MIT`
 
 ```text
 The MIT License (MIT)
@@ -10373,6 +10909,8 @@ SOFTWARE.
 
 Covers: window-vibrancy 0.6.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 MIT License
 
@@ -10401,6 +10939,8 @@ SOFTWARE.
 
 Covers: winnow 0.5.40, winnow 0.7.15, winnow 1.0.3
 
+Text from: `LICENSE-MIT`
+
 ```text
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -10425,6 +10965,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### MIT
 
 Covers: wry 0.55.1
+
+Text from: `LICENSE-MIT`
 
 ```text
 MIT License
@@ -10454,6 +10996,8 @@ SOFTWARE.
 
 Covers: y4m 0.8.0
 
+Text from: `LICENSE`
+
 ```text
 The MIT License (MIT)
 
@@ -10482,6 +11026,8 @@ SOFTWARE.
 ### MIT
 
 Covers: zerocopy 0.8.52, zerocopy-derive 0.8.52
+
+Text from: `LICENSE-MIT`
 
 ```text
 Copyright 2023 The Fuchsia Authors
@@ -10515,6 +11061,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: zeroize 1.9.0
 
+Text from: `LICENSE-MIT`
+
 ```text
 Copyright (c) 2018-2026 The RustCrypto Project Developers
 
@@ -10547,6 +11095,8 @@ DEALINGS IN THE SOFTWARE.
 
 Covers: zip 8.6.0
 
+Text from: `LICENSE`
+
 ```text
 The MIT License (MIT)
 
@@ -10575,6 +11125,8 @@ SOFTWARE.
 
 Covers: zstd 0.13.3, zstd-safe 7.2.4, zstd-sys 2.0.16+zstd.1.5.7
 
+Text from: `LICENSE`
+
 ```text
 The MIT License (MIT)
 Copyright (c) 2016 Alexandre Bury
@@ -10589,6 +11141,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ### MIT
 
 Covers: zune-core 0.5.1, zune-jpeg 0.5.15
+
+Text from: `LICENSE-MIT`
 
 ```text
 MIT License
@@ -10617,6 +11171,8 @@ SOFTWARE.
 ### MPL-2.0
 
 Covers: cssparser 0.36.0, cssparser-macros 0.6.1
+
+Text from: `LICENSE`
 
 ```text
 Mozilla Public License Version 2.0
@@ -10998,6 +11554,8 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 
 Covers: dtoa-short 0.3.5, nucleo-matcher 0.3.1
 
+Text from: `LICENSE`
+
 ```text
 Mozilla Public License Version 2.0
 ==================================
@@ -11377,6 +11935,8 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 ### MPL-2.0
 
 Covers: option-ext 0.2.0, selectors 0.36.1
+
+Text from: `LICENSE.txt`
 
 ```text
 Mozilla Public License Version 2.0
@@ -11758,6 +12318,8 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 
 Covers: uluru 3.1.0
 
+Text from: `LICENSE`
+
 ```text
  Mozilla Public License Version 2.0
 ==================================
@@ -12138,6 +12700,8 @@ defined by the Mozilla Public License, v. 2.0.
 
 Covers: icu_collections 2.2.0, icu_locale_core 2.2.0, icu_normalizer 2.2.0, icu_normalizer_data 2.2.0, icu_properties 2.2.0, icu_properties_data 2.2.0, icu_provider 2.2.0, litemap 0.8.2, potential_utf 0.1.5, tinystr 0.8.3, writeable 0.6.3, yoke 0.8.3, yoke-derive 0.8.2, zerofrom 0.1.8, zerofrom-derive 0.1.7, zerotrie 0.2.4, zerovec 0.11.6, zerovec-derive 0.11.3
 
+Text from: `LICENSE`
+
 ```text
 UNICODE LICENSE V3
 
@@ -12191,6 +12755,8 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 
 Covers: unicode-ident 1.0.24
 
+Text from: `LICENSE-UNICODE`
+
 ```text
 UNICODE LICENSE V3
 
@@ -12237,6 +12803,8 @@ authorization of the copyright holder.
 
 Covers: foldhash 0.2.0
 
+Text from: `LICENSE`
+
 ```text
 Copyright (c) 2024 Orson Peters
 
@@ -12263,6 +12831,8 @@ the following restrictions:
 
 Covers: zlib-rs 0.6.5
 
+Text from: `LICENSE`
+
 ```text
 (C) 2024 Trifecta Tech Foundation 
 
@@ -12288,6 +12858,8 @@ freely, subject to the following restrictions:
 ### bzip2-1.0.6
 
 Covers: libbz2-rs-sys 0.2.5
+
+Text from: `LICENSE`
 
 ```text
 

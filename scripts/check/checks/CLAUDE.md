@@ -35,22 +35,23 @@ For the runner architecture (parallel executor, dependency graph, CLI flags, fre
   (section delimiters, line-anchored regexes for harness noise), never by max-line count. See DETAILS.md "E2E failure
   output" and "cargo test output" decisions for the section-aware patterns to follow.
 - **Pin every tool install.** `EnsureGoTool` `installPath` pins `@vX.Y.Z` (never `@latest`); `cargo install` pins both
-  `--version` and `--locked`. Every operational `cargo` command in a check passes `--locked`. Unpinned installs let a
-  compromised tool repo auto-propagate to every fresh checkout. Toolchains count too: `cargo-udeps` runs on the dated
-  nightly in `desktop-rust-cargo-udeps.go`'s `nightlyToolchain`, the single source CI reads via `check --print-nightly`.
-  Bump procedure: DETAILS.md "Bumping the pinned nightly".
+  `--version` and `--locked`; a downloaded prebuilt binary pins its sha256 (`desktop-third-party-notices.go`). Every
+  operational `cargo` command in a check passes `--locked`. Unpinned installs let a compromised tool repo auto-propagate
+  to every fresh checkout. Toolchains count too: `cargo-udeps` runs on the dated nightly in
+  `desktop-rust-cargo-udeps.go`'s `nightlyToolchain`, the single source CI reads via `check --print-nightly`. Bump
+  procedure: DETAILS.md "Bumping the pinned nightly".
 - **Wire allowlist staleness from day one.** If a check grows an allowlist or an opt-out comment, dead entries must
   auto-remove or fail, and orphaned opt-out comments must fail. Reuse `directiveTracker` / `writeJSONAllowlist`. Agents
   never add or raise an allowlist entry (file-length, e2e-duration, bundle-size baseline) without David's OK.
 - **Error output uses `indentOutput()`**: `fmt.Errorf("check failed\n%s", indentOutput(output))`. Success messages carry
   useful stats ("12 tests passed"), not generic "OK". Return `Skipped(reason)` when a check can't run,
   `SuccessWithChanges` when it made local fixes (CI mode must still error on the same drift).
-- **`svelte-tests` coverage runs in a private per-invocation temp `reportsDirectory`** (via `VITEST_COVERAGE_DIR`), not
-  the shared `apps/desktop/coverage/`. Don't revert to a fixed path: concurrent runs clobber each other's in-flight v8
-  worker files (`ENOENT`). See DETAILS.md "svelte-tests coverage isolation".
+- **`svelte-tests` coverage runs in a per-invocation temp `reportsDirectory`** (via `VITEST_COVERAGE_DIR`), not the
+  shared `apps/desktop/coverage/`. A fixed path lets concurrent runs clobber each other's in-flight v8 worker files
+  (`ENOENT`). See DETAILS.md "svelte-tests coverage isolation".
 - After authoring, run `pnpm check go-vet staticcheck` (staticcheck is strict about idiomatic Go), and update the "Apps
-  and check counts" table in DETAILS.md. `--fast` membership is just the `IsFast` field in `registry.go` (editorially
-  curated), so there's no separate list anywhere to keep in sync.
+  and check counts" table in DETAILS.md. `--fast` membership is just `IsFast` in `registry.go`, editorially curated, so
+  no separate list needs keeping in sync.
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

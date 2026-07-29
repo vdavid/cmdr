@@ -134,6 +134,143 @@ func TestRenderNoticesIsDeterministic(t *testing.T) {
 	}
 }
 
+func TestCrateRelativeSourceStripsTheRegistryPrefix(t *testing.T) {
+	// The whole point: two machines must render the same line. An absolute path
+	// would bake in a home directory and a registry index hash, so the file
+	// could never match between a Mac and the Linux runner.
+	cases := []struct {
+		name  string
+		given string
+		want  string
+	}{
+		{
+			name:  "registry crate",
+			given: "/Users/someone/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/miniz_oxide-0.8.9/LICENSE-MIT.md",
+			want:  "LICENSE-MIT.md",
+		},
+		{
+			name:  "vendored file nested inside a registry crate",
+			given: "/home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libmimalloc-sys-0.1.49/c_src/mimalloc/v2/LICENSE",
+			want:  "c_src/mimalloc/v2/LICENSE",
+		},
+		{
+			name:  "workspace crate resolves against the repo instead",
+			given: "/repo/crates/fsevent-stream/LICENSE",
+			want:  "crates/fsevent-stream/LICENSE",
+		},
+		{
+			name:  "a clarified crate already reports crate-relative",
+			given: "LICENSE.txt",
+			want:  "LICENSE.txt",
+		},
+		{
+			name:  "no source file at all",
+			given: "",
+			want:  "",
+		},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			if got := crateRelativeSource(testCase.given, "/repo"); got != testCase.want {
+				t.Errorf("got %q, want %q", got, testCase.want)
+			}
+		})
+	}
+}
+
+func TestCrateRelativeSourceFallsBackToTheFileName(t *testing.T) {
+	// Somewhere neither under the repo nor in a registry: still no absolute
+	// path in the generated file.
+	if got := crateRelativeSource("/somewhere/else/LICENSE", "/repo"); got != "LICENSE" {
+		t.Errorf("got %q, want %q", got, "LICENSE")
+	}
+}
+
+func TestVerifyClarificationsAcceptsThePinnedFiles(t *testing.T) {
+	sources := map[string][]string{}
+	for _, clarification := range licenseClarifications {
+		for _, file := range clarification.files {
+			sources[clarification.crate] = append(sources[clarification.crate], file.path)
+		}
+	}
+	if err := verifyClarifications(sources); err != nil {
+		t.Errorf("the real pins should verify against their own files, got: %v", err)
+	}
+}
+
+func TestVerifyClarificationsCatchesASilentFallBackToScanning(t *testing.T) {
+	// What a stale checksum looks like from here: cargo-about warned, exited 0,
+	// scanned the crate, and picked a different file. Left unchecked, the
+	// notices file goes back to differing between macOS and CI.
+	sources := map[string][]string{}
+	for _, clarification := range licenseClarifications {
+		for _, file := range clarification.files {
+			sources[clarification.crate] = append(sources[clarification.crate], file.path)
+		}
+	}
+	sources["miniz_oxide"] = []string{"LICENSE-MIT.md"}
+
+	err := verifyClarifications(sources)
+	if err == nil {
+		t.Fatal("expected a failure when a pinned crate's text came from another file")
+	}
+	if !strings.Contains(err.Error(), "miniz_oxide") {
+		t.Errorf("the failure should name the crate to fix, got: %v", err)
+	}
+}
+
+func TestVerifyClarificationsCatchesACrateThatDroppedAFile(t *testing.T) {
+	// libmimalloc-sys pins two files because two copyright holders ship code in
+	// the binary. Crediting only one of them is a regression, not a rounding.
+	sources := map[string][]string{
+		"libmimalloc-sys": {"LICENSE.txt"},
+		"miniz_oxide":     {"LICENSE"},
+	}
+	if err := verifyClarifications(sources); err == nil {
+		t.Error("expected a failure when a pinned file stopped contributing a text")
+	}
+}
+
+func TestRenderClarificationsCarriesEveryPinnedChecksum(t *testing.T) {
+	// A file with no checksum would be written without one, and cargo-about
+	// rejects that outright — but silently missing a checksum in the map is the
+	// kind of thing a rename does quietly.
+	rendered := renderClarifications()
+	for _, clarification := range licenseClarifications {
+		for _, file := range clarification.files {
+			checksum, ok := clarificationChecksums[clarification.crate+"/"+file.path]
+			if !ok || checksum == "" {
+				t.Errorf("no checksum pinned for %s/%s", clarification.crate, file.path)
+				continue
+			}
+			if !strings.Contains(rendered, checksum) {
+				t.Errorf("rendered config omits the checksum for %s/%s", clarification.crate, file.path)
+			}
+		}
+		if !strings.Contains(rendered, "["+clarification.crate+".clarify]") {
+			t.Errorf("rendered config omits the [%s.clarify] section", clarification.crate)
+		}
+	}
+}
+
+func TestRenderNoticesNamesTheFileEachTextCameFrom(t *testing.T) {
+	rust := rustCollection{
+		texts: []licenseText{
+			{ID: "MIT", Text: "Copyright", SourcePath: "c_src/mimalloc/v2/LICENSE", UsedBy: []string{"libmimalloc-sys 0.1.49"}},
+			{ID: "MIT", Text: "Other", UsedBy: []string{"synthesized 1.0"}},
+		},
+	}
+	out := string(renderNotices(rust, nil))
+
+	if !strings.Contains(out, "Text from: `c_src/mimalloc/v2/LICENSE`") {
+		t.Errorf("expected the source file to be named, got:\n%s", out)
+	}
+	// A text cargo-about synthesized rather than read has no file to name.
+	if strings.Contains(out, "Text from: ``") {
+		t.Error("rendered an empty source path")
+	}
+}
+
 func TestFirstNonEmpty(t *testing.T) {
 	if got := firstNonEmpty("", "second", "third"); got != "second" {
 		t.Errorf("got %q, want %q", got, "second")
