@@ -10,6 +10,8 @@ code under here.
   matching `--spacing-*` / `--font-size-*` / `--radius-*` token (or `z-index` ≥ 10, or a non-token `font-family`):
   stylelint's `declaration-property-value-disallowed-list` flags exactly those values, so use the token. Token-less
   values (1px borders, negative nudges, display font sizes) may stay raw, with a `stylelint-disable` + `-- reason`.
+- Global CSS is `app.css` (tokens, base) plus `app-field` / `app-utilities` / `app-tooltip`, which
+  `routes/+layout.svelte` loads AFTER it. Never `@import` those three: that hoists and inverts the cascade.
 - A translucent / frosted-glass surface MUST degrade when "reduce transparency" is on. Key the opaque fallback off the
   `html.reduce-transparency` CLASS, NOT `@media (prefers-reduced-transparency)` — WKWebView never reflects that media
   query (it parses it and reflects `prefers-color-scheme`, but not this one), so the class is toggled from the backend

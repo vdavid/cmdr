@@ -1,0 +1,96 @@
+/* Class-per-value utilities (size tier, date age, spinner), extracted from
+   app.css for length.
+
+   Loaded AFTER app.css by `routes/+layout.svelte`, never @imported (an @import
+   hoists to the top of the sheet, which would put these rules BEFORE the base
+   styles they sit after). See apps/desktop/src/DETAILS.md § Global stylesheets. */
+
+/* =============================================================================
+   Size tier color utility classes (used dynamically via class bindings)
+   ============================================================================= */
+
+.size-bytes {
+  color: var(--color-size-bytes);
+}
+
+.size-kb {
+  color: var(--color-size-kb);
+}
+
+.size-mb {
+  color: var(--color-size-mb);
+}
+
+.size-gb {
+  color: var(--color-size-gb);
+}
+
+.size-tb {
+  color: var(--color-size-tb);
+}
+
+/* =============================================================================
+   Date age tier color utility classes (used dynamically via class bindings)
+   ============================================================================= */
+
+.age-fresh {
+  color: var(--color-age-fresh);
+}
+
+.age-recent {
+  color: var(--color-age-recent);
+}
+
+.age-aging {
+  color: var(--color-age-aging);
+}
+
+.age-old {
+  color: var(--color-age-old);
+}
+
+/* =============================================================================
+   Spinner utility classes
+   ============================================================================= */
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  display: inline-block;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border-style: solid;
+  border-color: var(--color-border);
+  border-top-color: var(--color-accent);
+  animation: spin 0.8s linear infinite;
+}
+
+.spinner-sm {
+  width: 12px;
+  height: 12px;
+  border-width: 2px;
+}
+
+.spinner-md {
+  width: 24px;
+  height: 24px;
+  border-width: 2.5px;
+}
+
+.spinner-lg {
+  width: 32px;
+  height: 32px;
+  border-width: 2.5px;
+}
+
+/* Respect reduced-motion: stop the spin and show a static accent-topped ring instead. The
+   accent-colored top border still reads as a "busy" affordance without any rotation. */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
