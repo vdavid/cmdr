@@ -76,7 +76,6 @@
     "apps/desktop/src/lib/file-operations/transfer/TransferDialog.svelte": 976,
     "apps/desktop/src/lib/file-operations/transfer/TransferDialog.test.ts": 861,
     "apps/desktop/src/lib/file-operations/transfer/transfer-progress-state.svelte.ts": 1122,
-    "apps/desktop/src/lib/query-ui/QueryDialog.svelte": 975,
     "apps/desktop/src/lib/search/SearchDialog.svelte.test.ts": 1179,
     "apps/desktop/src/routes/(main)/+page.svelte": 854,
     "apps/desktop/src/routes/(main)/command-dispatch.characterization.test.ts": 871,

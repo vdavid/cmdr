@@ -86,6 +86,34 @@ export function buildAiSummary(input: AiSummaryInput): AiSummary {
   }
 }
 
+/** The four slots a produced pattern can live in, in the order the strip prefers them. */
+export interface AiPatternInput {
+  /** The consumer's dedicated Pattern-chip slot (`filterChipsExtras.aiPattern`). */
+  extrasPattern: string | null
+  extrasPatternKind: 'glob' | 'regex' | null
+  /** The `regex` hand-typed buffer, the fallback the matcher would reach for first. */
+  regexBuffer: string
+  /** The `filename` hand-typed buffer. */
+  globBuffer: string
+}
+
+/**
+ * The AI-produced pattern for the transparency strip, with its kind.
+ *
+ * Search exposes the precise pattern + kind via its dedicated Pattern-chip slot. Selection
+ * has no Pattern chip and passes `null` there, but its `translateAi` clears the other-kind
+ * `handTyped` buffer, so reading those buffers (regex first, matching the matcher's
+ * precedence) is kind-correct as the fallback.
+ */
+export function resolveAiPattern(input: AiPatternInput): { pattern: string | null; kind: 'glob' | 'regex' | null } {
+  if (input.extrasPattern?.trim()) {
+    return { pattern: input.extrasPattern, kind: input.extrasPatternKind }
+  }
+  if (input.regexBuffer.trim()) return { pattern: input.regexBuffer, kind: 'regex' }
+  if (input.globBuffer.trim()) return { pattern: input.globBuffer, kind: 'glob' }
+  return { pattern: null, kind: null }
+}
+
 /** The label for the pattern row: names the flavor when known, falls back to "Pattern". */
 export function patternRowLabel(patternKind: 'glob' | 'regex' | null): string {
   if (patternKind === 'regex') return tString('queryUi.ai.patternLabel.regex')

@@ -42,6 +42,31 @@ callbacks for path-pill / example / row-menu / recent-activate / recent-remove /
 `onDestroy` / `onClearState` hooks, and an optional `resultsExtra` snippet (a consumer-owned section rendered below the
 results table, owning its own data + lifecycle — Search's "text in images" OCR grid; other consumers omit it).
 
+### The controller split
+
+`QueryDialog.svelte` holds the wiring and the layout; four siblings hold the behavior, each with its own unit tests.
+The component keeps only what genuinely needs the component: the `$derived` readers off `config.state`, the two
+`$effect`s, the mount/destroy hooks, the DOM refs, and the template.
+
+- **`query-runner.svelte.ts`** — everything between "the user wants results" and "state holds them": the nothing-to-run
+  guard, the auto-apply debounce and its gates, the IME guard, `executeQuery`, the `runAiSearch` round-trip, and the
+  `hasSearched` / `highlightedFields` flags the template renders off. Also exports two pure helpers the component's
+  effects call, `hasRunnableQuery(state)` and `shouldShowRunHint(...)`.
+- **`recent-popover.svelte.ts`** — the dropdown's open flag plus its focus-restore rules (`close()` defers a frame and
+  yields to whoever claimed focus; `closeAndFocus()` waits a tick past the popover's own focus trap).
+- **`query-shortcuts.ts`** — pure key routing: `matchKey` (modifier-superset rejection + the macOS Option-glyph `code`
+  fallback), `modeForShortcutNumber`, and `routeModifierShortcut(e, handlers)`.
+- **`result-actions.ts`** — what ⏎ / ⌥⏎ / a row click / the footer buttons do with the current result set, including
+  the Selection-style "no secondary action" fallback.
+
+`createQueryRunner` takes `getConfig`, a GETTER, not a config value. Consumers build `config` in a `$derived`, so it's
+a fresh object on every reactive change; a captured reference would freeze gates like `isIndexReady` and
+`inputsDisabled` at their mount-time values. Same rule for any future controller extracted from here.
+
+The runner's `highlightedFields` is ONE `SvelteSet` mutated in place, never reassigned. `SvelteSet` is reactive per key,
+so a reader that called `.has('query')` stays subscribed to the instance it read; swapping in a fresh set leaves every
+reader watching the old one and the AI flash silently stops repainting.
+
 ### Ownership contracts
 
 Three pieces of state are QueryDialog's alone; the consumer's callbacks MUST NOT write to them:
@@ -245,6 +270,13 @@ IME guard, and the `lastDialogEvent` ownership. `QueryDialog.a11y.test.ts` runs 
 AI-on against a minimal Search-shaped config. Search's full integration tests live in
 `lib/search/SearchDialog.svelte.test.ts` and `lib/search/SearchDialog.a11y.test.ts` and they mount QueryDialog through
 the Search wrapper.
+
+The four controller modules carry their own suites (`query-runner.test.ts`, `recent-popover.test.ts`,
+`query-shortcuts.test.ts`, `result-actions.test.ts`), which is where a rule is cheapest to pin: the nothing-to-run
+guard, the auto-apply gate chain, the spinner clearing on every AI early return, the Option-glyph remap, and the
+no-secondary fallbacks all get asserted without mounting a dialog. They build their config from `test-helpers.ts`
+(`makeQueryDialogConfig`), the minimal Search-shaped fixture; the mounted-dialog tests keep their own richer one
+because they record call transcripts.
 
 ## Files
 
@@ -478,8 +510,9 @@ makes that possible; see § Chrome.
 (default on). AI mode never auto-applies regardless: AI calls cost money and the user must explicitly opt in via Enter /
 `⌘Enter` / the `⏎` run button. Constant `SEARCH_AUTO_APPLY_DEBOUNCE_MS = 1000` lives in `query-filter-state.svelte.ts`.
 
-**Auto-apply gates**: `scheduleSearch()` returns early in three cases:
+**Auto-apply gates**: `scheduleSearch()` returns early in four cases:
 
+0. `!hasRunnableQuery()`: nothing to ask, and the previous run's rows get dropped (§ Nothing to run is not a run).
 1. `mode === 'ai'`: AI never auto-applies.
 2. `search.autoApply === false`: the user runs every search explicitly.
 3. IME composition is in progress.

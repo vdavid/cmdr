@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildAiSummary, patternRowLabel, type AiSummaryInput } from './ai-summary'
+import { buildAiSummary, patternRowLabel, resolveAiPattern, type AiSummaryInput } from './ai-summary'
 
 function baseInput(overrides: Partial<AiSummaryInput> = {}): AiSummaryInput {
   return {
@@ -82,5 +82,37 @@ describe('patternRowLabel', () => {
     expect(patternRowLabel('glob')).toBe('Glob')
     expect(patternRowLabel('regex')).toBe('Regex')
     expect(patternRowLabel(null)).toBe('Pattern')
+  })
+})
+
+describe('resolveAiPattern', () => {
+  const empty = { extrasPattern: null, extrasPatternKind: null, regexBuffer: '', globBuffer: '' }
+
+  it('prefers the dedicated Pattern-chip slot the consumer passes, kind and all', () => {
+    expect(
+      resolveAiPattern({ ...empty, extrasPattern: '*.heic', extrasPatternKind: 'glob', regexBuffer: '\\.png$' }),
+    ).toEqual({ pattern: '*.heic', kind: 'glob' })
+  })
+
+  it('falls back to the regex buffer before the glob one, matching the matcher order', () => {
+    expect(resolveAiPattern({ ...empty, regexBuffer: '\\.png$', globBuffer: '*.png' })).toEqual({
+      pattern: '\\.png$',
+      kind: 'regex',
+    })
+  })
+
+  it('falls back to the glob buffer when there is no regex', () => {
+    expect(resolveAiPattern({ ...empty, globBuffer: '*.png' })).toEqual({ pattern: '*.png', kind: 'glob' })
+  })
+
+  it('treats whitespace-only slots as absent', () => {
+    expect(resolveAiPattern({ ...empty, extrasPattern: '   ', regexBuffer: '  ', globBuffer: '   ' })).toEqual({
+      pattern: null,
+      kind: null,
+    })
+  })
+
+  it('reports nothing for a filter-only translation', () => {
+    expect(resolveAiPattern(empty)).toEqual({ pattern: null, kind: null })
   })
 })
