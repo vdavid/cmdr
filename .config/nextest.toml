@@ -210,6 +210,40 @@ fail-fast = false
 # = 8 s × 1 = kill after 8 s of wall-clock.
 slow-timeout = { period = "8s", terminate-after = 1 }
 
+# ── Contention re-run profiles ───────────────────────────────────────────────
+# Used ONLY by the check runner when a run goes red, to tell a starved test from a
+# genuinely slow or broken one. Never select them by hand for a normal run.
+# Mechanics: `scripts/check/checks/rust-test-contention.go`.
+
+[profile.contention-probe]
+# Stage 1: re-run just the failing tests, ALONE, with every deadline exactly as the
+# failing run had them (hence `inherits`, which carries the per-test overrides above).
+# Changing nothing but the parallelism is what makes a pass here mean "the suite was
+# starving it" rather than "we gave it more time".
+inherits = "default"
+test-threads = 1
+retries = 0
+fail-fast = false
+
+[profile.contention-retry]
+# Stage 2: only for tests stage 1 could NOT clear. Grants headroom to separate "got
+# slower" from "broken".
+#
+# ❌ Deliberately NO `inherits`: an inherited per-test override BEATS a profile-level
+# `slow-timeout` (verified against nextest 0.9.136, 2026-07-29: a test with a 4 s
+# override still died at 4 s under a profile declaring 30 s). Inheriting would silently
+# keep the tight caps this stage exists to lift. The cost is that the per-test overrides
+# above don't apply here, which is correct: 40 s is already above all of them except the
+# SMB ones, and the SMB lane isn't re-run this way.
+#
+# 40 s is ~40x a healthy test and 5x the global cap: enough that only a genuine hang
+# fails, while bounding the pathological case (15 hung tests) to ~10 minutes.
+test-threads = 1
+retries = 0
+fail-fast = false
+failure-output = "immediate"
+slow-timeout = { period = "40s", terminate-after = 1 }
+
 [profile.ci]
 # Inherit from default profile
 inherits = "default"

@@ -199,8 +199,12 @@ func DiagnoseRustFailures(failures []RustFailure) string {
 		{ClassOther, "Ordinary assertion or panic:"},
 	}
 
+	// Leaks are a nextest PASS status ("N passed (M leaky)"), so they're reported but
+	// never counted as failures: doing so overstates how red a run actually was.
+	realCount := len(RealFailures(failures))
+
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("Diagnosis of %d failing %s:\n", len(failures), Pluralize(len(failures), "test", "tests")))
+	b.WriteString(fmt.Sprintf("Diagnosis of %d failing %s:\n", realCount, Pluralize(realCount, "test", "tests")))
 	for _, g := range groups {
 		var members []RustFailure
 		for _, f := range failures {

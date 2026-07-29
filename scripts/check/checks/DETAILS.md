@@ -393,6 +393,38 @@ Gotchas for anyone touching this:
   `apps/desktop/src-tauri/src/test_support.rs`. Nothing but `TestWaitUntilPanicFormatStillMatchesTheClassifier` ties the
   two languages together; without it, rewording the panic would silently downgrade every `wait_until` timeout to
   `ClassOther`. Don't delete that test.
+- **Leaks are a PASS, not a failure.** nextest counts a leaky test in its "N passed (M leaky)" tally, so `RealFailures`
+  drops them before anything re-runs or counts failures. Treating a leak as a failure both overstates a red run and
+  sends the contention re-run chasing a test that passed.
+
+## The contention re-run (`rust-test-contention.go`)
+
+`desktop-rust-tests` doesn't believe a red run until it has re-run the failures alone. Rationale, the four verdicts, and
+the reporting contract are in `docs/testing.md`; this section is the mechanics.
+
+Two stages, both serialized (`test-threads = 1`), driven by two nextest profiles in `.config/nextest.toml`:
+
+- **`contention-probe`** `inherits = "default"`, so every deadline (including the per-test overrides) is exactly what
+  the failing run had. Only the parallelism changes. That's what makes a pass here mean "starved" rather than "given
+  more time".
+- **`contention-retry`** runs only what stage 1 couldn't clear, with a 40 s cap.
+
+Gotchas:
+
+- **`contention-retry` deliberately has no `inherits`.** An inherited per-test override BEATS a profile-level
+  `slow-timeout`: verified against nextest 0.9.136 (2026-07-29), a test carrying a 4 s override still died at 4 s under
+  a profile declaring 30 s. Inheriting would silently keep the tight caps this stage exists to lift. The cost, losing
+  the per-test overrides, is fine: 40 s already exceeds all of them except the SMB ones, and the SMB lane isn't re-run
+  this way.
+- **A non-zero cargo exit during a re-run is expected**, because failing tests are the whole point. `nextestRanRE`
+  (nextest's `Summary [` line) distinguishes "tests ran and some failed" from "cargo couldn't run at all". Only the
+  latter is a runner error, and it marks every verdict real rather than inventing an excuse for a red run.
+- **A runner error never softens a verdict.** Both `ClassifyContention` error paths fall through to `VerdictReal`. The
+  re-run may only ever make a red run _more_ explained, never quietly greener.
+- **The 15-test cap is disclosed, not silent** (`ContentionSkippedNote`), per the "no length-based truncation" rule
+  above applied to sampling: a bounded look must never read as a full one.
+- Worst case cost is bounded at roughly 15 × (8 s + 40 s) ≈ 12 minutes, which only happens if 15 tests genuinely hang.
+  Measured reality: a 10-failure saturated run resolved in 2m51s total against a 2m0s idle baseline.
 
 ## Apps and check counts
 

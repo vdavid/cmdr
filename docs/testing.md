@@ -224,6 +224,31 @@ raw output that sorts every failing test into:
 Reach for the cap only when the first class shows up. Guessing between these is how a deflaking pass ends up tuning the
 knob that wasn't binding. The parsing lives in `scripts/check/checks/rust-test-diagnostics.go`.
 
+### A red run re-runs its failures alone before believing them
+
+On a saturated machine the 8 s cap kills CPU-bound tests that pass easily on an idle one. Measured 2026-07-29 on an M3
+Max at load ~198, a full run produced 13 failures, nine of them cap kills of pure-compute tests
+(`find_newlines_utf8_matches_memchr`, `walk_memory_tests::*`, `tar_each_codec_round_trips_a_file`). Nothing was wrong
+with those tests; they could not get 8 s of wall-clock while 200 threads fought over 16 cores.
+
+Loosening the cap globally would cost every idle run its hang detector, so `rust-tests` instead re-runs **only** the
+failing tests, alone, and lets the outcome speak:
+
+- **Passes alone at the unchanged deadline** → the suite was starving it. Contention, not a defect.
+- **Fails alone, passes with headroom, machine quiet** → real slowness. Tweak the test or give it an explicit per-test
+  override. This one fails the run.
+- **Fails alone, passes with headroom, machine still busy** → inconclusive. Starvation and slowness can't be told apart,
+  so neither is claimed; re-run on a quiet machine to settle it.
+- **Fails alone even with headroom** → a genuine failure. Always red, whatever the load.
+
+Only the first and third soften the result, and only to a **warn**, never a pass. Load is never the gate: the isolated
+re-run is. Load enters at exactly one point, demoting the "needed headroom" verdict to inconclusive, because that is the
+only verdict whose meaning depends on a quiet machine.
+
+The re-run is capped at 15 tests. Past that the machine was too loaded for any of it to mean anything, and the output
+says so rather than quietly examining a subset. Mechanics and the two nextest profiles it drives:
+`scripts/check/checks/rust-test-contention.go`.
+
 ### ❌ Raw `tauri::invoke('command_name', …)` outside the typed bindings
 
 Use `commands.commandName(args)` from `apps/desktop/src/lib/ipc/`. Enforced by `cmdr/no-raw-tauri-invoke` ESLint rule
