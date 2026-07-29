@@ -538,6 +538,12 @@ A small pill button with two variants:
 - `recent`: a denser history pill with a leading mode badge (via the `leading` snippet) and a middle-truncated label.
   Activates on click; `onContextMenu` handles right-click "remove from history". No popover ARIA, no clear.
 
+**The `filter` variant is sized to `ToggleGroup`.** Same padding (`--spacing-xs` / `--spacing-md`) at the same
+`--font-size-md` + `line-height: 1`, so a chip and a segmented control in the same strip resolve to the same height
+(24px: 4 + 14 + 4 plus 1px of border each side). The filter-chip strip relies on that — it puts the Type `ToggleGroup`
+and the chips shoulder to shoulder. If `ToggleGroup`'s cell padding moves, move this with it. The `recent` variant keeps
+its own tighter padding on purpose: it stacks in a history list, not beside segmented controls.
+
 Props: `variant?`, `label` (required), `value?`, `configured?`, `isOpen?`, `disabled?`, `highlighted?`, `onActivate`
 (required), `onClear?`, `onContextMenu?`, `ariaLabel?`, `tooltipContent?` (a `TooltipParam`), `leading?` (Snippet),
 `chipElement?` (bindable button ref). The two variants render through `class:chip-filter` / `class:chip-recent`

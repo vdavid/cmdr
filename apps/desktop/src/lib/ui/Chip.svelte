@@ -156,13 +156,19 @@
             color var(--transition-base);
     }
 
-    /* === Filter chip: opens a popover. Slightly larger type for the calmer chip strip. === */
+    /* === Filter chip: opens a popover. Slightly larger type for the calmer chip strip. ===
+       Padding is `ToggleGroup`'s `.tg-item` padding, and at the same `--font-size-md` +
+       `line-height: 1` the two land on the same height (4 + 14 + 4 + 2 px of border), which
+       is what lets a chip sit beside the Type toggle in the filter strip without either
+       looking like the odd one out. Change one, change the other. */
     .chip-filter {
-        padding: var(--spacing-xxs) var(--spacing-sm);
+        padding: var(--spacing-xs) var(--spacing-md);
         font-size: var(--font-size-md);
     }
 
-    /* === Recent pill: denser, with a truncating label and a capped width. === */
+    /* === Recent pill: deliberately denser than the filter chip (it stacks in a history
+       list, not in a strip beside segmented controls), with a truncating label and a
+       capped width. === */
     .chip-recent {
         padding: var(--spacing-xxs) var(--spacing-sm);
         font-size: var(--font-size-sm);

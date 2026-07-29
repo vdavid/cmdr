@@ -460,13 +460,14 @@
 {/if}
 
 <style>
+    /* The strip sits on the dialog's own surface: no band fill, no top hairline.
+       The single bottom hairline is the seam into the results well below, which
+       carries the only surface flip left in the dialog. */
     .filter-chip-strip {
         display: flex;
         align-items: center;
-        gap: var(--spacing-xs);
+        gap: var(--spacing-sm);
         padding: var(--spacing-sm) var(--spacing-dialog);
-        background: var(--color-bg-secondary);
-        border-top: 1px solid var(--color-border-subtle);
         border-bottom: 1px solid var(--color-border-subtle);
         flex-wrap: wrap;
     }
