@@ -77,7 +77,7 @@
     onclose={onClose}
     fillBody
     padded={false}
-    containerStyle="width: 644px; min-width: 644px; max-width: 644px; height: 80vh"
+    containerStyle="width: 515px; min-width: 515px; max-width: 515px; height: 80vh"
 >
     {#snippet title()}
         <span id="acknowledgements-title">{tString('licensing.acknowledgements.srTitle')}</span>
@@ -175,8 +175,11 @@
            driven by the worst case (aws-lc-sys carries a ~130-char SPDX `AND`/`OR`
            expression), which starved the name track down to a few percent. Each
            track still shrinks below its cap when the content is shorter. */
-        grid-template-columns: minmax(0, 1fr) minmax(0, 10%) minmax(0, 20%);
+        grid-template-columns: minmax(0, 1fr) minmax(0, 10%) minmax(0, 30%);
         column-gap: var(--spacing-lg);
+        /* Pulled out so the striped rows' own inset lands their text back in line
+           with the headings and the dialog title. */
+        margin-inline: calc(var(--spacing-sm) * -1);
     }
 
     .packages > h3,
@@ -185,7 +188,9 @@
     }
 
     h3 {
-        margin: var(--spacing-xl) 0 var(--spacing-sm);
+        /* Matches the rows' horizontal inset, cancelling `.packages`' negative
+           margin so headings and rows share a left edge. */
+        margin: var(--spacing-xl) var(--spacing-sm) var(--spacing-sm);
         font-size: var(--font-size-md);
         font-weight: 600;
         color: var(--color-text-primary);
@@ -204,8 +209,16 @@
         display: grid;
         grid-template-columns: subgrid;
         align-items: baseline;
-        padding: var(--spacing-xxs) 0;
+        padding: var(--spacing-xxs) var(--spacing-sm);
+        border-radius: var(--radius-sm);
         font-size: var(--font-size-sm);
+    }
+
+    /* Zebra striping, to keep the eye on one row across three columns.
+       `--color-bg-stripe` is translucent by design, so it composites over
+       whatever sits behind the dialog and works in both modes. */
+    .package-list li:nth-child(even) {
+        background: var(--color-bg-stripe);
     }
 
     /* Resting rows stay clean: hundreds of permanently underlined names read as
