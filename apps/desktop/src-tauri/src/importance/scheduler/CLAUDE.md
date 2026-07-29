@@ -21,9 +21,11 @@ incremental). The volume-kind policy and the floor doctrine are in `../CLAUDE.md
 - **Incremental writes at the CURRENT generation, does NOT bump it, and NEVER escalates to a full pass.** It clears each
   changed subtree, then re-inserts only non-floored folders — ❌ never narrow `is_in_changed_subtree` or widen the clear
   list on their own, the two must stay on the SAME `changed_paths` slice or the clear deletes rows nothing re-adds.
-  `sanitize_incremental_batch` drops the bare `/` — ❌ don't reintroduce a `/` ⇒ full-pass escalation, which pegged a
-  core with back-to-back recomputes. Throttled to ≤1 walk per `INCREMENTAL_THROTTLE_WINDOW` (60 s), leading edge first.
-  Ancestor rescoping is capped at `ANCESTOR_WALK_CAP` (32).
+  `sanitize_incremental_batch` gates the batch BEFORE the read pool and the walk, dropping the bare `/`, empties, and
+  every FLOORED path (that last one is the idle floor: build output and caches can't score, so a batch of only churn
+  costs nothing — ❌ don't remove it, it's what stops a pass a minute forever). ❌ Don't reintroduce a `/` ⇒ full-pass
+  escalation, which pegged a core with back-to-back recomputes. Throttled to ≤1 walk per `INCREMENTAL_THROTTLE_WINDOW`
+  (60 s), leading edge first. Ancestor rescoping is capped at `ANCESTOR_WALK_CAP` (32).
 - **The batch's cost is set by what `dir-changed` carries: ORIGIN dirs, never their ancestors** (contract in
   `../../indexing/lifecycle/CLAUDE.md`). One ancestor in a batch rescores its whole subtree, which is how a two-folder
   change once rewrote ~90 k rows a minute. A floor transition reaches a renamed folder through its PARENT origin, so the

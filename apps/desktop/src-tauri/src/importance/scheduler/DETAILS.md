@@ -185,6 +185,29 @@ An incremental pass writes its rows at the CURRENT generation and does NOT bump 
 untouched folder keeps its as-of marker and the volume doesn't turn wholesale-stale after a one-file change. Only a full
 pass advances the generation.
 
+### The batch gate (the idle floor)
+
+`sanitize_incremental_batch` runs FIRST in `run_incremental_blocking`, before the read pool opens and before the walk,
+and an empty result returns `Ok(0)` immediately. It drops three kinds of path:
+
+- the bare root `/` and empty strings (below);
+- anything **floored by path** — `target`, `node_modules`, `.git`, `Library/Caches`, any dot-directory. A floored folder
+  gets NO row and floors its whole subtree, so a batch of only these would pay a full O(dirs) walk to write zero rows
+  and clear subtrees that hold none. Skipping it is exactly a no-op.
+
+That second rule is the idle floor. A boot volume is never silent (builds, caches, agent scratch dirs write
+continuously), so without it every 60-second window found a non-empty batch and ran a full walk plus — through
+`notify_recompute_completed` — a reload of every weight in `search::volumes` while the old map was still live. With it,
+a machine whose only activity is machine output does no importance work at all.
+
+The gate calls `classify::floors_by_path`, the SAME predicate the writer applies when deciding to skip a row, so the two
+can't disagree about what scores. **Decision/Why the accepted lossiness:** filtering a floored path also drops the
+unfloored ancestors `touched_folder_set` would have pulled in from it, and the one signal that can move for such an
+ancestor is `has_marker_below` (a project marker appearing inside a floored subtree — `propagate_marker_to_ancestors`
+doesn't stop at a floor). We accept it: a marker buried in machine output is the weakest reason to raise a folder,
+importance is advisory, and the next full pass heals it. The rationale and the test (`a_batch_of_only_floored_churn_is_dropped_whole`)
+live with the function.
+
 ### The incremental never escalates on `/`
 
 `/` reaches a batch whenever something changes directly in the root directory (on macOS that is routine churn), and it

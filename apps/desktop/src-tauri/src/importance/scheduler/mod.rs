@@ -392,12 +392,14 @@ impl ImportanceScheduler {
         changed_paths: &[String],
         now_secs: u64,
     ) -> Result<usize, String> {
-        // Drop the bare root and empties: a live batch ALWAYS carries `/` (the
-        // universal ancestor of every change), which is not a full-refresh signal.
-        // Never escalate to a full pass here — full recomputes are `ScanCompleted`
-        // -driven. A batch that was only `/` (or empty) has nothing real to rescore.
-        // See `sanitize_incremental_batch`.
-        let changed_paths = sanitize_incremental_batch(changed_paths);
+        // The batch gate, BEFORE anything expensive: drop the bare root, empties, and
+        // every path that floors (build output, caches, dot-directories — none of
+        // which can produce a weight row). Never escalate to a full pass here; full
+        // recomputes are `ScanCompleted`-driven. An empty result returns without
+        // opening the read pool or walking, which is what stops constant background
+        // churn from driving a pass a minute forever. See `sanitize_incremental_batch`.
+        let home = Self::home_dir();
+        let changed_paths = sanitize_incremental_batch(changed_paths, &home);
         if changed_paths.is_empty() {
             return Ok(0);
         }
@@ -405,7 +407,6 @@ impl ImportanceScheduler {
         let Some(pool) = crate::indexing::get_read_pool_for(volume_id) else {
             return Ok(0);
         };
-        let home = Self::home_dir();
 
         let mut folders = pool
             .with_conn(|conn| walk_index_folders(conn, &home))

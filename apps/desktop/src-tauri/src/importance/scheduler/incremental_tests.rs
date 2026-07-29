@@ -13,20 +13,74 @@ use super::*;
 /// unchanged, in order.
 #[test]
 fn sanitize_incremental_batch_drops_root_and_empties() {
+    let home = "/Users/test";
     assert_eq!(
-        sanitize_incremental_batch(&["/".to_string(), "/a/b".to_string()]),
+        sanitize_incremental_batch(&["/".to_string(), "/a/b".to_string()], home),
         vec!["/a/b".to_string()],
         "the bare root is dropped, the real path kept"
     );
     assert!(
-        sanitize_incremental_batch(&["/".to_string(), String::new()]).is_empty(),
+        sanitize_incremental_batch(&["/".to_string(), String::new()], home).is_empty(),
         "a batch of only root + empties has nothing real to rescore"
     );
     assert_eq!(
-        sanitize_incremental_batch(&["/a".to_string(), "/b/c".to_string()]),
+        sanitize_incremental_batch(&["/a".to_string(), "/b/c".to_string()], home),
         vec!["/a".to_string(), "/b/c".to_string()],
         "real paths pass through unchanged and in order"
     );
+}
+
+/// THE idle gate: a batch of nothing but machine churn is dropped whole, so the
+/// pass returns before it opens the read pool or walks the index.
+///
+/// A boot volume is never silent — builds, caches, and agents write constantly —
+/// and every one of those paths FLOORS, so a rescore of them would write zero rows
+/// after paying a full O(dirs) walk. Without this, background churn alone drove a
+/// walk plus a 161,094-weight reload every 60 s for a whole session.
+#[test]
+fn a_batch_of_only_floored_churn_is_dropped_whole() {
+    let home = "/Users/test";
+    let churn = [
+        // A cargo build under a worktree: denylisted `target`, AND under a dot-dir.
+        "/Users/test/proj/.claude/worktrees/wt/target/debug/deps".to_string(),
+        // Build output straight under a project.
+        "/Users/test/proj/target/debug/build".to_string(),
+        // A dependency tree.
+        "/Users/test/proj/node_modules/lodash".to_string(),
+        // Browser and toolchain caches.
+        "/Users/test/Library/Caches/com.example.app".to_string(),
+        // Repository internals.
+        "/Users/test/proj/.git/objects/pack".to_string(),
+        // And the universal ancestor that rides along.
+        "/".to_string(),
+    ];
+    assert!(
+        sanitize_incremental_batch(&churn, home).is_empty(),
+        "a batch that can produce no weight row must not cost a walk"
+    );
+
+    // A real edit in the same batch still gets through — with the churn stripped, so
+    // the surviving scope is exactly the folders that can score.
+    let mixed = [
+        "/Users/test/proj/target/debug".to_string(),
+        "/Users/test/proj/src".to_string(),
+        "/Users/test/Library/Caches/x".to_string(),
+    ];
+    assert_eq!(
+        sanitize_incremental_batch(&mixed, home),
+        vec!["/Users/test/proj/src".to_string()],
+        "the one path that can score survives, the churn around it doesn't"
+    );
+
+    // The filter is the SAME floor predicate the writer applies, so it never drops a
+    // path that would have earned a row.
+    for scoring in ["/Users/test/proj/src", "/Users/test/Documents/invoices", "/Users/test"] {
+        assert_eq!(
+            sanitize_incremental_batch(&[scoring.to_string()], home),
+            vec![scoring.to_string()],
+            "{scoring} scores, so it must drive a rescore"
+        );
+    }
 }
 
 /// The touched set is the changed folders PLUS their ancestor chains (so a marker

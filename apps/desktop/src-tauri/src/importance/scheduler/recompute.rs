@@ -416,7 +416,34 @@ pub(super) fn touched_folder_set(changed_paths: &[String]) -> std::collections::
 }
 
 /// Drop the paths that must never drive an incremental rescore from a live
-/// dir-changed batch: the bare root `/` and empty strings.
+/// dir-changed batch: the bare root `/`, empty strings, and anything FLOORED by
+/// path. An empty result means the batch has nothing to rescore, and the caller
+/// returns before the O(dirs) walk.
+///
+/// **Why the floor filter is the idle gate.** A boot volume is never silent:
+/// builds write under `target/`, `.git`, and `node_modules`, browsers and toolchains
+/// write under `Library/Caches`, and agents write under dot-directories. Every one of
+/// those floors by path, and a floored folder gets NO row — so a batch of only such
+/// paths would walk the whole index (O(dirs), seconds of CPU), rescope to a set that
+/// scores nothing, write zero rows, and clear subtrees that hold none. Skipping it is
+/// exactly a no-op, and it's what makes a quiet machine actually quiet: without the
+/// filter, background churn drove a full walk plus a full weight reload every 60 s for
+/// the whole session (prod v0.36.2, measured 2026-07-28).
+///
+/// `classify::floors_by_path` is the SAME predicate the walk applies when it decides
+/// to skip a row (`../CLAUDE.md` § the floor overrides), so the gate and the writer
+/// can't disagree about what scores. It's pure path math — no index, no syscall — and
+/// typed set-membership, never a message or substring branch.
+///
+/// **Decision/Why the accepted lossiness.** Filtering a floored path also drops the
+/// UNFLOORED ancestors `touched_folder_set` would have pulled in from it. The only
+/// signal that can move for such an ancestor is `has_marker_below` (a project marker
+/// appearing or vanishing inside a floored subtree — a `.git` under a `node_modules`,
+/// say), because a deep write changes neither an ancestor's mtime nor its direct-child
+/// aggregate. We accept that: a marker buried in machine output is the weakest possible
+/// reason to raise a folder, importance is advisory derived data, and the next full
+/// pass heals it. ❌ Don't "fix" it by dropping the filter — that reinstates the
+/// treadmill.
 ///
 /// **Why the bare root matters (the "everything changed" trap):** every live
 /// FSEvent's affected-paths set carries the full ancestor chain up to `/`
@@ -427,10 +454,11 @@ pub(super) fn touched_folder_set(changed_paths: &[String]) -> std::collections::
 /// incremental to a whole-volume rewrite, and (b) reach `write_weights_incremental`'s
 /// subtree-clear. Full recomputes are driven by `ScanCompleted`, never by a live
 /// batch, so the incremental path drops `/` and scores only real folders.
-pub(super) fn sanitize_incremental_batch(changed_paths: &[String]) -> Vec<String> {
+pub(super) fn sanitize_incremental_batch(changed_paths: &[String], home: &str) -> Vec<String> {
     changed_paths
         .iter()
         .filter(|p| !p.is_empty() && p.as_str() != "/")
+        .filter(|p| !crate::importance::classify::floors_by_path(p, home))
         .cloned()
         .collect()
 }
