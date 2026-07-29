@@ -39,7 +39,7 @@
         titleId="bulk-rename-review-title"
         dialogId="bulk-rename-review"
         resizable
-        containerStyle="width: min(1040px, calc(100vw - 48px))"
+        containerStyle="width: min(1040px, 90vw)"
         onclose={cancelRenameReview}
     >
         {#snippet title()}{tString('askCmdr.renameReview.title')}{/snippet}
