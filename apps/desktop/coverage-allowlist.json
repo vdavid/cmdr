@@ -336,9 +336,6 @@
     },
     "window-positioning.ts": {
       "reason": "Thin wrappers around `getCurrentWindow().outerPosition/outerSize/scaleFactor` + `availableMonitors`; pure math lives in window-positioning-utils.ts and is fully covered there"
-    },
-    "window-state.ts": {
-      "reason": "Depends on Tauri window APIs"
     }
   }
 }
