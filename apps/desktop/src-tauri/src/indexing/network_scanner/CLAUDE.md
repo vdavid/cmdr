@@ -12,8 +12,7 @@ are discovered and stat'd differs from the local guarded walker.
   1) that yields to navigation. `pace_tests.rs` is its test module.
 - **system_dirs.rs** — `is_recursion_excluded_dir` (NAS pseudo-dirs whose subtree isn't recursed) plus the
   exclusion-list stamp that drives the rebuild.
-- **tests/** — the scanner tests, one module per theme: `fresh_scan`, `disconnects`, `reconcile`, `nas_system_dirs`;
-  shared fixtures and the mock `Volume`s live in `tests/mod.rs`.
+- **tests/** — the scanner test modules, by theme.
 
 ## Must-knows
 
