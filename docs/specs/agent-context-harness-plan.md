@@ -35,13 +35,11 @@ not by auditing a quote chain.
 
 Estimated tokens (`chars/4`, the one ruler), measured 2026-07-29:
 
-| Piece                                                                        | Estimated tokens |
-| ---------------------------------------------------------------------------- | ---------------- |
-| Fixed overhead, every call: system prompt ~740 + 12 tool declarations ~2,370 | **~3,100**       |
-| `image_facts`, per file at 900 chars of OCR                                  | ~260             |
-| Plan row, per file (path + name + evidence)                                  | ~54              |
-| Pane listing, per file                                                       | ~21              |
-| A 100-file rename turn, all in                                               | **~39,700**      |
+- **Fixed overhead, every call**: **~3,100** (system prompt ~740 + 12 tool declarations ~2,370)
+- **`image_facts`, per file at 900 chars of OCR**: ~260
+- **Plan row, per file** (path + name + evidence): ~54
+- **Pane listing, per file**: ~21
+- **A 100-file rename turn, all in**: **~39,700**
 
 **Only the total is pinned by a test** (`a_hundred_file_rename_turn_needs_more_than_the_default_budget` asserts `> 16k`,
 `< 60k`, `elided_results == 0`). The breakdown was measured but is asserted nowhere, and the per-file figure assumes 900
