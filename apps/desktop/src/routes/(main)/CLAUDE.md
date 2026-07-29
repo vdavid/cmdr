@@ -6,15 +6,15 @@ via a typed API. Up: `apps/desktop/CLAUDE.md`, sibling: `../viewer/CLAUDE.md`.
 ## Module map
 
 - **`+layout.svelte`** / **`+page.svelte`**: layout (gates children on `settingsReady`) and the app shell (mounts
-  `DualPaneExplorer`; owns dialog visibility, the `explorerRef` handle, keydown, onboarding / licensing).
+  `DualPaneExplorer`; owns dialog visibility, the `explorerRef` handle, keydown, licensing).
 - **`listener-setup.ts`**: menu, MCP-dialog, and window-focus Tauri listeners (plain `.ts`, no runes); state crosses via
   a `ListenerSetupContext` of getters + setters.
 - **`command-dispatch.ts`** + **`command-handlers/`**: the dispatch core (preamble, then a flat `commandHandlers`-record
   lookup) and the family-grouped handlers; context types in `command-dispatch-context.ts`. Also
   `command-handlers/CLAUDE.md`.
-- **`mcp-listeners.ts`**, **`explorer-api.ts`**, **`dispatch-dedup.ts`**, **`global-keydown.ts`**,
-  **`global-contextmenu.ts`**: MCP transport adapter, `ExplorerAPI` contract, cross-source double-fire guard, pure
-  keydown and right-click decisions.
+- **`startup-gates.ts`**, **`mcp-listeners.ts`**, **`explorer-api.ts`**, **`dispatch-dedup.ts`**,
+  **`global-keydown.ts`**, **`global-contextmenu.ts`**: what a launch shows (the onboarding truth table), MCP transport
+  adapter, `ExplorerAPI` contract, cross-source double-fire guard, pure keydown/right-click decisions.
 
 ## Must-knows
 
@@ -25,8 +25,10 @@ via a typed API. Up: `apps/desktop/CLAUDE.md`, sibling: `../viewer/CLAUDE.md`.
   `CommandId`, never the label.
 - **❌ Never add a handler for a per-keystroke `nav.*` id**: a registry lookup + log + breadcrumb IPC per keypress is a
   P2 perf regression; exempt by design.
-- **Dialog state lives in `+page.svelte`, not in dispatch.** `command-dispatch.ts` only flips visibility via write-only
-  `ctx.dialogs.showXxx(...)` callbacks, never reads it back.
+- **`$state` lives in the `file-length`-flagged `+page.svelte`; logic leaves through a context of setters and GETTERS.**
+  `command-dispatch.ts` flips dialogs via write-only `ctx.dialogs.showXxx(...)`, new listeners go in `listener-setup.ts`
+  (shared `unlistenFns`), startup decisions in `startup-gates.ts`. ❌ Never capture a `$state` value;
+  `isOnboardingVisible()` reads live.
 - **Text-region intercept (⌘C / ⌘A).** `handleTextRegionShortcut` short-circuits `edit.copy` / `selection.selectAll`
   inside `.error-pane` or `[data-text-region]`, so copying error text doesn't copy files. Opt in with
   `data-text-region`.
@@ -36,9 +38,6 @@ via a typed API. Up: `apps/desktop/CLAUDE.md`, sibling: `../viewer/CLAUDE.md`.
 - **`mcp-listeners.ts` validate-parses each `mcp-*` payload** and dispatches typed `CommandId` consts, so a registry
   rename breaks compilation here; `mcp-nav-to-path` and `mcp-response` round-trips stay off the bus (DETAILS § MCP
   transport).
-- **New Tauri listener wiring goes in `listener-setup.ts`, not `+page.svelte`** (`file-length`-flagged): thread `$state`
-  through `ListenerSetupContext` (getters/setters; shared `unlistenFns` for HMR cleanup). Runes-touching logic
-  (onboarding, licensing) can't move.
 - **E2E and debug listeners stay off the bus by design.** `e2e-trigger-file-drop` and the DEV `debug-*-error` listeners
   call `explorerRef.*` directly: gated hooks, no registry entry. Don't "finish the migration" (DETAILS § Off-bus hooks).
 

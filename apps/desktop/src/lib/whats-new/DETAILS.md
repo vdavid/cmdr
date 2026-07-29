@@ -52,17 +52,17 @@ the shared-command reverse-map note) in `src-tauri/src/menu/DETAILS.md`.
 
 ## E2E seam
 
-The auto-popup is driven once at boot by `maybeRunWhatsNew()` in `routes/(main)/+page.svelte`. Two facts make the E2E
-path non-obvious:
+The auto-popup is driven once at boot by `maybeRunWhatsNew()` in `routes/(main)/startup-gates.ts`. Two facts make the
+E2E path non-obvious:
 
 - **E2E boots onboarded.** The FDA mock grants Full Disk Access, so `resolveOnboardingMount` marks the instance
   onboarded. With no `lastSeenVersion` yet, the inaugural-showcase rule would auto-open a popup at boot, which leaks
   into whichever spec runs first and trips the overlay leak guard in `fixtures.ts`. So `maybeRunWhatsNew()`
   early-returns under E2E mode unless called with `force: true`. This keeps every non-whats-new spec popup-free.
 - **The spec drives the real auto path explicitly.** `whats-new.spec.ts` emits the E2E-gated `e2e-rerun-whats-new` event
-  (handler in `+page.svelte`, gated on `getAppMode() === 'e2e'`). The handler seeds `isOnboarded` (via `saveSettings`)
-  plus `whatsNew.lastSeenVersion` + `whatsNew.showOnUpdate`, then calls `maybeRunWhatsNew(true)` so the real
-  `runWhatsNewStartupTrigger` runs (decide → fetch → open → stamp).
+  (handler in `routes/(main)/listener-setup.ts`, gated on `getAppMode() === 'e2e'`). The handler seeds `isOnboarded`
+  (via `saveSettings`) plus `whatsNew.lastSeenVersion` + `whatsNew.showOnUpdate`, then calls `maybeRunWhatsNew(true)` so
+  the real `runWhatsNewStartupTrigger` runs (decide → fetch → open → stamp).
 
 **The whats-new keys are seeded via `seedSettingForE2E` (cache + save, NO cross-window emit), not `setSetting`.** A
 `setSetting` seed emits a `settings:changed` event that loops back to this same window (no sender-id guard in the

@@ -25,6 +25,7 @@ test and debug hooks"). Only the layout facts that none of those carry live here
   rule.
 - **`global-contextmenu.ts` is the same split for the right-click**: `resolveGlobalContextMenuAction(event)` is pure
   (`native-text-menu` / `suppress`), `+page.svelte` runs `stopPropagation` or `preventDefault`. § Right-click ownership.
+- **`startup-gates.ts` owns what a launch SHOWS.** § Startup gates.
 - **`command-dispatch-context.ts` is deliberately a LEAF**, importing nothing from the core or the handlers, so handler
   modules and `command-dispatch.ts` can both import the context types without a cycle. It's re-exported from
   `command-dispatch.ts` for callers.
@@ -59,6 +60,35 @@ is what surfaced this. A single later observation with a genuinely hidden window
 at rAF being throttled while hidden, but that machine was at load average 79, so starvation isn't excluded. The
 show-first shape makes the question moot for startup speed either way; don't reintroduce a pre-show gate on the strength
 of either data point.
+
+## Startup gates
+
+`startup-gates.ts` holds the four decisions that determine what a launch actually shows, so each is exercisable without
+mounting the shell (`startup-gates.test.ts`). They're the highest-stakes branches in the route: getting one wrong either
+re-prompts someone who already answered the FDA question, or drops a first-run user into an explorer with no disk
+access, and neither is visible from a passing type-check.
+
+- **`resolveOnboardingMount(ctx)`**: reads `CMDR_FORCE_ONBOARDING`, settings, and a fresh FDA probe, then routes to the
+  wizard or the explorer. The truth table it implements is canonical in `lib/onboarding/DETAILS.md` § "Mount +
+  onboarding flag"; don't restate it here. A failing force probe degrades to "not forced" (`.catch(() => false)`) so a
+  missing backend can't wedge the launch. Every branch ends with the shell revealed.
+- **`maybeFireUpgradeNudge()`**: the one-time toast. Called only from the two branches that skip the wizard, which is
+  why it needs no visibility check of its own. Copy and the E2E suppression: `lib/onboarding/DETAILS.md` § "Upgrade
+  nudge".
+- **`maybeRunWhatsNew(ctx, force)`**: the boot check plus the re-attempt after the wizard closes. It only gathers the
+  gate inputs; the decision is `whats-new-trigger`'s.
+- **`openOnboardingFromMenuOrPalette(ctx, source)`**: re-entry. Both `menu` and `palette` open at the first reachable
+  step (`openWizard` enforces that per-source), so this only guards against re-opening an open wizard.
+
+**Why a context of getters.** `StartupGatesContext` passes setters for the `$state` these flip and GETTERS for what they
+read. `maybeRunWhatsNew` runs at boot and again on wizard close, so a captured `showOnboarding` value would report the
+boot-time answer on the second call and the popup would either double-show or never show. Same rule as
+`ListenerSetupContext`.
+
+**Wizard visibility moves in one place.** `setOnboardingVisible()` in `+page.svelte` writes `showOnboarding` AND
+`setOnboardingShowing()` (the updater's mirror, which holds the "restart to apply" toast back while onboarding is up).
+Every open and close goes through it, including `handleWizardComplete`; writing `showOnboarding` directly would let the
+two drift and leak an update toast over the wizard.
 
 ## Dispatch core
 

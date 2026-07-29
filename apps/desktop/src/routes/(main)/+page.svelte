@@ -3,8 +3,6 @@
     import DualPaneExplorer from '$lib/file-explorer/pane/DualPaneExplorer.svelte'
     import FunctionKeyBar from '$lib/file-explorer/pane/FunctionKeyBar.svelte'
     import OnboardingWizard from '$lib/onboarding/OnboardingWizard.svelte'
-    import { openWizard as openOnboardingWizard } from '$lib/onboarding/onboarding-state.svelte'
-    import { isForceOnboarding } from '$lib/tauri-commands'
     import ExpirationModal from '$lib/licensing/ExpirationModal.svelte'
     import CommercialReminderModal from '$lib/licensing/CommercialReminderModal.svelte'
     import AboutWindow from '$lib/licensing/AboutWindow.svelte'
@@ -19,7 +17,7 @@
         acknowledgementsState,
         closeAcknowledgements,
     } from '$lib/licensing/acknowledgements-trigger.svelte'
-    import { whatsNewState, runWhatsNewStartupTrigger } from '$lib/whats-new/whats-new-trigger.svelte'
+    import { whatsNewState } from '$lib/whats-new/whats-new-trigger.svelte'
     import OperationLogDialog from '$lib/operation-log/OperationLogDialog.svelte'
     import { operationLogState } from '$lib/operation-log/operation-log-trigger.svelte'
     import AskCmdrRail from '$lib/ask-cmdr/AskCmdrRail.svelte'
@@ -47,13 +45,14 @@
     import { resolveGlobalKeyAction } from './global-keydown'
     import { resolveGlobalContextMenuAction } from './global-contextmenu'
     import { isMacOS } from '$lib/shortcuts/key-capture'
-    import {
-        checkFullDiskAccess,
-        type UnlistenFn,
-        getWindowTitle,
-        registerKnownDialogs,
-    } from '$lib/tauri-commands'
+    import { type UnlistenFn, getWindowTitle, registerKnownDialogs } from '$lib/tauri-commands'
     import { showMainOnMount } from './show-main-on-mount'
+    import {
+        type StartupGatesContext,
+        maybeRunWhatsNew,
+        openOnboardingFromMenuOrPalette,
+        resolveOnboardingMount,
+    } from './startup-gates'
     import {
         type ListenerSetupContext,
         makeListenTauri,
@@ -63,14 +62,10 @@
     } from './listener-setup'
     import { SOFT_DIALOG_REGISTRY } from '$lib/ui/dialog-registry'
     import { isGalleryDialogOpen } from '$lib/dialog-gallery/gallery-state.svelte'
-    import { loadSettings, saveSettings } from '$lib/settings-store'
-    import { getAppLogger } from '$lib/logging/logger'
     import { notifyOnboardingComplete, setOnboardingShowing } from '$lib/updates/updater.svelte'
     import { initSystemStrings } from '$lib/system-strings.svelte'
-    import { getSetting, setSetting } from '$lib/settings'
+    import { getSetting } from '$lib/settings'
     import { getShowFunctionKeyBar } from '$lib/settings/reactive-settings.svelte'
-    import { addToast } from '$lib/ui/toast'
-    import { tString } from '$lib/intl/messages.svelte'
     import { startDownloadsEventBridge } from '$lib/downloads/event-bridge.svelte'
     import { startGlobalShortcutBridge } from '$lib/downloads/global-shortcut-bridge.svelte'
     import { startLowDiskSpaceEventBridge } from '$lib/low-disk-space/event-bridge.svelte'
@@ -91,8 +86,6 @@
     } from '$lib/licensing/licensing-store.svelte'
     import { updateLicenseCommandName } from '$lib/commands/command-registry'
     import type { ExplorerAPI } from './explorer-api'
-
-    const log = getAppLogger('main-page')
 
     /**
      * Onboarding wizard visibility. The wizard owns the first-launch path: FDA, AI consent,
@@ -254,128 +247,27 @@
     }
 
     /**
-     * Reads `CMDR_FORCE_ONBOARDING`, settings, and the FDA probe, then flips the right
-     * top-level state. Extracted from `onMount` to keep that function under the project's
-     * complexity cap. See `apps/desktop/src/lib/onboarding/CLAUDE.md` § "Mount + onboarding
-     * flag" for the truth table this implements.
+     * Flips the wizard's visibility. The updater reads its own mirror of the flag
+     * (to hold the update toast back while onboarding is up), so the two always
+     * move together; every wizard open and close goes through here.
      */
-    async function resolveOnboardingMount(): Promise<void> {
-        const forceOnboarding = await isForceOnboarding().catch(() => false)
-        const settings = await loadSettings()
-        const hasFda = await checkFullDiskAccess()
-        const ctx = {
-            fullDiskAccessChoice: settings.fullDiskAccessChoice,
-            isOnboarded: settings.isOnboarded,
-            hasFda,
-        }
-
-        if (forceOnboarding) {
-            openOnboardingWizard('force', ctx)
-            showOnboarding = true
-            setOnboardingShowing(true)
-            showApp = true
-            return
-        }
-
-        if (hasFda) {
-            // Granted-now: mirror the setting if it diverged (covers OS-side toggles), then
-            // either skip or mark onboarded based on the `isOnboarded` flag.
-            if (settings.fullDiskAccessChoice !== 'allow') {
-                if (!(await saveSettings({ fullDiskAccessChoice: 'allow' }))) {
-                    log.warn('Could not mirror fullDiskAccessChoice=allow; FDA may re-prompt on next launch')
-                }
-            }
-            if (!settings.isOnboarded) {
-                // Pre-wizard users who granted FDA before the wizard existed: unblock the
-                // update toast by marking them onboarded.
-                await notifyOnboardingComplete()
-            }
-            showApp = true
-            maybeFireUpgradeNudge()
-            return
-        }
-
-        if (settings.fullDiskAccessChoice === 'deny' && settings.isOnboarded) {
-            // User explicitly denied and already finished onboarding. Don't re-prompt.
-            showApp = true
-            maybeFireUpgradeNudge()
-            return
-        }
-
-        // Everything else routes through the wizard: first-launch (notAskedYet),
-        // revoke-after-allow, first-time-stuck (Allow but didn't grant), or
-        // Deny-but-not-onboarded.
-        openOnboardingWizard('first-launch', ctx)
-        showOnboarding = true
-        setOnboardingShowing(true)
-        showApp = true
+    function setOnboardingVisible(visible: boolean): void {
+        showOnboarding = visible
+        setOnboardingShowing(visible)
     }
 
     /**
-     * Fires the one-time `info` toast pointing existing users at the new
-     * `Cmdr > Onboarding…` menu item (and the matching palette entry on Linux).
-     * Persists `onboarding.upgradeNudgeShown: true` after firing so the toast
-     * never appears again on this machine.
-     *
-     * Guarded against running when the wizard is up: this code only runs from
-     * the `showApp = true` branches in `resolveOnboardingMount`, so the wizard
-     * is closed by definition; no extra `onboardingShowing` check needed.
-     *
-     * Suppressed under E2E mode: the toast would leak into the first Playwright
-     * test after every fresh-data-dir launch (each shard gets its own data dir),
-     * tripping the fixture safety net. E2E mode isn't a real user and the
-     * upgrade-discovery affordance doesn't matter there. The firing behaviour
-     * is covered by Vitest unit tests instead.
+     * Context for the extracted `startup-gates.ts` decisions (what the user sees on
+     * launch): setters for the `$state` they flip, live getters for the flags they
+     * read. See that module for the onboarding truth table.
      */
-    function maybeFireUpgradeNudge(): void {
-        if (getAppMode() === 'e2e') return
-        if (getSetting('onboarding.upgradeNudgeShown')) return
-        const message = isMacOS() ? tString('main.upgradeNudge.mac') : tString('main.upgradeNudge.other')
-        addToast(message, { level: 'info' })
-        setSetting('onboarding.upgradeNudgeShown', true)
-    }
-
-    /**
-     * Runs the automatic "What's new" post-update check. Reads `isOnboarded` from settings
-     * and the live startup-modal flags, then hands off to the pure decision in
-     * `whats-new-trigger`. Called once after onboarding resolves and re-attempted when the
-     * onboarding wizard closes (mirroring the update-toast re-attempt in `updater.svelte.ts`).
-     * The trigger itself no-ops if its dialog is already open, so the re-attempt is safe.
-     *
-     * Suppressed at boot under E2E mode (`force` stays false): E2E grants FDA via the mock,
-     * so the app boots onboarded, which would make the inaugural-showcase popup auto-open and
-     * leak into whichever spec runs first (tripping the overlay leak guard). The dedicated
-     * `whats-new.spec.ts` drives the real auto path explicitly through `e2e-rerun-whats-new`,
-     * which calls this with `force: true`. The decision logic is covered by Vitest.
-     */
-    async function maybeRunWhatsNew(force = false): Promise<void> {
-        if (!force && getAppMode() === 'e2e') return
-        const settings = await loadSettings()
-        await runWhatsNewStartupTrigger({
-            onboarded: settings.isOnboarded,
-            onboardingShowing: showOnboarding,
-            otherStartupModalOpen: showExpiredModal || showCommercialReminder,
-        })
-    }
-
-    /**
-     * Opens the onboarding wizard for re-entry from the menu item or the command
-     * palette. Always opens at step 1 on macOS (step 2 on Linux) regardless of
-     * `isOnboarded` — `openWizard()` itself enforces this when source is 'menu'.
-     * No-op when the wizard is already open.
-     */
-    async function openOnboardingFromMenuOrPalette(source: 'menu' | 'palette'): Promise<void> {
-        if (showOnboarding) return
-        const settings = await loadSettings()
-        const hasFda = await checkFullDiskAccess()
-        const ctx = {
-            fullDiskAccessChoice: settings.fullDiskAccessChoice,
-            isOnboarded: settings.isOnboarded,
-            hasFda,
-        }
-        openOnboardingWizard(source, ctx)
-        showOnboarding = true
-        setOnboardingShowing(true)
+    const startupGatesCtx: StartupGatesContext = {
+        setOnboardingVisible,
+        isOnboardingVisible: () => showOnboarding,
+        showApp: () => {
+            showApp = true
+        },
+        isOtherStartupModalOpen: () => showExpiredModal || showCommercialReminder,
     }
 
     onMount(async () => {
@@ -429,12 +321,12 @@
         // shows them in the same language the user sees in System Settings.
         await initSystemStrings()
 
-        await resolveOnboardingMount()
+        await resolveOnboardingMount(startupGatesCtx)
 
         // Automatic "What's new" post-update check. Runs after onboarding resolves so it can
         // see whether the wizard is up; if it is (or another startup modal), the check waits
         // and re-attempts on `handleWizardComplete`.
-        void maybeRunWhatsNew()
+        void maybeRunWhatsNew(startupGatesCtx)
 
         // Show the window once the webview has actually painted (avoids a blank-window race); fire-and-forget.
         void showMainOnMount()
@@ -557,12 +449,11 @@
      * re-opening the wizard on next launch.
      */
     function handleWizardComplete() {
-        showOnboarding = false
-        setOnboardingShowing(false)
+        setOnboardingVisible(false)
         void notifyOnboardingComplete()
         // Re-attempt the "What's new" check now that onboarding is closed: a popup that
         // `wait`ed on the wizard can show on this pass (matches the update-toast re-attempt).
-        void maybeRunWhatsNew()
+        void maybeRunWhatsNew(startupGatesCtx)
     }
 
     function handleExpirationModalClose() {
@@ -700,7 +591,7 @@
             showSelectionDialog: (mode: 'add' | 'remove' | null) => {
                 void setSelectionDialog(mode)
             },
-            openOnboarding: () => openOnboardingFromMenuOrPalette('menu'),
+            openOnboarding: () => openOnboardingFromMenuOrPalette(startupGatesCtx, 'menu'),
         },
     }
 
@@ -726,7 +617,7 @@
                 showAboutWindow = show
             },
         },
-        maybeRunWhatsNew,
+        maybeRunWhatsNew: (force: boolean) => maybeRunWhatsNew(startupGatesCtx, force),
     }
 </script>
 

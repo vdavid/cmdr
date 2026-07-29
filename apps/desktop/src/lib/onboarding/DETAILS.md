@@ -51,9 +51,10 @@ Three surfaces open the wizard after first launch:
 | Command palette | "Onboarding…" (both platforms)                    | "Onboarding…"                  | `cmdr.openOnboarding` |
 | MCP             | `dialog` tool with `type: "onboarding"`           | same                           | (none; direct event)  |
 
-All three surfaces route through the same handler (`+page.svelte::openOnboardingFromMenuOrPalette`), which opens the
-wizard at the first reachable step (step 1 on macOS, step 2 on Linux) regardless of `isOnboarded`. The plan's round-3 #1
-codifies "menu re-entry always opens at step 1"; `openWizard()` enforces this by checking the `source` argument.
+All three surfaces route through the same handler (`routes/(main)/startup-gates.ts::openOnboardingFromMenuOrPalette`),
+which opens the wizard at the first reachable step (step 1 on macOS, step 2 on Linux) regardless of `isOnboarded`. The
+plan's round-3 #1 codifies "menu re-entry always opens at step 1"; `openWizard()` enforces this by checking the `source`
+argument.
 
 `ctx.dialogs.openOnboarding` returns a `Promise` that resolves once the wizard is actually up (the handler loads
 settings and probes for Full Disk Access first), so a caller can act on the open wizard. The dev-only dialog gallery is
@@ -73,14 +74,14 @@ the first launch after they update past the wizard revamp:
 - macOS: "We've added new onboarding options. Open Cmdr > Onboarding… to review them."
 - Linux: "We've added new onboarding options. Open the command palette and run Onboarding… to review them."
 
-The toast fires from `resolveOnboardingMount()`'s `showApp = true` branches (so it only runs when the wizard is NOT
+The toast fires from `resolveOnboardingMount()`'s two wizard-skipping branches (so it only runs when the wizard is NOT
 mounting; no need for an extra `onboardingShowing` check). It writes `onboarding.upgradeNudgeShown = true` synchronously
 after firing, so it never appears again on the same machine.
 
 The toast is suppressed under `getAppMode() === 'e2e'` so it doesn't leak into Playwright's first-spec-of-the-run state
 (each E2E shard gets its own fresh data dir, so the nudge would otherwise fire once per shard launch and trip the
-fixture safety net). The firing logic itself stays unit-tested in Vitest; the E2E suppression is a target-mode gate, not
-a behaviour change.
+fixture safety net). The firing logic itself is unit-tested in `routes/(main)/startup-gates.test.ts`; the E2E
+suppression is a target-mode gate, not a behaviour change.
 
 ### MCP
 
@@ -286,7 +287,8 @@ The Tauri command is idempotent. See `src-tauri/src/fda_gate.rs`, `src-tauri/src
 
 ## Mount + onboarding flag
 
-`routes/(main)/+page.svelte` decides whether to mount the wizard:
+`routes/(main)/startup-gates.ts::resolveOnboardingMount` decides whether to mount the wizard (unit-tested row by row in
+its sibling `startup-gates.test.ts`):
 
 - `CMDR_FORCE_ONBOARDING=1` → mount wizard.
 - `hasFda && isOnboarded` → no wizard; mirror `fullDiskAccessChoice` to `'allow'` if needed.
@@ -299,8 +301,10 @@ The `isOnboarded` boolean lives in `$lib/settings-store.ts`. It flips to `true` 
 `notifyOnboardingComplete()` (from `$lib/updates/updater.svelte`), so the auto-update "restart to apply" toast doesn't
 fire during first-launch onboarding.
 
-While the wizard is up, `+page.svelte` also calls `setOnboardingShowing(true)` so the updater suppresses the deferred
-toast; `handleWizardComplete` flips it back. See `$lib/updates/CLAUDE.md` § "Onboarding gating".
+While the wizard is up, the updater's mirror flag is set too, so it suppresses the deferred toast. Both writes go
+through `+page.svelte`'s `setOnboardingVisible()`, the single seam for opening and closing the wizard (see
+`routes/(main)/DETAILS.md` § Startup gates), and `handleWizardComplete` flips it back. See `$lib/updates/CLAUDE.md` §
+"Onboarding gating".
 
 ## Testing
 
