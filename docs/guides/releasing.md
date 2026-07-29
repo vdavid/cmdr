@@ -100,6 +100,35 @@ reports the run has finished (wait for the overall run to be `completed`, not ju
 armed it yourself. If the release fails and the user wants to re-run failed jobs with no caffeinate running, re-arm it
 first.
 
+## Refreshing the app-directory listings (optional, minor and major releases)
+
+Cmdr is listed on app directories (MacUpdate, AlternativeTo), each with a file in `brand/listings` holding every field
+of that site's form, filled and ready to paste. Those files are the source of truth: edit them first, then paste from
+them. Never retype a listing from the CHANGELOG at the form.
+
+This is optional and deliberately not part of the release script:
+
+- **Skip it for patch releases.** A patch's changelog isn't interesting enough to spend a review cycle on, and the
+  listing pages age gracefully.
+- **The download URL never goes stale**, so an outdated listing still hands visitors the current DMG. Only the version
+  string and the changelog text on the page age. (`getcmdr.com/download/latest/<arch>` resolves at request time; see
+  `apps/api-server/DETAILS.md` § Download tracking.)
+- **No directory offers an API**, so submitting is a human pasting into a web form. An agent prepares the text and stops
+  there: submitting is an external action.
+
+For a minor or major release, the agent updates `brand/listings/macupdate.md` in place:
+
+- The version number.
+- The "Version changes" HTML, rewritten from the new CHANGELOG section into their `<h5>` + `<ul>` format (New / Improved
+  / Fixed). Cover the whole minor line, patches included, since the listing skipped those.
+- The description, but only where the release actually changed it: a feature that graduated out of alpha, a claim that
+  no longer holds, a "coming soon" that shipped. Leave the wording alone otherwise; David reviews every human-facing
+  string, and needless churn costs him a review.
+
+Then hand David the submission link: https://member.macupdate.com/content/submit, where "Modify an existing listing?" at
+the top takes the app name and loads the current listing. MacUpdate prefers updating an existing listing over a new one
+(downloads keep accumulating, version history stays catalogued, and Watch List users get notified).
+
 ## How updates work
 
 - App checks `https://getcmdr.com/latest.json` on start and every 60 min

@@ -5,6 +5,8 @@ and modifies a listing (search the app name at the top to modify).
 
 Status: draft, not submitted yet. Prepared for v0.36.2 (2026-07-28).
 
+Refresh cadence and what to update per release: `docs/guides/releasing.md` § "Refreshing the app-directory listings".
+
 The Description and Version changes fields take **HTML**, not plain text: `<p>`, `<strong>`, `<h5>`, `<ul>`, `<li>`.
 Their own hint says to keep pricing and promotional text out of the description, so the license and price story lives in
 the Price field and the note to the review team instead.

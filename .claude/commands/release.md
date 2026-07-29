@@ -197,3 +197,11 @@ Prepare a release based on docs/guides/releasing.md.
     - If `latest.json` still shows the old version after ~2 minutes, the deploy webhook may have failed silently. Tell
       the user; the manual fix is to re-trigger the website-deploy workflow via `workflow_dispatch` from the Actions
       tab. Don't block release success on this. The GitHub Release is what users actually download.
+
+13. **Minor or major release? Offer to refresh the app-directory listings** (skip entirely for patches). Update
+    @brand/listings/macupdate.md in place: the version number, the "Version changes" HTML rewritten from the new
+    CHANGELOG section into their `<h5>` + `<ul>` format, and only the description lines the release actually made stale.
+    That file is the source of truth; never retype a listing at the form. Then give David the link
+    (https://member.macupdate.com/content/submit, "Modify an existing listing?" at the top) and stop: submitting is his
+    call, and the download URL in the listing already always serves the current release. Full rationale:
+    `docs/guides/releasing.md` § "Refreshing the app-directory listings".
