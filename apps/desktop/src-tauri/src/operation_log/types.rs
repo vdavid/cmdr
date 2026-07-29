@@ -193,6 +193,41 @@ token_enum! {
     }
 }
 
+token_enum! {
+    /// Why a rollback left one item alone rather than reversing it — the rollback
+    /// engine's per-item verdict, and the vocabulary of the nullable
+    /// `operation_items.rollback_skip_reason` column.
+    ///
+    /// Stored ONLY by the rollback engine, ONLY on the original op's item rows, and
+    /// ONLY alongside [`ItemOutcome::Skipped`]. Everything else reads NULL, which means
+    /// "reason not recorded" and never a default: a pre-v2 row, a mutation path that
+    /// recorded its own `Skipped` outcome, and the inverse op's mirror rows all have no
+    /// rollback verdict to report. `AlreadyGone` counts as reversed (the desired end
+    /// state already holds), so it lands `RolledBack` and is never stored.
+    ///
+    /// This is reporting fidelity only: no variant may change whether an item is
+    /// skipped, retried, or forced.
+    pub enum SkipReason {
+        /// A precondition field couldn't be verified (a recorded snapshot field whose
+        /// live counterpart is absent, or no snapshot field at all) — fail safe, never
+        /// operate on an unprovable file.
+        UnverifiablePrecondition => "unverifiable_precondition",
+        /// The item changed since the op (size/mtime drift) — never touch a changed file.
+        Drift => "drift",
+        /// The restore target is occupied by a DIFFERENT entry — the pinned
+        /// non-destructive policy skips rather than overwrite (D7).
+        RestoreTargetOccupied => "restore_target_occupied",
+        /// A directory the undo would remove isn't empty (a file was added since) — the
+        /// create-folder / copied-dir recheck (D3).
+        DirNotEmpty => "dir_not_empty",
+        /// The thing to reverse is already gone (trash emptied, item already restored):
+        /// the desired end state already holds, so this is an idempotent no-op success.
+        AlreadyGone => "already_gone",
+        /// A backend error prevented reversing this item.
+        Failed => "failed",
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -250,5 +285,16 @@ mod tests {
         check!(EntryType, [File, Dir]);
         check!(RowRole, [RollbackUnit, SearchOnly]);
         check!(ItemOutcome, [Done, Skipped, Failed, RolledBack]);
+        check!(
+            SkipReason,
+            [
+                UnverifiablePrecondition,
+                Drift,
+                RestoreTargetOccupied,
+                DirNotEmpty,
+                AlreadyGone,
+                Failed
+            ]
+        );
     }
 }

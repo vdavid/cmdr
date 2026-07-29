@@ -124,6 +124,41 @@ fn unparseable_file_recreates_fresh() {
     );
 }
 
+/// A row written before `rollback_skip_reason` existed reads as "reason not recorded",
+/// never as a plausible-looking default. The step adds the column nullable with NO
+/// backfill on purpose: those rollbacks ran without recording why they left an item
+/// alone, so there is no honest value to invent for them.
+#[test]
+fn a_pre_migration_item_row_reads_as_no_recorded_skip_reason() {
+    let conn = crate::sqlite_util::open_in_memory().expect("in-memory db");
+    // Bring the DB to v1 only — the production schema before the column existed.
+    run_migrations(&conn, &MIGRATIONS[..1]).expect("migrate to v1");
+    let dir_id = intern_dir(&conn, "vol-1", "/Users/me").expect("intern");
+    conn.execute(
+        "INSERT INTO operations (op_id, kind, initiator, execution_status, rollback_state, started_at)
+         VALUES ('op', 'rename', 'user', 'done', 'partially_rolled_back', 1)",
+        [],
+    )
+    .expect("insert a v1 operation");
+    conn.execute(
+        "INSERT INTO operation_items
+            (op_id, seq, entry_type, row_role, source_dir_id, source_name, source_name_folded, outcome)
+         VALUES ('op', 0, 'file', 'rollback_unit', ?1, 'a.txt', 'a.txt', 'skipped')",
+        rusqlite::params![dir_id],
+    )
+    .expect("insert a v1 item");
+
+    run_migrations(&conn, MIGRATIONS).expect("migrate to the current version");
+
+    let items = read_operation_items(&conn, "op", 10).expect("read items");
+    assert_eq!(items.len(), 1, "the pre-migration row survives the step");
+    assert_eq!(items[0].outcome, ItemOutcome::Skipped, "its outcome is untouched");
+    assert_eq!(
+        items[0].rollback_skip_reason, None,
+        "a skip recorded before the column existed reads as not recorded"
+    );
+}
+
 /// A fresh `OperationLogStore::open` on a new path builds the full production
 /// schema at the current version.
 #[test]

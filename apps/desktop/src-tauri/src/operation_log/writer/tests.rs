@@ -372,7 +372,21 @@ fn set_rollback_state_and_item_outcomes_persist() {
     assert_eq!(op.rollback_state, RollbackState::RollingBack);
 
     writer
-        .set_item_outcomes("op", vec![(0, ItemOutcome::RolledBack), (1, ItemOutcome::Skipped)])
+        .set_item_outcomes(
+            "op",
+            vec![
+                ItemOutcomeUpdate {
+                    seq: 0,
+                    outcome: ItemOutcome::RolledBack,
+                    skip_reason: None,
+                },
+                ItemOutcomeUpdate {
+                    seq: 1,
+                    outcome: ItemOutcome::Skipped,
+                    skip_reason: Some(SkipReason::RestoreTargetOccupied),
+                },
+            ],
+        )
         .expect("set outcomes");
     writer
         .set_rollback_state("op", RollbackState::PartiallyRolledBack, None)
@@ -383,6 +397,31 @@ fn set_rollback_state_and_item_outcomes_persist() {
     let items = read_operation_items(store.conn(), "op", 100).expect("items");
     assert_eq!(items[0].outcome, ItemOutcome::RolledBack);
     assert_eq!(items[1].outcome, ItemOutcome::Skipped);
+    // The skip's reason rides along; a reversed item has none to report.
+    assert_eq!(items[0].rollback_skip_reason, None);
+    assert_eq!(
+        items[1].rollback_skip_reason,
+        Some(SkipReason::RestoreTargetOccupied)
+    );
+
+    // A retry that reverses the skipped item must clear the stale reason: the column
+    // never explains an outcome that no longer holds.
+    writer
+        .set_item_outcomes(
+            "op",
+            vec![ItemOutcomeUpdate {
+                seq: 1,
+                outcome: ItemOutcome::RolledBack,
+                skip_reason: None,
+            }],
+        )
+        .expect("set outcomes on retry");
+    let items = read_operation_items(store.conn(), "op", 100).expect("items");
+    assert_eq!(items[1].outcome, ItemOutcome::RolledBack);
+    assert_eq!(
+        items[1].rollback_skip_reason, None,
+        "reversing an item clears the reason a previous attempt recorded"
+    );
 
     writer.shutdown();
 }

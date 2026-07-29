@@ -39,7 +39,7 @@ use rusqlite::{Connection, OptionalExtension};
 use super::store::{OperationLogStoreError, fold_name, intern_dir, open_write_connection};
 use super::types::{
     ArchiveSubkind, EntryType, ExecutionStatus, Initiator, ItemOutcome, NotRollbackableReason, OpKind, RollbackState,
-    RowRole, SearchCoverage, SearchCoverageReason,
+    RowRole, SearchCoverage, SearchCoverageReason, SkipReason,
 };
 use crate::ignore_poison::IgnorePoison;
 
@@ -120,6 +120,19 @@ pub struct FinalizeOperation {
     pub dev_summary: Option<String>,
 }
 
+/// One item's terminal outcome as a rollback resolved it: the row to update (by `seq`),
+/// the outcome, and — for a skip — the typed reason.
+///
+/// `skip_reason` is `Some` only alongside [`ItemOutcome::Skipped`]; a reversed item
+/// carries `None`, which CLEARS any reason a previous attempt recorded, so the column
+/// never outlives the outcome it explains.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ItemOutcomeUpdate {
+    pub seq: i64,
+    pub outcome: ItemOutcome,
+    pub skip_reason: Option<SkipReason>,
+}
+
 /// Durable row counts per `row_role`, returned by finalize — the input to the capture
 /// completeness check (D4).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -166,7 +179,7 @@ enum WriteMessage {
     },
     SetItemOutcomes {
         op_id: String,
-        updates: Vec<(i64, ItemOutcome)>,
+        updates: Vec<ItemOutcomeUpdate>,
         reply: mpsc::Sender<()>,
     },
     Prune(PruneRequest),
@@ -256,13 +269,14 @@ impl OperationLogWriter {
         rx.recv().map_err(writer_gone)
     }
 
-    /// Set the per-item `outcome` for the given `(seq, outcome)` pairs of an op.
-    /// The rollback engine marks an original op's reversed items `rolled_back` and
-    /// its skipped items `skipped`. Blocks for the reply (a barrier).
+    /// Set the per-item terminal outcomes of an op, by `seq`. The rollback engine marks
+    /// an original op's reversed items `rolled_back` and its skipped items `skipped`,
+    /// each skip carrying the typed [`SkipReason`] that produced it. Blocks for the
+    /// reply (a barrier).
     pub fn set_item_outcomes(
         &self,
         op_id: &str,
-        updates: Vec<(i64, ItemOutcome)>,
+        updates: Vec<ItemOutcomeUpdate>,
     ) -> Result<(), OperationLogStoreError> {
         let (tx, rx) = mpsc::channel();
         self.send(WriteMessage::SetItemOutcomes {
@@ -503,18 +517,29 @@ fn apply_set_rollback_state(
     Ok(())
 }
 
-/// Set per-item `outcome`s by `(op_id, seq)` in one transaction (rollback). A seq with
-/// no matching row updates nothing (not an error).
+/// Set per-item outcomes (+ the nullable rollback skip reason) by `(op_id, seq)` in one
+/// transaction (rollback). A seq with no matching row updates nothing (not an error).
+///
+/// Both columns are written together on purpose: a reason without its `skipped` outcome
+/// — or one left behind by an earlier attempt that has since reversed the item — would
+/// be a stale explanation of something that no longer happened.
 fn apply_set_item_outcomes(
     conn: &mut Connection,
     op_id: &str,
-    updates: &[(i64, ItemOutcome)],
+    updates: &[ItemOutcomeUpdate],
 ) -> Result<(), OperationLogStoreError> {
     let tx = conn.unchecked_transaction()?;
     {
-        let mut stmt = tx.prepare_cached("UPDATE operation_items SET outcome = ?3 WHERE op_id = ?1 AND seq = ?2")?;
-        for (seq, outcome) in updates {
-            stmt.execute(rusqlite::params![op_id, seq, outcome.as_token()])?;
+        let mut stmt = tx.prepare_cached(
+            "UPDATE operation_items SET outcome = ?3, rollback_skip_reason = ?4 WHERE op_id = ?1 AND seq = ?2",
+        )?;
+        for update in updates {
+            stmt.execute(rusqlite::params![
+                op_id,
+                update.seq,
+                update.outcome.as_token(),
+                update.skip_reason.map(|r| r.as_token()),
+            ])?;
         }
     }
     tx.commit()?;

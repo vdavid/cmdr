@@ -28,7 +28,7 @@ pub use migrations::{MIGRATIONS, Migration, run_migrations};
 
 use super::types::{
     ArchiveSubkind, EntryType, ExecutionStatus, Initiator, ItemOutcome, NotRollbackableReason, OpKind, RollbackState,
-    RowRole, SearchCoverage, SearchCoverageReason,
+    RowRole, SearchCoverage, SearchCoverageReason, SkipReason,
 };
 
 /// The durable journal's file name in the app data dir. Single (not per-volume):
@@ -158,6 +158,10 @@ pub struct OperationItemRow {
     pub mtime: Option<i64>,
     pub outcome: ItemOutcome,
     pub overwrote: bool,
+    /// Why a rollback left this item alone, when one did. `None` means the reason
+    /// wasn't recorded: a row written before the column existed, or an outcome no
+    /// rollback produced. Never defaulted — see [`SkipReason`].
+    pub rollback_skip_reason: Option<SkipReason>,
 }
 
 /// A handle to `operation-log.db`, owning a connection for direct reads and the
@@ -376,7 +380,7 @@ pub fn recent_operations(conn: &Connection, limit: u32) -> Result<Vec<OperationR
 }
 
 pub(super) const ITEM_COLUMNS: &str = "item_id, op_id, seq, entry_type, row_role, source_dir_id, source_name, dest_dir_id, \
-     dest_name, size, mtime, outcome, overwrote";
+     dest_name, size, mtime, outcome, overwrote, rollback_skip_reason";
 
 pub(super) fn map_item_row(row: &rusqlite::Row<'_>) -> Result<OperationItemRow, OperationLogStoreError> {
     Ok(OperationItemRow {
@@ -393,6 +397,7 @@ pub(super) fn map_item_row(row: &rusqlite::Row<'_>) -> Result<OperationItemRow, 
         mtime: row.get(10)?,
         outcome: decode(row.get(11)?, ItemOutcome::from_token, "outcome")?,
         overwrote: row.get::<_, i64>(12)? != 0,
+        rollback_skip_reason: decode_opt(row.get(13)?, SkipReason::from_token, "rollback_skip_reason")?,
     })
 }
 

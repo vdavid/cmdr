@@ -44,9 +44,9 @@ use super::store::{
 };
 use super::types::{
     EntryType, ExecutionStatus, Initiator, ItemOutcome, NotRollbackableReason, OpKind, RollbackState, RowRole,
-    SearchCoverage,
+    SearchCoverage, SkipReason,
 };
-use super::writer::{FinalizeOperation, JournalItem, OpenOperation, OperationLogWriter};
+use super::writer::{FinalizeOperation, ItemOutcomeUpdate, JournalItem, OpenOperation, OperationLogWriter};
 
 /// Rows streamed per page from the journal — bounded so a huge op never
 /// materializes its full item list in memory (D7).
@@ -75,29 +75,6 @@ pub enum RollbackRefusal {
     /// time from mount state, never stored (D3); names the missing volume so the
     /// UI/agent can say "Volume 'Backup' is not connected".
     VolumeUnavailable { volume_id: String },
-}
-
-/// Why a single item was skipped rather than reversed. Feeds
-/// `partially_rolled_back` and is recorded per item (D7).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SkipReason {
-    /// A precondition field couldn't be verified (a recorded snapshot field whose
-    /// live counterpart is absent, or no snapshot field at all) — fail safe, never
-    /// operate on an unprovable file.
-    UnverifiablePrecondition,
-    /// The item changed since the op (size/mtime drift) — never touch a changed file.
-    Drift,
-    /// The restore target is occupied by a DIFFERENT entry — the pinned
-    /// non-destructive policy skips rather than overwrite (D7).
-    RestoreTargetOccupied,
-    /// A directory the undo would remove isn't empty (a file was added since) — the
-    /// create-folder / copied-dir recheck (D3).
-    DirNotEmpty,
-    /// The thing to reverse is already gone (trash emptied, item already restored):
-    /// the desired end state already holds, so this is an idempotent no-op success.
-    AlreadyGone,
-    /// A backend error prevented reversing this item.
-    Failed,
 }
 
 impl SkipReason {
@@ -459,7 +436,7 @@ struct RunAcc {
     reversed: u64,
     skipped: u64,
     inverse_items: Vec<JournalItem>,
-    original_outcomes: Vec<(i64, ItemOutcome)>,
+    original_outcomes: Vec<ItemOutcomeUpdate>,
     next_inverse_seq: i64,
 }
 
@@ -475,7 +452,11 @@ impl RunAcc {
         } else {
             self.skipped += 1;
         }
-        self.original_outcomes.push((unit.seq, original_outcome));
+        self.original_outcomes.push(ItemOutcomeUpdate {
+            seq: unit.seq,
+            outcome: original_outcome,
+            skip_reason: None,
+        });
         // Journal what the inverse op did to this item: reversed ⇒ Done, skipped ⇒
         // Skipped, so reconcile can read "did anything durably reverse" off the
         // inverse op's rows.

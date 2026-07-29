@@ -47,11 +47,18 @@ pub struct Migration {
 
 /// The production ladder. Version 1 creates the whole initial schema; later
 /// schema changes append steps here.
-pub const MIGRATIONS: &[Migration] = &[Migration {
-    version: 1,
-    description: "initial schema: dirs, operations, operation_items",
-    up: migrate_v1_initial,
-}];
+pub const MIGRATIONS: &[Migration] = &[
+    Migration {
+        version: 1,
+        description: "initial schema: dirs, operations, operation_items",
+        up: migrate_v1_initial,
+    },
+    Migration {
+        version: 2,
+        description: "operation_items.rollback_skip_reason: why a rollback left an item alone",
+        up: migrate_v2_rollback_skip_reason,
+    },
+];
 
 /// The meta key holding the integer schema version (as text). Absent ⇒ 0 (a
 /// fresh DB that hasn't run any step). The migration anchor.
@@ -203,4 +210,16 @@ fn migrate_v1_initial(tx: &Transaction<'_>) -> rusqlite::Result<()> {
             WHERE dest_name_folded IS NOT NULL;
         ",
     )
+}
+
+/// Version 2: record WHY a rollback left an item alone, per item.
+///
+/// Nullable, no default, and **no backfill**. A v1 row's skip carries no recorded
+/// reason, and inventing one (a "plausible" default) would put a fabricated fact in the
+/// user's history; NULL reads as "reason not recorded", which is the truth. Only the
+/// rollback engine writes it (see `types::SkipReason`), so a `Skipped` outcome from any
+/// other path stays NULL too. No index: it's read per item alongside the row, never
+/// filtered on.
+fn migrate_v2_rollback_skip_reason(tx: &Transaction<'_>) -> rusqlite::Result<()> {
+    tx.execute_batch("ALTER TABLE operation_items ADD COLUMN rollback_skip_reason TEXT;")
 }

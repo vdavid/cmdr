@@ -34,7 +34,7 @@ use super::store::{
     map_operation_row, resolve_dir,
 };
 use super::types::{
-    EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind, RollbackState, RowRole, SearchCoverage,
+    EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind, RollbackState, RowRole, SearchCoverage, SkipReason,
 };
 
 /// How a name filter matches the folded name column.
@@ -103,6 +103,10 @@ pub struct OperationItemView {
     pub mtime: Option<i64>,
     pub outcome: ItemOutcome,
     pub overwrote: bool,
+    /// Why a rollback left this item alone, when one did. `null` means the reason
+    /// wasn't recorded — a row written before the column existed, or an outcome no
+    /// rollback produced — never a stand-in reason.
+    pub rollback_skip_reason: Option<SkipReason>,
 }
 
 fn view_from_row(conn: &Connection, item: &OperationItemRow) -> Result<OperationItemView, OperationLogStoreError> {
@@ -127,6 +131,7 @@ fn view_from_row(conn: &Connection, item: &OperationItemRow) -> Result<Operation
         mtime: item.mtime,
         outcome: item.outcome,
         overwrote: item.overwrote,
+        rollback_skip_reason: item.rollback_skip_reason,
     })
 }
 
