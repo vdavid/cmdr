@@ -15,7 +15,7 @@ use lifecycle::state::{
     INDEX_REGISTRY, IndexInstance, IndexPhase, IndexVolumeKind, ROOT_VOLUME_ID, is_initializing_phase,
     try_reserve_initializing_phase,
 };
-use read::enrichment::{READ_POOL_TEST_MUTEX, THREAD_CONN, enrich_via_individual_paths_on, enrich_via_parent_id_on};
+use read::enrichment::{READ_POOL_TEST_MUTEX, THREAD_CONNS, enrich_via_individual_paths_on, enrich_via_parent_id_on};
 use rusqlite::Connection;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -788,8 +788,8 @@ fn read_pool_generation_invalidation() {
     pool.with_conn(|_| ()).expect("before invalidation");
 
     // Verify the cached generation is 0
-    let gen_before = THREAD_CONN.with(|cell| cell.borrow().as_ref().map(|(_, g, _)| *g).unwrap());
-    assert_eq!(gen_before, 0);
+    let gen_before = THREAD_CONNS.with(|cell| cell.borrow().generation_for(&db_path));
+    assert_eq!(gen_before, Some(0));
 
     pool.invalidate();
 
@@ -798,10 +798,49 @@ fn read_pool_generation_invalidation() {
     // detect the mismatch and reopen.
     pool.with_conn(|_| ()).expect("after invalidation");
 
-    let gen_after = THREAD_CONN.with(|cell| cell.borrow().as_ref().map(|(_, g, _)| *g).unwrap());
+    let gen_after = THREAD_CONNS.with(|cell| cell.borrow().generation_for(&db_path));
     assert_eq!(
-        gen_after, 1,
+        gen_after,
+        Some(1),
         "invalidation should force a new connection with bumped generation"
+    );
+    assert_eq!(
+        THREAD_CONNS.with(|cell| cell.borrow().len()),
+        1,
+        "the invalidated connection must not linger beside the fresh one"
+    );
+}
+
+/// The thrash regression, at the `ReadPool` level: a thread alternating between
+/// two volumes' indexes (left pane on the boot disk, right pane on a NAS share)
+/// must open each DB exactly once. A single-slot thread-local reopened on every
+/// alternation, re-running the pragmas and the collation registration and
+/// discarding the connection's whole `prepare_cached` statement cache.
+#[test]
+fn read_pool_alternating_volumes_does_not_reopen() {
+    let (left_path, _left_dir) = setup_db_for_pool();
+    let (right_path, _right_dir) = setup_db_for_pool();
+    let left = ReadPool::new(left_path.clone()).expect("left pool");
+    let right = ReadPool::new(right_path.clone()).expect("right pool");
+
+    // `ReadPool::new` validates the DB is openable, so count from here.
+    let left_before = crate::sqlite_util::open_count_for(&left_path);
+    let right_before = crate::sqlite_util::open_count_for(&right_path);
+
+    for _ in 0..25 {
+        left.with_conn(|_| ()).expect("left read");
+        right.with_conn(|_| ()).expect("right read");
+    }
+
+    assert_eq!(
+        crate::sqlite_util::open_count_for(&left_path) - left_before,
+        1,
+        "alternating panes must open the left volume's index once"
+    );
+    assert_eq!(
+        crate::sqlite_util::open_count_for(&right_path) - right_before,
+        1,
+        "alternating panes must open the right volume's index once"
     );
 }
 

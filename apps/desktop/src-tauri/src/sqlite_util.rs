@@ -4,7 +4,7 @@
 //! reclamation for the writer threads.
 
 use std::ffi::{c_int, c_void};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 
 use rusqlite::{Connection, OpenFlags, ffi};
@@ -164,6 +164,8 @@ fn report(outcome: SharedPageCache) -> SharedPageCache {
 /// longer be installed. Enforced by `desktop-rust-sqlite-open-direct`.
 pub fn open(db_path: &Path) -> rusqlite::Result<Connection> {
     ensure_shared_page_cache();
+    #[cfg(test)]
+    record_open(db_path);
     Connection::open(db_path)
 }
 
@@ -171,6 +173,8 @@ pub fn open(db_path: &Path) -> rusqlite::Result<Connection> {
 /// [`open`] for why every open funnels through this module.
 pub fn open_read_only(db_path: &Path) -> rusqlite::Result<Connection> {
     ensure_shared_page_cache();
+    #[cfg(test)]
+    record_open(db_path);
     Connection::open_with_flags(db_path, OpenFlags::SQLITE_OPEN_READ_ONLY)
 }
 
@@ -181,6 +185,34 @@ pub fn open_read_only(db_path: &Path) -> rusqlite::Result<Connection> {
 pub fn open_in_memory() -> rusqlite::Result<Connection> {
     ensure_shared_page_cache();
     Connection::open_in_memory()
+}
+
+/// Test-only: how many times this module opened a connection to `db_path`. Keyed
+/// by path so a test on its own temp DB is unaffected by connections other tests
+/// open in parallel. The reopen counter the thread-local cache's reuse tests
+/// assert on (identity via timing would only flake).
+#[cfg(test)]
+pub fn open_count_for(db_path: &Path) -> u64 {
+    OPEN_COUNTS
+        .lock_ignore_poison()
+        .get(db_path)
+        .copied()
+        .unwrap_or_default()
+}
+
+#[cfg(test)]
+use crate::ignore_poison::IgnorePoison;
+
+#[cfg(test)]
+static OPEN_COUNTS: LazyLock<std::sync::Mutex<std::collections::HashMap<PathBuf, u64>>> =
+    LazyLock::new(|| std::sync::Mutex::new(std::collections::HashMap::new()));
+
+#[cfg(test)]
+fn record_open(db_path: &Path) {
+    *OPEN_COUNTS
+        .lock_ignore_poison()
+        .entry(db_path.to_path_buf())
+        .or_default() += 1;
 }
 
 // ── Page cache budget (per connection) ───────────────────────────────
@@ -250,6 +282,100 @@ pub fn page_cache_kib(conn: &Connection) -> i64 {
         .expect("read cache_size");
     assert!(raw < 0, "cache_size should be set in negative-KiB form, got {raw}");
     -raw
+}
+
+// ── Per-thread connection cache ──────────────────────────────────────
+
+/// A small per-thread LRU of open read connections, keyed by db path plus the
+/// caller's invalidation generation.
+///
+/// Both read paths (`indexing::read::enrichment`'s `ReadPool` and
+/// `ImportanceIndex`) keep their connections in a thread-local so enrichment
+/// never takes a lock on the hot path. Holding ONE slot made that lock-freedom
+/// expensive in the ordinary two-pane case: a thread alternating between the
+/// left pane's volume and the right pane's closed and reopened on every
+/// alternation, re-running the pragmas and the collation registration and
+/// throwing away the connection's whole `prepare_cached` statement cache —
+/// recompiling those statements is the expensive part. A handful of slots costs
+/// nothing now that [`SHARED_PAGE_CACHE_BYTES`] decouples memory from connection
+/// count.
+///
+/// Not thread-safe by design: it lives in a `thread_local!` `RefCell`, so there
+/// is no lock. ❌ Don't wrap it in a mutex.
+pub struct ThreadConnCache {
+    /// Most-recently-used first. Never longer than `capacity`.
+    entries: Vec<(PathBuf, u64, Connection)>,
+    capacity: usize,
+}
+
+/// Slots per thread. Two covers the ordinary two-pane case (left pane on the
+/// boot disk, right pane on a NAS share); the third absorbs a background reader
+/// (search, the importance scheduler) landing on the same blocking thread
+/// without evicting either pane.
+pub const THREAD_CONN_SLOTS: usize = 3;
+
+impl ThreadConnCache {
+    pub const fn new(capacity: usize) -> Self {
+        Self {
+            entries: Vec::new(),
+            capacity,
+        }
+    }
+
+    /// Run `f` against the connection for `(db_path, generation)`, opening one
+    /// through `open` when this thread holds no live match.
+    ///
+    /// A hit moves the entry to the front; a miss evicts the least recently used
+    /// entry once the cache is full. An entry for `db_path` at a DIFFERENT
+    /// generation is dropped before the reopen, so a caller's `invalidate()`
+    /// still retires the stale connection rather than leaving two around.
+    pub fn with<T, E>(
+        &mut self,
+        db_path: &Path,
+        generation: u64,
+        open: impl FnOnce(&Path) -> Result<Connection, E>,
+        f: impl FnOnce(&Connection) -> T,
+    ) -> Result<T, E> {
+        match self
+            .entries
+            .iter()
+            .position(|(p, g, _)| p == db_path && *g == generation)
+        {
+            Some(0) => {}
+            Some(hit) => {
+                let entry = self.entries.remove(hit);
+                self.entries.insert(0, entry);
+            }
+            None => {
+                // Retire a same-path entry at a stale generation: the caller
+                // invalidated it, so it must not linger behind the new one.
+                self.entries.retain(|(p, _, _)| p != db_path);
+                let conn = open(db_path)?;
+                if self.entries.len() >= self.capacity {
+                    self.entries.pop();
+                }
+                self.entries.insert(0, (db_path.to_path_buf(), generation, conn));
+            }
+        }
+        let (_, _, conn) = self
+            .entries
+            .first()
+            .expect("the MRU entry exists: every branch above leaves a match at index 0");
+        Ok(f(conn))
+    }
+
+    /// Test-only: the generation this thread holds for `db_path`, or `None` when
+    /// it holds no connection to it.
+    #[cfg(test)]
+    pub fn generation_for(&self, db_path: &Path) -> Option<u64> {
+        self.entries.iter().find(|(p, _, _)| p == db_path).map(|(_, g, _)| *g)
+    }
+
+    /// Test-only: how many connections this thread currently holds.
+    #[cfg(test)]
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
 }
 
 // ── Freelist reclamation ─────────────────────────────────────────────

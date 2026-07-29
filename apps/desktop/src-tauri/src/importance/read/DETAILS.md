@@ -4,9 +4,15 @@ The canonical consumer entry point for folder importance. Read this before any n
 planning, reorganizing, or advising.
 
 `ImportanceIndex` mirrors `search/`→`indexing/`: a read-only handle that owns a `platform_case`-registered read
-connection over `importance.db` (thread-local, reopened lazily, keyed by DB path), so no consumer takes a raw
+connection over `importance.db` (thread-local, opened lazily, keyed by DB path), so no consumer takes a raw
 `rusqlite` dep on the store. The agent and media-ML plans point here rather than restating (single-source,
 `.claude/rules/docs.md`).
+
+`READ_CONNS` is a small per-thread LRU (`sqlite_util::ThreadConnCache`, three slots), not one connection: a thread that
+reads two volumes' weights would otherwise reopen on every alternation and lose the connection's `prepare_cached`
+statements. It passes generation `0` — importance reads have no invalidation generation, because a recompute rewrites
+rows in place and never swaps the DB file. Why more open connections is affordable: `indexing/store/DETAILS.md` §
+"SQLite page memory is one process-wide slab".
 
 `open(data_dir, volume_id, available)` doesn't touch the DB until the first read, so it's cheap and never fails on a
 missing file. `open_at(db_path, available)` serves a caller that already has a path (the dev tuning surface).

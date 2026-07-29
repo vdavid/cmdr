@@ -21,6 +21,10 @@ Serve recursive sizes and index status back to the app. Everything here reads vi
   per-entry pairing to leak). Marked only at the live loop's drain points (live-only, so replay doesn't flag everything
   on startup). Rides `DirStats` only, NOT `FileEntry` enrichment (deliberate). A second held-roots tier survives the
   wholesale clear for seconds-long coalesced rescans.
+- **`ReadPool`'s thread-local is a 3-slot LRU (`sqlite_util::ThreadConnCache`), not one connection.** One slot made a
+  thread alternating between two volumes (an ordinary two-pane setup) reopen on every alternation, losing the
+  connection's `prepare_cached` statements on the hot path. ❌ Don't add a mutex here, and ❌ don't shrink it back to
+  one slot. DETAILS § Enrichment.
 - **Enrichment logs once per changed result, via `EnrichResultMemo`** (fires only when `(dir_count, enriched)` differs).
   Don't add a per-pass line; an idle pane triggers this ~2/s per pane.
 

@@ -46,6 +46,7 @@ use super::scorer::{Explanation, FolderSignals, Score, SignalSet, Weights, expla
 use super::store::{ImportanceStoreError, importance_db_path, open_read_connection};
 use crate::ignore_poison::IgnorePoison;
 use crate::indexing::store::normalize_for_comparison;
+use crate::sqlite_util::{THREAD_CONN_SLOTS, ThreadConnCache};
 
 /// A stored weight for one folder, as the read API hands it back: the scalar, the
 /// deserialized raw signal vector it was computed from (plan Decision 2: a
@@ -361,24 +362,21 @@ impl ImportanceIndex {
         &self,
         f: impl FnOnce(&rusqlite::Connection) -> Result<T, ImportanceStoreError>,
     ) -> Result<T, ImportanceStoreError> {
-        READ_CONN.with(|cell| {
-            let mut slot = cell.borrow_mut();
-            let reuse = matches!(&*slot, Some((path, _)) if path == &self.db_path);
-            if !reuse {
-                let conn = open_read_connection(&self.db_path)?;
-                *slot = Some((self.db_path.clone(), conn));
-            }
-            let (_, conn) = slot.as_ref().expect("just populated");
-            f(conn)
-        })
+        // Generation `0`: importance reads have no invalidation generation (a
+        // recompute rewrites rows in place, it never swaps the DB file), so the
+        // cache keys on the path alone.
+        READ_CONNS.with(|cell| cell.borrow_mut().with(&self.db_path, 0, open_read_connection, f))?
     }
 }
 
 thread_local! {
-    /// A thread-local read connection, keyed by db path so a thread that reads
-    /// several volumes reopens on a path change (one live read conn per thread).
-    static READ_CONN: std::cell::RefCell<Option<(PathBuf, rusqlite::Connection)>> =
-        const { std::cell::RefCell::new(None) };
+    /// This thread's open read connections, keyed by db path. A bounded LRU
+    /// rather than one slot: a thread that reads two volumes' weights (the
+    /// ranker folding a snapshot per volume, an agent walking both panes) would
+    /// otherwise reopen on every alternation and lose the connection's
+    /// `prepare_cached` statements. See `crate::sqlite_util::ThreadConnCache`.
+    static READ_CONNS: std::cell::RefCell<ThreadConnCache> =
+        const { std::cell::RefCell::new(ThreadConnCache::new(THREAD_CONN_SLOTS)) };
 }
 
 // ── Read queries ──────────────────────────────────────────────────────────

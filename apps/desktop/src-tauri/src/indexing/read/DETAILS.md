@@ -16,6 +16,19 @@ lives in the `READ_POOL` module global; non-root pools live in their registry in
 root → `READ_POOL`, non-root → `state::get_instance_read_pool`. (The globals and instance storage are owned by
 `../lifecycle/DETAILS.md`; this area holds the `ReadPool` type and the readers.)
 
+**The thread-local is a small LRU, not one slot.** `THREAD_CONNS` holds up to `sqlite_util::THREAD_CONN_SLOTS` (3) open
+connections per thread, keyed by db path plus the pool's invalidation generation. One slot made the lock-freedom
+expensive in the ordinary two-pane case: a blocking thread alternating between the left pane's volume and the right
+pane's closed and reopened on every alternation, re-running the pragmas and the collation registration and discarding
+that connection's whole `prepare_cached` statement cache — recompiling the statements is the expensive part, and this
+is the hot path. Three slots cover both panes plus a background reader (search, the importance scheduler) landing on
+the same thread. Raising the slot count raises the process's connection count, which is affordable only because
+`../store/DETAILS.md` § "SQLite page memory is one process-wide slab" decoupled memory from it. ❌ Don't put a mutex
+here: the lock-freedom is the design. `invalidate()` still works — it bumps the generation, and the next `with_conn`
+for that path drops the stale entry before opening the replacement, so the two never coexist. Regression tests:
+`read_pool_alternating_volumes_does_not_reopen` (integration) and `sqlite_util::tests`, both asserting on a real reopen
+counter rather than timing.
+
 `enrich_entries_with_index(entries)` is the root-defaulting wrapper; `enrich_entries_with_index_on_volume(volume_id,
 entries)` is the volume-routed form. Called when entries land in the listing cache (streaming, watcher update, re-sort),
 NOT on `get_file_range`; live freshness flows separately via `index-dir-updated` → `refreshIndexSizes` →

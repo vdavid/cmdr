@@ -19,6 +19,7 @@ use crate::indexing::paths::firmlinks;
 use crate::indexing::paths::routing;
 use crate::indexing::store::{self, DirStatsById, IndexStore, IndexStoreError};
 use crate::pluralize::pluralize;
+use crate::sqlite_util::{THREAD_CONN_SLOTS, ThreadConnCache};
 
 // ── Read pool (lock-free enrichment reads) ──────────────────────────
 
@@ -29,7 +30,13 @@ pub(crate) struct ReadPool {
 }
 
 thread_local! {
-    pub(crate) static THREAD_CONN: RefCell<Option<(PathBuf, u64, Connection)>> = const { RefCell::new(None) };
+    /// This thread's open read connections, most recently used first. A bounded
+    /// LRU rather than one slot: a thread alternating between two volumes (the
+    /// ordinary two-pane setup) would otherwise close and reopen on every
+    /// alternation, throwing away the connection's `prepare_cached` statement
+    /// cache each time. See `crate::sqlite_util::ThreadConnCache`.
+    pub(crate) static THREAD_CONNS: RefCell<ThreadConnCache> =
+        const { RefCell::new(ThreadConnCache::new(THREAD_CONN_SLOTS)) };
 }
 
 impl ReadPool {
@@ -52,23 +59,20 @@ impl ReadPool {
     /// `T` is lifetime-independent of the `&Connection` borrow. This means
     /// callers can't hold the connection across `.await` points (the compiler
     /// rejects it), so async task migration can't break thread affinity.
+    ///
+    /// The thread keeps a few connections (keyed by db path + this pool's
+    /// generation), so alternating between two volumes reuses both instead of
+    /// reopening each time. A bumped generation ([`invalidate`](Self::invalidate))
+    /// still retires the stale connection on the next call.
     pub(crate) fn with_conn<T>(&self, f: impl FnOnce(&Connection) -> T) -> Result<T, String> {
         let current_gen = self.generation.load(Ordering::Acquire);
-        THREAD_CONN.with(|cell| {
-            let mut slot = cell.borrow_mut();
-            // Reuse if same path + same generation; otherwise reopen
-            let needs_reopen = match slot.as_ref() {
-                Some((p, g, _)) => p != &self.db_path || *g != current_gen,
-                None => true,
-            };
-            if needs_reopen {
-                let conn = IndexStore::open_read_connection(&self.db_path).map_err(|e| format!("{e}"))?;
-                *slot = Some((self.db_path.clone(), current_gen, conn));
-            }
-            Ok(f(&slot
-                .as_ref()
-                .expect("slot is Some: needs_reopen is true whenever it was None, and we just set it")
-                .2))
+        THREAD_CONNS.with(|cell| {
+            cell.borrow_mut().with(
+                &self.db_path,
+                current_gen,
+                |path| IndexStore::open_read_connection(path).map_err(|e| format!("{e}")),
+                f,
+            )
         })
     }
 }

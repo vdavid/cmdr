@@ -1,3 +1,5 @@
+use std::cell::Cell;
+
 use super::*;
 
 // ── Shared page cache ────────────────────────────────────────────────
@@ -81,6 +83,130 @@ fn cached_pages_come_from_the_shared_slab() {
         sqlite_status(ffi::SQLITE_STATUS_PAGECACHE_USED) > 0,
         "cached pages must come out of the shared slab"
     );
+}
+
+// ── Per-thread connection cache ──────────────────────────────────────
+
+/// Count opens so reuse is asserted on something real; timing would only flake.
+struct CountingOpener(Cell<usize>);
+
+impl CountingOpener {
+    fn new() -> Self {
+        Self(Cell::new(0))
+    }
+
+    fn open(&self) -> impl FnOnce(&Path) -> Result<Connection, rusqlite::Error> + '_ {
+        move |_| {
+            self.0.set(self.0.get() + 1);
+            open_in_memory()
+        }
+    }
+
+    fn count(&self) -> usize {
+        self.0.get()
+    }
+}
+
+/// The thrash regression: a thread alternating between two volumes (left pane on
+/// the boot disk, right pane on a NAS share) must keep BOTH connections, not
+/// close and reopen on every alternation. Each reopen re-runs the pragmas and
+/// the collation registration and discards the connection's whole
+/// `prepare_cached` statement cache, which is the expensive part.
+#[test]
+fn alternating_between_two_dbs_reuses_both_connections() {
+    let mut cache = ThreadConnCache::new(THREAD_CONN_SLOTS);
+    let opener = CountingOpener::new();
+    let left = Path::new("/tmp/cmdr-test/index-root.db");
+    let right = Path::new("/tmp/cmdr-test/index-smb-naspi.db");
+
+    for _ in 0..50 {
+        cache.with(left, 0, opener.open(), |_| ()).expect("left");
+        cache.with(right, 0, opener.open(), |_| ()).expect("right");
+    }
+
+    assert_eq!(
+        opener.count(),
+        2,
+        "alternating between two dbs must open each exactly once"
+    );
+    assert_eq!(cache.len(), 2);
+}
+
+/// The cache is bounded: a third db evicts the least recently used, so a thread
+/// can't accumulate a connection per volume it ever touched.
+#[test]
+fn a_full_cache_evicts_the_least_recently_used_db() {
+    let mut cache = ThreadConnCache::new(2);
+    let opener = CountingOpener::new();
+    let (a, b, c) = (Path::new("/a.db"), Path::new("/b.db"), Path::new("/c.db"));
+
+    cache.with(a, 0, opener.open(), |_| ()).expect("a");
+    cache.with(b, 0, opener.open(), |_| ()).expect("b");
+    cache.with(c, 0, opener.open(), |_| ()).expect("c");
+
+    assert_eq!(cache.len(), 2, "the cache stays within its capacity");
+    assert_eq!(cache.generation_for(a), None, "the least recently used was evicted");
+    assert!(cache.generation_for(b).is_some());
+    assert!(cache.generation_for(c).is_some());
+    assert_eq!(opener.count(), 3);
+}
+
+/// Reuse is per db path, so touching a second db doesn't cost the first one its
+/// connection the way the single-slot cache did.
+#[test]
+fn a_hit_moves_the_entry_to_the_front() {
+    let mut cache = ThreadConnCache::new(2);
+    let opener = CountingOpener::new();
+    let (a, b) = (Path::new("/a.db"), Path::new("/b.db"));
+
+    cache.with(a, 0, opener.open(), |_| ()).expect("a");
+    cache.with(b, 0, opener.open(), |_| ()).expect("b");
+    // Touch `a` so `b` becomes the eviction candidate.
+    cache.with(a, 0, opener.open(), |_| ()).expect("a again");
+    cache.with(Path::new("/c.db"), 0, opener.open(), |_| ()).expect("c");
+
+    assert!(cache.generation_for(a).is_some(), "the recently used entry survives");
+    assert_eq!(cache.generation_for(b), None, "the stale one is evicted");
+}
+
+/// Generation-based invalidation still retires the stale connection: a bumped
+/// generation reopens, and the old entry must not linger beside the new one.
+#[test]
+fn a_bumped_generation_reopens_and_retires_the_stale_connection() {
+    let mut cache = ThreadConnCache::new(THREAD_CONN_SLOTS);
+    let opener = CountingOpener::new();
+    let db = Path::new("/index-root.db");
+
+    cache.with(db, 0, opener.open(), |_| ()).expect("generation 0");
+    assert_eq!(cache.generation_for(db), Some(0));
+
+    cache.with(db, 1, opener.open(), |_| ()).expect("generation 1");
+    assert_eq!(
+        cache.generation_for(db),
+        Some(1),
+        "the entry moved to the new generation"
+    );
+    assert_eq!(
+        cache.len(),
+        1,
+        "the stale connection must not linger beside the new one"
+    );
+    assert_eq!(opener.count(), 2);
+}
+
+/// A failed open leaves the cache untouched, so the next call retries rather
+/// than serving a half-populated slot.
+#[test]
+fn a_failed_open_leaves_the_cache_unchanged() {
+    let mut cache = ThreadConnCache::new(THREAD_CONN_SLOTS);
+    let result: Result<(), rusqlite::Error> = cache.with(
+        Path::new("/nope.db"),
+        0,
+        |_| Err(rusqlite::Error::QueryReturnedNoRows),
+        |_| (),
+    );
+    assert!(result.is_err());
+    assert_eq!(cache.len(), 0);
 }
 
 // ── Freelist reclamation ─────────────────────────────────────────────
