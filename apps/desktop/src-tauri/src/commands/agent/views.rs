@@ -345,3 +345,6 @@ pub(super) fn to_message_view(message: StoredMessage) -> MessageView {
         created_at: message.created_at,
     }
 }
+
+#[cfg(test)]
+mod tests;

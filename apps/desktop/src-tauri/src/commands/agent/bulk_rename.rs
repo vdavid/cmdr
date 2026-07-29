@@ -154,3 +154,116 @@ pub fn cancel_bulk_rename_proposal(app: AppHandle, proposal_id: String) {
         store.consume(&proposal_id);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::file_system::write_operations::BulkRenameFingerprint;
+
+    /// The fingerprint is what apply re-checks each source against just before renaming
+    /// it, so every identity field has to survive this mapping. Dropping one widens the
+    /// window in which a file that changed since review still gets renamed.
+    #[test]
+    fn a_local_fingerprint_maps_every_identity_field_apply_rechecks() {
+        let fingerprint = RenameSourceFingerprint::Local {
+            row_id: "row".into(),
+            device: 17,
+            inode: 4_242,
+            size: 9_001,
+            modified_nanos: Some(1_780_000_000_000_000_000),
+        };
+
+        assert_eq!(fingerprint_row_id(&fingerprint), "row");
+        assert_eq!(
+            map_bulk_rename_fingerprint(&fingerprint),
+            BulkRenameFingerprint::Local {
+                device: 17,
+                inode: 4_242,
+                size: 9_001,
+                modified_nanos: Some(1_780_000_000_000_000_000),
+            }
+        );
+    }
+
+    /// A remote source has no inode, so apply identifies it by normalized path plus size
+    /// and mtime instead.
+    #[test]
+    fn a_remote_fingerprint_maps_the_path_size_and_mtime_it_is_identified_by() {
+        let fingerprint = RenameSourceFingerprint::Remote {
+            row_id: "row".into(),
+            normalized_path: "/photos/one.png".into(),
+            size: Some(2_048),
+            modified: Some(1_780_000_000),
+        };
+
+        assert_eq!(fingerprint_row_id(&fingerprint), "row");
+        assert_eq!(
+            map_bulk_rename_fingerprint(&fingerprint),
+            BulkRenameFingerprint::Remote {
+                normalized_path: "/photos/one.png".into(),
+                size: Some(2_048),
+                modified: Some(1_780_000_000),
+            }
+        );
+    }
+
+    /// Absent optional fields must stay absent, never become a placeholder zero: a zero
+    /// size or mtime reads as a real value a changed source could match.
+    #[test]
+    fn absent_fingerprint_fields_stay_absent_rather_than_becoming_zero() {
+        assert_eq!(
+            map_bulk_rename_fingerprint(&RenameSourceFingerprint::Local {
+                row_id: "row".into(),
+                device: 1,
+                inode: 2,
+                size: 3,
+                modified_nanos: None,
+            }),
+            BulkRenameFingerprint::Local {
+                device: 1,
+                inode: 2,
+                size: 3,
+                modified_nanos: None,
+            }
+        );
+        assert_eq!(
+            map_bulk_rename_fingerprint(&RenameSourceFingerprint::Remote {
+                row_id: "row".into(),
+                normalized_path: "/x/a.png".into(),
+                size: None,
+                modified: None,
+            }),
+            BulkRenameFingerprint::Remote {
+                normalized_path: "/x/a.png".into(),
+                size: None,
+                modified: None,
+            }
+        );
+    }
+
+    /// Apply keys its fingerprint lookup by row id, and both variants must answer with
+    /// their own. A variant that returned the wrong id would pair a row with another
+    /// row's expected fingerprint.
+    #[test]
+    fn both_fingerprint_variants_report_their_own_row_id() {
+        assert_eq!(
+            fingerprint_row_id(&RenameSourceFingerprint::Local {
+                row_id: "local-row".into(),
+                device: 0,
+                inode: 0,
+                size: 0,
+                modified_nanos: None,
+            }),
+            "local-row"
+        );
+        assert_eq!(
+            fingerprint_row_id(&RenameSourceFingerprint::Remote {
+                row_id: "remote-row".into(),
+                normalized_path: String::new(),
+                size: None,
+                modified: None,
+            }),
+            "remote-row"
+        );
+    }
+}

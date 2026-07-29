@@ -8,7 +8,6 @@
   },
   "files": {
     "apps/desktop/src-tauri/src/agent/chat/runtime/tests.rs": 1292,
-    "apps/desktop/src-tauri/src/commands/agent.rs": 1073,
     "apps/desktop/src-tauri/src/commands/network.rs": 901,
     "apps/desktop/src-tauri/src/downloads/watcher.rs": 1083,
     "apps/desktop/src-tauri/src/error_reporter/tests.rs": 998,
