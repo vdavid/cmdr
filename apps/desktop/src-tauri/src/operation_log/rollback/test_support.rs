@@ -12,7 +12,9 @@ use super::*;
 use crate::file_system::VolumeManager;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{InMemoryVolume, Volume};
-use crate::operation_log::store::{OperationRow, open_read_connection, operation_log_db_path, read_operation};
+use crate::operation_log::store::{
+    OperationItemRow, OperationRow, open_read_connection, operation_log_db_path, read_operation, read_operation_items,
+};
 use crate::operation_log::types::{
     EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind, RollbackState, RowRole, SearchCoverage,
 };
@@ -51,6 +53,13 @@ impl Rig {
     pub(super) fn read_op(&self, op_id: &str) -> OperationRow {
         let conn = open_read_connection(self.writer.db_path()).expect("read conn");
         read_operation(&conn, op_id).expect("read").expect("op present")
+    }
+
+    /// An operation's persisted item rows in `seq` order — how the journal reads back
+    /// after a rollback resolved each item.
+    pub(super) fn read_items(&self, op_id: &str) -> Vec<OperationItemRow> {
+        let conn = open_read_connection(self.writer.db_path()).expect("read conn");
+        read_operation_items(&conn, op_id, 1_000).expect("read items")
     }
 
     /// Seed an operation header + item rows + a terminal `rollback_state`, exactly

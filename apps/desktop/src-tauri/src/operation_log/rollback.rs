@@ -442,10 +442,13 @@ struct RunAcc {
 
 impl RunAcc {
     fn record(&mut self, unit: &RollbackUnit, result: ItemResult) {
-        let original_outcome = match &result {
-            ItemResult::Reversed => ItemOutcome::RolledBack,
-            ItemResult::Skipped(r) if r.counts_as_reversed() => ItemOutcome::RolledBack,
-            ItemResult::Skipped(_) => ItemOutcome::Skipped,
+        // A skip that counts as reversed (`AlreadyGone` — the end state already holds)
+        // is NOT a skip, so it reports no reason: the column explains items the undo
+        // left behind, and an idempotent no-op left nothing behind.
+        let (original_outcome, skip_reason) = match &result {
+            ItemResult::Reversed => (ItemOutcome::RolledBack, None),
+            ItemResult::Skipped(r) if r.counts_as_reversed() => (ItemOutcome::RolledBack, None),
+            ItemResult::Skipped(reason) => (ItemOutcome::Skipped, Some(*reason)),
         };
         if original_outcome == ItemOutcome::RolledBack {
             self.reversed += 1;
@@ -455,7 +458,7 @@ impl RunAcc {
         self.original_outcomes.push(ItemOutcomeUpdate {
             seq: unit.seq,
             outcome: original_outcome,
-            skip_reason: None,
+            skip_reason,
         });
         // Journal what the inverse op did to this item: reversed ⇒ Done, skipped ⇒
         // Skipped, so reconcile can read "did anything durably reverse" off the

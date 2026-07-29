@@ -495,6 +495,105 @@ async fn drift_on_one_item_skips_only_that_item() {
     assert!(!exists(&dst, "/gone.txt").await, "the unchanged copy IS deleted");
 }
 
+/// A skipped item persists the REASON it was skipped, per item — so a partial undo can
+/// say which file was left alone and why, instead of naming a reason class for the whole
+/// batch. The reversed item alongside it records no reason (there's nothing to explain).
+#[tokio::test]
+async fn a_skipped_item_persists_the_reason_it_was_skipped() {
+    let rig = Rig::new();
+    let v = Arc::new(InMemoryVolume::new("V"));
+    put(&v, "/invoice-2026.pdf", b"data").await;
+    put(&v, "/receipt-2026.pdf", b"data").await;
+    // The first file was edited after the rename (size no longer matches the snapshot);
+    // the second file's old name has since been taken by something else.
+    v.set_reported_size(Path::new("/invoice-2026.pdf"), 9999);
+    put(&v, "/scan002.pdf", b"someone-elses-file").await;
+    rig.register("v", v.clone());
+    rig.seed(
+        "op",
+        OpKind::Rename,
+        "v",
+        Some("v"),
+        RollbackState::Rollbackable,
+        vec![
+            file_unit(0, "v", "/scan001.pdf", "v", "/invoice-2026.pdf", 4),
+            file_unit(1, "v", "/scan002.pdf", "v", "/receipt-2026.pdf", 4),
+        ],
+    );
+
+    let report = rig.rollback("op").await;
+
+    assert_eq!(report.skipped, 2);
+    let items = rig.read_items("op");
+    assert_eq!(items[0].outcome, ItemOutcome::Skipped);
+    assert_eq!(
+        items[0].rollback_skip_reason,
+        Some(SkipReason::Drift),
+        "the edited file's row names drift, not a reason class"
+    );
+    assert_eq!(items[1].outcome, ItemOutcome::Skipped);
+    assert_eq!(
+        items[1].rollback_skip_reason,
+        Some(SkipReason::RestoreTargetOccupied),
+        "the taken-name file's row names the occupied target"
+    );
+}
+
+/// An item the rollback actually reversed records no skip reason: the column explains a
+/// skip, so a reversed item must read as "nothing to report", never as a leftover reason.
+#[tokio::test]
+async fn a_reversed_item_records_no_skip_reason() {
+    let rig = Rig::new();
+    let v = Arc::new(InMemoryVolume::new("V"));
+    put(&v, "/invoice-2026.pdf", b"data").await;
+    rig.register("v", v.clone());
+    rig.seed(
+        "op",
+        OpKind::Rename,
+        "v",
+        Some("v"),
+        RollbackState::Rollbackable,
+        vec![file_unit(0, "v", "/scan001.pdf", "v", "/invoice-2026.pdf", 4)],
+    );
+
+    let report = rig.rollback("op").await;
+
+    assert_eq!(report.final_state, RollbackState::RolledBack);
+    let items = rig.read_items("op");
+    assert_eq!(items[0].outcome, ItemOutcome::RolledBack);
+    assert_eq!(items[0].rollback_skip_reason, None);
+}
+
+/// An item that was ALREADY back where it belongs counts as reversed (an idempotent
+/// re-issue), so it records no reason either — `AlreadyGone` never reaches the column.
+#[tokio::test]
+async fn an_already_restored_item_counts_as_reversed_and_records_no_reason() {
+    let rig = Rig::new();
+    let v = Arc::new(InMemoryVolume::new("V"));
+    // Nothing at the renamed-to path: a previous undo already put the name back.
+    put(&v, "/scan001.pdf", b"data").await;
+    rig.register("v", v.clone());
+    rig.seed(
+        "op",
+        OpKind::Rename,
+        "v",
+        Some("v"),
+        RollbackState::Rollbackable,
+        vec![file_unit(0, "v", "/scan001.pdf", "v", "/invoice-2026.pdf", 4)],
+    );
+
+    let report = rig.rollback("op").await;
+
+    assert_eq!(report.reversed, 1);
+    assert_eq!(report.skipped, 0);
+    let items = rig.read_items("op");
+    assert_eq!(items[0].outcome, ItemOutcome::RolledBack);
+    assert_eq!(
+        items[0].rollback_skip_reason, None,
+        "an idempotent no-op is not a skip, so it explains nothing"
+    );
+}
+
 #[tokio::test]
 async fn unverifiable_precondition_skips_never_proceeds() {
     // A copy leaf whose mtime was recorded but whose live entry can't report it
