@@ -140,6 +140,12 @@
         return String(count)
     }
 
+    /**
+     * The status-bar sentence, or `''` when the content area is already saying it. The bar
+     * collapses on `''` (see the `.status-bar.is-empty` rule) rather than rendering an empty
+     * bordered strip: content is the source of truth, and a bar with nothing in it reads as
+     * broken. Every new content-area state has to return `''` here.
+     */
     function getStatusText(): string {
         if (!isIndexAvailable) {
             if (scanning && entriesScanned > 0) {
@@ -205,6 +211,8 @@
             hasSearched &&
             (query.trim() !== '' || sizeFilter !== 'any' || dateFilter !== 'any'),
     )
+
+    const statusText = $derived(getStatusText())
 
     /** Scrolls the cursor row into view. Called by the parent after cursor changes. */
     export function scrollCursorIntoView(): void {
@@ -363,9 +371,13 @@
     {/if}
 </div>
 
-<!-- Status bar -->
-<div class="status-bar" aria-live="polite">
-    <span class="status-text">{getStatusText()}</span>
+<!-- Status bar. Always in the DOM so the `aria-live` region survives every state change and
+     announces the next status; it collapses to nothing (no border, no padding, no height)
+     whenever it has nothing to say, which keeps the results well from ending in an empty
+     bordered strip while a search runs. Collapsing rather than unmounting also means the
+     dialog's height doesn't jump when the bar has something to report again. -->
+<div class="status-bar" class:is-empty={!statusText} aria-live="polite">
+    <span class="status-text">{statusText}</span>
 </div>
 
 <style>
@@ -619,6 +631,16 @@
         font-size: var(--font-size-md);
         color: var(--color-text-tertiary);
         flex-shrink: 0;
+    }
+
+    /* Nothing to report: zero it out. `overflow: hidden` clips the (empty) text box, the
+       transparent border keeps the 1px so the surrounding boxes don't shift by a hairline
+       when the text comes back, and the element stays rendered for `aria-live`. */
+    .status-bar.is-empty {
+        padding-block: 0;
+        height: 0;
+        border-top-color: transparent;
+        overflow: hidden;
     }
 
     .status-text {

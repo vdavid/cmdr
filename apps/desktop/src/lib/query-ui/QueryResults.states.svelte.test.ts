@@ -110,6 +110,19 @@ describe('SearchResults round 2 states', () => {
     expect(status?.textContent ?? '').toBe('')
   })
 
+  // An empty status bar still drew its top border and padding, so a running search ended
+  // the results well in a bordered strip with nothing in it. The bar stays in the DOM (the
+  // `aria-live` region has to survive the change) and collapses via `.is-empty` instead.
+  it('collapses the whole status bar, not just its text, while a search runs', async () => {
+    const target = mountWith({ isSearching: true, hasSearched: true, query: '*.jpg' })
+    await tick()
+    const bar = target.querySelector('.status-bar')
+    expect(bar).toBeTruthy()
+    expect(bar?.classList.contains('is-empty')).toBe(true)
+    // Still announceable: the live region is present, just collapsed.
+    expect(bar?.getAttribute('aria-live')).toBe('polite')
+  })
+
   it('clears the spinner and restores the status text once isSearching flips off', async () => {
     // The spinner shows for any in-flight fetch — the AI translate round-trip drives the same
     // `isSearching` flag in QueryDialog, so this renderer contract covers both paths.
@@ -136,6 +149,8 @@ describe('SearchResults round 2 states', () => {
     expect(target.querySelector('.spinner')).toBeFalsy()
     expect(target.querySelector('.result-row')).toBeTruthy()
     expect(target.querySelector('.status-bar .status-text')?.textContent ?? '').toContain('1 of 1')
+    // With something to report, the bar is back to its normal boxed self.
+    expect(target.querySelector('.status-bar')?.classList.contains('is-empty')).toBe(false)
   })
 
   it('D4: no-results state renders the bulleted criteria heading', async () => {

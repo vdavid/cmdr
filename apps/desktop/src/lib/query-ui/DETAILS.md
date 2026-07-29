@@ -566,6 +566,11 @@ Loading drive index). The rule: content is the source of truth; duplicating the 
 broken. When you add a new content-area state in `QueryResults.svelte`, make sure `getStatusText()` returns `''` for
 that state.
 
+An empty bar then COLLAPSES: `.status-bar.is-empty` zeroes its padding and height and makes its top border
+transparent, so a running search doesn't end the results well in a bordered strip with nothing in it. Two reasons it
+collapses instead of unmounting: the `aria-live="polite"` region has to exist before its content changes to be
+announced, and a mount/unmount would change the dialog's height every time the bar found something to say.
+
 **Gotcha**: ⌘⏎ and ⇧⏎ are explicit no-ops in the dialog. Bare Enter is the only key that runs a search or opens the
 cursor row (dispatched via `enterAction` per D8). The dialog's `handleModifierShortcuts` swallows both modifier
 combinations with `preventDefault` so the bare-Enter handler never sees a modified Enter.
