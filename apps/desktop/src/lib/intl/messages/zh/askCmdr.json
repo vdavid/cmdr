@@ -545,6 +545,46 @@
   "@askCmdr.renameUndo.skipped": {
     "sourceHash": "9a04738"
   },
+  "askCmdr.renameUndo.skipReason.drift.named": "保留了 {name}：重命名后它有改动。",
+  "@askCmdr.renameUndo.skipReason.drift.named": {
+    "sourceHash": "70f663f"
+  },
+  "askCmdr.renameUndo.skipReason.drift.counted": "保留了 {countText} {count, plural, other {个文件}}：重命名后它们有改动。",
+  "@askCmdr.renameUndo.skipReason.drift.counted": {
+    "sourceHash": "217d1e8"
+  },
+  "askCmdr.renameUndo.skipReason.nameTaken.named": "保留了 {name}：它原来的名称已被占用。",
+  "@askCmdr.renameUndo.skipReason.nameTaken.named": {
+    "sourceHash": "ed5bd8e"
+  },
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "保留了 {countText} {count, plural, other {个文件}}：它们原来的名称已被占用。",
+  "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
+    "sourceHash": "2fd2e7a"
+  },
+  "askCmdr.renameUndo.skipReason.unverifiable.named": "保留了 {name}：Cmdr 无法确认它有没有改动。",
+  "@askCmdr.renameUndo.skipReason.unverifiable.named": {
+    "sourceHash": "3e553b2"
+  },
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "保留了 {countText} {count, plural, other {个文件}}：Cmdr 无法确认它们有没有改动。",
+  "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
+    "sourceHash": "5964166"
+  },
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "保留了文件夹 {name}：里面现在有东西了。",
+  "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
+    "sourceHash": "b487d24"
+  },
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "保留了 {countText} {count, plural, other {个文件夹}}：里面现在有东西了。",
+  "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
+    "sourceHash": "d2c9f56"
+  },
+  "askCmdr.renameUndo.skipReason.failed.named": "保留了 {name}：Cmdr 无法把原来的名称改回去。",
+  "@askCmdr.renameUndo.skipReason.failed.named": {
+    "sourceHash": "35bb622"
+  },
+  "askCmdr.renameUndo.skipReason.failed.counted": "保留了 {countText} {count, plural, other {个文件}}：Cmdr 无法把原来的名称改回去。",
+  "@askCmdr.renameUndo.skipReason.failed.counted": {
+    "sourceHash": "f13c021"
+  },
   "askCmdr.renameUndo.refusedBatches": "Cmdr 无法撤销 {countText} {count, plural, other {批}}。详情请看操作日志。",
   "@askCmdr.renameUndo.refusedBatches": {
     "sourceHash": "16fde72"

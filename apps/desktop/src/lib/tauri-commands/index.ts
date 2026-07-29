@@ -312,6 +312,8 @@ export type {
   OperationItemView,
   OperationLogDetail,
   OperationUndoOutcome,
+  SkipBreakdown,
+  SkipReason,
   UndoReport,
 } from './operation-log'
 

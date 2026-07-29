@@ -10,7 +10,7 @@
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import { tString } from '$lib/intl/messages.svelte'
-    import { errorMessage } from './ask-cmdr-labels'
+    import { errorMessage, undoSkipMessage } from './ask-cmdr-labels'
     import { renderAssistantMarkdown } from './ask-cmdr-markdown'
     import AskCmdrToolLine from './AskCmdrToolLine.svelte'
     import AskCmdrAttachmentChip from './AskCmdrAttachmentChip.svelte'
@@ -35,6 +35,26 @@
             ? tString('askCmdr.renameUndo.undoLabel', undoCounts(message.fileCount))
             : '',
     )
+    /** The lines explaining what an undo left behind: one per reason it recorded, naming
+     *  the file when a reason applies to just one. Whatever no reason accounts for is still
+     *  said by class, so the skipped COUNT is always fully reported — a missing reason must
+     *  never quietly shrink what the line admits to. */
+    const skipReasonLines = $derived.by(() => {
+        if (message.kind !== 'renameApplied' || message.undo.status !== 'partial') return []
+        const { skips, skipped } = message.undo
+        const lines: string[] = []
+        let explained = 0
+        for (const group of skips) {
+            const line = undoSkipMessage(group)
+            if (line === null) continue
+            lines.push(line)
+            explained += group.count
+        }
+        const unexplained = Math.max(skipped - explained, 0)
+        if (unexplained > 0) lines.push(tString('askCmdr.renameUndo.skipped', undoCounts(unexplained)))
+        return lines
+    })
+
     const undoJobLabel = $derived(
         message.kind === 'renameApplied'
             ? tString('askCmdr.renameUndo.undoJobLabel', {
@@ -123,11 +143,13 @@
                  changed since keeps its new name and this says so. -->
             <div class="rename-lines">
                 <span>{tString('askCmdr.renameUndo.partial', undoCounts(message.undo.restored))}</span>
-                {#if message.undo.skipped > 0}
-                    <span class="rename-note">
-                        {tString('askCmdr.renameUndo.skipped', undoCounts(message.undo.skipped))}
-                    </span>
-                {/if}
+                <!-- One line per REASON, naming the file when a reason applies to just one.
+                     `skipReasonLines` is empty when nothing was skipped, and falls back to
+                     the reason-class line when the backend recorded no reason (a batch
+                     undone before the reason column existed). -->
+                {#each skipReasonLines as reasonLine, index (index)}
+                    <span class="rename-note">{reasonLine}</span>
+                {/each}
                 {#if message.undo.refusedBatches > 0}
                     <span class="rename-note">
                         {tString('askCmdr.renameUndo.refusedBatches', undoCounts(message.undo.refusedBatches))}

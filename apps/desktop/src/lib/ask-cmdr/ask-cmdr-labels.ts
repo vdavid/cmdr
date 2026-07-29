@@ -5,7 +5,8 @@
  */
 
 import { tString } from '$lib/intl/messages.svelte'
-import type { AskCmdrErrorKind, RenameEvidenceSource } from '$lib/tauri-commands'
+import { formatInteger } from '$lib/intl/number-format'
+import type { AskCmdrErrorKind, RenameEvidenceSource, SkipBreakdown, SkipReason } from '$lib/tauri-commands'
 import type { MessageKey } from '$lib/intl/keys.gen'
 
 /** Present-tense (running) and past-tense (done) label keys per read-only tool. */
@@ -73,4 +74,52 @@ const EVIDENCE_KEYS: Record<RenameEvidenceSource, MessageKey> = {
  */
 export function evidenceSourceLabel(source: RenameEvidenceSource): string {
   return tString(EVIDENCE_KEYS[source])
+}
+
+/**
+ * Per reason an undo can leave a file alone: the line that NAMES the one file it applies
+ * to, and the line that COUNTS them when it applies to several. Two keys rather than one
+ * ICU plural, because "name it" vs "count them" is a display decision, not a plural
+ * category — a locale with only `other` (Chinese, Vietnamese) could not express both.
+ *
+ * `null` means the reason has no line of its own, so the caller falls back to the
+ * reason-class line; the count is reported either way, so a reason with no copy can never
+ * hide that files stayed behind. `alreadyGone` is deliberately `null`: an item already
+ * back where it belongs counts as restored, not skipped, so it never reaches here.
+ *
+ * Exhaustive over the wire enum, so a new reason is a compile error until it's decided.
+ */
+const SKIP_REASON_KEYS: Record<SkipReason, { named: MessageKey; counted: MessageKey } | null> = {
+  drift: {
+    named: 'askCmdr.renameUndo.skipReason.drift.named',
+    counted: 'askCmdr.renameUndo.skipReason.drift.counted',
+  },
+  restoreTargetOccupied: {
+    named: 'askCmdr.renameUndo.skipReason.nameTaken.named',
+    counted: 'askCmdr.renameUndo.skipReason.nameTaken.counted',
+  },
+  unverifiablePrecondition: {
+    named: 'askCmdr.renameUndo.skipReason.unverifiable.named',
+    counted: 'askCmdr.renameUndo.skipReason.unverifiable.counted',
+  },
+  dirNotEmpty: {
+    named: 'askCmdr.renameUndo.skipReason.folderNotEmpty.named',
+    counted: 'askCmdr.renameUndo.skipReason.folderNotEmpty.counted',
+  },
+  failed: {
+    named: 'askCmdr.renameUndo.skipReason.failed.named',
+    counted: 'askCmdr.renameUndo.skipReason.failed.counted',
+  },
+  alreadyGone: null,
+}
+
+/**
+ * What happened to the files one reason applies to: the file NAMED when it's the only one,
+ * COUNTED when there are several. `null` when the reason has no line of its own.
+ */
+export function undoSkipMessage(group: SkipBreakdown): string | null {
+  const keys = SKIP_REASON_KEYS[group.reason]
+  if (!keys) return null
+  if (group.count === 1) return tString(keys.named, { name: group.exampleName })
+  return tString(keys.counted, { countText: formatInteger(group.count), count: group.count })
 }

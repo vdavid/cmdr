@@ -652,6 +652,111 @@
       }
     }
   },
+  "askCmdr.renameUndo.skipReason.drift.named": "Left {name} alone: it changed since the rename.",
+  "@askCmdr.renameUndo.skipReason.drift.named": {
+    "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed files kept their new names and why. This version is used when the reason applies to exactly ONE file, so the line names it. This reason: the file was edited after Cmdr renamed it, so putting the old name back would touch a file the user has since changed. Cmdr never overwrites while undoing, so say this as a considered choice, not as something going wrong. Sentence case.",
+    "placeholders": {
+      "name": {
+        "content": "The file’s own name, e.g. invoice-2026.pdf. Never translate it: it is the real name on disk."
+      }
+    }
+  },
+  "askCmdr.renameUndo.skipReason.drift.counted": "Left {countText} {count, plural, one {file} other {files}} alone: they changed since the rename.",
+  "@askCmdr.renameUndo.skipReason.drift.counted": {
+    "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed files kept their new names and why. This version is used when the reason applies to two or more files, so the line counts them instead of naming them. This reason: the file was edited after Cmdr renamed it, so putting the old name back would touch a file the user has since changed. Cmdr never overwrites while undoing, so say this as a considered choice, not as something going wrong. Sentence case.",
+    "placeholders": {
+      "countText": {
+        "content": "How many files this reason applies to, ready to drop into the sentence (e.g. 1,234). Always two or more."
+      },
+      "count": {
+        "content": "The same number of files (decides whether the noun is singular or plural)."
+      }
+    }
+  },
+  "askCmdr.renameUndo.skipReason.nameTaken.named": "Left {name} alone: its old name is taken again.",
+  "@askCmdr.renameUndo.skipReason.nameTaken.named": {
+    "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed files kept their new names and why. This version is used when the reason applies to exactly ONE file, so the line names it. This reason: something else now sits at the name the file used to have, so the file keeps its new name. Cmdr never overwrites while undoing, so say this as a considered choice, not as something going wrong. Sentence case.",
+    "placeholders": {
+      "name": {
+        "content": "The file’s own name, e.g. invoice-2026.pdf. Never translate it: it is the real name on disk."
+      }
+    }
+  },
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "Left {countText} {count, plural, one {file} other {files}} alone: their old names are taken again.",
+  "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
+    "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed files kept their new names and why. This version is used when the reason applies to two or more files, so the line counts them instead of naming them. This reason: something else now sits at the name the file used to have, so the file keeps its new name. Cmdr never overwrites while undoing, so say this as a considered choice, not as something going wrong. Sentence case.",
+    "placeholders": {
+      "countText": {
+        "content": "How many files this reason applies to, ready to drop into the sentence (e.g. 1,234). Always two or more."
+      },
+      "count": {
+        "content": "The same number of files (decides whether the noun is singular or plural)."
+      }
+    }
+  },
+  "askCmdr.renameUndo.skipReason.unverifiable.named": "Left {name} alone: Cmdr couldn’t check whether it changed.",
+  "@askCmdr.renameUndo.skipReason.unverifiable.named": {
+    "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed files kept their new names and why. This version is used when the reason applies to exactly ONE file, so the line names it. This reason: the drive could not tell Cmdr whether the file has changed since the rename (some network drives and phones cannot), and Cmdr never renames a file it cannot check first. Say this as caution, not as a fault. Sentence case; the apostrophe is U+2019.",
+    "placeholders": {
+      "name": {
+        "content": "The file’s own name, e.g. invoice-2026.pdf. Never translate it: it is the real name on disk."
+      }
+    }
+  },
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "Left {countText} {count, plural, one {file} other {files}} alone: Cmdr couldn’t check whether they changed.",
+  "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
+    "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed files kept their new names and why. This version is used when the reason applies to two or more files, so the line counts them instead of naming them. This reason: the drive could not tell Cmdr whether the file has changed since the rename (some network drives and phones cannot), and Cmdr never renames a file it cannot check first. Say this as caution, not as a fault. Sentence case; the apostrophe is U+2019.",
+    "placeholders": {
+      "countText": {
+        "content": "How many files this reason applies to, ready to drop into the sentence (e.g. 1,234). Always two or more."
+      },
+      "count": {
+        "content": "The same number of files (decides whether the noun is singular or plural)."
+      }
+    }
+  },
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "Left the folder {name} alone: it has something in it now.",
+  "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
+    "description": "One line of a partial undo result, about FOLDERS rather than files. This reason: undoing would have removed a folder Cmdr created, but something has been put inside it since, so Cmdr keeps the folder and what is in it. This version is used when the reason applies to exactly ONE file, so the line names it. Cmdr never overwrites while undoing, so say this as a considered choice, not as something going wrong. Sentence case.",
+    "placeholders": {
+      "name": {
+        "content": "The folder’s own name, e.g. Scans. Never translate it: it is the real name on disk."
+      }
+    }
+  },
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "Left {countText} {count, plural, one {folder} other {folders}} alone: they have something in them now.",
+  "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
+    "description": "One line of a partial undo result, about FOLDERS rather than files. This reason: undoing would have removed a folder Cmdr created, but something has been put inside it since, so Cmdr keeps the folder and what is in it. This version is used when the reason applies to two or more files, so the line counts them instead of naming them. Cmdr never overwrites while undoing, so say this as a considered choice, not as something going wrong. Sentence case.",
+    "placeholders": {
+      "countText": {
+        "content": "How many folders this reason applies to, ready to drop into the sentence (e.g. 1,234). Always two or more."
+      },
+      "count": {
+        "content": "The same number of folders (decides whether the noun is singular or plural)."
+      }
+    }
+  },
+  "askCmdr.renameUndo.skipReason.failed.named": "Left {name} alone: Cmdr couldn’t put its old name back.",
+  "@askCmdr.renameUndo.skipReason.failed.named": {
+    "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed files kept their new names and why. This version is used when the reason applies to exactly ONE file, so the line names it. This reason: the drive refused to rename the file back (it is disconnected, read-only, or reported a problem). Unlike the other reasons this one is not a deliberate choice, so it may be worth trying again. Sentence case; the apostrophe is U+2019.",
+    "placeholders": {
+      "name": {
+        "content": "The file’s own name, e.g. invoice-2026.pdf. Never translate it: it is the real name on disk."
+      }
+    }
+  },
+  "askCmdr.renameUndo.skipReason.failed.counted": "Left {countText} {count, plural, one {file} other {files}} alone: Cmdr couldn’t put their old names back.",
+  "@askCmdr.renameUndo.skipReason.failed.counted": {
+    "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed files kept their new names and why. This version is used when the reason applies to two or more files, so the line counts them instead of naming them. This reason: the drive refused to rename the file back (it is disconnected, read-only, or reported a problem). Unlike the other reasons this one is not a deliberate choice, so it may be worth trying again. Sentence case; the apostrophe is U+2019.",
+    "placeholders": {
+      "countText": {
+        "content": "How many files this reason applies to, ready to drop into the sentence (e.g. 1,234). Always two or more."
+      },
+      "count": {
+        "content": "The same number of files (decides whether the noun is singular or plural)."
+      }
+    }
+  },
   "askCmdr.renameUndo.refusedBatches": "Cmdr couldn’t undo {countText} {count, plural, one {batch} other {batches}}. The operation log has the details.",
   "@askCmdr.renameUndo.refusedBatches": {
     "description": "Extra line of a partial undo result, shown when whole batches could not be reversed at all (already undone, or a drive they need is disconnected). 'The operation log' is Cmdr's history of file changes; use whatever your locale calls that feature. A 'batch' is one reviewed group of renames the user approved. Sentence case; the apostrophe is U+2019.",

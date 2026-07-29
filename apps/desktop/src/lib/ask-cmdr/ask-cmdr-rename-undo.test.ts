@@ -58,6 +58,8 @@ function operation(operationId: string, restored: number, skipped = 0): UndoRepo
     operationId,
     restored,
     skipped,
+    // The engine records a reason for every skip, so a skipping operation carries one.
+    skips: skipped > 0 ? [{ reason: 'drift', count: skipped, exampleName: 'invoice-2026.pdf' }] : [],
     finalState: skipped > 0 ? 'partiallyRolledBack' : 'rolledBack',
     refusal: null,
   }
@@ -170,7 +172,13 @@ describe('reporting the result', () => {
 
     await undoRename(lines()[0])
 
-    expect(lines()[0].undo).toEqual({ status: 'partial', restored: 19, skipped: 4, refusedBatches: 0 })
+    expect(lines()[0].undo).toEqual({
+      status: 'partial',
+      restored: 19,
+      skipped: 4,
+      refusedBatches: 0,
+      skips: [{ reason: 'drift', count: 4, exampleName: 'invoice-2026.pdf' }],
+    })
   })
 
   it('hands the Undo back when the call itself did not go through', async () => {

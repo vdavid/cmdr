@@ -104,17 +104,53 @@ describe('the result', () => {
     expect(buttons(target)).toHaveLength(0)
   })
 
-  it('says what stayed behind on a partial undo, and why', () => {
-    const target = render(line({ status: 'partial', restored: 19, skipped: 4, refusedBatches: 0 }))
+  it('names the file and its own reason when one file stayed behind', () => {
+    const target = render(
+      line({
+        status: 'partial',
+        restored: 19,
+        skipped: 1,
+        refusedBatches: 0,
+        skips: [{ reason: 'drift', count: 1, exampleName: 'invoice-2026.pdf' }],
+      }),
+    )
 
     expect(target.textContent).toContain('Put back 19 files.')
-    // The honest half: undo never overwrites, so these kept their new names.
+    // The whole point of the per-item reason: this file, this reason.
+    expect(target.textContent).toContain('Left invoice-2026.pdf alone: it changed since the rename.')
+    // And NOT the vague either/or class line it replaces.
+    expect(target.textContent).not.toContain('or the old name is taken again')
+  })
+
+  it('gives each reason its own line, so two different reasons are not one blurred class', () => {
+    const target = render(
+      line({
+        status: 'partial',
+        restored: 19,
+        skipped: 4,
+        refusedBatches: 0,
+        skips: [
+          { reason: 'drift', count: 3, exampleName: 'invoice-2026.pdf' },
+          { reason: 'restoreTargetOccupied', count: 1, exampleName: 'receipt-2026.pdf' },
+        ],
+      }),
+    )
+
+    expect(target.textContent).toContain('Left 3 files alone: they changed since the rename.')
+    expect(target.textContent).toContain('Left receipt-2026.pdf alone: its old name is taken again.')
+  })
+
+  it('falls back to naming the reason class when no reason was recorded', () => {
+    // A batch undone before the reason column existed: the count is still reported, so a
+    // missing reason can never hide that files stayed behind.
+    const target = render(line({ status: 'partial', restored: 19, skipped: 4, refusedBatches: 0, skips: [] }))
+
     expect(target.textContent).toContain('Left 4 files alone')
     expect(target.textContent).toContain('changed since the rename, or the old name is taken again')
   })
 
   it('names refused batches separately, since they carry no per-file numbers', () => {
-    const target = render(line({ status: 'partial', restored: 12, skipped: 0, refusedBatches: 2 }))
+    const target = render(line({ status: 'partial', restored: 12, skipped: 0, refusedBatches: 2, skips: [] }))
 
     expect(target.textContent).toContain('Put back 12 files.')
     expect(target.textContent).toContain('Cmdr couldn’t undo 2 batches.')
@@ -139,7 +175,15 @@ describe('a11y', () => {
   })
 
   it('has no violations reporting a partial result', async () => {
-    const target = render(line({ status: 'partial', restored: 19, skipped: 4, refusedBatches: 1 }))
+    const target = render(
+      line({
+        status: 'partial',
+        restored: 19,
+        skipped: 4,
+        refusedBatches: 1,
+        skips: [{ reason: 'drift', count: 4, exampleName: 'invoice-2026.pdf' }],
+      }),
+    )
     await tick()
 
     await expectNoA11yViolations(target)

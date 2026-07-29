@@ -10,13 +10,14 @@
 import { describe, expect, it } from 'vitest'
 
 import { undoStateFromReport } from './rename-undo'
-import type { OperationUndoOutcome, UndoReport } from '$lib/tauri-commands'
+import type { OperationUndoOutcome, SkipBreakdown, UndoReport } from '$lib/tauri-commands'
 
 function outcome(overrides: Partial<OperationUndoOutcome> = {}): OperationUndoOutcome {
   return {
     operationId: 'op-1',
     restored: 0,
     skipped: 0,
+    skips: [],
     finalState: 'rolledBack',
     refusal: null,
     ...overrides,
@@ -25,6 +26,10 @@ function outcome(overrides: Partial<OperationUndoOutcome> = {}): OperationUndoOu
 
 function report(overrides: Partial<UndoReport> = {}): UndoReport {
   return { operations: [outcome()], restored: 0, skipped: 0, ...overrides }
+}
+
+function group(overrides: Partial<SkipBreakdown> = {}): SkipBreakdown {
+  return { reason: 'drift', count: 1, exampleName: 'a.pdf', ...overrides }
 }
 
 describe('undoStateFromReport', () => {
@@ -40,7 +45,7 @@ describe('undoStateFromReport', () => {
       report({ restored: 19, skipped: 4, operations: [outcome({ restored: 19, skipped: 4 })] }),
     )
 
-    expect(state).toEqual({ status: 'partial', restored: 19, skipped: 4, refusedBatches: 0 })
+    expect(state).toEqual({ status: 'partial', restored: 19, skipped: 4, refusedBatches: 0, skips: [] })
   })
 
   it('counts a refused batch separately, since it reports no per-file numbers', () => {
@@ -55,7 +60,7 @@ describe('undoStateFromReport', () => {
     )
 
     // Restored 12, yet a whole batch was missed: partial, not undone.
-    expect(state).toEqual({ status: 'partial', restored: 12, skipped: 0, refusedBatches: 1 })
+    expect(state).toEqual({ status: 'partial', restored: 12, skipped: 0, refusedBatches: 1, skips: [] })
   })
 
   it('reports nothing-happened as unavailable rather than as an undo of zero files', () => {
@@ -64,6 +69,75 @@ describe('undoStateFromReport', () => {
     )
 
     expect(state).toEqual({ status: 'unavailable' })
+  })
+
+  it('carries each reason through, so the line can name a file instead of a class', () => {
+    const state = undoStateFromReport(
+      report({
+        restored: 5,
+        skipped: 2,
+        operations: [
+          outcome({
+            restored: 5,
+            skipped: 2,
+            skips: [
+              group({ reason: 'drift', count: 1, exampleName: 'invoice-2026.pdf' }),
+              group({ reason: 'restoreTargetOccupied', count: 1, exampleName: 'receipt-2026.pdf' }),
+            ],
+          }),
+        ],
+      }),
+    )
+
+    expect(state).toEqual({
+      status: 'partial',
+      restored: 5,
+      skipped: 2,
+      refusedBatches: 0,
+      skips: [
+        { reason: 'drift', count: 1, exampleName: 'invoice-2026.pdf' },
+        { reason: 'restoreTargetOccupied', count: 1, exampleName: 'receipt-2026.pdf' },
+      ],
+    })
+  })
+
+  it('merges the same reason across batches into one group, keeping the counts complete', () => {
+    // A job-wide undo reverses several batches; the same reason hitting two of them is
+    // one thing to tell the user, and the count has to be the sum or the report
+    // understates what stayed behind.
+    const state = undoStateFromReport(
+      report({
+        restored: 0,
+        skipped: 5,
+        operations: [
+          outcome({
+            operationId: 'op-2',
+            skipped: 3,
+            skips: [group({ reason: 'drift', count: 3, exampleName: 'newest.pdf' })],
+          }),
+          outcome({
+            operationId: 'op-1',
+            skipped: 2,
+            skips: [
+              group({ reason: 'drift', count: 1, exampleName: 'older.pdf' }),
+              group({ reason: 'failed', count: 1, exampleName: 'locked.pdf' }),
+            ],
+          }),
+        ],
+      }),
+    )
+
+    expect(state).toEqual({
+      status: 'partial',
+      restored: 0,
+      skipped: 5,
+      refusedBatches: 0,
+      skips: [
+        // First seen wins the example: the operations arrive newest-batch-first.
+        { reason: 'drift', count: 4, exampleName: 'newest.pdf' },
+        { reason: 'failed', count: 1, exampleName: 'locked.pdf' },
+      ],
+    })
   })
 
   it('treats an already-restored batch (every item an idempotent no-op) as undone', () => {

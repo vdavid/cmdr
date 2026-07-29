@@ -547,6 +547,46 @@
   "@askCmdr.renameUndo.skipped": {
     "sourceHash": "9a04738"
   },
+  "askCmdr.renameUndo.skipReason.drift.named": "{name} laissé tel quel : il a changé depuis le renommage.",
+  "@askCmdr.renameUndo.skipReason.drift.named": {
+    "sourceHash": "70f663f"
+  },
+  "askCmdr.renameUndo.skipReason.drift.counted": "{countText} {count, plural, one {fichier laissé} many {fichiers laissés} other {fichiers laissés}} tels quels : ils ont changé depuis le renommage.",
+  "@askCmdr.renameUndo.skipReason.drift.counted": {
+    "sourceHash": "217d1e8"
+  },
+  "askCmdr.renameUndo.skipReason.nameTaken.named": "{name} laissé tel quel : son ancien nom est de nouveau pris.",
+  "@askCmdr.renameUndo.skipReason.nameTaken.named": {
+    "sourceHash": "ed5bd8e"
+  },
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{countText} {count, plural, one {fichier laissé} many {fichiers laissés} other {fichiers laissés}} tels quels : leurs anciens noms sont de nouveau pris.",
+  "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
+    "sourceHash": "2fd2e7a"
+  },
+  "askCmdr.renameUndo.skipReason.unverifiable.named": "{name} laissé tel quel : Cmdr n’a pas pu vérifier s’il avait changé.",
+  "@askCmdr.renameUndo.skipReason.unverifiable.named": {
+    "sourceHash": "3e553b2"
+  },
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{countText} {count, plural, one {fichier laissé} many {fichiers laissés} other {fichiers laissés}} tels quels : Cmdr n’a pas pu vérifier s’ils avaient changé.",
+  "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
+    "sourceHash": "5964166"
+  },
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "Dossier {name} laissé tel quel : il contient maintenant quelque chose.",
+  "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
+    "sourceHash": "b487d24"
+  },
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "{countText} {count, plural, one {dossier laissé} many {dossiers laissés} other {dossiers laissés}} tels quels : ils contiennent maintenant quelque chose.",
+  "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
+    "sourceHash": "d2c9f56"
+  },
+  "askCmdr.renameUndo.skipReason.failed.named": "{name} laissé tel quel : Cmdr n’a pas pu lui rendre son ancien nom.",
+  "@askCmdr.renameUndo.skipReason.failed.named": {
+    "sourceHash": "35bb622"
+  },
+  "askCmdr.renameUndo.skipReason.failed.counted": "{countText} {count, plural, one {fichier laissé} many {fichiers laissés} other {fichiers laissés}} tels quels : Cmdr n’a pas pu leur rendre leurs anciens noms.",
+  "@askCmdr.renameUndo.skipReason.failed.counted": {
+    "sourceHash": "f13c021"
+  },
   "askCmdr.renameUndo.refusedBatches": "Cmdr n’a pas pu annuler {countText} {count, plural, one {lot} many {lots} other {lots}}. Le journal des opérations donne les détails.",
   "@askCmdr.renameUndo.refusedBatches": {
     "sourceHash": "16fde72"

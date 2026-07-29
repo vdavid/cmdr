@@ -61,6 +61,7 @@ function item(seq: number): OperationItemView {
     mtime: 1_700_000_000_000,
     outcome: 'done',
     overwrote: false,
+    rollbackSkipReason: null,
   }
 }
 

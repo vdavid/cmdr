@@ -8,11 +8,13 @@ import {
   type OperationRow,
   type OperationItemView,
   type OperationUndoOutcome,
+  type SkipBreakdown,
+  type SkipReason,
   type UndoReport,
 } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
-export type { OperationRow, OperationItemView, OperationUndoOutcome, UndoReport }
+export type { OperationRow, OperationItemView, OperationUndoOutcome, SkipBreakdown, SkipReason, UndoReport }
 
 /** One operation's header plus a page of its items, dir prefixes resolved to full paths. */
 export interface OperationLogDetail {

@@ -123,6 +123,7 @@ describe('OperationLogDialog', () => {
           mtime: null,
           outcome: 'done',
           overwrote: false,
+          rollbackSkipReason: null,
         },
       ],
       totalItems: 1,

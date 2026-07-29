@@ -6,7 +6,7 @@
  * re-exports them, so `./ask-cmdr-trigger.svelte` stays the import path components use.
  */
 
-import type { AskCmdrErrorKind, AttachmentRef } from '$lib/tauri-commands'
+import type { AskCmdrErrorKind, AttachmentRef, SkipBreakdown } from '$lib/tauri-commands'
 
 /** One tool call the assistant made, as the collapsible "looked at X" line shows it. */
 export interface RailToolCall {
@@ -82,6 +82,12 @@ export type RenameUndoState =
        * Counted separately because a refused batch reports no per-file numbers, and
        * folding it into `skipped` would understate what was missed. */
       refusedBatches: number
+      /** WHICH reason left which file alone, merged across the job's batches: one group
+       * per reason, with its complete count and one example file name. Lets the line
+       * name a file rather than a reason class. Empty when the backend recorded no
+       * reasons, and then the line falls back to naming the class — the count is
+       * reported either way. */
+      skips: SkipBreakdown[]
     }
   /** Nothing was reversed: the batch was already undone, or a volume it needs is
    * disconnected. */

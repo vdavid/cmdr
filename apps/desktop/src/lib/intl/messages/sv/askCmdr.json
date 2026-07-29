@@ -546,6 +546,46 @@
   "@askCmdr.renameUndo.skipped": {
     "sourceHash": "9a04738"
   },
+  "askCmdr.renameUndo.skipReason.drift.named": "{name} lämnades som den är: den ändrades efter namnbytet.",
+  "@askCmdr.renameUndo.skipReason.drift.named": {
+    "sourceHash": "70f663f"
+  },
+  "askCmdr.renameUndo.skipReason.drift.counted": "{countText} {count, plural, one {fil} other {filer}} lämnades som de är: de ändrades efter namnbytet.",
+  "@askCmdr.renameUndo.skipReason.drift.counted": {
+    "sourceHash": "217d1e8"
+  },
+  "askCmdr.renameUndo.skipReason.nameTaken.named": "{name} lämnades som den är: det gamla namnet är taget igen.",
+  "@askCmdr.renameUndo.skipReason.nameTaken.named": {
+    "sourceHash": "ed5bd8e"
+  },
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{countText} {count, plural, one {fil} other {filer}} lämnades som de är: deras gamla namn är tagna igen.",
+  "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
+    "sourceHash": "2fd2e7a"
+  },
+  "askCmdr.renameUndo.skipReason.unverifiable.named": "{name} lämnades som den är: Cmdr kunde inte kontrollera om den ändrats.",
+  "@askCmdr.renameUndo.skipReason.unverifiable.named": {
+    "sourceHash": "3e553b2"
+  },
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{countText} {count, plural, one {fil} other {filer}} lämnades som de är: Cmdr kunde inte kontrollera om de ändrats.",
+  "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
+    "sourceHash": "5964166"
+  },
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "Mappen {name} lämnades som den är: det ligger något i den nu.",
+  "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
+    "sourceHash": "b487d24"
+  },
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "{countText} {count, plural, one {mapp} other {mappar}} lämnades som de är: det ligger något i dem nu.",
+  "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
+    "sourceHash": "d2c9f56"
+  },
+  "askCmdr.renameUndo.skipReason.failed.named": "{name} lämnades som den är: Cmdr kunde inte ge tillbaka det gamla namnet.",
+  "@askCmdr.renameUndo.skipReason.failed.named": {
+    "sourceHash": "35bb622"
+  },
+  "askCmdr.renameUndo.skipReason.failed.counted": "{countText} {count, plural, one {fil} other {filer}} lämnades som de är: Cmdr kunde inte ge tillbaka deras gamla namn.",
+  "@askCmdr.renameUndo.skipReason.failed.counted": {
+    "sourceHash": "f13c021"
+  },
   "askCmdr.renameUndo.refusedBatches": "Cmdr kunde inte ångra {countText} {count, plural, one {omgång} other {omgångar}}. Detaljerna finns i åtgärdsloggen.",
   "@askCmdr.renameUndo.refusedBatches": {
     "sourceHash": "16fde72"

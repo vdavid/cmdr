@@ -6,7 +6,7 @@
  */
 
 import type { RenameUndoState } from './ask-cmdr-messages'
-import type { UndoReport } from '$lib/tauri-commands'
+import type { SkipBreakdown, UndoReport } from '$lib/tauri-commands'
 
 /**
  * Read a finished undo as a display state.
@@ -25,7 +25,33 @@ export function undoStateFromReport(report: UndoReport): RenameUndoState {
   // undo of zero files as a success.
   if (report.restored === 0 && report.skipped === 0) return { status: 'unavailable' }
   if (report.skipped > 0 || refusedBatches > 0) {
-    return { status: 'partial', restored: report.restored, skipped: report.skipped, refusedBatches }
+    return {
+      status: 'partial',
+      restored: report.restored,
+      skipped: report.skipped,
+      refusedBatches,
+      skips: mergeSkips(report),
+    }
   }
   return { status: 'undone', restored: report.restored }
+}
+
+/**
+ * Fold every batch's per-reason groups into one list for the whole job.
+ *
+ * One reason is one thing to tell the user, however many batches it hit, so counts SUM
+ * across batches (understating them would defeat the point). The example file is the
+ * first one seen, and `report.operations` arrives newest-batch-first, so it's the most
+ * recent file the reason applied to — the one the user was just looking at.
+ */
+function mergeSkips(report: UndoReport): SkipBreakdown[] {
+  const merged: SkipBreakdown[] = []
+  for (const operation of report.operations) {
+    for (const group of operation.skips) {
+      const existing = merged.find((candidate) => candidate.reason === group.reason)
+      if (existing) existing.count += group.count
+      else merged.push({ ...group })
+    }
+  }
+  return merged
 }

@@ -547,6 +547,46 @@
   "@askCmdr.renameUndo.skipped": {
     "sourceHash": "9a04738"
   },
+  "askCmdr.renameUndo.skipReason.drift.named": "{name} se quedó como está: cambió después del cambio de nombre.",
+  "@askCmdr.renameUndo.skipReason.drift.named": {
+    "sourceHash": "70f663f"
+  },
+  "askCmdr.renameUndo.skipReason.drift.counted": "{countText} {count, plural, one {archivo} many {archivos} other {archivos}} se quedaron como están: cambiaron después del cambio de nombre.",
+  "@askCmdr.renameUndo.skipReason.drift.counted": {
+    "sourceHash": "217d1e8"
+  },
+  "askCmdr.renameUndo.skipReason.nameTaken.named": "{name} se quedó como está: su nombre anterior vuelve a estar ocupado.",
+  "@askCmdr.renameUndo.skipReason.nameTaken.named": {
+    "sourceHash": "ed5bd8e"
+  },
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{countText} {count, plural, one {archivo} many {archivos} other {archivos}} se quedaron como están: sus nombres anteriores vuelven a estar ocupados.",
+  "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
+    "sourceHash": "2fd2e7a"
+  },
+  "askCmdr.renameUndo.skipReason.unverifiable.named": "{name} se quedó como está: Cmdr no pudo comprobar si cambió.",
+  "@askCmdr.renameUndo.skipReason.unverifiable.named": {
+    "sourceHash": "3e553b2"
+  },
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{countText} {count, plural, one {archivo} many {archivos} other {archivos}} se quedaron como están: Cmdr no pudo comprobar si cambiaron.",
+  "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
+    "sourceHash": "5964166"
+  },
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "La carpeta {name} se quedó como está: ahora tiene algo dentro.",
+  "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
+    "sourceHash": "b487d24"
+  },
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "{countText} {count, plural, one {carpeta} many {carpetas} other {carpetas}} se quedaron como están: ahora tienen algo dentro.",
+  "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
+    "sourceHash": "d2c9f56"
+  },
+  "askCmdr.renameUndo.skipReason.failed.named": "{name} se quedó como está: Cmdr no pudo devolverle su nombre anterior.",
+  "@askCmdr.renameUndo.skipReason.failed.named": {
+    "sourceHash": "35bb622"
+  },
+  "askCmdr.renameUndo.skipReason.failed.counted": "{countText} {count, plural, one {archivo} many {archivos} other {archivos}} se quedaron como están: Cmdr no pudo devolverles sus nombres anteriores.",
+  "@askCmdr.renameUndo.skipReason.failed.counted": {
+    "sourceHash": "f13c021"
+  },
   "askCmdr.renameUndo.refusedBatches": "Cmdr no pudo deshacer {countText} {count, plural, one {lote} many {lotes} other {lotes}}. El registro de operaciones tiene los detalles.",
   "@askCmdr.renameUndo.refusedBatches": {
     "sourceHash": "16fde72"
