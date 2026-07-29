@@ -2,31 +2,17 @@
  * Tier 3 a11y and interaction coverage for the Ask Cmdr bulk-rename review.
  *
  * The dialog only receives display rows. These tests mock the trigger's user-action
- * callbacks, so no Tauri command or filesystem mutation can run here.
+ * callbacks, so no Tauri command or filesystem mutation can run here. The review state is a
+ * real `$state` fixture, because the dialog mints thumbnail tokens per proposal and must drop
+ * them when the review closes.
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount, tick } from 'svelte'
+import { flushSync, mount, tick } from 'svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
+import type { BulkRenameReview, BulkRenameReviewRow } from './ask-cmdr-trigger.svelte'
 
-const { state, actions, watcher } = vi.hoisted(() => ({
-  state: {
-    renameReview: null as {
-      proposalId: string
-      rows: Array<{
-        rowId: string
-        sourceName: string
-        destinationName: string
-        evidence: { source: 'imageText' | 'imageTags' | 'filename' | 'metadata' | 'userInstruction'; detail: string }
-        allowed: boolean
-        blockedReason: string | null
-        warnings: Array<'extensionChanged' | 'cycle'>
-      }>
-      preflighting: boolean
-      expired: boolean
-      requestVersion: number
-    } | null,
-  },
+const { actions, watcher, media, viewer } = vi.hoisted(() => ({
   actions: {
     apply: vi.fn<() => Promise<void>>(),
     allowAll: vi.fn(),
@@ -38,29 +24,43 @@ const { state, actions, watcher } = vi.hoisted(() => ({
   watcher: {
     handler: null as ((diff: { changes: unknown[] }) => void) | null,
   },
+  media: {
+    /** Which paths get a thumbnail token; anything else falls back to the placeholder. */
+    tokenFor: new Map<string, string>(),
+    mint: vi.fn<(path: string) => Promise<string | null>>(),
+    drop: vi.fn<(tokens: string[]) => Promise<void>>(),
+  },
+  viewer: {
+    open: vi.fn<(path: string, volumeId: string) => Promise<void>>(),
+  },
 }))
 
-vi.mock('./ask-cmdr-trigger.svelte', () => ({
-  applyRenameReview: async () => {
-    await actions.apply()
-  },
-  allowAllRenameRows: () => {
-    actions.allowAll()
-  },
-  askCmdrState: state,
-  cancelRenameReview: () => {
-    actions.cancel()
-  },
-  denyAllRenameRows: () => {
-    actions.denyAll()
-  },
-  setRenameRowAllowed: (rowId: string, allowed: boolean) => {
-    actions.setAllowed(rowId, allowed)
-  },
-  renameReviewListingChanged: (changes: unknown[]) => {
-    actions.listingChanged(changes)
-  },
-}))
+const { reviewState } = await import('./bulk-rename-review-fixture.svelte')
+
+vi.mock('./ask-cmdr-trigger.svelte', async () => {
+  const fixture = await import('./bulk-rename-review-fixture.svelte')
+  return {
+    applyRenameReview: async () => {
+      await actions.apply()
+    },
+    allowAllRenameRows: () => {
+      actions.allowAll()
+    },
+    askCmdrState: fixture.reviewState,
+    cancelRenameReview: () => {
+      actions.cancel()
+    },
+    denyAllRenameRows: () => {
+      actions.denyAll()
+    },
+    setRenameRowAllowed: (rowId: string, allowed: boolean) => {
+      actions.setAllowed(rowId, allowed)
+    },
+    renameReviewListingChanged: (changes: unknown[]) => {
+      actions.listingChanged(changes)
+    },
+  }
+})
 
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
@@ -69,52 +69,68 @@ vi.mock('$lib/tauri-commands', () => ({
     watcher.handler = handler
     return Promise.resolve(vi.fn())
   }),
+  mediaIndexThumbnailToken: (path: string) => media.mint(path),
+  mediaIndexDropThumbnailTokens: (tokens: string[]) => media.drop(tokens),
+}))
+
+// The viewer's `mediaUrl`; a plain string is all the row needs for render + axe.
+vi.mock('../../routes/viewer/media-view', () => ({
+  mediaUrl: (token: string) => `cmdr-media://localhost/${token}`,
+}))
+
+vi.mock('$lib/file-viewer/open-viewer', () => ({
+  openFileViewer: (path: string, volumeId: string) => viewer.open(path, volumeId),
 }))
 
 import BulkRenameReviewDialog from './BulkRenameReviewDialog.svelte'
 
-function review(
-  overrides: Partial<NonNullable<typeof state.renameReview>> = {},
-): NonNullable<typeof state.renameReview> {
+function row(overrides: Partial<BulkRenameReviewRow> = {}): BulkRenameReviewRow {
+  return {
+    rowId: 'opaque-row-one',
+    sourceName: 'before-one.png',
+    destinationName: 'after-one.png',
+    sourcePath: '/shots/before-one.png',
+    volumeId: 'root',
+    evidence: { source: 'imageText', detail: 'Invoice 4021 total 250 SEK' },
+    coverage: null,
+    allowed: true,
+    blockedReason: null,
+    warnings: [],
+    ...overrides,
+  }
+}
+
+function review(overrides: Partial<BulkRenameReview> = {}): BulkRenameReview {
   return {
     proposalId: 'opaque-proposal-id',
     rows: [
-      {
-        rowId: 'opaque-row-one',
-        sourceName: 'before-one.png',
-        destinationName: 'after-one.png',
-        evidence: { source: 'imageText', detail: 'Invoice 4021 total 250 SEK' },
-        allowed: true,
-        blockedReason: null,
-        warnings: ['extensionChanged'],
-      },
-      {
+      row({ warnings: ['extensionChanged'] }),
+      row({
         rowId: 'opaque-row-two',
         sourceName: 'before-two.png',
         destinationName: 'after-two.png',
+        sourcePath: '/shots/before-two.png',
         evidence: { source: 'metadata', detail: 'Taken 2026-07-20' },
-        allowed: true,
-        blockedReason: null,
         warnings: ['cycle'],
-      },
-      {
+      }),
+      row({
         rowId: 'opaque-row-blocked',
         sourceName: 'occupied.png',
         destinationName: 'after-three.png',
+        sourcePath: '/shots/occupied.png',
         evidence: { source: 'imageTags', detail: 'receipt, document' },
         allowed: false,
         blockedReason: 'targetExists',
-        warnings: [],
-      },
-      {
+      }),
+      row({
         rowId: 'opaque-row-missing',
         sourceName: 'imagined.png',
         destinationName: 'after-four.png',
+        sourcePath: '/shots/imagined.png',
         evidence: { source: 'userInstruction', detail: 'you asked for YYYY-MM-DD prefixes' },
         allowed: false,
         blockedReason: 'sourceMissing',
-        warnings: [],
-      },
+      }),
     ],
     preflighting: false,
     expired: false,
@@ -157,7 +173,14 @@ function checkboxByLabel(target: ParentNode, label: string): HTMLInputElement {
 }
 
 beforeEach(() => {
-  state.renameReview = review()
+  media.tokenFor.clear()
+  media.mint.mockReset()
+  media.mint.mockImplementation((path: string) => Promise.resolve(media.tokenFor.get(path) ?? null))
+  media.drop.mockReset()
+  media.drop.mockResolvedValue()
+  viewer.open.mockReset()
+  viewer.open.mockResolvedValue()
+  reviewState.renameReview = review()
   actions.apply.mockReset()
   actions.allowAll.mockReset()
   actions.cancel.mockReset()
@@ -224,9 +247,95 @@ describe('BulkRenameReviewDialog', () => {
     await expectNoA11yViolations(target)
   })
 
+  /**
+   * The whole point of M1: `old name → new name → a quote` is what let 12 fabricated names
+   * get approved, because the reviewer could not see the file. Every row shows its own image,
+   * and the focused row's file opens in the full viewer.
+   */
+  it('shows a thumbnail per row and opens the focused row in the viewer', async () => {
+    media.tokenFor.set('/shots/before-one.png', 'token-one')
+    media.tokenFor.set('/shots/before-two.png', 'token-two')
+    const target = mountDialog()
+    await vi.waitFor(() => {
+      expect(target.querySelectorAll('.preview-open img')).toHaveLength(2)
+    })
+
+    const buttons = [...target.querySelectorAll<HTMLButtonElement>('.preview-open')]
+    expect(buttons).toHaveLength(4)
+    expect(buttons[0]?.querySelector('img')?.getAttribute('src')).toBe('cmdr-media://localhost/token-one')
+    expect(buttons[0]?.getAttribute('aria-label')).toBe('Open before-one.png')
+
+    buttons[1]?.focus()
+    flushSync()
+    const focusedRows = [...target.querySelectorAll('tbody tr.focused')]
+    expect(focusedRows).toHaveLength(1)
+    expect(focusedRows[0]?.textContent).toContain('before-two.png')
+
+    buttons[1]?.click()
+    expect(viewer.open).toHaveBeenCalledWith('/shots/before-two.png', 'root')
+    await expectNoA11yViolations(target)
+  })
+
+  /**
+   * Degrade, never break: a file with no thumbnail (not an image, unreadable, or on a drive
+   * that isn't mounted here) gets a neutral glyph, and the row stays fully reviewable.
+   */
+  it('shows a neutral placeholder for a file with no thumbnail', async () => {
+    media.tokenFor.set('/shots/before-one.png', 'token-one')
+    const target = mountDialog()
+    await vi.waitFor(() => {
+      expect(target.querySelectorAll('.preview-open img')).toHaveLength(1)
+    })
+
+    const buttons = [...target.querySelectorAll<HTMLButtonElement>('.preview-open')]
+    expect(buttons[1]?.querySelector('img')).toBeNull()
+    expect(buttons[1]?.querySelector('[data-preview="none"]')).not.toBeNull()
+    expect(checkboxByLabel(target, 'Deny: before-two.png').disabled).toBe(false)
+    await expectNoA11yViolations(target)
+  })
+
+  /** Keyboard-first: reviewing 50 rows can't require a mouse to move the preview. */
+  it('walks the previews with the arrow keys', async () => {
+    const target = mountDialog()
+    await tick()
+    const buttons = [...target.querySelectorAll<HTMLButtonElement>('.preview-open')]
+
+    buttons[0]?.focus()
+    buttons[0]?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    expect(document.activeElement).toBe(buttons[1])
+
+    buttons[1]?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }))
+    expect(document.activeElement).toBe(buttons[0])
+
+    // At the ends, focus stays put rather than wrapping into another row's controls.
+    buttons[0]?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }))
+    expect(document.activeElement).toBe(buttons[0])
+  })
+
+  /**
+   * A `cmdr-media://` token maps to a path in a backend map with no window-close choke point,
+   * so the dialog owns every token it mints: a missed drop leaks path mappings for the session.
+   */
+  it('drops every thumbnail token when the review closes', async () => {
+    media.tokenFor.set('/shots/before-one.png', 'token-one')
+    media.tokenFor.set('/shots/before-two.png', 'token-two')
+    const target = mountDialog()
+    await vi.waitFor(() => {
+      expect(target.querySelectorAll('.preview-open img')).toHaveLength(2)
+    })
+    expect(media.drop).not.toHaveBeenCalled()
+
+    reviewState.renameReview = null
+    flushSync()
+
+    expect(media.drop).toHaveBeenCalledTimes(1)
+    expect(media.drop.mock.calls[0]?.[0]).toEqual(expect.arrayContaining(['token-one', 'token-two']))
+    expect(media.drop.mock.calls[0]?.[0]).toHaveLength(2)
+  })
+
   /** Model-authored text reaches this column, so it must never be interpreted as markup. */
   it('renders evidence detail as plain text, never as markup', async () => {
-    state.renameReview = review({
+    reviewState.renameReview = review({
       rows: review()
         .rows.slice(0, 1)
         .map((row) => ({ ...row, evidence: { source: 'imageText' as const, detail: MARKUP_DETAIL } })),
@@ -271,7 +380,7 @@ describe('BulkRenameReviewDialog', () => {
   })
 
   it('disables and labels Apply when no valid row remains allowed', async () => {
-    state.renameReview = review({
+    reviewState.renameReview = review({
       rows: review().rows.map((row) => ({ ...row, allowed: false })),
     })
     const target = mountDialog()

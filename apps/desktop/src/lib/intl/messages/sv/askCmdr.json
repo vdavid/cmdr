@@ -373,6 +373,18 @@
   "@askCmdr.renameReview.whyThisName": {
     "sourceHash": "23f0b4f"
   },
+  "askCmdr.renameReview.preview": "Förhandsvisning",
+  "@askCmdr.renameReview.preview": {
+    "sourceHash": "324b134"
+  },
+  "askCmdr.renameReview.openPreview": "Öppna {name}",
+  "@askCmdr.renameReview.openPreview": {
+    "sourceHash": "f687d18"
+  },
+  "askCmdr.renameReview.openPreviewTooltip": "Öppna filen för att kontrollera namnet (blanksteg)",
+  "@askCmdr.renameReview.openPreviewTooltip": {
+    "sourceHash": "17163aa"
+  },
   "askCmdr.renameReview.evidence.imageText": "Text i bilden",
   "@askCmdr.renameReview.evidence.imageText": {
     "sourceHash": "520b47b"

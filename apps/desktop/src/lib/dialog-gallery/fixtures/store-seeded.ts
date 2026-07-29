@@ -52,7 +52,12 @@ function review(
       rowId: `gallery-row-${String(index)}`,
       sourceName: row.sourceName,
       destinationName: row.destinationName,
+      // A fixture path that doesn't exist, so every row shows the no-thumbnail placeholder.
+      // That's the degraded state on purpose: the gallery reviews layout, not real images.
+      sourcePath: `/gallery-fixture/${row.sourceName}`,
+      volumeId: 'root',
       evidence: row.evidence ?? { source: 'filename' as const, detail: row.sourceName },
+      coverage: null,
       allowed: row.allowed ?? row.blockedReason == null,
       blockedReason: row.blockedReason ?? null,
       warnings: row.warnings ?? [],

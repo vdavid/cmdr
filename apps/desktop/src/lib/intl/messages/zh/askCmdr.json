@@ -372,6 +372,18 @@
   "@askCmdr.renameReview.whyThisName": {
     "sourceHash": "23f0b4f"
   },
+  "askCmdr.renameReview.preview": "预览",
+  "@askCmdr.renameReview.preview": {
+    "sourceHash": "324b134"
+  },
+  "askCmdr.renameReview.openPreview": "打开 {name}",
+  "@askCmdr.renameReview.openPreview": {
+    "sourceHash": "f687d18"
+  },
+  "askCmdr.renameReview.openPreviewTooltip": "打开文件以核对名称（空格键）",
+  "@askCmdr.renameReview.openPreviewTooltip": {
+    "sourceHash": "17163aa"
+  },
   "askCmdr.renameReview.evidence.imageText": "图片中的文字",
   "@askCmdr.renameReview.evidence.imageText": {
     "sourceHash": "520b47b"

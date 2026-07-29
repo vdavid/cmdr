@@ -374,6 +374,18 @@
   "@askCmdr.renameReview.whyThisName": {
     "sourceHash": "23f0b4f"
   },
+  "askCmdr.renameReview.preview": "Vorschau",
+  "@askCmdr.renameReview.preview": {
+    "sourceHash": "324b134"
+  },
+  "askCmdr.renameReview.openPreview": "{name} öffnen",
+  "@askCmdr.renameReview.openPreview": {
+    "sourceHash": "f687d18"
+  },
+  "askCmdr.renameReview.openPreviewTooltip": "Datei öffnen, um den Namen zu prüfen (Leertaste)",
+  "@askCmdr.renameReview.openPreviewTooltip": {
+    "sourceHash": "17163aa"
+  },
   "askCmdr.renameReview.evidence.imageText": "Text im Bild",
   "@askCmdr.renameReview.evidence.imageText": {
     "sourceHash": "520b47b"

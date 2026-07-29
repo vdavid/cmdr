@@ -191,7 +191,9 @@
   "@askCmdr.event.contextTrimmed": {
     "description": "A small centered timeline line in the chat thread, shown when older tool results had to leave the model's context so this turn would fit its token budget. It tells the user the reply was written with less than the whole chat in view. Sentence case. The apostrophe is U+2019.",
     "placeholders": {
-      "count": { "content": "How many earlier tool results were left out, as an integer." }
+      "count": {
+        "content": "How many earlier tool results were left out, as an integer."
+      }
     }
   },
   "askCmdr.event.modelChanged": "Switched to {model}",
@@ -386,6 +388,23 @@
   "askCmdr.renameReview.whyThisName": "Why this name",
   "@askCmdr.renameReview.whyThisName": {
     "description": "Column heading for the rightmost bulk rename review column, which shows what each proposed name is based on."
+  },
+  "askCmdr.renameReview.preview": "Preview",
+  "@askCmdr.renameReview.preview": {
+    "description": "Heading for the narrow thumbnail column in the bulk rename review table. Shown to screen readers only; the column itself is too narrow for a visible label."
+  },
+  "askCmdr.renameReview.openPreview": "Open {name}",
+  "@askCmdr.renameReview.openPreview": {
+    "description": "Accessible name of the per-row thumbnail button in the bulk rename review, which opens the file in the viewer so the user can check the proposed name against the file itself.",
+    "placeholders": {
+      "name": {
+        "content": "The file's current name."
+      }
+    }
+  },
+  "askCmdr.renameReview.openPreviewTooltip": "Open the file to check the name (Space)",
+  "@askCmdr.renameReview.openPreviewTooltip": {
+    "description": "Tooltip on the per-row thumbnail button in the bulk rename review. Names the keyboard shortcut that opens the focused row's file."
   },
   "askCmdr.renameReview.evidence.imageText": "Text in the image",
   "@askCmdr.renameReview.evidence.imageText": {

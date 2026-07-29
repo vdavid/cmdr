@@ -4,10 +4,14 @@
     import Icon from '$lib/ui/Icon.svelte'
     import Checkbox from '$lib/ui/Checkbox.svelte'
     import { tString } from '$lib/intl/messages.svelte'
-    import { onDirectoryDiff } from '$lib/tauri-commands'
-    import { onMount } from 'svelte'
+    import { mediaIndexDropThumbnailTokens, mediaIndexThumbnailToken, onDirectoryDiff } from '$lib/tauri-commands'
+    import { onDestroy, onMount, untrack } from 'svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
+    import { openFileViewer } from '$lib/file-viewer/open-viewer'
+    // The `cmdr-media://` URL is built ONLY via the viewer's `mediaUrl` (single source; see
+    // `routes/viewer/CLAUDE.md`), so a row's thumbnail reuses the exact preview origin.
+    import { mediaUrl } from '../../routes/viewer/media-view'
     import { evidenceSourceLabel } from './ask-cmdr-labels'
     import {
         applyRenameReview,
@@ -23,6 +27,88 @@
     const allowedCount = $derived(review?.rows.filter((row) => row.allowed && !row.blockedReason).length ?? 0)
     const blockedCount = $derived(review?.rows.filter((row) => row.blockedReason).length ?? 0)
     const renameLabel = $derived(tString('askCmdr.renameReview.rename', { count: allowedCount }))
+
+    // ── Per-row thumbnails ────────────────────────────────────────────────────
+    // Reviewing 50 rows means scanning for the odd wrong one, so every row shows its own
+    // image; the focused row's file opens in the full viewer with Space. A row with no
+    // thumbnail (not an image, unreadable, on a drive that isn't mounted here) shows a
+    // neutral glyph and stays fully reviewable.
+
+    /** `rowId` → `cmdr-media://` URL, for the rows we could tokenize. */
+    let thumbnailUrls = $state<Record<string, string>>({})
+    /** Tokens minted for the CURRENT proposal, so we drop exactly them. */
+    let mintedTokens: string[] = []
+    /** Monotonic id, so a late mint for a closed review can't install or leak tokens. */
+    let thumbnailSeq = 0
+    /** The row whose preview button holds focus, so the whole row reads as focused. */
+    let focusedRowId = $state<string | null>(null)
+
+    async function releaseThumbnails(): Promise<void> {
+        if (mintedTokens.length === 0) return
+        const toDrop = mintedTokens
+        mintedTokens = []
+        await mediaIndexDropThumbnailTokens(toDrop).catch(() => {
+            // Best-effort: a failed drop only risks a stale map entry, never correctness.
+        })
+    }
+
+    async function loadThumbnails(rows: Array<{ rowId: string; sourcePath: string }>, seq: number): Promise<void> {
+        const minted: string[] = []
+        const urls: Record<string, string> = {}
+        await Promise.all(
+            rows.map(async (row) => {
+                try {
+                    const token = await mediaIndexThumbnailToken(row.sourcePath)
+                    if (token === null) return
+                    minted.push(token)
+                    urls[row.rowId] = mediaUrl(token)
+                } catch {
+                    // No token → the row falls back to the neutral glyph.
+                }
+            }),
+        )
+        if (seq !== thumbnailSeq) {
+            void mediaIndexDropThumbnailTokens(minted).catch(() => {})
+            return
+        }
+        mintedTokens = minted
+        thumbnailUrls = urls
+    }
+
+    // One mint pass per proposal, dropped when the review closes or another replaces it (the
+    // token map has no window-close choke point, so a missed drop leaks path mappings).
+    // Depends on the proposal id ALONE: preflight mutates rows in place on every recheck, so
+    // reading the rows reactively here would re-mint every token each time.
+    $effect(() => {
+        const proposalId = askCmdrState.renameReview?.proposalId ?? null
+        const seq = ++thumbnailSeq
+        thumbnailUrls = {}
+        void releaseThumbnails()
+        if (proposalId === null) return
+        const rows = untrack(() =>
+            (askCmdrState.renameReview?.rows ?? []).map((row) => ({ rowId: row.rowId, sourcePath: row.sourcePath })),
+        )
+        void loadThumbnails(rows, seq)
+    })
+
+    onDestroy(() => {
+        thumbnailSeq += 1
+        void releaseThumbnails()
+    })
+
+    /** Arrow keys walk the preview buttons, so the preview follows the focused row with no
+     *  mouse. Tab still reaches every control; this only makes 50 rows navigable. */
+    function movePreviewFocus(from: HTMLElement, delta: number): void {
+        const buttons = [...(from.closest('table')?.querySelectorAll<HTMLButtonElement>('.preview-open') ?? [])]
+        buttons[buttons.indexOf(from as HTMLButtonElement) + delta]?.focus()
+    }
+
+    function onPreviewKeydown(event: KeyboardEvent): void {
+        const delta = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0
+        if (delta === 0 || !(event.currentTarget instanceof HTMLElement)) return
+        event.preventDefault()
+        movePreviewFocus(event.currentTarget, delta)
+    }
 
     onMount(() => {
         const listener = onDirectoryDiff((diff) => {
@@ -65,6 +151,11 @@
                         <thead>
                             <tr>
                                 <th scope="col" class="allow-col">{tString('askCmdr.renameReview.allow')}</th>
+                                <!-- The column is 44 px wide, so its heading is for screen
+                                     readers only rather than a truncated visible label. -->
+                                <th scope="col" class="preview-col">
+                                    <span class="sr-only">{tString('askCmdr.renameReview.preview')}</span>
+                                </th>
                                 <th scope="col" class="name-col">{tString('askCmdr.renameReview.originalName')}</th>
                                 <th scope="col" class="arrow-col" aria-hidden="true"></th>
                                 <th scope="col" class="name-col">{tString('askCmdr.renameReview.newName')}</th>
@@ -78,7 +169,7 @@
                                     row.warnings.includes('cycle') ||
                                     row.blockedReason === 'targetExists' ||
                                     row.blockedReason === 'sourceMissing'}
-                                <tr class:blocked={row.blockedReason}>
+                                <tr class:blocked={row.blockedReason} class:focused={row.rowId === focusedRowId}>
                                     <td class="allow-cell">
                                         <Checkbox
                                             checked={row.allowed}
@@ -88,6 +179,31 @@
                                                 : `${tString('askCmdr.renameReview.allow')}: ${row.sourceName}`}
                                             onCheckedChange={(checked: boolean) => { setRenameRowAllowed(row.rowId, checked); }}
                                         />
+                                    </td>
+                                    <!-- Seeing the file is the whole point: a plausible wrong
+                                         name only looks wrong next to the picture. -->
+                                    <td class="preview-cell">
+                                        <button
+                                            type="button"
+                                            class="preview-open"
+                                            data-row-id={row.rowId}
+                                            aria-label={tString('askCmdr.renameReview.openPreview', { name: row.sourceName })}
+                                            use:tooltip={tString('askCmdr.renameReview.openPreviewTooltip')}
+                                            onclick={() => { void openFileViewer(row.sourcePath, row.volumeId); }}
+                                            onkeydown={onPreviewKeydown}
+                                            onfocus={() => { focusedRowId = row.rowId; }}
+                                            onblur={() => { if (focusedRowId === row.rowId) focusedRowId = null; }}
+                                        >
+                                            {#if thumbnailUrls[row.rowId]}
+                                                <!-- The button carries the accessible name, so the
+                                                     image is presentational (axe image-redundant-alt). -->
+                                                <img src={thumbnailUrls[row.rowId]} alt="" loading="lazy" draggable="false" />
+                                            {:else}
+                                                <span class="preview-fallback" data-preview="none">
+                                                    <Icon name="file" size={18} aria-hidden="true" />
+                                                </span>
+                                            {/if}
+                                        </button>
                                     </td>
                                     <td class="name">
                                         <span class="fname" use:useShortenMiddle={{ text: row.sourceName, preferBreakAt: '.', startRatio: 0.7 }}></span>
@@ -239,7 +355,7 @@
         border-bottom: none;
     }
 
-    /* Two fixed-width columns take their pixels first; the three text columns share what's
+    /* Three fixed-width columns take their pixels first; the three text columns share what's
        left in these proportions, so evidence gets the most room and both names still fit at
        the dialog's default width. */
     .allow-col,
@@ -252,6 +368,57 @@
         line-height: 0;
     }
 
+    .preview-col,
+    .preview-cell {
+        width: 44px;
+        padding-right: 0;
+        line-height: 0;
+    }
+
+    /* A fixed square, so 50 rows keep one rhythm whatever shape the images are. */
+    .preview-open {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        overflow: hidden;
+        border: 1px solid var(--color-border-subtle);
+        border-radius: var(--radius-sm);
+        background: var(--color-bg-tertiary);
+        cursor: default;
+    }
+
+    .preview-open:hover {
+        border-color: var(--color-accent);
+    }
+
+    .preview-open:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+    .preview-open img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* No thumbnail (not an image, unreadable, or a drive that isn't mounted here) degrades to
+       a neutral glyph: never a broken image, never an empty cell, and the row stays
+       reviewable. */
+    .preview-fallback {
+        display: flex;
+        color: var(--color-text-tertiary);
+    }
+
+    /* The focused row is highlighted, so "the preview follows the focus" is visible while
+       arrowing down the list. */
+    tbody tr.focused {
+        background: var(--color-accent-subtle);
+    }
+
     .arrow-col,
     .arrow {
         width: 32px;
@@ -260,11 +427,11 @@
     }
 
     .name-col {
-        width: 28%;
+        width: 25%;
     }
 
     .why-col {
-        width: 38%;
+        width: 42%;
     }
 
     .arrow :global(svg) {
