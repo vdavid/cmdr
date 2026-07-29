@@ -158,7 +158,7 @@ else: the walk is serial, `GuardedReader` caps each read at `LOCAL_LIST_TIMEOUT`
 Both branches are unreachable on the filesystems we've measured (`FSOPT_PACK_INVAL_ATTRS` makes every requested
 attribute present), which is exactly why they're pinned by tests rather than by field evidence: `bulk_read.rs`'s
 synthetic-record tests build packed records with attributes withheld, and
-`reconciler/tests.rs`'s `the_reconcile_read_matches_a_per_entry_stat` asserts the batched read equals `read_dir` +
+`reconciler/tests/directory_read.rs`'s `the_reconcile_read_matches_a_per_entry_stat` asserts the batched read equals `read_dir` +
 `symlink_metadata` field-for-field over a tree of files with known sizes, an empty dir, a symlink, a broken symlink, a
 hardlink pair, a unicode name, a fifo, and an excluded basename.
 
@@ -692,4 +692,4 @@ now SUSPECT", not "rescan right now". At most one real sweep per volume per day.
 
 `classify`, `window_elapsed`, `min_interval_for`, and `decide_shallow_anchor_in` are pure/clock-injected and unit-tested
 in `rescan_route.rs`; the decision and seeding take an EXPLICIT ledger so the tests use a local `HashMap` (clearing a
-shared global from parallel tests flaked). `reconciler/tests.rs` holds the live-path repros.
+shared global from parallel tests flaked). `reconciler/tests/must_scan_routing.rs` holds the live-path repros.

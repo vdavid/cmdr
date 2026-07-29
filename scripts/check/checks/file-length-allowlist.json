@@ -44,7 +44,6 @@
     "apps/desktop/src-tauri/src/indexing/network_scanner/mod.rs": 867,
     "apps/desktop/src-tauri/src/indexing/reconcile/local_reconcile/tests.rs": 817,
     "apps/desktop/src-tauri/src/indexing/reconcile/reconciler.rs": 1634,
-    "apps/desktop/src-tauri/src/indexing/reconcile/reconciler/tests.rs": 2062,
     "apps/desktop/src-tauri/src/indexing/reconcile/verifier.rs": 873,
     "apps/desktop/src-tauri/src/indexing/scanner/tests.rs": 940,
     "apps/desktop/src-tauri/src/indexing/store/mod.rs": 816,

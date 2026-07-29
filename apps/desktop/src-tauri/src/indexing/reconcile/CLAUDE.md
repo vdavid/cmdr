@@ -6,7 +6,8 @@ Three mechanisms resync the index after the initial scan: the event-triggered `r
 ## Module map
 
 - **reconciler.rs** + **reconciler/**: the event path. `diff_dir_against_db`, `reconcile_subtree`,
-  `BulkReconcileGuard`, plus `rescan*` (route, throttle, settle, hold, churn) / `throttle` / `escalation`.
+  `BulkReconcileGuard`, plus `rescan*` (route, throttle, settle, hold, churn) / `throttle` / `escalation`. Tests are
+  themed modules under `reconciler/tests/`, fixtures in its `mod.rs`.
 - **local_reconcile.rs** + **local_reconcile/**: serial full-tree rescan-in-place (`cost_budget`, `latency_probe`).
 - **verifier.rs**: per-navigation `read_dir` diff. **reconcile_bench** / **reconcile_correctness**: perf + regressions.
 
