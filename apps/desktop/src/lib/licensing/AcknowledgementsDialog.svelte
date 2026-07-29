@@ -171,7 +171,11 @@
        license size to their content. */
     .packages {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto auto;
+        /* Version and license are CAPPED, not `auto`. Sized to content they were
+           driven by the worst case (aws-lc-sys carries a ~130-char SPDX `AND`/`OR`
+           expression), which starved the name track down to a few percent. Each
+           track still shrinks below its cap when the content is shorter. */
+        grid-template-columns: minmax(0, 1fr) minmax(0, 10%) minmax(0, 20%);
         column-gap: var(--spacing-lg);
     }
 
@@ -224,10 +228,14 @@
         color: var(--color-text-primary);
     }
 
+    /* No `nowrap` here: it's what made the caps above unhonorable, since a long
+       license had to claim a single line's worth of width. Long SPDX expressions
+       wrap within their track instead. */
     .package-version,
     .package-license {
+        min-width: 0;
+        overflow-wrap: anywhere;
         color: var(--color-text-tertiary);
-        white-space: nowrap;
     }
 
     .full-texts,
