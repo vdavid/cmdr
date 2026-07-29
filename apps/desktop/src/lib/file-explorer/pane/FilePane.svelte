@@ -2,10 +2,6 @@
     import { onDestroy, onMount, tick, untrack } from 'svelte'
     import type { FileEntry, FriendlyError, NetworkHost, SortColumn, SortOrder } from '../types'
     import {
-        findFileIndex,
-        getFileRange,
-        getFileAt,
-        getTotalCount,
         refreshListingIndexSizes,
         type Location,
         updateMenuContext,
@@ -83,8 +79,10 @@
     import { createPanePointer } from './pane-pointer'
     import { breadcrumbDisplayPath, createBreadcrumbHandlers } from './breadcrumb-bar'
     import { createDeletedDirPoll } from './deleted-dir-poll'
+    import { fetchEntriesSnapshot, fetchSelectedNames } from './entries-snapshot'
+    import { resolveInitialPathAction, shouldReloadAfterReachable } from './path-sync'
+    import { resyncAfterHiddenFilesToggle } from './hidden-files-resync'
     import { createMtpDisconnectWatch } from './mtp-disconnect-watch.svelte'
-    import { createParentEntry } from './parent-entry'
     import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
 
     interface Props {
@@ -853,47 +851,16 @@
      * rule in `selection-state::applyIndices`.
      */
     // noinspection JSUnusedGlobalSymbols -- consumed by DualPaneExplorer.getFocusedPaneEntries
-    export async function getEntriesSnapshot(): Promise<FileEntry[]> {
-        if (isSearchResultsView) {
-            // Adapt SearchResultEntry → FileEntry. The snapshot's entry.name is the
-            // friendly full path (per the search-results virtual volume contract);
-            // we preserve that so the Selection matcher's accessor sees what the
-            // user sees in the pane.
-            const sn = searchSnapshot
-            if (!sn) return []
-            return sn.entries.map(
-                (e): FileEntry => ({
-                    name: e.name,
-                    path: e.path,
-                    parentPath: e.parentPath,
-                    isDirectory: e.isDirectory,
-                    isSymlink: false,
-                    size: e.size ?? undefined,
-                    modifiedAt: e.modifiedAt ?? undefined,
-                    permissions: 0,
-                    owner: '',
-                    group: '',
-                    iconId: e.iconId,
-                    extendedMetadataLoaded: true,
-                }),
-            )
-        }
-        const canonical = canonicalPath
-        if (!listingId || totalCount === 0) {
-            // Synthetic `..` entry (when present) keeps the index alignment.
-            const synthetic = canonical ? createParentEntry(canonical) : null
-            return hasParent && synthetic ? [synthetic] : []
-        }
-        try {
-            const fetched = await getFileRange(listingId, 0, totalCount, showHiddenFiles)
-            if (hasParent) {
-                const synthetic = canonical ? createParentEntry(canonical) : null
-                return synthetic ? [synthetic, ...fetched] : fetched
-            }
-            return fetched
-        } catch {
-            return []
-        }
+    export function getEntriesSnapshot(): Promise<FileEntry[]> {
+        return fetchEntriesSnapshot({
+            listingId,
+            totalCount,
+            hasParent,
+            showHiddenFiles,
+            canonicalPath,
+            isSearchResultsView,
+            searchSnapshot,
+        })
     }
 
     /** Cursor index inside the entries-snapshot returned by `getEntriesSnapshot()`. */
@@ -904,20 +871,13 @@
 
     /** Snapshots the current selection as file names for diff-driven adjustment during operations. */
     export async function snapshotSelectionForOperation(): Promise<void> {
-        if (selection.isAllSelected(hasParent, effectiveTotalCount)) {
-            operationSelectedNames = 'all'
-            return
-        }
-
-        const indices = selection.getSelectedIndices()
-        const names: string[] = []
-        for (const frontendIndex of indices) {
-            const backendIndex = hasParent ? frontendIndex - 1 : frontendIndex
-            if (backendIndex < 0) continue
-            const entry = await getFileAt(listingId, backendIndex, includeHidden)
-            if (entry) names.push(entry.name)
-        }
-        operationSelectedNames = names
+        operationSelectedNames = await fetchSelectedNames({
+            listingId,
+            includeHidden,
+            hasParent,
+            isAllSelected: selection.isAllSelected(hasParent, effectiveTotalCount),
+            selectedIndices: selection.getSelectedIndices(),
+        })
     }
 
     /** Clears the operation snapshot and invalidates in-flight findFileIndices callbacks. Returns the previous value. */
@@ -1387,47 +1347,42 @@
         return friendlyError !== null || unreachable !== null
     }
 
-    // When includeHidden changes, cancel rename and refetch total count
+    // When includeHidden changes, cancel rename and re-sync the count + cursor
+    // (`hidden-files-resync.ts`).
     $effect(() => {
         if (listingId && !loading) {
             // Cancel rename on hidden files toggle (spec: sort change / toggle hidden = cancel)
             untrack(() => {
                 rename.cancel()
             })
-            // Read cursor state without tracking to avoid infinite re-triggers
-            const nameToFollow = untrack(() => selectionInfo.entry?.name)
-            const currentCursor = untrack(() => cursorIndex)
-            void getTotalCount(listingId, includeHidden).then(async (count) => {
-                totalCount = count
-                const total = hasParent ? count + 1 : count
-                // Try to keep cursor on the same file
-                if (nameToFollow) {
-                    const foundIndex = await findFileIndex(listingId, nameToFollow, includeHidden)
-                    if (foundIndex !== null) {
-                        const adjustedIndex = hasParent ? foundIndex + 1 : foundIndex
-                        await setCursorIndex(adjustedIndex)
-                        return
-                    }
-                }
-                // File not found (was hidden) or no file: clamp cursor
-                if (currentCursor >= total) {
-                    await setCursorIndex(Math.max(0, total - 1))
-                }
+            void resyncAfterHiddenFilesToggle({
+                listingId,
+                includeHidden,
+                // Read cursor state without tracking to avoid infinite re-triggers
+                nameToFollow: untrack(() => selectionInfo.entry?.name),
+                cursorIndex: untrack(() => cursorIndex),
+                getHasParent: () => hasParent,
+                setTotalCount: (count) => {
+                    totalCount = count
+                },
+                setCursorIndex,
             })
         }
     })
 
-    // Track previous unreachable state to detect when volume becomes reachable (retry success).
-    // Only triggers when the path stays the same (retry case). The "Open home folder" case
-    // changes the path, which the initialPath effect below handles instead.
+    // A tab that timed out at startup shows the unreachable banner; a successful
+    // Retry clears it, and nothing else would load the listing. The decision
+    // (including the "path changed, so the effect below owns it" case) is pure,
+    // in `path-sync.ts`.
     let prevUnreachable = $state(unreachable)
 
     $effect(() => {
-        const wasUnreachable = prevUnreachable !== null
-        const isNowReachable = unreachable === null
-        const pathUnchanged = initialPath === untrack(() => currentPath)
-
-        if (wasUnreachable && isNowReachable && pathUnchanged) {
+        if (shouldReloadAfterReachable({
+            prevUnreachable,
+            unreachable,
+            initialPath,
+            currentPath: untrack(() => currentPath),
+        })) {
             log.info('Tab became reachable (retry succeeded), loading directory: {path}', { path: initialPath })
             void loader.loadDirectory(initialPath)
             void refreshVolumeSpace()
@@ -1438,50 +1393,40 @@
     // Track the previous volumeId to detect MTP connection completion
     let prevVolumeId = $state(volumeId)
 
-    // Reactive path loading: handles persistence restore AND MTP connection completion.
-    // One effect to avoid duplicate loadDirectory calls from overlapping triggers.
+    // Reactive path loading: handles persistence restore AND MTP connection
+    // completion in one effect, so overlapping triggers can't both fire a
+    // `loadDirectory`. The truth table is pure, in `path-sync.ts`.
     $effect(() => {
-        const newPath = initialPath // Track this
-        const curPath = untrack(() => currentPath) // Don't track: user navigation changes this
-        const currentVolumeId = volumeId
+        const action = resolveInitialPathAction({
+            initialPath, // Track this
+            currentPath: untrack(() => currentPath), // Don't track: user navigation changes this
+            prevVolumeId,
+            volumeId,
+            isSearchResultsView,
+            isNetworkView,
+            isMtpDeviceOnly,
+        })
+        prevVolumeId = volumeId
 
-        // Case 1: MTP device just connected (device-only → storage-specific)
-        // This takes priority: the device just became browsable, always load.
-        const wasDeviceOnly = isMtpVolumeId(prevVolumeId) && !prevVolumeId.includes(':')
-        const isNowConnected = isMtpVolumeId(currentVolumeId) && currentVolumeId.includes(':')
-
-        if (wasDeviceOnly && isNowConnected) {
-            log.info('MTP volume connected, loading directory: {path}', { path: newPath })
-            currentPath = newPath
-            void loader.loadDirectory(newPath)
-            prevVolumeId = currentVolumeId
-            return // Don't also fire the initialPath branch
-        }
-
-        prevVolumeId = currentVolumeId
-
-        // Case 2: initialPath changed for a loadable view (local volumes, connected MTP).
-        // Search-results panes get their data from the snapshot store, not a real listing,
-        // so we only sync `currentPath` without triggering a backend `list_directory`.
-        if (isSearchResultsView) {
-            if (newPath !== curPath) currentPath = newPath
-            return
-        }
-        if (!isNetworkView && !isMtpDeviceOnly && newPath !== curPath) {
-            log.debug(
-                '[FilePane] initialPath effect: triggering loadDirectory, paneId={paneId}, newPath={newPath}, curPath={curPath}',
-                { paneId, newPath, curPath },
-            )
-            currentPath = newPath
-            void loader.loadDirectory(newPath)
-        }
-
-        // Case 3: Device-only MTP: just sync path, don't load (auto-connect handles transition)
-        if (isMtpDeviceOnly && newPath !== curPath) {
-            log.debug('[FilePane] initialPath effect (MTP device-only): updating path only, paneId={paneId}', {
-                paneId,
-            })
-            currentPath = newPath
+        switch (action.kind) {
+            case 'mtp-connected':
+                log.info('MTP volume connected, loading directory: {path}', { path: action.path })
+                currentPath = action.path
+                void loader.loadDirectory(action.path)
+                break
+            case 'load':
+                log.debug('[FilePane] initialPath effect: triggering loadDirectory, paneId={paneId}, newPath={newPath}', {
+                    paneId,
+                    newPath: action.path,
+                })
+                currentPath = action.path
+                void loader.loadDirectory(action.path)
+                break
+            case 'sync-path':
+                currentPath = action.path
+                break
+            case 'none':
+                break
         }
     })
 
