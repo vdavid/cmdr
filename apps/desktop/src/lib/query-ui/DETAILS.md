@@ -270,6 +270,12 @@ builds on live in `$lib/ui/`. Only the layout facts that none of those carry liv
   column needs, and its header label ellipsized to "Ac…" at the dialog's width.
 - **`EmptyState`'s example chips come from `config.emptyState.examples`** (forwarded by `QueryResults`), falling back to
   Search-flavoured defaults when a consumer omits them.
+- **The results header and the result rows are two separate grid containers, so every track has to resolve identically
+  in both.** `ch` tracks resolve against the font-size of the element that owns the grid, so `.column-header` declares
+  `--font-size-md` exactly like `.result-row` does; without it the header's `10ch` / `16ch` tracks came out ~14% wider
+  (the root size) and the whole right-hand side drifted. The Name track is handed to both as one inline
+  `grid-template-columns` string for the same reason. The Path header additionally insets by `--spacing-xxs`, matching
+  the horizontal padding on `PathPills`' first pill, so the two left edges line up on TEXT rather than on box edges.
 
 Component tests (`*.svelte.test.ts`) and tier-3 a11y audits (`*.a11y.test.ts`) colocate with what they pin;
 `codegraph_files` lists them. The one non-colocated suite is `queryui-i18n-parity.test.ts`, the en-locale golden net

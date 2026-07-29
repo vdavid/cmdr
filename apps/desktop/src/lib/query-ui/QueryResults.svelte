@@ -233,7 +233,7 @@
     <div class="column-header" class:no-path={!showPathColumn}>
         <span class="col-label col-icon" aria-hidden="true"></span>
         <span class="col-label">{tString('queryUi.results.col.name')}</span>
-        {#if showPathColumn}<span class="col-label">{tString('queryUi.results.col.path')}</span>{/if}
+        {#if showPathColumn}<span class="col-label col-path">{tString('queryUi.results.col.path')}</span>{/if}
         <span class="col-label col-right">{tString('queryUi.results.col.size')}</span>
         <span class="col-label col-right">{tString('queryUi.results.col.modified')}</span>
     </div>
@@ -411,16 +411,29 @@
     .column-header {
         padding: var(--spacing-xs) var(--spacing-dialog);
         background: var(--color-bg-primary);
+        /* The font-size MUST sit on the grid container, not just on `.col-label`: the
+           `ch` tracks above resolve against the element that owns the grid. `.result-row`
+           declares `--font-size-md` on itself, so a header left at the inherited root size
+           resolved every `ch` track ~14% wider and pushed the whole right-hand side of the
+           header out of line with the rows (the "Modified" label sat left of its dates).
+           Keep the two declarations in lockstep. */
+        font-size: var(--font-size-md);
         border-bottom: 1px solid var(--color-border-subtle);
         user-select: none;
     }
 
     .col-label {
-        font-size: var(--font-size-md);
         color: var(--color-text-tertiary);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    /* The Path cell's content is a `PathPills` strip whose first pill carries
+       `padding: 0 var(--spacing-xxs)`, so its text box starts inside the track. Inset the
+       header label by the same amount and the two left edges line up. */
+    .col-label.col-path {
+        padding-left: var(--spacing-xxs);
     }
 
     .col-label.col-icon {
