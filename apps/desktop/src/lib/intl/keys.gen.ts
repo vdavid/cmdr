@@ -900,7 +900,6 @@ export type MessageKey =
   | 'fileExplorer.doubleClickHint.neverAgain'
   | 'fileExplorer.doubleClickHint.title'
   | 'fileExplorer.entry.brokenSymlink'
-  | 'fileExplorer.entry.permissionDenied'
   | 'fileExplorer.errorPane.aMomentAgo'
   | 'fileExplorer.errorPane.hoursAgo'
   | 'fileExplorer.errorPane.minutesAgo'

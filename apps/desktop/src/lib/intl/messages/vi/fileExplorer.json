@@ -893,10 +893,6 @@
   "@fileExplorer.entry.brokenSymlink": {
     "sourceHash": "a7ffd43"
   },
-  "fileExplorer.entry.permissionDenied": "(không có quyền)",
-  "@fileExplorer.entry.permissionDenied": {
-    "sourceHash": "88cb526"
-  },
   "fileExplorer.dateTooltip.created": "Đã tạo",
   "@fileExplorer.dateTooltip.created": {
     "sourceHash": "d70b9e2"

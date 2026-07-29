@@ -9,9 +9,7 @@ import {
   formatDate,
   buildDateTooltip,
   getSizeDisplay,
-  getDateDisplay,
   isBrokenSymlink,
-  isPermissionDenied,
   sizeTierClasses,
   formatNumber,
   calculatePercentage,
@@ -227,70 +225,35 @@ describe('buildDateTooltip', () => {
 
 describe('getSizeDisplay', () => {
   it('returns null for null entry', () => {
-    expect(getSizeDisplay(null, false, false)).toBeNull()
+    expect(getSizeDisplay(null, false)).toBeNull()
   })
 
   it('returns null for broken symlink', () => {
     const entry = createFileEntry({ size: 1000 })
-    expect(getSizeDisplay(entry, true, false)).toBeNull()
-  })
-
-  it('returns null for permission denied', () => {
-    const entry = createFileEntry({ size: 1000 })
-    expect(getSizeDisplay(entry, false, true)).toBeNull()
+    expect(getSizeDisplay(entry, true)).toBeNull()
   })
 
   it('returns DIR for directory', () => {
     const entry = createFileEntry({ isDirectory: true })
-    expect(getSizeDisplay(entry, false, false)).toBe('DIR')
+    expect(getSizeDisplay(entry, false)).toBe('DIR')
+  })
+
+  it('returns DIR for a directory from a backend that reports no permissions (SMB, archives, MTP)', () => {
+    const entry = createFileEntry({ isDirectory: true, permissions: 0, size: undefined })
+    expect(getSizeDisplay(entry, false)).toBe('DIR')
   })
 
   it('returns null for file with undefined size', () => {
     const entry = createFileEntry({ size: undefined })
-    expect(getSizeDisplay(entry, false, false)).toBeNull()
+    expect(getSizeDisplay(entry, false)).toBeNull()
   })
 
   it('returns formatted triads for file with size', () => {
     const entry = createFileEntry({ size: 1234567 })
-    const result = getSizeDisplay(entry, false, false)
+    const result = getSizeDisplay(entry, false)
     expect(result).not.toBe('DIR')
     expect(result).not.toBeNull()
     expect(Array.isArray(result)).toBe(true)
-  })
-})
-
-describe('getDateDisplay', () => {
-  it('returns empty string for null entry', () => {
-    expect(getDateDisplay(null, false, false)).toBe('')
-  })
-
-  it('returns broken symlink message', () => {
-    const entry = createFileEntry()
-    expect(getDateDisplay(entry, true, false)).toBe('(broken symlink)')
-  })
-
-  it('returns permission denied message', () => {
-    const entry = createFileEntry()
-    expect(getDateDisplay(entry, false, true)).toBe('(permission denied)')
-  })
-
-  it('returns formatted date for regular file', () => {
-    const entry = createFileEntry({ modifiedAt: 1705322445 })
-    const result = getDateDisplay(entry, false, false)
-    expect(result).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
-  })
-
-  it('uses currentDirModifiedAt for parent entry', () => {
-    const entry = createFileEntry({ name: '..', modifiedAt: 1000 })
-    const result = getDateDisplay(entry, false, false, 2000)
-    // Should use currentDirModifiedAt (2000) instead of entry.modifiedAt (1000)
-    const resultWithoutOverride = getDateDisplay(entry, false, false)
-    expect(result).not.toBe(resultWithoutOverride)
-  })
-
-  it('returns empty string when no modified time and not parent', () => {
-    const entry = createFileEntry({ modifiedAt: undefined })
-    expect(getDateDisplay(entry, false, false)).toBe('')
   })
 })
 
@@ -312,32 +275,6 @@ describe('isBrokenSymlink', () => {
   it('returns true for broken symlink', () => {
     const entry = createFileEntry({ isSymlink: true, iconId: 'symlink-broken' })
     expect(isBrokenSymlink(entry)).toBe(true)
-  })
-})
-
-describe('isPermissionDenied', () => {
-  it('returns false for null', () => {
-    expect(isPermissionDenied(null)).toBe(false)
-  })
-
-  it('returns false for regular file with permissions', () => {
-    const entry = createFileEntry({ permissions: 0o644, size: 100 })
-    expect(isPermissionDenied(entry)).toBe(false)
-  })
-
-  it('returns false for symlink even with no permissions', () => {
-    const entry = createFileEntry({ isSymlink: true, permissions: 0, size: undefined })
-    expect(isPermissionDenied(entry)).toBe(false)
-  })
-
-  it('returns true for non-symlink with no permissions and no size', () => {
-    const entry = createFileEntry({ permissions: 0, size: undefined })
-    expect(isPermissionDenied(entry)).toBe(true)
-  })
-
-  it('returns false for file with no permissions but has size', () => {
-    const entry = createFileEntry({ permissions: 0, size: 100 })
-    expect(isPermissionDenied(entry)).toBe(false)
   })
 })
 

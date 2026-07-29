@@ -892,10 +892,6 @@
   "@fileExplorer.entry.brokenSymlink": {
     "sourceHash": "a7ffd43"
   },
-  "fileExplorer.entry.permissionDenied": "（无访问权限）",
-  "@fileExplorer.entry.permissionDenied": {
-    "sourceHash": "88cb526"
-  },
   "fileExplorer.dateTooltip.created": "创建日期",
   "@fileExplorer.dateTooltip.created": {
     "sourceHash": "d70b9e2"

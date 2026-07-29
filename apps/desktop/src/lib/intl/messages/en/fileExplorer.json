@@ -1329,10 +1329,6 @@
   "@fileExplorer.entry.brokenSymlink": {
     "description": "Placeholder shown in the date column for a symlink whose target is missing. Shown in parentheses. A symlink is a file-system shortcut/alias."
   },
-  "fileExplorer.entry.permissionDenied": "(permission denied)",
-  "@fileExplorer.entry.permissionDenied": {
-    "description": "Placeholder shown in the date column for a file Cmdr can''t read due to permissions. Shown in parentheses."
-  },
   "fileExplorer.dateTooltip.created": "Created",
   "@fileExplorer.dateTooltip.created": {
     "description": "Label in a file''s date tooltip for its creation time."

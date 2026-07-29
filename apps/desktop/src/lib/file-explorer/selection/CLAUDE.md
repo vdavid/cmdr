@@ -13,10 +13,9 @@ lives in `FilePane.svelte` as a `Set<number>`).
 
 ## Must-knows
 
-- **`sizeTierClasses` CSS rules must live in the consuming view, not in `selection-info-utils.ts`.** The util file is
-  pure TypeScript with no DOM/style deps; the classes (`size-bytes`, `size-kb`, `size-mb`, `size-gb`, `size-tb`) are
-  defined in the parent list view's stylesheet. A util that references a class it doesn't own keeps style ownership with
-  the view layer.
+- **`sizeTierClasses` CSS rules live in the consuming view, not in `selection-info-utils.ts`.** The util is pure
+  TypeScript with no DOM/style deps; the classes (`size-bytes` … `size-tb`) belong to the parent list view's stylesheet,
+  keeping style ownership in the view layer.
 - **Size-tier color tracks the underlying byte magnitude in every mode, not the displayed unit.** A 349-byte file shown
   as `"0.00 MB"` (forced-MB) still tiers as `size-bytes` (green), via `dynamicTierIndex(bytes, format)`. Don't tier off
   the displayed unit.
@@ -26,6 +25,9 @@ lives in `FilePane.svelte` as a `Set<number>`).
 - **`isBrokenSymlink` checks `iconId === 'symlink-broken'`, NOT filesystem flags.** The backend already resolves broken-
   symlink status when computing the icon ID; re-checking via stat would be redundant and possibly stale. Keep the
   frontend consistent with what the user sees.
+- **❌ Never infer "no access" from entry metadata** (`permissions === 0`, missing `size`): `permissions` defaults to
+  `0` and every non-local backend leaves it there, so the guess fires on EVERY SMB / archive / MTP folder. Proof:
+  `DETAILS.md`, `getSizeDisplay`.
 - **`SelectionInfo` derives its display mode from props** (`viewMode`, `selectedCount`, `stats`), never an explicit
   `mode` prop. Keeps mode-determination in one place. The four modes: `empty`, `selection-summary`, `no-selection`
   (Full, no selection), `file-info` (Brief, no selection).

@@ -169,11 +169,10 @@ export function buildDateTooltip(
 export function getSizeDisplay(
   entry: FileEntry | null,
   isBrokenSymlink: boolean,
-  isPermissionDenied: boolean,
   displaySize?: number,
   formatOpts?: { unit: FileSizeUnit; format: FileSizeFormat },
 ): { value: string; tierClass: string }[] | 'DIR' | null {
-  if (!entry || isBrokenSymlink || isPermissionDenied) return null
+  if (!entry || isBrokenSymlink) return null
   const opts = formatOpts ?? { unit: 'bytes' as const, format: 'binary' as const }
   // `!= null` because the Rust wire format serializes Optional fields as `null`
   // (see Group A migration in `getDisplaySize` doc).
@@ -183,29 +182,9 @@ export function getSizeDisplay(
   return formatSizeForDisplay(size, opts)
 }
 
-/** Determines date display for an entry */
-export function getDateDisplay(
-  entry: FileEntry | null,
-  isBrokenSymlink: boolean,
-  isPermissionDenied: boolean,
-  currentDirModifiedAt?: number,
-): string {
-  if (!entry) return ''
-  if (isBrokenSymlink) return tString('fileExplorer.entry.brokenSymlink')
-  if (isPermissionDenied) return tString('fileExplorer.entry.permissionDenied')
-  // For ".." entry, use the current directory's modified time
-  const timestamp = entry.name === '..' ? currentDirModifiedAt : entry.modifiedAt
-  return formatDate(timestamp)
-}
-
 /** Checks if entry is a broken symlink */
 export function isBrokenSymlink(entry: FileEntry | null): boolean {
   return entry !== null && entry.isSymlink && entry.iconId === 'symlink-broken'
-}
-
-/** Checks if entry has permission denied */
-export function isPermissionDenied(entry: FileEntry | null): boolean {
-  return entry !== null && !entry.isSymlink && entry.permissions === 0 && entry.size == null
 }
 
 // ============================================================================

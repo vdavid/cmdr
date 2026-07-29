@@ -5,7 +5,6 @@
         buildDateTooltip,
         getSizeDisplay,
         isBrokenSymlink as checkBrokenSymlink,
-        isPermissionDenied as checkPermissionDenied,
         formatSizeForDisplay,
         formatNumber,
         calculatePercentage,
@@ -114,7 +113,6 @@
     const displayName = $derived(entry?.name ?? '')
     const isDirectory = $derived(entry?.isDirectory ?? false)
     const isBrokenSymlink = $derived(checkBrokenSymlink(entry))
-    const isPermissionDenied = $derived(checkPermissionDenied(entry))
     const displaySize = $derived(
         entry
             ? getDisplaySize(
@@ -124,9 +122,7 @@
               )
             : undefined,
     )
-    const sizeDisplay = $derived(
-        getSizeDisplay(entry, isBrokenSymlink, isPermissionDenied, displaySize, sizeFormatOpts),
-    )
+    const sizeDisplay = $derived(getSizeDisplay(entry, isBrokenSymlink, displaySize, sizeFormatOpts))
     // Per-folder size-column state, shared with FullList via getDirSizeDisplayState.
     // `dirActive` = the folder's size is unsettled: a full scan/aggregation is
     // running, OR this folder has live index writes in flight (recursiveSizePending).
@@ -154,27 +150,24 @@
             : undefined,
     )
     /**
-     * `placeholder` is a string for the special states (broken/permission) and
-     * `null` when we should render the actual timestamp via `<DateLabel>`.
-     * `dateTimestamp` carries the value for that case (the parent dir's
-     * modifiedAt covers the `..` row).
+     * `placeholder` is a string for a broken symlink (there's no honest
+     * timestamp to show) and `null` when we should render the actual timestamp
+     * via `<DateLabel>`. `dateTimestamp` carries the value for that case (the
+     * parent dir's modifiedAt covers the `..` row).
      */
     const datePlaceholder = $derived.by(() => {
         if (!entry) return ''
-        if (isBrokenSymlink) return '(broken symlink)'
-        if (isPermissionDenied) return '(permission denied)'
+        if (isBrokenSymlink) return tString('fileExplorer.entry.brokenSymlink')
         return null
     })
     const dateTimestamp = $derived(entry?.name === '..' ? currentDirModifiedAt : entry?.modifiedAt)
-    const dateTooltip = $derived(
-        entry && !isBrokenSymlink && !isPermissionDenied ? buildDateTooltip(entry, formattedDate) : undefined,
-    )
+    const dateTooltip = $derived(entry && !isBrokenSymlink ? buildDateTooltip(entry, formattedDate) : undefined)
     // Show an info hint next to a directory's size when its subtree contains
     // symlinks: their content is intentionally excluded from the recursive
     // size (matching `du`/Finder), but that can be surprising for folders that
     // are mostly symlinks.
     const showSymlinkHint = $derived(
-        entry !== null && isDirectory && entry.recursiveHasSymlinks === true && !isBrokenSymlink && !isPermissionDenied,
+        entry !== null && isDirectory && entry.recursiveHasSymlinks === true && !isBrokenSymlink,
     )
     const symlinkHintTooltip = tString('fileExplorer.selectionInfo.symlinkHint')
     // Calculate date column width using measured text width (same utility as FullList)

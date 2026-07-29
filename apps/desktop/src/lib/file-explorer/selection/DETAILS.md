@@ -20,10 +20,15 @@ Depth for the status-bar / header components. `CLAUDE.md` holds the must-knows.
   caller passes `formattedDate` from `reactive-settings.svelte.ts`), then the year portion of each line is wrapped in an
   age-tier `<span>` so the tooltip picks up the active date palette. The callback keeps the util pure (no reactive
   imports); the `tooltip` action accepts `{ html }` directly.
-- `getSizeDisplay(entry, isBrokenSymlink, isPermissionDenied)`: returns triads array, `'DIR'`, or `null`.
-- `getDateDisplay(entry, ...)`: returns the formatted date or `'(broken symlink)'` / `'(permission denied)'`.
+- `getSizeDisplay(entry, isBrokenSymlink, displaySize?, formatOpts?)`: returns triads array, `'DIR'`, or `null`. A
+  broken symlink is the ONLY entry state that suppresses the size; nothing infers "no access" from metadata. ❌ Don't
+  reintroduce a permission-denied guess from `permissions === 0 && size == null`: `FileEntry::new` defaults
+  `permissions` to `0` and every non-local backend (SMB, archives, MTP, the git virtual listings) leaves it there while
+  directories carry no `size`, so that shape matches EVERY remote folder. It's also unreachable in the honest direction:
+  a local entry's `permissions` is `metadata.permissions().mode()`, which always carries the file-type bits (`S_IFDIR`,
+  `S_IFREG`), and an entry that can't be stat'ed is dropped from the listing. Pinned by
+  `SelectionInfo.zero-permissions.test.ts`.
 - `isBrokenSymlink(entry)`: `entry.isSymlink && entry.iconId === 'symlink-broken'` (not filesystem flags).
-- `isPermissionDenied(entry)`: `!isSymlink && permissions === 0 && size === undefined`.
 - `formatNumber`, `calculatePercentage`: selection summary helpers. `formatNumber` delegates to `formatInteger`
   (`$lib/intl`), so counts group per the active locale. Count + noun formatting goes through
   [`$lib/utils/pluralize`](../../utils/pluralize.ts).

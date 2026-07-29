@@ -894,10 +894,6 @@
   "@fileExplorer.entry.brokenSymlink": {
     "sourceHash": "a7ffd43"
   },
-  "fileExplorer.entry.permissionDenied": "(permiso denegado)",
-  "@fileExplorer.entry.permissionDenied": {
-    "sourceHash": "88cb526"
-  },
   "fileExplorer.dateTooltip.created": "Creado",
   "@fileExplorer.dateTooltip.created": {
     "sourceHash": "d70b9e2"

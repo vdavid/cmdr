@@ -894,10 +894,6 @@
   "@fileExplorer.entry.brokenSymlink": {
     "sourceHash": "a7ffd43"
   },
-  "fileExplorer.entry.permissionDenied": "(behörighet nekad)",
-  "@fileExplorer.entry.permissionDenied": {
-    "sourceHash": "88cb526"
-  },
   "fileExplorer.dateTooltip.created": "Skapad",
   "@fileExplorer.dateTooltip.created": {
     "sourceHash": "d70b9e2"
