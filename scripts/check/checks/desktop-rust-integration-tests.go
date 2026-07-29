@@ -76,18 +76,21 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 	// change their outcome — verified all 35 pass in debug. nextest's expression
 	// filter matches only our `smb_integration_*` tests, so unrelated `#[ignore]`
 	// tests are still skipped.
-	cmd := exec.Command(
-		"cargo", "nextest", "run",
-		"--locked",
-		"--run-ignored", "only",
-		"-E", "test(smb_integration_)",
-	)
+	// `--run-ignored only` rides in baseArgs so the contention re-run inherits it: these
+	// tests are all `#[ignore]`-gated, so a re-run without it would select nothing and
+	// read as "everything passed alone".
+	baseArgs := []string{"--locked", "--run-ignored", "only"}
+	cmd := exec.Command("cargo", append(append([]string{"nextest", "run"}, baseArgs...),
+		"-E", "test(smb_integration_)")...)
 	cmd.Dir = rustDir
 	output, err := RunCommand(cmd, true)
 	if err != nil {
-		// This lane is the most deadline-dense one (real Docker Samba, kernel mounts, NetFS
-		// settle waits), so the cap-vs-in-test-deadline split matters here most.
-		return CheckResult{}, fmt.Errorf("SMB integration tests failed\n%s", indentOutput(withFailureDiagnosis(trimRustTestProgress(output))))
+		// This lane contends on a SHARED Docker Samba stack as well as on CPU, so a red run
+		// here is even likelier to be starvation than in the default lane. Slowest healthy
+		// test measured 2.8s (whole 53-test suite: 5.3s wall-clock), well inside the
+		// contention-retry profile's 40s headroom.
+		return resolveRustFailure("SMB integration tests failed", rustDir, baseArgs,
+			trimRustTestProgress(output))
 	}
 
 	re := regexp.MustCompile(`(\d+) tests? run`)

@@ -58,7 +58,10 @@ func RunDesktopE2ELinux(ctx *CheckContext) (CheckResult, error) {
 		result = Success(fmt.Sprintf("%d %s passed", count, Pluralize(count, "test", "tests")))
 	}
 	// Warn-only duration flagging from the JSON report the run just wrote.
-	return applyE2EDurationWarnings(ctx, result, []string{linuxE2EReportPath}, "linux"), nil
+	result = applyE2EDurationWarnings(ctx, result, []string{linuxE2EReportPath}, "linux")
+	// This lane runs with `CI=true`, so `retries: 1` is live here: a rescued spec would
+	// otherwise be reported as a clean pass. See `e2e-flaky.go`.
+	return applyE2EFlakyWarning(result, []string{linuxE2EReportPath}), nil
 }
 
 // unmountOrbStackNFS unmounts OrbStack's reverse NFS mount (~/OrbStack) if present.

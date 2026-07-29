@@ -152,6 +152,9 @@ type e2eJSONSpec struct {
 }
 
 type e2eJSONTest struct {
+	// One of expected/unexpected/flaky/skipped. `flaky` means it failed then passed
+	// on a retry, which `e2e-flaky.go` reports rather than letting it look clean.
+	Status  string          `json:"status"`
 	Results []e2eJSONResult `json:"results"`
 }
 

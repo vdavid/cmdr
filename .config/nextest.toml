@@ -232,11 +232,14 @@ fail-fast = false
 # ❌ Deliberately NO `inherits`: an inherited per-test override BEATS a profile-level
 # `slow-timeout` (verified against nextest 0.9.136, 2026-07-29: a test with a 4 s
 # override still died at 4 s under a profile declaring 30 s). Inheriting would silently
-# keep the tight caps this stage exists to lift. The cost is that the per-test overrides
-# above don't apply here, which is correct: 40 s is already above all of them except the
-# SMB ones, and the SMB lane isn't re-run this way.
+# keep the tight caps this stage exists to lift, so the per-test overrides above don't
+# apply here.
 #
-# 40 s is ~40x a healthy test and 5x the global cap: enough that only a genuine hang
+# 40 s clears every lane's real runtime by a wide margin. Don't read the big per-test
+# caps above as runtimes: they're hang backstops. Measured 2026-07-29 on an idle M3 Max,
+# the slowest SMB integration test (`..._concurrent_streaming_writes_no_deadlock`, whose
+# cap is 130 s) actually runs in 2.8 s, and the whole 53-test integration suite is 5.3 s
+# wall-clock. So 40 s is ~14x the slowest real test, enough that only a genuine hang
 # fails, while bounding the pathological case (15 hung tests) to ~10 minutes.
 test-threads = 1
 retries = 0

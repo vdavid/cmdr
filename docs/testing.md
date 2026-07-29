@@ -247,7 +247,22 @@ only verdict whose meaning depends on a quiet machine.
 
 The re-run is capped at 15 tests. Past that the machine was too loaded for any of it to mean anything, and the output
 says so rather than quietly examining a subset. Mechanics and the two nextest profiles it drives:
-`scripts/check/checks/rust-test-contention.go`.
+`scripts/check/checks/rust-test-contention.go`. All three Rust lanes get this, `rust-integration-tests` included.
+
+### Playwright retry-passes warn too
+
+Both E2E lanes apply the same rule as the Rust suite: a spec rescued by its retry is a flake, not a pass, so the run is
+downgraded to a **warn** naming every rescued spec. This matters most on the Linux lane, which runs with `CI=true` and
+therefore inherits `retries: 1`. The verdict reads Playwright's structured JSON report (`stats.flaky` and each test's
+`expected`/`unexpected`/`flaky`/`skipped` status), not the `list` reporter's text. A genuinely failing spec is
+`unexpected`, not `flaky`, so it stays a failure and isn't double-counted. Mechanics:
+`scripts/check/checks/e2e-flaky.go`.
+
+### Caps are not runtimes
+
+A per-test `slow-timeout` in `.config/nextest.toml` is a hang backstop, typically 20-50x the real runtime. Don't quote
+one as what a test takes. Measured 2026-07-29 on an idle M3 Max: the SMB test carrying the largest cap (130 s) runs in
+**2.8 s**, and the whole 53-test integration suite finishes in **5.3 s** wall-clock.
 
 ### ❌ Raw `tauri::invoke('command_name', …)` outside the typed bindings
 

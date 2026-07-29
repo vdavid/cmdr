@@ -118,7 +118,10 @@ func RunDesktopE2EPlaywright(ctx *CheckContext) (CheckResult, error) {
 	for i, s := range shards {
 		reportPaths[i] = s.jsonReport
 	}
-	return applyE2EDurationWarnings(ctx, result, reportPaths, "macos"), nil
+	result = applyE2EDurationWarnings(ctx, result, reportPaths, "macos")
+	// Retry-passes last so the flake line is the final thing read. Local runs are at
+	// `retries: 0`, so this is normally a no-op here and does its work on CI.
+	return applyE2EFlakyWarning(result, reportPaths), nil
 }
 
 // buildTauriBinary compiles the Tauri binary with the playwright-e2e feature

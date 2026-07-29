@@ -367,6 +367,9 @@ Prerequisites these tests rely on (per-test temp backing root, watcher off, `vir
 `desktop-rust-tests-linux`, `desktop-rust-integration-tests`). Two jobs, both aimed at making a run's outcome
 self-explaining rather than something a reader has to re-derive.
 
+The Playwright equivalent of the first job is `e2e-flaky.go` (retry-passes become a warn on both E2E lanes, read from
+the structured JSON report rather than the `list` reporter's text).
+
 **Retry-passes become a warn, not a pass.** `.config/nextest.toml` grants `retries` to named real-FSEvents tests, and
 nextest exits 0 when a retry rescues the run. `ParseFlakyTests` reads the `FLAKY n/m` summary lines (and `TRY n PASS`,
 deduped against them) and the lane returns `ResultWarning` naming each test and the rescuing attempt. That turns the
@@ -413,9 +416,15 @@ Gotchas:
 
 - **`contention-retry` deliberately has no `inherits`.** An inherited per-test override BEATS a profile-level
   `slow-timeout`: verified against nextest 0.9.136 (2026-07-29), a test carrying a 4 s override still died at 4 s under
-  a profile declaring 30 s. Inheriting would silently keep the tight caps this stage exists to lift. The cost, losing
-  the per-test overrides, is fine: 40 s already exceeds all of them except the SMB ones, and the SMB lane isn't re-run
-  this way.
+  a profile declaring 30 s. Inheriting would silently keep the tight caps this stage exists to lift.
+- **Don't read the per-test caps in `.config/nextest.toml` as runtimes.** They're hang backstops, often 20-50x the real
+  thing, and mistaking one for a runtime is how the 40 s retry cap first looked too small for the SMB lane. Measured
+  2026-07-29 on an idle M3 Max: `smb_integration_concurrent_streaming_writes_no_deadlock` carries a 130 s cap and runs
+  in **2.8 s**; the whole 53-test integration suite is **5.3 s** wall-clock. 40 s is ~14x the slowest real test across
+  every lane.
+- **The integration lane passes `--run-ignored only` through `baseArgs`** so the re-run inherits it. Every
+  `smb_integration_*` test is `#[ignore]`-gated, so a re-run without it selects nothing and the probe would read as
+  "everything passed alone", turning every real SMB failure into a contention warn.
 - **A non-zero cargo exit during a re-run is expected**, because failing tests are the whole point. `nextestRanRE`
   (nextest's `Summary [` line) distinguishes "tests ran and some failed" from "cargo couldn't run at all". Only the
   latter is a runner error, and it marks every verdict real rather than inventing an excuse for a red run.

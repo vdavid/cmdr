@@ -35,7 +35,7 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 		// Trim the per-test PASS/SKIP lines (the Linux lane already does): on a 4 800-test
 		// suite they bury the diagnosis and the actual panics under thousands of lines.
 		// FAIL/LEAK/TIMEOUT/SLOW and every panic body survive.
-		return resolveRustFailure(rustDir, baseArgs, trimRustTestProgress(output))
+		return resolveRustFailure("rust tests failed", rustDir, baseArgs, trimRustTestProgress(output))
 	}
 
 	// Parse test count from output: "X tests run:"
@@ -82,19 +82,19 @@ func withFailureDiagnosis(output string) string {
 // the suite is told apart from real slowness or a real defect. Only an all-contention
 // outcome softens the result, and even then to a WARN, never a pass: the re-run must not
 // become a silent absorber (that's how the retry budget rotted before it was surfaced).
-func resolveRustFailure(rustDir string, baseArgs []string, trimmed string) (CheckResult, error) {
+func resolveRustFailure(label, rustDir string, baseArgs []string, trimmed string) (CheckResult, error) {
 	failures := ClassifyRustFailures(trimmed)
 	real := RealFailures(failures)
 	diagnosis := DiagnoseRustFailures(failures)
 
 	// Nothing classifiable (a build break, a harness problem): report as-is.
 	if len(real) == 0 {
-		return CheckResult{}, fmt.Errorf("rust tests failed\n%s", indentOutput(withFailureDiagnosis(trimmed)))
+		return CheckResult{}, fmt.Errorf("%s\n%s", label, indentOutput(withFailureDiagnosis(trimmed)))
 	}
 
 	results, skipped := MaybeClassifyContention(real, nextestContentionRunner(rustDir, baseArgs), LoadPerCore)
 	if skipped {
-		return CheckResult{}, fmt.Errorf("rust tests failed\n%s",
+		return CheckResult{}, fmt.Errorf("%s\n%s", label,
 			indentOutput(diagnosis+"\n"+ContentionSkippedNote(len(real))+"\n\n"+trimmed))
 	}
 
@@ -108,7 +108,7 @@ func resolveRustFailure(rustDir string, baseArgs []string, trimmed string) (Chec
 			Changes: -1,
 		}, nil
 	}
-	return CheckResult{}, fmt.Errorf("rust tests failed\n%s",
+	return CheckResult{}, fmt.Errorf("%s\n%s", label,
 		indentOutput(diagnosis+"\n"+summary+"\n"+trimmed))
 }
 
