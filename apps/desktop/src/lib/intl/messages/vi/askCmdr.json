@@ -384,6 +384,14 @@
   "@askCmdr.renameReview.openPreviewTooltip": {
     "sourceHash": "17163aa"
   },
+  "askCmdr.renameReview.editName": "Tên mới cho {name}",
+  "@askCmdr.renameReview.editName": {
+    "sourceHash": "862a5b7"
+  },
+  "askCmdr.renameReview.nameRejected": "Cmdr không dùng được tên đó. Hãy thử một tên khác.",
+  "@askCmdr.renameReview.nameRejected": {
+    "sourceHash": "028029d"
+  },
   "askCmdr.renameReview.evidence.imageText": "Văn bản trong ảnh",
   "@askCmdr.renameReview.evidence.imageText": {
     "sourceHash": "520b47b"
@@ -403,6 +411,10 @@
   "askCmdr.renameReview.evidence.userInstruction": "Điều bạn đã yêu cầu",
   "@askCmdr.renameReview.evidence.userInstruction": {
     "sourceHash": "c8e3674"
+  },
+  "askCmdr.renameReview.evidence.userEdited": "Bạn đã tự nhập tên này",
+  "@askCmdr.renameReview.evidence.userEdited": {
+    "sourceHash": "3f3a179"
   },
   "askCmdr.renameReview.coverage": "Khớp {matchedText} trên {totalText} ký tự",
   "@askCmdr.renameReview.coverage": {
@@ -471,6 +483,22 @@
   "askCmdr.renameReview.cycleTooltip": "Chu trình đổi tên. Cmdr sẽ dùng một tên tạm thời khi xoay vòng các tệp này.",
   "@askCmdr.renameReview.cycleTooltip": {
     "sourceHash": "d76a0af"
+  },
+  "askCmdr.renameReview.nothingReadBadge": "(không đọc gì)",
+  "@askCmdr.renameReview.nothingReadBadge": {
+    "sourceHash": "6308780"
+  },
+  "askCmdr.renameReview.nothingReadTooltip": "Cmdr không đọc gì bên trong tệp này. Tên này đến từ tên cũ, thông tin tệp hoặc điều bạn đã yêu cầu.",
+  "@askCmdr.renameReview.nothingReadTooltip": {
+    "sourceHash": "850f6ce"
+  },
+  "askCmdr.renameReview.nameKeptBadge": "(giữ nguyên tên)",
+  "@askCmdr.renameReview.nameKeptBadge": {
+    "sourceHash": "08f1bc7"
+  },
+  "askCmdr.renameReview.nameKeptTooltip": "Cmdr giữ nguyên tên hiện tại và không đọc gì bên trong tệp này.",
+  "@askCmdr.renameReview.nameKeptTooltip": {
+    "sourceHash": "d27a078"
   },
   "askCmdr.renameReview.expired": "Lần xem lại này đã hết hạn. Hãy nhờ Cmdr chuẩn bị lại.",
   "@askCmdr.renameReview.expired": {

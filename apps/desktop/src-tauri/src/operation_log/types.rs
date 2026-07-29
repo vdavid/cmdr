@@ -78,12 +78,14 @@ token_enum! {
 }
 
 token_enum! {
-    /// Who initiated the operation (provenance, D5). `Agent` is reserved for the
-    /// future in-app agent; v1 records only `User` and `AiClient`.
+    /// Who initiated the operation (provenance, D5). `AgentEdited` is mixed provenance: the
+    /// in-app agent proposed the batch and the user retyped at least one name while reviewing
+    /// it, so crediting the agent alone would be a lie about who chose those names.
     pub enum Initiator {
         User => "user",
         AiClient => "ai_client",
         Agent => "agent",
+        AgentEdited => "agent_edited",
     }
 }
 
@@ -218,7 +220,7 @@ mod tests {
             [Copy, Move, Delete, Trash, Rename, CreateFolder, CreateFile, ArchiveEdit]
         );
         check!(ArchiveSubkind, [Compress, Edit, Extract]);
-        check!(Initiator, [User, AiClient, Agent]);
+        check!(Initiator, [User, AiClient, Agent, AgentEdited]);
         check!(ExecutionStatus, [Queued, Running, Done, Failed, Canceled]);
         check!(
             RollbackState,

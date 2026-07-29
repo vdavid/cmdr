@@ -386,6 +386,14 @@
   "@askCmdr.renameReview.openPreviewTooltip": {
     "sourceHash": "17163aa"
   },
+  "askCmdr.renameReview.editName": "Novo nome para {name}",
+  "@askCmdr.renameReview.editName": {
+    "sourceHash": "862a5b7"
+  },
+  "askCmdr.renameReview.nameRejected": "O Cmdr não pode usar esse nome. Tente outro.",
+  "@askCmdr.renameReview.nameRejected": {
+    "sourceHash": "028029d"
+  },
   "askCmdr.renameReview.evidence.imageText": "Texto na imagem",
   "@askCmdr.renameReview.evidence.imageText": {
     "sourceHash": "520b47b"
@@ -405,6 +413,10 @@
   "askCmdr.renameReview.evidence.userInstruction": "O que você pediu",
   "@askCmdr.renameReview.evidence.userInstruction": {
     "sourceHash": "c8e3674"
+  },
+  "askCmdr.renameReview.evidence.userEdited": "Você digitou este nome",
+  "@askCmdr.renameReview.evidence.userEdited": {
+    "sourceHash": "3f3a179"
   },
   "askCmdr.renameReview.coverage": "Corresponde a {matchedText} de {totalText} caracteres",
   "@askCmdr.renameReview.coverage": {
@@ -473,6 +485,22 @@
   "askCmdr.renameReview.cycleTooltip": "Ciclo de renomeação. O Cmdr vai usar um nome temporário ao trocar os nomes desses arquivos entre si.",
   "@askCmdr.renameReview.cycleTooltip": {
     "sourceHash": "d76a0af"
+  },
+  "askCmdr.renameReview.nothingReadBadge": "(nada lido)",
+  "@askCmdr.renameReview.nothingReadBadge": {
+    "sourceHash": "6308780"
+  },
+  "askCmdr.renameReview.nothingReadTooltip": "O Cmdr não leu nada dentro deste arquivo. Este nome vem do nome anterior, dos detalhes do arquivo ou do que você pediu.",
+  "@askCmdr.renameReview.nothingReadTooltip": {
+    "sourceHash": "850f6ce"
+  },
+  "askCmdr.renameReview.nameKeptBadge": "(nome mantido)",
+  "@askCmdr.renameReview.nameKeptBadge": {
+    "sourceHash": "08f1bc7"
+  },
+  "askCmdr.renameReview.nameKeptTooltip": "O Cmdr manteve o nome atual e não leu nada dentro deste arquivo.",
+  "@askCmdr.renameReview.nameKeptTooltip": {
+    "sourceHash": "d27a078"
   },
   "askCmdr.renameReview.expired": "Esta revisão expirou. Peça ao Ask Cmdr para prepará-la de novo.",
   "@askCmdr.renameReview.expired": {

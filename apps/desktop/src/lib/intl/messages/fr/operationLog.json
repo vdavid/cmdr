@@ -88,6 +88,10 @@
     "sourceHash": "11b39c9",
     "sameAsSourceJustification": "\"Agent\" is a genuine French word (identical spelling, masculine), the standard term for a software agent in macOS/Microsoft French. No French alternative would read more naturally."
   },
+  "operationLog.initiator.agentEdited": "Agent, avec vos modifications",
+  "@operationLog.initiator.agentEdited": {
+    "sourceHash": "16c4cd2"
+  },
   "operationLog.status.queued": "En attente",
   "@operationLog.status.queued": {
     "sourceHash": "661ff40"

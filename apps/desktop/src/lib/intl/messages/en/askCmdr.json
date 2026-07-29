@@ -406,6 +406,19 @@
   "@askCmdr.renameReview.openPreviewTooltip": {
     "description": "Tooltip on the per-row thumbnail button in the bulk rename review. Names the keyboard shortcut that opens the focused row's file."
   },
+  "askCmdr.renameReview.editName": "New name for {name}",
+  "@askCmdr.renameReview.editName": {
+    "description": "Accessible label for the editable new name field in each bulk rename review row, so a wrong proposed name can be corrected in place instead of denied. Placeholder is the file's current name.",
+    "placeholders": {
+      "name": {
+        "content": "The file's current name."
+      }
+    }
+  },
+  "askCmdr.renameReview.nameRejected": "Cmdr can’t use that name. Try a different one.",
+  "@askCmdr.renameReview.nameRejected": {
+    "description": "Per-row message shown when the name the user typed in the bulk rename review is not a usable filename, so the row went back to the name it had. Conversational and actionable; never the words error or failed. The apostrophe is a curly typographic apostrophe (U+2019)."
+  },
   "askCmdr.renameReview.evidence.imageText": "Text in the image",
   "@askCmdr.renameReview.evidence.imageText": {
     "description": "Label above a quote of the text Cmdr recognized inside the image, shown as the reason for a proposed name."
@@ -425,6 +438,10 @@
   "askCmdr.renameReview.evidence.userInstruction": "What you asked for",
   "@askCmdr.renameReview.evidence.userInstruction": {
     "description": "Label shown when a proposed name follows a naming rule the user stated in the chat."
+  },
+  "askCmdr.renameReview.evidence.userEdited": "You typed this name",
+  "@askCmdr.renameReview.evidence.userEdited": {
+    "description": "Label shown in the bulk rename review when the user replaced the proposed name with one they typed themselves. The row then carries no evidence at all, and never the model’s."
   },
   "askCmdr.renameReview.coverage": "Matched {matchedText} of {totalText} characters",
   "@askCmdr.renameReview.coverage": {
@@ -506,6 +523,22 @@
   "askCmdr.renameReview.cycleTooltip": "Rename cycle. Cmdr will use one temporary name while rotating these files.",
   "@askCmdr.renameReview.cycleTooltip": {
     "description": "Accessible tooltip for the rename-cycle warning badge. Explains that Cmdr needs one temporary filename to rotate the files safely."
+  },
+  "askCmdr.renameReview.nothingReadBadge": "(nothing read)",
+  "@askCmdr.renameReview.nothingReadBadge": {
+    "description": "Compact badge beside a proposed filename in the bulk rename review when Cmdr read nothing inside the file, so the name rests on the old name, the file details, or the user’s instruction. Keep the parentheses."
+  },
+  "askCmdr.renameReview.nothingReadTooltip": "Cmdr read nothing inside this file. This name comes from the old name, the file’s details, or what you asked for.",
+  "@askCmdr.renameReview.nothingReadTooltip": {
+    "description": "Accessible tooltip for the nothing-read badge in the bulk rename review. It must stay an honest limit: nothing inside the file was read. Never soften it into something reassuring. The apostrophe is a curly typographic apostrophe (U+2019)."
+  },
+  "askCmdr.renameReview.nameKeptBadge": "(name kept)",
+  "@askCmdr.renameReview.nameKeptBadge": {
+    "description": "Compact badge beside a proposed filename in the bulk rename review when Cmdr kept the file’s current name because it read nothing inside the file. Keep the parentheses."
+  },
+  "askCmdr.renameReview.nameKeptTooltip": "Cmdr kept the current name and read nothing inside this file.",
+  "@askCmdr.renameReview.nameKeptTooltip": {
+    "description": "Accessible tooltip for the name-kept badge in the bulk rename review. Says both halves plainly: the name did not change, and nothing inside the file was read. Never soften it."
   },
   "askCmdr.renameReview.expired": "This review expired. Ask Cmdr to prepare it again.",
   "@askCmdr.renameReview.expired": {

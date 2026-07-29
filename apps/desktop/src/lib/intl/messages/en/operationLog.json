@@ -98,6 +98,10 @@
   "@operationLog.initiator.agent": {
     "description": "Shown on an operation Cmdr's own AI agent started. Provenance label."
   },
+  "operationLog.initiator.agentEdited": "Agent, with your edits",
+  "@operationLog.initiator.agentEdited": {
+    "description": "Provenance label shown on an operation Cmdr’s own AI agent proposed and the user changed before approving (they retyped at least one name in the review). Mixed provenance: the log must not credit the agent for a name the user chose."
+  },
 
   "operationLog.status.queued": "Queued",
   "@operationLog.status.queued": {

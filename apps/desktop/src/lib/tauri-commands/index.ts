@@ -316,6 +316,7 @@ export {
   applyBulkRename,
   preflightBulkRename,
   cancelBulkRenameProposal,
+  reviseBulkRenameRow,
   recordAskCmdrModelChange,
   getAskCmdrConversation,
   listAskCmdrConversations,
@@ -349,6 +350,7 @@ export type {
   RenameEvidence,
   RenameEvidenceCoverage,
   RenameEvidenceSource,
+  RenameProposalRow,
 } from './ask-cmdr'
 
 // Crash reporter

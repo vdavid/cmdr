@@ -58,7 +58,7 @@ const CONTEXT_CHARS: usize = 60;
 
 /// Where a proposed name came from. Typed, so the UI and the validator branch on a
 /// variant rather than sniffing wording (`no-string-matching`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum EvidenceSource {
     /// Text recognized inside the image, as `image_facts` delivered it.
@@ -107,7 +107,7 @@ impl RenameEvidence {
 /// `deny_unknown_fields` keeps the plan schema closed: the row's coverage is a fact this
 /// module derives from the ledger's own delivery, so a plan that tries to send one is refused
 /// rather than believed.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct RenameEvidence {
     pub source: EvidenceSource,
@@ -128,7 +128,7 @@ pub struct RenameEvidence {
 ///
 /// Every count is in characters of the DELIVERED text (`image_facts` caps that at 2,000), so
 /// the UI's "matched 7 of 3,140 characters" describes what the model was actually handed.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct EvidenceCoverage {
     /// Where the match starts in the delivered text.

@@ -12,6 +12,8 @@ import {
   type ConversationRow,
   type ConversationDetailView,
   type ConversationSearchHit,
+  type EvidenceCoverage,
+  type EvidenceSource,
   type MessageView,
   type MessageBlock,
   type AttachmentRef,
@@ -19,6 +21,8 @@ import {
   type AskCmdrConsentStatus,
   type ConversationCost,
   type CostSummary,
+  type RenameEvidence,
+  type RenameProposalRowSnapshot,
 } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
@@ -33,6 +37,7 @@ export type {
   AskCmdrConsentStatus,
   ConversationCost,
   CostSummary,
+  RenameEvidence,
 }
 
 /** Why an assistant turn ended, on the wire (mirrors Rust `StopReasonView`). */
@@ -58,41 +63,27 @@ export type AskCmdrErrorKind =
   | 'provider'
 
 /**
- * Where a proposed rename name came from (mirrors Rust `EvidenceSource`). The two image
- * sources are the only ones claiming the file's contents were read, and the backend refuses
- * a plan that claims them without `image_facts` having delivered that content.
+ * Where a proposed rename name came from (the generated `EvidenceSource`, under the name the
+ * rail uses). The two image sources are the only ones claiming the file's contents were read,
+ * and the backend refuses a plan that claims them without `image_facts` having delivered that
+ * content; `userEdited` means the user typed the name themselves, and only the backend's revise
+ * path can set it.
  */
-export type RenameEvidenceSource = 'imageText' | 'imageTags' | 'filename' | 'metadata' | 'userInstruction'
+export type RenameEvidenceSource = EvidenceSource
 
 /**
- * One proposed name's backing (mirrors Rust `RenameEvidence`). `detail` is MODEL-AUTHORED
- * text, so render it as plain text, never `{@html}`; the backend caps its length.
- */
-export interface RenameEvidence {
-  source: RenameEvidenceSource
-  detail: string
-}
-
-/**
- * How much of the text Cmdr read in an image the quote behind a name actually covers
- * (mirrors Rust `EvidenceCoverage`). Present on `imageText` rows only.
+ * How much of the text Cmdr read in an image the quote behind a name actually covers (the
+ * generated `EvidenceCoverage`). Present on `imageText` rows only.
  *
  * Backend-derived from the delivery the evidence check matched against, never model-authored
  * and never an input, so the review row can show that a 7-character hit inside 3,140
  * characters is thin. Every count is in characters of the delivered text. The three text
  * fields are OCR output: render them as plain text, never `{@html}`.
  */
-export interface RenameEvidenceCoverage {
-  matchOffset: number
-  matchedChars: number
-  deliveredChars: number
-  contextBefore: string
-  matchedText: string
-  contextAfter: string
-  /** The line ran on past the shown window, so the UI marks the cut. */
-  trimmedBefore: boolean
-  trimmedAfter: boolean
-}
+export type RenameEvidenceCoverage = EvidenceCoverage
+
+/** One review row as the backend owns it (the generated `RenameProposalRowSnapshot`). */
+export type RenameProposalRow = RenameProposalRowSnapshot
 
 /**
  * A streamed progress event for the rail. Hand-mirrors the Rust `AskCmdrStreamEvent`
@@ -107,23 +98,10 @@ export type AskCmdrStreamEvent =
   | { type: 'reasoningTick' }
   | { type: 'toolCallStarted'; callId: string; tool: string }
   | { type: 'toolCallFinished'; callId: string; ok: boolean }
-  | {
-      type: 'proposalReady'
-      proposal: {
-        proposalId: string
-        rows: Array<{
-          rowId: string
-          sourceName: string
-          destinationName: string
-          /** The file being renamed, for the row's thumbnail and the full viewer. Display
-           *  only: apply resolves paths server-side from the opaque row id. */
-          sourcePath: string
-          volumeId: string
-          evidence: RenameEvidence
-          coverage: RenameEvidenceCoverage | null
-        }>
-      }
-    }
+  /** The staged rename proposal, as the review dialog receives it. The rows are the generated
+   *  `RenameProposalRowSnapshot`: `sourcePath` / `volumeId` are display data for the thumbnail
+   *  and the viewer, since apply resolves every path server-side from the opaque row id. */
+  | { type: 'proposalReady'; proposal: { proposalId: string; rows: RenameProposalRow[] } }
   | { type: 'done'; messageId: number; seq: number; stop: StopReason; usage: AskCmdrUsage }
   /** `detail` is the source error's own wording for display under the typed headline
    * (a retired model slug, a quota reset time); never branch on it. */
@@ -166,6 +144,16 @@ export async function cancelAskCmdr(conversationId: number): Promise<void> {
  * cross the IPC boundary: source paths and destination names stay in the backend. */
 export async function preflightBulkRename(proposalId: string, allowedRowIds: string[]) {
   const res = await commands.preflightBulkRename(proposalId, allowedRowIds)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/** Replace one row's proposed name with the one the user typed. The backend validates the name,
+ * swaps the row's evidence for the "you typed this" marker, and invalidates the accepted
+ * preflight, so the edited name is rechecked before it can reach the filesystem. Answers the row
+ * as the dialog should now show it. */
+export async function reviseBulkRenameRow(proposalId: string, rowId: string, destinationName: string) {
+  const res = await commands.reviseBulkRenameRow(proposalId, rowId, destinationName)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }

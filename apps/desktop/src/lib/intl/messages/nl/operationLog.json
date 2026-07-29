@@ -88,6 +88,10 @@
     "sourceHash": "11b39c9",
     "sameAsSourceJustification": "'Agent' is a genuine Dutch word (MS NL terminology: agent -> agent), kept for the AI-agent provenance label."
   },
+  "operationLog.initiator.agentEdited": "Agent, met jouw wijzigingen",
+  "@operationLog.initiator.agentEdited": {
+    "sourceHash": "16c4cd2"
+  },
   "operationLog.status.queued": "Wachten",
   "@operationLog.status.queued": {
     "sourceHash": "661ff40"

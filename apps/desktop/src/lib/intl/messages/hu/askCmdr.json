@@ -384,6 +384,14 @@
   "@askCmdr.renameReview.openPreviewTooltip": {
     "sourceHash": "17163aa"
   },
+  "askCmdr.renameReview.editName": "{name} új neve",
+  "@askCmdr.renameReview.editName": {
+    "sourceHash": "862a5b7"
+  },
+  "askCmdr.renameReview.nameRejected": "A Cmdr ezt a nevet nem tudja használni. Próbálj egy másikat.",
+  "@askCmdr.renameReview.nameRejected": {
+    "sourceHash": "028029d"
+  },
   "askCmdr.renameReview.evidence.imageText": "A képen lévő szöveg",
   "@askCmdr.renameReview.evidence.imageText": {
     "sourceHash": "520b47b"
@@ -403,6 +411,10 @@
   "askCmdr.renameReview.evidence.userInstruction": "Amit kértél",
   "@askCmdr.renameReview.evidence.userInstruction": {
     "sourceHash": "c8e3674"
+  },
+  "askCmdr.renameReview.evidence.userEdited": "Ezt a nevet te írtad be",
+  "@askCmdr.renameReview.evidence.userEdited": {
+    "sourceHash": "3f3a179"
   },
   "askCmdr.renameReview.coverage": "{totalText} karakterből {matchedText} egyezik",
   "@askCmdr.renameReview.coverage": {
@@ -471,6 +483,22 @@
   "askCmdr.renameReview.cycleTooltip": "Átnevezési ciklus. A fájlok körbeforgatásához a Cmdr egy ideiglenes nevet használ.",
   "@askCmdr.renameReview.cycleTooltip": {
     "sourceHash": "d76a0af"
+  },
+  "askCmdr.renameReview.nothingReadBadge": "(semmit sem olvasott)",
+  "@askCmdr.renameReview.nothingReadBadge": {
+    "sourceHash": "6308780"
+  },
+  "askCmdr.renameReview.nothingReadTooltip": "A Cmdr semmit sem olvasott a fájl belsejéből. A név a régi névből, a fájladatokból vagy abból származik, amit kértél.",
+  "@askCmdr.renameReview.nothingReadTooltip": {
+    "sourceHash": "850f6ce"
+  },
+  "askCmdr.renameReview.nameKeptBadge": "(név megtartva)",
+  "@askCmdr.renameReview.nameKeptBadge": {
+    "sourceHash": "08f1bc7"
+  },
+  "askCmdr.renameReview.nameKeptTooltip": "A Cmdr megtartotta a jelenlegi nevet, és semmit sem olvasott a fájl belsejéből.",
+  "@askCmdr.renameReview.nameKeptTooltip": {
+    "sourceHash": "d27a078"
   },
   "askCmdr.renameReview.expired": "Ez az áttekintés lejárt. Kérd meg az Ask Cmdrt, hogy készítse el újra.",
   "@askCmdr.renameReview.expired": {

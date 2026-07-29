@@ -87,6 +87,10 @@
   "@operationLog.initiator.agent": {
     "sourceHash": "11b39c9"
   },
+  "operationLog.initiator.agentEdited": "Tác nhân, có chỉnh sửa của bạn",
+  "@operationLog.initiator.agentEdited": {
+    "sourceHash": "16c4cd2"
+  },
   "operationLog.status.queued": "Đang chờ",
   "@operationLog.status.queued": {
     "sourceHash": "661ff40"

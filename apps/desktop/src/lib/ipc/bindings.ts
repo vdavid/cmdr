@@ -337,7 +337,7 @@ export const commands = {
     volumeId: string | null,
     parentPath: string,
     name: string,
-    initiator: 'user' | 'aiClient' | 'agent' | null,
+    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
   ) => typedError<string, IpcError>(__TAURI_INVOKE('create_directory', { volumeId, parentPath, name, initiator })),
   /**
    *  Creates an empty file and returns its new path. Same shape as
@@ -347,7 +347,7 @@ export const commands = {
     volumeId: string | null,
     parentPath: string,
     name: string,
-    initiator: 'user' | 'aiClient' | 'agent' | null,
+    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
   ) => typedError<string, IpcError>(__TAURI_INVOKE('create_file', { volumeId, parentPath, name, initiator })),
   /**
    *  Stores `password` for the archive at `archive_path` on `parent_volume_id`,
@@ -396,7 +396,7 @@ export const commands = {
        */
       preKnownConflicts?: string[]
     } | null,
-    initiator: 'user' | 'aiClient' | 'agent' | null,
+    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
       __TAURI_INVOKE('copy_files', { sources, destination, config, initiator }),
@@ -429,7 +429,7 @@ export const commands = {
        */
       preKnownConflicts?: string[]
     } | null,
-    initiator: 'user' | 'aiClient' | 'agent' | null,
+    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
       __TAURI_INVOKE('move_files', { sources, destination, config, initiator }),
@@ -462,7 +462,7 @@ export const commands = {
        */
       preKnownConflicts?: string[]
     } | null,
-    initiator: 'user' | 'aiClient' | 'agent' | null,
+    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
       __TAURI_INVOKE('delete_files', { sources, volumeId, config, initiator }),
@@ -492,7 +492,7 @@ export const commands = {
        */
       preKnownConflicts?: string[]
     } | null,
-    initiator: 'user' | 'aiClient' | 'agent' | null,
+    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
       __TAURI_INVOKE('trash_files', { sources, itemSizes, config, initiator }),
@@ -639,7 +639,7 @@ export const commands = {
        */
       compressionLevel?: number | null
     } | null,
-    initiator: 'user' | 'aiClient' | 'agent' | null,
+    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
       __TAURI_INVOKE('copy_between_volumes', {
@@ -689,7 +689,7 @@ export const commands = {
        */
       compressionLevel?: number | null
     } | null,
-    initiator: 'user' | 'aiClient' | 'agent' | null,
+    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
       __TAURI_INVOKE('move_between_volumes', {
@@ -741,7 +741,7 @@ export const commands = {
        */
       compressionLevel?: number | null
     } | null,
-    initiator: 'user' | 'aiClient' | 'agent' | null,
+    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
       __TAURI_INVOKE('compress_files', { sourceVolumeId, sourcePaths, destVolumeId, destZipPath, config, initiator }),
@@ -887,7 +887,7 @@ export const commands = {
     to: string,
     force: boolean,
     volumeId: string | null,
-    initiator: 'user' | 'aiClient' | 'agent' | null,
+    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
   ) => typedError<null, IpcError>(__TAURI_INVOKE('rename_file', { from, to, force, volumeId, initiator })),
   // Moves a file or directory to the macOS Trash via NSFileManager.
   moveToTrash: (path: string) => typedError<null, IpcError>(__TAURI_INVOKE('move_to_trash', { path })),
@@ -2257,6 +2257,16 @@ export const commands = {
    */
   applyBulkRename: (proposalId: string, allowedRowIds: string[]) =>
     typedError<WriteOperationStartResult, IpcError>(__TAURI_INVOKE('apply_bulk_rename', { proposalId, allowedRowIds })),
+  /**
+   *  Replaces one row's proposed name with the one the user typed in the review, and answers the
+   *  row as the dialog should now show it. The name is validated server-side; the row keeps no
+   *  evidence afterwards, and the edit invalidates the accepted preflight, so the new name is
+   *  rechecked before it can reach the filesystem.
+   */
+  reviseBulkRenameRow: (proposalId: string, rowId: string, destinationName: string) =>
+    typedError<RenameProposalRowSnapshot, IpcError>(
+      __TAURI_INVOKE('revise_bulk_rename_row', { proposalId, rowId, destinationName }),
+    ),
   /**
    *  Discards a staged proposal after the user closes its review. There is no
    *  agent-controlled approval route: only this user action consumes the plan.
@@ -4245,6 +4255,74 @@ export type ErrorReportAutoSent = {
 }
 
 /**
+ *  How much of the delivered text a quote actually covers, and the line it came from.
+ *
+ *  Computed HERE, from the delivery the check just matched against, for one purpose: the
+ *  review row must show that a 7-character hit inside 3,140 characters of OCR is thin, where
+ *  a bare quote made it look exactly as strong as a decisive one (invariant 12).
+ *
+ *  **Serialize only, on purpose.** This is a display fact about a delivery that already
+ *  validated, never an input: if a plan could send it, "how thin is this match" would become
+ *  a field the model writes, and evidence has to stay a fact about what the ledger recorded
+ *  (invariant 6). It is also not a second way to pass validation — a row only ever gets
+ *  coverage after [`ImageFactsLedger::check`] has already accepted it.
+ *
+ *  Every count is in characters of the DELIVERED text (`image_facts` caps that at 2,000), so
+ *  the UI's "matched 7 of 3,140 characters" describes what the model was actually handed.
+ */
+export type EvidenceCoverage = {
+  // Where the match starts in the delivered text.
+  matchOffset: number
+  /**
+   *  How long the matched span is. Can exceed the quote's own length: folding collapses
+   *  whitespace runs, so one quoted space may cover a line break plus indentation.
+   */
+  matchedChars: number
+  // How much recognized text `image_facts` delivered for this file.
+  deliveredChars: number
+  /**
+   *  The delivered text just before the match, within its line and capped at
+   *  [`CONTEXT_CHARS`].
+   */
+  contextBefore: string
+  /**
+   *  The matched span as DELIVERED. The model's `detail` may differ in casing and spacing,
+   *  and what the user is asked to trust is what the image says.
+   */
+  matchedText: string
+  // The delivered text just after the match, within its line and capped.
+  contextAfter: string
+  // Whether the line ran on past the window, so the UI shows the cut.
+  trimmedBefore: boolean
+  trimmedAfter: boolean
+}
+
+/**
+ *  Where a proposed name came from. Typed, so the UI and the validator branch on a
+ *  variant rather than sniffing wording (`no-string-matching`).
+ */
+export type EvidenceSource =
+  // Text recognized inside the image, as `image_facts` delivered it.
+  | 'imageText'
+  // Vision tags for the image, as `image_facts` delivered them.
+  | 'imageTags'
+  // The file's existing name (no content claim).
+  | 'filename'
+  // Dates, size, or other metadata the agent already had (no content claim).
+  | 'metadata'
+  // A naming rule the user stated in the conversation (no content claim).
+  | 'userInstruction'
+  /**
+   *  The user typed this name in the review dialog. No content claim, and no evidence at
+   *  all: the name IS the decision (invariant 10).
+   *
+   *  The review's revise path is the only thing that may set it. A plan that sends it is
+   *  refused ([`EvidenceProblem::SourceReservedForUser`]), because "You typed this name"
+   *  beside a model-invented name is the exact misattribution this module exists to stop.
+   */
+  | 'userEdited'
+
+/**
  *  `execute-command`: the single unified menu/cross-window command relay. The
  *  native menu (`menu/menu_handlers.rs`), the MCP dialog/app tools
  *  (`mcp/executor/`), and the settings window's License section all emit this to
@@ -4984,10 +5062,11 @@ export type IndexStatusResponse = {
 }
 
 /**
- *  Who initiated the operation (provenance, D5). `Agent` is reserved for the
- *  future in-app agent; v1 records only `User` and `AiClient`.
+ *  Who initiated the operation (provenance, D5). `AgentEdited` is mixed provenance: the
+ *  in-app agent proposed the batch and the user retyped at least one name while reviewing
+ *  it, so crediting the agent alone would be a lie about who chose those names.
  */
-export type Initiator = 'user' | 'aiClient' | 'agent'
+export type Initiator = 'user' | 'aiClient' | 'agent' | 'agentEdited'
 
 /**
  *  Structured IPC error with a timeout flag.
@@ -6471,6 +6550,47 @@ export type RegistrationStatus =
    *  binding, or the most recent attempt failed).
    */
   | 'notRegistered'
+
+/**
+ *  One item's evidence: the typed source plus the short quote or note behind it.
+ *
+ *  `detail` is MODEL-AUTHORED TEXT that reaches the review dialog. The frontend renders it
+ *  as plain text (never `{@html}`), and its length is bounded here.
+ *
+ *  `deny_unknown_fields` keeps the plan schema closed: the row's coverage is a fact this
+ *  module derives from the ledger's own delivery, so a plan that tries to send one is refused
+ *  rather than believed.
+ */
+export type RenameEvidence = {
+  source: EvidenceSource
+  detail: string
+}
+
+export type RenameProposalRowSnapshot = {
+  rowId: string
+  sourceName: string
+  destinationName: string
+  /**
+   *  The file this row renames, so the dialog can show the user the thing itself: a
+   *  thumbnail per row, and the full viewer for the focused one. DISPLAY ONLY — apply
+   *  resolves the path from the stored proposal by row id and never from the client.
+   */
+  sourcePath: string
+  // Which volume `source_path` lives on, so the viewer can pull a file on a remote parent.
+  volumeId: string
+  /**
+   *  Why this name, for the review dialog's evidence column. The frontend maps `source`
+   *  to a localized label and renders `detail` as PLAIN TEXT (it's model-authored, so
+   *  never `{@html}`); its length is bounded by the evidence check.
+   */
+  evidence: RenameEvidence
+  /**
+   *  How thin the match behind this name is (`imageText` rows only). The dialog renders the
+   *  quote inside its surrounding line plus a coverage figure, so a sliver of a page of OCR
+   *  can't look as strong as a decisive quote.
+   */
+  coverage: EvidenceCoverage | null
+}
 
 // Result of a rename validity check.
 export type RenameValidityResult = {

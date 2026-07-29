@@ -87,6 +87,10 @@
   "@operationLog.initiator.agent": {
     "sourceHash": "11b39c9"
   },
+  "operationLog.initiator.agentEdited": "Agente, con tus cambios",
+  "@operationLog.initiator.agentEdited": {
+    "sourceHash": "16c4cd2"
+  },
   "operationLog.status.queued": "Esperando",
   "@operationLog.status.queued": {
     "sourceHash": "661ff40"

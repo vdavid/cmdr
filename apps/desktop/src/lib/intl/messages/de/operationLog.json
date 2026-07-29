@@ -88,6 +88,10 @@
     "sourceHash": "11b39c9",
     "sameAsSourceJustification": "\"Agent\" is a genuine German word (der Agent), the standard term for a software agent, kept identical in macOS/Microsoft German. No German alternative reads more naturally."
   },
+  "operationLog.initiator.agentEdited": "Agent, mit deinen Änderungen",
+  "@operationLog.initiator.agentEdited": {
+    "sourceHash": "16c4cd2"
+  },
   "operationLog.status.queued": "Wartet",
   "@operationLog.status.queued": {
     "sourceHash": "661ff40"

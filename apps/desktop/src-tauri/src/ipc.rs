@@ -656,6 +656,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::agent::ask_cmdr_cancel,
         crate::commands::agent::preflight_bulk_rename,
         crate::commands::agent::apply_bulk_rename,
+        crate::commands::agent::revise_bulk_rename_row,
         crate::commands::agent::cancel_bulk_rename_proposal,
         crate::commands::agent::ask_cmdr_record_model_change,
         crate::commands::agent::ask_cmdr_get_conversation,

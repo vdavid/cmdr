@@ -83,6 +83,7 @@ pub async fn apply_bulk_rename(
         .map(|fingerprint| (fingerprint_row_id(&fingerprint).to_string(), fingerprint))
         .collect();
     let mut rows = Vec::with_capacity(allowed_row_ids.len());
+    let mut applied_rows = Vec::with_capacity(allowed_row_ids.len());
     for row_id in &allowed_row_ids {
         let Some(proposal_row) = proposal.rows.iter().find(|row| &row.row_id == row_id) else {
             return Err(IpcError::from_err("Review the rename plan again before applying it."));
@@ -90,6 +91,7 @@ pub async fn apply_bulk_rename(
         let Some(fingerprint) = fingerprints.get(row_id) else {
             return Err(IpcError::from_err("Review the rename plan again before applying it."));
         };
+        applied_rows.push(proposal_row);
         rows.push(crate::file_system::write_operations::BulkRenameRow {
             row_id: row_id.clone(),
             source: PathBuf::from(&proposal_row.source_path),
@@ -101,13 +103,46 @@ pub async fn apply_bulk_rename(
         });
     }
 
+    let initiator = bulk_rename_initiator(&applied_rows);
     crate::file_system::write_operations::start_bulk_rename(
         Arc::new(crate::file_system::write_operations::TauriEventSink::new(app)),
         volume_id,
         rows,
-        crate::operation_log::types::Initiator::Agent,
+        initiator,
     )
     .map_err(IpcError::from_err)
+}
+
+/// Replaces one row's proposed name with the one the user typed in the review, and answers the
+/// row as the dialog should now show it. The name is validated server-side; the row keeps no
+/// evidence afterwards, and the edit invalidates the accepted preflight, so the new name is
+/// rechecked before it can reach the filesystem.
+#[tauri::command]
+#[specta::specta]
+pub fn revise_bulk_rename_row(
+    app: AppHandle,
+    proposal_id: String,
+    row_id: String,
+    destination_name: String,
+) -> Result<crate::agent::tools::propose::rename::RenameProposalRowSnapshot, IpcError> {
+    crate::agent::tools::propose::rename::revise_row(&app, &proposal_id, &row_id, &destination_name)
+        .map_err(|error| IpcError::from_err(error.message))
+}
+
+/// Who the operation log credits for a batch. The agent proposed it, but a row the user
+/// retyped in the review was the user's own choice, so a batch carrying one is mixed
+/// provenance rather than the agent's work.
+fn bulk_rename_initiator(
+    rows: &[&crate::agent::tools::propose::rename::RenameProposalRow],
+) -> crate::operation_log::types::Initiator {
+    let user_edited = rows
+        .iter()
+        .any(|row| row.evidence.source == crate::agent::tools::propose::evidence::EvidenceSource::UserEdited);
+    if user_edited {
+        crate::operation_log::types::Initiator::AgentEdited
+    } else {
+        crate::operation_log::types::Initiator::Agent
+    }
 }
 
 fn fingerprint_row_id(fingerprint: &RenameSourceFingerprint) -> &str {
@@ -158,7 +193,51 @@ pub fn cancel_bulk_rename_proposal(app: AppHandle, proposal_id: String) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::agent::tools::propose::evidence::{EvidenceSource, RenameEvidence};
+    use crate::agent::tools::propose::rename::RenameProposalRow;
     use crate::file_system::write_operations::BulkRenameFingerprint;
+    use crate::operation_log::types::Initiator;
+
+    fn row_from(source: EvidenceSource) -> RenameProposalRow {
+        RenameProposalRow {
+            row_id: "row".into(),
+            source_path: "/shots/one.png".into(),
+            volume_id: "root".into(),
+            destination_name: "renamed.png".into(),
+            evidence: RenameEvidence {
+                source,
+                detail: "Invoice 4021 total".into(),
+            },
+            coverage: None,
+        }
+    }
+
+    /// Provenance has to stay honest. The agent proposed the batch, but a name the user
+    /// retyped in the review was not the agent's choice, so recording plain `Agent` for that
+    /// batch would credit the model for the user's correction — and would tell a later reader
+    /// of the log that a name they fixed themselves came from the model.
+    #[test]
+    fn a_batch_carrying_a_user_edited_name_records_mixed_provenance() {
+        assert_eq!(
+            bulk_rename_initiator(&[&row_from(EvidenceSource::ImageText)]),
+            Initiator::Agent
+        );
+        assert_eq!(
+            bulk_rename_initiator(&[
+                &row_from(EvidenceSource::ImageText),
+                &row_from(EvidenceSource::Metadata),
+            ]),
+            Initiator::Agent
+        );
+        assert_eq!(
+            bulk_rename_initiator(&[
+                &row_from(EvidenceSource::ImageText),
+                &row_from(EvidenceSource::UserEdited),
+            ]),
+            Initiator::AgentEdited,
+            "one retyped name makes the whole batch mixed provenance"
+        );
+    }
 
     /// The fingerprint is what apply re-checks each source against just before renaming
     /// it, so every identity field has to survive this mapping. Dropping one widens the

@@ -53,7 +53,11 @@ export function operationSummary(kind: OpKind, subkind: ArchiveSubkind | null, i
   return tString(summaryKey(kind, subkind), { count: itemCount, countText: formatInteger(itemCount) })
 }
 
-/** Who started the operation: you, an external AI client (over MCP), or the agent. */
+/**
+ * Who started the operation: you, an external AI client (over MCP), or the agent. `agentEdited`
+ * is mixed provenance: the agent proposed the batch and you retyped at least one name while
+ * reviewing it, so the log doesn't credit the agent for names you chose.
+ */
 export function initiatorLabel(initiator: Initiator): string {
   switch (initiator) {
     case 'user':
@@ -62,6 +66,8 @@ export function initiatorLabel(initiator: Initiator): string {
       return tString('operationLog.initiator.aiClient')
     case 'agent':
       return tString('operationLog.initiator.agent')
+    case 'agentEdited':
+      return tString('operationLog.initiator.agentEdited')
   }
 }
 

@@ -88,6 +88,10 @@
     "sourceHash": "11b39c9",
     "sameAsSourceJustification": "'agent' is the same word in Swedish (agenten in definite form, verified across the sv catalog: queryUi.ai.lead, onboarding.stepAi). The provenance label stays the cognate 'Agent'."
   },
+  "operationLog.initiator.agentEdited": "Agent, med dina ändringar",
+  "@operationLog.initiator.agentEdited": {
+    "sourceHash": "16c4cd2"
+  },
   "operationLog.status.queued": "Väntar",
   "@operationLog.status.queued": {
     "sourceHash": "661ff40"

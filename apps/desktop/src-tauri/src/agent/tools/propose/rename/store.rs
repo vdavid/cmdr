@@ -45,7 +45,7 @@ pub struct RenameProposalSnapshot {
     pub rows: Vec<RenameProposalRowSnapshot>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RenameProposalRowSnapshot {
     pub row_id: String,

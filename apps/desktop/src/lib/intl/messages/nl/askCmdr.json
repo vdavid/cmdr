@@ -388,6 +388,14 @@
   "@askCmdr.renameReview.openPreviewTooltip": {
     "sourceHash": "17163aa"
   },
+  "askCmdr.renameReview.editName": "Nieuwe naam voor {name}",
+  "@askCmdr.renameReview.editName": {
+    "sourceHash": "862a5b7"
+  },
+  "askCmdr.renameReview.nameRejected": "Cmdr kan die naam niet gebruiken. Probeer een andere.",
+  "@askCmdr.renameReview.nameRejected": {
+    "sourceHash": "028029d"
+  },
   "askCmdr.renameReview.evidence.imageText": "Tekst in de afbeelding",
   "@askCmdr.renameReview.evidence.imageText": {
     "sourceHash": "520b47b"
@@ -407,6 +415,10 @@
   "askCmdr.renameReview.evidence.userInstruction": "Wat je hebt gevraagd",
   "@askCmdr.renameReview.evidence.userInstruction": {
     "sourceHash": "c8e3674"
+  },
+  "askCmdr.renameReview.evidence.userEdited": "Deze naam heb jij getypt",
+  "@askCmdr.renameReview.evidence.userEdited": {
+    "sourceHash": "3f3a179"
   },
   "askCmdr.renameReview.coverage": "{matchedText} van {totalText} tekens komen overeen",
   "@askCmdr.renameReview.coverage": {
@@ -475,6 +487,22 @@
   "askCmdr.renameReview.cycleTooltip": "Cyclus van naamwijzigingen. Cmdr gebruikt één tijdelijke naam terwijl deze bestanden van naam wisselen.",
   "@askCmdr.renameReview.cycleTooltip": {
     "sourceHash": "d76a0af"
+  },
+  "askCmdr.renameReview.nothingReadBadge": "(niets gelezen)",
+  "@askCmdr.renameReview.nothingReadBadge": {
+    "sourceHash": "6308780"
+  },
+  "askCmdr.renameReview.nothingReadTooltip": "Cmdr heeft niets in dit bestand gelezen. Deze naam komt van de oude naam, de bestandsgegevens of wat je hebt gevraagd.",
+  "@askCmdr.renameReview.nothingReadTooltip": {
+    "sourceHash": "850f6ce"
+  },
+  "askCmdr.renameReview.nameKeptBadge": "(naam behouden)",
+  "@askCmdr.renameReview.nameKeptBadge": {
+    "sourceHash": "08f1bc7"
+  },
+  "askCmdr.renameReview.nameKeptTooltip": "Cmdr heeft de huidige naam behouden en niets in dit bestand gelezen.",
+  "@askCmdr.renameReview.nameKeptTooltip": {
+    "sourceHash": "d27a078"
   },
   "askCmdr.renameReview.expired": "Deze beoordeling is verlopen. Vraag Ask Cmdr om deze opnieuw voor te bereiden.",
   "@askCmdr.renameReview.expired": {

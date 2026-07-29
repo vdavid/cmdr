@@ -87,6 +87,10 @@
   "@operationLog.initiator.agent": {
     "sourceHash": "11b39c9"
   },
+  "operationLog.initiator.agentEdited": "Ágens, a te módosításaiddal",
+  "@operationLog.initiator.agentEdited": {
+    "sourceHash": "16c4cd2"
+  },
   "operationLog.status.queued": "Várakozik",
   "@operationLog.status.queued": {
     "sourceHash": "661ff40"
