@@ -15,6 +15,7 @@
  *   4. Otherwise forward to the focused pane's `handleKeyDown`.
  */
 
+import { isTextInputTarget } from '$lib/utils/text-input-focus'
 import { isPrintableJumpContinuation, isTypeToJumpChar, isTypeToJumpResetKey } from './type-to-jump-keys'
 import type { FilePaneAPI } from './types'
 
@@ -30,16 +31,9 @@ export interface KeyDispatch {
   handleFocusGuard: (e: FocusEvent) => void
 }
 
-/** True if focus is in any text-entry control (rename, search dialog, login form, etc.). */
+/** True if the key went to a text-entry control (rename, search dialog, login form, etc.). */
 export function isTypingInInput(e: KeyboardEvent): boolean {
-  const target = e.target as HTMLElement | null
-  if (!target) return false
-  return (
-    target instanceof HTMLInputElement ||
-    target instanceof HTMLTextAreaElement ||
-    target instanceof HTMLSelectElement ||
-    target.isContentEditable
-  )
+  return isTextInputTarget(e.target)
 }
 
 export function createKeyDispatch(deps: KeyDispatchDeps): KeyDispatch {

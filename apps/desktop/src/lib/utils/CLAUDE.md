@@ -12,14 +12,14 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
 - **`pluralize.ts`**: count + noun formatting ("1 user" / "3 users").
 - **`srgb-mix.ts`**: sRGB color helpers (`mixSrgb`, `withAlpha`, `readableFgOn`, …).
 - **`webkit-compat.ts`**: one-shot `color-mix()` feature detection + boot-time telemetry log.
-- **`text-input-focus.ts`**: `isTextInputFocused()`, the one "is the user typing?" predicate (keydown resolver,
-  capability guard, clipboard handlers). ❌ Don't re-roll it: they must agree.
+- **`text-input-focus.ts`**: two "is this a text field?" predicates. `isTextInputFocused()` for keyboard events,
+  `isTextInputTarget(target)` for mouse (a right-click can land on an unfocused field). ❌ Don't re-roll either.
 
 ## Must-knows
 
 - **Validation runs on the frontend (pure TS), not via Rust round-trips.** Keystroke feedback needs sub-millisecond
-  latency; an IPC round-trip per keystroke would stutter. All rules (length, chars, conflicts) are deterministic given
-  the sibling list, so no filesystem access is needed. Don't move validation to the backend.
+  latency; an IPC hop per keystroke would stutter. All rules (length, chars, conflicts) are deterministic given the
+  sibling list. Don't move validation to the backend.
 - **Length limits are `>= 255` bytes (name) and `>= 1024` bytes (path), strictly**, not `> 255`: the filesystem reserves
   the last byte. Byte length comes from `TextEncoder`, not `.length` (multi-byte characters).
 - **`validateConflict` is case-insensitive (APFS).** A case-only rename (`foo` → `Foo`) passes without warning. Pass
@@ -31,8 +31,8 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
   equivalence groups live in `EQUIVALENT_EXTENSION_GROUPS` in the same file. Extend that constant to add aliases. Used
   by both `validateExtensionChange` and the rename save flow's "ask" gate.
 - **Use `confirmDialog` everywhere instead of `window.confirm()`** (unreliable in Tauri). It wraps Tauri's `ask()` with
-  an explicit `cancelLabel: 'Cancel'`: macOS `NSAlert` only assigns Escape to a button labeled "Cancel", so without the
-  override Escape does nothing in confirmation dialogs.
+  an explicit `cancelLabel: 'Cancel'`: macOS `NSAlert` only assigns Escape to a button labeled "Cancel", so without it
+  Escape does nothing.
 - **The CSS ships `color-mix()` heavily, which Safari < 16.2 (still on macOS 12 Monterey) doesn't parse.** Two safety
   nets must both stay: `app.css` static fallbacks inside `@supports not (color: color-mix(...))` blocks, and
   `accent-color.ts` / `volume-tint.svelte.ts` computing runtime-derived colors in JS via `mixSrgb` / `withAlpha` (the

@@ -45,6 +45,7 @@
     import { markDispatchSource } from './dispatch-dedup'
     import { navCommandForMouseButton } from './mouse-nav'
     import { resolveGlobalKeyAction } from './global-keydown'
+    import { resolveGlobalContextMenuAction } from './global-contextmenu'
     import { isMacOS } from '$lib/shortcuts/key-capture'
     import {
         checkFullDiskAccess,
@@ -207,6 +208,20 @@
             case 'ignore':
                 break
         }
+    }
+
+    /**
+     * Global right-click handler. The decision is `global-contextmenu.ts`'s (pure,
+     * unit-tested); this only runs the side effects. Registered in the CAPTURE
+     * phase so a text field can claim the click before the row / tab / chip
+     * handler underneath it opens a Cmdr menu.
+     */
+    function handleGlobalContextMenu(e: MouseEvent): void {
+        if (resolveGlobalContextMenuAction(e) === 'native-text-menu') {
+            e.stopPropagation()
+            return
+        }
+        e.preventDefault()
     }
 
     /**
@@ -430,13 +445,11 @@
         initShortcutDispatch()
 
         handleKeyDown = handleGlobalKeyDown
-        handleContextMenu = (e: MouseEvent) => {
-            e.preventDefault()
-        }
+        handleContextMenu = handleGlobalContextMenu
         handleMouseDown = handleGlobalMouseDown
         handleMouseUp = handleGlobalMouseUp
         document.addEventListener('keydown', handleKeyDown)
-        document.addEventListener('contextmenu', handleContextMenu)
+        document.addEventListener('contextmenu', handleContextMenu, true)
         document.addEventListener('mousedown', handleMouseDown)
         document.addEventListener('mouseup', handleMouseUp)
 
@@ -521,7 +534,7 @@
             document.removeEventListener('keydown', handleKeyDown)
         }
         if (handleContextMenu) {
-            document.removeEventListener('contextmenu', handleContextMenu)
+            document.removeEventListener('contextmenu', handleContextMenu, true)
         }
         if (handleMouseDown) {
             document.removeEventListener('mousedown', handleMouseDown)

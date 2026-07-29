@@ -7,21 +7,24 @@ Depth and rationale for the app orchestrator. `CLAUDE.md` holds the must-knows; 
 Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
 map, plus `command-handlers/CLAUDE.md` for the handler families. What each piece DOES is in the sections below (§
 "Startup: paint-gated window show", § "Dispatch core", § "The exempt families", § "Capability guard", § "MCP transport",
-§ "Mouse back / forward buttons", § "Native-menu and input-focus interactions", § "Off-bus test and debug hooks"). Only
-the layout facts that none of those carry live here:
+§ "Mouse back / forward buttons", § "Right-click ownership", § "Native-menu and input-focus interactions", § "Off-bus
+test and debug hooks"). Only the layout facts that none of those carry live here:
 
 - **`listener-setup.ts` is a plain `.ts` with NO runes**, so it can't hold `$state`. State crosses the boundary through
   a `ListenerSetupContext` of getter functions (reads) and setter callbacks (writes), which is what keeps the moved
   closures reading LIVE reactive values instead of a stale capture. Every registered unlisten goes onto the
   component-owned `unlistenFns` array so the one `onDestroy` loop tears them all down: without that, HMR stacks
   duplicate listeners on every reload. The keydown handler, licensing init, and onboarding gating stay in `+page.svelte`
-  precisely because they read and write `$state` directly.
+  precisely because they read and write `$state` directly. On the dispatch side the mirror rule is that only
+  `handleTextRegionShortcut` and `blockedByCapabilities` belong in the core; everything else is a handler.
 - **`global-keydown.ts` owns the keydown DECISION, `+page.svelte` owns the side effects.**
   `resolveGlobalKeyAction(event, isModalOpen)` is pure (`dispatch` / `openDebugWindow` / `suppress` / `ignore`), so
   every branch is unit-testable without mounting the shell; the component supplies `isModalDialogOpen()` (the only
   reactive input) and then runs `preventDefault`, `markDispatchSource('keyboard')`, and the dispatch. Keeping the
   decision out of the component is also what stops the `file-length`-flagged `+page.svelte` from growing per keyboard
   rule.
+- **`global-contextmenu.ts` is the same split for the right-click**: `resolveGlobalContextMenuAction(event)` is pure
+  (`native-text-menu` / `suppress`), `+page.svelte` runs `stopPropagation` or `preventDefault`. § Right-click ownership.
 - **`command-dispatch-context.ts` is deliberately a LEAF**, importing nothing from the core or the handlers, so handler
   modules and `command-dispatch.ts` can both import the context types without a cycle. It's re-exported from
   `command-dispatch.ts` for callers.
@@ -148,6 +151,31 @@ both consult `navCommandForMouseButton` (`mouse-nav.ts`, mapping `button === 3 �
   us. The suppression can't move to `mouseup` — the webview commits its default nav on the press — so the two halves
   stay split across the two events. Suppression runs even while a modal is open (we never want the webview navigating
   itself); only the dispatch is gated.
+
+## Right-click ownership
+
+Cmdr owns right-click in the main window: file rows, tabs, the breadcrumb, volume rows, query results, and network rows
+each build their own native macOS menu, so `+page.svelte` installs a document `contextmenu` listener that
+`preventDefault()`s WKWebView's menu. Without it every one of those clicks would show two menus.
+
+Text fields are the exception. WebKit's editing menu (Cut, Copy, Paste, Select All, plus the system Services and
+spelling entries) is exactly what a text field should offer, and it acts on the field through WebKit's own editing
+commands rather than through the command bus, so it can't double up with the `edit.*` handlers the way ⌘V did (§
+Native-menu and input-focus interactions).
+
+- **The predicate is the event TARGET, not focus.** `isTextInputTarget(event.target)` from
+  `$lib/utils/text-input-focus`. A right-click can land on a field that isn't focused yet, so the focus-based
+  `isTextInputFocused()` twin would deny the menu on that first click.
+- **The listener runs in the CAPTURE phase.** On an editable target it `stopPropagation()`s, so an ancestor's handler
+  can't open a Cmdr menu over the field: the inline rename editor sits inside a file row, and the volume switcher's
+  favorite-rename field inside a volume row, and both rows have their own `oncontextmenu`. On everything else it
+  `preventDefault()`s and lets the event keep bubbling, so those row handlers still open Cmdr's menu exactly as before.
+- **Dev builds show more.** WKWebView adds its inspector entry to the menu when the webview has devtools enabled, which
+  is Tauri's debug-build default; release builds don't enable them, so they show the editing items only. WKWebView gates
+  that itself, so ❌ don't add a dev-only branch here.
+- **Only the main window suppresses.** Settings, shortcuts, viewer, queue, and debug install no document-level
+  suppressor, so WebKit's menu is already live there. The viewer's media surface has its own element-level
+  `oncontextmenu` (`viewer-pointer-drag.svelte.ts`) because it opens an in-app menu at the pointer.
 
 ## Native-menu and input-focus interactions
 
