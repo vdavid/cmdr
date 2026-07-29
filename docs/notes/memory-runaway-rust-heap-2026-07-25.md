@@ -155,45 +155,40 @@ Dev repro: `pnpm --filter @cmdr/desktop tauri dev -m`, both panes as persisted, 
 used for these A/Bs (kill → relaunch → sample) is worth recreating; each run costs ~2–4 min because `tauri dev`
 recompiles.
 
-## Bugs found along the way (independent of the root cause)
+## Bugs found along the way — ALL FIXED (verified against `main`, 2026-07-29)
 
-1. **`indexing.enabled: false` does not stop the SMB index.** The log shows
-   `Drive indexing auto-start skipped (disabled in settings)` and then, ~2 s later,
-   `start_indexing: begin for 'smb-…-naspi'`. Adding every drive to `indexing.silencedDrives` doesn't stop it either.
-   `resume_smb_index_if_enabled` (`indexing/transports/smb/index.rs`) gates only on the persisted per-volume
-   `user_disabled` marker, never on the master setting. So a user who turns drive indexing off still pays the NAS index
-   cost at every launch.
-2. **The memory watchdog cannot see the heap it is meant to police** (see above), and its "graphics vs indexing"
-   discriminator keys on `resident − phys_footprint`, which is ~0 here. It should read mimalloc's own accounting
-   (`mi_process_info` / `mi_stats_merge`) or simply treat `phys_footprint − system-zones` as untracked heap.
-3. **The watchdog is one-shot**: on STOP it calls `state::stop_all_indexing()` and `return`s, so nothing watches the
-   climb afterwards. It should keep looping and escalate.
-4. **`@Recently-Snapshot` (QNAP) and `#snapshot` (Synology) are not excluded from SMB indexing**, inflating the NAS
-   index ~10× (76 TB reported on a 10 TB NAS) and therefore inflating every per-entry structure downstream.
+Each was open when this note was written and has since landed. Kept because the symptom is what a future investigation
+will recognize; the pointer says where the answer now lives.
 
-## The fix (proposed, not yet implemented)
+1. **`indexing.enabled: false` did not stop the SMB index** — a user who turned drive indexing off still paid the NAS
+   index cost at every launch. Fixed: `smb_index_was_enabled` now gates on
+   `master::drive_index_should_run(master::master_enabled(), …)`, and `start_indexing_for_smb` refuses outright when the
+   master switch is off (`indexing/transports/smb/index.rs`).
+2. **The memory watchdog could not see the heap it polices.** Fixed: `process_memory::query_mimalloc_heap` reads
+   mimalloc's own accounting, and `MemoryAttribution::classify` derives the verdict from `phys_footprint`, the Rust
+   heap, and the system zones plus an `untracked` remainder.
+3. **The watchdog was one-shot** (it `return`ed after the stop). Fixed: the loop runs for the process lifetime and
+   escalates at +2/4/8/16 GB, re-arming below the warn line (`indexing/resources/memory_watchdog.rs`).
+4. **`@Recently-Snapshot` (QNAP) and `#snapshot` (Synology) were not excluded from SMB indexing**, inflating the NAS
+   index ~10×. Fixed: `indexing/network_scanner/system_dirs.rs` holds the typed skip list.
 
-Core: **count without materializing.** Give the walk a streaming shape — `for_each_qualifying_image(conn, |dir, name|)`
-— so `coverage` aggregates straight into `per_folder` / `total` with O(folders) memory and never builds a path `String`
-per image. `emit_qualifying_group` already has the complete per-dir name set it needs for sibling-aware qualification,
-so the semantics are unchanged; only the sink differs. The enrichment passes keep a collecting sink (they genuinely need
-the list, though bounding them is worth a follow-up — the same `Vec` is multi-GB on the NAS during a real pass).
+## The root-cause fix — LANDED
 
-Supporting changes, each worth doing on its own merits:
+`coverage::get_or_build` no longer materializes every image path. Counting is a sink over
+`enrich::for_each_qualifying_image` (`coverage::count_qualifying_images`, O(folders), no per-image path `String`); polls
+and startup paths read `coverage::cached`, so `volume_state` can't trigger a cold build; and concurrent cold callers
+dedupe behind a per-volume build lock. Contract and rationale: `apps/desktop/src-tauri/src/media_index/DETAILS.md`
+§ Covered-count preview.
 
-- **Don't run a cold O(entries) walk from `volume_state`.** It's a startup-path IPC; serve `None`/cached and let the
-  settings slider request the count when that section actually opens.
-- **Deduplicate concurrent builds** — hold a per-volume build guard so N simultaneous callers can't each run a full walk
-  (observed: `root` walked twice within 70 ms at one launch).
-- **Exclude `@Recently-Snapshot` / `#snapshot`** from SMB indexing — ~10× fewer entries feeding every structure
-  downstream, and it fixes the bogus "76 TB on a 10 TB NAS" number too.
-- Note the module's own rule for the sibling `accounted` aggregate is "❌ INCREMENTAL … never rebuilt from a walk"
-  (`media_index/CLAUDE.md`). `COUNTS` is the one that still rebuilds from a walk; the fix brings it in line.
+## Still open
 
-Then: re-measure with mimalloc restored (this session's ladder ran on the system allocator once the mislabel was found),
-and re-test on prod with the real NAS index.
+- **mimalloc's `os_tag` still collides with `VM_MEMORY_IOACCELERATOR` (100)**, so `vmmap` keeps reporting the Rust heap
+  under a GPU name. Setting a non-colliding tag would retire the trap at the top of this note for good. It has cost
+  three investigations; the counter-argument is that `docs/tooling/memory-debugging.md` now documents it loudly, and
+  changing the tag invalidates that documentation everywhere it appears.
 
-## Also worth fixing (found along the way)
+## Later work this note seeded
 
-4. Consider setting mimalloc's `os_tag` to something non-colliding purely so future `vmmap` output stops reporting the
-   Rust heap as `IOAccelerator`. Cheap, and it prevents a repeat of this whole detour.
+A 2026-07-28 profile of prod v0.36.2 (2.5 GB idle) found two causes NOT covered here: SQLite page cache across ~156
+thread-local connections, and a 60-second importance rescore treadmill. Evidence and fixes:
+`docs/specs/memory-diet-plan.md`.

@@ -6,6 +6,12 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
+- [ ] 2026-07-29 `memory-diet-plan.md` - Cut Cmdr's idle RAM from ~2.5 GB. A prod profile (v0.36.2, ~10 h uptime) split
+      the footprint in two: ~1.15 GB of SQLite page cache across 156 thread-local connections all running the writer's
+      16 MiB `cache_size`, and a 60-second importance rescore treadmill that rewrites ~90 k rows for a 2-folder change
+      (the dir-changed bus publishes the ancestor closure, so `/Users/<user>` rides every batch and the downward
+      subtree expansion pulls in the whole home tree). Carries the `footprint -s` / `lsof` evidence, the milestones,
+      and the invariants. IN PROGRESS.
 - [ ] 2026-07-28 `flaky-test-eradication.md` - Make a red `rust-tests` run mean a real regression again. Measured on an
       idle machine, clean `main` fails 2 of 3 full runs, a different `downloads::watcher` test each time; 19 distinct
       offenders, every one a watcher/debounce/lock test, `downloads::` being 7 of them. Root causes to check: shared
