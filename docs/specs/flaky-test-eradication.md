@@ -67,10 +67,10 @@ Both original follow-ups SHIPPED (2026-07-29): `rust-integration-tests` now gets
 `--run-ignored only` riding in `baseArgs`, since every test there is `#[ignore]`-gated), and both Playwright lanes warn
 on retry-passes read from the structured JSON report.
 
-The stated blocker for the integration lane turned out not to exist. It rested on a claim that healthy SMB tests take
-up to 130 s, which was inferred from a per-test cap rather than measured. **Caps are hang backstops, typically 20-50x
-the real runtime.** Measured on an idle M3 Max, that test runs in **2.8 s** and the whole 53-test integration suite is
-**5.3 s** wall-clock, so the 40 s retry cap already had ~14x headroom.
+The stated blocker for the integration lane turned out not to exist. It rested on a claim that healthy SMB tests take up
+to 130 s, which was inferred from a per-test cap rather than measured. **Caps are hang backstops, typically 20-50x the
+real runtime.** Measured on an idle M3 Max, that test runs in **2.8 s** and the whole 53-test integration suite is **5.3
+s** wall-clock, so the 40 s retry cap already had ~14x headroom.
 
 A contention re-run for the E2E suites is NOT worth building: Playwright already runs `workers: 1` with
 `fullyParallel: false`, so there is no intra-suite parallelism for a serialized probe to remove, and the probe stage
@@ -85,16 +85,16 @@ David's standing goal is every test well under 2 s. Measured 2026-07-29 on an id
 - Rust unit (4,858 tests, ~30 s wall-clock): 7 over 2 s. The one real outlier is
   `indexing::store::tests::open_and_recover::busy_db_is_retried_not_deleted` at **5.5 s**; the rest sit at 2.0-2.2 s.
 - SMB integration (53 tests, 5.3 s wall-clock): 9 over 2 s, topping out at 2.8 s.
-- Playwright E2E: already enforces this exact budget. `e2eSlowTestThresholdMs = 2000` warns on any spec over 2 s, with
-  a reasoned allowlist (24 macOS / 14 Linux entries, capped at 3 s).
+- Playwright E2E: already enforces this exact budget. `e2eSlowTestThresholdMs = 2000` warns on any spec over 2 s, with a
+  reasoned allowlist (24 macOS / 14 Linux entries, capped at 3 s).
 
 The systematic fix is to give the Rust lanes the same treatment E2E already has: a warn-only per-test duration budget
 with a reasoned allowlist, mirroring `e2e-durations.go`. That makes the goal enforced and visible rather than a one-off
 cleanup. NOT STARTED: it seeds a new allowlist with ~16 entries, and agents don't create or raise an allowlist without
 David's OK (`.claude/rules/file-length-allowlist.md`).
 
-Shrinking `smb_integration_concurrent_streaming_writes_no_deadlock` specifically is NOT the lever. It buys ~1 s on a
-5.3 s suite and trades away repro strength on a deadlock regression test whose shape (200 files, 60 × 1 MB writes forced
+Shrinking `smb_integration_concurrent_streaming_writes_no_deadlock` specifically is NOT the lever. It buys ~1 s on a 5.3
+s suite and trades away repro strength on a deadlock regression test whose shape (200 files, 60 × 1 MB writes forced
 through the streaming fallback at concurrency 8) is deliberately tuned to the production workload that surfaced the bug.
 No reduction can be shown to still catch it without reproducing the original deadlock.
 

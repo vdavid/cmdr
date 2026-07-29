@@ -269,10 +269,10 @@ citing digest-only text is refused**; breakdown assertions.
 override. Fix the stale-family class in the budget table (`qwen`, `deepseek`, `grok`, `mistral` are all stale today, not
 just one).
 
-**Shape: a preset list plus "Automatic (recommended)"** (16,000 / 32,000 / 60,000 / 128,000 / 200,000),
-following the `ai.localContextSize` precedent. **Decided, not open**: presets make the bounds unmisstateable, so there
-is no below-minimum case to clamp and no numeric validation copy. An over-window warning is still needed, because a user
-can pick 200,000 for a model whose window is 32,000. Resolution stays pure in the budget module with the override passed
+**Shape: a preset list plus "Automatic (recommended)"** (16,000 / 32,000 / 60,000 / 128,000 / 200,000), following the
+`ai.localContextSize` precedent. **Decided, not open**: presets make the bounds unmisstateable, so there is no
+below-minimum case to clamp and no numeric validation copy. An over-window warning is still needed, because a user can
+pick 200,000 for a model whose window is 32,000. Resolution stays pure in the budget module with the override passed
 from the command layer; the read-fresh-per-send precedent means no settings-applier case.
 
 **Also in scope: the shipped 4,096 default breaks the agent for local users.** `prompt_budget_for_local_context(4096)`
@@ -296,8 +296,8 @@ setting to change. Silently assembling an over-budget prompt is the one option t
 
 **Tests.** Test-first for resolution: auto follows the table; an override is honoured; a preset above the known window
 warns and is still used; an unknown model gets the default; the per-batch hint derives correctly at 16,000 / 32,000 /
-60,000; a stored below-floor `ai.localContextSize` is clamped up to the floor; a local server whose own configured window
-is under the floor is refused honestly rather than assembled.
+60,000; a stored below-floor `ai.localContextSize` is clamped up to the floor; a local server whose own configured
+window is under the floor is refused honestly rather than assembled.
 
 **DONE when** every resolution case is pinned, a local user on defaults gets a working turn, and David has reviewed the
 copy.
@@ -322,9 +322,9 @@ landmine below and two open questions. Your call.
 
 **Landmines.**
 
-- **The E2E fake path is over budget on today's shipped default** (2,457 vs ~3,100). Decision 4 settles it: give the fake
-  path its own realistic budget rather than raising the harness's `ai.localContextSize`, so the harness keeps mirroring a
-  real user. Otherwise every E2E run pins the gauge and the assertions bless a pathological state.
+- **The E2E fake path is over budget on today's shipped default** (2,457 vs ~3,100). Decision 4 settles it: give the
+  fake path its own realistic budget rather than raising the harness's `ai.localContextSize`, so the harness keeps
+  mirroring a real user. Otherwise every E2E run pins the gauge and the assertions bless a pathological state.
 - **The stream event type is hand-mirrored in TypeScript** (Channel enums fall outside specta): a new event means a hand
   edit in both languages, kept in sync.
 - **Every new string needs 10-locale parity** (error-level check) plus a `keys.gen.ts` regeneration.
@@ -508,8 +508,8 @@ Not in a hurry: prefer sequential.
 
 ## Decisions (all questions closed; execution can proceed unblocked)
 
-1. **The undo verification defect** stays where it is: M3's prerequisite, fixed in M3, in the order above. Not a separate
-   pre-effort.
+1. **The undo verification defect** stays where it is: M3's prerequisite, fixed in M3, in the order above. Not a
+   separate pre-effort.
 2. **The local window floor is 16,384 tokens** (David: "below that, it's unusable"). So M6's fix to the shipped 4,096
    default is: raise the default to `16384`, drop the `2048` / `4096` / `8192` options from `ai.localContextSize`, and
    **clamp a stored below-floor value up on read** so an existing user who picked 4,096 is migrated rather than left
@@ -528,8 +528,8 @@ Not in a hurry: prefer sequential.
      one ships.
 6. **The `imageText` floor rises from 4 to 12 characters**, done as part of M1 (it's the same "a thin match must look
    thin" concern, and the coverage hint makes the remaining thin matches visible rather than refused).
-7. **M11 stays undecided, so M11 / M12 / M13 are out of this execution pass.** M11 is a policy shift (approval moves from
-   per-item to per-rule for a job's tail) and a write-engine change; M12 is gated on M11 being declined; M13 needs
+7. **M11 stays undecided, so M11 / M12 / M13 are out of this execution pass.** M11 is a policy shift (approval moves
+   from per-item to per-rule for a job's tail) and a write-engine change; M12 is gated on M11 being declined; M13 needs
    measurement that doesn't exist yet. **Executing now: M1 → M2 → M3 → M5 → M6 → M4 → M7 → M8 → M10.** M9 is cut.
 8. ~~Split `rename.rs`~~ — obsolete; the concurrent file-splits effort already did it, and it has landed on `main`
    (`propose/rename/` and `chat/runtime/` are directories now).
