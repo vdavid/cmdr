@@ -364,6 +364,8 @@ describe('QueryDialog recent-items dropdown', () => {
   it('ArrowDown keeps walking the results when there are some', async () => {
     const { overlay, state, cleanup } = mountQueryDialog({
       recentEntries: [RECENT_ENTRY],
+      // A runnable query: an empty bar with no filter is refused before it reaches `runQuery`.
+      initialQuery: '*.jpg',
       runQueryResult: { entries: [SAMPLE_RESULT, { ...SAMPLE_RESULT, path: '/b', name: 'b.jpg' }], totalCount: 2 },
     })
     await settle()
@@ -547,7 +549,12 @@ describe('QueryDialog count-only switch', () => {
 
   it('flipping it toggles count-only and re-runs, without an AI call', async () => {
     const onToggleCountOnly = vi.fn()
-    const { overlay, calls, cleanup } = mountQueryDialog({ countOnly: false, onToggleCountOnly })
+    // A runnable query: flipping the switch on an empty bar with no filter has nothing to re-run.
+    const { overlay, calls, cleanup } = mountQueryDialog({
+      countOnly: false,
+      onToggleCountOnly,
+      initialQuery: '*.jpg',
+    })
     await tick()
     await Promise.resolve()
     await tick()
@@ -598,6 +605,103 @@ describe('QueryDialog "Show results" under a count-only total', () => {
     expect(countOnly).toBe(false)
     // No timers advanced: the re-run fired straight away.
     expect(calls.runQuery).toBe(runsBefore + 1)
+    cleanup()
+  })
+})
+
+/**
+ * An empty bar AND every filter at its default is not a query — the backend refuses it
+ * ("Query too broad"), and before the guard that refusal surfaced as a warning toast the
+ * moment the user cleared the field. An empty pattern WITH an active filter stays a
+ * legitimate query (`≥ 1 MB` selects every file ≥ 1 MB); only "nothing at all" is guarded.
+ */
+describe('QueryDialog nothing-to-run guard', () => {
+  /** Scoped to this dialog's own overlay: a failed sibling test can leave a stale one behind. */
+  function typeQuery(overlay: Element, value: string): void {
+    const input = overlay.querySelector<HTMLInputElement>('.query-bar input.text-field-control')
+    if (!input) throw new Error('query input not found')
+    input.value = value
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  }
+
+  it('clearing the query with no active filter never runs, and drops the stale rows', async () => {
+    clearAllToasts()
+    const { overlay, state, calls, cleanup } = mountQueryDialog({
+      initialQuery: '*.jpg',
+      runQueryResult: { entries: [SAMPLE_RESULT], totalCount: 1 },
+    })
+    await settle()
+    dispatchKey(overlay, 'Enter')
+    await settle()
+    expect(calls.runQuery).toBe(1)
+    expect(state.getResults().length).toBe(1)
+
+    vi.useFakeTimers()
+    try {
+      typeQuery(overlay, '')
+      vi.advanceTimersByTime(2_000)
+      await Promise.resolve()
+      await Promise.resolve()
+    } finally {
+      vi.useRealTimers()
+    }
+    await settle()
+
+    // No doomed second run, so no "Query too broad" toast.
+    expect(calls.runQuery).toBe(1)
+    expect(getToasts()).toEqual([])
+    // And the previous run's rows don't sit there implying they still match.
+    expect(state.getResults()).toEqual([])
+    expect(state.getTotalCount()).toBe(0)
+    cleanup()
+  })
+
+  it('an empty pattern WITH an active size filter still runs (filter-only query)', async () => {
+    const { overlay, state, calls, cleanup } = mountQueryDialog({
+      initialQuery: '*.jpg',
+      runQueryResult: { entries: [SAMPLE_RESULT], totalCount: 1 },
+    })
+    await settle()
+    state.setSizeFilter('gte')
+    await tick()
+
+    vi.useFakeTimers()
+    try {
+      typeQuery(overlay, '')
+      vi.advanceTimersByTime(2_000)
+      await Promise.resolve()
+      await Promise.resolve()
+    } finally {
+      vi.useRealTimers()
+    }
+    await settle()
+
+    expect(calls.runQuery).toBe(1)
+    expect(state.getResults()).toEqual([SAMPLE_RESULT])
+    cleanup()
+  })
+
+  it('a non-default type filter alone counts as runnable', async () => {
+    const { overlay, state, calls, cleanup } = mountQueryDialog({
+      initialQuery: '*.jpg',
+      runQueryResult: { entries: [SAMPLE_RESULT], totalCount: 1 },
+    })
+    await settle()
+    state.setTypeFilter('folder')
+    await tick()
+
+    vi.useFakeTimers()
+    try {
+      typeQuery(overlay, '')
+      vi.advanceTimersByTime(2_000)
+      await Promise.resolve()
+      await Promise.resolve()
+    } finally {
+      vi.useRealTimers()
+    }
+    await settle()
+
+    expect(calls.runQuery).toBe(1)
     cleanup()
   })
 })

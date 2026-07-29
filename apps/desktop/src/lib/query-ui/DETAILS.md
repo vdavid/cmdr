@@ -183,6 +183,23 @@ The column header renders only when result rows do (the `showingRows` derived). 
 list, the empty state, or a bare total describe a table that isn't there, and they're the loudest thing in an otherwise
 quiet area. The seam is the chip strip's own bottom hairline plus the zone-2 → zone-3 surface flip.
 
+### Nothing to run is not a run
+
+`hasRunnableQuery()` is the single predicate for "is there anything to ask?": a non-empty trimmed query, OR size ≠
+`any`, OR date ≠ `any`, OR type ≠ `both`. It gates `executeQuery()` (the choke point every path funnels through:
+auto-apply, the ⏎ button, bare Enter, the `runOnMount` prefill) and short-circuits `scheduleSearch()` before its other
+gates. When it's false, `resetToEmptyState()` drops `results` / `totalCount` / `cursorIndex` / `lastRunQuery` / the AI
+strip and clears `hasSearched`, so the results area falls back to the empty state instead of leaving the previous run's
+rows on screen implying they still match.
+
+Why the guard exists: the backend refuses a filter-less, pattern-less run with "Query too broad", and `executeQuery`'s
+catch toasts that message — so simply clearing the query field produced a warning toast for a query the user never
+asked for.
+
+**An empty pattern WITH an active filter stays runnable.** `≥ 1 MB` with no glob selects every file ≥ 1 MB; Selection
+encodes the same rule in `hasActiveFilter()` + `buildMatchQuery` (`lib/selection-dialog/CLAUDE.md`). Don't widen the
+guard to "empty query" — that breaks filter-only queries in both dialogs.
+
 ### Run failures surface, they don't vanish
 
 `executeQuery`'s catch toasts `queryUi.dialog.runQueryToast` wrapping the reason. The backend refuses some runs with an
@@ -209,11 +226,11 @@ The orchestrator's `$effect` block on `state.getRunOnMount()` consumes the one-s
 BEFORE dispatching so downstream state writes can't re-trigger the effect. Cold-open (dialog mounts with the flag
 pre-set, e.g. MCP `open_search_dialog`) and hot-prefill (the flag flips while the dialog is already open, e.g. a
 recent-search activation) flow through the same path. The effect dispatches when there's anything runnable, via the
-shared `hasRestorableQuery()` predicate (non-empty query OR size/date/type filter active). AI mode honors the
+shared `hasRunnableQuery()` predicate (non-empty query OR size/date/type filter active). AI mode honors the
 explicit-trigger contract because the prefill caller's `autoRun: true` IS the explicit trigger.
 
 A third producer of `runOnMount` is the reopen path. `onMount` sets the flag when the surviving state holds a restorable
-NON-AI session (`getLastRunQuery() !== null` AND `hasRestorableQuery()` AND `mode !== 'ai'`), so the dialog re-derives
+NON-AI session (`getLastRunQuery() !== null` AND `hasRunnableQuery()` AND `mode !== 'ai'`), so the dialog re-derives
 results on reopen instead of resting on the empty state: Select re-runs the matcher against the freshly-snapshotted
 current folder (more correct than rendering rows from the old folder), Search re-hits the index. AI restored sessions
 are excluded from this gate (cloud cost); they render the persisted results because `hasSearched` is seeded from

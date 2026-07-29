@@ -211,16 +211,36 @@
     /**
      * Whether the current state has anything runnable: a non-empty query OR an active filter
      * (size ≠ any, date ≠ any, or type ≠ both). The single source of truth for "is there a
-     * session worth running?", shared by the `runOnMount` effect and the reopen re-run gate in
-     * `onMount`. Type counts: a "Folders"-only Selection run is a valid filter-only query.
+     * session worth running?", shared by `executeQuery`'s guard, the `runOnMount` effect, and
+     * the reopen re-run gate in `onMount`. Type counts: a "Folders"-only Selection run is a
+     * valid filter-only query.
+     *
+     * An empty pattern WITH an active filter is deliberately RUNNABLE: `≥ 1 MB` with no glob
+     * selects every file ≥ 1 MB (Selection's `hasActiveFilter()` + `buildMatchQuery` encode
+     * the same rule; see `lib/selection-dialog/CLAUDE.md`). Only "nothing at all" is refused.
      */
-    function hasRestorableQuery(): boolean {
+    function hasRunnableQuery(): boolean {
         return (
             config.state.getQuery().trim() !== '' ||
             config.state.getSizeFilter() !== 'any' ||
             config.state.getDateFilter() !== 'any' ||
             config.state.getTypeFilter() !== 'both'
         )
+    }
+
+    /**
+     * Back to "nothing has been asked yet": drops the previous run's rows so they can't sit
+     * there implying they still match, and puts the results area back on the empty state.
+     * Called when the user empties the query with no filter left standing.
+     */
+    function resetToEmptyState(): void {
+        config.state.setResults([])
+        config.state.setTotalCount(0)
+        config.state.setCursorIndex(0)
+        config.state.setLastRunQuery(null)
+        config.state.setLastAiPrompt(null)
+        config.state.setLastAiCaveat(null)
+        hasSearched = false
     }
 
     /**
@@ -243,7 +263,7 @@
         const trimmed = config.state.getQuery().trim()
         if (trimmed && config.state.getMode() === 'ai' && config.aiEnabled) {
             void runAiSearch(trimmed)
-        } else if (config.isIndexReady && hasRestorableQuery()) {
+        } else if (config.isIndexReady && hasRunnableQuery()) {
             void executeQuery()
         }
         // Otherwise: prefill arrived but nothing to run. The dialog rests on the empty
@@ -338,7 +358,7 @@
         if (
             config.state.getLastRunQuery() !== null &&
             config.state.getMode() !== 'ai' &&
-            hasRestorableQuery()
+            hasRunnableQuery()
         ) {
             config.state.setRunOnMount(true)
         }
@@ -388,13 +408,20 @@
     })
 
     /**
-     * Schedules a debounced auto-apply. Three early-return gates:
+     * Schedules a debounced auto-apply. Four early-return gates:
+     *   0. Nothing to run (empty bar, every filter at its default) — and that also drops the
+     *      previous run's rows. Checked FIRST, before the mode / setting gates, so emptying
+     *      the bar clears the list no matter how runs are triggered.
      *   1. AI mode never auto-applies (AI calls cost money; user must opt in).
      *   2. `search.autoApply === false`: user runs every query explicitly.
      *   3. IME composition is in progress.
      */
     function scheduleSearch(): void {
         if (debounceTimer) clearTimeout(debounceTimer)
+        if (!hasRunnableQuery()) {
+            resetToEmptyState()
+            return
+        }
         if (config.state.getMode() === 'ai') return
         if (!autoApplyEnabled) return
         if (imeComposing) return
@@ -422,6 +449,16 @@
      */
     async function executeQuery(fromAiTranslation = false): Promise<void> {
         if (debounceTimer) clearTimeout(debounceTimer)
+        // Nothing to run: an empty bar with every filter at its default isn't a query, and
+        // the backend refuses it ("Query too broad"), which surfaced as a warning toast the
+        // moment the user cleared the field. This is the choke point every path goes through
+        // (auto-apply, the ⏎ button, bare Enter, the runOnMount prefill), so the rule holds
+        // for all of them: fall back to the empty state instead of asking for everything.
+        if (!hasRunnableQuery()) {
+            resetToEmptyState()
+            config.state.setIsSearching(false)
+            return
+        }
         hasSearched = true
         if (!config.isIndexReady) {
             // Bail before running, but clear any spinner `runAiSearch` turned on for the translate

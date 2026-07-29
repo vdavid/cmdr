@@ -25,18 +25,17 @@ internals: `filter-chips/CLAUDE.md`. Consumer decisions: `../search/CLAUDE.md`, 
   `use:trapFocus` listeners run in the capture phase, so this can't starve the trap.
 - **All chrome is `ModalDialog`'s; never re-add it here.** Opt-ins: `align="top"`, `fillBody`, `padded={false}`,
   `ownsKeyboard` (Enter + the popover-aware Escape), `closeOnOverlayClick`, `overlayClass="search-overlay"`. Every strip
-  pads itself, at `--spacing-dialog`, matching the title bar.
-- **Two silent-failure traps.** Turning count-only OFF must re-run (`runFromButton()`, never `scheduleSearch()`) or a
-  stale count stays; and never swallow a `runQuery` rejection (`executeQuery` toasts the backend's message, else a
-  refusal reads as "nothing matched").
+  pads itself at `--spacing-dialog`, matching the title bar.
+- **Two silent-failure traps.** Turning count-only OFF must re-run via `runFromButton()` (not `scheduleSearch()`), else
+  a stale count stays; and never swallow a `runQuery` rejection (`executeQuery` toasts it), else a refusal reads as
+  "nothing matched".
 - **Don't wipe state from any lifecycle hook.** State survives unmount by design; `⌘N` is the ONLY sanctioned reset.
 - **Reopen re-derives results, not the empty state.** A restored NON-AI session sets `runOnMount` to re-run; AI must NOT
   (cloud cost). Don't loosen the `mode !== 'ai'` gate.
-- **The query field is a hand-assembled combobox over recent items, NOT a house/Ark `Combobox`** (that model uses the
-  control's own input as the filter; this needs two). In `RecentItemsPopover`: no wrap, `↑` at the top exits to the
-  field, every claimed key `stopPropagation()`s or the dialog also moves the results cursor, and `↓` in the field opens
-  it only with no results to walk. Picking LOADS, never runs: `onActivateRecent` must not set `runOnMount`, or an AI
-  entry re-bills the user for a keystroke. DETAILS.md § Recent-items dropdown.
+- **The query field is a hand-assembled combobox over recent items, NOT a house/Ark `Combobox`** (Ark filters on the
+  control's own input; this needs two fields). `RecentItemsPopover`: no wrap, `↑` at top exits to the field, every
+  claimed key `stopPropagation()`s, `↓` opens only with no results to walk. Picking LOADS, never runs (an AI entry
+  would re-bill). DETAILS.md § Recent items.
 - **Path pills are mouse-only, `tabindex="-1"`**: tabbable pills break the row's arrow-down flow, and `⌥←` / `⌥→` stay
   native move-by-word. `nested-interactive` is deliberately off on the populated-results test.
 - **Two `QueryResults` render gates.** The status bar stays empty whenever the content area shows a state message
@@ -45,6 +44,8 @@ internals: `filter-chips/CLAUDE.md`. Consumer decisions: `../search/CLAUDE.md`, 
 - **AI mode never auto-applies** (cost); filename/regex do, behind `search.autoApply` (default on, 1,000 ms debounce,
   IME-gated) in `scheduleSearch()`'s early-return chain. AI translation overwrites `query` + `mode`, so reach for
   `getLastAiPrompt()` when you want what the user typed.
+- **Nothing to run is not a run**: `hasRunnableQuery()` (query non-empty OR size/date/type off default) gates
+  `executeQuery`; false → `resetToEmptyState()`, no IPC. An empty pattern WITH a filter IS runnable.
 - **The `AiPromptStrip` is a MIRROR of chip state, never the truth**; its first-person agent voice is a SANCTIONED
   no-first-person-copy exception.
 - **Type-in-AI is leave-alone-if-null; size/date are reset-first. Don't "consistency-fix" this.** Each AI run resets
