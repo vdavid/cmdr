@@ -108,7 +108,7 @@ so pull it forward if there's appetite.
 2. **The quote in context.** Today the column shows a bare quote, so a four-character hit inside 3,000 characters of OCR
    looks exactly as strong as a decisive one. Send the match offset and the delivered text's length with the quote, and
    render it in its surrounding line plus a coverage hint ("matched 7 of 3,140 characters"). A thin match must _look_
-   thin. (Whether to also raise the `imageText` floor from four characters to ~12 is open question 7.)
+   thin. **Also raise the `imageText` floor from 4 to 12 characters** (decision 6).
 
 **Why.** This is the milestone that catches the failure class we actually hit. Everything else in this plan makes the
 agent better behaved; this makes the human able to disagree with it.
@@ -122,8 +122,8 @@ agent better behaved; this makes the human able to disagree with it.
 - Thumbnails depend on media-index enrichment. An unenriched or non-image file must degrade to a neutral placeholder,
   never a broken image or a blank cell, and the row must still be reviewable.
 - Honour the token lifecycle: drop tokens when the dialog closes, or they leak.
-- The dialog is already 1,040 px wide with four columns; a preview column changes the layout budget. Design it with
-  David rather than bolting a fifth column on.
+- The dialog is already 1,040 px wide with four columns, so layout space is the scarce resource here. Decision 5 settles
+  it: a narrow leading thumbnail column, quote-in-context inside the existing evidence column, no fifth column.
 - Keyboard-first: preview follows the focused row, no mouse required, and the a11y test must cover it.
 
 **Tests.** Component tests: the focused row drives the preview; an unenriched file shows the placeholder; the token is
@@ -269,7 +269,7 @@ citing digest-only text is refused**; breakdown assertions.
 override. Fix the stale-family class in the budget table (`qwen`, `deepseek`, `grok`, `mistral` are all stale today, not
 just one).
 
-**Shape: a preset list plus "Automatic (recommended)"** (8,000 / 16,000 / 32,000 / 60,000 / 128,000 / 200,000),
+**Shape: a preset list plus "Automatic (recommended)"** (16,000 / 32,000 / 60,000 / 128,000 / 200,000),
 following the `ai.localContextSize` precedent. **Decided, not open**: presets make the bounds unmisstateable, so there
 is no below-minimum case to clamp and no numeric validation copy. An over-window warning is still needed, because a user
 can pick 200,000 for a model whose window is 32,000. Resolution stays pure in the budget module with the override passed
@@ -282,7 +282,7 @@ setting to change. Silently assembling an over-budget prompt is the one option t
 
 **Landmines.**
 
-- **Minimum 8,000, not 4,000**: below that, ~3,100 of overhead plus one paged result leaves nothing.
+- **Minimum 16,000** (decision 2): ~3,100 of overhead plus one paged result leaves nothing below that.
 - **Drop "provider-reported window"**: no source for it exists in this codebase. The ceiling is the local server's
   configured window, else the family table, else the default. Label the source so a stale table is visible.
 - Above the real window warns, never blocks: our table will be wrong sometimes and the user may be right. Name the
@@ -295,11 +295,12 @@ setting to change. Silently assembling an over-budget prompt is the one option t
   that arithmetic next to the budget, not in the prompt or the UI.
 
 **Tests.** Test-first for resolution: auto follows the table; an override is honoured; a preset above the known window
-warns and is still used; an unknown model gets the default; the per-batch hint derives correctly at 8,000 / 16,000 /
-60,000; a local window too small to hold the overhead is refused honestly rather than assembled.
+warns and is still used; an unknown model gets the default; the per-batch hint derives correctly at 16,000 / 32,000 /
+60,000; a stored below-floor `ai.localContextSize` is clamped up to the floor; a local server whose own configured window
+is under the floor is refused honestly rather than assembled.
 
-**DONE when** every resolution case is pinned, a local user on defaults gets either a working turn or an honest refusal,
-and David has reviewed the copy.
+**DONE when** every resolution case is pinned, a local user on defaults gets a working turn, and David has reviewed the
+copy.
 
 ### M7: Say when the chat is filling up
 
@@ -321,9 +322,9 @@ landmine below and two open questions. Your call.
 
 **Landmines.**
 
-- **The E2E fake path is permanently over budget today** (2,457 vs ~3,100). Settle it first: give the fake path a
-  realistic budget, or raise the harness's `ai.localContextSize`. Otherwise every E2E run pins the gauge and the
-  assertions bless a pathological state.
+- **The E2E fake path is over budget on today's shipped default** (2,457 vs ~3,100). Decision 4 settles it: give the fake
+  path its own realistic budget rather than raising the harness's `ai.localContextSize`, so the harness keeps mirroring a
+  real user. Otherwise every E2E run pins the gauge and the assertions bless a pathological state.
 - **The stream event type is hand-mirrored in TypeScript** (Channel enums fall outside specta): a new event means a hand
   edit in both languages, kept in sync.
 - **Every new string needs 10-locale parity** (error-level check) plus a `keys.gen.ts` regeneration.
@@ -505,21 +506,31 @@ of everything else.
 
 Not in a hurry: prefer sequential.
 
-## Open questions for David
+## Decisions (all questions closed; execution can proceed unblocked)
 
-1. **The undo verification defect (M3's prerequisite)**: shall I fix the journal's missing mtime now, separately from
-   this plan? It's small but it sits in the rollback path, and getting the unit conversion wrong would silently disable
-   undo rather than merely leave it weak.
-2. **M7**: keep the gauge as you asked, or take the reviewer's advice and ship only the "older parts set aside" notice?
-3. **M11**: is trial-batch-then-background the shape you want for large jobs? Round 3 showed it's a write-engine change,
-   not a spike (no proposal means no fingerprint and no ledger; `MAX_RENAMES` is 200; progress isn't streamed yet), so
-   it needs your decision before M12 is worth planning.
-4. **E2E fake budget**: give the fake path its own budget, or raise the harness's `ai.localContextSize`? **Default if
-   you have no preference: its own budget**, since the harness setting otherwise stops mirroring a real user.
-5. **M1 layout**: the review dialog is already 1,040 px with four columns, and M1 adds a preview plus quote-in-context.
-   Fifth column, or a detail pane beside the table? Design call, and I'd rather you made it.
-6. **The `imageText` floor**: raise it from four characters to ~12? A four-character quote backs almost any name, and
-   M1's coverage hint makes thinness visible without refusing it. Cheap either way; I'd raise it.
-7. ~~Split `rename.rs`~~ — obsolete; the concurrent file-splits effort already did it.
-8. ~~Budget setting shape~~ — **decided inside M6**: presets plus "Automatic", so there's no clamp case and no numeric
-   validation copy. Say so if you disagree.
+1. **The undo verification defect** stays where it is: M3's prerequisite, fixed in M3, in the order above. Not a separate
+   pre-effort.
+2. **The local window floor is 16,384 tokens** (David: "below that, it's unusable"). So M6's fix to the shipped 4,096
+   default is: raise the default to `16384`, drop the `2048` / `4096` / `8192` options from `ai.localContextSize`, and
+   **clamp a stored below-floor value up on read** so an existing user who picked 4,096 is migrated rather than left
+   broken. No honest-refusal path is needed once the floor is unreachable, but keep the refusal for a local server whose
+   own configured window is smaller than the floor.
+3. **M7 keeps the gauge** (bar, percentage, tooltip) plus the trim notice, as originally asked. The round-2 argument to
+   ship only the notice is noted and declined.
+4. **The E2E fake path gets its own budget**, not a raised harness setting, so the harness keeps mirroring a real user.
+5. **M1 layout, decided so nobody is blocked** (David reviews the result; it's a visual call he QAs himself):
+   - A **narrow leading thumbnail column** (~44 px, fixed), because scanning 50 rows for the odd wrong one is the actual
+     review task, and a detail pane only shows the row you already suspect.
+   - **Quote-in-context stays inside the existing "Why this name" column**, gaining the surrounding line plus the
+     coverage hint underneath. No fifth column: the filenames are already tight at 90 vw.
+   - **Space opens the full viewer** for the focused row.
+   - If David wants the detail-pane shape instead, it's a layout swap over the same data; nothing below depends on which
+     one ships.
+6. **The `imageText` floor rises from 4 to 12 characters**, done as part of M1 (it's the same "a thin match must look
+   thin" concern, and the coverage hint makes the remaining thin matches visible rather than refused).
+7. **M11 stays undecided, so M11 / M12 / M13 are out of this execution pass.** M11 is a policy shift (approval moves from
+   per-item to per-rule for a job's tail) and a write-engine change; M12 is gated on M11 being declined; M13 needs
+   measurement that doesn't exist yet. **Executing now: M1 → M2 → M3 → M5 → M6 → M4 → M7 → M8 → M10.** M9 is cut.
+8. ~~Split `rename.rs`~~ — obsolete; the concurrent file-splits effort already did it, and it has landed on `main`
+   (`propose/rename/` and `chat/runtime/` are directories now).
+9. ~~Budget setting shape~~ — presets plus "Automatic", per M6. With decision 2 the preset list starts at 16,000.
