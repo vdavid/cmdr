@@ -6,6 +6,16 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
+- [ ] 2026-07-29 `agent-context-harness-plan.md` - Two problems: the human can't check the agent's rename work (review is
+      text against text, which is how 12 real files got fabricated names), and the agent loses grounding on a job too big
+      for one prompt. Phase A puts the file in front of the reviewer (thumbnail preview, the evidence quote shown in
+      context with a coverage figure, editable names, undo after apply) because that's the failure that actually happened;
+      later phases harden the prompt, make elision stubs re-fetchable, let the user set the chat's memory size, show when
+      history gets set aside, and ground batch jobs in the folder rather than the transcript. Carries measured budgets
+      (~3,100 fixed overhead per call, ~39,700 for 100 files), a 12-item invariants register, and both shipped weaknesses
+      four review rounds found: the image-tag evidence bypass (FIXED 2026-07-29) and bulk-rename undo verifying identity by
+      size alone (OPEN, prerequisite for M3). M9 cut as anti-safety; M11 (per-rule approval for large jobs) needs David's
+      policy decision and is a write-engine change, not a spike; M12/M13 deferred behind it. SPECCED, not started.
 - [ ] 2026-07-28 `flaky-test-eradication.md` - Make a red `rust-tests` run mean a real regression again. MOSTLY SHIPPED
       (2026-07-29): retry-rescued runs now warn instead of passing silently, failures are sorted by which deadline blew
       (nextest cap vs in-test `wait_until`), and a red run re-runs its failures alone before believing them, so
