@@ -6,12 +6,9 @@
         getFileRange,
         pathExistsChecked,
         getFileAt,
-        getPathsAtIndices,
         getTotalCount,
         onMtpDeviceDisconnected,
         refreshListingIndexSizes,
-        showFileContextMenu,
-        showParentRowContextMenu,
         type Location,
         updateMenuContext,
     } from '$lib/tauri-commands'
@@ -43,9 +40,6 @@
     import { createSmbViewState } from './smb-view-state.svelte'
     import { createVolumeSpace } from './volume-space.svelte'
     import { isVirtualGitPath } from '../git/path-detection'
-    import { getSetting, setSetting } from '$lib/settings'
-    import { isFileListBackgroundClick } from './pane-background-dblclick'
-    import DoubleClickPaneHintToastContent from './DoubleClickPaneHintToastContent.svelte'
     import ErrorPane from './ErrorPane.svelte'
     import VolumeUnreachableBanner from './VolumeUnreachableBanner.svelte'
     import SmbReauthView from './SmbReauthView.svelte'
@@ -62,7 +56,6 @@
     import { initListingDiffSync } from './listing-diff-sync.svelte'
     import { createRenameState } from '../rename/rename-state.svelte'
     import { type DirectorySortMode } from '$lib/settings'
-    import { addToast } from '$lib/ui/toast'
     import { tString } from '$lib/intl/messages.svelte'
     import { createRenameFlow } from './rename-flow.svelte'
     import ExtensionChangeDialog from '../rename/ExtensionChangeDialog.svelte'
@@ -95,6 +88,7 @@
     import { createSelectionInfoFeed } from './selection-info-feed.svelte'
     import { createPaneKeyRouter } from './pane-key-router'
     import { createEntryActivation } from './entry-activation'
+    import { createPanePointer } from './pane-pointer'
     import { createParentEntry } from './parent-entry'
     import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
 
@@ -510,27 +504,6 @@
     /** Navigate to a breadcrumb ancestor. Errors surface via the pane's error pipeline. */
     function handleBreadcrumbSegmentClick(target: string): void {
         void navigateToPath(target).catch(() => {})
-    }
-
-    /**
-     * Double-clicking the empty file-list background navigates up one folder
-     * (Directory Opus-style), gated by `behavior.doubleClickPaneNavigatesToParent`.
-     * On the very first trigger we raise a one-time INFO toast explaining it, and
-     * flip the hidden `behavior.doubleClickOnPaneNotificationSeen` so it shows once.
-     */
-    function handlePaneBackgroundDblClick(e: MouseEvent): void {
-        if (!getSetting('behavior.doubleClickPaneNavigatesToParent')) return
-        if (!isFileListBackgroundClick(e.target)) return
-        if (!hasParent) return // nothing above (volume root / search-results pane)
-        void navigateToParent()
-        if (!getSetting('behavior.doubleClickOnPaneNotificationSeen')) {
-            setSetting('behavior.doubleClickOnPaneNotificationSeen', true)
-            addToast(DoubleClickPaneHintToastContent, {
-                level: 'info',
-                dismissal: 'persistent',
-                id: 'double-click-pane-hint',
-            })
-        }
     }
 
     // Check if we're viewing an MTP device
@@ -1241,50 +1214,30 @@
         return loader.navigateToPath(path, selectName)
     }
 
-    function handleSelect(index: number, shiftKey = false, metaKey = false) {
-        if (shiftKey) {
-            // Shift wins over Cmd when both are held (matches Finder).
-            selection.handleShiftMouseNavigation(index, cursorIndex, hasParent)
-        } else if (metaKey) {
-            // Cmd+click toggles the clicked item. `..` is a no-op inside toggleAt.
-            selection.toggleAt(index, hasParent)
-            selection.clearRangeState()
-        } else {
-            selection.clearRangeState()
-        }
-        cursorIndex = index
-        onRequestFocus?.()
-        void selectionInfo.fetchEntry()
-    }
-
-    async function handleContextMenu(entry: FileEntry) {
-        if (entry.name === '..') {
-            // The `..` row gets its own one-item menu: "Add to favorites" (favorites the
-            // parent dir `entry.path`). The full file menu (Copy / Move / Delete) makes no
-            // sense on `..`. On a snapshot pane there's no real parent to favorite, so skip.
-            jump.clear()
-            if (volumeId === 'search-results') return
-            await showParentRowContextMenu(entry.path)
-            return
-        }
-        // Spec: opening a context menu cancels in-flight type-to-jump.
-        jump.clear()
-        // Match Finder: if the right-clicked entry is part of the current selection,
-        // actions apply to the whole selection. Otherwise they apply to just this entry.
-        let paths = [entry.path]
-        if (listingId && selection.selectedIndices.size > 0) {
-            const indices = Array.from(selection.selectedIndices)
-            try {
-                const selectedPaths = await getPathsAtIndices(listingId, indices, includeHidden, hasParent)
-                if (selectedPaths.includes(entry.path)) {
-                    paths = selectedPaths
-                }
-            } catch {
-                // Selection lookup failed: fall back to single-file action.
-            }
-        }
-        await showFileContextMenu(entry.path, entry.name, entry.isDirectory, paths, false, listingId)
-    }
+    // Mouse handling: row select (plain / Shift / Cmd), the context menu's
+    // selection-vs-entry rule, the focus click, and the background double-click
+    // that goes up a folder. All in `pane-pointer.ts`.
+    const pointer = createPanePointer({
+        getCursorIndex: () => cursorIndex,
+        setCursorIndex: (index) => {
+            cursorIndex = index
+        },
+        getHasParent: () => hasParent,
+        getListingId: () => listingId,
+        getIncludeHidden: () => includeHidden,
+        getVolumeId: () => volumeId,
+        getSelectedIndices: () => Array.from(selection.selectedIndices),
+        onRequestFocus: () => onRequestFocus?.(),
+        fetchCursorEntry: () => void selectionInfo.fetchEntry(),
+        extendSelectionFromMouse: (index, cursor, parent) =>
+            { selection.handleShiftMouseNavigation(index, cursor, parent); },
+        toggleSelectionAt: (index, parent) => { selection.toggleAt(index, parent); },
+        clearRangeState: () => { selection.clearRangeState(); },
+        clearJump: () => { jump.clear(); },
+        navigateToParent: () => void navigateToParent(),
+    })
+    const handleSelect = pointer.handleSelect
+    const handleContextMenu = pointer.handleContextMenu
 
     // Opening an entry (Enter, ⌘↓, double-click, or a popup choice): the redirect
     // arm, the archive/bundle Enter policy, the browse-in-place arm, the viewer
@@ -1306,15 +1259,6 @@
         onGoToLocation: (location) => onGoToLocation?.(location),
     })
     const handleNavigate = activation.handleNavigate
-
-    function handlePaneClick(event: MouseEvent) {
-        // Clicks inside the inline rename editor are the user placing the caret or
-        // selecting text. Focusing the pane here would blur the input and end the
-        // rename, making the field unusable with the mouse.
-        const target = event.target
-        if (target instanceof Element && target.closest('.rename-input')) return
-        onRequestFocus?.()
-    }
 
     function handleBreadcrumbContextMenu(e: MouseEvent) {
         e.preventDefault()
@@ -1841,8 +1785,8 @@
     bind:this={paneEl}
     class="file-pane"
     class:is-focused={isFocused}
-    onclick={handlePaneClick}
-    ondblclick={handlePaneBackgroundDblClick}
+    onclick={pointer.handlePaneClick}
+    ondblclick={pointer.handlePaneBackgroundDblClick}
     onkeydown={() => {}}
     role="region"
     aria-label={tString('fileExplorer.pane.filePaneAriaLabel', { side: paneId })}
