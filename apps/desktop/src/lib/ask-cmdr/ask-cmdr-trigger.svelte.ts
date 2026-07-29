@@ -17,6 +17,8 @@ import { explorerState } from '$lib/file-explorer/pane/explorer-state.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { SvelteSet } from 'svelte/reactivity'
 import { consentState, refreshConsent } from './ask-cmdr-consent.svelte'
+import { buildRailMessages } from './ask-cmdr-history'
+import type { RailMessage } from './ask-cmdr-messages'
 import { growMainWindowForRail, shrinkMainWindowForRail } from './rail-window'
 import {
   applyBulkRename,
@@ -31,13 +33,13 @@ import {
   type AskCmdrErrorKind,
   type AskCmdrStreamEvent,
   type AttachmentRef,
-  type ConversationDetailView,
-  type MessageView,
   type RenameEvidence,
   type RenameEvidenceCoverage,
 } from '$lib/tauri-commands'
 
 const log = getAppLogger('askCmdr')
+
+export type { RailMessage, RailToolCall } from './ask-cmdr-messages'
 
 /** Past this many thread messages the rail nudges "start a fresh one?" (mirrors the Rust
  * `THREAD_SOFT_CAP_MESSAGES`; no hard cut). */
@@ -51,45 +53,6 @@ const STALL_AFTER_MS = 30_000
 const STOP_AFTER_MS = 90_000
 let stallTimer: ReturnType<typeof setTimeout> | null = null
 let stopTimer: ReturnType<typeof setTimeout> | null = null
-
-/** One tool call the assistant made, as the collapsible "looked at X" line shows it. */
-export interface RailToolCall {
-  callId: string
-  /** The wire tool name; the localized label is derived in `ask-cmdr-labels.ts`. */
-  tool: string
-  running: boolean
-  ok: boolean
-  /** A path pulled from the call arguments, shown as escaped plain text. `null` if none. */
-  path: string | null
-}
-
-/** One rendered item in the thread. `attachments` on a user turn are the chips shown
- * under the sent message; history rows carry none (the refs rode into the envelope, not
- * stored blocks). */
-export type RailMessage =
-  | { kind: 'user'; id: number | null; text: string; attachments: AttachmentRef[] }
-  | {
-      kind: 'assistant'
-      id: number | null
-      text: string
-      tools: RailToolCall[]
-      thinking: boolean
-      stalled?: boolean
-      streaming: boolean
-    }
-  | {
-      kind: 'error'
-      errorKind: AskCmdrErrorKind
-      /** The provider's own wording, shown as escaped plain text under the friendly
-       * headline so the user sees what to fix. Display only; never branched on. */
-      detail?: string
-    }
-  /** A timeline line marking that the thread's effective model changed between turns. */
-  | { kind: 'modelChange'; model: string }
-  /** A timeline line marking that older lookups left the model's context so this turn would
-   * fit its budget: the reply was written with less than the whole chat in view. Live-stream
-   * only — it describes one turn's assembly, so history doesn't replay it. */
-  | { kind: 'contextTrimmed'; count: number }
 
 export interface BulkRenameReviewRow {
   rowId: string
@@ -312,72 +275,6 @@ export async function loadOlderMessages(): Promise<void> {
   } finally {
     askCmdrState.loadingOlder = false
   }
-}
-
-/** Fold a loaded conversation's messages into rail items: tool results are attached to the
- * assistant tool call they answer (by `callId`), so the thread shows one line per call. */
-function buildRailMessages(detail: ConversationDetailView): RailMessage[] {
-  // A plain lookup (not a reactive SvelteMap): purely local to this pure transform.
-  const resultOk: Record<string, boolean> = {}
-  for (const message of detail.messages) {
-    for (const block of message.blocks) {
-      if (block.type === 'toolResult') resultOk[block.callId] = block.ok
-    }
-  }
-  const out: RailMessage[] = []
-  for (const message of detail.messages) {
-    if (message.role === 'user') {
-      out.push({ kind: 'user', id: message.id, text: joinText(message), attachments: [] })
-    } else if (message.role === 'assistant') {
-      out.push({
-        kind: 'assistant',
-        id: message.id,
-        text: joinText(message),
-        tools: toolCallsOf(message, resultOk),
-        thinking: false,
-        streaming: false,
-      })
-    } else if (message.role === 'event') {
-      for (const block of message.blocks) {
-        if (block.type === 'modelChanged') out.push({ kind: 'modelChange', model: block.model })
-      }
-    }
-    // `tool`-role messages carry only results, already folded into the tool lines above.
-  }
-  return out
-}
-
-function joinText(message: MessageView): string {
-  return message.blocks
-    .filter((b): b is Extract<typeof b, { type: 'text' }> => b.type === 'text')
-    .map((b) => b.text)
-    .join('')
-}
-
-function toolCallsOf(message: MessageView, resultOk: Record<string, boolean>): RailToolCall[] {
-  return message.blocks
-    .filter((b): b is Extract<typeof b, { type: 'toolCall' }> => b.type === 'toolCall')
-    .map((b) => ({
-      callId: b.callId,
-      tool: b.tool,
-      running: false,
-      ok: resultOk[b.callId] ?? true,
-      path: pathFromArguments(b.arguments),
-    }))
-}
-
-/** Pull a `path` field out of a tool call's JSON arguments for the "looked at X" label. */
-export function pathFromArguments(argumentsJson: string): string | null {
-  try {
-    const parsed = JSON.parse(argumentsJson) as unknown
-    if (parsed && typeof parsed === 'object' && 'path' in parsed) {
-      const path = parsed.path
-      if (typeof path === 'string' && path.length > 0) return path
-    }
-  } catch {
-    // Malformed arguments just yield no path suffix.
-  }
-  return null
 }
 
 // ── Sending + streaming ──────────────────────────────────────────────────────────
