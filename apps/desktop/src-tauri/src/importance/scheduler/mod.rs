@@ -58,6 +58,7 @@ mod recompute;
 mod walk;
 use recompute::{
     IncrementalInputs, RecomputeInputs, incremental_rescore, load_visits, recompute_folders, sanitize_incremental_batch,
+    walk_for_incremental,
 };
 // Re-exported for the eval corpus tool, which walks a real index the SAME way a
 // recompute does (so dumped signals match production exactly).
@@ -258,6 +259,8 @@ mod coalescing_tests;
 #[cfg(test)]
 mod incremental_tests;
 #[cfg(test)]
+mod incremental_transition_tests;
+#[cfg(test)]
 mod multi_volume_tests;
 #[cfg(test)]
 mod recompute_tests;
@@ -409,7 +412,7 @@ impl ImportanceScheduler {
         };
 
         let mut folders = pool
-            .with_conn(|conn| walk_index_folders(conn, &home))
+            .with_conn(|conn| walk_for_incremental(conn, &home))
             .map_err(|e| format!("read pool error: {e}"))??;
         if folders.is_empty() {
             return Ok(0);

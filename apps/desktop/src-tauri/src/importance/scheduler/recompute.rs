@@ -254,6 +254,18 @@ pub(super) fn load_visits(data_dir: &std::path::Path, volume_id: &str) -> HashMa
 
 // ── Incremental rescore ────────────────────────────────────────────────────
 
+/// Read the folders one incremental pass needs out of `conn`.
+///
+/// The single seam between "how the index is read" and "what gets scored and
+/// written": everything downstream ([`incremental_rescore`]) is a pure function of
+/// the [`WalkedFolders`] this returns, so a cheaper way to produce the SAME folders
+/// swaps in here and nowhere else. Today that is the full O(dirs)
+/// [`walk_index_folders`], which reads the whole volume and lets the rescore filter
+/// it down.
+pub(super) fn walk_for_incremental(conn: &rusqlite::Connection, home: &str) -> Result<WalkedFolders, String> {
+    walk_index_folders(conn, home)
+}
+
 /// The inputs to an incremental rescore, bundled like [`RecomputeInputs`].
 pub(super) struct IncrementalInputs<'a> {
     pub(super) writer: &'a ImportanceWriter,

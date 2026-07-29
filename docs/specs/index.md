@@ -6,6 +6,14 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
+- [ ] 2026-07-29 `scoped-incremental-walk.md` - Make an importance incremental rescore cost O(touched) instead of
+      O(dirs): read only the changed subtrees out of the index instead of walking the whole volume (~5.5 s over a
+      611,699-folder root index, which is essentially the entire cost of every incremental pass). Rests on separating
+      the two whole-tree propagations: `under_floored_ancestor` is exact pure path math over a folder's own prefixes,
+      and `has_marker_below` is exact inside a walked subtree, leaving one cross-boundary signal that a stored-vs-fresh
+      `has_project_marker` comparison detects exactly, falling back to the full walk when it flips. Carries the
+      crossover rule for a wide batch, the accepted lossiness (strict ancestors stop getting their recency term
+      refreshed every pass), and the differential-oracle property the test suite pins.
 - [ ] 2026-07-29 `agent-context-harness-plan.md` - Two problems: the human can't check the agent's rename work (review
       is text against text, which is how 12 real files got fabricated names), and the agent loses grounding on a job too
       big for one prompt. Phase A puts the file in front of the reviewer (thumbnail preview, the evidence quote shown in
