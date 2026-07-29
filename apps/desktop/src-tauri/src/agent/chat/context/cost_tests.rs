@@ -105,24 +105,17 @@ fn every_call_pays_about_3_100_tokens_of_fixed_overhead() {
 /// magnitude, which is why the facts are what a window has to be sized for.
 #[test]
 fn a_bulk_rename_pays_about_350_tokens_per_file() {
-    assert_near(
-        estimate_tokens_of_value(&facts_row(0)),
-        IMAGE_FACTS_PER_FILE,
-        "one image_facts row at 900 chars of OCR",
-    );
-    assert_near(
-        estimate_tokens_of_value(&plan_row(0)),
-        PLAN_ROW_PER_FILE,
-        "one plan row",
-    );
-    assert_near(
-        estimate_tokens_of_value(&listing_entry(0)),
-        LISTING_PER_FILE,
-        "one pane-listing entry",
-    );
+    let facts = estimate_tokens_of_value(&facts_row(0));
+    let plan = estimate_tokens_of_value(&plan_row(0));
+    let listing = estimate_tokens_of_value(&listing_entry(0));
+
+    assert_near(facts, IMAGE_FACTS_PER_FILE, "one image_facts row at 900 chars of OCR");
+    assert_near(plan, PLAN_ROW_PER_FILE, "one plan row");
+    assert_near(listing, LISTING_PER_FILE, "one pane-listing entry");
     assert!(
-        IMAGE_FACTS_PER_FILE > 3 * (PLAN_ROW_PER_FILE + LISTING_PER_FILE),
-        "the facts dominate: sizing a window for the plan rows alone is how a batch overflows"
+        facts > 3 * (plan + listing),
+        "the facts dominate ({facts} vs {plan} + {listing}): sizing a window for the plan rows alone \
+         is how a batch overflows"
     );
 }
 
