@@ -87,11 +87,7 @@ export function planRowMouseDown(input: RowMouseDownInput): RowMouseDownPlan {
   // still runs either way, so the cursor row stays draggable; crossing the drag
   // threshold cancels the timer.
   const startClickToRename =
-    index === input.cursorIndex &&
-    !event.shiftKey &&
-    !event.metaKey &&
-    !input.isRenaming &&
-    input.canStartRename
+    index === input.cursorIndex && !event.shiftKey && !event.metaKey && !input.isRenaming && input.canStartRename
 
   if (selectedIndices.size === 0) {
     const fileInfo: DragFileInfo = { name: entry.name, isDirectory: entry.isDirectory, iconId: entry.iconId }

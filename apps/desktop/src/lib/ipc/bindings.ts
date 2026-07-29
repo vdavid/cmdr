@@ -1844,8 +1844,8 @@ export const commands = {
   recordVisit: (location: Location) => typedError<null, string>(__TAURI_INVOKE('record_visit', { location })),
   /**
    *  Search a volume's OCR text for `query`, returning up to `limit` hits (default
-   *  [`DEFAULT_LIMIT`], capped at [`MAX_LIMIT`]), each with a highlighted `snippet` —
-   *  the "why matched" reason the results grid shows.
+   *  [`DEFAULT_LIMIT`](super::DEFAULT_LIMIT), capped at [`MAX_LIMIT`](super::MAX_LIMIT)),
+   *  each with a highlighted `snippet` — the "why matched" reason the results grid shows.
    *
    *  An empty/whitespace query, an un-enriched volume, or an offline/purged `media.db`
    *  returns an empty list rather than erroring.

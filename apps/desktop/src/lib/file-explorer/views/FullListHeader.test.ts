@@ -83,9 +83,7 @@ describe('columns', () => {
 describe('sorting', () => {
   it('marks the sorted column active and leaves the rest alone', () => {
     const target = mountHeader({ sortBy: 'size' as SortColumn })
-    const active = [...target.querySelectorAll('.sortable-header')].filter((el) =>
-      el.classList.contains('is-active'),
-    )
+    const active = [...target.querySelectorAll('.sortable-header')].filter((el) => el.classList.contains('is-active'))
 
     expect(active).toHaveLength(1)
     expect(active[0].querySelector('.label')?.textContent).toBe('Size')

@@ -43,15 +43,15 @@ the pair out on hover. `measure-column-widths.ts` takes the SAME options, so the
 rendered.
 
 **`FullList`'s `staticEntries?: FileEntry[]` prop bypasses the backend-listing path entirely.** The array is mirrored
-into the cache and the cache-fetch / soft-refresh / cache-generation paths short-circuit. The search-results
-virtual volume is the user: it feeds full paths as the entries' `name` field, so the name cell mid-truncates via
+into the cache and the cache-fetch / soft-refresh / cache-generation paths short-circuit. The search-results virtual
+volume is the user: it feeds full paths as the entries' `name` field, so the name cell mid-truncates via
 `useShortenMiddle` (snapping to `/` when the name carries one, `.` otherwise). Unset, FullList renders identically: same
 grid template, same fetch loop, same DOM.
 
 ### FullList's siblings
 
-`FullList.svelte` keeps what needs the component (the props contract, the reactive readers, the `$effect`s, the DOM refs,
-and the row template). Four siblings hold the rest, each with its own suite:
+`FullList.svelte` keeps what needs the component (the props contract, the reactive readers, the `$effect`s, the DOM
+refs, and the row template). Four siblings hold the rest, each with its own suite:
 
 - **`full-list-cache.svelte.ts`** — the prefetch buffer plus the reset / soft-refresh / static-entries policy.
   `syncToProps(ready)` returns `'reset' | 'refresh' | 'none' | 'idle'`; the component reacts to `'reset'` only, by
@@ -87,8 +87,8 @@ FilePane (parent)
         └── visibleFiles: FileEntry[]    ($derived from virtual window)
 ```
 
-`BriefList` holds those three inline; `FullList` holds the same shape in `full-list-cache.svelte.ts`
-(`cache.entries` / `cache.range` / `cache.windowRows()`).
+`BriefList` holds those three inline; `FullList` holds the same shape in `full-list-cache.svelte.ts` (`cache.entries` /
+`cache.range` / `cache.windowRows()`).
 
 **Key**: Data lives in Rust `LISTING_CACHE`. Frontend fetches visible ranges on-demand via
 `getFileRange(listingId, start, count, includeHidden)`.

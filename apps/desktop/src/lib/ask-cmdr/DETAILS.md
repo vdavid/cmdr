@@ -193,15 +193,14 @@ routine truncation, because hiding evidence from the reviewer is the failure thi
 The stream also carries a display-only `proposalReady` rename-plan snapshot. The review dialog owns it in the next
 feature slice; until then the rail deliberately does not treat the event as approval or a filesystem action.
 
-The app has no real AI provider under E2E, so `commands/agent/chat.rs::resolve_agent_llm`
-routes the send through a scripted
-`FakeAgentLlm` when `CMDR_E2E_ASK_CMDR_FAKE=1` (set for the whole E2E run by the `desktop-svelte-e2e-playwright` check).
-It streams a fixed "Hi! I'm the test assistant." so `ask-cmdr.spec.ts` can assert send-and-render deterministically,
-zero network. The scripted turn is Say-only (no tools), so no tool dispatch runs. `ask-cmdr-trigger.test.ts` covers the
-full event model (tool lines, stop, soft cap, message paging, attachments) with mocked events;
-`ask-cmdr-sessions.test.ts` covers list paging/search/rename/archive. The E2E spec also drives the sessions path
-end-to-end (create two threads, search finds the right one via real FTS over the persisted messages, switch works) — it
-seeds a per-run nonce into the message text so search never matches a thread left by an earlier run.
+The app has no real AI provider under E2E, so `commands/agent/chat.rs::resolve_agent_llm` routes the send through a
+scripted `FakeAgentLlm` when `CMDR_E2E_ASK_CMDR_FAKE=1` (set for the whole E2E run by the
+`desktop-svelte-e2e-playwright` check). It streams a fixed "Hi! I'm the test assistant." so `ask-cmdr.spec.ts` can
+assert send-and-render deterministically, zero network. The scripted turn is Say-only (no tools), so no tool dispatch
+runs. `ask-cmdr-trigger.test.ts` covers the full event model (tool lines, stop, soft cap, message paging, attachments)
+with mocked events; `ask-cmdr-sessions.test.ts` covers list paging/search/rename/archive. The E2E spec also drives the
+sessions path end-to-end (create two threads, search finds the right one via real FTS over the persisted messages,
+switch works) — it seeds a per-run nonce into the message text so search never matches a thread left by an earlier run.
 
 The composer's Send gate (`AskCmdrComposer.svelte`) disables sending when `ai.provider` is `off` (its default), so the
 fake path — which never sets a real provider — needs the gate to treat the fake as an active provider. It reads

@@ -45,8 +45,8 @@ Virtual-scrolling file list components for rendering 100k+ file directories with
   reset path, not a separate trigger.** Adding one double-fetches.
 - **`listing.showExtensionInName` must stay in lockstep across the renderer and the measurer.** When on, the Name column
   carries the full filename and there's no Ext DATA column: `gridTemplate` drops the Ext track and
-  `computeFullListColumnWidths({ showExtensionInName })` returns `ext: 0`. Change one side and every column drifts.
-  ❌ Don't "clean up" the split header (`FullListHeader`'s `.header-name-ext`): it's the only way left to CLICK
+  `computeFullListColumnWidths({ showExtensionInName })` returns `ext: 0`. Change one side and every column drifts. ❌
+  Don't "clean up" the split header (`FullListHeader`'s `.header-name-ext`): it's the only way left to CLICK
   sort-by-extension in that mode. Full contract: `DETAILS.md`.
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
