@@ -193,8 +193,8 @@ strip and clears `hasSearched`, so the results area falls back to the empty stat
 rows on screen implying they still match.
 
 Why the guard exists: the backend refuses a filter-less, pattern-less run with "Query too broad", and `executeQuery`'s
-catch toasts that message — so simply clearing the query field produced a warning toast for a query the user never
-asked for.
+catch toasts that message — so simply clearing the query field produced a warning toast for a query the user never asked
+for.
 
 **An empty pattern WITH an active filter stays runnable.** `≥ 1 MB` with no glob selects every file ≥ 1 MB; Selection
 encodes the same rule in `hasActiveFilter()` + `buildMatchQuery` (`lib/selection-dialog/CLAUDE.md`). Don't widen the
@@ -283,8 +283,8 @@ described in § i18n: a copy edit lands in the catalog AND in its goldens, toget
 
 ## Name column shrink-wrap
 
-`QueryResults`' Name track is a measured pixel width, not the fixed `minmax(80px, 22ch)` it used to be: a list of
-`test` files reserved 22 characters and the Path column next to it mid-truncated to crumbs. Same idea as
+`QueryResults`' Name track is a measured pixel width, not the fixed `minmax(80px, 22ch)` it used to be: a list of `test`
+files reserved 22 characters and the Path column next to it mid-truncated to crumbs. Same idea as
 `file-explorer/views/measure-column-widths.ts`, which shrink-wraps `FullList`'s Ext / Size / Modified.
 
 - The math is pure and unit-tested with mocked widths: `name-column-width.ts` (`computeNameColumnWidth`,
@@ -299,9 +299,9 @@ described in § i18n: a copy edit lands in the catalog AND in its goldens, toget
   can't move when the track resizes; and we measure `entry.name`, never the DOM text `useShortenMiddle` wrote into the
   cell. The `$effect` reads its dependencies up front and never reads `nameTrack` itself.
 - **The measurer is keyed on the row's computed font string**, read off a real `.result-name` cell. A text-size change
-  therefore rebuilds it on its own, which is the job `getEffectiveScale()` does on the `FullList` side. It's probed
-  once (`candidate('0')`) before adoption, because pretext needs Canvas 2D and only fails on first use; without canvas
-  the component stays on the CSS fallback track, identical to the fixed one it replaced.
+  therefore rebuilds it on its own, which is the job `getEffectiveScale()` does on the `FullList` side. It's probed once
+  (`candidate('0')`) before adoption, because pretext needs Canvas 2D and only fails on first use; without canvas the
+  component stays on the CSS fallback track, identical to the fixed one it replaced.
 - **The track eases between widths** (`--transition-slow` on `grid-template-columns`, `prefers-reduced-motion`
   respected), except for the very first measured width, so opening the dialog doesn't animate the column in from the
   ceiling.
@@ -593,10 +593,10 @@ Loading drive index). The rule: content is the source of truth; duplicating the 
 broken. When you add a new content-area state in `QueryResults.svelte`, make sure `getStatusText()` returns `''` for
 that state.
 
-An empty bar then COLLAPSES: `.status-bar.is-empty` zeroes its padding and height and makes its top border
-transparent, so a running search doesn't end the results well in a bordered strip with nothing in it. Two reasons it
-collapses instead of unmounting: the `aria-live="polite"` region has to exist before its content changes to be
-announced, and a mount/unmount would change the dialog's height every time the bar found something to say.
+An empty bar then COLLAPSES: `.status-bar.is-empty` zeroes its padding and height and makes its top border transparent,
+so a running search doesn't end the results well in a bordered strip with nothing in it. Two reasons it collapses
+instead of unmounting: the `aria-live="polite"` region has to exist before its content changes to be announced, and a
+mount/unmount would change the dialog's height every time the bar found something to say.
 
 **Gotcha**: ⌘⏎ and ⇧⏎ are explicit no-ops in the dialog. Bare Enter is the only key that runs a search or opens the
 cursor row (dispatched via `enterAction` per D8). The dialog's `handleModifierShortcuts` swallows both modifier

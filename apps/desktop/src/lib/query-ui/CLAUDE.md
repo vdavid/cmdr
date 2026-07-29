@@ -38,8 +38,8 @@ Primitives shared by Search (`lib/search/`) and Selection (`lib/selection-dialog
   native move-by-word. `nested-interactive` is off on the populated-results test.
 - **The Name track is MEASURED; one inline `grid-template-columns` feeds both header and rows** (two grid containers
   won't resolve `ch` alike). Width = widest ON-SCREEN name, clamped to [80px, 22ch]. Measure `entry.name`, never the
-  cell's DOM text, and never read `nameTrack` in that effect — that rules out a measure→render→measure loop.
-  DETAILS.md § Name column.
+  cell's DOM text, and never read `nameTrack` in that effect — that rules out a measure→render→measure loop. DETAILS.md
+  § Name column.
 - **Two `QueryResults` render gates.** The status bar empties when the content area shows a state message
   (`getStatusText()` → `''`) then COLLAPSES via `.is-empty`; it stays mounted for `aria-live`. And `showingRows` — not
   `results.length > 0`, which trips axe `aria-required-children` — gates the `role="listbox"` and the header.

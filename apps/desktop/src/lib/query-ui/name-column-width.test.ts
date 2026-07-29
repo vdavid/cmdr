@@ -7,12 +7,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import {
-  computeNameColumnWidth,
-  visibleRowRange,
-  NAME_COL_MIN_PX,
-  NAME_MEASUREMENT_PAD,
-} from './name-column-width'
+import { computeNameColumnWidth, visibleRowRange, NAME_COL_MIN_PX, NAME_MEASUREMENT_PAD } from './name-column-width'
 
 const CHAR_PX = 10
 const measure = (text: string): number => text.length * CHAR_PX

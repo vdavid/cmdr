@@ -83,12 +83,7 @@ export interface RowRange {
  * back to the whole list rather than to an empty range: over-measuring gives a slightly
  * wide column, under-measuring clips names.
  */
-export function visibleRowRange(
-  scrollTop: number,
-  viewportHeight: number,
-  rowHeight: number,
-  count: number,
-): RowRange {
+export function visibleRowRange(scrollTop: number, viewportHeight: number, rowHeight: number, count: number): RowRange {
   if (count <= 0) return { start: 0, end: 0 }
   if (rowHeight <= 0 || viewportHeight <= 0) return { start: 0, end: count }
   const start = Math.max(0, Math.min(count - 1, Math.floor(scrollTop / rowHeight)))
