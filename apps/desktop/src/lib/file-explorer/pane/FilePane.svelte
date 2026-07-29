@@ -17,8 +17,6 @@
         updateMenuContext,
     } from '$lib/tauri-commands'
     import { resolveLocationOrToast } from '../navigation/navigate-and-select'
-    import { classifySelectionDialogKey } from './selection-dialog-keys'
-    import { classifySelectionKey } from './selection-keys'
     import { createTypeToJumpController } from './type-to-jump-controller.svelte'
     import TypeToJumpIndicator from './TypeToJumpIndicator.svelte'
     import type { ViewMode } from '$lib/app-status-store'
@@ -65,11 +63,9 @@
     import { createPaneMcpSync } from './pane-mcp-sync.svelte'
     import { initListingDiffSync } from './listing-diff-sync.svelte'
     import { createRenameState } from '../rename/rename-state.svelte'
-    import { cancelClickToRename } from '../rename/rename-activation'
     import { type DirectorySortMode } from '$lib/settings'
     import { addToast } from '$lib/ui/toast'
     import { tString } from '$lib/intl/messages.svelte'
-    import { maybeShowQuickLookHint } from '../quick-look/quick-look-hint'
     import { createRenameFlow } from './rename-flow.svelte'
     import ExtensionChangeDialog from '../rename/ExtensionChangeDialog.svelte'
     import RenameConflictDialog from '../rename/RenameConflictDialog.svelte'
@@ -95,13 +91,13 @@
     import { showBreadcrumbContextMenu } from '$lib/tauri-commands'
     import { getEffectiveShortcuts } from '$lib/shortcuts/shortcuts-store'
     import { toDisplayShortcut } from '$lib/shortcuts/key-capture'
-    import { eventMatchesCommand } from '$lib/shortcuts'
     import { getVolumes as getStoreVolumes } from '$lib/stores/volume-store.svelte'
     import type { UnreachableState } from '../tabs/tab-types'
     import { getDiskUsageLevel, getUsedPercent, formatBarTooltip } from '../disk-space-utils'
     import { getFileSizeFormat, getTypeToJumpResetDelay } from '$lib/settings/reactive-settings.svelte'
     import { createRowOverlays } from './row-overlays.svelte'
     import { createSelectionInfoFeed } from './selection-info-feed.svelte'
+    import { createPaneKeyRouter } from './pane-key-router'
     import { createParentEntry } from './parent-entry'
     import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
 
@@ -1485,57 +1481,6 @@
         getFullListRef: () => fullListRef,
     })
 
-    /**
-     * Bare `+` / `-` open the Selection dialog. Dispatch lives at the FilePane
-     * keyboard level (not menu-driven on macOS, since menu accelerators always carry
-     * ⌘). The pure classifier in `selection-dialog-keys.ts` pins the exact event
-     * filter: no `metaKey` / `altKey` / `ctrlKey`; `shiftKey` is intentionally NOT
-     * filtered (Shift+= on US QWERTY produces `event.key === '+'`).
-     */
-    function handleSelectionDialogKey(e: KeyboardEvent): boolean {
-        const action = classifySelectionDialogKey(e)
-        if (!action) return false
-        e.preventDefault()
-        e.stopPropagation()
-        onCommand?.(action === 'open-add' ? 'selection.selectFiles' : 'selection.deselectFiles')
-        return true
-    }
-
-    // Helper: Handle selection-related key events. The keys come from the registry
-    // (`classifySelectionKey`), so they stay customizable and the match is exact —
-    // ⇧Space is Quick Look and ⌥⌘A is Ask Cmdr, neither touches the selection.
-    // Every arm stops propagation so the document-level dispatcher doesn't re-fire
-    // the same command (its cases there exist for the palette and MCP).
-    function handleSelectionKeys(e: KeyboardEvent): boolean {
-        const command = classifySelectionKey(e)
-        if (!command) return false
-
-        e.preventDefault()
-        e.stopPropagation()
-
-        switch (command) {
-            case 'selection.toggle':
-                selection.toggleAt(cursorIndex, hasParent)
-                // Finder-convert education: the first time the user presses Space
-                // in the file list, explain that Cmdr uses Space for selection and
-                // ⇧Space for Quick Look. The selection toggle above still applies
-                // normally — the toast is purely additive. Subsequent presses are
-                // no-ops (the helper reads its own "shown once" persisted flag).
-                maybeShowQuickLookHint()
-                break
-            case 'selection.toggleAndDown':
-                toggleSelectionAndMoveDownAtCursor()
-                break
-            case 'selection.selectAll':
-                selection.selectAll(hasParent, effectiveTotalCount)
-                break
-            case 'selection.deselectAll':
-                selection.deselectAll()
-                break
-        }
-        return true
-    }
-
     /** Gets the file entry under the cursor from the current list view */
     function getEntryUnderCursor(): FileEntry | undefined {
         const listRef = viewMode === 'brief' ? briefListRef : fullListRef
@@ -1583,102 +1528,40 @@
         openCursorItem: () => void openCursorItem(),
     })
 
-    /**
-     * Open / parent keys, view-independent (handled before the Brief/Full split).
-     * Returns true if the key was consumed.
-     *
-     * - Enter / ⌘↓ → open the entry under the cursor (Finder parity, mirror of ⌘↑).
-     * - Backspace / ⌘↑ → go to the parent directory.
-     *
-     * Both keys resolve against the registry (`eventMatchesCommand`), so they follow a
-     * rebind and match the whole combo. ⌘Backspace therefore falls out naturally: it's
-     * `file.delete`'s combo, not `nav.parent`'s, so it passes through to the document
-     * dispatcher and deletes.
-     *
-     * `stopPropagation` is load-bearing for the ⌘-variants: ⌘↓ (`nav.open`) and ⌘↑
-     * (`nav.parent`) are ALSO in the dispatch map, so without stopping here the
-     * document-level dispatcher would run the command a second time (⌘↑ → grandparent,
-     * ⌘↓ → double-open).
-     */
-    function handleOpenOrParentKey(e: KeyboardEvent): boolean {
-        if (eventMatchesCommand(e, 'nav.open')) {
-            const entry = getEntryUnderCursor()
-            if (entry) {
-                e.preventDefault()
-                if (e.metaKey) e.stopPropagation()
-                void handleNavigate(entry)
-                return true
-            }
-            // ⌘↓ with nothing under the cursor: swallow it so it can't fall through
-            // to cursor-move or the document dispatcher.
-            if (e.metaKey) {
-                e.preventDefault()
-                e.stopPropagation()
-                return true
-            }
-            return false
-        }
-
-        if (eventMatchesCommand(e, 'nav.parent') && hasParent) {
-            e.preventDefault()
-            e.stopPropagation()
-            void navigateToParent()
-            return true
-        }
-
-        return false
-    }
+    // Keydown routing for a focused pane: the rename / network / search-results
+    // bails, the open + parent keys, the Selection dialog's `+` / `-`, the four
+    // selection commands, and the Brief/Full split. All of it in
+    // `pane-key-router.ts`; the pane keeps the refs and state it reads.
+    const keyRouter = createPaneKeyRouter({
+        getRenameActive: () => rename.active,
+        getIsNetworkView: () => isNetworkView,
+        getIsSearchResultsView: () => isSearchResultsView,
+        getViewMode: () => viewMode,
+        getHasParent: () => hasParent,
+        getEntryUnderCursor,
+        handleNetworkKeyDown: (e) => networkMountViewRef?.handleKeyDown(e),
+        handleSearchResultsKeyDown: (e) => { searchPaneKeys.handleSearchResultsKeyDown(e); },
+        handleBriefModeKeys: (e) => { cursorNav.handleBriefModeKeys(e); },
+        handleFullModeKeys: (e) => { cursorNav.handleFullModeKeys(e); },
+        openEntry: (entry) => void handleNavigate(entry),
+        navigateToParent: () => void navigateToParent(),
+        onCommand: (commandId) => onCommand?.(commandId),
+        toggleSelectionAtCursor: () => { selection.toggleAt(cursorIndex, hasParent); },
+        toggleSelectionAndMoveDown: toggleSelectionAndMoveDownAtCursor,
+        selectAll: () => { selection.selectAll(hasParent, effectiveTotalCount); },
+        deselectAll: () => { selection.deselectAll(); },
+        clearRangeState: () => { selection.clearRangeState(); },
+    })
 
     // Exported so DualPaneExplorer can forward keyboard events
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function handleKeyDown(e: KeyboardEvent) {
-        // When rename is active, suppress all app-level shortcuts.
-        // The InlineRenameEditor handles its own keyboard events via stopPropagation.
-        // This guard handles any edge cases where events still bubble.
-        if (rename.active) return
-
-        // Any keyboard action cancels a pending click-to-rename timer
-        cancelClickToRename()
-
-        if (isNetworkView) {
-            networkMountViewRef?.handleKeyDown(e)
-            return
-        }
-
-        // Search-results pane: route Enter to the cursor row's activation, arrow keys
-        // through the SearchResultsView's setCursorIndex. The view embeds FullList but
-        // owns its own bind ref; FilePane's `fullListRef` doesn't apply here. The
-        // cursor state itself still lives on `cursorIndex` so we can clamp uniformly.
-        if (isSearchResultsView) {
-            searchPaneKeys.handleSearchResultsKeyDown(e)
-            return
-        }
-
-        // Open (Enter / ⌘↓) and parent (Backspace / ⌘↑) — handled above the
-        // view-mode split so every view gets them. See `handleOpenOrParentKey`.
-        if (handleOpenOrParentKey(e)) return
-
-        // Bare `+` / `-` open the Selection dialog (Total Commander parity).
-        if (handleSelectionDialogKey(e)) return
-
-        // Handle selection keys
-        if (handleSelectionKeys(e)) return
-
-        // Delegate to view-mode-specific handler
-        if (viewMode === 'brief') {
-            cursorNav.handleBriefModeKeys(e)
-        } else {
-            cursorNav.handleFullModeKeys(e)
-        }
+        keyRouter.handleKeyDown(e)
     }
 
-    // Handle key release - terminates the mouse Shift+click anchor gesture so the next
-    // gesture starts fresh. Keyboard Shift+nav is stateless and doesn't need this.
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function handleKeyUp(e: KeyboardEvent) {
-        if (e.key === 'Shift') {
-            selection.clearRangeState()
-        }
+        keyRouter.handleKeyUp(e)
     }
 
     /** Debug only: inject a FriendlyError into this pane to preview the error state. */
