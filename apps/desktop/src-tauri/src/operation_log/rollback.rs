@@ -110,6 +110,10 @@ pub struct RollbackReport {
     pub reversed: u64,
     /// Items skipped (drift, unverifiable, occupied target, non-empty dir, error).
     pub skipped: u64,
+    /// Which reason left which file alone: one group per [`SkipReason`], with the
+    /// complete count and one example file name. The counts sum to `skipped`, so a
+    /// report can name a file instead of a reason class without understating the rest.
+    pub skips: Vec<SkipBreakdown>,
     /// The run stopped early because it was canceled.
     pub canceled: bool,
     /// The state the original op resolves to.
@@ -352,6 +356,7 @@ pub async fn execute_rollback(
             return RollbackReport {
                 reversed: 0,
                 skipped: 0,
+                skips: Vec::new(),
                 canceled: false,
                 final_state: RollbackState::Rollbackable,
             };
@@ -423,6 +428,7 @@ pub async fn execute_rollback(
     RollbackReport {
         reversed: acc.reversed,
         skipped: acc.skipped,
+        skips: acc.skips.into_breakdowns(),
         canceled,
         final_state,
     }
@@ -438,6 +444,9 @@ struct RunAcc {
     inverse_items: Vec<JournalItem>,
     original_outcomes: Vec<ItemOutcomeUpdate>,
     next_inverse_seq: i64,
+    /// The per-reason breakdown of what was left alone. Grows by at most one entry per
+    /// [`SkipReason`], so it stays bounded across a 1M-item stream.
+    skips: SkipTally,
 }
 
 impl RunAcc {
@@ -454,6 +463,11 @@ impl RunAcc {
             self.reversed += 1;
         } else {
             self.skipped += 1;
+        }
+        if let Some(reason) = skip_reason {
+            // Group by reason at the location the undo found the item — the name the
+            // file carries now, which is what the user sees in the pane.
+            self.skips.record(reason, &removal_target(unit).1);
         }
         self.original_outcomes.push(ItemOutcomeUpdate {
             seq: unit.seq,
@@ -844,7 +858,10 @@ fn reconcile_one(conn: &rusqlite::Connection, op_id: &str) -> RollbackState {
 }
 
 mod order;
+mod skips;
 pub use order::undo_order;
+pub use skips::SkipBreakdown;
+use skips::SkipTally;
 
 #[cfg(test)]
 mod test_support;

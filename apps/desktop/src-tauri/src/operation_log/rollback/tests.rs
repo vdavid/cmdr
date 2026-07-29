@@ -539,6 +539,60 @@ async fn a_skipped_item_persists_the_reason_it_was_skipped() {
     );
 }
 
+/// The report a rollback hands back carries the per-reason breakdown, so the caller can
+/// name a specific file rather than a reason class. Counts are complete (never a sample),
+/// so they always add up to `skipped` — the honesty the whole surface exists for.
+#[tokio::test]
+async fn the_report_breaks_skips_down_by_reason_with_an_example_file() {
+    let rig = Rig::new();
+    let v = Arc::new(InMemoryVolume::new("V"));
+    for name in ["/invoice-a.pdf", "/invoice-b.pdf", "/invoice-c.pdf"] {
+        put(&v, name, b"data").await;
+    }
+    // a and c were edited after the rename; b's old name has since been taken.
+    v.set_reported_size(Path::new("/invoice-a.pdf"), 9999);
+    v.set_reported_size(Path::new("/invoice-c.pdf"), 9999);
+    put(&v, "/scan002.pdf", b"someone-elses-file").await;
+    rig.register("v", v.clone());
+    rig.seed(
+        "op",
+        OpKind::Rename,
+        "v",
+        Some("v"),
+        RollbackState::Rollbackable,
+        vec![
+            file_unit(0, "v", "/scan001.pdf", "v", "/invoice-a.pdf", 4),
+            file_unit(1, "v", "/scan002.pdf", "v", "/invoice-b.pdf", 4),
+            file_unit(2, "v", "/scan003.pdf", "v", "/invoice-c.pdf", 4),
+        ],
+    );
+
+    let report = rig.rollback("op").await;
+
+    assert_eq!(report.skipped, 3);
+    // Reversal runs seq DESC, so `invoice-c.pdf` is the first drift seen.
+    assert_eq!(
+        report.skips,
+        vec![
+            SkipBreakdown {
+                reason: SkipReason::Drift,
+                count: 2,
+                example_name: "invoice-c.pdf".to_string(),
+            },
+            SkipBreakdown {
+                reason: SkipReason::RestoreTargetOccupied,
+                count: 1,
+                example_name: "invoice-b.pdf".to_string(),
+            },
+        ]
+    );
+    assert_eq!(
+        report.skips.iter().map(|g| g.count).sum::<u64>(),
+        report.skipped,
+        "the breakdown accounts for every skipped item"
+    );
+}
+
 /// An item the rollback actually reversed records no skip reason: the column explains a
 /// skip, so a reversed item must read as "nothing to report", never as a leftover reason.
 #[tokio::test]

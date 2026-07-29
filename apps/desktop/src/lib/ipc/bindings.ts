@@ -6164,6 +6164,12 @@ export type OperationItemView = {
   mtime: number | null
   outcome: ItemOutcome
   overwrote: boolean
+  /**
+   *  Why a rollback left this item alone, when one did. `null` means the reason
+   *  wasn't recorded — a row written before the column existed, or an outcome no
+   *  rollback produced — never a stand-in reason.
+   */
+  rollbackSkipReason: SkipReason | null
 }
 
 /**
@@ -6250,6 +6256,13 @@ export type OperationUndoOutcome = {
    *  forced overwrite.
    */
   skipped: number
+  /**
+   *  WHICH reason left which file alone, one group per typed reason, each with its
+   *  complete count and one example file name. Lets the UI say what happened to a
+   *  specific file instead of naming a reason class for the whole batch. Empty on a
+   *  refusal (nothing was examined) and on a clean undo.
+   */
+  skips: SkipBreakdown[]
   // The state the operation resolves to, absent on a refusal.
   finalState: RollbackState | null
   refusal: RollbackRefusal | null
@@ -7319,6 +7332,64 @@ export type SimilarImage = {
   // Cosine similarity to the query vector.
   score: number
 }
+
+/**
+ *  One reason a rollback left items alone: the complete count for that reason plus one
+ *  example file, so a report can NAME a file when the reason applies to just one.
+ */
+export type SkipBreakdown = {
+  reason: SkipReason
+  // Every item skipped for this reason, not a sample.
+  count: number
+  /**
+   *  The leaf name of the FIRST item this reason applied to, at the location the undo
+   *  found it — the name the file carries right now, which is the one the user is
+   *  looking at. A name, not a path: full paths live in the operation log.
+   */
+  exampleName: string
+}
+
+/**
+ *  Why a rollback left one item alone rather than reversing it — the rollback
+ *  engine's per-item verdict, and the vocabulary of the nullable
+ *  `operation_items.rollback_skip_reason` column.
+ *
+ *  Stored ONLY by the rollback engine, ONLY on the original op's item rows, and
+ *  ONLY alongside [`ItemOutcome::Skipped`]. Everything else reads NULL, which means
+ *  "reason not recorded" and never a default: a pre-v2 row, a mutation path that
+ *  recorded its own `Skipped` outcome, and the inverse op's mirror rows all have no
+ *  rollback verdict to report. `AlreadyGone` counts as reversed (the desired end
+ *  state already holds), so it lands `RolledBack` and is never stored.
+ *
+ *  This is reporting fidelity only: no variant may change whether an item is
+ *  skipped, retried, or forced.
+ */
+export type SkipReason =
+  /**
+   *  A precondition field couldn't be verified (a recorded snapshot field whose
+   *  live counterpart is absent, or no snapshot field at all) — fail safe, never
+   *  operate on an unprovable file.
+   */
+  | 'unverifiablePrecondition'
+  // The item changed since the op (size/mtime drift) — never touch a changed file.
+  | 'drift'
+  /**
+   *  The restore target is occupied by a DIFFERENT entry — the pinned
+   *  non-destructive policy skips rather than overwrite (D7).
+   */
+  | 'restoreTargetOccupied'
+  /**
+   *  A directory the undo would remove isn't empty (a file was added since) — the
+   *  create-folder / copied-dir recheck (D3).
+   */
+  | 'dirNotEmpty'
+  /**
+   *  The thing to reverse is already gone (trash emptied, item already restored):
+   *  the desired end state already holds, so this is an idempotent no-op success.
+   */
+  | 'alreadyGone'
+  // A backend error prevented reversing this item.
+  | 'failed'
 
 /**
  *  Typed `smb-connection-changed` Tauri event. The frontend reconnect manager

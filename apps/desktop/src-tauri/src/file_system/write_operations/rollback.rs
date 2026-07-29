@@ -31,8 +31,8 @@ use tokio::sync::oneshot;
 use crate::file_system::get_volume_manager;
 use crate::file_system::volume::DEFAULT_VOLUME_ID;
 use crate::operation_log::rollback::{
-    InversePlan, RollbackDispatch, RollbackRefusal, RollbackReport, execute_rollback, inverse_kind, rollback_operation,
-    undo_order,
+    InversePlan, RollbackDispatch, RollbackRefusal, RollbackReport, SkipBreakdown, execute_rollback, inverse_kind,
+    rollback_operation, undo_order,
 };
 use crate::operation_log::store::{open_read_connection, read_operation};
 use crate::operation_log::types::{Initiator, OpKind, RollbackState};
@@ -201,6 +201,11 @@ pub struct OperationUndoOutcome {
     /// Items left alone: they changed since, or their old name is taken. Never a
     /// forced overwrite.
     pub skipped: u64,
+    /// WHICH reason left which file alone, one group per typed reason, each with its
+    /// complete count and one example file name. Lets the UI say what happened to a
+    /// specific file instead of naming a reason class for the whole batch. Empty on a
+    /// refusal (nothing was examined) and on a clean undo.
+    pub skips: Vec<SkipBreakdown>,
     /// The state the operation resolves to, absent on a refusal.
     pub final_state: Option<RollbackState>,
     pub refusal: Option<RollbackRefusal>,
@@ -253,6 +258,7 @@ pub async fn undo_operations<R: Runtime>(
                     operation_id: op.op_id.clone(),
                     restored: run.reversed,
                     skipped: run.skipped,
+                    skips: run.skips,
                     final_state: Some(run.final_state),
                     refusal: None,
                 },
@@ -275,6 +281,9 @@ fn refused(op_id: &str, refusal: RollbackRefusal) -> OperationUndoOutcome {
         operation_id: op_id.to_string(),
         restored: 0,
         skipped: 0,
+        // A refused operation examined no items, so it has no per-file reasons — the
+        // typed `refusal` is the whole story.
+        skips: Vec::new(),
         final_state: None,
         refusal: Some(refusal),
     }
