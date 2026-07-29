@@ -1,21 +1,17 @@
 /**
- * Clipboard handlers: copy / cut / paste / paste-as-move. Each carries its own
- * `document.activeElement` input-vs-file branch verbatim (a focused `<input>` /
- * `<textarea>` / contenteditable routes to the native text op; otherwise the
- * file-scope clipboard runs). This is a SEPARATE focus layer from the
- * pre-dispatch text-region intercept in the core (`handleTextRegionShortcut`).
+ * Clipboard handlers: copy / cut / paste / paste-as-move. Each branches on
+ * input-vs-file focus (`isTextInputFocused`: a focused `<input>` / `<textarea>` /
+ * contenteditable routes to the native text op; otherwise the file-scope
+ * clipboard runs). This is a SEPARATE focus layer from the pre-dispatch
+ * text-region intercept in the core (`handleTextRegionShortcut`).
  */
 import { readClipboardText } from '$lib/tauri-commands'
+import { isTextInputFocused } from '$lib/utils/text-input-focus'
 import type { CommandHandlerRecord } from './types'
 
 export const clipboardHandlers = {
   'edit.copy': ({ explorerRef }) => {
-    const active = document.activeElement
-    if (
-      active instanceof HTMLInputElement ||
-      active instanceof HTMLTextAreaElement ||
-      active?.closest('[contenteditable]')
-    ) {
+    if (isTextInputFocused()) {
       // eslint-disable-next-line @typescript-eslint/no-deprecated -- No modern alternative for triggering native copy in text inputs
       document.execCommand('copy')
       return
@@ -34,12 +30,7 @@ export const clipboardHandlers = {
   },
 
   'edit.cut': ({ explorerRef }) => {
-    const active = document.activeElement
-    if (
-      active instanceof HTMLInputElement ||
-      active instanceof HTMLTextAreaElement ||
-      active?.closest('[contenteditable]')
-    ) {
+    if (isTextInputFocused()) {
       // eslint-disable-next-line @typescript-eslint/no-deprecated -- No modern alternative for triggering native cut in text inputs
       document.execCommand('cut')
       return
@@ -48,12 +39,7 @@ export const clipboardHandlers = {
   },
 
   'edit.paste': async ({ explorerRef }) => {
-    const active = document.activeElement
-    if (
-      active instanceof HTMLInputElement ||
-      active instanceof HTMLTextAreaElement ||
-      active?.closest('[contenteditable]')
-    ) {
+    if (isTextInputFocused()) {
       // Read clipboard text via Rust (bypasses WebKit's navigator.clipboard
       // permission popup that shows a "Paste" button the user must click).
       const text = await readClipboardText()

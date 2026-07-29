@@ -166,6 +166,39 @@ describe('handleCommandExecute — blockedByCapabilities (search-results / netwo
     expect(addToast).not.toHaveBeenCalled()
   })
 
+  it('exempts edit.paste into a focused text input, even on a search-results pane', async () => {
+    // Pasting into a dialog's text field is a TEXT op: the pane behind it is
+    // irrelevant, so neither the block nor the toast may fire. Before the modal
+    // keydown fix WebKit's native paste papered over this; now the dispatch is
+    // the only actor, so a block here would swallow the paste entirely.
+    getVolumeId.mockReturnValue('search-results')
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    input.focus()
+    const g = makeGuardCtx()
+
+    await handleCommandExecute('edit.paste', g.ctx)
+
+    expect(addToast).not.toHaveBeenCalled()
+    // The handler took its own text-input branch, so the pane paste never ran.
+    expect(g.pasteFromClipboard).not.toHaveBeenCalled()
+    input.remove()
+  })
+
+  it('still blocks edit.pasteAsMove from a focused text input (its handler always drives the pane)', async () => {
+    getVolumeId.mockReturnValue('search-results')
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    input.focus()
+    const g = makeGuardCtx()
+
+    await handleCommandExecute('edit.pasteAsMove', g.ctx)
+
+    expect(g.pasteFromClipboard).not.toHaveBeenCalled()
+    expect(addToast).toHaveBeenCalledExactlyOnceWith(SEARCH_RESULTS_NOT_A_FOLDER_TOAST, { level: 'info' })
+    input.remove()
+  })
+
   it('does NOT toast on a network pane and falls through to the explorer (PR3 byte-identical silence)', async () => {
     // network caps are also false for these ops, but the toast is search-results
     // only; the old string-compare guard never fired on network, so the keystroke

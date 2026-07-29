@@ -16,6 +16,7 @@ import { SEARCH_RESULTS_NOT_A_FOLDER_TOAST } from '$lib/search/capabilities'
 import { getAppLogger } from '$lib/logging/logger'
 import { getFocusedPaneVolumeId } from '$lib/file-explorer/pane/focused-pane-reads'
 import { capabilitiesFor } from '$lib/file-explorer/pane/volume-capabilities'
+import { isTextInputFocused } from '$lib/utils/text-input-focus'
 import type { CommandId, CommandArgs, CommandDispatchArgs } from '$lib/commands'
 import type { ExplorerAPI } from './explorer-api'
 import { commandHandlers } from './command-handlers'
@@ -57,6 +58,11 @@ function activeTextRegion(): Element | null {
  * toast is the LAST RESORT — so the user isn't left wondering whether the
  * keystroke registered.
  *
+ * ⌘V into a focused text input is exempt: that's a TEXT op (the handler inserts
+ * into the input and never touches the destination), so a snapshot pane behind a
+ * dialog must not stop the user pasting into its field. `edit.pasteAsMove` gets
+ * no such exemption — its handler always drives the pane.
+ *
  * The toast fires ONLY for the `search-results` kind (PR3 byte-identical
  * behavior). A `network`-kind pane shares the same `false` destination caps, but
  * those ops are unreachable through the UI and the shortcut path historically
@@ -68,6 +74,7 @@ function activeTextRegion(): Element | null {
  */
 function blockedByCapabilities(commandId: CommandId, explorer: ExplorerAPI | undefined): boolean {
   if (!explorer) return false
+  if (commandId === 'edit.paste' && isTextInputFocused()) return false
 
   const caps = capabilitiesFor(getFocusedPaneVolumeId())
   // The snapshot pane is the only kind whose destination-op block produces the

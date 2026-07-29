@@ -16,6 +16,12 @@ the layout facts that none of those carry live here:
   component-owned `unlistenFns` array so the one `onDestroy` loop tears them all down: without that, HMR stacks
   duplicate listeners on every reload. The keydown handler, licensing init, and onboarding gating stay in `+page.svelte`
   precisely because they read and write `$state` directly.
+- **`global-keydown.ts` owns the keydown DECISION, `+page.svelte` owns the side effects.**
+  `resolveGlobalKeyAction(event, isModalOpen)` is pure (`dispatch` / `openDebugWindow` / `suppress` / `ignore`), so
+  every branch is unit-testable without mounting the shell; the component supplies `isModalDialogOpen()` (the only
+  reactive input) and then runs `preventDefault`, `markDispatchSource('keyboard')`, and the dispatch. Keeping the
+  decision out of the component is also what stops the `file-length`-flagged `+page.svelte` from growing per keyboard
+  rule.
 - **`command-dispatch-context.ts` is deliberately a LEAF**, importing nothing from the core or the handlers, so handler
   modules and `command-dispatch.ts` can both import the context types without a cycle. It's re-exported from
   `command-dispatch.ts` for callers.
@@ -75,6 +81,12 @@ catches the shortcut-driven path that bypasses the UI. The toast (`SEARCH_RESULT
 the `search-results` kind: a `network` pane has the same `false` destination caps, but those ops are unreachable through
 its UI and the shortcut path falls through silently to the explorer no-op, so network keeps its prior silence. The
 capability decides the block; the kind decides the toast.
+
+One exemption: `edit.paste` with a text input focused (`isTextInputFocused`) skips the guard entirely, because that
+dispatch inserts into the input and never touches the pane. Without it, a snapshot pane behind a dialog would block
+pasting into the dialog's own field, and since the keydown resolver now `preventDefault`s that combo (§ Native-menu and
+input-focus interactions), nothing else would insert. `edit.pasteAsMove` gets no exemption: its handler always drives
+the pane.
 
 ## MCP transport
 
@@ -139,12 +151,29 @@ both consult `navCommandForMouseButton` (`mouse-nav.ts`, mapping `button === 3 �
 
 ## Native-menu and input-focus interactions
 
-These three CLAUDE.md gotchas share the same root: a native macOS menu accelerator fires before the webview keydown, so
-the dispatch path can't rely on the keydown bail.
+These CLAUDE.md gotchas share the same root: a native macOS menu accelerator fires before the webview keydown, so the
+dispatch path can't rely on the keydown bail.
 
 - **⌘A (`selection.selectAll`).** Intercepted as a menu accelerator before the webview. The handler routes to
   `active.select()` when a `<input>` / `<textarea>` is focused, otherwise delegates to
   `explorerRef.handleSelectionAction('selectAll')`. The keydown bail doesn't help; the menu fires first.
+- **The text-editing family while a modal is open.** `resolveGlobalKeyAction` (`global-keydown.ts`) normally resolves
+  nothing when `isModalDialogOpen()`, so pane-scoped commands stay inert behind a dialog. `edit.cut` / `edit.copy` /
+  `edit.paste` / `selection.selectAll` are the exception: with focus in a text input they still resolve, matched through
+  the registry (`comboMatchesCommand`, so a rebind follows) rather than as literal combos.
+
+  Two actors would otherwise insert on ⌘V: WebKit's native paste (the key event's default action on an editable element)
+  and the Edit > Paste accelerator, which reaches the `edit.paste` handler through the `execute-command` menu listener.
+  Outside a modal only one lands, because the resolver's dispatch means `+page.svelte` calls `preventDefault()` (killing
+  the native one) and the menu twin is swallowed by the cross-source dedup. With a modal open there was no
+  `preventDefault()`, so both ran and the clipboard text landed TWICE, in every dialog with a text field. The dedup
+  can't catch it: only one command dispatch happens, and the other insertion is a browser default action it never sees.
+
+  Two shapes that look like fixes and aren't: adding ⌘V to the suppress list makes paste depend on a native menu
+  existing (it breaks in the dev browser, and on any platform whose menu lacks the item), and gating the
+  `execute-command` listener on modal state breaks paste wherever AppKit consumes the key outright and the menu is the
+  only path.
+
 - **`edit.paste` into a text input.** Reads via the `readClipboardText` Rust IPC, then writes with
   `document.execCommand('insertText')`. `navigator.clipboard.readText()` would surface a WebKit "Paste" confirmation the
   user must click each time, so it's avoided.

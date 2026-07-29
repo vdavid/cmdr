@@ -10,9 +10,10 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
 - **`shorten-middle.ts`**: `shortenMiddle` mid-truncation + `createPretextMeasure` factory.
 - **`shorten-middle-action.ts`**: Svelte action wrapping `shortenMiddle` with ResizeObserver + async pretext.
 - **`pluralize.ts`**: count + noun formatting ("1 user" / "3 users").
-- **`srgb-mix.ts`**: sRGB color helpers (`mixSrgb`, `withAlpha`, `parseHex`, `toHex`, `relativeLuminance`,
-  `contrastRatio`, `readableFgOn`).
+- **`srgb-mix.ts`**: sRGB color helpers (`mixSrgb`, `withAlpha`, `readableFgOn`, …).
 - **`webkit-compat.ts`**: one-shot `color-mix()` feature detection + boot-time telemetry log.
+- **`text-input-focus.ts`**: `isTextInputFocused()`, the one "is the user typing?" predicate (keydown resolver,
+  capability guard, clipboard handlers). ❌ Don't re-roll it: they must agree.
 
 ## Must-knows
 
@@ -20,10 +21,9 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
   latency; an IPC round-trip per keystroke would stutter. All rules (length, chars, conflicts) are deterministic given
   the sibling list, so no filesystem access is needed. Don't move validation to the backend.
 - **Length limits are `>= 255` bytes (name) and `>= 1024` bytes (path), strictly**, not `> 255`: the filesystem reserves
-  the last byte. Byte length is measured with `TextEncoder`, not `.length`, to handle multi-byte characters.
+  the last byte. Byte length comes from `TextEncoder`, not `.length` (multi-byte characters).
 - **`validateConflict` is case-insensitive (APFS).** A case-only rename (`foo` → `Foo`) passes without warning. Pass
-  `originalName` correctly or you get false positives. This assumes macOS/APFS; Linux support will need a per-filesystem
-  case-sensitivity flag.
+  `originalName` correctly or you get false positives.
 - **`getExtension(filename)` returns the extension WITH the dot** (`.txt`), or `''` for dotfiles without an extension
   (`.gitignore` → `''`), via `lastIndexOf('.') <= 0`.
 - **`extensionsDifferMeaningfully(oldName, newName)` decides whether an extension change needs confirmation.** Returns
@@ -50,8 +50,8 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
   length, per-component length). "Absolute" accepts a leading `/` or the home shortcut (`~`, `~/…`); a bare `~foo` stays
   rejected. Used by TransferDialog; composable in NewFolderDialog.
 - **`'ask'` extension setting returns `ok` at validation time**; the save dialog handles the confirmation separately.
-- **`createDebounce` exposes `flush()`** (for `beforeunload` cleanup, e.g. the log bridge) and `createThrottle`
-  guarantees a trailing call. Both are hand-rolled (<35 lines each) deliberately, not lodash.
+- **`createDebounce` exposes `flush()`** (for `beforeunload` cleanup) and `createThrottle` guarantees a trailing call.
+  Both are hand-rolled deliberately, not lodash.
 - **`useShortenMiddle` action takes `tooltipWhenTruncated?` (default `false`)**: when set, the native `title` applies
   only when truncation actually trimmed the string. `VITE_CMDR_FORCE_OLD_WEBKIT=1 pnpm dev` forces the old-WebKit
   fallback path on modern WebKit (see DETAILS.md and `docs/guides/releasing.md` § "Pre-release smoke test on old

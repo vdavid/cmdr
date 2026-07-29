@@ -23,6 +23,10 @@ The family-grouped handler modules behind the dispatch core (`../command-dispatc
   silent behavior break with no compile error.
 - **Grouped ids share ONE body, no copy-paste.** The four `view.zoom.setNN` presets call one `applyZoomPreset`; the
   get-entry-then-act file/cloud arms call one `withEntryUnderCursor`.
+- **The clipboard arms branch on `isTextInputFocused()` (`$lib/utils/text-input-focus`) before touching the explorer**,
+  because a native menu accelerator reaches them even when focus is in a dialog's text field. Use that predicate, don't
+  re-roll the `activeElement` check: the keydown resolver and the capability guard read the same one, and they have to
+  agree. (`selection.selectAll` needs the element itself for `active.select()`, so it keeps its own narrower check.)
 - **No imports of the core or `+page.svelte`.** Modules import `../command-dispatch-context`, `../explorer-api`,
   `$lib/commands` types, and the leaf helpers the arms call; never the core (`import-cycles` fires if this inverts).
 - **❌ Don't add a handler for a per-keystroke `nav.*` id** (`nav.up/down/left/right/firstInFull/lastInFull`). They ride

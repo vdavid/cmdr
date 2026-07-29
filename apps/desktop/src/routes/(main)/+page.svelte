@@ -41,10 +41,11 @@
         initMediaEnrichState,
         destroyMediaEnrichState,
     } from '$lib/indexing/index'
-    import { initShortcutDispatch, destroyShortcutDispatch, lookupCommand } from '$lib/shortcuts/shortcut-dispatch'
+    import { initShortcutDispatch, destroyShortcutDispatch } from '$lib/shortcuts/shortcut-dispatch'
     import { markDispatchSource } from './dispatch-dedup'
     import { navCommandForMouseButton } from './mouse-nav'
-    import { formatKeyCombo, isMacOS, isTypingKeyCombo } from '$lib/shortcuts/key-capture'
+    import { resolveGlobalKeyAction } from './global-keydown'
+    import { isMacOS } from '$lib/shortcuts/key-capture'
     import {
         checkFullDiskAccess,
         type UnlistenFn,
@@ -142,17 +143,6 @@
         }
     }
 
-    /** ⌘⇧D opens the debug window (dev only). Exact combo: ⌃⌘⇧D / ⌥⌘⇧D are other combos. */
-    function isDebugWindowShortcut(e: KeyboardEvent): boolean {
-        return import.meta.env.DEV && e.metaKey && e.shiftKey && !e.altKey && !e.ctrlKey && e.key.toLowerCase() === 'd'
-    }
-
-    /** Check if key event should be suppressed (⌘A, ⌥⌘I in prod), each an exact combo. */
-    function shouldSuppressKey(e: KeyboardEvent): boolean {
-        if (e.metaKey && !e.altKey && !e.ctrlKey && !e.shiftKey && e.key === 'a') return true
-        return !import.meta.env.DEV && e.metaKey && e.altKey && !e.ctrlKey && !e.shiftKey && e.key === 'i'
-    }
-
     // Unlisten functions for menu, MCP, and dialog listeners (cleaned up on
     // destroy, important for HMR). Shared with the extracted `listener-setup.ts`
     // helpers and with `setupMcpListeners` so every registered listener tears
@@ -161,23 +151,6 @@
 
     /** `listenTauri` bound to the shared cleanup array; passed to `setupMcpListeners`. */
     const listenTauri = makeListenTauri(tauriUnlistenFns)
-
-    /** True if the user has selected text in the document (non-collapsed range). */
-    function hasTextSelection(): boolean {
-        const selection = window.getSelection()
-        return !!selection && !selection.isCollapsed && selection.toString().length > 0
-    }
-
-    /**
-     * True when focus is in a text-editing element. Used to let macOS's native
-     * line-start/line-end behavior (⌘← / ⌘→) reach inputs even though those
-     * combos are bound to "Copy path between panes" globally.
-     */
-    function isTextInputFocused(): boolean {
-        const active = document.activeElement
-        if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return true
-        return !!active?.closest('[contenteditable]')
-    }
 
     /**
      * Explorer-owned overlays that should suppress centralized dispatch: a
@@ -209,50 +182,30 @@
         )
     }
 
-    /** Global keyboard handler for app-level shortcuts */
+    /**
+     * Global keyboard handler for app-level shortcuts. The decision is
+     * `global-keydown.ts`'s (pure, unit-tested); this only runs the side effects.
+     */
     function handleGlobalKeyDown(e: KeyboardEvent): void {
-        // Centralized dispatch: look up the command for this key combo
-        if (!isModalDialogOpen()) {
-            const shortcutString = formatKeyCombo(e)
-            // Let the browser copy selected text natively (for example, from the error pane)
-            // instead of triggering our file-copy command.
-            if (shortcutString === '⌘C' && hasTextSelection()) {
-                return
-            }
-            // Let macOS's native line-start / line-end (⌘← / ⌘→) reach text inputs
-            // instead of triggering "Copy path between panes" from inside a rename
-            // editor, the palette search, the search dialog, settings inputs, etc.
-            if ((shortcutString === '⌘←' || shortcutString === '⌘→') && isTextInputFocused()) {
-                return
-            }
-            // Typing wins in text inputs: a bare-key (or shift-only) Tier 1 binding —
-            // Tab → switch pane being the built-in case — must not fire mid-typing.
-            // Individual inputs used to shield themselves with stopPropagation
-            // (NetworkLoginForm still does); this guard protects every current and
-            // future text input centrally. ⌘/⌃/⌥ combos and F-keys stay live.
-            if (isTextInputFocused() && isTypingKeyCombo(shortcutString)) {
-                return
-            }
-            const commandId = lookupCommand(shortcutString)
-            if (commandId) {
+        const action = resolveGlobalKeyAction(e, isModalDialogOpen())
+        switch (action.kind) {
+            case 'dispatch':
                 e.preventDefault()
                 e.stopPropagation()
                 // Tag the source so the dispatch core can swallow the spurious
                 // second half of a macOS keyboard+menu double-fire (dispatch-dedup.ts).
                 markDispatchSource('keyboard')
-                void handleCommandExecute(commandId)
-                return
-            }
-        }
-
-        // Special cases not handled by centralized dispatch:
-        // - Debug window: dev-only, not worth registering as a command
-        // - Key suppression: browser behavior overrides, not commands
-        if (isDebugWindowShortcut(e)) {
-            e.preventDefault()
-            void openDebugWindow()
-        } else if (shouldSuppressKey(e)) {
-            e.preventDefault()
+                void handleCommandExecute(action.commandId)
+                break
+            case 'openDebugWindow':
+                e.preventDefault()
+                void openDebugWindow()
+                break
+            case 'suppress':
+                e.preventDefault()
+                break
+            case 'ignore':
+                break
         }
     }
 
