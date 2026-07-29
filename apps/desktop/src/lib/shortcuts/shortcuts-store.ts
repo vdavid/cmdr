@@ -9,7 +9,7 @@ import { commands, FIXED_KEY_COMMAND_IDS, NATIVE_SHORTCUT_COMMAND_IDS } from '$l
 import { resolveStorePath } from '$lib/settings/store-path'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
-import { toPlatformShortcut } from './key-capture'
+import { toCanonicalShortcut, toPlatformShortcut } from './key-capture'
 
 const log = getAppLogger('shortcuts')
 
@@ -188,7 +188,11 @@ export async function initializeShortcuts(): Promise<void> {
     }
     const healed = shortcuts.filter((s) => s !== '')
     if (healed.length === 0) continue // was all-'' junk; fall back to default
-    customShortcuts.set(commandId, healed)
+    // Bring display-form key names back to the canonical vocabulary (`⌘⌫` →
+    // `⌘Backspace`). A file written before the two spellings were unified would
+    // otherwise hold a binding no keypress can produce and no menu accelerator
+    // can parse. See `key-capture.ts` for the canonical-vs-display split.
+    customShortcuts.set(commandId, healed.map(toCanonicalShortcut))
   }
 
   if (customShortcuts.size > 0) {
@@ -420,12 +424,15 @@ export function setShortcut(commandId: string, index: number, shortcut: string):
     return
   }
   log.debug('setShortcut({commandId}, {index}, {shortcut})', { commandId, index, shortcut })
+  // Canonicalize at the store boundary so every writer (the Settings capture, MCP
+  // events, any future caller) lands one vocabulary in `shortcuts.json`.
+  const canonical = toCanonicalShortcut(shortcut)
   const current = getEffectiveShortcuts(commandId)
 
   if (index >= 0 && index < current.length) {
-    current[index] = shortcut
+    current[index] = canonical
   } else if (index === current.length) {
-    current.push(shortcut)
+    current.push(canonical)
   }
 
   customShortcuts.set(commandId, current)
@@ -450,7 +457,7 @@ export function addShortcut(commandId: string, shortcut: string): void {
     return
   }
   const current = getEffectiveShortcuts(commandId)
-  current.push(shortcut)
+  current.push(toCanonicalShortcut(shortcut)) // canonical at the boundary, see `setShortcut`
   customShortcuts.set(commandId, current)
   cleanupIfMatchesDefaults(commandId)
   // Save immediately for reliable persistence

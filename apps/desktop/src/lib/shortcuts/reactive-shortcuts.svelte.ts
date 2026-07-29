@@ -13,9 +13,15 @@
  *     chips show).
  *
  * One-off reads at event time (toasts, context menus) don't need this; they keep
- * calling `getEffectiveShortcuts` directly.
+ * calling `getEffectiveShortcuts` directly — and then apply `toDisplayShortcut`
+ * themselves.
+ *
+ * Both readers return the DISPLAY form (`⌘⌫`, not the canonical `⌘Backspace`):
+ * everything reading them renders the string to a user. Anything comparing or
+ * dispatching a combo must call `getEffectiveShortcuts` instead.
  */
 import { getEffectiveShortcuts, onShortcutChange } from './shortcuts-store'
+import { toDisplayShortcut } from './key-capture'
 import type { CommandId } from '$lib/commands/command-ids'
 
 let version = $state(0)
@@ -32,19 +38,20 @@ function ensureSubscribed(): void {
 }
 
 /**
- * All effective shortcuts for a command, reactively. Returns a fresh array on every
- * call (`getEffectiveShortcuts` copies the store's data), so consumers can't mutate
- * the store — don't cache the reference. Empty when the command has no binding.
+ * All effective shortcuts for a command in display form, reactively. Returns a fresh
+ * array on every call (`getEffectiveShortcuts` copies the store's data), so consumers
+ * can't mutate the store — don't cache the reference. Empty when the command has no
+ * binding.
  */
 export function getEffectiveShortcutsReactive(commandId: CommandId): string[] {
   ensureSubscribed()
   void version // Subscribe $derived/$effect consumers to shortcut changes
-  return getEffectiveShortcuts(commandId)
+  return getEffectiveShortcuts(commandId).map(toDisplayShortcut)
 }
 
 /**
- * The first effective shortcut for a command (the one menus show), reactively.
- * Returns `undefined` when the command has no binding.
+ * The first effective shortcut for a command (the one menus show) in display form,
+ * reactively. Returns `undefined` when the command has no binding.
  */
 export function getFirstShortcutReactive(commandId: string): string | undefined {
   return getEffectiveShortcutsReactive(commandId as CommandId)[0]

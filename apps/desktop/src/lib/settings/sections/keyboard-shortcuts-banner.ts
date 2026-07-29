@@ -83,16 +83,17 @@ export interface SystemConflict {
 }
 
 /**
- * Default macOS system-wide shortcuts (display form, as `formatKeyCombo`
- * produces them on macOS). Best-effort: users can disable or remap these in
- * System Settings, so the banner warns and offers "Use anyway" instead of
- * refusing. Keys only ever match on macOS — other platforms capture
- * `Ctrl+…`-style strings.
+ * Default macOS system-wide shortcuts, keyed by the CANONICAL combo string
+ * `formatKeyCombo` produces (⌘⌃⌥⇧ modifier order, word key names) — Apple's own
+ * spelling of these (⌥⌘⎋) would silently never match what the user pressed.
+ * Best-effort: users can disable or remap these in System Settings, so the
+ * banner warns and offers "Use anyway" instead of refusing. Keys only ever match
+ * on macOS — other platforms capture `Ctrl+…`-style strings.
  */
 const macSystemShortcutToFeatureKey: Partial<Record<string, MessageKey>> = {
   '⌘Space': 'shortcuts.system.spotlight',
-  '⌥⌘Space': 'shortcuts.system.finderSearch',
-  '⌃⌘Space': 'shortcuts.system.characterViewer',
+  '⌘⌥Space': 'shortcuts.system.finderSearch',
+  '⌘⌃Space': 'shortcuts.system.characterViewer',
   '⌃Space': 'shortcuts.system.inputSourceSwitching',
   '⌘Tab': 'shortcuts.system.appSwitcher',
   '⌃↑': 'shortcuts.system.missionControl',
@@ -103,8 +104,8 @@ const macSystemShortcutToFeatureKey: Partial<Record<string, MessageKey>> = {
   '⌘⇧4': 'shortcuts.system.screenshots',
   '⌘⇧5': 'shortcuts.system.screenRecording',
   '⌘⇧Q': 'shortcuts.system.loggingOut',
-  '⌃⌘Q': 'shortcuts.system.lockingScreen',
-  '⌥⌘⎋': 'shortcuts.system.forceQuit',
+  '⌘⌃Q': 'shortcuts.system.lockingScreen',
+  '⌘⌥Escape': 'shortcuts.system.forceQuit',
 }
 
 /**

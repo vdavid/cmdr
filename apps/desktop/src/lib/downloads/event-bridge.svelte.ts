@@ -39,7 +39,7 @@ import { sendNotification } from '@tauri-apps/plugin-notification'
 import type { DownloadDetectedEvent } from '$lib/ipc/bindings'
 import { downloadsWatcherStatus, onDownloadDetected } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
-import { getEffectiveShortcuts } from '$lib/shortcuts'
+import { getEffectiveShortcuts, toDisplayShortcut } from '$lib/shortcuts'
 import { getAppLogger } from '$lib/logging/logger'
 import { ensureMacosNotificationPermission } from '$lib/notifications/macos-notification-permission'
 import { tString } from '$lib/intl/messages.svelte'
@@ -164,7 +164,7 @@ function dispatchToast(payload: DownloadDetectedEvent, explorer: ExplorerAPI | u
   // doesn't mutate an already-visible toast.
   //
   // In-app ⌘J: shown whenever the command is bound; `''` when it's unbound.
-  const shortcutHint = getEffectiveShortcuts(GO_TO_LATEST_COMMAND_ID)[0] ?? ''
+  const shortcutHint = toDisplayShortcut(getEffectiveShortcuts(GO_TO_LATEST_COMMAND_ID)[0] ?? '')
 
   // Global ⌃⌥⌘J (jump from any app): only teachable when the hotkey is turned
   // on AND has a binding. A disabled or unbound hotkey contributes no hint, so

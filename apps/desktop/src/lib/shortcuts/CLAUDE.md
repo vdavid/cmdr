@@ -16,6 +16,11 @@ Background on default sort-order shortcuts: `docs/notes/sort-order-shortcut-rese
 
 ## Must-knows
 
+- **ONE canonical combo vocabulary; macOS glyphs are display only.** `formatKeyCombo` is the single writer: word key
+  names (`Enter`, `Backspace`, `Escape`, `PageUp`) in ⌘⌃⌥⇧ order. Registry, `shortcuts.json`, the dispatch map,
+  conflict detection, and Rust's accelerator parser all speak it. Render via `toDisplayShortcut` (`⌘Backspace` → `⌘⌫`);
+  never store or compare that form. A default spelled `↩`, or in Apple's `⌥⌘A` order, is dead on the keyboard —
+  `shortcut-vocabulary.test.ts` fails on it. Writes canonicalize at the store boundary; load heals older files.
 - **Delta-only persistence; empty array vs missing key are semantically different.** `"nav.parent": []` means "user
   removed all shortcuts, don't use defaults"; a missing key means "use registry defaults". `initializeShortcuts` loads
   `[]` (and skips only non-array garbage), so the empty array survives a reload.

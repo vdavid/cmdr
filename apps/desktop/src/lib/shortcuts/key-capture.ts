@@ -1,6 +1,19 @@
 /**
- * Key capture and formatting utilities.
- * Platform-specific - stores shortcuts as display strings.
+ * Key capture and formatting.
+ *
+ * ONE canonical vocabulary, one display layer:
+ *
+ * - **Canonical** (`formatKeyCombo`, `normalizeKeyName`) is what the command
+ *   registry declares, what `shortcuts.json` persists, what the dispatch map is
+ *   keyed by, what conflict detection compares, and what Rust's
+ *   `frontend_shortcut_to_accelerator` parses. Platform-neutral WORD forms:
+ *   `Enter`, `Backspace`, `Escape`, `PageUp`.
+ * - **Display** (`toDisplayShortcut`) turns that into what a Mac user expects to
+ *   read (`↩`, `⌫`, `⎋`). Rendering only, never stored or compared.
+ *
+ * Keeping the symbols out of the canonical form is load-bearing: a combo spelled
+ * `↩` can never be looked up from a keypress, can never clash with `Enter` in
+ * conflict detection, and turns into a broken native accelerator.
  */
 
 /** Check if running on macOS */
@@ -10,41 +23,56 @@ export function isMacOS(): boolean {
   return navigator.userAgent.toLowerCase().includes('mac')
 }
 
-/** Special key name mappings */
-const macKeyNames: Record<string, string> = {
-  Backspace: '⌫',
-  Delete: '⌦',
-  Enter: '↩',
-  Return: '↩',
-  Escape: '⎋',
-  Tab: 'Tab',
-  ArrowUp: '↑',
-  ArrowDown: '↓',
-  ArrowLeft: '←',
-  ArrowRight: '→',
-  ' ': 'Space',
-  PageUp: 'PgUp',
-  PageDown: 'PgDn',
-  Home: 'Home',
-  End: 'End',
-}
-
-const nonMacKeyNames: Record<string, string> = {
+/** `event.key` → its canonical name. Arrows are symbols on every platform. */
+const canonicalKeyNames: Record<string, string> = {
   Backspace: 'Backspace',
   Delete: 'Delete',
   Enter: 'Enter',
   Return: 'Enter',
-  Escape: 'Esc',
+  Escape: 'Escape',
   Tab: 'Tab',
   ArrowUp: '↑',
   ArrowDown: '↓',
   ArrowLeft: '←',
   ArrowRight: '→',
   ' ': 'Space',
-  PageUp: 'PgUp',
-  PageDown: 'PgDn',
+  PageUp: 'PageUp',
+  PageDown: 'PageDown',
   Home: 'Home',
   End: 'End',
+}
+
+/** Canonical name → the glyph macOS users read on their keycaps. */
+const macDisplayKeyNames: Record<string, string> = {
+  Backspace: '⌫',
+  Delete: '⌦',
+  Enter: '↩',
+  Escape: '⎋',
+  PageUp: 'PgUp',
+  PageDown: 'PgDn',
+}
+
+/** Canonical name → the abbreviation Windows and Linux keyboards use. */
+const nonMacDisplayKeyNames: Record<string, string> = {
+  Escape: 'Esc',
+  PageUp: 'PgUp',
+  PageDown: 'PgDn',
+}
+
+/**
+ * Display (or legacy-stored) name → the canonical name. Feeds the load-time
+ * healing pass in `shortcuts-store`, so a `shortcuts.json` written before the
+ * vocabulary was unified still resolves.
+ */
+const displayToCanonicalKeyNames: Record<string, string> = {
+  '⌫': 'Backspace',
+  '⌦': 'Delete',
+  '↩': 'Enter',
+  '⎋': 'Escape',
+  Return: 'Enter',
+  Esc: 'Escape',
+  PgUp: 'PageUp',
+  PgDn: 'PageDown',
 }
 
 /** Maps event.code to a display character for physical keys (used when event.key is "Dead") */
@@ -63,8 +91,8 @@ const codeToKey: Record<string, string> = {
 }
 
 /**
- * Normalize a key name for display.
- * Single characters are uppercased, special keys are mapped.
+ * Normalize an `event.key` to its canonical name (see the module header).
+ * Single characters are uppercased, special keys are mapped to word forms.
  */
 export function normalizeKeyName(key: string, code?: string): string {
   // On macOS, Option+key often produces "Dead"; fall back to the physical key via event.code
@@ -80,8 +108,39 @@ export function normalizeKeyName(key: string, code?: string): string {
     return key.toUpperCase()
   }
 
-  const keyMap = isMacOS() ? macKeyNames : nonMacKeyNames
-  return keyMap[key] ?? key
+  return canonicalKeyNames[key] ?? key
+}
+
+/**
+ * Swap the key name at the end of a combo using `map`, leaving the modifier
+ * prefix untouched. Matching on the suffix keeps this safe for both the macOS
+ * symbol form (`⌘Backspace`) and the `Ctrl+Backspace` form.
+ */
+function mapKeyName(shortcut: string, map: Record<string, string>): string {
+  for (const [from, to] of Object.entries(map)) {
+    if (shortcut.endsWith(from)) return shortcut.slice(0, -from.length) + to
+  }
+  return shortcut
+}
+
+/**
+ * Render a canonical combo the way this platform's users read it: `⌘Backspace`
+ * shows as `⌘⌫` on macOS, `Escape` as `Esc` elsewhere. Display only — never
+ * store, compare, or dispatch the result. Idempotent, so wrapping an
+ * already-displayed value is harmless.
+ */
+export function toDisplayShortcut(shortcut: string): string {
+  if (!shortcut) return shortcut
+  return mapKeyName(shortcut, isMacOS() ? macDisplayKeyNames : nonMacDisplayKeyNames)
+}
+
+/**
+ * The canonical spelling of a combo that may carry a display or legacy key name
+ * (`⌘⌫` → `⌘Backspace`). Used to heal persisted shortcuts on load. Idempotent.
+ */
+export function toCanonicalShortcut(shortcut: string): string {
+  if (!shortcut) return shortcut
+  return mapKeyName(shortcut, displayToCanonicalKeyNames)
 }
 
 /**
@@ -92,9 +151,15 @@ export function isModifierKey(key: string): boolean {
 }
 
 /**
- * Format a keyboard event into a display string.
- * macOS: ⌘⇧P
- * Windows/Linux: Ctrl+Shift+P
+ * Format a keyboard event into its canonical combo string. This is the single
+ * writer of the shortcut vocabulary: dispatch looks up what it returns, and a
+ * rebind persists what it returns.
+ *
+ * Modifiers come out in a fixed order — ⌘⌃⌥⇧ on macOS, Ctrl+Alt+Shift+Super
+ * elsewhere — so a registry default written any other way (Apple's ⌥⌘ display
+ * order, say) can never match a keypress. `shortcut-vocabulary.test.ts` pins it.
+ *
+ * macOS: ⌘⇧P, ⌘Backspace. Windows/Linux: Ctrl+Shift+P.
  */
 export function formatKeyCombo(event: KeyboardEvent): string {
   const parts: string[] = []
@@ -210,9 +275,9 @@ const commandModifierTokens = ['⌘', '⌃', '⌥', 'Ctrl', 'Alt', 'Super']
  */
 export function isTypingKeyCombo(shortcut: string): boolean {
   if (commandModifierTokens.some((token) => shortcut.includes(token))) return false
-  // Strip the shift prefix (both display forms) to inspect the base key.
+  // Strip the shift prefix (both platform forms) to inspect the base key.
   const base = shortcut.replace(/^⇧/, '').replace(/^Shift\+/, '')
   if (/^F\d+$/.test(base)) return false
-  if (base === '⎋' || base === 'Esc' || base === 'Escape') return false
+  if (base === 'Escape') return false
   return true
 }

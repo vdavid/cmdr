@@ -27,7 +27,7 @@
     import { onMount } from 'svelte'
     import { setGlobalGoToLatestShortcut } from '$lib/tauri-commands'
     import { getAppLogger } from '$lib/logging/logger'
-    import { formatKeyCombo, isModifierKey } from '$lib/shortcuts'
+    import { formatKeyCombo, isModifierKey, toDisplayShortcut } from '$lib/shortcuts'
     import { tooltip } from '$lib/tooltip/tooltip'
     import {
         getGlobalGoToLatestBinding,
@@ -171,9 +171,9 @@
             }}
         >
             {#if editing}
-                {pendingKey || tString('downloads.shortcutRow.pressKeys')}
+                {toDisplayShortcut(pendingKey) || tString('downloads.shortcutRow.pressKeys')}
             {:else}
-                {binding}
+                {toDisplayShortcut(binding)}
             {/if}
         </button>
         {#if isModified}

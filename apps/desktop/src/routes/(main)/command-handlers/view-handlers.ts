@@ -4,7 +4,7 @@
  * `showZoomToast` helper is view-only, so it lives here.
  */
 import { addToast } from '$lib/ui/toast'
-import { getEffectiveShortcuts } from '$lib/shortcuts'
+import { getEffectiveShortcuts, toDisplayShortcut } from '$lib/shortcuts'
 import { getSetting, setSetting } from '$lib/settings'
 import { syncMenuShowHidden } from '$lib/tauri-commands'
 import { tString } from '$lib/intl/messages.svelte'
@@ -19,7 +19,7 @@ import type { CommandHandlerRecord } from './types'
 function showZoomToast(oldSize: number, newSize: number): void {
   if (oldSize === newSize) return
 
-  const resetShortcut = getEffectiveShortcuts('view.zoom.set100')[0]
+  const resetShortcut = toDisplayShortcut(getEffectiveShortcuts('view.zoom.set100')[0] ?? '')
   const resetHint = resetShortcut
     ? tString('commands.handler.zoomResetHintShortcut', { shortcut: resetShortcut })
     : tString('commands.handler.zoomResetHintMenu')

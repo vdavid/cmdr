@@ -63,8 +63,11 @@ vi.mock('$lib/ui/toast', () => ({
   addToast: addToastMock,
 }))
 
-vi.mock('$lib/shortcuts', () => ({
+vi.mock('$lib/shortcuts', async () => ({
   getEffectiveShortcuts: getEffectiveShortcutsMock,
+  // Real display formatter (`key-capture` is a dependency-free leaf), so the
+  // asserted hint text is what a user would actually read.
+  toDisplayShortcut: (await import('$lib/shortcuts/key-capture')).toDisplayShortcut,
 }))
 
 vi.mock('./global-shortcut-setting', () => ({

@@ -40,8 +40,9 @@ vi.mock('$lib/ui/toast', () => ({
   addToast: addToastMock,
 }))
 
-vi.mock('$lib/shortcuts', () => ({
+vi.mock('$lib/shortcuts', async () => ({
   getEffectiveShortcuts: getEffectiveShortcutsMock,
+  toDisplayShortcut: (await import('$lib/shortcuts/key-capture')).toDisplayShortcut,
 }))
 
 vi.mock('$lib/file-explorer/navigation/navigate-and-select', () => ({

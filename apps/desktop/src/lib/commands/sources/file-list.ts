@@ -204,7 +204,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.editPasteAsMove.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌥⌘V'],
+    shortcuts: ['⌘⌥V'],
     descriptionKey: 'commands.editPasteAsMove.description',
   },
   {
@@ -226,9 +226,10 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileDelete.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    // `⌘⌫` mirrors Finder's "Move to Trash". The menu accelerator stays `F8`
-    // (first shortcut); `⌘⌫` dispatches purely via the document keydown handler.
-    shortcuts: ['F8', '⌘⌫'],
+    // `⌘Backspace` (shown as ⌘⌫) mirrors Finder's "Move to Trash". The menu
+    // accelerator stays `F8` (first shortcut); ⌘⌫ dispatches purely via the
+    // document keydown handler.
+    shortcuts: ['F8', '⌘Backspace'],
   },
   {
     id: 'file.deletePermanently',
@@ -242,14 +243,14 @@ export const fileListCommands: CommandSource[] = [
     nameKey: isMacOS() ? 'commands.fileShowInFinder.mac.label' : 'commands.fileShowInFinder.other.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌥⌘O'],
+    shortcuts: ['⌘⌥O'],
   },
   {
     id: 'file.copyPath',
     nameKey: 'commands.fileCopyPath.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌃⌘C'],
+    shortcuts: ['⌘⌃C'],
   },
   {
     id: 'file.copyCurrentDirectoryPath',

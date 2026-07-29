@@ -17,6 +17,8 @@ export {
   isModifierKey,
   isCompleteCombo,
   isMacOS,
+  toDisplayShortcut,
+  toCanonicalShortcut,
 } from './key-capture'
 
 // Shortcuts store

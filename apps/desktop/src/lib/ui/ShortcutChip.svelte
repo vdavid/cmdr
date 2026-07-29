@@ -23,6 +23,7 @@
 <script lang="ts">
     import { commands, type CommandId } from '$lib/commands'
     import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
+    import { toDisplayShortcut } from '$lib/shortcuts/key-capture'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { tString } from '$lib/intl/messages.svelte'
 
@@ -58,7 +59,8 @@
 
     const commandName = $derived(commandId ? (commands.find((c) => c.id === commandId)?.name ?? '') : '')
     // Reactive: re-reads when the user rebinds. In literal mode this stays the fixed key.
-    const value = $derived(commandId ? getFirstShortcutReactive(commandId) : key)
+    // `toDisplayShortcut` is idempotent, so a literal `key` may be written either way.
+    const value = $derived(toDisplayShortcut((commandId ? getFirstShortcutReactive(commandId) : key) ?? ''))
 
     // Clickable only in `commandId` mode (a literal key has no command to customize).
     const isClickable = $derived(commandId !== undefined && clickable)

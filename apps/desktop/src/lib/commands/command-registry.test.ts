@@ -333,11 +333,11 @@ describe('operation-log shortcut binding', () => {
     expect(cmd?.shortcuts).toEqual(['⌘⌥L'])
   })
 
-  it('does not double-bind ⌘⌥L (its default) or ⌥⌘O (Show in Finder, the plan pick it avoided)', () => {
+  it('does not double-bind ⌘⌥L (its default) or ⌘⌥O (Show in Finder, the plan pick it avoided)', () => {
     const claimants = (shortcut: string): CommandId[] =>
       commands.filter((c) => c.shortcuts.includes(shortcut)).map((c) => c.id)
 
     expect(claimants('⌘⌥L')).toEqual(['log.operationLog'])
-    expect(claimants('⌥⌘O')).toEqual(['file.showInFinder'])
+    expect(claimants('⌘⌥O')).toEqual(['file.showInFinder'])
   })
 })

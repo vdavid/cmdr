@@ -121,8 +121,9 @@ vi.mock('$lib/settings', () => ({
 }))
 
 // `showZoomToast` reads the reset shortcut. Default: no shortcut bound (menu hint).
-vi.mock('$lib/shortcuts', () => ({
+vi.mock('$lib/shortcuts', async () => ({
   getEffectiveShortcuts: (id: string) => m.getEffectiveShortcuts(id),
+  toDisplayShortcut: (await import('$lib/shortcuts/key-capture')).toDisplayShortcut,
 }))
 
 vi.mock('$lib/settings/settings-window', () => ({

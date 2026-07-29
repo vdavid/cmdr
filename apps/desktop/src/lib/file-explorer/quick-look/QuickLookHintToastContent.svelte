@@ -21,7 +21,7 @@
     import Trans from '$lib/intl/Trans.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { setSetting } from '$lib/settings'
-    import { getEffectiveShortcuts } from '$lib/shortcuts'
+    import { getEffectiveShortcuts, toDisplayShortcut } from '$lib/shortcuts'
     import { openShortcutCustomization } from '$lib/settings/settings-window'
 
     import { QUICK_LOOK_HINT_TOAST_ID } from './quick-look-hint-id'
@@ -31,7 +31,7 @@
     // change); a literal-mode chip with this fixed string is the right shape.
     // Falls back to ⇧Space (the default) so the hint always shows a key. The
     // chip is non-clickable: the toast already offers the Settings link below.
-    const quickLookKey = getEffectiveShortcuts('file.quickLook')[0] ?? '⇧Space'
+    const quickLookKey = toDisplayShortcut(getEffectiveShortcuts('file.quickLook')[0] ?? '⇧Space')
 
     function handleOpenSettings() {
         dismissToast(QUICK_LOOK_HINT_TOAST_ID)

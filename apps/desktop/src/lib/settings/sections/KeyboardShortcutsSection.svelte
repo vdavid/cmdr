@@ -11,6 +11,7 @@
         onShortcutChange,
         isNativeShortcutCommand,
         isFixedKeyCommand,
+        toDisplayShortcut,
     } from '$lib/shortcuts'
     import GlobalShortcutRow from '$lib/downloads/GlobalShortcutRow.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
@@ -172,7 +173,7 @@
                 <!-- macOS owns this combo: it can never reach Cmdr, so we don't offer
                      "Remove from other" or "Keep both" (both would be a lie). -->
                 <span class="warning-text">
-                    {reservedByMacOsMessage(conflictWarning.shortcut, conflict.command)}
+                    {reservedByMacOsMessage(toDisplayShortcut(conflictWarning.shortcut), conflict.command)}
                 </span>
                 <div class="warning-actions">
                     <Button variant="secondary" size="mini" onclick={controller.cancelEdit}
@@ -183,7 +184,7 @@
                 <!-- macOS usually intercepts this combo before Cmdr sees it, but the user
                      may have disabled the system shortcut — warn and let them decide. -->
                 <span class="warning-text">
-                    {systemShortcutMessage(conflictWarning.shortcut, conflict.label)}
+                    {systemShortcutMessage(toDisplayShortcut(conflictWarning.shortcut), conflict.label)}
                 </span>
                 <div class="warning-actions">
                     <Button variant="secondary" size="mini" onclick={controller.handleKeepBoth}
@@ -197,7 +198,7 @@
                 <!-- The combo is hardcoded in a component: it can't be removed there and
                      would keep firing, so we don't offer "Remove from other" or "Keep both". -->
                 <span class="warning-text">
-                    {fixedKeyMessage(conflictWarning.shortcut, conflict.command)}
+                    {fixedKeyMessage(toDisplayShortcut(conflictWarning.shortcut), conflict.command)}
                 </span>
                 <div class="warning-actions">
                     <Button variant="secondary" size="mini" onclick={controller.cancelEdit}
@@ -212,7 +213,7 @@
                     <Trans
                         key="shortcuts.section.alreadyBound"
                         snippets={{ b: comboStrong }}
-                        params={{ combo: conflictWarning.shortcut, command: conflict.command.name }}
+                        params={{ combo: toDisplayShortcut(conflictWarning.shortcut), command: conflict.command.name }}
                     />
                 </span>
                 <div class="warning-actions">
@@ -271,7 +272,7 @@
                                      no +/×/reset and no add slot. -->
                                 {#if shortcuts.length > 0}
                                     {#each shortcuts as shortcut (shortcut)}
-                                        <span class="shortcut-pill static">{shortcut}</span>
+                                        <span class="shortcut-pill static">{toDisplayShortcut(shortcut)}</span>
                                     {/each}
                                 {:else}
                                     <span class="no-shortcut">{tString('shortcuts.section.noneShortcut')}</span>
@@ -302,9 +303,9 @@
                                         }}
                                     >
                                         {#if isEditing}
-                                            {controller.pendingKey || tString('shortcuts.section.pressKeys')}
+                                            {toDisplayShortcut(controller.pendingKey) || tString('shortcuts.section.pressKeys')}
                                         {:else if shortcut}
-                                            {shortcut}
+                                            {toDisplayShortcut(shortcut)}
                                             <span
                                                 class="remove-shortcut"
                                                 use:tooltip={tString('shortcuts.section.removeShortcutTooltip')}
@@ -340,7 +341,7 @@
                                         controller.resetPendingCapture()
                                     }}
                                 >
-                                    {controller.pendingKey || tString('shortcuts.section.pressKeys')}
+                                    {toDisplayShortcut(controller.pendingKey) || tString('shortcuts.section.pressKeys')}
                                 </button>
                             {/if}
                             <button

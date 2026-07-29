@@ -16,7 +16,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import { commands } from '$lib/commands/command-registry'
-    import { getDefaultShortcuts, getEffectiveShortcuts, onShortcutChange } from '$lib/shortcuts'
+    import { getDefaultShortcuts, getEffectiveShortcuts, onShortcutChange, toDisplayShortcut } from '$lib/shortcuts'
     import { groupCommandsByScope } from '$lib/settings/sections/keyboard-shortcuts-grouping'
     import { tString } from '$lib/intl/messages.svelte'
     import { diffShortcuts } from './shortcut-diff'
@@ -57,11 +57,11 @@
                     {:else}
                         {#each chips as chip (chip.key + chip.status)}
                             {#if chip.status === 'added'}
-                                <kbd class="chip added" use:tooltip={tString('shortcuts.list.addedTooltip')}>{chip.key}</kbd>
+                                <kbd class="chip added" use:tooltip={tString('shortcuts.list.addedTooltip')}>{toDisplayShortcut(chip.key)}</kbd>
                             {:else if chip.status === 'disabled'}
-                                <kbd class="chip disabled" use:tooltip={tString('shortcuts.list.disabledTooltip')}>{chip.key}</kbd>
+                                <kbd class="chip disabled" use:tooltip={tString('shortcuts.list.disabledTooltip')}>{toDisplayShortcut(chip.key)}</kbd>
                             {:else}
-                                <kbd class="chip">{chip.key}</kbd>
+                                <kbd class="chip">{toDisplayShortcut(chip.key)}</kbd>
                             {/if}
                         {/each}
                     {/if}

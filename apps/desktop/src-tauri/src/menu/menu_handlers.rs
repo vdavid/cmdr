@@ -141,6 +141,10 @@ pub fn frontend_shortcut_to_accelerator(shortcut: &str) -> Option<String> {
                     result.push_str("Escape");
                 } else if remaining.eq_ignore_ascii_case("backspace") {
                     result.push_str("Backspace");
+                } else if remaining.eq_ignore_ascii_case("delete") {
+                    result.push_str("Delete");
+                } else if remaining.eq_ignore_ascii_case("insert") {
+                    result.push_str("Insert");
                 } else if remaining.starts_with('F') || remaining.starts_with('f') {
                     // Function keys like F1, F4
                     result.push_str(&remaining.to_uppercase());
@@ -765,6 +769,26 @@ mod tests {
         assert_eq!(
             frontend_shortcut_to_accelerator("Backspace"),
             Some("Backspace".to_string())
+        );
+        assert_eq!(frontend_shortcut_to_accelerator("Delete"), Some("Delete".to_string()));
+        assert_eq!(frontend_shortcut_to_accelerator("Insert"), Some("Insert".to_string()));
+        assert_eq!(frontend_shortcut_to_accelerator("PageUp"), Some("PageUp".to_string()));
+        assert_eq!(frontend_shortcut_to_accelerator("Escape"), Some("Escape".to_string()));
+    }
+
+    /// The frontend only ever hands us its canonical word forms; the macOS glyphs
+    /// (⌫ ⎋ ↩) are a display concern that must never reach an accelerator, since
+    /// they'd fall through to the "unknown, use as-is" branch and produce garbage
+    /// like `Cmd+⌫`.
+    #[test]
+    fn test_frontend_shortcut_to_accelerator_canonical_key_names() {
+        assert_eq!(
+            frontend_shortcut_to_accelerator("⌘Backspace"),
+            Some("Cmd+Backspace".to_string())
+        );
+        assert_eq!(
+            frontend_shortcut_to_accelerator("⌘⌥Escape"),
+            Some("Cmd+Opt+Escape".to_string())
         );
     }
 

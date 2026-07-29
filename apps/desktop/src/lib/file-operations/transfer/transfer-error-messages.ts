@@ -19,7 +19,7 @@
 import type { WriteOperationError, TransferOperationType, FriendlyError } from '$lib/file-explorer/types'
 import { formatBytes } from '$lib/tauri-commands'
 import { isMacOS } from '$lib/shortcuts/key-capture'
-import { getEffectiveShortcuts } from '$lib/shortcuts'
+import { getEffectiveShortcuts, toDisplayShortcut } from '$lib/shortcuts'
 import { colorizeSizeString } from '$lib/file-explorer/selection/selection-info-utils'
 import { escapeHtml } from '$lib/tooltip/tooltip'
 import { getMessage } from '$lib/intl/messages.svelte'
@@ -96,7 +96,9 @@ const simpleMessageFactories: Partial<
     // Interpolate the live `file.deletePermanently` binding (platform-formatted)
     // at message-build time. Snapshot semantics are right here: a transient error
     // string isn't a live-updating surface. Falls back to the default if unbound.
-    const deletePermanentlyKey = getEffectiveShortcuts('file.deletePermanently')[0] ?? (isMacOS() ? '⇧F8' : 'Shift+F8')
+    const deletePermanentlyKey = toDisplayShortcut(
+      getEffectiveShortcuts('file.deletePermanently')[0] ?? (isMacOS() ? '⇧F8' : 'Shift+F8'),
+    )
     return {
       title: w('trashNotSupported.title'),
       message: w('trashNotSupported.message'),

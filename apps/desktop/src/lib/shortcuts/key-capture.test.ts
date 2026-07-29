@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { formatKeyCombo, toPlatformShortcut, isTypingKeyCombo } from './key-capture'
+import {
+  formatKeyCombo,
+  toPlatformShortcut,
+  isTypingKeyCombo,
+  toDisplayShortcut,
+  toCanonicalShortcut,
+} from './key-capture'
 
 // Mock navigator to control isMacOS() behavior
 const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
@@ -13,6 +19,17 @@ function setMacOS(isMac: boolean) {
 afterEach(() => {
   navigatorSpy.mockReset()
 })
+
+function makeKeyEvent(overrides: Partial<KeyboardEvent>): KeyboardEvent {
+  return {
+    key: '',
+    metaKey: false,
+    ctrlKey: false,
+    altKey: false,
+    shiftKey: false,
+    ...overrides,
+  } as KeyboardEvent
+}
 
 describe('toPlatformShortcut', () => {
   it('returns shortcut as-is on macOS', () => {
@@ -84,17 +101,6 @@ describe('toPlatformShortcut', () => {
 })
 
 describe('formatKeyCombo', () => {
-  function makeKeyEvent(overrides: Partial<KeyboardEvent>): KeyboardEvent {
-    return {
-      key: '',
-      metaKey: false,
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      ...overrides,
-    } as KeyboardEvent
-  }
-
   it('uses Super for metaKey on Linux', () => {
     setMacOS(false)
     const result = formatKeyCombo(makeKeyEvent({ metaKey: true, key: 'a' }))
@@ -144,12 +150,54 @@ describe('formatKeyCombo', () => {
   })
 })
 
+describe('canonical vs display forms', () => {
+  it('formats a keypress into the canonical word form, not a macOS glyph', () => {
+    setMacOS(true)
+    expect(formatKeyCombo(makeKeyEvent({ key: 'Enter' }))).toBe('Enter')
+    expect(formatKeyCombo(makeKeyEvent({ metaKey: true, key: 'Backspace' }))).toBe('⌘Backspace')
+    expect(formatKeyCombo(makeKeyEvent({ key: 'Escape' }))).toBe('Escape')
+    expect(formatKeyCombo(makeKeyEvent({ key: 'PageUp' }))).toBe('PageUp')
+  })
+
+  it('renders macOS glyphs for display, keeping the modifier prefix', () => {
+    setMacOS(true)
+    expect(toDisplayShortcut('Enter')).toBe('↩')
+    expect(toDisplayShortcut('⌘Backspace')).toBe('⌘⌫')
+    expect(toDisplayShortcut('⌘⌥Escape')).toBe('⌘⌥⎋')
+    expect(toDisplayShortcut('PageDown')).toBe('PgDn')
+    expect(toDisplayShortcut('⌘⇧P')).toBe('⌘⇧P')
+    expect(toDisplayShortcut('')).toBe('')
+  })
+
+  it('uses the familiar abbreviations off macOS', () => {
+    setMacOS(false)
+    expect(toDisplayShortcut('Escape')).toBe('Esc')
+    expect(toDisplayShortcut('Ctrl+Backspace')).toBe('Ctrl+Backspace')
+  })
+
+  it('is idempotent, so wrapping an already-displayed value is safe', () => {
+    setMacOS(true)
+    expect(toDisplayShortcut(toDisplayShortcut('⌘Backspace'))).toBe('⌘⌫')
+    expect(toCanonicalShortcut(toCanonicalShortcut('⌘⌫'))).toBe('⌘Backspace')
+  })
+
+  it('heals legacy and display spellings back to canonical', () => {
+    setMacOS(true)
+    expect(toCanonicalShortcut('↩')).toBe('Enter')
+    expect(toCanonicalShortcut('⌘⌫')).toBe('⌘Backspace')
+    expect(toCanonicalShortcut('⌥⌘⎋')).toBe('⌥⌘Escape')
+    expect(toCanonicalShortcut('PgUp')).toBe('PageUp')
+    expect(toCanonicalShortcut('Ctrl+Esc')).toBe('Ctrl+Escape')
+    expect(toCanonicalShortcut('⌘A')).toBe('⌘A')
+  })
+})
+
 describe('isTypingKeyCombo', () => {
   it('treats bare keys as typing (Tab, letters, Space, Enter)', () => {
     expect(isTypingKeyCombo('Tab')).toBe(true)
     expect(isTypingKeyCombo('A')).toBe(true)
     expect(isTypingKeyCombo('Space')).toBe(true)
-    expect(isTypingKeyCombo('↩')).toBe(true)
+    expect(isTypingKeyCombo('Enter')).toBe(true)
   })
 
   it('treats shift-only combos as typing (⇧Tab reverse-tab, ⇧A capital letter)', () => {
@@ -171,7 +219,6 @@ describe('isTypingKeyCombo', () => {
     expect(isTypingKeyCombo('F5')).toBe(false)
     expect(isTypingKeyCombo('F12')).toBe(false)
     expect(isTypingKeyCombo('⇧F6')).toBe(false)
-    expect(isTypingKeyCombo('⎋')).toBe(false)
-    expect(isTypingKeyCombo('Esc')).toBe(false)
+    expect(isTypingKeyCombo('Escape')).toBe(false)
   })
 })

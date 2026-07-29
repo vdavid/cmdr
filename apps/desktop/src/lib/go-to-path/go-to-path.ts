@@ -12,7 +12,7 @@
 import type { GoToPathResolution, RecentPathEntry } from '$lib/ipc/bindings'
 import { resolveGoToPath } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
-import { getEffectiveShortcuts } from '$lib/shortcuts'
+import { getEffectiveShortcuts, toDisplayShortcut } from '$lib/shortcuts'
 import { getAppLogger } from '$lib/logging/logger'
 import {
   navigateToDirInPane,
@@ -92,7 +92,7 @@ export async function goToPath(
       await navigateToDirInPane(explorer, pane, location)
       // Snapshot the back-shortcut at toast-creation time so a later rebind
       // doesn't rewrite a visible toast (matches the downloads snapshot rule).
-      const backShortcut = getEffectiveShortcuts('nav.back')[0] ?? ''
+      const backShortcut = toDisplayShortcut(getEffectiveShortcuts('nav.back')[0] ?? '')
       addToast(GoToPathAncestorToastContent, {
         id: GO_TO_PATH_ANCESTOR_TOAST_ID,
         level: 'info',

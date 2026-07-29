@@ -159,12 +159,38 @@ Example: `⌘N` in `Main window/File list` and `⌘N` in `Main window` conflict 
 
 ### Key capture (`key-capture.ts`)
 
-Platform-specific formatting:
+`formatKeyCombo(event)` is the single writer of the shortcut vocabulary, and its output is CANONICAL: what the registry
+declares, `shortcuts.json` persists, `shortcut-dispatch` keys its map by, `conflict-detector` compares, and
+`frontend_shortcut_to_accelerator` (Rust) parses.
 
-- macOS: `⌘⇧P` (symbols)
-- Windows/Linux: `Ctrl+Shift+P` (names)
+- Modifiers, always in this order: `⌘⌃⌥⇧` on macOS, `Ctrl+Alt+Shift+Super` elsewhere.
+- Key names are platform-neutral WORDS: `Enter`, `Backspace`, `Delete`, `Escape`, `PageUp`, `PageDown`, `Space`, `Tab`,
+  `Home`, `End`. Arrows stay symbols (`↑ ↓ ← →`) on every platform.
+- Example: `⌘⇧P`, `⌘Backspace`, `Ctrl+Shift+P`.
 
-No normalization: shortcuts are stored exactly as displayed.
+`toDisplayShortcut(combo)` is the display layer, applied at render time only: `⌘Backspace` → `⌘⌫`, `Enter` → `↩`,
+`Escape` → `⎋` / `Esc`, `PageUp` → `PgUp`. It's idempotent, so wrapping an already-displayed value is safe. Its
+consumers are the reactive readers (`reactive-shortcuts.svelte.ts` returns display form, since everything reading it
+renders to a user), `ShortcutChip`, `ShortcutsList`, the Settings editor's pills and conflict banner, the F-key bar, and
+the shortcut-carrying toasts. Anything that COMPARES or DISPATCHES a combo reads `getEffectiveShortcuts` instead.
+
+`toCanonicalShortcut(combo)` is the inverse, and only three places call it: `initializeShortcuts` (healing a
+`shortcuts.json` written before the vocabulary was unified) and `setShortcut` / `addShortcut` (canonicalizing at the
+store boundary, so MCP writes land in the same vocabulary as a Settings capture).
+
+**Why the split matters.** With glyphs in the canonical form, three things break silently and independently: central
+dispatch can never fire a word-form binding (`lookupCommand('↩')` misses `'Enter'`), conflict detection and the
+`isDuplicate` guard treat `'Enter'` and `'↩'` as different combos, and rebinding a menu command to Enter produces a
+broken native accelerator (the glyph falls through Rust's "unknown, use as-is" branch). `shortcut-vocabulary.test.ts`
+pins the whole contract by reconstructing a synthetic keydown from every registry default and demanding `formatKeyCombo`
+reproduce it byte for byte. macOS-native commands are exempt there: AppKit owns their accelerator, so their strings are
+pure display mirroring the OS menu (`⌥⌘H`), never dispatched.
+
+The macOS system-shortcut table in `../settings/sections/keyboard-shortcuts-banner.ts` is keyed by the same canonical
+strings for the same reason — Apple spells force-quit `⌥⌘⎋`, but the user's keypress arrives as `⌘⌥Escape`.
+
+The one place canonical strings surface as-is to a user is the Settings key-search box: it holds what `formatKeyCombo`
+produced so it can filter against stored combos, so it reads `⌘Backspace`, not `⌘⌫`.
 
 ### MCP integration (`mcp-shortcuts-listener.ts`)
 
@@ -218,8 +244,10 @@ The main window owns the window-creation perms; the help window needs only `core
 
 ### Why platform-specific storage?
 
-Cross-platform normalization is complex and error-prone. Storing shortcuts as display strings keeps the code simple.
-Each platform captures and matches shortcuts in its native format.
+Cross-platform normalization of the MODIFIERS is complex and error-prone, so each platform captures and matches in its
+native modifier form (`⌘⇧P` vs `Ctrl+Shift+P`); `toPlatformShortcut` converts the macOS-form registry defaults for
+Linux. The KEY NAMES are platform-neutral words, and the macOS glyphs are a render-time concern — see § Key capture for
+why that separation is load-bearing.
 
 ### Why delta-only persistence?
 

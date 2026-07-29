@@ -31,7 +31,10 @@ vi.mock('$lib/file-explorer/quick-look/quick-look-state.svelte', () => ({
   armQuickLookDispatchGuard: vi.fn(),
 }))
 vi.mock('$lib/settings', () => ({ getSetting: vi.fn(() => 100), setSetting: vi.fn() }))
-vi.mock('$lib/shortcuts', () => ({ getEffectiveShortcuts: vi.fn(() => []) }))
+vi.mock('$lib/shortcuts', async () => ({
+  getEffectiveShortcuts: vi.fn(() => []),
+  toDisplayShortcut: (await import('$lib/shortcuts/key-capture')).toDisplayShortcut,
+}))
 
 import { addToast } from '$lib/ui/toast'
 import { addFavorite } from '$lib/tauri-commands'

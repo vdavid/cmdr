@@ -111,6 +111,7 @@
     import { basenameOf, type CanonicalPath, parentOf, toCanonical } from '$lib/path/canonical'
     import { showBreadcrumbContextMenu } from '$lib/tauri-commands'
     import { getEffectiveShortcuts } from '$lib/shortcuts/shortcuts-store'
+    import { toDisplayShortcut } from '$lib/shortcuts/key-capture'
     import { getVolumes as getStoreVolumes } from '$lib/stores/volume-store.svelte'
     import type { UnreachableState } from '../tabs/tab-types'
     import { getDiskUsageLevel, getUsedPercent, formatBarTooltip } from '../disk-space-utils'
@@ -1639,7 +1640,7 @@
         const v = currentVolumeInfo
         const ejectable = v && isVolumeEjectable(v)
         void showBreadcrumbContextMenu(
-            shortcuts[0] ?? '',
+            toDisplayShortcut(shortcuts[0] ?? ''),
             ejectable ? v.id : undefined,
             ejectable ? v.name : undefined,
         )

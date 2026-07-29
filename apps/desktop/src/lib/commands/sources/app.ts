@@ -128,11 +128,10 @@ export const appCommands: CommandSource[] = [
     descriptionKey: 'commands.feedbackSend.description',
   },
   {
-    // Default ⌘⌥L. The plan's first pick ⌥⌘O is already bound to `file.showInFinder`,
-    // so L (for "log") is the mnemonic. Modifier order is Command-then-Option (⌘⌥),
-    // matching what `formatKeyCombo` emits, so the JS keydown dispatch fires it on
-    // macOS in addition to the native menu accelerator (⌥⌘-order defaults are
-    // native-menu-only). See `shortcut-dispatch.ts`.
+    // Default ⌘⌥L. The first pick ⌘⌥O is already bound to `file.showInFinder`, so L
+    // (for "log") is the mnemonic. Modifier order is Command-then-Option (⌘⌥) because
+    // that's what `formatKeyCombo` emits; Apple's ⌥⌘ display order would be dead on
+    // the keyboard. Pinned by `shortcuts/shortcut-vocabulary.test.ts`.
     id: 'log.operationLog',
     nameKey: 'commands.logOperationLog.label',
     scope: 'App',
@@ -142,8 +141,7 @@ export const appCommands: CommandSource[] = [
   },
   {
     // Default ⌘⌥A ("A for Ask"). Command-then-Option order (⌘⌥), matching what
-    // `formatKeyCombo` emits, so the JS keydown dispatch fires it on macOS too
-    // (⌥⌘-order defaults are native-menu-only). macOS still renders it ⌥⌘A in the menu.
+    // `formatKeyCombo` emits; macOS still renders it ⌥⌘A in the native menu.
     id: 'askCmdr.toggle',
     nameKey: 'commands.askCmdrToggle.label',
     scope: 'App',
