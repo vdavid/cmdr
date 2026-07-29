@@ -9,6 +9,7 @@ func TestSizeTiersAnalyzerEmitsAllCombos(t *testing.T) {
 	vars := NewVarTable()
 	// Minimal palette so every var resolves in both modes.
 	for _, m := range []map[string]string{vars.Light, vars.Dark} {
+		m["color-bg-dialog"] = "#ebebeb"
 		m["color-bg-primary"] = "#ffffff"
 		m["color-bg-secondary"] = "#f5f5f5"
 		m["color-bg-tertiary"] = "#e8e8e8"

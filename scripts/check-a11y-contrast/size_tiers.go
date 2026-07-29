@@ -44,8 +44,10 @@ type sizeTier struct {
 // by VarName for predictable output.
 //
 // Notes:
-//   - `color-bg-primary` covers the file list, transfer/delete dialog bodies,
-//     viewer body, settings pages, and the fallback transfer-error dialog.
+//   - `color-bg-dialog` covers every `ModalDialog` panel (transfer, delete,
+//     transfer-error), which is where most size text outside the file list sits.
+//   - `color-bg-primary` covers the file list, the query dialogs' result well,
+//     the viewer body, and settings pages.
 //   - `color-bg-secondary` covers the SelectionInfo footer, viewer status bar,
 //     search results panel, AiLocalSection rows, ErrorReportDialog body,
 //     FileSystemWatchingSection sub-panel.
@@ -55,7 +57,8 @@ type sizeTier struct {
 //   - `color-warning-bg` covers the TransferDialog / DeleteDialog warning rows
 //     and the TransferProgressDialog warning summary.
 var sizeBackgrounds = []sizeBackground{
-	{"color-bg-primary", "page bg (file list, dialog body, viewer)"},
+	{"color-bg-dialog", "dialog panel (transfer, delete, transfer-error)"},
+	{"color-bg-primary", "page bg (file list, query results well, viewer)"},
 	{"color-bg-secondary", "secondary panel (SelectionInfo, viewer footer, search, settings sub-panel)"},
 	{"color-bg-tertiary", "tertiary surface (volume dropdown, AI toast, error-report file rows)"},
 	{"color-error-bg", "danger row (DeleteDialog)"},

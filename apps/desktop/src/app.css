@@ -441,6 +441,15 @@
      works over whatever surface the dialog sits on. */
   --radius-dialog: 27px;
   --spacing-dialog: 20px;
+  /* The panel's own surface: the opaque twin of the settings window's backdrop
+     (`--color-bg-settings-primary` composited over its Sidebar material). It sits
+     one step BELOW `--color-bg-secondary` in light mode and between primary and
+     secondary in dark, which is what lets a `SectionCard` (on `bg-secondary`)
+     read as raised inside a dialog the same way it does in Settings, while a
+     content well on `--color-bg-primary` (the query dialogs' result list) still
+     reads as recessed. Don't collapse it into `--color-bg-secondary`: that's the
+     card color, and a card can't stand out against itself. */
+  --color-bg-dialog: #ebebeb;
   --color-dialog-border-outer: rgba(0, 0, 0, 0.28);
   --color-dialog-border-inner: rgba(255, 255, 255, 0.9);
   /* A floating panel's shadow, in three layers the way a real one falls: a wide
@@ -652,8 +661,12 @@
     /* Empty-control outline (see the light-mode twin for why it's its own token). */
     --color-control-border: #808080;
 
-    /* Dialog edge (see the light-mode twin). Dark mode needs a deeper outer
-       hairline and a much fainter inner highlight, or the ring reads as a glow. */
+    /* Dialog surface + edge (see the light-mode twins). The panel sits between
+       `--color-bg-primary` and `--color-bg-secondary`, so cards lift off it and
+       the query dialogs' result well sinks into it. Dark mode needs a deeper
+       outer hairline and a much fainter inner highlight, or the ring reads as a
+       glow. */
+    --color-bg-dialog: #232323;
     --color-dialog-border-outer: rgba(0, 0, 0, 0.7);
     --color-dialog-border-inner: rgba(255, 255, 255, 0.14);
     /* Same three layers, pushed harder: on a dark canvas a light-mode-strength

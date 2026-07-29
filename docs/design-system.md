@@ -59,6 +59,7 @@ The app and website use different color temperatures by design:
 | `--color-bg-primary`     | `#ffffff` | Main canvas                                |
 | `--color-bg-secondary`   | `#f5f5f5` | Headers, sidebars                          |
 | `--color-bg-tertiary`    | `#e8e8e8` | Hover fills, grouped sections              |
+| `--color-bg-dialog`      | `#ebebeb` | Every `ModalDialog` panel                  |
 | `--color-text-primary`   | `#1a1a1a` | Body text (not pure black, easier on eyes) |
 | `--color-text-secondary` | `#666666` | Labels, descriptions                       |
 | `--color-text-tertiary`  | `#888888` | Timestamps, metadata                       |
@@ -73,6 +74,7 @@ The app and website use different color temperatures by design:
 | `--color-bg-primary`     | `#1e1e1e` | Main canvas                               |
 | `--color-bg-secondary`   | `#2a2a2a` | Headers, sidebars                         |
 | `--color-bg-tertiary`    | `#333333` | Hover fills, grouped sections             |
+| `--color-bg-dialog`      | `#232323` | Every `ModalDialog` panel                 |
 | `--color-text-primary`   | `#e8e8e8` | Body text (not pure white, reduces glare) |
 | `--color-text-secondary` | `#aaaaaa` | Labels, descriptions                      |
 | `--color-text-tertiary`  | `#888888` | Timestamps, metadata                      |
@@ -490,13 +492,19 @@ All dialogs use `ModalDialog.svelte`.
 
 | Property          | Value                                                                       | Why                                                                                                  |
 | ----------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Panel surface     | `--color-bg-dialog` (`#ebebeb` / `#232323`)                                 | The settings window's backdrop, made opaque, so grouped blocks inside a dialog read as raised        |
 | Body padding      | `0 var(--spacing-dialog)` (20px)                                            | Owned by `ModalDialog`; bottom comes from the footer or, when footerless, the same inset on the body |
-| Title             | 16px, weight 600, left-aligned                                              | Clear hierarchy; left-aligned so the title starts on the same inset as the body below it             |
+| Title             | 16px, weight 600, left-aligned, flex row                                    | Clear hierarchy; the row lets a `StatusBadge` sit beside the words without hanging off the baseline  |
 | Button row        | `flex, gap 12px, justify-content: flex-end`                                 | Right-aligned matches macOS convention (primary action right)                                        |
 | Border-radius     | 27px (`--radius-dialog`)                                                    | Matches the macOS alert-panel corner                                                                 |
 | Edge              | 1px `--color-dialog-border-outer` + inset 1px `--color-dialog-border-inner` | macOS draws a panel edge as two hairlines: darker outside, lighter inside                            |
 | Drop shadow       | `--shadow-dialog` (three layers, down-only)                                 | Lifts the panel off the app the way a floating macOS panel casts                                     |
 | Max content width | 480px                                                                       | Optimal line length (~60 chars at 14px body)                                                         |
+
+**Three surfaces, one relationship.** The panel is `--color-bg-dialog`; a grouped block on it (`SectionCard`, a details
+box) is `--color-bg-secondary` and reads as RAISED; a content well (the query dialogs' result list) is
+`--color-bg-primary` and reads as RECESSED. That's the settings window's own stack, minus the vibrancy. A dialog's
+strips paint no background of their own; separate them with spacing, or at most a hairline.
 
 `ModalDialog` owns the standard body padding, so dialogs don't set their own. The horizontal inset (`--spacing-dialog`)
 matches the title bar and footer, and a `padded={false}` body that insets its own sections must use the SAME token or it

@@ -346,7 +346,7 @@
        the lighter INNER one. The inset ring rides the padding-box corner, so it
        stays concentric with the border at any radius. */
     .modal-dialog {
-        background: var(--color-bg-secondary);
+        background: var(--color-bg-dialog);
         border: 1px solid var(--color-dialog-border-outer);
         border-radius: var(--radius-dialog);
         box-shadow:
@@ -440,7 +440,15 @@
         cursor: move;
     }
 
+    /* The title is a ROW, not a line of inline content: the words, plus whatever a
+       dialog puts beside them (a `StatusBadge`, an icon). Flex is what gives the
+       badge a real gap from the last word and puts its BOX on the title's optical
+       middle. Left inline, the badge shares the title's text baseline, so its
+       padded background hangs below the words. */
     h2 {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
         margin: 0;
         font-size: var(--font-size-lg);
         font-weight: 600;

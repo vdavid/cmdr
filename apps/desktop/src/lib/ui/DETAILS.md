@@ -76,6 +76,17 @@ Props:
 | `overlayClass`        | `string`                      | Extra class on the overlay, for a shared dialog's stable test hook    |
 | `closeOnOverlayClick` | `boolean`                     | Default `false`. Scrim click dismisses                                |
 
+**The panel surface is `--color-bg-dialog`**, not `--color-bg-secondary`. It's the opaque twin of the settings window's
+backdrop, deliberately one step off `--color-bg-secondary` (the `SectionCard` fill), so a card, a details box, or any
+other grouped block inside a dialog reads as raised the way it does in Settings. A dialog that wants a recessed content
+well (the query dialogs' result list) drops to `--color-bg-primary`. Don't set a background on a dialog's own strips:
+they sit on the panel.
+
+**The title bar's `<h2>` is a flex ROW** (`align-items: center`, `--spacing-sm` gap), so a `title` snippet can hand it
+the words plus a trailing `StatusBadge` or icon as siblings and get the spacing and vertical alignment for free. Don't
+re-wrap them in a caller-side flex span, and don't rely on inline flow: inline, a badge shares the title's text baseline
+and its padded background hangs below the words.
+
 **Layout convention (macOS-style).** Title and body text are LEFT-aligned; action buttons are RIGHT-aligned with the
 primary action last (rightmost). Pass buttons via the `footer` snippet — `ModalDialog` renders them in a `.modal-footer`
 that owns the right-alignment, gap, and the dialog's bottom padding, so callers don't hand-roll a button-row. The title

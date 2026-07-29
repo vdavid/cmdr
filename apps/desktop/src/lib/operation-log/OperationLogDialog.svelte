@@ -86,11 +86,10 @@
     ariaDescribedby="operation-log-body"
     containerStyle="width: 620px; max-width: calc(100vw - 2 * var(--spacing-xl))"
 >
+    <!-- The title bar's `<h2>` is already the row (gap + badge alignment live there),
+         so the words and the badge are its direct children. -->
     {#snippet title()}
-        <span class="title-row">
-            {tString('operationLog.dialog.title')}
-            {#if badge}<StatusBadge status={badge} />{/if}
-        </span>
+        <span>{tString('operationLog.dialog.title')}</span>{#if badge}<StatusBadge status={badge} />{/if}
     {/snippet}
 
     <div class="body" id="operation-log-body">
@@ -194,12 +193,6 @@
 </ModalDialog>
 
 <style>
-    .title-row {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-    }
-
     .body {
         display: flex;
         flex-direction: column;

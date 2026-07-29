@@ -416,10 +416,11 @@
             32px;
     }
 
-    /* The results zone (header + list + status bar) sits on `--color-bg-primary`, one
-       step lighter than the filter band above it. That surface flip IS the separation
-       between "how do I narrow this" and "here's what I found"; the hairlines only
-       sharpen it. See `QueryDialog.svelte` § Layout for the three zones. */
+    /* The results zone (header + list + status bar) is the ONLY part of the dialog with
+       a surface of its own: `--color-bg-primary`, a recessed well against the panel's
+       `--color-bg-dialog`. Everything above it sits on the panel. That flip IS the
+       separation between "how do I narrow this" and "here's what I found"; the chip
+       strip's bottom hairline and the footer's top hairline only sharpen it. */
     .column-header {
         padding: var(--spacing-xs) var(--spacing-dialog);
         background: var(--color-bg-primary);
