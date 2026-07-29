@@ -82,6 +82,7 @@
     import { fetchEntriesSnapshot, fetchSelectedNames } from './entries-snapshot'
     import { resolveInitialPathAction, shouldReloadAfterReachable } from './path-sync'
     import { resyncAfterHiddenFilesToggle } from './hidden-files-resync'
+    import { createNetworkHostState } from './network-host-state.svelte'
     import { createMtpDisconnectWatch } from './mtp-disconnect-watch.svelte'
     import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
 
@@ -557,31 +558,12 @@
         getIsDiskImage: () => isDiskImageVolume,
     })
 
-    // Network browsing state - tracked here for history navigation integration
-    let currentNetworkHost = $state<NetworkHost | null>(null)
-    // Pending share to auto-mount on the network host. Set by "Copy path between
-    // panes" when the source pane has the cursor on a share. Cleared on volume leave.
-    let pendingAutoMountShare = $state<string | undefined>(undefined)
-
-    // Clear the selected network host whenever the pane leaves the network
-    // volume so that re-entering Network always lands on the host list, not on
-    // a stale ShareBrowser for whichever host was open last. Without this,
-    // `NetworkMountView` re-mounts with the old `initialNetworkHost` and the
-    // user sees the previous share list when they expected the host list.
-    //
-    // Previously this only got cleared by an explicit "Back" click inside
-    // `ShareBrowser` (which calls `onNetworkHostChange(null)`). Volume-switches
-    // via the picker, the breadcrumb, history navigation, or MCP didn't trip
-    // that path, so the host stayed pinned. The matching gotcha in
-    // `file-explorer/network/CLAUDE.md` documented this as the cause of E2E
-    // test 436 ("unicode shares render") and several SMB share-count tests.
-    $effect(() => {
-        if (!isNetworkView && currentNetworkHost !== null) {
-            currentNetworkHost = null
-        }
-        if (!isNetworkView && pendingAutoMountShare !== undefined) {
-            pendingAutoMountShare = undefined
-        }
+    // The Network host the pane has open (and any share queued to auto-mount on
+    // it), cleared whenever the pane leaves the network volume by ANY route
+    // (`network-host-state.svelte.ts`).
+    const networkHost = createNetworkHostState({
+        getIsNetworkView: () => isNetworkView,
+        onHostChange: (host) => onNetworkHostChange?.(host),
     })
 
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
@@ -1012,7 +994,7 @@
 
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function setNetworkHost(host: NetworkHost | null): void {
-        currentNetworkHost = host
+        networkHost.setHost(host)
         networkMountViewRef?.setNetworkHost(host)
     }
 
@@ -1024,7 +1006,7 @@
      */
     // noinspection JSUnusedGlobalSymbols -- used by DualPaneExplorer.copyPathBetweenPanes
     export function setNetworkAutoMount(shareName: string | undefined): void {
-        pendingAutoMountShare = shareName
+        networkHost.setAutoMountShare(shareName)
     }
 
     /** Navigates up and selects the folder we came from. Returns false if already at root. */
@@ -1218,12 +1200,6 @@
             diskSpace.clear()
         },
     })
-
-    // Handle network host change from NetworkMountView
-    function handleNetworkHostChange(host: NetworkHost | null) {
-        currentNetworkHost = host
-        onNetworkHostChange?.(host)
-    }
 
     // Cursor movement for the Brief/Full list views (arrows, Page/Home/End,
     // Shift-extend). The per-view step math lives in `../navigation/keyboard-shortcuts`
@@ -1658,10 +1634,10 @@
                 bind:this={networkMountViewRef}
                 {paneId}
                 {isFocused}
-                initialNetworkHost={currentNetworkHost}
-                initialAutoMountShare={pendingAutoMountShare}
+                initialNetworkHost={networkHost.host}
+                initialAutoMountShare={networkHost.autoMountShare}
                 {onVolumeChange}
-                onNetworkHostChange={handleNetworkHostChange}
+                onNetworkHostChange={networkHost.handleHostChange}
             />
         {:else if paneViewKind === 'search-results'}
             <SearchResultsView
