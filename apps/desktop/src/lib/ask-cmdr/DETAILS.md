@@ -118,6 +118,19 @@ result rows into their assistant tool line by `callId`, so the thread shows one 
   mirroring `leftPaneWidthPercent`. `hydrateRail` applies them once at startup from `loadPersistedState` (reopening
   bootstraps the active thread).
 
+## The toggle wiring
+
+The rail's toggle lives in four places, and a miss fails silently (no error, just a shortcut or menu item that does
+nothing):
+
+- The frontend command registry, plus `COMMAND_IDS`, plus the `askCmdr.toggle` handler.
+- Rust `command_map.rs`.
+- The `macos.rs` / `linux.rs` View submenus.
+- `shortcuts-store.ts` `menuCommands`.
+
+The default is `⌘⌥A`, registered **Command-then-Option**: `⌥⌘`-order strings are native-menu-only, so writing the
+shortcut that way in the registry leaves it unmatched. `ask-cmdr-shortcut.test.ts` pins all of it.
+
 ## Window growth (panes keep their size)
 
 Opening the rail grows the MAIN window by the rail's width instead of squeezing the panes; closing shrinks it back.
@@ -181,14 +194,14 @@ Three properties this column exists for:
   inside the file was read ("File details, not contents", "The old name", "What you asked for"). Rewording one of those
   into something that implies content would undo the guardrail's user-facing half.
 - **A thin match must LOOK thin.** A bare quote made a 14-character hit inside 3,140 characters of recognized text read
-  exactly as strong as a decisive one, which is the half of the failure no backend check can close: validation proves the
-  model READ something, never that the name is right. So an `imageText` row with a `coverage` renders the quote inside
-  the line it came from (`…before` + `<mark>` + `after…`, cut ends marked) plus "Matched 14 of 3,140 characters"
+  exactly as strong as a decisive one, which is the half of the failure no backend check can close: validation proves
+  the model READ something, never that the name is right. So an `imageText` row with a `coverage` renders the quote
+  inside the line it came from (`…before` + `<mark>` + `after…`, cut ends marked) plus "Matched 14 of 3,140 characters"
   underneath, and REPLACES the bare detail: the delivered text with the match highlighted proves more than the model's
   own retyping of it. Rows with no coverage (the other four sources) render `detail` as before.
-- **`detail` is model-authored text, and the excerpt is OCR output.** Render both as plain `{text}` only, never `{@html}`
-  (same boundary as assistant prose, `CLAUDE.md` § Must-knows). Backend caps `detail` at 160 characters and each side of
-  the excerpt at 60.
+- **`detail` is model-authored text, and the excerpt is OCR output.** Render both as plain `{text}` only, never
+  `{@html}` (same boundary as assistant prose, `CLAUDE.md` § Must-knows). Backend caps `detail` at 160 characters and
+  each side of the excerpt at 60.
 
 **The thin/solid split is a display judgment, and it lives in the frontend** (`rename-evidence-coverage.ts`, unit
 tested): thin is under 2 percent of the delivered text, and only once at least 200 characters were delivered (a short
@@ -200,16 +213,16 @@ alone.
 
 The layout: three fixed-pixel columns (allow 56, preview 44, arrow 32) plus three shared text columns at 25 / 25 / 42
 percent, inside a `min(1040px, calc(100vw - 48px))` resizable dialog. Evidence wraps (`overflow-wrap: anywhere`) and
-clamps at four lines. The clamp defends a hand-shrunk dialog; it isn't a routine truncation, because hiding evidence from
-the reviewer is the failure this column fixes.
+clamps at four lines. The clamp defends a hand-shrunk dialog; it isn't a routine truncation, because hiding evidence
+from the reviewer is the failure this column fixes.
 
 ## The preview column
 
 The reviewer has to be able to see the file, because a plausible wrong name only looks wrong beside the picture. Every
 row shows its own 36 px thumbnail (scanning 50 rows for the odd wrong one is the actual review task, so a detail pane
-would only show the row the user already suspects), and each thumbnail is a button that opens the file in the full viewer
-with Space or Enter. ArrowDown / ArrowUp walk the buttons, so the preview follows the focused row with no mouse, and the
-focused row is highlighted.
+would only show the row the user already suspects), and each thumbnail is a button that opens the file in the full
+viewer with Space or Enter. ArrowDown / ArrowUp walk the buttons, so the preview follows the focused row with no mouse,
+and the focused row is highlighted.
 
 - **Thumbnails reuse the viewer's `cmdr-media://` preview scheme** through `mediaIndexThumbnailToken` + `mediaUrl`, the
   same path `lib/search/ImageSearchResults.svelte` takes. They do NOT depend on media-index enrichment: the token is
@@ -222,8 +235,8 @@ focused row is highlighted.
   rows reactively there would re-mint 50 tokens per watcher event; the row ids and paths are read through `untrack`.
 - **No thumbnail degrades to a neutral glyph** (not an image, unreadable, on a drive that isn't mounted here): never a
   broken image, never an empty cell, and the row stays fully reviewable.
-- `source_path` + `volume_id` ride the row snapshot for this, and they are DISPLAY data. Apply still sends opaque row ids
-  only, and the backend resolves every path from its own stored proposal.
+- `source_path` + `volume_id` ride the row snapshot for this, and they are DISPLAY data. Apply still sends opaque row
+  ids only, and the backend resolves every path from its own stored proposal.
 
 ## The E2E fake-LLM path
 

@@ -23,38 +23,30 @@ path, layout, decisions): `DETAILS.md`.
 ## Must-knows
 
 - **Assistant prose is the XSS boundary.** Model text is untrusted (a crafted filename it echoes is an injection
-  vector). Render it ONLY through `renderAssistantMarkdown` before `{@html}`. Everything else (tool labels, paths, user
-  text, error copy, rename-evidence detail) renders as plain `{text}`, Svelte-escaped, NEVER `{@html}`. Don't swap its
-  narrow `escapeForMarkdownLite` for `errors/markdown-escape.ts` (that escapes formatting chars too, so nothing
-  renders). `ask-cmdr-markdown.test.ts` pins it; rationale in `DETAILS.md` § Decisions.
+  vector). Render it ONLY through `renderAssistantMarkdown` before `{@html}`; everything else (tool labels, paths, user
+  text, error copy, rename evidence) is plain `{text}`, NEVER `{@html}`. Don't swap its narrow `escapeForMarkdownLite`
+  for `errors/markdown-escape.ts` (that escapes formatting chars too, so nothing renders). `ask-cmdr-markdown.test.ts`
+  pins it; rationale in `DETAILS.md` § Decisions.
 - **The rail gates on consent; it sends NOTHING until the user opts in.** `openRail` refreshes `consentState`: `false`
   shows `AskCmdrConsent.svelte`, `true` the chat, `null` neither (no flash). Never render the composer/thread outside
   the `consented` branch.
 - **The rail is a THIRD focus region via a parallel flag.** `explorerState.getRailFocused()` / `setRailFocused()` is a
-  boolean ALONGSIDE the `'left'|'right'` `focusedPane` union; never widen that union. The rail is NON-modal: do NOT add
-  it to `isModalDialogOpen()` in `+page.svelte` (it would suppress every shortcut while open). Opening focuses the
-  composer; Escape there refocuses `.dual-pane-explorer`.
+  boolean ALONGSIDE the `'left'|'right'` `focusedPane` union; never widen it. The rail is NON-modal: do NOT add it to
+  `isModalDialogOpen()` (it would suppress every shortcut while open). Escape refocuses `.dual-pane-explorer`.
 - **No reasoning blob ever reaches the frontend.** `MessageView` (the wire type) carries display blocks only; the opaque
   provider state is a backend-only DB column. Never add a wire field that leaks it.
 - **Streaming events mutate the LAST assistant message in place** (Svelte deep-proxies the `$state` array). **Cancel
   finalizes locally**: the runtime returns `Cancelled` with NO terminal event, so `stopStreaming` stops the bubble
   itself; don't wait for a `done`/`failed` after a stop.
-- **The toggle is wired in four places** (a miss fails silently): the command registry + `COMMAND_IDS` + the
-  `askCmdr.toggle` handler; Rust `command_map.rs` + the `macos.rs`/`linux.rs` View submenus; `shortcuts-store.ts`
-  `menuCommands`. Default `⌘⌥A`, registered Command-then-Option (⌥⌘-order strings are native-menu-only).
-  `ask-cmdr-shortcut.test.ts` pins it.
-- **Opening the rail GROWS the main window so panes keep their size; closing shrinks it back** (`rail-window.ts`, skips
-  fullscreen/maximized). ❌ Don't grow on hydration or a re-open — the window is already rail-inclusive, so
-  `hydrateRail` passes `resizeWindow: false` and `openRail` grows only on `!wasOpen`. Doubling breaks. `DETAILS.md` §
-  Window growth.
-- **The rename review's "Why this name" column is a guardrail, not a nicety.** Its three non-image evidence labels must
-  keep saying nothing inside the file was read, and an `imageText` row shows its quote inside the delivered line plus
-  "Matched 14 of 3,140 characters", so a sliver can't read as a decisive match. Thin/solid is a DISPLAY judgment
-  (`rename-evidence-coverage.ts`), never a refusal: the app can't know a name is wrong, only that the user should look.
-- **The review's per-row thumbnail owns its `cmdr-media://` tokens.** One mint pass per proposal (keyed on the proposal
-  id alone, or a preflight recheck re-mints 50 tokens), dropped on close / replace / unmount, or the backend token map
-  leaks path mappings. No token → a neutral glyph, never a broken image, and the row stays reviewable. Space on the
-  focused row opens the full viewer. Both in `DETAILS.md`.
+- **The toggle is wired in four places and a miss fails silently.** The sites, and why `⌘⌥A` is registered
+  Command-then-Option, are in `DETAILS.md` § The toggle wiring. `ask-cmdr-shortcut.test.ts` pins it.
+- **Opening the rail GROWS the main window so panes keep their size; closing shrinks it back** (`rail-window.ts`). ❌
+  Never grow on hydration or a re-open: the window is already rail-inclusive, so doubling breaks. `DETAILS.md` § Window
+  growth.
+- **The rename review is a guardrail surface, not a table.** Non-image evidence labels must keep saying nothing inside
+  the file was read; an `imageText` row shows its quote inside the delivered line plus a coverage figure (thin vs solid
+  is display-only, never a refusal); thumbnails own their `cmdr-media://` tokens, minted per proposal and dropped on
+  close. `DETAILS.md`.
 - **Attachments cross into the envelope as path + kind ONLY, never contents** (the read-only privacy line). Drag from a
   pane is a NATIVE webview drag (`onDragDropEvent`), not HTML5, so a DOM `ondrop` never fires. Message paging is
   tail-first with load-older prepend (don't reintroduce one big page). Both in `DETAILS.md`.
