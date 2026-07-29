@@ -399,10 +399,7 @@ fn set_rollback_state_and_item_outcomes_persist() {
     assert_eq!(items[1].outcome, ItemOutcome::Skipped);
     // The skip's reason rides along; a reversed item has none to report.
     assert_eq!(items[0].rollback_skip_reason, None);
-    assert_eq!(
-        items[1].rollback_skip_reason,
-        Some(SkipReason::RestoreTargetOccupied)
-    );
+    assert_eq!(items[1].rollback_skip_reason, Some(SkipReason::RestoreTargetOccupied));
 
     // A retry that reverses the skipped item must clear the stale reason: the column
     // never explains an outcome that no longer holds.

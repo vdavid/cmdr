@@ -208,8 +208,20 @@ skipped files because it carries no per-file numbers. Every line a job undo cove
 offers an Undo the backend would now refuse. Live-stream only: undo needs the operation id, and a reopened thread could
 otherwise offer an Undo for a batch reversed from the operation log meanwhile.
 
-Per-item skip REASONS aren't persisted (the journal records `skipped`, not which `SkipReason`), so the copy names the
-reason class — "changed since the rename, or the old name is taken again" — rather than attributing one per file.
+**Each reason gets its own line, naming the file when it applies to just one** ("Left `invoice-2026.pdf` alone: it
+changed since the rename."). The backend carries a per-reason breakdown (`SkipBreakdown { reason, count, exampleName }`,
+complete counts — see `src-tauri/src/operation_log/DETAILS.md` § Undoing a job); `undoStateFromReport` merges those
+groups across the job's batches (counts sum; the first example wins, and the report arrives newest-batch-first) and
+`undoSkipMessage` maps each typed reason to copy through an exhaustive record, so a new reason is a compile error until
+it's decided.
+
+Two catalog keys per reason (`.named` / `.counted`), not one ICU plural: "name the file" vs "count them" is a display
+choice, and a locale whose plural has only `other` (`zh`, `vi`) couldn't express both from one message.
+
+**Whatever no reason accounts for is still said by class**, with the leftover count ("Left 4 files alone: they
+changed…, or the old name is taken again."). That covers a batch undone before the reason column existed (its rows read
+"reason not recorded") and `alreadyGone`, which maps to no line because it counts as restored. A missing reason must
+never shrink the skipped count the line admits to.
 
 ## Editing a proposed name
 

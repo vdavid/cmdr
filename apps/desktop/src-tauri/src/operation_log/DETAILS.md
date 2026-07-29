@@ -47,6 +47,12 @@ Rules for adding a migration: append a step with the next version; **never edit 
 already ran it — editing it silently diverges their schema); write `up` against the schema the prior steps produce, not
 the latest Rust structs.
 
+**v2 (`migrate_v2_rollback_skip_reason`) is the ladder's first appended step**, and the worked example of the rules: one
+`ALTER TABLE operation_items ADD COLUMN rollback_skip_reason TEXT`, nullable, no default, **no backfill**. Not
+backfilling is the decision, not a shortcut: a v1 row's skip has no recorded reason, so any value picked for it would be
+a fabricated fact in the user's own history. NULL reads as "reason not recorded" everywhere (`Option<SkipReason>` on the
+read side), which is what actually happened.
+
 **Why no delete-and-recreate here** (the whole point): the index/importance caches wipe on a `SCHEMA_VERSION` mismatch
 because their data is regenerable derived state. The operation log's data is the user's history — wiping it loses
 undo-ability, which is exactly what makes the log valuable. So it migrates.
@@ -83,9 +89,14 @@ non-obvious choices:
   in the alpha dialog.
 - **`operation_items` — per-item rows.** `seq` (order within the op, for grouped display and reverse-order rollback),
   typed `entry_type` (file/dir) and `row_role` (`rollback_unit` / `search_only`), interned `source_dir_id` +
-  `source_name` (+ folded) and nullable dest equivalents, `size`, `mtime`, typed `outcome`, `overwrote`. Directories the
-  op created are **first-class `dir` rows** sequenced after their contents, so a `seq DESC` rollback removes files before
-  the dirs that held them. Names are indexed folded (search) and, unlike dirs, **not interned** — a b-tree handles the
+  `source_name` (+ folded) and nullable dest equivalents, `size`, `mtime`, typed `outcome`, `overwrote`, and the nullable
+  typed `rollback_skip_reason` (v2). That last column has exactly ONE writer — the rollback engine, on the original op's
+  rows, alongside `outcome = skipped` — so its vocabulary can't drift: a `Skipped` outcome written by a mutation path
+  means something else entirely and correctly reads NULL, as do pre-v2 rows and the inverse op's mirror rows (the reason
+  is a property of the item the engine examined, and the inverse row reaches it via `rolls_back_op_id`). The plain name
+  `skip_reason` stays free for a future "why did the OPERATION skip this item". No index: read per row, never filtered on.
+  Directories the op created are **first-class `dir` rows** sequenced after their contents, so a `seq DESC` rollback
+  removes files before the dirs that held them. Names are indexed folded (search) and, unlike dirs, **not interned** — a b-tree handles the
   massive duplication across a large op fine, and names must stay directly queryable.
 
 ## The writer (`writer.rs`)
@@ -347,10 +358,23 @@ exists for the Ask Cmdr rename rail, where one run can approve several batches.
   `OperationUndoOutcome` with a typed `refusal` and zero counts, so the caller's operation count always matches what it
   asked for (invariant 9). Unknown ids carry no start time, so they land last in the report; they reversed nothing, so
   their position changes no outcome.
-- **Per-item skip REASONS are not persisted.** The engine records `ItemOutcome::Skipped` on the original's items but not
-  which `SkipReason` produced it, so a report can say how many items were left alone, never which reason applied to which
-  file. The UI therefore names the reason class ("changed since the rename, or the old name is taken again"). Attributing a
-  reason per file needs a new column, hence a migration.
+- **Per-item skip REASONS are persisted, so a report names files, not classes.** The engine writes the `SkipReason` it
+  computed into `rollback_skip_reason` alongside `ItemOutcome::Skipped`, both in one `set_item_outcomes` update — so a
+  retry that reverses an item CLEARS the reason, and no row ever explains an outcome that no longer holds. An
+  `AlreadyGone` item counts as reversed, so it stores no reason at all; the vocabulary lives in `types.rs::SkipReason`,
+  shared with the engine rather than duplicated.
+- **The report carries a per-reason breakdown, complete but bounded** (`rollback/skips.rs`). `RollbackReport.skips` (and
+  each `OperationUndoOutcome.skips`) is one `SkipBreakdown { reason, count, example_name }` per reason, so a 1M-item
+  rollback's report is a handful of strings AND every skip is counted — a truncated sample would be a cut to disclose
+  under invariant 9, and this way there's no cut. `example_name` is the leaf name at the location the undo FOUND the item
+  (`removal_target`), which is the name the file carries right now — the one the user is looking at; the frontend does no
+  path arithmetic. The UI merges groups across a job's batches and names the file when a group has one member — see
+  `apps/desktop/src/lib/ask-cmdr/DETAILS.md` § Undo after a batch lands.
+- **Reading pre-v2 history.** A rollback run before v2 left its items `skipped` with `rollback_skip_reason` NULL, and
+  every read surfaces that as `None` / `null` (`OperationItemRow`, `OperationItemView`, so MCP `operations_get` too) —
+  "reason not recorded", never a stand-in. The frontend falls back to naming the reason class for exactly this case, and
+  still reports the count. Retention and the startup reconcile only ever read `outcome`, so both behave identically
+  whether the column is set or NULL.
 
 ### The `rolling_back` state machine + startup reconcile (Finding 7 + 3)
 
@@ -522,3 +546,7 @@ rendering.
   in-tree tests).
 - Migration ladder forward/downgrade/unparseable behavior: `store::tests` (`forward_migration_preserves_rows_and_bumps_version`,
   `downgrade_is_refused_not_destroyed`, `unparseable_file_recreates_fresh`).
+- A pre-v2 row reading as "reason not recorded" rather than a default:
+  `store::tests::a_pre_migration_item_row_reads_as_no_recorded_skip_reason` (writes a row against the v1-only ladder, then
+  migrates forward). Per-item reasons round-tripping, and the reversed / already-restored cases recording none:
+  `rollback::tests::a_skipped_item_persists_the_reason_it_was_skipped` and its two siblings.
