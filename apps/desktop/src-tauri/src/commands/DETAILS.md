@@ -136,7 +136,15 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 
 ## Decisions
 
-`agent.rs` adapts Ask Cmdr's channel-only stream events. Its `ProposalReady` snapshot is display-only; rename review
+`agent/` is the one command domain split into a directory, because it carries five unrelated command families plus the
+wire DTOs they share: `views.rs` (the stream event enum, the specta display projections, and the pure mappings),
+`chat.rs` (send + cancel), `attachments.rs`, `bulk_rename.rs`, `conversations.rs`, `consent.rs`, `cost.rs`. `mod.rs`
+glob-re-exports each submodule, which is load-bearing: `#[tauri::command]` generates companion items next to the
+function, and `ipc.rs` / `ipc_collectors.rs` register by the `crate::commands::agent::<name>` path, so a NAMED re-export
+would leave those hidden items behind and fail to compile. `mod.rs` also owns the two shared `main.db` connection
+helpers.
+
+`chat.rs` adapts Ask Cmdr's channel-only stream events. Its `ProposalReady` snapshot is display-only; rename review
 commands accept only opaque proposal and row ids. `apply_bulk_rename` consumes an exact accepted preflight then delegates
 the batch to `write_operations::start_bulk_rename`; it never accepts frontend paths or model approval.
 

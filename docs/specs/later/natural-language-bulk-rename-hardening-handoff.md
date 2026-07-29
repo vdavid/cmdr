@@ -233,7 +233,7 @@ The post-fix Svelte lane passed all 6,815 tests. Earlier concurrent-run failures
 
 ### Finding 5: operation-log provenance
 
-Current code at `apps/desktop/src-tauri/src/commands/agent.rs` around line 906 passes only `Initiator::Agent`. The user
+Current code at `apps/desktop/src-tauri/src/commands/agent/bulk_rename.rs` passes only `Initiator::Agent`. The user
 requires the operation log to record both facts: the agent proposed the plan and the user approved the selected rows.
 
 Design this as structured provenance, not a misleading replacement with `User` and not a display-only string hack.

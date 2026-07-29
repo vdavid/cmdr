@@ -31,7 +31,7 @@ entity, not the surface, so later proactive slices (proposals, notifications) gr
   (`askCmdr.consent.*`), so bump `CONSENT_COPY_VERSION` if what it can send changes. This is a structural privacy line;
   don't add a tool that widens it without revisiting the whole consent + gating story.
 - **The runtime drives the seams; the IPC is wired.** `chat::runtime` consumes the `AgentLlm` seam, store queries, and
-  tool dispatch; `agent::start` registers `ChatRuntime`. `../commands/agent.rs` is the thin frontend surface
+  tool dispatch; `agent::start` registers `ChatRuntime`. `../commands/agent/` is the thin frontend surface
   (send/cancel, conversation CRUD + FTS, attachment resolvers, consent + cost commands; full list in DETAILS.md).
   `ask_cmdr_send_message` streams over a Tauri `Channel` on a worker thread (`run_turn` holds a non-`Send` connection
   across awaits). Register a new command in BOTH `ipc.rs` and `ipc_collectors.rs`. Frontend:

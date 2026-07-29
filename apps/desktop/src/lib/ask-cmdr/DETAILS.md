@@ -1,7 +1,7 @@
 # Ask Cmdr rail details
 
 Pull-tier docs for `lib/ask-cmdr/`. Must-knows live in `CLAUDE.md`. Backend:
-`apps/desktop/src-tauri/src/agent/CLAUDE.md` and `apps/desktop/src-tauri/src/commands/agent.rs`.
+`apps/desktop/src-tauri/src/agent/CLAUDE.md` and `apps/desktop/src-tauri/src/commands/agent/`.
 
 ## The IPC surface
 
@@ -193,7 +193,8 @@ routine truncation, because hiding evidence from the reviewer is the failure thi
 The stream also carries a display-only `proposalReady` rename-plan snapshot. The review dialog owns it in the next
 feature slice; until then the rail deliberately does not treat the event as approval or a filesystem action.
 
-The app has no real AI provider under E2E, so `commands/agent.rs::resolve_agent_llm` routes the send through a scripted
+The app has no real AI provider under E2E, so `commands/agent/chat.rs::resolve_agent_llm`
+routes the send through a scripted
 `FakeAgentLlm` when `CMDR_E2E_ASK_CMDR_FAKE=1` (set for the whole E2E run by the `desktop-svelte-e2e-playwright` check).
 It streams a fixed "Hi! I'm the test assistant." so `ask-cmdr.spec.ts` can assert send-and-render deterministically,
 zero network. The scripted turn is Say-only (no tools), so no tool dispatch runs. `ask-cmdr-trigger.test.ts` covers the
@@ -244,4 +245,4 @@ prefix would trip the unused-key check).
   dropping them is safe.
 - **The send command returns early and streams on a worker thread.** `run_turn` holds a non-`Send` rusqlite `Connection`
   across awaits, so its future can't live on the Tauri command future or a multi-thread tokio task; a dedicated thread
-  with a current-thread runtime sidesteps that. See `commands/agent.rs`.
+  with a current-thread runtime sidesteps that. See `commands/agent/`.

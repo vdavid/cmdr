@@ -39,7 +39,7 @@ rationale, the FTS design, the search-JOIN gotcha, no-retention-in-v1): `DETAILS
 - **Consent lives in the `meta` table, not a settings preference.** `get_consent`/`set_consent`/`clear_consent`
   read/write the `ask_cmdr_consent_version` + `ask_cmdr_consent_at` meta rows (agent state, `sqlite3`-inspectable). A
   partial/absent record reads as no consent, so the gate fails CLOSED. The copy version is owned by
-  `commands/agent.rs::CONSENT_COPY_VERSION`, not here.
+  `agent::consent::CONSENT_COPY_VERSION`, not here.
 - **`conversation_cost` sums a thread's whole cost meter and ANDs `priced`** (any unpriced turn ⇒ `fully_priced = false`)
   and lists the distinct providers, so the per-thread footer can render the honest miss-path (local ⇒ free; unpriced ⇒
   unknown; never a silent $0). Pricing itself is `crate::agent::pricing`, not the store.

@@ -485,7 +485,7 @@ The `AI › Ask Cmdr` subsection (second card under the AI card-menu), over the 
 - **The interactive slot is a MODEL-only setting.** `askCmdr.interactiveModel` (a hand-rolled text row — the registry
   has no generic text-input primitive) overrides the model; the provider, keys, and base URL come from the shared `ai/`
   config (Settings › AI). The section shows the current `ai.provider` as a hint. Backend resolution:
-  `commands/agent.rs::resolve_agent_llm` + `settings::load_ask_cmdr_interactive_model`.
+  `commands/agent/chat.rs::resolve_agent_llm` + `settings::load_ask_cmdr_interactive_model`.
 - **Spend** is the per-day rollup from `ask_cmdr_cost_summary`, formatted with the same honest miss-path as the rail
   footer (`lib/ask-cmdr/ask-cmdr-cost.ts`): a fully-priced day shows an estimate, a zero-cost fully-priced day is
   local/free, an unpriced day is "cost unknown", never a silent $0.
