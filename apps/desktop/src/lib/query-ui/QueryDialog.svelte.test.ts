@@ -532,14 +532,14 @@ describe('QueryDialog count-only switch', () => {
   it('renders no switch when the consumer omits onToggleCountOnly (Selection)', async () => {
     const { overlay, cleanup } = mountQueryDialog()
     await tick()
-    expect(overlay.querySelector('.mode-row [role="switch"]')).toBeNull()
+    expect(overlay.querySelector('.query-grid__count-only [role="switch"]')).toBeNull()
     cleanup()
   })
 
   it('renders it beside the mode chips, reflecting the state (Search)', async () => {
     const { overlay, cleanup } = mountQueryDialog({ countOnly: true, onToggleCountOnly: () => {} })
     await tick()
-    const sw = overlay.querySelector('.mode-row [role="switch"]')
+    const sw = overlay.querySelector('.query-grid__count-only [role="switch"]')
     expect(sw).not.toBeNull()
     expect((sw as HTMLInputElement).checked).toBe(true)
     cleanup()
@@ -554,7 +554,7 @@ describe('QueryDialog count-only switch', () => {
 
     vi.useFakeTimers()
     try {
-      overlay.querySelector<HTMLInputElement>('.mode-row [role="switch"]')?.click()
+      overlay.querySelector<HTMLInputElement>('.query-grid__count-only [role="switch"]')?.click()
       expect(onToggleCountOnly).toHaveBeenCalledOnce()
       // Debounced (`scheduleSearch`), which is what keeps AI mode's explicit-trigger contract.
       vi.advanceTimersByTime(1_000)

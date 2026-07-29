@@ -882,32 +882,36 @@
     {/snippet}
 
     <div class="query-dialog-body" bind:this={dialogElement}>
-        <!-- Zone 1: what to look for and how. -->
-        <QueryBar
-            bind:inputElement={queryInputElement}
-            bind:fieldElement={queryFieldElement}
-            {query}
-            {mode}
-            disabled={config.inputsDisabled}
-            aiHighlight={highlightedFields.has('query')}
-            {showRunHint}
-            showEnterHint={enterAction === 'run-search'}
-            recentOpen={recentPopoverOpen}
-            onInput={handleQueryInput}
-            onRun={runFromButton}
-            onToggleRecent={toggleRecentPopover}
-            recentTriggerLabel={config.recentItems.triggerAriaLabel ?? tString('queryUi.recent.allButtonAria')}
-            recentTriggerTooltip={config.recentItems.triggerTooltip ?? tString('queryUi.recent.trailingTooltip')}
-            onCompositionStart={handleCompositionStart}
-            onCompositionEnd={handleCompositionEnd}
-        />
+        <!-- Zone 1: what to look for and how, as a 2×2 grid. `QueryBar` is
+             `display: contents`, so it drops the query field into the left column and the
+             Search button into the right one; the mode chips and the Count-only switch sit
+             under them in the same two columns. -->
+        <div class="query-grid">
+            <QueryBar
+                bind:inputElement={queryInputElement}
+                bind:fieldElement={queryFieldElement}
+                {query}
+                {mode}
+                disabled={config.inputsDisabled}
+                aiHighlight={highlightedFields.has('query')}
+                {showRunHint}
+                showEnterHint={enterAction === 'run-search'}
+                recentOpen={recentPopoverOpen}
+                onInput={handleQueryInput}
+                onRun={runFromButton}
+                onToggleRecent={toggleRecentPopover}
+                recentTriggerLabel={config.recentItems.triggerAriaLabel ?? tString('queryUi.recent.allButtonAria')}
+                recentTriggerTooltip={config.recentItems.triggerTooltip ?? tString('queryUi.recent.trailingTooltip')}
+                onCompositionStart={handleCompositionStart}
+                onCompositionEnd={handleCompositionEnd}
+            />
 
-        <!-- The mode chips span the dialog (`fullWidth`), so the Count-only switch rides
-             beside them rather than inside the group. It belongs in zone 1: it changes
-             what the search RETURNS, it isn't one more way to narrow the matches.
-             Search wires `onToggleCountOnly`; Selection omits it and the switch is absent. -->
-        <div class="mode-row">
-            <div class="mode-row__chips">
+            <!-- The mode chips fill the left column (`fullWidth`), so the Count-only switch
+                 rides beside them rather than inside the group. It belongs in zone 1: it
+                 changes what the search RETURNS, it isn't one more way to narrow the matches.
+                 Search wires `onToggleCountOnly`; Selection omits it, and then the chips take
+                 the whole row rather than leaving a hole in the right column. -->
+            <div class="query-grid__modes" class:is-wide={!config.filterChipsExtras.onToggleCountOnly}>
                 <ModeChips
                     {mode}
                     aiEnabled={config.aiEnabled}
@@ -916,7 +920,7 @@
                 />
             </div>
             {#if config.filterChipsExtras.onToggleCountOnly}
-                <div class="mode-row__count-only" use:tooltip={tString('queryUi.filters.countOnly.tooltip')}>
+                <div class="query-grid__count-only" use:tooltip={tString('queryUi.filters.countOnly.tooltip')}>
                     <Switch
                         checked={config.filterChipsExtras.countOnly ?? false}
                         disabled={config.inputsDisabled}
@@ -1076,26 +1080,35 @@
         min-height: 0;
     }
 
-    /* Zone-1 mode row: the `fullWidth` mode chips take the room, the Count-only switch
-       rides at the trailing end. `ModeChips` brings its own `--spacing-lg` inset, so the
-       switch only pays for the right one. */
-    .mode-row {
-        display: flex;
+    /* Zone-1 control grid, a real 2×2: query field + Search button on row 1, mode chips
+       + Count-only switch on row 2. ONE `auto` right column, shared by both rows, sizes
+       itself to the wider of "Search ⏎" / "Count only" and never wraps either; the left
+       column takes the rest at `minmax(0, 1fr)` so the `fullWidth` ToggleGroup can't push
+       the grid wider than the dialog. The strips own their inset (`padded={false}`), and
+       this one covers all four cells. */
+    .query-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
-        background: var(--color-bg-primary);
+        gap: var(--spacing-sm);
+        padding: var(--spacing-lg) var(--spacing-dialog);
         flex-shrink: 0;
     }
 
-    .mode-row__chips {
-        flex: 1 1 auto;
+    .query-grid__modes {
         min-width: 0;
     }
 
-    .mode-row__count-only {
-        flex: 0 0 auto;
+    /* No Count-only switch (Selection): the chips take both columns. Keeping them in
+       column 1 would leave a hole and squeeze four mode cells into a narrower row than
+       they need at the dialog's minimum width. */
+    .query-grid__modes.is-wide {
+        grid-column: 1 / -1;
+    }
+
+    .query-grid__count-only {
         display: flex;
         align-items: center;
-        padding-right: var(--spacing-dialog);
         color: var(--color-text-secondary);
         white-space: nowrap;
     }
@@ -1105,8 +1118,6 @@
        undefined and the row doesn't render. */
     .query-dialog__notice {
         padding: var(--spacing-xs) var(--spacing-dialog);
-        background: var(--color-bg-primary);
-        border-bottom: 1px solid var(--color-border-subtle);
         color: var(--color-text-tertiary);
         font-size: var(--font-size-sm);
         flex-shrink: 0;
@@ -1117,7 +1128,6 @@
         display: flex;
         align-items: stretch;
         justify-content: flex-end;
-        background: var(--color-bg-primary);
         border-top: 1px solid var(--color-border-subtle);
         flex-shrink: 0;
     }

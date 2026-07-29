@@ -93,14 +93,25 @@ Five opt-ins carry the shape this dialog needs (each documented in `$lib/ui/DETA
 
 ### Zones
 
-The body reads as three zones, separated by a surface flip plus a hairline (no new divider vocabulary):
+The body reads as three zones. Only ONE of them paints a surface: everything above the results sits on the dialog
+panel's own `--color-bg-dialog`, and the separation comes from spacing plus single hairlines.
 
-1. **What to look for and how** — `QueryBar`, then the `fullWidth` `ModeChips` with the Count-only switch beside them,
-   then the `AiPromptStrip` / notice banner when present. On `--color-bg-primary`.
-2. **The filters** — `FilterChips`. On `--color-bg-secondary` with a hairline above and below: the band that separates
-   "how do I narrow this" from "here's what I found".
-3. **The results** — `QueryResults` (header + rows + states + status bar). Back on `--color-bg-primary`, so the list
-   reads as its own surface rather than blending into the chip strip.
+1. **What to look for and how** — the `.query-grid`, then the `AiPromptStrip` / notice banner when present.
+2. **The filters** — `FilterChips`. No band fill; one bottom hairline, which is the seam into the results.
+3. **The results** — `QueryResults` (header + rows + states + status bar) on `--color-bg-primary`, a recessed well
+   against the panel. That flip is what separates "how do I narrow this" from "here's what I found"; the footer's top
+   hairline closes the well from below.
+
+Don't reintroduce per-strip backgrounds. Three surfaces in one panel is the look this replaced, and the well only reads
+as a well while it's the only surface flip in the dialog.
+
+**The `.query-grid` is a real 2×2** (`minmax(0, 1fr) auto`): query field over mode chips on the left, Search button over
+the Count-only switch on the right. `QueryBar` is `display: contents`, so its two halves land directly in row 1's cells;
+`.query-bar` survives only as the selector hook the E2E suite and the dialog tests address the field and the run button
+through. The single `auto` right column is shared by both rows, which is what makes the pairs line up, and the run
+button stretches to fill it. With no Count-only switch (Selection), the chips span both columns instead of leaving a
+hole: four mode cells don't fit a narrowed left column at the dialog's minimum width (`min(720px, 60vw)` against a 950px
+window).
 
 The Count-only switch is a QueryDialog-level sibling of `ModeChips`, not a `ModeChips` or `FilterChips` child: it
 changes what the search RETURNS rather than what it matches, and `ModeChips` is a pure `ToggleGroup` wrapper. It's the
@@ -109,9 +120,9 @@ house `$lib/ui/Switch`; a hand-rolled `role="switch"` is rejected by `cmdr/prefe
 
 Every strip insets at `--spacing-dialog` (20 px), the same as `ModalDialog`'s title bar, so the title, the query field,
 the chips, the result rows, the status bar, and the footer actions all share one left edge. The strips own that padding
-individually (`padded={false}`), so a new strip has to opt in or the column goes ragged; the centered state blocks
-inside `QueryResults` (loading / no-results / empty) are content padding, not strip inset, and stay on the generic
-scale.
+individually (`padded={false}`; for the four zone-1 controls that's the `.query-grid` paying it once for all of them),
+so a new strip has to opt in or the column goes ragged; the centered state blocks inside `QueryResults` (loading /
+no-results / empty) are content padding, not strip inset, and stay on the generic scale.
 
 ### Recent-items dropdown
 
@@ -170,8 +181,7 @@ user staring at a stale count.
 
 The column header renders only when result rows do (the `showingRows` derived). Column labels over a spinner, a criteria
 list, the empty state, or a bare total describe a table that isn't there, and they're the loudest thing in an otherwise
-quiet area. The seam they used to draw below the chip strip is now the chip strip's own bottom hairline plus the zone-2
-→ zone-3 surface flip.
+quiet area. The seam is the chip strip's own bottom hairline plus the zone-2 → zone-3 surface flip.
 
 ### Run failures surface, they don't vanish
 

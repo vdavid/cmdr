@@ -78,8 +78,8 @@
 </script>
 
 <!-- ToggleGroup's `.tg-root` carries the visual chrome shared with Settings's segmented
-     controls. The wrapper adds the chip-row's outer padding + background, and the group
-     stretches across it. -->
+     controls. The wrapper is the grid cell the dialog hands us, and the group stretches
+     across it. -->
 <div class="mode-chips-wrap">
     <ToggleGroup
         semantics="tabs"
@@ -93,11 +93,12 @@
 </div>
 
 <style>
+    /* No inset of its own: the row is a cell in `QueryDialog`'s `.query-grid`, which
+       owns the dialog inset and hands this cell the same width as the query field
+       above it. */
     .mode-chips-wrap {
         display: flex;
         align-items: center;
-        padding: var(--spacing-sm) var(--spacing-dialog);
-        background: var(--color-bg-primary);
     }
 
     /* The query dialogs run one font-size step larger than Settings (the dialog is the

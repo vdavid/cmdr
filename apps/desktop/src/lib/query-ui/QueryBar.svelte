@@ -108,52 +108,57 @@
     const runTitle = $derived(mode === 'ai' ? tString('queryUi.bar.runTitle.ai') : tString('queryUi.bar.runTitle.default'))
 </script>
 
-<div class="query-bar" class:is-disabled={disabled}>
-    <!-- The AI flash rides the wrapper as an accent ring rather than the field's own fill: the
-         pill's background is opaque, so tinting behind it would never show. -->
-    <div class="query-field" class:ai-highlight={aiHighlight} bind:this={fieldElement}>
-        <TextInput
-            bind:inputElement
-            type="text"
-            radius="full"
-            leadingIcon="search"
-            containerStyle="flex: 1 1 auto; min-width: 0;"
-            {placeholder}
-            value={query}
-            {disabled}
-            {ariaLabel}
-            spellcheck={false}
-            autocomplete="off"
-            autocapitalize="off"
-            oninput={(e: Event) => {
-                onInput((e.target as HTMLInputElement).value)
-            }}
-            oncompositionstart={() => {
-                onCompositionStart?.()
-            }}
-            oncompositionend={() => {
-                onCompositionEnd?.()
-            }}
-        >
-            {#snippet trailing()}
-                <button
-                    type="button"
-                    class="recent-trigger"
-                    {disabled}
-                    aria-label={recentTriggerLabel}
-                    aria-haspopup="dialog"
-                    aria-expanded={recentOpen}
-                    onclick={onToggleRecent}
-                    use:tooltip={{ text: recentTriggerTooltip, shortcut: '⌘H' }}
-                >
-                    <Icon name="chevron-down" size={14} aria-hidden="true" />
-                </button>
-            {/snippet}
-        </TextInput>
+<!-- `display: contents`: the bar hands its two halves straight to the dialog's 2×2
+     control grid, so the field lands in the left column (above the mode chips) and the
+     Search button in the right one (above Count only). -->
+<div class="query-bar">
+    <div class="query-bar__query">
+        <!-- The AI flash rides the wrapper as an accent ring rather than the field's own fill: the
+             pill's background is opaque, so tinting behind it would never show. -->
+        <div class="query-field" class:ai-highlight={aiHighlight} bind:this={fieldElement}>
+            <TextInput
+                bind:inputElement
+                type="text"
+                radius="full"
+                leadingIcon="search"
+                containerStyle="flex: 1 1 auto; min-width: 0;"
+                {placeholder}
+                value={query}
+                {disabled}
+                {ariaLabel}
+                spellcheck={false}
+                autocomplete="off"
+                autocapitalize="off"
+                oninput={(e: Event) => {
+                    onInput((e.target as HTMLInputElement).value)
+                }}
+                oncompositionstart={() => {
+                    onCompositionStart?.()
+                }}
+                oncompositionend={() => {
+                    onCompositionEnd?.()
+                }}
+            >
+                {#snippet trailing()}
+                    <button
+                        type="button"
+                        class="recent-trigger"
+                        {disabled}
+                        aria-label={recentTriggerLabel}
+                        aria-haspopup="dialog"
+                        aria-expanded={recentOpen}
+                        onclick={onToggleRecent}
+                        use:tooltip={{ text: recentTriggerTooltip, shortcut: '⌘H' }}
+                    >
+                        <Icon name="chevron-down" size={14} aria-hidden="true" />
+                    </button>
+                {/snippet}
+            </TextInput>
+        </div>
+        {#if showRunHint}
+            <span class="run-hint" aria-hidden="true">{tString('queryUi.bar.runHint')}</span>
+        {/if}
     </div>
-    {#if showRunHint}
-        <span class="run-hint" aria-hidden="true">{tString('queryUi.bar.runHint')}</span>
-    {/if}
     <!-- Button reads "Search ⏎" when ⏎ owns the run action; just "Search" when the
          footer's Go-to-file owns ⏎. Exactly one of the two surfaces the hint. It's the
          house `Button` in the same secondary family as the footer's actions, so the
@@ -168,15 +173,20 @@
 </div>
 
 <style>
+    /* No box of its own: the two children below ARE the grid cells. The dialog's
+       `.query-grid` owns the inset (`--spacing-dialog`, matching `ModalDialog`'s title
+       bar) and the column widths. `.query-bar` survives as a selector hook: the E2E
+       suite and the dialog tests address the field and the run button through it. */
     .query-bar {
+        display: contents;
+    }
+
+    /* Left cell: the pill takes the room, the run hint rides at its trailing end. */
+    .query-bar__query {
         display: flex;
         align-items: center;
-        /* Horizontal inset matches `ModalDialog`'s title bar (`--spacing-dialog`), so the
-           title and the field share one left edge. Every other strip in the dialog does
-           the same; they move together or the column goes ragged. */
-        padding: var(--spacing-lg) var(--spacing-dialog);
-        background: var(--color-bg-primary);
         gap: var(--spacing-sm);
+        min-width: 0;
     }
 
     /* The pill's own wrapper. Carries the AI flash ring and hands the parent one element
@@ -229,8 +239,15 @@
         white-space: nowrap;
     }
 
+    /* Right cell. The button fills it, so "Search ⏎" and the "Count only" switch below
+       it end on the same two edges: that shared width is what makes the four controls
+       read as one 2×2 block. */
     .run-action {
-        flex-shrink: 0;
+        display: flex;
+    }
+
+    .run-action :global(button) {
+        width: 100%;
     }
 
     /* --spacing-xs gap between "Search" and "⏎" matches the visual rhythm of the
