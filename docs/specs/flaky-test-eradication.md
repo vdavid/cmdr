@@ -1,7 +1,8 @@
 # Flaky test eradication
 
-**Status**: The measurement tooling and the contention verdict SHIPPED (2026-07-29). What remains is the two follow-ups
-at the bottom.
+**Status**: SHIPPED (2026-07-29): the measurement tooling, the contention verdict across all three Rust lanes, and
+Playwright retry-pass reporting. One open item at the bottom, needing David's OK: a per-test duration budget for the
+Rust suites.
 
 **Goal**: a Rust test suite where a red run means a real regression. It now does, by a different route than this spec
 originally proposed: rather than restructuring 19 tests, the suite got the instrumentation to say WHY a run went red,
@@ -62,23 +63,40 @@ headroom on a busy one is inconclusive; failed alone with headroom is a genuine 
 Verified both directions: at load 256 a real run returned warn (9 cleared as contention, 1 left unsettled) in 2m51s
 against a 2m0s idle baseline; a planted always-failing test came back red at load 70.
 
-## What's left
+Both original follow-ups SHIPPED (2026-07-29): `rust-integration-tests` now gets the contention re-run (with
+`--run-ignored only` riding in `baseArgs`, since every test there is `#[ignore]`-gated), and both Playwright lanes warn
+on retry-passes read from the structured JSON report.
 
-1. **Wire the contention re-run into `rust-integration-tests`.** It's the most deadline-dense lane and it demonstrably
-   wants this: during a full `pnpm check` it failed on `smb_integration_concurrent_streaming_writes_no_deadlock` timing
-   out at 130 s, then passed standalone in 1m34s. Blocker to solve first: the `contention-retry` profile's 40 s cap is
-   _below_ what healthy SMB tests legitimately take (up to 130 s), and the profile deliberately has no `inherits`, so
-   wiring it as-is would misclassify a healthy slow test as a real failure. The lane needs its own retry profile, and
-   the re-run has to carry `--run-ignored only` alongside the exact-name filter.
-2. **Surface Playwright flaky passes.** `desktop-svelte-e2e-playwright.go` only ever returns `Success`, so on the Linux
-   and CI lanes (where `retries: 1` is set) a retried pass reports as clean green: the same hole just closed on the Rust
-   side, still open on the lane that actually has retries. The suite already writes a structured JSON report
-   (`CMDR_E2E_JSON_REPORT`), so this reads flaky counts from there rather than parsing stdout.
+The stated blocker for the integration lane turned out not to exist. It rested on a claim that healthy SMB tests take
+up to 130 s, which was inferred from a per-test cap rather than measured. **Caps are hang backstops, typically 20-50x
+the real runtime.** Measured on an idle M3 Max, that test runs in **2.8 s** and the whole 53-test integration suite is
+**5.3 s** wall-clock, so the 40 s retry cap already had ~14x headroom.
 
 A contention re-run for the E2E suites is NOT worth building: Playwright already runs `workers: 1` with
 `fullyParallel: false`, so there is no intra-suite parallelism for a serialized probe to remove, and the probe stage
 would be indistinguishable from the original run. The Rust mechanism works precisely because that suite is massively
 parallel.
+
+## Open: a per-test duration budget for the Rust suites
+
+David's standing goal is every test well under 2 s. Measured 2026-07-29 on an idle machine, that's nearly true already:
+**16 tests out of ~4,900 exceed 2 s.**
+
+- Rust unit (4,858 tests, ~30 s wall-clock): 7 over 2 s. The one real outlier is
+  `indexing::store::tests::open_and_recover::busy_db_is_retried_not_deleted` at **5.5 s**; the rest sit at 2.0-2.2 s.
+- SMB integration (53 tests, 5.3 s wall-clock): 9 over 2 s, topping out at 2.8 s.
+- Playwright E2E: already enforces this exact budget. `e2eSlowTestThresholdMs = 2000` warns on any spec over 2 s, with
+  a reasoned allowlist (24 macOS / 14 Linux entries, capped at 3 s).
+
+The systematic fix is to give the Rust lanes the same treatment E2E already has: a warn-only per-test duration budget
+with a reasoned allowlist, mirroring `e2e-durations.go`. That makes the goal enforced and visible rather than a one-off
+cleanup. NOT STARTED: it seeds a new allowlist with ~16 entries, and agents don't create or raise an allowlist without
+David's OK (`.claude/rules/file-length-allowlist.md`).
+
+Shrinking `smb_integration_concurrent_streaming_writes_no_deadlock` specifically is NOT the lever. It buys ~1 s on a
+5.3 s suite and trades away repro strength on a deadlock regression test whose shape (200 files, 60 × 1 MB writes forced
+through the streaming fallback at concurrency 8) is deliberately tuned to the production workload that surfaced the bug.
+No reduction can be shown to still catch it without reproducing the original deadlock.
 
 ## Still-open guidance
 

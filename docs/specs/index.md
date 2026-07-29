@@ -32,9 +32,9 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       (nextest cap vs in-test `wait_until`), and a red run re-runs its failures alone before believing them, so
       starvation is told apart from real slowness and from a real defect. Re-measurement under saturation refuted three
       of the spec's original premises (the offenders are CPU-bound pure-logic tests, not watchers; the headline test was
-      already on a 20 s cap, not 8 s). Remaining: wire the contention re-run into `rust-integration-tests` (needs its
-      own retry profile, since 40 s is below what healthy SMB tests take), and surface Playwright flaky passes on the
-      lanes where `retries: 1` is set.
+      already on a 20 s cap, not 8 s). All three Rust lanes plus both Playwright lanes now report retry-passes as warns,
+      and `rust-integration-tests` gets the contention re-run too. Remaining, needing David's OK: a per-test duration
+      budget for the Rust suites, mirroring the 2 s one E2E already enforces (only 16 of ~4,900 tests exceed it today).
 - [ ] 2026-07-28 `rename-chaining-arrow-keys.md` - ArrowDown/ArrowUp in the inline rename editor commits the current
       edit and instantly starts renaming the file below/above, so renaming a run of files is one keyboard flow. Fire and
       forget (fast on SMB/MTP), neighbour captured by path BEFORE the rename re-sorts the listing, unusable names and
