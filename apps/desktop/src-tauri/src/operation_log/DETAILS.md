@@ -177,6 +177,15 @@ Each point is where the op already stats the item, so journaling is near-zero ma
   location) as the row's dest, so the rollback restore knows where to move it back from. The subtree's `search_only` leaves
   come from the **drive index**, not a filesystem walk — see § Search-leaf enumeration.
 - **cross-FS move** — per-leaf via `copy_single_item` (it stages a copy), same as copy; the op's `kind` is `move`.
+- **batch rename** (Ask Cmdr's reviewed plans, `rename/bulk.rs::record_bulk_rename_outcomes`) — one `rollback_unit` row
+  per APPLIED row, source → destination, with the size + mtime the review preflight already fingerprinted (no new stat).
+  **The mtime crosses a unit boundary here and `journal_snapshot` owns the conversion**: a local fingerprint holds
+  NANOseconds (`Metadata::modified` as `u128`), while this column and `verify_snapshot`'s live counterpart
+  (`FileEntry::modified_at`) are whole Unix **seconds**. Floor-divide, matching `Duration::as_secs` on the read side, and
+  convert with `try_from`, never a saturating `as` cast. Journal nanoseconds and every undo reports drift and refuses,
+  silently disabling undo; journal `None` and identity rests on size alone, so a same-size replacement file gets renamed
+  back in place of the original. A remote fingerprint already holds seconds and passes through untouched; a backend that
+  reports no mtime records `None` and falls back to the size-only check.
 - **compress** (`archive_edit`) — spawns directly (not through `start_write_operation`), so `copy_into.rs`'s deferred
   carries its OWN open/finalize bracket. The compress driver supplies the `archive_edit` subkind + a net-new flag
   (probed before the seed overwrites the target) via `ArchiveProvenance` — the journal can't derive them, both compress

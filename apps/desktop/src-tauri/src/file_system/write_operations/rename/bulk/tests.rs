@@ -56,6 +56,265 @@ fn planning_row(source: &str, destination: &str) -> BulkRenameRow {
     }
 }
 
+fn remote_fingerprint(size: Option<u64>, modified: Option<i64>) -> BulkRenameFingerprint {
+    BulkRenameFingerprint::Remote {
+        normalized_path: "/share/receipt.pdf".to_string(),
+        size,
+        modified,
+    }
+}
+
+/// The journal's mtime column is Unix SECONDS (`journal::mtime_secs`), and undo
+/// compares it against `FileEntry::modified_at`, also Unix seconds. A local
+/// fingerprint holds NANOseconds, so recording it raw would make every undo
+/// report drift and refuse — silently disabling undo.
+#[test]
+fn journal_snapshot_converts_local_nanoseconds_into_the_journals_unix_seconds() {
+    let fingerprint = BulkRenameFingerprint::Local {
+        device: 7,
+        inode: 42,
+        size: 4096,
+        modified_nanos: Some(1_700_000_000_987_654_321),
+    };
+
+    // Truncated, not rounded: `Duration::as_secs` on the read side floors too, so
+    // the two readings of one file agree exactly.
+    assert_eq!(journal_snapshot(&fingerprint), (Some(4096), Some(1_700_000_000)));
+}
+
+/// The unit-agreement test: one real file, read through both sides of the
+/// contract. This is what a wrong conversion breaks, and asserting `is_some()`
+/// alone would not catch it.
+#[test]
+fn journal_snapshot_mtime_equals_the_live_reading_undo_rechecks_it_against() {
+    let tmp = create_test_dir("snapshot_unit");
+    let source = tmp.join("receipt.pdf");
+    fs::write(&source, "reviewed").expect("write fixture");
+    let fingerprint = local_fingerprint(&source).expect("fingerprint fixture source");
+
+    let (size, mtime) = journal_snapshot(&fingerprint);
+    let live = crate::file_system::listing::get_single_entry(&source).expect("read the live entry");
+
+    assert_eq!(mtime, live.modified_at.map(|secs| secs as i64));
+    assert_eq!(size, live.size.map(|size| size as i64));
+    assert!(mtime.is_some(), "a local file must journal a verifiable mtime");
+    let _ = fs::remove_dir_all(&tmp);
+}
+
+/// A remote fingerprint already holds `FileEntry::modified_at`, so it needs no
+/// conversion — and must not get one.
+#[test]
+fn journal_snapshot_passes_a_remote_seconds_reading_through_unchanged() {
+    assert_eq!(
+        journal_snapshot(&remote_fingerprint(Some(1_024), Some(1_700_000_000))),
+        (Some(1_024), Some(1_700_000_000))
+    );
+}
+
+/// A backend that reports no mtime (MTP, some SMB servers) journals none, so the
+/// recheck falls back to size alone rather than inventing a value that would
+/// read as a match.
+#[test]
+fn journal_snapshot_records_no_mtime_when_the_backend_reports_none() {
+    assert_eq!(
+        journal_snapshot(&remote_fingerprint(Some(1_024), None)),
+        (Some(1_024), None)
+    );
+}
+
+/// An applied rename must journal the mtime undo verifies on. Recording `None`
+/// here left `verify_snapshot` comparing size and nothing else, so a same-size
+/// replacement file was renamed back in place of the original.
+#[test]
+fn an_applied_bulk_rename_journals_the_mtime_undo_verifies_on() {
+    use crate::operation_log::TestJournalGuard;
+    use crate::operation_log::capture::WriterJournal;
+    use crate::operation_log::store::{open_read_connection, operation_log_db_path, read_operation_items};
+    use crate::operation_log::writer::OperationLogWriter;
+
+    let journal_dir = tempfile::tempdir().expect("journal tempdir");
+    let db = operation_log_db_path(journal_dir.path());
+    let writer = OperationLogWriter::spawn(&db).expect("spawn writer");
+    let _journal = TestJournalGuard::install(Arc::new(WriterJournal::new(writer)));
+
+    let tmp = create_test_dir("journaled_mtime");
+    let source = tmp.join("before.txt");
+    let destination = tmp.join("after.txt");
+    fs::write(&source, "reviewed").expect("write fixture");
+    let row = local_row("journaled", source.clone(), destination.clone());
+    let live = crate::file_system::listing::get_single_entry(&source).expect("read the live entry");
+
+    let op_id = "op-bulk-rename-mtime";
+    super::super::super::journal::open_local_op(op_id, OpKind::Rename, Initiator::User, 1, Some("root"));
+    record_bulk_rename_outcomes(op_id, "root", &[row], &[BulkRenameOutcome::Done]);
+    super::super::super::journal::finalize_op(op_id, OpKind::Rename, ExecutionStatus::Done);
+
+    let conn = open_read_connection(&db).expect("read conn");
+    let items = read_operation_items(&conn, op_id, 10).expect("items");
+    assert_eq!(items.len(), 1, "one row per applied rename");
+    assert_eq!(
+        items[0].mtime,
+        live.modified_at.map(|secs| secs as i64),
+        "the journaled mtime must be the one undo rechecks against"
+    );
+    assert_eq!(items[0].size, live.size.map(|size| size as i64));
+    let _ = fs::remove_dir_all(&tmp);
+}
+
+/// The full loop for one applied batch rename: a real local rename, journaled by
+/// the capture layer, then reversed by the real rollback engine over the rows
+/// capture actually wrote. Hand-seeded journal rows (as `rollback/tests.rs` uses)
+/// can't catch a capture-side snapshot defect, so this bed exists to.
+struct UndoLoop {
+    _journal: crate::operation_log::TestJournalGuard,
+    writer_journal: Arc<crate::operation_log::capture::WriterJournal>,
+    vm: crate::file_system::VolumeManager,
+    dir: PathBuf,
+    op_id: String,
+}
+
+impl UndoLoop {
+    fn new(name: &str) -> Self {
+        use crate::file_system::volume::{LocalPosixVolume, Volume};
+        use crate::operation_log::capture::WriterJournal;
+        use crate::operation_log::store::operation_log_db_path;
+        use crate::operation_log::writer::OperationLogWriter;
+
+        let journal_dir = create_test_dir(&format!("{name}_journal"));
+        let writer = OperationLogWriter::spawn(&operation_log_db_path(&journal_dir)).expect("spawn writer");
+        let writer_journal = Arc::new(WriterJournal::new(writer));
+        let journal = crate::operation_log::TestJournalGuard::install(writer_journal.clone());
+
+        let vm = crate::file_system::VolumeManager::new();
+        // Rooted at `/` so the fixture's absolute paths resolve, matching how the
+        // real `root` volume is registered.
+        vm.register(
+            "root",
+            Arc::new(LocalPosixVolume::new("Test root", "/")) as Arc<dyn Volume>,
+        );
+        UndoLoop {
+            _journal: journal,
+            writer_journal,
+            vm,
+            dir: create_test_dir(name),
+            op_id: format!("op-{name}"),
+        }
+    }
+
+    /// Apply `source` → `destination` for real and journal it exactly as the
+    /// managed driver does.
+    fn apply(&self, source: &Path, destination: &Path) {
+        let row = local_row("undo", source.to_path_buf(), destination.to_path_buf());
+        let run = bulk_rename_local(
+            std::slice::from_ref(&row),
+            &AtomicU8::new(OperationIntent::Running as u8),
+        );
+        assert_eq!(
+            run.outcomes,
+            vec![BulkRenameOutcome::Done],
+            "the fixture rename applied"
+        );
+        super::super::super::journal::open_local_op(&self.op_id, OpKind::Rename, Initiator::User, 1, Some("root"));
+        record_bulk_rename_outcomes(&self.op_id, "root", &[row], &run.outcomes);
+        super::super::super::journal::finalize_op(&self.op_id, OpKind::Rename, ExecutionStatus::Done);
+    }
+
+    async fn undo(&self) -> crate::operation_log::rollback::RollbackReport {
+        use crate::operation_log::store::{open_read_connection, read_operation};
+        let writer = self.writer_journal.writer();
+        let conn = open_read_connection(writer.db_path()).expect("read conn");
+        let original = read_operation(&conn, &self.op_id)
+            .expect("read op")
+            .expect("the applied batch is journaled");
+        assert_eq!(
+            original.rollback_state,
+            crate::operation_log::types::RollbackState::Rollbackable,
+            "an applied batch rename must be rollbackable"
+        );
+        drop(conn);
+        crate::operation_log::rollback::execute_rollback(
+            &self.vm,
+            writer,
+            &original,
+            "inv-undo",
+            Initiator::User,
+            &|| false,
+        )
+        .await
+    }
+}
+
+impl Drop for UndoLoop {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.dir);
+    }
+}
+
+/// Set a file's mtime to a fixed, distant second, so "the mtime differs" doesn't
+/// depend on the test running across a second boundary.
+fn pin_mtime(path: &Path, unix_seconds: u64) {
+    let file = fs::File::options().write(true).open(path).expect("open to set mtime");
+    file.set_modified(std::time::SystemTime::UNIX_EPOCH + Duration::from_secs(unix_seconds))
+        .expect("set mtime");
+}
+
+/// The half that's easy to break while fixing the other half: undo of an
+/// untouched batch must still restore. A snapshot recorded in the wrong unit
+/// would land here as drift, silently disabling undo.
+#[tokio::test]
+async fn undo_of_an_untouched_batch_rename_restores_the_original_name() {
+    let undo_loop = UndoLoop::new("undo_restores");
+    let source = undo_loop.dir.join("before.txt");
+    let destination = undo_loop.dir.join("after.txt");
+    fs::write(&source, "reviewed").expect("write fixture");
+    undo_loop.apply(&source, &destination);
+
+    let report = undo_loop.undo().await;
+
+    assert_eq!(report.reversed, 1, "an untouched rename reverses");
+    assert_eq!(report.skipped, 0);
+    assert_eq!(
+        report.final_state,
+        crate::operation_log::types::RollbackState::RolledBack
+    );
+    assert_eq!(fs::read_to_string(&source).expect("read restored source"), "reviewed");
+    assert!(!destination.exists(), "the renamed name is released");
+}
+
+/// The defect this milestone fixes: with no mtime journaled, identity rested on
+/// size alone, so a same-size replacement file was renamed back in place of the
+/// original — data loss by undo.
+#[tokio::test]
+async fn undo_refuses_a_same_size_replacement_instead_of_renaming_it_back() {
+    let undo_loop = UndoLoop::new("undo_drift");
+    let source = undo_loop.dir.join("before.txt");
+    let destination = undo_loop.dir.join("after.txt");
+    fs::write(&source, "reviewed").expect("write fixture");
+    undo_loop.apply(&source, &destination);
+    // A DIFFERENT file, byte-for-byte the same length, at the renamed name.
+    fs::write(&destination, "replaced").expect("replace the renamed file");
+    pin_mtime(&destination, 1_700_000_000);
+
+    let report = undo_loop.undo().await;
+
+    assert_eq!(report.reversed, 0, "a drifted target is never touched");
+    assert_eq!(report.skipped, 1);
+    assert_eq!(
+        report.final_state,
+        crate::operation_log::types::RollbackState::PartiallyRolledBack,
+        "a skip is reported as a partial undo, never as a clean one"
+    );
+    assert_eq!(
+        fs::read_to_string(&destination).expect("read the replacement"),
+        "replaced",
+        "the replacement stays where the user put it"
+    );
+    assert!(
+        !source.exists(),
+        "the impostor is NOT renamed back to the original name"
+    );
+}
+
 #[test]
 fn execution_plan_renames_independent_rows_directly_without_temporaries() {
     let rows = vec![planning_row("a", "renamed-a"), planning_row("b", "renamed-b")];

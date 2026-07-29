@@ -724,6 +724,48 @@ async fn remote_fingerprint_matches(volume: &dyn Volume, path: &Path, expected: 
     !metadata.is_directory && metadata.size == *size && metadata.modified_at.map(|value| value as i64) == *modified
 }
 
+/// Nanoseconds in one second — the divisor that brings a local fingerprint into
+/// the journal's unit.
+const NANOS_PER_SECOND: u128 = 1_000_000_000;
+
+/// The `(size, mtime)` identity snapshot the journal records for one applied
+/// rename, in the journal's units: bytes, and Unix **seconds** for mtime.
+///
+/// **The unit is the whole risk here.** Undo rechecks these two numbers against
+/// the live entry (`operation_log::rollback::verify_snapshot` vs
+/// `FileEntry::modified_at`), and every backend reports `modified_at` in whole
+/// Unix seconds — the local reader via `Duration::as_secs`, SMB pinned by
+/// `smb_integration_modified_at_is_unix_seconds`. Journal nanoseconds and every
+/// undo reports drift and refuses, which silently disables undo; journal nothing
+/// (as this did before) and identity rests on size alone, so a same-size
+/// replacement file gets renamed back in place of the original.
+///
+/// A rename never touches the file's mtime (POSIX `rename` changes the parent
+/// directory's, not the inode's; SMB's `FILE_RENAME_INFORMATION` likewise), so
+/// the pre-rename fingerprint stays the destination's true identity.
+///
+/// `None` for mtime when the backend reported none (MTP, some SMB servers): the
+/// recheck then falls back to size alone rather than inventing a value that
+/// would read as a match.
+fn journal_snapshot(fingerprint: &BulkRenameFingerprint) -> (Option<i64>, Option<i64>) {
+    match fingerprint {
+        BulkRenameFingerprint::Local {
+            size, modified_nanos, ..
+        } => (
+            Some(*size as i64),
+            // Floor-divide, matching the truncation `Duration::as_secs` applies on
+            // the read side, so both readings of one file land on the same second.
+            // `try_from` rather than `as`: a saturating or wrapping cast would
+            // journal a timestamp that isn't the file's, and undo would then refuse
+            // forever. An unrepresentable value (past year 292,277,026,596) degrades
+            // to the size-only check instead of panicking.
+            modified_nanos.and_then(|nanos| i64::try_from(nanos / NANOS_PER_SECOND).ok()),
+        ),
+        // A remote fingerprint already holds `FileEntry::modified_at`, in seconds.
+        BulkRenameFingerprint::Remote { size, modified, .. } => (size.map(|size| size as i64), *modified),
+    }
+}
+
 fn record_bulk_rename_outcomes(
     operation_id: &str,
     volume_id: &str,
@@ -734,10 +776,7 @@ fn record_bulk_rename_outcomes(
         if outcome != BulkRenameOutcome::Done {
             continue;
         }
-        let size = match &row.expected_fingerprint {
-            BulkRenameFingerprint::Local { size, .. } => Some(*size as i64),
-            BulkRenameFingerprint::Remote { size, .. } => size.map(|size| size as i64),
-        };
+        let (size, mtime) = journal_snapshot(&row.expected_fingerprint);
         super::super::journal::record_volume_leaf(
             operation_id,
             EntryType::File,
@@ -745,7 +784,7 @@ fn record_bulk_rename_outcomes(
             &row.source,
             Some((volume_id, &row.destination)),
             size,
-            None,
+            mtime,
             false,
             ItemOutcome::Done,
         );

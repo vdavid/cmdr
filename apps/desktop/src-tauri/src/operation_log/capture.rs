@@ -267,6 +267,14 @@ impl WriterJournal {
         }
     }
 
+    /// Test seam: the writer this journal records through, so a full-loop test can
+    /// journal a real operation and then drive `rollback::execute_rollback` over the
+    /// very rows the capture layer wrote (rather than rows a test hand-seeded).
+    #[cfg(test)]
+    pub fn writer(&self) -> &OperationLogWriter {
+        &self.writer
+    }
+
     /// Test seam: drop the next `rollback_unit` row on the floor (still counted
     /// as issued), to exercise the D4 `journal_incomplete` downgrade.
     #[cfg(test)]

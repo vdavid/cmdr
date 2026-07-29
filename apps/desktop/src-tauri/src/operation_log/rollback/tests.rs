@@ -696,6 +696,35 @@ async fn unverifiable_precondition_skips_never_proceeds() {
     assert!(exists(&dst, "/x.bin").await, "an unverifiable item is never deleted");
 }
 
+/// A batch rename on a remote volume journals the mtime its fingerprint held. If
+/// the backend can no longer report one (MTP, some SMB servers), the recheck must
+/// stay Unverifiable and skip — never fall back to size and read as a match,
+/// which is what let a same-size replacement be renamed back.
+#[tokio::test]
+async fn rename_undo_stays_unverifiable_when_the_backend_reports_no_mtime() {
+    let rig = Rig::new();
+    let v = Arc::new(InMemoryVolume::new("Remote"));
+    put(&v, "/invoice-2026.pdf", b"data").await;
+    v.set_modified_at(Path::new("/invoice-2026.pdf"), None);
+    rig.register("v", v.clone());
+    rig.seed(
+        "op",
+        OpKind::Rename,
+        "v",
+        Some("v"),
+        RollbackState::Rollbackable,
+        vec![file_unit(0, "v", "/scan001.pdf", "v", "/invoice-2026.pdf", 4)],
+    );
+
+    let report = rig.rollback("op").await;
+
+    assert_eq!(report.reversed, 0);
+    assert_eq!(report.skipped, 1);
+    assert_eq!(report.final_state, RollbackState::PartiallyRolledBack);
+    assert!(exists(&v, "/invoice-2026.pdf").await, "the unprovable row is untouched");
+    assert!(!exists(&v, "/scan001.pdf").await, "nothing is restored on a guess");
+}
+
 #[tokio::test]
 async fn cancel_stops_and_keeps_what_was_reversed() {
     let rig = Rig::new();
