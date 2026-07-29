@@ -10,7 +10,7 @@
  * fires the share selection only after credentials are validated.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest'
 import { mount, unmount, tick } from 'svelte'
 import ShareBrowser from './ShareBrowser.svelte'
 import type { NetworkHost, ShareInfo } from '../types'
@@ -83,6 +83,15 @@ async function waitForShareList(target: HTMLElement) {
     expect(target.querySelector('.share-row')).toBeTruthy()
   })
 }
+
+// The pane's keys resolve through the command registry, whose ⌘-form defaults only
+// match a keypress when `isMacOS()` says we're on a Mac (elsewhere ⌘↑ is stored as
+// `Ctrl+↑`). happy-dom reports a Linux UA, so pin it to macOS for these combos.
+const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
+beforeAll(() => {
+  navigatorSpy.mockReturnValue({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' } as Navigator)
+})
+afterAll(() => navigatorSpy.mockReset())
 
 describe('ShareBrowser credential gate', () => {
   beforeEach(() => {

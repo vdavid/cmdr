@@ -308,6 +308,12 @@
             return true
         }
 
+        // Everything below is an unmodified key. Matching the whole combo (rather
+        // than just `e.key`) keeps ⇧F8 (delete permanently), ⌘↑/⌘↓ (parent/open), and
+        // ⌘←/⌘→ (copy path between panes) reaching the document dispatcher instead of
+        // also moving this cursor.
+        if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return false
+
         // F8: remove manual host
         if (e.key === 'F8' && !isCursorOnConnectRow && cursorIndex < hosts.length) {
             e.preventDefault()
@@ -316,11 +322,6 @@
             return true
         }
 
-        // ⌘← / ⌘→ are reserved for "Copy path between panes" (document-level
-        // dispatch), so let them bubble instead of jumping the cursor.
-        if (e.metaKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
-            return false
-        }
         if (handleArrowAndEnter(e.key)) {
             e.preventDefault()
             return true

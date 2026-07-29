@@ -3,7 +3,7 @@
  *
  * These tests verify the wiring of Enter, Backspace, Tab, F1/F2, and view mode switching.
  */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
 import { mount, tick } from 'svelte'
 import FilePane from './FilePane.svelte'
 import { waitForUpdates, useMountTarget } from './integration-test-utils'
@@ -158,6 +158,15 @@ vi.mock('$lib/stores/volume-store.svelte', () => ({
 // ============================================================================
 // FilePane keyboard handling tests
 // ============================================================================
+
+// The pane's keys resolve through the command registry, whose ⌘-form defaults only
+// match a keypress when `isMacOS()` says we're on a Mac (elsewhere ⌘↑ is stored as
+// `Ctrl+↑`). happy-dom reports a Linux UA, so pin it to macOS for these combos.
+const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
+beforeAll(() => {
+  navigatorSpy.mockReturnValue({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' } as Navigator)
+})
+afterAll(() => navigatorSpy.mockReset())
 
 describe('FilePane keyboard handling', () => {
   const { getTarget } = useMountTarget()

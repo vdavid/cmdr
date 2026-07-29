@@ -207,6 +207,40 @@ command palette and MCP events. Rebuilds automatically when custom shortcuts cha
 Tier 2 commands (arrows, Space, Enter, Backspace, etc.) are not in the dispatch map. Unmatched keypresses propagate
 normally to component-level handlers in DualPaneExplorer and FilePane.
 
+### Local handlers resolve through the registry too (`eventMatchesCommand`)
+
+`handleGlobalKeyDown` is registered on `document` in the BUBBLE phase, so a handler on the explorer container — a
+descendant — runs FIRST. That ordering is deliberate (a local handler that `stopPropagation`s deliberately outranks
+central dispatch), but it means a sloppy local match silently shadows or doubles a real shortcut.
+
+So local handlers don't test raw key flags; they ask the registry:
+
+- `eventMatchesCommand(event, commandId, { allowShift? })` — does this keypress match THIS command exactly? Right for a
+  handler that knows its own scope, which is most of them: `Enter` is claimed by five different scopes, so the global
+  winner-takes-all `lookupCommand` would hand a pane the volume chooser's command.
+- `comboMatchesCommand(combo, commandId, …)` — the same test for an already-formatted combo, so a handler checking one
+  keypress against several commands (the file list's ten cursor commands) formats it once.
+- `allowShift` accepts the combo with Shift held. Only the file list needs it: Shift there means "extend the selection
+  while the cursor moves", so `⇧↓` is still `nav.down`, while `⌘↓` (open) and `⌥↓` (go to end) stay separate commands.
+
+Callers today: `../file-explorer/pane/selection-keys.ts` (`Space` / `Insert` / `⌘A` / `⌘⇧A`),
+`FilePane.handleOpenOrParentKey` (`nav.open` / `nav.parent` — and `⌘Backspace` falls through to `file.delete` for free,
+since it isn't `nav.parent`'s combo), `../file-explorer/pane/cursor-nav-keys.ts` (the ten cursor commands, as one gate
+in front of the per-view math), and `../file-explorer/network/ShareBrowser.svelte` (`share.back` / `share.selectShare`).
+
+Two file-list matchers stay hand-rolled ON PURPOSE, because they match a CLASS of keys rather than a combo:
+`../file-explorer/pane/type-to-jump-keys.ts` (any printable character) and
+`../file-explorer/pane/selection-dialog-keys.ts` (the physical Minus key, so `⇧-` works on any layout). Both already
+reject every command modifier, which is the property that matters.
+
+The viewer is a separate window and the registry has no source file for it, so its shortcuts aren't customizable and
+`../../routes/viewer/viewer-keyboard.ts` matches locally — but exactly: `handleKeyDown` splits on "carries ⌘/⌃/⌥" up
+front, so a bare key can never be reached by a modified one, and `⌥⌘C` lands on the search chord instead of copy.
+
+**Decision: central dispatch stays in the bubble phase.** Moving it to capture would invert precedence for every handler
+that deliberately stops propagation (`⌘↑`/`⌘↓`, Space, type-to-jump) with no behavior gained. With local handlers
+resolving through the registry, precedence is an explicit per-handler decision rather than an accident of DOM position.
+
 Typing wins in text inputs: before the lookup, `handleGlobalKeyDown` bails when focus is in a text-editing element and
 the combo `isTypingKeyCombo` (no ⌘/⌃/⌥, not an F-key or Escape — shift-only counts as typing). Without this, a bare-key
 Tier 1 binding (Tab → switch pane) fires mid-typing in any in-pane text input that forgets to `stopPropagation`. The

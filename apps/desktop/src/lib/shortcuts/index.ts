@@ -46,5 +46,9 @@ export {
   getConflictingCommandIds,
 } from './conflict-detector'
 
+// Event → command matching for local handlers (the document dispatcher imports
+// `lookupCommand` / `init` / `destroy` from `shortcut-dispatch` directly).
+export { eventMatchesCommand, comboMatchesCommand } from './shortcut-dispatch'
+
 // MCP shortcuts listener
 export { setupMcpShortcutsListener, cleanupMcpShortcutsListener } from './mcp-shortcuts-listener'

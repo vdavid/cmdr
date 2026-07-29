@@ -1,13 +1,25 @@
 /**
- * Centralized shortcut dispatch: reverse lookup from shortcut strings to command IDs.
+ * Turning a KeyboardEvent into a command — the one place that answers "what did the
+ * user just press?", for the document-level dispatcher and for local handlers alike.
  *
- * Builds a Map<shortcutString, commandId> for Tier 1 commands (those eligible for
- * central keyboard dispatch). Rebuilds automatically when custom shortcuts change.
+ * Two shapes, because there are two questions:
+ *
+ * - `lookupCommand`: the GLOBAL reverse lookup over Tier 1 commands
+ *   (`Map<shortcutString, commandId>`, one winner per combo). Right when the caller has
+ *   no scope of its own — the document keydown handler.
+ * - `eventMatchesCommand`: does this keypress match THIS command? Right for a local
+ *   handler, which knows its own scope and so must not be handed whichever command
+ *   happens to win a combo globally (`Enter` is claimed by five scopes).
+ *
+ * Both match the WHOLE combo, so a modifier superset can never trigger a handler:
+ * `⌥⌘A` is not `⌘A`. Hand-rolled predicates like `e.key === 'a' && e.metaKey` are how
+ * "Ask Cmdr" also selected every file.
  */
 
 import { commands } from '$lib/commands/command-registry'
 import type { CommandId } from '$lib/commands'
 import { getEffectiveShortcuts, onShortcutChange } from './shortcuts-store'
+import { formatKeyCombo } from './key-capture'
 import { getActiveScopes } from './scope-hierarchy'
 
 // Command IDs that have showInPalette: false but still need central dispatch
@@ -61,6 +73,40 @@ function buildShortcutMap(): Map<string, CommandId> {
 /** Look up which command ID a shortcut string maps to, if any. */
 export function lookupCommand(shortcutString: string): CommandId | undefined {
   return shortcutMap.get(shortcutString)
+}
+
+/**
+ * True when the keypress matches one of `commandId`'s effective shortcuts EXACTLY,
+ * modifiers and all. Works for every command, Tier 1 or fixed-key, so a local handler
+ * reads its keys from the registry instead of hardcoding them.
+ *
+ * `allowShift` accepts the same combo with Shift held. The file list uses Shift to
+ * extend the selection while the cursor moves, so `⇧↓` still has to mean "move down" —
+ * while `⌘↓` (open) and `⌥↓` (go to end) stay different commands. Only pass it where
+ * Shift genuinely carries that extra meaning.
+ */
+export function eventMatchesCommand(event: KeyboardEvent, commandId: CommandId, options?: MatchOptions): boolean {
+  return comboMatchesCommand(formatKeyCombo(event), commandId, options)
+}
+
+/** Options shared by the two matchers. */
+interface MatchOptions {
+  allowShift?: boolean
+}
+
+/**
+ * `eventMatchesCommand` for a combo already produced by `formatKeyCombo`. Use it when
+ * one keypress is tested against several commands (the file list's cursor keys), so
+ * the event is formatted once.
+ */
+export function comboMatchesCommand(
+  combo: string,
+  commandId: CommandId,
+  { allowShift = false }: MatchOptions = {},
+): boolean {
+  const shortcuts = getEffectiveShortcuts(commandId)
+  if (shortcuts.includes(combo)) return true
+  return allowShift && shortcuts.includes(combo.replace(/^⇧/, '').replace(/^Shift\+/, ''))
 }
 
 /** Initialize the dispatch map and subscribe to shortcut changes. */

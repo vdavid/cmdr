@@ -166,7 +166,7 @@
         } else if (event.key === 'ArrowUp') {
             event.preventDefault()
             navigateSections('up')
-        } else if (event.key === 'a' && (event.metaKey || event.ctrlKey)) {
+        } else if (event.key === 'a' && (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey) {
             // Cmd/Ctrl+A doesn't reach the input by default because the
             // settings window's Edit menu doesn't bind a Select-All item to
             // it (the app uses a custom menu, not the macOS-standard Edit

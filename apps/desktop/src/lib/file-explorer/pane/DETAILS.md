@@ -296,6 +296,25 @@ buttons' visible `disabled` flags (`canRename` / `canMkfile` / `canMkdir` / `can
 can't be clicked, so the dispatch capability guard never fires for an F-click (the guard's blocked set — `file.rename` /
 `file.newFile` / `file.newFolder` — matches exactly the buttons the flags disable on a snapshot pane).
 
+**Keydown handlers read their keys from the command registry.** `FilePane.handleKeyDown` runs before the document-level
+dispatcher (it's a descendant, and dispatch is registered in the bubble phase), so a loose local match silently shadows
+or doubles a real shortcut. Every handler here therefore resolves through `eventMatchesCommand` / `comboMatchesCommand`
+(`$lib/shortcuts`) instead of testing `e.key` plus a modifier flag:
+
+- `selection-keys.ts` — the pure `classifySelectionKey`, mapping a keypress to `selection.toggle` / `toggleAndDown` /
+  `selectAll` / `deselectAll`. Its arms all `stopPropagation()`, so each command runs exactly once (`⌘A` used to run
+  twice, locally and centrally; invisible only because both did the same thing).
+- `handleOpenOrParentKey` — `nav.open` (`Enter` / `⌘↓`) and `nav.parent` (`Backspace` / `⌘↑`). The `⌘Backspace`
+  carve-out is now structural rather than a hand-written `!e.metaKey`: it's `file.delete`'s combo, not `nav.parent`'s,
+  so it falls through to the dispatcher and deletes.
+- `cursor-nav-keys.ts` — one `isCursorKey` gate in front of the per-view math, covering all ten cursor commands (the
+  fixed six plus Home/End/PageUp/PageDown), with `allowShift` for the extend-selection gesture. It replaced a partial
+  `⌘←`/`⌘→` bail, so no modifier superset moves the cursor any more.
+
+`type-to-jump-keys.ts` and `selection-dialog-keys.ts` deliberately stay hand-rolled: they match a key CLASS (any
+printable character; the physical Minus key) rather than a combo. Both already reject ⌘/⌃/⌥, which is the property that
+matters. Full contract and the why: `$lib/shortcuts/DETAILS.md` § "Local handlers resolve through the registry too".
+
 **Selection-dialog keys dispatch onto the bus.** The `+` / `-` keypresses are classified by `selection-dialog-keys.ts`
 and reach the bus through a typed `onCommand?: (commandId: CommandId) => void` prop chain: `FilePane` (the classifier at
 `FilePane.svelte` emits `'selection.selectFiles'` / `'selection.deselectFiles'`) → `DualPaneExplorer` (same typed prop)

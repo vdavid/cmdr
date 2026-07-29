@@ -31,6 +31,7 @@
     import { getNetworkTimeoutMs, getShareCacheTtlMs } from '$lib/settings/network-settings'
     import NetworkLoginForm from './NetworkLoginForm.svelte'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
+    import { eventMatchesCommand } from '$lib/shortcuts'
     import { updateLeftPaneState, updateRightPaneState, type PaneState, type PaneFileEntry } from '$lib/tauri-commands'
 
     async function notifyIfUsingFileFallback(): Promise<void> {
@@ -444,18 +445,14 @@
         return true
     }
 
-    /** `⌘←` / `⌘→` belong to "Copy path between panes" (document-level dispatch). */
-    function isCopyPathBetweenPanesShortcut(e: KeyboardEvent): boolean {
-        return e.metaKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')
-    }
-
     /**
-     * Escape, Backspace, and `⌘↑` all return to the host list. `⌘↑` mirrors the
-     * file list's `⌘↑` = parent, and must be handled before the arrow handler,
-     * which would otherwise treat it as a cursor move.
+     * Escape, Backspace, and `⌘↑` all return to the host list (`share.back`'s
+     * registry keys; `⌘↑` mirrors the file list's `⌘↑` = parent). Matched on the
+     * whole combo and handled before the arrow handler, which would otherwise treat
+     * `⌘↑` as a cursor move.
      */
     function handleBackToHostKey(e: KeyboardEvent): boolean {
-        if (e.key === 'Escape' || e.key === 'Backspace' || (e.key === 'ArrowUp' && e.metaKey)) {
+        if (eventMatchesCommand(e, 'share.back')) {
             e.preventDefault()
             onBack?.()
             return true
@@ -492,14 +489,17 @@
             return true
         }
 
-        if (isCopyPathBetweenPanesShortcut(e)) return false
+        // Everything below is an unmodified key: `⌘←` / `⌘→` (copy path between
+        // panes) and other modifier supersets belong to the document dispatcher.
+        if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return false
+
         if (['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
             e.preventDefault()
             return handleArrowKey(e.key)
         }
 
         // Handle action keys
-        if (e.key === 'Enter') {
+        if (eventMatchesCommand(e, 'share.selectShare')) {
             e.preventDefault()
             if (cursorIndex >= 0 && cursorIndex < sortedShares.length) {
                 void activateShare(sortedShares[cursorIndex])

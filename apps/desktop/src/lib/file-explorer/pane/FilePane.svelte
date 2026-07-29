@@ -36,6 +36,7 @@
     import { resolveLocationOrToast } from '../navigation/navigate-and-select'
     import { updateIndexSizesInPlace } from '../views/file-list-utils'
     import { classifySelectionDialogKey } from './selection-dialog-keys'
+    import { classifySelectionKey } from './selection-keys'
     import { createTypeToJumpController } from './type-to-jump-controller.svelte'
     import TypeToJumpIndicator from './TypeToJumpIndicator.svelte'
     import type { ViewMode } from '$lib/app-status-store'
@@ -112,6 +113,7 @@
     import { showBreadcrumbContextMenu } from '$lib/tauri-commands'
     import { getEffectiveShortcuts } from '$lib/shortcuts/shortcuts-store'
     import { toDisplayShortcut } from '$lib/shortcuts/key-capture'
+    import { eventMatchesCommand } from '$lib/shortcuts'
     import { getVolumes as getStoreVolumes } from '$lib/stores/volume-store.svelte'
     import type { UnreachableState } from '../tabs/tab-types'
     import { getDiskUsageLevel, getUsedPercent, formatBarTooltip } from '../disk-space-utils'
@@ -1717,50 +1719,39 @@
         return true
     }
 
-    // Helper: Handle selection-related key events
+    // Helper: Handle selection-related key events. The keys come from the registry
+    // (`classifySelectionKey`), so they stay customizable and the match is exact —
+    // ⇧Space is Quick Look and ⌥⌘A is Ask Cmdr, neither touches the selection.
+    // Every arm stops propagation so the document-level dispatcher doesn't re-fire
+    // the same command (its cases there exist for the palette and MCP).
     function handleSelectionKeys(e: KeyboardEvent): boolean {
-        // Space - toggle selection at cursor. `Shift+Space` is the Quick Look
-        // accelerator: AppKit consumes the menu shortcut before the webview
-        // sees the keydown, so we shouldn't observe it here in practice. We
-        // still gate `!e.shiftKey` defensively — AppKit can release modifier
-        // keydowns to the webview in edge cases (menu rebuild during shortcut
-        // customization, focus mid-flight), and we don't want Shift+Space to
-        // ever silently toggle selection.
-        if (e.key === ' ' && !e.shiftKey) {
-            e.preventDefault()
-            // Stop propagation so the document-level centralized dispatch doesn't
-            // re-fire `selection.toggle` (whose case in command-dispatch.ts exists
-            // for palette/MCP triggers).
-            e.stopPropagation()
-            selection.toggleAt(cursorIndex, hasParent)
-            // Finder-convert education: the first time the user presses Space
-            // in the file list, explain that Cmdr uses Space for selection and
-            // ⇧Space for Quick Look. The selection toggle above still applies
-            // normally — the toast is purely additive. Subsequent presses are
-            // no-ops (the helper reads its own "shown once" persisted flag).
-            maybeShowQuickLookHint()
+        const command = classifySelectionKey(e)
+        if (!command) return false
 
-            return true
-        }
-        // Insert - toggle selection at cursor and move cursor down (Total Commander style)
-        if (e.key === 'Insert') {
-            e.preventDefault()
-            // See Space note above re: stopPropagation.
-            e.stopPropagation()
-            toggleSelectionAndMoveDownAtCursor()
-            return true
-        }
-        // Cmd+A - select all (Cmd+Shift+A - deselect all)
-        if (e.key === 'a' && e.metaKey) {
-            e.preventDefault()
-            if (e.shiftKey) {
-                selection.deselectAll()
-            } else {
+        e.preventDefault()
+        e.stopPropagation()
+
+        switch (command) {
+            case 'selection.toggle':
+                selection.toggleAt(cursorIndex, hasParent)
+                // Finder-convert education: the first time the user presses Space
+                // in the file list, explain that Cmdr uses Space for selection and
+                // ⇧Space for Quick Look. The selection toggle above still applies
+                // normally — the toast is purely additive. Subsequent presses are
+                // no-ops (the helper reads its own "shown once" persisted flag).
+                maybeShowQuickLookHint()
+                break
+            case 'selection.toggleAndDown':
+                toggleSelectionAndMoveDownAtCursor()
+                break
+            case 'selection.selectAll':
                 selection.selectAll(hasParent, effectiveTotalCount)
-            }
-            return true
+                break
+            case 'selection.deselectAll':
+                selection.deselectAll()
+                break
         }
-        return false
+        return true
     }
 
     /** Gets the file entry under the cursor from the current list view */
@@ -1817,14 +1808,18 @@
      * - Enter / ⌘↓ → open the entry under the cursor (Finder parity, mirror of ⌘↑).
      * - Backspace / ⌘↑ → go to the parent directory.
      *
+     * Both keys resolve against the registry (`eventMatchesCommand`), so they follow a
+     * rebind and match the whole combo. ⌘Backspace therefore falls out naturally: it's
+     * `file.delete`'s combo, not `nav.parent`'s, so it passes through to the document
+     * dispatcher and deletes.
+     *
      * `stopPropagation` is load-bearing for the ⌘-variants: ⌘↓ (`nav.open`) and ⌘↑
-     * (`nav.parent`) are ALSO bound in the registry, so without stopping here the
+     * (`nav.parent`) are ALSO in the dispatch map, so without stopping here the
      * document-level dispatcher would run the command a second time (⌘↑ → grandparent,
-     * ⌘↓ → double-open). ⌘Backspace is deliberately excluded from the parent branch:
-     * it deletes via `file.delete` (⌘⌫), so it falls through to the document dispatcher.
+     * ⌘↓ → double-open).
      */
     function handleOpenOrParentKey(e: KeyboardEvent): boolean {
-        if (e.key === 'Enter' || (e.key === 'ArrowDown' && e.metaKey)) {
+        if (eventMatchesCommand(e, 'nav.open')) {
             const entry = getEntryUnderCursor()
             if (entry) {
                 e.preventDefault()
@@ -1842,7 +1837,7 @@
             return false
         }
 
-        if (((e.key === 'Backspace' && !e.metaKey) || (e.key === 'ArrowUp' && e.metaKey)) && hasParent) {
+        if (eventMatchesCommand(e, 'nav.parent') && hasParent) {
             e.preventDefault()
             e.stopPropagation()
             void navigateToParent()

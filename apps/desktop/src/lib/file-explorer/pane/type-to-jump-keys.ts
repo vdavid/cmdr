@@ -4,6 +4,11 @@
  * (the Quick Look panel-forwarded path) so the two intercepts stay byte-identical
  * — landmine L9 (the panel mirror must match the main intercept). Factoring them
  * here avoids the copy that would let the two drift.
+ *
+ * These predicates deliberately stay hand-rolled rather than resolving through the
+ * command registry: type-to-jump matches a CLASS of keys (any printable character),
+ * not a combo. They're already exact in the way that matters — every one bails on
+ * ⌘/⌃/⌥, so no modifier combo can be swallowed as typing.
  */
 
 /** True if a printable letter or digit with no command-modifier and not a fn key. */

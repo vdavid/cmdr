@@ -13,6 +13,11 @@
  * (`event.code === 'Minus'`), so `⇧-` (which is `event.key === '_'` on US QWERTY)
  * deselects too — symmetry with the shifted `+`, and layout-independent.
  *
+ * This one deliberately stays hand-rolled rather than resolving through the command
+ * registry (as its sibling `selection-keys.ts` does): the physical-key test is the
+ * whole point, and it's already exact where it counts — it rejects every command
+ * modifier, so `⌘-` or `⌥-` can't open the dialog on their way elsewhere.
+ *
  * Tested separately in `selection-dialog-keys.test.ts` so the contract is
  * pinned without spinning up `FilePane`.
  */

@@ -236,6 +236,8 @@ export function createViewerKeyboard(deps: KeyboardDeps) {
    * complexity below the project lint threshold.
    */
   function handleBareKey(e: KeyboardEvent): boolean {
+    // Callers reach here only for unmodified keys (`handleKeyDown` bails on
+    // ⌘/⌃/⌥ first), which matters because `handleNavigationKey` sees only `e.key`.
     return (
       handleTailToggleKey(e, deps.toggleTailMode) ||
       handleToggleKey(e, deps.toggleWordWrap) ||
@@ -243,26 +245,40 @@ export function createViewerKeyboard(deps: KeyboardDeps) {
     )
   }
 
-  function handleKeyDown(e: KeyboardEvent): void {
-    const { search } = deps
-    const searchInputFocused = search.searchVisible && document.activeElement === search.searchInputRef
-
+  /**
+   * Keys carrying ⌘ / ⌃ / ⌥. Nothing here falls through to the bare-key handlers,
+   * which is the point: matching only part of a combo is how `⌥⌘C` would land on
+   * "copy" instead of the search chord it actually is.
+   */
+  function handleModifiedKey(e: KeyboardEvent, searchInputFocused: boolean): void {
     // Search-mode chords (⌘⌥R for regex, ⌘⌥C for case) work whenever the search
     // bar is visible, even if the input has focus. Checked before the generic
     // modifier-shortcut handler so the alt-bearing chord wins.
     if (
-      search.searchVisible &&
+      deps.search.searchVisible &&
       handleSearchToggleKey(e, {
-        toggleUseRegex: search.toggleUseRegex,
-        toggleCaseSensitive: search.toggleCaseSensitive,
+        toggleUseRegex: deps.search.toggleUseRegex,
+        toggleCaseSensitive: deps.search.toggleCaseSensitive,
       })
     ) {
       e.preventDefault()
       return
     }
 
-    if ((e.metaKey || e.ctrlKey) && handleModifierShortcut(e, searchInputFocused)) return
+    // Exactly ⌘/⌃ + letter: ⌘⌥C is the chord above and ⌘⇧A means nothing here.
+    if (!e.altKey && !e.shiftKey) handleModifierShortcut(e, searchInputFocused)
+  }
 
+  function handleKeyDown(e: KeyboardEvent): void {
+    const { search } = deps
+    const searchInputFocused = search.searchVisible && document.activeElement === search.searchInputRef
+
+    if (e.metaKey || e.ctrlKey || e.altKey) {
+      handleModifiedKey(e, searchInputFocused)
+      return
+    }
+
+    // Everything below is an unmodified key; Shift stays free (it picks findPrev).
     if (e.key === 'Escape') {
       e.preventDefault()
       if (tryConsumeEscapeForCopy()) return

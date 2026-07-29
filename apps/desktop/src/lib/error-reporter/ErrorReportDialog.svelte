@@ -166,9 +166,17 @@
         closeErrorReportDialog()
     }
 
+    /**
+     * Exactly ⌘/⌃Enter, no extra modifiers: ⌥⌘Enter and ⇧⌘Enter are different combos
+     * and must not send a report on their way somewhere else.
+     */
+    function isSendCombo(event: KeyboardEvent): boolean {
+        return (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key === 'Enter'
+    }
+
     function handleKeydown(event: KeyboardEvent) {
         // Cmd/Ctrl+Enter sends. Plain Enter is consumed by the textarea.
-        if ((event.metaKey || event.ctrlKey) && event.key === 'Enter' && !sending && !noteOverLimit) {
+        if (isSendCombo(event) && !sending && !noteOverLimit) {
             event.preventDefault()
             void handleSend()
         }

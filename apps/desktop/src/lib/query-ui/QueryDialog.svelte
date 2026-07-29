@@ -609,7 +609,7 @@
      * check remains the contract.
      */
     function matchKey(e: KeyboardEvent, key: string, mod: 'meta' | 'alt'): boolean {
-        if (e.shiftKey) return false
+        if (e.shiftKey || e.ctrlKey) return false
         const modMatches = mod === 'meta' ? e.metaKey && !e.altKey : e.altKey && !e.metaKey
         if (!modMatches) return false
         if (e.key === key) return true
@@ -640,7 +640,7 @@
     }
 
     function handleModeShortcut(e: KeyboardEvent): boolean {
-        if (!e.metaKey || e.altKey || e.shiftKey) return false
+        if (!e.metaKey || e.altKey || e.shiftKey || e.ctrlKey) return false
         if (e.key < '1' || e.key > '9') return false
         const n = parseInt(e.key, 10)
         const target = modeForShortcutNumber(n)

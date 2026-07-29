@@ -142,15 +142,15 @@
         }
     }
 
-    /** Check if key event matches ⌘⇧D (debug window, dev only) */
+    /** ⌘⇧D opens the debug window (dev only). Exact combo: ⌃⌘⇧D / ⌥⌘⇧D are other combos. */
     function isDebugWindowShortcut(e: KeyboardEvent): boolean {
-        return import.meta.env.DEV && e.metaKey && e.shiftKey && !e.altKey && e.key.toLowerCase() === 'd'
+        return import.meta.env.DEV && e.metaKey && e.shiftKey && !e.altKey && !e.ctrlKey && e.key.toLowerCase() === 'd'
     }
 
-    /** Check if key event should be suppressed (Cmd+A, Cmd+Opt+I in prod) */
+    /** Check if key event should be suppressed (⌘A, ⌥⌘I in prod), each an exact combo. */
     function shouldSuppressKey(e: KeyboardEvent): boolean {
-        if (e.metaKey && e.key === 'a') return true
-        return !import.meta.env.DEV && e.metaKey && e.altKey && e.key === 'i'
+        if (e.metaKey && !e.altKey && !e.ctrlKey && !e.shiftKey && e.key === 'a') return true
+        return !import.meta.env.DEV && e.metaKey && e.altKey && !e.ctrlKey && !e.shiftKey && e.key === 'i'
     }
 
     // Unlisten functions for menu, MCP, and dialog listeners (cleaned up on

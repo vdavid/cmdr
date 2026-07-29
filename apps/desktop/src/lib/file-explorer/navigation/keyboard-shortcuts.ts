@@ -103,17 +103,29 @@ function handleFullPageNavigation(
 }
 
 /**
+ * Whether the event carries a command modifier the given shortcut doesn't include.
+ * Shift is never checked: the file list uses it to extend the selection while the
+ * cursor moves, so `⇧PageDown` is still Page Down. Without this, `⌘Home` (and every
+ * other superset) would move the cursor on its way to a different command.
+ */
+function hasExtraModifier(event: KeyboardEvent, { alt = false } = {}): boolean {
+  return event.metaKey || event.ctrlKey || event.altKey !== alt
+}
+
+/**
  * Checks if the event is a Home shortcut (Option+Up or Fn+Left/Home).
  */
 function isHomeShortcut(event: KeyboardEvent): boolean {
-  return (event.altKey && event.key === 'ArrowUp') || (event.key === 'Home' && !event.metaKey)
+  if (event.key === 'ArrowUp') return !hasExtraModifier(event, { alt: true })
+  return event.key === 'Home' && !hasExtraModifier(event)
 }
 
 /**
  * Checks if the event is an End shortcut (Option+Down or Fn+Right/End).
  */
 function isEndShortcut(event: KeyboardEvent): boolean {
-  return (event.altKey && event.key === 'ArrowDown') || (event.key === 'End' && !event.metaKey)
+  if (event.key === 'ArrowDown') return !hasExtraModifier(event, { alt: true })
+  return event.key === 'End' && !hasExtraModifier(event)
 }
 
 /**
@@ -136,7 +148,7 @@ export function handleNavigationShortcut(event: KeyboardEvent, context: Navigati
   const isBriefMode = visibleColumns !== undefined && itemsPerColumn !== undefined
 
   // Page Up
-  if (event.key === 'PageUp') {
+  if (event.key === 'PageUp' && !hasExtraModifier(event)) {
     const clamped = isBriefMode
       ? handleBriefPageUp(currentIndex, totalCount, itemsPerColumn, visibleColumns)
       : handleFullPageNavigation(currentIndex, totalCount, visibleItems, false)
@@ -144,7 +156,7 @@ export function handleNavigationShortcut(event: KeyboardEvent, context: Navigati
   }
 
   // Page Down
-  if (event.key === 'PageDown') {
+  if (event.key === 'PageDown' && !hasExtraModifier(event)) {
     const clamped = isBriefMode
       ? handleBriefPageDown(currentIndex, totalCount, itemsPerColumn, visibleColumns)
       : handleFullPageNavigation(currentIndex, totalCount, visibleItems, true)

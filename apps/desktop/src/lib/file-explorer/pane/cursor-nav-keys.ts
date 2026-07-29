@@ -9,7 +9,42 @@
  */
 
 import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
+import { comboMatchesCommand } from '$lib/shortcuts'
+import { formatKeyCombo } from '$lib/shortcuts/key-capture'
+import type { CommandId } from '$lib/commands'
 import type { ListViewAPI } from './types'
+
+/**
+ * Every command whose key moves the file-list cursor, across both view modes. The
+ * fixed-key six (`nav.up`/`down`/`left`/`right`/`firstInFull`/`lastInFull`) can't be
+ * rebound; the paged four can, and this list is how a rebind reaches the cursor.
+ */
+const cursorCommands = [
+  'nav.up',
+  'nav.down',
+  'nav.left',
+  'nav.right',
+  'nav.firstInFull',
+  'nav.lastInFull',
+  'nav.home',
+  'nav.end',
+  'nav.pageUp',
+  'nav.pageDown',
+] as const satisfies readonly CommandId[]
+
+/**
+ * Whether this keypress is a cursor move, matched on the WHOLE combo. Without it a
+ * bare `e.key === 'ArrowDown'` test also fires for `⌘↓` (open), `⌥↓` (go to end), and
+ * every other modifier superset, so the pane would move the cursor on its way to
+ * running a completely different command.
+ *
+ * Shift is allowed because the file list uses it to extend the selection while the
+ * cursor moves (`⇧↓`); the per-view handlers below read `e.shiftKey` for that fill.
+ */
+function isCursorKey(event: KeyboardEvent): boolean {
+  const combo = formatKeyCombo(event)
+  return cursorCommands.some((commandId) => comboMatchesCommand(combo, commandId, { allowShift: true }))
+}
 
 /** The minimal scroll target `applyNavigation` needs (a list view or any scrollable). */
 export interface ScrollTarget {
@@ -57,18 +92,8 @@ export function createCursorNavKeys(deps: CursorNavKeysDeps): CursorNavKeys {
     // fetchEntryUnderCursor is handled by the $effect tracking cursorIndex
   }
 
-  /**
-   * `⌘←` / `⌘→` belong to "Copy path between panes" (document-level dispatch).
-   * Bail so the local pane handlers don't also move the cursor when those
-   * shortcuts fire. Other modifier + arrow combos keep their existing behavior.
-   */
-  function isShortcutModifierArrow(e: KeyboardEvent): boolean {
-    if (!e.metaKey) return false
-    return e.key === 'ArrowLeft' || e.key === 'ArrowRight'
-  }
-
   function handleBriefModeKeys(e: KeyboardEvent): boolean {
-    if (isShortcutModifierArrow(e)) return false
+    if (!isCursorKey(e)) return false
     const briefListRef = deps.getBriefListRef()
     const result = briefListRef?.handleKeyNavigation?.(e.key, e)
     if (result !== undefined) {
@@ -80,7 +105,7 @@ export function createCursorNavKeys(deps: CursorNavKeysDeps): CursorNavKeys {
   }
 
   function handleFullModeKeys(e: KeyboardEvent): boolean {
-    if (isShortcutModifierArrow(e)) return false
+    if (!isCursorKey(e)) return false
     const fullListRef = deps.getFullListRef()
     const cursorIndex = deps.getCursorIndex()
     const effectiveTotalCount = deps.getEffectiveTotalCount()

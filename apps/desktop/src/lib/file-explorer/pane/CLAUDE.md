@@ -27,10 +27,11 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
 - **`capabilitiesFor` / `volumeKindOf` must stay TOTAL** (never `undefined`; unknown real ids fall to the `local`
   default). Keep the tint classifier `volumeKindFor` separate; never feed the `local` default into tinting.
 - **Archive panes are KIND-FROM-PATH: gate via `capabilitiesForPane(volumeId, path)`, never `VolumeInfo` alone.** A pane
-  inside an archive keeps the parent DRIVE's `volumeId`; the PATH makes it the `archive` kind. Zip is WRITABLE
-  (mutations are managed ops — op handle, not a path; delete is permanent); tar/7z are READ-ONLY, so
-  `capabilitiesForPane` returns the write-flags-off `archive` row (`isWritableArchiveName`) and
-  mkdir/mkfile/rename/paste gate off (copy-OUT still works). DETAILS § "Archive browsing and editing".
+  inside an archive keeps the parent DRIVE's `volumeId`; the PATH makes it the `archive` kind. Zip is WRITABLE (managed
+  ops, permanent delete); tar/7z are READ-ONLY, so mkdir/mkfile/rename/paste gate off and only copy-OUT works. DETAILS §
+  "Archive browsing and editing".
+- **Keydown handlers match the WHOLE combo via `eventMatchesCommand`, never `e.key` + a modifier flag**: ⌥⌘A is not ⌘A.
+  The two class-of-key matchers are the documented exception. DETAILS.
 - **`FilePane.applyIndices` jumps the cursor on SELECT only** (deselect leaves it put), via `firstSelectedIndex` (skips
   the `..` row); raw `idxs[0]` can be `..`.
 - **Snapshot pane (`volumeId === 'search-results'`) couples two points**: `computeHasParent` returns `false` (no `..`
@@ -39,20 +40,19 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
 - **The MTP clipboard refusal gate keys on `caps.kind === 'mtp'`, not `!supportsSystemClipboard`** (network and
   search-results lack one too, so the MTP toast would misfire).
 - **The focus guard (`key-dispatch.ts`) must keep its `[role="dialog"], [role="alertdialog"]` exemption.** Rename
-  dialogs mount inside FilePane; without it the guard and `use:trapFocus` ping-pong focus and freeze the webview. Pinned
-  by E2E.
+  dialogs mount inside FilePane; without it the guard and `use:trapFocus` ping-pong focus and freeze the webview
+  (E2E-pinned).
 - **Nav-state persistence fires from ONE subscriber** (`persistence-subscriber.svelte.ts`, A5). Don't scatter
-  `saveAppStatus` / `saveTabsForPaneSide` across nav paths: mutate the store, the subscriber reacts (exceptions in
-  DETAILS).
+  `saveAppStatus` / `saveTabsForPaneSide` across nav paths: mutate the store, the subscriber reacts (DETAILS).
 - **`navigate(intent, deps)` is the single coordinator-level pane-nav entry.** `{ goTo }` self-routes by volume;
   `{ selectVolume }` always switches. Resolve bare paths to a `Location` at the edge, never feed one in. Refusal
   `message` strings are byte-pinned. DETAILS § "The navigate() transaction".
 - **Self-drag drop builds from recorded app state, not the pasteboard** (`handleDrop` consumes
-  `consumableSelfDragIdentity`). See `../drag/CLAUDE.md`.
+  `consumableSelfDragIdentity`). `../drag/CLAUDE.md`.
 - **`DualPaneExplorer.svelte` (~1450 lines) and `FilePane.svelte` (~2815) are `file-length`-flagged**: don't add to them
   or carve child components (DETAILS § "Why not child components"); cross-cutting state → a `*.svelte.ts` factory, pure
   logic → a `*.ts` helper.
-- **Volume tint has an old-WebKit (Safari < 16.2) sRGB fallback** gated by `hasColorMix`. Don't drop the reactive
-  `mediaTick`, or dark-mode / contrast swaps won't repaint the tint.
+- **Volume tint has an old-WebKit (Safari < 16.2) sRGB fallback** gated by `hasColorMix`. Keep the reactive `mediaTick`,
+  or dark-mode / contrast swaps won't repaint the tint.
 
 Read `DETAILS.md` before any non-trivial work here: editing, planning, reorganizing, or advising.

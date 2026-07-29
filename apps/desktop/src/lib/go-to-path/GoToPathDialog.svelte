@@ -140,7 +140,9 @@
     }
 
     function handleInputKeydown(event: KeyboardEvent): void {
-        if (event.key === 'Enter') {
+        // Bare Enter only: ⌘Enter and friends aren't "go", and swallowing them here
+        // would shadow whatever combo the user actually pressed.
+        if (event.key === 'Enter' && !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey) {
             event.preventDefault()
             event.stopPropagation()
             void confirmGo()

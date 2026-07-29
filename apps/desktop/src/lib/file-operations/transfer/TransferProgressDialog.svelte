@@ -226,6 +226,11 @@
         return 'pending'
     }
 
+    /** Any command modifier or Shift: `⇧F2` and `⌘F2` are other combos, not Queue. */
+    function hasModifier(event: KeyboardEvent): boolean {
+        return event.metaKey || event.ctrlKey || event.altKey || event.shiftKey
+    }
+
     function handleKeydown(event: KeyboardEvent) {
         // Dialog-scoped F2 → "Queue" (send to background). This is Total
         // Commander's copy-dialog-local F2, NOT the global `file.rename` binding:
@@ -234,7 +239,7 @@
         // reach the global key handler, so closing the dialog unmounts this
         // handler and F2 falls through to `file.rename` again (no leak). We still
         // `preventDefault` so the key never triggers a default browser action.
-        if (event.key === 'F2' && canPauseOrQueue) {
+        if (event.key === 'F2' && !hasModifier(event) && canPauseOrQueue) {
             event.preventDefault()
             progress.handleQueue()
             return
