@@ -33,10 +33,17 @@ const FACTS_TTL: Duration = Duration::from_secs(30 * 60);
 /// the model can fix by asking again.
 const MAX_LEDGER_ENTRIES: usize = 1_000;
 
-/// The shortest `detail` that can back an image-TEXT claim, in normalized characters. A
-/// one-or-two-character "quote" appears in almost any text, so it proves nothing. A tag claim
-/// has no such floor: membership in the delivered tag set is the proof, and real tags like
-/// "sky" are short.
+/// The shortest `detail` that can back an image-TEXT claim, in normalized characters. Matching
+/// is by substring against up to a page of OCR, so a short fragment ("Card", "Total") appears
+/// in almost any receipt or screenshot: the model can satisfy the check with text it would have
+/// guessed anyway, and the review row shows a sliver that reads exactly as strong as a decisive
+/// quote. Twelve characters is a phrase.
+const MIN_IMAGE_TEXT_CHARS: usize = 12;
+
+/// The shortest `detail` any source can carry. The three no-claim sources describe something
+/// the user can check for themselves ("old name", "IMG_4021"), so they only have to say
+/// something. A tag claim has no floor at all: membership in the delivered tag set is the
+/// proof, and real tags like "sky" are short.
 const MIN_DETAIL_CHARS: usize = 4;
 
 /// The longest `detail` the tool accepts, in characters. It's a short quote or note for a
@@ -235,11 +242,17 @@ impl ImageFactsLedger {
             return Err(EvidenceProblem::DetailTooLong);
         }
         let detail = normalize_detail(&evidence.detail);
-        // The floor guards SUBSTRING matching (a two-character "quote" hits any text). Tag
-        // claims are checked by membership, so a short real tag must not trip it.
-        if detail.is_empty()
-            || (evidence.source != EvidenceSource::ImageTags && detail.chars().count() < MIN_DETAIL_CHARS)
-        {
+        // The tall floor guards SUBSTRING matching (a short fragment hits any text). Tag claims
+        // are checked by membership, so a short real tag must not trip any floor; the no-claim
+        // sources only have to say something.
+        let floor = match evidence.source {
+            EvidenceSource::ImageText => MIN_IMAGE_TEXT_CHARS,
+            EvidenceSource::ImageTags => 1,
+            EvidenceSource::Filename | EvidenceSource::Metadata | EvidenceSource::UserInstruction => {
+                MIN_DETAIL_CHARS
+            }
+        };
+        if detail.chars().count() < floor {
             return Err(EvidenceProblem::DetailTooShort);
         }
         if !evidence.source.claims_image_content() {
@@ -421,7 +434,8 @@ mod tests {
         for detail in [
             "Messaging 3 new messages",
             "messaging   3 new messages",
-            "\u{201c}LinkedIn\u{201d}",
+            // A typographic-quoted phrase spanning the delivered text's hard line break.
+            "\u{201c}LinkedIn Messaging\u{201d}",
         ] {
             assert_eq!(
                 ledger.check(
@@ -534,22 +548,22 @@ mod tests {
         ledger.record_delivered(
             THREAD,
             "call-1",
-            &image_facts_result(vec![indexed("/x/a.png", Some("alpha text"), &[])]),
+            &image_facts_result(vec![indexed("/x/a.png", Some("alpha invoice text"), &[])]),
         );
         ledger.record_delivered(
             THREAD,
             "call-2",
-            &image_facts_result(vec![indexed("/x/b.png", Some("beta text"), &[])]),
+            &image_facts_result(vec![indexed("/x/b.png", Some("beta invoice text"), &[])]),
         );
 
         ledger.revoke_call("call-1");
 
         assert_eq!(
-            ledger.check(THREAD, "/x/a.png", &evidence(EvidenceSource::ImageText, "alpha text")),
+            ledger.check(THREAD, "/x/a.png", &evidence(EvidenceSource::ImageText, "alpha invoice text")),
             Err(EvidenceProblem::FactsNotDelivered)
         );
         assert_eq!(
-            ledger.check(THREAD, "/x/b.png", &evidence(EvidenceSource::ImageText, "beta text")),
+            ledger.check(THREAD, "/x/b.png", &evidence(EvidenceSource::ImageText, "beta invoice text")),
             Ok(())
         );
     }
@@ -638,6 +652,63 @@ mod tests {
             Ok(()),
             "a list of delivered tags is"
         );
+    }
+
+    /// The floor a quote has to clear. Eleven characters of a real receipt ("Klarna paym")
+    /// still isn't a phrase: short fragments appear in almost any screenshot, so the model can
+    /// satisfy the check with text it would have guessed anyway, and the review row shows a
+    /// sliver that reads as strong as a decisive quote. Twelve characters is the line.
+    ///
+    /// A DATA-SAFETY assertion: this pair is what stops a thin match from backing a rename.
+    #[test]
+    fn an_image_text_quote_shorter_than_twelve_characters_is_refused() {
+        let ledger = ImageFactsLedger::default();
+        ledger.record_delivered(
+            THREAD,
+            "call-1",
+            &image_facts_result(vec![indexed(
+                "/x/a.png",
+                Some("Klarna payment confirmation 1,299 SEK"),
+                &[],
+            )]),
+        );
+
+        assert_eq!(
+            ledger.check(
+                THREAD,
+                "/x/a.png",
+                &evidence(EvidenceSource::ImageText, "Klarna paym")
+            ),
+            Err(EvidenceProblem::DetailTooShort),
+            "11 characters of real delivered text is still too thin to back a name"
+        );
+        assert!(
+            ledger
+                .check(
+                    THREAD,
+                    "/x/a.png",
+                    &evidence(EvidenceSource::ImageText, "Klarna payme")
+                )
+                .is_ok(),
+            "12 characters is the shortest quote that passes"
+        );
+    }
+
+    /// The raised floor is for image TEXT only. The other sources describe things the user can
+    /// check for themselves ("old name", "IMG_4021"), so a short note stays usable there.
+    #[test]
+    fn the_twelve_character_floor_applies_to_image_text_only() {
+        let ledger = ImageFactsLedger::default();
+        for source in [
+            EvidenceSource::Filename,
+            EvidenceSource::Metadata,
+            EvidenceSource::UserInstruction,
+        ] {
+            assert!(
+                ledger.check(THREAD, "/x/a.png", &evidence(source, "IMG_4021")).is_ok(),
+                "{source:?} takes a short note"
+            );
+        }
     }
 
     /// A short tag is still a tag. The minimum-length rule guards SUBSTRING matching against

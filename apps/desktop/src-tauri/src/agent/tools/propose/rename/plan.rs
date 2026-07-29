@@ -63,7 +63,7 @@ pub fn propose_rename_plan_schema() -> Value {
                     },
                     "detail": {
                         "type": "string",
-                        "description": "Up to 160 characters. For imageText a SHORT VERBATIM QUOTE from the text image_facts returned for this path; for imageTags at least one tag it returned; otherwise the concrete detail you used, for example 'Taken 2026-07-20' or 'user asked for YYYY-MM-DD prefixes'."
+                        "description": "Up to 160 characters. For imageText a SHORT VERBATIM QUOTE of at least 12 characters from the text image_facts returned for this path (a whole phrase, not one word); for imageTags at least one tag it returned; otherwise the concrete detail you used, for example 'Taken 2026-07-20' or 'user asked for YYYY-MM-DD prefixes'."
                     }
                 },
                 "required": ["source", "detail"], "additionalProperties": false

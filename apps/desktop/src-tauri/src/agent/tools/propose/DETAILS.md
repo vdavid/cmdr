@@ -16,15 +16,21 @@ Each row's `evidence` is a required `{ source, detail }` pair. `EvidenceSource` 
   other half of the guardrail: a fabricated slug filed under `metadata` is visible as a name with no content behind it,
   rather than hidden. See `apps/desktop/src/lib/ask-cmdr/DETAILS.md` § The "Why this name" column.
 
-`detail` is bounded at both ends (4 normalized characters minimum, 160 maximum): a one-character "quote" appears in any
-text and proves nothing, and a review row can't honestly show a page of OCR output.
+`detail` is bounded at both ends (160 normalized characters maximum, because a review row can't honestly show a page of
+OCR output), and its minimum is per source:
+
+- **`imageText`: 12 characters** (`MIN_IMAGE_TEXT_CHARS`). Matching is by substring against up to a page of OCR, so a
+  short fragment ("Card", "Total") appears in almost any receipt: the model could satisfy the check with text it would
+  have guessed anyway, and the row would show a sliver that reads as strong as a decisive quote. Twelve is a phrase.
+- **`filename` / `metadata` / `userInstruction`: 4 characters** (`MIN_DETAIL_CHARS`). They describe something the user
+  can check for themselves ("old name", "IMG_4021"), so they only have to say something.
+- **`imageTags`: no floor.** Membership in the delivered tag set is the proof, and real tags (`sky`) are short.
 
 **Decision: a tag claim lists delivered tags and nothing else.** `check_tags` requires every comma- or
 semicolon-separated part of `detail` to equal a delivered tag. The tempting direction (does the detail CONTAIN a
 delivered tag?) is a hole: tags like `document`, `screenshot`, and `text` are near-universal in a screenshot corpus, so
-160 characters of invented prose passes on one of them, and a fabricated name reads as tag-backed. `MIN_DETAIL_CHARS`
-therefore applies only to `imageText`, where matching is by substring; membership needs no length floor and real tags
-(`sky`) are short.
+160 characters of invented prose passes on one of them, and a fabricated name reads as tag-backed. The length floors
+therefore skip `imageTags` entirely: membership needs no floor, and real tags (`sky`) are short.
 
 **Decision: one unbacked row refuses the whole plan.** Staging the survivors would hand the user a partial plan they'd
 read as complete, and the model has to resend the plan either way. The refusal names every offending row
