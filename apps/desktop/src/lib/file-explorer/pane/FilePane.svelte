@@ -9,14 +9,12 @@
         getPathsAtIndices,
         getTotalCount,
         onMtpDeviceDisconnected,
-        openFile,
         refreshListingIndexSizes,
         showFileContextMenu,
         showParentRowContextMenu,
         type Location,
         updateMenuContext,
     } from '$lib/tauri-commands'
-    import { resolveLocationOrToast } from '../navigation/navigate-and-select'
     import { createTypeToJumpController } from './type-to-jump-controller.svelte'
     import TypeToJumpIndicator from './TypeToJumpIndicator.svelte'
     import type { ViewMode } from '$lib/app-status-store'
@@ -79,15 +77,13 @@
     import { createSearchPaneKeys } from './search-pane-keys'
     import { computeHasParent } from './has-parent'
     import { firstSelectedIndex } from './first-selected-index'
-    import { capabilitiesForPane, pathInsideArchive } from './volume-capabilities'
-    import { resolveEnterPolicy, parseEnterBehaviorOverrides } from './archive-enter-policy'
+    import { capabilitiesForPane } from './volume-capabilities'
     import { createEnterMenu } from './enter-menu.svelte'
     import Menu from '$lib/ui/Menu.svelte'
-    import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { resolveValidPath } from '../navigation/path-resolution'
     import { isVolumeEjectable } from '../navigation/eject-predicate'
     import { homeDir } from '@tauri-apps/api/path'
-    import { basenameOf, type CanonicalPath, parentOf, toCanonical } from '$lib/path/canonical'
+    import { type CanonicalPath, parentOf, toCanonical } from '$lib/path/canonical'
     import { showBreadcrumbContextMenu } from '$lib/tauri-commands'
     import { getEffectiveShortcuts } from '$lib/shortcuts/shortcuts-store'
     import { toDisplayShortcut } from '$lib/shortcuts/key-capture'
@@ -98,6 +94,7 @@
     import { createRowOverlays } from './row-overlays.svelte'
     import { createSelectionInfoFeed } from './selection-info-feed.svelte'
     import { createPaneKeyRouter } from './pane-key-router'
+    import { createEntryActivation } from './entry-activation'
     import { createParentEntry } from './parent-entry'
     import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
 
@@ -350,8 +347,8 @@
     // opened. Rendered near the pane root; opened from `handleNavigate`.
     const enterMenu = createEnterMenu({
         getPaneElement: () => paneEl ?? null,
-        browse: (entry) => void browseIntoEntry(entry),
-        open: (entry) => void openEntryExternally(entry),
+        browse: (entry) => void activation.browseIntoEntry(entry),
+        open: (entry) => void activation.openEntryExternally(entry),
         restoreFocus: () => onRequestFocus?.(),
     })
     onDestroy(() => {
@@ -1289,116 +1286,26 @@
         await showFileContextMenu(entry.path, entry.name, entry.isDirectory, paths, false, listingId)
     }
 
-    async function handleNavigate(entry: FileEntry) {
-        // `redirectToPath` is set by the backend on virtual entries that
-        // should open elsewhere (worktree and submodule working dirs).
-        if (entry.redirectToPath) {
-            // On the search-results pane, opening a real entry must switch to the
-            // entry's real volume FIRST (resolve a `Location`, route through
-            // `navigate()`). Otherwise the pane keeps `volumeId === 'search-results'`
-            // with a real `path` and `SearchResultsView` shows "Search results no
-            // longer available" (the path doesn't start with `search-results://`).
-            if (isSearchResultsView) {
-                await goToRealEntry(entry.redirectToPath)
-                return
-            }
-            currentPath = entry.redirectToPath
-            await loader.loadDirectory(entry.redirectToPath)
-            return
-        }
-        // Enter-behavior policy for archives (`.zip`) and macOS bundles (`.app`
-        // etc.). Gate on the PANE's path, not the entry's: `pathInsideArchive` is true
-        // for a `.zip` file ITSELF (its own path crosses the boundary), so gating on
-        // the entry would wrongly skip the archive we want the popup for. Gating on the
-        // current directory skips the policy only when we're already browsing INSIDE an
-        // archive — there the entries are inner items, which keep the viewer interim
-        // below. `browse` falls through to the folder-browse arm; `open` launches;
-        // `ask` shows the Browse | Open | Configure popup.
-        if (!pathInsideArchive(currentPath)) {
-            const action = resolveEnterPolicy(
-                entry,
-                parseEnterBehaviorOverrides(getSetting('behavior.archiveEnterBehavior')),
-            )
-            if (action) {
-                // From search results, opening any real entry must switch to its real
-                // volume first (no popup on the snapshot pane — mirrors the arms below).
-                if (isSearchResultsView) {
-                    await goToRealEntry(entry.path)
-                    return
-                }
-                if (action === 'ask') {
-                    enterMenu.openFor(entry, action)
-                    return
-                }
-                if (action === 'open') {
-                    await openEntryExternally(entry)
-                    return
-                }
-                // action === 'browse': fall through to the folder-browse arm.
-            }
-        }
-        // An archive file (`.zip`) browses like a folder: Enter navigates INTO it,
-        // same-volume in-place (the tab keeps the parent-drive id; the backend
-        // `resolve` routes the `…/foo.zip/…` path to the read-only ArchiveVolume).
-        // `isDirectory` stays false on an archive, so it's an explicit second arm.
-        if (entry.isDirectory || entry.isArchive) {
-            // Same as the redirect branch: a real directory opened from the
-            // search-results rows switches to its real volume first.
-            if (isSearchResultsView) {
-                await goToRealEntry(entry.path)
-                return
-            }
-            await browseIntoEntry(entry)
-        } else if (pathInsideArchive(entry.path)) {
-            // A file INSIDE an archive can't be opened by the OS default app: the
-            // inner path doesn't exist on disk, so `openFile` is a silent no-op.
-            // Route to the viewer (bounded temp-extract, same as F3) — the honest
-            // interim until the Enter-behavior milestone adds extract-then-open.
-            // Pass the pane's DRIVE volume id (an archive pane keeps its parent
-            // drive's id) so a remote-hosted zip previews through that volume.
-            void openFileViewer(entry.path, volumeId)
-        } else {
-            await openEntryExternally(entry)
-        }
-    }
-
-    /**
-     * Step into a folder / archive / bundle: commit the path and load its listing.
-     * When going up (`..`), remember the folder we came from so it lands selected.
-     * The archive/bundle browse arms and the Enter popup's Browse choice share this.
-     */
-    async function browseIntoEntry(entry: FileEntry): Promise<void> {
-        const isGoingUp = entry.name === '..'
-        const currentFolderName = isGoingUp && canonicalPath ? basenameOf(canonicalPath) : undefined
-        currentPath = entry.path
-        // Note: onPathChange is called in the listing-complete handler after a successful load.
-        await loader.loadDirectory(entry.path, currentFolderName)
-    }
-
-    /**
-     * Hand an entry to its default app via LaunchServices: a `.zip` opens in the OS
-     * archive tool, a `.app`/`.bundle` launches, any other file opens normally.
-     */
-    async function openEntryExternally(entry: FileEntry): Promise<void> {
-        try {
-            await openFile(entry.path)
-        } catch {
-            // Silently fail - file open errors are expected sometimes
-        }
-    }
-
-    /**
-     * Leave the search-results pane for a real entry: resolve `realPath` to a
-     * `Location` (volume id + path), then bubble it via `onGoToLocation` so
-     * `navigate()` switches to the real volume before loading the path. An
-     * unresolvable path (its drive is gone) shows the shared friendly toast rather
-     * than navigating to the wrong volume.
-     */
-    async function goToRealEntry(realPath: string): Promise<void> {
-        const location = await resolveLocationOrToast(realPath)
-        if (!location) return
-        onGoToLocation?.(location)
-    }
+    // Opening an entry (Enter, ⌘↓, double-click, or a popup choice): the redirect
+    // arm, the archive/bundle Enter policy, the browse-in-place arm, the viewer
+    // interim for files inside an archive, and the search-results "leave the
+    // snapshot volume first" rule all live in `entry-activation.ts`.
+    const activation = createEntryActivation({
+        getCurrentPath: () => currentPath,
+        setCurrentPath: (path) => {
+            currentPath = path
+        },
+        getCanonicalPath: () => canonicalPath,
+        getVolumeId: () => volumeId,
+        getIsSearchResultsView: () => isSearchResultsView,
+        loadDirectory: (path, selectName) => loader.loadDirectory(path, selectName),
+        // The popup exists only for the `ask` policy, so the highlight starts there.
+        openEnterMenu: (entry) => {
+            enterMenu.openFor(entry, 'ask')
+        },
+        onGoToLocation: (location) => onGoToLocation?.(location),
+    })
+    const handleNavigate = activation.handleNavigate
 
     function handlePaneClick(event: MouseEvent) {
         // Clicks inside the inline rename editor are the user placing the caret or
