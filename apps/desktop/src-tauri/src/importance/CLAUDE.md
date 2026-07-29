@@ -10,7 +10,8 @@ read it before non-trivial work there.
 
 - **`scorer/CLAUDE.md`** — the pure formula: `score` / `explain`, `FolderSignals`, the tunable `Weights`.
   **`store/CLAUDE.md`** — per-volume `importance.db`: the schema, the folded PK, what earns a row.
-- **`scheduler/CLAUDE.md`** — bus-driven full and incremental recompute, the O(dirs) index walk, the kind policy.
+- **`scheduler/CLAUDE.md`** — bus-driven full and incremental recompute, the O(dirs) full walk and the O(touched)
+  scoped one, the kind policy.
   **`read/CLAUDE.md`** — `ImportanceIndex`, the ONLY consumer entry, plus the recompute subscription.
 - **`evals/CLAUDE.md`** — the ranking-quality suite and the anonymized real-index corpus.
 

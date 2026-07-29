@@ -1,7 +1,9 @@
 # Scoped incremental walk
 
-Make an importance incremental rescore cost O(touched) instead of O(dirs), by reading only the changed subtrees out of
-the index instead of walking the whole thing.
+**SHIPPED 2026-07-29.** Make an importance incremental rescore cost O(touched) instead of O(dirs), by reading only the
+changed subtrees out of the index instead of walking the whole thing. The durable version of everything below now lives
+in `apps/desktop/src-tauri/src/importance/scheduler/DETAILS.md` § The scoped walk; this stays until the next specs wipe
+as the reasoning trail.
 
 Area docs: `apps/desktop/src-tauri/src/importance/scheduler/DETAILS.md` (the canonical home for the mechanism once this
 ships). Evidence: `docs/notes/idle-memory-profile-2026-07-28.md`.
@@ -158,6 +160,20 @@ Per surviving origin:
 The result is a `WalkedFolders` with the same invariants the full walk produces (tree rows in ascending id order,
 folder records in ascending `dir_index` order), so every downstream consumer is unchanged.
 
+## What it measured
+
+Measured 2026-07-29 with `cargo run --release -p index-query --bin importance-diff`, against read-only copies of the
+real `index-root.db` (611,699 folders) and `index-smb-…naspi.db` (391,563 folders):
+
+- **Scoped walk per origin**: median 165 µs (root, 764 sampled origins; mean 352 µs, max 12.2 ms), median 98 µs (NAS,
+  200 sampled origins; mean 488 µs, max 47.9 ms). Against a full walk's 5.5 s / 6.4 s. Folders read per origin: median
+  1, max 1,044 (root) / 6,026 (NAS).
+- **Disagreements with the oracle**: zero, across 964 origins of the two indexes (7,297 + 2,087 rows compared) — same
+  paths, same scores, same signal blobs. No sampled origin fell back.
+- **Fallback probe** (an origin whose subtree blows `SCOPED_WALK_MAX_DIRS`): 15–390 ms before it gives up, against the
+  5.5 s full walk it then runs. Origins that fall back on the root index are the ones sitting above most of a dev tree
+  (`~`, a repo root with `node_modules` + `target` + `.git`, `/Applications`).
+
 ## Correctness property (the safety net)
 
 The claim the differential harness pins, over real and synthetic indexes:
@@ -190,4 +206,20 @@ milliseconds, the throttle is no longer paying for the walk; it only paces the s
 per-pass cost.
 
 **Recommendation, not taken here:** relaxing the window is a separate decision, and it should wait until the weight
-reload is incremental too. Lowering it now would trade a cheap walk for a frequent full weight-map rebuild.
+reload is incremental too. Lowering it now would trade a cheap walk for a frequent full weight-map rebuild (161,094
+weights on a dev machine, `docs/notes/idle-memory-profile-2026-07-28.md`).
+
+## Two things found along the way
+
+1. **A real bug in the first cut, caught by the differential.** A batch whose origins were all deleted between the
+   publish and the pass produces an EMPTY scoped walk, and `run_incremental_blocking`'s `folders.is_empty()` early
+   return then skipped the CLEAR — every deleted folder's weight stayed until the next full pass. The guard is gone,
+   with a `❌ don't reintroduce` note; a pass is also announced now whether or not it wrote a row, since it cleared
+   either way.
+2. **A pre-existing gap, NOT fixed here.** The subtree clear folds the path (`path_folded` is the PK) while
+   `is_in_changed_subtree` / `touched_folder_set` compare bytes, so an origin spelled in a different case than the index
+   holds it clears rows that nothing re-adds. Both walks lose the row identically, so this is neither caused nor made
+   worse by the scoped walk. The fix would be to canonicalize each origin against the index (resolve, then rebuild the
+   path from the index's own names) before either walk, which the scoped walk already does internally for its rows —
+   ≤ 32 point queries per pass. Worth doing, but it changes the full-walk oracle's behaviour, so it belongs in its own
+   change. Pinned meanwhile as a differential-only scenario.
