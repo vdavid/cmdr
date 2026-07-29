@@ -3,7 +3,8 @@
 Submission form: https://member.macupdate.com/content/submit (needs a MacUpdate member account). The same form creates
 and modifies a listing (search the app name at the top to modify).
 
-Status: draft, not submitted yet. Prepared for v0.36.2 (2026-07-28).
+Status: submitted 2026-07-29 for v0.36.2, awaiting review by their content specialists. The fields below are what was
+submitted; edit them here first when refreshing, then paste.
 
 Refresh cadence and what to update per release: `docs/guides/releasing.md` § "Refreshing the app-directory listings".
 
