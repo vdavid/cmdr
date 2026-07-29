@@ -102,6 +102,9 @@ pub async fn preflight<R: Runtime>(
         && !store.record_accepted_preflight(
             &proposal_id,
             AcceptedPreflight {
+                // The names as they stood for THIS check, so a later edit can't ride this
+                // acceptance past the duplicate, cycle, and case-only checks above.
+                allowed_destination_names: proposal.destination_names_for(&allowed_row_ids),
                 allowed_row_ids,
                 fingerprints: outcome.fingerprints,
             },

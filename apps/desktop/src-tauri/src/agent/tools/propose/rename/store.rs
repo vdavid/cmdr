@@ -71,23 +71,36 @@ impl RenameProposal {
     pub fn snapshot(&self) -> RenameProposalSnapshot {
         RenameProposalSnapshot {
             proposal_id: self.proposal_id.clone(),
-            rows: self
-                .rows
-                .iter()
-                .map(|row| RenameProposalRowSnapshot {
-                    row_id: row.row_id.clone(),
-                    source_name: Path::new(&row.source_path)
-                        .file_name()
-                        .and_then(|n| n.to_str())
-                        .unwrap_or(&row.source_path)
-                        .to_string(),
-                    destination_name: row.destination_name.clone(),
-                    source_path: row.source_path.clone(),
-                    volume_id: row.volume_id.clone(),
-                    evidence: row.evidence.clone(),
-                    coverage: row.coverage.clone(),
-                })
-                .collect(),
+            rows: self.rows.iter().map(RenameProposalRow::snapshot).collect(),
+        }
+    }
+
+    /// The destination names of the given rows, in the order they were allowed. An unknown id
+    /// contributes nothing, so a subset that names a row this proposal doesn't have can never
+    /// produce a name list that matches a recorded one.
+    pub(super) fn destination_names_for(&self, row_ids: &[String]) -> Vec<String> {
+        row_ids
+            .iter()
+            .filter_map(|row_id| self.rows.iter().find(|row| row.row_id == *row_id))
+            .map(|row| row.destination_name.clone())
+            .collect()
+    }
+}
+
+impl RenameProposalRow {
+    pub fn snapshot(&self) -> RenameProposalRowSnapshot {
+        RenameProposalRowSnapshot {
+            row_id: self.row_id.clone(),
+            source_name: Path::new(&self.source_path)
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or(&self.source_path)
+                .to_string(),
+            destination_name: self.destination_name.clone(),
+            source_path: self.source_path.clone(),
+            volume_id: self.volume_id.clone(),
+            evidence: self.evidence.clone(),
+            coverage: self.coverage.clone(),
         }
     }
 }
@@ -103,6 +116,11 @@ struct StoredProposal {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AcceptedPreflight {
     pub allowed_row_ids: Vec<String>,
+    /// The destination names those rows carried when preflight cleared them, in the same
+    /// order. Row ids alone don't say WHICH names were checked, and duplicate-destination,
+    /// cycle, and case-only detection all live in preflight: binding the names is what stops
+    /// an edited name from riding an older acceptance onto the filesystem (invariant 10).
+    pub allowed_destination_names: Vec<String>,
     pub fingerprints: Vec<RenameSourceFingerprint>,
 }
 
@@ -164,6 +182,35 @@ impl RenameProposalStore {
         (stored.expires_at > Instant::now()).then_some(stored.proposal)
     }
 
+    /// Replaces one staged row's destination name with the one the user typed, and drops
+    /// everything that described the model's name for it: the evidence becomes the
+    /// `UserEdited` marker and the coverage goes (invariant 10).
+    ///
+    /// The name arrives already validated — the caller ([`super::revise`]) is the boundary
+    /// that checks it, exactly as the tool boundary checks the model's.
+    pub fn revise_row(
+        &self,
+        proposal_id: &str,
+        row_id: &str,
+        destination_name: &str,
+    ) -> Option<RenameProposalRowSnapshot> {
+        let mut proposals = self.proposals.lock_ignore_poison();
+        let stored = proposals.get_mut(proposal_id)?;
+        if stored.expires_at <= Instant::now() {
+            proposals.remove(proposal_id);
+            return None;
+        }
+        let row = stored.proposal.rows.iter_mut().find(|row| row.row_id == row_id)?;
+        row.destination_name = destination_name.to_string();
+        row.evidence = RenameEvidence::user_edited();
+        row.coverage = None;
+        let snapshot = row.snapshot();
+        // Apply skips its own re-check when the allowed row ids match the acceptance, so a name
+        // that changed since that check has to force a fresh preflight.
+        stored.accepted_preflight = None;
+        Some(snapshot)
+    }
+
     pub fn record_accepted_preflight(&self, proposal_id: &str, accepted: AcceptedPreflight) -> bool {
         let mut proposals = self.proposals.lock_ignore_poison();
         let Some(stored) = proposals.get_mut(proposal_id) else {
@@ -182,7 +229,7 @@ impl RenameProposalStore {
         let proposals = self.proposals.lock_ignore_poison();
         let stored = proposals.get(&proposal.proposal_id)?;
         let accepted = stored.accepted_preflight.clone()?;
-        (accepted.allowed_row_ids == allowed_row_ids).then_some(accepted)
+        accepted_matches(&accepted, &stored.proposal, allowed_row_ids).then_some(accepted)
     }
 
     /// Atomically consumes the exact user-approved subset after a successful
@@ -201,11 +248,21 @@ impl RenameProposalStore {
         if stored
             .accepted_preflight
             .as_ref()
-            .is_none_or(|accepted| accepted.allowed_row_ids != allowed_row_ids)
+            .is_none_or(|accepted| !accepted_matches(accepted, &stored.proposal, allowed_row_ids))
         {
             return None;
         }
         let stored = proposals.remove(proposal_id)?;
         Some((stored.proposal, stored.accepted_preflight?))
     }
+}
+
+/// Whether an acceptance still describes what the caller is asking to apply: the same rows AND
+/// the same names. Row ids alone can't say that — a revised row keeps its id — and every
+/// name-level check (duplicate destinations, cycles, case-only edges, target-exists) happened
+/// during the preflight that recorded this. So a mismatch means "check it again", never
+/// "apply it anyway".
+fn accepted_matches(accepted: &AcceptedPreflight, proposal: &RenameProposal, allowed_row_ids: &[String]) -> bool {
+    accepted.allowed_row_ids == allowed_row_ids
+        && accepted.allowed_destination_names == proposal.destination_names_for(allowed_row_ids)
 }

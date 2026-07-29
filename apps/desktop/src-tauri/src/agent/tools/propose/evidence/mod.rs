@@ -71,6 +71,13 @@ pub enum EvidenceSource {
     Metadata,
     /// A naming rule the user stated in the conversation (no content claim).
     UserInstruction,
+    /// The user typed this name in the review dialog. No content claim, and no evidence at
+    /// all: the name IS the decision (invariant 10).
+    ///
+    /// The review's revise path is the only thing that may set it. A plan that sends it is
+    /// refused ([`EvidenceProblem::SourceReservedForUser`]), because "You typed this name"
+    /// beside a model-invented name is the exact misattribution this module exists to stop.
+    UserEdited,
 }
 
 impl EvidenceSource {
@@ -78,6 +85,17 @@ impl EvidenceSource {
     /// checked against the ledger; the rest make no claim to verify.
     pub fn claims_image_content(self) -> bool {
         matches!(self, EvidenceSource::ImageText | EvidenceSource::ImageTags)
+    }
+}
+
+impl RenameEvidence {
+    /// What a row carries once the user typed its name: the honest source and nothing else.
+    /// Never the model's quote — that described the model's name, not this one.
+    pub fn user_edited() -> Self {
+        RenameEvidence {
+            source: EvidenceSource::UserEdited,
+            detail: String::new(),
+        }
     }
 }
 
@@ -155,6 +173,9 @@ pub enum EvidenceProblem {
     DetailTooShort,
     /// Past the length a review row can honestly show.
     DetailTooLong,
+    /// The row claims the USER typed this name. Only the review dialog's revise path can say
+    /// that, so a plan claiming it is refused rather than believed.
+    SourceReservedForUser,
 }
 
 /// One refused plan item, as the tool result reports it back to the model.
@@ -286,6 +307,11 @@ impl ImageFactsLedger {
         source_path: &str,
         evidence: &RenameEvidence,
     ) -> Result<Option<EvidenceCoverage>, EvidenceProblem> {
+        // A claim that the user typed the name can only come from the review dialog, so it is
+        // refused here before anything else is weighed.
+        if evidence.source == EvidenceSource::UserEdited {
+            return Err(EvidenceProblem::SourceReservedForUser);
+        }
         // Length first, so an oversized detail is rejected before it's worth normalizing.
         if evidence.detail.chars().count() > MAX_DETAIL_CHARS {
             return Err(EvidenceProblem::DetailTooLong);
@@ -297,7 +323,10 @@ impl ImageFactsLedger {
         let floor = match evidence.source {
             EvidenceSource::ImageText => MIN_IMAGE_TEXT_CHARS,
             EvidenceSource::ImageTags => 1,
-            EvidenceSource::Filename | EvidenceSource::Metadata | EvidenceSource::UserInstruction => MIN_DETAIL_CHARS,
+            EvidenceSource::Filename
+            | EvidenceSource::Metadata
+            | EvidenceSource::UserInstruction
+            | EvidenceSource::UserEdited => MIN_DETAIL_CHARS,
         };
         if detail.chars().count() < floor {
             return Err(EvidenceProblem::DetailTooShort);
@@ -316,7 +345,10 @@ impl ImageFactsLedger {
         match evidence.source {
             EvidenceSource::ImageText => check_quote(&delivered.text, &detail).map(Some),
             EvidenceSource::ImageTags => check_tags(&delivered.tags, &detail).map(|()| None),
-            EvidenceSource::Filename | EvidenceSource::Metadata | EvidenceSource::UserInstruction => Ok(None),
+            EvidenceSource::Filename
+            | EvidenceSource::Metadata
+            | EvidenceSource::UserInstruction
+            | EvidenceSource::UserEdited => Ok(None),
         }
     }
 }
