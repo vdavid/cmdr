@@ -96,6 +96,23 @@ insets its own sections must use that same token. A dialog with a custom button 
 helper, equal-width buttons) keeps its buttons in `children` and right-aligns them itself; genuinely centered content
 (spinners, progress bars, numeric readouts, hero panels like `AboutWindow`) stays centered.
 
+**The panel must never become a containing block for `position: fixed`.** The drag offset rides on `left` / `top`
+against the panel's own `position: relative`. ❌ Don't move it to a `transform`, and don't add `filter`,
+`backdrop-filter`, `perspective`, `contain: paint|layout`, or `will-change` of any of those to `.modal-dialog`. Each
+makes the panel the containing block for fixed-position DESCENDANTS, which re-bases any floating layer rendered inside
+the dialog from the viewport onto the panel's border box: it lands down-right by exactly the panel's top-left offset.
+`transform: translate(0px, 0px)` counts, so an undragged dialog breaks them just as thoroughly as a dragged one.
+`Popover` is what's exposed (it positions `fixed` from `getBoundingClientRect()` and deliberately doesn't portal, so a
+host dialog's Escape handler can find it in its own subtree); `Menu` and `Select` portal to `document.body` and are
+immune. `will-change: transform` is the tempting "smooth out the drag" change that reintroduces it. jsdom has no layout,
+so no unit test can catch this — a Playwright assertion comparing the popover's rect to its anchor is the only real
+guard.
+
+The same trap sits one level up: `blur` puts `backdrop-filter` on the OVERLAY, which is also an ancestor. No blurred
+dialog hosts a `Popover` today (the query dialogs, the only `Popover` consumers, don't set `blur`), and unlike the panel
+transform this one can't just be dropped — the filter IS the feature. So if a blurred dialog ever needs a popover, that
+one has to portal.
+
 **`growDownward`** is for a dialog whose height changes while it's open (a mode switch revealing extra controls). The
 overlay centers with flex, so a taller body would push the title up and re-center everything under the user's eyes. With
 this on, `ModalDialog` measures where centering put the dialog at mount and pins that top edge with

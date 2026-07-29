@@ -109,11 +109,19 @@ Concrete replacement values, ready to paste on the next edit pass.
   ranging between $59 and $199", which misstates the $59/year subscription. This needs revisiting when the new pricing
   ships anyway.
 
-Two judgment calls for David, not mechanical fixes:
+Two settled calls, so they don't get re-litigated at the next edit pass:
 
-- **"Is Opensource?" is checked**, so the page carries an "Open Source" badge and its summary opens with "Ultra-fast,
-  open-source two-pane file manager". BSL 1.1 is source-available, not OSI open source, which is exactly the distinction
-  that audience is sensitive about. Unchecking keeps the Source URL and drops the badge (and the open-source filter's
-  traffic).
-- **The `portable` tag and Portable feature** claim Cmdr runs from a USB stick with no installation. It's a normal
-  `.app` that keeps its data in `~/Library` and wants Full Disk Access for indexing.
+- **Keep "Is Opensource?" checked.** Unchecking it hides the Source URL field, and a public link to the source is worth
+  more than a precise badge. BSL 1.1 is source-available, not OSI open source, so the description carries the correction
+  instead, early rather than as fine print. Draft replacement for the third paragraph, for David to review when pasting:
+
+  > Cmdr is source-available under the Business Source License 1.1: the full source is on GitHub, though BSL isn't an
+  > OSI-approved open-source license (AlternativeTo's "open source" label here is auto-generated). Free forever for
+  > personal use, commercial license needed for work use.
+
+  Say the same in one sentence in the "Note about your changes" box: it's the only channel to the admins who control the
+  page summary, which currently opens with "Ultra-fast, open-source two-pane file manager" and isn't editable.
+
+- **Keep the `portable` tag and the Portable feature.** True in the only sense the tag can mean on macOS: a `.app` runs
+  from wherever you put it, a USB stick included. Settings and the index stay in `~/Library` and Full Disk Access is per
+  machine, but that's every Mac app, and nobody reads the tag as a promise about state.

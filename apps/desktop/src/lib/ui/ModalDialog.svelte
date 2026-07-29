@@ -131,8 +131,28 @@
     let previousActiveElement: HTMLElement | null = null
     let heightObserver: ResizeObserver | null = null
 
+    /**
+     * The drag offset rides on `left` / `top` against the panel's own `position: relative`,
+     * NOT on a `transform`.
+     *
+     * ❌ Never move this back to `transform`, and never add `filter`, `backdrop-filter`,
+     * `perspective`, `contain: paint|layout`, or `will-change` of any of those to the panel.
+     * Each of them makes the panel the containing block for `position: fixed` DESCENDANTS,
+     * which silently re-bases any floating layer rendered INSIDE the panel from the viewport
+     * onto the panel's border box: it jumps down-right by exactly the panel's top-left.
+     * `transform: translate(0px, 0px)` triggers it too, so an undragged dialog broke them
+     * just as thoroughly as a dragged one.
+     *
+     * `Popover` is the exposed one (it positions `fixed` from `getBoundingClientRect()` and
+     * deliberately does NOT portal, so the host dialog's Escape handler can find it in its own
+     * subtree). `Menu` and `Select` portal to `document.body` and are immune.
+     *
+     * `left` / `top` shift the panel visually without reflowing siblings (same as the
+     * transform did) and establish no containing block. `will-change: transform` is the
+     * tempting "smooth out the drag" change that would bring the bug straight back.
+     */
     const dialogStyle = $derived(
-        `transform: translate(${String(dialogPosition.x)}px, ${String(dialogPosition.y)}px);` +
+        `left: ${String(dialogPosition.x)}px; top: ${String(dialogPosition.y)}px;` +
             (anchoredTop === null ? '' : ` align-self: flex-start; margin-top: ${String(anchoredTop)}px;`) +
             (containerStyle ? ` ${containerStyle}` : ''),
     )

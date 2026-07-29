@@ -15,33 +15,33 @@ received in that thread. This plan is about everything that fix didn't touch.
 `apps/desktop/src/lib/ask-cmdr/CLAUDE.md`.
 
 **Refer to code by seam, not by path.** A concurrent effort (`.claude/worktrees/file-splits-2`) is splitting two files
-this plan touches: `agent/tools/propose/rename.rs` is already `propose/rename/{mod,plan,store,preflight,tests}.rs` there,
-and `agent/chat/runtime.rs` is becoming `runtime/{mod,turn,dispatch,events,cost}.rs`. **Rebase onto that work before
-starting**, and find "the turn driver", "the dispatch seam", "the proposal store", "the plan schema" by name
+this plan touches: `agent/tools/propose/rename.rs` is already `propose/rename/{mod,plan,store,preflight,tests}.rs`
+there, and `agent/chat/runtime.rs` is becoming `runtime/{mod,turn,dispatch,events,cost}.rs`. **Rebase onto that work
+before starting**, and find "the turn driver", "the dispatch seam", "the proposal store", "the plan schema" by name
 (`codegraph_search`), never by the pre-split filename.
 
 ## The failure this is really about
 
-The shipped guardrails stop a name with *no* content behind it. They do nothing about a name with the *wrong reading* of
+The shipped guardrails stop a name with _no_ content behind it. They do nothing about a name with the _wrong reading_ of
 real content: a Klarna payment confirmation that gets named `klarna-invoice`, backed by a perfectly genuine quote. The
 model had the facts, quoted them verbatim, and still got it wrong.
 
-The only thing that catches that is a human looking at the picture. Today the review dialog shows `old name → new name →
-a quote`, and **you cannot see the file**. So Phase A comes first, and it's worth more than the entire engine half of
-this plan. That's principle 6 (humans to humans) done properly: the human checks with their eyes, not by auditing a
-quote chain.
+The only thing that catches that is a human looking at the picture. Today the review dialog shows
+`old name → new name → a quote`, and **you cannot see the file**. So Phase A comes first, and it's worth more than the
+entire engine half of this plan. That's principle 6 (humans to humans) done properly: the human checks with their eyes,
+not by auditing a quote chain.
 
 ## Measured ground truth
 
 Estimated tokens (`chars/4`, the one ruler), measured 2026-07-29:
 
-| Piece | Estimated tokens |
-|---|---|
-| Fixed overhead, every call: system prompt ~740 + 12 tool declarations ~2,370 | **~3,100** |
-| `image_facts`, per file at 900 chars of OCR | ~260 |
-| Plan row, per file (path + name + evidence) | ~54 |
-| Pane listing, per file | ~21 |
-| A 100-file rename turn, all in | **~39,700** |
+| Piece                                                                        | Estimated tokens |
+| ---------------------------------------------------------------------------- | ---------------- |
+| Fixed overhead, every call: system prompt ~740 + 12 tool declarations ~2,370 | **~3,100**       |
+| `image_facts`, per file at 900 chars of OCR                                  | ~260             |
+| Plan row, per file (path + name + evidence)                                  | ~54              |
+| Pane listing, per file                                                       | ~21              |
+| A 100-file rename turn, all in                                               | **~39,700**      |
 
 **Only the total is pinned by a test** (`a_hundred_file_rename_turn_needs_more_than_the_default_budget` asserts `> 16k`,
 `< 60k`, `elided_results == 0`). The breakdown was measured but is asserted nowhere, and the per-file figure assumes 900
@@ -52,9 +52,9 @@ Two consequences that change what milestones must do:
 - **A 4,096-token local window can't run Ask Cmdr at all.** `prompt_budget_for_local_context(4096)` is 2,457, below the
   ~3,100 fixed overhead. That's today's default `ai.localContextSize`, so a local-model user on defaults gets no working
   turn at all. **M6 owns fixing it** (raise the default, or refuse honestly and name the setting).
-- **The E2E fake path is in exactly that state.** The scripted fake resolves as `ProviderTag::Local` / `"fake"`, so every
-  fake turn is already over budget today. **M7 owns settling it** (open question 5), or the suite blesses a pathological
-  state.
+- **The E2E fake path is in exactly that state.** The scripted fake resolves as `ProviderTag::Local` / `"fake"`, so
+  every fake turn is already over budget today. **M7 owns settling it** (open question 5), or the suite blesses a
+  pathological state.
 
 ## Design intentions
 
@@ -74,9 +74,9 @@ Two consequences that change what milestones must do:
 
 ## Non-goals
 
-- **No rehydrate/un-elide tool.** Every agent-visible tool is an idempotent local read, so re-calling *is* the rehydrate,
-  and a second path to guarded data needs its own ledger wiring (intention 5). Revisit only for a tool whose results are
-  expensive or unreproducible; the shape then is a result handle plus a slice call.
+- **No rehydrate/un-elide tool.** Every agent-visible tool is an idempotent local read, so re-calling _is_ the
+  rehydrate, and a second path to guarded data needs its own ledger wiring (intention 5). Revisit only for a tool whose
+  results are expensive or unreproducible; the shape then is a result handle plus a slice call.
 - **No new egress, no consent bump.** If a milestone seems to need `CONSENT_COPY_VERSION` bumped, stop and escalate.
 - **No change to prefix stability.** M4 rewrites the prompt's text once, statically.
 - **No real tokenizer.** `chars/4` stays; every number the UI shows is labelled an estimate.
@@ -109,15 +109,15 @@ so pull it forward if there's appetite.
    viewer.
 2. **The quote in context.** Today the column shows a bare quote, so a four-character hit inside 3,000 characters of OCR
    looks exactly as strong as a decisive one. Send the match offset and the delivered text's length with the quote, and
-   render it in its surrounding line plus a coverage hint ("matched 7 of 3,140 characters"). A thin match must *look*
+   render it in its surrounding line plus a coverage hint ("matched 7 of 3,140 characters"). A thin match must _look_
    thin. (Whether to also raise the `imageText` floor from four characters to ~12 is open question 7.)
 
 **Why.** This is the milestone that catches the failure class we actually hit. Everything else in this plan makes the
 agent better behaved; this makes the human able to disagree with it.
 
 **Shape.** The pieces exist: media-index thumbnails ship as `cmdr-media://` tokens rendered straight into an `<img>`
-(`lib/search/ImageSearchResults.svelte` is the precedent, including its token-drop lifecycle), and `file-viewer/open-viewer.ts`
-opens the real thing.
+(`lib/search/ImageSearchResults.svelte` is the precedent, including its token-drop lifecycle), and
+`file-viewer/open-viewer.ts` opens the real thing.
 
 **Landmines.**
 
@@ -129,11 +129,12 @@ opens the real thing.
 - Keyboard-first: preview follows the focused row, no mouse required, and the a11y test must cover it.
 
 **Tests.** Component tests: the focused row drives the preview; an unenriched file shows the placeholder; the token is
-dropped on close; a quote renders with its surrounding line and its coverage figure; a thin match and a decisive one render
-differently. Rust: the match offset and delivered-text length reach the snapshot. a11y test in the existing dialog pattern.
+dropped on close; a quote renders with its surrounding line and its coverage figure; a thin match and a decisive one
+render differently. Rust: the match offset and delivered-text length reach the snapshot. a11y test in the existing
+dialog pattern.
 
-**DONE when** David can look at each screenshot while reviewing its proposed name, AND a four-character match inside 3,000
-characters is visibly weaker than a decisive one.
+**DONE when** David can look at each screenshot while reviewing its proposed name, AND a four-character match inside
+3,000 characters is visibly weaker than a decisive one.
 
 ### M2: Fix the name yourself, and see what wasn't read
 
@@ -141,13 +142,13 @@ characters is visibly weaker than a decisive one.
 "nothing was read inside this file, so the name comes from metadata".
 
 **Why.** Today a row is allow-or-deny, so the user's only options are the model's name or the old one. That's the
-pressure that produces "approved because it looked plausible". And M4's "keep a neutral name" instruction is worthless if
-the user can't see which rows took that path.
+pressure that produces "approved because it looked plausible". And M4's "keep a neutral name" instruction is worthless
+if the user can't see which rows took that path.
 
 **Shape: a server-side per-row `revise_row`, not a re-stage.** Routing an edit through the normal proposal path would
-re-run two gates that must not fire here: the evidence check (one revoked `call_id` refuses all 50 rows under the shipped
-whole-plan rule, so editing row 7 could destroy the review) and pane-scope validation (the user scrolled, so every row
-refuses). So revise is its own narrow operation on the staged row.
+re-run two gates that must not fire here: the evidence check (one revoked `call_id` refuses all 50 rows under the
+shipped whole-plan rule, so editing row 7 could destroy the review) and pane-scope validation (the user scrolled, so
+every row refuses). So revise is its own narrow operation on the staged row.
 
 **Landmines (data safety).**
 
@@ -157,14 +158,14 @@ refuses). So revise is its own narrow operation on the staged row.
 - **Names cross IPC for the first time**, so `validate_destination_name` runs at revise time on the server, and apply
   never trusts a client-supplied name.
 - **Replace the evidence, don't keep it.** Evidence rides the row snapshot and apply never reads it, so an edited row
-  would otherwise keep displaying the model's quote beside the user's name. Revise swaps it for a `userEdited` marker, and
-  the oplog's `Initiator::Agent` becomes a lie for that row: record the mixed provenance honestly (this is the one
+  would otherwise keep displaying the model's quote beside the user's name. Revise swaps it for a `userEdited` marker,
+  and the oplog's `Initiator::Agent` becomes a lie for that row: record the mixed provenance honestly (this is the one
   remaining item from the earlier bulk-rename hardening handoff, so the two efforts meet here).
 - The "kept the name" state must keep saying nothing inside the file was read. That's what the column is for.
 
-**Tests.** Rust, test-first: revise validates the name server-side; revise clears the accepted preflight (red-guarded, it's
-the data-safety case); a revised row needs no evidence and reports `userEdited`; the whole-plan evidence rule is NOT
-re-run by a revise. Frontend: edit, blur, apply round-trip; the "kept the name" state renders.
+**Tests.** Rust, test-first: revise validates the name server-side; revise clears the accepted preflight (red-guarded,
+it's the data-safety case); a revised row needs no evidence and reports `userEdited`; the whole-plan evidence rule is
+NOT re-run by a revise. Frontend: edit, blur, apply round-trip; the "kept the name" state renders.
 
 **DONE when** a wrong name can be corrected in place instead of abandoned.
 
@@ -173,29 +174,29 @@ re-run by a revise. Frontend: edit, blur, apply round-trip; the "kept the name" 
 **Scope.** Surface undo for a completed rename batch: a "Renamed 23 files. Undo" affordance after apply, and a
 job-scoped undo across a multi-batch run.
 
-**Why.** Intention 2. Every other safety net in this system fires before the user can possibly know whether the names are
-right; the one that fires after is worth more than all of them.
+**Why.** Intention 2. Every other safety net in this system fires before the user can possibly know whether the names
+are right; the one that fires after is worth more than all of them.
 
-**Shape.** The pieces exist: renames journal, the oplog reports `rollbackState: rollbackable` (confirmed on real ops), the
-`operations_rollback` IPC exists, and the operation log dialog *displays* rollback state. What's missing is a
+**Shape.** The pieces exist: renames journal, the oplog reports `rollbackState: rollbackable` (confirmed on real ops),
+the `operations_rollback` IPC exists, and the operation log dialog _displays_ rollback state. What's missing is a
 user-reachable undo **trigger** next to the rename result.
 
-**PREREQUISITE, and it's a real defect: undo currently verifies identity by size alone.**
-`record_bulk_rename_outcomes` journals the fingerprint's `size` and passes `None` for mtime, so `verify_snapshot` compares
-size and nothing else. Replace the renamed file with a same-size different file and undo renames *that* back. The claim
-"the journal's fingerprints are the authority" is false until this is fixed.
+**PREREQUISITE, and it's a real defect: undo currently verifies identity by size alone.** `record_bulk_rename_outcomes`
+journals the fingerprint's `size` and passes `None` for mtime, so `verify_snapshot` compares size and nothing else.
+Replace the renamed file with a same-size different file and undo renames _that_ back. The claim "the journal's
+fingerprints are the authority" is false until this is fixed.
 
 - The data is already held: `BulkRenameFingerprint::Local { modified_nanos }` and `Remote { modified }`.
 - **The trap is precision.** The journal takes `Option<i64>` and `verify_snapshot` compares it against
-  `FileEntry::modified_at`. Convert to whatever unit that field actually reports, or every undo reports drift and refuses,
-  which is a worse failure than the one being fixed (it silently disables undo).
-- Tests, red first: a matching target verifies; a same-size-different-mtime target is refused as drift; a remote row with
-  no mtime available stays `Unverifiable` rather than becoming a false match.
+  `FileEntry::modified_at`. Convert to whatever unit that field actually reports, or every undo reports drift and
+  refuses, which is a worse failure than the one being fixed (it silently disables undo).
+- Tests, red first: a matching target verifies; a same-size-different-mtime target is refused as drift; a remote row
+  with no mtime available stays `Unverifiable` rather than becoming a false match.
 
 **Landmines.**
 
-- **Multi-batch undo must run newest-first.** If batch 3 reused a name batch 1 freed, oldest-first hits
-  "restore target occupied" and skips silently. State the order and pin it.
+- **Multi-batch undo must run newest-first.** If batch 3 reused a name batch 1 freed, oldest-first hits "restore target
+  occupied" and skips silently. State the order and pin it.
 - Partial success must be loud: N restored, M skipped and why, per the existing rollback vocabulary.
 - Undo of a row the user later hand-renamed must refuse (drift), not force.
 
@@ -219,9 +220,9 @@ honesty, renaming, evidence, style). (5) Fold in M5's re-fetch sentence.
 **Why.** A prohibition leaves the next token to chance; a named action gets followed. Items 2 and 3 turn classes of
 backend refusal into non-events.
 
-**Landmines.** Static text only (prefix stability). Existing prompt-asset tests stay green; a moved phrase moves its test
-and the commit says so. **Verify the completion-token ceiling separately**: a 100-row plan call is ~5,400 tokens of
-*output*, a different limit from the prompt budget, so check what the slot allows before writing a number. Don't add a
+**Landmines.** Static text only (prefix stability). Existing prompt-asset tests stay green; a moved phrase moves its
+test and the commit says so. **Verify the completion-token ceiling separately**: a 100-row plan call is ~5,400 tokens of
+_output_, a different limit from the prompt budget, so check what the slot allows before writing a number. Don't add a
 fourth honesty exhortation.
 
 **Tests.** Prompt-asset tests, one per item 1–3 plus the re-fetch rule (authored text, so written alongside).
@@ -234,10 +235,14 @@ fourth honesty exhortation.
 result, and a re-fetch hint. Add the breakdown assertions to the measurement test.
 
 ```json
-{ "elided_tool_result": true, "tool": "image_facts", "approx_tokens": 5406,
+{
+  "elided_tool_result": true,
+  "tool": "image_facts",
+  "approx_tokens": 5406,
   "call": "12 paths under /Users/me/Downloads/shots",
   "held": "12 indexed files, OCR text for 11",
-  "refetch": "call image_facts again for the paths you still need" }
+  "refetch": "call image_facts again for the paths you still need"
+}
 ```
 
 **Landmines.**
@@ -266,16 +271,16 @@ citing digest-only text is refused**; breakdown assertions.
 override. Fix the stale-family class in the budget table (`qwen`, `deepseek`, `grok`, `mistral` are all stale today, not
 just one).
 
-**Shape: a preset list plus "Automatic (recommended)"** (8,000 / 16,000 / 32,000 / 60,000 / 128,000 / 200,000), following
-the `ai.localContextSize` precedent. **Decided, not open**: presets make the bounds unmisstateable, so there is no
-below-minimum case to clamp and no numeric validation copy. An over-window warning is still needed, because a user can
-pick 200,000 for a model whose window is 32,000. Resolution stays pure in the budget module with the override passed from
-the command layer; the read-fresh-per-send precedent means no settings-applier case.
+**Shape: a preset list plus "Automatic (recommended)"** (8,000 / 16,000 / 32,000 / 60,000 / 128,000 / 200,000),
+following the `ai.localContextSize` precedent. **Decided, not open**: presets make the bounds unmisstateable, so there
+is no below-minimum case to clamp and no numeric validation copy. An over-window warning is still needed, because a user
+can pick 200,000 for a model whose window is 32,000. Resolution stays pure in the budget module with the override passed
+from the command layer; the read-fresh-per-send precedent means no settings-applier case.
 
-**Also in scope: the shipped 4,096 default breaks the agent for local users.** `prompt_budget_for_local_context(4096)` is
-2,457 against ~3,100 of fixed overhead, so a user on defaults cannot get a single working turn. Nobody else owns this.
-Either raise the shipped default to a window that works, or refuse the turn with an honest message naming the setting to
-change. Silently assembling an over-budget prompt is the one option this plan rules out.
+**Also in scope: the shipped 4,096 default breaks the agent for local users.** `prompt_budget_for_local_context(4096)`
+is 2,457 against ~3,100 of fixed overhead, so a user on defaults cannot get a single working turn. Nobody else owns
+this. Either raise the shipped default to a window that works, or refuse the turn with an honest message naming the
+setting to change. Silently assembling an over-budget prompt is the one option this plan rules out.
 
 **Landmines.**
 
@@ -295,25 +300,25 @@ change. Silently assembling an over-budget prompt is the one option this plan ru
 warns and is still used; an unknown model gets the default; the per-batch hint derives correctly at 8,000 / 16,000 /
 60,000; a local window too small to hold the overhead is refused honestly rather than assembled.
 
-**DONE when** every resolution case is pinned, a local user on defaults gets either a working turn or an honest
-refusal, and David has reviewed the copy.
+**DONE when** every resolution case is pinned, a local user on defaults gets either a working turn or an honest refusal,
+and David has reviewed the copy.
 
 ### M7: Say when the chat is filling up
 
 **Scope.** A usage indicator in the rail footer: a fill bar with a percentage, and a plain-language tooltip. Plus a
 one-line thread notice when older material is set aside.
 
-**The three states**, so a component test can name them: **calm** (under 80% of budget), **filling** (80% or more, nothing
-set aside yet), **set aside** (something from history was dropped this turn; the tooltip carries the count). Over 100% is
-not a fourth state: it renders as "set aside" with a full bar.
+**The three states**, so a component test can name them: **calm** (under 80% of budget), **filling** (80% or more,
+nothing set aside yet), **set aside** (something from history was dropped this turn; the tooltip carries the count).
+Over 100% is not a fourth state: it renders as "set aside" with a full bar.
 
 **Persistence, decided**: store the last turn's usage with the thread, so a reopened thread shows the last known figure
-rather than an empty gauge. An event-only number would blank on reopen, which reads as "no usage" instead of "not measured
-yet".
+rather than an empty gauge. An event-only number would blank on reopen, which reads as "no usage" instead of "not
+measured yet".
 
-**Note on scope, for David.** You asked for the bar, the percentage, and the "N of M tokens" tooltip, so that's what this
-specifies. The round-2 reviewer argued for cutting the gauge and keeping only the trim notice, on the grounds that a
-percentage answers a question no file-manager user asked. Worth weighing: the notice alone would delete the E2E-fake
+**Note on scope, for David.** You asked for the bar, the percentage, and the "N of M tokens" tooltip, so that's what
+this specifies. The round-2 reviewer argued for cutting the gauge and keeping only the trim notice, on the grounds that
+a percentage answers a question no file-manager user asked. Worth weighing: the notice alone would delete the E2E-fake
 landmine below and two open questions. Your call.
 
 **Landmines.**
@@ -351,22 +356,22 @@ thread renders the persisted figure.
 convention the already-renamed files show. (2) Carry the user's denials into the next batch, so a rejected style isn't
 proposed again.
 
-**Why.** The transcript records what the model *proposed*; the folder records what actually happened, including the user's
-denials and hand edits. It's free to read, always current, and can't drift.
+**Why.** The transcript records what the model _proposed_; the folder records what actually happened, including the
+user's denials and hand edits. It's free to read, always current, and can't drift.
 
 **Cut from the earlier draft, deliberately:**
 
-- **The "recent renames here" envelope line, and its new folder-scoped oplog query.** `list_pane_files` already shows the
-  renamed files for free, in a call the model is making anyway, so the envelope version bought nothing but a permanent
-  per-turn cost and a backend workstream. Worse, feeding content-shaped `old → new` examples into every turn invites the
-  model to extend a convention to files it never read, under `filename` evidence, which always passes: names that *look*
-  content-derived while the column honestly says nothing inside was read. Invariant 6 holds, but only just, and the
-  temptation isn't worth it.
+- **The "recent renames here" envelope line, and its new folder-scoped oplog query.** `list_pane_files` already shows
+  the renamed files for free, in a call the model is making anyway, so the envelope version bought nothing but a
+  permanent per-turn cost and a backend workstream. Worse, feeding content-shaped `old → new` examples into every turn
+  invites the model to extend a convention to files it never read, under `filename` evidence, which always passes: names
+  that _look_ content-derived while the column honestly says nothing inside was read. Invariant 6 holds, but only just,
+  and the temptation isn't worth it.
 - **Don't tell the model to use `operations_list` either.** Its rows carry no paths and there's no folder filter, so
   old→new names would need an `operations_get` per operation plus dir-prefix reconstruction: several calls against a
   `MAX_TOOL_TURNS` of 8, to learn what one `list_pane_files` call shows.
 
-**Landmines.** The denial feedback must carry *what* was rejected without re-proposing it: pass the denied names, not a
+**Landmines.** The denial feedback must carry _what_ was rejected without re-proposing it: pass the denied names, not a
 model-authored summary of why, or the next batch inherits a rationalization.
 
 **Tests.** Prompt-asset test for the re-derive rule; a runtime test that denials reach the next turn.
@@ -380,7 +385,7 @@ backend can never validate (the moment it tries to verify that a name "matches" 
 language it can't win), displayed exactly where it raises the user's confidence in a batch they're about to approve.
 Unverifiable reassurance at the approval boundary is anti-safety, which is the opposite of this plan's purpose.
 
-**What survives the idea**: M11's per-rule flow, if David wants it, needs a rule the *app* interprets rather than prose
+**What survives the idea**: M11's per-rule flow, if David wants it, needs a rule the _app_ interprets rather than prose
 the model authors. That's a different and much harder thing than a display field, and it belongs to that decision.
 
 ### M10: Keep it honest over time (serves Phase A's purpose; pull it forward if you can)
@@ -388,10 +393,10 @@ the model authors. That's a different and much harder thing than a display field
 **Scope.** An offline eval over a fixture corpus of screenshots with known content, scripted through the fake path.
 
 **The case that matters is NOT "invented quote is refused"** — unit tests already cover that, so asserting it here is a
-tautology that would pass forever while the real gap widens. The eval's job is the case no guardrail catches: **a genuine,
-verbatim quote supporting a materially wrong name** (the payment confirmation named `klarna-invoice`). Assert that such a
-row is *flagged for the human* (thin-coverage hint from M1, provenance visible), not that it's refused, because refusing
-it is impossible without understanding the image.
+tautology that would pass forever while the real gap widens. The eval's job is the case no guardrail catches: **a
+genuine, verbatim quote supporting a materially wrong name** (the payment confirmation named `klarna-invoice`). Assert
+that such a row is _flagged for the human_ (thin-coverage hint from M1, provenance visible), not that it's refused,
+because refusing it is impossible without understanding the image.
 
 **Why.** Every other milestone is a one-time fix. This is the only one that detects the next regression, and it runs
 without a provider. There's existing eval infrastructure for importance ranking to model it on.
@@ -403,12 +408,12 @@ review surface, not the model's taste, so assert on provenance, coverage, and re
 
 ### M11 (decision needed, then a write-engine change): trial batch, then background remainder
 
-**The shape.** Instead of ten review dialogs for 500 files: the model applies one rule to a trial batch of five to 10 the
-user reviews carefully, and the remainder runs as **one background operation** with progress, cancel, and undo (what the
-design principles ask for: background, quantified progress, cancelable).
+**The shape.** Instead of ten review dialogs for 500 files: the model applies one rule to a trial batch of five to 10
+the user reviews carefully, and the remainder runs as **one background operation** with progress, cancel, and undo (what
+the design principles ask for: background, quantified progress, cancelable).
 
-**Why it's a decision, not a task.** It moves approval from per-item to per-rule for the tail. That's a real shift in the
-"only the user approves" line, safe only because M3's undo exists, and it's David's call.
+**Why it's a decision, not a task.** It moves approval from per-item to per-rule for the tail. That's a real shift in
+the "only the user approves" line, safe only because M3's undo exists, and it's David's call.
 
 **And it is NOT a spike: it's a write-engine change.** Round 3 established this concretely, so nobody should start it
 believing otherwise:
@@ -416,29 +421,29 @@ believing otherwise:
 - **A background remainder has no proposal, therefore no safety.** Every guardrail on this path lives in the reviewed
   proposal: the evidence check, pane-scoped source validation, the fingerprinted preflight, and the per-row fingerprint
   recheck at write time. A tail with no proposal has no `expected_fingerprint` to compare, no ledger check, and no human
-  look, while a content-shaped rule means the tail *must* derive names from content. That is the original incident at 490
-  files instead of 12.
+  look, while a content-shaped rule means the tail _must_ derive names from content. That is the original incident at
+  490 files instead of 12.
 - **`MAX_RENAMES` is 200**, `start_bulk_rename` refuses rows whose parent differs, and a proposal only covers the loaded
   pane window. So "the rest of the folder" is several folder-scoped operations, not one call.
 - **Progress is emitted after the whole run finishes**, so "progress and cancel" doesn't exist yet for bulk rename.
 - **The 15-minute proposal TTL** breaks a paced job: step away mid-review and batch six is gone.
 
-**So if David says yes**, the honest version is: per-rule approval still enumerates and preflights *every* row up front, in
-≤200-row folder-scoped operations, with streaming progress added to the bulk-rename driver. That's a substantial piece of
-work, and it's the only version that doesn't open a second unguarded path to the user's files.
+**So if David says yes**, the honest version is: per-rule approval still enumerates and preflights _every_ row up front,
+in ≤200-row folder-scoped operations, with streaming progress added to the bulk-rename driver. That's a substantial
+piece of work, and it's the only version that doesn't open a second unguarded path to the user's files.
 
 **If David says yes, M12 evaporates**: the tail stops being a series of plan calls in a transcript, so M12 is only worth
 building if this shape is declined.
 
 ### M12 (deferred, and gated by M11 being DECLINED): a consumed plan stops costing what it cost
 
-**Scope.** Extend compaction to tool *call* arguments for rename plans no longer live: N rows collapse to
+**Scope.** Extend compaction to tool _call_ arguments for rename plans no longer live: N rows collapse to
 `{ renames: N, examples: [3 rows] }`. The plan under review is never touched.
 
 **Honest arithmetic.** Ten batches of 50 at 60k: ~27k of plan calls + ~13k current-turn facts + ~3,100 overhead + ~2,100
-listing + ~1k per batch of unelidable prose ≈ **55k, which still fits**. The wall is nearer **500–600 files** at 60k, and
-at the 16k default it's **batch two**. So the DONE test pins the 16k case (a 60k test would pass either way and prove
-nothing), plus a 500-file case at 60k.
+listing + ~1k per batch of unelidable prose ≈ **55k, which still fits**. The wall is nearer **500–600 files** at 60k,
+and at the 16k default it's **batch two**. So the DONE test pins the 16k case (a 60k test would pass either way and
+prove nothing), plus a 500-file case at 60k.
 
 **Shape.** The pure core can't query the store, so: the store records the **originating `call_id`** with each staged
 proposal, exposes `live_call_ids()`, and the runtime passes that set into assembly through a dispatch-seam method
@@ -447,10 +452,10 @@ re-reading the set per loop iteration so a plan staged mid-turn counts as live.
 
 **Landmines.**
 
-- **"Liveness, not age" is the wrong rationale**: proposals carry a 15-minute TTL, so the live set *is* age-gated. Say
+- **"Liveness, not age" is the wrong rationale**: proposals carry a 15-minute TTL, so the live set _is_ age-gated. Say
   "the store's live set, which expires with the proposal", or the next reader deletes the TTL check.
-- **Collapsed calls need their own `ElisionFacts` counters.** Reusing `elided_call_ids` would revoke evidence spuriously;
-  counting them in `elided_results` would fire a false trim notice.
+- **Collapsed calls need their own `ElisionFacts` counters.** Reusing `elided_call_ids` would revoke evidence
+  spuriously; counting them in `elided_results` would fire a false trim notice.
 - Narrows the "assistant messages are never modified" invariant: state the narrowed form out loud (prose never; a call
   only when it's a non-live rename plan).
 - Row ids are opaque and single-use, so examples are names, never ids.
@@ -466,8 +471,8 @@ over budget with prose dominant. Don't start on principle.
 ## Invariants register
 
 No milestone may break these. **Guarded by a red-guarded test today: 1–9 and 11.** **Established by this plan: 10 (M2's
-revise path) and 12 (M1's coverage hint plus M10's eval).** Don't hunt for tests that don't exist yet; write them as those
-milestones land.
+revise path) and 12 (M1's coverage hint plus M10's eval).** Don't hunt for tests that don't exist yet; write them as
+those milestones land.
 
 1. The current turn's tool results are never elided.
 2. The pure context core stays pure: no clock, no I/O, no app state. New inputs arrive as values.
@@ -487,35 +492,36 @@ milestones land.
     show how thin a match is, and the eval (M10) targets exactly the genuine-quote-wrong-name case.
 
 **Two shipped weaknesses this plan found, for the record.** One is fixed: a tag claim used to pass if the model's prose
-merely *contained* a delivered tag, so invented text rode a near-universal tag like `document` (fixed 2026-07-29). One is
-open and is M3's prerequisite: bulk-rename undo verifies identity by size alone, because the journal records no mtime.
+merely _contained_ a delivered tag, so invented text rode a near-universal tag like `document` (fixed 2026-07-29). One
+is open and is M3's prerequisite: bulk-rename undo verifies identity by size alone, because the journal records no
+mtime.
 
 ## Parallelization
 
-**M1 and M2 are one coherent UI effort** and should run sequentially, by one agent, on the review dialog. **M3 is backend**
-(the journal fingerprint defect, the oplog trigger) and can run in parallel with them.
+**M1 and M2 are one coherent UI effort** and should run sequentially, by one agent, on the review dialog. **M3 is
+backend** (the journal fingerprint defect, the oplog trigger) and can run in parallel with them.
 
 **M4 is NOT independent**, despite what an earlier draft said: it carries M5's re-fetch sentence and points at M6's
-per-batch arithmetic, so it comes after both. M6 before M7 (a gauge needs a settable budget). M8 and M10 are independent of
-everything else.
+per-batch arithmetic, so it comes after both. M6 before M7 (a gauge needs a settable budget). M8 and M10 are independent
+of everything else.
 
 Not in a hurry: prefer sequential.
 
 ## Open questions for David
 
-1. **The undo verification defect (M3's prerequisite)**: shall I fix the journal's missing mtime now, separately from this
-   plan? It's small but it sits in the rollback path, and getting the unit conversion wrong would silently disable undo
-   rather than merely leave it weak.
+1. **The undo verification defect (M3's prerequisite)**: shall I fix the journal's missing mtime now, separately from
+   this plan? It's small but it sits in the rollback path, and getting the unit conversion wrong would silently disable
+   undo rather than merely leave it weak.
 2. **M7**: keep the gauge as you asked, or take the reviewer's advice and ship only the "older parts set aside" notice?
-4. **M11**: is trial-batch-then-background the shape you want for large jobs? Round 3 showed it's a write-engine change,
-   not a spike (no proposal means no fingerprint and no ledger; `MAX_RENAMES` is 200; progress isn't streamed yet), so it
-   needs your decision before M12 is worth planning.
-5. **E2E fake budget**: give the fake path its own budget, or raise the harness's `ai.localContextSize`? **Default if you
-   have no preference: its own budget**, since the harness setting otherwise stops mirroring a real user.
-6. **M1 layout**: the review dialog is already 1,040 px with four columns, and M1 adds a preview plus quote-in-context.
+3. **M11**: is trial-batch-then-background the shape you want for large jobs? Round 3 showed it's a write-engine change,
+   not a spike (no proposal means no fingerprint and no ledger; `MAX_RENAMES` is 200; progress isn't streamed yet), so
+   it needs your decision before M12 is worth planning.
+4. **E2E fake budget**: give the fake path its own budget, or raise the harness's `ai.localContextSize`? **Default if
+   you have no preference: its own budget**, since the harness setting otherwise stops mirroring a real user.
+5. **M1 layout**: the review dialog is already 1,040 px with four columns, and M1 adds a preview plus quote-in-context.
    Fifth column, or a detail pane beside the table? Design call, and I'd rather you made it.
-7. **The `imageText` floor**: raise it from four characters to ~12? A four-character quote backs almost any name, and M1's
-   coverage hint makes thinness visible without refusing it. Cheap either way; I'd raise it.
-8. ~~Split `rename.rs`~~ — obsolete; the concurrent file-splits effort already did it.
-9. ~~Budget setting shape~~ — **decided inside M6**: presets plus "Automatic", so there's no clamp case and no numeric
+6. **The `imageText` floor**: raise it from four characters to ~12? A four-character quote backs almost any name, and
+   M1's coverage hint makes thinness visible without refusing it. Cheap either way; I'd raise it.
+7. ~~Split `rename.rs`~~ — obsolete; the concurrent file-splits effort already did it.
+8. ~~Budget setting shape~~ — **decided inside M6**: presets plus "Automatic", so there's no clamp case and no numeric
    validation copy. Say so if you disagree.

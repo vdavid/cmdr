@@ -12,7 +12,8 @@ and a red run re-runs its failures alone before believing them.
 Re-measured 2026-07-29 on David's M3 Max (12 P + 4 E) under deliberate oversubscription (96 busy workers, load ~198,
 above the load ~144 that motivated this spec). A full `pnpm check rust-tests --fresh` produced 13 failures:
 
-- **9 killed at the 8 s nextest cap**, every one a CPU-bound test: `file_viewer::encoding_test::find_newlines_utf8_matches_memchr`,
+- **9 killed at the 8 s nextest cap**, every one a CPU-bound test:
+  `file_viewer::encoding_test::find_newlines_utf8_matches_memchr`,
   `file_viewer::line_index_test::extend_to_n_equals_open_at_n`, `importance::scheduler::walk_memory_tests::*` (2),
   `archive::read::multiformat_test::tar_each_codec_round_trips_a_file`,
   `error_reporter::tests::streaming_tests::streaming_stops_at_cap`,
@@ -20,8 +21,9 @@ above the load ~144 that motivated this spec). A full `pnpm check rust-tests --f
   `mtp::macos_workaround::tests::test_get_usb_exclusive_owner_returns_option`,
   `operation_log::writer::retention_tests::size_prune_brings_db_under_budget_and_shrinks_the_file`
 - **2 leaks** (which nextest counts as PASSED, not failures)
-- **2 ordinary assertion failures**, both timing-shaped: `live_throttle_collapses_rapid_rewrites_and_trailing_flushes_last_size`
-  and `tail_watcher_sees_appender_task_events_within_debounce`
+- **2 ordinary assertion failures**, both timing-shaped:
+  `live_throttle_collapses_rapid_rewrites_and_trailing_flushes_last_size` and
+  `tail_watcher_sees_appender_task_events_within_debounce`
 - **0 in-test `wait_until` deadline expiries**
 
 Three of this spec's original premises did not survive that run:
@@ -32,8 +34,8 @@ Three of this spec's original premises did not survive that run:
   cores.
 - **"The nextest budget is 8 s against tests that take under a second."** Not for the headline offender.
   `dropping_a_file_emits_one_event` already had a 20 s cap and `real-notify` serialization; the 17.75 s burn was against
-  that 20 s, not 8 s. Several of the cap-killed tests are also not sub-second:
-  `find_newlines_utf8_matches_memchr` takes **3.3 s alone on an idle machine**, a 2.4x margin against the cap, not 10x.
+  that 20 s, not 8 s. Several of the cap-killed tests are also not sub-second: `find_newlines_utf8_matches_memchr` takes
+  **3.3 s alone on an idle machine**, a 2.4x margin against the cap, not 10x.
 - **"19 offenders, one or two root causes."** The overlap between this spec's list and what actually fails under
   saturation is small. Also worth knowing: much of the `downloads::` cluster had already been fixed before this spec was
   written (`0359b38e7`, `8c485aa91`, 2026-07-06/09), which the original measurement didn't account for.
@@ -63,12 +65,11 @@ against a 2m0s idle baseline; a planted always-failing test came back red at loa
 ## What's left
 
 1. **Wire the contention re-run into `rust-integration-tests`.** It's the most deadline-dense lane and it demonstrably
-   wants this: during a full `pnpm check` it failed on
-   `smb_integration_concurrent_streaming_writes_no_deadlock` timing out at 130 s, then passed standalone in 1m34s.
-   Blocker to solve first: the `contention-retry` profile's 40 s cap is *below* what healthy SMB tests legitimately take
-   (up to 130 s), and the profile deliberately has no `inherits`, so wiring it as-is would misclassify a healthy slow
-   test as a real failure. The lane needs its own retry profile, and the re-run has to carry `--run-ignored only`
-   alongside the exact-name filter.
+   wants this: during a full `pnpm check` it failed on `smb_integration_concurrent_streaming_writes_no_deadlock` timing
+   out at 130 s, then passed standalone in 1m34s. Blocker to solve first: the `contention-retry` profile's 40 s cap is
+   _below_ what healthy SMB tests legitimately take (up to 130 s), and the profile deliberately has no `inherits`, so
+   wiring it as-is would misclassify a healthy slow test as a real failure. The lane needs its own retry profile, and
+   the re-run has to carry `--run-ignored only` alongside the exact-name filter.
 2. **Surface Playwright flaky passes.** `desktop-svelte-e2e-playwright.go` only ever returns `Success`, so on the Linux
    and CI lanes (where `retries: 1` is set) a retried pass reports as clean green: the same hole just closed on the Rust
    side, still open on the lane that actually has retries. The suite already writes a structured JSON report
