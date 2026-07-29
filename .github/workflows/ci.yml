@@ -140,8 +140,16 @@ jobs:
       # ~1000-crate Tauri tree to recompile cold every run (~16 min); with target/
       # cached, an unchanged-deps push recompiles only the `cmdr` crate. rust-cache
       # prunes intelligently to stay under GitHub's 10 GB per-repo cache ceiling.
+      #
+      # `cache-on-failure` is load-bearing, not a nicety: the action's save step
+      # is `post-if: success() || CACHE_ON_FAILURE`, so by default one failing
+      # check means the whole job saves nothing, and every later run recompiles
+      # the Tauri tree from cold while still failing. A red job is exactly when
+      # the cache matters most, because that's the state you push fixes into.
       - name: Cache Rust build
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          cache-on-failure: true
 
       - name: Install Tauri dependencies (Linux)
         run: |
