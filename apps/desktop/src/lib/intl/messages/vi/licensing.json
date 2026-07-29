@@ -411,15 +411,19 @@
   "licensing.acknowledgements.rustHeading": "Rust crates ({count, number})",
   "@licensing.acknowledgements.rustHeading": {
     "sourceHash": "b2f91ff",
-    "sameAsSourceJustification": "A personal first name; the same in every locale."
+    "sameAsSourceJustification": "‘Rust crates’ is used untranslated in Vietnamese technical writing; there is no established Vietnamese term."
   },
   "licensing.acknowledgements.npmHeading": "Gói npm ({count, number})",
   "@licensing.acknowledgements.npmHeading": {
     "sourceHash": "44bdf59"
   },
-  "licensing.acknowledgements.fullTexts": "Toàn bộ nội dung giấy phép được kèm theo Cmdr trong THIRD-PARTY-NOTICES.md.",
+  "licensing.acknowledgements.jumpToNpm": "Chuyển đến các gói npm",
+  "@licensing.acknowledgements.jumpToNpm": {
+    "sourceHash": "9f55ebb"
+  },
+  "licensing.acknowledgements.fullTexts": "Toàn bộ nội dung giấy phép được kèm theo Cmdr trong <notices>THIRD-PARTY-NOTICES.md</notices>.",
   "@licensing.acknowledgements.fullTexts": {
-    "sourceHash": "62b74a3"
+    "sourceHash": "1760aeb"
   },
   "licensing.acknowledgements.loading": "Đang tải danh sách…",
   "@licensing.acknowledgements.loading": {

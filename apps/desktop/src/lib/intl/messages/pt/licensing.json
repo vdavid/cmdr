@@ -417,9 +417,13 @@
   "@licensing.acknowledgements.npmHeading": {
     "sourceHash": "44bdf59"
   },
-  "licensing.acknowledgements.fullTexts": "Os textos completos das licenças são incluídos no Cmdr em THIRD-PARTY-NOTICES.md.",
+  "licensing.acknowledgements.jumpToNpm": "Ir para os pacotes npm",
+  "@licensing.acknowledgements.jumpToNpm": {
+    "sourceHash": "9f55ebb"
+  },
+  "licensing.acknowledgements.fullTexts": "Os textos completos das licenças são incluídos no Cmdr em <notices>THIRD-PARTY-NOTICES.md</notices>.",
   "@licensing.acknowledgements.fullTexts": {
-    "sourceHash": "62b74a3"
+    "sourceHash": "1760aeb"
   },
   "licensing.acknowledgements.loading": "A carregar a lista…",
   "@licensing.acknowledgements.loading": {

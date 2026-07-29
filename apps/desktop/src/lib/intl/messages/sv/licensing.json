@@ -417,9 +417,13 @@
   "@licensing.acknowledgements.npmHeading": {
     "sourceHash": "44bdf59"
   },
-  "licensing.acknowledgements.fullTexts": "De fullständiga licenstexterna följer med Cmdr i THIRD-PARTY-NOTICES.md.",
+  "licensing.acknowledgements.jumpToNpm": "Hoppa till npm-paketen",
+  "@licensing.acknowledgements.jumpToNpm": {
+    "sourceHash": "9f55ebb"
+  },
+  "licensing.acknowledgements.fullTexts": "De fullständiga licenstexterna följer med Cmdr i <notices>THIRD-PARTY-NOTICES.md</notices>.",
   "@licensing.acknowledgements.fullTexts": {
-    "sourceHash": "62b74a3"
+    "sourceHash": "1760aeb"
   },
   "licensing.acknowledgements.loading": "Läser in listan…",
   "@licensing.acknowledgements.loading": {

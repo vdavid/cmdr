@@ -1446,6 +1446,7 @@ export type MessageKey =
   | 'licensing.about.tagline'
   | 'licensing.about.version'
   | 'licensing.acknowledgements.fullTexts'
+  | 'licensing.acknowledgements.jumpToNpm'
   | 'licensing.acknowledgements.loading'
   | 'licensing.acknowledgements.note'
   | 'licensing.acknowledgements.npmHeading'

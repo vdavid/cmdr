@@ -37,6 +37,21 @@ function mountDialog(): HTMLElement {
   return target
 }
 
+/**
+ * Waits for the dynamic package-list import to land. A fixed number of `tick()`s
+ * isn't enough (the `import()` settles over an unknown number of macrotasks), and
+ * getting this wrong silently re-runs the loading-state assertions instead of the
+ * loaded ones.
+ */
+async function waitForPackages(target: HTMLElement): Promise<void> {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, 5))
+    await tick()
+    if (target.querySelector('.package-list li')) return
+  }
+  throw new Error("The package list never rendered; the dialog's dynamic import didn't resolve")
+}
+
 describe('AcknowledgementsDialog a11y', () => {
   it('has no a11y violations while the list is loading', async () => {
     const target = mountDialog()
@@ -46,9 +61,7 @@ describe('AcknowledgementsDialog a11y', () => {
 
   it('has no a11y violations once the package lists are rendered', async () => {
     const target = mountDialog()
-    // Two ticks: one for mount, one after the dynamic import resolves.
-    await tick()
-    await tick()
+    await waitForPackages(target)
     await expectNoA11yViolations(target)
   })
 })

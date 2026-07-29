@@ -418,9 +418,13 @@
   "@licensing.acknowledgements.npmHeading": {
     "sourceHash": "44bdf59"
   },
-  "licensing.acknowledgements.fullTexts": "De volledige licentieteksten worden met Cmdr meegeleverd in THIRD-PARTY-NOTICES.md.",
+  "licensing.acknowledgements.jumpToNpm": "Naar de npm-pakketten",
+  "@licensing.acknowledgements.jumpToNpm": {
+    "sourceHash": "9f55ebb"
+  },
+  "licensing.acknowledgements.fullTexts": "De volledige licentieteksten worden met Cmdr meegeleverd in <notices>THIRD-PARTY-NOTICES.md</notices>.",
   "@licensing.acknowledgements.fullTexts": {
-    "sourceHash": "62b74a3"
+    "sourceHash": "1760aeb"
   },
   "licensing.acknowledgements.loading": "Lijst laden…",
   "@licensing.acknowledgements.loading": {

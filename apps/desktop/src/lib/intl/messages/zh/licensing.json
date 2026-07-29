@@ -416,9 +416,13 @@
   "@licensing.acknowledgements.npmHeading": {
     "sourceHash": "44bdf59"
   },
-  "licensing.acknowledgements.fullTexts": "完整的许可证文本随 Cmdr 一起提供，位于 THIRD-PARTY-NOTICES.md。",
+  "licensing.acknowledgements.jumpToNpm": "跳转到 npm 包",
+  "@licensing.acknowledgements.jumpToNpm": {
+    "sourceHash": "9f55ebb"
+  },
+  "licensing.acknowledgements.fullTexts": "完整的许可证文本随 Cmdr 一起提供，位于 <notices>THIRD-PARTY-NOTICES.md</notices>。",
   "@licensing.acknowledgements.fullTexts": {
-    "sourceHash": "62b74a3"
+    "sourceHash": "1760aeb"
   },
   "licensing.acknowledgements.loading": "正在加载列表…",
   "@licensing.acknowledgements.loading": {

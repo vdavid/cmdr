@@ -416,9 +416,13 @@
   "@licensing.acknowledgements.npmHeading": {
     "sourceHash": "44bdf59"
   },
-  "licensing.acknowledgements.fullTexts": "A teljes licencszövegeket a Cmdr a THIRD-PARTY-NOTICES.md fájlban tartalmazza.",
+  "licensing.acknowledgements.jumpToNpm": "Ugrás az npm csomagokhoz",
+  "@licensing.acknowledgements.jumpToNpm": {
+    "sourceHash": "9f55ebb"
+  },
+  "licensing.acknowledgements.fullTexts": "A teljes licencszövegeket a Cmdr a <notices>THIRD-PARTY-NOTICES.md</notices> fájlban tartalmazza.",
   "@licensing.acknowledgements.fullTexts": {
-    "sourceHash": "62b74a3"
+    "sourceHash": "1760aeb"
   },
   "licensing.acknowledgements.loading": "Lista betöltése…",
   "@licensing.acknowledgements.loading": {
