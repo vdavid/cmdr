@@ -57,6 +57,7 @@ fn incremental_deletes_rows_that_become_floored() {
         },
         &mut after,
         &changed,
+        RescoreScope::WithAncestors,
     )
     .expect("incremental");
     writer.flush_blocking().expect("flush");
@@ -135,6 +136,7 @@ fn incremental_scores_rows_that_stop_being_floored() {
         },
         &mut after,
         &changed,
+        RescoreScope::WithAncestors,
     )
     .expect("incremental");
     writer.flush_blocking().expect("flush");

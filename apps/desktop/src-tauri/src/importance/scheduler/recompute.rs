@@ -254,16 +254,101 @@ pub(super) fn load_visits(data_dir: &std::path::Path, volume_id: &str) -> HashMa
 
 // ── Incremental rescore ────────────────────────────────────────────────────
 
-/// Read the folders one incremental pass needs out of `conn`.
+/// Which folders an incremental pass writes rows for.
+///
+/// Set by which walk produced the folders, so the rescore never reaches for a folder
+/// the walk didn't read.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum RescoreScope {
+    /// Only the folders inside the changed subtrees — what a scoped walk holds.
+    ChangedSubtreesOnly,
+    /// Those PLUS each origin's capped ancestor chain, which only a whole-volume
+    /// walk can score correctly (an ancestor's `has_marker_below` depends on
+    /// everything below it, not only on the changed subtree).
+    WithAncestors,
+}
+
+/// Read the folders one incremental pass needs out of `conn`, and say which of them
+/// the pass may write.
 ///
 /// The single seam between "how the index is read" and "what gets scored and
 /// written": everything downstream ([`incremental_rescore`]) is a pure function of
-/// the [`WalkedFolders`] this returns, so a cheaper way to produce the SAME folders
-/// swaps in here and nowhere else. Today that is the full O(dirs)
-/// [`walk_index_folders`], which reads the whole volume and lets the rescore filter
-/// it down.
-pub(super) fn walk_for_incremental(conn: &rusqlite::Connection, home: &str) -> Result<WalkedFolders, String> {
-    walk_index_folders(conn, home)
+/// the [`WalkedFolders`] this returns. It prefers the SCOPED walk
+/// ([`super::scoped_walk`]), which reads only the changed subtrees, and falls back to
+/// the full O(dirs) [`walk_index_folders`] whenever the scoped one can't stand in for
+/// it — which is also what keeps the full walk exercised as the fallback path.
+pub(super) fn walk_for_incremental(
+    conn: &rusqlite::Connection,
+    home: &str,
+    origins: &[String],
+    previous_markers: &HashMap<String, bool>,
+) -> Result<(WalkedFolders, RescoreScope), String> {
+    match super::scoped_walk::try_scoped_walk(conn, home, origins, previous_markers)? {
+        super::scoped_walk::ScopedWalkOutcome::Scoped(folders) => Ok((folders, RescoreScope::ChangedSubtreesOnly)),
+        super::scoped_walk::ScopedWalkOutcome::FullWalkNeeded(reason) => {
+            log::debug!(target: "importance", "incremental rescore takes the full walk: {reason}");
+            Ok((walk_index_folders(conn, home)?, RescoreScope::WithAncestors))
+        }
+    }
+}
+
+/// Drop every origin that sits under another origin in the same batch.
+///
+/// `subtree(P/x) ⊆ subtree(P)`, so a nested origin adds no folder and clears no extra
+/// row — it only makes the pass read the same rows twice. Dropping it BEFORE the walk
+/// keeps clear and insert on one slice (both take the de-duplicated list), and it is
+/// what usually spares a brand-new folder from the marker-comparison fallback: the
+/// folder's creation changed its PARENT's listing, so the parent is an origin too,
+/// and the parent has a stored row where the new child doesn't.
+pub(super) fn dedupe_nested_origins(origins: &[String]) -> Vec<String> {
+    let mut sorted: Vec<&String> = origins.iter().collect();
+    // Shortest first, so an ancestor is always considered before its descendants.
+    sorted.sort_unstable_by_key(|p| p.len());
+    let mut kept: Vec<String> = Vec::new();
+    for origin in sorted {
+        if !is_in_changed_subtree(origin, &kept) {
+            kept.push(origin.clone());
+        }
+    }
+    // Back to the batch's own order, so the clear list stays stable across passes.
+    let mut out: Vec<String> = origins.iter().filter(|p| kept.contains(p)).cloned().collect();
+    out.dedup();
+    out
+}
+
+/// Read each origin's stored `has_project_marker` out of this volume's
+/// `importance.db`: the "before" side of the scoped walk's guard. An origin missing
+/// from the result has no stored row.
+pub(super) fn load_previous_markers(
+    data_dir: &std::path::Path,
+    volume_id: &str,
+    origins: &[String],
+) -> HashMap<String, bool> {
+    let db_path = importance_db_path(data_dir, volume_id);
+    let mut out = HashMap::new();
+    let Ok(conn) = crate::importance::store::open_read_connection(&db_path) else {
+        return out;
+    };
+    for origin in origins {
+        let Ok(Some(stored)) = crate::importance::store::read_weight(&conn, origin) else {
+            continue;
+        };
+        let Ok(signals) = serde_json::from_str::<crate::importance::scorer::FolderSignals>(&stored.signals_json) else {
+            continue;
+        };
+        out.insert(origin.clone(), signals.has_project_marker);
+    }
+    out
+}
+
+/// Everything scoring one folder needs, with no writer attached — so the
+/// differential harness can build rows off two walks without a store behind it.
+pub(super) struct ScoringInputs<'a> {
+    pub(super) weights: &'a Weights,
+    pub(super) home: &'a str,
+    pub(super) now_secs: u64,
+    pub(super) available: SignalSet,
+    pub(super) visits: &'a HashMap<String, u32>,
 }
 
 /// The inputs to an incremental rescore, bundled like [`RecomputeInputs`].
@@ -274,6 +359,19 @@ pub(super) struct IncrementalInputs<'a> {
     pub(super) now_secs: u64,
     pub(super) available: SignalSet,
     pub(super) visits: &'a HashMap<String, u32>,
+}
+
+impl<'a> IncrementalInputs<'a> {
+    /// The scoring half of these inputs, without the writer.
+    fn scoring(&self) -> ScoringInputs<'a> {
+        ScoringInputs {
+            weights: self.weights,
+            home: self.home,
+            now_secs: self.now_secs,
+            available: self.available,
+            visits: self.visits,
+        }
+    }
 }
 
 /// Rescore the changed subtrees WITHOUT advancing the generation, so every
@@ -301,19 +399,15 @@ pub(super) fn incremental_rescore(
     inputs: &IncrementalInputs<'_>,
     folders: &mut WalkedFolders,
     changed_paths: &[String],
+    scope: RescoreScope,
 ) -> Result<usize, String> {
-    // The set of folders to (re)insert: each changed path's capped ancestor chain
-    // (upward propagation) plus every walked folder in a changed path's subtree
-    // (downward floor propagation). The ancestor cap bounds the upward walk; the
-    // downward side is bounded by the subtree that actually changed. Only THIS
-    // subset materializes a path, so the memory stays proportional to what changed.
-    let touched = touched_folder_set(changed_paths);
-    let mut subset: Vec<(IndexFolder, String)> = Vec::new();
-    folders.for_each(|f, path| {
-        if touched.contains(path) || is_in_changed_subtree(path, changed_paths) {
-            subset.push((*f, path.to_string()));
-        }
-    });
+    // The set of folders to (re)insert: every walked folder in a changed path's
+    // subtree (downward floor propagation), plus — on a full walk only — each
+    // changed path's capped ancestor chain (upward marker propagation). The
+    // ancestor cap bounds the upward walk; the downward side is bounded by the
+    // subtree that actually changed. Only THIS subset materializes a path, so the
+    // memory stays proportional to what changed.
+    let subset = rescore_subset(folders, changed_paths, scope);
     if subset.is_empty() && changed_paths.is_empty() {
         return Ok(0);
     }
@@ -333,9 +427,60 @@ pub(super) fn incremental_rescore(
         HashMap::new()
     };
 
-    // Assemble each touched folder's signals; only the NON-FLOORED ones get a row
-    // (floored folders are cleared by the subtree delete and never re-inserted).
-    let rows: Vec<WeightRow> = subset
+    let rows = rescore_rows(&inputs.scoring(), &subset, &last_used);
+    let count = rows.len();
+
+    let writer = inputs.writer;
+    // The incremental rows carry the CURRENT generation (no bump), so they're
+    // as-fresh-as the last full pass and untouched folders don't turn stale. The
+    // changed subtrees are cleared first so renamed-away / deleted / now-floored
+    // folders leave no orphan row.
+    let generation = writer.next_generation().map_err(|e| e.to_string())?.saturating_sub(1);
+
+    writer
+        .write_weights_incremental(generation, rows, changed_paths.to_vec())
+        .map_err(|e| e.to_string())?;
+    writer.flush_blocking().map_err(|e| e.to_string())?;
+    // The every-60s incremental is the WAL churn source (plan M9): truncate at this
+    // quiet point so the file doesn't creep up in place. Best-effort, never fails.
+    let _ = writer.checkpoint_wal();
+    Ok(count)
+}
+
+/// The folders an incremental pass writes rows for, each with its materialized path.
+///
+/// Only THIS subset materializes a path, so the memory stays proportional to what
+/// changed. Split out of [`incremental_rescore`] so the differential harness can
+/// build the same subset off two different walks without writing anything.
+pub(super) fn rescore_subset(
+    folders: &mut WalkedFolders,
+    changed_paths: &[String],
+    scope: RescoreScope,
+) -> Vec<(IndexFolder, String)> {
+    let touched = match scope {
+        RescoreScope::WithAncestors => touched_folder_set(changed_paths),
+        // A scoped walk never read the ancestors, and doesn't need to: the only
+        // signal that can move for them is `has_project_marker`, and the scoped
+        // walk falls back to the full one whenever that could have happened.
+        RescoreScope::ChangedSubtreesOnly => std::collections::HashSet::new(),
+    };
+    let mut subset = Vec::new();
+    folders.for_each(|f, path| {
+        if touched.contains(path) || is_in_changed_subtree(path, changed_paths) {
+            subset.push((*f, path.to_string()));
+        }
+    });
+    subset
+}
+
+/// Assemble each subset folder's signals and score it; only the NON-FLOORED ones get
+/// a row (floored folders are cleared by the subtree delete and never re-inserted).
+pub(super) fn rescore_rows(
+    inputs: &ScoringInputs<'_>,
+    subset: &[(IndexFolder, String)],
+    last_used: &HashMap<String, u64>,
+) -> Vec<WeightRow> {
+    subset
         .iter()
         .filter_map(|(f, path)| {
             let optional = OptionalSignals {
@@ -362,24 +507,7 @@ pub(super) fn incremental_rescore(
                 signals_json,
             })
         })
-        .collect();
-    let count = rows.len();
-
-    let writer = inputs.writer;
-    // The incremental rows carry the CURRENT generation (no bump), so they're
-    // as-fresh-as the last full pass and untouched folders don't turn stale. The
-    // changed subtrees are cleared first so renamed-away / deleted / now-floored
-    // folders leave no orphan row.
-    let generation = writer.next_generation().map_err(|e| e.to_string())?.saturating_sub(1);
-
-    writer
-        .write_weights_incremental(generation, rows, changed_paths.to_vec())
-        .map_err(|e| e.to_string())?;
-    writer.flush_blocking().map_err(|e| e.to_string())?;
-    // The every-60s incremental is the WAL churn source (plan M9): truncate at this
-    // quiet point so the file doesn't creep up in place. Best-effort, never fails.
-    let _ = writer.checkpoint_wal();
-    Ok(count)
+        .collect()
 }
 
 /// Whether `path` sits at or under any of `changed_paths` — the downward subtree

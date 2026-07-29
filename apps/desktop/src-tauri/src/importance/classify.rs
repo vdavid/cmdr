@@ -86,11 +86,23 @@ pub fn under_floored_paths<'a>(
 ) -> std::collections::HashSet<String> {
     let mut under = std::collections::HashSet::new();
     for path in paths {
-        if any_ancestor_self_floors(path, home) {
+        if under_floored_ancestor(path, home) {
             under.insert(path.to_string());
         }
     }
     under
+}
+
+/// The `under_floored_ancestor` signal for ONE folder: whether any PROPER ancestor
+/// of it self-floors (denylisted / hidden / system).
+///
+/// Pure path math — a folder's ancestors are exactly the prefixes of its own
+/// absolute path, and each one's name is that prefix's last component — so this
+/// needs neither the folder set nor the index. That is what lets an incremental
+/// rescore compute the signal for a subtree it reads in isolation: the flooring
+/// ancestor can sit far above the subtree root and still be seen.
+pub fn under_floored_ancestor(path: &str, home: &str) -> bool {
+    any_ancestor_self_floors(path, home)
 }
 
 /// Whether a folder floors purely by its PATH — it self-floors (denylisted /

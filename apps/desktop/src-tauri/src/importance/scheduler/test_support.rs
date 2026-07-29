@@ -8,7 +8,8 @@ use super::*;
 // Re-exports the split test bodies reference by bare name (the scheduler's
 // glob doesn't cover the recompute internals or these crate paths).
 pub(super) use super::recompute::{
-    ANCESTOR_WALK_CAP, RecomputeInputs, is_in_changed_subtree, recompute_folders, score_folders, touched_folder_set,
+    ANCESTOR_WALK_CAP, RecomputeInputs, RescoreScope, is_in_changed_subtree, recompute_folders, score_folders,
+    touched_folder_set,
 };
 pub(super) use super::walk::WalkedFolders;
 pub(super) use crate::importance::signals::OptionalSignals;

@@ -54,11 +54,13 @@ use super::writer::ImportanceWriter;
 use crate::ignore_poison::IgnorePoison;
 use crate::indexing::IndexVolumeKind;
 
+mod differential;
 mod recompute;
+mod scoped_walk;
 mod walk;
 use recompute::{
-    IncrementalInputs, RecomputeInputs, incremental_rescore, load_visits, recompute_folders, sanitize_incremental_batch,
-    walk_for_incremental,
+    IncrementalInputs, RecomputeInputs, dedupe_nested_origins, incremental_rescore, load_previous_markers, load_visits,
+    recompute_folders, sanitize_incremental_batch, walk_for_incremental,
 };
 // Re-exported for the eval corpus tool, which walks a real index the SAME way a
 // recompute does (so dumped signals match production exactly).
@@ -67,6 +69,9 @@ pub(crate) use walk::walk_index_folders;
 // `importance.db` — the full-pass core without the registry or async driver.
 use crate::indexing::lifecycle::lifecycle_bus;
 pub use recompute::{MeasureOutcome, recompute_index_to_db};
+// The correctness harness: run the scoped walk and the full walk over the same real
+// index and difference the rows they'd write.
+pub use differential::{OriginComparison, compare_walks_for_incremental, sample_origins};
 
 // ── Volume kind → scoring policy (plan M4, typed, never string-matched) ────
 
@@ -403,6 +408,10 @@ impl ImportanceScheduler {
         // churn from driving a pass a minute forever. See `sanitize_incremental_batch`.
         let home = Self::home_dir();
         let changed_paths = sanitize_incremental_batch(changed_paths, &home);
+        // One origin per changed subtree: a nested origin adds nothing and costs a
+        // second read of the same rows. Both the clear and the insert take THIS
+        // slice, so they can't disagree about the region.
+        let changed_paths = dedupe_nested_origins(&changed_paths);
         if changed_paths.is_empty() {
             return Ok(0);
         }
@@ -411,12 +420,18 @@ impl ImportanceScheduler {
             return Ok(0);
         };
 
-        let mut folders = pool
-            .with_conn(|conn| walk_for_incremental(conn, &home))
+        // The "before" side of the scoped walk's guard, read before the walk so the
+        // whole decision fits in one read-pool checkout.
+        let previous_markers = load_previous_markers(&self.data_dir, volume_id, &changed_paths);
+        let (mut folders, scope) = pool
+            .with_conn(|conn| walk_for_incremental(conn, &home, &changed_paths, &previous_markers))
             .map_err(|e| format!("read pool error: {e}"))??;
-        if folders.is_empty() {
-            return Ok(0);
-        }
+
+        // ❌ No `folders.is_empty()` early return here. A scoped walk over a batch
+        // whose origins were ALL deleted between the publish and this pass finds no
+        // folder — and that batch is exactly the one whose rows have to be CLEARED.
+        // Returning early would leave every deleted folder's weight behind until the
+        // next full pass.
 
         let visits = load_visits(&self.data_dir, volume_id);
         let writer = self.writer_for(volume_id).map_err(|e| e.to_string())?;
@@ -432,14 +447,16 @@ impl ImportanceScheduler {
             },
             &mut folders,
             &changed_paths,
+            scope,
         )?;
 
-        if count > 0 {
-            // The incremental rows carry the current generation (no bump), so the
-            // notification announces that generation as freshly touched.
-            let generation = writer.next_generation().map_err(|e| e.to_string())?.saturating_sub(1);
-            super::read::notify_recompute_completed(volume_id, generation);
-        }
+        // Announce the pass whether or not it wrote a row: it CLEARED each changed
+        // subtree either way, so a pass that only deleted rows (every origin gone,
+        // or a whole subtree newly floored) still moved the store. The incremental
+        // rows carry the current generation (no bump), so the notification announces
+        // that generation as freshly touched.
+        let generation = writer.next_generation().map_err(|e| e.to_string())?.saturating_sub(1);
+        super::read::notify_recompute_completed(volume_id, generation);
         Ok(count)
     }
 }

@@ -21,7 +21,7 @@ use crate::indexing::store::{ARENA_FULL, DirTree, IndexStore, ROOT_ID};
 #[derive(Clone, Copy)]
 pub(crate) struct IndexFolder {
     /// This folder's row in the walk's tree: its id, parent id, and name.
-    dir_index: u32,
+    pub(super) dir_index: u32,
     /// The folder's own modification time — the only column scoring reads off its
     /// entry row, so the only one kept.
     pub(crate) modified_at: Option<u64>,
@@ -54,6 +54,21 @@ pub(crate) struct WalkedFolders {
 }
 
 impl WalkedFolders {
+    /// Assemble a walk from an already-built tree plus its folder records — for a
+    /// walk that reads only PART of an index ([`super::scoped_walk`]) and so builds
+    /// both itself.
+    ///
+    /// The two invariants every consumer leans on are the caller's to uphold:
+    /// `tree`'s rows ascend by id (its lookups are binary searches), and `folders`
+    /// ascends by `dir_index` and excludes the root sentinel.
+    pub(super) fn from_parts(tree: DirTree, folders: Vec<IndexFolder>) -> Self {
+        debug_assert!(
+            folders.windows(2).all(|w| w[0].dir_index < w[1].dir_index),
+            "folder records must ascend by tree row"
+        );
+        Self { tree, folders }
+    }
+
     /// How many folders the walk found (the root sentinel isn't one).
     pub(crate) fn len(&self) -> usize {
         self.folders.len()
@@ -80,6 +95,20 @@ impl WalkedFolders {
         }
     }
 
+    /// Visit every folder MUTABLY with its reconstructed absolute path.
+    ///
+    /// [`for_each`](WalkedFolders::for_each)'s twin, for a pass that sets a folder's
+    /// flags from its own path — the scoped walk derives `under_floored_ancestor`
+    /// that way, from pure path math rather than a whole-tree propagation.
+    pub(super) fn for_each_mut(&mut self, mut visit: impl FnMut(&mut IndexFolder, &str)) {
+        let mut path = String::new();
+        for index in 0..self.folders.len() {
+            let dir_index = self.folders[index].dir_index as usize;
+            self.tree.path_at_into(dir_index, &mut path);
+            visit(&mut self.folders[index], &path);
+        }
+    }
+
     /// The first `max` folders' absolute paths, reconstructing no more than that.
     ///
     /// For the `kMDItemLastUsedDate` sample, which queries at most its own cap and takes
@@ -97,19 +126,31 @@ impl WalkedFolders {
         out
     }
 
+    /// The folder record at `index` (an index [`folder_of_dir_id`](WalkedFolders::folder_of_dir_id)
+    /// or [`folder_of_dir_index`](WalkedFolders::folder_of_dir_index) returned).
+    pub(super) fn folder_at(&self, index: usize) -> &IndexFolder {
+        &self.folders[index]
+    }
+
+    /// [`folder_at`](WalkedFolders::folder_at), mutably — for a walk that fills its
+    /// folders' aggregates in after building the tree.
+    pub(super) fn folder_at_mut(&mut self, index: usize) -> &mut IndexFolder {
+        &mut self.folders[index]
+    }
+
     /// The folder index of directory `id`, or `None` when the id isn't a folder here
     /// (the root sentinel, or a file's parent that vanished between queries).
     ///
     /// Two binary searches, no hash map: id → tree row, then tree row → folder. The
     /// walk runs it once per folder-with-files, never per file.
-    fn folder_of_dir_id(&self, id: i64) -> Option<usize> {
+    pub(super) fn folder_of_dir_id(&self, id: i64) -> Option<usize> {
         self.folder_of_dir_index(self.tree.index_of(id)?)
     }
 
     /// The folder index of the directory at tree row `dir_index`, for a caller that
     /// already resolved the row. `None` for the root sentinel, the one directory that
     /// isn't a folder.
-    fn folder_of_dir_index(&self, dir_index: usize) -> Option<usize> {
+    pub(super) fn folder_of_dir_index(&self, dir_index: usize) -> Option<usize> {
         let dir_index = u32::try_from(dir_index).ok()?;
         self.folders.binary_search_by_key(&dir_index, |f| f.dir_index).ok()
     }
@@ -286,7 +327,7 @@ fn propagate_floor_to_descendants(walked: &mut WalkedFolders, home: &str) {
 /// Propagate a direct project marker up to every ancestor: a `.git` deep in a subtree
 /// marks the whole path above it as project-adjacent (plan Decision 3). Seeds from each
 /// folder's own direct-marker flag, then walks parent pointers.
-fn propagate_marker_to_ancestors(walked: &mut WalkedFolders) {
+pub(super) fn propagate_marker_to_ancestors(walked: &mut WalkedFolders) {
     let seeds: Vec<u32> = walked
         .folders
         .iter()
@@ -374,7 +415,7 @@ impl WalkedFolders {
 /// of these per directory instead cost ~280 bytes a folder (the table plus a `String`
 /// per extension), which on a NAS-sized volume is most of a walk's memory.
 #[derive(Default)]
-struct ExtensionGroup {
+pub(super) struct ExtensionGroup {
     /// The distinct extensions seen so far, then spare buffers past `len` left over
     /// from earlier (bigger) groups.
     slots: Vec<String>,
@@ -384,13 +425,13 @@ struct ExtensionGroup {
 
 impl ExtensionGroup {
     /// Start a new group, keeping the buffers the last one used.
-    fn reset(&mut self) {
+    pub(super) fn reset(&mut self) {
         self.len = 0;
     }
 
     /// Add one file's extension (`""` for a file with none, which counts as its own
     /// distinct extension — the long-standing shape the scorer's weights are tuned on).
-    fn insert(&mut self, extension: &str) {
+    pub(super) fn insert(&mut self, extension: &str) {
         if self.slots[..self.len].iter().any(|seen| seen == extension) {
             return;
         }
@@ -404,7 +445,7 @@ impl ExtensionGroup {
     }
 
     /// How many distinct extensions the group holds.
-    fn len(&self) -> u32 {
+    pub(super) fn len(&self) -> u32 {
         self.len as u32
     }
 }
@@ -414,7 +455,7 @@ impl ExtensionGroup {
 /// Folds ASCII in place, which is every real extension; only a non-ASCII one takes the
 /// allocating `to_lowercase` path (whose Unicode special cases we must keep, so the
 /// fast path is gated on `is_ascii`, where the two agree by definition).
-fn lowercased_extension_into(name: &str, out: &mut String) {
+pub(super) fn lowercased_extension_into(name: &str, out: &mut String) {
     out.clear();
     let Some(extension) = std::path::Path::new(name).extension().and_then(|e| e.to_str()) else {
         return;
@@ -431,7 +472,7 @@ fn lowercased_extension_into(name: &str, out: &mut String) {
 /// Same ASCII fast path as [`lowercased_extension_into`]: markers are ASCII, but a
 /// non-ASCII name can still fold onto one (U+212A KELVIN SIGN lowercases to `k`), so
 /// the slow path stays exact rather than assuming it can't.
-fn folded_is_project_marker(name: &str, buf: &mut String) -> bool {
+pub(super) fn folded_is_project_marker(name: &str, buf: &mut String) -> bool {
     if name.is_ascii() {
         buf.clear();
         buf.extend(name.chars().map(|c| c.to_ascii_lowercase()));

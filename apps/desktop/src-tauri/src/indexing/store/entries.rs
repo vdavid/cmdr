@@ -8,6 +8,11 @@ use super::*;
 /// SQLite's default 999-parameter ceiling.
 const DELETE_CHUNK: usize = 256;
 
+/// `"?, ?, …"` for an `IN` list of `count` bound parameters.
+fn placeholders(count: usize) -> String {
+    vec!["?"; count].join(", ")
+}
+
 impl IndexStore {
     // ── Read methods (integer-keyed, new API) ────────────────────────
 
@@ -200,6 +205,75 @@ impl IndexStore {
         while let Some(row) = rows.next()? {
             let parent_id: i64 = row.get(0)?;
             // `get_ref` borrows SQLite's own buffer, so no `String` is allocated per row.
+            let name = row.get_ref(1)?.as_str().map_err(rusqlite::Error::from)?;
+            f(parent_id, name);
+        }
+        Ok(())
+    }
+
+    /// Stream the child DIRECTORY rows of every parent in `parent_ids` through `f` as
+    /// `(id, parent_id, name, modified_at)`.
+    ///
+    /// The level-by-level descent a SCOPED walk uses: the importance incremental
+    /// rescore reads only the changed subtrees, so it expands one whole level per
+    /// query instead of paying a point query per directory (or, as the full walk
+    /// does, reading the volume). Served by `idx_parent_name_folded`'s leading
+    /// `parent_id` column, so the cost tracks the subtree, not the table.
+    ///
+    /// The caller chunks `parent_ids` to stay under SQLite's bound-parameter limit.
+    /// Rows arrive in no guaranteed order — a directory has no per-parent
+    /// accumulator to close, unlike the file side.
+    pub fn for_each_child_directory_of(
+        conn: &Connection,
+        parent_ids: &[i64],
+        mut f: impl FnMut(i64, i64, &str, Option<u64>),
+    ) -> Result<(), IndexStoreError> {
+        if parent_ids.is_empty() {
+            return Ok(());
+        }
+        let sql = format!(
+            "SELECT id, parent_id, name, modified_at FROM entries \
+             WHERE is_directory = 1 AND parent_id IN ({})",
+            placeholders(parent_ids.len())
+        );
+        let mut stmt = conn.prepare_cached(&sql)?;
+        let mut rows = stmt.query(rusqlite::params_from_iter(parent_ids))?;
+        while let Some(row) = rows.next()? {
+            let id: i64 = row.get(0)?;
+            let parent_id: i64 = row.get(1)?;
+            // `get_ref` borrows SQLite's own buffer, so no `String` is allocated per row.
+            let name = row.get_ref(2)?.as_str().map_err(rusqlite::Error::from)?;
+            let modified_at: Option<u64> = row.get(3)?;
+            f(id, parent_id, name, modified_at);
+        }
+        Ok(())
+    }
+
+    /// Stream the child FILE rows of every parent in `parent_ids` through `f` as
+    /// `(parent_id, name)`, with all of one parent's files CONTIGUOUS.
+    ///
+    /// The scoped counterpart to
+    /// [`for_each_file_child_by_parent`](IndexStore::for_each_file_child_by_parent),
+    /// and it keeps that one's contract: the `ORDER BY parent_id` is what lets the
+    /// caller fold a directory's distinct extensions through ONE reusable accumulator
+    /// and close it at the group boundary. ❌ Don't drop it. Each parent id appears in
+    /// exactly one chunk, so chunking never splits a group.
+    pub fn for_each_child_file_of(
+        conn: &Connection,
+        parent_ids: &[i64],
+        mut f: impl FnMut(i64, &str),
+    ) -> Result<(), IndexStoreError> {
+        if parent_ids.is_empty() {
+            return Ok(());
+        }
+        let sql = format!(
+            "SELECT parent_id, name FROM entries WHERE is_directory = 0 AND parent_id IN ({}) ORDER BY parent_id",
+            placeholders(parent_ids.len())
+        );
+        let mut stmt = conn.prepare_cached(&sql)?;
+        let mut rows = stmt.query(rusqlite::params_from_iter(parent_ids))?;
+        while let Some(row) = rows.next()? {
+            let parent_id: i64 = row.get(0)?;
             let name = row.get_ref(1)?.as_str().map_err(rusqlite::Error::from)?;
             f(parent_id, name);
         }
