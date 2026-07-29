@@ -445,7 +445,8 @@ fn a_folder_renamed_away_from_node_modules_unfloors_its_whole_subtree() {
         two_projects(v);
         v.full_pass();
         assert!(
-            !v.weights().contains_key("/Users/test/projects/beta/node_modules/left-pad"),
+            !v.weights()
+                .contains_key("/Users/test/projects/beta/node_modules/left-pad"),
             "a floored folder has no row to start with"
         );
         v.rename("/Users/test/projects/beta/node_modules", "vendor");
@@ -592,7 +593,10 @@ fn an_origin_spelled_in_another_case_behaves_the_same_under_both_walks() {
 /// otherwise — the clear list and the insert set stay one slice.
 #[test]
 fn nested_origins_collapse_to_their_outermost() {
-    let batch: Vec<String> = ["/a/b/c", "/a/b", "/x", "/a/bc"].iter().map(|p| p.to_string()).collect();
+    let batch: Vec<String> = ["/a/b/c", "/a/b", "/x", "/a/bc"]
+        .iter()
+        .map(|p| p.to_string())
+        .collect();
     assert_eq!(
         dedupe_nested_origins(&batch),
         vec!["/a/b".to_string(), "/x".to_string(), "/a/bc".to_string()],

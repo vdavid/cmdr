@@ -11,8 +11,8 @@ ships). Evidence: `docs/notes/idle-memory-profile-2026-07-28.md`.
 ## The problem
 
 `run_incremental_blocking` calls `walk_index_folders`, which reads **every** directory and **every** file row of the
-volume, folds each folder's aggregate, and runs two whole-tree propagations. Only then does `incremental_rescore`
-filter to the touched subset. The targeted write that follows is sub-millisecond (binary `path_folded` PK).
+volume, folds each folder's aggregate, and runs two whole-tree propagations. Only then does `incremental_rescore` filter
+to the touched subset. The targeted write that follows is sub-millisecond (binary `path_folded` PK).
 
 Measured 2026-07-27 (warm cache, five alternating runs, `cargo run -p index-query --bin importance-measure`):
 
@@ -47,8 +47,8 @@ under_floored_ancestor(f) = any_ancestor_self_floors(f.path, home)
 which `classify.rs` already implements (`floors_by_path` calls it). This is **identical** to what the full walk's
 `propagate_floor_to_descendants` computes, not an approximation:
 
-- The full walk seeds from every tree row except the root sentinel, then walks parent pointers. Every strict ancestor
-  of `f` is a directory in the index (the index is a tree), its path is a prefix of `f`'s path, and `DirTree::name_at`
+- The full walk seeds from every tree row except the root sentinel, then walks parent pointers. Every strict ancestor of
+  `f` is a directory in the index (the index is a tree), its path is a prefix of `f`'s path, and `DirTree::name_at`
   equals `leaf_name` of that prefix (a name can't contain `/`).
 - The full walk stops at `ROOT_ID`; `any_ancestor_self_floors` stops at `pos == 0`. Same boundary.
 
@@ -68,8 +68,8 @@ code, over the scoped tree.
 Let `A` be a strict ancestor of origin `C`, outside every walked subtree. Which of `A`'s signals can move because of a
 change inside `subtree(C)`?
 
-- `modified_at(A)`: no. A directory's mtime changes only when its own listing changes, and then `A` is itself an
-  origin (`dir-changed` carries origin dirs).
+- `modified_at(A)`: no. A directory's mtime changes only when its own listing changes, and then `A` is itself an origin
+  (`dir-changed` carries origin dirs).
 - `children` (`file_count`, `distinct_extension_count`, `has_direct_marker`): direct children only, so same argument.
 - `under_floored_ancestor(A)`: depends on `A`'s own ancestor chain. A rename up there makes the renamed folder's
   **parent** an origin, which puts `A` inside that origin's subtree, not outside it.
@@ -82,12 +82,12 @@ has_marker_below(A) = markerOutside(A, {C_i}) OR OR_i M(C_i)
 M(C) = has_direct_marker(C) OR has_marker_below(C)   -- "subtree(C) contains a marker"
 ```
 
-`markerOutside` is untouched by anything inside the subtrees. So **the ancestors' `has_marker_below` changes if and
-only if some `M(C_i)` changes.**
+`markerOutside` is untouched by anything inside the subtrees. So **the ancestors' `has_marker_below` changes if and only
+if some `M(C_i)` changes.**
 
 `M(C)` is exactly the `has_project_marker` field `signals_for_dir` computes and the store persists
-(`has_project_marker = children.has_direct_marker || has_marker_below`). So the previous `M(C)` is readable straight
-off `C`'s stored row, and the new one comes out of the scoped walk.
+(`has_project_marker = children.has_direct_marker || has_marker_below`). So the previous `M(C)` is readable straight off
+`C`'s stored row, and the new one comes out of the scoped walk.
 
 **The guard:** if every origin's `M` is unchanged, no ancestor outside the walked subtrees can have changed. If any
 origin's `M` flipped, or an origin has no stored row to compare against, this pass **falls back to the full walk**,
@@ -115,7 +115,7 @@ ancestor chain. On the scoped path the walk holds only the subtrees, so the rows
 rewriting it every pass:
 
 - Its **recency term** stops being recomputed against a fresh `now_secs`. Every other folder on the volume already ages
-  that way between full passes, so this makes the store *more* uniform, not less: today an ancestor of a churny
+  that way between full passes, so this makes the store _more_ uniform, not less: today an ancestor of a churny
   directory gets its score decayed every 60 s while its siblings keep an older, higher `now_secs`.
 - A **visit** recorded since its row was written folds in later (at the next full pass, or the next pass that actually
   covers it). Visits already lag a pass today.
@@ -140,7 +140,7 @@ A batch carries many origins. The rule, in order:
    - `SCOPED_WALK_MAX_DIRS` — the scoped walk counts directories as it descends and abandons the moment it passes this,
      so a batch that turns out to cover most of the volume costs a bounded probe and then takes the full walk.
 
-   The second is the load-bearing one: it is checked *during* the descent, so no batch can make the scoped path cost
+   The second is the load-bearing one: it is checked _during_ the descent, so no batch can make the scoped path cost
    more than a small fraction of a full walk before it gives up.
 
 ### 6. Reading the subtree out of the index
@@ -157,8 +157,8 @@ Per surviving origin:
   with a batched `WHERE parent_id IN (…) AND is_directory = 0` query. Both are served by the `(parent_id, name_folded)`
   index.
 
-The result is a `WalkedFolders` with the same invariants the full walk produces (tree rows in ascending id order,
-folder records in ascending `dir_index` order), so every downstream consumer is unchanged.
+The result is a `WalkedFolders` with the same invariants the full walk produces (tree rows in ascending id order, folder
+records in ascending `dir_index` order), so every downstream consumer is unchanged.
 
 ## What it measured
 
@@ -220,6 +220,6 @@ weights on a dev machine, `docs/notes/idle-memory-profile-2026-07-28.md`).
    `is_in_changed_subtree` / `touched_folder_set` compare bytes, so an origin spelled in a different case than the index
    holds it clears rows that nothing re-adds. Both walks lose the row identically, so this is neither caused nor made
    worse by the scoped walk. The fix would be to canonicalize each origin against the index (resolve, then rebuild the
-   path from the index's own names) before either walk, which the scoped walk already does internally for its rows —
-   ≤ 32 point queries per pass. Worth doing, but it changes the full-walk oracle's behaviour, so it belongs in its own
+   path from the index's own names) before either walk, which the scoped walk already does internally for its rows — ≤
+   32 point queries per pass. Worth doing, but it changes the full-walk oracle's behaviour, so it belongs in its own
    change. Pinned meanwhile as a differential-only scenario.

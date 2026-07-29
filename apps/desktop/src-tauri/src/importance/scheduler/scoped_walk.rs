@@ -205,15 +205,22 @@ fn resolve_directory(conn: &rusqlite::Connection, path: &str) -> Result<Option<i
     }
 }
 
+/// One directory the scoped walk read.
+struct ScopedRow {
+    parent_id: i64,
+    name: String,
+    modified_at: Option<u64>,
+    /// Whether this row is a folder to SCORE. Ancestor-chain rows are present so
+    /// paths reconstruct with the index's own names, but they sit outside the
+    /// changed subtrees, so nothing rescores them.
+    in_scope: bool,
+}
+
 /// The directory rows one scoped walk collected, before they're ordered into a tree.
 #[derive(Default)]
 struct ScopedRows {
-    /// id → (parent_id, name, mtime, whether this row is a folder to SCORE).
-    ///
-    /// Ancestor-chain rows are present so paths reconstruct with the index's own
-    /// names, but they aren't folders: they sit outside the changed subtrees and
-    /// nothing rescores them.
-    rows: HashMap<i64, (i64, String, Option<u64>, bool)>,
+    /// Every directory read, by entry id.
+    rows: HashMap<i64, ScopedRow>,
     /// How many in-scope directories the descent has read, against
     /// [`SCOPED_WALK_MAX_DIRS`].
     scored_dirs: usize,
@@ -223,14 +230,19 @@ impl ScopedRows {
     fn insert(&mut self, id: i64, parent_id: i64, name: &str, modified_at: Option<u64>, in_scope: bool) {
         self.rows
             .entry(id)
-            .and_modify(|row| row.3 |= in_scope)
-            .or_insert_with(|| (parent_id, name.to_string(), modified_at, in_scope));
+            .and_modify(|row| row.in_scope |= in_scope)
+            .or_insert_with(|| ScopedRow {
+                parent_id,
+                name: name.to_string(),
+                modified_at,
+                in_scope,
+            });
     }
 
     /// Order the rows by id, build the tree, and fold every in-scope folder's direct
     /// children into its aggregate. `None` when the name arena filled up.
     fn into_walk(self, conn: &rusqlite::Connection) -> Result<Option<WalkedFolders>, String> {
-        let mut ordered: Vec<(i64, (i64, String, Option<u64>, bool))> = self.rows.into_iter().collect();
+        let mut ordered: Vec<(i64, ScopedRow)> = self.rows.into_iter().collect();
         // `DirTree` binary-searches its rows, so they MUST be pushed id-ascending —
         // the same contract `for_each_directory`'s `ORDER BY id` gives the full walk.
         ordered.sort_unstable_by_key(|(id, _)| *id);
@@ -238,14 +250,14 @@ impl ScopedRows {
         let mut tree = DirTree::new();
         let mut folders: Vec<IndexFolder> = Vec::new();
         let mut scored_ids: Vec<i64> = Vec::new();
-        for (index, (id, (parent_id, name, modified_at, in_scope))) in ordered.iter().enumerate() {
-            if !tree.push(*id, *parent_id, name) {
+        for (index, (id, row)) in ordered.iter().enumerate() {
+            if !tree.push(*id, row.parent_id, &row.name) {
                 return Ok(None);
             }
-            if *in_scope && *id != ROOT_ID {
+            if row.in_scope && *id != ROOT_ID {
                 folders.push(IndexFolder {
                     dir_index: index as u32,
-                    modified_at: *modified_at,
+                    modified_at: row.modified_at,
                     children: ChildAggregate::default(),
                     has_marker_below: false,
                     under_floored_ancestor: false,
@@ -266,18 +278,18 @@ impl ScopedRows {
 fn fold_direct_children(
     conn: &rusqlite::Connection,
     walked: &mut WalkedFolders,
-    ordered: &[(i64, (i64, String, Option<u64>, bool))],
+    ordered: &[(i64, ScopedRow)],
     scored_ids: &[i64],
 ) -> Result<(), String> {
     let mut folded = String::new();
 
     // Directory children come from the rows already read: the descent read every
     // directory under every origin, so a marker directory is always present.
-    for (_, (parent_id, name, _, _)) in ordered {
-        if !folded_is_project_marker(name, &mut folded) {
+    for (_, row) in ordered {
+        if !folded_is_project_marker(&row.name, &mut folded) {
             continue;
         }
-        if let Some(folder) = walked.folder_of_dir_id(*parent_id) {
+        if let Some(folder) = walked.folder_of_dir_id(row.parent_id) {
             walked.folder_at_mut(folder).children.has_direct_marker = true;
         }
     }

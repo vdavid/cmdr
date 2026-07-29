@@ -71,7 +71,10 @@ pub fn compare_walks_for_incremental(
     let mut markers: HashMap<String, bool> = HashMap::new();
     full.for_each(|folder, path| {
         if origins.iter().any(|o| o == path) {
-            markers.insert(path.to_string(), folder.children.has_direct_marker || folder.has_marker_below);
+            markers.insert(
+                path.to_string(),
+                folder.children.has_direct_marker || folder.has_marker_below,
+            );
         }
     });
 

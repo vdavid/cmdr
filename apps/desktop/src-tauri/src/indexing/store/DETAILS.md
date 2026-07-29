@@ -25,7 +25,12 @@ pulling shared items via `use super::*`):
   per-parent folding need and so let the caller hold a compact structure instead of a row per entry. Reach for a
   streaming one unless the consumer genuinely wants the metadata. `delete_descendants_by_id` descends in bounded chunks
   rather than issuing one recursive-CTE `DELETE` (which materialized 10.9M ids into a single ephemeral table and
-  transaction on a real index), and deletes POST-ORDER (see below).
+  transaction on a real index), and deletes POST-ORDER (see below). `for_each_child_directory_of` /
+  `for_each_child_file_of` are the SCOPED counterparts: same columns, but for a batch of parent ids at a time, so a
+  consumer reading one subtree expands a whole level per query instead of scanning the table. Both are served by
+  `idx_parent_name_folded`'s leading `parent_id`; the file one keeps `for_each_file_child_by_parent`'s `ORDER BY
+  parent_id` group contract (each parent id sits in exactly one chunk, so chunking never splits a group). The importance
+  incremental rescore is the consumer (`../../importance/scheduler/DETAILS.md` § The scoped walk).
 - `dir_tree.rs`: `DirTree`, the compact in-memory projection of the directory rows that `for_each_directory`
   exists to feed — one name arena plus a 24-byte `(id, parent_id, name slice)` record per folder, id-ordered and
   binary-searched. The shape every whole-index walk (`media_index`'s image walk, `importance`'s recompute walk)
