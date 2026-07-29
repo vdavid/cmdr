@@ -1,12 +1,11 @@
 <script lang="ts">
     import { onDestroy, onMount, tick, untrack } from 'svelte'
-    import type { FileEntry, FriendlyError, ListingStats, NetworkHost, SortColumn, SortOrder } from '../types'
+    import type { FileEntry, FriendlyError, NetworkHost, SortColumn, SortOrder } from '../types'
     import {
         findFileIndex,
         getFileRange,
         pathExistsChecked,
         getFileAt,
-        getListingStats,
         getPathsAtIndices,
         getTotalCount,
         onMtpDeviceDisconnected,
@@ -18,7 +17,6 @@
         updateMenuContext,
     } from '$lib/tauri-commands'
     import { resolveLocationOrToast } from '../navigation/navigate-and-select'
-    import { updateIndexSizesInPlace } from '../views/file-list-utils'
     import { classifySelectionDialogKey } from './selection-dialog-keys'
     import { classifySelectionKey } from './selection-keys'
     import { createTypeToJumpController } from './type-to-jump-controller.svelte'
@@ -76,7 +74,7 @@
     import ExtensionChangeDialog from '../rename/ExtensionChangeDialog.svelte'
     import RenameConflictDialog from '../rename/RenameConflictDialog.svelte'
     import { getAppLogger } from '$lib/logging/logger'
-    import { createDebounce, createThrottle } from '$lib/utils/timing'
+    import { createDebounce } from '$lib/utils/timing'
 
     const log = getAppLogger('fileExplorer')
     import { isMtpVolumeId, getMtpDisplayPath } from '$lib/mtp'
@@ -103,6 +101,8 @@
     import { getDiskUsageLevel, getUsedPercent, formatBarTooltip } from '../disk-space-utils'
     import { getFileSizeFormat, getTypeToJumpResetDelay } from '$lib/settings/reactive-settings.svelte'
     import { createRowOverlays } from './row-overlays.svelte'
+    import { createSelectionInfoFeed } from './selection-info-feed.svelte'
+    import { createParentEntry } from './parent-entry'
     import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
 
     interface Props {
@@ -301,7 +301,7 @@
             cursorIndex = index
         },
         clearEntryUnderCursor: () => {
-            entryUnderCursor = null
+            selectionInfo.clearEntry()
         },
         clearSyncStatusMap: () => {
             overlays.clearSyncStatusMap()
@@ -324,20 +324,14 @@
         syncMcp: () => {
             debouncedSyncMcp.call()
         },
-        fetchEntryUnderCursor: () => void fetchEntryUnderCursor(),
-        fetchListingStats: () => void fetchListingStats(),
+        fetchEntryUnderCursor: () => void selectionInfo.fetchEntry(),
+        fetchListingStats: () => void selectionInfo.fetchStats(),
         onPathChange: (path) => onPathChange?.(path),
         onVolumeChange: (id, path, target) => onVolumeChange?.(id, path, target),
         onMtpFatalError: (message) => onMtpFatalError?.(message),
         onCancelLoading: (cancelledPath, selectName) => onCancelLoading?.(cancelledPath, selectName),
         onArchiveNeedsPassword: (info) => onArchiveNeedsPassword?.(info),
     })
-
-    // File under the cursor fetched separately for SelectionInfo
-    let entryUnderCursor = $state<FileEntry | null>(null)
-
-    // Listing stats for SelectionInfo (selection summary in Full mode, totals display)
-    let listingStats = $state<ListingStats | null>(null)
 
     // Volume root path from listing-complete event (accurate for MTP and all volume types)
     let volumeRootFromEvent = $state<string | undefined>(undefined)
@@ -689,18 +683,18 @@
 
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function getFilenameUnderCursor(): string | undefined {
-        return entryUnderCursor?.name
+        return selectionInfo.entry?.name
     }
 
     /**
      * Absolute path of the entry under the cursor (or `undefined` when the listing is empty
-     * or hasn't resolved the entry yet). Reads the reactive `entryUnderCursor` $state, so
+     * or hasn't resolved the entry yet). Reads the feed's reactive entry, so
      * Quick Look's cursor-follow $effect in `DualPaneExplorer.svelte` stays subscribed
      * across cursor moves, listing swaps, and pane switches.
      */
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function getPathUnderCursor(): string | undefined {
-        return entryUnderCursor?.path
+        return selectionInfo.entry?.path
     }
 
     /**
@@ -712,7 +706,7 @@
      */
     // noinspection JSUnusedGlobalSymbols -- used by DualPaneExplorer.copyPathBetweenPanes
     export function getCursorEntry(): FileEntry | null {
-        return entryUnderCursor
+        return selectionInfo.entry
     }
 
     /**
@@ -738,7 +732,7 @@
             return
         }
         cursorIndex = index
-        // fetchEntryUnderCursor is handled by the $effect tracking cursorIndex
+        // The cursor-entry refetch is handled by the feed's $effect tracking cursorIndex
         // Scroll to make cursor visible
         const listRef = viewMode === 'brief' ? briefListRef : fullListRef
         listRef?.scrollToIndex(index)
@@ -1073,13 +1067,13 @@
     export function refreshIndexSizes(): void {
         const listRef = viewMode === 'brief' ? briefListRef : fullListRef
         listRef?.refreshIndexSizes()
-        // Re-enrich backend cache entries so fetchListingStats sees fresh recursive_size values
+        // Re-enrich backend cache entries so the stats fetch sees fresh recursive_size values
         if (listingId) {
-            void refreshListingIndexSizes(listingId).then(() => fetchListingStats())
+            void refreshListingIndexSizes(listingId).then(() => selectionInfo.fetchStats())
         }
         // Refresh the cursor entry too so SelectionInfo's Brief size readout (and
         // its "size updating" hourglass) tracks the storm live, not just on cursor moves.
-        void fetchEntryUnderCursor()
+        void selectionInfo.fetchEntry()
         // Mirror the refreshed sizes (and the `recursiveSizePending` hourglass flag)
         // into the MCP pane state so agents see `[size-pending]` update live during
         // an index storm, not just on cursor/nav changes. Debounced (300ms), so a
@@ -1184,11 +1178,10 @@
 
     // Debounced/throttled IPC wrappers to avoid flooding the backend during rapid navigation.
     // The virtual scroll (cursorIndex → scrollToIndex → DOM) is fully synchronous and unaffected.
-    const debouncedFetchEntry = createDebounce(() => void fetchEntryUnderCursor(), 16)
-    const throttledFetchStats = createThrottle(() => void fetchListingStats(), 150)
     const debouncedMenuContext = createDebounce(() => {
-        if (entryUnderCursor && entryUnderCursor.name !== '..') {
-            void updateMenuContext(entryUnderCursor.path, entryUnderCursor.name)
+        const entry = selectionInfo.entry
+        if (entry && entry.name !== '..') {
+            void updateMenuContext(entry.path, entry.name)
         }
     }, 100)
     const debouncedSyncMcp = createDebounce(() => void syncPaneStateToMcp(), 300)
@@ -1198,22 +1191,6 @@
         visibleRangeStart = start
         visibleRangeEnd = end
         debouncedSyncMcp.call()
-    }
-
-    // Create ".." entry for parent navigation
-    function createParentEntry(path: CanonicalPath): FileEntry | null {
-        if (path === '/') return null
-        return {
-            name: '..',
-            path: parentOf(path),
-            isDirectory: true,
-            isSymlink: false,
-            permissions: 0o755,
-            owner: '',
-            group: '',
-            iconId: 'dir',
-            extendedMetadataLoaded: true,
-        }
     }
 
     // Check if current directory has a parent (not at filesystem root AND not at volume root)
@@ -1271,68 +1248,6 @@
         return loader.navigateToPath(path, selectName)
     }
 
-    // Fetch the entry currently under the cursor for SelectionInfo
-    async function fetchEntryUnderCursor() {
-        if (!listingId) {
-            entryUnderCursor = null
-            return
-        }
-
-        // Handle ".." entry specially
-        if (hasParent && cursorIndex === 0) {
-            entryUnderCursor = canonicalPath ? createParentEntry(canonicalPath) : null
-            return
-        }
-
-        // Empty listing at a volume root (no ".." synthetic entry, no real entries):
-        // calling getFileAt(0) here would log a spurious FE/BE index-mismatch error.
-        if (totalCount === 0) {
-            entryUnderCursor = null
-            return
-        }
-
-        // Adjust index for ".." entry
-        const backendIndex = hasParent ? cursorIndex - 1 : cursorIndex
-
-        try {
-            entryUnderCursor = await getFileAt(listingId, backendIndex, includeHidden)
-        } catch {
-            entryUnderCursor = null
-        }
-
-        // Overlay the per-folder `recursiveSizePending` flag (and refresh the
-        // recursive size) onto the cursor entry. It lives only on `DirStats`, not
-        // on `get_file_range`, so SelectionInfo's Brief readout couldn't show the
-        // "size updating" hourglass without this. Reuses the same enrichment the
-        // list rows get; no-op for files. Fire-and-forget (mutates in place, so
-        // Svelte reactivity updates SelectionInfo); re-runs on `index-dir-updated`
-        // via `refreshIndexSizes`. Skips "..", whose entry path is the *parent*
-        // folder, so enriching it would fetch the wrong folder's stats.
-        if (entryUnderCursor?.isDirectory && entryUnderCursor.name !== '..') {
-            void updateIndexSizesInPlace([entryUnderCursor])
-        }
-    }
-
-    // Fetch listing stats for SelectionInfo (totals and selection stats)
-    async function fetchListingStats() {
-        if (!listingId) {
-            listingStats = null
-            return
-        }
-
-        try {
-            // Convert selected indices to backend indices (adjust for ".." entry)
-            const backendIndices =
-                selection.selectedIndices.size > 0
-                    ? Array.from(selection.selectedIndices).map((i) => (hasParent ? i - 1 : i))
-                    : undefined
-
-            listingStats = await getListingStats(listingId, includeHidden, backendIndices)
-        } catch {
-            listingStats = null
-        }
-    }
-
     function handleSelect(index: number, shiftKey = false, metaKey = false) {
         if (shiftKey) {
             // Shift wins over Cmd when both are held (matches Finder).
@@ -1346,7 +1261,7 @@
         }
         cursorIndex = index
         onRequestFocus?.()
-        void fetchEntryUnderCursor()
+        void selectionInfo.fetchEntry()
     }
 
     async function handleContextMenu(entry: FileEntry) {
@@ -1795,7 +1710,7 @@
                 rename.cancel()
             })
             // Read cursor state without tracking to avoid infinite re-triggers
-            const nameToFollow = untrack(() => entryUnderCursor?.name)
+            const nameToFollow = untrack(() => selectionInfo.entry?.name)
             const currentCursor = untrack(() => cursorIndex)
             void getTotalCount(listingId, includeHidden).then(async (count) => {
                 totalCount = count
@@ -1888,70 +1803,31 @@
     // Update global menu context when cursor position or focus changes (debounced: only matters for right-click)
     $effect(() => {
         if (!isFocused) return
-        if (entryUnderCursor && entryUnderCursor.name !== '..') {
+        const entry = selectionInfo.entry
+        if (entry && entry.name !== '..') {
             debouncedMenuContext.call()
         }
     })
 
-    // Re-fetch entry under the cursor when cursorIndex changes (debounced: status bar info can lag one frame).
-    // Also sync to MCP so cmdr://state reflects keyboard nav (arrows, Insert, PageUp/Down, Home/End, click-to-position).
-    // Previously, only listing changes and visible-range scrolls triggered the sync, so cursor moves within an
-    // already-rendered window stayed invisible to MCP-driven agents.
-    $effect(() => {
-        void cursorIndex // Track
-        if (listingId && !loading) {
-            debouncedFetchEntry.call()
+    // The pane's cursor-entry + listing-stats feed: the two fetchers, their
+    // debounce/throttle wrappers, the cursor-move and selection-change effects,
+    // and the search-results snapshot mirror live in a `*.svelte.ts` factory.
+    // Created here so its effects keep their place in the pane's effect order.
+    const selectionInfo = createSelectionInfoFeed({
+        getListingId: () => listingId,
+        getLoading: () => loading,
+        getTotalCount: () => totalCount,
+        getCursorIndex: () => cursorIndex,
+        getHasParent: () => hasParent,
+        getCanonicalPath: () => canonicalPath,
+        getIncludeHidden: () => includeHidden,
+        getIsSearchResultsView: () => isSearchResultsView,
+        getSearchSnapshot: () => searchSnapshot,
+        getSelectedIndices: () => Array.from(selection.selectedIndices),
+        getSelectionSize: () => selection.selectedIndices.size,
+        syncMcp: () => {
             debouncedSyncMcp.call()
-        }
-    })
-
-    /**
-     * Search-results pane: mirror the snapshot row under the cursor into
-     * `entryUnderCursor` so SelectionInfo (if ever surfaced) and other consumers
-     * see a real `FileEntry`. The cursor index changes via FilePane's keyboard
-     * handler, and the snapshot itself is immutable, so the read here is cheap
-     * and synchronous. No-op for non-search panes; the regular effect above
-     * handles those.
-     */
-    $effect(() => {
-        if (!isSearchResultsView) return
-        const snap = searchSnapshot
-        if (!snap) {
-            entryUnderCursor = null
-            return
-        }
-        // TS doesn't model array bounds (no `noUncheckedIndexedAccess`), but the
-        // cursor can briefly point past the snapshot's entries after a delete-
-        // sync mutation. Keep the guard at runtime.
-         
-        const e = snap.entries[cursorIndex]
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime bounds guard; cursor can point past entries after delete-sync (see comment above)
-        if (!e) {
-            entryUnderCursor = null
-            return
-        }
-        entryUnderCursor = {
-            name: e.name,
-            path: e.path,
-            isDirectory: e.isDirectory,
-            isSymlink: false,
-            size: e.size ?? undefined,
-            modifiedAt: e.modifiedAt ?? undefined,
-            permissions: 0o644,
-            owner: '',
-            group: '',
-            iconId: e.iconId,
-            extendedMetadataLoaded: true,
-            parentPath: e.parentPath,
-        }
-    })
-
-    // Re-fetch listing stats when selection changes (throttled: shows live count at steady cadence)
-    $effect(() => {
-        void selection.selectedIndices.size // Track selection changes
-        if (listingId && !loading) {
-            throttledFetchStats.call()
-        }
+        },
     })
 
     // Scroll the entry under the cursor into view when view mode changes
@@ -1995,8 +1871,8 @@
             softRefreshTick++
         },
         scheduleColumnWidthRefetch,
-        fetchEntryUnderCursor: () => void fetchEntryUnderCursor(),
-        fetchListingStats: () => void fetchListingStats(),
+        fetchEntryUnderCursor: () => void selectionInfo.fetchEntry(),
+        fetchListingStats: () => void selectionInfo.fetchStats(),
         onRequestFocus,
         navigateToFallback: loader.navigateToFallback,
     })
@@ -2157,8 +2033,7 @@
         clearInterval(dirExistsPollInterval)
         // Drop the badge feeds' poll, retry timer, enrichment listeners, and pending refresh.
         overlays.cleanup()
-        debouncedFetchEntry.cancel()
-        throttledFetchStats.cancel()
+        selectionInfo.cleanup()
         debouncedMenuContext.cancel()
         debouncedSyncMcp.cancel()
         // Stop type-to-jump timers so they can't fire after the FilePane is gone
@@ -2407,9 +2282,9 @@
         <SelectionInfo
             {viewMode}
             {volumeId}
-            entry={entryUnderCursor}
+            entry={selectionInfo.entry}
             currentDirModifiedAt={undefined}
-            stats={listingStats}
+            stats={selectionInfo.stats}
             selectedCount={selection.selectedIndices.size}
             volumeSpace={diskSpace.volumeSpace}
             {mtpSpaceHint}
@@ -2449,8 +2324,8 @@
     <RenameConflictDialog
         renamedFile={{
             name: rename.target?.originalName ?? '',
-            size: entryUnderCursor?.size ?? 0,
-            modifiedAt: entryUnderCursor?.modifiedAt,
+            size: selectionInfo.entry?.size ?? 0,
+            modifiedAt: selectionInfo.entry?.modifiedAt,
         }}
         existingFile={{
             name: renameFlow.conflictDialogState.validity.conflict.name,
