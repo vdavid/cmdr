@@ -64,7 +64,7 @@
     import { createDebounce } from '$lib/utils/timing'
 
     const log = getAppLogger('fileExplorer')
-    import { isMtpVolumeId, getMtpDisplayPath } from '$lib/mtp'
+    import { isMtpVolumeId } from '$lib/mtp'
     import { getPaneTintBg, getPaneTintName } from './volume-tint.svelte'
     import { createCursorNavKeys } from './cursor-nav-keys'
     import { createSearchPaneKeys } from './search-pane-keys'
@@ -74,12 +74,8 @@
     import { createEnterMenu } from './enter-menu.svelte'
     import Menu from '$lib/ui/Menu.svelte'
     import { resolveValidPath } from '../navigation/path-resolution'
-    import { isVolumeEjectable } from '../navigation/eject-predicate'
     import { homeDir } from '@tauri-apps/api/path'
     import { type CanonicalPath, parentOf, toCanonical } from '$lib/path/canonical'
-    import { showBreadcrumbContextMenu } from '$lib/tauri-commands'
-    import { getEffectiveShortcuts } from '$lib/shortcuts/shortcuts-store'
-    import { toDisplayShortcut } from '$lib/shortcuts/key-capture'
     import { getVolumes as getStoreVolumes } from '$lib/stores/volume-store.svelte'
     import type { UnreachableState } from '../tabs/tab-types'
     import { getDiskUsageLevel, getUsedPercent, formatBarTooltip } from '../disk-space-utils'
@@ -89,6 +85,7 @@
     import { createPaneKeyRouter } from './pane-key-router'
     import { createEntryActivation } from './entry-activation'
     import { createPanePointer } from './pane-pointer'
+    import { breadcrumbDisplayPath, createBreadcrumbHandlers } from './breadcrumb-bar'
     import { createParentEntry } from './parent-entry'
     import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
 
@@ -439,39 +436,18 @@
         getHasBackendListing: () => caps.hasBackendListing,
     })
 
-    // Display path shown in the breadcrumb after the volume name.
-    // For the root volume: replaces the home dir prefix with "~", otherwise shows absolute path.
-    // For other volumes: shows path relative to the volume root.
-    const breadcrumbDisplayPath = $derived.by(() => {
-        // R3 B6: the search-results pane shows the snapshot's friendly label
-        // (the AI title / filename pattern / regex pattern) AS the path. The
-        // volume selector itself reads the generic "Search results" so the
-        // slots map cleanly: volume-kind on the left, query-specific label
-        // on the right. Don't invert this (label on the left, no path on
-        // the right) — see `lib/search/CLAUDE.md` § "Search-specific UI
-        // behavior".
-        if (isSearchResultsView) {
-            return searchSnapshot?.label ?? 'Search'
-        }
-        if (isMtpVolumeId(volumeId)) return getMtpDisplayPath(currentPath)
-
-        // For non-root volumes, strip the volume path prefix
-        if (volumePath !== '/') {
-            return currentPath.startsWith(volumePath) ? currentPath.slice(volumePath.length) || '/' : currentPath
-        }
-
-        // Root volume: paths starting with ~ are already user-friendly
-        if (currentPath.startsWith('~')) return currentPath
-
-        // Root volume with absolute path: replace home dir prefix with ~
-        if (userHomePath && currentPath.startsWith(userHomePath)) {
-            const rest = currentPath.slice(userHomePath.length)
-            return rest ? '~' + rest : '~'
-        }
-
-        // Root volume, outside home dir: show absolute path as-is
-        return currentPath
-    })
+    // The path shown after the volume name (`~`-folded, volume-relative, MTP
+    // form, or the snapshot label). Pure derivation in `breadcrumb-bar.ts`.
+    const breadcrumbDisplayPathValue = $derived(
+        breadcrumbDisplayPath({
+            currentPath,
+            volumeId,
+            volumePath,
+            userHomePath,
+            isSearchResultsView,
+            searchLabel: searchSnapshot?.label,
+        }),
+    )
 
     // Segmented form of the breadcrumb path so we can color anything inside
     // a `.git/...` portal with the git-portal token. Pure derivation; the
@@ -483,8 +459,8 @@
     // broken up into path-style segments with separator glyphs.
     const breadcrumbSegments = $derived(
         isSearchResultsView
-            ? [{ text: breadcrumbDisplayPath, gitPortal: false }]
-            : splitPathSegments(breadcrumbDisplayPath),
+            ? [{ text: breadcrumbDisplayPathValue, gitPortal: false }]
+            : splitPathSegments(breadcrumbDisplayPathValue),
     )
 
     // Each segment enriched with a navigation `target` (null when not clickable)
@@ -500,11 +476,6 @@
             isSearchResults: isSearchResultsView,
         }),
     )
-
-    /** Navigate to a breadcrumb ancestor. Errors surface via the pane's error pipeline. */
-    function handleBreadcrumbSegmentClick(target: string): void {
-        void navigateToPath(target).catch(() => {})
-    }
 
     // Check if we're viewing an MTP device
     const isMtpView = $derived(isMtpVolumeId(volumeId))
@@ -1260,53 +1231,28 @@
     })
     const handleNavigate = activation.handleNavigate
 
-    function handleBreadcrumbContextMenu(e: MouseEvent) {
-        e.preventDefault()
-        onRequestFocus?.()
-        const shortcuts = getEffectiveShortcuts('file.copyCurrentDirectoryPath')
-        // Pass eject info when the pane's volume is ejectable so the menu can
-        // include an "Eject ({name})" item. Same gate as the row/header eject
-        // buttons; the volume-context-action listener in DualPaneExplorer
-        // dispatches the click to `ejectVolume`.
-        const v = currentVolumeInfo
-        const ejectable = v && isVolumeEjectable(v)
-        void showBreadcrumbContextMenu(
-            toDisplayShortcut(shortcuts[0] ?? ''),
-            ejectable ? v.id : undefined,
-            ejectable ? v.name : undefined,
-        )
-    }
-
-    function handleVolumeChangeFromBreadcrumb(newVolumeId: string, newVolumePath: string, targetPath: string) {
-        // Navigate to the target path (may differ from volume root for favorites)
-        // Note: We intentionally don't call onPathChange here - the volume change handler
-        // in DualPaneExplorer takes care of saving both the old volume's path and the new path.
-        // Calling onPathChange would save the new path under the OLD volume ID (race condition).
-        currentPath = targetPath
-        onVolumeChange?.(newVolumeId, newVolumePath, targetPath)
-
-        // Don't load directory for network views (they handle their own data)
-        // or device-only MTP views (they need connection first via auto-connect effect)
-        // But DO load for connected MTP views (storage-specific volume ID contains ":")
-        const isDeviceOnlyMtp = isMtpVolumeId(newVolumeId) && !newVolumeId.includes(':')
-        if (newVolumeId !== 'network' && !isDeviceOnlyMtp) {
-            void loader.loadDirectory(targetPath)
+    // The breadcrumb's three interactions (ancestor click, right-click menu with
+    // its eject item, volume switch with the disk-space watch that follows it).
+    const breadcrumb = createBreadcrumbHandlers({
+        getCurrentVolumeInfo: () => currentVolumeInfo,
+        navigateToPath: (path) => navigateToPath(path),
+        setCurrentPath: (path) => {
+            currentPath = path
+        },
+        onVolumeChange: (id, path, target) => onVolumeChange?.(id, path, target),
+        onRequestFocus: () => onRequestFocus?.(),
+        loadDirectory: (path) => void loader.loadDirectory(path),
+        refreshSpace: () => void diskSpace.refresh(),
+        watchSpace: (id, path) => {
+            diskSpace.watch(id, path)
+        },
+        unwatchSpace: () => {
             diskSpace.unwatch()
-            // Disk images have no meaningful free space: skip the poll, the bottom bar, and the
-            // SelectionInfo free/total text. Read the flag off the NEW volume directly — the
-            // `volumeId` prop (and so `isDiskImageVolume`) hasn't updated yet this tick.
-            const newIsDiskImage = getStoreVolumes().find((v) => v.id === newVolumeId)?.isDiskImage === true
-            if (newIsDiskImage) {
-                diskSpace.clear()
-            } else {
-                void diskSpace.refresh()
-                diskSpace.watch(newVolumeId, targetPath)
-            }
-        } else {
-            // Leaving a physical volume: stop watching
-            diskSpace.unwatch()
-        }
-    }
+        },
+        clearSpace: () => {
+            diskSpace.clear()
+        },
+    })
 
     // Handle network host change from NetworkMountView
     function handleNetworkHostChange(host: NetworkHost | null) {
@@ -1794,12 +1740,12 @@
     data-pane-tint={paneTintName ?? undefined}
 >
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="header" oncontextmenu={handleBreadcrumbContextMenu}>
+    <div class="header" oncontextmenu={breadcrumb.handleContextMenu}>
         <VolumeBreadcrumb
             bind:this={volumeBreadcrumbRef}
             {volumeId}
             {currentPath}
-            onVolumeChange={handleVolumeChangeFromBreadcrumb}
+            onVolumeChange={breadcrumb.handleVolumeChange}
             onSmbUpgradeLogin={smbView.handleSmbUpgradeLogin}
         />
         <span class="path">{#each clickableBreadcrumbSegments as seg, i (i)}{#if i > 0 && seg.text !== ''}<span class="path-sep">/</span>{/if}{#if seg.target !== null}<button
@@ -1807,7 +1753,7 @@
                     class="path-segment"
                     class:git-portal={seg.gitPortal}
                     use:tooltip={tString('fileExplorer.breadcrumb.navigateTooltip', { path: seg.displayPath })}
-                    onclick={() => { handleBreadcrumbSegmentClick(seg.target as string); }}
+                    onclick={() => { breadcrumb.handleSegmentClick(seg.target as string); }}
                 >{seg.text}</button>{:else}<span class:git-portal={seg.gitPortal}>{seg.text}</span>{/if}{/each}</span>
         {#if gitBrowser.showRepoChip && gitBrowser.gitRepoInfo}
             <RepoChip info={gitBrowser.gitRepoInfo} />
