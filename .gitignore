@@ -43,6 +43,8 @@ build/
 playwright-report/
 test-results/
 coverage/
+# ...but not Rust source dirs that happen to be named `coverage` (the `media_index::coverage` module).
+!apps/desktop/src-tauri/src/**/coverage/
 .vitest-localstorage*
 
 # Rust build artifacts
