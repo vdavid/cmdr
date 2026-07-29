@@ -97,17 +97,18 @@ func scanForLockPoison(rootDir, srcDir string) ([]lockPoisonSite, []orphanDirect
 		if d.IsDir() || !strings.HasSuffix(d.Name(), ".rs") {
 			return nil
 		}
-		// Skip dedicated test files. (Reuses isRustTestFile from the
-		// error-string-match check, which lives in the same package.)
-		if isRustTestFile(d.Name()) {
-			return nil
-		}
-		scanned++
-
 		relPath, relErr := filepath.Rel(rootDir, path)
 		if relErr != nil {
 			relPath = path
 		}
+
+		// Skip dedicated test files, including a themed module under a `tests/`
+		// directory. (Reuses isRustTestPath from the test-sleep check, which
+		// lives in the same package.)
+		if isRustTestPath(filepath.ToSlash(relPath), d.Name()) {
+			return nil
+		}
+		scanned++
 
 		fileViolations, fileOrphans, scanErr := scanRustFileForLockPoison(path, relPath)
 		if scanErr != nil {

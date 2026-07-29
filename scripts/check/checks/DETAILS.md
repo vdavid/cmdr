@@ -490,7 +490,9 @@ modeled on `error-string-match`) that flags bare unwraps and non-poison `.expect
 `io::Read::read(&mut buf).unwrap()`, `io::Write::write(buf).unwrap()`, and tokio's `mutex.lock().await` all pass
 through; `try_lock` / `try_read` / `try_write` are out of scope by name. Opt out with `// allowed-lock-poison: <reason>`
 on the line above or as a trailing comment. Unlike `error-string-match`, it skips in-file `#[cfg(test)]` mods (tracked
-by brace depth): a poisoned lock in a test means the test already panicked, so aborting there is harmless.
+by brace depth): a poisoned lock in a test means the test already panicked, so aborting there is harmless. Whole test
+files are skipped via `isRustTestPath` (shared with `test-sleep`), so a `tests.rs` split into themed modules under a
+`tests/` directory keeps passing.
 
 **Decision**: `mtp-dropping-timeout` check to keep wall-clock timeouts and task aborts away from mtp-rs calls. **Why**:
 A PTP transaction is command → data → response over one bulk pipe, so dropping its future mid-data-phase leaves the

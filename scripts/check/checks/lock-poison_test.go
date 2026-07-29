@@ -355,3 +355,22 @@ mod tests {
 		t.Fatalf("expected ResultSuccess, got %v: %s", res.Code, res.Message)
 	}
 }
+
+func TestLockPoison_SkipsFilesUnderATestsDir(t *testing.T) {
+	// A themed test module under a `tests/` directory is test code just like a
+	// `tests.rs` is, so bare `.lock().unwrap()` is fine there too.
+	res, err := runLockPoisonOn(t, map[string]string{
+		"indexing/reconcile/tests/routing.rs": `
+#[test]
+fn t() {
+    let g = STATE.lock().unwrap();
+}
+`,
+	})
+	if err != nil {
+		t.Fatalf("expected success on a file under a tests/ dir, got: %v", err)
+	}
+	if res.Code != ResultSuccess {
+		t.Fatalf("expected ResultSuccess, got %v: %s", res.Code, res.Message)
+	}
+}
