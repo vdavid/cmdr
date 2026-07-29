@@ -67,12 +67,32 @@ refs, and the row template). Four siblings hold the rest, each with its own suit
   `.header-git` (all self-contained: no rule reaches outside the header's own sub-tree), and reports its measured height
   back through `bind:height` because the virtual-scroll math subtracts it from the container.
 
-The ROW styles stay in `FullList.svelte` on purpose. Roughly 250 lines of the `<style>` block are the selection / cursor
-/ striping cascade, and a chunk of it is keyed off `.full-list-container.is-focused` / `.is-compact` — ancestors that
-live in `FullList`'s own markup. Moving those rules into a row component means rewriting each as
-`:global(.full-list-container.is-focused) .file-entry…`, which changes their specificity by one class relative to
-`app.css`'s tinted-pane fallback. Don't do it piecemeal: either the whole row (markup + every row rule) moves together,
-or none of it does.
+### Where the row styles live
+
+The row chrome that is IDENTICAL in both views lives in `src/app-file-list.css`: the `.is-striped` fill, the
+`.is-selected` fill, the `--color-selection-fg` swap for a cursor-on-selected row, the hairline between consecutive
+selected rows, the `.is-under-cursor` fill + outline + radius, and the `.restricted-indicator` icon's own chrome. One
+copy, so the two views can't drift apart on how a selected or cursor row looks.
+
+Every selector there is prefixed with `.full-list-container` / `.brief-list-container`. That's mandatory, not stylistic:
+a lifted rule loses the class of specificity Svelte's scoping gave it, and a bare `.file-entry.is-selected` would tie
+with `DualPaneExplorer`'s `:global(.file-entry.folder-drop-target)` and lose on source order. Full rationale and the
+verification recipe: `src/DETAILS.md` § Global stylesheets.
+
+Everything else stays per-view, deliberately:
+
+- **FullList's column cascade** (~190 lines): `.col-name` / `.col-ext` / `.col-size` / `.col-date` / `.col-git`, the
+  size-tier and date-age color rules, the rename-editor grid spans, the `.is-compact` padding, and the
+  `--color-size-*-selected` collapse on a cursor-on-selected row. These are FullList's own cells; scoping is what keeps
+  them from leaking, and it's what lets `css-unused` see the class as defined-and-used in one file.
+- **BriefList's `.name`** rules and its `.header-row` layout, for the same reason.
+- **The base `.file-entry` box.** Its `padding` / `gap` / `align-items` / `white-space` are the same in both views, but
+  the rule also carries each view's `display` (grid vs flex), FullList's `transition` and `.is-compact` padding
+  override, and BriefList's `overflow`. Splitting four declarations out would leave a husk in each component and put the
+  base padding a file away from the override that adjusts it, so the rule stays whole in both.
+
+Don't move the per-view cascade into a row component either: that's ~50 component instances per frame on the app's
+hottest render path.
 
 ### Data flow
 

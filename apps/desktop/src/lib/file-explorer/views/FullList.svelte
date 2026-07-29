@@ -892,14 +892,9 @@
         opacity: 0.6;
     }
 
-    .restricted-indicator {
-        display: inline-flex;
-        align-items: center;
-        margin-left: var(--spacing-xxs);
-        opacity: 0.7;
-        font-size: var(--font-size-sm);
-        vertical-align: text-bottom;
-    }
+    /* `.restricted-indicator`'s own chrome, the stripe / selection / cursor
+       fills, and the selected-row hairline are identical in `BriefList`, so
+       they live in `src/app-file-list.css`. */
 
     .file-entry.no-transition {
         transition: none;
@@ -943,27 +938,10 @@
         padding-bottom: var(--spacing-xs);
     }
 
-    .file-entry.is-striped {
-        background-color: var(--color-bg-stripe);
-    }
-
-    /* Selected rows: a translucent darkening (`--color-selection-bg`)
-       overrides the stripe so the selection reads as a single block. Being
-       translucent, it keeps a tinted pane's hue (just darker) instead of
-       flattening it. Cursor rules win by specificity (see below), so cursor-
-       on-selected still shows the cursor highlight. */
-    .file-entry.is-selected {
-        background-color: var(--color-selection-bg);
-    }
-
-    /* When the cursor is on a selected row, the text color shifts from
-       the primary (strong red, AA-safe against `--color-selection-bg`)
-       to the cursor variant (slightly darker/lighter red, AA-safe
-       against the translucent cursor bg). The tinted-dark + cursor-active
-       corner has its own fallback rule in app.css that wins over this
-       via higher specificity. */
+    /* The `--color-selection-fg` swap for a cursor-on-selected row lives in
+       `src/app-file-list.css`; the size-tier collapse below is FullList-only
+       (BriefList has no size column), so it stays here on the same selector. */
     .file-entry.is-selected.is-under-cursor {
-        --color-selection-fg: var(--color-selection-fg-cursor);
         /* Size tiers are otherwise computed as `color-mix(secondary, selection-fg)`,
            so even with `--color-selection-fg` swapped to the cursor variant the
            size triads keep a grayer cast than the name/date. Collapse the
@@ -974,31 +952,6 @@
         --color-size-mb-selected: var(--color-selection-fg);
         --color-size-gb-selected: var(--color-selection-fg);
         --color-size-tb-selected: var(--color-selection-fg);
-    }
-
-    /* Faint hairline between two consecutive selected rows so dense
-       selections stay countable. `box-shadow: inset` draws on top of
-       `background-color` and takes zero layout space, so row height
-       doesn't jump. Skipped when the row is under the cursor — cursor
-       is already a strong visual signal, no need for the divider on
-       top of it. */
-    .file-entry.is-selected + .file-entry.is-selected:not(.is-under-cursor) {
-        box-shadow: inset 0 1px 0 var(--color-selection-border);
-    }
-
-    .file-entry.is-under-cursor {
-        background-color: var(--color-cursor-inactive);
-        /* Faint accent-colored hairline outlining the cursor row. `inset`
-           draws inside the row with no layout shift. Visible in both the
-           focused (`is-focused`) and unfocused states so the cursor stays
-           distinguishable from the selection bg. The `border-radius`
-           softens the cursor box; the box-shadow follows the radius. */
-        box-shadow: inset 0 0 0 1px var(--color-cursor-outline);
-        border-radius: var(--radius-sm);
-    }
-
-    .full-list-container.is-focused .file-entry.is-under-cursor {
-        background-color: var(--color-cursor-active);
     }
 
     .col-name {

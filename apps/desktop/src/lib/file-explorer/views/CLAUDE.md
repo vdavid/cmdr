@@ -24,8 +24,10 @@ Virtual-scrolling file list components for rendering 100k+ file directories with
 - **`hasParent = true` makes UI indices 1-based**: index 0 is the `..` entry (not in backend cache). Real files start at
   1, so `cache_index = ui_index - 1`. Forgetting it lands the cursor one row off.
 - **`FullList`'s cache deps are one getter per prop, not one bag.** A bag read whole subscribes every host `$effect` to
-  every prop: the `..`-row stats refetch on each `directory-diff` tick. See `DETAILS.md` § FullList's siblings, which
-  also says why the ROW styles must stay in `FullList.svelte` (or move as one whole).
+  every prop: the `..`-row stats refetch on each `directory-diff` tick. See `DETAILS.md` § FullList's siblings.
+- **Row chrome shared by both views lives in `src/app-file-list.css`.** Every selector there keeps a
+  `.full-list-container` / `.brief-list-container` prefix, or it loses specificity ties to
+  `:global(.file-entry.folder-drop-target)`.
 - **Don't reintroduce a `scrollTop - headerHeight` shift with a `Math.max(0, …)` clamp** in `FullList`. The sticky
   header lives inside the scroll container, so `scrollTop` and the spacer offset are the same number. A clamp collapses
   `scrollTop ∈ [0, headerHeight]` to one state and hides row 0 (including the `..` cursor) under the header. Pinned by

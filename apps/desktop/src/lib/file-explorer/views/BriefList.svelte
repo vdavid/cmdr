@@ -1100,52 +1100,9 @@
         opacity: 0.6;
     }
 
-    .restricted-indicator {
-        display: inline-flex;
-        align-items: center;
-        margin-left: var(--spacing-xxs);
-        opacity: 0.7;
-        font-size: var(--font-size-sm);
-        vertical-align: text-bottom;
-    }
-
-    .file-entry.is-striped {
-        background-color: var(--color-bg-stripe);
-    }
-
-    /* Selected rows: a translucent darkening that keeps a tinted pane's hue
-       (see FullList.svelte and app.css for the cascade rationale). Cursor
-       rules win by specificity, so cursor-on-selected still shows the
-       cursor highlight. */
-    .file-entry.is-selected {
-        background-color: var(--color-selection-bg);
-    }
-
-    /* Cursor-on-selected: swap the selection text color to the cursor
-       variant (AA-safe against the cursor bg). See FullList.svelte for
-       the full rationale. */
-    .file-entry.is-selected.is-under-cursor {
-        --color-selection-fg: var(--color-selection-fg-cursor);
-    }
-
-    /* Faint hairline between two consecutive selected rows. `box-shadow:
-       inset` draws on top of `background-color` and takes zero layout
-       space. Skipped when the row is under the cursor. */
-    .file-entry.is-selected + .file-entry.is-selected:not(.is-under-cursor) {
-        box-shadow: inset 0 1px 0 var(--color-selection-border);
-    }
-
-    .file-entry.is-under-cursor {
-        background-color: var(--color-cursor-inactive);
-        /* Faint accent-colored hairline outlining the cursor row. See
-           FullList.svelte for the rationale. */
-        box-shadow: inset 0 0 0 1px var(--color-cursor-outline);
-        border-radius: var(--radius-sm);
-    }
-
-    .brief-list-container.is-focused .file-entry.is-under-cursor {
-        background-color: var(--color-cursor-active);
-    }
+    /* `.restricted-indicator`'s own chrome, the stripe / selection / cursor
+       fills, and the selected-row hairline are identical in `FullList`, so
+       they live in `src/app-file-list.css`. */
 
     .name {
         overflow: hidden;

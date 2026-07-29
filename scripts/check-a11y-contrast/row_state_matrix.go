@@ -119,8 +119,8 @@ func resolveRowBg(vars *VarTable, mode Mode, tint paneTintHue, variant string) (
 		return paneBg, true
 	case "striped":
 		// On a selected row the stripe is overridden by the selection
-		// bg (same rule + same specificity, but `.is-selected` appears
-		// later in `FullList.svelte`'s `<style>`). The matrix's text
+		// bg (same specificity, but `.is-selected` appears later in
+		// `apps/desktop/src/app-file-list.css`). The matrix's text
 		// roles only apply to selected rows, so model that.
 		if sel, ok := resolveSelectionBg(vars, mode, paneBg); ok {
 			return sel, true
@@ -261,7 +261,7 @@ func (a *Analyzer) evalRowCellForAccent(
 		vars = withAccentOverride(a.Vars, accent)
 	}
 	// Mirror the three-tier `--color-selection-fg` cascade from `app.css`
-	// + `FullList.svelte`. The resolver doesn't model rule-level CSS
+	// + `app-file-list.css`. The resolver doesn't model rule-level CSS
 	// overrides, so apply the right tier by hand per scenario.
 	vars = withSelectionFgVariant(vars, selectionFgTokenFor(mode, tint, variant))
 	bg, ok := resolveRowBg(vars, mode, tint, variant)
@@ -316,7 +316,7 @@ func evalRowText(
 }
 
 // selectionFgTokenFor picks which `--color-selection-fg-*` variant applies
-// to a given scenario, mirroring the cascade in `app.css` + `FullList.svelte`.
+// to a given scenario, mirroring the cascade in `app.css` + `app-file-list.css`.
 // Keep this in sync with the CSS rules: least- to most-specific is
 // primary → cursor.
 //

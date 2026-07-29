@@ -1,0 +1,84 @@
+/* File-list row chrome shared by the two list views (`FullList` / `BriefList`).
+ *
+ * Only rules that were byte-identical in both components live here. Anything
+ * one view alone needs (FullList's column cascade, BriefList's `.name`) stays
+ * in that component's own style block, where Svelte scopes it.
+ *
+ * Every selector is prefixed with the view's container class. That's not
+ * decoration: Svelte scoping adds a class worth of specificity to a component
+ * rule, so a bare `.file-entry.is-selected` here would be (0,3,0) → (0,2,0) and
+ * tie with `DualPaneExplorer`'s `:global(.file-entry.folder-drop-target)`,
+ * which sets its own `background-color` and is emitted LATER (component styles
+ * ship in the route chunk, this sheet in the root-layout chunk). The prefix
+ * restores the original specificity, so the drag-over highlight keeps losing to
+ * the selection / cursor fills exactly as it does today.
+ *
+ * Source order below matters and mirrors the components': stripe → selection →
+ * cursor. Same-specificity rules are resolved by it.
+ *
+ * Loaded from `routes/+layout.svelte`; see `src/DETAILS.md` § Global stylesheets.
+ */
+
+/* The (i) icon next to a TCC-restricted row's name; it carries the tooltip
+   pointing at System Settings. The italic + dimmed treatment of the row's own
+   cells stays per-view, since the cell class names differ. */
+.file-entry .restricted-indicator {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--spacing-xxs);
+  opacity: 0.7;
+  font-size: var(--font-size-sm);
+  vertical-align: text-bottom;
+}
+
+.full-list-container .file-entry.is-striped,
+.brief-list-container .file-entry.is-striped {
+  background-color: var(--color-bg-stripe);
+}
+
+/* Selected rows: a translucent darkening (`--color-selection-bg`) overrides the
+   stripe so the selection reads as a single block. Being translucent, it keeps
+   a tinted pane's hue (just darker) instead of flattening it. The cursor rules
+   below win, so cursor-on-selected still shows the cursor highlight. */
+.full-list-container .file-entry.is-selected,
+.brief-list-container .file-entry.is-selected {
+  background-color: var(--color-selection-bg);
+}
+
+/* When the cursor is on a selected row, the text color shifts from the primary
+   (strong red, AA-safe against `--color-selection-bg`) to the cursor variant
+   (slightly darker/lighter red, AA-safe against the translucent cursor bg). The
+   tinted-dark + cursor-active corner has its own fallback rule in `app.css`
+   that wins over this via higher specificity. FullList adds the size-tier
+   collapse on this same selector in its own style block. */
+.full-list-container .file-entry.is-selected.is-under-cursor,
+.brief-list-container .file-entry.is-selected.is-under-cursor {
+  --color-selection-fg: var(--color-selection-fg-cursor);
+}
+
+/* Faint hairline between two consecutive selected rows so dense selections stay
+   countable. `box-shadow: inset` draws on top of `background-color` and takes
+   zero layout space, so row height doesn't jump. Skipped when the row is under
+   the cursor: the cursor is already a strong visual signal. */
+.full-list-container .file-entry.is-selected + .file-entry.is-selected:not(.is-under-cursor),
+.brief-list-container .file-entry.is-selected + .file-entry.is-selected:not(.is-under-cursor) {
+  box-shadow: inset 0 1px 0 var(--color-selection-border);
+}
+
+.full-list-container .file-entry.is-under-cursor,
+.brief-list-container .file-entry.is-under-cursor {
+  background-color: var(--color-cursor-inactive);
+
+  /* Faint accent-colored hairline outlining the cursor row. `inset` draws
+     inside the row with no layout shift. Visible in both the focused
+     (`is-focused`) and unfocused states so the cursor stays distinguishable
+     from the selection bg. The `border-radius` softens the cursor box; the
+     box-shadow follows the radius. */
+  box-shadow: inset 0 0 0 1px var(--color-cursor-outline);
+  border-radius: var(--radius-sm);
+}
+
+.full-list-container.is-focused .file-entry.is-under-cursor,
+.brief-list-container.is-focused .file-entry.is-under-cursor {
+  background-color: var(--color-cursor-active);
+}
