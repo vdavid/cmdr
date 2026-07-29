@@ -6,12 +6,14 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
 
 ## In progress
 
-- [ ] 2026-07-28 `flaky-test-eradication.md` - Make a red `rust-tests` run mean a real regression again. Measured on an
-      idle machine, clean `main` fails 2 of 3 full runs, a different `downloads::watcher` test each time; 19 distinct
-      offenders, every one a watcher/debounce/lock test, `downloads::` being 7 of them. Root causes to check: shared
-      real-world state (the real `~/Downloads`), leaked watchers (nextest reports "leaky"), real-clock dependence, and
-      wall-clock assertions that slipped past the `test-sleep` check. Includes the offender list, the per-test numbers,
-      and a measure-first approach. NOT STARTED.
+- [ ] 2026-07-28 `flaky-test-eradication.md` - Make a red `rust-tests` run mean a real regression again. MOSTLY SHIPPED
+      (2026-07-29): retry-rescued runs now warn instead of passing silently, failures are sorted by which deadline blew
+      (nextest cap vs in-test `wait_until`), and a red run re-runs its failures alone before believing them, so
+      starvation is told apart from real slowness and from a real defect. Re-measurement under saturation refuted three
+      of the spec's original premises (the offenders are CPU-bound pure-logic tests, not watchers; the headline test was
+      already on a 20 s cap, not 8 s). Remaining: wire the contention re-run into `rust-integration-tests` (needs its
+      own retry profile, since 40 s is below what healthy SMB tests take), and surface Playwright flaky passes on the
+      lanes where `retries: 1` is set.
 - [ ] 2026-07-28 `rename-chaining-arrow-keys.md` - ArrowDown/ArrowUp in the inline rename editor commits the current
       edit and instantly starts renaming the file below/above, so renaming a run of files is one keyboard flow. Fire and
       forget (fast on SMB/MTP), neighbour captured by path BEFORE the rename re-sorts the listing, unusable names and

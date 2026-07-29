@@ -1,87 +1,86 @@
 # Flaky test eradication
 
-**Status**: NOT STARTED. Investigation only so far; no fix attempted.
+**Status**: The measurement tooling and the contention verdict SHIPPED (2026-07-29). What remains is the two follow-ups
+at the bottom.
 
-**Goal**: a Rust test suite where a red run means a real regression. Today it doesn't, so the honest reaction to red is
-"run it again", which is the same as having no signal.
+**Goal**: a Rust test suite where a red run means a real regression. It now does, by a different route than this spec
+originally proposed: rather than restructuring 19 tests, the suite got the instrumentation to say WHY a run went red,
+and a red run re-runs its failures alone before believing them.
 
-## The evidence
+## What the measurements actually showed
 
-Measured 2026-07-27/28 on David's M3 Max (12 P + 4 E), running full `pnpm check rust-tests --fresh` repeatedly on an
-otherwise idle machine, single-check runs so load was not a confound.
+Re-measured 2026-07-29 on David's M3 Max (12 P + 4 E) under deliberate oversubscription (96 busy workers, load ~198,
+above the load ~144 that motivated this spec). A full `pnpm check rust-tests --fresh` produced 13 failures:
 
-Clean `main` (4d53b2939), three consecutive runs: **1 passed, 2 failed**. A different `downloads::watcher::tests` test
-each time. A feature branch over the same commit, four runs: 3 passed, 1 failed.
+- **9 killed at the 8 s nextest cap**, every one a CPU-bound test: `file_viewer::encoding_test::find_newlines_utf8_matches_memchr`,
+  `file_viewer::line_index_test::extend_to_n_equals_open_at_n`, `importance::scheduler::walk_memory_tests::*` (2),
+  `archive::read::multiformat_test::tar_each_codec_round_trips_a_file`,
+  `error_reporter::tests::streaming_tests::streaming_stops_at_cap`,
+  `indexing::writer::maintenance::tests::handle_incremental_vacuum_reclaims_capped_batch`,
+  `mtp::macos_workaround::tests::test_get_usb_exclusive_owner_returns_option`,
+  `operation_log::writer::retention_tests::size_prune_brings_db_under_budget_and_shrinks_the_file`
+- **2 leaks** (which nextest counts as PASSED, not failures)
+- **2 ordinary assertion failures**, both timing-shaped: `live_throttle_collapses_rapid_rewrites_and_trailing_flushes_last_size`
+  and `tail_watcher_sees_appender_task_events_within_debounce`
+- **0 in-test `wait_until` deadline expiries**
 
-So the gating suite fails roughly two runs in three, on an idle machine, with no code change involved.
+Three of this spec's original premises did not survive that run:
 
-Under real load (load average 144 during parallel agent work) a single run produced 12 timeouts at once.
+- **"Every offender is a watcher, debounce, or lock test. Not one is a pure-logic test."** False under saturation. The
+  dominant failures were pure compute (a memchr comparison, allocation-counting walks, codec round-trips). No test
+  restructuring fixes those: a test needing 0.1 s of CPU cannot finish in 8 s of wall-clock when 200 threads share 16
+  cores.
+- **"The nextest budget is 8 s against tests that take under a second."** Not for the headline offender.
+  `dropping_a_file_emits_one_event` already had a 20 s cap and `real-notify` serialization; the 17.75 s burn was against
+  that 20 s, not 8 s. Several of the cap-killed tests are also not sub-second:
+  `find_newlines_utf8_matches_memchr` takes **3.3 s alone on an idle machine**, a 2.4x margin against the cap, not 10x.
+- **"19 offenders, one or two root causes."** The overlap between this spec's list and what actually fails under
+  saturation is small. Also worth knowing: much of the `downloads::` cluster had already been fixed before this spec was
+  written (`0359b38e7`, `8c485aa91`, 2026-07-06/09), which the original measurement didn't account for.
 
-## The 19 distinct offenders
+## What shipped
 
-Every one is a watcher, debounce, or lock-contention test. Not one is a pure-logic test. That clustering is the main
-clue: this is one or two root causes, not 19.
+**A run's verdict is now self-explaining** (`scripts/check/checks/rust-test-diagnostics.go`):
 
-- `downloads::watcher::tests` - `dropping_a_file_emits_one_event`, `latest_download_returns_ring_value_after_event`,
-  `note_pending_write_suppresses_matching_event`
-- `downloads::runtime::tests` - `note_pending_write_for_cmdr_suppresses_watcher_event_end_to_end`,
-  `note_pending_write_for_cmdr_outside_downloads_silently_noops`
-- `downloads::commands::tests` - `go_to_latest_returns_download_from_scan_fallback_when_ring_is_empty`,
-  `go_to_latest_returns_empty_when_ring_and_scan_both_turn_up_nothing`
-- `file_viewer::session_test` - `test_session_close_stops_watcher`, `test_session_emits_file_changed_on_append`,
-  `test_session_tail_mode_off_does_not_extend_index`, `test_session_rotation_reopens_backend`,
-  `tail_mode_on_extends_backend_when_watcher_reports_grew`
-- `file_system::listing::caching_reaper_test` - `reaper_keeps_recently_touched_listing_even_if_created_long_ago`,
-  `reaper_evicts_stale_listing_and_its_watcher_together`
-- `file_system::volume::backends` - `local_posix_test::test_listing_is_watched_flips_with_watcher_lifecycle`,
-  `archive::watch::watch_integration_test::lru_eviction_releases_the_archive_and_its_watch`
-- `indexing::watch::watcher::tests::current_event_id_returns_nonzero`
-- `indexing::store::tests::interrupting_a_subtree_delete_never_strands_a_row`
-- `network::manual_servers::tests::rapid_sequential_adds` (Linux; a 20-thread barrier over a `STORE_LOCK` file)
+- Retry-rescued runs are no longer silent. nextest exits 0 when a retry saves a run, so the suite used to report a clean
+  pass while hiding the exact flake the retries exist to tolerate. All three Rust lanes now parse `FLAKY n/m` and
+  downgrade such a run to **warn**, naming the test and the rescuing attempt. The retry budget became a standing
+  flake-rate meter.
+- Failures are sorted by which deadline blew: killed at the nextest cap, blew its own in-test `wait_until` deadline
+  (quoting the wait), leaked, or ordinary panic. The two timeout classes look identical in raw nextest output and need
+  opposite fixes; conflating them is what produced the wrong analysis above.
 
-`downloads::` is 7 of 19 and by far the most frequent. Start there: one root cause probably clears a third of the list.
+**A red run re-runs its failures alone before believing them** (`scripts/check/checks/rust-test-contention.go`). Rather
+than loosening the cap globally (which would cost every idle run its hang detector, and the cap encodes a real 4-day
+red-CI incident), only the failing tests re-run, serialized, and the outcome classifies them: passed alone at the
+unchanged deadline means the suite was starving it; needed headroom on a quiet machine means real slowness; needed
+headroom on a busy one is inconclusive; failed alone with headroom is a genuine failure. Full contract:
+`docs/testing.md`.
 
-## What the numbers say about the cause
+Verified both directions: at load 256 a real run returned warn (9 cleared as contention, 1 left unsettled) in 2m51s
+against a 2m0s idle baseline; a planted always-failing test came back red at load 70.
 
-`dropping_a_file_emits_one_event` runs in **0.84 s alone**, and burned **17.75 s before failing** inside the full suite.
-nextest flagged that run "leaky" (a handle outlived the test). So the code isn't wrong; the test is asserting a
-wall-clock deadline it doesn't control, and something it spawned outlives it.
+## What's left
 
-The nextest budget is 8 s against tests that take under a second. A 10x margin sounds generous and isn't: contention
-eats that easily. A timeout is a **deadlock detector**, not a performance assertion, and should sit 50-100x above
-healthy runtime, with condition-waits (not the timeout) keeping the suite fast.
+1. **Wire the contention re-run into `rust-integration-tests`.** It's the most deadline-dense lane and it demonstrably
+   wants this: during a full `pnpm check` it failed on
+   `smb_integration_concurrent_streaming_writes_no_deadlock` timing out at 130 s, then passed standalone in 1m34s.
+   Blocker to solve first: the `contention-retry` profile's 40 s cap is *below* what healthy SMB tests legitimately take
+   (up to 130 s), and the profile deliberately has no `inherits`, so wiring it as-is would misclassify a healthy slow
+   test as a real failure. The lane needs its own retry profile, and the re-run has to carry `--run-ignored only`
+   alongside the exact-name filter.
+2. **Surface Playwright flaky passes.** `desktop-svelte-e2e-playwright.go` only ever returns `Success`, so on the Linux
+   and CI lanes (where `retries: 1` is set) a retried pass reports as clean green: the same hole just closed on the Rust
+   side, still open on the lane that actually has retries. The suite already writes a structured JSON report
+   (`CMDR_E2E_JSON_REPORT`), so this reads flaky counts from there rather than parsing stdout.
 
-## Hypotheses to check first
+A contention re-run for the E2E suites is NOT worth building: Playwright already runs `workers: 1` with
+`fullyParallel: false`, so there is no intra-suite parallelism for a serialized probe to remove, and the probe stage
+would be indistinguishable from the original run. The Rust mechanism works precisely because that suite is massively
+parallel.
 
-1. **Shared real-world state.** Does `downloads::` touch the real `~/Downloads`? If so the tests race each other AND the
-   machine, which fits the cluster exactly. Per-test tmpdir is the likely fix.
-2. **Leaked watchers/tasks.** nextest's "leaky" verdict is a concrete lead: find what outlives the test and join or drop
-   it.
-3. **Real-clock dependence.** Debounce and throttle windows driven by wall time rather than an injected clock.
-4. **Wall-clock assertions** that survived the `test-sleep` check (`crate::test_support::wait_until` /
-   `wait_until_async` are mandated by `apps/desktop/src-tauri/CLAUDE.md`; these 19 either predate the rule or slip past
-   the checker). Worth asking whether the checker has a hole.
+## Still-open guidance
 
-## Suggested approach
-
-1. **Measure before fixing.** Run the full suite 20-50x overnight and produce a per-test flake-rate table. Without a
-   baseline there is no way to prove a fix worked; "I ran it and it passed" is exactly the reasoning that lets flakes
-   survive.
-2. **Fix `downloads::` first** and re-measure. If the rate collapses, the remaining clusters likely share the cause.
-3. **Raise the nextest timeout** to an honest hang-detector value, and make the suite fast via condition-waits instead.
-4. **Sweep the rest**: replace duration assertions with condition-waits, inject clocks, isolate filesystem state.
-5. **Keep it from coming back**: consider running CI deliberately oversubscribed so flakes surface there rather than on
-   a laptop, and if `--retries` is ever enabled, report "passed on retry" as a flake rather than swallowing it. A silent
-   retry policy is how a suite rots.
-
-## Out of scope
-
-Don't fix these by adding retries, raising individual timeouts one at a time, or marking tests `#[ignore]`. Those hide
-the signal, which is the actual problem being solved.
-
-## Success criteria
-
-- A per-test flake-rate table exists, before and after.
-- 20 consecutive full `rust-tests` runs on an idle machine, all green.
-- The suite still passes when run under deliberate load (the real bar: at load 144 today, a correct suite would not have
-  produced a single failure, because no test would be asserting a wall-clock duration).
+Don't fix flakes by adding retries, raising individual timeouts one at a time, or marking tests `#[ignore]`. The one
+sanctioned retry carve-out is narrow and now visible (`docs/testing.md`). If a test lands in the "needed headroom on a
+quiet machine" verdict, that's real slowness: tweak the test or give it an explicit, documented per-test override.
