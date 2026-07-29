@@ -44,9 +44,9 @@ results table, owning its own data + lifecycle — Search's "text in images" OCR
 
 ### The controller split
 
-`QueryDialog.svelte` holds the wiring and the layout; four siblings hold the behavior, each with its own unit tests.
-The component keeps only what genuinely needs the component: the `$derived` readers off `config.state`, the two
-`$effect`s, the mount/destroy hooks, the DOM refs, and the template.
+`QueryDialog.svelte` holds the wiring and the layout; four siblings hold the behavior, each with its own unit tests. The
+component keeps only what genuinely needs the component: the `$derived` readers off `config.state`, the two `$effect`s,
+the mount/destroy hooks, the DOM refs, and the template.
 
 - **`query-runner.svelte.ts`** — everything between "the user wants results" and "state holds them": the nothing-to-run
   guard, the auto-apply debounce and its gates, the IME guard, `executeQuery`, the `runAiSearch` round-trip, and the
@@ -56,12 +56,12 @@ The component keeps only what genuinely needs the component: the `$derived` read
   yields to whoever claimed focus; `closeAndFocus()` waits a tick past the popover's own focus trap).
 - **`query-shortcuts.ts`** — pure key routing: `matchKey` (modifier-superset rejection + the macOS Option-glyph `code`
   fallback), `modeForShortcutNumber`, and `routeModifierShortcut(e, handlers)`.
-- **`result-actions.ts`** — what ⏎ / ⌥⏎ / a row click / the footer buttons do with the current result set, including
-  the Selection-style "no secondary action" fallback.
+- **`result-actions.ts`** — what ⏎ / ⌥⏎ / a row click / the footer buttons do with the current result set, including the
+  Selection-style "no secondary action" fallback.
 
-`createQueryRunner` takes `getConfig`, a GETTER, not a config value. Consumers build `config` in a `$derived`, so it's
-a fresh object on every reactive change; a captured reference would freeze gates like `isIndexReady` and
-`inputsDisabled` at their mount-time values. Same rule for any future controller extracted from here.
+`createQueryRunner` takes `getConfig`, a GETTER, not a config value. Consumers build `config` in a `$derived`, so it's a
+fresh object on every reactive change; a captured reference would freeze gates like `isIndexReady` and `inputsDisabled`
+at their mount-time values. Same rule for any future controller extracted from here.
 
 The runner's `highlightedFields` is ONE `SvelteSet` mutated in place, never reassigned. `SvelteSet` is reactive per key,
 so a reader that called `.has('query')` stays subscribed to the instance it read; swapping in a fresh set leaves every
@@ -275,8 +275,8 @@ The four controller modules carry their own suites (`query-runner.test.ts`, `rec
 `query-shortcuts.test.ts`, `result-actions.test.ts`), which is where a rule is cheapest to pin: the nothing-to-run
 guard, the auto-apply gate chain, the spinner clearing on every AI early return, the Option-glyph remap, and the
 no-secondary fallbacks all get asserted without mounting a dialog. They build their config from `test-helpers.ts`
-(`makeQueryDialogConfig`), the minimal Search-shaped fixture; the mounted-dialog tests keep their own richer one
-because they record call transcripts.
+(`makeQueryDialogConfig`), the minimal Search-shaped fixture; the mounted-dialog tests keep their own richer one because
+they record call transcripts.
 
 ## Files
 

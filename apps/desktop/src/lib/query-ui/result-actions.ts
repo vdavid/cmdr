@@ -53,11 +53,7 @@ export function activateResultAt<E>(config: QueryDialogConfig<E>, index: number)
  *     exists (Selection), falls through to the primary action.
  *   - 'run-search': `run()` fires the active mode's query (AI / filename / regex).
  */
-export function dispatchEnterAction<E>(
-  config: QueryDialogConfig<E>,
-  enterAction: EnterAction,
-  run: () => void,
-): void {
+export function dispatchEnterAction<E>(config: QueryDialogConfig<E>, enterAction: EnterAction, run: () => void): void {
   if (enterAction !== 'go-to-file') {
     run()
     return

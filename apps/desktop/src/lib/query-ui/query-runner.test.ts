@@ -160,7 +160,7 @@ describe('shouldShowRunHint', () => {
  * legitimate query.
  */
 describe('the nothing-to-run guard', () => {
-  it('refuses the run and drops the previous run\'s rows', async () => {
+  it("refuses the run and drops the previous run's rows", async () => {
     const { runner, config, calls } = makeRunner({ runQueryResult: { entries: sampleEntries(2), totalCount: 2 } })
     await runner.executeQuery()
     expect(calls.runQuery).toBe(1)

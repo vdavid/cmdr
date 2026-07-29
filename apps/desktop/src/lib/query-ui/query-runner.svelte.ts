@@ -18,11 +18,7 @@ import { showAiTranslateErrorToast } from '$lib/ai/translate-error-toast'
 import { tString } from '$lib/intl/messages.svelte'
 import { addToast } from '$lib/ui/toast/toast-store.svelte'
 import type { QueryDialogConfig } from './query-dialog-config'
-import {
-  SEARCH_AUTO_APPLY_DEBOUNCE_MS,
-  type QueryFilterState,
-  type SearchMode,
-} from './query-filter-state.svelte'
+import { SEARCH_AUTO_APPLY_DEBOUNCE_MS, type QueryFilterState, type SearchMode } from './query-filter-state.svelte'
 
 /** How long the fields the AI touched stay flashed, so the user sees what changed. */
 export const AI_HIGHLIGHT_FLASH_MS = 1500
