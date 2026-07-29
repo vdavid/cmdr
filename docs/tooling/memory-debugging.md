@@ -65,3 +65,14 @@ and `malloc_history` can name the call sites. Revert afterwards.
 Useful as a sanity baseline when re-testing: with the NAS index resumed, the app peaked at ~646 MB; suppressing the
 media-coverage walk alone made the same build flat at ~155 MB. Details and the full investigation:
 `docs/notes/memory-runaway-rust-heap-2026-07-25.md`.
+
+## Past investigations
+
+Read these before re-deriving anything; between them they cover every cause found so far.
+
+- `docs/notes/idle-memory-profile-2026-07-28.md` — the STEADY-STATE costs (2.5 GB idle): SQLite page cache across many
+  thread-local connections, and the importance rescore treadmill. Start here for "it's high but not climbing".
+- `docs/notes/memory-runaway-rust-heap-2026-07-25.md` — the RUNAWAY (up to 50 GB): a walk that materialized every image
+  path. Also the origin of the `IOAccelerator` trap above.
+- `docs/notes/high-memory-gpu-compositor-investigation-2026-07.md` — superseded; its conclusion is wrong (it read the
+  mislabel as GPU memory). Kept for the measurement methodology only.

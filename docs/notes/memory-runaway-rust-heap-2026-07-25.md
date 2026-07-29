@@ -191,4 +191,4 @@ dedupe behind a per-volume build lock. Contract and rationale: `apps/desktop/src
 
 A 2026-07-28 profile of prod v0.36.2 (2.5 GB idle) found two causes NOT covered here: SQLite page cache across ~156
 thread-local connections, and a 60-second importance rescore treadmill. Evidence and fixes:
-`docs/specs/memory-diet-plan.md`.
+`docs/notes/idle-memory-profile-2026-07-28.md`.
