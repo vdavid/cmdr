@@ -137,7 +137,8 @@ fn report(outcome: SharedPageCache) -> SharedPageCache {
         SharedPageCache::Installed { slot_bytes, slots } => {
             log::debug!(
                 target: "sqlite",
-                "shared page cache installed: {slots} slots x {slot_bytes} B = {} MiB",
+                "shared page cache installed: {} x {slot_bytes} B = {} MiB",
+                crate::pluralize::pluralize(slots as u64, "slot"),
                 (slot_bytes * slots) / (1024 * 1024)
             );
         }
