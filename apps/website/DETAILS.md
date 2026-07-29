@@ -126,6 +126,13 @@ in `public/fonts/`.
   which knows nothing about `nginx.conf`. Use it for links published where we can't edit the URL per release (app
   directories, the README, blog posts); the site's own download button keeps its version-pinned URL, which carries the
   `?src=website` tag and the file size.
+- **Page content as data**: pages whose bulk is content, not logic, keep that content in a typed module under `src/lib/`
+  and map over it. `src/lib/roadmap.ts` holds every roadmap milestone (sections → optional month groups → milestones,
+  each with a `date`, `title`, `description`, optional `icon`, and `done`); `src/pages/roadmap.astro` is layout and
+  styling only. Titles and descriptions are inline HTML rendered with `set:html`, so keep them plain text unless markup
+  is genuinely needed, and note that markup inside those strings gets no `data-astro-cid-…` scope attribute: it can't be
+  targeted by the page's scoped `<style>`. Style such elements globally or wrap them in a classed span the template
+  owns.
 - **RSS autodiscovery**: `<link>` tag in `Layout.astro`
 - **Agent-facing endpoints**: `src/pages/llms.txt.ts` (concise) and `llms-full.txt.ts` (detailed) describe Cmdr for AI
   agents; each blog post also has a Markdown mirror at `/blog/{slug}/index.md`. Keep the llms files in sync when product
