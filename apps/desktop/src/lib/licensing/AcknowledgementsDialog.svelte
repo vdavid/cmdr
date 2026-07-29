@@ -90,8 +90,6 @@
             <p class="signature">{tString('licensing.acknowledgements.signature')}</p>
         </div>
 
-        <hr class="note-divider" />
-
         {#if loaded}
             <div class="jump">
                 <Button size="mini" onclick={jumpToNpm}>{tString('licensing.acknowledgements.jumpToNpm')}</Button>
@@ -153,12 +151,6 @@
 
     .signature {
         color: var(--color-text-secondary);
-    }
-
-    .note-divider {
-        margin: var(--spacing-lg) 0;
-        border: none;
-        border-top: 1px solid var(--color-border-subtle);
     }
 
     .jump {
