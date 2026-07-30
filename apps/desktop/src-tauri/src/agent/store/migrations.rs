@@ -52,6 +52,11 @@ pub const MIGRATIONS: &[Migration] = &[
         description: "conversations.last_model for model-change events",
         up: migrate_v2_last_model,
     },
+    Migration {
+        version: 3,
+        description: "conversations.last_prompt_tokens/last_prompt_budget for the context gauge",
+        up: migrate_v3_context_usage,
+    },
 ];
 
 /// The meta key holding the integer schema version (as text). Absent ⇒ 0 (a fresh DB
@@ -206,4 +211,17 @@ fn migrate_v1_initial(tx: &Transaction<'_>) -> rusqlite::Result<()> {
 /// the effective model changes between turns.
 fn migrate_v2_last_model(tx: &Transaction<'_>) -> rusqlite::Result<()> {
     tx.execute_batch("ALTER TABLE conversations ADD COLUMN last_model TEXT;")
+}
+
+/// Version 3: what the conversation's last completed turn spent, and the budget it spent it
+/// against, so reopening a thread shows its real usage instead of an empty gauge.
+///
+/// Nullable with no backfill, and read as a PAIR: a thread that predates this, or one whose
+/// first turn hasn't finished, reads as "not measured yet" rather than as zero usage, which
+/// would render as a reassuring empty bar for a thread that may be nearly full.
+fn migrate_v3_context_usage(tx: &Transaction<'_>) -> rusqlite::Result<()> {
+    tx.execute_batch(
+        "ALTER TABLE conversations ADD COLUMN last_prompt_tokens INTEGER;
+         ALTER TABLE conversations ADD COLUMN last_prompt_budget INTEGER;",
+    )
 }

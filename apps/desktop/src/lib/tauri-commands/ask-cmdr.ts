@@ -115,6 +115,9 @@ export type AskCmdrStreamEvent =
   /** The prompt budget pushed earlier tool results out of this turn's context, so the reply
    * was written with less than the whole thread in view. At most one per turn. */
   | { type: 'contextTrimmed'; elidedResults: number; approxTokens: number }
+  /** What this turn's prompt cost against its budget, once per answered turn, for the rail's
+   * usage gauge. Both figures are `chars/4` estimates, never a tokenizer's count. */
+  | { type: 'contextUsage'; estimatedTokens: number; budgetTokens: number; elidedResults: number }
 
 /**
  * Send one message and stream the answer. `conversationId` is `null` to start a fresh

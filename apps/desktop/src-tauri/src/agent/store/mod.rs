@@ -28,9 +28,10 @@ pub use migrations::{MIGRATIONS, Migration, run_migrations};
 pub use query::{
     AskCmdrConsent, ConversationCost, ConversationDetail, ConversationEvent, ConversationRow, ConversationSearchHit,
     CostDay, CostRecord, CostSummary, StoredContent, StoredMessage, append_event, append_message, archive_conversation,
-    clear_consent, conversation_cost, conversation_last_model, cost_summary, create_conversation, get_consent,
-    get_conversation, list_conversations, list_messages, record_cost, rename_conversation, sanitize_fts_query,
-    search_conversations, set_consent, set_conversation_last_model,
+    clear_consent, conversation_context_usage, conversation_cost, conversation_last_model, cost_summary,
+    create_conversation, get_consent, get_conversation, list_conversations, list_messages, record_cost,
+    rename_conversation, sanitize_fts_query, search_conversations, set_consent, set_conversation_context_usage,
+    set_conversation_last_model,
 };
 
 /// The durable store's file name in the app data dir. Peer to `operation-log.db`.

@@ -512,7 +512,6 @@
   "@askCmdr.renameReview.status": {
     "sourceHash": "9f70789"
   },
-
   "askCmdr.renameUndo.applied": "Đã đổi tên {countText} {count, plural, other {tệp}}.",
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
@@ -596,5 +595,8 @@
   "askCmdr.renameUndo.unavailable": "Không có gì để đặt lại. Có thể lô này đã được hoàn tác, hoặc ổ đĩa của nó chưa được kết nối.",
   "@askCmdr.renameUndo.unavailable": {
     "sourceHash": "8a95b9e"
-  }
+  },
+  "askCmdr.context.label": "Mức lấp đầy của cuộc trò chuyện này",
+  "askCmdr.context.tooltip": "Đã dùng {usedText} trên {budgetText} token (ước tính)",
+  "askCmdr.context.setAside": "Các phần cũ hơn của cuộc trò chuyện đã được đặt sang một bên để có thêm chỗ. Không có gì trong câu trả lời này bị bỏ sót."
 }

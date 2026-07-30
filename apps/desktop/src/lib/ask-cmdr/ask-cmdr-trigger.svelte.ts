@@ -17,6 +17,7 @@ import { explorerState } from '$lib/file-explorer/pane/explorer-state.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { SvelteSet } from 'svelte/reactivity'
 import { consentState, refreshConsent } from './ask-cmdr-consent.svelte'
+import type { ContextUsage } from './ask-cmdr-context-usage'
 import { buildRailMessages } from './ask-cmdr-history'
 import type { RailMessage } from './ask-cmdr-messages'
 import { growMainWindowForRail, shrinkMainWindowForRail } from './rail-window'
@@ -104,6 +105,9 @@ interface AskCmdrState {
   /** Files/folders staged in the composer for the next send (path + kind only). */
   attachments: AttachmentRef[]
   renameReview: BulkRenameReview | null
+  /** How full the model's view got on the thread's last measured turn, for the footer gauge.
+   * `null` means no turn has been measured, which the gauge shows as nothing at all. */
+  contextUsage: ContextUsage | null
 }
 
 export const RAIL_MIN_WIDTH = 280
@@ -122,6 +126,7 @@ export const askCmdrState = $state<AskCmdrState>({
   loadingOlder: false,
   attachments: [],
   renameReview: null,
+  contextUsage: null,
 })
 
 /** True once the thread grows past the soft cap (drives the "start a fresh one?" nudge). */
@@ -210,6 +215,8 @@ export function newChat(): void {
   askCmdrState.messageTotal = 0
   askCmdrState.historyCount = 0
   askCmdrState.attachments = []
+  // A fresh chat has measured nothing, so the gauge must not carry the previous thread's fill.
+  askCmdrState.contextUsage = null
   discardRenameReview()
 }
 
@@ -252,6 +259,16 @@ async function loadConversation(id: number): Promise<void> {
     askCmdrState.messageTotal = detail.totalMessages
     askCmdrState.historyCount = detail.messages.length
     askCmdrState.messages = buildRailMessages(detail)
+    // The gauge shows the thread's last measured turn, so reopening a chat reports what it
+    // really cost instead of an empty bar. `elidedResults` is 0 here on purpose: whether THAT
+    // turn set anything aside isn't persisted, and inventing a count would be a false claim.
+    askCmdrState.contextUsage = detail.lastContextUsage
+      ? {
+          estimatedTokens: detail.lastContextUsage.estimatedTokens,
+          budgetTokens: detail.lastContextUsage.budgetTokens,
+          elidedResults: 0,
+        }
+      : null
   } finally {
     askCmdrState.loadingHistory = false
   }
@@ -381,9 +398,28 @@ function handleStreamEvent(event: AskCmdrStreamEvent): void {
     case 'modelChanged':
       applyModelChanged(event.model)
       return
+    default:
+      handleContextEvent(event)
+  }
+}
+
+/** The two events that report on the CONTEXT rather than on the answer: what the assembly set
+ * aside, and what it cost. Split out so `handleStreamEvent` stays under the complexity ceiling
+ * and both halves stay exhaustive. */
+function handleContextEvent(event: Extract<AskCmdrStreamEvent, { type: 'contextTrimmed' | 'contextUsage' }>): void {
+  switch (event.type) {
     case 'contextTrimmed':
       applyContextTrimmed(event.elidedResults)
+      return
+    case 'contextUsage':
+      applyContextUsage(event.estimatedTokens, event.budgetTokens, event.elidedResults)
   }
+}
+
+/** Record what this turn's prompt cost, for the footer gauge. One event per answered turn, so
+ * this is a straight replace rather than an accumulation. */
+function applyContextUsage(estimatedTokens: number, budgetTokens: number, elidedResults: number): void {
+  askCmdrState.contextUsage = { estimatedTokens, budgetTokens, elidedResults }
 }
 
 /** Show that the budget pushed older lookups out of this turn's context. It goes before the

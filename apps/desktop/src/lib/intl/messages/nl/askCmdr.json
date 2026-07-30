@@ -516,7 +516,6 @@
   "@askCmdr.renameReview.status": {
     "sourceHash": "9f70789"
   },
-
   "askCmdr.renameUndo.applied": "{countText} {count, plural, one {bestand} other {bestanden}} hernoemd.",
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
@@ -600,5 +599,8 @@
   "askCmdr.renameUndo.unavailable": "Er is niets terug te zetten. Deze groep is misschien al ongedaan gemaakt, of de schijf is niet verbonden.",
   "@askCmdr.renameUndo.unavailable": {
     "sourceHash": "8a95b9e"
-  }
+  },
+  "askCmdr.context.label": "Hoe vol deze chat is",
+  "askCmdr.context.tooltip": "{usedText} van {budgetText} tokens gebruikt (geschat)",
+  "askCmdr.context.setAside": "Oudere delen van deze chat zijn apart gezet om ruimte te maken. Uit dit antwoord is niets weggelaten."
 }

@@ -308,6 +308,31 @@ and the focused row is highlighted.
 - `source_path` + `volume_id` ride the row snapshot for this, and they are DISPLAY data. Apply still sends opaque row
   ids only, and the backend resolves every path from its own stored proposal.
 
+## The context gauge (how full the chat is)
+
+`AskCmdrContextGauge.svelte` sits in the footer row beside the cost line, and the two answer different questions on
+purpose: **cost is what the whole thread has SPENT** (cumulative, only ever rising), the **gauge is how much of ONE
+prompt's room the last turn used** (it drops when history is set aside). The gauge's tooltip spells out "N of M tokens
+used (estimated)" so the two numbers can't read as a contradiction. Each half hides independently — a local-only thread
+has a real context reading and no money to report.
+
+State lives in `ask-cmdr-context-usage.ts`, pure and unit-tested, as four named states:
+
+- `unmeasured` — no turn finished yet, so the gauge renders NOTHING. Deliberately not 0%: an empty bar reads as "plenty
+  of room" for a thread nobody measured.
+- `calm` — under `FILLING_THRESHOLD_PERCENT` (80).
+- `filling` — at or over the threshold, nothing dropped yet.
+- `setAside` — history left the model's view this turn. **Going over budget lands here too**, not in a fifth state: the
+  turn worked, older material made room, and "over budget" is engine vocabulary, not something the user did wrong.
+
+Two rules the tests pin: the state follows the percentage the gauge SHOWS (79.998% displays as 80%, so it reads as
+`filling`, or the bar would say 80% while behaving as calm), and a measured turn never rounds down to 0%.
+
+The figure survives a restart: the backend stores it per conversation and `ConversationDetailView.lastContextUsage`
+returns it, so reopening a thread shows its last real reading. A restored reading reports `elidedResults: 0` because
+whether THAT turn set anything aside isn't persisted, and inventing a count would be a false claim. A fresh chat clears
+it, so no thread inherits another's fill.
+
 ## The E2E fake-LLM path
 
 The stream also carries a display-only `proposalReady` rename-plan snapshot. The review dialog owns it in the next
@@ -321,6 +346,12 @@ runs. `ask-cmdr-trigger.test.ts` covers the full event model (tool lines, stop, 
 with mocked events; `ask-cmdr-sessions.test.ts` covers list paging/search/rename/archive. The E2E spec also drives the
 sessions path end-to-end (create two threads, search finds the right one via real FTS over the persisted messages,
 switch works) — it seeds a per-run nonce into the message text so search never matches a thread left by an earlier run.
+
+**The fake gets its own prompt budget.** It answers as a LOCAL provider with no local server behind it, so the real
+resolution would size its budget from `ai.localContextSize` — a setting the harness has no reason to touch, and whose
+value would then decide what the gauge shows in every E2E run. `resolve_prompt_budget` returns
+`DEFAULT_PROMPT_TOKEN_BUDGET` (16,000) for the fake instead, so the harness keeps mirroring a real user's settings and
+an E2E run's gauge reads as a normal calm chat rather than pinned.
 
 The composer's Send gate (`AskCmdrComposer.svelte`) disables sending when `ai.provider` is `off` (its default), so the
 fake path — which never sets a real provider — needs the gate to treat the fake as an active provider. It reads

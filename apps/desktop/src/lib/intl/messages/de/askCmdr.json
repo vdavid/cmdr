@@ -514,7 +514,6 @@
   "@askCmdr.renameReview.status": {
     "sourceHash": "9f70789"
   },
-
   "askCmdr.renameUndo.applied": "{countText} {count, plural, one {Datei} other {Dateien}} umbenannt.",
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
@@ -598,5 +597,8 @@
   "askCmdr.renameUndo.unavailable": "Es gibt nichts zurückzusetzen. Diese Gruppe wurde vielleicht schon widerrufen, oder ihr Laufwerk ist nicht verbunden.",
   "@askCmdr.renameUndo.unavailable": {
     "sourceHash": "8a95b9e"
-  }
+  },
+  "askCmdr.context.label": "Wie voll dieser Chat ist",
+  "askCmdr.context.tooltip": "{usedText} von {budgetText} Tokens genutzt (geschätzt)",
+  "askCmdr.context.setAside": "Ältere Teile dieses Chats wurden zur Seite gelegt, um Platz zu schaffen. Aus dieser Antwort fehlt nichts."
 }

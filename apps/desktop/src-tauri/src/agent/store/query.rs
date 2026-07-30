@@ -379,6 +379,44 @@ pub fn set_conversation_last_model(
     Ok(())
 }
 
+/// What the conversation's last completed turn sent, and the budget it was assembled against.
+/// `None` means no turn has finished yet, which the gauge shows as "not measured" rather than
+/// as an empty bar.
+///
+/// Read as a pair on purpose: a size without the budget it was measured against can't be
+/// turned into a percentage, so a half-recorded row is no measurement at all.
+pub fn conversation_context_usage(
+    conn: &Connection,
+    conversation_id: i64,
+) -> Result<Option<(usize, usize)>, AgentStoreError> {
+    let mut stmt =
+        conn.prepare_cached("SELECT last_prompt_tokens, last_prompt_budget FROM conversations WHERE id = ?1")?;
+    let mut rows = stmt.query(rusqlite::params![conversation_id])?;
+    let Some(row) = rows.next()? else {
+        return Ok(None);
+    };
+    let tokens: Option<i64> = row.get(0)?;
+    let budget: Option<i64> = row.get(1)?;
+    match (tokens, budget) {
+        (Some(tokens), Some(budget)) if budget > 0 => Ok(Some((tokens.max(0) as usize, budget as usize))),
+        _ => Ok(None),
+    }
+}
+
+/// Record what a completed turn's prompt cost against its budget, for the thread's gauge.
+pub fn set_conversation_context_usage(
+    conn: &Connection,
+    conversation_id: i64,
+    prompt_tokens: usize,
+    prompt_budget: usize,
+) -> Result<(), AgentStoreError> {
+    conn.execute(
+        "UPDATE conversations SET last_prompt_tokens = ?2, last_prompt_budget = ?3 WHERE id = ?1",
+        rusqlite::params![conversation_id, prompt_tokens as i64, prompt_budget as i64],
+    )?;
+    Ok(())
+}
+
 /// The shared insert for message and event rows: derive the per-conversation `seq` and
 /// bump the conversation's `updated_at`, all inside one transaction so the seq can't race
 /// and the two writes commit together.

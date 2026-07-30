@@ -514,7 +514,6 @@
   "@askCmdr.renameReview.status": {
     "sourceHash": "9f70789"
   },
-
   "askCmdr.renameUndo.applied": "Se {count, plural, one {cambió el nombre de} many {cambiaron los nombres de} other {cambiaron los nombres de}} {countText} {count, plural, one {archivo} many {archivos} other {archivos}}.",
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
@@ -598,5 +597,8 @@
   "askCmdr.renameUndo.unavailable": "No hay nada que restaurar. Puede que este lote ya se haya deshecho, o que su unidad no esté conectada.",
   "@askCmdr.renameUndo.unavailable": {
     "sourceHash": "8a95b9e"
-  }
+  },
+  "askCmdr.context.label": "Qué tan lleno está este chat",
+  "askCmdr.context.tooltip": "{usedText} de {budgetText} tokens usados (estimado)",
+  "askCmdr.context.setAside": "Se apartaron partes anteriores de este chat para hacer espacio. No se omitió nada de esta respuesta."
 }

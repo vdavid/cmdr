@@ -162,6 +162,30 @@ fn production_v1_db_migrates_forward_gaining_last_model() {
     assert_eq!(last_model, None, "pre-existing rows read as no recorded model");
 }
 
+/// A thread reopened after a restart must show its last known context usage rather than an
+/// empty gauge, so the figures live with the conversation. An older thread that never
+/// recorded one reads as "not measured yet", never as zero usage.
+#[test]
+fn a_conversations_context_usage_round_trips_and_is_absent_before_a_turn() {
+    let conn = crate::sqlite_util::open_in_memory().expect("in-memory db");
+    run_migrations(&conn, MIGRATIONS).expect("migrate to current");
+    let id = create_conversation(&conn, "sizing", 10, None).expect("create conversation");
+
+    assert_eq!(
+        conversation_context_usage(&conn, id).expect("read usage"),
+        None,
+        "a thread with no completed turn has no usage to report"
+    );
+
+    set_conversation_context_usage(&conn, id, 31_200, 60_000).expect("record usage");
+
+    assert_eq!(
+        conversation_context_usage(&conn, id).expect("read usage"),
+        Some((31_200, 60_000)),
+        "the reopened thread reports the last turn's prompt against its budget"
+    );
+}
+
 // ── Token round-trips + uniqueness ─────────────────────────────────────────────
 
 /// Assert every token round-trips through `as_token`/`from_token` and the tokens are

@@ -513,7 +513,6 @@
   "@askCmdr.renameReview.status": {
     "sourceHash": "9f70789"
   },
-
   "askCmdr.renameUndo.applied": "{countText} {count, plural, one {fil} other {filer}} bytte namn.",
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
@@ -597,5 +596,8 @@
   "askCmdr.renameUndo.unavailable": "Det finns inget att återställa. Omgången kan redan vara ångrad, eller så är dess enhet inte ansluten.",
   "@askCmdr.renameUndo.unavailable": {
     "sourceHash": "8a95b9e"
-  }
+  },
+  "askCmdr.context.label": "Hur full den här chatten är",
+  "askCmdr.context.tooltip": "{usedText} av {budgetText} tokens använda (uppskattat)",
+  "askCmdr.context.setAside": "Äldre delar av den här chatten lades åt sidan för att ge plats. Inget i det här svaret utelämnades."
 }

@@ -2318,6 +2318,12 @@ export const commands = {
         conversation: ConversationRow
         messages: MessageView[]
         totalMessages: number
+        /**
+         *  What the thread's last measured turn spent, and the budget it spent it against, so a
+         *  reopened thread shows its real gauge instead of an empty one. `None` until a turn has
+         *  finished: read as "not measured yet", never as zero usage.
+         */
+        lastContextUsage: ContextUsageView | null
       } | null,
       string
     >(__TAURI_INVOKE('ask_cmdr_get_conversation', { id, msgLimit, msgOffset })),
@@ -3777,6 +3783,12 @@ export type ConnectionDiagnosticsDto = {
 // Connection mode used for the last successful connection.
 export type ConnectionMode = 'guest' | 'credentials'
 
+// A thread's last measured context usage, on the wire. Both figures are `chars/4` estimates.
+export type ContextUsageView = {
+  estimatedTokens: number
+  budgetTokens: number
+}
+
 /**
  *  One conversation's cumulative token + cost totals across every day and model it used.
  *  Wire type (the per-thread footer).
@@ -3806,6 +3818,12 @@ export type ConversationDetailView = {
   conversation: ConversationRow
   messages: MessageView[]
   totalMessages: number
+  /**
+   *  What the thread's last measured turn spent, and the budget it spent it against, so a
+   *  reopened thread shows its real gauge instead of an empty one. `None` until a turn has
+   *  finished: read as "not measured yet", never as zero usage.
+   */
+  lastContextUsage: ContextUsageView | null
 }
 
 /**

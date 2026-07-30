@@ -209,6 +209,22 @@ refused, not assembled: `BudgetRefusal::LocalWindowBelowFloor` reaches the rail 
 `AgentErrorKindView::LocalWindowTooSmall`, whose copy names the number to pick and where. The refusal happens in
 `ask_cmdr_send_message` before a conversation exists, like the consent gate.
 
+### Reporting what a turn cost
+
+Two events carry context pressure to the user, and both are once per turn:
+
+- `ContextTrimmed` — the budget pushed history out. Fired only when the BUDGET forced it (`ElisionFacts::budget_forced`),
+  not on ordinary age-based elision, or it would cry wolf every turn on a small window.
+- `ContextUsage` — what the prompt cost against its budget, plus the set-aside count, for the rail's gauge. Emitted on
+  the ANSWERED path from that call's own assembly, which is the turn's last and largest (each tool result joins the same
+  prompt). A failed or cancelled turn reports nothing: the user is looking at an error line, and the previous turn's
+  stored figure stays the last thing actually measured.
+
+The same call stamps `conversations.last_prompt_tokens` / `last_prompt_budget` (store migration v3, nullable, no
+backfill), so reopening a thread shows its last real reading instead of an empty gauge. The pair is read as a pair: a
+size without the budget it was measured against can't become a percentage, so a half-recorded row is no measurement at
+all. A persist problem is logged and dropped — a gauge is worth no turn.
+
 ### Sizing a batch from the budget
 
 `files_per_batch(prompt_tokens)` answers how many files one content-based rename batch fits, as the **smaller of two

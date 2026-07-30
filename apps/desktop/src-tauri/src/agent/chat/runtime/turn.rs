@@ -224,6 +224,7 @@ pub async fn run_turn(
         // Terminal vs. another tool turn.
         let has_tool_calls = message.parts.iter().any(|p| matches!(p, AgentPart::ToolCall(_)));
         if !has_tool_calls {
+            report_context_usage(conn, params.conversation_id, &assembled.elision, sink);
             emit(
                 sink,
                 AgentChatEvent::Done {
@@ -319,6 +320,30 @@ async fn consume_stream(mut stream: crate::agent::llm::AgentDeltaStream, sink: &
         stop,
         usage,
         stream_error,
+    }
+}
+
+/// Tell the user, once per answered turn, how full the model's view got — and remember it with
+/// the thread, so reopening the chat shows the last known figure instead of an empty gauge.
+///
+/// Called on the answered path with THAT call's assembly, which is the turn's last and largest:
+/// within one turn each tool result joins the same prompt, and the biggest is what answers "is
+/// this chat filling up?"
+///
+/// A failed or cancelled turn deliberately reports nothing: the user is looking at an error
+/// line, and the previous turn's stored figure stays the last thing actually measured. A
+/// persist problem here is logged and dropped — a gauge is worth no turn.
+fn report_context_usage(conn: &rusqlite::Connection, conversation_id: i64, facts: &ElisionFacts, sink: &ChatEventSink) {
+    emit(
+        sink,
+        AgentChatEvent::ContextUsage {
+            estimated_tokens: facts.estimated_tokens,
+            budget_tokens: facts.budget,
+            elided_results: facts.elided_results,
+        },
+    );
+    if let Err(e) = store::set_conversation_context_usage(conn, conversation_id, facts.estimated_tokens, facts.budget) {
+        log::warn!(target: LOG_TARGET, "could not record this turn's context usage: {e}");
     }
 }
 

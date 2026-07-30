@@ -71,6 +71,13 @@ pub enum AskCmdrStreamEvent {
         elided_results: usize,
         approx_tokens: usize,
     },
+    /// What this turn's prompt cost against its budget, once per answered turn, for the rail's
+    /// usage gauge. Both figures are `chars/4` estimates and the UI labels them so.
+    ContextUsage {
+        estimated_tokens: usize,
+        budget_tokens: usize,
+        elided_results: usize,
+    },
 }
 
 /// What the chat-memory setting needs to warn honestly: the model the next turn would use,
@@ -211,6 +218,15 @@ pub(super) fn to_wire_event(event: AgentChatEvent) -> AskCmdrStreamEvent {
             elided_results,
             approx_tokens,
         },
+        AgentChatEvent::ContextUsage {
+            estimated_tokens,
+            budget_tokens,
+            elided_results,
+        } => AskCmdrStreamEvent::ContextUsage {
+            estimated_tokens,
+            budget_tokens,
+            elided_results,
+        },
     }
 }
 
@@ -284,6 +300,18 @@ pub struct ConversationDetailView {
     pub conversation: ConversationRow,
     pub messages: Vec<MessageView>,
     pub total_messages: u32,
+    /// What the thread's last measured turn spent, and the budget it spent it against, so a
+    /// reopened thread shows its real gauge instead of an empty one. `None` until a turn has
+    /// finished: read as "not measured yet", never as zero usage.
+    pub last_context_usage: Option<ContextUsageView>,
+}
+
+/// A thread's last measured context usage, on the wire. Both figures are `chars/4` estimates.
+#[derive(Clone, Copy, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ContextUsageView {
+    pub estimated_tokens: u32,
+    pub budget_tokens: u32,
 }
 
 // ── Attachments (by reference; path + kind, never contents) ─────────────────────

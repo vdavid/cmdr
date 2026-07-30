@@ -512,7 +512,6 @@
   "@askCmdr.renameReview.status": {
     "sourceHash": "9f70789"
   },
-
   "askCmdr.renameUndo.applied": "{countText} {count, plural, one {fájl} other {fájl}} átnevezve.",
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
@@ -596,5 +595,8 @@
   "askCmdr.renameUndo.unavailable": "Nincs mit visszaállítani. Lehet, hogy ezt a csomagot már visszavonta valaki, vagy a meghajtója nincs csatlakoztatva.",
   "@askCmdr.renameUndo.unavailable": {
     "sourceHash": "8a95b9e"
-  }
+  },
+  "askCmdr.context.label": "Mennyire van tele ez a beszélgetés",
+  "askCmdr.context.tooltip": "{usedText} / {budgetText} token felhasználva (becsült)",
+  "askCmdr.context.setAside": "A beszélgetés korábbi részeit félretettük, hogy legyen hely. Ebből a válaszból semmi sem maradt ki."
 }

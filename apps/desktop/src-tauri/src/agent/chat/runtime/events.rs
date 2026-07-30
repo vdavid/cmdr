@@ -70,6 +70,21 @@ pub enum AgentChatEvent {
         /// Roughly how many tokens of detail that removed.
         approx_tokens: usize,
     },
+    /// What this turn's prompt actually cost, against the budget it was assembled for.
+    /// Emitted ONCE per answered turn, from the turn's LAST assembly (the largest one, since
+    /// each tool result joins the same turn), so the gauge reports the peak the user should
+    /// judge "is this chat filling up?" by, not the cheapest moment in the turn.
+    ///
+    /// Both numbers are `chars/4` ESTIMATES, not a tokenizer's count, and the UI says so.
+    ContextUsage {
+        /// The assembled prompt's estimated size.
+        estimated_tokens: usize,
+        /// The budget it was assembled against.
+        budget_tokens: usize,
+        /// How many tool results this turn's assembly set aside, so the gauge can name the
+        /// "set aside" state without a second event.
+        elided_results: usize,
+    },
 }
 
 /// The typed reasons a turn can end without an answer. A pure classification the

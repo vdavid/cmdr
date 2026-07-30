@@ -560,7 +560,6 @@
       }
     }
   },
-
   "askCmdr.renameUndo.applied": "Renamed {countText} {count, plural, one {file} other {files}}.",
   "@askCmdr.renameUndo.applied": {
     "description": "A line in the Ask Cmdr chat thread, shown right after a batch of files was renamed. It reports what happened and sits beside an Undo button. Sentence case.",
@@ -776,5 +775,17 @@
   "askCmdr.renameUndo.unavailable": "Nothing to put back. This batch may already be undone, or its drive isn’t connected.",
   "@askCmdr.renameUndo.unavailable": {
     "description": "Result line shown when an undo reversed nothing at all: the batch had already been undone, or a drive it needs is not connected. Says what is true without guessing which of the two it was. Sentence case; the apostrophe is U+2019."
+  },
+  "askCmdr.context.label": "How full this chat is",
+  "@askCmdr.context.label": {
+    "description": "Accessible label for the chat's context-usage gauge in the rail footer."
+  },
+  "askCmdr.context.tooltip": "{usedText} of {budgetText} tokens used (estimated)",
+  "@askCmdr.context.tooltip": {
+    "description": "Tooltip on the context-usage gauge. usedText and budgetText are preformatted numbers (with thousands separators). Both are chars/4 estimates, never a tokenizer's count, so the copy says so."
+  },
+  "askCmdr.context.setAside": "Older parts of this chat were set aside to make room. Nothing from this answer was left out.",
+  "@askCmdr.context.setAside": {
+    "description": "Timeline line shown when the budget pushed older lookups out of a turn's context. Reassures that the current answer is complete."
   }
 }

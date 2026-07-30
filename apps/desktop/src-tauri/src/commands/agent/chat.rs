@@ -251,6 +251,14 @@ fn provider_and_model(model_override: Option<&str>) -> (ProviderTag, String) {
 /// The resolution's source is logged, so a budget that came from a stale family table is
 /// visible in the log rather than silently authoritative.
 fn resolve_prompt_budget(app: &AppHandle, provider: ProviderTag, model: &str) -> Result<usize, budget::BudgetRefusal> {
+    // The E2E fake answers as a LOCAL provider with no local server behind it, so the real
+    // resolution would size its budget from `ai.localContextSize` — a setting the harness has no
+    // reason to touch, and whose value would then decide what the usage gauge shows in every E2E
+    // run. Give the fake its own realistic budget instead: the harness keeps mirroring a real
+    // user's settings, and the gauge under test shows what a normal user's would.
+    if crate::test_mode::ask_cmdr_fake_active() {
+        return Ok(budget::DEFAULT_PROMPT_TOKEN_BUDGET);
+    }
     let resolved = budget::resolve_prompt_budget(budget::BudgetInputs {
         provider,
         model,

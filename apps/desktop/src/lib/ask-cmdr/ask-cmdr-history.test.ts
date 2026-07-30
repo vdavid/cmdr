@@ -12,6 +12,7 @@ function detail(messages: ConversationDetailView['messages']): ConversationDetai
     conversation: { id: 1, title: 't', createdAt: 0, updatedAt: 0, archived: false, origin: null },
     messages,
     totalMessages: messages.length,
+    lastContextUsage: null,
   }
 }
 

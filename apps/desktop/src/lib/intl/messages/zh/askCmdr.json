@@ -512,7 +512,6 @@
   "@askCmdr.renameReview.status": {
     "sourceHash": "9f70789"
   },
-
   "askCmdr.renameUndo.applied": "已重命名 {countText} {count, plural, other {个文件}}。",
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
@@ -596,5 +595,8 @@
   "askCmdr.renameUndo.unavailable": "没有可恢复的内容。这一批可能已经撤销，或者它所在的驱动器未连接。",
   "@askCmdr.renameUndo.unavailable": {
     "sourceHash": "8a95b9e"
-  }
+  },
+  "askCmdr.context.label": "这个对话的占用情况",
+  "askCmdr.context.tooltip": "已使用 {usedText} / {budgetText} 个 token（估算）",
+  "askCmdr.context.setAside": "已将对话中较早的部分暂时移出，以腾出空间。本次回答的内容没有任何遗漏。"
 }

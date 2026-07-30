@@ -20,10 +20,18 @@ pub async fn ask_cmdr_get_conversation(
         let Some(detail) = store::get_conversation(conn, id, msg_limit, msg_offset)? else {
             return Ok(None);
         };
+        // The gauge's figure survives a restart, so reopening a thread shows what its last turn
+        // actually cost rather than an empty bar.
+        let last_context_usage =
+            store::conversation_context_usage(conn, id)?.map(|(tokens, budget)| super::ContextUsageView {
+                estimated_tokens: tokens as u32,
+                budget_tokens: budget as u32,
+            });
         Ok(Some(ConversationDetailView {
             conversation: detail.conversation,
             messages: detail.messages.into_iter().map(to_message_view).collect(),
             total_messages: detail.total_messages,
+            last_context_usage,
         }))
     })
     .await
