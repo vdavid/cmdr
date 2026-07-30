@@ -184,3 +184,10 @@ func seedAppFixtureWorkspace(t *testing.T, root string) {
 	mustWrite(t, filepath.Join(root, "apps", "desktop", "src-tauri", "Cargo.toml"),
 		"[package]\nname = \"cmdr\"\nversion = \"0.0.0\"\n")
 }
+
+func removeOrFail(t *testing.T, path string) {
+	t.Helper()
+	if err := os.Remove(path); err != nil {
+		t.Fatalf("remove %s: %v", path, err)
+	}
+}

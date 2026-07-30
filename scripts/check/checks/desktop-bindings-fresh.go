@@ -18,7 +18,8 @@ import (
 // edited a Rust command surface without regenerating the typed IPC bindings.
 //
 // Strategy: hash the inputs that could affect the generated bindings (every
-// `.rs` file under `src-tauri/src` plus `Cargo.lock` and `Cargo.toml`) and the
+// `.rs` file under every workspace member's `src/`, every member manifest, and
+// the workspace root's `Cargo.toml` + `Cargo.lock`) and the
 // current `bindings.ts`. If both hashes match the marker from the last
 // successful run, skip the regen entirely; that's the common case and turns a
 // ~2-minute test-mode compile into a ~50 ms hash scan. Otherwise: run the
@@ -37,15 +38,22 @@ import (
 func RunDesktopBindingsFresh(ctx *CheckContext) (CheckResult, error) {
 	bindingsPath := filepath.Join(ctx.RootDir, "apps", "desktop", "src", "lib", "ipc", "bindings.ts")
 	desktopDir := filepath.Join(ctx.RootDir, "apps", "desktop")
-	rustDir := filepath.Join(desktopDir, "src-tauri")
 	markerPath := filepath.Join(cargoTargetDir(ctx.RootDir), ".bindings-fresh-marker")
+
+	// Every member, not just the app: `specta::Type` derives live wherever the data
+	// types do, and `ipc.rs` collects them transitively through command signatures,
+	// so a type edited in a crate reaches `bindings.ts` all the same.
+	members, err := WorkspaceMembers(ctx.RootDir)
+	if err != nil {
+		return CheckResult{}, err
+	}
 
 	original, err := os.ReadFile(bindingsPath)
 	if err != nil {
 		return CheckResult{}, fmt.Errorf("couldn't read %s: %w", bindingsPath, err)
 	}
 
-	inputHash, hashErr := hashBindingsInputs(rustDir)
+	inputHash, hashErr := hashBindingsInputs(ctx.RootDir, members)
 	bindingsSha := sha256Bytes(original)
 
 	if hashErr == nil && matchesBindingsMarker(markerPath, inputHash, bindingsSha) {
@@ -106,42 +114,61 @@ func RunDesktopBindingsFresh(ctx *CheckContext) (CheckResult, error) {
 	return Success(fmt.Sprintf("bindings.ts in sync (%d lines)", lineCount)), nil
 }
 
-// hashBindingsInputs returns a stable hash of every input that could affect
-// the generated bindings: all `.rs` files under `src-tauri/src` plus
-// `Cargo.lock` and `Cargo.toml`. Hashing all source files (rather than only
-// those with `#[tauri::command]` / `specta::Type`) costs ~tens of ms here and
-// removes any "we added the attr to a new file but the watch list didn't pick
-// it up" footgun.
-func hashBindingsInputs(rustDir string) (string, error) {
-	srcDir := filepath.Join(rustDir, "src")
-
-	var paths []string
-	err := filepath.Walk(srcDir, func(path string, info os.FileInfo, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if !info.Mode().IsRegular() {
-			return nil
-		}
-		if strings.HasSuffix(path, ".rs") {
-			paths = append(paths, path)
-		}
-		return nil
-	})
-	if err != nil {
-		return "", err
+// hashBindingsInputs returns a stable hash of every input that could affect the
+// generated bindings: all `.rs` files under each workspace member's `src/`, each
+// member's manifest, and the workspace root's `Cargo.toml` and `Cargo.lock`.
+// Hashing all source files (rather than only those with `#[tauri::command]` /
+// `specta::Type`) costs ~tens of ms here and removes any "we added the attr to a new
+// file but the watch list didn't pick it up" footgun.
+//
+// A required input that isn't on disk is an ERROR, not a skip. Skipping is what let
+// the lockfile go unhashed: the path contributed its name but never its bytes, so no
+// dependency bump ever invalidated the marker and nobody could see that from a green
+// run.
+func hashBindingsInputs(rootDir string, members []WorkspaceMember) (string, error) {
+	// Required: absent means the workspace isn't what we think it is.
+	required := []string{
+		filepath.Join(rootDir, "Cargo.toml"),
+		filepath.Join(rootDir, "Cargo.lock"),
 	}
-	paths = append(paths, filepath.Join(rustDir, "Cargo.lock"), filepath.Join(rustDir, "Cargo.toml"))
+	// Discovered by walking: a file that vanishes mid-walk changes the hash, which
+	// is the correct outcome, so those stay tolerant.
+	var walked []string
+
+	for _, m := range members {
+		required = append(required, m.ManifestPath)
+		err := filepath.WalkDir(m.SrcDir, func(path string, d os.DirEntry, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+			if !d.IsDir() && strings.HasSuffix(path, ".rs") {
+				walked = append(walked, path)
+			}
+			return nil
+		})
+		if err != nil && !os.IsNotExist(err) {
+			return "", err
+		}
+	}
+
+	requiredSet := make(map[string]bool, len(required))
+	for _, p := range required {
+		requiredSet[p] = true
+	}
+	paths := append(append([]string{}, required...), walked...)
 	sort.Strings(paths)
 
 	h := sha256.New()
 	for _, p := range paths {
-		rel, _ := filepath.Rel(rustDir, p)
+		rel, relErr := filepath.Rel(rootDir, p)
+		if relErr != nil {
+			rel = p
+		}
 		// Include the relative path so adding/removing files changes the hash.
-		_, _ = io.WriteString(h, rel+"\x00")
+		_, _ = io.WriteString(h, filepath.ToSlash(rel)+"\x00")
 		f, err := os.Open(p)
 		if err != nil {
-			if os.IsNotExist(err) {
+			if os.IsNotExist(err) && !requiredSet[p] {
 				continue
 			}
 			return "", err

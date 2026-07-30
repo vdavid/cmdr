@@ -5,39 +5,79 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/BurntSushi/toml"
 )
 
-// RunCfgGate verifies that Rust code properly gates macOS-only crate imports with #[cfg(target_os = "macos")].
+// RunCfgGate verifies that Rust code properly gates macOS-only crate imports with
+// #[cfg(target_os = "macos")].
+//
+// It works in (manifest, source root) PAIRS, one per workspace member, because a
+// macOS-only dependency is declared in the manifest of the crate that uses it.
+// Reading one manifest while scanning several trees would miss every macOS-only dep
+// a crate declares for itself; scanning one tree would miss every import in the
+// others. Either way the failure surfaces as a broken Linux build rather than a red
+// check — commit aabc4cb11 ("declare `libmimalloc-sys` as macOS-only so Linux builds
+// again") is what that looks like in practice.
+//
+// A member that declares itself macOS-only is skipped: its gate is at the crate
+// level, so a per-import `#[cfg]` inside it would protect nothing.
 func RunCfgGate(ctx *CheckContext) (CheckResult, error) {
-	rustSrcDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri", "src")
-	cargoPath := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri", "Cargo.toml")
-
-	// Step 1: Parse Cargo.toml and extract macOS-only crate names
-	macOSModules, err := extractMacOSCrateModules(cargoPath)
+	members, err := WorkspaceMembers(ctx.RootDir)
 	if err != nil {
-		return CheckResult{}, fmt.Errorf("failed to parse Cargo.toml: %w", err)
-	}
-	if len(macOSModules) == 0 {
-		return Success("No macOS-only dependencies found"), nil
+		return CheckResult{}, err
 	}
 
-	// Step 2: Build set of module-gated files (files inside cfg(target_os = "macos") modules)
-	gatedFiles, err := buildModuleGatedFileSet(rustSrcDir)
-	if err != nil {
-		return CheckResult{}, fmt.Errorf("failed to build module-gated file set: %w", err)
+	var violations []violation
+	gatedUseCount := 0
+	macOSCrateCount := 0
+	gatedFileCount := 0
+	scannedMembers := 0
+
+	for _, m := range members {
+		if !m.BuildsOn("linux") {
+			continue
+		}
+		if info, statErr := os.Stat(m.SrcDir); statErr != nil || !info.IsDir() {
+			continue
+		}
+
+		// Step 1: this member's own macOS-only crate names.
+		macOSModules, err := extractMacOSCrateModules(m.ManifestPath)
+		if err != nil {
+			return CheckResult{}, fmt.Errorf("failed to parse %s: %w", m.RelDir(ctx.RootDir)+"/Cargo.toml", err)
+		}
+		if len(macOSModules) == 0 {
+			continue
+		}
+		scannedMembers++
+		macOSCrateCount += len(macOSModules)
+
+		// Step 2: files inside cfg(target_os = "macos") modules are inherently gated.
+		gatedFiles, err := buildModuleGatedFileSet(m.SrcDir)
+		if err != nil {
+			return CheckResult{}, fmt.Errorf("failed to build module-gated file set: %w", err)
+		}
+		gatedFileCount += len(gatedFiles)
+
+		// Step 3: the remaining files must gate every use of a macOS-only crate.
+		memberViolations, memberGatedUses, err := scanForUngatedUses(ctx.RootDir, m.SrcDir, macOSModules, gatedFiles)
+		if err != nil {
+			return CheckResult{}, fmt.Errorf("failed to scan Rust files: %w", err)
+		}
+		violations = append(violations, memberViolations...)
+		gatedUseCount += memberGatedUses
 	}
 
-	// Step 3 & 4: Scan remaining .rs files for ungated uses of macOS-only crates
-	violations, gatedUseCount, err := scanForUngatedUses(rustSrcDir, macOSModules, gatedFiles)
-	if err != nil {
-		return CheckResult{}, fmt.Errorf("failed to scan Rust files: %w", err)
-	}
-
-	// Step 5: Report violations
 	if len(violations) > 0 {
+		sort.Slice(violations, func(i, j int) bool {
+			if violations[i].relPath == violations[j].relPath {
+				return violations[i].line < violations[j].line
+			}
+			return violations[i].relPath < violations[j].relPath
+		})
 		var sb strings.Builder
 		for _, v := range violations {
 			sb.WriteString(fmt.Sprintf("  %s:%d: use of macOS-only crate '%s' without #[cfg(target_os = \"macos\")]\n",
@@ -49,12 +89,15 @@ func RunCfgGate(ctx *CheckContext) (CheckResult, error) {
 		)
 	}
 
-	// Step 6: Success
+	if scannedMembers == 0 {
+		return Success("No macOS-only dependencies found"), nil
+	}
 	return Success(fmt.Sprintf(
-		"%d gated %s of %d macOS-only %s verified (%d %s skipped via module-level gating)",
+		"%d gated %s of %d macOS-only %s verified across %d workspace %s (%d %s skipped via module-level gating)",
 		gatedUseCount, Pluralize(gatedUseCount, "use", "uses"),
-		len(macOSModules), Pluralize(len(macOSModules), "crate", "crates"),
-		len(gatedFiles), Pluralize(len(gatedFiles), "file", "files"),
+		macOSCrateCount, Pluralize(macOSCrateCount, "crate", "crates"),
+		scannedMembers, Pluralize(scannedMembers, "member", "members"),
+		gatedFileCount, Pluralize(gatedFileCount, "file", "files"),
 	)), nil
 }
 
@@ -199,7 +242,7 @@ var usePattern = regexp.MustCompile(`^\s*(?:pub(?:\s*\((?:crate|super)\))?\s+)?u
 // scanForUngatedUses walks all .rs files, skipping gated files, and checks that
 // uses of macOS-only crates are properly gated. Returns violations and the count of
 // properly gated uses found.
-func scanForUngatedUses(srcDir string, macOSModules map[string]bool, gatedFiles map[string]bool) ([]violation, int, error) {
+func scanForUngatedUses(rootDir, srcDir string, macOSModules map[string]bool, gatedFiles map[string]bool) ([]violation, int, error) {
 	var violations []violation
 	gatedUseCount := 0
 
@@ -236,10 +279,6 @@ func scanForUngatedUses(srcDir string, macOSModules map[string]bool, gatedFiles 
 			if hasMacOSCfgAttribute(lines, i) {
 				gatedUseCount++
 			} else {
-				// Compute relative path from the repo root's grandparent for display
-				// We want paths like apps/desktop/src-tauri/src/foo.rs
-				// srcDir is <root>/apps/desktop/src-tauri/src, so go up 4 levels to get root
-				rootDir := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(srcDir))))
 				relPath, relErr := filepath.Rel(rootDir, path)
 				if relErr != nil {
 					relPath = path

@@ -382,8 +382,18 @@ func TestIsMacOSGateAttribute(t *testing.T) {
 
 // --- RunCfgGate integration tests ---
 
+// seedCfgGateWorkspaceRoot writes only the ROOT manifest. Each fixture below
+// supplies the app member's own Cargo.toml, since that's what carries the
+// macOS-only dependencies under test.
+func seedCfgGateWorkspaceRoot(t *testing.T, root string) {
+	t.Helper()
+	mustWrite(t, filepath.Join(root, "Cargo.toml"),
+		"[workspace]\nmembers = [\"apps/desktop/src-tauri\"]\nresolver = \"2\"\n")
+}
+
 func TestRunCfgGate_ProperlyGatedPasses(t *testing.T) {
 	root := t.TempDir()
+	seedCfgGateWorkspaceRoot(t, root)
 	srcDir := filepath.Join(root, "apps", "desktop", "src-tauri", "src")
 	if err := os.MkdirAll(srcDir, 0755); err != nil {
 		t.Fatal(err)
@@ -434,6 +444,7 @@ fn main() {}
 
 func TestRunCfgGate_UngatedReportsViolation(t *testing.T) {
 	root := t.TempDir()
+	seedCfgGateWorkspaceRoot(t, root)
 	srcDir := filepath.Join(root, "apps", "desktop", "src-tauri", "src")
 	if err := os.MkdirAll(srcDir, 0755); err != nil {
 		t.Fatal(err)
@@ -483,6 +494,7 @@ fn main() {}
 
 func TestRunCfgGate_ModuleGatedFileSkipped(t *testing.T) {
 	root := t.TempDir()
+	seedCfgGateWorkspaceRoot(t, root)
 	srcDir := filepath.Join(root, "apps", "desktop", "src-tauri", "src")
 	if err := os.MkdirAll(srcDir, 0755); err != nil {
 		t.Fatal(err)
@@ -534,6 +546,7 @@ pub fn do_macos_stuff() {}
 
 func TestRunCfgGate_DirectoryModuleGated(t *testing.T) {
 	root := t.TempDir()
+	seedCfgGateWorkspaceRoot(t, root)
 	srcDir := filepath.Join(root, "apps", "desktop", "src-tauri", "src")
 	macosModDir := filepath.Join(srcDir, "macos_mod")
 	if err := os.MkdirAll(macosModDir, 0755); err != nil {
@@ -593,6 +606,7 @@ pub fn inner_fn() {}
 
 func TestRunCfgGate_NoMacOSDepsEarlyReturn(t *testing.T) {
 	root := t.TempDir()
+	seedCfgGateWorkspaceRoot(t, root)
 	srcDir := filepath.Join(root, "apps", "desktop", "src-tauri", "src")
 	if err := os.MkdirAll(srcDir, 0755); err != nil {
 		t.Fatal(err)
@@ -628,6 +642,7 @@ serde = "1.0"
 
 func TestRunCfgGate_MissingCargoToml(t *testing.T) {
 	root := t.TempDir()
+	seedCfgGateWorkspaceRoot(t, root)
 	srcDir := filepath.Join(root, "apps", "desktop", "src-tauri", "src")
 	if err := os.MkdirAll(srcDir, 0755); err != nil {
 		t.Fatal(err)
@@ -639,8 +654,8 @@ func TestRunCfgGate_MissingCargoToml(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for missing Cargo.toml")
 	}
-	if !strings.Contains(err.Error(), "failed to parse Cargo.toml") {
-		t.Errorf("expected parse error, got: %v", err)
+	if !strings.Contains(err.Error(), "couldn't read") || !strings.Contains(err.Error(), "Cargo.toml") {
+		t.Errorf("expected an unreadable-manifest error naming the file, got: %v", err)
 	}
 }
 
@@ -810,7 +825,7 @@ fn main() {}
 	macOSModules := map[string]bool{"core_foundation": true}
 	gatedFiles := map[string]bool{}
 
-	violations, gatedCount, err := scanForUngatedUses(dir, macOSModules, gatedFiles)
+	violations, gatedCount, err := scanForUngatedUses(dir, dir, macOSModules, gatedFiles)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -843,7 +858,7 @@ fn main() {}
 	macOSModules := map[string]bool{"core_foundation": true}
 	gatedFiles := map[string]bool{}
 
-	violations, gatedCount, err := scanForUngatedUses(dir, macOSModules, gatedFiles)
+	violations, gatedCount, err := scanForUngatedUses(dir, dir, macOSModules, gatedFiles)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -868,7 +883,7 @@ func TestScanForUngatedUses_SkipsGatedFiles(t *testing.T) {
 	macOSModules := map[string]bool{"core_foundation": true}
 	gatedFiles := map[string]bool{filePath: true}
 
-	violations, _, err := scanForUngatedUses(dir, macOSModules, gatedFiles)
+	violations, _, err := scanForUngatedUses(dir, dir, macOSModules, gatedFiles)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -890,7 +905,7 @@ use tokio::runtime;
 	macOSModules := map[string]bool{"core_foundation": true}
 	gatedFiles := map[string]bool{}
 
-	violations, gatedCount, err := scanForUngatedUses(dir, macOSModules, gatedFiles)
+	violations, gatedCount, err := scanForUngatedUses(dir, dir, macOSModules, gatedFiles)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -972,5 +987,85 @@ impl Foo {
 	// which recursively checks line 1 (impl Foo {), which has the cfg on line 0.
 	if !hasMacOSCfgAttribute(lines, 3) {
 		t.Error("expected true for use inside nested cfg-gated block")
+	}
+}
+
+// --- Workspace coverage ---
+//
+// The check derives (manifest, source root) PAIRS from the workspace members. A
+// macOS-only crate is declared in the manifest of the crate that uses it, so
+// reading the app's manifest while scanning a crate's tree — or scanning only the
+// app's tree — leaves the crate's ungated imports invisible. The failure mode is a
+// broken Linux build, not a red check: commit aabc4cb11 ("declare `libmimalloc-sys`
+// as macOS-only so Linux builds again") is what it looks like in practice.
+
+// writeCfgGateWorkspace lays out a two-member workspace: the app with no macOS
+// deps, and a crate whose own manifest declares one.
+func writeCfgGateWorkspace(t *testing.T, crateUse string) string {
+	t.Helper()
+	root := t.TempDir()
+
+	mustWrite(t, filepath.Join(root, "Cargo.toml"),
+		"[workspace]\nmembers = [\"apps/desktop/src-tauri\", \"crates/cmdr-index\"]\nresolver = \"2\"\n")
+
+	appDir := filepath.Join(root, "apps", "desktop", "src-tauri")
+	mustWrite(t, filepath.Join(appDir, "Cargo.toml"), "[package]\nname = \"cmdr\"\nversion = \"0.0.0\"\n")
+	mustWrite(t, filepath.Join(appDir, "src", "lib.rs"), "mod nothing;\n")
+
+	crateDir := filepath.Join(root, "crates", "cmdr-index")
+	mustWrite(t, filepath.Join(crateDir, "Cargo.toml"), `[package]
+name = "cmdr-index"
+version = "0.0.0"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-vision = "0.3.2"
+`)
+	mustWrite(t, filepath.Join(crateDir, "src", "lib.rs"), "mod vision;\n")
+	mustWrite(t, filepath.Join(crateDir, "src", "vision.rs"), crateUse)
+	return root
+}
+
+func TestRunCfgGate_FlagsAnUngatedMacOSImportInACrate(t *testing.T) {
+	root := writeCfgGateWorkspace(t, "use objc2_vision::VNRecognizeTextRequest;\n\nfn main() {}\n")
+
+	_, err := RunCfgGate(&CheckContext{RootDir: root})
+	if err == nil {
+		t.Fatal("expected the ungated macOS import in crates/cmdr-index to fail the check")
+	}
+	if !strings.Contains(err.Error(), "objc2_vision") {
+		t.Errorf("expected the offending crate to be named, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), filepath.Join("crates", "cmdr-index", "src", "vision.rs")) {
+		t.Errorf("expected a repo-relative path into the crate, got: %v", err)
+	}
+}
+
+func TestRunCfgGate_AcceptsAGatedMacOSImportInACrate(t *testing.T) {
+	root := writeCfgGateWorkspace(t,
+		"#[cfg(target_os = \"macos\")]\nuse objc2_vision::VNRecognizeTextRequest;\n\nfn main() {}\n")
+
+	result, err := RunCfgGate(&CheckContext{RootDir: root})
+	if err != nil {
+		t.Fatalf("expected success, got error: %v", err)
+	}
+	if !strings.Contains(result.Message, "1 gated use") {
+		t.Errorf("expected the crate's gated use to be counted, got: %s", result.Message)
+	}
+}
+
+// A member that declares itself macOS-only has its gate at the crate level, so
+// requiring a per-import `#[cfg]` inside it would be asking for a second gate that
+// protects nothing.
+func TestRunCfgGate_SkipsAMemberThatIsItselfMacOSOnly(t *testing.T) {
+	root := writeCfgGateWorkspace(t, "use objc2_vision::VNRecognizeTextRequest;\n\nfn main() {}\n")
+	manifest := filepath.Join(root, "crates", "cmdr-index", "Cargo.toml")
+	body, err := os.ReadFile(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustWrite(t, manifest, string(body)+"\n[package.metadata.cmdr]\nplatforms = [\"macos\"]\n")
+
+	if _, err := RunCfgGate(&CheckContext{RootDir: root}); err != nil {
+		t.Fatalf("a macOS-only member needs no per-import gate, got: %v", err)
 	}
 }
