@@ -1,4 +1,8 @@
-//! File entry metadata types and helper functions.
+//! The entry a listing yields: [`FileEntry`], its Finder tags, and the icon-key
+//! classifier its constructor runs.
+//!
+//! Every backend's `list_directory` returns these, and they cross the IPC
+//! boundary verbatim, so the shape here is the frontend's contract.
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -7,12 +11,12 @@ use std::sync::{LazyLock, RwLock};
 use uzers::{get_group_by_gid, get_user_by_uid};
 
 /// Cache for uid→username resolution.
-pub(crate) static OWNER_CACHE: LazyLock<RwLock<HashMap<u32, String>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
+static OWNER_CACHE: LazyLock<RwLock<HashMap<u32, String>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
 /// Cache for gid→groupname resolution.
-pub(crate) static GROUP_CACHE: LazyLock<RwLock<HashMap<u32, String>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
+static GROUP_CACHE: LazyLock<RwLock<HashMap<u32, String>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
 
 /// Resolves a uid to a username, with caching.
-pub(crate) fn get_owner_name(uid: u32) -> String {
+pub fn get_owner_name(uid: u32) -> String {
     // Try read lock first
     if let Ok(cache) = OWNER_CACHE.read()
         && let Some(name) = cache.get(&uid)
@@ -30,7 +34,7 @@ pub(crate) fn get_owner_name(uid: u32) -> String {
 }
 
 /// Resolves a gid to a group name, with caching.
-pub(crate) fn get_group_name(gid: u32) -> String {
+pub fn get_group_name(gid: u32) -> String {
     if let Ok(cache) = GROUP_CACHE.read()
         && let Some(name) = cache.get(&gid)
     {
@@ -66,7 +70,7 @@ pub(crate) fn get_group_name(gid: u32) -> String {
 /// Symlinks (even to a special location) keep their `symlink-dir` icon: the link
 /// badge is the salient signal, and following a symlink to classify it would
 /// cost a syscall per entry.
-pub(crate) fn get_icon_id(is_dir: bool, is_symlink: bool, name: &str, path: &str) -> String {
+pub fn get_icon_id(is_dir: bool, is_symlink: bool, name: &str, path: &str) -> String {
     if is_symlink {
         // Distinguish symlinks to directories vs files
         return if is_dir {
@@ -79,7 +83,7 @@ pub(crate) fn get_icon_id(is_dir: bool, is_symlink: bool, name: &str, path: &str
         if let Some(special_id) = crate::icons::special_folders::icon_id_for_path(Path::new(path)) {
             return special_id;
         }
-        if let Some(pkg_id) = crate::icons::per_path::package_icon_id(name, path) {
+        if let Some(pkg_id) = crate::icons::packages::package_icon_id(name, path) {
             return pkg_id;
         }
         return "dir".to_string();
@@ -101,9 +105,13 @@ pub(crate) fn get_icon_id(is_dir: bool, is_symlink: bool, name: &str, path: &str
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FileEntry {
+    /// The entry's own file name (the last path component).
     pub name: String,
+    /// The entry's full path, in the namespace its volume reports.
     pub path: String,
+    /// `true` for a directory (and for a symlink the backend resolved to one).
     pub is_directory: bool,
+    /// `true` when the entry itself is a symlink.
     pub is_symlink: bool,
     /// `true` when this entry is a file whose extension is a supported browsable
     /// archive (zip today). Computed extension-only at listing time — no per-file
@@ -113,6 +121,7 @@ pub struct FileEntry {
     /// layer. A directory named `foo.zip` is NOT an archive (its `is_directory`
     /// wins), so this is always `false` for directories.
     pub is_archive: bool,
+    /// Logical size in bytes. `None` when the backend didn't stat it.
     pub size: Option<u64>,
     /// Physical size on disk in bytes (st_blocks * 512 on Unix, same as size on other platforms)
     pub physical_size: Option<u64>,
@@ -125,15 +134,21 @@ pub struct FileEntry {
     /// hardlinks, so `None` is the safe default — the dedup loop just treats
     /// every entry as a unique inode.
     pub inode: Option<u64>,
+    /// Last-modified time, Unix seconds.
     pub modified_at: Option<u64>,
+    /// Creation time, Unix seconds.
     pub created_at: Option<u64>,
     /// When the file was added to its current directory (macOS only)
     pub added_at: Option<u64>,
     /// When the file was last opened (macOS only)
     pub opened_at: Option<u64>,
+    /// POSIX mode bits. `0` when the backend has no permission concept.
     pub permissions: u32,
+    /// Owning user name, resolved from the uid. Empty when unknown.
     pub owner: String,
+    /// Owning group name, resolved from the gid. Empty when unknown.
     pub group: String,
+    /// The icon key the frontend resolves to a real image. See [`get_icon_id`].
     pub icon_id: String,
     /// Whether extended metadata (addedAt, openedAt) has been loaded
     /// Always true for legacy list_directory(), false for list_directory_core()
@@ -192,13 +207,12 @@ pub struct FileEntry {
 
 impl FileEntry {
     /// Creates a `FileEntry` with the four essential fields set and everything else defaulted.
-    pub(crate) fn new(name: String, path: String, is_dir: bool, is_symlink: bool) -> Self {
+    pub fn new(name: String, path: String, is_dir: bool, is_symlink: bool) -> Self {
         Self {
             icon_id: get_icon_id(is_dir, is_symlink, &name, &path),
             // Extension-only, and never for a directory (a folder named
             // `foo.zip` is browsed as itself, not as an archive).
-            is_archive: !is_dir
-                && crate::file_system::volume::backends::archive::has_supported_archive_extension(&name),
+            is_archive: !is_dir && crate::archive_format::has_supported_archive_extension(&name),
             name,
             path,
             is_directory: is_dir,
@@ -321,7 +335,10 @@ mod icon_id_tests {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct TagRef {
+    /// The tag's name as Finder shows it.
     pub name: String,
+    /// Finder's color index: `0` none, `1` grey, `2` green, `3` purple, `4` blue,
+    /// `5` yellow, `6` red, `7` orange.
     pub color: u8,
 }
 

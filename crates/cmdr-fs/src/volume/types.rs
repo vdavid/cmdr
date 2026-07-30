@@ -17,7 +17,9 @@ use std::path::PathBuf;
 /// single decode pass for byte-carrying files.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExtractedFile {
+    /// Full source path, in the source volume's namespace.
     pub source_path: PathBuf,
+    /// Uncompressed size in bytes.
     pub size: u64,
 }
 
@@ -90,8 +92,11 @@ impl std::fmt::Display for LaneKey {
 /// entry count for "Loading N entries…" displays read `files + dirs`.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct ListingProgress {
+    /// Files enumerated so far, directories excluded.
     pub files: usize,
+    /// Directories enumerated so far.
     pub dirs: usize,
+    /// Sum of file sizes so far; directories contribute 0.
     pub bytes: u64,
 }
 
@@ -111,14 +116,21 @@ pub enum MutationEvent {
     Deleted(String),
     /// A file or directory was modified. Contains the entry name.
     Modified(String),
-    /// A file or directory was renamed within the same parent. Contains old and new names.
-    Renamed { from: String, to: String },
+    /// A file or directory was renamed within the same parent.
+    Renamed {
+        /// The name before the rename.
+        from: String,
+        /// The name after it.
+        to: String,
+    },
 }
 
 /// Result of scanning a path for copy operation.
 #[derive(Debug, Clone)]
 pub struct CopyScanResult {
+    /// Files found in the scanned subtree.
     pub file_count: usize,
+    /// Directories found in it.
     pub dir_count: usize,
     /// Total size in bytes — the **write footprint**. Counts every file at
     /// full size, including each hardlink, because hardlinks don't survive a
@@ -204,6 +216,7 @@ pub struct SpaceInfo {
 /// Information about a source item for conflict scanning.
 #[derive(Debug, Clone)]
 pub struct SourceItemInfo {
+    /// The item's own file name.
     pub name: String,
     /// In bytes.
     pub size: u64,
@@ -218,8 +231,11 @@ pub struct SourceItemInfo {
 /// Error type for volume operations.
 #[derive(Debug, Clone)]
 pub enum VolumeError {
+    /// No such path. Carries the path.
     NotFound(String),
+    /// The OS refused access. Carries the path.
     PermissionDenied(String),
+    /// The destination already exists. Carries the path.
     AlreadyExists(String),
     /// Not supported by this volume type.
     NotSupported,
@@ -237,6 +253,7 @@ pub enum VolumeError {
     ReadOnly(String),
     /// Device storage is full.
     StorageFull {
+        /// What the backend reported, for the technical-details panel.
         message: String,
     },
     /// Connection timed out.
@@ -257,8 +274,12 @@ pub enum VolumeError {
     /// Carries the destination folder path for a destination-correct message if
     /// the retry also fails. MTP-only today.
     StaleDestinationHandle(String),
+    /// Anything the backend couldn't classify further. The classifier
+    /// re-dispatches on `raw_os_error` when one is present.
     IoError {
+        /// What the OS or backend reported, for the technical-details panel.
         message: String,
+        /// The errno behind it, when there was one.
         raw_os_error: Option<i32>,
     },
     /// A password-protected archive needs a password to browse (header-encrypted
@@ -269,6 +290,8 @@ pub enum VolumeError {
     /// via `set_archive_password` and retries. Carries no path — the failing path
     /// is the one the caller was reading.
     NeedsPassword {
+        /// `false` when no password has been tried yet, `true` when the supplied
+        /// one was rejected.
         wrong_attempt: bool,
     },
     /// Structured git-layer failure.
@@ -279,7 +302,7 @@ pub enum VolumeError {
     /// kind, no baked prose) without parsing strings; the FE renders the
     /// git-specific copy. Built by the volume hooks in `file_system::git::mod`
     /// (`try_route_listing`, `try_route_metadata`, `try_open_blob_stream`).
-    FriendlyGit(crate::file_system::git::friendly::FriendlyGitError),
+    FriendlyGit(crate::volume::friendly_error::git::FriendlyGitError),
 }
 
 impl std::fmt::Display for VolumeError {

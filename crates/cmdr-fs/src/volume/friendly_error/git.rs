@@ -20,8 +20,10 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-use crate::file_system::volume::friendly_error::ErrorCategory;
+use crate::volume::friendly_error::ErrorCategory;
 
+/// What went wrong in the git layer. The frontend renders the words from its
+/// parallel factory; nothing here is user-facing prose.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum FriendlyGitErrorKind {
@@ -90,9 +92,12 @@ impl FriendlyGitErrorKind {
     }
 }
 
+/// A classified git failure: the [`FriendlyGitErrorKind`], the path it was
+/// about, and an optional raw message for the technical-details panel.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendlyGitError {
+    /// What went wrong.
     pub kind: FriendlyGitErrorKind,
     /// Repo path or path under inspection, for log triage.
     pub path: String,
@@ -103,6 +108,7 @@ pub struct FriendlyGitError {
 }
 
 impl FriendlyGitError {
+    /// Builds one from a kind and the path under inspection.
     pub fn new(kind: FriendlyGitErrorKind, path: impl Into<String>) -> Self {
         Self {
             kind,
@@ -111,6 +117,8 @@ impl FriendlyGitError {
         }
     }
 
+    /// Builds one from a kind plus a raw message, for a failure with no single
+    /// path to name.
     pub fn with_source(kind: FriendlyGitErrorKind, raw: impl Into<String>, _err: impl StdError) -> Self {
         Self {
             kind,
@@ -119,6 +127,8 @@ impl FriendlyGitError {
         }
     }
 
+    /// Builds a [`FriendlyGitErrorKind::CorruptRepo`] carrying the underlying
+    /// gix error, the shape most gix open/parse failures take.
     pub fn corrupt(path: &std::path::Path, err: &impl StdError) -> Self {
         Self {
             kind: FriendlyGitErrorKind::CorruptRepo,
@@ -176,8 +186,8 @@ mod tests {
 
     #[test]
     fn typed_variant_preserves_path_with_colon_chars() {
-        use crate::file_system::volume::VolumeError;
-        use crate::file_system::volume::friendly_error::{ListingErrorReason, listing_error_from_volume_error};
+        use crate::volume::VolumeError;
+        use crate::volume::friendly_error::{ListingErrorReason, listing_error_from_volume_error};
 
         // macOS resource fork style, Windows drive letter, a stash spec, and
         // a path with embedded colons all need to ride through the typed

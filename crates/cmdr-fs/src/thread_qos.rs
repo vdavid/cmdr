@@ -30,13 +30,19 @@
 //! indexing live/replay loops run as tokio tasks and are deliberately NOT lowered here
 //! for exactly this reason.
 //!
-//! ## No-op under `cfg(test)`
+//! ## No-op in test builds
 //!
-//! In the crate's own test builds this is a no-op. Unit tests run massively parallel
-//! under nextest (roughly one process per core), so lowering a heavy background thread
-//! there can starve it past a per-test timeout, with no UI to protect and no production
-//! meaning. Production and dev builds (neither is `cfg(test)`) get the real class. The FFI
-//! itself is still verified directly by this module's macOS test.
+//! In any test build this is a no-op. Unit tests run massively parallel under nextest
+//! (roughly one process per core), so lowering a heavy background thread there can starve
+//! it past a per-test timeout, with no UI to protect and no production meaning.
+//!
+//! The condition is `cfg(test)` **or** the `testing` feature, and the feature half is
+//! load-bearing: a consumer's `#[test]`s compile this crate as a plain dependency, where
+//! `cfg(test)` is NOT set, so `cfg(test)` alone would silently start applying the real
+//! QoS to every caller's tests. Consumers switch the feature on through a
+//! dev-dependency, which keeps it off in production and dev builds — those get the real
+//! class. The FFI itself is still verified directly by this module's macOS test, which
+//! calls the inner fn.
 
 /// Scheduling tier for a dedicated background thread. Maps to a macOS `qos_class_t`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -50,18 +56,26 @@ pub enum QosClass {
 /// Lowers the calling thread's scheduling priority to `class`.
 ///
 /// See the module docs for the call-site discipline (dedicated threads only) and the
-/// `cfg(test)` no-op. On non-macOS this is a no-op.
+/// test-build no-op. On non-macOS this is a no-op.
 pub fn set_current_thread_qos(class: QosClass) {
-    // Real work only on macOS in non-test builds. See the module docs for why tests skip it.
-    #[cfg(all(target_os = "macos", not(test)))]
+    // Real work only on macOS in non-test builds. See the module docs for why tests skip
+    // it, and why the `testing` feature has to be in the condition alongside `test`.
+    #[cfg(all(target_os = "macos", not(any(test, feature = "testing"))))]
     set_thread_qos_macos(class);
-    #[cfg(not(all(target_os = "macos", not(test))))]
+    #[cfg(not(all(target_os = "macos", not(any(test, feature = "testing")))))]
     let _ = class;
 }
 
 /// Sets the calling thread's macOS QoS class via `pthread_set_qos_class_self_np`. The real
 /// FFI, shared by the production path and the test that verifies it.
 #[cfg(target_os = "macos")]
+#[cfg_attr(
+    feature = "testing",
+    allow(
+        dead_code,
+        reason = "a consumer's test build no-ops the public wrapper, and this crate's own FFI test (which does call this) runs under `cfg(test)`, not the feature"
+    )
+)]
 fn set_thread_qos_macos(class: QosClass) {
     let qos = match class {
         QosClass::Utility => libc::qos_class_t::QOS_CLASS_UTILITY,
@@ -99,7 +113,7 @@ mod tests {
     }
 
     /// The FFI must move the current thread to the requested class. Calls
-    /// `set_thread_qos_macos` directly (the public wrapper is a no-op under `cfg(test)`),
+    /// `set_thread_qos_macos` directly (the public wrapper is a no-op in test builds),
     /// on its own spawned thread so the harness thread's QoS isn't mutated for other tests.
     #[test]
     fn sets_utility_class_on_current_thread() {

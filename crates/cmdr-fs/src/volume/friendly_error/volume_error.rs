@@ -12,7 +12,7 @@ use std::path::Path;
 
 use super::errno::listing_error_from_errno;
 use super::{ErrorCategory, ListingError, ListingErrorReason, kinds};
-use crate::file_system::volume::VolumeError;
+use crate::volume::VolumeError;
 
 /// Converts a `VolumeError` into a typed, word-free `ListingError`.
 ///
@@ -57,6 +57,13 @@ pub fn archive_needs_password_listing_error(wrong_attempt: bool) -> ListingError
     }
 }
 
+/// The entry point: classifies any [`VolumeError`] into a typed
+/// [`ListingError`], dispatching to the errno table when the variant is a raw
+/// `IoError` carrying one.
+///
+/// The git pass-through matches FIRST and is never provider-enriched, so a git
+/// failure keeps its own kind instead of being swallowed by the generic I/O
+/// fallback.
 pub fn listing_error_from_volume_error(err: &VolumeError, path: &Path) -> ListingError {
     let path_display = path.display().to_string();
     let raw = err.to_string();
@@ -79,9 +86,7 @@ pub fn listing_error_from_volume_error(err: &VolumeError, path: &Path) -> Listin
             // or a network volume), surface the dedicated reason that points to both
             // Full Disk Access AND the per-folder Files & Folders pane. Otherwise
             // fall through to the generic permission-denied reason.
-            if crate::restricted_paths::tcc_paths::is_potentially_tcc_restricted(path)
-                || crate::restricted_paths::tcc_paths::is_network_volume_path(path)
-            {
+            if crate::tcc_paths::is_potentially_tcc_restricted(path) || crate::tcc_paths::is_network_volume_path(path) {
                 kinds::tcc_restricted(&path_display, raw)
             } else {
                 kinds::permission_denied(&path_display, raw)

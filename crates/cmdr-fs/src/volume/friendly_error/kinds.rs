@@ -31,7 +31,7 @@ pub(super) fn not_found(path_display: &str, raw_detail: String) -> ListingError 
 
 /// Permission-denied on a path that macOS guards via TCC (Downloads, Documents,
 /// Desktop, Pictures, Movies, Music, iCloud Drive, FileProvider domains, network
-/// volumes, etc.; see `crate::restricted_paths::tcc_paths`). The user has two
+/// volumes, etc.; see `crate::tcc_paths`). The user has two
 /// distinct escape hatches (Full Disk Access for everything, or per-folder
 /// Files & Folders for just this one), so it carries its own `reason`.
 pub(super) fn tcc_restricted(path_display: &str, raw_detail: String) -> ListingError {

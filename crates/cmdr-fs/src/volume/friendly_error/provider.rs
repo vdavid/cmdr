@@ -20,22 +20,39 @@ use super::ListingError;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum Provider {
+    /// Dropbox.
     Dropbox,
+    /// Google Drive.
     GoogleDrive,
+    /// Microsoft OneDrive.
     OneDrive,
+    /// Box.
     Box,
+    /// pCloud, mounted through its own client.
     PCloud,
+    /// Nextcloud.
     Nextcloud,
+    /// Synology Drive.
     SynologyDrive,
+    /// Tresorit.
     Tresorit,
+    /// Proton Drive.
     ProtonDrive,
+    /// Sync.com.
     Sync,
+    /// Egnyte.
     Egnyte,
+    /// MacDroid, which mounts an Android device as a volume.
     MacDroid,
+    /// iCloud Drive.
     ICloud,
+    /// pCloud's FUSE mount, as distinct from its File Provider one.
     PCloudFuse,
+    /// A macFUSE mount of some other kind.
     MacFuse,
+    /// A mounted VeraCrypt container.
     VeraCrypt,
+    /// A CommanderOne / CloudMounter volume.
     CmVolumes,
     /// Any unrecognized dir under `~/Library/CloudStorage/`.
     GenericCloudStorage,
@@ -166,8 +183,8 @@ mod tests {
     use super::*;
     use std::path::PathBuf;
 
-    use crate::file_system::volume::VolumeError;
-    use crate::file_system::volume::friendly_error::listing_error_from_volume_error;
+    use crate::volume::VolumeError;
+    use crate::volume::friendly_error::listing_error_from_volume_error;
 
     // ── Provider detection tests ────────────────────────────────────────
 

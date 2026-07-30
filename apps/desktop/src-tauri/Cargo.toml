@@ -16,7 +16,7 @@ workspace = true
 
 [features]
 # Playwright E2E testing plugin (socket bridge to real webview). Never enable in production builds.
-playwright-e2e = ["dep:tauri-plugin-playwright"]
+playwright-e2e = ["dep:tauri-plugin-playwright", "cmdr-fs/playwright-e2e"]
 # Virtual MTP device for E2E testing (registers a fake Android device). Never enable in production builds.
 virtual-mtp = ["mtp-rs/virtual-device"]
 # Virtual SMB hosts for E2E testing (injects synthetic network hosts). Never enable in production builds.
@@ -45,6 +45,10 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+# Filesystem vocabulary and host primitives shared across the workspace: the
+# `Volume` trait and its data types, `FileEntry`, the typed error classification,
+# thread QoS, process memory, poison-free locking. No Tauri, no index.
+cmdr-fs = { path = "../../../crates/cmdr-fs" }
 tauri = { version = "2", features = ["macos-private-api"] }
 tauri-plugin-opener = "2"
 tauri-plugin-mcp-bridge = "0.12"
@@ -59,7 +63,6 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 notify = "8"
 dirs = "6"
-uzers = "0.12.2"
 image = "0.25.10"
 # CLIP byte-pair text tokenizer (ctx 77) for the semantic-search query path (cross-platform,
 # pure Rust — the query path isn't macOS-gated). Bundles the OpenAI CLIP BPE vocab; MIT,
@@ -261,13 +264,6 @@ urlencoding = "2.1.3"
 semver = "1"
 
 [target.'cfg(target_os = "macos")'.dependencies]
-# The raw mimalloc FFI, for `mi_process_info` (how many bytes OUR allocator has committed).
-# Needed because mimalloc is not a registered macOS malloc zone, so `malloc_zone_statistics`
-# can't see the Rust heap at all: `process_memory.rs` explains it. The `mimalloc` wrapper
-# doesn't re-export its `ffi` module, hence the direct dep; 0.1.49 is what `mimalloc` 0.1.52
-# already resolves to (latest stable, MIT). macOS-only: `query_mimalloc_heap` is the sole
-# caller and is macOS-gated, so a non-macOS build would trip `unused_crate_dependencies`.
-libmimalloc-sys = { version = "0.1.49", features = ["extended"] }
 file_icon_provider = "1.0.0"
 core-foundation = "0.10.1"
 core-services = "1.0.0"
@@ -348,6 +344,9 @@ objc2-core-ml = { version = "0.3.2", features = [
 # make `cargo clippy --all-targets` silently SKIP them, and an unlinted,
 # never-compiled benchmark harness rots before the next person needs it.
 cmdr = { path = ".", features = ["testing"] }
+# Same crate as the normal dependency above, with the test-wait helpers
+# (`cmdr_fs::testing::wait_until`) switched on for dev targets only.
+cmdr-fs = { path = "../../../crates/cmdr-fs", features = ["testing"] }
 # SMB integration tests hash source and destination bytes to catch pipeline
 # corruption (dropped/duplicated chunks, concurrency bleed) that a simple
 # size-check or `Vec<u8>` equality would either miss or report uselessly

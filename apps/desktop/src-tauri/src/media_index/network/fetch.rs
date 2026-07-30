@@ -443,8 +443,8 @@ mod tests {
     /// exact shape of the enrichment pass's `spawn_blocking` / fetcher threads.
     #[test]
     fn volume_fetch_reads_bytes_through_the_volume_trait() {
+        use crate::file_system::volume::InMemoryVolume;
         use crate::file_system::volume::Volume;
-        use crate::file_system::volume::backends::InMemoryVolume;
         let rt = tokio::runtime::Runtime::new().expect("runtime");
         let volume = std::sync::Arc::new(InMemoryVolume::new("test"));
         rt.block_on(volume.create_file(std::path::Path::new("/DCIM/a.jpg"), b"direct bytes"))
@@ -465,7 +465,7 @@ mod tests {
     /// WITHOUT touching the wire.
     #[test]
     fn volume_fetch_classifies_not_found_and_oversize_hint() {
-        use crate::file_system::volume::backends::InMemoryVolume;
+        use crate::file_system::volume::InMemoryVolume;
         let rt = tokio::runtime::Runtime::new().expect("runtime");
         let volume = std::sync::Arc::new(InMemoryVolume::new("test"));
         let fetcher = VolumeByteFetcher::new(volume, rt.handle().clone());

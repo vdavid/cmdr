@@ -92,9 +92,13 @@ export const commands = {
   getFileAt: (listingId: string, index: number, includeHidden: boolean) =>
     typedError<
       {
+        // The entry's own file name (the last path component).
         name: string
+        // The entry's full path, in the namespace its volume reports.
         path: string
+        // `true` for a directory (and for a symlink the backend resolved to one).
         isDirectory: boolean
+        // `true` when the entry itself is a symlink.
         isSymlink: boolean
         /**
          *  `true` when this entry is a file whose extension is a supported browsable
@@ -106,6 +110,7 @@ export const commands = {
          *  wins), so this is always `false` for directories.
          */
         isArchive: boolean
+        // Logical size in bytes. `None` when the backend didn't stat it.
         size: number | null
         // Physical size on disk in bytes (st_blocks * 512 on Unix, same as size on other platforms)
         physicalSize: number | null
@@ -120,15 +125,21 @@ export const commands = {
          *  every entry as a unique inode.
          */
         inode: number | null
+        // Last-modified time, Unix seconds.
         modifiedAt: number | null
+        // Creation time, Unix seconds.
         createdAt: number | null
         // When the file was added to its current directory (macOS only)
         addedAt: number | null
         // When the file was last opened (macOS only)
         openedAt: number | null
+        // POSIX mode bits. `0` when the backend has no permission concept.
         permissions: number
+        // Owning user name, resolved from the uid. Empty when unknown.
         owner: string
+        // Owning group name, resolved from the gid. Empty when unknown.
         group: string
+        // The icon key the frontend resolves to a real image. See [`get_icon_id`].
         iconId: string
         /**
          *  Whether extended metadata (addedAt, openedAt) has been loaded
@@ -4277,6 +4288,7 @@ export type ErrorActionKind =
   // User should grant Full Disk Access in macOS System Settings → Privacy & Security.
   'open_privacy_settings'
 
+// How serious a failure is, and therefore how the frontend styles it.
 export type ErrorCategory =
   // Might work if you retry (timeouts, temporary resource issues).
   | 'transient'
@@ -4408,9 +4420,13 @@ export type FileEncoding =
  *  specta's `validate_exported_command` accepts the type in Unified mode.
  */
 export type FileEntry = {
+  // The entry's own file name (the last path component).
   name: string
+  // The entry's full path, in the namespace its volume reports.
   path: string
+  // `true` for a directory (and for a symlink the backend resolved to one).
   isDirectory: boolean
+  // `true` when the entry itself is a symlink.
   isSymlink: boolean
   /**
    *  `true` when this entry is a file whose extension is a supported browsable
@@ -4422,6 +4438,7 @@ export type FileEntry = {
    *  wins), so this is always `false` for directories.
    */
   isArchive: boolean
+  // Logical size in bytes. `None` when the backend didn't stat it.
   size: number | null
   // Physical size on disk in bytes (st_blocks * 512 on Unix, same as size on other platforms)
   physicalSize: number | null
@@ -4436,15 +4453,21 @@ export type FileEntry = {
    *  every entry as a unique inode.
    */
   inode: number | null
+  // Last-modified time, Unix seconds.
   modifiedAt: number | null
+  // Creation time, Unix seconds.
   createdAt: number | null
   // When the file was added to its current directory (macOS only)
   addedAt: number | null
   // When the file was last opened (macOS only)
   openedAt: number | null
+  // POSIX mode bits. `0` when the backend has no permission concept.
   permissions: number
+  // Owning user name, resolved from the uid. Empty when unknown.
   owner: string
+  // Owning group name, resolved from the gid. Empty when unknown.
   group: string
+  // The icon key the frontend resolves to a real image. See [`get_icon_id`].
   iconId: string
   /**
    *  Whether extended metadata (addedAt, openedAt) has been loaded
@@ -4572,13 +4595,21 @@ export type FileIndexStatus = {
  *  [`FilesystemInfo::raw_type`].
  */
 export type FilesystemKind =
+  // Apple File System, the macOS default since High Sierra.
   | 'apfs'
+  // HFS+, the pre-APFS macOS format.
   | 'hfs_plus'
+  // ext2 / ext3 / ext4.
   | 'ext4'
+  // Btrfs.
   | 'btrfs'
+  // XFS.
   | 'xfs'
+  // ZFS.
   | 'zfs'
+  // NTFS, including the `ntfs3` and `ufsd_ntfs` drivers.
   | 'ntfs'
+  // exFAT: the common big-USB format, and NOT size-capped (unlike FAT32).
   | 'ex_fat'
   // FAT32 (and FAT16): the only common format with a hard 4 GiB per-file cap.
   | 'fat32'
@@ -4659,6 +4690,10 @@ export type Freshness =
    */
   | 'failed'
 
+/**
+ *  What went wrong in the git layer. The frontend renders the words from its
+ *  parallel factory; nothing here is user-facing prose.
+ */
 export type FriendlyGitErrorKind =
   /**
    *  `gix::discover` returned `Discover(_)` – we walked up to the FS root and
@@ -5260,7 +5295,12 @@ export type ListingCompleteEvent = {
  *  text in the disclosure).
  */
 export type ListingError = {
+  // How serious this is. Drives the frontend's icon and severity color.
   category: ErrorCategory
+  /**
+   *  What went wrong, semantically. The frontend switches on it to pick the
+   *  message factory.
+   */
   reason: ListingErrorReason
   /**
    *  Detected cloud/mount provider, if any. The FE replaces the base reason's
@@ -5307,58 +5347,192 @@ export type ListingErrorEvent = {
  *  typed kind; the FE routes it to its parallel git factory.
  */
 export type ListingErrorReason =
+  // A signal interrupted the syscall before it did anything.
   | { reason: 'interrupted' }
+  // The system was out of memory for the operation.
   | { reason: 'notEnoughMemory' }
-  | { reason: 'resourceBusy'; path: string }
+  // The path is in use by something that holds it exclusively.
+  | {
+      reason: 'resourceBusy'
+      // The path the OS named.
+      path: string
+    }
+  // The resource would have blocked; worth another try.
   | { reason: 'temporarilyUnavailable' }
+  // The network itself is down.
   | { reason: 'networkDown' }
+  // The network reset, dropping the connection with it.
   | { reason: 'networkConnectionDropped' }
+  // The connection aborted mid-operation.
   | { reason: 'connectionDropped' }
+  // The peer reset the connection.
   | { reason: 'connectionReset' }
+  // The connection timed out at the OS level.
   | { reason: 'connectionTimedOutErrno' }
+  // The host is reachable on the network but not answering.
   | { reason: 'hostDown' }
+  // A network file handle went stale (the mount moved out from under it).
   | { reason: 'staleConnection' }
+  // No file locks were available.
   | { reason: 'lockUnavailable' }
+  // The OS reported the operation as cancelled.
   | { reason: 'cancelledErrno' }
-  | { reason: 'notPermitted'; path: string }
-  | { reason: 'pathNotFoundErrno'; path: string }
-  | { reason: 'noPermissionErrno'; path: string }
-  | { reason: 'alreadyExistsErrno'; path: string }
+  // The operation isn't permitted for this user on this path.
+  | {
+      reason: 'notPermitted'
+      // The path the failure was about.
+      path: string
+    }
+  // The path doesn't exist.
+  | {
+      reason: 'pathNotFoundErrno'
+      // The path the failure was about.
+      path: string
+    }
+  // The OS denied access to the path.
+  | {
+      reason: 'noPermissionErrno'
+      // The path the failure was about.
+      path: string
+    }
+  // Something already exists at the destination.
+  | {
+      reason: 'alreadyExistsErrno'
+      // The path the failure was about.
+      path: string
+    }
+  // A link or rename crossed a device boundary, which the OS refuses.
   | { reason: 'crossDeviceOperation' }
-  | { reason: 'notAFolder'; path: string }
-  | { reason: 'isAFolderErrno'; path: string }
+  // A path component that had to be a directory is a file.
+  | {
+      reason: 'notAFolder'
+      // The path the failure was about.
+      path: string
+    }
+  // The path is a directory where a file was needed.
+  | {
+      reason: 'isAFolderErrno'
+      // The path the failure was about.
+      path: string
+    }
+  // The destination volume is out of space.
   | { reason: 'diskFullErrno' }
+  // The volume is mounted read-only.
   | { reason: 'readOnlyVolumeErrno' }
+  // The filesystem doesn't support the operation.
   | { reason: 'notSupportedErrno' }
+  // No route to the network.
   | { reason: 'networkUnreachable' }
+  // The host actively refused the connection.
   | { reason: 'connectionRefused' }
-  | { reason: 'symlinkLoopErrno'; path: string }
+  // Following symlinks went in a circle.
+  | {
+      reason: 'symlinkLoopErrno'
+      // The path the failure was about.
+      path: string
+    }
+  // The name exceeds the filesystem's length limit.
   | { reason: 'nameTooLongErrno' }
+  // No route to the host.
   | { reason: 'hostUnreachable' }
-  | { reason: 'folderNotEmpty'; path: string }
+  // A directory had to be empty to be removed, and was not.
+  | {
+      reason: 'folderNotEmpty'
+      // The path the failure was about.
+      path: string
+    }
+  // The user's disk quota is used up.
   | { reason: 'quotaExceeded' }
+  // The server rejected the credentials.
   | { reason: 'authRequiredEauth' }
+  // The server wants credentials that were never supplied.
   | { reason: 'authRequiredEneedauth' }
+  // The device is powered off.
   | { reason: 'devicePoweredOff' }
+  // The requested extended attribute is absent.
   | { reason: 'attributeNotFound' }
-  | { reason: 'diskReadProblem'; path: string }
+  // A hardware-level read failed. Usually a failing disk or a dropped mount.
+  | {
+      reason: 'diskReadProblem'
+      // The path the failure was about.
+      path: string
+    }
+  // The OS rejected the arguments, which means we built the call wrong.
   | { reason: 'unexpectedSystemResponse' }
+  // The device reported a fault of its own.
   | { reason: 'deviceProblem' }
-  | { reason: 'couldntReadUnknown'; path: string }
-  | { reason: 'notFound'; path: string }
-  | { reason: 'tccRestricted'; path: string }
-  | { reason: 'permissionDenied'; path: string }
-  | { reason: 'alreadyExists'; path: string }
+  // An errno we don't classify. The raw code rides in `raw_detail`.
+  | {
+      reason: 'couldntReadUnknown'
+      // The path the failure was about.
+      path: string
+    }
+  // `VolumeError::NotFound`: the backend has no such path.
+  | {
+      reason: 'notFound'
+      // The path the failure was about.
+      path: string
+    }
+  // macOS TCC is guarding the path; the user has to grant access.
+  | {
+      reason: 'tccRestricted'
+      // The path the failure was about.
+      path: string
+    }
+  // `VolumeError::PermissionDenied`: the backend refused access.
+  | {
+      reason: 'permissionDenied'
+      // The path the failure was about.
+      path: string
+    }
+  // `VolumeError::AlreadyExists`: the destination is taken.
+  | {
+      reason: 'alreadyExists'
+      // The path the failure was about.
+      path: string
+    }
+  // The user cancelled the operation.
   | { reason: 'cancelled' }
-  | { reason: 'deviceDisconnected'; path: string }
-  | { reason: 'deviceReconnecting'; path: string }
+  // The device went away mid-operation.
+  | {
+      reason: 'deviceDisconnected'
+      // The path the failure was about.
+      path: string
+    }
+  // The device's session died but the device is still attached, and a reopen is already running.
+  | {
+      reason: 'deviceReconnecting'
+      // The path the failure was about.
+      path: string
+    }
+  // The volume or device is read-only.
   | { reason: 'readOnly' }
+  // The device is out of storage.
   | { reason: 'storageFull' }
+  // The backend timed out waiting for the device or server.
   | { reason: 'connectionTimedOut' }
+  // The backend doesn't implement this operation.
   | { reason: 'notSupported' }
-  | { reason: 'deletePending'; path: string }
-  | { reason: 'ioSerious'; path: string; osMessage: string }
-  | { reason: 'isADirectory'; path: string }
+  // A delete is pending on the path and an open handle is keeping it alive.
+  | {
+      reason: 'deletePending'
+      // The path the failure was about.
+      path: string
+    }
+  // An I/O failure the backend couldn't classify further.
+  | {
+      reason: 'ioSerious'
+      // The path the failure was about.
+      path: string
+      // What the OS said, for the technical-details disclosure.
+      osMessage: string
+    }
+  // The path is a directory where a file was needed.
+  | {
+      reason: 'isADirectory'
+      // The path the failure was about.
+      path: string
+    }
   /**
    *  Browsing an archive failed because the archive itself is unreadable:
    *  damaged/truncated, encrypted, an unsupported format, or a file that carries
@@ -5377,9 +5551,19 @@ export type ListingErrorReason =
    *  supplying the password and re-navigating. (Content-encrypted archives list
    *  fine and prompt only on extract, via the transfer path.)
    */
-  | { reason: 'archiveNeedsPassword'; wrongAttempt: boolean }
+  | {
+      reason: 'archiveNeedsPassword'
+      // `true` once a supplied password has been rejected.
+      wrongAttempt: boolean
+    }
+  // An iCloud Drive root that looks empty because TCC is hiding it, not because it is.
   | { reason: 'emptyRootICloud' }
-  | { reason: 'git'; kind: FriendlyGitErrorKind }
+  // A git-layer failure, carrying its own typed kind for the frontend to route.
+  | {
+      reason: 'git'
+      // Which git failure it was.
+      kind: FriendlyGitErrorKind
+    }
 
 // Opening event payload (emitted just before read_dir starts - the slow part for network folders)
 export type ListingOpeningEvent = {
@@ -6466,22 +6650,39 @@ export type PrepareResult = {
  *  union member-for-member.
  */
 export type Provider =
+  // Dropbox.
   | 'dropbox'
+  // Google Drive.
   | 'googleDrive'
+  // Microsoft OneDrive.
   | 'oneDrive'
+  // Box.
   | 'box'
+  // pCloud, mounted through its own client.
   | 'pCloud'
+  // Nextcloud.
   | 'nextcloud'
+  // Synology Drive.
   | 'synologyDrive'
+  // Tresorit.
   | 'tresorit'
+  // Proton Drive.
   | 'protonDrive'
+  // Sync.com.
   | 'sync'
+  // Egnyte.
   | 'egnyte'
+  // MacDroid, which mounts an Android device as a volume.
   | 'macDroid'
+  // iCloud Drive.
   | 'iCloud'
+  // pCloud's FUSE mount, as distinct from its File Provider one.
   | 'pCloudFuse'
+  // A macFUSE mount of some other kind.
   | 'macFuse'
+  // A mounted VeraCrypt container.
   | 'veraCrypt'
+  // A CommanderOne / CloudMounter volume.
   | 'cmVolumes'
   // Any unrecognized dir under `~/Library/CloudStorage/`.
   | 'genericCloudStorage'
@@ -7679,7 +7880,12 @@ export type TagHit = {
  *  is recolored, so we never consult the system tag registry.
  */
 export type TagRef = {
+  // The tag's name as Finder shows it.
   name: string
+  /**
+   *  Finder's color index: `0` none, `1` grey, `2` green, `3` purple, `4` blue,
+   *  `5` yellow, `6` red, `7` orange.
+   */
   color: number
 }
 

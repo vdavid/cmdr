@@ -28,15 +28,11 @@ use super::read::{ArchiveFormat, TarCodec, format_for_name, format_for_path};
 /// (zip/gzip/bzip2/xz/zstd/7z magics all live at offset 0).
 pub const ARCHIVE_MAGIC_PREFIX_LEN: usize = 512;
 
-/// True if `name`'s SUFFIX denotes a supported archive format (case-insensitive).
-///
-/// Extension-only, no I/O. Suffix-based (not just the last `.ext`) so `.tar.gz`
-/// counts while a bare `.gz` doesn't — see [`format_for_name`], the single source
-/// of truth this delegates to. Drives `FileEntry.is_archive` at listing time and
-/// the cheap pre-filter in [`archive_boundary_candidate`].
-pub fn has_supported_archive_extension(name: &str) -> bool {
-    format_for_name(name).is_some()
-}
+// The extension predicate lives in `cmdr_fs::archive_format` alongside
+// `format_for_name`, the suffix table it delegates to, because `FileEntry::new`
+// sets `is_archive` from it. Re-exported so this module stays the one import site
+// for boundary detection.
+pub use cmdr_fs::archive_format::has_supported_archive_extension;
 
 /// Whether `header` (a file's first bytes, ideally [`ARCHIVE_MAGIC_PREFIX_LEN`]
 /// long) carries the magic signature for `format`. Short slices simply fail to
@@ -192,21 +188,6 @@ pub fn bytes_start_with_zip_signature(bytes: &[u8]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn extension_check_is_case_insensitive_and_needs_a_real_stem() {
-        assert!(has_supported_archive_extension("foo.zip"));
-        assert!(has_supported_archive_extension("foo.ZIP"));
-        assert!(has_supported_archive_extension("archive.name.zip"));
-        // Not archives:
-        assert!(!has_supported_archive_extension("foo.txt"));
-        // A name that IS the word "zip" with no dot is not an archive.
-        assert!(!has_supported_archive_extension("zip"));
-        // A dotfile with no stem (`.zip`) has no extension.
-        assert!(!has_supported_archive_extension(".zip"));
-        // The archive extension must be the LAST one.
-        assert!(!has_supported_archive_extension("foo.zip.txt"));
-    }
 
     #[test]
     fn candidate_splits_at_the_archive_component() {

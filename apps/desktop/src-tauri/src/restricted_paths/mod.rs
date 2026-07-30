@@ -23,7 +23,10 @@
 //! On non-macOS, the predicate always returns `false` so the set never
 //! gains entries and the observer is a no-op (or compiled out).
 
-pub mod tcc_paths;
+// The TCC path predicates live in `cmdr-fs` (this module's parent imports Tauri,
+// so it can't ride along), re-exported here so `restricted_paths::tcc_paths::…`
+// keeps resolving.
+pub use cmdr_fs::tcc_paths;
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};

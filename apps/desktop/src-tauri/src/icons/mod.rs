@@ -6,7 +6,9 @@
 
 mod disk_cache;
 pub mod per_path;
-pub mod special_folders;
+// The special-folder classifier moved to `cmdr-fs`, where `FileEntry::new` can
+// reach it. Aliased so `icons::special_folders::…` keeps resolving.
+pub use cmdr_fs::icons::special_folders;
 
 use crate::config::ICON_SIZE;
 use crate::ignore_poison::RwLockIgnorePoison;

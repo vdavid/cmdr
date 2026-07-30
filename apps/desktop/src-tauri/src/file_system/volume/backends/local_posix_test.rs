@@ -465,7 +465,7 @@ async fn test_open_read_stream_rejects_directory() {
 
 #[tokio::test]
 async fn test_write_from_stream_creates_file() {
-    use super::InMemoryVolume;
+    use crate::file_system::volume::InMemoryVolume;
     use std::fs;
 
     let vol_dir = std::env::temp_dir().join("cmdr_write_from_stream_test");
@@ -500,7 +500,7 @@ async fn test_write_from_stream_creates_file() {
 
 #[tokio::test]
 async fn test_write_from_stream_multichunk_is_durable_and_correct() {
-    use super::InMemoryVolume;
+    use crate::file_system::volume::InMemoryVolume;
     use std::fs;
 
     // A multi-chunk payload (> InMemory's 64 KiB chunk) exercises the chunk

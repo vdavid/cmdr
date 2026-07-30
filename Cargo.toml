@@ -1,5 +1,5 @@
 [workspace]
-members = ["apps/desktop/src-tauri", "crates/fsevent-stream", "crates/index-query"]
+members = ["apps/desktop/src-tauri", "crates/cmdr-fs", "crates/fsevent-stream", "crates/index-query"]
 exclude = ["benchmarks/smb"]
 resolver = "2"
 

@@ -235,55 +235,8 @@ impl Volume for LocalPosixVolume {
         if git::is_virtual(parent_path) {
             return Box::pin(async {});
         }
-        // Fall through to the trait default.
         Box::pin(async move {
-            use super::MutationEvent;
-            use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
-            use crate::file_system::listing::reading::get_single_entry;
-
-            match mutation {
-                MutationEvent::Created(ref name) | MutationEvent::Modified(ref name) => {
-                    let entry_path = parent_path.join(name);
-                    match get_single_entry(&entry_path) {
-                        Ok(entry) => {
-                            let change = if matches!(mutation, MutationEvent::Created(_)) {
-                                DirectoryChange::Added(entry)
-                            } else {
-                                DirectoryChange::Modified(entry)
-                            };
-                            notify_directory_changed(volume_id, parent_path, change);
-                        }
-                        Err(e) => {
-                            log::warn!("notify_mutation: couldn't stat {}: {}", entry_path.display(), e);
-                        }
-                    }
-                }
-                MutationEvent::Deleted(name) => {
-                    notify_directory_changed(volume_id, parent_path, DirectoryChange::Removed(name));
-                }
-                MutationEvent::Renamed { from, to } => {
-                    let new_path = parent_path.join(&to);
-                    match get_single_entry(&new_path) {
-                        Ok(entry) => {
-                            notify_directory_changed(
-                                volume_id,
-                                parent_path,
-                                DirectoryChange::Renamed {
-                                    old_name: from,
-                                    new_entry: entry,
-                                },
-                            );
-                        }
-                        Err(e) => {
-                            log::warn!(
-                                "notify_mutation: couldn't stat renamed entry {}: {}",
-                                new_path.display(),
-                                e
-                            );
-                        }
-                    }
-                }
-            }
+            crate::file_system::listing::caching::patch_listing_after_local_mutation(volume_id, parent_path, mutation);
         })
     }
 

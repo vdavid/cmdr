@@ -9,7 +9,8 @@
 //! - **Packages** — a directory whose name ends in a known package extension
 //!   (`.app`, `.bundle`, …). A pure suffix check with no I/O, cheap enough to run
 //!   for every entry during listing, so it routes straight to a `pkg:{dir}` key
-//!   in `get_icon_id`.
+//!   in `get_icon_id`. It lives in `cmdr_fs::icons::packages` (where `FileEntry`
+//!   can reach it) and is re-exported below.
 //! - **Custom-icon folders** — a folder carrying the `kHasCustomIcon` flag in its
 //!   `com.apple.FinderInfo` xattr. Detecting this needs a `getxattr` syscall, so
 //!   it is NOT run during bulk listing (a syscall per directory entry would
@@ -23,65 +24,7 @@
 
 use std::path::Path;
 
-/// Prefix marking package icon keys (`pkg:/Applications/Safari.app`, …). Shares
-/// the `path:`-key lifecycle (LRU-capped, not persisted) — `.app` icons are
-/// per-app (each different), so they're as unbounded as custom-icon folders. The
-/// distinct prefix keeps the two candidate sources legible in logs and lets a
-/// future eviction-tuning pass treat them separately if needed.
-pub const PKG_KEY_PREFIX: &str = "pkg:";
-
-/// Directory-name suffixes that mark a macOS package/bundle. A package presents a
-/// single composite icon in Finder (the app/plugin icon), not a folder glyph, so
-/// these deviate from `dir` and earn a real fetch. The list is intentionally
-/// bounded to the common, user-visible bundle kinds; obscure private bundle types
-/// (`.xpc`, `.appex`, …) stay generic rather than paying a fetch for an icon a
-/// user almost never sees in a normal browse.
-///
-/// Compared case-insensitively against the directory name. `.app` is the dominant
-/// case; the rest are rarer but still show a distinct composite icon.
-const PACKAGE_EXTENSIONS: &[&str] = &[
-    "app",         // applications
-    "bundle",      // loadable bundles
-    "framework",   // shared frameworks
-    "plugin",      // plug-ins
-    "kext",        // kernel extensions
-    "prefpane",    // System Settings panes
-    "qlgenerator", // Quick Look generators
-    "wdgt",        // Dashboard widgets
-    "mdimporter",  // Spotlight importers
-];
-
-/// Returns true when `name` ends in a known package extension (case-insensitive).
-/// Pure, no I/O — safe to call for every directory entry during listing.
-///
-/// `name` is the directory's own file name (the last path component), not the
-/// full path: we classify by how Finder presents the bundle, which is purely a
-/// function of its extension.
-pub fn is_package_dir(name: &str) -> bool {
-    let Some(dot) = name.rfind('.') else {
-        return false;
-    };
-    // Reject a leading-dot dotfile with no real extension ("`.app`" the folder,
-    // not "Safari.app"): `rfind('.')` at index 0 means the whole name is the
-    // "extension", which is a dotfile, not a bundle.
-    if dot == 0 {
-        return false;
-    }
-    let ext = &name[dot + 1..];
-    PACKAGE_EXTENSIONS.iter().any(|known| ext.eq_ignore_ascii_case(known))
-}
-
-/// Builds the `pkg:{path}` icon key for a package directory, or `None` when the
-/// directory name isn't a known package. The key carries the full path because
-/// `.app` icons are per-app — each bundle's icon is distinct — so unlike
-/// `special:*` they can't share a bounded key.
-pub fn package_icon_id(name: &str, path: &str) -> Option<String> {
-    if is_package_dir(name) {
-        Some(format!("{PKG_KEY_PREFIX}{path}"))
-    } else {
-        None
-    }
-}
+pub use cmdr_fs::icons::packages::{PKG_KEY_PREFIX, is_package_dir, package_icon_id};
 
 /// Byte offset of the Finder flags within a `com.apple.FinderInfo` buffer.
 ///

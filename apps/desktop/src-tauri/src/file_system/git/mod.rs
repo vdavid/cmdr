@@ -40,7 +40,10 @@ use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 pub mod column_meta;
-pub mod friendly;
+// `FriendlyGitError` moved to `cmdr-fs`: `VolumeError::FriendlyGit` carries it,
+// and it maps onto `friendly_error::ErrorCategory`, so the two must live
+// together. Aliased so `git::friendly::…` keeps resolving.
+pub use cmdr_fs::volume::friendly_error::git as friendly;
 pub mod log;
 pub mod path;
 pub mod read_blob;

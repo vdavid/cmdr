@@ -2,9 +2,9 @@
 //!
 //! One place owns the Mach and allocator FFI so both the indexing memory
 //! watchdog (machine-protection thresholds) and the log RAM gauge
-//! ([`crate::logging::ram_gauge`]) read the SAME metrics the SAME cheap way.
-//! Policy (thresholds, what to do about a number) lives in
-//! [`crate::indexing::resources::memory_watchdog`]; this module only reads.
+//! (the app's `logging::ram_gauge`) read the SAME metrics the SAME cheap way.
+//! Policy (thresholds, what to do about a number) lives with the caller — the
+//! app's `indexing::resources::memory_watchdog`; this module only reads.
 //!
 //! Four readers, three different accountants:
 //!
@@ -42,7 +42,7 @@
 
 /// The cheap read: the current process's `phys_footprint` in bytes, or `None`
 /// if the query failed or the platform has no Mach `task_info`.
-pub(crate) fn current_phys_footprint() -> Option<u64> {
+pub fn current_phys_footprint() -> Option<u64> {
     #[cfg(target_os = "macos")]
     {
         query_task_vm_info().map(|vm| vm.phys_footprint)
@@ -56,10 +56,15 @@ pub(crate) fn current_phys_footprint() -> Option<u64> {
 /// What we extract from a `task_vm_info` query. The watchdog's snapshot path
 /// wants the peak and resident size too, so this carries all three.
 #[cfg(target_os = "macos")]
-pub(crate) struct TaskVmInfoResult {
-    pub(crate) phys_footprint: u64,
-    pub(crate) phys_footprint_peak: Option<u64>,
-    pub(crate) resident_size: u64,
+pub struct TaskVmInfoResult {
+    /// The metric macOS keys memory pressure and jetsam on, and what Activity
+    /// Monitor's "Memory" column shows.
+    pub phys_footprint: u64,
+    /// The high-water mark of `phys_footprint`, when the kernel reports it.
+    pub phys_footprint_peak: Option<u64>,
+    /// Resident set size. Counts graphics and shared mappings that aren't real
+    /// memory pressure, so prefer `phys_footprint`.
+    pub resident_size: u64,
 }
 
 /// The prefix of `task_vm_info` we read: everything up to and including
@@ -104,7 +109,7 @@ struct TaskVmInfo {
 ///
 /// Uses raw FFI because the `libc` crate doesn't expose `TASK_VM_INFO`.
 #[cfg(target_os = "macos")]
-pub(crate) fn query_task_vm_info() -> Option<TaskVmInfoResult> {
+pub fn query_task_vm_info() -> Option<TaskVmInfoResult> {
     // Mach task info flavor (from <mach/task_info.h>).
     const TASK_VM_INFO: u32 = 22;
 
@@ -165,16 +170,18 @@ pub(crate) fn query_task_vm_info() -> Option<TaskVmInfoResult> {
 
 /// The prefix of `mach_task_basic_info` we read.
 #[cfg(target_os = "macos")]
-pub(crate) struct BasicInfo {
-    pub(crate) resident_size: u64,
-    pub(crate) resident_size_max: u64,
+pub struct BasicInfo {
+    /// Resident set size right now.
+    pub resident_size: u64,
+    /// The high-water mark of `resident_size` over the process's life.
+    pub resident_size_max: u64,
 }
 
 /// Query `mach_task_basic_info` for resident size and its high-water mark.
 ///
 /// Uses raw FFI because the `libc` crate doesn't expose `MACH_TASK_BASIC_INFO`.
 #[cfg(target_os = "macos")]
-pub(crate) fn query_basic_info() -> Option<BasicInfo> {
+pub fn query_basic_info() -> Option<BasicInfo> {
     // Mach task info flavor (from <mach/task_info.h>).
     const MACH_TASK_BASIC_INFO: u32 = 20;
 
@@ -224,19 +231,19 @@ pub(crate) fn query_basic_info() -> Option<BasicInfo> {
 /// What mimalloc accounts for. mimalloc is Cmdr's global allocator, so this
 /// covers essentially every Rust allocation in the process, indexing included.
 #[cfg(target_os = "macos")]
-pub(crate) struct MimallocHeap {
+pub struct MimallocHeap {
     /// Bytes mimalloc has committed from the OS: live allocations plus its own
     /// free lists and arena slack. mimalloc exposes no cheap process-wide
     /// "bytes in use", so committed is the number that tracks the Rust heap.
-    pub(crate) committed: u64,
+    pub committed: u64,
     /// High-water mark of `committed` over the process lifetime.
-    pub(crate) peak_committed: u64,
+    pub peak_committed: u64,
 }
 
 /// Ask mimalloc how much it has committed. This is the only way to see the Rust
 /// heap: the macOS zone APIs are blind to it (see the module docs).
 #[cfg(target_os = "macos")]
-pub(crate) fn query_mimalloc_heap() -> MimallocHeap {
+pub fn query_mimalloc_heap() -> MimallocHeap {
     let mut current_commit: usize = 0;
     let mut peak_commit: usize = 0;
 
@@ -297,17 +304,20 @@ unsafe extern "C" {
 /// What the system malloc zones hold: WebKit, Objective-C, and C-library
 /// allocations. Explicitly NOT the Rust heap (see the module docs).
 #[cfg(target_os = "macos")]
-pub(crate) struct SystemMallocZones {
-    pub(crate) in_use: u64,
-    pub(crate) reserved: u64,
-    pub(crate) zone_count: u32,
+pub struct SystemMallocZones {
+    /// Bytes the zones report as handed out.
+    pub in_use: u64,
+    /// Bytes the zones hold from the OS, in use or not.
+    pub reserved: u64,
+    /// How many zones were registered at snapshot time.
+    pub zone_count: u32,
     /// The largest zone by in-use bytes: `(name, in_use)`.
-    pub(crate) largest_zone: Option<(String, u64)>,
+    pub largest_zone: Option<(String, u64)>,
 }
 
 /// Sum every registered malloc zone, plus the zone count and the largest zone.
 #[cfg(target_os = "macos")]
-pub(crate) fn query_system_malloc_zones() -> SystemMallocZones {
+pub fn query_system_malloc_zones() -> SystemMallocZones {
     // SAFETY: a NULL zone pointer asks `malloc_zone_statistics` for the
     // all-zones aggregate (documented behavior); `agg` is a `#[repr(C)]` match
     // of `malloc_statistics_t` and is fully written by the call.

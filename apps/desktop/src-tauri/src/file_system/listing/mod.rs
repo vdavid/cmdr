@@ -4,7 +4,6 @@ pub(crate) mod brief_columns;
 pub(crate) mod caching;
 pub(crate) mod diff_emitter;
 pub(crate) mod fuzzy_jump;
-pub(crate) mod metadata;
 pub(crate) mod operations;
 pub(crate) mod reading;
 pub(crate) mod sorting;
@@ -14,6 +13,10 @@ pub(crate) mod streaming;
 // (call sites import them from `crate::file_system::listing` directly).
 pub use brief_columns::{BriefColumnsError, compute_brief_column_text_widths};
 pub use fuzzy_jump::fuzzy_find_first_match_in_listing;
+// `FileEntry` and its siblings moved to `cmdr-fs` (the `Volume` trait exchanges
+// them, and that trait is the crate's centrepiece). Aliased, not just
+// re-exported, so `file_system::listing::metadata::…` paths keep resolving.
+pub(crate) use cmdr_fs::entry as metadata;
 pub use metadata::{ExtendedMetadata, FileEntry};
 pub use operations::{
     ListingStartResult, ListingStats, ResortResult, find_file_index, find_file_indices, get_file_at, get_file_range,

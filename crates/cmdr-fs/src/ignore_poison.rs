@@ -36,7 +36,7 @@
 //!    unsafe>")`. The message MUST contain "poison" so the deliberate choice is
 //!    visible and machine-checkable.
 //! 3. **Bare `.lock().unwrap()` / `.read().unwrap()` / `.write().unwrap()` on a
-//!    std lock is banned** in non-test `src-tauri` code — it records no intent, so a
+//!    std lock is banned** in non-test Rust code anywhere in the workspace — it records no intent, so a
 //!    reader can't tell a considered abort from a thoughtless one. The `lock-poison`
 //!    check (`scripts/check/checks/`) fails on it; pick form 1 or 2.
 //!
@@ -55,6 +55,7 @@
 
 use std::sync::{Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
+/// Poison-ignoring `lock()` for [`Mutex`].
 pub trait IgnorePoison<T> {
     /// Locks the mutex, ignoring poison. Use this for simple value stores where
     /// a panic in another thread doesn't invalidate the data.
@@ -71,7 +72,9 @@ impl<T> IgnorePoison<T> for Mutex<T> {
 /// thread doesn't invalidate the data, so reading the previous value is
 /// strictly better than a cascading panic at the next lock site.
 pub trait RwLockIgnorePoison<T> {
+    /// Takes the read guard, ignoring poison.
     fn read_ignore_poison(&self) -> RwLockReadGuard<'_, T>;
+    /// Takes the write guard, ignoring poison.
     fn write_ignore_poison(&self) -> RwLockWriteGuard<'_, T>;
 }
 

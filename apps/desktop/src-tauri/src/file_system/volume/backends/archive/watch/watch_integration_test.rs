@@ -18,8 +18,8 @@ use std::time::{Duration, Instant};
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE, refresh_archive_listings};
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
+use crate::file_system::volume::InMemoryVolume;
 use crate::file_system::volume::Volume;
-use crate::file_system::volume::backends::InMemoryVolume;
 use crate::file_system::volume::backends::archive::{ArchiveVolume, active_watch_count};
 use crate::file_system::{VolumeManager, get_volume_manager};
 

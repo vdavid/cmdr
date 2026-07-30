@@ -13,7 +13,7 @@ use std::path::Path;
 #[cfg(target_os = "macos")]
 use super::ErrorActionKind;
 use super::{ErrorCategory, ListingError, ListingErrorReason};
-use crate::file_system::volume::VolumeError;
+use crate::volume::VolumeError;
 
 /// Maps a raw macOS errno to a `ListingError`.
 #[cfg(target_os = "macos")]

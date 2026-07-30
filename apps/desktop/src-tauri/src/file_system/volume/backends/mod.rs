@@ -20,7 +20,6 @@
 // like the mtp/smb backends. The `ArchiveVolume` `Volume` impl is built on top
 // of this.
 pub mod archive;
-mod in_memory;
 mod local_posix;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod mtp;
@@ -29,7 +28,6 @@ pub mod smb;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod smb_watcher;
 
-pub use in_memory::InMemoryVolume;
 pub use local_posix::LocalPosixVolume;
 /// Cross-platform volume used-bytes helper (NSURL purgeable-aware on macOS,
 /// `statvfs` on Linux). Re-exported so the indexing module can read the scanned
@@ -50,7 +48,6 @@ pub(crate) use super::{
 };
 
 #[cfg(test)]
-mod in_memory_test;
 #[cfg(test)]
 mod local_posix_test;
 // `mtp_test` is gated on the same platforms as the `mtp` module it tests (the

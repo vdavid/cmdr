@@ -24,13 +24,17 @@
 
 mod empty_root;
 mod errno;
+/// Git-specific error classification. It lives under `friendly_error` because
+/// the two reference each other: a `FriendlyGitErrorKind` maps to an
+/// [`ErrorCategory`], and `VolumeError::FriendlyGit` carries the whole thing.
+pub mod git;
 mod kinds;
 mod provider;
 mod volume_error;
 
 use serde::{Deserialize, Serialize};
 
-use crate::file_system::git::friendly::FriendlyGitErrorKind;
+use crate::volume::friendly_error::git::FriendlyGitErrorKind;
 
 // Public API re-exports: keep the `volume::friendly_error::*` import surface
 // unchanged for callers regardless of how the module is split internally.
@@ -56,6 +60,7 @@ pub enum ErrorActionKind {
     OpenPrivacySettings,
 }
 
+/// How serious a failure is, and therefore how the frontend styles it.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ErrorCategory {
@@ -79,7 +84,10 @@ pub enum ErrorCategory {
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ListingError {
+    /// How serious this is. Drives the frontend's icon and severity color.
     pub category: ErrorCategory,
+    /// What went wrong, semantically. The frontend switches on it to pick the
+    /// message factory.
     pub reason: ListingErrorReason,
     /// Detected cloud/mount provider, if any. The FE replaces the base reason's
     /// suggestion with the provider-specific one.
@@ -106,100 +114,173 @@ pub struct ListingError {
 #[serde(tag = "reason", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum ListingErrorReason {
     // ── errno: transient ──
+    /// A signal interrupted the syscall before it did anything.
     Interrupted,
+    /// The system was out of memory for the operation.
     NotEnoughMemory,
+    /// The path is in use by something that holds it exclusively.
     ResourceBusy {
+        /// The path the OS named.
         path: String,
     },
+    /// The resource would have blocked; worth another try.
     TemporarilyUnavailable,
+    /// The network itself is down.
     NetworkDown,
+    /// The network reset, dropping the connection with it.
     NetworkConnectionDropped,
+    /// The connection aborted mid-operation.
     ConnectionDropped,
+    /// The peer reset the connection.
     ConnectionReset,
+    /// The connection timed out at the OS level.
     ConnectionTimedOutErrno,
+    /// The host is reachable on the network but not answering.
     HostDown,
+    /// A network file handle went stale (the mount moved out from under it).
     StaleConnection,
+    /// No file locks were available.
     LockUnavailable,
+    /// The OS reported the operation as cancelled.
     CancelledErrno,
     // ── errno: needs-action ──
+    /// The operation isn't permitted for this user on this path.
     NotPermitted {
+        /// The path the failure was about.
         path: String,
     },
+    /// The path doesn't exist.
     PathNotFoundErrno {
+        /// The path the failure was about.
         path: String,
     },
+    /// The OS denied access to the path.
     NoPermissionErrno {
+        /// The path the failure was about.
         path: String,
     },
+    /// Something already exists at the destination.
     AlreadyExistsErrno {
+        /// The path the failure was about.
         path: String,
     },
+    /// A link or rename crossed a device boundary, which the OS refuses.
     CrossDeviceOperation,
+    /// A path component that had to be a directory is a file.
     NotAFolder {
+        /// The path the failure was about.
         path: String,
     },
+    /// The path is a directory where a file was needed.
     IsAFolderErrno {
+        /// The path the failure was about.
         path: String,
     },
+    /// The destination volume is out of space.
     DiskFullErrno,
+    /// The volume is mounted read-only.
     ReadOnlyVolumeErrno,
+    /// The filesystem doesn't support the operation.
     NotSupportedErrno,
+    /// No route to the network.
     NetworkUnreachable,
+    /// The host actively refused the connection.
     ConnectionRefused,
+    /// Following symlinks went in a circle.
     SymlinkLoopErrno {
+        /// The path the failure was about.
         path: String,
     },
+    /// The name exceeds the filesystem's length limit.
     NameTooLongErrno,
+    /// No route to the host.
     HostUnreachable,
+    /// A directory had to be empty to be removed, and was not.
     FolderNotEmpty {
+        /// The path the failure was about.
         path: String,
     },
+    /// The user's disk quota is used up.
     QuotaExceeded,
+    /// The server rejected the credentials.
     AuthRequiredEauth,
+    /// The server wants credentials that were never supplied.
     AuthRequiredEneedauth,
+    /// The device is powered off.
     DevicePoweredOff,
+    /// The requested extended attribute is absent.
     AttributeNotFound,
     // ── errno: serious ──
+    /// A hardware-level read failed. Usually a failing disk or a dropped mount.
     DiskReadProblem {
+        /// The path the failure was about.
         path: String,
     },
+    /// The OS rejected the arguments, which means we built the call wrong.
     UnexpectedSystemResponse,
+    /// The device reported a fault of its own.
     DeviceProblem,
+    /// An errno we don't classify. The raw code rides in `raw_detail`.
     CouldntReadUnknown {
+        /// The path the failure was about.
         path: String,
     },
     // ── typed VolumeError variants (shared "kinds") ──
+    /// `VolumeError::NotFound`: the backend has no such path.
     NotFound {
+        /// The path the failure was about.
         path: String,
     },
+    /// macOS TCC is guarding the path; the user has to grant access.
     TccRestricted {
+        /// The path the failure was about.
         path: String,
     },
+    /// `VolumeError::PermissionDenied`: the backend refused access.
     PermissionDenied {
+        /// The path the failure was about.
         path: String,
     },
+    /// `VolumeError::AlreadyExists`: the destination is taken.
     AlreadyExists {
+        /// The path the failure was about.
         path: String,
     },
+    /// The user cancelled the operation.
     Cancelled,
+    /// The device went away mid-operation.
     DeviceDisconnected {
+        /// The path the failure was about.
         path: String,
     },
+    /// The device's session died but the device is still attached, and a reopen is already running.
     DeviceReconnecting {
+        /// The path the failure was about.
         path: String,
     },
+    /// The volume or device is read-only.
     ReadOnly,
+    /// The device is out of storage.
     StorageFull,
+    /// The backend timed out waiting for the device or server.
     ConnectionTimedOut,
+    /// The backend doesn't implement this operation.
     NotSupported,
+    /// A delete is pending on the path and an open handle is keeping it alive.
     DeletePending {
+        /// The path the failure was about.
         path: String,
     },
+    /// An I/O failure the backend couldn't classify further.
     IoSerious {
+        /// The path the failure was about.
         path: String,
+        /// What the OS said, for the technical-details disclosure.
         os_message: String,
     },
+    /// The path is a directory where a file was needed.
     IsADirectory {
+        /// The path the failure was about.
         path: String,
     },
     // ── archive (browsing a `.zip` that can't be read) ──
@@ -218,12 +299,16 @@ pub enum ListingErrorReason {
     /// supplying the password and re-navigating. (Content-encrypted archives list
     /// fine and prompt only on extract, via the transfer path.)
     ArchiveNeedsPassword {
+        /// `true` once a supplied password has been rejected.
         wrong_attempt: bool,
     },
     // ── empty-root hint ──
+    /// An iCloud Drive root that looks empty because TCC is hiding it, not because it is.
     EmptyRootICloud,
     // ── git (wire-only; FE routes to its parallel git factory) ──
+    /// A git-layer failure, carrying its own typed kind for the frontend to route.
     Git {
+        /// Which git failure it was.
         kind: FriendlyGitErrorKind,
     },
 }
@@ -247,8 +332,8 @@ mod tests {
     use std::path::Path;
 
     use super::*;
-    use crate::file_system::git::friendly::{FriendlyGitError, FriendlyGitErrorKind};
-    use crate::file_system::volume::VolumeError;
+    use crate::volume::VolumeError;
+    use crate::volume::friendly_error::git::{FriendlyGitError, FriendlyGitErrorKind};
 
     // ── Errno category + reason tests ───────────────────────────────────
     //
@@ -605,7 +690,7 @@ mod tests {
         let home = dirs::home_dir().expect("home dir");
         let tcc_path = home.join("Downloads/some-folder");
         assert!(
-            crate::restricted_paths::tcc_paths::is_potentially_tcc_restricted(&tcc_path),
+            crate::tcc_paths::is_potentially_tcc_restricted(&tcc_path),
             "~/Downloads must be TCC-classified for this test to be meaningful"
         );
         let listing = listing_error_from_volume_error(&VolumeError::PermissionDenied("x".into()), &tcc_path);
@@ -621,8 +706,8 @@ mod tests {
         // through to the generic permission-denied reason.
         let plain_path = Path::new("/tmp/cmdr-not-tcc/folder");
         assert!(
-            !crate::restricted_paths::tcc_paths::is_potentially_tcc_restricted(plain_path)
-                && !crate::restricted_paths::tcc_paths::is_network_volume_path(plain_path),
+            !crate::tcc_paths::is_potentially_tcc_restricted(plain_path)
+                && !crate::tcc_paths::is_network_volume_path(plain_path),
             "the plain path must NOT be TCC-classified"
         );
         let listing = listing_error_from_volume_error(&VolumeError::PermissionDenied("x".into()), plain_path);

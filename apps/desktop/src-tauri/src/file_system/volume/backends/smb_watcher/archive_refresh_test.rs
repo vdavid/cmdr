@@ -25,7 +25,7 @@ use crate::file_system::get_volume_manager;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
-use crate::file_system::volume::backends::InMemoryVolume;
+use crate::file_system::volume::InMemoryVolume;
 use crate::file_system::volume::backends::archive::test_fixtures::{FixtureFile, build_zip, stored};
 
 /// A temp directory with a `.zip` inside, cleaned up on drop. The temp dir plays

@@ -12,7 +12,7 @@ use super::DEFAULT_VOLUME_ID;
 /// **Don't use this for SMB mounts.** Use [`smb_volume_id`] instead: it keys by
 /// the underlying mount (server, port, share) rather than the path-shape, so two
 /// SMB shares with the same case-folded name on different servers don't collide.
-pub(crate) fn path_to_id(path: &str) -> String {
+pub fn path_to_id(path: &str) -> String {
     if path == "/" {
         return DEFAULT_VOLUME_ID.to_string();
     }

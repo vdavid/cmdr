@@ -1282,6 +1282,7 @@ dependencies = [
  "bzip2",
  "chrono",
  "cmdr",
+ "cmdr-fs",
  "cmdr-fsevent-stream",
  "cocoon",
  "core-foundation 0.10.1",
@@ -1307,7 +1308,6 @@ dependencies = [
  "instant-clip-tokenizer",
  "keyring-core",
  "libc",
- "libmimalloc-sys",
  "log",
  "lzma-rust2",
  "mdns-sd",
@@ -1375,7 +1375,6 @@ dependencies = [
  "urlencoding",
  "usearch",
  "uuid",
- "uzers",
  "walkdir",
  "wiremock",
  "xattr",
@@ -1384,6 +1383,21 @@ dependencies = [
  "zeroize",
  "zip 8.6.0",
  "zstd",
+]
+
+[[package]]
+name = "cmdr-fs"
+version = "0.0.0"
+dependencies = [
+ "dirs 6.0.0",
+ "libc",
+ "libmimalloc-sys",
+ "log",
+ "serde",
+ "serde_json",
+ "specta",
+ "tokio",
+ "uzers",
 ]
 
 [[package]]

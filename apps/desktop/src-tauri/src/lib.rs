@@ -63,8 +63,13 @@ use tauri_plugin_updater as _;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use mtp_rs as _;
 
-mod ignore_poison;
-pub use ignore_poison::IgnorePoison;
+// Poison-free locking, the count/noun formatter, thread QoS, and the process
+// memory reader now live in `cmdr-fs`, so every crate in the workspace shares one
+// copy. Re-exported at their original paths, so `crate::ignore_poison::…`,
+// `crate::pluralize::…`, `crate::thread_qos::…`, and `crate::process_memory::…`
+// keep resolving.
+pub use cmdr_fs::ignore_poison;
+pub use cmdr_fs::ignore_poison::IgnorePoison;
 
 mod ipc;
 mod ipc_collectors;
@@ -130,9 +135,9 @@ mod permissions;
 #[cfg(target_os = "linux")]
 mod permissions_linux;
 mod platform;
-mod pluralize;
+pub use cmdr_fs::pluralize;
 pub mod priority;
-mod process_memory;
+pub use cmdr_fs::process_memory;
 mod quick_look;
 mod redact;
 #[cfg(target_os = "macos")]
@@ -154,7 +159,7 @@ pub mod test_mode;
 pub(crate) mod test_support;
 #[cfg(target_os = "macos")]
 mod text_size;
-mod thread_qos;
+pub use cmdr_fs::thread_qos;
 #[cfg(target_os = "macos")]
 mod updater;
 mod usb_speed;
