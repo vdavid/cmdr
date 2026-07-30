@@ -1,0 +1,11 @@
+# rustfmt configuration for the whole Cargo workspace.
+#
+# rustfmt resolves its config by walking UP from each source file, so this has to
+# live at the repo root: a crate under `crates/` would otherwise find nothing and
+# silently fall back to `max_width = 100`, rewriting every line it formats.
+# `crates/fsevent-stream/` pins its own copy on purpose (see the file there).
+edition = "2021"
+max_width = 120          # Matches ESLint's printWidth for consistency
+tab_spaces = 4           # Rust standard (unlike frontend's 4-space tabs)
+use_small_heuristics = "Default"  # Let rustfmt decide when to break lines
+

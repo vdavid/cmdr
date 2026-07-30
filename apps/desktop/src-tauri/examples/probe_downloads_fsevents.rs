@@ -6,9 +6,9 @@
 //! per-folder Downloads TCC consent, or does it require full Full Disk Access?
 //!
 //! This is a one-shot diagnostic, not part of the running app. `println!` is
-//! the natural idiom here, hence the cargo example (where it's allowed) rather
-//! than a module under `src/` (where clippy denies `println!` crate-wide; see
-//! `src-tauri/src/logging/CLAUDE.md`).
+//! the natural idiom here, hence a cargo example with the explicit opt-out
+//! below, rather than a module under `src/` (where `println!` is denied with no
+//! opt-out; see `src-tauri/src/logging/CLAUDE.md`).
 //!
 //! # How to run
 //!
@@ -64,6 +64,14 @@
 //! - The probe doesn't filter events at all — even spurious
 //!   `Access(Close(Write))` and metadata events print. The real watcher will
 //!   filter; this is intentionally raw so we see exactly what FSEvents emits.
+
+#![allow(
+    clippy::print_stdout,
+    clippy::print_stderr,
+    reason = "A standalone diagnostic run by hand from a terminal: stdout IS its output. \
+The workspace lint set routes app code through `log::*` so error-report bundles capture it, \
+which an example that nobody bundles has no use for."
+)]
 
 use std::path::PathBuf;
 use std::sync::mpsc;

@@ -1,22 +1,12 @@
-// Deny unused code to catch dead code early (like knip for TS)
-#![deny(unused)]
-// Warn on unused dependencies to catch platform-specific cfg mismatches
+// The lint set this crate is held to lives in the workspace root's
+// `[workspace.lints]`, opted into by `Cargo.toml`'s `lints.workspace = true`.
+// It's there rather than here so the crates under `crates/` share one definition.
+//
+// This one can't go with them: it's judged per compilation unit, so as a
+// package-wide flag every bin, integration test, and bench would report ~100
+// "unused extern crate" errors for deps only the lib uses. It catches
+// platform-specific cfg mismatches, hence the `use foo as _;` markers below.
 #![warn(unused_crate_dependencies)]
-// Warn on redundant path prefixes (like std::path::Path when Path is imported)
-#![warn(unused_qualifications)]
-// Use log::* macros instead of println!/eprintln!/dbg! for proper log level control
-// and so error-report bundles capture the context. See `logging/CLAUDE.md` for the rules.
-#![deny(clippy::print_stdout, clippy::print_stderr, clippy::dbg_macro)]
-// No leftover `todo!()` / `unimplemented!()` stubs reaching a build (`unreachable!()` stays allowed).
-#![deny(clippy::todo, clippy::unimplemented)]
-// Require justification for all #[allow] attributes
-#![warn(clippy::allow_attributes_without_reason)]
-// Require a `// SAFETY:` comment on every `unsafe {}` block: each site must state the concrete
-// invariant that makes it sound. Rote FFI is documented per-site, never blanket-exempted.
-#![warn(clippy::undocumented_unsafe_blocks)]
-// No silent `.unwrap()` in production: each must be a handled error or a documented `.expect("why")`.
-// Extends the lock-poison discipline to all unwraps. Tests are exempt via clippy.toml.
-#![warn(clippy::unwrap_used)]
 
 //noinspection RsUnusedImport
 // Silence false positives for dev dependencies (used only in benches/, not lib)

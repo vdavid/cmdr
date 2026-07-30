@@ -5,6 +5,14 @@
 //!
 //! NOTE: This example only works on macOS/Linux (requires the `smb2` crate).
 
+#![allow(
+    clippy::print_stdout,
+    clippy::print_stderr,
+    reason = "A standalone diagnostic run by hand from a terminal: stdout IS its output. \
+The workspace lint set routes app code through `log::*` so error-report bundles capture it, \
+which an example that nobody bundles has no use for."
+)]
+
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod inner {
     use smb2::{ClientConfig, SmbClient};

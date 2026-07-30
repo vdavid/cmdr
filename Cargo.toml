@@ -18,3 +18,49 @@ resolver = "2"
 # the same way or their numbers describe a build nobody ships.
 [profile.release]
 lto = "thin"
+
+# The house lint set, in ONE place. A member opts in with `lints.workspace = true`
+# rather than repeating a `#![deny(…)]` block at its crate root, so a new crate
+# can't quietly become a lint-free zone and the set can't drift between crates.
+#
+# Cargo passes these as rustc flags, so they cover every target of an opted-in
+# package (lib, bins, tests, benches, build script), not just the lib. A crate-root
+# or item-level `#[allow(…, reason = "…")]` still wins where a member genuinely
+# needs an exception.
+#
+# One lint deliberately stays OUT of this table and lives at each crate root
+# instead: `unused_crate_dependencies`. It's judged per compilation unit, so as a
+# package-wide flag every bin, integration test, and bench reports ~100 "unused
+# extern crate" errors for deps only the lib uses. It belongs on the lib target
+# alone, which only a `#![warn(…)]` in `lib.rs` can express.
+#
+# Who opts in: `cmdr` and any crate under `crates/` that we wrote.
+# `crates/fsevent-stream` does NOT: it's a vendored third-party fork, and the
+# `unused_crate_dependencies` / `unwrap_used` churn would bury the upstream diff.
+# `crates/index-query` does NOT: it's a CLI whose job is to print to stdout, which
+# `print_stdout` / `print_stderr` deny by design.
+[workspace.lints.rust]
+# Dead code caught early (the Rust counterpart of knip for TypeScript). It's a
+# lint GROUP containing the two below, so it takes a lower priority; Cargo ignores
+# table order and would otherwise reject the ambiguity.
+unused = { level = "deny", priority = -1 }
+# Redundant path prefixes (`std::path::Path` where `Path` is already imported).
+unused_qualifications = "warn"
+
+[workspace.lints.clippy]
+# Use the `log::*` macros, so error-report bundles capture the context.
+# See `apps/desktop/src-tauri/src/logging/CLAUDE.md`.
+print_stdout = "deny"
+print_stderr = "deny"
+dbg_macro = "deny"
+# No leftover stubs reaching a build (`unreachable!()` stays allowed).
+todo = "deny"
+unimplemented = "deny"
+# Every `#[allow]` states why.
+allow_attributes_without_reason = "warn"
+# Every `unsafe {}` block carries a `// SAFETY:` comment naming the invariant that
+# makes it sound. Rote FFI is documented per site, never blanket-exempted.
+undocumented_unsafe_blocks = "warn"
+# No silent `.unwrap()` in production: each is a handled error or a documented
+# `.expect("why")`. `#[test]` fns are exempt via `clippy.toml`.
+unwrap_used = "warn"

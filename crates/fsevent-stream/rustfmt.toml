@@ -1,0 +1,10 @@
+# This is a vendored fork of the third-party `fsevent-stream` crate, and the diff
+# against upstream is what makes a rebase reviewable. The workspace-root
+# `rustfmt.toml` widens lines to 120, which would rewrite 22 sites here for no
+# reason a reader could connect to a behavior change.
+#
+# So this file pins rustfmt's defaults (everything but `edition`, which just
+# matches the package's own), keeping the source byte-identical to upstream's
+# formatting. Clippy config is NOT pinned the same way: `../../clippy.toml` only
+# tunes lints this crate doesn't enable, and clippy rewrites no source anyway.
+edition = "2021"

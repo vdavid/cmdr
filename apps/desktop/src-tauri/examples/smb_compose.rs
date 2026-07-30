@@ -5,6 +5,14 @@
 //! Run with:
 //!   cargo run --example smb_compose --features smb-e2e -- <output_dir>
 
+#![allow(
+    clippy::print_stdout,
+    clippy::print_stderr,
+    reason = "A standalone diagnostic run by hand from a terminal: stdout IS its output. \
+The workspace lint set routes app code through `log::*` so error-report bundles capture it, \
+which an example that nobody bundles has no use for."
+)]
+
 fn main() {
     let dir = std::env::args()
         .nth(1)

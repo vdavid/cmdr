@@ -8,6 +8,12 @@ license = "LicenseRef-BSL-1.1"
 default-run = "Cmdr"
 publish = false  # Private application, not for crates.io
 
+# The house lint set lives in the workspace root's `[workspace.lints]`, so every
+# crate we write shares one definition. Unlike the crate-root `#![deny(…)]` block
+# it replaced, this also covers the bins, tests, benches, and build script.
+[lints]
+workspace = true
+
 [features]
 # Playwright E2E testing plugin (socket bridge to real webview). Never enable in production builds.
 playwright-e2e = ["dep:tauri-plugin-playwright"]

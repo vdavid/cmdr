@@ -1,7 +1,0 @@
-# rustfmt configuration
-# Formats Rust code according to project standards
-edition = "2021"
-max_width = 120          # Matches ESLint's printWidth for consistency
-tab_spaces = 4           # Rust standard (unlike frontend's 4-space tabs)
-use_small_heuristics = "Default"  # Let rustfmt decide when to break lines
-
