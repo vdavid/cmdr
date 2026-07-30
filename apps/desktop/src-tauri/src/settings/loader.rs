@@ -443,7 +443,13 @@ pub fn load_ask_cmdr_interactive_model<R: tauri::Runtime>(app: &tauri::AppHandle
 pub fn load_ask_cmdr_chat_memory_size<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Option<usize> {
     let data_dir = crate::config::resolved_app_data_dir(app).ok()?;
     let contents = fs::read_to_string(data_dir.join("settings.json")).ok()?;
-    let json: serde_json::Value = serde_json::from_str(&contents).ok()?;
+    parse_ask_cmdr_chat_memory_size(&contents)
+}
+
+/// The parsing half of [`load_ask_cmdr_chat_memory_size`], pure so it can be tested without an
+/// app handle. Anything that isn't a positive number of tokens reads as Automatic.
+fn parse_ask_cmdr_chat_memory_size(contents: &str) -> Option<usize> {
+    let json: serde_json::Value = serde_json::from_str(contents).ok()?;
     json.get("askCmdr.chatMemorySize")
         .and_then(|v| v.as_str())
         .and_then(|s| s.trim().parse::<usize>().ok())
@@ -698,5 +704,30 @@ mod tests {
             "missing key → None (FE default)"
         );
         assert_eq!(empty.indexing_stale_notify, None, "missing key → None (FE default)");
+    }
+
+    #[test]
+    fn chat_memory_size_reads_a_preset_and_treats_everything_else_as_automatic() {
+        assert_eq!(
+            parse_ask_cmdr_chat_memory_size(r#"{ "askCmdr.chatMemorySize": "32000" }"#),
+            Some(32_000)
+        );
+        // Automatic is the absence of a number, however it's spelled: the budget module then
+        // follows the model's own window. A hand-edited or half-written value must not become a
+        // budget nobody chose.
+        for contents in [
+            r#"{ "askCmdr.chatMemorySize": "auto" }"#,
+            r#"{ "askCmdr.chatMemorySize": "" }"#,
+            r#"{ "askCmdr.chatMemorySize": "0" }"#,
+            r#"{ "askCmdr.chatMemorySize": 32000 }"#, // a number, not the stored string form
+            "{}",
+            "not json at all",
+        ] {
+            assert_eq!(
+                parse_ask_cmdr_chat_memory_size(contents),
+                None,
+                "{contents} must read as Automatic"
+            );
+        }
     }
 }
