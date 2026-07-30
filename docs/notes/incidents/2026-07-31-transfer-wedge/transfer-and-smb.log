@@ -1,0 +1,851 @@
+2026-07-31T00:00:04.465+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:00:04.465+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:00:04.469+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:00:10.950+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:00:10.950+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:00:10.981+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:00:16.113+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:00:16.114+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:00:16.122+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:00:21.247+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:00:21.248+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:00:21.251+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:00:26.364+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:00:26.364+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:00:26.373+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:00:31.457+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:00:31.458+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:00:31.468+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:00:36.665+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:00:36.665+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:00:36.670+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:00:41.791+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:00:41.791+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:00:41.795+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:00:46.882+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:00:46.882+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:00:46.892+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:00:52.053+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:00:52.057+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:00:52.061+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:00:57.166+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:00:57.166+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:00:57.172+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:01:02.353+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:01:02.353+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:01:02.360+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:01:07.424+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:01:07.424+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:01:07.429+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:01:12.563+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:01:12.563+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:01:12.567+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:01:17.720+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:01:17.720+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:01:17.724+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:01:22.848+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:01:22.848+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:01:22.853+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:01:28.012+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:01:28.013+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:01:28.022+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:01:33.462+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:01:33.462+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:01:33.467+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:01:40.326+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:01:40.326+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:01:40.332+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:01:45.473+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:01:45.473+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:01:45.482+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:01:51.341+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:01:51.341+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:01:51.350+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:01:56.607+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:01:56.608+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:01:56.613+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:02:01.727+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:02:01.727+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:02:01.731+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:02:06.920+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:02:06.920+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:02:06.924+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:02:12.030+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:02:12.117+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:02:12.189+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:02:17.465+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:02:17.465+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:02:17.469+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:02:22.634+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:02:22.635+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:02:22.644+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:02:27.818+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:02:27.818+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:02:27.823+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:02:32.979+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:02:32.979+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:02:32.983+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:02:38.170+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:02:38.170+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:02:38.457+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:02:43.760+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:02:43.761+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:02:43.768+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:02:50.802+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:02:50.802+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:02:50.806+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:02:55.957+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:02:55.972+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:02:56.296+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:03:01.910+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:03:01.910+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:03:01.914+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:03:07.061+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:03:07.061+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:03:07.080+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:03:12.180+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:03:12.180+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:03:12.187+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:03:17.366+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:03:17.366+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:03:17.370+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:03:22.452+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:03:22.452+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:03:22.458+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:03:27.806+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:03:27.806+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:03:27.811+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:03:33.215+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:03:33.215+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:03:33.219+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:03:38.353+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:03:38.353+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:03:38.357+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:03:43.504+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:03:43.537+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:03:43.560+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:03:48.780+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:03:48.780+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:03:48.785+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:03:53.931+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:03:53.931+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:03:53.938+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:04:16.106+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:04:16.106+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:04:16.111+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:04:21.300+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:04:21.300+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:04:21.311+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:04:26.800+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:04:26.800+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:04:26.805+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:04:31.893+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:04:31.924+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:04:31.929+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:04:37.118+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:04:37.118+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:04:37.127+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:04:42.209+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:04:42.209+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:04:42.215+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:04:47.348+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:04:47.348+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:04:47.353+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:04:52.587+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:04:52.587+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:04:52.591+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:05:08.499+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:05:08.499+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:05:08.504+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:05:13.556+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:05:13.556+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:05:13.560+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:05:18.591+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:05:18.591+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:05:18.595+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:05:23.642+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:05:23.642+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:05:23.647+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:05:28.682+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:05:28.683+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:05:28.688+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:05:33.767+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:05:33.767+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:05:33.771+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:05:38.875+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:05:38.875+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:05:38.880+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:05:43.983+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:05:43.983+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:05:43.988+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:05:49.036+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:05:49.036+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:05:49.041+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:05:54.109+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:05:54.109+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:05:54.113+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:05:59.163+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:05:59.163+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:05:59.167+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:06:04.227+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:06:04.227+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:06:04.232+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:06:09.327+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:06:09.327+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:06:09.331+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:06:14.386+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:06:14.386+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:06:14.390+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:06:19.478+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:06:19.478+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:06:19.484+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:06:24.529+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:06:24.529+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:06:24.533+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:06:29.605+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:06:29.605+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:06:29.609+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:06:34.666+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:06:34.666+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:06:34.677+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:06:39.734+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:06:39.734+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:06:39.741+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:06:44.819+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:06:44.819+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:06:44.827+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:06:49.928+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:06:49.928+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:06:49.933+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:06:54.984+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:06:54.985+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:06:54.989+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:07:00.065+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:07:00.065+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:07:00.069+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:07:05.121+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:07:05.121+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:07:05.127+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:07:10.210+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:07:10.210+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:07:10.214+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:07:15.286+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:07:15.287+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:07:15.294+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:07:20.354+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:07:20.354+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:07:20.358+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:07:25.453+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:07:25.453+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:07:25.458+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:07:30.570+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:07:30.570+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:07:30.574+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:07:35.641+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:07:35.641+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:07:35.645+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:07:40.735+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:07:40.735+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:07:40.740+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:07:45.789+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:07:45.789+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:07:45.794+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:07:50.847+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:07:50.847+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:07:50.850+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:07:55.895+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:07:55.896+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:07:55.900+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:08:00.960+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:08:00.960+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:08:00.970+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:08:02.323+02:00 INFO  file_system::write_operations  delete_files_start: sources=["/Users/veszelovszki/projects-git/vdavid/prvw/target"], volume=root, dry_run=false
+2026-07-31T00:08:02.323+02:00 INFO  op_manager  admit op=bd66f4f2-785d-4d9b-85d9-d015df307f9c
+2026-07-31T00:08:02.323+02:00 DEBUG file_system::write_operations::delete::walker  delete_files_with_progress: reusing cached scan for operation_id=bd66f4f2-785d-4d9b-85d9-d015df307f9c, preview_id=3cbe0008-9c5d-4765-b920-1bbac04d0db9, files=49867, bytes=19143820136
+2026-07-31T00:08:06.074+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:08:06.075+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:08:06.078+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:08:11.128+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:08:11.128+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:08:11.133+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:08:16.200+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:08:16.200+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:08:16.205+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:08:21.252+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:08:21.252+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:08:21.256+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:08:26.298+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:08:26.298+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:08:26.303+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:08:31.340+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:08:31.340+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:08:31.345+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:08:36.437+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:08:36.440+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:08:36.552+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:08:41.616+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:08:41.616+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:08:41.620+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:08:46.666+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:08:46.666+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:08:46.755+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:08:51.832+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:08:51.832+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:08:51.837+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:08:56.874+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:08:56.874+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:08:57.001+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:09:02.052+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:09:02.052+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:09:02.056+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:09:07.128+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:09:07.128+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:09:07.138+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:09:12.181+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:09:12.181+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:09:12.185+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:09:17.263+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:09:17.263+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:09:17.268+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:09:22.340+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:09:22.340+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:09:22.343+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:09:27.405+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:09:27.405+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:09:27.409+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:09:32.493+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:09:32.493+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:09:32.497+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:09:37.547+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:09:37.547+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:09:37.551+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:09:42.621+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:09:42.621+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:09:42.625+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:09:47.683+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:09:47.683+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:09:47.688+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:09:52.752+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:09:52.752+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:09:52.757+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:09:57.851+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:09:57.851+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:09:57.856+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:10:02.916+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:10:02.916+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:10:02.925+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:10:08.019+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:10:08.020+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:10:08.024+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:10:13.146+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:10:13.146+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:10:13.150+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:10:18.260+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:10:18.260+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:10:18.265+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:10:23.312+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:10:23.312+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:10:23.316+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:10:28.357+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:10:28.357+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:10:28.361+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:10:33.400+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:10:33.400+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:10:33.408+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810248192, total_free=3766810248192
+2026-07-31T00:10:38.463+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:10:38.463+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:10:38.468+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:10:43.498+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:10:43.498+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:10:43.507+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810264576, total_free=3766810264576
+2026-07-31T00:10:48.548+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:10:48.548+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:10:48.552+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810264576, total_free=3766810264576
+2026-07-31T00:10:53.282+02:00 INFO  op_manager  run instant op=8f5e9431-eb90-4c3a-b708-c8bccdf44e89
+2026-07-31T00:10:53.282+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::create_directory: share=naspi, path="saves/2026-07-31 SMS Backup & Restore save"
+2026-07-31T00:10:53.282+02:00 DEBUG smb2::client::tree  tree: create_directory path=saves\2026-07-31 SMS Backup & Restore save
+2026-07-31T00:10:53.291+02:00 INFO  smb2::client::tree  tree: created directory=saves\2026-07-31 SMS Backup & Restore save
+2026-07-31T00:10:53.291+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/Volumes/naspi/saves/2026-07-31 SMS Backup & Restore save", smb_path="saves/2026-07-31 SMS Backup & Restore save"
+2026-07-31T00:10:53.291+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save
+2026-07-31T00:10:53.295+02:00 DEBUG smb2::client::tree  tree: stat done, size=0, is_dir=true
+2026-07-31T00:10:53.589+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:10:53.590+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:10:53.593+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810264576, total_free=3766810264576
+2026-07-31T00:10:56.502+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save
+2026-07-31T00:10:56.506+02:00 DEBUG smb2::client::tree  tree: stat done, size=0, is_dir=true
+2026-07-31T00:10:57.987+02:00 INFO  file_system::write_operations::transfer::volume_copy  copy_between_volumes: operation_id=a8df2e93-be03-40b7-82b4-d72a65e39498, source_volume=Macintosh HD, dest_volume=naspi, 764 sources, dest=/saves/2026-07-31 SMS Backup & Restore save
+2026-07-31T00:10:57.987+02:00 INFO  op_manager  admit op=a8df2e93-be03-40b7-82b4-d72a65e39498
+2026-07-31T00:10:57.987+02:00 DEBUG file_system::write_operations::transfer::volume_copy  copy_volumes_with_progress: starting operation_id=a8df2e93-be03-40b7-82b4-d72a65e39498, 764 sources
+2026-07-31T00:10:57.987+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save
+2026-07-31T00:10:57.992+02:00 DEBUG smb2::client::tree  tree: stat done, size=0, is_dir=true
+2026-07-31T00:10:57.992+02:00 DEBUG file_system::write_operations::transfer::volume_preflight  scan_volume_sources: reused cached preview for op=a8df2e93-be03-40b7-82b4-d72a65e39498, files=764, bytes=3098637054, per_path=0
+2026-07-31T00:10:57.992+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:10:57.992+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:10:57.997+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:10:57.997+02:00 DEBUG file_system::write_operations::transfer::volume_copy  copy_volumes_with_progress: 764 sources, concurrency=8 (src=8, dst=10), path=concurrent
+2026-07-31T00:10:57.997+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/saves/2026-07-31 SMS Backup & Restore save/sms-20260730001726.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/sms-20260730001726.xml"
+2026-07-31T00:10:57.997+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\sms-20260730001726.xml
+2026-07-31T00:10:58.002+02:00 DEBUG file_system::volume::backends::smb::session  SmbVolume::get_metadata(share=naspi): Protocol error: STATUS_OBJECT_NAME_NOT_FOUND during Create
+2026-07-31T00:10:58.002+02:00 DEBUG file_system::write_operations::transfer::volume_copy  copy_volumes_with_progress: spawning copy /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/sms-20260730001726.xml -> /saves/2026-07-31 SMS Backup & Restore save/sms-20260730001726.xml
+2026-07-31T00:10:58.002+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/saves/2026-07-31 SMS Backup & Restore save/calls-20260730001726.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/calls-20260730001726.xml"
+2026-07-31T00:10:58.002+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\calls-20260730001726.xml
+2026-07-31T00:10:58.011+02:00 DEBUG file_system::volume::backends::smb::session  SmbVolume::get_metadata(share=naspi): Protocol error: STATUS_OBJECT_NAME_NOT_FOUND during Create
+2026-07-31T00:10:58.011+02:00 DEBUG file_system::write_operations::transfer::volume_copy  copy_volumes_with_progress: spawning copy /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/calls-20260730001726.xml -> /saves/2026-07-31 SMS Backup & Restore save/calls-20260730001726.xml
+2026-07-31T00:10:58.011+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/saves/2026-07-31 SMS Backup & Restore save/sms-20260729005626.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/sms-20260729005626.xml"
+2026-07-31T00:10:58.011+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\sms-20260729005626.xml
+2026-07-31T00:10:58.016+02:00 DEBUG file_system::volume::backends::smb::session  SmbVolume::get_metadata(share=naspi): Protocol error: STATUS_OBJECT_NAME_NOT_FOUND during Create
+2026-07-31T00:10:58.016+02:00 DEBUG file_system::write_operations::transfer::volume_copy  copy_volumes_with_progress: spawning copy /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/sms-20260729005626.xml -> /saves/2026-07-31 SMS Backup & Restore save/sms-20260729005626.xml
+2026-07-31T00:10:58.016+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/saves/2026-07-31 SMS Backup & Restore save/calls-20260729005626.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/calls-20260729005626.xml"
+2026-07-31T00:10:58.016+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\calls-20260729005626.xml
+2026-07-31T00:10:58.020+02:00 DEBUG file_system::write_operations::transfer::volume_copy  copy_volumes_with_progress: spawning copy /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/calls-20260729005626.xml -> /saves/2026-07-31 SMS Backup & Restore save/calls-20260729005626.xml
+2026-07-31T00:10:58.020+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/saves/2026-07-31 SMS Backup & Restore save/sms-20260728003131.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/sms-20260728003131.xml"
+2026-07-31T00:10:58.020+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\sms-20260728003131.xml
+2026-07-31T00:10:58.026+02:00 DEBUG file_system::write_operations::transfer::volume_copy  copy_volumes_with_progress: spawning copy /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/sms-20260728003131.xml -> /saves/2026-07-31 SMS Backup & Restore save/sms-20260728003131.xml
+2026-07-31T00:10:58.026+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/saves/2026-07-31 SMS Backup & Restore save/calls-20260728003131.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/calls-20260728003131.xml"
+2026-07-31T00:10:58.026+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\calls-20260728003131.xml
+2026-07-31T00:10:58.030+02:00 DEBUG file_system::write_operations::transfer::volume_copy  copy_volumes_with_progress: spawning copy /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/calls-20260728003131.xml -> /saves/2026-07-31 SMS Backup & Restore save/calls-20260728003131.xml
+2026-07-31T00:10:58.030+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/saves/2026-07-31 SMS Backup & Restore save/sms-20260727002817.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/sms-20260727002817.xml"
+2026-07-31T00:10:58.030+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\sms-20260727002817.xml
+2026-07-31T00:10:58.034+02:00 DEBUG file_system::write_operations::transfer::volume_copy  copy_volumes_with_progress: spawning copy /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/sms-20260727002817.xml -> /saves/2026-07-31 SMS Backup & Restore save/sms-20260727002817.xml
+2026-07-31T00:10:58.035+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/saves/2026-07-31 SMS Backup & Restore save/calls-20260727002817.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/calls-20260727002817.xml"
+2026-07-31T00:10:58.035+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\calls-20260727002817.xml
+2026-07-31T00:10:58.039+02:00 DEBUG file_system::write_operations::transfer::volume_copy  copy_volumes_with_progress: spawning copy /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/calls-20260727002817.xml -> /saves/2026-07-31 SMS Backup & Restore save/calls-20260727002817.xml
+2026-07-31T00:10:58.039+02:00 DEBUG file_system::write_operations::transfer::volume_strategy  stream_pipe_file: /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/sms-20260730001726.xml -> /saves/2026-07-31 SMS Backup & Restore save/sms-20260730001726.xml
+2026-07-31T00:10:58.039+02:00 DEBUG file_system::write_operations::transfer::volume_strategy  stream_pipe_file: /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/calls-20260730001726.xml -> /saves/2026-07-31 SMS Backup & Restore save/calls-20260730001726.xml
+2026-07-31T00:10:58.039+02:00 DEBUG file_system::write_operations::transfer::volume_strategy  stream_pipe_file: /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/sms-20260729005626.xml -> /saves/2026-07-31 SMS Backup & Restore save/sms-20260729005626.xml
+2026-07-31T00:10:58.039+02:00 DEBUG file_system::write_operations::transfer::volume_strategy  stream_pipe_file: /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/calls-20260729005626.xml -> /saves/2026-07-31 SMS Backup & Restore save/calls-20260729005626.xml
+2026-07-31T00:10:58.039+02:00 DEBUG file_system::write_operations::transfer::volume_strategy  stream_pipe_file: /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/sms-20260728003131.xml -> /saves/2026-07-31 SMS Backup & Restore save/sms-20260728003131.xml
+2026-07-31T00:10:58.039+02:00 DEBUG file_system::write_operations::transfer::volume_strategy  stream_pipe_file: /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/calls-20260728003131.xml -> /saves/2026-07-31 SMS Backup & Restore save/calls-20260728003131.xml
+2026-07-31T00:10:58.039+02:00 DEBUG file_system::write_operations::transfer::volume_strategy  stream_pipe_file: /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/sms-20260727002817.xml -> /saves/2026-07-31 SMS Backup & Restore save/sms-20260727002817.xml
+2026-07-31T00:10:58.039+02:00 DEBUG file_system::write_operations::transfer::volume_strategy  stream_pipe_file: /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/calls-20260727002817.xml -> /saves/2026-07-31 SMS Backup & Restore save/calls-20260727002817.xml
+2026-07-31T00:10:58.039+02:00 DEBUG file_system::volume::backends::smb::streams  SmbVolume::write_from_stream: share=naspi, path="saves/2026-07-31 SMS Backup & Restore save/sms-20260730001726.xml", size=13422009
+2026-07-31T00:10:58.039+02:00 DEBUG smb2::client::stream  stream: open_file_writer path=saves\2026-07-31 SMS Backup & Restore save\sms-20260730001726.xml
+2026-07-31T00:10:58.039+02:00 DEBUG file_system::volume::backends::smb::streams  SmbVolume::write_from_stream: share=naspi, path="saves/2026-07-31 SMS Backup & Restore save/calls-20260730001726.xml", size=520642
+2026-07-31T00:10:58.039+02:00 DEBUG file_system::volume::backends::smb::streams  SmbVolume::write_from_stream: share=naspi, path="saves/2026-07-31 SMS Backup & Restore save/calls-20260729005626.xml", size=520347
+2026-07-31T00:10:58.039+02:00 DEBUG file_system::volume::backends::smb::streams  SmbVolume::write_from_stream: share=naspi, path="saves/2026-07-31 SMS Backup & Restore save/sms-20260729005626.xml", size=13422009
+2026-07-31T00:10:58.039+02:00 DEBUG smb2::client::stream  stream: open_file_writer path=saves\2026-07-31 SMS Backup & Restore save\sms-20260729005626.xml
+2026-07-31T00:10:58.039+02:00 DEBUG file_system::volume::backends::smb::streams  SmbVolume::write_from_stream: share=naspi, path="saves/2026-07-31 SMS Backup & Restore save/sms-20260728003131.xml", size=13421605
+2026-07-31T00:10:58.039+02:00 DEBUG smb2::client::stream  stream: open_file_writer path=saves\2026-07-31 SMS Backup & Restore save\sms-20260728003131.xml
+2026-07-31T00:10:58.039+02:00 DEBUG file_system::volume::backends::smb::streams  SmbVolume::write_from_stream: share=naspi, path="saves/2026-07-31 SMS Backup & Restore save/calls-20260728003131.xml", size=520345
+2026-07-31T00:10:58.039+02:00 DEBUG file_system::volume::backends::smb::streams  SmbVolume::write_from_stream: share=naspi, path="saves/2026-07-31 SMS Backup & Restore save/sms-20260727002817.xml", size=13421605
+2026-07-31T00:10:58.039+02:00 DEBUG smb2::client::stream  stream: open_file_writer path=saves\2026-07-31 SMS Backup & Restore save\sms-20260727002817.xml
+2026-07-31T00:10:58.039+02:00 DEBUG file_system::volume::backends::smb::streams  SmbVolume::write_from_stream: share=naspi, path="saves/2026-07-31 SMS Backup & Restore save/calls-20260727002817.xml", size=520346
+2026-07-31T00:10:58.040+02:00 DEBUG file_system::volume::backends::smb::streams  SmbVolume::write_from_stream: using compound fast-path (520346 bytes)
+2026-07-31T00:10:58.040+02:00 DEBUG smb2::client::tree  tree: write_file_compound path=saves\2026-07-31 SMS Backup & Restore save\calls-20260727002817.xml, len=520346
+2026-07-31T00:10:58.041+02:00 DEBUG file_system::volume::backends::smb::streams  SmbVolume::write_from_stream: using compound fast-path (520345 bytes)
+2026-07-31T00:10:58.041+02:00 DEBUG smb2::client::tree  tree: write_file_compound path=saves\2026-07-31 SMS Backup & Restore save\calls-20260728003131.xml, len=520345
+2026-07-31T00:10:58.041+02:00 DEBUG file_system::volume::backends::smb::streams  SmbVolume::write_from_stream: using compound fast-path (520347 bytes)
+2026-07-31T00:10:58.041+02:00 DEBUG smb2::client::tree  tree: write_file_compound path=saves\2026-07-31 SMS Backup & Restore save\calls-20260729005626.xml, len=520347
+2026-07-31T00:10:58.041+02:00 DEBUG file_system::volume::backends::smb::streams  SmbVolume::write_from_stream: using compound fast-path (520642 bytes)
+2026-07-31T00:10:58.041+02:00 DEBUG smb2::client::tree  tree: write_file_compound path=saves\2026-07-31 SMS Backup & Restore save\calls-20260730001726.xml, len=520642
+2026-07-31T00:10:58.053+02:00 DEBUG smb2::client::watcher  watcher: received 1 change event(s)
+2026-07-31T00:10:58.053+02:00 DEBUG smb2::client::connection  dispatch: cmd=ChangeNotify, msg_id=1857, credit_charge=1, tree_id=Some(TreeId(1058520985)), signed=true, encrypted=false, len=96
+2026-07-31T00:10:58.053+02:00 DEBUG smb2::client::watcher  watcher: received 1 change event(s)
+2026-07-31T00:10:58.053+02:00 DEBUG smb2::client::connection  dispatch: cmd=ChangeNotify, msg_id=1858, credit_charge=1, tree_id=Some(TreeId(1058520985)), signed=true, encrypted=false, len=96
+2026-07-31T00:10:58.060+02:00 DEBUG smb2::client::connection  recv: STATUS_PENDING (interim), cmd=ChangeNotify, msg_id=1858
+2026-07-31T00:10:58.060+02:00 DEBUG smb2::client::watcher  watcher: received 2 change event(s)
+2026-07-31T00:10:58.060+02:00 DEBUG smb2::client::connection  dispatch: cmd=ChangeNotify, msg_id=1859, credit_charge=1, tree_id=Some(TreeId(1058520985)), signed=true, encrypted=false, len=96
+2026-07-31T00:10:58.068+02:00 DEBUG smb2::client::connection  recv: STATUS_PENDING (interim), cmd=ChangeNotify, msg_id=1859
+2026-07-31T00:10:58.080+02:00 DEBUG smb2::client::tree  tree: write_file_compound done, wrote 520346 bytes
+2026-07-31T00:10:58.080+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/Volumes/naspi/saves/2026-07-31 SMS Backup & Restore save/calls-20260727002817.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/calls-20260727002817.xml"
+2026-07-31T00:10:58.080+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\calls-20260727002817.xml
+2026-07-31T00:10:58.080+02:00 DEBUG smb2::client::watcher  watcher: received 1 change event(s)
+2026-07-31T00:10:58.080+02:00 DEBUG smb2::client::connection  dispatch: cmd=ChangeNotify, msg_id=1860, credit_charge=1, tree_id=Some(TreeId(1058520985)), signed=true, encrypted=false, len=96
+2026-07-31T00:10:58.102+02:00 DEBUG smb2::client::connection  recv: STATUS_PENDING (interim), cmd=ChangeNotify, msg_id=1860
+2026-07-31T00:10:58.102+02:00 DEBUG smb2::client::connection  dispatch: cmd=ChangeNotify, msg_id=1861, credit_charge=1, tree_id=Some(TreeId(1058520985)), signed=true, encrypted=false, len=96
+2026-07-31T00:10:58.102+02:00 DEBUG smb2::client::tree  tree: write_file_compound done, wrote 520345 bytes
+2026-07-31T00:10:58.102+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/Volumes/naspi/saves/2026-07-31 SMS Backup & Restore save/calls-20260728003131.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/calls-20260728003131.xml"
+2026-07-31T00:10:58.102+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\calls-20260728003131.xml
+2026-07-31T00:10:58.115+02:00 DEBUG smb2::client::tree  tree: write_file_compound done, wrote 520347 bytes
+2026-07-31T00:10:58.115+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/Volumes/naspi/saves/2026-07-31 SMS Backup & Restore save/calls-20260729005626.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/calls-20260729005626.xml"
+2026-07-31T00:10:58.115+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\calls-20260729005626.xml
+2026-07-31T00:10:58.115+02:00 DEBUG smb2::client::connection  dispatch: cmd=ChangeNotify, msg_id=1862, credit_charge=1, tree_id=Some(TreeId(1058520985)), signed=true, encrypted=false, len=96
+2026-07-31T00:10:58.149+02:00 DEBUG smb2::client::tree  tree: write_file_compound done, wrote 520642 bytes
+2026-07-31T00:10:58.149+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/Volumes/naspi/saves/2026-07-31 SMS Backup & Restore save/calls-20260730001726.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/calls-20260730001726.xml"
+2026-07-31T00:10:58.149+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\calls-20260730001726.xml
+2026-07-31T00:10:58.150+02:00 DEBUG smb2::client::connection  recv: STATUS_PENDING (interim), cmd=ChangeNotify, msg_id=1861
+2026-07-31T00:10:58.150+02:00 DEBUG smb2::client::connection  dispatch: cmd=ChangeNotify, msg_id=1863, credit_charge=1, tree_id=Some(TreeId(1058520985)), signed=true, encrypted=false, len=96
+2026-07-31T00:10:58.151+02:00 DEBUG smb2::client::connection  recv: STATUS_PENDING (interim), cmd=ChangeNotify, msg_id=1862
+2026-07-31T00:10:58.188+02:00 DEBUG smb2::client::connection  recv: STATUS_PENDING (interim), cmd=ChangeNotify, msg_id=1863
+2026-07-31T00:10:58.352+02:00 DEBUG file_system::volume::backends::smb_watcher  smb_watcher(naspi): processing 8 event(s) across 1 dir(s)
+2026-07-31T00:10:58.352+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/Volumes/naspi/saves/2026-07-31 SMS Backup & Restore save/sms-20260730001726.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/sms-20260730001726.xml"
+2026-07-31T00:10:58.352+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\sms-20260730001726.xml
+2026-07-31T00:10:58.406+02:00 DEBUG smb2::client::tree  tree: flushing file handle
+2026-07-31T00:10:58.622+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:10:58.622+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:10:58.660+02:00 DEBUG smb2::client::tree  tree: flushing file handle
+2026-07-31T00:10:58.884+02:00 DEBUG smb2::client::tree  tree: flushing file handle
+2026-07-31T00:10:59.110+02:00 DEBUG smb2::client::tree  tree: stat done, size=520346, is_dir=false
+2026-07-31T00:10:59.111+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/saves/2026-07-31 SMS Backup & Restore save/sms-20260726002817.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/sms-20260726002817.xml"
+2026-07-31T00:10:59.111+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\sms-20260726002817.xml
+2026-07-31T00:10:59.113+02:00 DEBUG smb2::client::tree  tree: stat done, size=13422009, is_dir=false
+2026-07-31T00:10:59.113+02:00 DEBUG smb2::client::tree  tree: fs_info done, total=10168946529280, free=3766810256384, total_free=3766810256384
+2026-07-31T00:10:59.113+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/Volumes/naspi/saves/2026-07-31 SMS Backup & Restore save/sms-20260729005626.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/sms-20260729005626.xml"
+2026-07-31T00:10:59.113+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\sms-20260729005626.xml
+2026-07-31T00:10:59.114+02:00 DEBUG file_system::volume::backends::smb::session  SmbVolume::get_metadata(share=naspi): Protocol error: STATUS_OBJECT_NAME_NOT_FOUND during Create [+5 identical suppressed]
+2026-07-31T00:10:59.114+02:00 DEBUG file_system::write_operations::transfer::volume_copy  copy_volumes_with_progress: spawning copy /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/sms-20260726002817.xml -> /saves/2026-07-31 SMS Backup & Restore save/sms-20260726002817.xml
+2026-07-31T00:10:59.114+02:00 DEBUG smb2::client::tree  tree: stat done, size=520345, is_dir=false
+2026-07-31T00:10:59.114+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/saves/2026-07-31 SMS Backup & Restore save/calls-20260726002817.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/calls-20260726002817.xml"
+2026-07-31T00:10:59.114+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\calls-20260726002817.xml
+2026-07-31T00:10:59.120+02:00 DEBUG smb2::client::tree  tree: stat done, size=13422009, is_dir=false
+2026-07-31T00:10:59.120+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/Volumes/naspi/saves/2026-07-31 SMS Backup & Restore save/sms-20260728003131.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/sms-20260728003131.xml"
+2026-07-31T00:10:59.120+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\sms-20260728003131.xml
+2026-07-31T00:10:59.120+02:00 DEBUG file_system::volume::backends::smb::session  SmbVolume::get_metadata(share=naspi): Protocol error: STATUS_OBJECT_NAME_NOT_FOUND during Create
+2026-07-31T00:10:59.120+02:00 DEBUG file_system::write_operations::transfer::volume_copy  copy_volumes_with_progress: spawning copy /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/calls-20260726002817.xml -> /saves/2026-07-31 SMS Backup & Restore save/calls-20260726002817.xml
+2026-07-31T00:10:59.120+02:00 DEBUG smb2::client::tree  tree: stat done, size=520347, is_dir=false
+2026-07-31T00:10:59.120+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/saves/2026-07-31 SMS Backup & Restore save/sms-20260725002819.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/sms-20260725002819.xml"
+2026-07-31T00:10:59.120+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\sms-20260725002819.xml
+2026-07-31T00:10:59.124+02:00 DEBUG file_system::volume::backends::smb::session  SmbVolume::get_metadata(share=naspi): Protocol error: STATUS_OBJECT_NAME_NOT_FOUND during Create
+2026-07-31T00:10:59.124+02:00 DEBUG file_system::write_operations::transfer::volume_copy  copy_volumes_with_progress: spawning copy /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/sms-20260725002819.xml -> /saves/2026-07-31 SMS Backup & Restore save/sms-20260725002819.xml
+2026-07-31T00:10:59.124+02:00 DEBUG smb2::client::tree  tree: stat done, size=520642, is_dir=false
+2026-07-31T00:10:59.124+02:00 DEBUG smb2::client::tree  tree: stat done, size=13421605, is_dir=false
+2026-07-31T00:10:59.124+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/Volumes/naspi/saves/2026-07-31 SMS Backup & Restore save/sms-20260727002817.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/sms-20260727002817.xml"
+2026-07-31T00:10:59.124+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\sms-20260727002817.xml
+2026-07-31T00:10:59.124+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/saves/2026-07-31 SMS Backup & Restore save/calls-20260725002819.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/calls-20260725002819.xml"
+2026-07-31T00:10:59.124+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\calls-20260725002819.xml
+2026-07-31T00:10:59.128+02:00 DEBUG file_system::write_operations::transfer::volume_copy  copy_volumes_with_progress: spawning copy /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/calls-20260725002819.xml -> /saves/2026-07-31 SMS Backup & Restore save/calls-20260725002819.xml
+2026-07-31T00:10:59.128+02:00 DEBUG smb2::client::tree  tree: stat done, size=13421605, is_dir=false
+2026-07-31T00:10:59.128+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/Volumes/naspi/saves/2026-07-31 SMS Backup & Restore save/calls-20260727002817.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/calls-20260727002817.xml"
+2026-07-31T00:10:59.128+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\calls-20260727002817.xml
+2026-07-31T00:10:59.128+02:00 DEBUG file_system::write_operations::transfer::volume_strategy  stream_pipe_file: /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/sms-20260726002817.xml -> /saves/2026-07-31 SMS Backup & Restore save/sms-20260726002817.xml
+2026-07-31T00:10:59.128+02:00 DEBUG file_system::write_operations::transfer::volume_strategy  stream_pipe_file: /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/calls-20260726002817.xml -> /saves/2026-07-31 SMS Backup & Restore save/calls-20260726002817.xml
+2026-07-31T00:10:59.128+02:00 DEBUG file_system::write_operations::transfer::volume_strategy  stream_pipe_file: /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/sms-20260725002819.xml -> /saves/2026-07-31 SMS Backup & Restore save/sms-20260725002819.xml
+2026-07-31T00:10:59.128+02:00 DEBUG file_system::write_operations::transfer::volume_strategy  stream_pipe_file: /Users/veszelovszki/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore/calls-20260725002819.xml -> /saves/2026-07-31 SMS Backup & Restore save/calls-20260725002819.xml
+2026-07-31T00:10:59.128+02:00 DEBUG file_system::volume::backends::smb::streams  SmbVolume::write_from_stream: share=naspi, path="saves/2026-07-31 SMS Backup & Restore save/sms-20260726002817.xml", size=13421021
+2026-07-31T00:10:59.128+02:00 DEBUG smb2::client::stream  stream: open_file_writer path=saves\2026-07-31 SMS Backup & Restore save\sms-20260726002817.xml
+2026-07-31T00:10:59.128+02:00 DEBUG file_system::volume::backends::smb::streams  SmbVolume::write_from_stream: share=naspi, path="saves/2026-07-31 SMS Backup & Restore save/calls-20260726002817.xml", size=520357
+2026-07-31T00:10:59.128+02:00 DEBUG file_system::volume::backends::smb::streams  SmbVolume::write_from_stream: share=naspi, path="saves/2026-07-31 SMS Backup & Restore save/sms-20260725002819.xml", size=13421021
+2026-07-31T00:10:59.128+02:00 DEBUG smb2::client::stream  stream: open_file_writer path=saves\2026-07-31 SMS Backup & Restore save\sms-20260725002819.xml
+2026-07-31T00:10:59.128+02:00 DEBUG file_system::volume::backends::smb::streams  SmbVolume::write_from_stream: share=naspi, path="saves/2026-07-31 SMS Backup & Restore save/calls-20260725002819.xml", size=520341
+2026-07-31T00:10:59.129+02:00 DEBUG file_system::volume::backends::smb::streams  SmbVolume::write_from_stream: using compound fast-path (520357 bytes)
+2026-07-31T00:10:59.129+02:00 DEBUG smb2::client::tree  tree: write_file_compound path=saves\2026-07-31 SMS Backup & Restore save\calls-20260726002817.xml, len=520357
+2026-07-31T00:10:59.130+02:00 DEBUG file_system::volume::backends::smb::streams  SmbVolume::write_from_stream: using compound fast-path (520341 bytes)
+2026-07-31T00:10:59.130+02:00 DEBUG smb2::client::tree  tree: write_file_compound path=saves\2026-07-31 SMS Backup & Restore save\calls-20260725002819.xml, len=520341
+2026-07-31T00:10:59.150+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/Volumes/naspi/saves/2026-07-31 SMS Backup & Restore save/sms-20260728003131.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/sms-20260728003131.xml"
+2026-07-31T00:10:59.150+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\sms-20260728003131.xml
+2026-07-31T00:10:59.150+02:00 DEBUG smb2::client::tree  tree: stat done, size=520346, is_dir=false
+2026-07-31T00:10:59.150+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/Volumes/naspi/saves/2026-07-31 SMS Backup & Restore save/sms-20260729005626.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/sms-20260729005626.xml"
+2026-07-31T00:10:59.150+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\sms-20260729005626.xml
+2026-07-31T00:10:59.150+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/Volumes/naspi/saves/2026-07-31 SMS Backup & Restore save/calls-20260728003131.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/calls-20260728003131.xml"
+2026-07-31T00:10:59.150+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\calls-20260728003131.xml
+2026-07-31T00:10:59.151+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/Volumes/naspi/saves/2026-07-31 SMS Backup & Restore save/sms-20260730001726.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/sms-20260730001726.xml"
+2026-07-31T00:10:59.151+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\sms-20260730001726.xml
+2026-07-31T00:10:59.151+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/Volumes/naspi/saves/2026-07-31 SMS Backup & Restore save/sms-20260727002817.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/sms-20260727002817.xml"
+2026-07-31T00:10:59.151+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\sms-20260727002817.xml
+2026-07-31T00:10:59.161+02:00 DEBUG smb2::client::tree  tree: write_file_compound done, wrote 520357 bytes
+2026-07-31T00:10:59.161+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/Volumes/naspi/saves/2026-07-31 SMS Backup & Restore save/calls-20260726002817.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/calls-20260726002817.xml"
+2026-07-31T00:10:59.161+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\calls-20260726002817.xml
+2026-07-31T00:10:59.166+02:00 DEBUG smb2::client::tree  tree: stat done, size=13421605, is_dir=false
+2026-07-31T00:10:59.166+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/saves/2026-07-31 SMS Backup & Restore save/sms-20260724020237.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/sms-20260724020237.xml"
+2026-07-31T00:10:59.166+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\sms-20260724020237.xml
+2026-07-31T00:10:59.166+02:00 DEBUG smb2::client::tree  tree: stat done, size=520345, is_dir=false
+2026-07-31T00:10:59.166+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_metadata: share=naspi, input="/Volumes/naspi/saves/2026-07-31 SMS Backup & Restore save/calls-20260729005626.xml", smb_path="saves/2026-07-31 SMS Backup & Restore save/calls-20260729005626.xml"
+2026-07-31T00:10:59.166+02:00 DEBUG smb2::client::tree  tree: stat (compound) path=saves\2026-07-31 SMS Backup & Restore save\calls-20260729005626.xml
+2026-07-31T00:11:04.141+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:11:04.141+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:11:12.197+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:11:12.197+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:11:20.252+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:11:20.252+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:11:28.303+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:11:28.303+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:11:36.340+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:11:36.341+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:11:44.397+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:11:44.397+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:11:52.434+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:11:52.434+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:12:00.492+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:12:00.492+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:12:08.543+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:12:08.543+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:12:16.602+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:12:16.602+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:12:24.685+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:12:24.685+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:12:32.725+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:12:32.725+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:12:40.757+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:12:40.757+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:12:48.817+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:12:48.818+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:12:56.885+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:12:56.885+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:13:04.931+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:13:04.932+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:13:12.990+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:13:12.990+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:13:21.038+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:13:21.038+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:13:29.098+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:13:29.098+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:13:37.148+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:13:37.148+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:13:45.194+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:13:45.194+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:13:53.263+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:13:53.264+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:14:01.313+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:14:01.313+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:14:09.376+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:14:09.377+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:14:17.441+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:14:17.441+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:14:25.491+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:14:25.491+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:14:33.550+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:14:33.550+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:14:41.617+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:14:41.619+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:14:53.557+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:14:53.557+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:15:02.430+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:15:02.430+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:15:10.478+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:15:10.479+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:15:18.548+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:15:18.548+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:15:26.604+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:15:26.604+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:15:34.653+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:15:34.653+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:15:42.761+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:15:42.761+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:15:50.916+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:15:50.916+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:15:59.007+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:15:59.007+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:16:07.150+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:16:07.150+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:16:15.277+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:16:15.277+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:16:23.399+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:16:23.399+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:16:31.516+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:16:31.516+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:16:39.620+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:16:39.620+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:16:47.783+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:16:47.783+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:16:55.967+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:16:55.967+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:17:04.118+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:17:04.118+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:17:12.223+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:17:12.223+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:17:20.329+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:17:20.329+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:17:28.438+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:17:28.438+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:17:36.496+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:17:36.496+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:17:44.538+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:17:44.538+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:17:52.576+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:17:52.576+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:18:00.632+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:18:00.632+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:18:08.680+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:18:08.680+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:18:16.789+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:18:16.789+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:18:24.989+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:18:24.989+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:18:33.229+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:18:33.229+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:18:41.459+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:18:41.459+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:18:49.606+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:18:49.606+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:18:57.718+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:18:57.718+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:19:06.110+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:19:06.110+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:19:14.649+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:19:14.649+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:19:23.399+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:19:23.400+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:19:32.261+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:19:32.261+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:19:40.385+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:19:40.385+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:19:48.497+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:19:48.497+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:19:56.593+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:19:56.594+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:20:04.743+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:20:04.743+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:20:12.882+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:20:12.883+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:20:20.995+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:20:20.995+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:20:29.228+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:20:29.379+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:20:37.273+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:20:37.273+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:20:45.321+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:20:45.321+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:20:53.363+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:20:53.363+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:21:01.430+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:21:01.430+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:21:09.476+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:21:09.476+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:21:17.537+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:21:17.537+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:21:25.582+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:21:25.582+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:21:33.669+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:21:33.669+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:21:46.593+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:21:46.593+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:21:54.711+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:21:54.711+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:22:02.828+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:22:02.828+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:22:29.468+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:22:29.468+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:22:37.604+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:22:37.604+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:22:45.794+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:22:45.794+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:23:31.122+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:23:31.122+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:23:39.799+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:23:39.799+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:23:47.890+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:23:47.891+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:23:56.023+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:23:56.023+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:24:04.139+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:24:04.139+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:24:12.225+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:24:12.226+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:24:20.338+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:24:20.338+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:24:28.416+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:24:28.416+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:24:36.524+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:24:36.524+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:24:44.600+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:24:44.600+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:24:52.699+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:24:52.699+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:25:00.794+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:25:00.794+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:25:08.976+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:25:08.976+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:25:17.050+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:25:17.050+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:25:25.223+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:25:25.223+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:25:33.316+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:25:33.316+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:25:41.418+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:25:41.418+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:25:49.528+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:25:49.529+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:25:57.632+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:25:57.632+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:26:05.789+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:26:05.789+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:26:13.867+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:26:13.867+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:26:21.968+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:26:21.969+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:26:30.098+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:26:30.098+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:26:42.687+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:26:42.687+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:26:58.667+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:26:58.667+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:27:06.792+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:27:06.792+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:27:14.895+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:27:14.895+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:27:23.100+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:27:23.100+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:27:31.158+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:27:31.158+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:27:39.244+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:27:39.244+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:27:47.306+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:27:47.306+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:27:55.375+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:27:55.375+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:28:03.493+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:28:03.493+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:28:11.566+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:28:11.566+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:28:19.651+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:28:19.651+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:28:27.710+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:28:27.710+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:28:35.803+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:28:35.803+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:28:43.889+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:28:43.889+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:28:51.957+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:28:51.957+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:28:59.991+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:28:59.992+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:29:08.044+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:29:08.044+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:29:16.091+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:29:16.091+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:29:24.148+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:29:24.148+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:29:32.188+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:29:32.191+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:29:40.249+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:29:40.249+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:29:48.280+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:29:48.280+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:29:56.328+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:29:56.328+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:30:04.397+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:30:04.398+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:30:12.434+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:30:12.435+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:30:20.494+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:30:20.494+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:30:28.538+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:30:28.538+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:30:36.620+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:30:36.620+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:30:44.681+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:30:44.681+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:30:52.720+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:30:52.720+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:31:00.750+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:31:00.750+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:31:08.825+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:31:08.826+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:31:16.951+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:31:16.951+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:31:24.999+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:31:25.000+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:31:33.063+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:31:33.063+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:31:41.115+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:31:41.115+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:31:49.184+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:31:49.184+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:31:57.266+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:31:57.266+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:32:05.306+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:32:05.306+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:32:13.374+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:32:13.374+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:32:21.480+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:32:21.480+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:32:29.520+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:32:29.521+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:32:37.571+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:32:37.572+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:32:45.662+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:32:45.662+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:32:53.728+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:32:53.728+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi
+2026-07-31T00:33:01.794+02:00 DEBUG file_system::volume::backends::smb::volume_impl  SmbVolume::get_space_info: share=naspi
+2026-07-31T00:33:01.794+02:00 DEBUG smb2::client::tree  tree: fs_info on share=naspi

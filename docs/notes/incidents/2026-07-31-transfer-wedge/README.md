@@ -1,0 +1,103 @@
+# Incident: cross-volume transfer wedged with no diagnostic trace (2026-07-31)
+
+A user-initiated copy of 764 files (3.10 GB) from a Dropbox File Provider folder to an SMB NAS share stopped dead after
+12 files and could not be cancelled, rolled back, or dismissed. The app had to be force-quit, leaving two
+byte-incomplete files at their final names on the destination.
+
+**The root cause is unknown and this evidence is not sufficient to find it.** That is the point of this record: it is
+the complete forensic yield of a serious production wedge, and it is preserved here as the target the observability
+work has to beat. The test for any instrumentation we add is: *would it have answered the open questions below?*
+
+Environment: Cmdr 0.36.2 (prod, `/Applications/Cmdr.app`), macOS 26.5.2, Apple silicon. Source
+`~/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore` (volume `root`, Dropbox File Provider domain, 764 files, none
+dataless). Destination `/Volumes/naspi/saves/2026-07-31 SMS Backup & Restore save` on share `naspi`
+(`smb-192-168-1-111-445-naspi`, `smbConnectionState: direct`). Operation `a8df2e93-be03-40b7-82b4-d72a65e39498`.
+
+## Files here
+
+- `transfer-and-smb.log` - the curated subset (851 lines): `write_operations`, the SMB backend, `smb2::client`, and
+  `op_manager`. Read this one first.
+- `cmdr.log.slice.gz` - everything the prod log holds for the whole run window (00:09-00:33, 11,286 lines), so nothing
+  is lost to the 50 MB rotation.
+- `sample-1-00-13.txt.gz`, `sample-2-00-17.txt.gz` - `sample 72874` of the wedged app, ~4 minutes apart. The pair is
+  what proves the wedged threads are stuck rather than churning.
+- `sample-dropbox-fileprovider.txt.gz` - `sample` of `DropboxFileProvider.appex` (pid 78509) during the wedge.
+
+## Timeline
+
+All times 2026-07-31, from `transfer-and-smb.log`.
+
+- `00:10:57.987` copy admitted, `concurrency=8 (src=8, dst=10)`, `path=concurrent`.
+- `00:10:58.039` the first 8 sources stream. All 8 land by ~`00:10:59.11` (~50 MB/s, healthy).
+- `00:10:59.114-128` four more spawn: `sms-20260726002817.xml`, `calls-20260726002817.xml`,
+  `sms-20260725002819.xml`, `calls-20260725002819.xml`.
+- The two small `calls-*` take `write_from_stream`'s compound fast-path and complete.
+- The two large `sms-*` log `stream: open_file_writer` and then emit nothing further, ever.
+- `00:10:59.166` the driver logs its destination `get_metadata` pre-check for source 13
+  (`sms-20260724020237.xml`) and never logs the matching `spawning copy`.
+- Silence. The remaining 752 sources were never started.
+- `00:20:30` onward the log shows the app working normally (downloads watcher, a volume mount, the 00:25:42 updater
+  check, global-shortcut refreshes). The backend was healthy; only the transfer subsystem was wedged.
+- `00:33:09` force-quit. Shutdown itself was orderly (mDNS cleanup, `MCP server stopped`).
+
+## Observed state during the wedge
+
+Progress froze at 79.78 MiB and `5/764` files and never moved again across 20+ minutes of polling. Meanwhile the
+destination actually held 10 complete files plus two incomplete ones:
+
+```
+sms-20260726002817.xml          0   <- zero bytes
+sms-20260725002819.xml    4194304   <- exactly 4 MiB, truncated
+```
+
+Both sit at their **final names**, not `.cmdr-tmp-*`: a new-file copy has no conflict, so it takes no safe-replace
+temp. After the force-quit these are indistinguishable from complete files by name.
+
+## What was ruled out, and how
+
+- **Not the source.** `dd` read both stuck source files directly during the wedge: 13 MB in ~3 ms from page cache. No
+  file in the folder carries `SF_DATALESS`, so nothing was waiting on a Dropbox materialization.
+- **Not the SMB connection.** `smb2::client::tree fs_info` kept succeeding every ~8 s throughout, and `tree: stat`
+  (11x) and `tree: write_file_compound` (2x) ran *after* the stall point.
+- **Not a thread blocked in transfer code.** Both samples contain zero frames in `volume_copy`, `volume_strategy`,
+  `checkpoint_stream`, or `smb2`. The driver and both stuck tasks are async-parked, invisible to a stack sample.
+- **Not global runtime starvation.** ~14 `tokio::runtime::blocking::pool` threads were idle and awaiting work.
+- **Not a frozen process.** The main thread is in its normal event loop, and unrelated subsystems kept logging.
+
+## The separate, confirmed defect the samples caught
+
+Both samples show 21-23 OS threads permanently blocked in
+`file_system::sync_status::get_ubiquitous_bool` -> `NSURL getResourceValue:forKey:error:` ->
+`FPCFCopyAttributeValuesForItem` -> `__NSXPCCONNECTION_IS_WAITING_FOR_A_SYNCHRONOUS_REPLY__`, 17 of them mid-XPC to
+`fileproviderd`. Still present, still blocked, four minutes later.
+
+`commands/sync_status.rs` wraps `get_sync_statuses` in a 2 s `blocking_with_timeout_flag`, but `spawn_blocking` work
+cannot be cancelled: the timeout returns an empty map to the frontend while the `std::thread::scope` keeps holding a
+Tokio blocking thread plus its ~11 spawned 8 MB-stack OS threads until the provider answers. The frontend then retries,
+starting another batch; two rounds were in flight when sampled.
+
+This folder is a worst case for it: with no dataless files, every one of the 764 paths misses the cheap `stat`
+shortcut and takes the NSURL/XPC path.
+
+Whether this contributed to the transfer wedge is **unknown** - different subsystems, no established link.
+
+## Open questions the evidence cannot answer
+
+1. What are the two `sms-*` copy tasks awaiting? A checkpoint park, an SMB response, or a lock?
+2. Why did the driver stop after source 13's `get_metadata` pre-check without logging `spawning copy`, when six of its
+   eight concurrency slots were free?
+3. Did three SMB requests (two large writes plus one Create) genuinely go unanswered while small operations on the same
+   connection kept flowing? Only `ChangeNotify` logs a `dispatch:` line, so Create and Write are invisible.
+4. Why did Rollback do nothing? No `copy_volumes_with_progress: rolling back op=` line was ever written, so the intent
+   never reached the driver or the driver never observed it while parked.
+
+## Why the log could not answer them
+
+- The transfer driver logs a task's spawn and its stream open, then nothing until completion. A task that stops
+  mid-stream is indistinguishable from one that is merely slow.
+- `checkpoint_stream`'s parks (user pause, source yield, destination yield) log nothing, so a park cannot be told from
+  a hang.
+- `smb2::client` logs request dispatch only on the `ChangeNotify` path; there is no outstanding-request accounting.
+- `file_system::sync_status` has no logging at all, which is why 23 wedged threads left no trace in the log.
+
+The remediation plan is `docs/specs/transfer-wedge-observability.md`.
