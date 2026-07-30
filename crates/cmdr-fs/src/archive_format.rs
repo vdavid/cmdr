@@ -24,8 +24,8 @@ pub enum ArchiveFormat {
 
 /// The outer compression wrapping a tar's byte stream. `Plain` is an
 /// uncompressed `.tar` (random-access members); the rest wrap the whole tar in
-/// one sequential stream (no random access — see [`super::index`] on the
-/// sequential class).
+/// one sequential stream (no random access — the archive reading core's
+/// `index` module explains the sequential class).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TarCodec {
     /// An uncompressed `.tar`: members are randomly accessible.
