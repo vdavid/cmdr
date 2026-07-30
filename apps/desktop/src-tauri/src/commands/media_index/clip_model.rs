@@ -5,9 +5,10 @@ use std::sync::Arc;
 
 use tauri::{AppHandle, Manager};
 
+use super::kick_all_ready_passes_for;
 use crate::media_index::clip;
 use crate::media_index::gate;
-use crate::media_index::scheduler::{self, MediaScheduler};
+use crate::media_index::scheduler::MediaScheduler;
 
 /// The CLIP model's install state, for the settings download affordance. Crosses the IPC
 /// boundary, so it derives `Serialize` + `specta::Type` (camelCase).
@@ -82,7 +83,7 @@ pub async fn media_index_download_clip_model(app: AppHandle) -> Result<(), Strin
     // Newly installed ⇒ every already-enriched image is CLIP-stale: kick the ready passes so
     // they embed CLIP now (Vision stays current — two-part staleness), like a threshold drop.
     if gate::is_enabled() {
-        scheduler::kick_all_ready_passes(&app);
+        kick_all_ready_passes_for(&app);
     }
     Ok(())
 }

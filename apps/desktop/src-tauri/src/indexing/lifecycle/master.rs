@@ -77,7 +77,7 @@ pub(crate) fn drive_index_should_run(master_on: bool, db_path: &Path, is_root: b
 /// record) or explicitly turned off (`user_disabled`) isn't in the list. The
 /// caller routes each id through the normal per-drive enable, so each transport's
 /// own gate (the direct-smb2 upgrade, MTP device presence) still applies.
-pub(crate) fn drives_to_resume(app: &tauri::AppHandle) -> Vec<String> {
+pub(crate) fn drives_to_resume() -> Vec<String> {
     let mut ids = vec![crate::indexing::ROOT_VOLUME_ID.to_string()];
     ids.extend(
         crate::indexing::host::volumes::current()
@@ -89,7 +89,7 @@ pub(crate) fn drives_to_resume(app: &tauri::AppHandle) -> Vec<String> {
         if super::state::is_active(id) {
             return false;
         }
-        match super::state::resolved_index_db_path(app, id) {
+        match super::state::resolved_index_db_path(id) {
             Ok(db_path) => drive_index_should_run(true, &db_path, id == crate::indexing::ROOT_VOLUME_ID),
             Err(e) => {
                 log::debug!(target: "indexing::master", "drives_to_resume: can't resolve db path for '{id}': {e}");

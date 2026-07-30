@@ -32,7 +32,7 @@ pub mod writer;
 #[cfg(test)]
 pub(crate) mod test_support;
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 #[cfg(test)]
 pub(crate) use tests::stress_test_helpers;
 
@@ -66,6 +66,7 @@ pub use read::queries::{
     get_volume_index_status_for_path, list_dir_children,
 };
 pub use resources::subsystem_stop::register_subsystem_stop_hook;
+pub use scanner::SYSTEM_DIR_EXCLUDES;
 pub use store::IndexFailure;
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]

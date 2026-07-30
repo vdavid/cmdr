@@ -33,8 +33,6 @@ use std::sync::LazyLock;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use tauri::AppHandle;
-
 use super::failure::IndexFailureSignal;
 use super::freshness::{Freshness, FreshnessEvent};
 use super::manager::IndexManager;
@@ -129,35 +127,24 @@ pub(crate) struct IndexInstance {
 pub(crate) static INDEX_REGISTRY: LazyLock<std::sync::Mutex<HashMap<VolumeId, IndexInstance>>> =
     LazyLock::new(|| std::sync::Mutex::new(HashMap::new()));
 
-/// App handle for the paths that still resolve app-owned configuration (the data
-/// dir) or hand one to a start entry point. Set once in `init`; absent only
-/// before setup or in unit tests, where the caller no-ops. Events do NOT go
-/// through here — every emit site holds its volume's `EventSink`.
-static APP_HANDLE: std::sync::OnceLock<AppHandle> = std::sync::OnceLock::new();
-
 // ── Initialization ───────────────────────────────────────────────────
 
-/// Force-initialize the registry static and stash the app handle. Called during
-/// app setup so the LazyLock is ready before any async tasks access it.
-pub fn init(app: &AppHandle) {
+/// Force-initialize the registry static. Called during app setup so the
+/// `LazyLock` is ready before any async tasks access it.
+///
+/// The subsystem holds no `AppHandle`: what it needs from the host arrives
+/// through the seams in `../host/`, so there is nothing to stash here.
+pub fn init() {
     drop(INDEX_REGISTRY.lock());
-    let _ = APP_HANDLE.set(app.clone());
     log::debug!("Indexing registry initialized");
-}
-
-/// The app handle stashed in `init`, for handle-free callers that need to reach
-/// the indexer from a context without one (the SMB on-connect auto-resume hook,
-/// fired from the volume backend / upgrade paths). `None` before setup or in unit
-/// tests, where the caller no-ops.
-pub(crate) fn app_handle() -> Option<AppHandle> {
-    APP_HANDLE.get().cloned()
 }
 
 /// The on-disk path of a volume's index DB (`index-<volume_id>.db` under the
 /// resolved app data dir). Single-sources the filename format shared by the
 /// indexer's open path and the on-connect resume probe.
-pub(crate) fn resolved_index_db_path(app: &AppHandle, volume_id: &str) -> Result<PathBuf, String> {
-    Ok(crate::config::resolved_app_data_dir(app)?.join(format!("index-{volume_id}.db")))
+pub(crate) fn resolved_index_db_path(volume_id: &str) -> Result<PathBuf, String> {
+    let data_dir = crate::indexing::host::config::data_dir().map_err(|e| e.to_string())?;
+    Ok(data_dir.join(format!("index-{volume_id}.db")))
 }
 
 /// Whether indexing should auto-start on launch.
@@ -617,9 +604,9 @@ impl IndexVolumeKind {
 ///
 /// `start_indexing` starts the local `root` volume; `start_indexing_for_smb`
 /// starts an SMB share. Both funnel through `start_indexing_for`.
-pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
+pub fn start_indexing() -> Result<(), String> {
     // The boot disk is APFS, so its inodes are trustworthy.
-    start_indexing_for(app, ROOT_VOLUME_ID, PathBuf::from("/"), IndexVolumeKind::Local, true)
+    start_indexing_for(ROOT_VOLUME_ID, PathBuf::from("/"), IndexVolumeKind::Local, true)
 }
 
 /// Start indexing for a specific volume id and root path.
@@ -629,7 +616,6 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
 /// drive; `true` for the boot disk and trait-scanned volumes). It threads to the
 /// per-scan `IndexPathSpace` so a FAT/exFAT drive stores `inode: None`.
 fn start_indexing_for(
-    app: &AppHandle,
     volume_id: &str,
     volume_root: PathBuf,
     kind: IndexVolumeKind,
@@ -645,10 +631,9 @@ fn start_indexing_for(
         return Ok(());
     }
     log::info!("start_indexing: begin for '{volume_id}' ({kind:?})");
-    // The one place an `AppHandle` becomes a sink: everything below this line
-    // reports through the trait, so no indexing code names Tauri to say something.
-    let events: Arc<dyn crate::indexing::EventSink> =
-        Arc::new(crate::events::index_mapping::TauriEventSink::new(app.clone()));
+    // The sink the host installed at startup. Everything below this line reports
+    // through the trait, so no indexing code names Tauri to say something.
+    let events = crate::indexing::host::events::current();
     crate::indexing::resources::memory_watchdog::start(Arc::clone(&events));
 
     // Lock-first reservation, per volume id. We open the init store and the
@@ -658,7 +643,7 @@ fn start_indexing_for(
     // per-volume guard, two writers race on the same DB (each owns its own
     // `Arc<AtomicI64>` ID counter and `AccumulatorMaps`), producing PK
     // collisions and inflated `dir_stats`.
-    let db_path = resolved_index_db_path(app, volume_id)?;
+    let db_path = resolved_index_db_path(volume_id)?;
     let init_store = IndexStore::open(&db_path).map_err(|e| format!("Failed to open init store: {e}"))?;
     let pool = Arc::new(ReadPool::new(db_path.clone()).map_err(|e| format!("Failed to create read pool: {e}"))?);
     let pending = Arc::new(PendingSizes::new());
@@ -822,14 +807,10 @@ fn start_indexing_for(
 /// `start_indexing_for` with the `Smb` kind so the lock-first reservation,
 /// load-as-Stale freshness seeding, and `Volume`-trait scan path all apply.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) fn start_indexing_for_smb_inner(
-    app: &AppHandle,
-    volume_id: &str,
-    mount_root: PathBuf,
-) -> Result<(), String> {
+pub(crate) fn start_indexing_for_smb_inner(volume_id: &str, mount_root: PathBuf) -> Result<(), String> {
     // SMB stores trait-provided inodes and doesn't run the local inode-keyed
     // rename pre-pass, so its inode identity is treated as trustworthy.
-    start_indexing_for(app, volume_id, mount_root, IndexVolumeKind::Smb, true)
+    start_indexing_for(volume_id, mount_root, IndexVolumeKind::Smb, true)
 }
 
 /// Internal MTP-start entry point, called by `mtp_index::start_indexing_for_mtp`
@@ -838,14 +819,10 @@ pub(crate) fn start_indexing_for_smb_inner(
 /// load-as-Stale freshness seeding, and `Volume`-trait scan path all apply.
 /// `volume_root` is the MTP volume's `mtp://{device}/{storage}` root.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) fn start_indexing_for_mtp_inner(
-    app: &AppHandle,
-    volume_id: &str,
-    volume_root: PathBuf,
-) -> Result<(), String> {
+pub(crate) fn start_indexing_for_mtp_inner(volume_id: &str, volume_root: PathBuf) -> Result<(), String> {
     // MTP reuses the `inode` column for PTP object handles and doesn't run the
     // local rename pre-pass, so its inode identity is treated as trustworthy.
-    start_indexing_for(app, volume_id, volume_root, IndexVolumeKind::Mtp, true)
+    start_indexing_for(volume_id, volume_root, IndexVolumeKind::Mtp, true)
 }
 
 /// Internal local-external-start entry point, called by
@@ -863,13 +840,11 @@ pub(crate) fn start_indexing_for_mtp_inner(
 /// false move), `true` for every other local format.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) fn start_indexing_for_local_external_inner(
-    app: &AppHandle,
     volume_id: &str,
     mount_root: PathBuf,
     inodes_trustworthy: bool,
 ) -> Result<(), String> {
     start_indexing_for(
-        app,
         volume_id,
         mount_root,
         IndexVolumeKind::LocalExternal,
@@ -921,8 +896,7 @@ pub(crate) fn reset_to_not_indexed(volume_id: &str) {
 /// (a failure only means a future reconnect might re-resume; logged).
 pub fn disable_drive_index_persist_intent(volume_id: &str) -> Result<(), String> {
     stop_indexing(volume_id)?;
-    if let Some(app) = app_handle()
-        && let Ok(db_path) = resolved_index_db_path(&app, volume_id)
+    if let Ok(db_path) = resolved_index_db_path(volume_id)
         && db_path.exists()
         && let Err(e) = IndexStore::set_user_disabled(&db_path, true)
     {

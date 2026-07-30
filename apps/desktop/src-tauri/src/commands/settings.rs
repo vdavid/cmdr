@@ -152,7 +152,7 @@ pub fn set_log_llm_calls(enabled: bool) {
 pub fn set_image_index_enabled(app: AppHandle, enabled: bool) {
     crate::media_index::gate::set_enabled(enabled);
     if enabled {
-        crate::media_index::scheduler::kick_all_ready_passes(&app);
+        crate::commands::media_index::kick_all_ready_passes_for(&app);
     }
 }
 

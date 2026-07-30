@@ -11,7 +11,9 @@ use std::sync::Arc;
 
 use cmdr_fs::volume::Volume;
 
-use crate::indexing::host::volumes::{MountFacts, ResolveMtpFut, ResolvedMtpObject, VolumeProvider};
+use crate::indexing::host::volumes::{
+    EnsureDirectSmbFut, MountFacts, ResolveMtpFut, ResolvedMtpObject, SmbUpgradeRefusal, VolumeProvider,
+};
 
 /// Answers the index from the app's real volume registry and platform probes.
 pub struct AppVolumeProvider;
@@ -63,6 +65,31 @@ impl VolumeProvider for AppVolumeProvider {
             .map(|info| info.used_bytes)
             .map_err(|e| log::warn!("Failed to read volume used bytes (tier-2 will degrade): {e}"))
             .ok()
+    }
+
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    fn ensure_direct_smb(&self, volume_id: &str) -> EnsureDirectSmbFut<'_> {
+        use crate::network::smb_upgrade::UpgradeResult;
+        let volume_id = volume_id.to_string();
+        Box::pin(async move {
+            match crate::commands::network::upgrade_to_smb_volume_inner(volume_id).await {
+                Ok(UpgradeResult::Success) => Ok(()),
+                Ok(UpgradeResult::CredentialsNeeded { .. }) => Err(SmbUpgradeRefusal::CredentialsNeeded),
+                Ok(UpgradeResult::NetworkError { message }) => {
+                    Err(SmbUpgradeRefusal::Failed(format!("network error: {message}").into()))
+                }
+                Err(e) => Err(SmbUpgradeRefusal::Failed(e.to_string().into())),
+            }
+        })
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    fn ensure_direct_smb(&self, _volume_id: &str) -> EnsureDirectSmbFut<'_> {
+        Box::pin(async move {
+            Err(SmbUpgradeRefusal::Failed(
+                "SMB is unsupported on this platform".to_string().into(),
+            ))
+        })
     }
 
     #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -127,9 +154,29 @@ mod tests {
     }
 
     /// The local disk must never classify as a network mount, or the local scanner
-    /// would refuse to walk it.
+    /// would refuse to walk it. Its inodes are also trustworthy, which is what lets
+    /// the rename pre-pass match files across a rename.
     #[test]
-    fn the_local_disk_is_not_a_network_mount() {
-        assert!(!AppVolumeProvider.mount_facts(Path::new("/")).is_network);
+    fn the_local_disk_is_a_trustworthy_non_network_mount() {
+        let facts = AppVolumeProvider.mount_facts(Path::new("/"));
+        assert!(!facts.is_network);
+        assert!(facts.inodes_trustworthy);
+    }
+
+    /// The negative half, against a REAL filesystem: a FAT32 mount's inodes are
+    /// derived rather than stored, so the rename pre-pass must not trust them. This
+    /// is the mapping the index-side scan tests take as given.
+    #[cfg(target_os = "macos")]
+    #[test]
+    #[ignore = "attaches a disk image; run with --run-ignored all"]
+    fn a_real_fat32_mount_detects_as_inode_untrusted() {
+        use crate::indexing::tests::external_drive_fixture::{DiskImageFilesystem, DiskImageFixture};
+
+        let fixture = DiskImageFixture::attach(DiskImageFilesystem::Fat32, "CMDRFACTS").expect("attach FAT32");
+        let facts = AppVolumeProvider.mount_facts(fixture.mount_point());
+        assert!(
+            !facts.inodes_trustworthy,
+            "a real FAT32 mount must detect as inode-untrusted"
+        );
     }
 }

@@ -74,6 +74,23 @@ pub(crate) struct ResolvedMtpObject {
     pub(crate) modified_at: Option<u64>,
 }
 
+/// Why the host couldn't hand the index a direct smb2 session.
+///
+/// Typed rather than a message, so the gate's own refusal reason maps across
+/// without anyone string-matching an upgrade failure.
+#[derive(Debug)]
+pub(crate) enum SmbUpgradeRefusal {
+    /// The share needs credentials the user hasn't supplied. The frontend's
+    /// "Sign in" flow owns collecting them; indexing stays off until it does.
+    CredentialsNeeded,
+    /// The upgrade failed for any other reason (network, auth, a session that
+    /// wouldn't come up). The diagnostic is log-only.
+    Failed(Diagnostic),
+}
+
+/// The future [`VolumeProvider::ensure_direct_smb`] returns.
+pub(crate) type EnsureDirectSmbFut<'a> = Pin<Box<dyn Future<Output = Result<(), SmbUpgradeRefusal>> + Send + 'a>>;
+
 /// The future [`VolumeProvider::resolve_mtp_object`] returns. Boxed because the
 /// provider is used as `dyn`.
 pub(crate) type ResolveMtpFut<'a> = Pin<Box<dyn Future<Output = Result<ResolvedMtpObject, Diagnostic>> + Send + 'a>>;
@@ -112,6 +129,15 @@ pub(crate) trait VolumeProvider: Send + Sync {
     /// `None` on any failure: a missing denominator degrades the ETA, and nothing
     /// about a scan may wait on it.
     fn volume_used_bytes(&self, path: &Path) -> Option<u64>;
+
+    /// Make sure `volume_id` is a direct smb2 session, upgrading it from an OS
+    /// mount if that's all there is.
+    ///
+    /// The index can only scan a share over the `Volume` trait, which an OS mount
+    /// doesn't provide. Mounting, credentials, and session management are all the
+    /// host's, so it does the upgrade and reports success or a typed refusal; on
+    /// success the host has REPLACED the registered volume, so re-`get` it.
+    fn ensure_direct_smb(&self, volume_id: &str) -> EnsureDirectSmbFut<'_>;
 
     /// Resolve a PTP object handle on `(device_id, storage_id)` to a path plus the
     /// metadata an index upsert needs.
@@ -216,6 +242,10 @@ impl VolumeProvider for NoVolumes {
     fn volume_used_bytes(&self, _path: &Path) -> Option<u64> {
         None
     }
+    fn ensure_direct_smb(&self, volume_id: &str) -> EnsureDirectSmbFut<'_> {
+        let reason = format!("no volume provider installed, so '{volume_id}' can't be upgraded");
+        Box::pin(async move { Err(SmbUpgradeRefusal::Failed(Diagnostic::from(reason))) })
+    }
     fn resolve_mtp_object(&self, device_id: &str, storage_id: u32, handle: u32) -> ResolveMtpFut<'_> {
         let reason =
             format!("no volume provider installed (device {device_id}, storage {storage_id}, handle {handle})");
@@ -233,6 +263,7 @@ impl VolumeProvider for NoVolumes {
 pub(crate) struct FakeVolumeProvider {
     volumes: RwLock<std::collections::HashMap<String, Arc<dyn Volume>>>,
     network_mounts: RwLock<std::collections::HashSet<PathBuf>>,
+    untrusted_inode_mounts: RwLock<std::collections::HashSet<PathBuf>>,
 }
 
 #[cfg(test)]
@@ -251,6 +282,13 @@ impl FakeVolumeProvider {
     /// Make `mount_facts` report a network filesystem for paths under `root`.
     pub(crate) fn mark_network(&self, root: impl Into<PathBuf>) -> &Self {
         self.network_mounts.write_ignore_poison().insert(root.into());
+        self
+    }
+
+    /// Make `mount_facts` report untrustworthy inodes for paths under `root`, the
+    /// way a real FAT/exFAT mount does.
+    pub(crate) fn mark_inodes_untrusted(&self, root: impl Into<PathBuf>) -> &Self {
+        self.untrusted_inode_mounts.write_ignore_poison().insert(root.into());
         self
     }
 }
@@ -277,14 +315,12 @@ impl VolumeProvider for FakeVolumeProvider {
     }
 
     fn mount_facts(&self, path: &Path) -> MountFacts {
-        let is_network = self
-            .network_mounts
-            .read_ignore_poison()
-            .iter()
-            .any(|root| path.starts_with(root));
+        let under = |set: &RwLock<std::collections::HashSet<PathBuf>>| {
+            set.read_ignore_poison().iter().any(|root| path.starts_with(root))
+        };
         MountFacts {
-            is_network,
-            inodes_trustworthy: true,
+            is_network: under(&self.network_mounts),
+            inodes_trustworthy: !under(&self.untrusted_inode_mounts),
         }
     }
 
@@ -294,6 +330,11 @@ impl VolumeProvider for FakeVolumeProvider {
 
     fn volume_used_bytes(&self, _path: &Path) -> Option<u64> {
         None
+    }
+
+    fn ensure_direct_smb(&self, volume_id: &str) -> EnsureDirectSmbFut<'_> {
+        let reason = format!("fake provider upgrades nothing ('{volume_id}')");
+        Box::pin(async move { Err(SmbUpgradeRefusal::Failed(Diagnostic::from(reason))) })
     }
 
     fn resolve_mtp_object(&self, _device_id: &str, _storage_id: u32, handle: u32) -> ResolveMtpFut<'_> {

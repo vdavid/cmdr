@@ -13,6 +13,63 @@
 
 use std::sync::OnceLock;
 
+// ── System directory exclusions ──────────────────────────────────────
+
+/// Common system, build, and cache directory names: machine output nobody searches
+/// for and nobody ranks as important.
+///
+/// The indexer's policy, read by three consumers so they can't drift: search
+/// applies it when `SearchQuery::exclude_system_dirs` isn't `Some(false)`, the
+/// importance scorer treats a match as known-unimportant, and the walk uses it for
+/// scope decisions. ❌ Match on NAME EQUALITY, never a substring
+/// (`no-string-matching`): a folder called `my-build-notes` is not build output.
+pub const SYSTEM_DIR_EXCLUDES: &[&str] = &[
+    // Package managers & build tools
+    "node_modules",
+    ".pnpm-store",
+    ".npm",
+    ".yarn",
+    ".cargo",
+    ".m2",
+    ".gradle",
+    // VCS
+    ".git",
+    ".svn",
+    ".hg",
+    // Python
+    "__pycache__",
+    ".venv",
+    "venv",
+    ".tox",
+    // JS/TS build output
+    "build",
+    "dist",
+    ".next",
+    ".nuxt",
+    ".cache",
+    ".parcel-cache",
+    "target",
+    // macOS system & caches
+    "Caches",
+    "CacheStorage",
+    "Cache",
+    "GPUCache",
+    "ScriptCache",
+    "GrShaderCache",
+    "ShaderCache",
+    "Logs",
+    "Cookies",
+    "WebKit",
+    "Saved Application State",
+    ".Trash",
+    ".Spotlight-V100",
+    ".fseventsd",
+    ".DocumentRevisions-V100",
+    // IDE workspace caches
+    "workspaceStorage",
+    "DerivedData",
+];
+
 /// Which exclusion tier applies to a `should_exclude` check, derived from the
 /// volume being scanned (never from `is_volume_root` — the boot `/` scan is also
 /// a volume root, so that bool can't tell the two apart).

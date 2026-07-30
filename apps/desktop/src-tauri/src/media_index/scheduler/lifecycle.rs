@@ -9,10 +9,7 @@
 
 use std::time::Duration;
 
-use tauri::{AppHandle, Manager};
-
-use crate::events::index_mapping::TauriEventSink;
-use crate::indexing::{EventSink, IndexVolumeKind};
+use crate::indexing::IndexVolumeKind;
 // The fake backend is production's fallback only off-macOS (macOS uses real Vision);
 // tests import it themselves.
 #[cfg(not(target_os = "macos"))]
@@ -92,19 +89,10 @@ pub(super) fn pass_coverage(
     }
 }
 
-/// Kick a coalesced enrichment pass for every volume ready to enrich right now —
-/// the user-action entry point behind the master toggle, a persisted-on restart, and
-/// a threshold decrease. Resolves the managed scheduler and delegates to
-/// [`kick_all_ready_passes_with`]. A no-op when the scheduler isn't managed yet (an
-/// early call before [`start`]).
-pub fn kick_all_ready_passes(app: &AppHandle) {
-    if let Some(scheduler) = app.try_state::<Arc<MediaScheduler>>() {
-        kick_all_ready_passes_with(scheduler.inner());
-    }
-}
-
-/// Kick a coalesced pass for every ready volume, given the scheduler handle
-/// directly (so [`start`] can call it without a managed-state round-trip). Iterates
+/// Kick a coalesced pass for every ready volume: the user-action entry point behind
+/// the master toggle, a persisted-on restart, and a threshold decrease. The caller
+/// holds the scheduler (the app keeps it in Tauri state), so nothing here needs an
+/// app handle. Iterates
 /// [`crate::indexing::ready_volumes_with_kind`] and spawns the kind-mapped pass
 /// (Local → local, SMB → network which self-checks opt-in, MTP → never). The
 /// [`PassCoordinator`] folds a kick that races a running pass into one re-run, and
@@ -143,51 +131,20 @@ pub(super) fn kick_ready_passes_from(scheduler: &Arc<MediaScheduler>, ready: Vec
 /// registrations, sweep the registry for already-ready volumes, and wire each
 /// volume's scan-completion subscription by kind (local + opted-in SMB enrich; MTP
 /// never background-sweeps).
-pub fn start(app: &AppHandle) {
-    let data_dir = match crate::config::resolved_app_data_dir(app) {
+pub fn start() -> Option<Arc<MediaScheduler>> {
+    // Every policy value the scheduler runs on was applied when the app called
+    // `host::config::set_config`; nothing here reads a settings file.
+    let data_dir = match crate::indexing::host::config::data_dir() {
         Ok(d) => d,
         Err(e) => {
             log::warn!(target: "media_index", "media scheduler not started: {e}");
-            return;
+            return None;
         }
     };
 
     // Tell the CLIP module where the model installs, so the query-time text tower and the
     // enrichment image tower can load it (a no-op off macOS).
     crate::media_index::clip::set_data_dir(&data_dir);
-
-    // Seed the master toggle + the network opt-in / always-index overrides from
-    // settings (all off/empty by default; sparse-persisted, so absent keys mean off).
-    let settings = crate::settings::load_settings(app);
-    gate::set_enabled(settings.image_index_enabled == Some(true));
-    // The scope, with the pre-setting fallback applied (see `gate::scope_from_settings`):
-    // an install that already had image indexing on keeps the automatic behavior even on
-    // the launch before the frontend migration writes the key.
-    gate::set_scope(gate::scope_from_settings(
-        settings.media_index_scope.as_deref(),
-        settings.image_index_enabled,
-    ));
-    gate::set_importance_threshold(
-        settings
-            .media_index_importance_threshold
-            .unwrap_or(gate::DEFAULT_IMPORTANCE_THRESHOLD),
-    );
-    // Parallel enrichment workers (plan M2): absent means the default 1; `set_parallelism`
-    // clamps to `1..=CPU-count`, so a persisted or hand-edited value can't over-provision.
-    gate::set_parallelism(
-        settings
-            .media_index_parallelism
-            .map_or(gate::DEFAULT_PARALLELISM, usize::from),
-    );
-    // Semantic search: ON unless explicitly turned off (absent means on — inert with no
-    // model installed anyway). Gates both the CLIP write path and `search_semantic`.
-    gate::set_semantic_search_enabled(settings.media_index_semantic_search_enabled.unwrap_or(true));
-    network::config::set_config(network::config::NetworkEnrichConfig {
-        opted_in_volumes: settings.media_index_network_volumes.iter().cloned().collect(),
-        always_index_volumes: settings.media_index_always_index_volumes.iter().cloned().collect(),
-        always_index_folders: settings.media_index_always_index_folders.iter().cloned().collect(),
-        excluded_folders: settings.media_index_excluded_folders.iter().cloned().collect(),
-    });
 
     // Share the ONE resident-memory ceiling: the indexing memory watchdog's stop
     // action runs this hook, telling in-flight enrichment to yield — rather than a
@@ -218,9 +175,8 @@ pub fn start(app: &AppHandle) {
         Arc::new(|| Arc::new(FakeVisionBackend::new()) as Arc<dyn VisionBackend>),
     );
     log::info!(target: "media_index", "media enrichment scheduler starting");
-    let events: Arc<dyn EventSink> = Arc::new(TauriEventSink::new(app.clone()));
+    let events = crate::indexing::host::events::current();
     let scheduler = Arc::new(MediaScheduler::new_with_events(data_dir, backend, factory, events));
-    app.manage(Arc::clone(&scheduler));
 
     // Subscribe to registrations FIRST (before the sweep) so a volume registering in
     // the gap isn't dropped (late-registering volumes).
@@ -250,6 +206,10 @@ pub fn start(app: &AppHandle) {
     if gate::is_enabled() {
         kick_all_ready_passes_with(&scheduler);
     }
+
+    // The caller owns the handle from here: the app keeps it in Tauri state so the
+    // IPC layer can reach it, which is why nothing in this subsystem manages it.
+    Some(scheduler)
 }
 
 /// Whether a volume's pass reads bytes locally or off the network (SMB). The

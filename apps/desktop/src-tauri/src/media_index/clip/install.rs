@@ -12,7 +12,7 @@
 //! — never bundle a prebuilt one). The towers are produced by the out-of-tree conversion
 //! script (`apps/desktop/scripts/convert-clip-model/`).
 //!
-//! [`ai::download`]: crate::ai::download
+//! [`ai::download`]: the app's model-download helper, reached through the command layer.
 
 use std::path::{Path, PathBuf};
 

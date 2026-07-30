@@ -16,8 +16,7 @@
 
 use std::path::PathBuf;
 
-use tauri::AppHandle;
-
+use crate::indexing::host::volumes::SmbUpgradeRefusal;
 use crate::indexing::lifecycle::freshness;
 use crate::indexing::lifecycle::master;
 use crate::indexing::lifecycle::state;
@@ -114,24 +113,18 @@ async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, SmbIndexGateReaso
         return Err(SmbIndexGateReason::NotAnSmbVolume);
     }
 
-    // os_mount → trigger/await the upgrade to a direct smb2 session.
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
-    {
-        use crate::network::smb_upgrade::UpgradeResult;
-        match crate::commands::network::upgrade_to_smb_volume_inner(volume_id.to_string()).await {
-            Ok(UpgradeResult::Success) => {}
-            Ok(UpgradeResult::CredentialsNeeded { .. }) => {
-                log::info!(target: "indexing::smb_index", "SMB index gate: '{volume_id}' needs credentials for a direct smb2 connection");
-                return Err(SmbIndexGateReason::CredentialsNeeded);
-            }
-            Ok(UpgradeResult::NetworkError { message }) => {
-                log::warn!(target: "indexing::smb_index", "SMB index gate: upgrade network error for '{volume_id}': {message}");
-                return Err(SmbIndexGateReason::UpgradeFailed);
-            }
-            Err(e) => {
-                log::warn!(target: "indexing::smb_index", "SMB index gate: upgrade failed for '{volume_id}': {e}");
-                return Err(SmbIndexGateReason::UpgradeFailed);
-            }
+    // os_mount → ask the host to upgrade it to a direct smb2 session. Mounting,
+    // credentials, and session management are all the host's; the index only needs
+    // to know whether it ended up with something it can walk.
+    match volumes.ensure_direct_smb(volume_id).await {
+        Ok(()) => {}
+        Err(SmbUpgradeRefusal::CredentialsNeeded) => {
+            log::info!(target: "indexing::smb_index", "SMB index gate: '{volume_id}' needs credentials for a direct smb2 connection");
+            return Err(SmbIndexGateReason::CredentialsNeeded);
+        }
+        Err(SmbUpgradeRefusal::Failed(reason)) => {
+            log::warn!(target: "indexing::smb_index", "SMB index gate: upgrade failed for '{volume_id}': {reason}");
+            return Err(SmbIndexGateReason::UpgradeFailed);
         }
     }
 
@@ -151,7 +144,7 @@ async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, SmbIndexGateReaso
 /// by design (network paths aren't TCC-protected). Returns the typed gate reason
 /// on refusal so the caller (and the per-drive UX) can show an honest, non-string-matched
 /// status. A no-op if the volume's index is already active.
-pub async fn start_indexing_for_smb(app: AppHandle, volume_id: String) -> Result<(), SmbIndexGateReason> {
+pub async fn start_indexing_for_smb(volume_id: String) -> Result<(), SmbIndexGateReason> {
     if state::is_active(&volume_id) {
         log::info!("start_indexing_for_smb: '{volume_id}' already active, no-op");
         return Ok(());
@@ -174,7 +167,7 @@ pub async fn start_indexing_for_smb(app: AppHandle, volume_id: String) -> Result
     // existing DB — a first-ever enable has no marker to clear. Reached by both the
     // manual enable command and the auto-resume hook; on the latter the marker is
     // already absent (the resume gate required it), so this is a no-op there.
-    if let Ok(db_path) = state::resolved_index_db_path(&app, &volume_id)
+    if let Ok(db_path) = state::resolved_index_db_path(&volume_id)
         && db_path.exists()
     {
         if let Err(e) = crate::indexing::store::IndexStore::set_user_disabled(&db_path, false) {
@@ -191,7 +184,7 @@ pub async fn start_indexing_for_smb(app: AppHandle, volume_id: String) -> Result
     // The direct gate passed: start the per-volume index over the Volume trait.
     // `start_indexing_for` handles the lock-first reservation, load-as-Stale
     // freshness seeding, and SMB scan-path selection.
-    if let Err(e) = state::start_indexing_for_smb_inner(&app, &volume_id, mount_root) {
+    if let Err(e) = state::start_indexing_for_smb_inner(&volume_id, mount_root) {
         log::warn!("start_indexing_for_smb: start failed for '{volume_id}': {e}");
         // A start failure here isn't a gate reason — it's an internal error
         // (DB open, manager spawn). Treat as UpgradeFailed for the caller's
@@ -202,7 +195,7 @@ pub async fn start_indexing_for_smb(app: AppHandle, volume_id: String) -> Result
     // A new external index DB just came online (or resumed): cap accumulation by
     // evicting the least-recently-used OFFLINE external DBs. Safe — never touches
     // a registered/live volume, and this one is now registered. See `retention`.
-    crate::indexing::resources::retention::enforce_external_index_cap(&app);
+    crate::indexing::resources::retention::enforce_external_index_cap();
     Ok(())
 }
 
@@ -220,8 +213,8 @@ pub async fn start_indexing_for_smb(app: AppHandle, volume_id: String) -> Result
 /// intent, so a reconnect never turns back on what the user turned off. Enabling
 /// (`start_indexing_for_smb`) clears the marker; `forget_drive_index` deletes the
 /// whole DB.
-pub(crate) fn smb_index_was_enabled(app: &AppHandle, volume_id: &str) -> bool {
-    match state::resolved_index_db_path(app, volume_id) {
+pub(crate) fn smb_index_was_enabled(volume_id: &str) -> bool {
+    match state::resolved_index_db_path(volume_id) {
         // An SMB share is opt-IN (`is_root: false`), so it needs a completed scan
         // on record before any reconnect resumes it.
         Ok(db_path) => master::drive_index_should_run(master::master_enabled(), &db_path, false),
@@ -250,22 +243,20 @@ pub(crate) fn smb_index_was_enabled(app: &AppHandle, volume_id: &str) -> bool {
 ///   no scheduler changes. The resumed index loads Stale (we weren't watching
 ///   while disconnected); a rescan is what restores Fresh (the honest-sizes model).
 ///
-/// Handle-free: pulls the app handle stashed in `indexing::init` (a no-op before
-/// setup or in unit tests). Keyed on the canonical volume id both install paths
+/// Handle-free: before the host has configured a data dir (unit tests, startup
+/// before `setup`), `smb_index_was_enabled` can't resolve a DB path and refuses,
+/// so this is a no-op there. Keyed on the canonical volume id both install paths
 /// agree on.
 pub(crate) fn resume_smb_index_if_enabled(volume_id: String) {
-    let Some(app) = state::app_handle() else {
-        return;
-    };
     if state::is_active(&volume_id) {
         return;
     }
-    if !smb_index_was_enabled(&app, &volume_id) {
+    if !smb_index_was_enabled(&volume_id) {
         return;
     }
     crate::indexing::host::runtime::spawn(async move {
         log::info!(target: "indexing::smb_index", "SMB '{volume_id}' online with a persisted index; resuming indexing");
-        if let Err(reason) = start_indexing_for_smb(app, volume_id.clone()).await {
+        if let Err(reason) = start_indexing_for_smb(volume_id.clone()).await {
             log::warn!(target: "indexing::smb_index", "auto-resume indexing for '{volume_id}' refused: {reason}");
         }
     });

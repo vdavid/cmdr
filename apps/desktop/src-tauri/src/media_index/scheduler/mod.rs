@@ -19,7 +19,7 @@
 //!   subscriptions — a volume Fresh at launch keeps a `Pending` bus and never re-fires,
 //!   so [`kick_all_ready_passes_with`] at the end of [`start`] (master toggle on) is what
 //!   actually enriches on a persisted-on restart.
-//! - **User actions** ([`kick_all_ready_passes`] / [`kick_network_pass`]): toggle-on, a
+//! - **User actions** ([`kick_all_ready_passes_with`] / [`kick_network_pass`]): toggle-on, a
 //!   threshold DECREASE, or a network opt-in kicks an immediate pass.
 //! - **The importance bridge** ([`wire_volume`]'s subscriber): a pass that DEFERRED its
 //!   gated remainder (importance unscored) is re-kicked when importance first scores
@@ -67,7 +67,7 @@ use lifecycle::{PassOutcome, should_retry_when_idle};
 // `local_should_enrich` is the enrichment coverage gate; the file-status command reuses
 // it (via this re-export) to tell `pending` from `excluded` for an un-enriched image.
 pub(crate) use lifecycle::local_should_enrich;
-pub use lifecycle::{kick_all_ready_passes, kick_all_ready_passes_with, kick_network_pass, start};
+pub use lifecycle::{kick_all_ready_passes_with, kick_network_pass, start};
 // Re-exported into the scheduler namespace so the sibling `kick_tests` module reaches
 // them through its `use super::*` (they're otherwise only called within `lifecycle`).
 #[cfg(test)]

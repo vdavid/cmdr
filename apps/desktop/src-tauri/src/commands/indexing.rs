@@ -43,12 +43,12 @@ pub enum EnableIndexingOutcome {
 
 #[tauri::command]
 #[specta::specta]
-pub async fn start_drive_index(app: AppHandle) -> Result<(), String> {
+pub async fn start_drive_index() -> Result<(), String> {
     if indexing::is_active(ROOT_VOLUME_ID) {
         // Already running: force a fresh full scan (for example, from the debug "Start scan" button)
         indexing::force_scan(ROOT_VOLUME_ID)
     } else {
-        indexing::start_indexing(&app)
+        indexing::start_indexing()
     }
 }
 
@@ -130,7 +130,7 @@ pub async fn set_indexing_enabled(app: AppHandle, enabled: bool) -> Result<(), S
     // so a concurrent reconnect resume can't slip in behind the stop sweep.
     indexing::set_master_enabled(enabled);
     if enabled {
-        for volume_id in indexing::drives_to_resume(&app) {
+        for volume_id in indexing::drives_to_resume() {
             // Each drive routes through the normal per-drive enable, so its own gate
             // (the direct-smb2 upgrade, MTP device presence) still applies. A refusal
             // is expected here (a share that's offline right now) and only logged;
@@ -187,7 +187,7 @@ pub async fn start_indexing_after_fda_decision(app: AppHandle) -> Result<(), Str
     if indexing::is_active(ROOT_VOLUME_ID) {
         return Ok(());
     }
-    indexing::start_indexing(&app)
+    indexing::start_indexing()
 }
 
 // ── Per-drive enable / disable / rescan (the per-drive badge menu) ───
@@ -235,7 +235,7 @@ pub async fn enable_drive_index(app: AppHandle, volume_id: String) -> Result<Ena
     }
 
     if volume_id == ROOT_VOLUME_ID {
-        indexing::start_indexing(&app)?;
+        indexing::start_indexing()?;
         return Ok(EnableIndexingOutcome::Started);
     }
 
@@ -246,7 +246,7 @@ pub async fn enable_drive_index(app: AppHandle, volume_id: String) -> Result<Ena
         // path; a plain string error (device not connected / internal start
         // failure) surfaces as a command error.
         if cmdr_fs::volume::mtp_ids::is_mtp_volume_id(&volume_id) {
-            indexing::start_indexing_for_mtp(app, volume_id)?;
+            indexing::start_indexing_for_mtp(volume_id)?;
             return Ok(EnableIndexingOutcome::Started);
         }
 
@@ -256,7 +256,7 @@ pub async fn enable_drive_index(app: AppHandle, volume_id: String) -> Result<Ena
         // by typed volume facts; a network mount (SMB os-mount, NFS, ...) is NOT
         // this branch and falls through to the SMB gate below. This is the branch
         // whose absence refused a healthy local drive as `NotAnSmbVolume`.
-        match indexing::start_indexing_for_local_external(app.clone(), volume_id.clone()).await? {
+        match indexing::start_indexing_for_local_external(volume_id.clone()).await? {
             indexing::LocalExternalEnable::Started => return Ok(EnableIndexingOutcome::Started),
             indexing::LocalExternalEnable::NotLocalExternal => {}
         }
@@ -265,7 +265,7 @@ pub async fn enable_drive_index(app: AppHandle, volume_id: String) -> Result<Ena
         // freshly-typed server name resolves during the upgrade, then start. The
         // typed gate reason is the refusal surface for the UI.
         crate::network::ensure_mdns_started(app.clone());
-        match indexing::start_indexing_for_smb(app, volume_id).await {
+        match indexing::start_indexing_for_smb(volume_id).await {
             Ok(()) => Ok(EnableIndexingOutcome::Started),
             Err(reason) => Ok(EnableIndexingOutcome::Refused { reason }),
         }

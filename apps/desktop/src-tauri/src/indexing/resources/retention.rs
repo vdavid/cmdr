@@ -32,8 +32,6 @@
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
-use tauri::AppHandle;
-
 use crate::indexing::lifecycle::state;
 use crate::indexing::lifecycle::state::ROOT_VOLUME_ID;
 
@@ -171,8 +169,8 @@ fn enumerate_external_index_dbs(data_dir: &Path) -> Vec<IndexDbFile> {
 /// Call after enabling a new external (SMB/MTP) index, so the cap is checked
 /// exactly when accumulation can grow. Never evicts a live volume's DB (see the
 /// module safety invariants) nor `root`.
-pub(crate) fn enforce_external_index_cap(app: &AppHandle) {
-    let data_dir = match crate::config::resolved_app_data_dir(app) {
+pub(crate) fn enforce_external_index_cap() {
+    let data_dir = match crate::indexing::host::config::data_dir() {
         Ok(d) => d,
         Err(e) => {
             log::warn!(target: "indexing::retention", "cannot resolve data dir for cap enforcement: {e}");

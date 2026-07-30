@@ -24,6 +24,9 @@
 //! This file keeps only what more than one of them needs: the hit-limit clamp and the
 //! ONE enabled-volume rule.
 
+use crate::indexing::host::config::{IndexConfig, MediaConfig};
+use crate::media_index::network::config::NetworkEnrichConfig;
+
 mod clip_model;
 mod file_status;
 pub mod policy;
@@ -43,6 +46,59 @@ pub use reclaim::*;
 pub use search::*;
 pub use state::*;
 pub use thumbnail::*;
+
+/// Kick a coalesced enrichment pass for every ready volume, resolving the managed
+/// scheduler first.
+///
+/// The app-side half of `media_index::scheduler::kick_all_ready_passes_with`: the
+/// scheduler lives in Tauri state, which the subsystem can't reach. A no-op before
+/// the scheduler is managed (an early call at startup).
+pub(crate) fn kick_all_ready_passes_for(app: &tauri::AppHandle) {
+    use tauri::Manager;
+    if let Some(scheduler) = app.try_state::<std::sync::Arc<crate::media_index::scheduler::MediaScheduler>>() {
+        crate::media_index::scheduler::kick_all_ready_passes_with(scheduler.inner());
+    }
+}
+
+/// Turn the app's stored settings into the index's [`IndexConfig`].
+///
+/// The one place settings become index policy. Every default and every migration
+/// fallback lives here rather than inside the index, which is what "the crate never
+/// reads settings" means in practice. Called at startup and again by the policy
+/// setters below whenever the user changes one of these.
+pub(crate) fn index_config_from(
+    data_dir: std::path::PathBuf,
+    settings: &crate::settings::loader::Settings,
+) -> IndexConfig {
+    use crate::media_index::gate;
+    IndexConfig {
+        data_dir,
+        media: MediaConfig {
+            enabled: settings.image_index_enabled == Some(true),
+            // The scope, with the pre-setting fallback applied: an install that already
+            // had image indexing on keeps the automatic behavior even on the launch
+            // before the frontend migration writes the key.
+            scope: gate::scope_from_settings(settings.media_index_scope.as_deref(), settings.image_index_enabled),
+            importance_threshold: settings
+                .media_index_importance_threshold
+                .unwrap_or(gate::DEFAULT_IMPORTANCE_THRESHOLD),
+            // Absent means the default 1; the index clamps to `1..=CPU count`, so a
+            // persisted or hand-edited value can't over-provision.
+            parallelism: settings
+                .media_index_parallelism
+                .map_or(gate::DEFAULT_PARALLELISM, usize::from),
+            // ON unless explicitly turned off (absent means on — inert with no model
+            // installed anyway). Gates both the CLIP write path and `search_semantic`.
+            semantic_search_enabled: settings.media_index_semantic_search_enabled.unwrap_or(true),
+            network: NetworkEnrichConfig {
+                opted_in_volumes: settings.media_index_network_volumes.iter().cloned().collect(),
+                always_index_volumes: settings.media_index_always_index_volumes.iter().cloned().collect(),
+                always_index_folders: settings.media_index_always_index_folders.iter().cloned().collect(),
+                excluded_folders: settings.media_index_excluded_folders.iter().cloned().collect(),
+            },
+        },
+    }
+}
 
 /// The default hit cap when the caller doesn't specify one, and the hard ceiling on
 /// any caller-supplied limit (a photo-search grid never needs more, and it bounds the

@@ -17,4 +17,4 @@ mod stress_tests_partial_aggregation;
 // Synthetic FAT32/exFAT disk-image fixtures for external-drive indexing tests.
 // macOS-only (hdiutil); see the module and the area DETAILS.
 #[cfg(target_os = "macos")]
-mod external_drive_fixture;
+pub(crate) mod external_drive_fixture;

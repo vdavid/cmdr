@@ -47,8 +47,6 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use tauri::{AppHandle, Manager};
-
 use super::scorer::{SignalSet, Weights};
 use super::writer::ImportanceWriter;
 use crate::indexing::IndexVolumeKind;
@@ -472,20 +470,15 @@ impl ImportanceScheduler {
 /// mounted MID-SESSION; the startup sweep catches volumes already ready at launch —
 /// subscribing to the bus BEFORE the sweep closes the gap so no registration is
 /// missed.
-pub fn start(app: &AppHandle) {
-    let data_dir = match crate::config::resolved_app_data_dir(app) {
+pub fn start() -> Option<Arc<ImportanceScheduler>> {
+    let data_dir = match crate::indexing::host::config::data_dir() {
         Ok(d) => d,
         Err(e) => {
             log::warn!(target: "importance", "importance scheduler not started: {e}");
-            return;
+            return None;
         }
     };
     let scheduler = Arc::new(ImportanceScheduler::new(data_dir));
-
-    // Make the scheduler reachable from the IPC layer: `record_visit` routes its
-    // write through the shared per-volume writer the scheduler owns (one writer
-    // thread per DB), rather than spawning a short-lived writer per navigation.
-    app.manage(Arc::clone(&scheduler));
 
     // Subscribe to registrations FIRST (before the sweep), so a volume that
     // registers during the sweep isn't dropped in the gap (plan M4
@@ -515,6 +508,11 @@ pub fn start(app: &AppHandle) {
         wire_volume(Arc::clone(&scheduler), volume_id.clone(), kind);
         enqueue_initial_full_pass_if_unscored(Arc::clone(&scheduler), volume_id, kind);
     }
+
+    // The caller owns the handle: the app keeps it in Tauri state so `record_visit`
+    // can route its write through the shared per-volume writer the scheduler owns
+    // (one writer thread per DB) rather than spawning one per navigation.
+    Some(scheduler)
 }
 
 /// For a volume READY at launch (Fresh, so no `ScanCompleted` will fire), enqueue a

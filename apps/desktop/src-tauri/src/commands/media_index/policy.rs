@@ -12,6 +12,7 @@ use std::sync::Arc;
 
 use tauri::{AppHandle, Manager};
 
+use super::kick_all_ready_passes_for;
 use crate::media_index::gate;
 use crate::media_index::network::config as network_config;
 use crate::media_index::scheduler::{self, MediaScheduler};
@@ -69,7 +70,7 @@ pub fn media_index_set_always_index_volume(app: AppHandle, volume_id: String, al
 pub fn media_index_set_always_index_folder(app: AppHandle, folder: String, always: bool) {
     network_config::set_always_index_folder(&folder, always);
     if folder_override_should_kick(always, gate::is_enabled()) {
-        scheduler::kick_all_ready_passes(&app);
+        kick_all_ready_passes_for(&app);
     }
 }
 
@@ -97,7 +98,7 @@ pub fn media_index_set_scope(app: AppHandle, scope: String) {
     let next = gate::IndexScope::from_token(&scope);
     gate::set_scope(next);
     if scope_change_should_kick(previous, next, gate::is_enabled()) {
-        scheduler::kick_all_ready_passes(&app);
+        kick_all_ready_passes_for(&app);
     }
 }
 
@@ -180,7 +181,7 @@ pub fn media_index_set_semantic_search_enabled(app: AppHandle, enabled: bool) {
         .map(|dir| crate::media_index::clip::install::is_installed(&dir))
         .unwrap_or(false);
     if model_installed {
-        scheduler::kick_all_ready_passes(&app);
+        kick_all_ready_passes_for(&app);
     }
 }
 
@@ -202,7 +203,7 @@ pub fn media_index_set_importance_threshold(app: AppHandle, threshold: f64) {
     gate::set_importance_threshold(threshold);
     let next = gate::importance_threshold();
     if threshold_change_should_kick(previous, next, gate::is_enabled()) {
-        scheduler::kick_all_ready_passes(&app);
+        kick_all_ready_passes_for(&app);
     }
 }
 

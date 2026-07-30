@@ -8,55 +8,11 @@ use super::types::{PatternType, SearchQuery};
 
 // ── System directory exclusions ──────────────────────────────────────
 
-/// Common system, build, and cache directory names excluded by default.
-/// Applied automatically when `SearchQuery::exclude_system_dirs` is not `Some(false)`.
-pub const SYSTEM_DIR_EXCLUDES: &[&str] = &[
-    // Package managers & build tools
-    "node_modules",
-    ".pnpm-store",
-    ".npm",
-    ".yarn",
-    ".cargo",
-    ".m2",
-    ".gradle",
-    // VCS
-    ".git",
-    ".svn",
-    ".hg",
-    // Python
-    "__pycache__",
-    ".venv",
-    "venv",
-    ".tox",
-    // JS/TS build output
-    "build",
-    "dist",
-    ".next",
-    ".nuxt",
-    ".cache",
-    ".parcel-cache",
-    "target",
-    // macOS system & caches
-    "Caches",
-    "CacheStorage",
-    "Cache",
-    "GPUCache",
-    "ScriptCache",
-    "GrShaderCache",
-    "ShaderCache",
-    "Logs",
-    "Cookies",
-    "WebKit",
-    "Saved Application State",
-    ".Trash",
-    ".Spotlight-V100",
-    ".fseventsd",
-    ".DocumentRevisions-V100",
-    // IDE workspace caches
-    "workspaceStorage",
-    "DerivedData",
-];
-
+// Machine-output directory names (`node_modules`, `.git`, caches, build output) are
+// the INDEXER's policy, so the list lives with the scanner's exclusions and search
+// reads it from there. One list, so search and the importance scorer can't disagree
+// about what counts as machine output.
+pub use crate::indexing::SYSTEM_DIR_EXCLUDES;
 // ── Query summary ────────────────────────────────────────────────────
 
 /// Build a dense, human-readable summary of a `SearchQuery` for logging and display.

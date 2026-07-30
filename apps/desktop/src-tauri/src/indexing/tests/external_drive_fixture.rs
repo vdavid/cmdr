@@ -568,17 +568,21 @@ mod tests {
         let known = fixture.populate_known_tree().expect("populate tree");
         let mount = fixture.mount_point().to_path_buf();
 
-        // Build the scan config the way the manager does for a LocalExternal drive.
-        // Inode-trust is resolved from the mount's REAL filesystem, exactly as
-        // `local_external_index::classify` does in production: a FAT mount detects
-        // as inode-untrusted, so the space carries that fact.
-        let fs = crate::file_system::filesystem_kind::detect_filesystem_for_path(&mount);
-        let inodes_trustworthy = fs.kind.has_stable_inodes();
-        assert!(
-            !inodes_trustworthy,
-            "a real FAT32 mount must detect as inode-untrusted (fs kind {:?})",
-            fs.kind
-        );
+        // Build the scan config the way the manager does for a LocalExternal drive:
+        // ask the host for the mount's typed facts, exactly as
+        // `local_external_index::classify` does in production. The host reports this
+        // FAT32 image as inode-untrusted; that the REAL probe says so for a real FAT
+        // mount is proven app-side, in
+        // `file_system::index_provider::tests::a_real_fat32_mount_detects_as_inode_untrusted`.
+        let provider = crate::indexing::host::volumes::FakeVolumeProvider::shared();
+        provider.mark_inodes_untrusted(&mount);
+        let _serialized = crate::indexing::host::volumes::test_lock();
+        let _installed = crate::indexing::host::volumes::install_for_test(provider);
+
+        let inodes_trustworthy = crate::indexing::host::volumes::current()
+            .mount_facts(&mount)
+            .inodes_trustworthy;
+        assert!(!inodes_trustworthy, "the FAT32 fixture mount is inode-untrusted");
         let space = IndexPathSpace::mount_rooted(mount.to_string_lossy().to_string())
             .with_inodes_trustworthy(inodes_trustworthy);
         let config = ScanConfig {

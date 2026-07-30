@@ -21,7 +21,6 @@
 
 use crate::indexing::lifecycle::freshness;
 use crate::indexing::lifecycle::state;
-use tauri::AppHandle;
 
 /// Turn on indexing for an MTP volume (the per-drive "Turn on indexing" action,
 /// routed here by `commands/indexing.rs` for `mtp-*` volume ids).
@@ -31,7 +30,7 @@ use tauri::AppHandle;
 /// index is already active. Errors (as a plain string for the IPC surface) only
 /// on an internal start failure or an unregistered volume — there's no typed
 /// gate reason because MTP has no connection-upgrade step to refuse.
-pub(crate) fn start_indexing_for_mtp(app: AppHandle, volume_id: String) -> Result<(), String> {
+pub(crate) fn start_indexing_for_mtp(volume_id: String) -> Result<(), String> {
     if state::is_active(&volume_id) {
         log::info!("start_indexing_for_mtp: '{volume_id}' already active, no-op");
         return Ok(());
@@ -48,12 +47,12 @@ pub(crate) fn start_indexing_for_mtp(app: AppHandle, volume_id: String) -> Resul
         }
     };
 
-    state::start_indexing_for_mtp_inner(&app, &volume_id, volume_root)?;
+    state::start_indexing_for_mtp_inner(&volume_id, volume_root)?;
 
     // A new external index DB just came online: cap accumulation by evicting the
     // least-recently-used OFFLINE external DBs. Safe — never touches a registered
     // volume, and this one is now registered. See `retention`.
-    crate::indexing::resources::retention::enforce_external_index_cap(&app);
+    crate::indexing::resources::retention::enforce_external_index_cap();
     Ok(())
 }
 

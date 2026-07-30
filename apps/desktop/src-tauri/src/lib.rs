@@ -324,6 +324,30 @@ pub fn run() {
                 log::warn!(target: "indexing", "index runtime was already set; keeping the first one ({e:?})");
             }
 
+            // Tell the index where to report. The typed `IndexEvent` becomes a Tauri
+            // payload in `events/index_mapping.rs` and nowhere else, which is what
+            // keeps every user-facing word app-side.
+            if indexing::host::events::set_event_sink(std::sync::Arc::new(
+                events::index_mapping::TauriEventSink::new(app.handle().clone()),
+            ))
+            .is_err()
+            {
+                log::warn!(target: "indexing", "index event sink was already set; keeping the first one");
+            }
+
+            // Hand the index its configuration. It never reads a settings file or
+            // resolves the data dir for itself: policy belongs to the product, and
+            // this is the one place that turns stored settings into what the index
+            // acts on. Re-applied by the media-policy IPC setters as the user
+            // changes them.
+            match config::resolved_app_data_dir(app.handle()) {
+                Ok(data_dir) => indexing::host::config::set_config(commands::media_index::index_config_from(
+                    data_dir,
+                    &settings::load_settings(app.handle()),
+                )),
+                Err(e) => log::warn!(target: "indexing", "index not configured (no data dir): {e}"),
+            }
+
             // Tell the index which volumes exist. It never touches `VolumeManager`,
             // the platform mount probes, or the MTP session layer directly — those
             // are the app's, and they can't follow the index into its own crate.
@@ -849,7 +873,7 @@ pub fn run() {
             indexing::set_master_enabled(indexing::should_auto_start(saved_settings.indexing_enabled));
 
             // Initialize indexing state (does not start scanning until explicitly started)
-            indexing::init(app.handle());
+            indexing::init();
 
             // Reuse the OS FDA result already captured for the gate above; this
             // call is on `/Library/Mail` which is cheap, but a fresh probe here
@@ -862,11 +886,11 @@ pub fn run() {
             // index as a plain answer.
             let fda_pending = fda_gate::is_fda_pending(saved_settings.full_disk_access_choice, os_fda_granted);
             if indexing::should_auto_start_indexing(saved_settings.indexing_enabled, fda_pending) {
-                let app_handle = app.handle().clone();
+
                 // Use tauri's runtime spawn instead of tokio::spawn since setup()
                 // runs synchronously before the Tokio runtime is fully available
                 tauri::async_runtime::spawn(async move {
-                    if let Err(e) = indexing::start_indexing(&app_handle) {
+                    if let Err(e) = indexing::start_indexing() {
                         log::warn!("Failed to auto-start indexing: {e}");
                     }
                 });
@@ -886,15 +910,20 @@ pub fn run() {
             // is Fresh at launch). Independent of whether indexing auto-starts here —
             // the bus fires whenever any scan completes. See
             // `importance/scheduler.rs` and the plan (Decision 4 / 5).
-            importance::scheduler::start(app.handle());
+            if let Some(scheduler) = importance::scheduler::start() {
+                // Reachable from the IPC layer: `record_visit` resolves it here.
+                app.manage(scheduler);
+            }
 
-            // Start the media-ML enrichment scheduler: it seeds the master "Index
-            // image contents" toggle from settings (off by default), hooks its
+            // Start the media-ML enrichment scheduler: it runs on the policy applied
+            // above (off by default), hooks its
             // cancellation into the shared indexing memory watchdog, and subscribes
             // to the same scan-completion bus so images enrich when a local volume's
             // index finishes scanning. Off by default, so no work runs until the
             // toggle is enabled. See `media_index/CLAUDE.md`.
-            media_index::scheduler::start(app.handle());
+            if let Some(scheduler) = media_index::scheduler::start() {
+                app.manage(scheduler);
+            }
 
             // Keep the search ranker's importance weight map fresh: subscribe to the
             // root volume's recompute-completed notifications and (re)load the

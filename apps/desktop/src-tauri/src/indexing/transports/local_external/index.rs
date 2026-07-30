@@ -26,7 +26,6 @@ use std::path::PathBuf;
 
 use crate::indexing::host::volumes::MountFacts;
 use crate::indexing::lifecycle::state;
-use tauri::AppHandle;
 use tokio::time::Duration;
 
 /// How long to wait for the mount's filesystem-type probe before treating the
@@ -119,10 +118,7 @@ async fn classify(volume_id: &str) -> Classified {
 /// refusal — a local mount is already readable. A no-op ([`Started`](LocalExternalEnable::Started))
 /// if the volume's index is already active. Errors (a plain string for the IPC
 /// surface) only on an internal start failure (DB open, manager spawn).
-pub(crate) async fn start_indexing_for_local_external(
-    app: AppHandle,
-    volume_id: String,
-) -> Result<LocalExternalEnable, String> {
+pub(crate) async fn start_indexing_for_local_external(volume_id: String) -> Result<LocalExternalEnable, String> {
     if state::is_active(&volume_id) {
         log::info!("start_indexing_for_local_external: '{volume_id}' already active, no-op");
         return Ok(LocalExternalEnable::Started);
@@ -134,13 +130,13 @@ pub(crate) async fn start_indexing_for_local_external(
             mount_root,
             inodes_trustworthy,
         } => {
-            state::start_indexing_for_local_external_inner(&app, &volume_id, mount_root, inodes_trustworthy)?;
+            state::start_indexing_for_local_external_inner(&volume_id, mount_root, inodes_trustworthy)?;
 
             // A new external index DB just came online (or resumed): cap
             // accumulation by evicting the least-recently-used OFFLINE external
             // DBs. Safe — never touches a registered/live volume, and this one is
             // now registered. See `retention`.
-            crate::indexing::resources::retention::enforce_external_index_cap(&app);
+            crate::indexing::resources::retention::enforce_external_index_cap();
             Ok(LocalExternalEnable::Started)
         }
     }
