@@ -142,8 +142,9 @@ fixtures: 14 Samba containers (guest, auth, readonly, slow, flaky, unicode, deep
 The repo-wide worktree workflow is in `AGENTS.md` § Workflow. Desktop-specific setup when creating a worktree under
 `.claude/worktrees/<slug>`:
 
-- `cp -c ~/projects-git/vdavid/cmdr/target <worktree>/target`: instant on APFS; deps are fingerprinted on version +
-  features + rustc + profile, so only the workspace members rebuild.
+- `cp -cR ~/projects-git/vdavid/cmdr/target <worktree>/target`: seconds on APFS; deps are fingerprinted on version +
+  features + rustc + profile, so only the workspace members rebuild. `-R` is required: without it `cp` refuses with
+  "is a directory (not copied)" and you get a from-scratch rebuild instead.
   - **STALE-BUILD HAZARD (cost us repeatedly): the COW-cloned `target` makes a bare `cargo` / `cargo nextest` skip
     recompiling edited files** — cargo's mtime fingerprint can think the cloned objects are current, so a "green"
     bare-cargo run after editing `.rs` can be a FALSE green (tests run against stale code). Always
