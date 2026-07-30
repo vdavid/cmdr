@@ -383,11 +383,10 @@ pub trait Volume: Send + Sync {
     /// **Default is a no-op**, because what "update the listing" means belongs to
     /// the host, not to this crate. Every mutable backend overrides it:
     /// `LocalPosixVolume` stats through `std::fs` and patches the app's listing
-    /// cache (`file_system::listing::mutation`), `SmbVolume` and `MtpVolume` do
-    /// the same through their own protocol's
-    /// `get_metadata` (their watchers are lossy under load, so this patch is what
-    /// keeps a destination pane honest after a bulk copy). A read-only or test
-    /// backend leaves the default.
+    /// cache (`file_system::listing::mutation`), while `SmbVolume` and `MtpVolume`
+    /// build the entry from their own protocol's `get_metadata`. Their watchers
+    /// are lossy under load, so this patch is what keeps a destination pane
+    /// honest after a bulk copy. A read-only or test backend leaves the default.
     ///
     /// Fire-and-forget: no error propagation, because a failed cache patch must
     /// never fail the mutation that already succeeded.
