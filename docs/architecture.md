@@ -110,17 +110,14 @@ All under `apps/desktop/src-tauri/src/`.
 - `file_system/write_operations/transfer/`: Copy + move pipelines: conflict resolution, transfer driver, platform copies
   (`copyfile(3)` / `copy_file_range(2)` / chunked)
 - `file_system/write_operations/delete/`: Delete walker, trash, oracle-aware delete semantics
-- `file_system/volume/`: `Volume` trait + `VolumeManager`. Umbrella over `backends/` and `friendly_error/`. Checklist +
-  capability matrix for new backends
+- `file_system/volume/`: `VolumeManager` plus the `backends/` umbrella, re-exporting the `Volume` trait and its types
+  from `crates/cmdr-fs/`. Checklist + capability matrix for new backends
 - `file_system/volume/backends/`: Per-backend `Volume` impls: `LocalPosixVolume`, `MtpVolume`, `SmbVolume` (+
   `SmbWatcher`), `InMemoryVolume`
 - `file_system/volume/backends/archive/`: `ArchiveVolume` (read-only zip: browse + extract) + its decoupled reading core
   (central-directory parse, synthetic tree, streaming decompress, Zip Slip) + `boundary.rs` (the shared `.zip`-boundary
   detector). Paths that cross a `.zip` route here via `VolumeManager::resolve` (on-demand registration, archive LRU).
   See its `apps/desktop/src-tauri/src/file_system/volume/backends/archive/CLAUDE.md`
-- `file_system/volume/friendly_error/`: typed, word-free error CLASSIFICATION (`ListingError` / `ListingErrorReason`,
-  `ErrorCategory`, errno → reason mapping, provider detection over 18 providers). The user-facing WORDS live on the FE
-  (`src/lib/errors/`)
 - `file_system/git/`: Git browser: repo discovery/info/status, watcher, virtual `.git` portal wired through `Volume`
   hooks, typed git-error classification (`FriendlyGitErrorKind`)
 - `file_viewer/`: Three-backend file viewer (FullLoad, ByteSeek, LineIndex)
@@ -213,12 +210,22 @@ All under `apps/desktop/src-tauri/src/`.
   platforms use stock Tauri
 - `redact/`: Shared PII redactor (path-shape preserving). Used by both crash and error reporters
 - `logging/`: Log directory resolver, `KeepSome(N)` post-rotation pruner, `list_recent_log_files`
-- `process_memory.rs`: The canonical "how much memory is this process using" readers (kernel footprint, RSS, the
-  mimalloc heap, the system malloc zones), shared by the indexing memory watchdog and the log RAM gauge. Read it before
-  interpreting any memory number: the macOS zone APIs can't see our Rust heap
 - `commands/`: Tauri command definitions (IPC entry points)
 - `capabilities/`: Per-window Tauri API permissions; update when using new Tauri APIs from a window
 - `icons/`: App icons for all platforms + macOS Tahoe Liquid Glass (Assets.car). See its CLAUDE.md for regeneration
+
+## Workspace crates
+
+All under `crates/`, alongside the four apps. They carry no `tauri` dependency.
+
+- `crates/cmdr-fs/`: the filesystem vocabulary and host primitives every layer speaks in — the `Volume` trait and its
+  data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →
+  reason mapping, provider detection over 18 providers), `InMemoryVolume`, thread QoS, process-memory readers,
+  poison-free locking. The app re-exports all of it from the original paths. See `crates/cmdr-fs/CLAUDE.md`
+- `crates/index-query/`: developer CLI that queries the index DB with the `platform_case` collation `sqlite3` can't
+  supply. See `docs/tooling/index-query.md`
+- `crates/fsevent-stream/`: vendored fork of the FSEvents stream crate (published as `cmdr-fsevent-stream`), giving the
+  drive watcher event IDs and `sinceWhen` replay. macOS-only
 
 ## Other apps
 

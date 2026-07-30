@@ -13,8 +13,9 @@ for the breadcrumb chip, status column, and the live `RepoInfo` store.
   `is_virtual` for the mutation guards. `repo.rs`: discovery, `repo_info`, process-global `RepoCache`. `path.rs`:
   `VirtualGitPath` / `classify` parser. `virtual_listing.rs`, `log.rs`, `stash.rs`, `worktrees.rs`, `submodules.rs`,
   `tree.rs`, `snapshot_dates.rs`: per-category listing + tree walks. `status.rs`: cached status walk.
-  `read_blob.rs`: `GitBlobReadStream`. `watcher.rs`: per-repo notify debouncer. `friendly.rs`: `FriendlyGitError`.
-  `column_meta.rs`: Modified/Size column helpers.
+  `read_blob.rs`: `GitBlobReadStream`. `watcher.rs`: per-repo notify debouncer. `column_meta.rs`: Modified/Size column
+  helpers. `FriendlyGitError` lives in `crates/cmdr-fs/src/volume/friendly_error/git.rs`
+  (`VolumeError::FriendlyGit` carries it), aliased here as `git::friendly`.
 - Tauri commands, the watcher path set, the column tables, and the decision record are in `DETAILS.md`.
 
 ## Must-knows

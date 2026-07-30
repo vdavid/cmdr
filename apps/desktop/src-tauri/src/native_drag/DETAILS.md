@@ -112,7 +112,8 @@ through the typed `ListingError` pipeline). Mirrors the transfer-failure pattern
 
 ## NSError mapping
 
-A `FulfillError` carries a typed `ListingError` (`file_system::volume::friendly_error`) plus a `cancelled` flag. The
+A `FulfillError` carries a typed `ListingError` (`cmdr_fs::volume::friendly_error`, re-exported as
+`file_system::volume::friendly_error`) plus a `cancelled` flag. The
 delegate maps it to an `NSError` in domain `com.veszelovszki.cmdr.drag-out`, using `FulfillError::nserror_title()` (a
 short, category-keyed one-liner) as `localizedDescription` (Finder shows its own alert; the detailed user-facing prose
 lives on the frontend). A cancelled fulfillment uses the `NSUserCancelledError` code (3072) so Finder stays quiet; a

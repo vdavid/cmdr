@@ -15,7 +15,7 @@ non-blocking I/O and progress events.
 - **diff_emitter.rs**: coalesces all `directory-diff` emits into one event per 50 ms trailing window.
 - **brief_columns.rs**: `compute_brief_column_text_widths()`, per-column widest-filename widths for Brief mode.
 - **sorting.rs**: `SortColumn`, `SortOrder`, `sort_entries()`.
-- **metadata.rs**: `FileEntry` (`physical_size` from `st_blocks * 512`; `recursive_physical_size` from the drive index).
+- **`FileEntry`** lives in `crates/cmdr-fs/src/entry.rs`, aliased here as `listing::metadata`.
 - **fuzzy_jump.rs**: `find_first_match()` (pure) powers type-to-jump, wrapped by the `find_first_fuzzy_match` command.
 
 Full details (data flow, caching lifecycle, the orphan reaper, all decisions, cache-helper and notification API

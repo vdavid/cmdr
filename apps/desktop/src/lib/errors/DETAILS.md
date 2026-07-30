@@ -6,7 +6,7 @@ strategy, and the convergence plan.
 ## Where this sits
 
 This is one half of the friendly-error system. The other half is Rust classification
-(`apps/desktop/src-tauri/src/file_system/volume/friendly_error/DETAILS.md`): it decides WHAT happened (a typed
+(`crates/cmdr-fs/src/volume/friendly_error/DETAILS.md`): it decides WHAT happened (a typed
 `ListingError`), this decides the WORDS. The split realizes "smart backend, thin frontend" and seeds an i18n catalog (a
 single home for all error copy).
 

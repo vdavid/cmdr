@@ -6,7 +6,7 @@ per-volume), these cap the WHOLE indexing pool.
 ## Module map
 
 - **memory_watchdog.rs** — the single global `phys_footprint` budget (warn 8 GB, stop ALL indexing 16 GB, then keep
-  watching). Policy only; the memory readers live in `crate::process_memory`.
+  watching). Policy only; the memory readers live in `cmdr_fs::process_memory`, re-exported as `crate::process_memory`.
 - **subsystem_stop.rs** — the stop-hook registry the watchdog runs alongside the index stop.
 - **retention.rs** — the external-index-DB count cap with LRU eviction.
 

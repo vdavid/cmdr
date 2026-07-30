@@ -12,7 +12,9 @@ the `Volume` trait, capability flags, and any write path.
 
 - `index.rs`: `ArchiveIndex` (parsed tree + query surface), `ArchiveNode`, the generic `build_index<H>` seam, `EntryStore`
   dispatch, and the DoS caps.
-- `format.rs`: `ArchiveFormat`, `format_for_name` (detection SoT), `is_sequential`, `open_tar_decoder` (the codecs).
+- `format.rs`: `open_tar_decoder` (the codecs), plus a re-export of the naming vocabulary — `ArchiveFormat`,
+  `format_for_name` (detection SoT), `is_sequential` — which lives in `crates/cmdr-fs/src/archive_format.rs` because
+  `FileEntry.is_archive` reads it.
 - `zip.rs` / `tar.rs` / `sevenz.rs`: per-format parse + producer + `EntryStore` arm.
 - `source.rs`: the `ArchiveByteSource` seam + `LocalFileSource` / `BytesSource` / `TailCachedSource`.
 - `reader.rs`: `ArchiveEntryReader` — chunked, off-executor decompression. `extract.rs`: `SubtreeExtractReader` — the

@@ -13,7 +13,8 @@ checklist live in the parent `../CLAUDE.md` + `../DETAILS.md`.
   concerns split into `events`, `state`, `mapping`, `session`, `reconnect`, `streams`, `scan`, `scan_pool`, and
   `volume_impl` (the whole `impl Volume`, since a trait impl can't be split across files).
 - `smb_watcher.rs`: background SMB change watcher on a dedicated smb2 session.
-- `in_memory.rs`: `InMemoryVolume`, `RwLock<HashMap>` for tests.
+- `InMemoryVolume` (for tests) isn't here — it needs no host, so it rides with the trait in `cmdr-fs` and is
+  re-exported as `volume::InMemoryVolume`.
 - `archive/`: `ArchiveVolume` (zip/tar/7z) + reading core, zip write side, live watch. See
   `archive/CLAUDE.md`.
 
@@ -25,11 +26,10 @@ Depth: `DETAILS.md` (§§ Per-backend decisions, Gotchas, SMB auto-upgrade / rec
   long-polls on the write session wedges Samba (pinned by `smb_integration_concurrent_streaming_writes_no_deadlock`).
 - **Background bulk work (scan listings + media prefetch) uses a pool of extra smb2 sessions**
   (`smb/scan_pool.rs`; ksmbd serializes per connection, 4 connections ≈ 3.8×). Reads are compound-only on members;
-  dead members retry on siblings, never the MAIN session; REFCOUNTED across overlapping sessions. DETAILS § "SMB
-  scan-connection pool".
+  dead members retry on siblings, never the MAIN session; REFCOUNTED. DETAILS § "SMB scan-connection pool".
 - **The SMB watcher doesn't reconnect itself; on death it kicks the one reconnect path** (`spawn_watcher_death_reconnect`
-  → `do_attempt_reconnect`, single source of truth, bounded backoff), which respawns the watcher AND resumes the index.
-  Don't give it its OWN reconnect loop (a second state machine swallows real disconnects).
+  → `do_attempt_reconnect`, bounded backoff), which respawns the watcher AND resumes the index. Don't give it its OWN
+  reconnect loop (a second state machine swallows real disconnects).
 - **`SmbVolume::write_from_stream` uses a cloned `Connection` + owned `FileWriter`, never a borrowed `FileWriter<'a>`
   holding the client mutex across the upload** (that shape is the QNAP deadlock reproducer).
 - **`write_from_stream` error paths must `abort()` then delete the partial.** Dropping a `FileWriter` without
@@ -39,12 +39,11 @@ Depth: `DETAILS.md` (§§ Per-backend decisions, Gotchas, SMB auto-upgrade / rec
   Every cross-volume copy/move landing on local disk flows through it; a bare `flush()` leaves bytes only in the page
   cache, so an eject/sleep loses data (on a move, from both sides). Don't drop the fsync.
 - **`MtpVolume::get_metadata` lists the entire parent directory** (MTP has no single-file stat). Avoid in hot paths.
-- **`MtpReadStream` reads in bounded windows, freeing the session between them** (`cancel_and_release` is a no-op; a
-  mid-window drop self-heals via mtp-rs `TransactionScope`). Don't re-add a `Drop`/cancel. Offset/EOF rules:
-  `mtp/connection/DETAILS.md` § "Bounded-window reads".
+- **`MtpReadStream` reads in bounded windows, freeing the session between them** (a mid-window drop self-heals via
+  mtp-rs `TransactionScope`). Don't re-add a `Drop`/cancel. `mtp/connection/DETAILS.md` § "Bounded-window reads".
 - **`MtpVolume::read_range` uses `read_range_direct`, NOT a read session**: one `GetPartialObject64` per call, no
-  `GetStorageInfo`/`GetObjectInfo`. Archive extraction issues one per 256 KiB, so routing through `open_read_session`
-  would triple the USB round trips. Same doc, § "Ranged reads take the DIRECT path".
+  `GetStorageInfo`/`GetObjectInfo`. Archive extraction issues one per 256 KiB, so a read session would triple the USB
+  round trips. Same doc, § "Ranged reads take the DIRECT path".
 - **SMB watcher filenames need normalizing** (backslash→slash, NFC→NFD) before cache lookups.
 - **SMB auto-upgrade is gated on `network.directSmbConnection`** and no-ops with no SMB mounts (fires no macOS Local
   Network prompt).

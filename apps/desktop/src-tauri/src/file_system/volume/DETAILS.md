@@ -53,7 +53,7 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `max_concurrent_ops()`: how many streaming copies the copy engine can drive in parallel against this volume. The batch copy path takes `min(src.max_concurrent_ops(), dst.max_concurrent_ops(), 32)` and spawns that many `FuturesUnordered` tasks. Defaults to `1` (safe for any new backend). Current values: `LocalPosixVolume` returns `available_parallelism()/2` clamped to 4..=16; `SmbVolume` returns 10 (currently hardcoded; eventually wires to `network.smbConcurrency`); `MtpVolume` returns 1 (USB bulk transport is serial); `InMemoryVolume` returns 32.
 - `local_path()`: returns `Some` only for local volumes; allows `copyfile(2)` fast-path in copy operations. `SmbVolume` returns `None` so copies go through smb2 instead of the slow OS mount.
 - `supports_local_fs_access()`: whether `std::fs` operations (stat, read_dir) work on this volume's paths. Default `true`. `MtpVolume` and `SmbVolume` return `false`. Used to skip the legacy synthetic entry diff path (now superseded by `notify_mutation`).
-- `notify_mutation(volume_id, parent_path, mutation)`: called after a successful mutation (create, delete, rename) to update the listing cache immediately. Default impl uses `std::fs` (works for `LocalPosixVolume`). `SmbVolume` and `MtpVolume` override to use their own protocol's `get_metadata`. Fire-and-forget, no error propagation.
+- `notify_mutation(volume_id, parent_path, mutation)`: called after a successful mutation (create, delete, rename, and `write_from_stream`) to update the listing cache immediately. Fire-and-forget, no error propagation. See "Mutation notification" below.
 - `smb_connection_state()`: returns `Some(SmbConnectionState)` for SMB volumes (green/yellow indicator in volume picker). Default `None`. Only `SmbVolume` implements it.
 - `attempt_reconnect()`: tries to rebuild the volume's underlying session in place after a transient connection loss. Default `Err(NotSupported)`. Only `SmbVolume` overrides today; the Tauri command `reconnect_smb_volume` and the FE reconnect manager call this on each backoff tick. Idempotent and single-flight: concurrent callers wait on the same in-flight attempt instead of dog-piling the server.
 - `reconnect_with_credentials(username, password)`: reconnect with freshly-entered credentials, replacing whatever was cached. Default `Err(NotSupported)`; `SmbVolume` persists the new password (so the next reconnect is silent) then runs `attempt_reconnect`. Invoked by the Tauri command `reconnect_smb_volume_with_credentials` behind the "Sign in" prompt shown after an auth-failure reconnect give-up.
@@ -348,3 +348,22 @@ lifecycle for a LocalExternal index (the wedge-safe ordering)" for the full inci
 
 Per-backend tests live colocated with their backend in `backends/`. See `backends/DETAILS.md` §
 "Testing".
+
+## Mutation notification
+
+`Volume::notify_mutation`'s trait default is a **no-op**, and that's deliberate: the trait lives in `cmdr-fs`, which
+knows nothing about `LISTING_CACHE`. Every backend that can be mutated overrides it.
+
+- `LocalPosixVolume` calls `file_system::listing::caching::patch_listing_after_local_mutation`, which stats the affected
+  entry through `std::fs` and turns it into the right `DirectoryChange`. It early-returns for virtual git paths, whose
+  invalidations come through the `.git`-watcher pipeline instead.
+- `SmbVolume` and `MtpVolume` build the entry from their own protocol's `get_metadata` (faster than `std::fs` would be,
+  and on MTP `std::fs` isn't an option at all) and call `notify_directory_changed` directly.
+- `ArchiveVolume` is read-only and never calls it.
+
+**Why it's a no-op rather than a required method**: making it required would force ~45 `impl Volume for` sites — mostly
+test doubles — to each write `Box::pin(async {})` for no gain. The no-op is also more correct than the local-FS default
+it replaced, which had `InMemoryVolume` and every test double statting the real filesystem.
+
+**The cost, stated plainly**: a new mutable backend that forgets to override this gets a silently stale destination
+pane rather than a free correct one. That's what the `CLAUDE.md` guardrail and the Tier 2 checklist above are for.

@@ -4,13 +4,16 @@ Turns a raw OS error + path into a TYPED, word-free `ListingError` the frontend 
 Rust (errno → reason, provider detection, category/retry/action), WORDS on the frontend (`apps/desktop/src/lib/errors/CLAUDE.md`).
 This module emits zero user-facing prose.
 
-Parent: `../CLAUDE.md` (trait + manager + capability matrix). App-wide error conventions:
-`docs/guides/error-handling.md`.
+Parent: `crates/cmdr-fs/CLAUDE.md` (the crate) and
+`apps/desktop/src-tauri/src/file_system/volume/CLAUDE.md` (the trait's app-side wiring, backends, capability matrix).
+App-wide error conventions: `docs/guides/error-handling.md`.
 
 ## Module map
 
 - `mod.rs`: data model (`ListingError`, `ListingErrorReason`, `ErrorCategory`, `ErrorActionKind`) + public re-exports +
   the typed-mapping tests.
+- `git.rs`: `FriendlyGitError` / `FriendlyGitErrorKind` and their `ErrorCategory` mapping. It lives here, not with the
+  git module, because the two reference each other: `VolumeError::FriendlyGit` carries the whole thing.
 - `volume_error.rs`: `VolumeError` → `ListingError` (the entry point; dispatches to `errno` for raw `IoError`s).
 - `errno.rs`: raw macOS errno → `ListingError` (one reason per distinct outcome), non-macOS fallback.
 - `kinds.rs`: shared `ListingError` constructors for `VolumeError` variants that map to the same conceptual reason.

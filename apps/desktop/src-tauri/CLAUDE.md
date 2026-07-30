@@ -10,13 +10,14 @@ The Tauri 2 + Rust backend. Subsystem must-knows live in each module's colocated
   `src/logging/CLAUDE.md`.
 - ❌ No bare `.lock()` / `.read()` / `.write().unwrap()` on a std `Mutex` / `RwLock`: a poisoned lock aborts the whole
   app. Use `*_ignore_poison()` (recover) or `.expect("…poison…<why aborting is correct>")` (abort). Enforced by
-  `lock-poison`; see `src/ignore_poison.rs`.
+  `lock-poison`; see `crates/cmdr-fs/src/ignore_poison.rs`, re-exported as `crate::ignore_poison`.
 - ❌ No bare `.unwrap()` in production: it's a silent panic. Handle the error (`?` / `ok_or` / `match`) where the value
   can genuinely be absent, or `.expect("<concrete why it can't fail>")` for a true invariant. Enforced by
   `clippy::unwrap_used`; `#[test]` fns are exempt (`clippy.toml` `allow-unwrap-in-tests`), but test *helper* fns outside
   `#[test]` aren't, so they use `.expect("…")` too.
 - ❌ No hand-rolled poll loop or fixed sleep in a test: both pass silently or flake. Wait on a condition with
-  `crate::test_support::wait_until` / `wait_until_async`, which panic on timeout. Rules: `docs/testing.md`.
+  `crate::test_support::wait_until` / `wait_until_async` (re-exported from `cmdr_fs::testing`), which panic on
+  timeout. Rules: `docs/testing.md`.
 - ❌ Never build with raw `cargo build` (white screen, no embedded frontend). Use `pnpm tauri build` or the
   `tauri-wrapper.ts build` wrapper, which runs `beforeBuildCommand`. See `../scripts/CLAUDE.md`.
 - ❌ Every `unsafe {}` block (and `unsafe impl`) needs a `// SAFETY:` comment on the immediately-preceding line, stating

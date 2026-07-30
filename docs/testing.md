@@ -45,8 +45,9 @@ work into it that a unit test would cover.
 
 ## Waiting for background work (Rust)
 
-`crate::test_support` is the sanctioned way for a Rust test to wait, and the only place in Rust test code that sleeps.
-Two flavors, same shape:
+`cmdr_fs::testing` is the sanctioned way for a Rust test to wait, and the only place in Rust test code that sleeps. The
+app re-exports both helpers as `crate::test_support`, so app tests keep the shorter path; another crate's tests
+dev-depend on `cmdr-fs` with `features = ["testing"]` and import `cmdr_fs::testing::…`. Two flavors, same shape:
 
 ```rust
 use crate::test_support::{wait_until, wait_until_async};

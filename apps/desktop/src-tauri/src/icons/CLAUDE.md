@@ -8,7 +8,7 @@ unrelated.)
 
 ## Icon-id scheme
 
-`get_icon_id` (in `file_system/listing/metadata.rs`) assigns each entry an id; `get_icons` resolves it to a base64 WebP
+`get_icon_id` (in `crates/cmdr-fs/src/entry.rs`, next to `FileEntry`) assigns each entry an id; `get_icons` resolves it to a base64 WebP
 data URL. The namespace, by tier:
 
 | Tier | Id | Assigned to | Fetched from |
@@ -24,6 +24,9 @@ Full details (tier narratives, the package vs custom-icon detection-timing decis
 
 ## Must-knows
 
+- **The two per-entry classifiers live in `cmdr-fs`, re-exported here.** `special_folders` and the package half of
+  `per_path` run inside `FileEntry::new`, so they had to move where `FileEntry` is; everything expensive (NSWorkspace,
+  `getxattr`, the disk cache) stayed. Keep it that way: anything reachable from `get_icon_id` must be pure and cheap.
 - **Special folders are detected by canonical path, NOT by name, with no disk I/O.** `classify` is a lexical `HashMap`
   lookup; never add a `canonicalize` (it blocks on dead mounts and runs per entry during listing).
 - **Custom-icon detection (`getxattr`) must NOT run during bulk listing.** A syscall per directory in a 100k-entry

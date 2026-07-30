@@ -89,6 +89,8 @@ may speak as David where deliberately personal (onboarding, About).
 
 - `apps/desktop/`: `src/` (Svelte frontend), `src-tauri/` (Rust backend), `test/` (Vitest, Playwright, Linux Docker E2E,
   SMB fixtures), `scripts/`. The other three apps are listed above.
+- `crates/`: workspace crates with no `tauri` in their tree: `cmdr-fs` (filesystem vocabulary + host primitives,
+  `crates/cmdr-fs/CLAUDE.md`), `index-query`, and the vendored `fsevent-stream` fork.
 - `brand/`: tracked brand and press-kit assets.
 - `docs/`: `docs/architecture.md` (the map), `docs/guides/` (how-tos), `tooling/` (service and workflow references),
   `docs/specs/index.md` (per-development plans, periodically wiped), `docs/notes/README.md` (benchmarks and analysis),

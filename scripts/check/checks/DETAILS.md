@@ -393,7 +393,7 @@ Gotchas for anyone touching this:
 - **The summary block repeats every `FAIL`/`TIMEOUT` line**, so classification dedupes by (binary, test) and keeps the
   first occurrence, which is the one carrying the panic body.
 - **`ClassInTestDeadline` recognition depends on a string Rust owns**: `timed_out()` in
-  `apps/desktop/src-tauri/src/test_support.rs`. Nothing but `TestWaitUntilPanicFormatStillMatchesTheClassifier` ties the
+  `crates/cmdr-fs/src/testing.rs`. Nothing but `TestWaitUntilPanicFormatStillMatchesTheClassifier` ties the
   two languages together; without it, rewording the panic would silently downgrade every `wait_until` timeout to
   `ClassOther`. Don't delete that test.
 - **Leaks are a PASS, not a failure.** nextest counts a leaky test in its "N passed (M leaky)" tally, so `RealFailures`
@@ -664,7 +664,7 @@ bare `.lock().unwrap()` / `.read().unwrap()` / `.write().unwrap()` aborts the wh
 background thread panicked while holding it), and records no intent — a reader can't tell a considered abort from a
 thoughtless one. The policy (recover-by-default for value stores via `lock_ignore_poison()`; abort only for
 invariant-guarding locks, marked by an `.expect("… poison …")` whose message names poison) lives in the module doc of
-`apps/desktop/src-tauri/src/ignore_poison.rs`. The check is a fast-lane Go scanner (`apps/desktop/src-tauri/src/`,
+`crates/cmdr-fs/src/ignore_poison.rs`. The check is a fast-lane Go scanner (every Rust source root,
 modeled on `error-string-match`) that flags bare unwraps and non-poison `.expect(…)`. Its matcher requires empty parens
 (`.lock()` / `.read()` / `.write()` with nothing between) immediately followed by `.unwrap()` / `.expect(`, so
 `io::Read::read(&mut buf).unwrap()`, `io::Write::write(buf).unwrap()`, and tokio's `mutex.lock().await` all pass

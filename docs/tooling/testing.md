@@ -15,7 +15,8 @@ Run all: through the checker: `pnpm check rust-tests`. Don't run raw `cargo test
 
 ### `crate::test_support::wait_until` / `wait_until_async` (waiting for background work)
 
-In `apps/desktop/src-tauri/src/test_support.rs`, `#[cfg(test)]` at the crate root. `wait_until` for sync `#[test]`s,
+In `crates/cmdr-fs/src/testing.rs`, behind the `testing` feature, re-exported as `crate::test_support` in the app.
+`wait_until` for sync `#[test]`s,
 `wait_until_async` for `#[tokio::test]`s; both take a timeout, a description, and a condition closure, and panic on
 timeout. The only sanctioned sleep in Rust test code lives inside them. Rules and examples: `../testing.md` § "Waiting
 for background work (Rust)".

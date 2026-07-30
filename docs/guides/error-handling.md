@@ -15,7 +15,7 @@ VolumeError (with errno)
   → ErrorPane.svelte                    → renders markdown, category icon, retry button
 ```
 
-All classification and message authoring happens in Rust (`file_system/volume/friendly_error/`). The frontend renders
+All classification and message authoring happens in Rust (`crates/cmdr-fs/src/volume/friendly_error/`). The frontend renders
 what it receives and never does OS-specific logic.
 
 ## Data model
@@ -192,8 +192,8 @@ suggestion: "You may want to try simply reconnecting the device."  ← permissiv
 
 ## Key files
 
-- **`src-tauri/src/file_system/volume/friendly_error/`**: All error classification, messages, and provider detection
-- **`src-tauri/src/file_system/volume/types.rs`**: `VolumeError` enum definition
+- **`crates/cmdr-fs/src/volume/friendly_error/`**: All error classification, messages, and provider detection
+- **`crates/cmdr-fs/src/volume/types.rs`**: `VolumeError` enum definition
 - **`src-tauri/src/file_system/listing/streaming.rs`**: Emits `listing-error` events
 - **`src-tauri/src/commands/file_system/e2e_support.rs`**: `inject_listing_error` (E2E) and `preview_friendly_error`
   (debug)
