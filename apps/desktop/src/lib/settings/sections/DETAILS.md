@@ -86,7 +86,9 @@ sections compose).
   - the RAM gauge) is wrapped in an unlabeled `SectionCard`, and that wrapper sits INSIDE the
     `{#if modelInstalled && shouldShow('ai.localContextSize')}` guard, so no empty card renders before the model is
     installed. The `.status-card`, install/`.actions` buttons, and the delete dialog stay OUTSIDE any card on purpose
-    (already visually distinct full-bleed blocks).
+    (already visually distinct full-bleed blocks). **The window starts at 16,384**: below that an Ask Cmdr turn can't
+    fit its own prefix, so smaller sizes were dropped from the picker and a stored one resolves to the 16,384 default
+    (`agent/chat/DETAILS.md` § A local window too small to use).
 - **`DeleteAiModelDialog.svelte`**: the "Delete the local AI model?" confirmation `AiLocalSection` opens
   (`dialogId: 'delete-ai-model'`, `role="alertdialog"`). Props are `modelSizeFormatted` / `isDeleting` / `onConfirm` /
   `onCancel`; the section owns the flags and the `uninstallAi()` call, so the dialog performs nothing itself. While
@@ -474,7 +476,8 @@ copy the old standalone `LoggingSection` carried.
 ## Ask Cmdr section (`AskCmdrSection.svelte`)
 
 The `AI › Ask Cmdr` subsection (second card under the AI card-menu), over the read-only chat rail. Its
-`askCmdr.interactiveModel` registry entry lives at `section: ['AI', 'Ask Cmdr']`. Its parts:
+`askCmdr.interactiveModel` and `askCmdr.chatMemorySize` registry entries live at `section: ['AI', 'Ask Cmdr']`. Its
+parts:
 
 - **Enable toggle IS consent, not a registry setting.** The on/off state lives in `main.db` (the consent record), driven
   by the consent commands via `lib/ask-cmdr/ask-cmdr-consent.svelte.ts` (`acceptConsent` / `revokeConsent`), not a
@@ -486,6 +489,17 @@ The `AI › Ask Cmdr` subsection (second card under the AI card-menu), over the 
   has no generic text-input primitive) overrides the model; the provider, keys, and base URL come from the shared `ai/`
   config (Settings › AI). The section shows the current `ai.provider` as a hint. Backend resolution:
   `commands/agent/chat.rs::resolve_agent_llm` + `settings::load_ask_cmdr_interactive_model`.
+- **Chat memory size** (`askCmdr.chatMemorySize`, a `SettingSelect`): "Automatic (recommended)" or one of five presets
+  (16,000 / 32,000 / 60,000 / 128,000 / 200,000). Presets rather than a number field, so there is no bound to misstate,
+  no below-minimum case, and no numeric validation copy. Automatic follows the window the backend knows the model to
+  have; an explicit size overrides it and is used as chosen. Resolution is `agent::chat::budget::resolve_prompt_budget`,
+  read fresh per send, so there is no `settings-applier` case (same as the model override).
+  - **The warning lives here, the window knowledge doesn't.** `ask_cmdr_model_window` answers with the model the next
+    turn would use plus the window Cmdr believes it has; the section compares the just-picked value against it and shows
+    `settings.askCmdr.chatMemorySize.overWindow` when it's larger. Two reasons the comparison is frontend-side: a
+    `setSetting` reaches `settings.json` up to 500 ms later (`SAVE_DEBOUNCE_MS`), so asking the backend "is my pick too
+    big" would warn a beat late; and the picker must warn WITHOUT overruling, since a stale family table is likelier
+    than a user wrong about their own model. An unknown window (`null`) shows nothing at all.
 - **Spend** is the per-day rollup from `ask_cmdr_cost_summary`, formatted with the same honest miss-path as the rail
   footer (`lib/ask-cmdr/ask-cmdr-cost.ts`): a fully-priced day shows an estimate, a zero-cost fully-priced day is
   local/free, an unpriced day is "cost unknown", never a silent $0.

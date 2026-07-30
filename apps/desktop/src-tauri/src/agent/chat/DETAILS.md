@@ -141,17 +141,76 @@ In `budget.rs` (how many tokens a prompt and a tool result may spend):
 - `CHARS_PER_TOKEN_ESTIMATE = 4` — the ONE size-estimate divisor (elision, the stub hint, every tool's self-cap).
 - `DEFAULT_PROMPT_TOKEN_BUDGET = 16_000` — an unrecognized model's budget. Conservative because guessing high is a hard
   provider rejection mid-turn; still double the 8k that overflowed on a 12-file batch.
-- `PROMPT_BUDGET_60K = 60_000` — a known ≥128k-window cloud family (`claude-`, `gpt-4o`/`gpt-4.1`/`gpt-5`,
-  `o3`/`o4-mini`, `gemini-2`). Far below the window on purpose: a prompt this size costs real money per call and dilutes
-  attention, while still holding a 200-row listing plus a full `image_facts` batch.
-- Local: `LOCAL_PROMPT_BUDGET_PERCENT = 60` of the server's configured window (`ai.localContextSize`, default 4096),
-  floored at `MIN_LOCAL_PROMPT_BUDGET = 2_000` — the reply comes out of the same window.
+- `PROMPT_BUDGET_60K = 60_000` — the cap on any family's budget, which every ≥100k-window family therefore gets. Far
+  below those windows on purpose: a prompt this size costs real money per call and dilutes attention, while still
+  holding a 200-row listing plus a full `image_facts` batch.
+- `PROMPT_BUDGET_WINDOW_PERCENT = 60` — the share of a window one prompt may claim, cloud and local alike. The rest is
+  the reply's, which comes out of the same window.
+- `MIN_LOCAL_CONTEXT_TOKENS = 16_384` — the smallest local window one turn can run in, mirrored by
+  `ai.localContextSize`'s default and its smallest option. See § A local window too small to use.
+- `FIXED_PROMPT_OVERHEAD_TOKENS = 3_124` / `RENAME_TOKENS_PER_FILE = 349` / `BATCH_HINT_HEADROOM_PERCENT = 10` — what
+  `files_per_batch` divides. See § Sizing a batch from the budget.
 - `MAX_TOOL_RESULT_TOKENS = DEFAULT_PROMPT_TOKEN_BUDGET / 2` — the most ONE tool result may spend. Derived from the
-  conservative default, not the resolved model, because a tool handler doesn't know the model (and may be answering an
-  external MCP client). Enforced via `mcp::executor::fit_to_result_budget`.
+  conservative default, not the resolved budget, because a tool handler doesn't know the model (and may be answering an
+  external MCP client). Enforced via `mcp::executor::fit_to_result_budget`. **The asymmetry is load-bearing**, not an
+  oversight to tidy up: at a user-chosen 200,000 a proportional ceiling would let one result claim 100,000, and the same
+  handler would hand that result to an MCP client whose window is a tenth of it. The `budget.rs` header says so too,
+  since that's where a reader meets the constant.
 
 Windows and prices both drift: re-verify the families at release time, like `agent::pricing`.
 Bumping any constant is a conscious change (never a silent side effect).
+
+### Resolving one budget: three sources, and the answer says which
+
+`budget::resolve_prompt_budget` takes a `BudgetInputs` (provider, model, the user's `askCmdr.chatMemorySize` choice, the
+local server's window) and answers a `ResolvedBudget` carrying `prompt_tokens`, the `BudgetSource` that decided, the
+window it believes the model has, and whether the user's size exceeds that window. The command layer
+(`commands/agent/chat.rs`) gathers those values once per send and logs the source; the core reads no settings and no app
+state (invariant 2).
+
+- **`UserSetting`** — an explicit size, used exactly as chosen. It is never clamped down: our table will be wrong
+  sometimes and the user may be right about their own model. `over_known_window` rides along, the settings row warns
+  ("Your model may refuse a message this long"), and the provider gets the final say.
+- **`LocalServerWindow`** — 60% of `ai.localContextSize`.
+- **`FamilyTable`** — 60% of the family's window, capped at 60,000. A family row carries its WINDOW, not a budget, so no
+  row can claim more than its window holds.
+- **`Default`** — nothing recognized the model, so `DEFAULT_PROMPT_TOKEN_BUDGET` and no claim about the window (an
+  unknown model can't be "over" a window nobody knows).
+
+**There is no provider-reported window.** No API this app talks to reports one, so the table is the only knowledge we
+have, and it will age. Hence the label: a budget that came from a stale table is visible in the log rather than silently
+authoritative. `every_shipped_cloud_preset_is_in_the_family_table` walks the default model of every provider preset
+`lib/settings/cloud-providers.ts` ships, so a new preset without a row fails a test rather than quietly costing a user
+four fifths of their window; gateway-prefixed ids (`openai/gpt-4.1-mini`, `accounts/fireworks/models/llama-v3p3-…`)
+normalize to the family they name. Ollama, LM Studio, and an unconfigured Custom endpoint stay OUT on purpose: their
+window is whatever the user's own server was started with, and the conservative default is the honest answer.
+
+**A settings change never moves a turn in flight.** The choice is read fresh per send
+(`settings::load_ask_cmdr_chat_memory_size`) and the resolved number rides `TurnParams::prompt_budget` as a value, the
+same shape as the interactive model override.
+
+### A local window too small to use
+
+`prompt_budget_for_local_context(4096)` was 2,457 tokens against 3,124 of fixed overhead: the shipped default could not
+complete one turn. So `MIN_LOCAL_CONTEXT_TOKENS = 16_384` is the floor, `ai.localContextSize` offers nothing smaller,
+and a stored 2,048 / 4,096 / 8,192 no longer validates (it resolves to the 16,384 default on load, migrating an early
+tester instead of leaving them broken).
+
+A window UNDER the floor is still reachable — a local server Cmdr didn't launch at the current setting — and it is
+refused, not assembled: `BudgetRefusal::LocalWindowBelowFloor` reaches the rail as
+`AgentErrorKindView::LocalWindowTooSmall`, whose copy names the number to pick and where. The refusal happens in
+`ask_cmdr_send_message` before a conversation exists, like the consent gate.
+
+### Sizing a batch from the budget
+
+`files_per_batch(prompt_tokens)` answers how many files one content-based rename batch fits:
+`(budget − 10% headroom − 3,124 of prefix) / 349 per file`. 32 files at 16,000, 73 at 32,000, 145 at 60,000, 16 on a
+local model at the floor. The headroom exists because the measured 100-file turn came in ~4% above what the per-file
+costs account for (the paths the calls name, the envelope, the user's sentence, JSON scaffolding).
+
+The arithmetic lives in `budget.rs`, next to the budget it derives from, and `cost_tests.rs` proves the promise against
+the real shapes: a batch of exactly that size, assembled against that budget, fits with nothing elided. Renderers (the
+system prompt, the UI) may show the number; they don't own it.
 
 ### What the budgets buy, measured
 
@@ -168,8 +227,9 @@ the test and the plan's "measured ground truth" section together.
 - **A 100-file content-based rename: 39,699 tokens** for the whole turn. The parts above account for over 90% of it; the
   rest is the paths the calls name, the envelope, the user's sentence, and JSON scaffolding. The facts arrive over
   several `MAX_TOOL_RESULT_TOKENS` pages that all stay in the turn.
-- So **60k does 100 files, 16k does roughly 30**, and a 4k local window does a handful. A model's window must exceed the
-  whole turn, not one page of it: every page of facts is evidence the plan cites, so none of it may elide.
+- So **60k does 100 files, 16k does roughly 30** (`files_per_batch` says 145 and 32, the difference being that a hint
+  leaves headroom the measurement doesn't). A model's window must exceed the whole turn, not one page of it: every page
+  of facts is evidence the plan cites, so none of it may elide.
 
 ## The runtime (`runtime/`)
 
