@@ -18,6 +18,13 @@ exclude = [".github/**/*", ".gitignore", ".mergify.yml", "Justfile"]
 # `cargo --workspace` SELECTION does, and the target gate no longer applies there.
 # The check runner reads this key to drop the crate from non-macOS lanes
 # (`scripts/check/checks/cargo-workspace.go`).
+[package.metadata.cargo-udeps.ignore]
+# `async-std1` is used only under `#[cfg(feature = "async-std")]` (`src/tests.rs`,
+# `src/stream.rs`), and the default feature set is `tokio`. cargo-udeps compiles
+# with default features, so it can't see those uses. `pretty_env_logger` was
+# upstream's and genuinely unused; it's gone rather than ignored.
+development = ["async-std1"]
+
 [package.metadata.cmdr]
 # A third-party crate we forked and carry. The house Rust rules (poison handling,
 # no fixed sleeps in tests, no substring error matching, …) aren't ours to impose
@@ -45,6 +52,5 @@ tokio1 = { package = "tokio", version = "1.14", features = ["sync"], optional = 
 [dev-dependencies]
 async-std1 = { package = "async-std", version = "1.10", features = ["attributes"] }
 libc = "0.2"
-pretty_env_logger = "0.5"
 tempfile = "3.12"
 tokio1 = { package = "tokio", version = "1.14", features = ["rt-multi-thread", "sync", "macros"] }
