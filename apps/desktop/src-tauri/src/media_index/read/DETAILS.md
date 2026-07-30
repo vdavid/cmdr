@@ -1,7 +1,7 @@
 # Media index read API — details
 
 The depth behind `CLAUDE.md`. Read this before any non-trivial work here: editing, planning, reorganizing, or advising.
-The IPC commands that wrap these entry points live in `../commands/search.rs` (`../DETAILS.md` § The IPC surface).
+The IPC commands that wrap these entry points live in `../../commands/media_index/search.rs` (`../DETAILS.md` § The IPC surface).
 
 ## The entry points
 

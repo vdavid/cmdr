@@ -26,8 +26,7 @@ Under `cfg(test)` this module installs a pass-through global allocator that coun
 (parallel tests can't pollute each other). `count_allocations(|| …)` reports how many allocations a closure made;
 `heap_bytes_held(|| …)` reports the requested bytes its result still holds. Use them to pin a hot path's SHAPE against a
 generous bound ("this walk doesn't allocate per row"), never an exact number: the numbers move with buffer growth and
-allocator internals, the shape is the invariant. Worked examples:
-`media_index/scheduler/enrich_memory_tests.rs`.
+allocator internals, the shape is the invariant. Worked examples: `media_index/scheduler/enrich_memory_tests.rs`.
 
 It lives in the indexing tree, not next to `wait_until`, because a `#[global_allocator]` is per BINARY: it has to sit in
 the crate whose test binary is measuring, and a shared crate would give the shipped app a second one. Rust memory

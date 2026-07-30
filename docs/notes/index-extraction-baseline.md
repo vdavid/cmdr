@@ -134,15 +134,13 @@ per-thread and set explicitly here, so nothing is inherited from whoever spawned
 it with the thread name; the instrumentation was reverted afterwards. Every call site fired and every one reported
 `set_rc=0 get_rc=0 class=0x11` — `QOS_CLASS_UTILITY`:
 
-| thread | count |
-| --- | --- |
-| `index-walk` | 16 |
-| `index-writer` | 2 |
-| `index-scanner` | 1 |
-| `index-walk-watchdog` | 1 |
-| `index-local-reconcile` | 1 |
-| `reconcile-read` | 1 |
-| `rescan-subtree` | 1 |
+- **`index-walk`**: 16 threads (the walker pool)
+- **`index-writer`**: 2
+- **`index-scanner`**: 1
+- **`index-walk-watchdog`**: 1
+- **`index-local-reconcile`**: 1
+- **`reconcile-read`**: 1
+- **`rescan-subtree`**: 1
 
 23 threads, no exceptions.
 

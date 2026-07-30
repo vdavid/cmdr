@@ -15,7 +15,12 @@ func runSqliteOpenDirectOn(t *testing.T, files map[string]string) (CheckResult, 
 	seedAppFixtureWorkspace(t, root)
 	srcDir := filepath.Join(root, "apps", "desktop", "src-tauri", "src")
 	for rel, body := range files {
+		// A key starting with `crates/` is repo-root-relative, so a test can place
+		// the factory file itself (which lives in `cmdr-fs`, not the app).
 		full := filepath.Join(srcDir, rel)
+		if strings.HasPrefix(rel, "crates/") {
+			full = filepath.Join(root, rel)
+		}
 		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
 			t.Fatalf("mkdir: %v", err)
 		}
@@ -47,7 +52,7 @@ func TestSqliteOpenDirect_FlagsEveryOpenFlavor(t *testing.T) {
 
 func TestSqliteOpenDirect_AllowsTheFactoryItself(t *testing.T) {
 	res, err := runSqliteOpenDirectOn(t, map[string]string{
-		"sqlite_util.rs": "fn open(p: &Path) -> Result<Connection> { Connection::open(p) }\n",
+		"crates/cmdr-fs/src/sqlite_util.rs": "fn open(p: &Path) -> Result<Connection> { Connection::open(p) }\n",
 	})
 	if err != nil {
 		t.Fatalf("the factory file must be allowed to open connections, got: %v", err)

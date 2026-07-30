@@ -392,6 +392,13 @@ impl ThreadConnCache {
     pub fn len(&self) -> usize {
         self.entries.len()
     }
+
+    /// Test-only: whether this thread holds no connections at all. Paired with
+    /// [`len`](Self::len) because clippy won't take one without the other.
+    #[cfg(any(test, feature = "testing"))]
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
 }
 
 // ── Freelist reclamation ─────────────────────────────────────────────

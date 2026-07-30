@@ -57,7 +57,7 @@ scoped core directly with the installed stamp.
 
 Semantic search is a real user toggle (`gate::semantic_search_enabled`, an atomic ON by default, seeded from the FE-owned
 `mediaIndex.semanticSearch.enabled` at startup and live-applied by `media_index_set_semantic_search_enabled` in
-`../commands/policy.rs`). Downloading the model is no longer the de-facto opt-in — the toggle is.
+`../../commands/media_index/policy.rs`). Downloading the model is no longer the de-facto opt-in — the toggle is.
 
 **One atomic, both sides.** The gate is enforced at exactly two seams so read and write can't disagree:
 

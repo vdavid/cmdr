@@ -755,8 +755,8 @@ after:** full suite with `--include-slow`; this milestone touches concurrency. *
   `file_system::file_provider` into `indexing/scanner/` too — its only consumer is the exclusion policy.
 - **Deleting the `APP_HANDLE` `OnceLock` cascaded further than expected**: `init`, `start_indexing`,
   `start_indexing_for`, all three transport entry points, `drives_to_resume`, `enforce_external_index_cap`,
-  `smb_index_was_enabled`, and `resolved_index_db_path` all lost their `AppHandle` parameter once the thing they
-  reached for had a seam. Both schedulers now RETURN their handle instead of calling `app.manage`.
+  `smb_index_was_enabled`, and `resolved_index_db_path` all lost their `AppHandle` parameter once the thing they reached
+  for had a seam. Both schedulers now RETURN their handle instead of calling `app.manage`.
 - **`smb/integration_test.rs` moved app-side**, to `file_system/volume/smb_index_scan_test.rs`. It needs a real
   `SmbVolume`, which only the app can build, so it becomes the app proving its backend works with the index's scanner.
 - **Item 6 relocated 30 commands across 8 files**, not 27 across 3, and `media_index/commands.rs` was already

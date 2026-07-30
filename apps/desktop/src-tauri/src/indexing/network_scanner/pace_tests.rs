@@ -209,7 +209,7 @@ async fn the_policy_is_consulted_per_listing_not_per_entry() {
     let asked = host.call_count() as u64;
     assert!(
         asked < total_entries,
-        "the host must not be asked per entry ({asked} questions for {total_entries} entries)"
+        "the host must not be asked per entry (asked={asked}, entries={total_entries})"
     );
     // The walk asks while topping up its in-flight set, so a handful of questions per
     // dispatched listing is expected; anything that scales with entries is not.
@@ -217,6 +217,6 @@ async fn the_policy_is_consulted_per_listing_not_per_entry() {
     assert!(
         asked <= ceiling,
         "policy questions must scale with listings, not entries \
-         ({asked} questions for {listings} listings, ceiling {ceiling})"
+         (asked={asked}, listings={listings}, ceiling={ceiling})"
     );
 }

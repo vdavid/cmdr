@@ -19,7 +19,7 @@ import (
 // unbounded) connection count.
 //
 // Path is relative to the repo root.
-const sqliteOpenFactoryFile = "apps/desktop/src-tauri/src/sqlite_util.rs"
+const sqliteOpenFactoryFile = "crates/cmdr-fs/src/sqlite_util.rs"
 
 // rawSqliteOpenPattern matches a direct rusqlite connection open: `Connection::open`,
 // `Connection::open_with_flags`, `Connection::open_in_memory`, with or without the

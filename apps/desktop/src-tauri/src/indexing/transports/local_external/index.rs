@@ -168,6 +168,10 @@ mod tests {
     }
 
     #[tokio::test]
+    #[allow(
+        clippy::await_holding_lock,
+        reason = "the lock serializes the process-wide provider slot for the whole test; holding it across the await IS the point"
+    )]
     async fn classify_resolves_a_registered_local_volume_to_its_mount_root() {
         // A registered volume on a local mount is a local external drive rooted at
         // that path. Exercises the real wiring: registry lookup + mount probe + the
@@ -197,6 +201,10 @@ mod tests {
     /// The other side of the same decision: a NETWORK mount must fall through to the
     /// SMB gate, because the local guarded walker must never walk a share.
     #[tokio::test]
+    #[allow(
+        clippy::await_holding_lock,
+        reason = "the lock serializes the process-wide provider slot for the whole test; holding it across the await IS the point"
+    )]
     async fn classify_falls_through_for_a_network_mount() {
         let mount = std::path::Path::new("/Volumes/LocalExternalNetworkTest");
         let vid = "local-external-network-test";
