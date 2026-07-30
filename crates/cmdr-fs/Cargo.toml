@@ -45,10 +45,12 @@ uzers = "0.12.2"
 # runtime auto-advances through the wait instead of burning wall-clock.
 tokio = { version = "1", features = ["time"], optional = true }
 
-[target.'cfg(unix)'.dependencies]
-libc = "0.2"
-
 [target.'cfg(target_os = "macos")'.dependencies]
+# Mach `task_info`, the malloc-zone walk, and `pthread_set_qos_class_self_np`.
+# macOS-only on purpose: every `libc::` call in this crate is behind
+# `#[cfg(target_os = "macos")]`, so declaring it for all of unix would make it an
+# unused crate dependency on Linux. `cfg-gate` watches this block.
+libc = "0.2"
 # The raw mimalloc FFI, for `mi_process_info` (how many bytes the app's allocator
 # has committed). mimalloc is not a registered macOS malloc zone, so
 # `malloc_zone_statistics` can't see the Rust heap at all; `process_memory.rs`
