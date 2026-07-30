@@ -100,30 +100,29 @@ callers.
 
 ## Gotcha: `cfg(test)`-conditioned BEHAVIOR stops meaning anything in a dependency
 
-**Any `cfg(test)` that gates BEHAVIOR — not just a test module — silently changes meaning the moment its code moves
-into a crate somebody else depends on.** `cfg(test)` is set only while compiling a crate's OWN test target. A
-consumer's `#[test]`s compile this crate as a plain dependency, where it is NOT set, so the "test build" arm quietly
-stops being taken and production behavior starts running inside everyone's test suite.
+**Any `cfg(test)` that gates BEHAVIOR — not just a test module — silently changes meaning the moment its code moves into
+a crate somebody else depends on.** `cfg(test)` is set only while compiling a crate's OWN test target. A consumer's
+`#[test]`s compile this crate as a plain dependency, where it is NOT set, so the "test build" arm quietly stops being
+taken and production behavior starts running inside everyone's test suite.
 
 **Grep for `cfg(test)` and `cfg(not(test))` outside `mod tests` declarations before moving any code down here.** The
 replacement is `any(test, feature = "testing")` (or `not(any(…))`), with consumers switching the feature on through a
 **dev-dependency** so it stays off in shipped builds.
 
-**Why this rates a gotcha rather than a footnote**: it is invisible at the call site, it compiles clean, and it fails
-as a *timing* symptom in unrelated tests. `thread_qos::set_current_thread_qos` was
-`#[cfg(all(target_os = "macos", not(test)))]`; moving it here started applying the real `QOS_CLASS_UTILITY` to the
-app's background threads during the app's own test run. Under nextest's one-process-per-core parallelism that starved
-a walker test past its stall watchdog and
-`indexing::scanner::walker::tests::a_read_that_keeps_delivering_is_never_abandoned` began failing — a genuine failure
-that reads exactly like flakiness. Nothing about the diff suggested thread scheduling.
+**Why this rates a gotcha rather than a footnote**: it is invisible at the call site, it compiles clean, and it fails as
+a _timing_ symptom in unrelated tests. `thread_qos::set_current_thread_qos` was
+`#[cfg(all(target_os = "macos", not(test)))]`; moving it here started applying the real `QOS_CLASS_UTILITY` to the app's
+background threads during the app's own test run. Under nextest's one-process-per-core parallelism that starved a walker
+test past its stall watchdog and `indexing::scanner::walker::tests::a_read_that_keeps_delivering_is_never_abandoned`
+began failing — a genuine failure that reads exactly like flakiness. Nothing about the diff suggested thread scheduling.
 
-**This applies to `cmdr-index` too, and harder.** `set_current_thread_qos` is called from seven sites across
-`scanner/`, `writer/`, and `reconcile/` — all code that moves into that crate. When it does, the same question has to
-be asked of every `cfg(test)` in the moving trees, and the QoS no-op has to keep working from a *third* crate. It is
-the property that kept indexing in-process at all.
+**This applies to `cmdr-index` too, and harder.** `set_current_thread_qos` is called from seven sites across `scanner/`,
+`writer/`, and `reconcile/` — all code that moves into that crate. When it does, the same question has to be asked of
+every `cfg(test)` in the moving trees, and the QoS no-op has to keep working from a _third_ crate. It is the property
+that kept indexing in-process at all.
 
-The same shape bit once more, harmlessly: the `Volume::inject_error` E2E hook is `#[cfg(feature = "playwright-e2e")]`,
-a feature that lived only on the app. This crate now declares its own, and the app's enables it via
+The same shape bit once more, harmlessly: the `Volume::inject_error` E2E hook is `#[cfg(feature = "playwright-e2e")]`, a
+feature that lived only on the app. This crate now declares its own, and the app's enables it via
 `cmdr-fs/playwright-e2e`. A feature name that isn't declared in the crate you move code into doesn't error — it warns
 about an "unexpected `cfg` condition value" and takes the false branch forever.
 

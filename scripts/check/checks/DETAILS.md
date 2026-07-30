@@ -483,8 +483,8 @@ the reader to decide. Read it carefully before believing it:
   runs beat any amount of reasoning about the diff.
 - **`pkill -f check.sh` does NOT stop a run.** The runner is a compiled Go binary under the `go-build` cache parented by
   `go run .`, and killing the wrapper orphans the whole tree of Playwright, Docker, and cargo children, which then keep
-  competing with whatever you start next. Kill `go-build.*/check` and `go run \. --include-slow`, then confirm with
-  `ps` before drawing conclusions from the next run.
+  competing with whatever you start next. Kill `go-build.*/check` and `go run \. --include-slow`, then confirm with `ps`
+  before drawing conclusions from the next run.
 
 Giving this lane the macOS lanes' contention re-run would remove the manual work; it hasn't been done.
 

@@ -195,8 +195,10 @@ func TestFlakySummaryNamesTheTestAndTheAttempt(t *testing.T) {
 // the panic, classification silently degrades to `ClassOther` and every
 // `wait_until` timeout starts looking like an ordinary assertion failure.
 func TestWaitUntilPanicFormatStillMatchesTheClassifier(t *testing.T) {
-	// Go runs a test with cwd = its package dir (`scripts/check/checks`).
-	path := filepath.Join("..", "..", "..", "apps", "desktop", "src-tauri", "src", "test_support.rs")
+	// Go runs a test with cwd = its package dir (`scripts/check/checks`). The
+	// helper lives in `cmdr-fs` (every crate in the workspace waits the same way);
+	// the app re-exports it as `crate::test_support::wait_until`.
+	path := filepath.Join("..", "..", "..", "crates", "cmdr-fs", "src", "testing.rs")
 	src, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read %s: %v", path, err)
