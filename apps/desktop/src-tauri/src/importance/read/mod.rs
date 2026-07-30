@@ -45,8 +45,8 @@ use tokio::sync::watch;
 use super::scorer::{Explanation, FolderSignals, Score, SignalSet, Weights, explain};
 use super::store::{ImportanceStoreError, importance_db_path, open_read_connection};
 use crate::indexing::store::normalize_for_comparison;
-use crate::sqlite_util::{THREAD_CONN_SLOTS, ThreadConnCache};
 use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::sqlite_util::{THREAD_CONN_SLOTS, ThreadConnCache};
 
 /// A stored weight for one folder, as the read API hands it back: the scalar, the
 /// deserialized raw signal vector it was computed from (plan Decision 2: a
@@ -374,7 +374,7 @@ thread_local! {
     /// rather than one slot: a thread that reads two volumes' weights (the
     /// ranker folding a snapshot per volume, an agent walking both panes) would
     /// otherwise reopen on every alternation and lose the connection's
-    /// `prepare_cached` statements. See `crate::sqlite_util::ThreadConnCache`.
+    /// `prepare_cached` statements. See `cmdr_fs::sqlite_util::ThreadConnCache`.
     static READ_CONNS: std::cell::RefCell<ThreadConnCache> =
         const { std::cell::RefCell::new(ThreadConnCache::new(THREAD_CONN_SLOTS)) };
 }

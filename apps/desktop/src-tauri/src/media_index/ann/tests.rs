@@ -676,7 +676,7 @@ fn a_schema_recreate_takes_the_index_files_with_it() {
     // take the derivative index along (a fresh DB searched through an old index
     // would resurrect deleted rows).
     {
-        let conn = crate::sqlite_util::open(&db_path).expect("raw conn");
+        let conn = cmdr_fs::sqlite_util::open(&db_path).expect("raw conn");
         conn.execute("UPDATE meta SET value = '0' WHERE key = 'schema_version'", [])
             .expect("age the schema");
     }

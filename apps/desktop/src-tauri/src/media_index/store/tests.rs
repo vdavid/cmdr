@@ -380,10 +380,10 @@ fn clip_and_vision_staleness_are_independent() {
 /// Read-only connections open with the smaller page cache, write connections
 /// with the bigger one. The media read path opens a fresh read connection per
 /// query, so the budget is claimed on every one. Both are upper bounds drawn
-/// from the process-wide slab in `crate::sqlite_util`.
+/// from the process-wide slab in `cmdr_fs::sqlite_util`.
 #[test]
 fn read_connections_get_a_smaller_page_cache_than_write_connections() {
-    use crate::sqlite_util::{READ_PAGE_CACHE_KIB, WRITE_PAGE_CACHE_KIB, page_cache_kib};
+    use cmdr_fs::sqlite_util::{READ_PAGE_CACHE_KIB, WRITE_PAGE_CACHE_KIB, page_cache_kib};
 
     let dir = tempfile::tempdir().expect("temp dir");
     let path = media_db_path(dir.path(), "root");

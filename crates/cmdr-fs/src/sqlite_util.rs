@@ -2,6 +2,15 @@
 //! and the connection factories that install it, the per-connection page-cache
 //! budget, the per-thread connection cache the read paths keep, and freelist
 //! reclamation for the writer threads.
+//!
+//! It lives here rather than in the app because the slab is exactly ONE per
+//! process and five stores share it — the three index DBs plus the agent's and the
+//! operation log's — so the helpers belong in the crate all of them depend on.
+//!
+//! ❌ The test-only items and the open counter are gated on
+//! `any(test, feature = "testing")`, never bare `cfg(test)`: a consumer compiles
+//! this crate as a plain dependency, where `cfg(test)` is NOT set, so the counter
+//! would silently stop recording inside their suites. See `../CLAUDE.md`.
 
 use std::ffi::{c_int, c_void};
 use std::path::{Path, PathBuf};
@@ -38,7 +47,12 @@ const DB_PAGE_BYTES: usize = 4096;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SharedPageCache {
     /// The slab is installed: `slots` cache lines of `slot_bytes` each.
-    Installed { slot_bytes: usize, slots: usize },
+    Installed {
+        /// Bytes per cache slot: one database page plus SQLite's per-page header.
+        slot_bytes: usize,
+        /// How many slots the slab holds.
+        slots: usize,
+    },
     /// SQLite was already initialized, so it refused the slab. Something opened
     /// a connection outside this module's factories and won the race; the
     /// process falls back to per-connection budgets alone.
@@ -50,7 +64,7 @@ pub enum SharedPageCache {
 impl SharedPageCache {
     /// Total bytes SQLite will serve page-cache allocations from, or `0` when
     /// the slab isn't installed.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "testing"))]
     pub fn bytes(&self) -> usize {
         match self {
             Self::Installed { slot_bytes, slots } => slot_bytes * slots,
@@ -165,7 +179,7 @@ fn report(outcome: SharedPageCache) -> SharedPageCache {
 /// longer be installed. Enforced by `desktop-rust-sqlite-open-direct`.
 pub fn open(db_path: &Path) -> rusqlite::Result<Connection> {
     ensure_shared_page_cache();
-    #[cfg(test)]
+    #[cfg(any(test, feature = "testing"))]
     record_open(db_path);
     Connection::open(db_path)
 }
@@ -174,7 +188,7 @@ pub fn open(db_path: &Path) -> rusqlite::Result<Connection> {
 /// [`open`] for why every open funnels through this module.
 pub fn open_read_only(db_path: &Path) -> rusqlite::Result<Connection> {
     ensure_shared_page_cache();
-    #[cfg(test)]
+    #[cfg(any(test, feature = "testing"))]
     record_open(db_path);
     Connection::open_with_flags(db_path, OpenFlags::SQLITE_OPEN_READ_ONLY)
 }
@@ -182,7 +196,7 @@ pub fn open_read_only(db_path: &Path) -> rusqlite::Result<Connection> {
 /// Open an in-memory database, installing the shared page cache first. See
 /// [`open`] for why every open funnels through this module. Test-only today:
 /// production always opens a file.
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 pub fn open_in_memory() -> rusqlite::Result<Connection> {
     ensure_shared_page_cache();
     Connection::open_in_memory()
@@ -192,7 +206,7 @@ pub fn open_in_memory() -> rusqlite::Result<Connection> {
 /// by path so a test on its own temp DB is unaffected by connections other tests
 /// open in parallel. The reopen counter the thread-local cache's reuse tests
 /// assert on (identity via timing would only flake).
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 pub fn open_count_for(db_path: &Path) -> u64 {
     OPEN_COUNTS
         .lock_ignore_poison()
@@ -201,14 +215,14 @@ pub fn open_count_for(db_path: &Path) -> u64 {
         .unwrap_or_default()
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 use crate::ignore_poison::IgnorePoison;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 static OPEN_COUNTS: LazyLock<std::sync::Mutex<std::collections::HashMap<PathBuf, u64>>> =
     LazyLock::new(|| std::sync::Mutex::new(std::collections::HashMap::new()));
 
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 fn record_open(db_path: &Path) {
     *OPEN_COUNTS
         .lock_ignore_poison()
@@ -276,7 +290,7 @@ pub fn apply_page_cache(conn: &Connection, readonly: bool) -> rusqlite::Result<(
 
 /// The connection's page-cache budget in KiB. `PRAGMA cache_size` echoes back the
 /// negative KiB form [`apply_page_cache`] sets, so flip the sign.
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 pub fn page_cache_kib(conn: &Connection) -> i64 {
     let raw: i64 = conn
         .pragma_query_value(None, "cache_size", |row| row.get(0))
@@ -316,6 +330,7 @@ pub struct ThreadConnCache {
 pub const THREAD_CONN_SLOTS: usize = 3;
 
 impl ThreadConnCache {
+    /// An empty cache holding at most `capacity` connections.
     pub const fn new(capacity: usize) -> Self {
         Self {
             entries: Vec::new(),
@@ -367,13 +382,13 @@ impl ThreadConnCache {
 
     /// Test-only: the generation this thread holds for `db_path`, or `None` when
     /// it holds no connection to it.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "testing"))]
     pub fn generation_for(&self, db_path: &Path) -> Option<u64> {
         self.entries.iter().find(|(p, _, _)| p == db_path).map(|(_, g, _)| *g)
     }
 
     /// Test-only: how many connections this thread currently holds.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "testing"))]
     pub fn len(&self) -> usize {
         self.entries.len()
     }

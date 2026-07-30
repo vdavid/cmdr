@@ -764,7 +764,7 @@ pub(super) fn handle_truncate_data(
                 t.elapsed().as_millis(),
             );
             // Reclaim free pages from the truncation
-            if let Err(e) = crate::sqlite_util::run_incremental_vacuum(conn, None) {
+            if let Err(e) = cmdr_fs::sqlite_util::run_incremental_vacuum(conn, None) {
                 log::warn!("Writer: incremental_vacuum after truncate failed: {e}");
             }
         }

@@ -177,7 +177,7 @@ pub(super) fn handle_incremental_vacuum(conn: &rusqlite::Connection, signal: &In
         return;
     };
 
-    if let Err(e) = crate::sqlite_util::run_incremental_vacuum(conn, Some(cap)) {
+    if let Err(e) = cmdr_fs::sqlite_util::run_incremental_vacuum(conn, Some(cap)) {
         signal.note(&IndexStoreError::from(e), "incremental_vacuum");
     } else {
         log::debug!(

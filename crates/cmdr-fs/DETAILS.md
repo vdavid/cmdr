@@ -32,6 +32,13 @@ body, and `#[cfg(test)]` items are all invisible to a header grep.
 - **`ignore_poison`, `pluralize`, `thread_qos`, `process_memory`.** Host primitives with 8–49 references from the index
   trees, none of which can sensibly be injected. `thread_qos` in particular is the property that kept indexing
   in-process at all: a `tokio::runtime::Handle` does nothing for thread scheduling class.
+- **`sqlite_util`.** A leaf over `std` + `rusqlite`, whose only two in-crate calls are `pluralize` and `ignore_poison`,
+  both already here. It had to come down because five stores share it and they sit on both sides of the boundary: the
+  three index DBs move into `cmdr-index`, while the agent's and the operation log's stay app-side. Putting it in
+  `cmdr-index` would have made `agent/` and `operation_log/` depend on the index for connection plumbing, and there is
+  only one `SQLITE_CONFIG_PAGECACHE` slab per process, so it genuinely has to be one instance both sides see. (The plan
+  budgeted this as "move `run_incremental_vacuum` down", counted when the module was two references; the process-wide
+  page-cache work landed four days later and took it to 33.)
 - **`wait_until` / `wait_until_async`.** Behind the `testing` feature. The rest of the app's `test_support.rs` can't
   follow: `COUNTING_ALLOCATOR` is a `#[global_allocator]`, and a second one in any binary linking this crate is a hard
   compile error.
@@ -120,6 +127,12 @@ began failing — a genuine failure that reads exactly like flakiness. Nothing a
 `writer/`, and `reconcile/` — all code that moves into that crate. When it does, the same question has to be asked of
 every `cfg(test)` in the moving trees, and the QoS no-op has to keep working from a _third_ crate. It is the property
 that kept indexing in-process at all.
+
+It bit again on the way in, exactly as predicted: `sqlite_util`'s open counter and its test-only accessors
+(`page_cache_kib`, `open_count_for`, `ThreadConnCache::len`) were bare `cfg(test)`, and five app-side test modules
+import them. As a dependency they were configured out and the build broke loudly; had they merely gated behavior, the
+counter would have gone quiet inside every consumer's suite instead. All of them are `any(test, feature = "testing")`
+now.
 
 The same shape bit once more, harmlessly: the `Volume::inject_error` E2E hook is `#[cfg(feature = "playwright-e2e")]`, a
 feature that lived only on the app. This crate now declares its own, and the app's enables it via

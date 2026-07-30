@@ -13,7 +13,7 @@ use crate::media_index::writer::{MediaWriter, UpsertAnalysis};
 /// so this is a cheap runtime guard, not a milestone gate.
 #[test]
 fn fts5_virtual_table_can_be_created() {
-    let conn = crate::sqlite_util::open_in_memory().expect("open in-memory");
+    let conn = cmdr_fs::sqlite_util::open_in_memory().expect("open in-memory");
     conn.execute_batch("CREATE VIRTUAL TABLE t USING fts5(body);")
         .expect("bundled SQLite must compile FTS5");
     conn.execute("INSERT INTO t (body) VALUES ('hello world')", [])
@@ -47,7 +47,7 @@ fn special_characters_that_would_be_fts_syntax_are_quoted() {
     // quoting makes them literals. We assert the built query parses + runs.
     for raw in ["report(v2)", "foo:bar", "AND", "NOT", "a\"b", "c-d"] {
         let q = build_ocr_match_query(raw).expect("non-empty");
-        let conn = crate::sqlite_util::open_in_memory().expect("db");
+        let conn = cmdr_fs::sqlite_util::open_in_memory().expect("db");
         conn.execute_batch("CREATE VIRTUAL TABLE t USING fts5(text);")
             .expect("fts5");
         // The built query must be valid fts5 syntax (no error), the whole point of

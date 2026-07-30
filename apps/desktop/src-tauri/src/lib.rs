@@ -63,13 +63,14 @@ use tauri_plugin_updater as _;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use mtp_rs as _;
 
-// These four host primitives live in `cmdr-fs` so every crate in the workspace
-// shares one copy, and are re-exported here at their original paths: poison-free
-// locking, the count/noun formatter, thread QoS, and the process-memory readers.
-// `crate::ignore_poison::…`, `crate::pluralize::…`, `crate::thread_qos::…`, and
-// `crate::process_memory::…` all still resolve.
+// These host primitives live in `cmdr-fs` so every crate in the workspace shares
+// one copy, and are re-exported here at their original paths: poison-free
+// locking, the count/noun formatter, thread QoS, the process-memory readers, and
+// the SQLite connection factories over the one process-wide page-cache slab.
+// `crate::ignore_poison::…`, `crate::pluralize::…`, `crate::thread_qos::…`,
+// `crate::process_memory::…`, and `crate::sqlite_util::…` all still resolve.
 pub use cmdr_fs::ignore_poison::IgnorePoison;
-pub use cmdr_fs::{ignore_poison, pluralize, process_memory, thread_qos};
+pub use cmdr_fs::{ignore_poison, pluralize, process_memory, sqlite_util, thread_qos};
 
 mod ipc;
 mod ipc_collectors;
@@ -148,7 +149,6 @@ pub mod selection;
 mod settings;
 mod short_id;
 mod space_poller;
-mod sqlite_util;
 mod system_events;
 mod system_memory;
 mod system_strings;

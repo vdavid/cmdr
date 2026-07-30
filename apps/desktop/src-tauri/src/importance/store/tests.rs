@@ -494,10 +494,10 @@ fn needs_initial_full_pass_is_false_for_an_already_scored_store() {
 /// with the bigger one. `ImportanceIndex` holds thread-local read connections
 /// (`../read/mod.rs`'s `READ_CONNS`), so these are the many; the writer is the
 /// one. Both budgets are upper bounds drawn from the process-wide slab in
-/// `crate::sqlite_util`.
+/// `cmdr_fs::sqlite_util`.
 #[test]
 fn read_connections_get_a_smaller_page_cache_than_write_connections() {
-    use crate::sqlite_util::{READ_PAGE_CACHE_KIB, WRITE_PAGE_CACHE_KIB, page_cache_kib};
+    use cmdr_fs::sqlite_util::{READ_PAGE_CACHE_KIB, WRITE_PAGE_CACHE_KIB, page_cache_kib};
 
     let dir = tempfile::tempdir().expect("temp dir");
     let path = importance_db_path(dir.path(), "root");

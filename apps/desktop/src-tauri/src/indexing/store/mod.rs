@@ -568,7 +568,7 @@ fn ensure_root_sentinel(conn: &Connection) -> Result<(), IndexStoreError> {
 /// Apply WAL-mode pragmas for performance.
 ///
 /// The page-cache budget is role-dependent and shared with every other store; see
-/// [`crate::sqlite_util::apply_page_cache`].
+/// [`cmdr_fs::sqlite_util::apply_page_cache`].
 fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), IndexStoreError> {
     // busy_timeout: when another connection holds the write lock, retry for up
     // to 5s instead of returning SQLITE_BUSY immediately. Applies to every open
@@ -585,7 +585,7 @@ fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), IndexStoreErro
         "PRAGMA busy_timeout = 5000;
          PRAGMA synchronous = NORMAL;",
     )?;
-    crate::sqlite_util::apply_page_cache(conn, readonly)?;
+    cmdr_fs::sqlite_util::apply_page_cache(conn, readonly)?;
     if !readonly {
         conn.execute_batch(
             "PRAGMA auto_vacuum = INCREMENTAL;

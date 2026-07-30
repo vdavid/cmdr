@@ -37,6 +37,14 @@ serde = { version = "1", features = ["derive"] }
 # transitively.
 specta = { version = "=2.0.0-rc.24", features = ["derive"] }
 log = "0.4"
+# The process-wide SQLite page-cache slab and the connection factories that
+# install it (`sqlite_util`). Every store in the app — the three index DBs plus
+# the agent's and the operation log's — shares that one slab, so the helpers have
+# to live in the crate all of them already depend on. `bundled` so the linked
+# SQLite is ours, `collation` for the index store's `name_folded` collation, and
+# `fallible_uint` for the app-side stores; the feature set has to be a superset of
+# every consumer's or Cargo unification silently drops one.
+rusqlite = { version = "0.40", features = ["bundled", "collation", "fallible_uint"] }
 # Standard-location resolution for the special-system-folder icon classifier.
 dirs = "6"
 # uid/gid → name resolution for `FileEntry`'s owner and group columns.
@@ -60,6 +68,9 @@ libmimalloc-sys = { version = "0.1.49", features = ["extended"] }
 
 [dev-dependencies]
 serde_json = "1"
+# `sqlite_util`'s tests open real on-disk databases: the page-cache budget and the
+# freelist reclamation only mean anything against a file-backed connection.
+tempfile = "3"
 # This crate's own tests exercise `testing` under plain `cfg(test)`, where the
 # optional dependency above isn't switched on.
 tokio = { version = "1", features = ["rt", "macros", "time"] }

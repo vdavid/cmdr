@@ -1393,9 +1393,11 @@ dependencies = [
  "libc",
  "libmimalloc-sys",
  "log",
+ "rusqlite",
  "serde",
  "serde_json",
  "specta",
+ "tempfile",
  "tokio",
  "uzers",
 ]

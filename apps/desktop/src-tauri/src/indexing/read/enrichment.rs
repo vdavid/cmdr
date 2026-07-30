@@ -16,10 +16,10 @@ use crate::indexing::lifecycle::state::ROOT_VOLUME_ID;
 use crate::indexing::paths::firmlinks;
 use crate::indexing::paths::routing;
 use crate::indexing::store::{self, DirStatsById, IndexStore, IndexStoreError};
-use crate::sqlite_util::{THREAD_CONN_SLOTS, ThreadConnCache};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::pluralize::pluralize;
+use cmdr_fs::sqlite_util::{THREAD_CONN_SLOTS, ThreadConnCache};
 
 // ── Read pool (lock-free enrichment reads) ──────────────────────────
 
@@ -34,7 +34,7 @@ thread_local! {
     /// LRU rather than one slot: a thread alternating between two volumes (the
     /// ordinary two-pane setup) would otherwise close and reopen on every
     /// alternation, throwing away the connection's `prepare_cached` statement
-    /// cache each time. See `crate::sqlite_util::ThreadConnCache`.
+    /// cache each time. See `cmdr_fs::sqlite_util::ThreadConnCache`.
     pub(crate) static THREAD_CONNS: RefCell<ThreadConnCache> =
         const { RefCell::new(ThreadConnCache::new(THREAD_CONN_SLOTS)) };
 }

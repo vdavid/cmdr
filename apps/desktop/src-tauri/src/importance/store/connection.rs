@@ -18,7 +18,7 @@ use crate::indexing::store::register_platform_case_collation;
 /// read and write get the busy-timeout and a role-sized page cache. Mirrors the
 /// index store's `apply_pragmas` so the two DBs behave identically under
 /// contention, page-cache budget included
-/// ([`crate::sqlite_util::apply_page_cache`]).
+/// ([`cmdr_fs::sqlite_util::apply_page_cache`]).
 fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), ImportanceStoreError> {
     if !readonly {
         conn.execute_batch(
@@ -30,7 +30,7 @@ fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), ImportanceStor
         "PRAGMA busy_timeout = 5000;
          PRAGMA synchronous = NORMAL;",
     )?;
-    crate::sqlite_util::apply_page_cache(conn, readonly)?;
+    cmdr_fs::sqlite_util::apply_page_cache(conn, readonly)?;
     Ok(())
 }
 
@@ -39,7 +39,7 @@ fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), ImportanceStor
 /// (which also owns the schema-version check). Callers own the returned
 /// connection.
 pub(crate) fn open_write_connection(db_path: &Path) -> Result<Connection, ImportanceStoreError> {
-    let conn = crate::sqlite_util::open(db_path)?;
+    let conn = cmdr_fs::sqlite_util::open(db_path)?;
     register_collation(&conn)?;
     apply_pragmas(&conn, false)?;
     conn.execute_batch(CREATE_TABLES)?;
@@ -51,7 +51,7 @@ pub(crate) fn open_write_connection(db_path: &Path) -> Result<Connection, Import
 /// exist (the writer/`open` path created them); a read-only connection can't
 /// create them.
 pub fn open_read_connection(db_path: &Path) -> Result<Connection, ImportanceStoreError> {
-    let conn = crate::sqlite_util::open_read_only(db_path)?;
+    let conn = cmdr_fs::sqlite_util::open_read_only(db_path)?;
     register_collation(&conn)?;
     apply_pragmas(&conn, true)?;
     Ok(conn)

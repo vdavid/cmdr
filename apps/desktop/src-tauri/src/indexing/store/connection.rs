@@ -73,7 +73,7 @@ impl IndexStore {
 
     /// Attempt to open the DB without the delete-and-recreate fallback.
     fn try_open(db_path: &Path) -> Result<Self, IndexStoreError> {
-        let conn = crate::sqlite_util::open(db_path)?;
+        let conn = cmdr_fs::sqlite_util::open(db_path)?;
         register_platform_case_collation(&conn)?;
         apply_pragmas(&conn, false)?;
         create_tables(&conn)?;
@@ -124,7 +124,7 @@ impl IndexStore {
             let _ = std::fs::remove_file(&shm);
         }
 
-        let conn = crate::sqlite_util::open(db_path)?;
+        let conn = cmdr_fs::sqlite_util::open(db_path)?;
         register_platform_case_collation(&conn)?;
         apply_pragmas(&conn, false)?;
         create_tables(&conn)?;
@@ -142,7 +142,7 @@ impl IndexStore {
     ///
     /// Used by the writer thread; callers own the returned connection.
     pub fn open_write_connection(db_path: &Path) -> Result<Connection, IndexStoreError> {
-        let conn = crate::sqlite_util::open(db_path)?;
+        let conn = cmdr_fs::sqlite_util::open(db_path)?;
         register_platform_case_collation(&conn)?;
         apply_pragmas(&conn, false)?;
         Ok(conn)
@@ -152,7 +152,7 @@ impl IndexStore {
     ///
     /// Never contends with the writer thread's write lock.
     pub fn open_read_connection(db_path: &Path) -> Result<Connection, IndexStoreError> {
-        let conn = crate::sqlite_util::open_read_only(db_path)?;
+        let conn = cmdr_fs::sqlite_util::open_read_only(db_path)?;
         register_platform_case_collation(&conn)?;
         apply_pragmas(&conn, true)?;
         Ok(conn)

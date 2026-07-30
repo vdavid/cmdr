@@ -358,13 +358,13 @@ fn a_failed_savepoint_call_leaves_the_connection_in_autocommit() {
 
 /// A read-only connection must open with the SMALLER page cache and the write
 /// connection with the bigger one. Both are upper bounds drawn from the
-/// process-wide slab (`crate::sqlite_util`), not reservations; the writer's is
+/// process-wide slab (`cmdr_fs::sqlite_util`), not reservations; the writer's is
 /// larger because it holds a whole `wal_autocheckpoint` window of dirty pages.
 /// `open` itself is a write path, so its `read_conn` field is NOT the
 /// small-cache one.
 #[test]
 fn read_connections_get_a_smaller_page_cache_than_write_connections() {
-    use crate::sqlite_util::{READ_PAGE_CACHE_KIB, WRITE_PAGE_CACHE_KIB, page_cache_kib};
+    use cmdr_fs::sqlite_util::{READ_PAGE_CACHE_KIB, WRITE_PAGE_CACHE_KIB, page_cache_kib};
 
     let (store, _dir) = open_temp_store();
     let write = IndexStore::open_write_connection(store.db_path()).expect("write conn");

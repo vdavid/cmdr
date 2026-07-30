@@ -15,7 +15,7 @@ use crate::indexing::store::register_platform_case_collation;
 
 /// Apply pragmas. Write connections enable WAL + incremental auto-vacuum; both read
 /// and write get the busy-timeout and a role-sized page cache
-/// ([`crate::sqlite_util::apply_page_cache`]). Matches the index and importance
+/// ([`cmdr_fs::sqlite_util::apply_page_cache`]). Matches the index and importance
 /// stores so all three behave identically under contention.
 fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), MediaStoreError> {
     if !readonly {
@@ -28,7 +28,7 @@ fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), MediaStoreErro
         "PRAGMA busy_timeout = 5000;
          PRAGMA synchronous = NORMAL;",
     )?;
-    crate::sqlite_util::apply_page_cache(conn, readonly)?;
+    cmdr_fs::sqlite_util::apply_page_cache(conn, readonly)?;
     Ok(())
 }
 
@@ -36,7 +36,7 @@ fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), MediaStoreErro
 /// if missing (including the FTS5 `media_ocr` virtual table). Used by the writer
 /// thread and by `MediaStore::open` (which also owns the schema-version check).
 pub(crate) fn open_write_connection(db_path: &Path) -> Result<Connection, MediaStoreError> {
-    let conn = crate::sqlite_util::open(db_path)?;
+    let conn = cmdr_fs::sqlite_util::open(db_path)?;
     register_collation(&conn)?;
     apply_pragmas(&conn, false)?;
     // Creating `media_ocr USING fts5` here is also the FTS5 availability guard: a
@@ -49,7 +49,7 @@ pub(crate) fn open_write_connection(db_path: &Path) -> Result<Connection, MediaS
 /// Open a read-only connection with the collation and read pragmas. Never contends
 /// with the writer thread's write lock (WAL). The tables are assumed to exist.
 pub fn open_read_connection(db_path: &Path) -> Result<Connection, MediaStoreError> {
-    let conn = crate::sqlite_util::open_read_only(db_path)?;
+    let conn = cmdr_fs::sqlite_util::open_read_only(db_path)?;
     register_collation(&conn)?;
     apply_pragmas(&conn, true)?;
     Ok(conn)

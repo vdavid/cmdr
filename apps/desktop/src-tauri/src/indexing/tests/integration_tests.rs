@@ -823,8 +823,8 @@ fn read_pool_alternating_volumes_does_not_reopen() {
     let right = ReadPool::new(right_path.clone()).expect("right pool");
 
     // `ReadPool::new` validates the DB is openable, so count from here.
-    let left_before = crate::sqlite_util::open_count_for(&left_path);
-    let right_before = crate::sqlite_util::open_count_for(&right_path);
+    let left_before = cmdr_fs::sqlite_util::open_count_for(&left_path);
+    let right_before = cmdr_fs::sqlite_util::open_count_for(&right_path);
 
     for _ in 0..25 {
         left.with_conn(|_| ()).expect("left read");
@@ -832,12 +832,12 @@ fn read_pool_alternating_volumes_does_not_reopen() {
     }
 
     assert_eq!(
-        crate::sqlite_util::open_count_for(&left_path) - left_before,
+        cmdr_fs::sqlite_util::open_count_for(&left_path) - left_before,
         1,
         "alternating panes must open the left volume's index once"
     );
     assert_eq!(
-        crate::sqlite_util::open_count_for(&right_path) - right_before,
+        cmdr_fs::sqlite_util::open_count_for(&right_path) - right_before,
         1,
         "alternating panes must open the right volume's index once"
     );
