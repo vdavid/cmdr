@@ -1,20 +1,21 @@
 //! Per-backend `Volume` implementations.
 //!
-//! Each submodule wraps a different storage system behind the `Volume` trait
-//! defined in [`super`]. The trait lives in `volume/mod.rs`; the implementations
-//! live here. New backends slot in alongside these without touching the trait.
+//! Each submodule wraps a different storage system behind the `Volume` trait,
+//! which lives in `cmdr_fs::volume` and is re-exported by [`super`]; the
+//! implementations live here. New backends slot in alongside these without
+//! touching the trait.
 //!
 //! See [`super::CLAUDE.md`](../CLAUDE.md) for the trait shape and capability
 //! matrix, and `backends/CLAUDE.md` for the per-backend decisions and gotchas
 //! that drive each implementation here.
 
-// `InMemoryVolume` and its read stream are test-only scaffolding, and the archive
-// reading core carries a few accessors (`ArchiveIndex::has_encrypted_entries`,
-// `ArchiveEntryReader::bytes_read`, `BytesSource`, …) that only its own tests call.
-// `#![deny(unused)]` at the crate root would flag both against a non-test build.
-// Scoped to `backends`: the trait, its types, the manager, eject, and
-// `friendly_error` are all fully live, so don't widen this back up the tree.
-#![allow(dead_code, reason = "Test-only backends and archive-core accessors")]
+// The archive reading core carries a few accessors (`ArchiveIndex::has_encrypted_entries`,
+// `ArchiveEntryReader::bytes_read`, `BytesSource`, …) that only its own tests call, and each
+// backend keeps a little scaffolding in the same shape. `#![deny(unused)]` at the crate root
+// would flag them against a non-test build. Scoped to `backends`: the manager and eject are
+// fully live, and the trait and its types now live in `cmdr-fs`, so don't widen this back up
+// the tree.
+#![allow(dead_code, reason = "Archive-core accessors and per-backend scaffolding")]
 
 // Archive reading core (zip). Cross-platform (pure Rust), so it isn't gated
 // like the mtp/smb backends. The `ArchiveVolume` `Volume` impl is built on top
