@@ -115,3 +115,41 @@ Post-extraction the comparable numbers are:
   the app rather than the app's own 239k lines
 - the `commands/` edit, which is where the clearer win should land: the app crate loses 28% of its lines, and an app
   edit stops touching the index at all
+
+## Thread QoS after the runtime swap
+
+The property that lets indexing run inside the app process at all: the heavy walking, writing, and reconciling threads
+sit at macOS `QOS_CLASS_UTILITY`, so a runaway scan can never outrank the webview for CPU. The extraction replaced ~66
+`tauri::async_runtime::{spawn, spawn_blocking, block_on}` calls with an injected `tokio::runtime::Handle`, which is a
+named risk for exactly this, so it was measured rather than assumed.
+
+**Structurally, the runtime can't matter.** All seven `set_current_thread_qos` call sites sit at the top of a
+**dedicated** `std::thread::Builder::spawn` body — `scanner/mod.rs`, `scanner/walker/mod.rs` (worker and watchdog),
+`writer/mod.rs`, `reconcile/local_reconcile.rs` (reader and walk), `reconcile/reconciler/rescan.rs`. Those threads are
+created by index code and aren't tokio's to schedule; a tokio task that starts one is just the caller. macOS QoS is
+per-thread and set explicitly here, so nothing is inherited from whoever spawned the task either.
+
+**Measured anyway, in-process** (2026-07-31, macOS 26.5.2, `pnpm dev` build, full fresh scan of `/` plus a reconcile).
+`set_current_thread_qos` was temporarily instrumented to read its own class back with `pthread_get_qos_class_np` and log
+it with the thread name; the instrumentation was reverted afterwards. Every call site fired and every one reported
+`set_rc=0 get_rc=0 class=0x11` — `QOS_CLASS_UTILITY`:
+
+| thread | count |
+| --- | --- |
+| `index-walk` | 16 |
+| `index-writer` | 2 |
+| `index-scanner` | 1 |
+| `index-walk-watchdog` | 1 |
+| `index-local-reconcile` | 1 |
+| `reconcile-read` | 1 |
+| `rescan-subtree` | 1 |
+
+23 threads, no exceptions.
+
+**Don't use `ps -M` alone to re-check this.** Its `PRI` column does report `20T` for a Utility thread (verified against
+a purpose-built C probe), but the walker pool is short-lived and the app carries 20+ webview and tokio threads at `46T`
+legitimately, so a snapshot taken a moment late reads like a regression that isn't there. The in-process read-back is
+the measurement that means something.
+
+Redo it if the spawn topology changes. `set_current_thread_qos` is a no-op in test builds, so no unit test can catch a
+regression here.

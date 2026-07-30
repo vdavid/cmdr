@@ -16,7 +16,7 @@ No `rusqlite`, no `Volume`, no filesystem, no clock: "now" is passed in as a `u6
 `FolderSignals` carries the raw signal vector.
 
 - **name denylist** (`name_denylisted`): a set-membership check on the folded folder name against the shared
-  `search::SYSTEM_DIR_EXCLUDES` list (`node_modules`, `.git`, caches, build output). A FLOOR override, not an additive
+  `indexing::SYSTEM_DIR_EXCLUDES` list (`node_modules`, `.git`, caches, build output). A FLOOR override, not an additive
   term. Set-membership, never a substring match (`no-string-matching`).
 - **hidden / system** (`hidden_or_system`): also a FLOOR override. A dotfile or system-owned folder scores `0.0`. The
   soft, non-floor side ("being visible is mildly positive") is the separate additive `Visibility` term.

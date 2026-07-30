@@ -734,6 +734,34 @@ consulted per batch not per entry (counting fake on a fixture scan, pinning Deci
 after:** full suite with `--include-slow`; this milestone touches concurrency. **Docs:** `indexing/CLAUDE.md` +
 `DETAILS.md`, `media_index/CLAUDE.md`. **Checks:** `pnpm check --include-slow`.
 
+**Landed, with corrections.** Items 1–4 and 6–10 are done; the gate holds (the `crate::` census over the three trees is
+`indexing`, `media_index`, `importance` and nothing else, with zero `tauri::` in code). What the plan got wrong:
+
+- **Item 5 (cancellation) is NOT done, deliberately.** The plan assumed Decision 1's deletion made the blast radius
+  index-internal. It didn't: `Volume::list_directory_for_scan` and `list_directory_with_cancel` carry
+  `Option<&Arc<AtomicBool>>` in **`cmdr-fs`**, implemented by every real backend. So the swap is a `cmdr-fs` trait
+  change plus every implementor plus ~100 call sites, and a partial swap leaves two primitives. Separately, turning
+  `ScanSummary { was_cancelled }` into a distinct error variant forks the completion handler that decides whether
+  `scan_completed_at` is written, where a wrong answer permanently strands an index. Both belong in a focused step, not
+  M4's tail. Rationale: `indexing/host/DETAILS.md` § "Cancellation is still `Arc<AtomicBool>`".
+- **`fda_gate::is_fda_pending` needed no seam.** The index's only reference was the PURE two-argument decision, not the
+  process-global `is_fda_pending_runtime`. `should_auto_start_indexing` takes `fda_pending: bool` and the app resolves
+  the rule; Decision 6's `HostPolicy` fda entry is moot.
+- **`sqlite_util` was 33 references, not 2**, because the process-wide page-cache work landed four days after the
+  census. It moved whole to `cmdr-fs` rather than just `run_incremental_vacuum` to `cmdr-index`: `agent/` and
+  `operation_log/` share the same one-per-process slab and stay app-side.
+- **`mtp::identity` moved down instead of becoming `VolumeProvider` methods** (nine references to pure string work with
+  no host behind it), and so did `DirectoryChange`. `search::SYSTEM_DIR_EXCLUDES` moved into `indexing/scanner/`, and
+  `file_system::file_provider` into `indexing/scanner/` too — its only consumer is the exclusion policy.
+- **Deleting the `APP_HANDLE` `OnceLock` cascaded further than expected**: `init`, `start_indexing`,
+  `start_indexing_for`, all three transport entry points, `drives_to_resume`, `enforce_external_index_cap`,
+  `smb_index_was_enabled`, and `resolved_index_db_path` all lost their `AppHandle` parameter once the thing they
+  reached for had a seam. Both schedulers now RETURN their handle instead of calling `app.manage`.
+- **`smb/integration_test.rs` moved app-side**, to `file_system/volume/smb_index_scan_test.rs`. It needs a real
+  `SmbVolume`, which only the app can build, so it becomes the app proving its backend works with the index's scanner.
+- **Item 6 relocated 30 commands across 8 files**, not 27 across 3, and `media_index/commands.rs` was already
+  `media_index/commands/`.
+
 ### M5 — The `Index` handle and the public-API audit
 
 **Intent:** the design milestone. Where the crate stops being a directory and becomes an API.
