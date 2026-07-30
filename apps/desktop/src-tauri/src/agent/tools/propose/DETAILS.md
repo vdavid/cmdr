@@ -131,3 +131,32 @@ extension additions, removals, and changes without blocking them. A renamed dotf
 dot is an empty extension and therefore differs from no extension. The same warning list carries dependency-cycle
 metadata. Preflight peels acyclic dependencies from free destinations and marks only rows left in closed multi-file
 cycles, so the frontend renders backend findings instead of re-deriving filename or graph semantics.
+
+## The name-quality eval (`name_quality_eval.rs`)
+
+Every guardrail here answers "did the model read something?". This module answers the question
+none of them can: **the model read the file, quoted it verbatim, and named it wrong anyway** — a
+Klarna payment confirmation named `klarna-invoice`, backed by a real quote. That passes every
+check we have, and should: refusing it would need us to understand the image.
+
+So the eval measures **the review surface**, not the model's taste. Each fixture (a screenshot's
+delivered OCR plus the evidence a model claimed for it) runs through the shipped ledger and
+`check`, and is scored on whether the row that reaches the dialog carries what a human needs to
+disagree: the matched text AS DELIVERED, a locatable position, and a real delivered-length to
+weigh it against. It asserts nothing about name quality — that is what the human is for.
+
+Two tiers, following `importance::evals`: hard constraints as ordinary tests, plus one scalar
+(the share of accepted rows that are judgeable) against a **fixed floor**, never a self-updating
+ratchet.
+
+Load-bearing details a future reader should not "simplify":
+
+- **Surrounding context is not required for a row to be judgeable.** A quote can be an entire
+  line of its own ("Payment confirmation" is, in the incident text), so demanding context would
+  fail the exact case this eval exists for.
+- **An `imageText` claim accepted with NO coverage scores as not judgeable.** That is the M1
+  regression this catches: suppress coverage and four of these tests fail while every unit test
+  in `evidence/tests.rs` still passes. Verified by mutation.
+- **A fair name and an unfair one must score identically.** If they ever diverge, something
+  started judging name quality, which is the human's job and a thing we would get wrong.
+- Offline and deterministic. No provider, no network, no clock.
