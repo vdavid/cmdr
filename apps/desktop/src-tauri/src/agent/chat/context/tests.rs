@@ -107,6 +107,50 @@ fn envelope_names_the_batch_size_the_prompt_points_at() {
     );
 }
 
+/// A style the user rejected must not come back next batch, so the names they turned down ride
+/// the envelope. Names only, never a reason: a model-authored "why" would be a rationalization
+/// the next batch inherits.
+#[test]
+fn envelope_lists_the_names_the_user_turned_down() {
+    let mut env = envelope_at(1_780_000_000);
+    env.denied_names = vec!["klarna-invoice.png".to_string(), "receipt-2.png".to_string()];
+
+    let rendered = render_envelope(&env, offset());
+
+    assert!(
+        rendered.contains("turned down: klarna-invoice.png, receipt-2.png"),
+        "the envelope must name what was rejected, got: {rendered}"
+    );
+}
+
+/// Fifty denied rows would spend the user's window on our own bookkeeping (intention 8), and a
+/// silent cut would misreport what the user rejected (invariant 9). So it caps AND says so.
+#[test]
+fn a_long_denial_list_is_capped_and_says_how_many_it_left_out() {
+    let mut env = envelope_at(1_780_000_000);
+    env.denied_names = (0..9).map(|index| format!("shot-{index}.png")).collect();
+
+    let rendered = render_envelope(&env, offset());
+
+    assert!(rendered.contains("shot-0.png"), "the first examples are shown");
+    assert!(
+        !rendered.contains("shot-5.png"),
+        "past the cap the names stop: {rendered}"
+    );
+    assert!(
+        rendered.contains("and 4 more"),
+        "the cut has to be visible, got: {rendered}"
+    );
+}
+
+/// The common case: the user denied nothing, so the segment must vanish rather than render an
+/// empty label on every single turn.
+#[test]
+fn envelope_omits_the_denial_segment_when_nothing_was_turned_down() {
+    let rendered = render_envelope(&envelope_at(1_780_000_000), offset());
+    assert!(!rendered.contains("turned down"), "no denials, no segment: {rendered}");
+}
+
 #[test]
 fn envelope_uses_em_dashes_and_none_when_fields_are_absent() {
     let env = ContextEnvelope {
@@ -116,6 +160,7 @@ fn envelope_uses_em_dashes_and_none_when_fields_are_absent() {
         selection_count: 0,
         volumes: vec![],
         attachments: vec![],
+        denied_names: vec![],
         rename_batch_files: 101,
     };
     let rendered = render_envelope(&env, offset());
@@ -423,6 +468,7 @@ fn envelope_with_attachments(attachments: Vec<EnvelopeAttachment>) -> ContextEnv
         selection_count: 0,
         volumes: vec![],
         attachments,
+        denied_names: vec![],
         rename_batch_files: 101,
     }
 }

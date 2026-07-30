@@ -9,14 +9,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { AskCmdrStreamEvent } from '$lib/tauri-commands'
 
 const sendMock =
-  vi.fn<(c: number | null, t: string, a: unknown[], o: (e: AskCmdrStreamEvent) => void) => Promise<number>>()
+  vi.fn<
+    (c: number | null, t: string, a: unknown[], d: string[], o: (e: AskCmdrStreamEvent) => void) => Promise<number>
+  >()
 const preflightRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
 const reviseRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
 const applyRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
 
 vi.mock('$lib/tauri-commands', () => ({
-  sendAskCmdrMessage: (c: number | null, t: string, a: unknown[], o: (e: AskCmdrStreamEvent) => void) =>
-    sendMock(c, t, a, o),
+  sendAskCmdrMessage: (c: number | null, t: string, a: unknown[], d: string[], o: (e: AskCmdrStreamEvent) => void) =>
+    sendMock(c, t, a, d, o),
   cancelAskCmdr: vi.fn(() => Promise.resolve()),
   listAskCmdrConversations: vi.fn(() => Promise.resolve([])),
   getAskCmdrConversation: vi.fn(() => Promise.resolve(null)),
@@ -45,6 +47,7 @@ vi.mock('./ask-cmdr-consent.svelte', () => ({
 import {
   applyRenameReview,
   askCmdrState,
+  cancelRenameReview,
   newChat,
   renameReviewListingChanged,
   reviseRenameRow,
@@ -61,7 +64,7 @@ function fire(event: AskCmdrStreamEvent): void {
 
 beforeEach(() => {
   sendMock.mockReset()
-  sendMock.mockImplementation((c, _t, _a, o) => {
+  sendMock.mockImplementation((c, _t, _a, _d, o) => {
     lastOnEvent = o
     return Promise.resolve(c ?? 1)
   })
@@ -73,6 +76,96 @@ beforeEach(() => {
   newChat()
   askCmdrState.messages = []
   askCmdrState.conversationId = null
+})
+
+describe('carrying denials into the next batch', () => {
+  /** The row shape a review carries, trimmed to what these tests drive. */
+  function proposalRow(rowId: string, sourceName: string, destinationName: string) {
+    return {
+      rowId,
+      sourceName,
+      destinationName,
+      sourcePath: `/shots/${sourceName}`,
+      volumeId: 'root',
+      evidence: { source: 'filename' as const, detail: sourceName },
+      coverage: null,
+    }
+  }
+
+  /** End the streaming turn, so the next `sendMessage` isn't a no-op (single-flight). */
+  function finishTurn(): void {
+    fire({ type: 'done', messageId: 1, seq: 1, stop: 'completed', usage: { promptTokens: 1, completionTokens: 1 } })
+  }
+
+  async function openTwoRowReview(): Promise<void> {
+    sendMessage('rename these')
+    fire({
+      type: 'proposalReady',
+      proposal: {
+        proposalId: 'proposal-1',
+        rows: [
+          proposalRow('row-1', 'a.png', 'klarna-invoice.png'),
+          proposalRow('row-2', 'b.png', 'klarna-receipt.png'),
+        ],
+      },
+    })
+    // The proposal kicks off a preflight; apply no-ops while one is in flight.
+    await vi.waitFor(() => {
+      expect(preflightRenameMock).toHaveBeenCalledTimes(1)
+    })
+  }
+
+  it('sends the names the user denied with the next message, then forgets them', async () => {
+    await openTwoRowReview()
+    const review = askCmdrState.renameReview
+    if (!review) throw new Error('the review should be open')
+    // The user keeps the first name and turns down the second.
+    review.rows[1].allowed = false
+    await applyRenameReview()
+    finishTurn()
+
+    sendMessage('try again')
+
+    // The rejected name rides the next send; the accepted one does not.
+    expect(sendMock).toHaveBeenLastCalledWith(
+      expect.anything(),
+      'try again',
+      [],
+      ['klarna-receipt.png'],
+      expect.any(Function),
+    )
+
+    // And they are feedback on one decision, not a permanent denylist.
+    finishTurn()
+    sendMessage('and again')
+    expect(sendMock).toHaveBeenLastCalledWith(expect.anything(), 'and again', [], [], expect.any(Function))
+  })
+
+  it('treats cancelling the whole review as turning every name down', async () => {
+    await openTwoRowReview()
+    cancelRenameReview()
+    finishTurn()
+
+    sendMessage('different style please')
+
+    expect(sendMock).toHaveBeenLastCalledWith(
+      expect.anything(),
+      'different style please',
+      [],
+      ['klarna-invoice.png', 'klarna-receipt.png'],
+      expect.any(Function),
+    )
+  })
+
+  it('carries no denials when the user accepted every row', async () => {
+    await openTwoRowReview()
+    await applyRenameReview()
+    finishTurn()
+
+    sendMessage('now the rest')
+
+    expect(sendMock).toHaveBeenLastCalledWith(expect.anything(), 'now the rest', [], [], expect.any(Function))
+  })
 })
 
 describe('rename review listing updates', () => {

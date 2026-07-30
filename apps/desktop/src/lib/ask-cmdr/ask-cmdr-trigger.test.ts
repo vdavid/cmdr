@@ -9,7 +9,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { AskCmdrStreamEvent } from '$lib/tauri-commands'
 
 const sendMock =
-  vi.fn<(c: number | null, t: string, a: unknown[], o: (e: AskCmdrStreamEvent) => void) => Promise<number>>()
+  vi.fn<
+    (c: number | null, t: string, a: unknown[], d: string[], o: (e: AskCmdrStreamEvent) => void) => Promise<number>
+  >()
 const cancelMock = vi.fn<(id: number) => Promise<void>>()
 const listMock = vi.fn<(...a: unknown[]) => Promise<unknown>>()
 const getMock = vi.fn<(...a: unknown[]) => Promise<unknown>>()
@@ -22,8 +24,8 @@ const reviseRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
 const applyRenameMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
 
 vi.mock('$lib/tauri-commands', () => ({
-  sendAskCmdrMessage: (c: number | null, t: string, a: unknown[], o: (e: AskCmdrStreamEvent) => void) =>
-    sendMock(c, t, a, o),
+  sendAskCmdrMessage: (c: number | null, t: string, a: unknown[], d: string[], o: (e: AskCmdrStreamEvent) => void) =>
+    sendMock(c, t, a, d, o),
   cancelAskCmdr: (id: number) => cancelMock(id),
   listAskCmdrConversations: (...a: unknown[]) => listMock(...a),
   getAskCmdrConversation: (...a: unknown[]) => getMock(...a),
@@ -105,7 +107,7 @@ beforeEach(() => {
   growWindowMock.mockResolvedValue()
   shrinkWindowMock.mockResolvedValue()
   listMock.mockResolvedValue([])
-  sendMock.mockImplementation((c, _t, _a, o) => {
+  sendMock.mockImplementation((c, _t, _a, _d, o) => {
     lastOnEvent = o
     return Promise.resolve(c ?? 1)
   })
@@ -130,7 +132,7 @@ describe('sendMessage + streaming', () => {
     sendMessage('hello')
     expect(askCmdrState.messages[0]).toEqual({ kind: 'user', id: null, text: 'hello', attachments: [] })
     expect(askCmdrState.streaming).toBe(true)
-    expect(sendMock).toHaveBeenCalledWith(null, 'hello', [], expect.any(Function))
+    expect(sendMock).toHaveBeenCalledWith(null, 'hello', [], [], expect.any(Function))
 
     fire({ type: 'started', conversationId: 7 })
     fire({ type: 'assistantStarted' })
@@ -618,7 +620,7 @@ describe('attachments', () => {
   it('send passes staged attachments, echoes them on the user bubble, then clears them', () => {
     addAttachments([{ path: '/a', kind: 'file' }])
     sendMessage('about this')
-    expect(sendMock).toHaveBeenCalledWith(null, 'about this', [{ path: '/a', kind: 'file' }], expect.any(Function))
+    expect(sendMock).toHaveBeenCalledWith(null, 'about this', [{ path: '/a', kind: 'file' }], [], expect.any(Function))
     const first = askCmdrState.messages[0]
     expect(first.kind === 'user' && first.attachments).toEqual([{ path: '/a', kind: 'file' }])
     // Staged attachments are cleared after the send.

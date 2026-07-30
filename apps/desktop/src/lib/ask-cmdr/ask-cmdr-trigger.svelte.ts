@@ -108,6 +108,10 @@ interface AskCmdrState {
   /** How full the model's view got on the thread's last measured turn, for the footer gauge.
    * `null` means no turn has been measured, which the gauge shows as nothing at all. */
   contextUsage: ContextUsage | null
+  /** Destination names the user turned down in the last review, newest first, waiting to ride
+   * the NEXT send so the following batch doesn't propose the same style again. Cleared once
+   * sent: they're feedback on one decision, not a permanent denylist. */
+  deniedNames: string[]
 }
 
 export const RAIL_MIN_WIDTH = 280
@@ -127,6 +131,7 @@ export const askCmdrState = $state<AskCmdrState>({
   attachments: [],
   renameReview: null,
   contextUsage: null,
+  deniedNames: [],
 })
 
 /** True once the thread grows past the soft cap (drives the "start a fresh one?" nudge). */
@@ -217,6 +222,7 @@ export function newChat(): void {
   askCmdrState.attachments = []
   // A fresh chat has measured nothing, so the gauge must not carry the previous thread's fill.
   askCmdrState.contextUsage = null
+  askCmdrState.deniedNames = []
   discardRenameReview()
 }
 
@@ -308,7 +314,11 @@ export function sendMessage(text: string): void {
   askCmdrState.streaming = true
   resetProgressWatchdog()
   askCmdrState.attachments = []
-  void sendAskCmdrMessage(askCmdrState.conversationId, trimmed, attachments, handleStreamEvent).then(
+  // The names the user turned down ride this turn only. Clearing them here (not on the
+  // response) keeps a retry from re-sending feedback the model already acted on.
+  const deniedNames = askCmdrState.deniedNames
+  askCmdrState.deniedNames = []
+  void sendAskCmdrMessage(askCmdrState.conversationId, trimmed, attachments, deniedNames, handleStreamEvent).then(
     (id) => {
       askCmdrState.conversationId = id
     },
@@ -613,10 +623,22 @@ export async function renameReviewListingChanged(
   if (changes.some((change) => reviewedNames.has(change.entry.name))) await refreshRenamePreflight()
 }
 
+/** The destination names in this review the user did NOT take: denied rows, and (when the whole
+ * review is cancelled) every row. Names only — what the model needs is the fact that a style was
+ * rejected, and a reason would be its own words handed back to it. */
+function rememberDeniedNames(rows: { allowed: boolean; destinationName: string }[]): void {
+  const denied = rows.filter((row) => !row.allowed).map((row) => row.destinationName)
+  if (denied.length === 0) return
+  // Newest first, so the cap in the envelope keeps the most recent decision.
+  askCmdrState.deniedNames = [...denied, ...askCmdrState.deniedNames]
+}
+
 /** Cancel closes the review and consumes its server-owned proposal. */
 export function cancelRenameReview(): void {
   const review = askCmdrState.renameReview
   if (!review) return
+  // Cancelling turns down every row, and that is exactly the feedback the next batch needs.
+  rememberDeniedNames(review.rows.map((row) => ({ allowed: false, destinationName: row.destinationName })))
   askCmdrState.renameReview = null
   void cancelBulkRenameProposal(review.proposalId)
 }
@@ -630,6 +652,8 @@ export async function applyRenameReview(): Promise<void> {
   review.preflighting = true
   try {
     const started = await applyBulkRename(review.proposalId, allowedRowIds)
+    // Applying a subset is a decision about the rest: carry those names into the next batch.
+    rememberDeniedNames(review.rows)
     noteRenameApplied(started.operationId, allowedRowIds.length)
     if (askCmdrState.renameReview?.proposalId === review.proposalId) askCmdrState.renameReview = null
   } catch (e) {

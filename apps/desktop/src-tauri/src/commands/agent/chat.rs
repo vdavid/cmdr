@@ -289,6 +289,7 @@ fn resolve_prompt_budget(app: &AppHandle, provider: ProviderTag, model: &str) ->
 async fn capture_envelope<R: tauri::Runtime>(
     app: &AppHandle<R>,
     attachments: &[AttachmentRef],
+    denied_names: Vec<String>,
     rename_batch_files: usize,
 ) -> ContextEnvelope {
     let (focused_pane_path, cursor_item, selection_count) = match app.try_state::<PaneStateStore>() {
@@ -313,6 +314,7 @@ async fn capture_envelope<R: tauri::Runtime>(
         selection_count,
         volumes,
         attachments: attachments.iter().map(AttachmentRef::to_envelope).collect(),
+        denied_names,
         rename_batch_files,
     }
 }
@@ -363,6 +365,10 @@ pub async fn ask_cmdr_send_message(
     conversation_id: Option<i64>,
     text: String,
     attachments: Vec<AttachmentRef>,
+    // Destination names the user turned down in this thread's last rename review, newest
+    // first. Names only: a reason would be model-authored, and the next batch would inherit
+    // the rationalization instead of the fact.
+    denied_names: Vec<String>,
     on_event: Channel<AskCmdrStreamEvent>,
 ) -> Result<i64, String> {
     let Some(db_path) = app.try_state::<AgentDb>().map(|db| db.db_path().to_path_buf()) else {
@@ -472,6 +478,7 @@ pub async fn ask_cmdr_send_message(
             conversation_id,
             text,
             attachments,
+            denied_names,
             on_event,
             cancel,
         ));
@@ -498,6 +505,7 @@ async fn drive_turn(
     conversation_id: i64,
     text: String,
     attachments: Vec<AttachmentRef>,
+    denied_names: Vec<String>,
     on_event: Channel<AskCmdrStreamEvent>,
     cancel: CancellationToken,
 ) {
@@ -510,7 +518,7 @@ async fn drive_turn(
     }
     let _guard = CancelGuard(conversation_id);
 
-    let envelope = capture_envelope(&app, &attachments, budget::files_per_batch(prompt_budget)).await;
+    let envelope = capture_envelope(&app, &attachments, denied_names, budget::files_per_batch(prompt_budget)).await;
     let offset = local_offset();
 
     let Some(runtime) = app.try_state::<ChatRuntime>() else {

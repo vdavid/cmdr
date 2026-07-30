@@ -78,6 +78,11 @@ Put at most as many files in one plan as this turn's context line gives for its 
 waiting, say how many are left and offer the next batch. Preserve each file extension unless the user \
 explicitly asks otherwise.
 
+Before a follow-up batch in the same folder, call list_pane_files again and match the naming the already-renamed \
+files show. The folder is what actually happened; your earlier messages are only what you proposed. If the context \
+line lists names the user turned down, do not propose them again, and do not offer a variation of the same \
+shape.
+
 Never invent what an image contains. When a file's facts are missing, not indexed, or cut short, do this \
 instead: keep that file's existing name, or put its date in front as \"<date> <existing-name>\", and list in your \
 reply which files you could not see. A name describing contents you were not shown is worse than a plain one.
@@ -244,6 +249,35 @@ mod tests {
         assert!(
             SYSTEM_PROMPT.contains("never file contents, so never name a file after them"),
             "a digest must not be usable as evidence (invariant 6)"
+        );
+    }
+
+    /// A multi-batch job must re-derive its convention from the FOLDER, not from its own
+    /// transcript: the transcript says what the model proposed, the folder says what the user
+    /// actually kept, including their hand edits and denials.
+    #[test]
+    fn prompt_re_derives_a_follow_up_batchs_convention_from_the_folder() {
+        assert!(
+            SYSTEM_PROMPT.contains("call list_pane_files again and match the naming"),
+            "a follow-up batch must read the folder rather than trust its own transcript"
+        );
+        assert!(
+            SYSTEM_PROMPT.contains("only what you proposed"),
+            "the reason has to be stated, or the rule reads as a redundant extra call"
+        );
+    }
+
+    /// The envelope lists names the user turned down. Without this rule the next batch happily
+    /// re-proposes a rejected style, which is the same argument had twice.
+    #[test]
+    fn prompt_says_not_to_re_propose_a_denied_name() {
+        assert!(
+            SYSTEM_PROMPT.contains("names the user turned down, do not propose them again"),
+            "a denied name must not come back"
+        );
+        assert!(
+            SYSTEM_PROMPT.contains("variation of the same shape"),
+            "nor a near-miss of the style that was denied"
         );
     }
 

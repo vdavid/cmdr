@@ -8,13 +8,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AskCmdrStreamEvent, ConversationDetailView } from '$lib/tauri-commands'
 
 const sendMock =
-  vi.fn<(c: number | null, t: string, a: unknown[], o: (e: AskCmdrStreamEvent) => void) => Promise<number>>()
+  vi.fn<
+    (c: number | null, t: string, a: unknown[], d: string[], o: (e: AskCmdrStreamEvent) => void) => Promise<number>
+  >()
 const getConversationMock =
   vi.fn<(id: number, limit: number, offset: number) => Promise<ConversationDetailView | null>>()
 
 vi.mock('$lib/tauri-commands', () => ({
-  sendAskCmdrMessage: (c: number | null, t: string, a: unknown[], o: (e: AskCmdrStreamEvent) => void) =>
-    sendMock(c, t, a, o),
+  sendAskCmdrMessage: (c: number | null, t: string, a: unknown[], d: string[], o: (e: AskCmdrStreamEvent) => void) =>
+    sendMock(c, t, a, d, o),
   cancelAskCmdr: vi.fn(() => Promise.resolve()),
   listAskCmdrConversations: vi.fn(() => Promise.resolve([])),
   getAskCmdrConversation: (id: number, limit: number, offset: number) => getConversationMock(id, limit, offset),
@@ -51,7 +53,7 @@ function fire(event: AskCmdrStreamEvent): void {
 
 beforeEach(() => {
   sendMock.mockReset()
-  sendMock.mockImplementation((c, _t, _a, o) => {
+  sendMock.mockImplementation((c, _t, _a, _d, o) => {
     lastOnEvent = o
     return Promise.resolve(c ?? 1)
   })

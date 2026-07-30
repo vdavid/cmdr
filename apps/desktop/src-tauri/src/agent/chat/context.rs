@@ -62,6 +62,11 @@ pub const MIN_ELISION_TURNS_BACK: usize = 1;
 /// start a fresh one?" nudge, no hard cut. Initial value; tune with use.
 pub const THREAD_SOFT_CAP_MESSAGES: usize = 40;
 
+/// The most denied names one envelope spells out. A few examples show the user the pattern
+/// they rejected; fifty rows would spend their window on our bookkeeping (intention 8). Past
+/// this the segment says how many more there were, so the cut is visible (invariant 9).
+pub const MAX_RENDERED_DENIED_NAMES: usize = 5;
+
 /// Header that introduces the user's `CMDR.md` inside the system prompt when present.
 const CMDR_MD_HEADER: &str = "The user's CMDR.md (their notes for you; read-only):";
 
@@ -161,6 +166,13 @@ pub struct ContextEnvelope {
     /// or "ask about selection"). Empty in the common case; rendered as a trailing
     /// `attached: …` segment. Paths + kinds only, never contents.
     pub attachments: Vec<EnvelopeAttachment>,
+    /// Destination names the user turned down in this thread's last review, newest first.
+    ///
+    /// The NAMES, never a reason: a model-authored summary of why a style was rejected would
+    /// come back as a rationalization the next batch inherits. Capped when rendered
+    /// ([`MAX_RENDERED_DENIED_NAMES`]) — a few examples show the pattern, and fifty rows would
+    /// spend the user's window on our own bookkeeping.
+    pub denied_names: Vec<String>,
     /// How many files one content-based rename batch fits this turn
     /// ([`budget::files_per_batch`](super::budget::files_per_batch)).
     ///
@@ -314,6 +326,26 @@ fn elision_facts(
 
 /// Render the envelope as its tagged block (the exact §9 field set). Public so the
 /// runtime and tests can assert the rendered form directly.
+/// The `turned down: …` segment, or nothing when the user has denied nothing. Names only, and
+/// capped: the segment says how many were left out rather than trailing off silently.
+fn render_denied_names(names: &[String]) -> String {
+    if names.is_empty() {
+        return String::new();
+    }
+    let shown: Vec<&str> = names
+        .iter()
+        .take(MAX_RENDERED_DENIED_NAMES)
+        .map(String::as_str)
+        .collect();
+    let rest = names.len().saturating_sub(shown.len());
+    let more = if rest > 0 {
+        format!(", and {rest} more")
+    } else {
+        String::new()
+    };
+    format!(" · turned down: {}{more}", shown.join(", "))
+}
+
 pub fn render_envelope(envelope: &ContextEnvelope, offset: FixedOffset) -> String {
     let timestamp = format_timestamp(envelope.captured_at, offset);
     let focused = envelope.focused_pane_path.as_deref().unwrap_or(EM_DASH);
@@ -341,8 +373,10 @@ pub fn render_envelope(envelope: &ContextEnvelope, offset: FixedOffset) -> Strin
     };
     format!(
         "[{timestamp} · focused: {focused} · cursor: {cursor} · {} selected · volumes: {volumes} · \
-         rename batch: up to {} files{attachments}]",
-        envelope.selection_count, envelope.rename_batch_files
+         rename batch: up to {} files{denied}{attachments}]",
+        envelope.selection_count,
+        envelope.rename_batch_files,
+        denied = render_denied_names(&envelope.denied_names),
     )
 }
 

@@ -125,17 +125,28 @@ export type AskCmdrStreamEvent =
  * value. All progress rides `onEvent`. Cancel via [`cancelAskCmdr`] once the id is known
  * (the `started` event) — Tauri's `Channel::send` is fire-and-forget, so abandonment isn't
  * detectable without the explicit cancel command.
+ *
+ * `deniedNames` are destination names the user turned down in this thread's last rename review.
+ * They ride the turn envelope so the next batch doesn't re-propose a style the user rejected.
+ * Names only, never a reason: a model-authored "why" would come back as a rationalization.
  */
 export function sendAskCmdrMessage(
   conversationId: number | null,
   text: string,
   attachments: AttachmentRef[],
+  deniedNames: string[],
   onEvent: (event: AskCmdrStreamEvent) => void,
 ): Promise<number> {
   const channel = new Channel<AskCmdrStreamEvent>()
   channel.onmessage = onEvent
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- streaming Channel<T> not specta-friendly yet; tracked for follow-up
-  return invoke<number>('ask_cmdr_send_message', { conversationId, text, attachments, onEvent: channel }).then(
+  return invoke<number>('ask_cmdr_send_message', {
+    conversationId,
+    text,
+    attachments,
+    deniedNames,
+    onEvent: channel,
+  }).then(
     (id) => id,
     () => conversationId ?? 0, // contracted Ok(i64); webview teardown can reject — fall back to the known id
   )

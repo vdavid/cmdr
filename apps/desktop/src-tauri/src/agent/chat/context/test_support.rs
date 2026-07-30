@@ -92,6 +92,7 @@ pub(crate) fn envelope_at(at: i64) -> ContextEnvelope {
         focused_pane_path: Some("~/Documents/taxes".to_string()),
         cursor_item: Some("2024/".to_string()),
         selection_count: 2,
+        denied_names: vec![],
         rename_batch_files: 101,
         volumes: vec![
             EnvelopeVolume {
