@@ -8,7 +8,10 @@ use serde_json::json;
 
 use super::test_support::*;
 use super::*;
-use crate::agent::chat::budget::{DEFAULT_PROMPT_TOKEN_BUDGET, MAX_TOOL_RESULT_TOKENS, PROMPT_BUDGET_60K};
+use crate::agent::chat::budget::{
+    DEFAULT_PROMPT_TOKEN_BUDGET, FIXED_PROMPT_OVERHEAD_TOKENS, MAX_TOOL_RESULT_TOKENS, PROMPT_BUDGET_60K,
+    RENAME_TOKENS_PER_FILE, files_per_batch,
+};
 use crate::agent::llm::types::ToolId;
 
 /// Average OCR text per screenshot in the real corpus the fabrication incident came from,
@@ -23,9 +26,13 @@ const FILES: usize = 100;
 // Estimated tokens, `chars/4`, measured against the shipped assets. Each is pinned within a
 // tenth below, so a change that doubles what a file costs fails here instead of surprising a
 // user mid-rename. Change one on purpose ⇒ change the plan's section too.
+//
+// Two of these figures are PRODUCTION constants (`budget.rs` sizes a rename batch from them),
+// so they're imported rather than restated: this file is what keeps them honest against the
+// real shapes.
 
 /// Every call: the system prompt plus the 12 tool declarations, before the user has said a word.
-const FIXED_OVERHEAD: usize = 3_124;
+const FIXED_OVERHEAD: usize = FIXED_PROMPT_OVERHEAD_TOKENS;
 const SYSTEM_PROMPT_TOKENS: usize = 740;
 const TOOL_DECLARATION_TOKENS: usize = 2_384;
 
@@ -112,6 +119,12 @@ fn a_bulk_rename_pays_about_350_tokens_per_file() {
     assert_near(facts, IMAGE_FACTS_PER_FILE, "one image_facts row at 900 chars of OCR");
     assert_near(plan, PLAN_ROW_PER_FILE, "one plan row");
     assert_near(listing, LISTING_PER_FILE, "one pane-listing entry");
+    assert_eq!(
+        IMAGE_FACTS_PER_FILE + PLAN_ROW_PER_FILE + LISTING_PER_FILE,
+        RENAME_TOKENS_PER_FILE,
+        "budget::RENAME_TOKENS_PER_FILE sizes every batch hint from these three parts, so it is \
+         their sum or the hint is fiction"
+    );
     assert!(
         facts > 3 * (plan + listing),
         "the facts dominate ({facts} vs {plan} + {listing}): sizing a window for the plan rows alone \
@@ -129,68 +142,7 @@ fn a_bulk_rename_pays_about_350_tokens_per_file() {
 /// then the plan call carrying 100 rows of paths, names, and evidence.
 #[test]
 fn a_hundred_file_rename_turn_needs_more_than_the_default_budget() {
-    let listing = json!({
-        "pane": "right",
-        "path": SHOTS_DIR,
-        "scope": "selection",
-        "returned": FILES,
-        "total": FILES,
-        "truncated": false,
-        "entries": (0..FILES).map(listing_entry).collect::<Vec<_>>(),
-    });
-
-    // `image_facts` pages itself to MAX_TOOL_RESULT_TOKENS, so 100 dense rows arrive over
-    // several calls — and every page stays in this turn's prompt.
-    let rows_per_page = {
-        let per_row = estimate_tokens_of_value(&facts_row(0));
-        (MAX_TOOL_RESULT_TOKENS / per_row).max(1)
-    };
-    let pages: Vec<Vec<usize>> = (0..FILES)
-        .collect::<Vec<_>>()
-        .chunks(rows_per_page)
-        .map(<[usize]>::to_vec)
-        .collect();
-
-    let mut transcript = vec![
-        user("Rename these 100 screenshots by their content, please.", 1_000),
-        assistant_tool_call("listing", ToolId::ListPaneFiles, json!({}), 1_010),
-        tool_result("listing", listing, 1_020),
-    ];
-    for (page, indexes) in pages.iter().enumerate() {
-        let call_id = format!("facts-{page}");
-        transcript.push(assistant_tool_call(
-            &call_id,
-            ToolId::ImageFacts,
-            json!({ "volumeId": "root", "paths": indexes.iter().map(|i| shot_path(*i)).collect::<Vec<_>>() }),
-            1_030 + page as i64,
-        ));
-        transcript.push(tool_result(
-            &call_id,
-            json!({ "status": "ok", "coverage": [], "facts": indexes.iter().map(|i| facts_row(*i)).collect::<Vec<_>>() }),
-            1_040 + page as i64,
-        ));
-    }
-    transcript.push(assistant_tool_call(
-        "plan",
-        ToolId::ProposeRenamePlan,
-        json!({ "renames": (0..FILES).map(plan_row).collect::<Vec<_>>() }),
-        1_100,
-    ));
-
-    let tools = crate::agent::tools::agent_tool_declarations();
-    let real_prefix = PrefixInputs {
-        system_prompt: crate::agent::chat::system_prompt::SYSTEM_PROMPT,
-        cmdr_md: None,
-        tools: &tools,
-    };
-    let assembled = assemble_prompt(
-        &real_prefix,
-        &transcript,
-        &envelope_at(1_000),
-        offset(),
-        PROMPT_BUDGET_60K,
-    );
-    let tokens = estimate_prompt_tokens(&assembled.system, &assembled.tools, &assembled.messages);
+    let (tokens, elided, pages) = assemble_rename_turn(FILES, PROMPT_BUDGET_60K);
 
     assert_near(tokens, HUNDRED_FILE_TURN, "the whole 100-file turn");
     // The per-item costs above have to explain the turn, or one of them is measuring the wrong
@@ -212,10 +164,90 @@ fn a_hundred_file_rename_turn_needs_more_than_the_default_budget() {
     );
     // Nothing from this turn may have been dropped to get there: every page of facts is the
     // evidence the plan cites.
-    assert_eq!(
-        assembled.elision.elided_results,
-        0,
-        "the turn in flight keeps all {} of its results",
-        pages.len() + 1
-    );
+    assert_eq!(elided, 0, "the turn in flight keeps all {} of its results", pages + 1);
+}
+
+/// The batch size `budget::files_per_batch` promises has to survive contact with the real
+/// shapes: a batch that size, assembled against the same budget, must fit with nothing
+/// elided. Without this the hint is arithmetic nobody checked, and the model would be told to
+/// take on a batch that overruns the window it was sized for.
+#[test]
+fn a_batch_the_hint_promises_actually_fits_its_budget() {
+    for budget in [DEFAULT_PROMPT_TOKEN_BUDGET, PROMPT_BUDGET_60K] {
+        let files = files_per_batch(budget);
+        assert!(files > 0, "a {budget}-token budget has to be able to rename something");
+        let (tokens, elided, _) = assemble_rename_turn(files, budget);
+        assert!(
+            tokens <= budget,
+            "the hint promised {files} files inside {budget} tokens; the real turn costs {tokens}"
+        );
+        assert_eq!(
+            elided, 0,
+            "a batch the hint promised must not need its own results dropped"
+        );
+    }
+}
+
+/// One content-based rename turn as the tools really serialize it, assembled against
+/// `budget`: the pane listing, `image_facts` in as many pages as the per-result ceiling
+/// forces, then the plan call. Returns the estimated size, how many results were elided, and
+/// how many `image_facts` pages it took.
+fn assemble_rename_turn(files: usize, budget: usize) -> (usize, usize, usize) {
+    let listing = json!({
+        "pane": "right",
+        "path": SHOTS_DIR,
+        "scope": "selection",
+        "returned": files,
+        "total": files,
+        "truncated": false,
+        "entries": (0..files).map(listing_entry).collect::<Vec<_>>(),
+    });
+
+    // `image_facts` pages itself to MAX_TOOL_RESULT_TOKENS, so dense rows arrive over several
+    // calls — and every page stays in this turn's prompt.
+    let rows_per_page = {
+        let per_row = estimate_tokens_of_value(&facts_row(0));
+        (MAX_TOOL_RESULT_TOKENS / per_row).max(1)
+    };
+    let pages: Vec<Vec<usize>> = (0..files)
+        .collect::<Vec<_>>()
+        .chunks(rows_per_page)
+        .map(<[usize]>::to_vec)
+        .collect();
+
+    let mut transcript = vec![
+        user("Rename these screenshots by their content, please.", 1_000),
+        assistant_tool_call("listing", ToolId::ListPaneFiles, json!({}), 1_010),
+        tool_result("listing", listing, 1_020),
+    ];
+    for (page, indexes) in pages.iter().enumerate() {
+        let call_id = format!("facts-{page}");
+        transcript.push(assistant_tool_call(
+            &call_id,
+            ToolId::ImageFacts,
+            json!({ "volumeId": "root", "paths": indexes.iter().map(|i| shot_path(*i)).collect::<Vec<_>>() }),
+            1_030 + page as i64,
+        ));
+        transcript.push(tool_result(
+            &call_id,
+            json!({ "status": "ok", "coverage": [], "facts": indexes.iter().map(|i| facts_row(*i)).collect::<Vec<_>>() }),
+            1_040 + page as i64,
+        ));
+    }
+    transcript.push(assistant_tool_call(
+        "plan",
+        ToolId::ProposeRenamePlan,
+        json!({ "renames": (0..files).map(plan_row).collect::<Vec<_>>() }),
+        1_100,
+    ));
+
+    let tools = crate::agent::tools::agent_tool_declarations();
+    let real_prefix = PrefixInputs {
+        system_prompt: crate::agent::chat::system_prompt::SYSTEM_PROMPT,
+        cmdr_md: None,
+        tools: &tools,
+    };
+    let assembled = assemble_prompt(&real_prefix, &transcript, &envelope_at(1_000), offset(), budget);
+    let tokens = estimate_prompt_tokens(&assembled.system, &assembled.tools, &assembled.messages);
+    (tokens, assembled.elision.elided_results, pages.len())
 }
