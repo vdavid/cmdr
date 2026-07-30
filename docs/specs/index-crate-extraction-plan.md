@@ -1,7 +1,10 @@
 # Extract the index into a `cmdr-index` crate
 
-Status: planned, 2026-07-25. Not started. Revised after three review rounds against the code; every count below is
-measured, not estimated.
+Status: in progress on `worktree-david-index-crate-extraction`, started 2026-07-30. M0 through M2 are landed. Written
+2026-07-25 after three review rounds against the code; every count below was measured then, and a handful drifted as
+the subsystems kept moving (`media_index/commands.rs` is now `media_index/commands/`, `get_volume_manager` is 23 sites
+not 18, the subsystems are 93,256 of 332,264 lines). The structural claims all still hold; treat the counts as
+approximate and re-measure before relying on one.
 
 Move `indexing/`, `media_index/`, and `importance/` out of the app crate into a standalone, Tauri-free workspace crate
 with a designed public API: typed errors, no user-facing strings, real cancellation, structured progress, and a
