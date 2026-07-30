@@ -117,5 +117,7 @@ fn main() {
         scenario.folders.len(),
         scenario_path.display()
     );
-    println!("Next: open the labels file and mark your important folders, then run the eval suite.");
+    println!(
+        "Next: open the labels file and mark your important folders, then run the eval suite."
+    );
 }

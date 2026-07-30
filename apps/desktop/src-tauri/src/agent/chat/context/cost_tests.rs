@@ -33,7 +33,7 @@ const FILES: usize = 100;
 
 /// Every call: the system prompt plus the 12 tool declarations, before the user has said a word.
 const FIXED_OVERHEAD: usize = FIXED_PROMPT_OVERHEAD_TOKENS;
-const SYSTEM_PROMPT_TOKENS: usize = 740;
+const SYSTEM_PROMPT_TOKENS: usize = 963;
 const TOOL_DECLARATION_TOKENS: usize = 2_384;
 
 /// One `image_facts` row at [`OCR_CHARS`] of recognized text: the dominant per-file cost, and
@@ -47,7 +47,7 @@ const PLAN_ROW_PER_FILE: usize = PLAN_ROW_TOKENS_PER_FILE;
 const LISTING_PER_FILE: usize = LISTING_TOKENS_PER_FILE;
 
 /// The whole 100-file rename turn, prefix included.
-const HUNDRED_FILE_TURN: usize = 39_699;
+const HUNDRED_FILE_TURN: usize = 39_922;
 
 const SHOTS_DIR: &str = "/Users/me/Downloads/shots";
 

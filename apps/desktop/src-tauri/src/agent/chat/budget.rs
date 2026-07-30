@@ -80,8 +80,9 @@ const _: () = assert!(MAX_TOOL_RESULT_TOKENS < DEFAULT_PROMPT_TOKEN_BUDGET);
 
 /// What every call pays before the user has said a word: the system prompt plus the tool
 /// declarations. Measured against the shipped assets, and pinned there —
-/// `context/cost_tests.rs` fails if the real prefix drifts away from this figure.
-pub const FIXED_PROMPT_OVERHEAD_TOKENS: usize = 3_124;
+/// `context/cost_tests.rs` fails if the real prefix drifts away from this figure. The system
+/// prompt is 963 of it, the 12 tool declarations the rest.
+pub const FIXED_PROMPT_OVERHEAD_TOKENS: usize = 3_347;
 
 /// What one `image_facts` row costs at the corpus' average OCR length.
 pub const IMAGE_FACTS_TOKENS_PER_FILE: usize = 269;
@@ -604,14 +605,18 @@ mod tests {
 
     #[test]
     fn a_batch_hint_derives_from_the_budget() {
-        // (budget − 10% headroom − 3,124 of prefix) / 349 per file, while the prompt is what
+        // (budget − 10% headroom − 3,347 of prefix) / 349 per file, while the prompt is what
         // binds.
-        assert_eq!(files_per_batch(16_000), 32);
-        assert_eq!(files_per_batch(32_000), 73);
+        assert_eq!(files_per_batch(16_000), 31);
+        assert_eq!(files_per_batch(32_000), 72);
         // Past roughly 45,000 the reply's own ceiling binds instead, and the hint stops
         // growing with the budget: 6,000 emittable tokens / 59 per row.
         assert_eq!(files_per_batch(60_000), 101);
-        assert_eq!(files_per_batch(200_000), 101, "a huge window still gets one reply's worth");
+        assert_eq!(
+            files_per_batch(200_000),
+            101,
+            "a huge window still gets one reply's worth"
+        );
         // A budget that can't even hold the prefix says so, rather than proposing one file.
         assert_eq!(files_per_batch(2_000), 0);
     }

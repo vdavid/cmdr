@@ -40,7 +40,11 @@ fn main() {
         std::process::exit(1);
     }
     // Start from a clean scratch store so the size reflects only this pass.
-    for p in [&out_db, &out_db.with_extension("db-wal"), &out_db.with_extension("db-shm")] {
+    for p in [
+        &out_db,
+        &out_db.with_extension("db-wal"),
+        &out_db.with_extension("db-shm"),
+    ] {
         let _ = std::fs::remove_file(p);
     }
 
@@ -75,9 +79,18 @@ fn main() {
         Some(b) => format!("{:.1} MB", b as f64 / 1e6),
         None => "unavailable on this platform".to_string(),
     };
-    println!("walk memory (phys_footprint growth): {}", mb(outcome.walk_footprint_bytes));
-    println!("whole-pass memory (phys_footprint growth): {}", mb(outcome.pass_footprint_bytes));
-    println!("importance.db size: {main_bytes} bytes ({:.1} MB)", main_bytes as f64 / 1e6);
+    println!(
+        "walk memory (phys_footprint growth): {}",
+        mb(outcome.walk_footprint_bytes)
+    );
+    println!(
+        "whole-pass memory (phys_footprint growth): {}",
+        mb(outcome.pass_footprint_bytes)
+    );
+    println!(
+        "importance.db size: {main_bytes} bytes ({:.1} MB)",
+        main_bytes as f64 / 1e6
+    );
     println!("  wal remaining: {wal_bytes} bytes");
     println!(
         "full-pass wall clock: {:.2?} (walk+score {:.2?}, write+flush {:.2?})",

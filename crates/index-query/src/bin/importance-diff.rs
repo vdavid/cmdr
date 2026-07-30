@@ -24,7 +24,10 @@ const NOW_SECS: u64 = 1_700_000_000;
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 3 || args.len() > 4 {
-        eprintln!("Usage: {} <index.db> <home-or-mount-root> [origin-count]", args[0]);
+        eprintln!(
+            "Usage: {} <index.db> <home-or-mount-root> [origin-count]",
+            args[0]
+        );
         std::process::exit(1);
     }
     let index_db = PathBuf::from(&args[1]);
@@ -32,7 +35,9 @@ fn main() {
     // A number samples that many origins across the index; a comma-separated list
     // compares exactly those (for a deliberately deep or wide subtree).
     let explicit: Option<Vec<String>> = match args.get(3) {
-        Some(a) if a.parse::<usize>().is_err() => Some(a.split(',').map(|p| p.trim().to_string()).collect()),
+        Some(a) if a.parse::<usize>().is_err() => {
+            Some(a.split(',').map(|p| p.trim().to_string()).collect())
+        }
         _ => None,
     };
     let wanted: usize = args.get(3).and_then(|a| a.parse().ok()).unwrap_or(200);
@@ -103,10 +108,17 @@ fn main() {
             folders[folders.len() - 1]
         );
     }
-    let mut probes: Vec<_> = comparisons.iter().filter(|c| c.fell_back).map(|c| c.scoped_walk).collect();
+    let mut probes: Vec<_> = comparisons
+        .iter()
+        .filter(|c| c.fell_back)
+        .map(|c| c.scoped_walk)
+        .collect();
     probes.sort_unstable();
     if let (Some(min), Some(max)) = (probes.first(), probes.last()) {
-        println!("  fallback probe before giving up: median {:.2?}, min {min:.2?}, max {max:.2?}", probes[probes.len() / 2]);
+        println!(
+            "  fallback probe before giving up: median {:.2?}, min {min:.2?}, max {max:.2?}",
+            probes[probes.len() / 2]
+        );
     }
     println!("whole differential (one full walk plus every scoped walk): {total:.2?}");
 

@@ -35,11 +35,11 @@ not by auditing a quote chain.
 
 Estimated tokens (`chars/4`, the one ruler), re-measured 2026-07-30 against the shipped assets:
 
-- **Fixed overhead, every call**: **3,124** (system prompt 740 + 12 tool declarations 2,384)
+- **Fixed overhead, every call**: **3,347** (system prompt 963 + 12 tool declarations 2,384)
 - **`image_facts`, per file at 900 chars of OCR**: 269
 - **Plan row, per file** (path + name + evidence): 59
 - **Pane listing, per file**: 21
-- **A 100-file rename turn, all in**: **39,699**
+- **A 100-file rename turn, all in**: **39,922**
 
 **The whole breakdown is pinned, each figure within a tenth**, by `agent/chat/context/cost_tests.rs`: the fixed overhead
 and its two halves, the three per-file costs, the total, and that the parts account for over 90% of the turn (the rest is

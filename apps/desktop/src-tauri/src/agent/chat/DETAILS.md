@@ -7,7 +7,12 @@ Pull-tier docs for `agent/chat/`. Must-knows live in `CLAUDE.md`.
 `run_turn` assembles and sends, top to bottom:
 
 1. **System** (`system` arg): `system_prompt::SYSTEM_PROMPT` + `~/.cmdr/CMDR.md` under a
-   header if present. Stable, cached.
+   header if present. Stable, cached. Five labelled sections (identity, what you can do,
+   coverage, renaming, evidence, style) so a rule can be found and edited without re-reading
+   the block; every load-bearing rule is pinned by a prompt-asset test in `system_prompt.rs`.
+   **Each rule that forbids something also names the action to take instead** — a prohibition
+   alone leaves the next token to chance, which is how a batch of screenshots got 12
+   fabricated names.
 2. **Tool declarations** (`tools` arg): `agent::tools::agent_tool_declarations()`. Stable,
    cached.
 3. **History**: every persisted turn, each user turn prefixed with its own local
@@ -16,7 +21,10 @@ Pull-tier docs for `agent/chat/`. Must-knows live in `CLAUDE.md`.
    stub (§ The elision stub). Eliding prose is never done — that's the soft-cap's job. The
    current turn's results never elide either (see § Budget enforcement).
 4. **The envelope** opens the LATEST user turn only, as a tagged block (§9 field set):
-   `[Sat 2026-07-12 21:30 · focused: <path> · cursor: <name|—> · <n> selected · volumes: <name> (<freshness>[, <connectivity>]), …]`.
+   `[Sat 2026-07-12 21:30 · focused: <path> · cursor: <name|—> · <n> selected · volumes: <name> (<freshness>[, <connectivity>]), … · rename batch: up to <n> files]`.
+   The batch size is `budget::files_per_batch` for this turn's resolved budget; it rides here
+   rather than in the prompt because it moves with the model and the user's setting, and the
+   prompt points at it (§ Sizing a batch from the budget).
 5. **The user's text**, following the envelope block in the same message.
 
 An answer that needs no tools comes straight back (`Done`). One that needs tools runs the
@@ -191,7 +199,7 @@ same shape as the interactive model override.
 
 ### A local window too small to use
 
-`prompt_budget_for_local_context(4096)` was 2,457 tokens against 3,124 of fixed overhead: the shipped default could not
+`prompt_budget_for_local_context(4096)` was 2,457 tokens against 3,347 of fixed overhead: the shipped default could not
 complete one turn. So `MIN_LOCAL_CONTEXT_TOKENS = 16_384` is the floor, `ai.localContextSize` offers nothing smaller,
 and a stored 2,048 / 4,096 / 8,192 no longer validates (it resolves to the 16,384 default on load, migrating an early
 tester instead of leaving them broken).
@@ -203,14 +211,28 @@ refused, not assembled: `BudgetRefusal::LocalWindowBelowFloor` reaches the rail 
 
 ### Sizing a batch from the budget
 
-`files_per_batch(prompt_tokens)` answers how many files one content-based rename batch fits:
-`(budget − 10% headroom − 3,124 of prefix) / 349 per file`. 32 files at 16,000, 73 at 32,000, 145 at 60,000, 16 on a
-local model at the floor. The headroom exists because the measured 100-file turn came in ~4% above what the per-file
-costs account for (the paths the calls name, the envelope, the user's sentence, JSON scaffolding).
+`files_per_batch(prompt_tokens)` answers how many files one content-based rename batch fits, as the **smaller of two
+limits**:
+
+- what the PROMPT holds: `(budget − 10% headroom − 3,347 of prefix) / 349 per file`. The headroom exists because the
+  measured 100-file turn came in ~4% above what the per-file costs account for (the paths the calls name, the envelope,
+  the user's sentence, JSON scaffolding).
+- what one REPLY can emit: `AGENT_MAX_OUTPUT_TOKENS` (12,000), less a half-slot reasoning reserve, divided by the plan
+  row's 59 tokens, so **101**.
+
+31 files at 16,000, 72 at 32,000, then **101 from roughly 45,000 upward** — including at 200,000, because past that
+crossover the reply's ceiling binds and a bigger window buys no bigger batch.
+
+**Both limits are load-bearing.** The number is advertised to the model as "propose this many files" and the model
+answers by EMITTING that many plan rows, so a hint past the completion slot doesn't degrade gracefully: the reply is cut
+off mid-JSON and the whole plan is lost. The reserve is half the slot because reasoning tokens share it and their size
+isn't knowable in advance; `ai::client` already retries with a raised ceiling when reasoning consumes everything, so an
+exhausted slot is observed behaviour, not a hypothesis.
 
 The arithmetic lives in `budget.rs`, next to the budget it derives from, and `cost_tests.rs` proves the promise against
-the real shapes: a batch of exactly that size, assembled against that budget, fits with nothing elided. Renderers (the
-system prompt, the UI) may show the number; they don't own it.
+the real shapes: a batch of exactly that size, assembled against that budget, fits with nothing elided. Renderers may
+show the number; they don't own it. The **per-turn envelope** carries it to the model (`rename batch: up to N files`),
+because it moves with the model and the setting and so can't live in the cached prefix.
 
 ### What the budgets buy, measured
 
@@ -218,18 +240,17 @@ Estimated tokens from the shipped assets and `estimate_prompt_tokens`. Every fig
 `context/cost_tests.rs`, whose constants block is the single copy; a failure there names both numbers and says to update
 the test and the plan's "measured ground truth" section together.
 
-- **Fixed overhead: 3,124 tokens** on every single call — 740 for `SYSTEM_PROMPT` and 2,384 for the 12 tool
+- **Fixed overhead: 3,347 tokens** on every single call — 963 for `SYSTEM_PROMPT` and 2,384 for the 12 tool
   declarations. It's why the old flat 8k left only ~4.9k for the actual work, so an 11-file `image_facts` batch fit and a
   12-file one did not.
 - **Per file: 269 for an `image_facts` row** (at 900 chars of OCR, the corpus average, against the 2,000-char cap — a
   text-dense corpus costs up to ~2.2× more), **59 for a plan row**, **21 for a pane-listing entry**. The facts dominate
   by more than 3×, so a window has to be sized for them, not for the plan.
-- **A 100-file content-based rename: 39,699 tokens** for the whole turn. The parts above account for over 90% of it; the
+- **A 100-file content-based rename: 39,922 tokens** for the whole turn. The parts above account for over 90% of it; the
   rest is the paths the calls name, the envelope, the user's sentence, and JSON scaffolding. The facts arrive over
   several `MAX_TOOL_RESULT_TOKENS` pages that all stay in the turn.
-- So **60k does 100 files, 16k does roughly 30** (`files_per_batch` says 145 and 32, the difference being that a hint
-  leaves headroom the measurement doesn't). A model's window must exceed the whole turn, not one page of it: every page
-  of facts is evidence the plan cites, so none of it may elide.
+- So **60k does 100 files, 16k does roughly 30** (`files_per_batch` says 101 and 31). A model's window must exceed the
+  whole turn, not one page of it: every page of facts is evidence the plan cites, so none of it may elide.
 
 ## The runtime (`runtime/`)
 

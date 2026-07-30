@@ -16,7 +16,8 @@
 use std::path::PathBuf;
 
 use cmdr_lib::operation_log::store::{
-    OperationItemRow, open_read_connection, read_operation_items, reconstruct_dir_path, recent_operations,
+    OperationItemRow, open_read_connection, read_operation_items, recent_operations,
+    reconstruct_dir_path,
 };
 use rusqlite::Connection;
 
@@ -56,7 +57,10 @@ fn main() {
     }
 
     for op in &operations {
-        let subkind = op.archive_subkind.map(|s| format!("/{}", s.as_token())).unwrap_or_default();
+        let subkind = op
+            .archive_subkind
+            .map(|s| format!("/{}", s.as_token()))
+            .unwrap_or_default();
         let reason = op
             .not_rollbackable_reason
             .map(|r| format!(" reason={}", r.as_token()))
