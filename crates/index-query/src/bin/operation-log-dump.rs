@@ -16,8 +16,7 @@
 use std::path::PathBuf;
 
 use cmdr_lib::operation_log::store::{
-    OperationItemRow, open_read_connection, read_operation_items, recent_operations,
-    reconstruct_dir_path,
+    OperationItemRow, open_read_connection, read_operation_items, recent_operations, reconstruct_dir_path,
 };
 use rusqlite::Connection;
 
