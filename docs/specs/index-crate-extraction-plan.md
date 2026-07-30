@@ -761,6 +761,9 @@ after:** full suite with `--include-slow`; this milestone touches concurrency. *
   `SmbVolume`, which only the app can build, so it becomes the app proving its backend works with the index's scanner.
 - **Item 6 relocated 30 commands across 8 files**, not 27 across 3, and `media_index/commands.rs` was already
   `media_index/commands/`.
+- **The seams landed as `indexing/host/`** (runtime, policy, volumes, config, events), with the app answering from
+  `src/index_host.rs` — one `install(app)` that wires all five. `indexing/host/CLAUDE.md` + `DETAILS.md` carry the
+  reasoning; M5 turns those accessors into fields on the handle without touching a call site.
 
 ### M5 — The `Index` handle and the public-API audit
 
