@@ -62,7 +62,7 @@ func RunErrorStringMatch(ctx *CheckContext) (CheckResult, error) {
 	// Every first-party tree. Typed errors are the crate boundary's whole point, so
 	// a crate is the last place a substring match should go unnoticed. The vendored
 	// fork is out of jurisdiction.
-	roots, err := RustSrcRoots(ctx.RootDir, KindApp, KindTool)
+	roots, err := ScannerRoots(ctx.RootDir, "desktop-rust-error-string-match")
 	if err != nil {
 		return CheckResult{}, err
 	}

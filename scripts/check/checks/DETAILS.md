@@ -435,6 +435,75 @@ Gotchas:
 - Worst case cost is bounded at roughly 15 × (8 s + 40 s) ≈ 12 minutes, which only happens if 15 tests genuinely hang.
   Measured reality: a 10-failure saturated run resolved in 2m51s total against a 2m0s idle baseline.
 
+## Workspace geometry: which members a Rust check reaches
+
+`cargo-workspace.go` reads the root `Cargo.toml`'s `[workspace] members` (globs expanded) plus each member's own
+manifest, and hands every Rust check the same picture. It parses the manifests directly instead of shelling out to
+`cargo metadata`, because the source scanners otherwise need no toolchain and a cold `cargo metadata` costs more than
+all of them together.
+
+A member describes ITSELF in `[package.metadata.cmdr]`, so a new crate teaches every lane and scanner about itself with
+no Go edit:
+
+- **`kind`** decides which scanners have jurisdiction. `app` (the default) is first-party code linked into the Cmdr
+  process. `tool` is a first-party standalone developer CLI: its own process, its own stdout, its own SQLite connection,
+  so the rules written for the app process describe a situation it isn't in (`crates/index-query`). `vendored` is a
+  third-party fork whose value is that it still matches upstream (`crates/fsevent-stream`). An unknown value is an
+  error, not a silent default.
+- **`platforms`** is the target-OS allowlist the member claims for itself, in cargo's `target_os` spelling. Empty means
+  portable. `CargoSelectionArgs` turns it into `--workspace --exclude <name>` for every lane whose target can't build
+  it.
+
+**Gotcha: `--workspace` moves a macOS-only member from the dependency graph into the SELECTION set, where its target
+gate no longer applies.** `cmdr-fsevent-stream` was only ever a `cfg(target_os = "macos")` dependency of `cmdr`, so no
+non-macOS lane ever touched it. Selected directly it fails at `cargo check` — not at link — with
+`E0455: link kind 'framework' is only supported on Apple targets` (reproduced in a `rust:latest` container, 2026-07-30).
+That's every compiling lane, including the ones named for macOS: CI's "Desktop (Rust)" job runs `desktop-rust-clippy`,
+`desktop-rust-tests`, and `desktop-rust-cargo-machete` on ubuntu.
+
+**Gotcha: the Docker lane computes its selection for `linux`, not for the host.** `desktop-rust-tests-linux` runs cargo
+inside a container from a Mac, so `HostCargoSelectionArgs` would answer for the wrong OS.
+`TestProvisionScriptSelectsForTheContainerNotTheHost` pins it.
+
+Feature specs are package-qualified (`cmdr/virtual-mtp`). A bare `--features virtual-mtp` changes meaning once more than
+one package is selected.
+
+## Workspace member coverage
+
+`workspace-member-coverage` (`IsFast`, error-level, app scope `crates`) is what stops the next crate from re-opening the
+hole this whole area was built to close: before it, every cargo lane was `cmd.Dir`-scoped to the app package and every
+Rust scanner walked a hardcoded `apps/desktop/src-tauri/src`, so anything under `crates/` was never tested, linted,
+formatted, or scanned. Nothing was red about that — a member no lane selects compiles fine and reports nothing at all.
+
+It asserts three things:
+
+- **Every member is reachable.** A member no lane's target OS can build is a member whose tests never run. A member of a
+  `kind` no scanner governs is a member whose sources nothing reads.
+- **Every Rust check is classified**, into exactly one of `rustCargoLanes` (drives cargo; coverage comes from the
+  package selection), `rustScannerJurisdictions` (walks source trees; coverage comes from the declared kinds), or
+  `rustMetaChecks` (reasons about the workspace rather than compiling or scanning it). Adding a Rust check without
+  classifying it fails, which is the shape of "someone added a scanner and hardcoded a path inside it".
+- **No stale classification**: an entry naming a check that no longer exists fails, the same way `ci-coverage` refuses
+  to let an excuse outlive its check.
+
+`rustScannerJurisdictions` isn't documentation: each scanner resolves its own roots through `ScannerRoots` /
+`ScannerMemberKinds`, and an undeclared check ID is an error rather than an empty list (an empty list reads as "scanned
+nothing" and passes). Anything narrower than every first-party member carries a `Why`. The narrowings today:
+
+- **`desktop-rust-log-error-macro`** is `AppTreeOnly`. `log_error!` is a crate-root `macro_rules!` no separate crate can
+  invoke, so pointing it at `crates/` would make every diagnostic `log::error!` there a hard failure with no legal
+  alternative. Crates raise errors as typed values the app re-raises.
+- **`desktop-rust-mtp-dropping-timeout`** and **`desktop-rust-mtp-no-transport-reset`** are `AppTreeOnly`: both are
+  scoped to `src/mtp/`, one app-side USB subsystem.
+- **`desktop-rust-sqlite-open-direct`** is `app` only. The page-cache slab is process-wide, so a standalone CLI opening
+  the first connection in its own process has nothing to protect.
+- **`desktop-pluralize-noun`** is `app` only. `pluralize` is a private module of the app crate, so a tool crate can't
+  reach the helper the check directs it to.
+- **`desktop-rust-cfg-gate`** governs every kind, because it pairs each member's OWN manifest with that member's tree
+  and skips members that are already macOS-only at the crate level.
+
+`claude-md-length` needed no re-rooting: it enumerates via `git ls-files` across the whole repo already.
+
 ## Apps and check counts
 
 Checks by app and tech:
@@ -445,6 +514,9 @@ Checks by app and tech:
   fixed `thread::sleep` / `tokio::time::sleep` in test code, where a condition-based `wait_until` belongs; opt out a
   genuine sleep-is-the-subject site with `// allowed-test-sleep: <reason>`), mtp-dropping-timeout,
   mtp-no-transport-reset, bindings-fresh, ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)
+- **Crates / Rust**: workspace-member-coverage (every workspace member is reachable by the cargo lanes and the source
+  scanners, and every Rust check has declared which of the two it is). The crates' code is also covered by the desktop
+  Rust lanes above, which all run workspace-wide; this scope is for checks about the crate boundary itself.
 - **Desktop / Svelte**: prettier, eslint, svelte-kit-sync, eslint-typecheck-svelte, eslint-typecheck-typescript,
   stylelint, css-unused, a11y-contrast, a11y-coverage (every primitive has a tier-3 a11y test), ui-primitive-coverage
   (every top-level `lib/ui/*.svelte` primitive has a Debug > Components catalog section), dialog-gallery-coverage (every

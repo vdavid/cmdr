@@ -107,7 +107,11 @@ func RunPluralizeNoun(ctx *CheckContext) (CheckResult, error) {
 	// `log-error-macro`: `pluralize` is a private module of the app crate, so a
 	// standalone developer CLI has no way to reach the helper this check directs it
 	// to. The vendored fork is out too — its strings are upstream's.
-	rustMembers, err := MembersOfKind(ctx.RootDir, KindApp)
+	kinds, err := ScannerMemberKinds("desktop-pluralize-noun")
+	if err != nil {
+		return CheckResult{}, err
+	}
+	rustMembers, err := MembersOfKind(ctx.RootDir, kinds...)
 	if err != nil {
 		return CheckResult{}, err
 	}

@@ -16,7 +16,7 @@ func RunIpcEnumCamelCase(ctx *CheckContext) (CheckResult, error) {
 	// Every first-party tree. `specta::Type` derives live wherever the data types
 	// do, and bindings collect them transitively across crate boundaries, so an
 	// enum in a crate ships snake_case fields exactly the same way.
-	roots, err := RustSrcRoots(ctx.RootDir, KindApp, KindTool)
+	roots, err := ScannerRoots(ctx.RootDir, "desktop-rust-ipc-enum-camelcase")
 	if err != nil {
 		return CheckResult{}, err
 	}

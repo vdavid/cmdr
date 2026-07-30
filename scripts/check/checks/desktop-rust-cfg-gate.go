@@ -25,7 +25,11 @@ import (
 // A member that declares itself macOS-only is skipped: its gate is at the crate
 // level, so a per-import `#[cfg]` inside it would protect nothing.
 func RunCfgGate(ctx *CheckContext) (CheckResult, error) {
-	members, err := WorkspaceMembers(ctx.RootDir)
+	kinds, err := ScannerMemberKinds("desktop-rust-cfg-gate")
+	if err != nil {
+		return CheckResult{}, err
+	}
+	members, err := MembersOfKind(ctx.RootDir, kinds...)
 	if err != nil {
 		return CheckResult{}, err
 	}

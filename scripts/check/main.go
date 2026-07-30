@@ -284,7 +284,7 @@ func handleFreestyleFlags(rootDir string, flags *cliFlags) bool {
 // positional selectors (and by --app / the group flags). ValidateCheckNames
 // rejects any check ID/nickname that would shadow one, because positional
 // resolution tries check names first.
-var reservedSelectorNames = []string{"desktop", "website", "api-server", "scripts", "rust", "svelte", "go"}
+var reservedSelectorNames = []string{"desktop", "website", "api-server", "scripts", "crates", "rust", "svelte", "go"}
 
 // parseFlags parses command-line flags and positional selectors (check
 // names, app names, and tech groups, in any order and mix; commas work too).
@@ -432,7 +432,7 @@ func applySelector(flags *cliFlags, name string) error {
 		return nil
 	}
 	switch strings.ToLower(name) {
-	case "desktop", "website", "api-server", "scripts":
+	case "desktop", "website", "api-server", "scripts", "crates":
 		flags.appNames = append(flags.appNames, strings.ToLower(name))
 	case "rust":
 		flags.rustOnly = true
@@ -516,8 +516,10 @@ func selectChecksByApp(appName string) ([]checks.CheckDefinition, error) {
 		return checks.GetChecksByApp(checks.AppApiServer), nil
 	case "scripts":
 		return checks.GetChecksByApp(checks.AppScripts), nil
+	case "crates":
+		return checks.GetChecksByApp(checks.AppCrates), nil
 	default:
-		return nil, fmt.Errorf("unknown app: %s\nAvailable apps: desktop, website, api-server, scripts", appName)
+		return nil, fmt.Errorf("unknown app: %s\nAvailable apps: desktop, website, api-server, scripts, crates", appName)
 	}
 }
 

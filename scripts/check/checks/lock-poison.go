@@ -47,7 +47,7 @@ type lockPoisonSite struct {
 func RunLockPoison(ctx *CheckContext) (CheckResult, error) {
 	// Every first-party tree, app and crates alike: a poisoned lock aborts the same
 	// process wherever it was acquired. The vendored fork is out of jurisdiction.
-	roots, err := RustSrcRoots(ctx.RootDir, KindApp, KindTool)
+	roots, err := ScannerRoots(ctx.RootDir, "desktop-rust-lock-poison")
 	if err != nil {
 		return CheckResult{}, err
 	}

@@ -47,7 +47,7 @@ type testSleepSite struct {
 func RunTestSleep(ctx *CheckContext) (CheckResult, error) {
 	// Every first-party tree. The vendored fork is out of jurisdiction: its tests
 	// drive real FSEvents against upstream's own timing assumptions.
-	roots, err := RustSrcRoots(ctx.RootDir, KindApp, KindTool)
+	roots, err := ScannerRoots(ctx.RootDir, "desktop-rust-test-sleep")
 	if err != nil {
 		return CheckResult{}, err
 	}

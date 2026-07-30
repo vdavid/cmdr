@@ -164,6 +164,11 @@ jobs:
         run: ./scripts/check/check --check desktop-rust-rustfmt --ci
 
       # Cheap static lints first, so a violation fails before the long compiles below.
+      # Member coverage leads: if a crate has fallen outside the lanes, every check
+      # after it is green over a smaller tree than anyone thinks.
+      - name: Check workspace member coverage
+        run: ./scripts/check/check --check workspace-member-coverage --ci
+
       - name: Check cfg-gate
         run: ./scripts/check/check --check desktop-rust-cfg-gate --ci
 

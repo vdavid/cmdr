@@ -1126,6 +1126,19 @@ var AllChecks = []CheckDefinition{
 	// in a workflow or carry a NotInCI reason, and ci.yml's change-detection
 	// filter paths must exist. See ci-coverage.go for the incidents behind it.
 	{
+		ID:          "workspace-member-coverage",
+		Nickname:    "member-coverage",
+		DisplayName: "every workspace member is checked",
+		App:         AppCrates,
+		Tech:        "🦀 Rust",
+		IsFast:      true,
+		// Pure Go over the manifests and the registry: no cargo, no compile.
+		Inputs: inputs(
+			[]string{"Cargo.toml", "apps/desktop/src-tauri/Cargo.toml", "crates/**"},
+		),
+		Run: RunWorkspaceMemberCoverage,
+	},
+	{
 		ID:          "ci-coverage",
 		DisplayName: "CI coverage",
 		App:         AppOther,

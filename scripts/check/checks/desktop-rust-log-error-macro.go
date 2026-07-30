@@ -37,11 +37,22 @@ type logErrorSite struct {
 // `log::error!` there into a hard failure with no legal alternative. Crates raise
 // errors as typed values the app re-raises through `log_error!` instead.
 func RunLogErrorMacro(ctx *CheckContext) (CheckResult, error) {
-	rustSrcDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri", "src")
-
-	violations, stale, scanned, err := scanForRawLogError(ctx.RootDir, rustSrcDir)
+	roots, err := ScannerRoots(ctx.RootDir, "desktop-rust-log-error-macro")
 	if err != nil {
-		return CheckResult{}, fmt.Errorf("failed to scan Rust files: %w", err)
+		return CheckResult{}, err
+	}
+
+	var violations []logErrorSite
+	var stale []string
+	scanned := 0
+	for _, root := range roots {
+		rootViolations, rootStale, rootScanned, scanErr := scanForRawLogError(ctx.RootDir, root)
+		if scanErr != nil {
+			return CheckResult{}, fmt.Errorf("failed to scan Rust files: %w", scanErr)
+		}
+		violations = append(violations, rootViolations...)
+		stale = append(stale, rootStale...)
+		scanned += rootScanned
 	}
 
 	var parts []string

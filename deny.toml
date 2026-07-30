@@ -16,28 +16,28 @@ version = 2
 # dependency fails the check, so the list can't accumulate stale entries.
 unused-allowed-license = "deny"
 allow = [
-    "MIT",
-    "Apache-2.0",
-    "Apache-2.0 WITH LLVM-exception",
-    "BSD-2-Clause",
-    "BSD-3-Clause",
-    "ISC",
-    "Zlib",
-    "MPL-2.0",
-    "Unicode-3.0",
-    "CC0-1.0",
-    "LicenseRef-BSL-1.1",       # Our own crate (Business Source License 1.1)
-    "NCSA",                     # For libfuzzer-sys (transitive dependency of image crate)
-    "BSL-1.0",                  # For clipboard-win (transitive dependency of tauri-plugin-clipboard-manager)
-    "CDLA-Permissive-2.0",      # For webpki-roots (TLS cert verification via reqwest)
-    "bzip2-1.0.6",              # For libbz2-rs-sys (bzip2 codec for archive browsing); permissive BSD-style
+  "MIT",
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "Zlib",
+  "MPL-2.0",
+  "Unicode-3.0",
+  "CC0-1.0",
+  "LicenseRef-BSL-1.1", # Our own crate (Business Source License 1.1)
+  "NCSA", # For libfuzzer-sys (transitive dependency of image crate)
+  "BSL-1.0", # For clipboard-win (transitive dependency of tauri-plugin-clipboard-manager)
+  "CDLA-Permissive-2.0", # For webpki-roots (TLS cert verification via reqwest)
+  "bzip2-1.0.6", # For libbz2-rs-sys (bzip2 codec for archive browsing); permissive BSD-style
 ]
 
 [bans]
 multiple-versions = "allow"
 wildcards = "deny"
 highlight = "all"
-allow-wildcard-paths = true  # cmdr is private (BSL)
+allow-wildcard-paths = true # cmdr is private (BSL)
 
 [sources]
 unknown-registry = "deny"

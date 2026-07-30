@@ -20,7 +20,7 @@ func RunJscpdRust(ctx *CheckContext) (CheckResult, error) {
 	// Every first-party tree. Duplication doesn't stop being duplication at a crate
 	// boundary — and copy-paste ACROSS the boundary is the specific thing an
 	// extraction invites. The vendored fork is out of jurisdiction.
-	roots, err := RustSrcRoots(ctx.RootDir, KindApp, KindTool)
+	roots, err := ScannerRoots(ctx.RootDir, "desktop-rust-jscpd")
 	if err != nil {
 		return CheckResult{}, err
 	}

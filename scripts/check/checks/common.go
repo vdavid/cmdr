@@ -26,7 +26,11 @@ const (
 	AppWebsite   App = "website"
 	AppApiServer App = "api-server"
 	AppScripts   App = "scripts"
-	AppOther     App = "other"
+	// AppCrates is the shared Rust crates under `crates/`. It exists so
+	// crate-boundary checks have a selector of their own; the crates' code is also
+	// covered by the desktop Rust lanes, which run workspace-wide.
+	AppCrates App = "crates"
+	AppOther  App = "other"
 )
 
 // AppDisplayName returns a human-readable name for an app with icon.
@@ -38,6 +42,8 @@ func AppDisplayName(app App) string {
 		return "🌐 Website"
 	case AppApiServer:
 		return "🌐 API server"
+	case AppCrates:
+		return "📦 Crates"
 	case AppScripts:
 		return "📜 Scripts"
 	default:

@@ -12,11 +12,11 @@ For check authoring (how to add a check, `CheckDefinition` shape, naming rules, 
 - `runner.go`: parallel executor (CPU-weighted admission gate, dependency graph, fail-fast, live TTY status line).
 - `plan.go` + `checks/fingerprint.go` + `checks/cache.go`: the input-fingerprint cache (split selected checks into hits
   and misses before pnpm/SMB; record passes after the run).
-- `checks/inputs.go`: shared `Inputs` building blocks (mined from ci.yml filters).
+- `checks/inputs.go`: shared `Inputs` building blocks (mined from ci.yml filters). `checks/cargo-workspace.go`: the
+  cargo workspace's geometry, which every Rust check derives its scope from.
 - `smb_orchestrator.go` + `smblease/` + `smb-lease/`: runner-level SMB Docker lifecycle behind a machine-wide lease.
-- `freestyle.go`: all freestyle.sh remote-VM execution. `graph.go`: `--graph` (check dependency tree) renderer.
-  `docs_graph_render.go`: `--docs-graph` (doc-discoverability tree) renderer; `docs_graph_usage.go`: per-doc read/write
-  tallies mined from `~/.claude` transcripts for it. `stats.go`: CSV stats logging.
+- `freestyle.go`: freestyle.sh remote-VM execution. `graph.go` / `docs_graph_render.go` (+ `docs_graph_usage.go`): the
+  `--graph` and `--docs-graph` renderers. `stats.go`: CSV stats logging.
 
 ## Must-knows
 

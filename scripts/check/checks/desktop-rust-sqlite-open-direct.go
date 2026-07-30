@@ -43,7 +43,7 @@ func RunSqliteOpenDirect(ctx *CheckContext) (CheckResult, error) {
 	// connection in its OWN process and has nothing to protect. The index store is
 	// the biggest consumer of all this and is headed for a crate, so scanning the
 	// app tree alone would leave the check watching the wrong half.
-	roots, err := RustSrcRoots(ctx.RootDir, KindApp)
+	roots, err := ScannerRoots(ctx.RootDir, "desktop-rust-sqlite-open-direct")
 	if err != nil {
 		return CheckResult{}, err
 	}

@@ -24,11 +24,10 @@ otherwise idle. Tree: the `david-index-crate-extraction` worktree with thin LTO 
 ## Criterion benches
 
 `apps/desktop/src-tauri/benches/index_benchmarks.rs`, built for this baseline; there was no index benchmark before it.
-The fixture
-is a synthetic index DB built through the public `store` API (no files on disk, no scan, no lifecycle), so it's
-deterministic and machine-independent in shape. The harness asserts every fixture directory actually resolves before it
-times anything, because all three paths have cheap early returns that would otherwise produce a green run measuring
-nothing.
+The fixture is a synthetic index DB built through the public `store` API (no files on disk, no scan, no lifecycle), so
+it's deterministic and machine-independent in shape. The harness asserts every fixture directory actually resolves
+before it times anything, because all three paths have cheap early returns that would otherwise produce a green run
+measuring nothing.
 
 ```
 cd apps/desktop/src-tauri
