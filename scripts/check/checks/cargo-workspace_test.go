@@ -171,3 +171,16 @@ func TestRealWorkspaceMembersResolve(t *testing.T) {
 		t.Errorf("cmdr-fsevent-stream platforms = %v, want [macos]", fork.Platforms)
 	}
 }
+
+// seedAppFixtureWorkspace makes a temp dir look like this repo to the workspace
+// reader: a root manifest with one member, the app crate. Fixtures for the Rust
+// scanners need it because those scanners derive their source roots from the
+// member list instead of hardcoding a path, so a fixture with no manifest is a
+// fixture with no source roots at all.
+func seedAppFixtureWorkspace(t *testing.T, root string) {
+	t.Helper()
+	mustWrite(t, filepath.Join(root, "Cargo.toml"),
+		"[workspace]\nmembers = [\"apps/desktop/src-tauri\"]\nresolver = \"2\"\n")
+	mustWrite(t, filepath.Join(root, "apps", "desktop", "src-tauri", "Cargo.toml"),
+		"[package]\nname = \"cmdr\"\nversion = \"0.0.0\"\n")
+}

@@ -38,11 +38,25 @@ type sqliteOpenSite struct {
 // `apps/desktop/src-tauri/src/indexing/store/DETAILS.md` § "SQLite page memory is one
 // process-wide slab".
 func RunSqliteOpenDirect(ctx *CheckContext) (CheckResult, error) {
-	rustSrcDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri", "src")
-
-	violations, scanned, err := scanForDirectSqliteOpen(ctx.RootDir, rustSrcDir)
+	// KindApp only. The slab is process-wide, so only code linked into the Cmdr
+	// process can lose the race; a standalone developer CLI opens the first
+	// connection in its OWN process and has nothing to protect. The index store is
+	// the biggest consumer of all this and is headed for a crate, so scanning the
+	// app tree alone would leave the check watching the wrong half.
+	roots, err := RustSrcRoots(ctx.RootDir, KindApp)
 	if err != nil {
-		return CheckResult{}, fmt.Errorf("failed to scan Rust files: %w", err)
+		return CheckResult{}, err
+	}
+
+	var violations []sqliteOpenSite
+	scanned := 0
+	for _, root := range roots {
+		rootViolations, rootScanned, scanErr := scanForDirectSqliteOpen(ctx.RootDir, root)
+		if scanErr != nil {
+			return CheckResult{}, fmt.Errorf("failed to scan Rust files: %w", scanErr)
+		}
+		violations = append(violations, rootViolations...)
+		scanned += rootScanned
 	}
 
 	if len(violations) > 0 {

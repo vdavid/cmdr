@@ -18,7 +18,7 @@ func scanFixture(t *testing.T, name string, rs string) []ipcEnumViolation {
 	if err := os.WriteFile(filepath.Join(srcDir, name+".rs"), []byte(rs), 0644); err != nil {
 		t.Fatal(err)
 	}
-	violations, _, err := scanIpcEnums(srcDir)
+	violations, _, err := scanIpcEnums(dir, srcDir)
 	if err != nil {
 		t.Fatalf("scanIpcEnums: %v", err)
 	}

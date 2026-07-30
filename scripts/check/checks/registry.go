@@ -209,8 +209,12 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            inputs([]string{"apps/desktop/src/**", "apps/desktop/src-tauri/**", "tools/**"}),
-		Run:               RunPluralizeNoun,
+		// Its own list rather than `rustInputs`: it scans TypeScript and Svelte too.
+		// `crates/**` is in here because the scan follows the workspace members, so
+		// a change confined to a crate is a change to this check's own inputs — the
+		// cache would otherwise skip it over exactly the tree that moved.
+		Inputs: inputs([]string{"apps/desktop/src/**", "apps/desktop/src-tauri/**", "crates/**", "tools/**"}),
+		Run:    RunPluralizeNoun,
 	},
 	{
 		ID:                "desktop-bindings-fresh",

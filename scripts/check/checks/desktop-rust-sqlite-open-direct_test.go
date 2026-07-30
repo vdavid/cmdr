@@ -12,6 +12,7 @@ import (
 func runSqliteOpenDirectOn(t *testing.T, files map[string]string) (CheckResult, error) {
 	t.Helper()
 	root := t.TempDir()
+	seedAppFixtureWorkspace(t, root)
 	srcDir := filepath.Join(root, "apps", "desktop", "src-tauri", "src")
 	for rel, body := range files {
 		full := filepath.Join(srcDir, rel)

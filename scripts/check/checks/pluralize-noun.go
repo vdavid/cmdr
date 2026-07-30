@@ -99,14 +99,36 @@ type pluralizeNounSite struct {
 // `+s` plural). Callers should use the shared `pluralize(count, "thing")`
 // helper instead so the form reads correctly when the count is 1.
 func RunPluralizeNoun(ctx *CheckContext) (CheckResult, error) {
+	// The `src/` and `tests/` trees of every KindApp workspace member, not just the
+	// app's: `pluralize` is a copy formatter, and copy formatting doesn't get less
+	// wrong for living in a crate.
+	//
+	// KindTool is out of jurisdiction for the same structural reason as
+	// `log-error-macro`: `pluralize` is a private module of the app crate, so a
+	// standalone developer CLI has no way to reach the helper this check directs it
+	// to. The vendored fork is out too — its strings are upstream's.
+	rustMembers, err := MembersOfKind(ctx.RootDir, KindApp)
+	if err != nil {
+		return CheckResult{}, err
+	}
 	roots := []struct {
 		dir  string
 		exts []string
 	}{
-		{filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri", "src"), []string{".rs"}},
 		{filepath.Join(ctx.RootDir, "apps", "desktop", "src"), []string{".ts", ".svelte"}},
-		{filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri", "tests"), []string{".rs"}},
 		{filepath.Join(ctx.RootDir, "tools"), []string{".rs"}},
+	}
+	for _, m := range rustMembers {
+		roots = append(roots,
+			struct {
+				dir  string
+				exts []string
+			}{m.SrcDir, []string{".rs"}},
+			struct {
+				dir  string
+				exts []string
+			}{filepath.Join(m.Dir, "tests"), []string{".rs"}},
+		)
 	}
 
 	var allViolations []pluralizeNounSite

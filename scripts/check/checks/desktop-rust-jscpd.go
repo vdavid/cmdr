@@ -3,7 +3,6 @@ package checks
 import (
 	"fmt"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -18,7 +17,13 @@ const jscpdVersion = "4.2.3"
 
 // RunJscpdRust detects code duplication in Rust files.
 func RunJscpdRust(ctx *CheckContext) (CheckResult, error) {
-	rustSrcDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri", "src")
+	// Every first-party tree. Duplication doesn't stop being duplication at a crate
+	// boundary — and copy-paste ACROSS the boundary is the specific thing an
+	// extraction invites. The vendored fork is out of jurisdiction.
+	roots, err := RustSrcRoots(ctx.RootDir, KindApp, KindTool)
+	if err != nil {
+		return CheckResult{}, err
+	}
 	jscpdSpec := "jscpd@" + jscpdVersion
 
 	// Check if the pinned jscpd is available via npx; install it if not.
@@ -31,8 +36,8 @@ func RunJscpdRust(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	// Run jscpd on Rust source files
-	cmd = exec.Command("npx", jscpdSpec,
-		rustSrcDir,
+	args := append([]string{jscpdSpec}, roots...)
+	args = append(args,
 		"--format", "rust",
 		"--min-lines", "5",
 		"--min-tokens", "100",
@@ -47,6 +52,7 @@ func RunJscpdRust(ctx *CheckContext) (CheckResult, error) {
 		"--ignore", "**/test*.rs,**/*_test.rs,**/*_tests.rs,**/*_test_*.rs",
 		"--reporters", "console",
 	)
+	cmd = exec.Command("npx", args...)
 	output, err := RunCommand(cmd, true)
 	if err != nil {
 		// Only the specific over-threshold marker counts as a duplication

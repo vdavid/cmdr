@@ -13,11 +13,23 @@ import (
 // inside struct variants ship as snake_case on the wire even though the variant tags are camelCase.
 // See apps/desktop/src/lib/ipc/CLAUDE.md "Type shape constraints" for the rationale.
 func RunIpcEnumCamelCase(ctx *CheckContext) (CheckResult, error) {
-	rustSrcDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri", "src")
-
-	violations, scanned, err := scanIpcEnums(rustSrcDir)
+	// Every first-party tree. `specta::Type` derives live wherever the data types
+	// do, and bindings collect them transitively across crate boundaries, so an
+	// enum in a crate ships snake_case fields exactly the same way.
+	roots, err := RustSrcRoots(ctx.RootDir, KindApp, KindTool)
 	if err != nil {
-		return CheckResult{}, fmt.Errorf("failed to scan Rust files: %w", err)
+		return CheckResult{}, err
+	}
+
+	var violations []ipcEnumViolation
+	scanned := 0
+	for _, root := range roots {
+		rootViolations, rootScanned, scanErr := scanIpcEnums(ctx.RootDir, root)
+		if scanErr != nil {
+			return CheckResult{}, fmt.Errorf("failed to scan Rust files: %w", scanErr)
+		}
+		violations = append(violations, rootViolations...)
+		scanned += rootScanned
 	}
 
 	if len(violations) > 0 {
@@ -59,7 +71,7 @@ var deriveSpectaTypePattern = regexp.MustCompile(`derive\s*\([^)]*\bspecta::Type
 // Captures the body of `#[serde(...)]` (single-line attributes only).
 var serdeAttrPattern = regexp.MustCompile(`#\[serde\(([^\]]*)\)\]`)
 
-func scanIpcEnums(srcDir string) ([]ipcEnumViolation, int, error) {
+func scanIpcEnums(rootDir, srcDir string) ([]ipcEnumViolation, int, error) {
 	var violations []ipcEnumViolation
 	scanned := 0
 
@@ -105,7 +117,7 @@ func scanIpcEnums(srcDir string) ([]ipcEnumViolation, int, error) {
 				continue
 			}
 
-			relPath := relPathFromRoot(srcDir, path)
+			relPath := relPathFromRoot(rootDir, path)
 			violations = append(violations, ipcEnumViolation{
 				relPath:  relPath,
 				line:     i + 1,
@@ -201,8 +213,7 @@ func lineIsStructVariant(lines []string, i int) bool {
 	return false
 }
 
-func relPathFromRoot(srcDir, path string) string {
-	rootDir := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(srcDir))))
+func relPathFromRoot(rootDir, path string) string {
 	rel, err := filepath.Rel(rootDir, path)
 	if err != nil {
 		return path

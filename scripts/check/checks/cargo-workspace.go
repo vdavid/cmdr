@@ -21,6 +21,26 @@ import (
 // don't otherwise need a toolchain, and a `cargo metadata` invocation on a cold
 // target dir costs more than every scanner combined.
 
+// MemberKind says what a workspace member IS, which decides which scanners have
+// jurisdiction over it. A member declares its own kind; the default is the common
+// case, so only the exceptions carry the key.
+type MemberKind string
+
+const (
+	// KindApp is first-party code linked into the Cmdr app process. Every house
+	// rule applies. This is the default when a member declares no kind.
+	KindApp MemberKind = "app"
+	// KindTool is a first-party standalone developer CLI. It's a separate process
+	// with its own stdout and its own SQLite connection, so the rules written for
+	// the app process (route output through `log::`, open every connection through
+	// the page-cache factory) describe a situation it isn't in.
+	KindTool MemberKind = "tool"
+	// KindVendored is a third-party crate we forked and carry. The house rules
+	// aren't ours to impose on it, and the diff against upstream is what makes a
+	// rebase reviewable.
+	KindVendored MemberKind = "vendored"
+)
+
 // WorkspaceMember is one entry of the root manifest's `[workspace] members`.
 type WorkspaceMember struct {
 	// Name is the `[package] name`, i.e. what `-p` and `--exclude` take. It is NOT
@@ -33,6 +53,12 @@ type WorkspaceMember struct {
 	// SrcDir is the member's `src/` tree. It always exists for our members; a
 	// caller that walks it should tolerate absence anyway.
 	SrcDir string
+	// Kind decides which scanners have jurisdiction. Declared in the member's own
+	// manifest, defaulting to KindApp:
+	//
+	//	[package.metadata.cmdr]
+	//	kind = "vendored"
+	Kind MemberKind
 	// Platforms is the target-OS allowlist the member declares for ITSELF, in
 	// cargo's `target_os` spelling ("macos", "linux"). Empty means portable.
 	// Declared in the member's own manifest, so a new platform-locked crate
@@ -79,6 +105,7 @@ type memberManifest struct {
 		Name     string `toml:"name"`
 		Metadata struct {
 			Cmdr struct {
+				Kind      string   `toml:"kind"`
 				Platforms []string `toml:"platforms"`
 			} `toml:"cmdr"`
 		} `toml:"metadata"`
@@ -151,13 +178,65 @@ func readMemberManifest(dir string) (WorkspaceMember, error) {
 	if manifest.Package.Name == "" {
 		return WorkspaceMember{}, fmt.Errorf("%s declares no `[package] name`", manifestPath)
 	}
+	kind := MemberKind(manifest.Package.Metadata.Cmdr.Kind)
+	switch kind {
+	case "":
+		kind = KindApp
+	case KindApp, KindTool, KindVendored:
+	default:
+		return WorkspaceMember{}, fmt.Errorf(
+			"%s declares `[package.metadata.cmdr] kind = %q`; the known kinds are %q, %q, and %q",
+			manifestPath, kind, KindApp, KindTool, KindVendored)
+	}
 	return WorkspaceMember{
 		Name:         manifest.Package.Name,
 		Dir:          dir,
 		ManifestPath: manifestPath,
 		SrcDir:       filepath.Join(dir, "src"),
+		Kind:         kind,
 		Platforms:    manifest.Package.Metadata.Cmdr.Platforms,
 	}, nil
+}
+
+// MembersOfKind returns the workspace members matching any of the given kinds.
+// Each Rust scanner names the kinds it governs at its own call site rather than
+// sharing one "the Rust source roots" list, because the answers genuinely differ:
+// `sqlite-open-direct` protects a process-wide slab that a standalone CLI doesn't
+// share, and `log-error-macro` points at a macro no crate can reach across the
+// boundary.
+func MembersOfKind(rootDir string, kinds ...MemberKind) ([]WorkspaceMember, error) {
+	members, err := WorkspaceMembers(rootDir)
+	if err != nil {
+		return nil, err
+	}
+	var out []WorkspaceMember
+	for _, m := range members {
+		for _, k := range kinds {
+			if m.Kind == k {
+				out = append(out, m)
+				break
+			}
+		}
+	}
+	return out, nil
+}
+
+// RustSrcRoots returns the `src/` tree of every member of the given kinds, dropping
+// any that isn't on disk (a fresh worktree, a member with no sources yet). Walking a
+// missing root is an error in `filepath.WalkDir`, so the filter has to happen here
+// rather than in each scanner.
+func RustSrcRoots(rootDir string, kinds ...MemberKind) ([]string, error) {
+	members, err := MembersOfKind(rootDir, kinds...)
+	if err != nil {
+		return nil, err
+	}
+	roots := make([]string, 0, len(members))
+	for _, m := range members {
+		if info, statErr := os.Stat(m.SrcDir); statErr == nil && info.IsDir() {
+			roots = append(roots, m.SrcDir)
+		}
+	}
+	return roots, nil
 }
 
 // CargoSelectionArgs builds the package-selection flags for a cargo invocation that

@@ -59,11 +59,25 @@ type errorStringMatchSite struct {
 // error/state value by substring. The convention is documented in
 // `AGENTS.md` § "No string-matching error or state classification".
 func RunErrorStringMatch(ctx *CheckContext) (CheckResult, error) {
-	rustSrcDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri", "src")
-
-	violations, orphans, scanned, err := scanForErrorStringMatch(ctx.RootDir, rustSrcDir)
+	// Every first-party tree. Typed errors are the crate boundary's whole point, so
+	// a crate is the last place a substring match should go unnoticed. The vendored
+	// fork is out of jurisdiction.
+	roots, err := RustSrcRoots(ctx.RootDir, KindApp, KindTool)
 	if err != nil {
-		return CheckResult{}, fmt.Errorf("failed to scan Rust files: %w", err)
+		return CheckResult{}, err
+	}
+
+	var violations []errorStringMatchSite
+	var orphans []orphanDirective
+	scanned := 0
+	for _, root := range roots {
+		rootViolations, rootOrphans, rootScanned, scanErr := scanForErrorStringMatch(ctx.RootDir, root)
+		if scanErr != nil {
+			return CheckResult{}, fmt.Errorf("failed to scan Rust files: %w", scanErr)
+		}
+		violations = append(violations, rootViolations...)
+		orphans = append(orphans, rootOrphans...)
+		scanned += rootScanned
 	}
 
 	var parts []string

@@ -9,6 +9,14 @@ publish = false
 cmdr = { path = "../../apps/desktop/src-tauri" }
 rusqlite = { version = "0.40", features = ["bundled", "collation"] }
 
+[package.metadata.cmdr]
+# A standalone developer CLI, not code linked into the Cmdr app process. That's
+# what exempts it from the rules written for the app: stdout IS its output (so it
+# opts out of the workspace `print_stdout` deny), and its own SQLite connection is
+# the first in its own process (so the shared-page-cache factory has nothing to
+# protect here). The check runner reads this key.
+kind = "tool"
+
 [package.metadata.cargo-machete]
 # The package is `cmdr` but its library target is `cmdr_lib`, so the `use cmdr_lib::…`
 # lines here don't match the name machete greps for. It IS used, in every binary.

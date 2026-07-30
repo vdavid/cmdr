@@ -13,6 +13,7 @@ import (
 func runErrorStringMatchOn(t *testing.T, files map[string]string) (CheckResult, error) {
 	t.Helper()
 	root := t.TempDir()
+	seedAppFixtureWorkspace(t, root)
 	srcDir := filepath.Join(root, "apps", "desktop", "src-tauri", "src")
 	if err := os.MkdirAll(srcDir, 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)

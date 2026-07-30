@@ -45,11 +45,24 @@ type testSleepSite struct {
 // the body of a `#[cfg(test)] mod { ... }` inside a production file. Production
 // sleeps are out of jurisdiction and never flagged.
 func RunTestSleep(ctx *CheckContext) (CheckResult, error) {
-	rustSrcDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri", "src")
-
-	violations, orphans, scanned, err := scanForTestSleep(ctx.RootDir, rustSrcDir)
+	// Every first-party tree. The vendored fork is out of jurisdiction: its tests
+	// drive real FSEvents against upstream's own timing assumptions.
+	roots, err := RustSrcRoots(ctx.RootDir, KindApp, KindTool)
 	if err != nil {
-		return CheckResult{}, fmt.Errorf("failed to scan Rust files: %w", err)
+		return CheckResult{}, err
+	}
+
+	var violations []testSleepSite
+	var orphans []orphanDirective
+	scanned := 0
+	for _, root := range roots {
+		rootViolations, rootOrphans, rootScanned, scanErr := scanForTestSleep(ctx.RootDir, root)
+		if scanErr != nil {
+			return CheckResult{}, fmt.Errorf("failed to scan Rust files: %w", scanErr)
+		}
+		violations = append(violations, rootViolations...)
+		orphans = append(orphans, rootOrphans...)
+		scanned += rootScanned
 	}
 
 	var parts []string

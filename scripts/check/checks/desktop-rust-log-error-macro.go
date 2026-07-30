@@ -29,6 +29,13 @@ type logErrorSite struct {
 // that no longer exists, or one with no `log::error!` calls left (so the entry no
 // longer excuses anything). The convention is documented in
 // `apps/desktop/src-tauri/src/error_reporter/CLAUDE.md` § Convention.
+//
+// This is the ONE Rust scanner deliberately pinned to the app tree rather than
+// derived from the workspace members. `log_error!` is a `macro_rules!` at the app
+// crate's root, and a separate crate can't invoke a crate-root macro across the
+// boundary — so pointing this check at `crates/` would turn every diagnostic
+// `log::error!` there into a hard failure with no legal alternative. Crates raise
+// errors as typed values the app re-raises through `log_error!` instead.
 func RunLogErrorMacro(ctx *CheckContext) (CheckResult, error) {
 	rustSrcDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri", "src")
 

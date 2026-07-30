@@ -19,6 +19,11 @@ exclude = [".github/**/*", ".gitignore", ".mergify.yml", "Justfile"]
 # The check runner reads this key to drop the crate from non-macOS lanes
 # (`scripts/check/checks/cargo-workspace.go`).
 [package.metadata.cmdr]
+# A third-party crate we forked and carry. The house Rust rules (poison handling,
+# no fixed sleeps in tests, no substring error matching, …) aren't ours to impose
+# on upstream's code, and every scanner hit here would be noise on a file whose
+# value is that it still matches upstream. The check runner reads this key.
+kind = "vendored"
 platforms = ["macos"]
 
 [features]

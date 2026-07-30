@@ -45,11 +45,24 @@ type lockPoisonSite struct {
 // `apps/desktop/src-tauri/src/ignore_poison.rs` and in `AGENTS.md` § "No bare
 // `.lock().unwrap()`".
 func RunLockPoison(ctx *CheckContext) (CheckResult, error) {
-	rustSrcDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri", "src")
-
-	violations, orphans, scanned, err := scanForLockPoison(ctx.RootDir, rustSrcDir)
+	// Every first-party tree, app and crates alike: a poisoned lock aborts the same
+	// process wherever it was acquired. The vendored fork is out of jurisdiction.
+	roots, err := RustSrcRoots(ctx.RootDir, KindApp, KindTool)
 	if err != nil {
-		return CheckResult{}, fmt.Errorf("failed to scan Rust files: %w", err)
+		return CheckResult{}, err
+	}
+
+	var violations []lockPoisonSite
+	var orphans []orphanDirective
+	scanned := 0
+	for _, root := range roots {
+		rootViolations, rootOrphans, rootScanned, scanErr := scanForLockPoison(ctx.RootDir, root)
+		if scanErr != nil {
+			return CheckResult{}, fmt.Errorf("failed to scan Rust files: %w", scanErr)
+		}
+		violations = append(violations, rootViolations...)
+		orphans = append(orphans, rootOrphans...)
+		scanned += rootScanned
 	}
 
 	var parts []string
