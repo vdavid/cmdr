@@ -83,10 +83,34 @@ const _: () = assert!(MAX_TOOL_RESULT_TOKENS < DEFAULT_PROMPT_TOKEN_BUDGET);
 /// `context/cost_tests.rs` fails if the real prefix drifts away from this figure.
 pub const FIXED_PROMPT_OVERHEAD_TOKENS: usize = 3_124;
 
-/// What one file costs a content-based rename, all in: its `image_facts` row at the corpus'
-/// average OCR length (269), its plan row (59), and its pane-listing entry (21). Pinned
-/// against the real shapes in `context/cost_tests.rs`.
-pub const RENAME_TOKENS_PER_FILE: usize = 349;
+/// What one `image_facts` row costs at the corpus' average OCR length.
+pub const IMAGE_FACTS_TOKENS_PER_FILE: usize = 269;
+
+/// What one plan row costs: source path, proposed name, and evidence. This is also what the
+/// row costs as OUTPUT when the model emits it, which is what [`files_per_batch`] divides the
+/// completion slot by.
+pub const PLAN_ROW_TOKENS_PER_FILE: usize = 59;
+
+/// What one pane-listing entry costs.
+pub const LISTING_TOKENS_PER_FILE: usize = 21;
+
+/// What one file costs a content-based rename, all in. Summed from the parts rather than
+/// written as a total, so a re-measured part can't leave the total behind. Every part is
+/// pinned against the real shapes in `context/cost_tests.rs`.
+pub const RENAME_TOKENS_PER_FILE: usize =
+    IMAGE_FACTS_TOKENS_PER_FILE + PLAN_ROW_TOKENS_PER_FILE + LISTING_TOKENS_PER_FILE;
+
+/// Per-call output room, shared by reasoning tokens, visible text, and tool calls.
+pub const AGENT_MAX_OUTPUT_TOKENS: u32 = 12_000;
+
+/// How much of [`AGENT_MAX_OUTPUT_TOKENS`] a batch hint leaves for the model's reasoning and
+/// its accompanying sentence, rather than for plan rows.
+///
+/// Half the slot, because we cannot see how much a reasoning model will spend before it starts
+/// emitting: `ai::client` already retries with a raised ceiling when reasoning consumes the
+/// whole budget, so an exhausted slot is an observed failure here, not a hypothetical. Erring
+/// large costs a smaller batch; erring small costs the entire plan, cut off mid-JSON.
+const REASONING_RESERVE_TOKENS: usize = AGENT_MAX_OUTPUT_TOKENS as usize / 2;
 
 /// The share of a budget [`files_per_batch`] leaves unclaimed. The measured 100-file turn
 /// came in about 4% above what the per-file costs account for (the paths the calls name, the
@@ -94,15 +118,28 @@ pub const RENAME_TOKENS_PER_FILE: usize = 349;
 /// budget would put a batch just over it.
 const BATCH_HINT_HEADROOM_PERCENT: usize = 10;
 
-/// How many files one content-based rename batch fits inside `prompt_tokens`:
-/// `(budget − overhead) / per-file cost`, less [`BATCH_HINT_HEADROOM_PERCENT`].
+/// How many files one content-based rename batch fits, as the smaller of two limits:
+///
+/// - what the PROMPT holds: `(budget − overhead) / per-file cost`, less
+///   [`BATCH_HINT_HEADROOM_PERCENT`];
+/// - what one REPLY can emit: the completion slot, less [`REASONING_RESERVE_TOKENS`], divided
+///   by [`PLAN_ROW_TOKENS_PER_FILE`].
+///
+/// **Both limits are load-bearing, and the second binds first on a large budget.** The number
+/// is advertised to the model as "propose this many files", and the model answers by emitting
+/// that many plan rows, so a hint past the completion slot doesn't degrade gracefully: the
+/// reply is cut off mid-JSON and the whole plan is lost. A 60,000-token budget holds 145 files
+/// comfortably in the prompt and can only get about 101 of them back.
 ///
 /// This arithmetic lives HERE, next to the budget it derives from, and not in the system
 /// prompt or the UI: those render the number, they don't own it. `0` is a meaningful answer
 /// (a budget that can't even hold the prefix cannot do a batch at all).
 pub fn files_per_batch(prompt_tokens: usize) -> usize {
     let assembly_ceiling = prompt_tokens * (100 - BATCH_HINT_HEADROOM_PERCENT) / 100;
-    assembly_ceiling.saturating_sub(FIXED_PROMPT_OVERHEAD_TOKENS) / RENAME_TOKENS_PER_FILE
+    let prompt_fits = assembly_ceiling.saturating_sub(FIXED_PROMPT_OVERHEAD_TOKENS) / RENAME_TOKENS_PER_FILE;
+    let reply_fits =
+        (AGENT_MAX_OUTPUT_TOKENS as usize).saturating_sub(REASONING_RESERVE_TOKENS) / PLAN_ROW_TOKENS_PER_FILE;
+    prompt_fits.min(reply_fits)
 }
 
 /// One family's context window, matched by model-id prefix (longest first, like
@@ -567,12 +604,34 @@ mod tests {
 
     #[test]
     fn a_batch_hint_derives_from_the_budget() {
-        // (budget − 10% headroom − 3,124 of prefix) / 349 per file.
+        // (budget − 10% headroom − 3,124 of prefix) / 349 per file, while the prompt is what
+        // binds.
         assert_eq!(files_per_batch(16_000), 32);
         assert_eq!(files_per_batch(32_000), 73);
-        assert_eq!(files_per_batch(60_000), 145);
+        // Past roughly 45,000 the reply's own ceiling binds instead, and the hint stops
+        // growing with the budget: 6,000 emittable tokens / 59 per row.
+        assert_eq!(files_per_batch(60_000), 101);
+        assert_eq!(files_per_batch(200_000), 101, "a huge window still gets one reply's worth");
         // A budget that can't even hold the prefix says so, rather than proposing one file.
         assert_eq!(files_per_batch(2_000), 0);
+    }
+
+    /// The hint is advertised to the model as "propose this many files", and the model answers
+    /// by EMITTING that many plan rows. So a hint the completion slot can't hold doesn't
+    /// degrade, it truncates: the model is cut off mid-JSON and the whole plan is lost, which
+    /// is worse than a smaller batch. Reasoning tokens come out of the same slot, so the cap
+    /// has to leave room for them.
+    #[test]
+    fn a_batch_hint_never_exceeds_what_one_reply_can_emit() {
+        for budget in [16_000, 32_000, 60_000, 128_000, 200_000] {
+            let rows = files_per_batch(budget);
+            let plan_output = rows * PLAN_ROW_TOKENS_PER_FILE;
+            assert!(
+                plan_output <= AGENT_MAX_OUTPUT_TOKENS as usize - REASONING_RESERVE_TOKENS,
+                "a {budget}-token budget advertises {rows} files = {plan_output} output tokens, \
+                 past what one reply can emit alongside its reasoning"
+            );
+        }
     }
 
     #[test]

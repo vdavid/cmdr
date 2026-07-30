@@ -9,8 +9,8 @@ use serde_json::json;
 use super::test_support::*;
 use super::*;
 use crate::agent::chat::budget::{
-    DEFAULT_PROMPT_TOKEN_BUDGET, FIXED_PROMPT_OVERHEAD_TOKENS, MAX_TOOL_RESULT_TOKENS, PROMPT_BUDGET_60K,
-    RENAME_TOKENS_PER_FILE, files_per_batch,
+    DEFAULT_PROMPT_TOKEN_BUDGET, FIXED_PROMPT_OVERHEAD_TOKENS, IMAGE_FACTS_TOKENS_PER_FILE, LISTING_TOKENS_PER_FILE,
+    MAX_TOOL_RESULT_TOKENS, PLAN_ROW_TOKENS_PER_FILE, PROMPT_BUDGET_60K, RENAME_TOKENS_PER_FILE, files_per_batch,
 };
 use crate::agent::llm::types::ToolId;
 
@@ -27,9 +27,9 @@ const FILES: usize = 100;
 // tenth below, so a change that doubles what a file costs fails here instead of surprising a
 // user mid-rename. Change one on purpose ⇒ change the plan's section too.
 //
-// Two of these figures are PRODUCTION constants (`budget.rs` sizes a rename batch from them),
-// so they're imported rather than restated: this file is what keeps them honest against the
-// real shapes.
+// The per-file figures are all PRODUCTION constants (`budget.rs` sizes a rename batch from
+// them, and divides the reply's own ceiling by the plan row), so they're imported rather than
+// restated: this file is what keeps them honest against the real shapes.
 
 /// Every call: the system prompt plus the 12 tool declarations, before the user has said a word.
 const FIXED_OVERHEAD: usize = FIXED_PROMPT_OVERHEAD_TOKENS;
@@ -38,13 +38,13 @@ const TOOL_DECLARATION_TOKENS: usize = 2_384;
 
 /// One `image_facts` row at [`OCR_CHARS`] of recognized text: the dominant per-file cost, and
 /// the reason a window has to be sized for the facts rather than for the plan.
-const IMAGE_FACTS_PER_FILE: usize = 269;
+const IMAGE_FACTS_PER_FILE: usize = IMAGE_FACTS_TOKENS_PER_FILE;
 
 /// One `propose_rename_plan` row: source path, new name, and the evidence behind it.
-const PLAN_ROW_PER_FILE: usize = 59;
+const PLAN_ROW_PER_FILE: usize = PLAN_ROW_TOKENS_PER_FILE;
 
 /// One `list_pane_files` entry: name, size, mtime.
-const LISTING_PER_FILE: usize = 21;
+const LISTING_PER_FILE: usize = LISTING_TOKENS_PER_FILE;
 
 /// The whole 100-file rename turn, prefix included.
 const HUNDRED_FILE_TURN: usize = 39_699;

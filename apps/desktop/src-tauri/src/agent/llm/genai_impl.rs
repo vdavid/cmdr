@@ -35,7 +35,11 @@ const LOG_TARGET: &str = "agent::llm";
 
 /// Per-call output room for reasoning-heavy OpenAI-compatible models. Reasoning tokens
 /// share this budget with visible text and tool calls.
-const AGENT_MAX_OUTPUT_TOKENS: u32 = 12_000;
+///
+/// Defined next to the prompt budget, not here, because `budget::files_per_batch` divides it
+/// to decide how many rename rows one reply can actually emit. Two copies would let a raise
+/// here silently fail to reach the batch hint.
+use crate::agent::chat::budget::AGENT_MAX_OUTPUT_TOKENS;
 
 /// The genai-backed agent LLM. Wraps a configured [`AiBackend`] (the interactive
 /// model slot; the slot is resolved in the command layer) and reuses its adapter routing and
