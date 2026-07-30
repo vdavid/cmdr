@@ -26,11 +26,27 @@ index is being extracted into a Tauri-free crate, and this directory is what it 
   browsing a local folder ends up throttling a NAS scan.
 - **`runtime::spawn` resolves a handle; `tokio::spawn` inherits one.** Indexing and the watcher can start from the app's
   synchronous `setup()` hook, where there's no ambient runtime, so `tokio::spawn` panics there. Spawn through the seam.
+- **❌ Never read a setting or resolve the data dir here.** Policy is the product's: the app turns stored settings into
+  an `IndexConfig` and `set_config` applies it. The `CMDR_*` env knobs are the one deliberate exception (developer
+  diagnostics, documented where they're read).
+- **Every seam degrades, none panics.** No provider means nothing is mounted, no policy means nothing is competing, no
+  sink means events are dropped, no config means `data_dir()` errors. Each is a case callers already handle, so a test
+  binary or a tool works without installing anything.
+- **Vocabulary moves down; questions become seams.** `cmdr_fs::volume::{smb_volume_id, mtp_ids}` is pure string work,
+  so it lives with the volume types rather than as provider methods. If you can compute it from a `&str`, it isn't a
+  seam.
 
 ## Module map
 
 - `runtime.rs` — the tokio runtime background work spawns onto (`set_runtime`, `spawn`, `spawn_blocking`, `block_on`).
-- `policy.rs` — "may background work run right now?": `HostPolicy`, the `Copy` `WorkClearance` snapshot, `AlwaysClear`,
-  and the test `FakeHostPolicy`. Implemented app-side by `priority::host_policy::AppHostPolicy`.
+- `policy.rs` — "may background work run right now?": `HostPolicy`, the `Copy` `WorkClearance` snapshot, the
+  `OpenListing` list, `AlwaysClear`, and the test `FakeHostPolicy`. App side: `priority::host_policy::AppHostPolicy`.
+- `volumes.rs` — what's mounted, where, what kind of storage, plus the SMB upgrade and MTP handle resolution:
+  `VolumeProvider`, `MountFacts`, `NoVolumes`, and the test `FakeVolumeProvider`. App side:
+  `file_system::index_provider::AppVolumeProvider`.
+- `config.rs` — `IndexConfig` in, no settings reads: the data dir plus the media policy. App side:
+  `commands::media_index::index_config_from`.
+- `events.rs` — the injection point for the `EventSink` from `../events/sink.rs`. App side:
+  `events::index_mapping::TauriEventSink`.
 
 Rationale, the fallback runtime, and the QoS argument in full: `DETAILS.md`.

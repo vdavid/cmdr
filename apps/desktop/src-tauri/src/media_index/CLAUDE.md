@@ -21,6 +21,11 @@ autoloads; read it before non-trivial work there.
 The IPC surface lives app-side in `../commands/media_index/`, not here: commands carry `tauri::` and this subsystem
 must not. It reaches back in through `read/`, `gate.rs`, and `network::config`.
 
+❌ **Nothing here reads a settings file.** The app builds an `IndexConfig` (`commands/media_index::index_config_from`)
+and `indexing::host::config::set_config` applies its media half to `gate.rs` and `network/config.rs`, which stay the
+storage the hot paths read. `scheduler::start()` returns the scheduler for the app to manage; it never calls
+`app.manage` itself.
+
 Top-level leaves this file owns: `coverage.rs` (the eligible/accounted caches), `gate.rs` (toggle / scope /
 threshold / parallelism atomics), `writer/` + `writer_registry.rs` (ONE writer thread per volume), `events.rs`,
 `progress.rs`, `thermal.rs`, and `predicate.rs`, whose `qualify_dir` stays PURE.

@@ -21,7 +21,7 @@ a direct one is an `SmbVolume` returning `Some(Direct)`. `ensure_direct_smb` the
 Every refusal is a TYPED `SmbIndexGateReason` (`NotRegistered` / `NotAnSmbVolume` / `UpgradeFailed` /
 `CredentialsNeeded` / `Disconnected`) that crosses IPC as a snake_case tag, never a message substring (per
 `.claude/rules/no-string-matching.md`). FDA-independent: SMB paths aren't TCC-protected, so `start_indexing_for_smb`
-never routes through `should_auto_start_indexing`. Volume access is global (`crate::file_system::get_volume_manager()`,
+never routes through `should_auto_start_indexing`. Volume access goes through the host seam (`host::volumes::current()`,
 a `LazyLock`, no `AppHandle` needed). `smb_volume_id_for_path` probes the mount (`get_smb_mount_info`) and keys by
 `(server, port, share)`.
 
@@ -188,13 +188,13 @@ healthy local drive fell to the SMB path and was refused as `NotAnSmbVolume` (th
 connection gate (a local mount is already directly readable) and NO typed refusal; unlike MTP it uses the local scanner.
 
 **Classification (`classify`)** decides local-external vs fall-through from TYPED facts, never a volume-id/path
-substring: resolve the volume in `VolumeManager`, read its mount root, and check two things — a live smb2 session
+substring: resolve the volume through `host::volumes`, read its mount root, and check two things — a live smb2 session
 (`smb_connection_state().is_some()`) and whether the mount's filesystem is a network type (`is_network_fs_type` over the
 fs-type from `detect_filesystem_for_path`). Either ⇒ fall through to the SMB gate (a network mount must never run the
 local guarded walker). Neither ⇒ `LocalExternal`, indexed via `start_indexing_for_local_external_inner` →
 `start_indexing_for(.., LocalExternal, inodes_trustworthy)`, then `enforce_external_index_cap` (retention, owned by
 `../resources/DETAILS.md`). The pure routing decision (`routes_to_local_external`) is split from the
-wiring so it's unit-testable without a `VolumeManager` or `AppHandle`. Disk images are INCLUDED: a mounted DMG is a real
+wiring so it's unit-testable against a `FakeVolumeProvider`. Disk images are INCLUDED: a mounted DMG is a real
 local filesystem; the first-connect prompt stays `isDriveRow`-gated so a DMG is only ever indexed by an explicit enable.
 
 **The fs-type probe is timeout-guarded** (2 s, on the blocking pool): a hung network mount's `statfs` must never stall

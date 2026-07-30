@@ -12,8 +12,9 @@ The key UX win: showing directory sizes in listings. Design history is in git (f
 Background-indexes each volume into its own per-volume SQLite DB with recursive size aggregates. `mod.rs` is a thin
 public-API facade; the areas:
 
-- **`host/DETAILS.md`** — the host seams: what the subsystems ask the application for, why each one is a seam rather
-  than an import, and why the runtime swap can't cost us thread QoS.
+- **`host/DETAILS.md`** — the host seams (runtime, policy, volumes, config, events): what the subsystems ask the
+  application for, why each one is a seam rather than an import, why the runtime swap can't cost us thread QoS, and
+  where cancellation stands.
 - **`lifecycle/DETAILS.md`** — the per-volume registry, `IndexPhase` machine, `IndexManager` coordinator
   (+ its `network_scan` trait-scan dispatch), scan completion, the freshness state machine, the Failed state, the
   lifecycle bus, and `IndexVolumeKind`'s two-axis capability model.

@@ -92,3 +92,57 @@ also what makes them safe to run in parallel.
 The counter is not incidental: it's the evidence for the per-batch dispatch rule. With four directories of 250 files,
 a compliant walk asks 15 times; adding a single `clearance()` call to the per-entry loop takes it to 1,015 and the
 guard fails.
+
+## The volume seam
+
+`VolumeProvider` covers four things the app is the only one that can answer: what's registered right now, what
+filesystem a path sits on, how to turn an OS-mounted share into a direct smb2 session, and what a PTP object handle
+resolves to. All at human cadence — once per scan start, per watch event, per enrichment pass.
+
+**What deliberately isn't on it.** Volume ID vocabulary: `mtp_ids` was nine references to pure string work with no host
+behind it, so it moved to `cmdr-fs` beside `smb_volume_id` rather than becoming four trait methods. The test is whether
+you could compute the answer from a `&str`.
+
+**`MountFacts` is two decisions, not a `FilesystemKind`.** The index acts on exactly two things — may the local walker
+touch this mount, and may the rename pre-pass trust its inodes — and both are host judgments: the kind → network
+mapping is per-platform, and the probe itself can block for minutes on a wedged mount. Returning the two flags moved
+the whole macOS/Linux fork out of `transports/local_external`.
+
+**Why the provider slot is an `RwLock`, unlike the runtime and the policy.** Tests swap it. Three tests used to
+register real `LocalPosixVolume`s into the process-wide `VolumeManager`, which is exactly the coupling the extraction
+removes; they now build a `FakeVolumeProvider` and install it under a guard that restores on drop. The slot is still
+process-wide, so `test_lock()` serializes them for a plain `cargo test` (nextest's process-per-test wouldn't need it).
+
+## The config seam
+
+`IndexConfig` is an INPUT value, not a stored snapshot. `set_config` pushes the media half straight into the gate
+atomics and the network-enrichment config, and keeps only the data dir.
+
+**That asymmetry is the design, not an oversight.** The media-policy IPC setters live-apply single fields as the user
+moves a slider, so a stored copy of `enabled` or `scope` here would go stale the moment one ran, and "what is the index
+configured to do" would have two answers. The gate atomics stay the one place those values live; the data dir has no
+other home, so it lives here.
+
+`commands/media_index::index_config_from` is where settings become policy — every default, every migration fallback
+(the pre-setting scope inference), every clamp. Nothing inside the index reads a settings file.
+
+## The event seam
+
+`events.rs` is only an injection point; the trait and the `IndexEvent` enum belong to `../events/`. It exists because
+two places START a subsystem — a drive index and the media scheduler — and both used to build an app-side
+`TauriEventSink` inline, which put the app's event mapping back inside the index. Everything downstream already threads
+`Arc<dyn EventSink>` through constructors, which is the shape to keep: read the seam where a subsystem starts, then
+pass it down.
+
+## Cancellation is still `Arc<AtomicBool>`
+
+The plan wants one cancellation primitive, `tokio_util::sync::CancellationToken`, replacing the `Arc<AtomicBool>` flags.
+That isn't done, and it isn't index-internal: `Volume::list_directory_for_scan` and `list_directory_with_cancel` carry
+`Option<&Arc<AtomicBool>>` in **`cmdr-fs`**, implemented by every real backend (SMB in two files, MTP in two). So the
+swap is a `cmdr-fs` trait change plus every implementor plus ~100 call sites, and a partial swap would leave two
+primitives, which is worse than one.
+
+Also unresolved with it: whether a cancelled scan should return a distinct error variant instead of
+`ScanSummary { was_cancelled: true }`. Cancellation IS observable today — it's a returned value, not a silent early
+return — but the variant would fork the completion handler's arms, and that handler decides whether `scan_completed_at`
+gets written. A false "complete" permanently strands an index, so this is not a change to make in passing.

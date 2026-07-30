@@ -121,7 +121,7 @@ bulk writes via `BulkReconcileGuard`. The remaining lever is fewer round trips p
 
 The walk's listing budget isn't a constant: at every top-up it asks `ScanPacer::listing_budget()`, which returns
 `FULL_LISTING_BUDGET` (64) while the share is quiet and `YIELDING_LISTING_BUDGET` (1) while a higher-priority claim
-holds it — the user browsing it, OR a user-initiated transfer touching it (`crate::priority`'s order: interactive >
+holds it — the user browsing it, OR a user-initiated transfer touching it (the host's order: interactive >
 transfers > indexing; the transfer signal is `priority::transfers`' per-volume gauge). Both the fresh scan and the
 reconcile walk read it. **Why it exists:** a scan and the pane's own listings share ONE SMB
 session (every `SmbVolume` clone multiplexes frames over the same connection), so 64 in-flight listings bury a

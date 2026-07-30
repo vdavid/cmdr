@@ -26,7 +26,7 @@ same local-vs-remote predicate the archive backend uses for its byte source). Wh
   captured runtime handle + `block_on`, sound because enrichment fetch runs on `spawn_blocking`/plain worker threads,
   never a runtime worker (the archive backend's `VolumeByteSource` bridge). The whole read sits under
   `tokio::time::timeout` ⇒ a hung transport is a `Disconnected` pause, never a wedge.
-- The mount root still comes from `VolumeManager::get(volume_id).root()` — the same source
+- The mount root still comes from `host::volumes::current().get(volume_id).root()` — the same source
   `indexing::paths::routing::index_read_path` uses for its read-side mount strip — and `Volume` impls accept
   mount-absolute display paths, so the os-joined path feeds both fetchers unchanged.
 
@@ -58,7 +58,7 @@ direct fetcher also short-circuits on an over-cap size hint, without touching th
 Typed knobs (`ConservativeFetchPolicy`), each a real gate, not a comment:
 
 - **Priority-gated.** The pass proceeds only while the volume is CLEAR of higher-priority work
-  (`volume_clear_for_enrichment`, pure and tested — `crate::priority`'s order: interactive > transfers > indexing): the
+  (`volume_clear_for_enrichment`, pure and tested — the host's order: interactive > transfers > indexing): the
   app has been foreground-idle for `idle_threshold` (default 5 s) AND no user-initiated transfer is touching this
   volume (`priority::transfers`). `priority::foreground` holds the process-global "last foreground activity"
   timestamps, stamped by the hot foreground filesystem IPC (directory listing = every navigation); the pure

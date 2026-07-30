@@ -24,8 +24,9 @@ the pattern to copy (`network_scanner/DETAILS.md` § "Rebuilding an index that p
 Each area subdir has its own `CLAUDE.md` (must-knows) + `DETAILS.md` (depth). Touch a dir and its `CLAUDE.md`
 autoloads; read it before non-trivial work there.
 
-- **`host/CLAUDE.md`** — the seams the subsystems reach their host through (the injected tokio runtime, and the rest as
-  they land). ❌ Anything the app must answer arrives here, never as a `crate::<app module>` import.
+- **`host/CLAUDE.md`** — the four seams the subsystems reach their host through: the injected tokio runtime, the
+  background-work priority policy, the volume registry + mount classification, and the config. ❌ Anything the app must
+  answer arrives here, never as a `crate::<app module>` import. These three trees reference no app module at all.
 - **`lifecycle/CLAUDE.md`** — the registry + `IndexPhase` machine + `IndexManager` coordinator + scan completion +
   freshness + failure + the lifecycle bus. Owns the per-volume registry, lock discipline, and the master
   drive-indexing switch (`indexing.enabled`), a hard gate over every per-drive choice.

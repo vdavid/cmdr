@@ -93,7 +93,7 @@ id its volume and index register under:
    `{device}:{storage}`.
 3. **Local external mount** — `external_mount_volume_id_for_path`: fast-reject with
    `scanner::is_on_mounted_external_volume` (a pure prefix check, no registry lock) so ONLY a path under an excluded
-   mount prefix (`/Volumes`, `/mnt`, `/media`) can leave `root`, then route by the `VolumeManager` registry
+   mount prefix (`/Volumes`, `/mnt`, `/media`) can leave `root`, then route by the host's volume registry
    (`mount_id_for_path`, the longest non-root ancestor mount). The fast-reject is the load-bearing trap-guard: a
    registered cloud-drive folder in the home dir (`~/Library/CloudStorage/…`) is a non-root registered volume too, but
    `root`'s index owns it — a naive "any registered non-root volume" prefix match would divert it to an index-less id
