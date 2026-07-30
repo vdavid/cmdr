@@ -8,6 +8,14 @@
 //! matrix, and `backends/CLAUDE.md` for the per-backend decisions and gotchas
 //! that drive each implementation here.
 
+// `InMemoryVolume` and its read stream are test-only scaffolding, and the archive
+// reading core carries a few accessors (`ArchiveIndex::has_encrypted_entries`,
+// `ArchiveEntryReader::bytes_read`, `BytesSource`, …) that only its own tests call.
+// `#![deny(unused)]` at the crate root would flag both against a non-test build.
+// Scoped to `backends`: the trait, its types, the manager, eject, and
+// `friendly_error` are all fully live, so don't widen this back up the tree.
+#![allow(dead_code, reason = "Test-only backends and archive-core accessors")]
+
 // Archive reading core (zip). Cross-platform (pure Rust), so it isn't gated
 // like the mtp/smb backends. The `ArchiveVolume` `Volume` impl is built on top
 // of this.
@@ -38,7 +46,7 @@ pub use smb::SmbVolume;
 // having to spell `crate::file_system::volume::...` everywhere.
 pub(crate) use super::{
     BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SmbConnectionState, SourceItemInfo,
-    SpaceInfo, Volume, VolumeError, VolumeReadStream, VolumeScanner, VolumeWatcher,
+    SpaceInfo, Volume, VolumeError, VolumeReadStream,
 };
 
 #[cfg(test)]

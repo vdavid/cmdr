@@ -15,7 +15,7 @@ FTP). Callers never touch the filesystem directly; they call `Volume` methods wi
 
 ## Key files
 
-- **`mod.rs`**: `Volume` trait (async: most methods return `Pin<Box<dyn Future>>`; sync: `name`, `root`, `supports_*`, `local_path`, `space_poll_interval`) plus the `VolumeScanner`, `VolumeWatcher`, and `VolumeReadStream` sub-traits. Re-exports `types::*` and `ids::*`
+- **`mod.rs`**: `Volume` trait (async: most methods return `Pin<Box<dyn Future>>`; sync: `name`, `root`, `supports_*`, `local_path`, `space_poll_interval`) plus the `VolumeReadStream` and `SequentialExtract` sub-traits. Re-exports `types::*` and `ids::*`
 - **`types.rs`**: the data types the trait exchanges (`VolumeError` + its `Display`/`Error`/`From<io::Error>` impls, `SpaceInfo`, `CopyScanResult`, `BatchScanResult`, `ScanConflict`, `SourceItemInfo`, `LaneKey`, `ListingProgress`, `MutationEvent`, `SmbConnectionState`)
 - **`ids.rs`**: the volume ID helpers (`path_to_id`, `smb_volume_id`)
 - **`manager.rs`**: `VolumeManager`: thread-safe `RwLock<HashMap>` registry; supports a default volume
@@ -27,14 +27,17 @@ FTP). Callers never touch the filesystem directly; they call `Volume` methods wi
 ```
 VolumeManager (registry)
   └─ Arc<dyn Volume>  (async trait: most methods return Pin<Box<dyn Future>>)
-        ├─ LocalPosixVolume   → real FS (spawn_blocking for I/O), FSEvents watcher, guarded-walker scanner
+        ├─ LocalPosixVolume   → real FS (spawn_blocking for I/O)
         ├─ MtpVolume          → direct async MTP ops
         ├─ SmbVolume          → direct async smb2 ops (direct protocol, not OS mount)
         └─ InMemoryVolume     → HashMap, test/stress use only
 ```
 
-`VolumeScanner` and `VolumeWatcher` are separate sub-traits returned by `Volume::scanner()` and `Volume::watcher()`.
-Only `LocalPosixVolume` implements both today.
+**Drive indexing does NOT go through `Volume`.** The local scanner and the FSEvents watcher are called directly by the
+indexing lifecycle (`indexing::scanner::{scan_volume, scan_subtree}`, `DriveWatcher::start`), dispatched on
+`VolumeKind::uses_local_scanner()`; SMB and MTP index through `network_scanner::scan_volume_via_trait`, a BFS over
+`Volume::list_directory`. So `list_directory` is the only volume abstraction the indexer uses, and a new backend gets
+indexed by implementing it, not by implementing an indexing hook.
 
 Every non-forced `LocalPosixVolume::rename` is atomic-no-overwrite. macOS uses `renamex_np(RENAME_EXCL)` and Linux uses
 `renameat2(RENAME_NOREPLACE)`, covering the boot volume, attached local volumes, and cloud folders registered under
@@ -44,7 +47,7 @@ their own volume IDs. A separate metadata check followed by plain `rename` is no
 
 Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new volume types can be added incrementally. Key capability flags:
 
-- `supports_watching()`: enables the `notify`-based *listing* file watcher in `operations.rs` (separate from the `VolumeWatcher` trait used for drive indexing). `MtpVolume` returns `false` (it has its own USB event loop).
+- `supports_watching()`: enables the `notify`-based *listing* file watcher in `operations.rs` (separate from the drive-index watcher, which the indexing lifecycle owns). `MtpVolume` returns `false` (it has its own USB event loop).
 - `supports_export()`: "this volume can stream its bytes via `open_read_stream`" (so it can act as a source in a cross-volume copy). Gates the copy dialog's "copy from this volume" UI. Local, MTP, SMB, and InMemory return `true`.
 - `supports_streaming()`: enables cross-volume transfers via `open_read_stream` / `write_from_stream`. `LocalPosixVolume`, `MtpVolume`, `SmbVolume`, and `InMemoryVolume` all return `true`. This is the universal byte path for every non-APFS-clone copy. New backends just implement the two streaming methods to get cross-volume copy for free.
 - `max_concurrent_ops()`: how many streaming copies the copy engine can drive in parallel against this volume. The batch copy path takes `min(src.max_concurrent_ops(), dst.max_concurrent_ops(), 32)` and spawns that many `FuturesUnordered` tasks. Defaults to `1` (safe for any new backend). Current values: `LocalPosixVolume` returns `available_parallelism()/2` clamped to 4..=16; `SmbVolume` returns 10 (currently hardcoded; eventually wires to `network.smbConcurrency`); `MtpVolume` returns 1 (USB bulk transport is serial); `InMemoryVolume` returns 32.
@@ -55,7 +58,6 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `attempt_reconnect()`: tries to rebuild the volume's underlying session in place after a transient connection loss. Default `Err(NotSupported)`. Only `SmbVolume` overrides today; the Tauri command `reconnect_smb_volume` and the FE reconnect manager call this on each backoff tick. Idempotent and single-flight: concurrent callers wait on the same in-flight attempt instead of dog-piling the server.
 - `reconnect_with_credentials(username, password)`: reconnect with freshly-entered credentials, replacing whatever was cached. Default `Err(NotSupported)`; `SmbVolume` persists the new password (so the next reconnect is silent) then runs `attempt_reconnect`. Invoked by the Tauri command `reconnect_smb_volume_with_credentials` behind the "Sign in" prompt shown after an auth-failure reconnect give-up.
 - `on_unmount()`: lifecycle hook called before unregistration. `SmbVolume` uses it to disconnect its smb2 session. Default is no-op.
-- `scanner()` / `watcher()`: drive indexing hooks; `None` by default.
 - `begin_scan_session()` / `end_scan_session()`: default-no-op async hooks the indexing lifecycle
   (`indexing/lifecycle/network_scan.rs`) calls right before and after a background `Volume`-trait scan/reconcile walk.
   Let a backend open scan-scoped resources for the duration of a walk. `SmbVolume` overrides them to open/close a pool of
@@ -147,7 +149,6 @@ Everything below is optional per the trait (methods default to `Err(NotSupported
 - [ ] Override `lane_key()` to a STABLE identifier for the shared physical resource a transfer contends on (MTP device serial, SMB server+share, local mount root). The operation manager serializes write ops that share a lane (budget 1) and parallelizes disjoint ones; the default returns the volume root, which is right for an independent mount but would over-serialize if multiple `Volume` instances actually share one device/pipe. See `../write_operations/DETAILS.md` § "Operation manager".
 - [ ] Override `space_poll_interval()` to whatever polling cadence your backend can afford (local 2 s, network 5 s, none = don't poll).
 - [ ] If the volume needs async teardown (session close, handle drop), implement `on_unmount`. The default is a no-op.
-- [ ] If the backend participates in drive indexing, implement `scanner()` and `watcher()`. Today only `LocalPosixVolume` does.
 - [ ] Add a branch to `detect_provider` / `provider_suggestion` in `friendly_error/provider.rs` (see `friendly_error/CLAUDE.md`) if there's a recognizable path shape or fs type worth calling out in friendly errors.
 - [ ] Add a capability-matrix row below and update the `docs/architecture.md` volume line if the shape changes meaningfully.
 
@@ -286,8 +287,8 @@ lifecycle for a LocalExternal index (the wedge-safe ordering)" for the full inci
 **Decision**: Trait with optional methods defaulting to `NotSupported`/`false`
 **Why**: New volume types (SMB, S3, FTP) will have vastly different capability sets. Forcing every implementor to stub out every method would be noisy and error-prone. Defaults let new backends start with just `list_directory` + `get_metadata` and opt in to capabilities incrementally. The alternative (a capabilities bitfield) would require runtime checks everywhere and couldn't express return-type differences.
 
-**Decision**: `VolumeScanner` and `VolumeWatcher` are separate sub-traits, not part of `Volume`
-**Why**: Scanning and watching have their own lifetimes, threading models, and state (handles, channels). Folding them into `Volume` would force every volume to carry scanner/watcher state even if it never indexes. Returning `Option<Box<dyn VolumeScanner>>` keeps the core trait lightweight.
+**Decision**: drive indexing has no hook on `Volume`
+**Why**: the indexer reaches a volume in exactly two ways, and neither wants a per-volume plugin object. The local disk is scanned and watched by concrete calls from the lifecycle layer, chosen by volume KIND; every other transport is walked through `Volume::list_directory`. A `scanner()` / `watcher()` pair on the trait was written for "future backends", and the backends that arrived (SMB, MTP) chose the BFS shape instead, so it sat uncalled. Don't re-add it: an abstraction with one implementor and no caller costs a real dependency (`file_system` → `indexing`) to buy nothing.
 
 **Decision**: `VolumeManager` uses `RwLock<HashMap>` (not `DashMap` or `Mutex`)
 **Why**: Volume registration/unregistration is rare (mount/unmount events); reads are frequent (every file operation resolves a volume). `RwLock` gives concurrent read access without pulling in an extra dependency. `DashMap` would work but is heavier than needed for a registry that rarely exceeds ~10 entries.

@@ -5,8 +5,8 @@ operation goes through a `Volume`, with **paths relative to the volume root**.
 
 ## Module map
 
-- `mod.rs`: the `Volume` trait (mostly async methods returning `Pin<Box<dyn Future>>`) and the `VolumeScanner` /
-  `VolumeWatcher` / `VolumeReadStream` sub-traits. Re-exports `types::*` and `ids::*`.
+- `mod.rs`: the `Volume` trait (mostly async methods returning `Pin<Box<dyn Future>>`) plus the `VolumeReadStream`
+  and `SequentialExtract` sub-traits. Re-exports `types::*` and `ids::*`.
 - `types.rs`: the data types the trait exchanges (`VolumeError`, `SpaceInfo`, `CopyScanResult`, `LaneKey`, …).
 - `ids.rs`: the volume ID helpers (`path_to_id`, `smb_volume_id`).
 - `manager.rs`: `VolumeManager`, a thread-safe `RwLock<HashMap>` registry with a default volume.

@@ -5,8 +5,8 @@ checklist live in the parent `../CLAUDE.md` + `../DETAILS.md`.
 
 ## Module map
 
-- `local_posix.rs`: `LocalPosixVolume`, real filesystem; delegates listing/indexing/watching to `file_system::listing`
-  + `indexing`, copy scan via `walkdir`, space via `libc::statvfs` FFI.
+- `local_posix.rs`: `LocalPosixVolume`, real filesystem; delegates listing to `file_system::listing`, copy scan via
+  `walkdir`, space via `libc::statvfs` FFI.
 - `mtp.rs`: `MtpVolume`, MTP device storage; direct async MTP calls, `MtpReadStream` (bounded-window reads).
   macOS/Linux only.
 - `smb/`: `SmbVolume`, direct async smb2. `mod.rs` owns the struct + `connect_smb_volume`;

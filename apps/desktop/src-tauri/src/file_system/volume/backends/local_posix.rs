@@ -1,22 +1,14 @@
 //! Local POSIX file system volume implementation.
 
-use super::{
-    CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, VolumeScanner,
-    VolumeWatcher,
-};
+use super::{CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream};
 use crate::file_system::git;
 use crate::file_system::listing::{FileEntry, get_single_entry, list_directory_core};
 #[cfg(feature = "playwright-e2e")]
 use crate::ignore_poison::IgnorePoison;
-use crate::indexing::scanner::{self, ScanConfig, ScanError, ScanHandle, ScanSummary};
-use crate::indexing::watch::watcher::{DriveWatcher, FsChangeEvent, WatcherError};
-use crate::indexing::writer::IndexWriter;
 use std::future::Future;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
-use std::sync::atomic::AtomicBool;
-use tokio::sync::mpsc;
 use tokio::task::spawn_blocking;
 use walkdir::WalkDir;
 
@@ -764,52 +756,6 @@ impl Volume for LocalPosixVolume {
                 .await
                 .expect("spawn_blocking get_space_info closure doesn't panic and the task is uncancelable")
         })
-    }
-
-    fn scanner(&self) -> Option<Box<dyn VolumeScanner>> {
-        Some(Box::new(LocalPosixScanner))
-    }
-
-    fn watcher(&self) -> Option<Box<dyn VolumeWatcher>> {
-        Some(Box::new(LocalPosixWatcher))
-    }
-}
-
-// ── Indexing trait implementations ────────────────────────────────────
-
-/// Scanner for local POSIX volumes using the guarded walker's parallel directory traversal.
-struct LocalPosixScanner;
-
-impl VolumeScanner for LocalPosixScanner {
-    fn scan_volume(
-        &self,
-        config: ScanConfig,
-        writer: &IndexWriter,
-    ) -> Result<(ScanHandle, std::thread::JoinHandle<Result<ScanSummary, ScanError>>), ScanError> {
-        scanner::scan_volume(config, writer)
-    }
-
-    fn scan_subtree(
-        &self,
-        root: &Path,
-        writer: &IndexWriter,
-        cancelled: &AtomicBool,
-    ) -> Result<ScanSummary, ScanError> {
-        scanner::scan_subtree(root, writer, cancelled)
-    }
-}
-
-/// Watcher for local POSIX volumes using macOS FSEvents via cmdr-fsevent-stream.
-struct LocalPosixWatcher;
-
-impl VolumeWatcher for LocalPosixWatcher {
-    fn watch(
-        &self,
-        root: &Path,
-        since_when: u64,
-        event_sender: mpsc::UnboundedSender<FsChangeEvent>,
-    ) -> Result<DriveWatcher, WatcherError> {
-        DriveWatcher::start(root, since_when, event_sender)
     }
 }
 
