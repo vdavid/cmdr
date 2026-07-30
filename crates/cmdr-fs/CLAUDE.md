@@ -28,9 +28,11 @@ editing app code; use `cmdr_fs::…` from another crate.
 - **`Volume::notify_mutation` defaults to a no-op.** A new mutable backend must override it or its destination pane goes
   stale after a copy; the local-FS behavior lives app-side in
   `file_system::listing::mutation::patch_listing_after_local_mutation`. `DETAILS.md` § "What the app kept".
-- **`thread_qos` no-ops under `cfg(test)` OR the `testing` feature, and the feature half is load-bearing.** `cfg(test)`
-  isn't set when a consumer compiles this crate, so without the feature the real Utility QoS would apply inside every
-  consumer's parallel test run and starve slow tests past their timeouts. It did.
+- **❌ Never gate BEHAVIOR on `cfg(test)` in this crate; use `any(test, feature = "testing")`.** `cfg(test)` is set only
+  while compiling a crate's own test target, so in a consumer's test build the arm silently flips and production
+  behavior runs inside their suite. `thread_qos`'s no-op was `not(test)` and started applying the real Utility QoS to
+  the app's background threads, starving a walker test past its watchdog. It compiles clean and surfaces as someone
+  else's flake. `DETAILS.md` § "Gotcha: `cfg(test)`-conditioned BEHAVIOR".
 - **Turn the `testing` feature on through a dev-dependency, never a normal one.** That's what keeps it out of shipped
   builds. It gates `testing::wait_until` / `wait_until_async` and the QoS no-op together.
 - **Nothing here produces user-facing prose.** Errors carry typed reasons and structured params; the frontend renders

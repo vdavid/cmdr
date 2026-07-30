@@ -98,21 +98,34 @@ Already deleted before this crate existed: `VolumeScanner`, `VolumeWatcher`, `Vo
 and their `LocalPosixVolume` implementations. They were the `file_system → indexing` half of the cycle and had zero
 callers.
 
-## The trap that only showed up at runtime
+## Gotcha: `cfg(test)`-conditioned BEHAVIOR stops meaning anything in a dependency
 
-`thread_qos::set_current_thread_qos` was `#[cfg(all(target_os = "macos", not(test)))]`. That `not(test)` silently stops
-meaning anything the moment the code becomes a dependency: `cfg(test)` is set only while compiling a crate's _own_ test
-target, so the app's tests started applying the real `QOS_CLASS_UTILITY` to their background threads. Under nextest's
-one-process-per-core parallelism that starved a walker test past its stall watchdog, and
-`walker::tests::a_read_that_keeps_delivering_is_never_abandoned` failed for a completely real reason.
+**Any `cfg(test)` that gates BEHAVIOR — not just a test module — silently changes meaning the moment its code moves
+into a crate somebody else depends on.** `cfg(test)` is set only while compiling a crate's OWN test target. A
+consumer's `#[test]`s compile this crate as a plain dependency, where it is NOT set, so the "test build" arm quietly
+stops being taken and production behavior starts running inside everyone's test suite.
 
-The condition is now `not(any(test, feature = "testing"))`. The lesson generalizes: **any `cfg(test)`-conditioned
-BEHAVIOR (not just a test module) changes meaning when its code moves into a dependency.** Grep for it before moving
-anything else down.
+**Grep for `cfg(test)` and `cfg(not(test))` outside `mod tests` declarations before moving any code down here.** The
+replacement is `any(test, feature = "testing")` (or `not(any(…))`), with consumers switching the feature on through a
+**dev-dependency** so it stays off in shipped builds.
 
-The same shape bit once more, harmlessly: the `Volume::inject_error` E2E hook is `#[cfg(feature = "playwright-e2e")]`, a
-feature that lived only on the app. This crate now declares its own, and the app's enables it via
-`cmdr-fs/playwright-e2e`.
+**Why this rates a gotcha rather than a footnote**: it is invisible at the call site, it compiles clean, and it fails
+as a *timing* symptom in unrelated tests. `thread_qos::set_current_thread_qos` was
+`#[cfg(all(target_os = "macos", not(test)))]`; moving it here started applying the real `QOS_CLASS_UTILITY` to the
+app's background threads during the app's own test run. Under nextest's one-process-per-core parallelism that starved
+a walker test past its stall watchdog and
+`indexing::scanner::walker::tests::a_read_that_keeps_delivering_is_never_abandoned` began failing — a genuine failure
+that reads exactly like flakiness. Nothing about the diff suggested thread scheduling.
+
+**This applies to `cmdr-index` too, and harder.** `set_current_thread_qos` is called from seven sites across
+`scanner/`, `writer/`, and `reconcile/` — all code that moves into that crate. When it does, the same question has to
+be asked of every `cfg(test)` in the moving trees, and the QoS no-op has to keep working from a *third* crate. It is
+the property that kept indexing in-process at all.
+
+The same shape bit once more, harmlessly: the `Volume::inject_error` E2E hook is `#[cfg(feature = "playwright-e2e")]`,
+a feature that lived only on the app. This crate now declares its own, and the app's enables it via
+`cmdr-fs/playwright-e2e`. A feature name that isn't declared in the crate you move code into doesn't error — it warns
+about an "unexpected `cfg` condition value" and takes the false branch forever.
 
 ## What the app kept, and why
 
