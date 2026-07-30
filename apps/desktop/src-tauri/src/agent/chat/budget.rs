@@ -457,12 +457,12 @@ mod tests {
             assert_eq!(
                 resolved.source,
                 BudgetSource::FamilyTable,
-                "{model} ships as a provider preset's default, so the table must know its window; \
-                 without a row it silently takes {DEFAULT_PROMPT_TOKEN_BUDGET} of a far larger window"
+                "a provider preset defaults to {model}, so the table must know its window; \
+                 without a row it silently takes a {DEFAULT_PROMPT_TOKEN_BUDGET}-token slice of a far larger window"
             );
             assert_eq!(
                 resolved.prompt_tokens, PROMPT_BUDGET_60K,
-                "{model} carries 128,000 or more"
+                "the table gives {model} a window of at least 128,000"
             );
         }
     }
@@ -594,8 +594,8 @@ mod tests {
         let floored = budget_for_window(MIN_LOCAL_CONTEXT_TOKENS as usize);
         assert!(
             floored > FIXED_PROMPT_OVERHEAD_TOKENS + MAX_TOOL_RESULT_TOKENS / 2,
-            "the floor exists so a local user gets a working turn: {floored} tokens against \
-             {FIXED_PROMPT_OVERHEAD_TOKENS} of prefix"
+            "the floor exists so a local user gets a working turn: a budget of {floored} against \
+             a prefix of {FIXED_PROMPT_OVERHEAD_TOKENS}"
         );
         assert!(
             files_per_batch(floored) > 0,
@@ -633,7 +633,7 @@ mod tests {
             let plan_output = rows * PLAN_ROW_TOKENS_PER_FILE;
             assert!(
                 plan_output <= AGENT_MAX_OUTPUT_TOKENS as usize - REASONING_RESERVE_TOKENS,
-                "a {budget}-token budget advertises {rows} files = {plan_output} output tokens, \
+                "a {budget}-token budget advertises a batch of {rows}, needing output of {plan_output}, \
                  past what one reply can emit alongside its reasoning"
             );
         }

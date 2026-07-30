@@ -396,3 +396,11 @@ prefix would trip the unused-key check).
 - **The send command returns early and streams on a worker thread.** `run_turn` holds a non-`Send` rusqlite `Connection`
   across awaits, so its future can't live on the Tauri command future or a multi-thread tokio task; a dedicated thread
   with a current-thread runtime sidesteps that. See `commands/agent/`.
+
+## Known size warns (follow-ups, not allowlists)
+
+`ask-cmdr-trigger.svelte.ts` is past the 800-line warn. It is NOT allowlisted, on purpose: the honest fix is to move
+`askCmdrState` (and its type) into its own module so the rename-review and undo slices can live in their own files.
+Today every candidate slice mutates that state, so extracting one while the state stays here would create an import
+cycle (the `import-cycles` check would fail). Do the state extraction first, then split; don't allowlist the length
+instead.

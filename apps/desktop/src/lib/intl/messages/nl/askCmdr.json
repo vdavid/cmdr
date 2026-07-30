@@ -601,6 +601,11 @@
     "sourceHash": "8a95b9e"
   },
   "askCmdr.context.label": "Hoe vol deze chat is",
+  "@askCmdr.context.label": {
+    "sourceHash": "8451f61"
+  },
   "askCmdr.context.tooltip": "{usedText} van {budgetText} tokens gebruikt (geschat)",
-  "askCmdr.context.setAside": "Oudere delen van deze chat zijn apart gezet om ruimte te maken. Uit dit antwoord is niets weggelaten."
+  "@askCmdr.context.tooltip": {
+    "sourceHash": "3b4eef0"
+  }
 }

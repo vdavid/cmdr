@@ -597,6 +597,11 @@
     "sourceHash": "8a95b9e"
   },
   "askCmdr.context.label": "Mức lấp đầy của cuộc trò chuyện này",
+  "@askCmdr.context.label": {
+    "sourceHash": "8451f61"
+  },
   "askCmdr.context.tooltip": "Đã dùng {usedText} trên {budgetText} token (ước tính)",
-  "askCmdr.context.setAside": "Các phần cũ hơn của cuộc trò chuyện đã được đặt sang một bên để có thêm chỗ. Không có gì trong câu trả lời này bị bỏ sót."
+  "@askCmdr.context.tooltip": {
+    "sourceHash": "3b4eef0"
+  }
 }

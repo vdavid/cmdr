@@ -598,6 +598,11 @@
     "sourceHash": "8a95b9e"
   },
   "askCmdr.context.label": "Hur full den här chatten är",
+  "@askCmdr.context.label": {
+    "sourceHash": "8451f61"
+  },
   "askCmdr.context.tooltip": "{usedText} av {budgetText} tokens använda (uppskattat)",
-  "askCmdr.context.setAside": "Äldre delar av den här chatten lades åt sidan för att ge plats. Inget i det här svaret utelämnades."
+  "@askCmdr.context.tooltip": {
+    "sourceHash": "3b4eef0"
+  }
 }

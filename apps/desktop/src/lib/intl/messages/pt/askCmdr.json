@@ -599,6 +599,11 @@
     "sourceHash": "8a95b9e"
   },
   "askCmdr.context.label": "O quanto este chat está cheio",
+  "@askCmdr.context.label": {
+    "sourceHash": "8451f61"
+  },
   "askCmdr.context.tooltip": "{usedText} de {budgetText} tokens usados (estimado)",
-  "askCmdr.context.setAside": "Partes mais antigas deste chat foram postas de lado para abrir espaço. Nada desta resposta ficou de fora."
+  "@askCmdr.context.tooltip": {
+    "sourceHash": "3b4eef0"
+  }
 }

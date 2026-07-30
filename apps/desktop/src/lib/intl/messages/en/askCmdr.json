@@ -783,9 +783,5 @@
   "askCmdr.context.tooltip": "{usedText} of {budgetText} tokens used (estimated)",
   "@askCmdr.context.tooltip": {
     "description": "Tooltip on the context-usage gauge. usedText and budgetText are preformatted numbers (with thousands separators). Both are chars/4 estimates, never a tokenizer's count, so the copy says so."
-  },
-  "askCmdr.context.setAside": "Older parts of this chat were set aside to make room. Nothing from this answer was left out.",
-  "@askCmdr.context.setAside": {
-    "description": "Timeline line shown when the budget pushed older lookups out of a turn's context. Reassures that the current answer is complete."
   }
 }

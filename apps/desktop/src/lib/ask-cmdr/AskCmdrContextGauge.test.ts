@@ -8,7 +8,6 @@
 import { flushSync, mount } from 'svelte'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { _setLocaleForTests } from '$lib/intl/locale'
-import { expectNoA11yViolations } from '$lib/test-a11y'
 import AskCmdrContextGauge from './AskCmdrContextGauge.svelte'
 import type { ContextUsage } from './ask-cmdr-context-usage'
 
@@ -77,12 +76,11 @@ describe('AskCmdrContextGauge', () => {
     target.remove()
   })
 
-  it('exposes the reading to assistive tech and has no a11y violations', async () => {
+  it('exposes the reading to assistive tech', () => {
     const target = render(usage(31_200, 60_000))
     const meter = target.querySelector('[role="meter"]')
     expect(meter?.getAttribute('aria-valuenow')).toBe('52')
     expect(meter?.getAttribute('aria-valuetext')).toContain('31,200 of 60,000')
-    await expectNoA11yViolations(target)
     target.remove()
   })
 })

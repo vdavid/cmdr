@@ -114,7 +114,7 @@ fn a_stub_costs_a_small_fraction_of_the_result_it_replaces() {
     );
     assert!(
         stub_tokens * 20 < full,
-        "the stub ({stub_tokens}) must cost a small fraction of the {full} tokens it replaces"
+        "the stub ({stub_tokens}) must cost a small fraction of the {full} it replaces"
     );
 
     // A pathological result: 40 keys, each an array of wide objects under a long name.

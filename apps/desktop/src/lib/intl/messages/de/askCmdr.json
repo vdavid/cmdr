@@ -599,6 +599,11 @@
     "sourceHash": "8a95b9e"
   },
   "askCmdr.context.label": "Wie voll dieser Chat ist",
+  "@askCmdr.context.label": {
+    "sourceHash": "8451f61"
+  },
   "askCmdr.context.tooltip": "{usedText} von {budgetText} Tokens genutzt (geschätzt)",
-  "askCmdr.context.setAside": "Ältere Teile dieses Chats wurden zur Seite gelegt, um Platz zu schaffen. Aus dieser Antwort fehlt nichts."
+  "@askCmdr.context.tooltip": {
+    "sourceHash": "3b4eef0"
+  }
 }

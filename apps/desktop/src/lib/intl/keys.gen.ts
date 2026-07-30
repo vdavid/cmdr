@@ -125,7 +125,6 @@ export type MessageKey =
   | 'askCmdr.consent.noContents'
   | 'askCmdr.consent.title'
   | 'askCmdr.context.label'
-  | 'askCmdr.context.setAside'
   | 'askCmdr.context.tooltip'
   | 'askCmdr.cost.estimate'
   | 'askCmdr.cost.free'

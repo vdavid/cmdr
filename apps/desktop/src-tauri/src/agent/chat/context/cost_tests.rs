@@ -87,7 +87,7 @@ fn assert_near(measured: usize, documented: usize, what: &str) {
     let slack = documented / 10;
     assert!(
         measured.abs_diff(documented) <= slack,
-        "{what} costs {measured} estimated tokens; the documented figure is {documented} (±{slack}). \
+        "the measured cost of {what} is {measured}; the documented figure is {documented} (±{slack}). \
          If the change is intended, update it HERE and in the plan's measured-ground-truth section."
     );
 }
@@ -179,7 +179,7 @@ fn a_batch_the_hint_promises_actually_fits_its_budget() {
         let (tokens, elided, _) = assemble_rename_turn(files, budget);
         assert!(
             tokens <= budget,
-            "the hint promised {files} files inside {budget} tokens; the real turn costs {tokens}"
+            "the hint promised a batch of {files} inside a {budget}-token budget; the real turn costs {tokens}"
         );
         assert_eq!(
             elided, 0,

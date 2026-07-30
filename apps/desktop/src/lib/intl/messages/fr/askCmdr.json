@@ -599,6 +599,11 @@
     "sourceHash": "8a95b9e"
   },
   "askCmdr.context.label": "Le remplissage de cette conversation",
+  "@askCmdr.context.label": {
+    "sourceHash": "8451f61"
+  },
   "askCmdr.context.tooltip": "{usedText} jetons utilisés sur {budgetText} (estimation)",
-  "askCmdr.context.setAside": "Des parties plus anciennes de cette conversation ont été mises de côté pour faire de la place. Rien n’a été omis de cette réponse."
+  "@askCmdr.context.tooltip": {
+    "sourceHash": "3b4eef0"
+  }
 }

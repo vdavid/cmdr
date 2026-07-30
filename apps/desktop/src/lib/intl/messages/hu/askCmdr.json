@@ -597,6 +597,11 @@
     "sourceHash": "8a95b9e"
   },
   "askCmdr.context.label": "Mennyire van tele ez a beszélgetés",
+  "@askCmdr.context.label": {
+    "sourceHash": "8451f61"
+  },
   "askCmdr.context.tooltip": "{usedText} / {budgetText} token felhasználva (becsült)",
-  "askCmdr.context.setAside": "A beszélgetés korábbi részeit félretettük, hogy legyen hely. Ebből a válaszból semmi sem maradt ki."
+  "@askCmdr.context.tooltip": {
+    "sourceHash": "3b4eef0"
+  }
 }
