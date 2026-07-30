@@ -82,6 +82,8 @@
     "apps/desktop/test/e2e-playwright/i18n-capture-surfaces.ts": 811,
     "apps/desktop/test/e2e-playwright/mtp.spec.ts": 1124,
     "apps/website/src/dev/blog-editor/entry.ts": 1096,
+    "crates/cmdr-fs/src/volume/in_memory_test.rs": 914,
+    "crates/cmdr-fs/src/volume/mod.rs": 948,
     "scripts/check/checks/desktop-rust-cfg-gate_test.go": 976
   }
 }
