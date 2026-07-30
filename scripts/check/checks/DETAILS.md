@@ -467,6 +467,27 @@ inside a container from a Mac, so `HostCargoSelectionArgs` would answer for the 
 Feature specs are package-qualified (`cmdr/virtual-mtp`). A bare `--features virtual-mtp` changes meaning once more than
 one package is selected.
 
+**Gotcha: the Linux lane has NO contention probe, so a cluster of `TIMEOUT`s there needs disambiguating by hand.** The
+macOS lanes re-run failures serially and report "passed alone at the same deadline, so the suite was starving it";
+`desktop-rust-tests-linux` just prints the raw nextest failures with a "hang, or starvation under load" hint and leaves
+the reader to decide. Read it carefully before believing it:
+
+- **A moving failure set across runs means starvation, not a defect.** Measured 2026-07-30 on one unchanged tree: 47
+  timeouts while the full `--include-slow` suite ran (three Playwright shards plus a SECOND Docker container plus four
+  `cargo-nextest` processes), 11 timeouts — of a nearly disjoint set — alone on a still-busy host, and zero alone on a
+  settled one. Nothing was wrong with the tree.
+- **The tests that die are the trivial ones**, because nextest batches many fast tests at once and a stall takes the
+  whole batch. `read_connections_get_a_smaller_page_cache_than_write_connections` (a `tempfile::tempdir()`, two SQLite
+  opens, two PRAGMA reads — no threads, no sleeps, no waits) timing out at 8 s is a machine symptom by construction.
+- **The one thing that settles it is a control run**: the same lane, alone, on a commit before the change. Two matched
+  runs beat any amount of reasoning about the diff.
+- **`pkill -f check.sh` does NOT stop a run.** The runner is a compiled Go binary under the `go-build` cache parented by
+  `go run .`, and killing the wrapper orphans the whole tree of Playwright, Docker, and cargo children, which then keep
+  competing with whatever you start next. Kill `go-build.*/check` and `go run \. --include-slow`, then confirm with
+  `ps` before drawing conclusions from the next run.
+
+Giving this lane the macOS lanes' contention re-run would remove the manual work; it hasn't been done.
+
 ## Workspace member coverage
 
 `workspace-member-coverage` (`IsFast`, error-level, app scope `crates`) is what stops the next crate from re-opening the
