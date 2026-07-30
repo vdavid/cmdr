@@ -47,8 +47,8 @@ is and when it gets wiped. Shipped specs get wiped once their durable intent is 
       structured progress, and a first-class ingest side (so listing-enrichment and space-to-size fit later without
       reshaping). Buys encapsulation, independent incremental builds, and the substrate for exposing the index to
       external agents. IN PROGRESS on `worktree-david-index-crate-extraction`: M0-M4 landed, so the three subsystems
-      reference no app module and no `tauri::`. M4's cancellation item is deferred (it's a `cmdr-fs` trait change);
-      M5 designs the `Index` handle, M6 moves the code, M7 measures.
+      reference no app module and no `tauri::`. M4's cancellation item is deferred (it's a `cmdr-fs` trait change); M5
+      designs the `Index` handle, M6 moves the code, M7 measures.
 
 ## Later
 

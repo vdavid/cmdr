@@ -11,11 +11,13 @@
 //! handle lands, the handle owns them and the statics disappear without touching a
 //! single call site.
 //!
-//! - [`events`]: where the index's typed events go.
-//! - [`config`]: what the product tells the index to do, settings resolved by the app.
 //! - [`runtime`]: the tokio runtime background work spawns onto.
 //! - [`policy`]: whether the user is busy, so background work can stand aside.
 //! - [`volumes`]: which volumes are mounted, where, and what kind of storage they are.
+//! - [`config`]: what the product tells the index to do, settings resolved by the app.
+//! - [`events`]: where the index's typed events go.
+//!
+//! The app answers all five from one place, `crate::index_host::install`.
 //!
 //! Rationale, including why the runtime is injected rather than crate-owned:
 //! `DETAILS.md`.
