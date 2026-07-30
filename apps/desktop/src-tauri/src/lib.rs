@@ -110,6 +110,7 @@ mod font_metrics;
 mod go_to_path;
 pub mod icons;
 pub mod importance;
+mod index_host;
 pub mod indexing;
 mod install_id;
 mod instance_lock;
@@ -315,59 +316,10 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(downloads::global_shortcut::plugin_builder())
         .setup(move |app| {
-            // Hand the index subsystems the app's runtime, before anything can start
-            // background work on it. They spawn through their own `host::runtime`
-            // seam so they can be extracted into a Tauri-free crate; sharing OUR
-            // runtime rather than building their own is what keeps a single thread
-            // pool, and with it the QoS story that lets indexing run in-process.
-            if let Err(e) = indexing::host::runtime::set_runtime(tauri::async_runtime::handle().inner().clone()) {
-                log::warn!(target: "indexing", "index runtime was already set; keeping the first one ({e:?})");
-            }
-
-            // Tell the index where to report. The typed `IndexEvent` becomes a Tauri
-            // payload in `events/index_mapping.rs` and nowhere else, which is what
-            // keeps every user-facing word app-side.
-            if indexing::host::events::set_event_sink(std::sync::Arc::new(
-                events::index_mapping::TauriEventSink::new(app.handle().clone()),
-            ))
-            .is_err()
-            {
-                log::warn!(target: "indexing", "index event sink was already set; keeping the first one");
-            }
-
-            // Hand the index its configuration. It never reads a settings file or
-            // resolves the data dir for itself: policy belongs to the product, and
-            // this is the one place that turns stored settings into what the index
-            // acts on. Re-applied by the media-policy IPC setters as the user
-            // changes them.
-            match config::resolved_app_data_dir(app.handle()) {
-                Ok(data_dir) => indexing::host::config::set_config(commands::media_index::index_config_from(
-                    data_dir,
-                    &settings::load_settings(app.handle()),
-                )),
-                Err(e) => log::warn!(target: "indexing", "index not configured (no data dir): {e}"),
-            }
-
-            // Tell the index which volumes exist. It never touches `VolumeManager`,
-            // the platform mount probes, or the MTP session layer directly — those
-            // are the app's, and they can't follow the index into its own crate.
-            if indexing::host::volumes::set_volume_provider(std::sync::Arc::new(
-                file_system::index_provider::AppVolumeProvider,
-            ))
-            .is_err()
-            {
-                log::warn!(target: "indexing", "index volume provider was already set; keeping the first one");
-            }
-
-            // Tell the index whose priority signals to yield to. Same reason as the
-            // runtime: the subsystems ask through a seam so they can leave the app
-            // crate, and the priority ORDER (interactive > transfers > indexing)
-            // stays a product decision that lives in `priority/`.
-            if indexing::host::policy::set_host_policy(std::sync::Arc::new(priority::host_policy::AppHostPolicy))
-                .is_err()
-            {
-                log::warn!(target: "indexing", "index host policy was already set; keeping the first one");
-            }
+            // Everything the index needs from this app, in one place. Must run
+            // before anything can start background work. Mirror of
+            // `indexing/host/`, which declares the other side of each seam.
+            index_host::install(app.handle());
 
             // Mount the typed `tauri-specta` events onto the app. Required before
             // any `Event::emit` / `Event::listen` call resolves the event name

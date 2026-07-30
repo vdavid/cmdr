@@ -381,14 +381,29 @@ mod tests {
         assert!(provider.get("absent").is_none());
     }
 
-    /// A path marked network has to come back as network, or every test built on
-    /// the fake's routing would pass vacuously.
+    /// The two mount facts have to come back as marked, or every test built on the
+    /// fake's routing would pass vacuously. They're independent: a FAT stick is
+    /// inode-untrusted but local, a share is network with fine inodes.
     #[test]
-    fn the_fake_reports_the_network_mounts_it_was_given() {
+    fn the_fake_reports_the_mount_facts_it_was_given() {
         let provider = FakeVolumeProvider::shared();
-        provider.mark_network("/Volumes/naspi");
+        provider
+            .mark_network("/Volumes/naspi")
+            .mark_inodes_untrusted("/Volumes/stick");
 
-        assert!(provider.mount_facts(Path::new("/Volumes/naspi/media")).is_network);
-        assert!(!provider.mount_facts(Path::new("/Volumes/usb")).is_network);
+        let share = provider.mount_facts(Path::new("/Volumes/naspi/media"));
+        assert!(share.is_network);
+        assert!(
+            share.inodes_trustworthy,
+            "a share's inodes aren't the thing in question"
+        );
+
+        let stick = provider.mount_facts(Path::new("/Volumes/stick/DCIM"));
+        assert!(!stick.is_network, "a FAT stick is local");
+        assert!(!stick.inodes_trustworthy);
+
+        let plain = provider.mount_facts(Path::new("/Volumes/usb"));
+        assert!(!plain.is_network);
+        assert!(plain.inodes_trustworthy);
     }
 }

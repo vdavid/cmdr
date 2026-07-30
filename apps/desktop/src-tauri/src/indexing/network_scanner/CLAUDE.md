@@ -25,26 +25,26 @@ are discovered and stat'd differs from the local guarded walker.
   the consecutive-failure backstop, `CONSECUTIVE_FAILURE_ABORT` = 32) stops the walk and runs `finish_partial_scan`
   (flush + `MarkDirsListed` + `ComputeAllAggregates`) so scanned subtrees roll up exact-stale and unscanned ones stay
   `0` (`—`/`≥`); the DB is kept. A user cancel writes no marks/aggregate.
-- **This scanner NEVER writes `scan_completed_at`** (on any path); the completion handler does, only on a clean finish.
-  And **never on an empty root** (`VolumeScanError::EmptyRoot`): a false "complete" permanently strands the index.
+- **This scanner NEVER writes `scan_completed_at`**; the completion handler does, only on a clean finish. And **never
+  on an empty root** (`VolumeScanError::EmptyRoot`): a false "complete" permanently strands the index.
 - **The listing budget is PACED per volume, not constant** (`scan_pace.rs`): browsing the share OR a running transfer
-  on it (the host's priority order — transfers trump indexing) drops it 64 → 1 so higher-priority work isn't queued
-  behind the scan. ❌ Never let it reach 0 — one-at-a-time is what makes forward progress structural. The signals arrive
-  through `../host/policy.rs`, asked once per top-up; ❌ never per entry (`../host/CLAUDE.md`).
-- **NAS system/snapshot dirs aren't recursed** (`system_dirs.rs`): the dir's own row IS indexed (navigable), but its
-  subtree is never walked (rolls up honestly-unknown). Don't remove it to "fill in" sizes — it re-triggers the stall.
+  on it (transfers trump indexing) drops it 64 → 1 so higher-priority work isn't queued behind the scan. ❌ Never let it
+  reach 0 — one-at-a-time is what makes forward progress structural. The signals arrive through `../host/policy.rs`,
+  asked once per top-up; ❌ never per entry.
+- **NAS system/snapshot dirs aren't recursed** (`system_dirs.rs`): the dir's own row IS indexed, but its subtree is
+  never walked (rolls up honestly-unknown). Don't remove it to "fill in" sizes — it re-triggers the stall.
 - **Adding a name REBUILDS every network index**, so a false positive costs a user their indexed folder: add one only
   with a vendor citation, and only if it's SMB-visible (why ONTAP's `~snapshot` is absent). An index stamps the list it
   was built against and `lifecycle/network_scan.rs` truncate-rescans on a mismatch. ❌ Stamp only right after a
-  `TruncateData`; ❌ never migrate an old index (`../CLAUDE.md` § "Rebuild, don't migrate").
+  `TruncateData`; ❌ never migrate (`../CLAUDE.md` § "Rebuild, don't migrate").
 - **The FRESH scan wraps its inserts in periodic explicit transactions** (`SCAN_COMMIT_INTERVAL`, 2 s): the single
-  writer fsyncs per interval, not per 2000-entry batch — the writer-side lever that keeps it from becoming the bottleneck
-  once the SMB connection pool lifts listing throughput ~4×. `commit_scan_tx` closes the transaction before EVERY exit,
-  so marks + the final aggregate run in autocommit exactly as before and a crash just loses the last interval (heals to a
-  rescan). Reconcile is untouched (it already brackets via `BulkReconcileGuard`).
+  writer fsyncs per interval, not per 2000-entry batch — the lever that keeps it from becoming the bottleneck once the
+  SMB connection pool lifts listing throughput ~4×. `commit_scan_tx` closes the transaction before EVERY exit, so marks
+  + the final aggregate run in autocommit and a crash loses only the last interval (heals to a rescan). Reconcile is
+  untouched (it already brackets via `BulkReconcileGuard`).
 - **A backend may fan `list_directory_for_scan` out across an internal connection pool** (SMB opens extra TCP sessions;
-  `backends/DETAILS.md` § "SMB scan-connection pool"). The walk is unchanged and transport-agnostic; the global in-flight
-  budget still caps total concurrency, so pacing survives for free.
+  `backends/DETAILS.md` § "SMB scan-connection pool"). The walk is transport-agnostic and the global in-flight budget
+  still caps concurrency, so pacing survives for free.
 
 Architecture, the concurrency pump, the pacing decision, the NAS-dir rationale, and empty-root handling:
 `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
