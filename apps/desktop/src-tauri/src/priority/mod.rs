@@ -32,4 +32,7 @@
 //! their loop boundaries. No scheduler, no queues: signals in, decisions out.
 
 pub mod foreground;
+/// The adapter that answers the index subsystems' `HostPolicy` question from the
+/// signals above. Installed once at startup; the index never reaches this module.
+pub mod host_policy;
 pub mod transfers;

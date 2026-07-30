@@ -30,7 +30,7 @@ pub(super) fn progress() -> Arc<ScanProgress> {
     })
 }
 
-fn entry(name: &str, path: &str, is_dir: bool, size: Option<u64>) -> FileEntry {
+pub(super) fn entry(name: &str, path: &str, is_dir: bool, size: Option<u64>) -> FileEntry {
     FileEntry {
         size,
         ..FileEntry::new(name.to_string(), path.to_string(), is_dir, false)

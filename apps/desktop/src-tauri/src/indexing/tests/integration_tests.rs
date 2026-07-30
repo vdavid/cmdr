@@ -9,7 +9,6 @@
 //! dedicated mutex and clear it before returning.
 
 use crate::indexing::*;
-use crate::settings::FullDiskAccessChoice;
 use cmdr_fs::entry::FileEntry;
 use lifecycle::state::{
     INDEX_REGISTRY, IndexInstance, IndexPhase, IndexVolumeKind, ROOT_VOLUME_ID, is_initializing_phase,
@@ -870,84 +869,37 @@ fn read_pool_cross_thread_reads() {
 }
 
 // ── should_auto_start_indexing (FDA gate) ────────────────────────
+//
+// The index takes the gate's ANSWER, not its inputs: whether a pending FDA
+// decision exists is the host's call, and `fda_gate::is_fda_pending` owns that
+// truth table (choice × OS-granted) with its own test. What's left here is what
+// the index does with the answer.
 
-/// First launch with no FDA decision and OS reports no FDA: indexer
-/// must NOT auto-start. Otherwise the recursive scan from `/` would
-/// trigger native TCC popups behind the in-app FDA modal.
+/// The gate is pending — the in-app FDA modal is still up — so the indexer must
+/// NOT auto-start. Otherwise the recursive scan from `/` triggers native TCC
+/// popups stacked behind that modal, which is the onboarding flood we exist to
+/// avoid.
 #[test]
-fn should_auto_start_indexing_blocked_when_not_asked_and_os_fda_false() {
-    assert!(!should_auto_start_indexing(
-        None,
-        FullDiskAccessChoice::NotAskedYet,
-        false
-    ));
-    assert!(!should_auto_start_indexing(
-        Some(true),
-        FullDiskAccessChoice::NotAskedYet,
-        false
-    ));
+fn should_auto_start_indexing_blocked_while_the_fda_gate_is_pending() {
+    assert!(!should_auto_start_indexing(None, true));
+    assert!(!should_auto_start_indexing(Some(true), true));
 }
 
-/// `NotAskedYet` but OS already grants FDA (e.g., granted externally
-/// before our modal ever ran): safe to auto-start, no popups will fire.
+/// The gate is clear (the user picked Allow or Deny, or the OS already grants
+/// FDA): auto-start. After a Deny the scan draws per-folder TCC popups as it walks
+/// protected paths — that's the "individual Allow/Deny prompts" contract the user
+/// opted into.
 #[test]
-fn should_auto_start_indexing_allowed_when_os_fda_true_overrides_not_asked() {
-    assert!(should_auto_start_indexing(
-        None,
-        FullDiskAccessChoice::NotAskedYet,
-        true
-    ));
-    assert!(should_auto_start_indexing(
-        Some(true),
-        FullDiskAccessChoice::NotAskedYet,
-        true
-    ));
+fn should_auto_start_indexing_allowed_once_the_fda_gate_clears() {
+    assert!(should_auto_start_indexing(None, false));
+    assert!(should_auto_start_indexing(Some(true), false));
 }
 
-/// User picked Allow: auto-start (after restart the OS probe is true,
-/// no popups; if FDA was revoked between sessions the revoked-prompt
-/// flow re-asks while the indexer waits for the gate to clear again).
-#[test]
-fn should_auto_start_indexing_allowed_when_user_choice_is_allow() {
-    assert!(should_auto_start_indexing(None, FullDiskAccessChoice::Allow, true));
-    // Allow + OS-false: predicate passes the gate. The indexer attempts
-    // to scan; per-folder TCC popups fire as it walks protected paths,
-    // and the revoked-prompt UI guides the user back into System Settings.
-    assert!(should_auto_start_indexing(None, FullDiskAccessChoice::Allow, false));
-}
-
-/// User picked Deny: auto-start. Per the onboarding contract, Cmdr
-/// proceeds in limited mode and the user gets individual TCC popups for
-/// each protected folder the indexer touches; they accept or deny each.
-#[test]
-fn should_auto_start_indexing_allowed_when_user_choice_is_deny() {
-    assert!(should_auto_start_indexing(None, FullDiskAccessChoice::Deny, false));
-    assert!(should_auto_start_indexing(
-        Some(true),
-        FullDiskAccessChoice::Deny,
-        false
-    ));
-}
-
-/// Indexing disabled in settings always wins: never auto-start
-/// regardless of FDA state.
+/// Indexing disabled in settings always wins, gate or no gate.
 #[test]
 fn should_auto_start_indexing_blocked_when_indexing_disabled() {
-    assert!(!should_auto_start_indexing(
-        Some(false),
-        FullDiskAccessChoice::Allow,
-        true
-    ));
-    assert!(!should_auto_start_indexing(
-        Some(false),
-        FullDiskAccessChoice::Deny,
-        false
-    ));
-    assert!(!should_auto_start_indexing(
-        Some(false),
-        FullDiskAccessChoice::NotAskedYet,
-        true
-    ));
+    assert!(!should_auto_start_indexing(Some(false), false));
+    assert!(!should_auto_start_indexing(Some(false), true));
 }
 
 // ── IndexPhase transitions ─────────────────────────────────────────

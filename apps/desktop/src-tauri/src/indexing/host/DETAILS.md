@@ -53,3 +53,42 @@ exactly what `tauri::async_runtime` does for a host that never calls `set`.
 
 A second `set_runtime` loses and reports `RuntimeAlreadySet` rather than panicking or swapping the runtime under tasks
 that are already running on the first one. Stranding live tasks to honor a late caller would be the worse failure.
+
+## The host policy seam
+
+Two consumers, one question. A network index scan asks at every listing top-up
+(`network_scanner/scan_pace.rs`) and a media-enrichment pass asks between images and while parked waiting to resume
+(`media_index/scheduler/`). Both stand aside the same way and both used to reach `crate::priority` directly.
+
+**Why one trait rather than two.** The priority ORDER — user-interactive work, then transfers, then indexing — is a
+single product decision. Splitting it across a foreground trait and a transfer trait would let the two drift, and
+neither consumer ever wants one without the other.
+
+**Why the scopes are both in the snapshot.** `app_idle` and `volume_idle` answer different questions and are not
+interchangeable: enrichment is heavy on-device ML competing for the whole machine, so any browsing is reason to wait,
+while a network scan contends for one share's SMB session, so browsing a local folder must not slow it. Computing both
+costs nothing (one atomic load and one small map read) and it means a consumer picks its scope at the point where the
+reasoning is written down, rather than by choosing which function to call.
+
+### Why the FDA gate isn't a method here
+
+The plan expected `fda_gate::is_fda_pending` to need a `HostPolicy` method, on the grounds that it's a runtime query.
+It isn't: the index's only reference is to the **pure two-argument** decision, from inside
+`should_auto_start_indexing`, which is itself a pure function over caller-supplied values. (The process-global
+`is_fda_pending_runtime` exists, but no index code calls it.)
+
+So the disposition is cheaper than a seam: `should_auto_start_indexing` now takes `fda_pending: bool`, the app resolves
+the rule where the FDA choice and the OS probe already live, and the back-edge is gone with no trait at all. The
+choice × OS-granted truth table stays tested once, in `fda_gate`.
+
+### The write half
+
+A query-only trait returning a `Copy` value gives a test nothing to manipulate, and the real signals live in
+process-global maps a test can nudge but never reset. So `FakeHostPolicy` carries setters —
+`note_foreground_activity`, `note_foreground_quiet`, `note_transfer_started`, `note_transfer_finished` — plus a call
+counter, and `ScanPacer::with_policy` takes one directly. The pacing tests no longer touch a global at all, which is
+also what makes them safe to run in parallel.
+
+The counter is not incidental: it's the evidence for the per-batch dispatch rule. With four directories of 250 files,
+a compliant walk asks 15 times; adding a single `clearance()` call to the per-entry loop takes it to 1,015 and the
+guard fails.

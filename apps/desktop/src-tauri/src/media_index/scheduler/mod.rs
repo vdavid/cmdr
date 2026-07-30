@@ -554,16 +554,14 @@ impl MediaScheduler {
         };
         let idle_threshold = policy.idle_threshold;
         // The between-images proceed gate: the app is foreground-idle AND no
-        // user-initiated transfer touches this volume (`crate::priority`'s order —
-        // transfers trump indexing). Either claim pauses the pass as `NotIdle`; the
-        // caller resumes it once the volume is clear again.
+        // user-initiated transfer touches this volume (the host's order — transfers
+        // trump indexing). Either claim pauses the pass as `NotIdle`; the caller
+        // resumes it once the volume is clear again. Asked once per image, which is
+        // the batch boundary here; the host handle is captured, not re-resolved.
         let gate_volume = volume_id.to_string();
-        let is_idle = move || {
-            network::policy::volume_clear_for_enrichment(
-                crate::priority::foreground::global().idle_for(idle_threshold),
-                crate::priority::transfers::transfer_active(&gate_volume),
-            )
-        };
+        let host = crate::indexing::host::policy::current();
+        let is_idle =
+            move || network::policy::volume_clear_for_enrichment(host.clearance(&gate_volume, idle_threshold));
         // The conservative per-image gate (plan Decision 6 + importance): an excluded folder
         // never enriches (privacy veto); otherwise enrich when an "always index"
         // override covers it OR its folder importance meets the slider threshold.

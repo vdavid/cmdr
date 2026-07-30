@@ -8,8 +8,10 @@
 //!
 //! So the walk asks this module, at every top-up, how many listings it may keep in
 //! flight. Browsing the share OR a running user-initiated transfer on it (both
-//! higher-priority claims on the connection — `crate::priority`) drops the budget
-//! to [`YIELDING_LISTING_BUDGET`]; a quiet share gets [`FULL_LISTING_BUDGET`].
+//! higher-priority claims on the connection) drops the budget to
+//! [`YIELDING_LISTING_BUDGET`]; a quiet share gets [`FULL_LISTING_BUDGET`]. Both
+//! claims arrive through the host policy seam (`indexing::host::policy`), asked once
+//! per top-up and never per entry.
 //!
 //! **Forward progress is structural, not a floor.** The yielding budget is 1, never
 //! 0, so there is no starvation case to defend against with a quota or a
@@ -18,13 +20,16 @@
 //! Nothing to reset, nothing to leak, nothing that can wedge. See
 //! `indexing/DETAILS.md` § "Yielding to navigation".
 //!
-//! Scope is PER VOLUME (`priority::foreground`'s scoped signal): the contention
-//! is one share's session, so browsing a local folder must not slow a NAS scan.
+//! Scope is PER VOLUME ([`WorkClearance::volume_idle`], not `app_idle`): the
+//! contention is one share's session, so browsing a local folder must not slow a
+//! NAS scan.
 
+use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
-use crate::priority::foreground;
+use crate::indexing::host::policy as host_policy;
+use crate::indexing::host::policy::{HostPolicy, WorkClearance};
 
 /// Listings in flight while the share is quiet. Directory listing is latency-bound
 /// (each dir is open+query+close round trips over an otherwise-idle link), so
@@ -52,24 +57,17 @@ pub(crate) const YIELDING_LISTING_BUDGET: usize = 1;
 /// after the user stops.
 pub(crate) const SCAN_FOREGROUND_IDLE_THRESHOLD: Duration = Duration::from_secs(2);
 
-/// PURE: the in-flight listing budget for a share whose last foreground activity
-/// was at `last_foreground_millis`, as of `now_millis`, and on which a
-/// user-initiated transfer is (`transfer_active`) or isn't running.
+/// PURE: the in-flight listing budget for a share the host reports `clearance` on.
 ///
-/// Both higher-priority claims yield the same way (`crate::priority`'s order:
-/// interactive > transfers > indexing): the budget drops to one listing in
-/// flight, never zero, so the scan slows but structurally keeps finishing.
+/// Both higher-priority claims yield the same way (the host's order: interactive >
+/// transfers > indexing): the budget drops to one listing in flight, never zero, so
+/// the scan slows but structurally keeps finishing.
 ///
-/// Injected clock + threshold so the whole decision is unit-testable without
-/// sleeping. Delegates the elapsed-vs-threshold comparison to
-/// [`foreground::is_idle`] so there's one saturating-subtraction rule in the app.
-pub(crate) fn listing_budget(
-    now_millis: u64,
-    last_foreground_millis: u64,
-    threshold: Duration,
-    transfer_active: bool,
-) -> usize {
-    if !transfer_active && foreground::is_idle(now_millis, last_foreground_millis, threshold) {
+/// Reads `volume_idle`, not `app_idle` — the contention here is one share's session.
+/// The elapsed-versus-threshold rule that produced the flag stays host-side, so
+/// there's exactly one place that owns "how long is quiet".
+pub(crate) fn listing_budget(clearance: WorkClearance) -> usize {
+    if clearance.volume_idle && !clearance.transfer_active {
         FULL_LISTING_BUDGET
     } else {
         YIELDING_LISTING_BUDGET
@@ -84,28 +82,34 @@ pub(crate) struct ScanPacer {
     /// by unrelated activity).
     volume_id: Option<String>,
     idle_threshold: Duration,
+    /// The host asked at each top-up. Captured once at construction rather than
+    /// resolved per question, so a walk paces against one policy for its lifetime.
+    policy: Arc<dyn HostPolicy>,
     /// The budget we last logged, so a walk logs one line per transition rather
     /// than one per top-up (thousands per second).
     last_logged: AtomicUsize,
 }
 
 impl ScanPacer {
-    /// Pace this walk against foreground activity on `volume_id` (production).
+    /// Pace this walk against foreground activity on `volume_id`, asking whichever
+    /// host the app installed (production).
     pub(crate) fn for_volume(volume_id: impl Into<String>) -> Self {
-        Self {
-            volume_id: Some(volume_id.into()),
-            idle_threshold: SCAN_FOREGROUND_IDLE_THRESHOLD,
-            last_logged: AtomicUsize::new(FULL_LISTING_BUDGET),
-        }
+        Self::with_policy(volume_id, SCAN_FOREGROUND_IDLE_THRESHOLD, host_policy::current())
     }
 
-    /// Pace against `volume_id` with an explicit idle threshold, so tests exercise
-    /// the real decision path without waiting out the production window.
-    #[cfg(test)]
-    pub(crate) fn with_threshold(volume_id: impl Into<String>, idle_threshold: Duration) -> Self {
+    /// Pace against `volume_id` with an explicit idle threshold and an explicit host.
+    /// Production goes through [`for_volume`](Self::for_volume); a test uses this to
+    /// drive the real decision path against a policy it controls, instead of nudging
+    /// process-global signals it can't reset.
+    pub(crate) fn with_policy(
+        volume_id: impl Into<String>,
+        idle_threshold: Duration,
+        policy: Arc<dyn HostPolicy>,
+    ) -> Self {
         Self {
             volume_id: Some(volume_id.into()),
             idle_threshold,
+            policy,
             last_logged: AtomicUsize::new(FULL_LISTING_BUDGET),
         }
     }
@@ -117,23 +121,21 @@ impl ScanPacer {
         Self {
             volume_id: None,
             idle_threshold: SCAN_FOREGROUND_IDLE_THRESHOLD,
+            policy: Arc::new(host_policy::AlwaysClear),
             last_logged: AtomicUsize::new(FULL_LISTING_BUDGET),
         }
     }
 
-    /// How many listings the walk may have in flight right now. Cheap enough to
-    /// call at every top-up (two uncontended read locks over tiny maps).
+    /// How many listings the walk may have in flight right now.
+    ///
+    /// This is the walk's ONE policy question, asked at each listing top-up. It must
+    /// stay at that cadence: the walk visits millions of entries and asks this once
+    /// per dispatched listing, which is what keeps the seam off the hot path.
     pub(crate) fn listing_budget(&self) -> usize {
         let Some(volume_id) = self.volume_id.as_deref() else {
             return FULL_LISTING_BUDGET;
         };
-        let transfer_active = crate::priority::transfers::transfer_active(volume_id);
-        // A volume nobody has browsed has no timestamp at all, which reads as
-        // foreground-idle; otherwise the pure decision below owns the call.
-        let budget = match foreground::global().volume_activity_millis(volume_id) {
-            Some((now, last)) => listing_budget(now, last, self.idle_threshold, transfer_active),
-            None => listing_budget(0, 0, Duration::ZERO, transfer_active),
-        };
+        let budget = listing_budget(self.policy.clearance(volume_id, self.idle_threshold));
         self.log_transition(volume_id, budget);
         budget
     }
@@ -158,55 +160,61 @@ impl ScanPacer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::indexing::host::policy::FakeHostPolicy;
 
-    /// The core decision: a share the user just touched gets the yielding budget,
-    /// and it climbs back to full exactly at the threshold.
+    /// Build a clearance the way the host would report it.
+    fn clearance(volume_idle: bool, transfer_active: bool) -> WorkClearance {
+        WorkClearance {
+            app_idle: volume_idle,
+            volume_idle,
+            transfer_active,
+        }
+    }
+
+    /// The core decision: a share the user is on gets the yielding budget, and a
+    /// quiet one gets full speed.
     #[test]
-    fn a_recently_browsed_volume_gets_the_yielding_budget() {
-        let threshold = Duration::from_secs(2);
-        let last = 10_000;
+    fn a_browsed_volume_gets_the_yielding_budget() {
         assert_eq!(
-            listing_budget(10_000, last, threshold, false),
+            listing_budget(clearance(false, false)),
             YIELDING_LISTING_BUDGET,
-            "navigating right now throttles the scan"
+            "navigating this share throttles its scan"
         );
         assert_eq!(
-            listing_budget(11_999, last, threshold, false),
-            YIELDING_LISTING_BUDGET,
-            "still inside the quiet window"
-        );
-        assert_eq!(
-            listing_budget(12_000, last, threshold, false),
+            listing_budget(clearance(true, false)),
             FULL_LISTING_BUDGET,
-            "the window elapsed ⇒ full speed"
+            "a quiet share runs at full speed"
         );
     }
 
-    /// Transfers trump indexing: a running transfer yields the throttled budget
-    /// even on a foreground-quiet share, and the two claims don't mask each other.
+    /// Transfers trump indexing: a running transfer yields the throttled budget even
+    /// on a foreground-quiet share, and the two claims don't mask each other.
     #[test]
     fn a_running_transfer_gets_the_yielding_budget_regardless_of_foreground() {
-        let threshold = Duration::from_secs(2);
-        // Foreground long quiet, transfer running ⇒ yield.
         assert_eq!(
-            listing_budget(100_000, 0, threshold, true),
+            listing_budget(clearance(true, true)),
             YIELDING_LISTING_BUDGET,
             "a transfer alone must throttle the scan"
         );
-        // Both busy ⇒ still the same single yielding budget.
-        assert_eq!(listing_budget(10_000, 10_000, threshold, true), YIELDING_LISTING_BUDGET);
-        // Transfer done, foreground quiet ⇒ full speed again.
-        assert_eq!(listing_budget(100_000, 0, threshold, false), FULL_LISTING_BUDGET);
+        assert_eq!(
+            listing_budget(clearance(false, true)),
+            YIELDING_LISTING_BUDGET,
+            "both claims together are still one yielding budget"
+        );
+        assert_eq!(listing_budget(clearance(true, false)), FULL_LISTING_BUDGET);
     }
 
-    /// A share nobody has browsed runs at full speed from the very first listing —
-    /// a first scan must not start out throttled. "Never browsed" is an ABSENT
-    /// entry, not a zero timestamp (`ForegroundActivity::idle_for_volume`); the
-    /// pure decision below never sees it, which is why this asserts at the pacer.
+    /// The scope contract, at the decision: only the PER-VOLUME idle flag may reach
+    /// the budget. Reading `app_idle` here would let browsing a local folder throttle
+    /// a NAS scan that isn't competing with it.
     #[test]
-    fn a_never_browsed_volume_starts_at_full_speed() {
-        let pacer = ScanPacer::with_threshold("test://scan_pace/never_browsed", Duration::from_secs(30));
-        assert_eq!(pacer.listing_budget(), FULL_LISTING_BUDGET);
+    fn app_wide_activity_alone_does_not_throttle_a_quiet_share() {
+        let busy_app_quiet_share = WorkClearance {
+            app_idle: false,
+            volume_idle: true,
+            transfer_active: false,
+        };
+        assert_eq!(listing_budget(busy_app_quiet_share), FULL_LISTING_BUDGET);
     }
 
     /// THE anti-starvation guarantee, as a property: no reachable input yields a
@@ -214,68 +222,62 @@ mod tests {
     /// yield cap to get wrong, because the walk is never fully stopped.
     #[test]
     fn the_budget_is_never_zero_for_any_input() {
-        let threshold = Duration::from_secs(2);
-        for now in [0_u64, 1, 999, 1_000, 100_000, u64::MAX] {
-            for last in [0_u64, 1, 999, 100_000, u64::MAX] {
+        for app_idle in [false, true] {
+            for volume_idle in [false, true] {
                 for transfer_active in [false, true] {
-                    assert!(
-                        listing_budget(now, last, threshold, transfer_active) >= 1,
-                        "budget must never reach 0 (now={now}, last={last}, transfer={transfer_active})"
-                    );
+                    let c = WorkClearance {
+                        app_idle,
+                        volume_idle,
+                        transfer_active,
+                    };
+                    assert!(listing_budget(c) >= 1, "budget must never reach 0 for {c:?}");
                 }
             }
         }
     }
 
-    /// An unpaced walk ignores foreground activity entirely, so tests and callers
-    /// with no volume identity always get the full budget.
+    /// A share nobody has browsed runs at full speed from the very first listing: a
+    /// first scan must not start out throttled.
+    #[test]
+    fn a_never_browsed_volume_starts_at_full_speed() {
+        let pacer = ScanPacer::with_policy(
+            "test://scan_pace/never_browsed",
+            Duration::from_secs(30),
+            FakeHostPolicy::shared(),
+        );
+        assert_eq!(pacer.listing_budget(), FULL_LISTING_BUDGET);
+    }
+
+    /// An unpaced walk ignores the host entirely, so tests and callers with no volume
+    /// identity always get the full budget.
     #[test]
     fn an_unpaced_walk_always_gets_the_full_budget() {
         assert_eq!(ScanPacer::unpaced().listing_budget(), FULL_LISTING_BUDGET);
     }
 
-    /// End to end over the real global tracker: noting activity on this volume
-    /// throttles it, and an untouched volume stays at full speed. The volume ids
-    /// are unique to this test, so the process-global tracker can't cross-talk
-    /// with other tests running in parallel.
+    /// End to end through the seam: the pacer reads whatever the host says, and keeps
+    /// reading it, so a share that goes quiet is back at full speed with no re-arm.
     #[test]
-    fn the_pacer_reads_the_scoped_global_signal() {
-        let browsed = "test://scan_pace/browsed";
-        let quiet = "test://scan_pace/quiet";
-        let pacer = ScanPacer::with_threshold(browsed, Duration::from_secs(30));
-        let quiet_pacer = ScanPacer::with_threshold(quiet, Duration::from_secs(30));
+    fn the_pacer_tracks_the_host_as_it_changes() {
+        let host = FakeHostPolicy::shared();
+        let pacer = ScanPacer::with_policy("test://scan_pace/tracked", Duration::from_secs(30), host.clone());
 
-        assert_eq!(pacer.listing_budget(), FULL_LISTING_BUDGET, "nothing noted yet");
-        foreground::note_foreground_activity_on(browsed);
-        assert_eq!(
-            pacer.listing_budget(),
-            YIELDING_LISTING_BUDGET,
-            "browsing this share throttles its scan"
-        );
-        assert_eq!(
-            quiet_pacer.listing_budget(),
-            FULL_LISTING_BUDGET,
-            "browsing one share must not throttle another's scan"
-        );
-    }
+        assert_eq!(pacer.listing_budget(), FULL_LISTING_BUDGET, "nothing competing yet");
 
-    /// Resume: once the user stops, the scan is back at full speed as soon as the
-    /// quiet window elapses — no extra debounce, no manual re-arm.
-    #[tokio::test]
-    async fn the_scan_returns_to_full_speed_once_the_share_goes_quiet() {
-        let volume_id = "test://scan_pace/goes_quiet";
-        let pacer = ScanPacer::with_threshold(volume_id, Duration::from_millis(50));
-
-        foreground::note_foreground_activity_on(volume_id);
+        host.note_foreground_activity();
         assert_eq!(pacer.listing_budget(), YIELDING_LISTING_BUDGET, "browsing right now");
 
-        // allowed-test-sleep: outliving the 50 ms quiet window is the subject. The pacer reads the
-        // real clock against the last foreground timestamp, so only elapsed wall time reopens it
-        tokio::time::sleep(Duration::from_millis(80)).await;
+        host.note_foreground_quiet();
         assert_eq!(
             pacer.listing_budget(),
             FULL_LISTING_BUDGET,
-            "the quiet window elapsed ⇒ full speed again"
+            "quiet again ⇒ full speed, no debounce and no manual re-arm"
         );
+
+        host.note_transfer_started();
+        assert_eq!(pacer.listing_budget(), YIELDING_LISTING_BUDGET, "a transfer claims it");
+
+        host.note_transfer_finished();
+        assert_eq!(pacer.listing_budget(), FULL_LISTING_BUDGET);
     }
 }

@@ -434,11 +434,9 @@ const RESUME_POLL_INTERVAL: Duration = Duration::from_secs(2);
 /// exactly "clear enough to have kept going".
 async fn wait_until_idle_to_resume(volume_id: &str) {
     let idle_threshold = ConservativeFetchPolicy::default().idle_threshold;
+    let host = crate::indexing::host::policy::current();
     loop {
-        let clear = network::policy::volume_clear_for_enrichment(
-            crate::priority::foreground::global().idle_for(idle_threshold),
-            crate::priority::transfers::transfer_active(volume_id),
-        );
+        let clear = network::policy::volume_clear_for_enrichment(host.clearance(volume_id, idle_threshold));
         if idle_wait_should_end(clear, gate::should_stop()) {
             return;
         }

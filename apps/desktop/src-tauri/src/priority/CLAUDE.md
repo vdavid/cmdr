@@ -8,6 +8,8 @@ them at their own loop boundaries.
 
 - `foreground.rs`: last-interactive-activity timestamps, app-wide + per volume. Written by the hot listing IPC.
 - `transfers.rs`: per-volume gauge of user-initiated write ops (copy/move/delete/trash/drag-out).
+- `host_policy.rs`: `AppHostPolicy`, the adapter that answers the index subsystems' `HostPolicy` question from the two
+  signals above. Installed once in `setup()`.
 
 ## Must-knows
 
@@ -19,6 +21,10 @@ them at their own loop boundaries.
 - **Consumers pick their own scope on purpose** (documented per consumer in `foreground.rs` + `DETAILS.md`): enrichment
   reads APP-WIDE foreground + per-volume transfers; scan pacing and transfer-yield read PER-VOLUME. Don't "unify" the
   scopes.
+- **The index reads these through `AppHostPolicy`, never directly.** It's being extracted into a Tauri-free crate, so
+  `crate::priority` isn't reachable from it. A new index consumer asks `indexing::host::policy` and the adapter answers;
+  ❌ don't hand it a `crate::priority` import back. SMB transfer-yield and the write-op feed still call in directly —
+  they're app code.
 - **Indexing yields must keep forward progress structural**: throttle-to-one or pause-with-resume, ❌ never a gate that
   can stop work with no wake-up path (see `indexing/network_scanner/scan_pace.rs`'s never-zero budget).
 

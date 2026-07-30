@@ -324,6 +324,16 @@ pub fn run() {
                 log::warn!(target: "indexing", "index runtime was already set; keeping the first one ({e:?})");
             }
 
+            // Tell the index whose priority signals to yield to. Same reason as the
+            // runtime: the subsystems ask through a seam so they can leave the app
+            // crate, and the priority ORDER (interactive > transfers > indexing)
+            // stays a product decision that lives in `priority/`.
+            if indexing::host::policy::set_host_policy(std::sync::Arc::new(priority::host_policy::AppHostPolicy))
+                .is_err()
+            {
+                log::warn!(target: "indexing", "index host policy was already set; keeping the first one");
+            }
+
             // Mount the typed `tauri-specta` events onto the app. Required before
             // any `Event::emit` / `Event::listen` call resolves the event name
             // from the registry. See `ipc.rs` for the event collection.
@@ -837,11 +847,10 @@ pub fn run() {
             // probe-2 → indexer skips even though it shouldn't).
             let os_fda_granted = os_fda_granted_for_gate;
 
-            if indexing::should_auto_start_indexing(
-                saved_settings.indexing_enabled,
-                saved_settings.full_disk_access_choice,
-                os_fda_granted,
-            ) {
+            // The FDA rule is the app's, so it's resolved here and handed to the
+            // index as a plain answer.
+            let fda_pending = fda_gate::is_fda_pending(saved_settings.full_disk_access_choice, os_fda_granted);
+            if indexing::should_auto_start_indexing(saved_settings.indexing_enabled, fda_pending) {
                 let app_handle = app.handle().clone();
                 // Use tauri's runtime spawn instead of tokio::spawn since setup()
                 // runs synchronously before the Tokio runtime is fully available

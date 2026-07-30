@@ -12,8 +12,10 @@
 //! single call site.
 //!
 //! - [`runtime`]: the tokio runtime background work spawns onto.
+//! - [`policy`]: whether the user is busy, so background work can stand aside.
 //!
 //! Rationale, including why the runtime is injected rather than crate-owned:
 //! `DETAILS.md`.
 
+pub(crate) mod policy;
 pub(crate) mod runtime;

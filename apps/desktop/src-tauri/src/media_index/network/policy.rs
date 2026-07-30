@@ -17,6 +17,8 @@
 
 use std::time::Duration;
 
+use crate::indexing::host::policy::WorkClearance;
+
 /// The typed conservative-fetch knobs. Defaults are deliberately gentle for a NAS.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ConservativeFetchPolicy {
@@ -59,8 +61,8 @@ pub enum FetchGate {
     DeferNotIdle,
 }
 
-/// The pure idle gate: proceed only when idle. (`is_idle` comes from
-/// [`crate::priority::foreground`], itself tested over a fake clock.)
+/// The pure idle gate: proceed only when idle. (The idle decision itself is the
+/// host's, reported through `indexing::host::policy`.)
 pub fn gate_on_idle(is_idle: bool) -> FetchGate {
     if is_idle {
         FetchGate::Proceed
@@ -70,14 +72,17 @@ pub fn gate_on_idle(is_idle: bool) -> FetchGate {
 }
 
 /// The pure proceed-gate for one network-enrichment step, composing the two
-/// higher-priority claims (`crate::priority`: interactive > transfers > indexing):
-/// proceed only while the app is foreground-idle (app-WIDE — heavy on-device ML
-/// with no deadline stands aside for any browsing) AND no user-initiated transfer
-/// is touching THIS volume (per-volume — a copy elsewhere is no reason to wait).
-/// A `false` pauses the pass exactly like a plain not-idle always has
-/// (`PauseReason::NotIdle` → retry when clear).
-pub fn volume_clear_for_enrichment(app_idle: bool, transfer_active_on_volume: bool) -> bool {
-    app_idle && !transfer_active_on_volume
+/// higher-priority claims the host reports (interactive > transfers > indexing):
+/// proceed only while the app is foreground-idle (`app_idle`, app-WIDE — heavy
+/// on-device ML with no deadline stands aside for any browsing) AND no
+/// user-initiated transfer is touching THIS volume (per-volume — a copy elsewhere
+/// is no reason to wait). A `false` pauses the pass exactly like a plain not-idle
+/// always has (`PauseReason::NotIdle` → retry when clear).
+///
+/// ❌ Reads `app_idle`, never `volume_idle`: unlike a network scan, enrichment
+/// competes for the whole machine, not for one share's connection.
+pub(crate) fn volume_clear_for_enrichment(clearance: WorkClearance) -> bool {
+    clearance.app_idle && !clearance.transfer_active
 }
 
 /// The bandwidth throttle: how long `bytes` should take at `max_bytes_per_sec`, i.e.
@@ -107,6 +112,16 @@ pub fn should_enrich_image(covered_by_override: bool, importance: Option<f32>, t
 mod tests {
     use super::*;
 
+    /// Build a clearance the way the host would report it. Enrichment only reads
+    /// `app_idle`, so `volume_idle` rides along at the same value.
+    fn clearance(app_idle: bool, transfer_active: bool) -> WorkClearance {
+        WorkClearance {
+            app_idle,
+            volume_idle: app_idle,
+            transfer_active,
+        }
+    }
+
     #[test]
     fn gate_defers_when_not_idle_proceeds_when_idle() {
         assert_eq!(gate_on_idle(false), FetchGate::DeferNotIdle);
@@ -117,11 +132,14 @@ mod tests {
     /// even when the app is otherwise idle, and neither claim masks the other.
     #[test]
     fn a_transfer_on_the_volume_pauses_enrichment_even_when_idle() {
-        assert!(!volume_clear_for_enrichment(true, true), "idle but transferring ⇒ wait");
-        assert!(!volume_clear_for_enrichment(false, false), "browsing ⇒ wait");
-        assert!(!volume_clear_for_enrichment(false, true));
         assert!(
-            volume_clear_for_enrichment(true, false),
+            !volume_clear_for_enrichment(clearance(true, true)),
+            "idle but transferring ⇒ wait"
+        );
+        assert!(!volume_clear_for_enrichment(clearance(false, false)), "browsing ⇒ wait");
+        assert!(!volume_clear_for_enrichment(clearance(false, true)));
+        assert!(
+            volume_clear_for_enrichment(clearance(true, false)),
             "idle and no transfer ⇒ proceed"
         );
     }
