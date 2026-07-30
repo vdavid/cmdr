@@ -2,3 +2,19 @@
 members = ["apps/desktop/src-tauri", "crates/fsevent-stream", "crates/index-query"]
 exclude = ["benchmarks/smb"]
 resolver = "2"
+
+# Optimized builds cross crate boundaries. Cargo's default (`lto = false`,
+# `codegen-units = 16`) inlines only `#[inline]` and generic functions between
+# crates, so any hot path that gets split across a crate boundary silently loses
+# the inlining it had inside one crate. Thin LTO restores it at a fraction of
+# `lto = "fat"`'s build cost.
+#
+# It IS a real tradeoff: release builds get meaningfully slower, and that includes
+# the sign-and-notarize pipeline. Measured both ways in
+# `docs/notes/index-extraction-baseline.md`.
+#
+# `[profile.bench]` inherits this, which is deliberate: the benches call the index
+# across a crate boundary the same way the app does, so they have to be optimized
+# the same way or their numbers describe a build nobody ships.
+[profile.release]
+lto = "thin"
