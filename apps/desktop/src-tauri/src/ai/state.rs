@@ -51,8 +51,11 @@ pub(super) struct ManagerState {
 const STATE_FILENAME: &str = "ai-state.json";
 
 /// The local llama-server context size before the frontend pushes the user's setting
-/// (`ai.localContextSize`, whose own default matches this).
-const DEFAULT_CONTEXT_SIZE: u32 = 4096;
+/// (`ai.localContextSize`, whose own default matches this). It is also the floor Ask Cmdr
+/// needs for one working turn (`agent::chat::budget::MIN_LOCAL_CONTEXT_TOKENS`): a smaller
+/// window can't hold the prefix plus a paged tool result, so a turn against it is refused
+/// rather than assembled.
+const DEFAULT_CONTEXT_SIZE: u32 = crate::agent::chat::budget::MIN_LOCAL_CONTEXT_TOKENS;
 
 /// Builds a fresh `ManagerState` for `ai_dir` with the given persisted `state` and the
 /// default in-memory config (provider `local`, default cloud endpoint). `init` mutates

@@ -160,6 +160,25 @@ describe('sparse settings persistence', () => {
     expect(disk.has('developer.verboseLogging')).toBe(true)
   })
 
+  it('(g) a stored below-floor local context window reads as the 16,384 floor', async () => {
+    // A tester who picked 4,096 in an earlier build had a chat that could not complete one
+    // message: the prefix alone costs more than 60% of that window. 4,096 is no longer an
+    // option, so it fails validation on load and the read resolves to the default, which IS
+    // the floor (`agent::chat::budget::MIN_LOCAL_CONTEXT_TOKENS`). They get a working chat
+    // without touching a thing.
+    disk.set('ai.localContextSize', '4096')
+    disk.set('_schemaVersion', 3)
+
+    const store = await loadStore()
+    await store.initializeSettings()
+
+    expect(getDefaultValue('ai.localContextSize')).toBe('16384')
+    expect(store.getSetting('ai.localContextSize')).toBe('16384')
+    // Dropped, not kept: the next save prunes it rather than leaving a value the UI can't show.
+    await store.forceSave()
+    expect(disk.has('ai.localContextSize')).toBe(false)
+  })
+
   it('(f) pre-init reads return defaults and write nothing', async () => {
     const store = await loadStore()
 

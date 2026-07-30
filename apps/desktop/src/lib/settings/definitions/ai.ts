@@ -3,8 +3,24 @@
  * which concatenates this array into the full registry in section order.
  */
 
-import type { SettingDefinitionSource } from '../types'
+import type { EnumOption, SettingDefinitionSource } from '../types'
 import { cloudProviderPresets } from '../cloud-providers'
+import { formatInteger } from '$lib/intl/number-format'
+
+/**
+ * A token-count option whose label is the number itself, grouped for the reader's locale
+ * (16,000 / 16 000 / 16.000). A getter, so it formats at read time rather than freezing the
+ * locale that happened to be active when this module first loaded; the registry passes an
+ * option with a literal `label` through unchanged, getter included.
+ */
+function tokenOption(tokens: number): EnumOption {
+  return {
+    value: String(tokens),
+    get label() {
+      return formatInteger(tokens)
+    },
+  }
+}
 
 export const aiSettings: SettingDefinitionSource[] = [
   // ========================================================================
@@ -78,20 +94,16 @@ export const aiSettings: SettingDefinitionSource[] = [
     descriptionKey: 'settings.ai.localContextSize.description',
     keywords: ['context', 'window', 'tokens', 'memory', 'size', 'local'],
     type: 'enum',
-    default: '4096',
+    // 16,384 is the floor Ask Cmdr needs for one working turn
+    // (`agent::chat::budget::MIN_LOCAL_CONTEXT_TOKENS`, which this default mirrors): the
+    // system prompt plus the tool declarations cost ~3,124 tokens before the user says a
+    // word. Nothing smaller is offered, and a stored 2,048 / 4,096 / 8,192 from an earlier
+    // build no longer validates, so it reads as this default instead of leaving a tester
+    // with a chat that can't complete a single message.
+    default: '16384',
     component: 'select',
     constraints: {
-      // Token-count option labels are plain numerals, not translatable copy.
-      options: [
-        { value: '2048', label: '2048' },
-        { value: '4096', label: '4096' },
-        { value: '8192', label: '8192' },
-        { value: '16384', label: '16384' },
-        { value: '32768', label: '32768' },
-        { value: '65536', label: '65536' },
-        { value: '131072', label: '131072' },
-        { value: '262144', label: '262144' },
-      ],
+      options: [tokenOption(16384), tokenOption(32768), tokenOption(65536), tokenOption(131072), tokenOption(262144)],
     },
   },
 
@@ -115,7 +127,6 @@ export const aiSettings: SettingDefinitionSource[] = [
     default: '',
     component: 'text-input',
   },
-
   // ========================================================================
   // AI › MCP server
   //

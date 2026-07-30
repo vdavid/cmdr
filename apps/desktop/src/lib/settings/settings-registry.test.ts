@@ -501,3 +501,21 @@ describe('fileOperations.pasteClipboardAsFile', () => {
     expect(ids).toContain('fileOperations.pasteClipboardAsFile')
   })
 })
+
+describe('ai.localContextSize (the local model’s window)', () => {
+  it('starts at the 16,384 floor and defaults to it', () => {
+    // Below 16,384 an Ask Cmdr turn cannot fit its own prefix, so those sizes are gone from
+    // the picker and a stored one resolves to this default instead.
+    expect(getDefaultValue('ai.localContextSize')).toBe('16384')
+    const options = getSettingDefinition('ai.localContextSize')?.constraints?.options ?? []
+    expect(options.map((o) => o.value)).toEqual(['16384', '32768', '65536', '131072', '262144'])
+  })
+
+  it('rejects the sizes an earlier build offered', () => {
+    for (const value of ['2048', '4096', '8192']) {
+      expect(() => {
+        validateSettingValue('ai.localContextSize', value)
+      }).toThrow()
+    }
+  })
+})

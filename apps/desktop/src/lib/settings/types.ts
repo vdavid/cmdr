@@ -195,7 +195,13 @@ export type DownloadsNotificationsMode = 'in-app' | 'macos' | 'both' | 'neither'
 export type LowDiskSpaceNotificationsMode = 'in-app' | 'macos' | 'off'
 
 export type AiProvider = 'off' | 'cloud' | 'local'
-export type AiLocalContextSize = '2048' | '4096' | '8192' | '16384' | '32768' | '65536' | '131072' | '262144'
+/**
+ * The local llama-server context window. Starts at 16,384: below that, one Ask Cmdr turn
+ * cannot fit its own prefix (`agent::chat::budget::MIN_LOCAL_CONTEXT_TOKENS`). A stored
+ * 2,048 / 4,096 / 8,192 from an earlier build no longer validates, so it reads as the
+ * 16,384 default.
+ */
+export type AiLocalContextSize = '16384' | '32768' | '65536' | '131072' | '262144'
 
 /**
  * UI language: `'system'` follows the OS locale (the default); any other value

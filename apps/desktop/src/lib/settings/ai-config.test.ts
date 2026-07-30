@@ -252,7 +252,7 @@ describe('pushConfigToBackend', () => {
     settingsMap['ai.provider'] = 'cloud'
     settingsMap['ai.cloudProvider'] = 'openai'
     settingsMap['ai.cloudProviderConfigs'] = JSON.stringify({ openai: { model: 'gpt-4o' } })
-    settingsMap['ai.localContextSize'] = '8192'
+    settingsMap['ai.localContextSize'] = '32768'
     getAiApiKey.mockResolvedValue('sk-fresh')
 
     await pushConfigToBackend()
@@ -261,7 +261,7 @@ describe('pushConfigToBackend', () => {
     // OpenAI requires a key, so requiresApiKey is true.
     expect(configureAi).toHaveBeenCalledWith(
       'cloud',
-      8192,
+      32768,
       'sk-fresh',
       expect.stringContaining('openai.com'),
       'gpt-4o',
@@ -273,19 +273,26 @@ describe('pushConfigToBackend', () => {
     settingsMap['ai.provider'] = 'cloud'
     settingsMap['ai.cloudProvider'] = 'ollama'
     settingsMap['ai.cloudProviderConfigs'] = JSON.stringify({ ollama: { model: 'llama3.2' } })
-    settingsMap['ai.localContextSize'] = '8192'
+    settingsMap['ai.localContextSize'] = '32768'
     getAiApiKey.mockResolvedValue('')
 
     await pushConfigToBackend()
 
-    expect(configureAi).toHaveBeenCalledWith('cloud', 8192, '', expect.stringContaining('localhost'), 'llama3.2', false)
+    expect(configureAi).toHaveBeenCalledWith(
+      'cloud',
+      32768,
+      '',
+      expect.stringContaining('localhost'),
+      'llama3.2',
+      false,
+    )
   })
 
   it('surfaces a persistent toast and keeps pushing when the secret store read fails', async () => {
     settingsMap['ai.provider'] = 'cloud'
     settingsMap['ai.cloudProvider'] = 'openai'
     settingsMap['ai.cloudProviderConfigs'] = JSON.stringify({ openai: { model: 'gpt-4o' } })
-    settingsMap['ai.localContextSize'] = '4096'
+    settingsMap['ai.localContextSize'] = '16384'
     getAiApiKey.mockRejectedValue(new Error('keyring locked'))
 
     await pushConfigToBackend()
@@ -295,7 +302,7 @@ describe('pushConfigToBackend', () => {
     expect(typeof body).toBe('string')
     expect(opts).toMatchObject({ dismissal: 'persistent' })
     // Still pushed with an empty key so the rest of the config reaches the backend.
-    expect(configureAi).toHaveBeenCalledWith('cloud', 4096, '', expect.any(String), 'gpt-4o', true)
+    expect(configureAi).toHaveBeenCalledWith('cloud', 16384, '', expect.any(String), 'gpt-4o', true)
     expect(loggerError).toHaveBeenCalled()
   })
 
@@ -303,7 +310,7 @@ describe('pushConfigToBackend', () => {
     settingsMap['ai.provider'] = 'cloud'
     settingsMap['ai.cloudProvider'] = 'openai'
     settingsMap['ai.cloudProviderConfigs'] = '{}'
-    settingsMap['ai.localContextSize'] = '2048'
+    settingsMap['ai.localContextSize'] = '65536'
     configureAi.mockRejectedValueOnce(new Error('IPC down'))
 
     await expect(pushConfigToBackend()).resolves.toBeUndefined()
