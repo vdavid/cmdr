@@ -655,11 +655,19 @@ fn incremental_key(volume_id: &str) -> String {
 }
 
 /// The minimum spacing between two incremental rescores of the same volume under
-/// sustained change. An incremental walks the whole index (O(dirs)) before it
-/// rescopes to the touched subset, so back-to-back incrementals under a constant
-/// FSEvent firehose (a busy boot volume is never truly idle) would peg a core.
-/// Debouncing to one walk per window bounds that; importance is a background
-/// signal, so a lag of this order is invisible to its consumers.
+/// sustained change. A busy boot volume is never truly idle, so without a window
+/// the FSEvent firehose would drive back-to-back passes forever.
+///
+/// What the window paces is NOT the walk: the scoped walk made a typical pass
+/// microseconds (`scoped_walk.rs`). It's the store write and, through
+/// `notify_recompute_completed`, the weight reload in `search::volumes` — which is
+/// O(ALL weights) on the volume, not O(changed). ❌ Don't relax this window on the
+/// grounds that the walk is now cheap; that trades a cheap walk for a frequent
+/// full weight-map rebuild. Lower it once that reload is incremental too.
+/// Rationale and numbers: `DETAILS.md` § Throttle.
+///
+/// Importance is a background signal, so a lag of this order is invisible to its
+/// consumers.
 const INCREMENTAL_THROTTLE_WINDOW: Duration = Duration::from_secs(60);
 
 /// How long to wait before the next incremental rescore of a volume may start,
