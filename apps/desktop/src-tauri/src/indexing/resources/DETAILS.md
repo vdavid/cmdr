@@ -28,7 +28,7 @@ dispatches to `on_warn` / `on_stop` / `on_escalate`.
 to be stopped by hand. A stop is now one event in an endless loop. After a stop the watchdog holds a `PostStop` record
 and escalates when `phys_footprint` climbs another 2 GB, then 4, 8, 16: the step doubles so a runaway yields a handful
 of proportionate alerts instead of one per 5 s tick (a 16→40 GB climb produces three). Each escalation logs via
-`log_error!` (so it reaches shipped error reports), emits the event with `StillGrowingAfterStop`, and re-runs
+an `IndexEvent::Error` (so it reaches shipped error reports), reports the warning with `StillGrowingAfterStop`, and re-runs
 `stop_all_indexing` in case a volume registered again. It says plainly that the stop didn't hold, so the growth is not
 (only) the index scan. Dropping back under the warn line logs a recovery and clears the record, re-arming the stop.
 

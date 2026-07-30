@@ -337,23 +337,25 @@ the main DB after deletes; the checkpoint reclaims the *WAL file* after writes.
 A pass joins the top-right indexing indicator as a second publisher (the FE side is `lib/indexing/DETAILS.md` §
 Image-enrichment publisher). `events.rs` defines two typed Tauri events + the emission machinery:
 
-- **`MediaEnrichProgressEvent`** (`media-enrich-progress`): throttled progress. `total` / `bytes_total` are the
+- **`IndexEvent::MediaEnrichProgress`** (`media-enrich-progress` on the wire): throttled progress. `total` / `bytes_total` are the
   ENRICHABLE-subset denominators (`enrichable_totals` / `network_enrichable_totals` = images passing `should_enrich` AND
   not `is_excluded`), NEVER the full walked set — a raw `images.len()` denominator rebuilds the never-finishes bug
   inside the indicator. `done` counts every subset image the pass finishes handling (enriched, already-current, or a
   quiet skip), so it reaches `total` on completion. Bytes ride `ImageEntry.size` (`Option`, `None` counts 0 —
   under-count, never lie). The pure `should_emit_progress` throttle (`progress.rs`) fires at pass start, then ≤ every
   500 ms or 100 images. Emission is a cheap counter + time check per image; the `EnrichProgressSink` seam keeps the
-  registry-free cores testable (a recorder in tests, the throttled `TauriEnrichEmitter` in production).
-- **`MediaEnrichTerminalEvent`** (`media-enrich-terminal`): exactly one per pass on EVERY exit path. The
+  registry-free cores testable (a recorder in tests, the throttled `EnrichProgressEmitter` in production).
+- **`IndexEvent::MediaEnrichTerminal`** (`media-enrich-terminal` on the wire): exactly one per pass on EVERY exit path. The
   `EnrichTerminalGuard` (RAII) guarantees it: it defaults to `Failed` and emits on `Drop`, so a `?`-error bubble (a
   writer-send failure) still reports a terminal; `run_pass_blocking` / `run_network_pass_blocking` override the reason
   (`Completed { enriched, gc_count }` / `Cancelled` / the two `Paused*`) before a clean exit. Without a terminal on
   every path the FE row sticks at "enriching" (the `index-scan-aborted` stuck-row bug). The local pass distinguishes
   cancel from completion via `PassSummary.cancelled`; the network pass maps its `NetworkPassOutcome`.
 
-The scheduler holds an `Option<AppHandle>` (set in `start` via `new_with_app`, `None` in unit tests via `new`), so a
-pass emits nothing under test. `pass_emitters` builds the sink + guard (both no-ops when the app is absent).
+The scheduler holds an `Arc<dyn EventSink>` (the real one wired in `start` via `new_with_events`, a `NoopEventSink` in
+unit tests via `new`), so a pass reports nothing under test. `pass_emitters` builds the throttled progress sink + the
+terminal guard from it. The wire payloads live app-side in `events/index_mapping.rs`; this area produces only the typed
+values.
 
 **Vanished / phantom files are DEBUG, never WARN.** A file deleted between the index walk and its analyze, or an
 orphaned index row whose reconstructed path can never read, surfaces at analyze as a typed `VisionError::Missing`. The

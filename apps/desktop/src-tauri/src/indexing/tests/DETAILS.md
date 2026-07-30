@@ -52,10 +52,12 @@ during cancel) is the trickiest backend state machine to test cleanly. Four rule
 3. **`Initializing { store: IndexStore }` carries non-`Clone` owned state.** Building fixtures is verbose. Where you'd
    like to test a pure transition without the owned data, extract a pure classifier (e.g. `is_initializing_phase`) and
    test that in isolation. Don't pretend to mock `IndexStore`.
-4. **`start_indexing`'s `(absent) → Initializing → Running` happy path needs `tauri::AppHandle`**: currently not feasible
-   in unit tests without enabling the `tauri/test` feature (meaningful compile cost). The classifier-extraction approach
-   plus the hand-installed `Initializing` instance cover the race-decision logic; the rest stays under integration / E2E
-   coverage.
+4. **`start_indexing`'s `(absent) → Initializing → Running` happy path needs `tauri::AppHandle`**: `start_indexing_for`
+   still resolves the data dir from one, so the full entry point isn't unit-testable without the `tauri/test` feature
+   (meaningful compile cost). The classifier-extraction approach plus the hand-installed `Initializing` instance cover
+   the race-decision logic; the rest stays under integration / E2E coverage. **`IndexManager` itself is handle-free** —
+   it takes a resolved `db_path` and an `EventSink` — so a scan CAN be driven in-process; `event_stream_tests.rs` does
+   exactly that.
 
 See `docs/testing.md` for the project-wide testing playbook.
 
@@ -100,8 +102,8 @@ filesystem: it drives `scanner::scan_volume` with the mount-rooted `IndexPathSpa
 untrusted-inode flag, resolved from the real `detect_filesystem_for_path` as `local_external_index::classify` does) and
 asserts the drive's own index holds the tree under `ROOT_ID` by mount-relative name with recursive sizes, and the FAT
 inode nulled. Asserts are lower bounds (macOS adds AppleDouble `._*` sidecars on FAT). The full app-level lifecycle
-(enable → scan → sizes → eject-safe stop → detach) is not an automated CI test — the scan pipeline is `AppHandle`-bound
-(no mock-app harness) and driving `hdiutil` in CI is the deliberately-avoided panic-class op; it's validated live via
+(enable → scan → sizes → eject-safe stop → detach) is not an automated CI test — driving `hdiutil` in CI is the
+deliberately-avoided panic-class op; it's validated live via
 MCP against the running dev app instead.
 
 For `platform_case_compare` in `store.rs`: proptests cover the comparator algebra (reflexive / antisymmetric /

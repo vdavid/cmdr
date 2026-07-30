@@ -5,44 +5,58 @@ invariants are in `CLAUDE.md`.
 
 This area owns the frontend-facing event payloads, the phase-transition emitter, and the scan-progress tick loop.
 
-## The Tauri event payload catalog (`mod.rs`)
+## The event seam (`sink.rs`)
 
-Each struct derives `tauri_specta::Event` with a pinned `#[tauri_specta(event_name = "…")]` kebab wire name (the
-`…Event` suffix wouldn't kebab-case to the existing string), emits via `payload.emit(app)`, is registered in `ipc.rs`'s
-`collect_events!`, and is consumed via typed `on*` wrappers in `tauri-commands/indexing.ts`:
+The index subsystems say what happened; the app decides what a human sees. A subsystem builds an `IndexEvent` and hands
+it to an injected `EventSink`. Nothing here names a wire format, an event name, or a sentence.
 
-- `IndexScanStartedEvent` (`index-scan-started`) — carries `scan_run_kind` plus `prior_total_entries`,
-  `prior_scan_duration_ms`, `volume_used_bytes` (the static per-scan calibration; the FE's calibrated-vs-rough tier
-  decision is a pure function of it). See § "ScanRunKind" below.
-- `IndexScanProgressEvent` (`index-scan-progress`) — `entries_scanned`, `dirs_found`, `bytes_scanned`; emitted every
-  500 ms by the reporter.
-- `IndexScanCompleteEvent` (`index-scan-complete`).
-- `IndexScanAbortedEvent` (`index-scan-aborted`, `{ volume_id }`) — emitted by the network disconnect/cancel/fail arms
-  and the local `RootUnlistable` abort. A network scan that ends WITHOUT completing fires no scan-complete, so this
-  tells the FE to clear that volume's live activity, else the corner indicator and breadcrumb badge keep a stuck
-  "scanning" row. Carries no completion facts.
-- `IndexDirUpdatedEvent` (`index-dir-updated`).
-- `IndexReplayProgressEvent` / `IndexReplayCompleteEvent`.
-- `IndexAggregationCompleteEvent` (`index-aggregation-complete`) — carries `volume_id` so the FE clears the right
-  drive's aggregation row.
-- `IndexMemoryWarningEvent` (`index-memory-warning`) — carries `phys_footprint_bytes`, `resident_bytes`,
-  `rust_heap_bytes`, `system_malloc_bytes`, `untracked_bytes`, and a typed `MemoryWatchdogAction`. Bytes, not rounded
-  GB, because shipped reports need the precision. The two allocator figures are disjoint and neither alone is "the
-  heap": `crate::process_memory` explains why. Emitted on the stop AND on each post-stop escalation.
-- `IndexPhaseChangedEvent` (`index-phase-changed`, `{ volume_id, phase: ActivityPhase }`) — the per-volume
-  pipeline-phase event driving the FE step checklist; see § "set_phase_for".
-- `index-freshness-changed` — the per-volume badge-color event (`VolumeIndexStatus.freshness`); emitted by the
-  freshness layer, whose state machine is owned by `../lifecycle/DETAILS.md`.
+`IndexEvent` has 17 variants. Fifteen become frontend events (`ScanStarted`, `ScanProgress`, `ScanComplete`,
+`ScanAborted`, `DirsUpdated`, `ReplayProgress`, `ReplayComplete`, `RescanScheduled`, `AggregationProgress`,
+`AggregationComplete`, `MemoryWarning`, `FreshnessChanged`, `PhaseChanged`, `MediaEnrichProgress`,
+`MediaEnrichTerminal`). Two reach the host's own machinery instead:
 
-`RescanReason` (and `emit_rescan_notification`, `index-rescan-notification`) lives here too: `StaleIndex`, `JournalGap`,
-`ReplayOverflow`, `WatcherStartFailed`, `ReconcilerBufferOverflow`, `IncompletePreviousScan`, `WatcherChannelOverflow`,
-`IngestionBacklog`. Every code path that falls back to a full rescan emits one; the FE maps each to a toast. The
-triggers that CHOOSE each reason live in `../watch/DETAILS.md` and `../reconcile/DETAILS.md`, not here — this area
-owns only the payload shape.
+- **`Error { report: IndexErrorReport }`** — a failure worth an error report, described by what broke rather than by
+  the sentence someone would write about it: `MemoryWatchdog` (action, footprint, limit, escalation, the breakdown),
+  `StorageFailed` (the typed `IndexFailure` plus context), `LiveEventLoopUnavailable`, `WalkWorkerSpawnFailed`. The app
+  renders each and raises it through `log_error!`, which is what feeds `error_reporter::auto_dispatcher`. **This exists
+  because a crate can't invoke a crate-root macro**; dropping it would silently cost the shipped-error feedback loop.
+  The backtrace is still the failure's, not the mapper's — `emit` is a synchronous call from the failing code.
+- **`PathAccessDenied { path }`** — the scanner hit an OS denial. The app decides whether it's TCC-restricted and worth
+  the sidebar's "limited by macOS" styling.
 
-Two payloads that could look like they belong here but don't: `AggregationProgressEvent` (`index-aggregation-progress`)
-lives in `../writer/DETAILS.md`, and `SearchIndexReadyEvent` (`search-index-ready`) lives in `commands/search.rs`. Also
-here: the IPC response types (`IndexStatusResponse`, `IndexDebugStatusResponse`).
+`IndexEventKind` is the payload-free twin, so a test can assert the SHAPE of a stream (`[ScanStarted, ScanProgress,
+ScanComplete]`) without spelling out fields. Its `ALL` array is fixed-length, so a new variant fails to compile until
+it's listed, and the app-side completeness test then fails until a sample joins `one_of_every_kind`.
+
+Three sinks ship: the app's `TauriEventSink`, `NoopEventSink` (paths and tests with nothing to say —
+`NoopEventSink::shared()` hands out one `Arc`), and the test `RecordingSink`.
+
+`Diagnostic(String)` wraps English the index produces for logs and never for the UI. The newtype is the point: a bare
+`String` leaves the next reader guessing whether it needs translating. `RescanScheduled.details` is the live case (the
+frontend handler reads `reason` and resolves its own message key; `details` is console-only).
+
+**Where an event goes.** `events/index_mapping.rs` app-side holds the 15 `tauri_specta::Event` payload structs and one
+exhaustive `route(event, app)`. It EMITS as it decides and returns the wire name it emitted under (read off the
+payload's own `Event::NAME`), so there's no second lookup table to drift from what actually ships. `route(event, None)`
+suppresses the Tauri emit and nothing else, which is how the mapping is tested without an app.
+
+The data types the payloads carry stay on this side: `ScanRunKind`, `RescanReason`, `ActivityPhase`,
+`MemoryWatchdogAction`, `Freshness`, `AggregationPhase`, `MediaEnrichTerminalReason`, `IndexFailure`. A `specta::Type`
+derive on a value is fine here; a presentation decision isn't.
+
+## Response types and the debug ring (`mod.rs`)
+
+`IndexStatusResponse`, `VolumeIndexStatus`, and `IndexDebugStatusResponse` are IPC RESPONSES, not events, so they stay
+here with their serde shapes. `DebugStats` is the app-wide phase ring the debug window reads; `PhaseRecord.trigger` is
+a free-text English line rendered only in that developer panel.
+
+`RescanReason` lives here too: `StaleIndex`, `JournalGap`, `ReplayOverflow`, `WatcherStartFailed`,
+`ReconcilerBufferOverflow`, `IncompletePreviousScan`, `WatcherChannelOverflow`, `IngestionBacklog`. Every path that
+falls back to a full rescan reports one through `emit_rescan_notification`, which also logs the reason; the frontend
+maps each to a toast. The triggers that CHOOSE each reason live in `../watch/DETAILS.md` and `../reconcile/DETAILS.md`.
+
+Two reports that could look like they belong here but don't: `AggregationProgress` is the writer's
+(`../writer/DETAILS.md`), and `SearchIndexReadyEvent` (`search-index-ready`) is `commands/search.rs`'s.
 
 ## `ScanRunKind` — what kind of run this is (`mod.rs`)
 
@@ -71,17 +85,17 @@ There are TWO records of the top-level pipeline phase (`Scanning → Aggregating
 - **Global, app-wide**: `DEBUG_STATS.set_phase()` appends to one `PhaseRecord` ring (capped at 20) that the debug
   window's "Phase timeline" reads. It's a singleton: under two concurrent volumes it interleaves their transitions and
   can't say WHICH drive changed. Debug-only; keep it.
-- **Per-volume**: the `IndexPhaseChangedEvent { volumeId, phase: ActivityPhase }` event tells the frontend which drive
+- **Per-volume**: the `IndexEvent::PhaseChanged { volume_id, phase }` report tells the frontend which drive
   moved to which phase, driving the per-volume step checklist. `ActivityPhase` (Replaying/Scanning/Aggregating/
   Reconciling/Live/Idle) is a serde `snake_case` specta enum, so the FE branches on the typed variant, no
   string-matching on labels.
 
-`set_phase_for(app, volume_id, phase, trigger)` (a `pub(super)` fn) does BOTH in one call — the global ring plus a
-fire-and-forget per-volume emit — so the two can't drift. Every `set_phase` site where a `volume_id` and an `AppHandle`
-are in scope goes through it: `lifecycle/manager.rs` (local `Replaying`/`Scanning`, the completion task's `Aggregating →
+`set_phase_for(events, volume_id, phase, trigger)` (a `pub(super)` fn) does BOTH in one call — the global ring plus a
+fire-and-forget per-volume report — so the two can't drift. Every `set_phase` site where a `volume_id` and a sink are
+in scope goes through it: `lifecycle/manager.rs` (local `Replaying`/`Scanning`, the completion task's `Aggregating →
 Reconciling → Live`, `Idle` in stop/shutdown), `lifecycle/network_scan.rs` (`Scanning` at start; `Live` on clean
 finish, `Idle` on disconnect), `lifecycle/scan_completion.rs`, and `watch/event_loop/replay.rs` (`Live` at the end of
-replay). Spawned tasks capture cloned `app` / `volume_id`, never re-resolving the manager in the registry (same
+replay). Spawned tasks capture a cloned sink / `volume_id`, never re-resolving the manager in the registry (same
 discipline as the freshness `Arc`).
 
 The event fires only on TRANSITIONS, so a frontend that joins mid-scan (window reload) can't learn the current phase
@@ -103,20 +117,20 @@ The 500 ms progress + mid-scan partial-aggregation tick loop shared by EVERY sca
 `start_scan`, SMB/MTP trait fresh/reconcile via `network_scan`), so the coordinator reads as "dispatch scanner → await
 completion → spawn live loop".
 
-- `new(progress, writer, app, volume_id, partial_agg_source)` builds it; `spawn(scan_done)` runs the loop on
+- `new(progress, writer, events, volume_id, partial_agg_source)` builds it; `spawn(scan_done)` runs the loop on
   `tauri::async_runtime::spawn` (a scan can start from the sync Tauri `setup()` hook) until the completion handler sets
   `scan_done`. Partial passes are therefore structurally scoped to the full-scan window.
 - `partial_agg_source` is chosen by the caller per scan kind: `Maps` for a fresh scan (accumulator maps populated by
   `InsertEntriesV2`), `Sql` for a reconcile rescan (maps empty). See the `source: Maps|Sql` contract in
   `../writer/DETAILS.md`.
-- Each `tick()` emits an `IndexScanProgressEvent`, then — via a tick counter gated behind
+- Each `tick()` reports `IndexEvent::ScanProgress`, then — via a tick counter gated behind
   `partial_agg::should_send_partial_agg` — snapshots the listing cache (`caching::snapshot_listings()`), runs
   `partial_agg::collect_hot_paths`, maps each firmlink-normalized absolute hot path into the volume's index-relative
   space via `routing::index_read_path` (the SAME volume-root strip enrichment uses; a pass-through for `root`,
   mount/scheme strip for SMB/MTP), and fires a non-blocking `writer.try_send(ComputePartialAggregates { hot_paths,
   source })`. The whole partial-agg block sits behind the gate, so skipped ticks do zero extra work.
-- Keeps `AppHandle` by value rather than abstracting emission behind a closure: emitting progress is the reporter's
-  whole job, and the genuinely pure decision logic already lives (and is unit-tested) in `partial_agg`.
+- Keeps its sink by value (cloned in by the caller), so the spawned loop owns everything it needs; the genuinely pure
+  decision logic already lives (and is unit-tested) in `partial_agg`.
 
 ## `partial_agg` — the pure helpers (`partial_agg.rs`)
 

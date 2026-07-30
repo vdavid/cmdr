@@ -250,7 +250,7 @@ A drive yanked mid-scan makes the local scan's ROOT unlistable: the fresh guarde
 on a volume-root scan, and the reconcile walk hits `reader.read(root) == None` — both return the typed
 `ScanError::RootUnlistable`, distinct from `ScanError::EmptyRoot` (a readable-but-empty root, e.g. a blank USB stick,
 which legitimately completes). The completion handler fires `ScanFailed` ⇒ Stale for every failure and, ONLY for
-`RootUnlistable`, additionally goes `Idle` and emits `IndexScanAbortedEvent { volume_id }` — clearing the frontend's
+`RootUnlistable`, additionally goes `Idle` and reports `IndexEvent::ScanAborted { volume_id }` — clearing the frontend's
 stuck "scanning" row, mirroring the network path's disconnect arm. No `scan_completed_at` is written, so the index heals
 to a rescan on remount. `scan_failure_is_vanished_volume` is the pure distinguisher; an empty root or a walk panic does
 NOT abort. (The wedge-safe unmount/eject ORDERING that stops the index before the FS goes away lives in

@@ -1,6 +1,6 @@
 # Extract the index into a `cmdr-index` crate
 
-Status: in progress on `worktree-david-index-crate-extraction`, started 2026-07-30. M0 through M2 are landed. Written
+Status: in progress on `worktree-david-index-crate-extraction`, started 2026-07-30. M0 through M3 are landed. Written
 2026-07-25 after three review rounds against the code; every count below was measured then, and a handful drifted as the
 subsystems kept moving (`media_index/commands.rs` is now `media_index/commands/`, `get_volume_manager` is 23 sites not
 18, the subsystems are 93,256 of 332,264 lines). The structural claims all still hold; treat the counts as approximate
@@ -393,7 +393,8 @@ not.** Events are where presentation lives.
 
 **Watch for:** `IndexRescanNotificationEvent.details: String` is free-text English, verified log-only (the FE handler at
 `index-state.svelte.ts:370` reads `payload.reason` and maps it to an i18n key; `details` is never rendered). It stays a
-diagnostic, typed as `Diagnostic(String)` so the boundary is explicit. Separately, `pluralize` output reaches
+diagnostic, typed as `Diagnostic(String)` so the boundary is explicit. (Done: the crate-side field is `Diagnostic`, and
+the app-side payload unwraps it to `String` at the wire edge.) Separately, `pluralize` output reaches
 `PhaseRecord.trigger`, which **is** rendered at `DebugDriveIndexPanel.svelte:234` — the developer debug panel, not
 product copy, so it's acceptable, but "pluralize is purely log-only" shouldn't be claimed.
 

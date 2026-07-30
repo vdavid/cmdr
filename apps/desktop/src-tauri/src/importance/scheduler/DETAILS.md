@@ -120,7 +120,7 @@ rescore** of only the touched folders, so a single file edit doesn't re-walk-and
 ### The event source (documented choice)
 
 There is no clean in-process per-directory hook in `indexing/`: the reconciler
-reports directory changes only via `IndexDirUpdatedEvent` to the frontend, and the writer/aggregation `emit_dir_updated`
+reports directory changes only via `IndexEvent::DirsUpdated` to the frontend, and the writer/aggregation `emit_dir_updated`
 sites aren't uniformly volume-aware. So, exactly as the full pass uses `publish_scan_completed` alongside the frontend
 `.emit`, there is a per-volume `dir-changed` channel on `indexing/lifecycle/lifecycle_bus.rs` (`publish_dirs_changed`),
 published from the **live-change sites where `volume_id` is in scope**: the live event loop (FSEvents batches, under

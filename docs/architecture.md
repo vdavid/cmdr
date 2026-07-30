@@ -206,6 +206,8 @@ All under `apps/desktop/src-tauri/src/`.
   `commands/feedback.rs`
 - `error_reporter/`: Error reports: bundle build (manifest + redacted log tail), short-ID + R2 upload, debounced
   auto-dispatcher
+- `events/`: App-side Tauri payloads for subsystems that emit typed values instead of wire formats (the drive index,
+  media index, importance). See `events/CLAUDE.md`
 - `updater/`: macOS custom updater: syncs files into the running `.app` in place so FDA survives updates. Other
   platforms use stock Tauri
 - `redact/`: Shared PII redactor (path-shape preserving). Used by both crash and error reporters

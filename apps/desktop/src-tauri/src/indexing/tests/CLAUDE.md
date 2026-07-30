@@ -8,6 +8,10 @@ tests stay colocated in each module; these are the integration tier.
 - **integration_tests.rs** — end-to-end (scan → aggregate → enrich → watcher update → re-enrich), the enrichment fast
   path / fallback / root-level path, the `ReadPool` (reuse, invalidation, cross-thread, contention), the
   `should_auto_start_indexing` FDA gate, and the `IndexPhase` lifecycle transitions.
+- **event_stream_tests.rs** — what a scan tells its host, asserted at the `EventSink`: the lifecycle's shape
+  (`ScanStarted` first, `ScanComplete` after, progress in between), the reporter's tick, and per-volume isolation (two
+  concurrent scans, two streams, neither mentioning the other). Drives a real `IndexManager` over a temp-dir fixture
+  with a `RecordingSink` — no app involved.
 - **stress_tests_{concurrency,lifecycle,partial_aggregation}.rs** + **stress_test_helpers.rs** — concurrency,
   start/stop/restart-under-load, and the partial-aggregation differential test, plus shared setup helpers.
 - **external_drive_fixture.rs** — a macOS-only synthetic disk-image FIXTURE (`#[cfg(target_os = "macos")]`), NOT a test

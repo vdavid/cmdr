@@ -355,8 +355,8 @@ judges the headline feature. Instead, on `ComputePartialAggregates { hot_paths, 
 progress reporter), `handle_compute_partial_aggregates` **borrows** the accumulator maps READ-ONLY (no clear, no
 mutation, no generation bump), no-ops on empty maps with NO SQL fallback, delegates the math to
 `aggregator::compute_partial_aggregates` (full bottom-up over every scanned dir — cheap, pure in-memory), writes a
-depth-capped (`PARTIAL_AGG_MAX_DEPTH = 3`) subset plus each resolvable hot-path dir + its direct children, and emits
-`index-dir-updated { paths: ["/"] }` when an `AppHandle` is present. Real-volume cost (release, 5.94M entries / 558K
+depth-capped (`PARTIAL_AGG_MAX_DEPTH = 3`) subset plus each resolvable hot-path dir + its direct children, and reports
+`IndexEvent::DirsUpdated { paths: ["/"] }`. Real-volume cost (release, 5.94M entries / 558K
 dirs): p95 377 ms/pass, 151–716 rows/pass, indistinguishable from the feature-off baseline.
 
 The don'ts (all load-bearing):
