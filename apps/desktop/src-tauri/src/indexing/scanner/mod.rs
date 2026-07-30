@@ -25,7 +25,8 @@ use cmdr_fs::pluralize::{pluralize, pluralize_with};
 mod exclusions;
 pub use exclusions::SYSTEM_DIR_EXCLUDES;
 /// Recognizing macOS File Provider domain roots, the one probe `exclusions` needs
-/// that isn't pure string work.
+/// that isn't pure string work. macOS-only: no other platform has File Provider.
+#[cfg(target_os = "macos")]
 mod file_provider;
 pub(in crate::indexing) use exclusions::*;
 

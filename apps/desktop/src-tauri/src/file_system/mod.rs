@@ -3,7 +3,6 @@
 pub mod cloud_actions;
 pub mod filesystem_kind;
 pub mod git;
-#[cfg(target_os = "macos")]
 /// The app's `VolumeProvider`: what the index asks about mounted volumes.
 pub(crate) mod index_provider;
 #[cfg(target_os = "linux")]
